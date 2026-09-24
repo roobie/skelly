@@ -402,15 +402,20 @@ more tightly.
   magazine for another cartridge fails `port-compat`. Its magazine-path volume
   matches the bore's magazine footprint.
 
-| Bore | Depth × width | Per round | S / M / L capacity |
-| --- | --- | --- | --- |
-| S | 2 × 1.5 | 0.4 | 4 / 8 / 12 |
-| M | 3 × 2 | 0.5 | 5 / 10 / 15 |
-| L | 4 × 2.5 | 0.6 | 6 / 12 / 18 |
+Sizes are scaled up by 20% (tuned by eye against the other parts) and
+snapped so every edge stays on the 0.25u grid:
 
-The rifle's magazine (bore M, capacity M) is 3 × 2 × 10. The SMG's (bore S,
-capacity L) is 2 × 1.5 × 12. Generator stats are unchanged, because
-magazines never caused a clash.
+| Bore | Depth × width | Length at capacity S / M / L |
+| --- | --- | --- |
+| S | 2.5 × 2 | 5 / 9.5 / 14.5 |
+| M | 3.5 × 2.5 | 6 / 12 / 18 |
+| L | 5 × 3 | 7 / 14.5 / 21.5 |
+
+The rifle's magazine (bore M, capacity M) is 3.5 × 2.5 × 12. The SMG's (bore
+S, capacity L) is 2.5 × 2 × 14.5. The magazine well sits at x = −4.5, 0.5u
+further forward than before, so the deepest magazine (bore L) stays clear of
+the trigger-finger volume. Generator stats are unchanged, because magazines
+never caused a clash.
 
 A possible next step for SMGs is a layout where the magazine goes through the
 grip, as a new lower `layout`.

@@ -25,7 +25,7 @@ describe('resolve', () => {
     expectVec(at(r, 'barrel', [36, 0, 0]), [36, 0, 0]); // muzzle points forward
     expectVec(at(r, 'stock', [-16, 0, 0]), [-32, 0, 0]); // stock extends backward
     expectVec(at(r, 'lower'), [0, -2.5, 0]); // lower hangs under the receiver
-    expectVec(at(r, 'magazine', [0, -10, 0]), [-5, -14, 0]); // magazine hangs from the lower
+    expectVec(at(r, 'magazine', [0, -10, 0]), [-4.5, -14, 0]); // magazine hangs from the lower
   });
 
   it('offsets slotted connections along the port', () => {
@@ -251,8 +251,9 @@ describe('resolve: params from neighbours', () => {
     const rifle = body('archetype-rifle'); // bore M, capacity M
     expect(smg[0]).toBeLessThan(rifle[0]); // depth, front to back
     expect(smg[2]).toBeLessThan(rifle[2]); // width
-    // Length follows rounds × per-round pitch: 30 × 0.4 and 20 × 0.5.
-    expect([smg[1] * 2, rifle[1] * 2]).toEqual([12, 10]);
+    // Length follows rounds × per-round pitch × 1.2, snapped to the grid:
+    // 30 × 0.4 × 1.2 = 14.4 → 14.5, and 20 × 0.5 × 1.2 = 12.
+    expect([smg[1] * 2, rifle[1] * 2]).toEqual([14.5, 12]);
   });
 });
 

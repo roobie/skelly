@@ -77,7 +77,7 @@ describe('rules', () => {
     };
     const issues = validate(variant('archetype-rifle', () => {}), domain).issues;
     expect(issues.map((i) => i.message)).toEqual([
-      'magazine intrudes 2u into the magazine-path volume of lower.',
+      'magazine intrudes 2.5u into the magazine-path volume of lower.',
     ]);
   });
 

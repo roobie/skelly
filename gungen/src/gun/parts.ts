@@ -19,7 +19,7 @@
 //   lug        barrel ↔ tube magazine front (closes a loop, like clamp)
 //   forend     tube magazine ↔ sliding forend
 
-import { SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
+import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid } from '../core/schema.ts';
@@ -66,6 +66,25 @@ const CARTRIDGE: Record<SizeClass, { depth: number; width: number; pitch: number
 
 /** Rounds per capacity class. */
 const ROUNDS: Record<SizeClass, number> = { S: 10, M: 20, L: 30 };
+
+/** Overall magazine scale, tuned by eye against the rest of the parts. */
+const MAGAZINE_SCALE = 1.2;
+
+/** Snap a full extent so its half sits on the grid. */
+const snap = (n: number): number => Math.round(n / (2 * GRID)) * 2 * GRID;
+
+/** A box magazine's depth, width and length, on the grid. */
+const magazineSize = (bore: SizeClass, capacity: SizeClass) => {
+  const c = CARTRIDGE[bore];
+  return {
+    depth: snap(c.depth * MAGAZINE_SCALE),
+    width: snap(c.width * MAGAZINE_SCALE),
+    length: snap(ROUNDS[capacity] * c.pitch * MAGAZINE_SCALE),
+  };
+};
+
+/** Where the magazine well sits on a lower, along X. */
+const MAGWELL_X = -4.5;
 
 // ---- receiver ----
 
@@ -142,11 +161,11 @@ export const lower: PartFamily = {
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const { depth, width } = CARTRIDGE[bore];
+    const { depth, width } = magazineSize(bore, 'S');
     const top: PortDef = { id: 'top', mount: 'lower', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true };
     const grip = (x: number): PortDef => ({ id: 'grip', mount: 'grip', gender: 'female', pos: [x, -1.5, 0], normal: NEG_Y, up: X });
-    const magazine: PortDef = { id: 'magazine', mount: 'magazine', gender: 'female', size: bore, pos: [-5, -1.5, 0], normal: NEG_Y, up: X, required: true };
-    const magazinePath = keepOut('magazine-path', [-5 - depth / 2, -40, -width / 2], [-5 + depth / 2, -1.5, width / 2], 'magazine');
+    const magazine: PortDef = { id: 'magazine', mount: 'magazine', gender: 'female', size: bore, pos: [MAGWELL_X, -1.5, 0], normal: NEG_Y, up: X, required: true };
+    const magazinePath = keepOut('magazine-path', [MAGWELL_X - depth / 2, -40, -width / 2], [MAGWELL_X + depth / 2, -1.5, width / 2], 'magazine');
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
 
     switch (params.layout) {
@@ -320,11 +339,10 @@ export const magazine: PartFamily = {
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const { depth, width, pitch } = CARTRIDGE[bore];
-    const len = ROUNDS[cls(params, 'capacity')] * pitch;
+    const { depth, width, length } = magazineSize(bore, cls(params, 'capacity'));
     return {
       family: 'magazine',
-      solids: [solid('body', [-depth / 2, -len, -width / 2], [depth / 2, 0, width / 2])],
+      solids: [solid('body', [-depth / 2, -length, -width / 2], [depth / 2, 0, width / 2])],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', size: bore, pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],
