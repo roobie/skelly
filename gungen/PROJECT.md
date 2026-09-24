@@ -308,7 +308,8 @@ archetype:
 
 ### Still open
 
-- The SMG is still the rifle at a different size and bore.
+- The SMG is still the rifle at a different size and bore. *(Partly
+  addressed in 2.1: its magazine now follows its small bore.)*
 - Ergonomics is still only "is there a firing grip".
 - Neighbour-reading copies values as they are. There's no mapping between
   them (e.g. "one size smaller than the barrel"), and a part can't compute
@@ -381,6 +382,38 @@ it also means their variety comes from proportions, not layout.
   handguard of the same length.
 - **Retrying is linear** (seed, seed + 1, …). Fine at these valid rates; a
   template with a low valid rate would need smarter search.
+
+## Milestone 2.1: magazines sized by cartridge
+
+**Status:** done.
+
+A box magazine's shape now follows the cartridge it holds, not a fixed box.
+That's one of the visible differences between a rifle and an SMG: at small
+bore, the magazine is slimmer front to back and narrower, and packs rounds
+more tightly.
+
+- **Magazine params:** `bore`, read from the magazine well unless set, and
+  `capacity` (S/M/L = 10/20/30 rounds), which replaces `length`.
+  - Bore sets the depth (front to back), the width, and how much length each
+    round adds.
+  - Length = rounds × that per-round pitch.
+- **Lower:** gets a `bore` param read from the receiver, so the chain is
+  receiver → lower → magazine. Its magazine well is sized by bore again, so a
+  magazine for another cartridge fails `port-compat`. Its magazine-path volume
+  matches the bore's magazine footprint.
+
+| Bore | Depth × width | Per round | S / M / L capacity |
+| --- | --- | --- | --- |
+| S | 2 × 1.5 | 0.4 | 4 / 8 / 12 |
+| M | 3 × 2 | 0.5 | 5 / 10 / 15 |
+| L | 4 × 2.5 | 0.6 | 6 / 12 / 18 |
+
+The rifle's magazine (bore M, capacity M) is 3 × 2 × 10. The SMG's (bore S,
+capacity L) is 2 × 1.5 × 12. Generator stats are unchanged, because
+magazines never caused a clash.
+
+A possible next step for SMGs is a layout where the magazine goes through the
+grip, as a new lower `layout`.
 
 ## Running it
 

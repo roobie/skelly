@@ -58,7 +58,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "capacity": "S",
         },
       },
       "receiver": {
@@ -134,7 +134,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "capacity": "S",
         },
       },
       "receiver": {
@@ -210,7 +210,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "capacity": "S",
         },
       },
       "receiver": {
@@ -302,7 +302,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "M",
+          "capacity": "M",
         },
       },
       "receiver": {
@@ -389,7 +389,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "capacity": "S",
         },
       },
       "receiver": {
@@ -465,7 +465,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "capacity": "S",
         },
       },
       "receiver": {
@@ -542,7 +542,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -607,7 +607,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -686,7 +686,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -977,7 +977,7 @@ exports[`templates > rifle > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -1059,7 +1059,7 @@ exports[`templates > rifle > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "M",
+          "capacity": "M",
         },
       },
       "receiver": {
@@ -1137,7 +1137,7 @@ exports[`templates > rifle > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -1229,7 +1229,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -1315,7 +1315,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {
@@ -1398,7 +1398,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "capacity": "L",
         },
       },
       "receiver": {

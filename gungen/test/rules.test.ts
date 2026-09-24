@@ -111,4 +111,15 @@ describe('rules', () => {
   it('feed-match: top-fed receivers take a magazine well too', () => {
     expect(rulesFailed(loadFixture('archetype-bolt-rifle'))).toEqual([]);
   });
+
+  it('port-compat: a magazine for another cartridge does not fit the well', () => {
+    const a = variant('archetype-rifle', (x) => {
+      x.parts.magazine!.params = { ...x.parts.magazine!.params, bore: 'S' };
+    });
+    const issues = validate(a, gunDomain).issues;
+    expect(issues.map((i) => i.message)).toEqual([
+      'Size mismatch: lower.magazine is size M but magazine.top is size S.',
+    ]);
+  });
 });
+

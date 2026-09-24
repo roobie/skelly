@@ -13,7 +13,7 @@
 //   rail       receiver or handguard top rail (slotted) ↔ sight
 //   lower      receiver bottom ↔ lower
 //   grip       lower bottom ↔ grip
-//   magazine   lower bottom ↔ box magazine
+//   magazine   lower bottom ↔ box magazine (sized by bore)
 //   stock      receiver rear ↔ stock
 //   tube       receiver front ↔ tube magazine (tube-fed receivers)
 //   lug        barrel ↔ tube magazine front (closes a loop, like clamp)
@@ -52,6 +52,20 @@ const FORE_LENGTH: Record<SizeClass, number> = { S: 16, M: 24, L: 32 };
 
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
+
+/**
+ * Box-magazine proportions by bore class, standing in for the cartridge:
+ * depth (front to back, the cartridge's length), width (a double stack) and
+ * how much length each round adds. Stylized, not real dimensions.
+ */
+const CARTRIDGE: Record<SizeClass, { depth: number; width: number; pitch: number }> = {
+  S: { depth: 2, width: 1.5, pitch: 0.4 },
+  M: { depth: 3, width: 2, pitch: 0.5 },
+  L: { depth: 4, width: 2.5, pitch: 0.6 },
+};
+
+/** Rounds per capacity class. */
+const ROUNDS: Record<SizeClass, number> = { S: 10, M: 20, L: 30 };
 
 // ---- receiver ----
 
@@ -121,12 +135,18 @@ export const receiver: PartFamily = {
  */
 export const lower: PartFamily = {
   name: 'lower',
-  params: { layout: choice('conventional', 'bullpup', 'trigger') },
+  params: {
+    layout: choice('conventional', 'bullpup', 'trigger'),
+    // The magazine well is sized for the receiver's cartridge, unless set.
+    bore: { ...size, from: [{ port: 'top', param: 'bore' }] },
+  },
   build(params): PartDef {
+    const bore = cls(params, 'bore');
+    const { depth, width } = CARTRIDGE[bore];
     const top: PortDef = { id: 'top', mount: 'lower', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true };
     const grip = (x: number): PortDef => ({ id: 'grip', mount: 'grip', gender: 'female', pos: [x, -1.5, 0], normal: NEG_Y, up: X });
-    const magazine: PortDef = { id: 'magazine', mount: 'magazine', gender: 'female', pos: [-5, -1.5, 0], normal: NEG_Y, up: X, required: true };
-    const magazinePath = keepOut('magazine-path', [-6.5, -40, -1], [-3.5, -1.5, 1], 'magazine');
+    const magazine: PortDef = { id: 'magazine', mount: 'magazine', gender: 'female', size: bore, pos: [-5, -1.5, 0], normal: NEG_Y, up: X, required: true };
+    const magazinePath = keepOut('magazine-path', [-5 - depth / 2, -40, -width / 2], [-5 + depth / 2, -1.5, width / 2], 'magazine');
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
 
     switch (params.layout) {
@@ -287,15 +307,25 @@ export const grip: PartFamily = {
   },
 };
 
+/**
+ * A box magazine. Its shape comes from the cartridge (bore, read from the
+ * magazine well unless set) and how many rounds it holds (capacity): a small
+ * bore gives a slim magazine, and more rounds a longer one.
+ */
 export const magazine: PartFamily = {
   name: 'magazine',
-  params: { length: size },
+  params: {
+    bore: { ...size, from: [{ port: 'top', param: 'bore' }] },
+    capacity: size,
+  },
   build(params): PartDef {
-    const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
+    const bore = cls(params, 'bore');
+    const { depth, width, pitch } = CARTRIDGE[bore];
+    const len = ROUNDS[cls(params, 'capacity')] * pitch;
     return {
       family: 'magazine',
-      solids: [solid('body', [-1.5, -len, -1], [1.5, 0, 1])],
-      ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
+      solids: [solid('body', [-depth / 2, -len, -width / 2], [depth / 2, 0, width / 2])],
+      ports: [{ id: 'top', mount: 'magazine', gender: 'male', size: bore, pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],
     };

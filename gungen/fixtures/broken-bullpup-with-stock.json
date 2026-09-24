@@ -8,7 +8,7 @@
     "lower": { "family": "lower", "params": { "layout": "bullpup" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "M" } },
+    "magazine": { "family": "magazine", "params": { "capacity": "M" } },
     "sight": { "family": "sight" },
     "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } }
   },

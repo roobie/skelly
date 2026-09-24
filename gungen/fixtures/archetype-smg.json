@@ -9,7 +9,7 @@
     "barrel": { "family": "barrel", "params": { "length": "S" } },
     "handguard": { "family": "handguard", "params": { "inner": "M" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "L" } },
+    "magazine": { "family": "magazine", "params": { "capacity": "L" } },
     "stock": { "family": "stock", "params": { "length": "S", "style": "straight" } },
     "sight": { "family": "sight" }
   },

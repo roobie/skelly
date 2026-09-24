@@ -238,5 +238,21 @@ describe('resolve: params from neighbours', () => {
     expect(param(r, 'handguard', 'length')).toEqual({ value: 'M', source: 'default' });
     expect(param(r, 'tube', 'length')).toEqual({ value: 'S', source: 'default' });
   });
+
+  it("sizes a magazine from the receiver's cartridge, through the lower", () => {
+    const r = resolve(valid, gunDomain);
+    expect(param(r, 'lower', 'bore')).toEqual({ value: 'M', source: 'inherited', from: 'receiver.bore' });
+    expect(param(r, 'magazine', 'bore')).toEqual({ value: 'M', source: 'inherited', from: 'lower.bore' });
+  });
+
+  it('gives a small-bore gun a slimmer magazine than a rifle', () => {
+    const body = (fixture: string) => resolve(loadFixture(fixture), gunDomain).defs.get('magazine')!.solids[0]!.box.half;
+    const smg = body('archetype-smg'); // bore S, capacity L
+    const rifle = body('archetype-rifle'); // bore M, capacity M
+    expect(smg[0]).toBeLessThan(rifle[0]); // depth, front to back
+    expect(smg[2]).toBeLessThan(rifle[2]); // width
+    // Length follows rounds × per-round pitch: 30 × 0.4 and 20 × 0.5.
+    expect([smg[1] * 2, rifle[1] * 2]).toEqual([12, 10]);
+  });
 });
 
