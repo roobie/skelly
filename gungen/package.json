@@ -8,7 +8,9 @@
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "test": "vitest run",
-    "validate": "node src/cli/validate.ts"
+    "validate": "node src/cli/validate.ts",
+    "generate": "node src/cli/generate.ts",
+    "stats": "node src/cli/stats.ts"
   },
   "dependencies": {
     "three": "^0.186.0"
