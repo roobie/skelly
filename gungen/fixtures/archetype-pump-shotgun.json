@@ -1,0 +1,22 @@
+{
+  "name": "archetype-pump-shotgun",
+  "description": "Pump-action shotgun: tube magazine under the barrel fixed to its lug, sliding forend, trigger-only lower.",
+  "expect": [],
+  "root": "receiver",
+  "parts": {
+    "receiver": { "family": "receiver", "params": { "action": "pump", "feed": "tube", "bore": "L" } },
+    "lower": { "family": "lower", "params": { "layout": "trigger" } },
+    "barrel": { "family": "barrel", "params": { "length": "M" } },
+    "tube": { "family": "tube-magazine" },
+    "forend": { "family": "forend" },
+    "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } }
+  },
+  "connections": [
+    { "from": "receiver.lower", "to": "lower.top" },
+    { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.tube", "to": "tube.rear" },
+    { "from": "tube.cap", "to": "barrel.lug" },
+    { "from": "tube.forend", "to": "forend.rear" },
+    { "from": "receiver.stock", "to": "stock.front" }
+  ]
+}

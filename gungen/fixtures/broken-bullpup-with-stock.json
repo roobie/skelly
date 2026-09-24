@@ -1,0 +1,23 @@
+{
+  "name": "broken-bullpup-with-stock",
+  "description": "Bullpup with a stock added at the receiver rear, where the built-in butt already is.",
+  "expect": ["solid-overlap"],
+  "root": "receiver",
+  "parts": {
+    "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
+    "lower": { "family": "lower", "params": { "layout": "bullpup" } },
+    "barrel": { "family": "barrel", "params": { "length": "M" } },
+    "grip": { "family": "grip", "params": { "length": "M" } },
+    "magazine": { "family": "magazine", "params": { "length": "M" } },
+    "sight": { "family": "sight" },
+    "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } }
+  },
+  "connections": [
+    { "from": "receiver.lower", "to": "lower.top" },
+    { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "lower.grip", "to": "grip.top" },
+    { "from": "lower.magazine", "to": "magazine.top" },
+    { "from": "receiver.rail", "slot": 3, "to": "sight.base" },
+    { "from": "receiver.stock", "to": "stock.front" }
+  ]
+}
