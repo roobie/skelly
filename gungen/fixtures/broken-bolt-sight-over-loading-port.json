@@ -1,0 +1,24 @@
+{
+  "name": "broken-bolt-sight-over-loading-port",
+  "description": "Top-loaded bolt-action rifle with the sight over the action, blocking the loading port.",
+  "expect": ["keep-out"],
+  "root": "receiver",
+  "parts": {
+    "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "top", "bore": "M" } },
+    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "barrel": { "family": "barrel", "params": { "bore": "M", "length": "L" } },
+    "handguard": { "family": "handguard", "params": { "length": "L", "inner": "M" } },
+    "magazine": { "family": "magazine", "params": { "length": "S" } },
+    "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } },
+    "sight": { "family": "sight" }
+  },
+  "connections": [
+    { "from": "receiver.lower", "to": "lower.top" },
+    { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.handguard", "to": "handguard.rear" },
+    { "from": "handguard.front", "to": "barrel.clamp" },
+    { "from": "lower.magazine", "to": "magazine.top" },
+    { "from": "receiver.stock", "to": "stock.front" },
+    { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
+  ]
+}

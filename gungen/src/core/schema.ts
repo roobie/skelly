@@ -2,7 +2,9 @@
 // Everything domain-specific (which parts and mount types exist) is data
 // supplied through a Domain.
 
+import type { Issue } from './issue.ts';
 import type { Vec3 } from './math.ts';
+import type { Resolved } from './resolve.ts';
 
 /** Axis-aligned box in its part's local frame. */
 export interface Box {
@@ -58,6 +60,8 @@ export interface PartDef {
   readonly solids: readonly Solid[];
   readonly keepOuts: readonly KeepOut[];
   readonly axes: readonly Axis[];
+  /** Free-form labels that domain rules can look for. */
+  readonly tags?: readonly string[];
 }
 
 export interface ParamSpec {
@@ -78,10 +82,19 @@ export interface AxisRule {
   readonly mode: 'collinear' | 'parallel';
 }
 
+/** A feasibility check over a resolved assembly (PROJECT.md §1). */
+export interface Rule {
+  readonly id: string;
+  readonly title: string;
+  check(r: Resolved): Issue[];
+}
+
 export interface Domain {
   readonly name: string;
   readonly families: Readonly<Record<string, PartFamily>>;
   readonly axisRules: readonly AxisRule[];
+  /** Domain-specific rules, run after the core rules. */
+  readonly rules?: readonly Rule[];
 }
 
 // ---- Assembly file format (JSON) ----

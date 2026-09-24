@@ -133,10 +133,23 @@ const load = (assembly: Assembly) => {
 
 // ---- UI wiring ----
 
-for (const f of fixtures) select.add(new Option(f.name, f.name));
+const groups = new Map<string, HTMLOptGroupElement>();
+for (const f of fixtures) {
+  const kind = f.name.split('-')[0]!;
+  let group = groups.get(kind);
+  if (!group) {
+    group = document.createElement('optgroup');
+    group.label = kind === 'archetype' ? 'Archetypes' : kind === 'broken' ? 'Broken (one rule each)' : kind;
+    groups.set(kind, group);
+    select.append(group);
+  }
+  group.append(new Option(f.name, f.name));
+}
 select.addEventListener('change', () => {
   const f = fixtures.find((x) => x.name === select.value);
-  if (f) load(f);
+  if (!f) return;
+  framed = false;
+  load(f);
 });
 
 fileInput.addEventListener('change', async () => {
@@ -178,7 +191,10 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 });
 
 const initial = new URLSearchParams(location.search).get('fixture');
-const start = fixtures.find((f) => f.name === initial) ?? fixtures.find((f) => f.expect?.length === 0) ?? fixtures[0];
+const start =
+  fixtures.find((f) => f.name === initial) ??
+  fixtures.find((f) => f.name === 'archetype-rifle') ??
+  fixtures[0];
 if (start) {
   select.value = start.name;
   load(start);

@@ -8,7 +8,7 @@ assembling and constraining 3D structure.
 
 | Dir | Status | Summary |
 | --- | --- | --- |
-| [`gungen/`](gungen/PROJECT.md) | milestone 1 done: validator and viewer | A super-low-poly 3D firearm generator that works out how components connect, so every generated assembly fits together. |
+| [`gungen/`](gungen/PROJECT.md) | milestone 1.1 done: validator, viewer, six archetypes | A super-low-poly 3D firearm generator that works out how components connect, so every generated assembly fits together. |
 
 ## Shared direction
 

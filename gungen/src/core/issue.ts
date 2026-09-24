@@ -1,4 +1,5 @@
-export const RULE_IDS = [
+/** Rules the core always runs. Domains may add their own (Domain.rules). */
+export const CORE_RULE_IDS = [
   /** The file can't be resolved as written: unknown parts, ports, params... */
   'structure',
   'port-compat',
@@ -9,10 +10,11 @@ export const RULE_IDS = [
   'loop-closure',
 ] as const;
 
-export type RuleId = (typeof RULE_IDS)[number];
+export type CoreRuleId = (typeof CORE_RULE_IDS)[number];
 
 export interface Issue {
-  readonly rule: RuleId;
+  /** A core rule id, or one a domain added. */
+  readonly rule: string;
   readonly message: string;
   /** Part ids involved, for highlighting. */
   readonly parts: readonly string[];

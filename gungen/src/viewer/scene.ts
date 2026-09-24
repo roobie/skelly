@@ -12,7 +12,10 @@ import type { Report } from '../core/validate.ts';
 
 const FAMILY_COLORS: Record<string, number> = {
   receiver: 0x8d939c,
+  lower: 0x6f757e,
   barrel: 0x5d636b,
+  'tube-magazine': 0x4d535b,
+  forend: 0x8a6a52,
   handguard: 0x74805f,
   grip: 0x7d604c,
   magazine: 0x566276,

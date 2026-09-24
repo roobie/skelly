@@ -37,7 +37,9 @@ size classes (see §4), not measurements.
 | Tests | Vitest |
 | Part definitions | TypeScript code: each family is a function from size-class params to a part |
 | Assemblies | JSON files: part instances plus connections (§7) |
-| Loops | Milestone 1 only *checks* that loops close; there is no solver yet |
+| Loops | Loops are only *checked* for closure; there is no solver yet |
+| Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
+| Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |
 
 ## Design areas
 
@@ -171,8 +173,8 @@ the generator later has something independent to be tested against (§9).
 
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
-- **Parts** (`src/gun/parts.ts`): receiver, barrel, handguard, grip, magazine,
-  stock and sight, built from boxes. The handguard can clamp to the barrel as
+- **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
+  barrel, handguard, grip, magazine, stock and sight, built from boxes. The handguard can clamp to the barrel as
   well as the receiver, which creates the loop. There are 7 mount types, not
   the 3–4 first planned: each socket needs its own type so a stock can't go
   in a grip socket.
@@ -193,7 +195,84 @@ The generator and grammar (§6), the human rig (§5; the trigger-finger volume
 stands in for now), final meshes and merging (§7), the metrics in §9, and
 more archetypes.
 
-### Running it
+## Milestone 1.1: receiver split, domain rules, archetype smoke tests
+
+**Goal:** stop the part library being one rifle layout. Every archetype below
+must be buildable from the shared parts, pass every rule, and read as that
+archetype in the viewer.
+
+**Status:** done.
+
+### What changed
+
+- **Domain rules.** `Domain.rules` adds rules that run after the core ones.
+  Parts can carry free-form `tags` for such rules to look for. The gun domain
+  adds one:
+
+  | Rule id | Checks |
+  | --- | --- |
+  | `firing-grip` | Something for the firing hand: a part tagged `firing-grip` (a pistol grip, or a stock with a wrist) |
+
+- **Receiver split.** The receiver is now only the action body, with two
+  params:
+  - `action`: `auto` (charging handle), `bolt` (bolt travel out of the back,
+    bolt handle sweep on the right) or `pump` (driven by the forend). Each adds
+    its own keep-out volumes.
+  - `feed`: `box` (magazine through the lower), `top` (loading port above the
+    action) or `tube` (tube magazine port, loading port underneath).
+
+  The grip and magazine hang from a **lower** under it, whose `layout` param
+  sets where they go:
+  - `conventional`: magazine ahead of the grip.
+  - `bullpup`: grip ahead of the magazine, with the butt built in.
+  - `trigger`: trigger only, for tube-fed or top-loaded designs.
+- **New and extended parts:**
+  - `tube-magazine`: runs under the barrel, with its cap fixed to the barrel's
+    lug. That closes a loop, the same way the handguard clamp does.
+  - `forend`: slides on the tube, with a slide-travel keep-out volume.
+  - `stock` now has a `style`. `straight` puts the comb in line with the bore.
+    `sporting` drops the comb below the bolt's travel and adds a wrist to hold.
+  - The handguard has a top rail, so a sight can sit ahead of the action.
+- **Mount types:** 11 now. `lower`, `tube`, `lug` and `forend` are new.
+
+### Archetype fixtures
+
+Each is valid and passes every rule. Files are in `fixtures/`.
+
+| Fixture | Archetype | Built from |
+| --- | --- | --- |
+| `archetype-rifle` | Rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
+| `archetype-smg` | Submachine gun | Same layout as the rifle at small bore, with a short barrel and stock and a long magazine |
+| `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
+| `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
+| `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
+| `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
+
+On top of one broken fixture per rule, these check constraints specific to an
+archetype:
+
+| Fixture | Fails | Why |
+| --- | --- | --- |
+| `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
+| `broken-bolt-sight-over-loading-port` | `keep-out` | On a top-loaded action, a sight over the receiver blocks the loading port |
+| `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
+| `broken-bullpup-with-stock` | `solid-overlap` | A stock added where the built-in butt already is |
+
+### Known gaps
+
+- **Feed type and lower aren't cross-checked.** A box-fed receiver on a
+  trigger-only lower has no magazine, and nothing flags it. A tube-fed
+  receiver on a conventional lower is only caught because the lower happens
+  to hit the loading port.
+- **The SMG differs from the rifle only in proportions and bore.** Nothing
+  models what makes an SMG distinct, such as a simpler action.
+- **Parts still don't read their neighbours' params.** Barrel length, and the
+  handguard or tube length that has to match it, are still matched by hand.
+- **Ergonomics is just "is there a firing grip".** Reach, length of pull and
+  cheek weld (§5) are not checked. For a bullpup, the ejection port sits next
+  to the shooter's face, and nothing checks that yet.
+
+## Running it
 
 ```sh
 cd gungen

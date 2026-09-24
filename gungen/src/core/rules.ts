@@ -3,15 +3,10 @@
 
 import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
 import { penetration, worldBox } from './geometry.ts';
-import type { Issue, RuleId } from './issue.ts';
+import type { Issue } from './issue.ts';
 import { angleBetween, applyDir, applyPoint, cross, length, sub } from './math.ts';
 import { type Resolved, connectionMismatch } from './resolve.ts';
-
-export interface Rule {
-  readonly id: RuleId;
-  readonly title: string;
-  check(r: Resolved): Issue[];
-}
+import type { Rule } from './schema.ts';
 
 const fmt = (n: number): string => n.toFixed(2).replace(/\.?0+$/, '');
 const qualified = (part: string, port: string): string => `${part}.${port}`;
@@ -250,7 +245,7 @@ export const loopClosure: Rule = {
   },
 };
 
-export const RULES: readonly Rule[] = [
+export const CORE_RULES: readonly Rule[] = [
   portCompat,
   axisAlignment,
   solidOverlap,
