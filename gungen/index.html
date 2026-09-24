@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gungen viewer</title>
+    <link rel="stylesheet" href="./src/viewer/style.css" />
+  </head>
+  <body>
+    <aside id="panel">
+      <h1>gungen viewer</h1>
+      <label class="field">
+        Assembly
+        <select id="fixture"></select>
+      </label>
+      <label class="field file">
+        Open a JSON file…
+        <input id="file" type="file" accept=".json,application/json" />
+      </label>
+      <p id="description"></p>
+      <div id="status"></div>
+      <ol id="issues"></ol>
+      <fieldset id="layers">
+        <legend>Show</legend>
+        <label><input type="checkbox" data-layer="solids" checked /> Solids</label>
+        <label><input type="checkbox" data-layer="ports" checked /> Ports</label>
+        <label><input type="checkbox" data-layer="keepOuts" checked /> Keep-out volumes</label>
+        <label><input type="checkbox" data-layer="axes" checked /> Main axis</label>
+      </fieldset>
+      <p class="hint">
+        Drag to orbit, scroll to zoom. Click an issue to isolate it.
+        Ports: <span class="k normal">normal</span> <span class="k up">up</span>.
+      </p>
+      <p id="hover"></p>
+    </aside>
+    <main id="view"></main>
+    <script type="module" src="./src/viewer/main.ts"></script>
+  </body>
+</html>

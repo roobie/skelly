@@ -1,0 +1,83 @@
+{
+  "name": "broken-loop-closure",
+  "description": "Short barrel with a medium handguard: the handguard front misses the barrel clamp.",
+  "expect": [
+    "loop-closure"
+  ],
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "receiver",
+      "params": {
+        "bore": "M"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "bore": "M",
+        "length": "S"
+      }
+    },
+    "handguard": {
+      "family": "handguard",
+      "params": {
+        "length": "M",
+        "inner": "M"
+      }
+    },
+    "grip": {
+      "family": "grip",
+      "params": {
+        "length": "M"
+      }
+    },
+    "magazine": {
+      "family": "magazine",
+      "params": {
+        "bore": "M",
+        "length": "M"
+      }
+    },
+    "stock": {
+      "family": "stock",
+      "params": {
+        "length": "M"
+      }
+    },
+    "sight": {
+      "family": "sight"
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "receiver.handguard",
+      "to": "handguard.rear"
+    },
+    {
+      "from": "handguard.front",
+      "to": "barrel.clamp"
+    },
+    {
+      "from": "receiver.grip",
+      "to": "grip.top"
+    },
+    {
+      "from": "receiver.magazine",
+      "to": "magazine.top"
+    },
+    {
+      "from": "receiver.stock",
+      "to": "stock.front"
+    },
+    {
+      "from": "receiver.rail",
+      "slot": 3,
+      "to": "sight.base"
+    }
+  ]
+}

@@ -26,6 +26,19 @@ simulation.
 The output is stylized low-poly models of assemblies. Sizes are expressed as
 size classes (see §4), not measurements.
 
+## Decisions
+
+| Decision | Choice |
+| --- | --- |
+| Language | TypeScript (strict), one language for core and viewer |
+| Core | Pure library in `src/core`, with no rendering dependency; domain-agnostic (§10) |
+| Gun data | `src/gun`: part families and the gun domain config |
+| Viewer | three.js, served by Vite, in `src/viewer` |
+| Tests | Vitest |
+| Part definitions | TypeScript code: each family is a function from size-class params to a part |
+| Assemblies | JSON files: part instances plus connections (§7) |
+| Loops | Milestone 1 only *checks* that loops close; there is no solver yet |
+
 ## Design areas
 
 §1–§3 are the first milestone. Together they form one design: a port schema, a
@@ -40,7 +53,8 @@ change later.
 - Every rule has an id and a readable failure message (see §8).
 - Starting rule set: port compatibility, bore-axis alignment, no overlap
   between solids, no solid inside a keep-out volume, required ports filled,
-  ergonomic reach (§5).
+  loops close, ergonomic reach (§5). All but ergonomic reach are implemented
+  in Milestone 1.
 
 ### 2. Ports (how parts connect)
 
@@ -123,9 +137,77 @@ logic, and put everything gun-specific in data. The same core should later
 drive other skelly domains, such as rigging, where a joint is just a port that
 can rotate.
 
+## Milestone 1: validator and debug viewer
+
+**Goal:** take a hand-written assembly file, place its parts, check it against
+the rules, and show the result in a viewer. When a build fails, the output says
+which rule broke and where. No generator yet: the validator comes first, so
+the generator later has something independent to be tested against (§9).
+
+**Status:** done.
+
+### What was built
+
+- **Conventions** (`src/core/conventions.ts`): +X forward (toward the muzzle),
+  +Y up, +Z right; right-handed. The bore line is the X axis through the
+  origin, and the root part sits at the origin. Lengths are in u, an abstract
+  unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
+  each part family maps them to u in its own tables.
+- **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes only),
+  parts, part families, domains, and the JSON assembly format.
+- **Placement** (`src/core/resolve.ts`): walks connections out from the root.
+  A connection whose two parts are both already placed closes a loop and is
+  checked, not solved. Connections support rail slots and 90° roll.
+- **Rules** (`src/core/rules.ts`), each with an id and a readable message:
+
+  | Rule id | Checks |
+  | --- | --- |
+  | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
+  | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
+  | `solid-overlap` | Solids don't overlap. Directly connected parts may nest by up to 0.75u |
+  | `keep-out` | No solid is inside another part's keep-out volume, except the part attached at the port the volume allows |
+  | `required-ports` | Every required port has something attached |
+  | `loop-closure` | Connections that close a loop actually meet |
+
+  A file that can't be resolved (unknown family, part, port or param; bad slot
+  or roll) is reported under `structure`.
+- **Parts** (`src/gun/parts.ts`): receiver, barrel, handguard, grip, magazine,
+  stock and sight, built from boxes. The handguard can clamp to the barrel as
+  well as the receiver, which creates the loop. There are 7 mount types, not
+  the 3–4 first planned: each socket needs its own type so a stock can't go
+  in a grip socket.
+- **Keep-out volumes:** ejection path, trigger finger, magazine insertion
+  path, charging handle travel (receiver); sight line (sight); muzzle
+  (barrel).
+- **Fixtures** (`fixtures/`): one valid assembly and one broken assembly per
+  rule. Each file lists the rules it is expected to fail in `expect`, and the
+  tests check each one fails exactly those.
+- **Viewer** (`src/viewer/`): solids, port frames (normal and up arrows),
+  keep-out volumes and the bore line, with failing parts and volumes in red.
+  Click an issue to isolate it; hover to name what's under the pointer; open
+  your own assembly JSON.
+
+### Out of scope for Milestone 1
+
+The generator and grammar (§6), the human rig (§5; the trigger-finger volume
+stands in for now), final meshes and merging (§7), the metrics in §9, and
+more archetypes.
+
+### Running it
+
+```sh
+cd gungen
+npm install
+npm test               # unit tests plus every fixture
+npm run typecheck
+npm run validate       # validate all fixtures from the command line
+npm run validate -- path/to/assembly.json
+npm run dev            # the viewer; add ?fixture=<name> to open a fixture
+```
+
 ## Open questions
 
-- Tech stack and runtime (web? native? both?).
-- The format for part definitions (JSON/TOML/code?).
 - The solver: hand-rolled iterative constraint solving, or a CSP/SAT library?
+  Deferred until generation needs one.
 - Archetypes: templates or emergent (§6)?
+- Keep-out shapes: are boxes enough, or do we need capsules or swept shapes?

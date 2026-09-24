@@ -1,0 +1,54 @@
+:root {
+  --bg: #16181c;
+  --panel: #1f2227;
+  --text: #d8dbe0;
+  --muted: #8b919a;
+  --line: #2e3238;
+  --pass: #5fb97a;
+  --fail: #e5534b;
+  --normal: #f0a24a;
+  --up: #4ac1f0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  display: flex;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, sans-serif;
+}
+#panel {
+  width: 340px;
+  flex: none;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+#view { flex: 1; min-width: 0; position: relative; }
+#view canvas { display: block; }
+h1 { font-size: 16px; margin: 0 0 12px; letter-spacing: 0.02em; }
+.field { display: block; margin-bottom: 10px; color: var(--muted); font-size: 12px; }
+.field select { display: block; width: 100%; margin-top: 4px; padding: 6px; font: inherit; font-size: 14px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 4px; }
+.field.file input { display: block; margin-top: 4px; font-size: 12px; max-width: 100%; }
+#description { color: var(--muted); margin: 8px 0; }
+#status { font-weight: 600; margin: 8px 0; }
+#status .pass { color: var(--pass); }
+#status .fail { color: var(--fail); }
+#status .note { color: var(--muted); font-weight: 400; }
+#issues { padding-left: 20px; margin: 8px 0 16px; }
+#issues li { margin-bottom: 8px; cursor: pointer; }
+#issues li.active { color: #fff; }
+#issues li.dim { opacity: 0.45; }
+#issues .rule { display: inline-block; font-size: 11px; font-family: ui-monospace, monospace; color: var(--fail); margin-right: 4px; }
+fieldset { border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; margin: 0 0 12px; }
+fieldset label { display: block; }
+.hint, #hover { color: var(--muted); font-size: 12px; }
+.k::before { content: ''; display: inline-block; width: 10px; height: 3px; margin: 0 4px 2px 0; vertical-align: middle; }
+.k.normal::before { background: var(--normal); }
+.k.up::before { background: var(--up); }
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  #panel { width: auto; max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--line); }
+}
