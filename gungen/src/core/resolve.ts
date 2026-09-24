@@ -23,6 +23,14 @@ import {
 } from './math.ts';
 import type { Assembly, Connection, Domain, PartDef, PortDef } from './schema.ts';
 
+/** A param's final value and where it came from. */
+export interface ResolvedParam {
+  readonly value: string;
+  readonly source: 'set' | 'inherited' | 'default';
+  /** For inherited values: the neighbour's param, as "part.param". */
+  readonly from?: string;
+}
+
 export interface PortRef {
   readonly part: string;
   readonly port: PortDef;
@@ -42,6 +50,8 @@ export interface Resolved {
   readonly domain: Domain;
   /** Built definitions of every valid part instance. */
   readonly defs: ReadonlyMap<string, PartDef>;
+  /** The params each valid part was built with. */
+  readonly params: ReadonlyMap<string, Readonly<Record<string, ResolvedParam>>>;
   /** Transforms of the parts that could be placed. */
   readonly placed: ReadonlyMap<string, Transform>;
   /** Connections that are structurally valid. */
@@ -99,39 +109,120 @@ const splitRef = (ref: string): [string, string] | undefined => {
   return [ref.slice(0, dot), ref.slice(dot + 1)];
 };
 
-export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
-  const issues: Issue[] = [];
-  const structure = (message: string, parts: string[] = []): void => {
-    issues.push({ rule: 'structure', message, parts });
-  };
+/**
+ * Works out every part's params: set in the assembly, else read from a
+ * neighbour (ParamSpec.from), else the default. Reading from neighbours only
+ * needs the connection list, not placement, so it runs before parts are built.
+ * Parts with an unknown family or a bad param are reported and left out.
+ */
+const resolveParams = (
+  assembly: Assembly,
+  domain: Domain,
+  structure: (message: string, parts?: string[]) => void,
+): Map<string, Record<string, ResolvedParam>> => {
+  const result = new Map<string, Record<string, ResolvedParam>>();
+  const pending: { part: string; name: string }[] = [];
 
-  // Build every part instance from its family.
-  const defs = new Map<string, PartDef>();
   for (const [id, inst] of Object.entries(assembly.parts)) {
     const family = domain.families[inst.family];
     if (!family) {
       structure(`Part "${id}" uses unknown family "${inst.family}".`, [id]);
       continue;
     }
-    const params: Record<string, string> = {};
     let ok = true;
-    for (const [name, spec] of Object.entries(family.params)) params[name] = spec.default;
     for (const [name, value] of Object.entries(inst.params ?? {})) {
       const spec = family.params[name];
       if (!spec) {
         structure(`Part "${id}" (${family.name}) has no parameter "${name}".`, [id]);
         ok = false;
       } else if (!spec.values.includes(value)) {
-        structure(
-          `Part "${id}": ${name}="${value}" is not one of ${spec.values.join(', ')}.`,
-          [id],
-        );
+        structure(`Part "${id}": ${name}="${value}" is not one of ${spec.values.join(', ')}.`, [id]);
         ok = false;
-      } else {
-        params[name] = value;
       }
     }
-    if (ok) defs.set(id, family.build(params));
+    if (!ok) continue;
+    const values: Record<string, ResolvedParam> = {};
+    for (const [name, spec] of Object.entries(family.params)) {
+      const set = inst.params?.[name];
+      if (set !== undefined) values[name] = { value: set, source: 'set' };
+      else if (spec.from?.length) pending.push({ part: id, name });
+      else values[name] = { value: spec.default, source: 'default' };
+    }
+    result.set(id, values);
+  }
+
+  // The parts connected at a given port, from the raw connection list.
+  const neighbours = (part: string, port: string): string[] => {
+    const ref = `${part}.${port}`;
+    return assembly.connections.flatMap((c) => {
+      const other = c.from === ref ? c.to : c.to === ref ? c.from : undefined;
+      const split = other === undefined ? undefined : splitRef(other);
+      return split ? [split[0]] : [];
+    });
+  };
+
+  const setDefault = (part: string, name: string): void => {
+    const spec = domain.families[assembly.parts[part]!.family]!.params[name]!;
+    result.get(part)![name] = { value: spec.default, source: 'default' };
+  };
+
+  // Resolve inherited params until nothing changes; chains resolve in any order.
+  while (pending.length > 0) {
+    let progress = false;
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const { part, name } = pending[i]!;
+      const spec = domain.families[assembly.parts[part]!.family]!.params[name]!;
+      const values = result.get(part)!;
+      for (const src of spec.from ?? []) {
+        const hit = neighbours(part, src.port)
+          .map((n) => ({ n, v: result.get(n)?.[src.param] }))
+          .find((x) => x.v !== undefined);
+        if (!hit) continue;
+        const from = `${hit.n}.${src.param}`;
+        if (!spec.values.includes(hit.v!.value)) {
+          structure(
+            `Part "${part}": ${name} would come from ${from}="${hit.v!.value}", which is not one of ${spec.values.join(', ')}.`,
+            [part],
+          );
+          values[name] = { value: spec.default, source: 'default' };
+        } else {
+          values[name] = { value: hit.v!.value, source: 'inherited', from };
+        }
+        pending.splice(i, 1);
+        progress = true;
+        break;
+      }
+    }
+    if (progress) continue;
+    // Stuck. Params with no connected source take their default, which may
+    // unblock params reading from them. If every source is connected, the
+    // rest wait on each other in a cycle: default them all.
+    const unconnected = pending.filter(({ part, name }) => {
+      const spec = domain.families[assembly.parts[part]!.family]!.params[name]!;
+      return !(spec.from ?? []).some((src) => neighbours(part, src.port).some((n) => result.has(n)));
+    });
+    for (const p of unconnected.length > 0 ? unconnected : [...pending]) {
+      setDefault(p.part, p.name);
+      pending.splice(pending.indexOf(p), 1);
+    }
+  }
+  return result;
+};
+
+export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
+  const issues: Issue[] = [];
+  const structure = (message: string, parts: string[] = []): void => {
+    issues.push({ rule: 'structure', message, parts });
+  };
+
+  const params = resolveParams(assembly, domain, structure);
+
+  // Build every part instance from its family.
+  const defs = new Map<string, PartDef>();
+  for (const [id, resolved] of params) {
+    const family = domain.families[assembly.parts[id]!.family]!;
+    const values = Object.fromEntries(Object.entries(resolved).map(([k, v]) => [k, v.value]));
+    defs.set(id, family.build(values));
   }
 
   // Check each connection refers to real parts and ports.
@@ -220,5 +311,5 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
   }
 
   const connections = pending.map((c) => ({ ...c, role: roles.get(c.index) ?? 'unplaced' }));
-  return { assembly, domain, defs, placed, connections, issues };
+  return { assembly, domain, defs, params, placed, connections, issues };
 };

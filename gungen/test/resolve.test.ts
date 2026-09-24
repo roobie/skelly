@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyPoint } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
+import type { Domain } from '../src/core/schema.ts';
+import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture, variant } from './helpers.ts';
 
@@ -112,3 +114,129 @@ describe('resolve: structure issues', () => {
     expect(r.issues).toEqual([]);
   });
 });
+
+describe('resolve: params from neighbours', () => {
+  const param = (r: ReturnType<typeof resolve>, part: string, name: string) => r.params.get(part)![name]!;
+
+  it('reads unset params from the connected neighbour', () => {
+    const r = resolve(valid, gunDomain);
+    expect(param(r, 'handguard', 'length')).toEqual({ value: 'M', source: 'inherited', from: 'barrel.length' });
+    expect(param(r, 'barrel', 'bore')).toEqual({ value: 'M', source: 'inherited', from: 'receiver.bore' });
+    expect(param(r, 'barrel', 'length')).toEqual({ value: 'M', source: 'set' });
+  });
+
+  it('re-sizes a clamped handguard to whatever barrel it clamps to', () => {
+    for (const length of ['S', 'M', 'L']) {
+      const a = variant('archetype-rifle', (x) => { x.parts.barrel!.params = { length }; });
+      const report = validate(a, gunDomain);
+      expect(param(report.resolved, 'handguard', 'length').value).toBe(length);
+      expect(report.issues).toEqual([]);
+    }
+  });
+
+  it('re-sizes a tube magazine to the barrel its cap fixes to', () => {
+    for (const length of ['S', 'M', 'L']) {
+      const a = variant('archetype-pump-shotgun', (x) => { x.parts.barrel!.params = { length }; });
+      const report = validate(a, gunDomain);
+      expect(param(report.resolved, 'tube', 'length').value).toBe(length);
+      expect(report.issues).toEqual([]);
+    }
+  });
+
+  it('lets the assembly override a neighbour', () => {
+    const r = resolve(loadFixture('broken-loop-closure'), gunDomain);
+    expect(param(r, 'handguard', 'length')).toEqual({ value: 'M', source: 'set' });
+  });
+
+  it('falls back to the default when the source port is not connected', () => {
+    // A free-floating handguard has nothing on its front port.
+    const r = resolve(loadFixture('broken-solid-overlap'), gunDomain);
+    expect(param(r, 'handguard', 'length')).toEqual({ value: 'M', source: 'default' });
+  });
+
+  // A domain where the handguard's inner size also follows the barrel's bore,
+  // which itself follows the receiver: a two-step chain.
+  const handguard = gunDomain.families.handguard!;
+  const chained = (values?: readonly string[]): Domain => ({
+    ...gunDomain,
+    families: {
+      ...gunDomain.families,
+      handguard: {
+        ...handguard,
+        params: {
+          ...handguard.params,
+          inner: { values: values ?? ['S', 'M', 'L'], default: 'M', from: [{ port: 'front', param: 'bore' }] },
+        },
+      },
+    },
+  });
+
+  it('resolves chains of neighbours', () => {
+    const a = variant('archetype-rifle', (x) => {
+      x.parts.receiver!.params = { ...x.parts.receiver!.params, bore: 'L' };
+      delete x.parts.handguard!.params;
+    });
+    const r = resolve(a, chained());
+    expect(param(r, 'barrel', 'bore').value).toBe('L');
+    expect(param(r, 'handguard', 'inner')).toEqual({ value: 'L', source: 'inherited', from: 'barrel.bore' });
+  });
+
+  it('reports a neighbour value the param does not allow', () => {
+    const a = variant('archetype-rifle', (x) => {
+      x.parts.receiver!.params = { ...x.parts.receiver!.params, bore: 'L' };
+      delete x.parts.handguard!.params;
+    });
+    const r = resolve(a, chained(['S', 'M']));
+    expect(r.issues.map((i) => i.message)).toEqual([
+      'Part "handguard": inner would come from barrel.bore="L", which is not one of S, M.',
+    ]);
+  });
+
+  it('passes a default along a chain whose middle has nothing to read from', () => {
+    // Free-floating handguard: its length can't come from a barrel, so it
+    // takes the default. A domain where the tube's length follows the
+    // handguard should then read that default, not fall back on its own.
+    const tube = gunDomain.families['tube-magazine']!;
+    const domain: Domain = {
+      ...chained(),
+      families: {
+        ...chained().families,
+        'tube-magazine': {
+          ...tube,
+          params: { length: { values: ['S', 'M', 'L'], default: 'S', from: [{ port: 'cap', param: 'length' }] } },
+        },
+      },
+    };
+    const a = variant('broken-solid-overlap', (x) => {
+      x.parts.tube = { family: 'tube-magazine' };
+      // Params only need topology; this connection needn't be mountable.
+      x.connections.push({ from: 'tube.cap', to: 'handguard.rear' });
+    });
+    const r = resolve(a, domain);
+    expect(param(r, 'handguard', 'length')).toEqual({ value: 'M', source: 'default' });
+    expect(param(r, 'tube', 'length')).toEqual({ value: 'M', source: 'inherited', from: 'handguard.length' });
+  });
+
+  it('falls back to defaults for a cycle', () => {
+    // Tube length reads the handguard; the handguard's length reads the tube.
+    const tube = gunDomain.families['tube-magazine']!;
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        'tube-magazine': {
+          ...tube,
+          params: { length: { values: ['S', 'M', 'L'], default: 'S', from: [{ port: 'cap', param: 'length' }] } },
+        },
+      },
+    };
+    const a = variant('broken-solid-overlap', (x) => {
+      x.parts.tube = { family: 'tube-magazine' };
+      x.connections.push({ from: 'tube.cap', to: 'handguard.front' });
+    });
+    const r = resolve(a, domain);
+    expect(param(r, 'handguard', 'length')).toEqual({ value: 'M', source: 'default' });
+    expect(param(r, 'tube', 'length')).toEqual({ value: 'S', source: 'default' });
+  });
+});
+

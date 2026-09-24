@@ -65,6 +65,10 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
 
   for (const [part, t] of resolved.placed) {
     const def = resolved.defs.get(part)!;
+    // e.g. "length M ← barrel.length, inner M"
+    const params = Object.entries(resolved.params.get(part) ?? {})
+      .map(([name, p]) => `${name} ${p.value}${p.from ? ` ← ${p.from}` : ''}`)
+      .join(', ');
     const failing = hl.parts.has(part);
 
     for (const s of def.solids) {
@@ -79,7 +83,7 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
         }),
       );
       placeBox(mesh, obb);
-      mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}` };
+      mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
       const edges = new THREE.LineSegments(
         new THREE.EdgesGeometry(mesh.geometry),
         new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }),

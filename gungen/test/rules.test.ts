@@ -92,4 +92,23 @@ describe('rules', () => {
     expect(rulesFailed(gripless)).toEqual(['firing-grip']);
     expect(rulesFailed(gripless, { ...gunDomain, rules: [] })).toEqual([]);
   });
+
+  it('feed-match: box-fed receiver on a trigger-only lower', () => {
+    const issues = validate(loadFixture('broken-feed-match'), gunDomain).issues;
+    expect(issues.map((i) => i.message)).toEqual(['receiver is box-fed, but lower (trigger) has no magazine well.']);
+  });
+
+  it('feed-match: tube-fed receiver on a lower with a magazine well', () => {
+    const a = variant('archetype-pump-shotgun', (x) => {
+      x.parts.lower = { family: 'lower', params: { layout: 'conventional' } };
+      x.parts.magazine = { family: 'magazine' };
+      x.connections.push({ from: 'lower.magazine', to: 'magazine.top' });
+    });
+    const messages = validate(a, gunDomain).issues.filter((i) => i.rule === 'feed-match').map((i) => i.message);
+    expect(messages).toEqual(["receiver is tube-fed, but lower (conventional) has a magazine well it can't feed from."]);
+  });
+
+  it('feed-match: top-fed receivers take a magazine well too', () => {
+    expect(rulesFailed(loadFixture('archetype-bolt-rifle'))).toEqual([]);
+  });
 });

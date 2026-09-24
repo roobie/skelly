@@ -165,7 +165,8 @@ export const lower: PartFamily = {
 
 export const barrel: PartFamily = {
   name: 'barrel',
-  params: { bore: size, length: size },
+  // Bore follows the receiver it's mounted in, unless set.
+  params: { bore: { ...size, from: [{ port: 'rear', param: 'bore' }] }, length: size },
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const len = { S: 26, M: 36, L: 46 }[cls(params, 'length')];
@@ -188,7 +189,8 @@ export const barrel: PartFamily = {
 /** A tube of four slabs around the barrel, with a rail on top. */
 export const handguard: PartFamily = {
   name: 'handguard',
-  params: { length: size, inner: size },
+  // When clamped, length follows the barrel so the clamp meets, unless set.
+  params: { length: { ...size, from: [{ port: 'front', param: 'length' }] }, inner: size },
   build(params): PartDef {
     const len = FORE_LENGTH[cls(params, 'length')];
     const inner = { S: 0.75, M: 1.5, L: 2.5 }[cls(params, 'inner')];
@@ -215,7 +217,8 @@ export const handguard: PartFamily = {
 /** A magazine tube under the barrel; its front fixes to the barrel's lug. */
 export const tubeMagazine: PartFamily = {
   name: 'tube-magazine',
-  params: { length: size },
+  // Length follows the barrel whose lug the cap fixes to, unless set.
+  params: { length: { ...size, from: [{ port: 'cap', param: 'length' }] } },
   build(params): PartDef {
     const len = FORE_LENGTH[cls(params, 'length')];
     return {

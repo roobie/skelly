@@ -64,9 +64,22 @@ export interface PartDef {
   readonly tags?: readonly string[];
 }
 
+/** Where a param can read its value from: the part on one of our ports. */
+export interface ParamSource {
+  /** Our port; the part connected there is the neighbour. */
+  readonly port: string;
+  /** The neighbour's param to copy. */
+  readonly param: string;
+}
+
 export interface ParamSpec {
   readonly values: readonly string[];
   readonly default: string;
+  /**
+   * When the assembly doesn't set this param, take it from a neighbour: the
+   * first source whose port is connected wins. Otherwise use the default.
+   */
+  readonly from?: readonly ParamSource[];
 }
 
 /** A parametric family of parts (PROJECT.md §7). */

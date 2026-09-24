@@ -40,6 +40,7 @@ size classes (see §4), not measurements.
 | Loops | Loops are only *checked* for closure; there is no solver yet |
 | Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |
+| Params from neighbours | Declared per param (`ParamSpec.from`): an unset param copies a neighbour's param through a named port. Values set in the assembly always win |
 
 ## Design areas
 
@@ -263,14 +264,51 @@ archetype:
 - **Feed type and lower aren't cross-checked.** A box-fed receiver on a
   trigger-only lower has no magazine, and nothing flags it. A tube-fed
   receiver on a conventional lower is only caught because the lower happens
-  to hit the loading port.
+  to hit the loading port. *(Fixed in 1.2.)*
 - **The SMG differs from the rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
 - **Parts still don't read their neighbours' params.** Barrel length, and the
   handguard or tube length that has to match it, are still matched by hand.
+  *(Fixed in 1.2.)*
 - **Ergonomics is just "is there a firing grip".** Reach, length of pull and
   cheek weld (§5) are not checked. For a bullpup, the ejection port sits next
   to the shooter's face, and nothing checks that yet.
+
+## Milestone 1.2: feed check and params from neighbours
+
+**Status:** done.
+
+- **`feed-match` rule** (gun domain): the lower under a receiver must suit its
+  feed. Box- and top-fed receivers need a lower with a magazine well; a
+  tube-fed receiver can't use one. Fixture: `broken-feed-match`.
+- **Params from neighbours.** A family can declare that a param reads its
+  value from the part on one of its ports, when the assembly doesn't set it.
+  Resolution needs only the connection list, so it runs before parts are
+  built. It handles chains in any order. A param whose source port isn't
+  connected takes its default, and parts reading from it get that default.
+  Params that read each other in a cycle all take their defaults. A value the
+  param doesn't allow is reported under `structure`. Declared so far:
+
+  | Part | Param | Read from |
+  | --- | --- | --- |
+  | barrel | `bore` | the receiver on its `rear` port |
+  | handguard | `length` | the barrel on its `front` (clamp) port |
+  | tube-magazine | `length` | the barrel on its `cap` (lug) port |
+
+  So changing a barrel's length re-sizes a clamped handguard or tube magazine
+  to match. The archetype fixtures now leave those params unset. The broken
+  fixtures set them on purpose to create mismatches.
+- Every part's final params, and where each came from, are in
+  `Resolved.params`. The viewer shows them on hover, e.g.
+  `length M ← barrel.length`.
+
+### Still open
+
+- The SMG is still the rifle at a different size and bore.
+- Ergonomics is still only "is there a firing grip".
+- Neighbour-reading copies values as they are. There's no mapping between
+  them (e.g. "one size smaller than the barrel"), and a part can't compute
+  geometry from a neighbour's actual dimensions.
 
 ## Running it
 

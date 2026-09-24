@@ -6,7 +6,7 @@
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
     "lower": { "family": "lower", "params": { "layout": "bullpup" } },
-    "barrel": { "family": "barrel", "params": { "bore": "M", "length": "M" } },
+    "barrel": { "family": "barrel", "params": { "length": "M" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "M" } },
     "sight": { "family": "sight" },

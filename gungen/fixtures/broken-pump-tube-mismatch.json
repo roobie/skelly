@@ -1,12 +1,12 @@
 {
   "name": "broken-pump-tube-mismatch",
-  "description": "Pump shotgun with a short tube magazine: its cap misses the barrel lug.",
+  "description": "Pump shotgun with a tube magazine set short: its cap misses the barrel lug.",
   "expect": ["loop-closure"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "pump", "feed": "tube", "bore": "L" } },
     "lower": { "family": "lower", "params": { "layout": "trigger" } },
-    "barrel": { "family": "barrel", "params": { "bore": "L", "length": "M" } },
+    "barrel": { "family": "barrel", "params": { "length": "M" } },
     "tube": { "family": "tube-magazine", "params": { "length": "S" } },
     "forend": { "family": "forend" },
     "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } }

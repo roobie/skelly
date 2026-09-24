@@ -1,13 +1,13 @@
 {
   "name": "broken-loop-closure",
-  "description": "Rifle with a short barrel and a medium handguard: the handguard front misses the barrel clamp.",
+  "description": "Rifle with a short barrel and a handguard set to medium: the handguard front misses the barrel clamp.",
   "expect": ["loop-closure"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
-    "barrel": { "family": "barrel", "params": { "bore": "M", "length": "S" } },
-    "handguard": { "family": "handguard", "params": { "length": "M", "inner": "M" } },
+    "barrel": { "family": "barrel", "params": { "length": "S" } },
+    "handguard": { "family": "handguard", "params": { "inner": "M", "length": "M" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "M" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },

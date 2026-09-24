@@ -1,6 +1,6 @@
 import type { Domain } from '../core/schema.ts';
 import { FAMILIES } from './parts.ts';
-import { firingGrip } from './rules.ts';
+import { feedMatch, firingGrip } from './rules.ts';
 
 /** The gun domain. The core's main axis is the bore line. */
 export const gunDomain: Domain = {
@@ -10,5 +10,5 @@ export const gunDomain: Domain = {
     { kind: 'bore', mode: 'collinear' },
     { kind: 'sight', mode: 'parallel' },
   ],
-  rules: [firingGrip],
+  rules: [firingGrip, feedMatch],
 };

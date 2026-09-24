@@ -1,15 +1,14 @@
 {
-  "name": "archetype-rifle",
-  "description": "Rifle, conventional layout: magazine ahead of the pistol grip, straight stock, handguard clamped to the barrel.",
-  "expect": [],
+  "name": "broken-feed-match",
+  "description": "Box-fed rifle on a trigger-only lower: nowhere for the magazine to go.",
+  "expect": ["feed-match"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
-    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "lower": { "family": "lower", "params": { "layout": "trigger" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard", "params": { "inner": "M" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "M" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },
     "sight": { "family": "sight" }
   },
@@ -19,7 +18,6 @@
     { "from": "receiver.handguard", "to": "handguard.rear" },
     { "from": "handguard.front", "to": "barrel.clamp" },
     { "from": "lower.grip", "to": "grip.top" },
-    { "from": "lower.magazine", "to": "magazine.top" },
     { "from": "receiver.stock", "to": "stock.front" },
     { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
   ]
