@@ -44,6 +44,12 @@ h1 { font-size: 16px; margin: 0 0 12px; letter-spacing: 0.02em; }
 #issues .rule { display: inline-block; font-size: 11px; font-family: ui-monospace, monospace; color: var(--fail); margin-right: 4px; }
 fieldset { border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; margin: 0 0 12px; }
 fieldset label { display: block; }
+.row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+.row .seed { display: flex; gap: 6px; align-items: center; flex: 1; color: var(--muted); font-size: 12px; }
+.row .seed input { width: 100%; min-width: 0; padding: 4px 6px; font: inherit; font-size: 14px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 4px; }
+button { padding: 4px 10px; font: inherit; font-size: 13px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+#generate-btn { flex: 1; }
 .hint, #hover { color: var(--muted); font-size: 12px; }
 .k::before { content: ''; display: inline-block; width: 10px; height: 3px; margin: 0 4px 2px 0; vertical-align: middle; }
 .k.normal::before { background: var(--normal); }

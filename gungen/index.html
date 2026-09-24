@@ -17,6 +17,23 @@
         Open a JSON file…
         <input id="file" type="file" accept=".json,application/json" />
       </label>
+      <fieldset id="generate">
+        <legend>Generate</legend>
+        <label class="field">
+          Template
+          <select id="template"></select>
+        </label>
+        <div class="row">
+          <button id="prev-seed" type="button" title="Previous seed">◀</button>
+          <label class="seed">Seed <input id="seed" type="number" step="1" value="0" /></label>
+          <button id="next-seed" type="button" title="Next seed">▶</button>
+        </div>
+        <label><input id="only-valid" type="checkbox" /> Skip to the next valid seed</label>
+        <div class="row">
+          <button id="generate-btn" type="button">Generate</button>
+          <button id="save" type="button" title="Download the current assembly as JSON">Save JSON</button>
+        </div>
+      </fieldset>
       <p id="description"></p>
       <div id="status"></div>
       <ol id="issues"></ol>

@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Assembly } from '../core/schema.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
+import { TEMPLATES } from '../gun/templates.ts';
 import { type Layers, buildLayers, disposeGroup } from './scene.ts';
 
 const fixtures = Object.values(
@@ -18,6 +20,9 @@ const description = $<HTMLParagraphElement>('description');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
 const hover = $<HTMLParagraphElement>('hover');
+const templateSelect = $<HTMLSelectElement>('template');
+const seedInput = $<HTMLInputElement>('seed');
+const onlyValid = $<HTMLInputElement>('only-valid');
 const layerToggles = [...document.querySelectorAll<HTMLInputElement>('#layers input')];
 
 // ---- three.js setup ----
@@ -51,6 +56,7 @@ new ResizeObserver(resize).observe(view);
 
 // ---- state ----
 
+let current: Assembly | undefined;
 let report: Report | undefined;
 let layers: Layers | undefined;
 let focused: Issue | undefined;
@@ -125,6 +131,7 @@ const renderPanel = (assembly: Assembly) => {
 };
 
 const load = (assembly: Assembly) => {
+  current = assembly;
   report = validate(assembly, gunDomain);
   focused = undefined;
   renderPanel(assembly);
@@ -157,6 +164,7 @@ fileInput.addEventListener('change', async () => {
   if (!file) return;
   try {
     const assembly = JSON.parse(await file.text()) as Assembly;
+    select.querySelector('option[value=""]')?.remove();
     select.add(new Option(`${assembly.name} (file)`, ''), 0);
     select.selectedIndex = 0;
     framed = false;
@@ -190,14 +198,75 @@ renderer.domElement.addEventListener('pointermove', (e) => {
   hover.textContent = hit ? String(hit.object.userData.label) : '';
 });
 
-const initial = new URLSearchParams(location.search).get('fixture');
-const start =
-  fixtures.find((f) => f.name === initial) ??
-  fixtures.find((f) => f.name === 'archetype-rifle') ??
-  fixtures[0];
-if (start) {
-  select.value = start.name;
-  load(start);
+// ---- generation ----
+
+for (const t of TEMPLATES) templateSelect.add(new Option(t.name, t.name));
+
+const runGenerator = (step = 0) => {
+  const template = TEMPLATES.find((t) => t.name === templateSelect.value);
+  if (!template) return;
+  let seed = (Number.parseInt(seedInput.value, 10) || 0) + step;
+  let assembly: Assembly;
+  if (onlyValid.checked) {
+    // Walk in the direction of the step until a seed passes.
+    const dir = step < 0 ? -1 : 1;
+    let found;
+    for (let i = 0; i < 100 && !found; i++) {
+      const g = generateValid(template, gunDomain, seed + dir * i, 1);
+      if (g) found = g;
+    }
+    if (!found) {
+      status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
+      return;
+    }
+    seed = found.seed;
+    assembly = found.assembly;
+  } else {
+    assembly = generate(template, gunDomain, seed);
+  }
+  seedInput.value = String(seed);
+  const option = new Option(`${assembly.name} (generated)`, '');
+  select.querySelector('option[value=""]')?.remove();
+  select.add(option, 0);
+  select.selectedIndex = 0;
+  load(assembly);
+};
+
+templateSelect.addEventListener('change', () => {
+  framed = false;
+  runGenerator();
+});
+$<HTMLButtonElement>('generate-btn').addEventListener('click', () => runGenerator());
+$<HTMLButtonElement>('next-seed').addEventListener('click', () => runGenerator(1));
+$<HTMLButtonElement>('prev-seed').addEventListener('click', () => runGenerator(-1));
+seedInput.addEventListener('change', () => runGenerator());
+
+$<HTMLButtonElement>('save').addEventListener('click', () => {
+  if (!current) return;
+  const url = URL.createObjectURL(new Blob([`${JSON.stringify(current, null, 2)}\n`], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${current.name}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ?fixture=<name> opens a fixture; ?template=<name>&seed=<n> generates one.
+const query = new URLSearchParams(location.search);
+const initialTemplate = TEMPLATES.find((t) => t.name === query.get('template'));
+if (initialTemplate) {
+  templateSelect.value = initialTemplate.name;
+  seedInput.value = query.get('seed') ?? '0';
+  runGenerator();
+} else {
+  const start =
+    fixtures.find((f) => f.name === query.get('fixture')) ??
+    fixtures.find((f) => f.name === 'archetype-rifle') ??
+    fixtures[0];
+  if (start) {
+    select.value = start.name;
+    load(start);
+  }
 }
 
 renderer.setAnimationLoop(() => {

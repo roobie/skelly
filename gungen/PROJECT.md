@@ -40,6 +40,8 @@ size classes (see §4), not measurements.
 | Loops | Loops are only *checked* for closure; there is no solver yet |
 | Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |
+| Generation | Templates (data) plus a seeded generator. The generator only makes choices; the validator decides what's feasible |
+| CI | GitHub Actions (`.github/workflows/gungen.yml`): typecheck, tests, fixture validation, viewer build |
 | Params from neighbours | Declared per param (`ParamSpec.from`): an unset param copies a neighbour's param through a named port. Values set in the assembly always win |
 
 ## Design areas
@@ -107,8 +109,9 @@ checks them. This is the first link to skelly's skeleton and rigging work.
   (keep-out volumes, ergonomics).
 - Rejected as the main approach: generate-and-test, because most results are
   invalid.
-- Open: are archetypes (pistol, rifle, shotgun…) hard-coded templates, or do
-  they emerge from the part rules?
+- Decided (Milestone 2): archetypes are hand-written **templates** first.
+  Emergent archetypes, found from the part rules alone, can come later on the
+  same machinery.
 
 ### 7. The data format comes first, the mesh second
 
@@ -310,6 +313,74 @@ archetype:
   them (e.g. "one size smaller than the barrel"), and a part can't compute
   geometry from a neighbour's actual dimensions.
 
+## Milestone 2: templates and seeded generation
+
+**Status:** done.
+
+The first step that generates anything. Each archetype is a template, and a
+seeded generator turns a template plus a seed into an ordinary assembly file.
+The validator then judges it like any hand-written fixture.
+
+### What was built
+
+- **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
+  for the six archetypes). A template lists slots and connections:
+  - A **slot** names a part family and, per param, a value or a list to pick
+    from. Params it leaves out are default or read from neighbours, so a
+    template picks the barrel length and a clamped handguard or tube magazine
+    follows.
+  - A slot or connection can have a **chance** of being included. That covers
+    optional stocks and sights, and handguards that are clamped or floating.
+  - A connection's `from` can be a **list of ports** (a sight on the receiver
+    rail or the handguard rail), and its `slot` can be **`any`**. The slot
+    count is read from the resolved part, so it respects inherited params.
+- **Generator** (`src/core/generate.ts`): `generate(template, domain, seed)`
+  is deterministic. It uses a seeded RNG (`src/core/random.ts`, mulberry32),
+  never `Math.random`. `generateValid` tries seed, seed + 1, … until a build
+  passes. The generator never checks feasibility itself.
+- **CLI:** `npm run generate` prints one assembly (`--valid` skips to the next
+  valid seed; `--out` writes a file). `npm run stats` reports the §9 metrics.
+- **Viewer:** a Generate panel with a template picker, a seed field, previous
+  and next buttons, "skip to the next valid seed", and "Save JSON" to keep a
+  generated build as a fixture.
+- **Tests:**
+  - Same seed, same assembly.
+  - Every param value a template can choose exists.
+  - No template produces a structurally broken file over 300 seeds.
+  - Every template is valid at least half the time.
+  - Snapshots of three known-good builds per template
+    (`test/__snapshots__/`). A snapshot change means generation changed: look
+    at the new builds in the viewer before updating with `vitest -u`.
+
+### First metrics (`npm run stats`, 1000 seeds per template)
+
+| Template | Valid | Distinct builds | Distinct valid | Failures |
+| --- | --- | --- | --- | --- |
+| rifle | 80.6% | 959 | 776 | keep-out (sightline) 19.4% |
+| smg | 100% | 430 | 430 | – |
+| bolt-rifle | 76.3% | 308 | 234 | keep-out (loading-port) 23.7% |
+| bolt-rifle-box | 100% | 560 | 560 | – |
+| pump-shotgun | 100% | 152 | 152 | – |
+| bullpup | 100% | 247 | 247 | – |
+
+The failures are the clashes the templates allow on purpose: a wide handguard
+under a sight mounted low on the receiver, and a sight over a top-loading
+port. The four templates at 100% have no choices that clash. That's fine, but
+it also means their variety comes from proportions, not layout.
+
+### Known gaps
+
+- **A clamped handguard that's too tight passes.** Directly connected parts
+  may nest by up to 0.75u (needed for the grip's tilted corner), and a
+  handguard clamped to the barrel counts as directly connected. Found while
+  writing templates, which avoid the `S` inner size for now. The fix is an
+  allowance per mount type instead of one global value.
+- **Distinct builds are counted by file, not shape.** Two builds whose files
+  differ but look the same count as two, e.g. a clamped and a floating
+  handguard of the same length.
+- **Retrying is linear** (seed, seed + 1, …). Fine at these valid rates; a
+  template with a low valid rate would need smarter search.
+
 ## Running it
 
 ```sh
@@ -319,12 +390,14 @@ npm test               # unit tests plus every fixture
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json
-npm run dev            # the viewer; add ?fixture=<name> to open a fixture
+npm run generate -- --template rifle --seed 42          # print a generated assembly
+npm run generate -- --template rifle --seed 42 --valid  # skip to the next valid seed
+npm run stats          # generator metrics over 1000 seeds per template
+npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>
 ```
 
 ## Open questions
 
 - The solver: hand-rolled iterative constraint solving, or a CSP/SAT library?
   Deferred until generation needs one.
-- Archetypes: templates or emergent (§6)?
 - Keep-out shapes: are boxes enough, or do we need capsules or swept shapes?
