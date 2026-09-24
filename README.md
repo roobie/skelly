@@ -4,6 +4,9 @@ A greenfield, experimental, multi-modal 3D project. The scope is not limited to
 skeletons, anatomy or rigging. It is a place to try out ideas about generating,
 assembling and constraining 3D structure.
 
+**Live site:** <https://roobie.github.io/skelly/>, deployed from `main` by
+`.github/workflows/pages.yml`.
+
 ## Subprojects
 
 | Dir | Status | Summary |

@@ -42,6 +42,7 @@ size classes (see §4), not measurements.
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |
 | Generation | Templates (data) plus a seeded generator. The generator only makes choices; the validator decides what's feasible |
 | CI | GitHub Actions (`.github/workflows/gungen.yml`): typecheck, tests, fixture validation, viewer build |
+| Hosting | GitHub Pages (`.github/workflows/pages.yml`): every push to `main` is checked, then the viewer is published at <https://roobie.github.io/skelly/gungen/> |
 | Params from neighbours | Declared per param (`ParamSpec.from`): an unset param copies a neighbour's param through a named port. Values set in the assembly always win |
 
 ## Design areas
@@ -395,6 +396,10 @@ npm run generate -- --template rifle --seed 42 --valid  # skip to the next valid
 npm run stats          # generator metrics over 1000 seeds per template
 npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>
 ```
+
+The same viewer is live at <https://roobie.github.io/skelly/gungen/>, and the
+query parameters work there too, e.g.
+<https://roobie.github.io/skelly/gungen/?template=rifle&seed=7>.
 
 ## Open questions
 

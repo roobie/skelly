@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>skelly</title>
+    <meta name="description" content="skelly: experiments in generating, assembling and constraining 3D structure." />
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #1d2126;
+        --muted: #5f6670;
+        --line: #dde1e6;
+        --link: #1f6feb;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #16181c; --panel: #1f2227; --text: #d8dbe0; --muted: #8b919a; --line: #2e3238; --link: #6cb6ff; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: 48px 16px; }
+      h1 { font-size: 28px; margin: 0 0 4px; }
+      .lede { color: var(--muted); margin: 0 0 32px; }
+      a { color: var(--link); }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+      .card h2 { font-size: 18px; margin: 0 0 6px; }
+      .card p { margin: 0 0 12px; color: var(--muted); }
+      .links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .links a { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; text-decoration: none; }
+      .links a:hover { border-color: var(--link); }
+      footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>skelly</h1>
+      <p class="lede">Experiments in generating, assembling and constraining 3D structure.</p>
+
+      <section class="card">
+        <h2><a href="gungen/">gungen</a></h2>
+        <p>
+          A super-low-poly firearm generator that works out how components connect, so every
+          generated assembly fits together. Stylized proportions only: no real dimensions or
+          mechanisms.
+        </p>
+        <ul class="links">
+          <li><a href="gungen/">Open the viewer</a></li>
+          <li><a href="gungen/?template=rifle&amp;seed=7">Generated rifle</a></li>
+          <li><a href="gungen/?template=bolt-rifle&amp;seed=10">A build that fails</a></li>
+          <li><a href="gungen/?template=pump-shotgun&amp;seed=3">Generated pump shotgun</a></li>
+          <li><a href="gungen/?template=bullpup&amp;seed=5">Generated bullpup</a></li>
+        </ul>
+      </section>
+
+      <footer>Source: <a href="https://github.com/roobie/skelly">github.com/roobie/skelly</a></footer>
+    </main>
+  </body>
+</html>
