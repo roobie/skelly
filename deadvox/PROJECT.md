@@ -39,9 +39,9 @@ This file describes the code as it is. The game's design and roadmap are in
 | Core | Pure library in `src/core`: no DOM or three.js imports, so it runs in tests, workers and Node |
 | Rendering | three.js, in `src/render` |
 | UI | Plain HTML/CSS over the canvas (`src/ui`). No framework yet; pick one when screens get stateful |
-| Meshing | Culled faces with per-vertex AO (`core/mesher.ts`), run in Web Workers. Buffers are transferred, not shared |
+| Meshing | Greedy meshing with per-vertex AO (`core/mesher.ts`): faces with the same block and AO merge into larger quads. Built in Web Workers; buffers are transferred, not shared. Per-block colour variation is computed in the chunk shader (`render/chunks.ts`) |
 | Scale | 0.5 m blocks (`BLOCK_SIZE` in `core/scale.ts`, chosen in milestone 1.0). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres. The benchmark can build other block sizes to compare |
-| Chunks | 32³ blocks, `Uint16Array` of runtime block ids, y-major. The world spans −48 m to +80 m: 5 chunks tall at 1 m blocks, 8 at 0.5 m |
+| Chunks | 32³ blocks of runtime block ids, y-major. A chunk where every block is the same stores a single id. The world spans −48 m to +80 m, 8 chunks tall. Unedited chunk data far out of range is dropped and regenerated from the seed when needed |
 | Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
 | Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
@@ -84,7 +84,8 @@ npm run validate   # base content; add paths to validate a mod on top
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (roads, towns, buildings).
-- Nothing is saved yet.
+- Nothing is saved yet, and edited chunks stay in memory until saves exist
+  (milestone 1.9).
 - Pointer lock only works on desktop. There are no touch controls.
 
 ## Design and roadmap

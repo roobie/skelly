@@ -20,8 +20,8 @@ describe('bench stats', () => {
 });
 
 describe('bench plan', () => {
-  it('runs both block sizes at 64, 96 and 128 m by default', () => {
-    expect(formatPlan(DEFAULT_PLAN)).toBe('1:64,1:96,1:128,0.5:64,0.5:96,0.5:128');
+  it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {
+    expect(formatPlan(DEFAULT_PLAN)).toBe('0.5:64,0.5:96,0.5:128');
   });
 
   it('round-trips through the URL and rejects nonsense', () => {
@@ -53,17 +53,18 @@ describe('bench report', () => {
     gen: { count: 1, median: 3, p95: 4 },
     meshMs: { count: 1, median: 2, p95: 5 },
     meshTriangles: { count: 1, median: 1234, p95: 2000 },
-    look: { ...frames, drawCalls: 300, triangles: 1e6 },
-    jog: { ...frames, holesMax: 0, holeFraction: 0 },
-    sprint: { ...frames, holesMax: 3, holeFraction: 0.2 },
+    look: { ...frames, work: { count: 10, median: 4, p95: 6 }, drawCalls: 300, triangles: 1e6 },
+    jog: { ...frames, work: { count: 10, median: 5, p95: 7.5 }, holesMax: 0, holeFraction: 0 },
+    sprint: { ...frames, work: { count: 10, median: 6, p95: 9 }, holesMax: 3, holeFraction: 0.2 },
     interrupted: false,
   };
 
   it('formats a row per run with one cell per header', () => {
     const row = resultRow(result);
     expect(row).toHaveLength(HEADERS.length);
-    expect(row[4]).toBe('6.3 / 2.5 / 1.0');
+    expect(row[4]).toBe('2.5 / 6.3 / 1.0');
     expect(row[10]).toBe('17.0 / 10% / 3');
+    expect(row[11]).toBe('6.0 / 7.5 / 9.0');
   });
 
   it('renders a Markdown table', () => {

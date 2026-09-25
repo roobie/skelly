@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { createPlayerBody, physicsFor } from '../src/game/player.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 
 const metre = makeScale(1);
 const half = makeScale(0.5);
@@ -66,6 +66,19 @@ describe('stepBody', () => {
     expect(bodyOverlapsBlock(body, [0, 11, 0])).toBe(true);
     expect(bodyOverlapsBlock(body, [0, 12, 0])).toBe(false);
     expect(bodyOverlapsBlock(body, [1, 10, 0])).toBe(false);
+  });
+});
+
+describe('steer', () => {
+  it('walks, jogs and sprints at the speeds in metres per second', () => {
+    const speed = (intent: { sprint: boolean; walk: boolean }) => {
+      const body = createPlayerBody(half, 0, 0, 0);
+      steer(body, half, 0, { forward: 1, right: 0, jump: false, ...intent });
+      return Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
+    };
+    expect(speed({ sprint: false, walk: true })).toBeCloseTo(PLAYER.walk);
+    expect(speed({ sprint: false, walk: false })).toBeCloseTo(PLAYER.jog);
+    expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
   });
 });
 

@@ -133,8 +133,9 @@ benchmark can still compare sizes, for example with `?bench=1&plan=1:96,0.5:96`.
   counter, table and bed, and climb the stairs to the roof. With 0.5 m blocks
   you walk up the stairs; with 1 m blocks every step needs a jump.
 - **Numbers:** open `?bench=1` on the reference laptop, in a maximised window,
-  and leave the tab visible. It runs the six configurations one after another,
-  reloading the page between them, and takes about 6 minutes. Each run loads
+  and leave the tab visible. In 1.0 it ran six configurations (both block
+  sizes); it now runs 0.5 m blocks at 64, 96 and 128 m by default, reloading
+  the page between runs, and takes about 3 minutes. Each run loads
   the world around spawn, turns the camera once around for 12 s, then flies
   away across the terrain for 15 s at jog speed and 15 s at sprint speed. The
   report page at the end has a table and a **Copy Markdown** button. Paste the
@@ -182,6 +183,10 @@ measurement found:
 
 **Done when:** a new benchmark run on the reference laptop meets the frame
 budget from 1.0, and the Results below are updated.
+
+**Status:** implemented. Waiting for the benchmark run on the reference laptop.
+The walk toggle is on Z (Ctrl would collide with browser shortcuts such as
+Ctrl+W).
 
 ### 1.2 Simulation core
 
