@@ -1,6 +1,8 @@
 import { Chunk } from './chunk.ts';
-import { CHUNK, MAX_CY, MIN_CY, type Vec3 } from './coords.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import { fbm2 } from './random.ts';
+import type { Scale } from './scale.ts';
+import { type BlockBox, stampChunk } from './structure.ts';
 
 /** Registry ids of the blocks terrain is made of. */
 export interface TerrainBlocks {
@@ -10,38 +12,53 @@ export interface TerrainBlocks {
   sand: number;
 }
 
-export const MIN_HEIGHT = 8;
-export const MAX_HEIGHT = 56;
-const BEACH_BELOW = 14;
+/** Everything terrain generation depends on. */
+export interface Terrain {
+  seed: number;
+  blocks: TerrainBlocks;
+  scale: Scale;
+}
 
-/** Y of the top solid block of the column at (x, z). */
-export const terrainHeight = (seed: number, x: number, z: number): number =>
-  Math.floor(MIN_HEIGHT + fbm2(seed, x / 96, z / 96, 4) * (MAX_HEIGHT - MIN_HEIGHT));
+// Terrain is defined in metres, so every block size gives the same landscape.
+export const MIN_HEIGHT_M = 8;
+export const MAX_HEIGHT_M = 56;
+const BEACH_BELOW_M = 14;
+const DIRT_DEPTH_M = 2;
+const FEATURE_SIZE_M = 96;
+
+/** Ground height in metres at a point in metres. */
+export const terrainHeightMetres = (seed: number, xm: number, zm: number): number =>
+  MIN_HEIGHT_M + fbm2(seed, xm / FEATURE_SIZE_M, zm / FEATURE_SIZE_M, 4) * (MAX_HEIGHT_M - MIN_HEIGHT_M);
+
+/** Y (in blocks) of the top solid block of the column at block (x, z). Sampled at the block's centre. */
+export const terrainHeight = (seed: number, scale: Scale, x: number, z: number): number => {
+  const s = scale.blockSize;
+  return Math.floor(terrainHeightMetres(seed, (x + 0.5) * s, (z + 0.5) * s) / s);
+};
 
 /** Top block heights for a chunk column, CHUNK×CHUNK, indexed x + CHUNK * z. */
-export const columnHeights = (seed: number, cx: number, cz: number): Int32Array => {
+export const columnHeights = (seed: number, scale: Scale, cx: number, cz: number): Int32Array => {
   const out = new Int32Array(CHUNK * CHUNK);
   for (let lz = 0; lz < CHUNK; lz++) {
     for (let lx = 0; lx < CHUNK; lx++) {
-      out[lx + CHUNK * lz] = terrainHeight(seed, cx * CHUNK + lx, cz * CHUNK + lz);
+      out[lx + CHUNK * lz] = terrainHeight(seed, scale, cx * CHUNK + lx, cz * CHUNK + lz);
     }
   }
   return out;
 };
 
-/** The block at height y in a column whose top block is at h. */
-const blockAt = (blocks: TerrainBlocks, y: number, h: number): number => {
+/** The block at height y in a column whose top block is at h (both in blocks). */
+const blockAt = (blocks: TerrainBlocks, scale: Scale, y: number, h: number): number => {
   if (y === h) {
-    return h < BEACH_BELOW ? blocks.sand : blocks.grass;
+    return h * scale.blockSize < BEACH_BELOW_M ? blocks.sand : blocks.grass;
   }
-  return y > h - 4 ? blocks.dirt : blocks.stone;
+  return y > h - DIRT_DEPTH_M / scale.blockSize ? blocks.dirt : blocks.stone;
 };
 
 export const generateChunk = (
-  seed: number,
-  blocks: TerrainBlocks,
+  { seed, blocks, scale }: Terrain,
   [cx, cy, cz]: Vec3,
-  heights = columnHeights(seed, cx, cz),
+  heights = columnHeights(seed, scale, cx, cz),
 ): Chunk => {
   const chunk = new Chunk(cx, cy, cz);
   const y0 = cy * CHUNK;
@@ -50,19 +67,30 @@ export const generateChunk = (
       const h = heights[lx + CHUNK * lz]!;
       const top = Math.min(h - y0, CHUNK - 1);
       for (let ly = 0; ly <= top; ly++) {
-        chunk.set(lx, ly, lz, blockAt(blocks, y0 + ly, h));
+        chunk.set(lx, ly, lz, blockAt(blocks, scale, y0 + ly, h));
       }
     }
   }
   return chunk;
 };
 
-/** Every chunk of the column (cx, cz) inside the world's vertical range, bottom first. */
-export const generateColumn = (seed: number, blocks: TerrainBlocks, cx: number, cz: number): Chunk[] => {
-  const heights = columnHeights(seed, cx, cz);
+/**
+ * Every chunk of the column (cx, cz) inside the world's vertical range, bottom first,
+ * with any structures stamped in.
+ */
+export const generateColumn = (
+  terrain: Terrain,
+  cx: number,
+  cz: number,
+  structures: readonly BlockBox[] = [],
+): Chunk[] => {
+  const { seed, scale } = terrain;
+  const heights = columnHeights(seed, scale, cx, cz);
   const out: Chunk[] = [];
-  for (let cy = MIN_CY; cy <= MAX_CY; cy++) {
-    out.push(generateChunk(seed, blocks, [cx, cy, cz], heights));
+  for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+    const chunk = generateChunk(terrain, [cx, cy, cz], heights);
+    stampChunk(chunk, structures);
+    out.push(chunk);
   }
   return out;
 };

@@ -12,7 +12,14 @@ export interface Body {
   onGround: boolean;
 }
 
-export const GRAVITY = 28;
+/** Physical constants in block units (convert from metres with the block size). */
+export interface PhysicsParams {
+  /** Blocks per second squared. */
+  gravity: number;
+  /** Tallest ledge a grounded body walks up without jumping, in blocks. 0 disables. */
+  stepHeight: number;
+}
+
 const EPS = 1e-4;
 const MAX_STEP = 0.45; // per-axis move per substep; below 1 so only one new block layer is touched
 
@@ -52,9 +59,51 @@ const moveAxis = (body: Body, axis: Axis, delta: number, isSolid: SolidAt): bool
   return true;
 };
 
+/** What a horizontal move needs besides the axis and distance. */
+interface MoveContext {
+  body: Body;
+  isSolid: SolidAt;
+  stepHeight: number;
+  grounded: boolean;
+}
+
+/** Tries to move along a horizontal axis from a raised position, then settles back down. */
+const tryStepUp = ({ body, isSolid, stepHeight }: MoveContext, axis: Axis, delta: number): boolean => {
+  body.pos[1] += stepHeight;
+  if (overlapsSolid(body, isSolid)) {
+    body.pos[1] -= stepHeight;
+    return false;
+  }
+  body.pos[axis] += delta;
+  if (overlapsSolid(body, isSolid)) {
+    body.pos[axis] -= delta;
+    body.pos[1] -= stepHeight;
+    return false;
+  }
+  moveAxis(body, 1, -stepHeight, isSolid); // lands on the step, or back where it was
+  return true;
+};
+
+/** Horizontal move that climbs ledges up to stepHeight when grounded. */
+const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
+  const { body, isSolid, stepHeight, grounded } = ctx;
+  const start = body.pos[axis]!;
+  const speed = body.vel[axis]!;
+  if (!(moveAxis(body, axis, delta, isSolid) && grounded) || stepHeight <= 0) {
+    return;
+  }
+  // Blocked: retry the whole move from a raised position.
+  body.pos[axis] = start;
+  body.vel[axis] = speed;
+  if (!tryStepUp(ctx, axis, delta)) {
+    moveAxis(body, axis, delta, isSolid);
+  }
+};
+
 /** Applies gravity and velocity for dt seconds, resolving collisions axis by axis (y first). */
-export const stepBody = (body: Body, dt: number, isSolid: SolidAt): void => {
-  body.vel[1] -= GRAVITY * dt;
+export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): void => {
+  const wasGrounded = body.onGround;
+  body.vel[1] -= params.gravity * dt;
   const largest = Math.max(...body.vel.map((v) => Math.abs(v * dt)));
   const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
   const h = dt / substeps;
@@ -64,8 +113,9 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt): void => {
     if (moveAxis(body, 1, body.vel[1] * h, isSolid) && falling) {
       body.onGround = true;
     }
-    moveAxis(body, 0, body.vel[0] * h, isSolid);
-    moveAxis(body, 2, body.vel[2] * h, isSolid);
+    const ctx: MoveContext = { body, isSolid, stepHeight: params.stepHeight, grounded: wasGrounded || body.onGround };
+    moveHorizontal(ctx, 0, body.vel[0] * h);
+    moveHorizontal(ctx, 2, body.vel[2] * h);
   }
 };
 

@@ -1,16 +1,35 @@
-import type { Body } from '../core/physics.ts';
+// The player's body and movement, specified in metres and converted to blocks.
 
-export const WALK_SPEED = 4.3;
-export const SPRINT_SPEED = 6.8;
-export const JUMP_SPEED = 9;
-export const EYE_HEIGHT = 1.62;
-export const REACH = 5;
+import type { Body, PhysicsParams } from '../core/physics.ts';
+import type { Scale } from '../core/scale.ts';
 
-export const createPlayerBody = (x: number, y: number, z: number): Body => ({
-  pos: [x, y, z],
-  vel: [0, 0, 0],
+/** Player constants in metres and metres per second (DESIGN.md, "Scale and units"). */
+export const PLAYER = {
   halfWidth: 0.3,
   height: 1.8,
+  eye: 1.62,
+  jog: 4.3,
+  sprint: 6.5,
+  /** Take-off speed; with GRAVITY it clears about 1.1 m. */
+  jump: 7.9,
+  reach: 4,
+  stepHeight: 0.5,
+} as const;
+
+/** m/s². Heavier than Earth's; it makes jumps feel snappy. */
+export const GRAVITY = 28;
+
+export const physicsFor = (scale: Scale): PhysicsParams => ({
+  gravity: GRAVITY / scale.blockSize,
+  stepHeight: PLAYER.stepHeight / scale.blockSize,
+});
+
+/** A player body at (x, y, z) in blocks, sized for the block size. */
+export const createPlayerBody = (scale: Scale, x: number, y: number, z: number): Body => ({
+  pos: [x, y, z],
+  vel: [0, 0, 0],
+  halfWidth: PLAYER.halfWidth / scale.blockSize,
+  height: PLAYER.height / scale.blockSize,
   onGround: false,
 });
 
@@ -22,20 +41,20 @@ export interface MoveIntent {
 }
 
 /** Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. */
-export const steer = (body: Body, yaw: number, intent: MoveIntent): void => {
+export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent): void => {
   let { forward, right } = intent;
   const len = Math.hypot(forward, right);
   if (len > 1) {
     forward /= len;
     right /= len;
   }
-  const speed = intent.sprint ? SPRINT_SPEED : WALK_SPEED;
+  const speed = (intent.sprint ? PLAYER.sprint : PLAYER.jog) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.
   body.vel[0] = (-sin * forward + cos * right) * speed;
   body.vel[2] = (-cos * forward - sin * right) * speed;
   if (intent.jump && body.onGround) {
-    body.vel[1] = JUMP_SPEED;
+    body.vel[1] = PLAYER.jump / scale.blockSize;
   }
 };

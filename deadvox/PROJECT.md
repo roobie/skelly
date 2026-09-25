@@ -7,8 +7,13 @@ Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxel
 This file describes the code as it is. The game's design and roadmap are in
 [DESIGN.md](DESIGN.md) and [EPIC.md](EPIC.md).
 
-**Play:** <https://roobie.github.io/skelly/deadvox/> (`?seed=N` picks a world,
-`?radius=N` sets the view distance in chunks).
+**Play:** <https://roobie.github.io/skelly/deadvox/>. URL parameters:
+
+- `?seed=N` picks a world.
+- `?block=0.5` or `?block=1` sets the block size in metres (default 0.5).
+- `?radius=N` sets the view distance in metres (default 96).
+- `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
+  results. See [SLICE-1.md](SLICE-1.md#running-it).
 
 ## Aim
 
@@ -35,8 +40,10 @@ This file describes the code as it is. The game's design and roadmap are in
 | Rendering | three.js, in `src/render` |
 | UI | Plain HTML/CSS over the canvas (`src/ui`). No framework yet; pick one when screens get stateful |
 | Meshing | Culled faces with per-vertex AO (`core/mesher.ts`), run in Web Workers. Buffers are transferred, not shared |
-| Chunks | 32³ blocks, `Uint16Array` of runtime block ids, y-major. World is 4 chunks tall (`MIN_CY..MAX_CY`) |
-| Terrain | Seeded value-noise heightmap, generated one column at a time on the main thread |
+| Scale | Block size is a runtime setting while milestone 1.0 compares 1 m and 0.5 m (`core/scale.ts`). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres |
+| Chunks | 32³ blocks, `Uint16Array` of runtime block ids, y-major. The world spans −48 m to +80 m: 5 chunks tall at 1 m blocks, 8 at 0.5 m |
+| Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
+| Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
 | Content | JSON in `src/content/base`, validated (`core/content.ts`) and merged in order. An override keeps the block's runtime id. A file with any issue is skipped whole |
 | Units | Weight in grams, volume in millilitres |
@@ -49,14 +56,16 @@ This file describes the code as it is. The game's design and roadmap are in
 
 ```
 src/
-  core/        pure logic: coords, chunk, world, worldgen, mesher, raycast, physics, content, inventory
+  core/        pure logic: coords, scale, chunk, world, worldgen, structure, storage, mesher,
+               raycast, physics, content, inventory
   content/     JSON content packs (base/)
   worker/      mesh worker + message types
   render/      three.js chunk meshes
-  game/        streaming, player controller, input
+  game/        engine setup, play mode, streaming, player controller, input, test house
+  bench/       milestone 1.0 benchmark: runner, stats, results page
   ui/          HUD/inventory DOM + CSS
   cli/         content validator (npm run validate -- mod/*.json)
-  main.ts      wires it all together
+  main.ts      picks play, benchmark or results page from the URL
 test/          Vitest specs for core
 ```
 

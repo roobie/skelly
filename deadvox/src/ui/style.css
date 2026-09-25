@@ -198,3 +198,74 @@ body {
 #errors:empty {
   display: none;
 }
+
+#overlay .scale {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+#overlay a {
+  color: var(--accent);
+}
+
+/* Benchmark and report pages have no crosshair or hotbar. */
+body.bench #crosshair,
+body.bench #hotbar {
+  display: none;
+}
+#overlay .card.report {
+  max-width: min(1100px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  cursor: default;
+}
+#overlay .card.report table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin: 8px 0 12px;
+}
+#overlay .card.report th,
+#overlay .card.report td {
+  border-bottom: 1px solid var(--line);
+  padding: 4px 6px;
+  text-align: right;
+  white-space: nowrap;
+}
+#overlay .card.report th:first-child,
+#overlay .card.report td:first-child {
+  text-align: left;
+}
+#overlay .card.report ul {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+#overlay .card.report .buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+#overlay .card.report button {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #2a3038;
+  color: var(--text);
+  cursor: pointer;
+}
+#overlay .card.report textarea {
+  width: 100%;
+  min-height: 140px;
+  margin-top: 8px;
+  background: #0e1013;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font:
+    11px / 1.4 ui-monospace,
+    monospace;
+}

@@ -1,11 +1,76 @@
 {
   "blocks": [
-    { "id": "grass", "name": "Grass", "color": "#5b8c3a", "solid": true },
-    { "id": "dirt", "name": "Dirt", "color": "#7a5a3a", "solid": true },
-    { "id": "stone", "name": "Stone", "color": "#8a8d91", "solid": true },
-    { "id": "sand", "name": "Sand", "color": "#d6c68f", "solid": true },
-    { "id": "asphalt", "name": "Asphalt", "color": "#3b3d40", "solid": true },
-    { "id": "concrete", "name": "Concrete", "color": "#b5b3ad", "solid": true },
-    { "id": "planks", "name": "Wooden planks", "color": "#a0763f", "solid": true }
+    {
+      "id": "grass",
+      "name": "Grass",
+      "color": "#5b8c3a",
+      "solid": true
+    },
+    {
+      "id": "dirt",
+      "name": "Dirt",
+      "color": "#7a5a3a",
+      "solid": true
+    },
+    {
+      "id": "stone",
+      "name": "Stone",
+      "color": "#8a8d91",
+      "solid": true
+    },
+    {
+      "id": "sand",
+      "name": "Sand",
+      "color": "#d6c68f",
+      "solid": true
+    },
+    {
+      "id": "asphalt",
+      "name": "Asphalt",
+      "color": "#3b3d40",
+      "solid": true
+    },
+    {
+      "id": "concrete",
+      "name": "Concrete",
+      "color": "#b5b3ad",
+      "solid": true
+    },
+    {
+      "id": "planks",
+      "name": "Wooden planks",
+      "color": "#a0763f",
+      "solid": true
+    },
+    {
+      "id": "brick",
+      "name": "Brick",
+      "color": "#9c4f3a",
+      "solid": true
+    },
+    {
+      "id": "plaster",
+      "name": "Plaster",
+      "color": "#d9d4c7",
+      "solid": true
+    },
+    {
+      "id": "tiles",
+      "name": "Tiles",
+      "color": "#cfd6da",
+      "solid": true
+    },
+    {
+      "id": "fabric",
+      "name": "Fabric",
+      "color": "#5b6f9a",
+      "solid": true
+    },
+    {
+      "id": "roof",
+      "name": "Roofing",
+      "color": "#4a4b50",
+      "solid": true
+    }
   ]
 }
