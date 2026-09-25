@@ -37,3 +37,28 @@ export const fbm2 = (seed: number, x: number, z: number, octaves: number): numbe
   }
   return sum / norm;
 };
+
+/** A 32-bit hash of a string (FNV-1a). */
+const hashString = (text: string): number => {
+  let h = 0x81_1c_9d_c5;
+  for (let i = 0; i < text.length; i++) {
+    h = Math.imul(h ^ text.charCodeAt(i), 0x01_00_01_93);
+  }
+  return h >>> 0;
+};
+
+/**
+ * A seeded random stream for one system: numbers in [0, 1), the same sequence for
+ * the same world seed and system id (mulberry32). Systems never share a stream, so
+ * adding a draw in one system doesn't change what another sees.
+ */
+export const randomStream = (seed: number, systemId: string): (() => number) => {
+  let state = (seed ^ hashString(systemId)) >>> 0;
+  return () => {
+    state = (state + 0x6d_2b_79_f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+};

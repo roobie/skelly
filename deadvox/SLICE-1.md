@@ -204,6 +204,13 @@ Ctrl+W).
 **Done when:** scenario tests show that a compressed hour and an uncompressed
 hour give the same needs and clock state, within tolerance.
 
+**Status:** done. The equivalence test is in `test/sim.test.ts`: a needs-like
+meter and the clock agree after an hour at 1× and an hour compressed (about 15
+real seconds instead of 7.5 minutes). In the game, **T** starts and stops a
+debug "Wait" that compresses time; with `?debug=1`, **I** simulates an
+interruption, and `&time=22` starts the clock at 22:00. There are no safety
+checks yet: they arrive with shamblers in 1.7.
+
 ### 1.3 Content v2
 
 - Valibot schemas for all Slice 1 content. TypeScript types are inferred from

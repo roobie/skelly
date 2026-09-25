@@ -1,4 +1,5 @@
-// Normal play: walk, look, break and place blocks, open the inventory.
+// Normal play: walk, look, break and place blocks, open the inventory, and wait
+// (a debug long action that compresses time).
 
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments, Vector3 } from 'three';
 import { blockId } from '../core/content.ts';
@@ -6,13 +7,18 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Stack } from '../core/inventory.ts';
 import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
+import { Clock, formatClock, HOUR, hourOf } from '../core/sim/clock.ts';
+import { Simulation } from '../core/sim/simulation.ts';
+import { skyAt } from '../core/sim/sky.ts';
+import { applySky } from '../render/sky.ts';
 import { renderInventory } from '../ui/inventory.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './player.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const STEP = 1 / 60;
+/** Player physics rate, in simulation ticks per second. */
+const PLAYER_HZ = 60;
 const DIGIT_KEY = /^Digit([1-9])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 
@@ -38,6 +44,32 @@ export const startPlay = (engine: Engine): void => {
   const body = createPlayerBody(scale, sx / s, sy / s + 0.01, sz / s);
   const input = new Input(renderer.domElement);
   input.yaw = engine.spawn.yaw;
+  const params = new URLSearchParams(location.search);
+  const debug = params.has('debug');
+  // Debug: `?debug=1&time=22` starts the clock at 22:00 on day 1.
+  const startHour = Number(params.get('time'));
+  const clock = debug && startHour >= 0 && startHour < 24 ? new Clock(startHour * HOUR) : new Clock();
+
+  // ---- simulation ----
+
+  const sim = new Simulation(clock);
+  sim.scheduler.add({
+    id: 'player',
+    interval: 1 / PLAYER_HZ,
+    kind: 'fixed',
+    tick: (dt) => {
+      // Hold the player still until there is ground under them.
+      if (!streamer.isReady(body.pos[0], body.pos[2])) {
+        return;
+      }
+      // Inputs are locked while time is compressed.
+      const intent = input.locked && !sim.compression.running ? input.intent() : IDLE;
+      steer(body, scale, input.yaw, intent);
+      stepBody(body, dt, isSolid, physics);
+    },
+  });
+  /** Shown in the HUD when Wait couldn't start. */
+  let refused = '';
 
   // Outline of the targeted block, in metres.
   const outline = new LineSegments(
@@ -84,25 +116,46 @@ export const startPlay = (engine: Engine): void => {
   };
   drawHotbar();
 
+  const toggleInventory = () => {
+    const open = inventoryPanel.hidden === true;
+    inventoryPanel.hidden = !open;
+    if (open) {
+      renderInventory(inventoryPanel, inventory, registry);
+      input.unlock();
+    } else {
+      input.lock();
+    }
+    syncOverlay();
+  };
+
+  const toggleWait = () => {
+    if (sim.compression.running) {
+      sim.compression.stop();
+    } else {
+      refused = sim.compression.start() ?? '';
+    }
+  };
+
+  const selectSlot = (code: string) => {
+    const digit = DIGIT_KEY.exec(code);
+    if (digit && Number(digit[1]) <= Math.min(9, placeable.length)) {
+      selected = Number(digit[1]) - 1;
+      drawHotbar();
+    }
+  };
+
   globalThis.addEventListener('keydown', (e) => {
     if (e.repeat) {
       return;
     }
     if (e.code === 'Tab') {
-      const open = inventoryPanel.hidden;
-      inventoryPanel.hidden = !open;
-      if (open) {
-        renderInventory(inventoryPanel, inventory, registry);
-        input.unlock();
-      } else {
-        input.lock();
-      }
-      syncOverlay();
-    }
-    const digit = DIGIT_KEY.exec(e.code);
-    if (digit && Number(digit[1]) <= Math.min(9, placeable.length)) {
-      selected = Number(digit[1]) - 1;
-      drawHotbar();
+      toggleInventory();
+    } else if (e.code === 'KeyT') {
+      toggleWait();
+    } else if (e.code === 'KeyI' && debug && sim.compression.running) {
+      sim.compression.interrupt('debug: simulated threat');
+    } else {
+      selectSlot(e.code);
     }
   });
   globalThis.addEventListener('wheel', (e) => {
@@ -145,21 +198,7 @@ export const startPlay = (engine: Engine): void => {
   // ---- loop ----
 
   let last = performance.now();
-  let acc = 0;
   let fps = 0;
-
-  /** Fixed-step movement; the player is held still until there is ground under them. */
-  const simulate = (dt: number) => {
-    if (!streamer.isReady(body.pos[0], body.pos[2])) {
-      return;
-    }
-    acc += dt;
-    while (acc >= STEP) {
-      steer(body, scale, input.yaw, input.locked ? input.intent() : IDLE);
-      stepBody(body, STEP, isSolid, physics);
-      acc -= STEP;
-    }
-  };
 
   /** Outlines the targeted block and returns it. */
   const target = () => {
@@ -171,9 +210,22 @@ export const startPlay = (engine: Engine): void => {
     return hit;
   };
 
+  const waitStatus = (): string => {
+    const { compression } = sim;
+    if (compression.running) {
+      return `Waiting… time ×${compression.factor.toFixed(0)} (T to stop)`;
+    }
+    if (compression.interruption !== undefined) {
+      return `Interrupted: ${compression.interruption}. T to continue waiting.`;
+    }
+    return refused === '' ? 'T: wait' : `Can't wait: ${refused}`;
+  };
+
   const hudText = (hit: ReturnType<typeof target>): string => {
     const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
     return [
+      `${formatClock(sim.clock.calendar)}${sim.paused ? '   paused' : ''}`,
+      waitStatus(),
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
@@ -188,7 +240,10 @@ export const startPlay = (engine: Engine): void => {
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     streamer.update(body.pos[0], body.pos[2]);
-    simulate(dt);
+    // Esc (leaving the game view) pauses; the inventory screen doesn't.
+    sim.paused = !input.locked && inventoryPanel.hidden === true;
+    sim.frame(dt);
+    applySky(scene, engine.lights, skyAt(hourOf(sim.clock.calendar)));
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);
