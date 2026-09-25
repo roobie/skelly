@@ -43,11 +43,12 @@ taken apart.
 ## Reference hardware
 
 Performance targets are measured on the **reference laptop**: the project
-owner's 8-core Intel laptop with 32 GB of RAM and **Iris Xe integrated
-graphics**. The GPU is the constraint to design for: integrated graphics share
-memory bandwidth with the CPU, so triangle count, overdraw and draw calls
-matter more than CPU time. Milestone 1.0 records the exact CPU model, browser
-and browser version next to its results.
+owner's laptop with an Intel Core i7-1185G7 (4 cores, 8 threads), 32 GB of RAM
+and **Iris Xe integrated graphics**, running Firefox on Linux. The GPU is the
+constraint to design for: integrated graphics share memory bandwidth with the
+CPU, so triangle count, overdraw and draw calls matter more than CPU time. With
+4 cores, workers (meshing, later worldgen and AI) compete with the main thread,
+so keep their number small.
 
 ## Scale and units
 

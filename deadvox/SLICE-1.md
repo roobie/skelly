@@ -154,20 +154,32 @@ What the benchmark can and can't tell us:
 
 ### 1.1 Metres and half-metre blocks
 
-- `BLOCK_SIZE` converts between blocks and metres. Physics, player and
-  streaming radius work in metres.
-- Uniform chunks are stored as a single value. The world is 8 chunks tall
-  (−48 m to +80 m).
+Milestone 1.0 already moved the player, physics, terrain and world height to
+metres, and added step-up and a 1.1 m jump. What's left, plus what the
+measurement found:
+
+- The block size becomes a fixed constant, `BLOCK_SIZE = 0.5`. The benchmark
+  keeps its own setting so it can still compare sizes.
+- **Stop drawing the underside of the world.** The mesher treats what's below
+  the bottom chunk layer as air, so every bottom chunk draws a 32 × 32 layer of
+  faces nobody can see. That's about half of the non-empty chunk meshes (see
+  Results). Treat below the world as solid.
+- Uniform chunks are stored as a single value. Chunk data that hasn't been
+  edited is dropped when it goes far out of range, and regenerated from the seed
+  when needed. Today every generated chunk stays in memory for the whole
+  session.
 - Greedy meshing, with per-block colour variation moved into the fragment
   shader.
-- Player speeds: walk 1.8, jog 4.3, sprint 6.5 m/s. Automatic step up of one
-  block, and a jump of about 1 m.
+- A walk speed of 1.8 m/s alongside jog and sprint.
+- The benchmark also records **work time per frame**: the milliseconds spent
+  in streaming, simulation and the render call. Frame times stop at the
+  display's refresh rate; work time shows how much of the 16.7 ms is used.
 - Tests: greedy meshing gives the same visible surface as face culling
-  (property test), storage round-trips for uniform chunks, and the step-up
-  physics.
+  (property test), storage round-trips for uniform chunks, no faces below the
+  world.
 
-**Done when:** the frame budget from 1.0 holds in the real game at the chosen
-radius.
+**Done when:** a new benchmark run on the reference laptop meets the frame
+budget from 1.0, and the Results below are updated.
 
 ### 1.2 Simulation core
 
@@ -428,4 +440,60 @@ A zombie type:
 
 ## Results
 
-*(Filled in as milestones finish, starting with the 1.0 scale measurement.)*
+### 1.0 Scale measurement (2026-09-25)
+
+**Setup.** The reference laptop: Intel Core i7-1185G7 (4 cores, 8 threads,
+3.0 GHz), 32 GB RAM, Intel Iris Xe Graphics (TGL GT2). Firefox 140 on Linux,
+which reports the GPU only as "Intel(R) HD Graphics, or similar". The canvas
+was 1674 × 972 pixels at pixel ratio 1.2.
+
+| Block | Radius | Load s | Chunks | MiB full / uniform / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 m | 64 m | 0.5 | 245 | 15.3 / 4.8 / 0.6 | 12.0 / 22.0 | 2048 | 60 / 17.2 / 0% | 26 | 17.2 / 0% / 0 | 17.2 / 0% / 0 |
+| 1 m | 96 m | 0.8 | 405 | 25.3 / 7.9 / 1.0 | 12.0 / 20.0 | 2048 | 60 / 17.2 / 0% | 48 | 17.2 / 0% / 0 | 17.2 / 0% / 0 |
+| 1 m | 128 m | 1.4 | 605 | 37.8 / 11.6 / 1.4 | 12.0 / 21.0 | 2048 | 60 / 17.2 / 0% | 77 | 17.2 / 0% / 0 | 17.2 / 0% / 0 |
+| 0.5 m | 64 m | 2.4 | 968 | 60.5 / 10.6 / 1.3 | 14.0 / 21.0 | 2048 | 60 / 17.2 / 0% | 55 | 17.2 / 0% / 0 | 17.2 / 0% / 0 |
+| 0.5 m | 96 m | 4.0 | 1800 | 112.5 / 19.4 / 2.3 | 12.0 / 19.0 | 2048 | 60 / 17.2 / 0% | 119 | 17.2 / 0% / 0 | 17.2 / 0% / 0 |
+| 0.5 m | 128 m | 6.9 | 2888 | 180.5 / 31.8 / 3.8 | 15.0 / 28.0 | 2048 | 60 / 17.2 / 0% | 213 | 17.2 / 1% / 0 | 17.3 / 4% / 0 |
+
+**Findings.**
+
+1. **Frame rate:** 60 fps in every configuration, including 0.5 m blocks at
+   128 m. Frame times stop at the display's refresh rate, so the only sign of
+   strain is slow frames (over 18 ms): 1% while jogging and 4% while sprinting
+   at 0.5 m and 128 m, and none anywhere else. How much headroom is left above
+   60 fps isn't visible yet (1.1 adds work time per frame).
+2. **Streaming keeps up:** no holes in any run, even sprinting at 0.5 m and
+   128 m with terrain generated on the main thread. Moving worldgen to workers
+   can wait until towns make it more expensive.
+3. **Memory:** at the same radius, 0.5 m blocks take about 4.8× the memory of
+   1 m blocks when every chunk is stored in full (180 MiB against 38 MiB at
+   128 m). Storing uniform chunks as a single value brings 0.5 m at 128 m down
+   to 32 MiB; palette packing brings it to 3.8 MiB. The totals are higher than
+   the estimate in CHALLENGES.md because terrain is generated one ring beyond
+   the view radius (19 × 19 columns × 8 layers = 2,888 chunks at 128 m).
+4. **Meshing:** 12–15 ms median and 19–28 ms p95 per chunk in a worker, about
+   the same at both block sizes (the work depends on a chunk's blocks, not on
+   its size in metres). Firefox rounds timers to whole milliseconds.
+5. **Load time:** 4.0 s at 0.5 m and 96 m, 6.9 s at 128 m. Both are within
+   version 1's 10 s target.
+6. **Wasted geometry.** The median of exactly 2,048 triangles per chunk in
+   every run is the underside of the world: each bottom-layer chunk draws a
+   32 × 32 layer of downward faces because the mesher treats below the world as
+   air. Checked in Node: every bottom-layer chunk has exactly 2,048 triangles,
+   while surface chunks have 2,300–3,000. They are about half of all non-empty
+   chunk meshes, so a large share of the draw calls in the table are invisible.
+   Fixing it is the first item in 1.1, and should make frames cheaper.
+
+**Decision (proposed, pending the feel test).**
+
+- **Block size: 0.5 m.** The numbers don't rule it out: it holds 60 fps up to
+  128 m on the reference laptop.
+- **View radius:** 96 m by default, with no slow frames, which leaves room for
+  zombies, lighting and UI. 128 m becomes a higher graphics setting.
+- **Frame budget** for later milestones: 0.5 m blocks at a 96 m radius run at
+  60 fps on the reference laptop in Firefox, with at most 1% slow frames in
+  every benchmark phase and no holes at sprint speed.
+
+**Feel test:** *to be added* (doorways, stairs, furniture and interiors at 1 m
+and at 0.5 m).
