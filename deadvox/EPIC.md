@@ -123,6 +123,8 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Disassembly and salvage, and repairing items' condition.
 - Workbenches, and materials used from nearby piles and containers.
 - Skills that go up with use, books and reading, and recipe discovery.
+- Light you make: torches, candles and glowsticks (see
+  [Light](DESIGN.md#light)).
 - About 80 item types. The validator checks that every component can be found
   or crafted.
 - More templates: a hardware store and a garage.
@@ -135,6 +137,8 @@ See [SLICE-1.md](SLICE-1.md). It covers:
   noise and recoil.
 - The noise system (sources, reduction by walls), sight at night and when
   crouching, and a smell trail.
+- Light as a sense: zombies see light sources from far away and see you when
+  you're lit. Flares and thrown lights as lures, and the headlamp.
 - Positional sound for every noise event, muffled by walls like the noise
   itself, and distinct sounds for each zombie type.
 - Zombies: crawler, runner, screamer, bloater. Flow fields and the background
@@ -148,7 +152,11 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
-- Voxel light (dark interiors), and body temperature, clothing warmth and rain.
+- Voxel light: interiors pitch black at night and dim by day. Light through
+  windows and doors can be seen from outside.
+- Body temperature, clothing warmth, and rain.
+- The night sky: the moon and stars, moon phases, and overcast nights that come
+  with the rain.
 - Driveable surfaces in worldgen, ready for vehicles.
 - The dystopian dressing: notices, marked doors, roadblocks and triage sites
   in the templates, a radio with the emergency broadcast, and distant sounds
@@ -160,7 +168,8 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Doors and locks, and zombies bashing doors (brutes arrive here).
 - Electricity: generators, batteries, solar panels, wires, lights and
   appliances, with catch-up while away.
-- Fire: burning, spreading, smoke and light. Molotovs.
+- Fire: burning, spreading, smoke and light. Molotovs. Lanterns and fixed
+  lamps, and covering windows so a lit base doesn't draw a crowd.
 
 ### 6. Wheels
 

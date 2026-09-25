@@ -88,7 +88,7 @@ save, and continue the next day.
 | --- | --- |
 | Crafting, disassembly, repair, skills, books | 2 |
 | Body parts and wounds, firearms, noise from walls (and sound muffled by walls), other zombie types, hordes | 3 |
-| Region map, towns, far terrain, voxel light, temperature and weather, the dystopian dressing and the radio broadcast | 4 |
+| Region map, towns, far terrain, voxel light (dark interiors), the night sky (moon, stars, overcast), temperature and weather, the dystopian dressing and the radio broadcast | 4 |
 | Construction, locks, bashing doors, electricity, fire | 5 |
 | Vehicles | 6 |
 
@@ -98,6 +98,17 @@ Also out:
   0.5 m blocks, each step is one block and the player steps up it
   automatically.
 - **Glass and transparent blocks.** Windows are openings with a frame.
+- **Dark interiors.** Until voxel light arrives in Slice 4, a room is lit by the
+  sky like the ground outside: as dark as the night, but no darker, and not
+  dark by day. Read the answers to the Dread playtest question with that in
+  mind. Slice 1 must not make voxel light harder to add:
+  - the flashlight is a three.js light, since voxel light won't cover moving
+    lights (see [CHALLENGES.md](CHALLENGES.md#9-lighting))
+  - whether the player is lit, for shambler sight, is one function of the sky
+    and carried lights; voxel light later changes only where the sky part
+    comes from
+  - the time of day stays in the lights and fog (`render/sky.ts`), never baked
+    into chunk meshes; per-vertex sunlight joins AO in the vertex colours
 
 ## Milestones
 
@@ -275,7 +286,8 @@ test), and every template passes the validator.
   45-minute session.
 - Health as a single pool, with regeneration while needs are met. Eating and
   drinking are short actions.
-- The flashlight uses battery charge. Swapping batteries is handling.
+- The flashlight uses battery charge. Swapping batteries is handling. It's a
+  three.js spot light (see "Dark interiors" under Scope).
 - Death: a screen with the time survived and a looting summary, then a new
   world.
 
@@ -287,7 +299,9 @@ decay (compared against live ticking), and death.
 - Zombie types are data. Slice 1 has only the shambler: slow when wandering,
   shuffling when chasing, and it can't open doors.
 - Perception: a sight cone with a ray cast, reduced at night, plus hearing
-  player footstep noise (more when sprinting).
+  player footstep noise (more when sprinting). A lit flashlight is seen from
+  much further than the player in the dark. Whether the player is lit is one
+  function, ready for voxel light (see "Dark interiors" under Scope).
 - Movement: steering, with step-up and a jump when blocked, using the same body
   physics as the player. A lost shambler wanders back.
 - Melee in both directions: the zombie attack has reach and a cooldown; the
@@ -443,7 +457,7 @@ A zombie type:
 | Safe radius for compression | 30 m |
 | Spawn time and state | 19:30. Calories 40%, hydration 35%, fatigue 70% |
 | Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.2 s per litre. Opening a door 0.6 s |
-| Shambler perception | Sight 25 m by day, 10 m at night (flashlight on: 25 m). Hearing: jogging 8 m, sprinting 15 m |
+| Shambler perception | Sight 25 m by day, 10 m at night; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: jogging 8 m, sprinting 15 m |
 | Shambler count | 6–10 in the hamlet |
 
 ## Playtest plan

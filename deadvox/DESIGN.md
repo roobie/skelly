@@ -334,6 +334,40 @@ renders as a small model, or a generic bundle if the item has no model.
   (see the screamer below). Stealth is a matter of managing noise and staying
   out of sight.
 
+## Light
+
+Nights are dark and interiors are pitch black, so you have to bring light. Light
+is the visual side of noise: it lets you see, and it lets them see you.
+
+- **Sources you carry** (the numbers are starting points):
+
+  | Source | Light | Seen from | The catch |
+  | --- | --- | --- | --- |
+  | Matches, lighter | A small circle | 10 m | Matches last seconds; takes a hand |
+  | Candle | Small and steady | 15 m | Blows out if you move fast |
+  | Glowstick | Dim, green | 15 m | Used once; can be thrown |
+  | Headlamp | A weak beam | 30 m | Batteries; leaves both hands free |
+  | Flashlight | A beam, instant on and off | 40 m along the beam | Batteries; takes a hand |
+  | Lantern | Bright, all around | 50 m | Bulky; can be set down |
+  | Torch | Bright, all around | 60 m | Can't be switched off, only dropped or doused; burns out; sets things alight |
+  | Road flare | Very bright, red | 80 m | Used once; can be thrown |
+
+- **Being seen.** Zombies see a light in their view cone from much further than
+  they see you in the dark (the "seen from" column), and they see you when
+  you're lit, by your own light or anyone else's. Pointing a flashlight down or
+  covering the lens shortens the distance.
+- **Lit buildings are beacons.** Light through doors and windows can be seen
+  from outside. A lamp in a house at night draws attention unless the windows
+  are covered or boarded.
+- **Light as a lure.** A thrown flare, a glowstick or a fire pulls zombies
+  towards it, the way noise does, which can clear a path. The lantern zombie
+  works the same system against you.
+- **Making and keeping light:** torches and candles are crafted (rags, sticks,
+  wax, fuel), batteries are scavenged and later charged, and fixed lamps need
+  power (see [Base building](#base-building-and-electricity)).
+- **Hands:** most lights take a hand, which matters with a two-handed weapon.
+  The headlamp frees them, at the cost of a weaker beam.
+
 ## Zombies
 
 ### Types are data
@@ -443,10 +477,16 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   palette is muted and grey; the saturated colours are the ones that mean
   something: warning signs, blood, fire and the glow of hot zombies.
 - **Day and night** from sun and sky colour and fog. Nights are dark enough
-  that a flashlight matters.
+  that a flashlight matters, and darkest in the dead of night (about 23:00 to
+  03:30).
+- **The night sky:** the moon and stars show on clear nights. The moon goes
+  through its phases over about a month of game days. On a clear night near
+  full moon you can see shapes and find your way outdoors without a light; on
+  a new moon, or when it's overcast, you can't. Clouds hide the moon and stars.
 - **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
-  spread through the block grid. It's needed for dark interiors and comes after
-  Slice 1.
+  spread through the block grid. Inside buildings it's pitch black at night and
+  dim by day, lit only by what comes in through doors and windows. It comes
+  after Slice 1.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.

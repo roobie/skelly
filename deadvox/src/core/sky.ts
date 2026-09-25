@@ -39,6 +39,18 @@ const NIGHT: Look = {
   fogFar: 0.5,
 };
 
+/** The dead of night: the dusk glow is gone, and there's barely more than shapes. */
+const DEEP_NIGHT: Look = {
+  sky: hex(0x04_05_08),
+  lightColor: hex(0x6a_76_90),
+  lightIntensity: 0.05,
+  ambientSky: hex(0x1c_23_30),
+  ambientGround: hex(0x05_05_05),
+  ambientIntensity: 0.1,
+  fogNear: 0.05,
+  fogFar: 0.35,
+};
+
 const DAWN: Look = {
   sky: hex(0x8a_80_7e),
   lightColor: hex(0xf0_b0_88),
@@ -75,12 +87,14 @@ const DUSK: Look = {
 
 /** Keyframes by hour; the look is interpolated between them and wraps at midnight. */
 const KEYS: readonly (readonly [number, Look])[] = [
+  [3.5, DEEP_NIGHT],
   [5, NIGHT],
   [6.5, DAWN],
   [8.5, DAY],
   [17.5, DAY],
   [19.5, DUSK],
   [21, NIGHT],
+  [23, DEEP_NIGHT],
 ];
 
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
