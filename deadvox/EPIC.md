@@ -15,7 +15,7 @@ risks in [CHALLENGES.md](CHALLENGES.md), and the first slice in detail in
 > better gear, and fortify a house with a generator and lights. You piece a car
 > together from wrecks and drive to the military cordon. Eventually you go down
 > into a lab to find out why some of the dead glow. Death is permanent, and a
-> good run lasts many hours.
+> good run lasts many hours. The nights are the worst of it.
 
 ### Exit criteria
 
@@ -31,6 +31,8 @@ risks in [CHALLENGES.md](CHALLENGES.md), and the first slice in detail in
   thirst, fatigue, stamina, temperature.
 - Melee and firearms (from gungen), noise, and zombie senses (sight, hearing,
   smell).
+- Positional sound for every noise event, muffled by walls, plus zombie sounds
+  and ambience driven by the simulation. See [Audio](DESIGN.md#audio).
 - Zombie level-of-detail tiers with hordes, and evolution over time.
 - A region map: roads, towns, and points of interest in tiers 0–3, including
   underground labs.
@@ -62,6 +64,9 @@ risks in [CHALLENGES.md](CHALLENGES.md), and the first slice in detail in
 - Plays in current Chrome, Firefox and Safari.
 - A new player learns the controls and the inventory without reading this
   repo: an onboarding card, plus contextual hints.
+- It's frightening: in the Slice 8 playtest, most players say they were afraid,
+  and what scared them came from the systems (the dark, sounds, being hunted),
+  not from a scripted moment. See [Dread](DESIGN.md#dread).
 - CI is green, including the golden saves and scenario tests. Every Biome and
   TypeScript check stays on (see the root README).
 
@@ -79,10 +84,10 @@ risks in [CHALLENGES.md](CHALLENGES.md), and the first slice in detail in
 
 | # | Name | Playtest question |
 | --- | --- | --- |
-| 1 | **The loot run** | Is looting a house in real time, with handling time, tense and fun? Is 0.5 m the right scale? |
+| 1 | **The loot run** | Is looting a house in real time, with handling time, tense and fun? Is 0.5 m the right scale? Is the first night frightening? |
 | 2 | **Craft and mend** | Does crafting from scavenged materials give looting a purpose? |
-| 3 | **Flesh and noise** | Is combat readable, and do noise and wounds change how you play? |
-| 4 | **The region** | Does the open world pull you from town to town? |
+| 3 | **Flesh and noise** | Is combat readable, and do noise and wounds change how you play? Do players listen before they move? |
+| 4 | **The region** | Does the open world pull you from town to town? Does it feel like a place that was abandoned? |
 | 5 | **Holding ground** | Is a base worth building and defending? |
 | 6 | **Wheels** | Are vehicles worth the effort to build and keep running? |
 | 7 | **The cordon and the labs** | Does the weird endgame feel earned and grounded? |
@@ -107,6 +112,7 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - needs, and health as a single pool
 - shamblers
 - sleep in compressed time
+- basic sound: footsteps, doors, shamblers and night ambience
 - saves
 - a playtest build that logs local metrics
 
@@ -129,6 +135,8 @@ See [SLICE-1.md](SLICE-1.md). It covers:
   noise and recoil.
 - The noise system (sources, reduction by walls), sight at night and when
   crouching, and a smell trail.
+- Positional sound for every noise event, muffled by walls like the noise
+  itself, and distinct sounds for each zombie type.
 - Zombies: crawler, runner, screamer, bloater. Flow fields and the background
   tier; the first hordes.
 - Input recording and replay for bug reports.
@@ -142,6 +150,9 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Far-terrain level of detail, and worldgen in workers.
 - Voxel light (dark interiors), and body temperature, clothing warmth and rain.
 - Driveable surfaces in worldgen, ready for vehicles.
+- The dystopian dressing: notices, marked doors, roadblocks and triage sites
+  in the templates, a radio with the emergency broadcast, and distant sounds
+  from the simulation (see [Dystopia](DESIGN.md#dystopia)).
 
 ### 5. Holding ground
 
@@ -189,7 +200,7 @@ If version 1 is running late, drop these in this order:
 6. Procedural houses (templates only, with more variety).
 
 Never cut these: handling time, pockets, compressed long actions, crafting with
-qualities, the body model, saves. They are the game.
+qualities, the body model, saves, dark nights and sound. They are the game.
 
 ## How each slice runs
 

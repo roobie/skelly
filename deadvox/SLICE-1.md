@@ -23,6 +23,9 @@ save, and continue the next day.
    interruption clear and fair?
 5. **Threat:** are a few dumb shamblers enough threat to make questions 1 and 4
    meaningful?
+6. **Dread:** is the first night frightening? What scared players, and did it
+   come from the dark and from sounds rather than from something that looked
+   scripted?
 
 ## What a playtester does
 
@@ -36,7 +39,9 @@ save, and continue the next day.
 4. While they're in the inventory screen, a shambler bangs into the door they
    left open. They drop what they were holding, grab a crowbar from the pile on
    the floor, and fight it off.
-5. Drinks, eats, and turns on a flashlight. Night is dark.
+5. Drinks, eats, and turns on a flashlight. Night is dark. Something shuffles
+   outside, closer than they'd like; they can't see it, and switch the
+   flashlight off.
 6. Closes the door, lies down on a bed and sleeps. The clock spins. At 03:40
    they're woken ("You hear something outside"), deal with it, and go back to
    sleep.
@@ -71,6 +76,7 @@ save, and continue the next day.
 - Shamblers: perception (sight and player noise), chase with step-up and jump,
   melee in both directions, and simple box-figure rendering.
 - Rest and sleep as a long action with compression and interruptions.
+- Basic sound: positional footsteps, doors, shamblers and night ambience.
 - Saves: one slot, OPFS with IndexedDB fallback, autosave, Continue, a save
   version, and a golden-save test.
 - A playtest build: debug overlay, local session metrics with JSON export, and
@@ -81,8 +87,8 @@ save, and continue the next day.
 | Feature | Slice |
 | --- | --- |
 | Crafting, disassembly, repair, skills, books | 2 |
-| Body parts and wounds, firearms, noise from walls, other zombie types, hordes | 3 |
-| Region map, towns, far terrain, voxel light, temperature and weather | 4 |
+| Body parts and wounds, firearms, noise from walls (and sound muffled by walls), other zombie types, hordes | 3 |
+| Region map, towns, far terrain, voxel light, temperature and weather, the dystopian dressing and the radio broadcast | 4 |
 | Construction, locks, bashing doors, electricity, fire | 5 |
 | Vehicles | 6 |
 
@@ -309,7 +315,24 @@ late, and playtests confirm players understand why they were woken.
 **Done when:** save → reload → identical state (a state hash in a scenario
 test), and the golden save loads.
 
-### 1.10 Playtest build
+### 1.10 Sound
+
+- Web Audio, started by the Play click (browsers block sound until the first
+  click).
+- Positional sounds with distance falloff. Walls don't muffle them yet; that
+  comes with the noise system in Slice 3.
+- The player: footsteps by surface and speed, doors, eating and drinking, the
+  flashlight switch, and heavy breathing when stamina is low.
+- Shamblers: shuffling, groans, hits, and bumping into doors. At night they're
+  heard beyond the 10 m they can be seen, so sound comes first.
+- Ambience: wind, quieter at night. No music during play.
+- Sounds are content: ids in the base pack, checked by the validator.
+
+**Done when:** the validator fails on a missing sound id or file, and a
+scenario test shows every noise event (footsteps, doors, fights) also emits a
+sound event with its position.
+
+### 1.11 Playtest build
 
 - A debug overlay (F3):
   - frame time broken down into simulation, render and meshing queue
@@ -399,6 +422,7 @@ A zombie type:
 | Wearables with pockets | 8 | jeans, cargo pants, hoodie, jacket, vest, fanny pack, school backpack, hiking backpack |
 | Food and drink | 8 | canned beans, crackers, apple, chocolate, soda, water bottle, juice, canned soup |
 | Tools and weapons | 8 | crowbar, hammer, kitchen knife, baseball bat, pipe, flashlight, lighter, can opener |
+| Sounds | about 20 | footsteps on grass, asphalt, wood and carpet (walk, jog, sprint); door open and close; shambler shuffle, groan, hit and door bump; flashlight switch; eating; drinking; breathing; wind |
 | Other | about 8 | batteries, bandage, painkillers, rag, duct tape, nails, scrap metal, book (inert until Slice 2) |
 
 ## Tunables to start from
@@ -423,8 +447,9 @@ A zombie type:
   - how long people spend in the inventory screen
   - whether they pick pockets deliberately
   - their first reaction to an interruption
+  - what they do when they hear something they can't see
   - where they get stuck
-- **Afterwards:** the 5 playtest questions, plus the most annoying moment and
+- **Afterwards:** the 6 playtest questions, plus the most annoying moment and
   the best moment.
 - **Collect:** the metrics JSON and the notes. The findings are written back
   into this file and into [DESIGN.md](DESIGN.md) and
@@ -432,7 +457,7 @@ A zombie type:
 
 ## Definition of done
 
-- Milestones 1.0–1.10 are merged and deployed, and CI is green: Biome, types,
+- Milestones 1.0–1.11 are merged and deployed, and CI is green: Biome, types,
   tests, content validation, golden save.
 - The frame budget from 1.0 holds in the hamlet at night with every shambler
   active.
