@@ -1,11 +1,13 @@
 // The inventory screen (DESIGN.md, "Inventory screen"): what you hold and wear, with
-// each pocket drawn as its grid, and the piles within reach. Items move by drag and
-// drop, with the cells where they'd go previewed, or by keys. Every move goes through
-// the handling queue, so it takes real seconds while the world keeps running.
+// each pocket drawn as its grid, and the piles and furniture within reach. Items move
+// by drag and drop, with the cells where they'd go previewed, or by keys. Every move
+// goes through the handling queue, so it takes real seconds while the world keeps
+// running. Furniture shows its contents once it has been searched.
 
+import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
-import { type Inventory, PILE_GRID, type Pile, type Target } from '../core/inventory.ts';
+import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { bestPocket, dropTarget, options, toHands } from '../game/targets.ts';
@@ -32,6 +34,14 @@ export interface ScreenHooks {
   nearby: () => Pile[];
   /** Distance in metres from the player to a pile. */
   distance: (pile: Pile) => number;
+  /** Furniture with pockets within reach, nearest first. */
+  containers: () => BlockEntity[];
+  /** Distance in metres from the player to a piece of furniture. */
+  entityDistance: (entity: BlockEntity) => number;
+  /** Queues a search of a container; says why not, or undefined. */
+  search: (entity: BlockEntity) => string | undefined;
+  /** Whether a search of it is queued. */
+  searching: (entity: BlockEntity) => boolean;
   notice: (text: string) => void;
   /** Assigns a quickbar slot (0–4). */
   assign: (slot: number, item: Item) => void;
@@ -66,6 +76,7 @@ export class InventoryScreen {
   private readonly queue: HandlingQueue;
   private readonly hooks: ScreenHooks;
   private readonly byUid = new Map<number, Item>();
+  private readonly entityByUid = new Map<number, BlockEntity>();
   private order: Item[] = [];
   private drawn = '';
   private drag: Drag | undefined;
@@ -107,7 +118,11 @@ export class InventoryScreen {
       .nearby()
       .map((p) => p.pos.join(','))
       .join(';');
-    const key = `${this.inv.version}|${this.selected?.uid}|${piles}|${this.queue.jobs.length}`;
+    const containers = this.hooks
+      .containers()
+      .map((e) => e.uid)
+      .join(',');
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${this.queue.jobs.length}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -131,6 +146,11 @@ export class InventoryScreen {
     }
     if (e.code.startsWith('Arrow')) {
       this.step(e.code === 'ArrowDown' || e.code === 'ArrowRight' ? 1 : -1);
+      return true;
+    }
+    if (e.code === 'KeyS') {
+      const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
+      this.report(next ? this.hooks.search(next) : 'Nothing here to search');
       return true;
     }
     if (!item) {
@@ -191,23 +211,26 @@ export class InventoryScreen {
 
   private rotateInPlace(item: Item): void {
     const at = this.inv.locate(item);
-    if (at?.kind !== 'pocket' && at?.kind !== 'pile') {
-      return;
+    const spot = at && spotOf(at);
+    const target = spot && sameGrid(at, { ...spot, rotated: !spot.rotated });
+    if (target) {
+      this.report(this.tryQueue(item, target));
     }
-    const spot = { x: at.placed.x, y: at.placed.y, rotated: !at.placed.rotated };
-    const target: Target =
-      at.kind === 'pocket'
-        ? { kind: 'pocket', owner: at.owner, pocket: at.pocket, at: spot }
-        : { kind: 'pile', pos: at.pile.pos, at: spot };
-    this.report(this.tryQueue(item, target));
   }
 
   /** Takes every item of the same category from the piles within reach. */
   private takeAllLike(item: Item): void {
     const { category } = defOf(this.inv.registry, item.type);
     let queued = 0;
-    for (const pile of this.hooks.nearby()) {
-      for (const { item: other } of [...pile.items]) {
+    const around = [
+      ...this.hooks.nearby().map((p) => p.items),
+      ...this.hooks
+        .containers()
+        .filter((c) => c.searched)
+        .flatMap((c) => c.pockets ?? []),
+    ];
+    for (const grid of around) {
+      for (const { item: other } of [...grid]) {
         if (defOf(this.inv.registry, other.type).category !== category) {
           continue;
         }
@@ -232,6 +255,7 @@ export class InventoryScreen {
 
   private render(): void {
     this.byUid.clear();
+    this.entityByUid.clear();
     this.order = [];
     const head = el('header', 'inv-head');
     head.append(
@@ -240,7 +264,7 @@ export class InventoryScreen {
       el(
         'span',
         'inv-help',
-        'Drag items · H hands · W wear · D drop · E take · R rotate · 1–5 quickbar · X cancel · Tab close',
+        'Drag items · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close',
       ),
     );
     const body = el('div', 'inv-body');
@@ -323,7 +347,39 @@ export class InventoryScreen {
       box.append(this.grid(PILE_GRID, [], `pile:${feet.join(',')}`));
       pane.append(box);
     }
+    for (const entity of this.hooks.containers()) {
+      pane.append(this.container(entity));
+    }
     return pane;
+  }
+
+  /** A piece of furniture: its pockets once searched, or a button to search it. */
+  private container(entity: BlockEntity): HTMLElement {
+    this.entityByUid.set(entity.uid, entity);
+    const def = this.inv.entities.defOf(entity);
+    const box = el('div', 'inv-pile');
+    box.append(el('div', 'inv-pile-label', `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`));
+    if (entity.searched) {
+      def.container?.pockets.forEach((spec, i) => {
+        if (def.container!.pockets.length > 1 || spec.name) {
+          box.append(el('span', 'inv-pocket-label', `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handling)}`));
+        }
+        box.append(
+          this.grid({ w: spec.grid[0], h: spec.grid[1] }, entity.pockets?.[i] ?? [], `furniture:${entity.uid}:${i}`),
+        );
+      });
+      return box;
+    }
+    if (this.hooks.searching(entity)) {
+      box.append(el('p', 'inv-muted', 'Searching…'));
+      return box;
+    }
+    const button = el('button', 'inv-option');
+    button.type = 'button';
+    button.append(el('span', '', 'Search it (S)'), el('span', 'inv-time', secs(searchTime(def))));
+    button.addEventListener('click', () => this.report(this.hooks.search(entity)));
+    box.append(button);
+    return box;
   }
 
   /** A bag lying on the floor shows its pockets, so it can be looted without picking it up. */
@@ -493,7 +549,7 @@ export class InventoryScreen {
     this.selected = item;
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
-    const rotated = (at?.kind === 'pocket' || at?.kind === 'pile') && at.placed.rotated;
+    const rotated = (at && spotOf(at)?.rotated) ?? false;
     this.drag = {
       item,
       grab: [Math.min(e.clientX - rect.left, CELL / 2), Math.min(e.clientY - rect.top, CELL / 2)],
@@ -606,7 +662,7 @@ export class InventoryScreen {
     }
     const { ok, reason } = this.dropCheck(drag.item, spec, target);
     drag.hover = { target, ok, reason };
-    if (!(spec.startsWith('pocket:') || spec.startsWith('pile:'))) {
+    if (!(spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:'))) {
       zone.classList.add(ok ? 'drop-ok' : 'drop-no');
       return;
     }
@@ -633,6 +689,10 @@ export class InventoryScreen {
       case 'pile': {
         const pos = a!.split(',').map(Number) as Vec3;
         return { kind: 'pile', pos, at };
+      }
+      case 'furniture': {
+        const entity = this.entityByUid.get(Number(a));
+        return entity ? { kind: 'furniture', entity, pocket: Number(b), at } : undefined;
       }
       default:
         return undefined;

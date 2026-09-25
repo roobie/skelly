@@ -23,5 +23,6 @@ if (bench === 'report') {
   const { blockSize, radiusM } = currentConfig(run);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
   const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, blockSize);
+  config.site = 'testHouse'; // defined in metres, so it compares across block sizes
   startBench(createEngine(config, view, stats), run, stats);
 }

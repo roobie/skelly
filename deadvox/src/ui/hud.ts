@@ -42,6 +42,8 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined): string
       return 'worn';
     case 'pocket':
       return `${inv.name(at.owner).toLowerCase()} · ${(inv.pocketHandling(at.owner, at.pocket) + 0.05 * cells).toFixed(1)} s`;
+    case 'furniture':
+      return `in the ${inv.entities.defOf(at.entity).name.toLowerCase()}`;
     default:
       return 'on the floor';
   }

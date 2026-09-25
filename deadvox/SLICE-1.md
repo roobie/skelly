@@ -309,10 +309,21 @@ yet. The block-editing tools moved to build mode (B), only with `?debug=1`.
   the buildings. Loot is rolled per container from its loot table when the
   chunk generates.
 - Searching a container you haven't opened takes a moment before its contents
-  show.
+  show. E opens and closes the door or searches the container in the crosshair.
 
 **Done when:** the hamlet generates the same in any chunk order (property
 test), and every template passes the validator.
+
+**Status:** implemented. `test/hamlet.test.ts` generates every column the
+hamlet touches in order, shuffled and reversed, each with a fresh hamlet, and
+compares every chunk and every piece of furniture with its loot; it runs for two
+seeds. The base pack's five templates pass the validator, and the tests also
+check that furniture stands in air on a floor, doors have wall above them, lots
+are flat and the road is asphalt. Furniture and doors are drawn as plain boxes
+and panels until 1.5.5. Loot is rolled from a stream keyed by each container's
+position, so no chunk's loot depends on another's. The hamlet goes on the
+flattest site within 160 m of the origin. The starting pile of things by the
+spawn point is gone: the player starts on the road in jeans and a hoodie.
 
 ### 1.5.5 Item models
 

@@ -3,12 +3,13 @@
 // workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
 // and AO at chunk borders are correct and never need a second pass.
 
+import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { Scale } from '../core/scale.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
 import { extractPadded, isEnclosed } from '../core/world.ts';
-import { generateColumn, type TerrainBlocks } from '../core/worldgen.ts';
+import { generateColumn, type Surface, type TerrainBlocks } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
@@ -32,6 +33,10 @@ export interface StreamerOptions {
   scale: Scale;
   /** Stamped into every column as it generates. */
   structures: readonly BlockBox[];
+  /** Changes to the ground (flattened lots, roads). */
+  surface?: Surface | undefined;
+  /** Writes buildings into each chunk as it generates. */
+  stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (square). Terrain is generated one column further out. */
   radius: number;
   /** When given, per-column and per-chunk timings are appended here. */
@@ -58,6 +63,8 @@ export class Streamer {
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
   private center: [number, number] = [Number.NaN, Number.NaN];
+  /** Called after a column is generated, to add what stands in it (furniture). */
+  onColumn: (cx: number, cz: number) => void = () => undefined;
 
   constructor(opts: StreamerOptions) {
     this.opts = opts;
@@ -211,9 +218,9 @@ export class Streamer {
     if (this.generated.has(col)) {
       return false;
     }
-    const { world, seed, terrain, scale, structures, stats } = this.opts;
+    const { world, seed, terrain, scale, structures, surface, stamp, stats } = this.opts;
     const start = performance.now();
-    const column = generateColumn({ seed, blocks: terrain, scale }, cx, cz, structures);
+    const column = generateColumn({ seed, blocks: terrain, scale, surface, stamp }, cx, cz, structures);
     stats?.genMs.push(performance.now() - start);
     for (const chunk of column) {
       if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {
@@ -225,6 +232,7 @@ export class Streamer {
       }
     }
     this.generated.add(col);
+    this.onColumn(cx, cz);
     return true;
   }
 

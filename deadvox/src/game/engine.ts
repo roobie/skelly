@@ -1,12 +1,15 @@
 // Builds everything play and benchmark modes share: content, world, streaming,
 // renderer and scene. The voxel grid and physics are in blocks; the scene is in
-// metres, so chunk meshes are scaled by the block size.
+// metres, so chunk meshes are scaled by the block size. The game's world has the
+// hamlet near spawn; the benchmark's has milestone 1.0's test house.
 
 import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { BlockEntities } from '../core/blockEntities.ts';
 import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { DAY_SKY } from '../core/sky.ts';
-import { rasterize } from '../core/structure.ts';
+import { type BlockBox, rasterize } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { terrainHeightMetres } from '../core/worldgen.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
@@ -21,6 +24,11 @@ export interface Engine {
   /** Content problems, one per line; empty when all content loaded. */
   contentErrors: string;
   world: World;
+  /** Furniture and doors. The game adds them as their columns generate. */
+  entities: BlockEntities;
+  /** The hamlet, when this world has one. */
+  hamlet: Hamlet | undefined;
+  /** Blocks and block entities that stop movement. */
   isSolid: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
   renderer: WebGLRenderer;
@@ -29,25 +37,14 @@ export interface Engine {
   meshes: ChunkMeshes;
   /** The scene's lights and fog, for time of day. Starts in daylight, which the benchmark keeps. */
   sky: SkyTargets;
-  /** Player start in metres (feet), and the yaw that faces the test house. */
+  /** Player start in metres (feet), and the yaw that faces the hamlet or the test house. */
   spawn: { pos: Vec3; yaw: number };
 }
 
-const loadContent = (): { registry: Registry; contentErrors: string } => {
-  // Base content is bundled. Mods would be appended to this list (from URLs or local files).
-  const files = import.meta.glob<unknown>('../content/base/*.json', { eager: true, import: 'default' });
-  const sources: ContentSource[] = Object.entries(files)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([source, data]) => ({ source, data }));
-  const { registry, issues } = buildRegistry(sources);
-  return { registry, contentErrors: issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n') };
-};
-
-export const createEngine = (config: GameConfig, view: HTMLElement, stats?: StreamerStats): Engine => {
-  const { registry, contentErrors } = loadContent();
-  const { seed, scale, radiusM } = config;
+/** The test house, rasterized, and a spawn point facing its front door. */
+const testHouseSite = (config: GameConfig, registry: Registry) => {
+  const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
-
   // The test house sits on a level lot at a whole-metre height, so it lines up with any block size.
   const floor = Math.round(terrainHeightMetres(seed, HOUSE_OFFSET[0] + LOT_CENTRE[0], HOUSE_OFFSET[1] + LOT_CENTRE[1]));
   const house = testHouse(
@@ -64,11 +61,42 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     },
     scale.blockSize,
   );
+  const spawn: Vec3 = [HOUSE_OFFSET[0] + SPAWN_OFFSET[0], floor, HOUSE_OFFSET[1] + SPAWN_OFFSET[2]];
+  return { structures: rasterize(house, scale.blockSize), spawn: { pos: spawn, yaw: SPAWN_YAW } };
+};
+
+/** Whether content has what the hamlet needs; broken content falls back to the test house. */
+const canBuildHamlet = (config: GameConfig, registry: Registry): boolean =>
+  config.site === 'hamlet' &&
+  config.scale.blockSize === HAMLET_BLOCK_SIZE &&
+  registry.blockIds.has('asphalt') &&
+  HAMLET_TEMPLATES.every((t) => registry.templates.has(t));
+
+const loadContent = (): { registry: Registry; contentErrors: string } => {
+  // Base content is bundled. Mods would be appended to this list (from URLs or local files).
+  const files = import.meta.glob<unknown>('../content/base/*.json', { eager: true, import: 'default' });
+  const sources: ContentSource[] = Object.entries(files)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([source, data]) => ({ source, data }));
+  const { registry, issues } = buildRegistry(sources);
+  return { registry, contentErrors: issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n') };
+};
+
+export const createEngine = (config: GameConfig, view: HTMLElement, stats?: StreamerStats): Engine => {
+  const { registry, contentErrors } = loadContent();
+  const { seed, scale, radiusM } = config;
+  const id = (name: string) => blockId(registry, name);
+
+  const hamlet = canBuildHamlet(config, registry) ? new Hamlet(seed, registry, scale) : undefined;
+  const site: { structures: BlockBox[]; spawn: Engine['spawn'] } = hamlet
+    ? { structures: [], spawn: hamlet.spawn }
+    : testHouseSite(config, registry);
 
   const world = new World();
+  const entities = new BlockEntities(registry);
   const isSolid = (x: number, y: number, z: number) => {
     const block = world.getBlock(x, y, z);
-    return block !== 0 && registry.blocks[block]!.solid;
+    return (block !== 0 && registry.blocks[block]!.solid) || entities.isSolid(x, y, z);
   };
 
   const renderer = new WebGLRenderer({ antialias: true });
@@ -101,17 +129,20 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     terrain: { grass: id('grass'), dirt: id('dirt'), stone: id('stone'), sand: id('sand') },
     colors: blockColors(registry),
     scale,
-    structures: rasterize(house, scale.blockSize),
+    structures: site.structures,
+    surface: hamlet?.surface,
+    stamp: hamlet ? (chunk) => hamlet.stamp(chunk) : undefined,
     radius: config.radiusChunks,
     ...(stats ? { stats } : {}),
   });
 
-  const spawn: Vec3 = [HOUSE_OFFSET[0] + SPAWN_OFFSET[0], floor, HOUSE_OFFSET[1] + SPAWN_OFFSET[2]];
   return {
     config,
     registry,
     contentErrors,
     world,
+    entities,
+    hamlet,
     isSolid,
     streamer,
     renderer,
@@ -119,6 +150,6 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     camera,
     meshes,
     sky,
-    spawn: { pos: spawn, yaw: SPAWN_YAW },
+    spawn: site.spawn,
   };
 };

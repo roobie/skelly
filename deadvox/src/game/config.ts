@@ -18,12 +18,22 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (`?debug=1`). */
   debug: boolean;
+  /** What stands near spawn: the hamlet, or milestone 1.0's test house (the benchmark's scene). */
+  site: 'hamlet' | 'testHouse';
 }
 
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE): GameConfig => {
   const scale = makeScale(blockSize);
-  return { seed, scale, radiusM, radiusChunks: chunksFor(scale, radiusM), start: SPAWN_TIME, debug: false };
+  return {
+    seed,
+    scale,
+    radiusM,
+    radiusChunks: chunksFor(scale, radiusM),
+    start: SPAWN_TIME,
+    debug: false,
+    site: 'hamlet',
+  };
 };
 
 /** Reads `?seed=`, `?radius=` (metres), `?time=HH:MM` and `?debug=1`, falling back to defaults. */

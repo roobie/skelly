@@ -54,7 +54,10 @@ This file describes the code as it is. The game's design and roadmap are in
 | Inventory screen | `ui/inventoryScreen.ts`, plain DOM: pockets and piles drawn as grids, pointer-based drag and drop with a preview of the cells, R to rotate while dragging, keys for the common moves, and a details panel that lists every place an item can go with its time or the reason it can't. The quickbar and handling progress are in `ui/hud.ts` |
 | Time of day | `core/sky.ts` interpolates keyframes (night, dawn, day, dusk) for the sky colour, sun or moon light, ambient light and fog; `render/sky.ts` applies them each frame. The benchmark stays in daylight |
 | Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
-| Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
+| Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The benchmark's test house is built this way |
+| Templates | ASCII layers in half-metre blocks (`core/templates.ts`). A template is compiled once against the registry: each cell gets a block id, and furniture marks become pieces anchored at their lowest corner. A placement turns it by quarter turns and stamps whatever part falls inside a chunk |
+| The hamlet | `core/hamlet.ts`, the game's world near spawn (the benchmark keeps the test house): an asphalt road with five buildings on lots beside it, on the flattest site within 160 m of the origin. Lots and the road are flattened and blended into the ground by a `Surface` that worldgen applies per column; buildings are stamped per chunk; furniture comes with its column, with loot rolled from a stream keyed by its position (`core/loot.ts`). All of it is a pure function of the seed and position, so chunks can generate in any order |
+| Block entities | `core/blockEntities.ts`: furniture and doors, each anchored at its lowest corner with every cell pointing back at it. Closed doors and solid furniture count as solid for physics and ray casts. A container shows its contents once searched (1–3 s by size); `core/inventory.ts` treats its pockets as another place items can be, within 2 m. They're drawn as boxes in their colour, and doors as panels that swing inward (`render/furniture.ts`). E opens and closes the door or searches the container in the crosshair; searching and doors are timed actions in the handling queue. Entities stay in memory once added, so a column that generates again doesn't duplicate them |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
 | Assets and credits | `content/base/assets/manifest.json` lists where each asset file came from; `core/assets.ts` checks it (CC0 and CC BY only, and CC BY needs an author and a link, each file listed once). The start and pause card's Credits link shows `ui/credits.ts`, drawn from it. `npm run validate` checks the base manifest, and any `manifest.json` passed to it |
 | Content | JSON in `src/content/base`, with sections for blocks, items, furniture, loot tables, templates and zombie types. Valibot schemas (`core/schema.ts`) check each file and give the TypeScript types; `core/content.ts` merges files in order and then checks references between them. An override keeps the block's runtime id. A file with any issue, including a broken reference, is skipped whole |
@@ -68,13 +71,14 @@ This file describes the code as it is. The game's design and roadmap are in
 
 ```
 src/
-  core/        pure logic: coords, scale, chunk, world, worldgen, structure, storage, mesher,
-               raycast, physics, content and schema, assets, items, inventory, handling; the simulation core: sim, clock,
-               scheduler, compression, events, random, entities, needs, sky
+  core/        pure logic: coords, scale, chunk, world, worldgen, structure, templates, hamlet, storage,
+               mesher, raycast, physics, content and schema, assets, items, inventory, handling,
+               block entities, loot; the simulation core: sim, clock, scheduler, compression, events,
+               random, entities, needs, sky
   content/     JSON content packs (base/): blocks, items, furniture, loot, templates, zombies;
                assets/manifest.json lists where each asset file came from (URL, author, licence)
   worker/      mesh worker + message types
-  render/      three.js chunk meshes, sky and lights, piles
+  render/      three.js chunk meshes, sky and lights, piles, furniture
   game/        engine setup, play mode, streaming, player controller, input, test house,
                starting loadout, move targets, build mode
   bench/       milestone 1.0 benchmark: runner, stats, results page
@@ -98,12 +102,15 @@ npm run validate   # base content; add paths to validate a mod on top
 - All blocks render as opaque cubes. `solid: false` only affects collision.
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
-  column. Move it to the workers when worldgen grows (roads, towns, buildings).
+  column. Move it to the workers when worldgen grows (towns, a region map).
 - Needs only run down: eating, drinking and sleep arrive in 1.6 and 1.8. Nights
   are dark with no flashlight until 1.6. Items can be held but not used yet.
-- Furniture has no contents yet (1.5): the only loot is the pile by the spawn
-  point.
-- Items in piles render as one generic bundle per block of floor.
+- Items in piles render as one generic bundle per block of floor, and furniture
+  as plain boxes.
+- The hamlet's templates are drawn in half-metre blocks, so only the game's
+  block size has it; the benchmark's other sizes use the test house.
+- An open door doesn't block movement anywhere; its swung panel is only drawn.
+- Shamblers' spawn marks in templates are left as air; nothing spawns yet (1.7).
 - Nothing is saved yet, and edited chunks stay in memory until saves exist
   (milestone 1.9).
 - Pointer lock only works on desktop. There are no touch controls.
