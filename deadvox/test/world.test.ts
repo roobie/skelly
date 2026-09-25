@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK, toChunk, toLocal } from '../src/core/coords.ts';
 import { buildMesh } from '../src/core/mesher.ts';
-import { affectedChunks, BEDROCK, extractPadded, PADDED, paddedIndex, World } from '../src/core/world.ts';
+import { affectedChunks, BEDROCK, extractPadded, isEnclosed, PADDED, paddedIndex, World } from '../src/core/world.ts';
 import { unitFaces } from './meshFaces.ts';
 
 describe('coords', () => {
@@ -62,5 +63,24 @@ describe('World', () => {
       [...unitFaces(buildMesh(padded, colors))].filter((f) => f.endsWith(',1,-1')).length;
     expect(downFaces(open)).toBe(CHUNK * CHUNK);
     expect(downFaces(closed)).toBe(0);
+  });
+
+  it('knows when a chunk has no visible faces (solid, with solid neighbours)', () => {
+    const world = new World();
+    for (let x = -1; x <= 1; x++) {
+      for (let y = -1; y <= 1; y++) {
+        for (let z = -1; z <= 1; z++) {
+          world.addChunk(new Chunk(x, y, z, 3));
+        }
+      }
+    }
+    expect(isEnclosed(world, [0, 0, 0])).toBe(true);
+    world.setBlock(CHUNK, 5, 5, 0); // a hole in the +x neighbour
+    expect(isEnclosed(world, [0, 0, 0])).toBe(false);
+    // Missing neighbours are air, except below the world's bottom layer.
+    world.removeChunk(0, -1, 0);
+    world.addChunk(new Chunk(1, 0, 0, 3));
+    expect(isEnclosed(world, [0, 0, 0])).toBe(false);
+    expect(isEnclosed(world, [0, 0, 0], 0)).toBe(true);
   });
 });
