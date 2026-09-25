@@ -314,8 +314,18 @@ HTML over the game view, and keyboard-first:
 
 ### Piles
 
-Items on the ground form **piles** at block positions, like CDDA. A pile
-renders as a small model, or a generic bundle if the item has no model.
+Items on the ground form **piles** at block positions, like CDDA. An item
+with a model lies at its place in the pile's grid; items without one make a
+generic bundle.
+
+### Item models
+
+Items have simple, low-poly models: glTF files in the content pack, named by id
+and checked by the validator, like sounds. A model says where the hand holds
+the item and names points such as a flashlight's lens. It's what you see in a
+pile and in your hands; an item without one is a bundle on the ground and a
+plain box in your hands. Files are small and made for the game or CC0, and each
+pack credits its sources.
 
 ## Crafting
 
