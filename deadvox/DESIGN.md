@@ -20,7 +20,8 @@ Cataclysm: DDA: what you carry, and in which pocket; what you can craft from
 what you found; which wound will get infected. Towns are for scavenging. The
 military cordon and the secret labs are where the good gear is, and the
 strangest things. Everything is made of half-metre voxels, and everything can be
-taken apart.
+taken apart. It should feel dystopian and frightening: alone in the dark, in a
+place the authorities gave up on.
 
 ## Pillars
 
@@ -28,16 +29,21 @@ taken apart.
    happen in real time. Crafting, reading, building and resting take hours of
    game time, but that time is compressed into seconds, and the world keeps
    moving while it passes.
-2. **Depth through data.** Items, recipes, zombies, buildings and loot are data
+2. **Dread, not shocks.** The game should be scary. The fear comes from being
+   vulnerable and hunted: the dark, the noise you make, what you hear but can't
+   see yet, and knowing that death is permanent. The systems make the
+   frightening moments; nothing is scripted to startle you. The world shows how
+   badly things went, and who made them worse (see [Tone](#tone)).
+3. **Depth through data.** Items, recipes, zombies, buildings and loot are data
    that combine through a small number of general systems. No one-off scripted
    items.
-3. **Grounded weird.** The world is mundane first: houses, canned beans, dead
+4. **Grounded weird.** The world is mundane first: houses, canned beans, dead
    cars. The weirdness has physical causes, gets stronger toward its sources,
    and can be understood (see [Tone](#tone)).
-4. **The world moves on.** Time passes everywhere, including in places the
+5. **The world moves on.** Time passes everywhere, including in places the
    player isn't. Food rots, generators run dry, hordes drift and zombies evolve.
    Areas the player left are caught up when they return, not frozen.
-5. **Browser first.** A static site with no backend, running on a mid-range
+6. **Browser first.** A static site with no backend, running on a mid-range
    laptop. It's singleplayer, so the player's machine is the whole world.
 
 ## Reference hardware
@@ -424,8 +430,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   load after it and can add new ids or override existing ones. Ids are strings,
   namespaced by pack when they would clash (for example `base:shambler`).
 - **Every kind of content goes through the same validator:** blocks, shapes,
-  items, recipes, loot tables, templates, zombie types, vehicle parts. It
-  reports references to missing ids.
+  items, recipes, loot tables, templates, zombie types, vehicle parts, sounds.
+  It reports references to missing ids.
 - **Versioned saves.** A save records which packs, and which pack versions, it
   was made with. Ids that no longer exist are kept as "unknown" rather than
   dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
@@ -433,7 +439,9 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 ## Rendering
 
 - **The look:** flat colour per block, with small per-block variation, ambient
-  occlusion and fog. Textures only if colour alone can't carry the look.
+  occlusion and fog. Textures only if colour alone can't carry the look. The
+  palette is muted and grey; the saturated colours are the ones that mean
+  something: warning signs, blood, fire and the glow of hot zombies.
 - **Day and night** from sun and sky colour and fog. Nights are dark enough
   that a flashlight matters.
 - **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
@@ -445,6 +453,31 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
 
+## Audio
+
+Sound is the main way threat arrives, so it's part of the simulation, not
+decoration.
+
+- **The player hears what the zombies hear.** Every noise event (see
+  [Combat and noise](#combat-and-noise)) also plays as a positional sound, and
+  walls muffle it the same way for both. A zombie shuffling in the next room
+  is heard before it's seen.
+- **Zombies make sound:** shuffling, groans, breathing, banging on doors. Each
+  type sounds different, so you can learn what's out there from sound alone.
+- **Your own sounds:** footsteps by surface and speed, doors, the inventory
+  (zips, cans), and heavy breathing when stamina is low. You hear how much
+  noise you're making.
+- **Ambience by time and place:** wind, rain, a building settling. The
+  distant sounds (a gunshot, a scream, a helicopter over the cordon, a
+  generator) come from things happening in the simulation, not from a random
+  loop, so they're worth listening to.
+- **Silence is a tool.** No music during play; if a score is added later, it
+  never signals danger, because then the music would tell you what the world
+  should make you guess.
+- Web Audio, started by the first click (browsers block sound until then).
+  Sounds are content: ids in the pack, checked by the validator. Files are
+  small and made for the game or CC0.
+
 ## UI principles
 
 - **HTML and CSS** over the canvas. Dense, legible, and keyboard-first, with
@@ -453,6 +486,9 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   fast: search, filters, "take all food", and repeating the last move.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
   somewhere in the UI. Depth is only fun when you can read it.
+- **The UI only shows what your character knows.** No enemy markers, no
+  minimap of zombies, no threat meter. A rest interruption says what you
+  heard, not what it was.
 
 ## Tone
 
@@ -468,6 +504,37 @@ strange. Most of the dead are just dead. Some run hot.
   - hazard zones around labs
   - a military that did bad things to contain it
 - **Not allowed:** gods, magic, portals to other dimensions, eldritch horror,
-  sanity mechanics.
+  sanity mechanics, scripted jump scares.
 - **Every weird thing has a cause** you can find out from notes, terminals and
   lab records. The closer you get to the labs, the stranger it gets.
+
+### Dread
+
+The fear is slow and grounded. It comes from the systems:
+
+- **Darkness.** Nights are dark, and interiors are dark by day. The flashlight
+  lets you see and lets them see you.
+- **Sound before sight** (see [Audio](#audio)): you usually hear the danger
+  first and have to decide what it is.
+- **Vulnerability.** Handling takes real seconds and the world doesn't pause
+  for the inventory. Early on you're hungry, tired and badly armed.
+- **Not knowing.** A closed door, a dark room, a body on the floor that may or
+  may not get up. The UI never gives it away.
+- **Permanent death**, so every risk is real.
+- **A world that gets worse.** Zombies evolve and hordes drift. Staying alive
+  longer doesn't make you safe.
+
+### Dystopia
+
+The region was sealed, not saved. The world tells that story through what's
+left, not through cutscenes, and all of it is data (templates, items, notes):
+
+- **The cordon:** fences, watchtowers, roadblocks and checkpoints, with
+  warning signs that shoot-on-sight is in force.
+- **Notices:** evacuation orders, curfew and ration posters, quarantine tape,
+  and spray-painted marks on doors (searched, infected, how many dead inside).
+- **The broadcast:** a radio loops an emergency message that promises help and
+  tells you to stay indoors. It doesn't match what you see, and one day it
+  stops.
+- **What the containment did:** body bags, burn pits, a school turned into a
+  triage centre, abandoned roadblocks, and houses boarded up from the outside.
