@@ -16,7 +16,7 @@ save, and continue the next day.
 1. **Looting:** is looting a house tense and fun when each item move takes real
    seconds while the world keeps moving?
 2. **Pockets:** does choosing which pocket to use matter? Do players notice
-   and use handling time?
+   and use handling time? Is fitting items into grids a good puzzle or a chore?
 3. **Scale:** does 0.5 m feel right for doors, stairs, interiors and
    furniture?
 4. **Compressed sleep:** is sleeping in compressed time readable? Is the
@@ -62,7 +62,7 @@ save, and continue the next day.
 - Content v2: Valibot schemas for blocks, items, furniture, loot tables,
   templates and zombie types, with a validator that checks cross-references.
 - Items:
-  - item instances, components and pockets
+  - item instances, components, and pockets as grids
   - worn items and hands
   - piles on the ground
   - handling time and an action queue
@@ -255,24 +255,33 @@ and the shambler. Sounds join the validator in 1.10, when they exist.
 
 ### 1.4 Items and inventory
 
-- Item instances, stacks, and the `container` (pockets), `wearable`, `food`,
-  `tool`, `weapon`, `light` and `battery` components.
+- Item instances, stacks, and the `container` (pockets as grids), `wearable`,
+  `food`, `tool`, `weapon`, `light` and `battery` components. Items take w × h
+  cells and can be rotated.
+- Content: items get `size: [w, h]` in place of `volume` and `length`, and
+  pockets get `grid: [w, h]` in place of their volume, weight, length and
+  `rigid` limits. The 1.3 schemas and the base pack change to match.
 - The player: two hands and worn slots (head, torso, legs, back, waist).
-  Carrying weight slows you down.
+  Carrying weight slows you down. Eating, drinking, bandaging and switching a
+  light on need the item in your hands (DESIGN.md,
+  ["Hands"](DESIGN.md#hands-what-you-see-is-whats-there)).
 - Piles: dropping, picking up and rendering.
 - The handling-time action queue. Handling stops sprinting and halves walking
   speed.
 - The inventory screen:
   - two panes (you, and around you)
-  - pockets as nested rows
-  - drag and drop, and keyboard moves
-  - handling time and the limits of each pocket shown on every row
+  - each pocket drawn as its grid
+  - drag and drop with the cells where the item fits highlighted, R to
+    rotate, and keyboard moves
+  - handling time on each pocket, condition as words, and exact numbers in
+    an item's details
   - take all of a category
-- A quickbar with 5 slots.
+- A quickbar with 5 slots: a slot's key puts the item in your hands, and
+  pressing it again uses it.
 
-**Done when:** scenario tests cover pocket limits (volume, weight, length),
-handling times, stacking, and nesting (a backpack inside a duffel bag is
-refused if it doesn't fit).
+**Done when:** scenario tests cover grid placement (fitting, rotation, overlap
+and edges), handling times, stacking, and nesting (a bag with anything in it is
+refused inside another container; an empty one fits if its size does).
 
 ### 1.5 The hamlet
 
@@ -389,7 +398,9 @@ file and their notes.
 The real definitions are the Valibot schemas in `src/core/schema.ts`, and the
 base pack in `src/content/base` has every kind. A content file has any of the
 sections `blocks`, `items`, `furniture`, `loot`, `templates` and `zombies`, each a
-list. Units: grams, millilitres, and millimetres for an item's length.
+list. Units: grams and millilitres. The item and pocket examples below are in
+the grid format that milestone 1.4 moves to (DESIGN.md, "Items and
+inventory"); until then, the schemas still use volume and length.
 
 An item with pockets:
 
@@ -399,13 +410,12 @@ An item with pockets:
   "name": "Hiking backpack",
   "category": "bag",
   "weight": 1400,
-  "volume": 3000,
-  "length": 600,
+  "size": [4, 5],
   "wearable": { "slot": "back", "encumbrance": 12 },
   "container": {
     "pockets": [
-      { "name": "main", "volume": 35000, "weight": 30000, "length": 700, "rigid": false, "handling": 1.5 },
-      { "name": "lid", "volume": 2000, "weight": 3000, "length": 250, "rigid": false, "handling": 1.0 }
+      { "name": "main", "grid": [6, 8], "handling": 1.5 },
+      { "name": "lid", "grid": [3, 2], "handling": 1.0 }
     ]
   }
 }
@@ -415,7 +425,7 @@ Furniture that contains items:
 
 ```json
 { "id": "kitchen_cupboard", "name": "Kitchen cupboard", "size": [2, 2, 1], "color": "#8a6a48",
-  "container": { "pockets": [{ "volume": 60000, "weight": 50000, "length": 900, "rigid": true, "handling": 1.0 }] },
+  "container": { "pockets": [{ "grid": [8, 6], "handling": 1.0 }] },
   "loot": "kitchen_cupboard" }
 ```
 
