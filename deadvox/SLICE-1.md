@@ -283,6 +283,17 @@ and the shambler. Sounds join the validator in 1.10, when they exist.
 and edges), handling times, stacking, and nesting (a bag with anything in it is
 refused inside another container; an empty one fits if its size does).
 
+**Status:** implemented. `test/inventory.test.ts` covers the done-when:
+placement, rotation, overlap and edges; stacking, including items that differ
+and splitting a stack; bags with contents refused, a bag too big, and a bag
+inside itself; two-handed items; wearing; and handling times, including moves
+that happen only when their time is up and are checked again then. In the game,
+the player starts in jeans and a hoodie with a pile of things nearby (a school
+backpack, a crowbar, a flashlight and more) until the hamlet's furniture has
+loot in 1.5. Using what's in your hands (eating, drinking, the flashlight)
+comes in 1.6: pressing a quickbar key for an item already in hand does nothing
+yet. The block-editing tools moved to build mode (B), only with `?debug=1`.
+
 ### 1.5 The hamlet
 
 - Block entities: containers (cupboard, fridge, wardrobe, desk, shelf, crate)

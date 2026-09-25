@@ -8,10 +8,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 60000,
-            "weight": 50000,
-            "length": 900,
-            "rigid": true,
+            "grid": [6, 4],
             "handling": 1.0
           }
         ]
@@ -26,10 +23,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 50000,
-            "weight": 40000,
-            "length": 600,
-            "rigid": true,
+            "grid": [6, 3],
             "handling": 1.0
           }
         ]
@@ -44,10 +38,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 150000,
-            "weight": 80000,
-            "length": 700,
-            "rigid": true,
+            "grid": [5, 6],
             "handling": 1.0
           }
         ]
@@ -62,10 +53,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 400000,
-            "weight": 60000,
-            "length": 1500,
-            "rigid": true,
+            "grid": [6, 8],
             "handling": 1.2
           }
         ]
@@ -80,10 +68,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 30000,
-            "weight": 20000,
-            "length": 600,
-            "rigid": true,
+            "grid": [5, 3],
             "handling": 1.0
           }
         ]
@@ -98,10 +83,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 80000,
-            "weight": 60000,
-            "length": 900,
-            "rigid": true,
+            "grid": [6, 4],
             "handling": 0.8
           }
         ]
@@ -116,10 +98,7 @@
       "container": {
         "pockets": [
           {
-            "volume": 150000,
-            "weight": 80000,
-            "length": 900,
-            "rigid": true,
+            "grid": [6, 5],
             "handling": 1.2
           }
         ]

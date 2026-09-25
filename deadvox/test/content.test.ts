@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry, validateContent } from '../src/core/content.ts';
-import { inventoryTotals } from '../src/core/inventory.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -50,8 +49,7 @@ describe('content', () => {
       'blocks[0].color',
       'blocks[0].hardnes',
       'blocks[0].id',
-      'items[0].length',
-      'items[0].volume',
+      'items[0].size',
       'items[0].weight',
       'lewt',
     ]);
@@ -140,8 +138,7 @@ describe('content references', () => {
             name: 'Lamp',
             category: 'light',
             weight: 300,
-            volume: 400,
-            length: 200,
+            size: [1, 2],
             light: { radius: 5, seenFrom: 30, power: { battery: 'bandage', perHour: 1 } },
           },
         ],
@@ -226,17 +223,5 @@ describe('content', () => {
       { source: 'a', data: { blocks: [{ id: 'r', name: 'R', color: '#ff8001', solid: true }] } },
     ]);
     expect([...blockColors(registry)]).toEqual([0, 0, 0, 255, 128, 1]);
-  });
-
-  it('totals inventory weight and volume', () => {
-    const { registry } = buildRegistry(base);
-    const totals = inventoryTotals(
-      [
-        { item: 'bandage', count: 3 },
-        { item: 'gone_mod_item', count: 1 },
-      ],
-      registry,
-    );
-    expect(totals).toEqual({ weight: 60, volume: 150, unknown: ['gone_mod_item'] });
   });
 });

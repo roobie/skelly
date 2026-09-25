@@ -1,48 +1,64 @@
-// Normal play: walk, look, break and place blocks, open the inventory. The simulation
-// core runs the clock, the player's physics and needs; Esc pauses it.
+// Normal play: walk, look, loot, and manage what you carry. The simulation core runs
+// the clock, the player's physics, needs and the handling queue; Esc pauses it.
+// Build mode (B, with ?debug=1) is a development tool for editing blocks.
 
-import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments, Vector3 } from 'three';
+import { Vector3 } from 'three';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
-import { blockId } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { Stack } from '../core/inventory.ts';
-import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
-import { raycast } from '../core/raycast.ts';
+import { HandlingQueue } from '../core/handling.ts';
+import { Inventory, type Pile } from '../core/inventory.ts';
+import { stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
+import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
-import { renderInventory } from '../ui/inventory.ts';
+import { Quickbar, renderHandling, renderQuickbar } from '../ui/hud.ts';
+import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { BuildMode } from './build.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from './player.ts';
+import { startingLoadout } from './loadout.ts';
+import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer } from './player.ts';
+import { toHands } from './targets.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const PHYSICS_RATE = 60;
-const DIGIT_KEY = /^Digit([1-9])$/;
+const HANDLING_RATE = 20;
+/** Metres: how far away you can loot a pile. */
+const LOOT_REACH = 2;
+const QUICK_KEY = /^Digit([1-5])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 
 export const startPlay = (engine: Engine): void => {
-  const { config, registry, world, isSolid, streamer, renderer, scene, camera, meshes } = engine;
+  const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
   const { scale } = config;
   const s = scale.blockSize;
   const physics = physicsFor(scale);
-  const reach = PLAYER.reach / s;
   const eyeHeight = PLAYER.eye / s;
-
-  const placeable = registry.blocks.slice(1);
-  let selected = 0;
-  const inventory: Stack[] = [
-    { item: 'canned_beans', count: 2 },
-    { item: 'water_bottle', count: 1 },
-    { item: 'bandage', count: 3 },
-    { item: 'kitchen_knife', count: 1 },
-    { item: 'matches', count: 1 },
-  ].filter((stack) => registry.items.has(stack.item));
 
   const [sx, sy, sz] = engine.spawn.pos;
   const body = createPlayerBody(scale, sx / s, sy / s + 0.01, sz / s);
   const input = new Input(renderer.domElement);
   input.yaw = engine.spawn.yaw;
+
+  /** The air block at the player's feet, where drops land. */
+  const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
+  /** Metres from the player's feet to the middle of a pile's block. */
+  const pileDistance = (pos: Vec3) =>
+    Math.hypot(pos[0] + 0.5 - body.pos[0], pos[1] - body.pos[1], pos[2] + 0.5 - body.pos[2]) * s;
+
+  // ---- items ----
+
+  const inventory = new Inventory(registry);
+  inventory.canReach = (pos) => pileDistance(pos) <= LOOT_REACH;
+  const [fx, fy, fz] = [Math.floor(sx / s), Math.floor(sy / s + 0.01), Math.floor(sz / s)];
+  startingLoadout(inventory, [fx + 2, fy, fz + 1]);
+  const queue = new HandlingQueue(inventory);
+  const quickbar = new Quickbar();
+  const piles = new PileMeshes(s);
+  scene.add(piles.group);
+
+  // ---- simulation ----
 
   /** Debug stand-in for a hostile nearby (U), until shamblers exist. */
   let danger: string | undefined;
@@ -54,7 +70,7 @@ export const startPlay = (engine: Engine): void => {
   const { compression } = sim;
 
   // The player is held still until there is ground under them. Inputs are locked
-  // while time is compressed.
+  // while time is compressed. Handling and a heavy load slow you down.
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
@@ -62,32 +78,67 @@ export const startPlay = (engine: Engine): void => {
       if (!streamer.isReady(body.pos[0], body.pos[2])) {
         return;
       }
-      steer(body, scale, input.yaw, input.locked && !compression.locksInput ? input.intent() : IDLE);
-      stepBody(body, dt, isSolid, physics);
+      const moving = input.locked && !compression.locksInput;
+      const intent = moving ? input.intent() : IDLE;
+      const handling = queue.busy;
+      steer(body, scale, input.yaw, {
+        ...intent,
+        sprint: intent.sprint && !handling,
+        pace: paceFactor(inventory.carriedWeight(), handling),
+      });
+      stepBody(body, dt, engine.isSolid, physics);
     },
   });
-
-  // Outline of the targeted block, in metres.
-  const outline = new LineSegments(
-    new EdgesGeometry(new BoxGeometry(s * 1.002, s * 1.002, s * 1.002)),
-    new LineBasicMaterial({ color: 0x11_11_11 }),
-  );
-  outline.visible = false;
-  scene.add(outline);
 
   // ---- UI ----
 
   const overlay = $('overlay');
   const inventoryPanel = $('inventory');
   const hud = $('hud');
-  const hotbar = $('hotbar');
   const prompt = $('prompt');
+  const quickbarBox = $('quickbar');
+  const handlingBox = $('handling');
   $('errors').textContent = engine.contentErrors;
+
+  /** A message that isn't an interruption, such as why a move was refused. */
+  let notice = '';
+  let noticeUntil = 0;
+  const showNotice = (text: string) => {
+    notice = text;
+    noticeUntil = performance.now() + 3000;
+  };
+
+  sim.scheduler.register({
+    id: 'handling',
+    rate: HANDLING_RATE,
+    tick: (dt) => {
+      // Handling happens in real time; compressed time belongs to long actions.
+      if (compression.c > 1) {
+        return;
+      }
+      for (const { job, reason } of queue.tick(dt).failed) {
+        showNotice(`${job.label}: ${reason.toLowerCase()}`);
+      }
+    },
+  });
+
+  const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
+    feet,
+    nearby: () => inventory.pilesNear(body.pos, LOOT_REACH / s),
+    distance: (pile: Pile) => pileDistance(pile.pos),
+    notice: showNotice,
+    assign: (slot, item) => {
+      quickbar.assign(slot, item);
+      showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
+    },
+  });
+
+  const build = new BuildMode(engine, $('hotbar'), body, PLAYER.reach / s);
 
   let started = false;
   const syncOverlay = () => {
     started ||= input.locked;
-    overlay.hidden = input.locked || !inventoryPanel.hidden;
+    overlay.hidden = input.locked || screen.isOpen;
     $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
   };
   overlay.addEventListener('click', (e) => {
@@ -96,34 +147,14 @@ export const startPlay = (engine: Engine): void => {
     }
   });
   renderer.domElement.addEventListener('click', () => {
-    if (!input.locked) {
+    if (!(input.locked || screen.isOpen)) {
       input.lock();
     }
   });
   document.addEventListener('pointerlockchange', syncOverlay);
 
-  const drawHotbar = () => {
-    hotbar.replaceChildren(
-      ...placeable.slice(0, 9).map((block, i) => {
-        const slot = document.createElement('div');
-        slot.className = i === selected ? 'selected' : '';
-        const swatch = document.createElement('span');
-        swatch.style.background = block.color;
-        slot.append(swatch, `${i + 1} ${block.name}`);
-        return slot;
-      }),
-    );
-  };
-  drawHotbar();
-
-  /** A message that isn't an interruption, such as why compression was refused. */
-  let notice = '';
-  let noticeUntil = 0;
-  const showNotice = (text: string) => {
-    notice = text;
-    noticeUntil = performance.now() + 3000;
-  };
   const compress = () => {
+    queue.cancel();
     const result = sim.compress();
     if (!result.ok) {
       showNotice(`Can't rest: ${result.reason}`);
@@ -142,55 +173,88 @@ export const startPlay = (engine: Engine): void => {
     ],
   ]);
 
-  /** C continues and X stops after an interruption. */
-  const timeKeys = (code: string) => {
+  /** C continues and X stops after an interruption. Returns true if the key was used. */
+  const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
-      if (config.debug) {
-        debugKeys.get(code)?.();
-      }
-    } else if (code === 'KeyC') {
-      compress();
-    } else if (code === 'KeyX') {
-      compression.stop();
+      const debug = config.debug ? debugKeys.get(code) : undefined;
+      debug?.();
+      return debug !== undefined;
     }
+    if (code === 'KeyC') {
+      compress();
+      return true;
+    }
+    if (code === 'KeyX') {
+      compression.stop();
+      return true;
+    }
+    return false;
   };
 
   const toggleInventory = () => {
-    const open = inventoryPanel.hidden;
-    inventoryPanel.hidden = !open;
-    if (open) {
-      renderInventory(inventoryPanel, inventory, registry);
-      input.unlock();
-    } else {
+    if (screen.isOpen) {
+      screen.close();
       input.lock();
+    } else {
+      screen.open();
+      input.unlock();
     }
     syncOverlay();
   };
 
-  globalThis.addEventListener('keydown', (e) => {
-    if (e.repeat) {
+  /** A quickbar key puts its item in your hands; pressing it again uses it. */
+  const quickKey = (slot: number) => {
+    const item = quickbar.slots[slot];
+    if (!item) {
+      showNotice(`Quickbar ${slot + 1} is empty: open the inventory, pick an item, press ${slot + 1}`);
       return;
     }
-    timeKeys(e.code);
+    const at = inventory.locate(item);
+    if (!at) {
+      showNotice(`The ${inventory.name(item).toLowerCase()} isn't with you`);
+    } else if (at.kind === 'hand') {
+      showNotice(`Nothing to do with the ${inventory.name(item).toLowerCase()} yet`);
+    } else {
+      const reason = toHands(inventory, queue, item, feet());
+      if (reason) {
+        showNotice(reason);
+      }
+    }
+  };
+
+  const playKeys = (code: string) => {
+    const quick = QUICK_KEY.exec(code);
+    if (code === 'KeyB' && config.debug) {
+      build.toggle();
+    } else if (code === 'KeyX') {
+      queue.cancel();
+    } else if (!build.key(code) && quick && !compression.locksInput) {
+      quickKey(Number(quick[1]) - 1);
+    }
+  };
+
+  globalThis.addEventListener('keydown', (e) => {
+    if (e.code === 'Tab') {
+      e.preventDefault();
+    }
+    if (e.repeat || timeKeys(e.code)) {
+      return;
+    }
     if (e.code === 'Tab' && !compression.locksInput) {
       toggleInventory();
-    }
-    const digit = DIGIT_KEY.exec(e.code);
-    if (digit && Number(digit[1]) <= Math.min(9, placeable.length)) {
-      selected = Number(digit[1]) - 1;
-      drawHotbar();
+    } else if (screen.isOpen) {
+      if (screen.onKey(e)) {
+        e.preventDefault();
+      }
+    } else {
+      playKeys(e.code);
     }
   });
   globalThis.addEventListener('wheel', (e) => {
-    if (!input.locked) {
-      return;
+    if (input.locked) {
+      build.wheel(e.deltaY);
     }
-    const n = Math.min(9, placeable.length);
-    selected = (selected + (e.deltaY > 0 ? 1 : -1) + n) % n;
-    drawHotbar();
   });
-
-  // ---- block editing (all in blocks) ----
 
   const lookDir = (): Vec3 => {
     const d = new Vector3(0, 0, -1).applyEuler(camera.rotation);
@@ -200,21 +264,8 @@ export const startPlay = (engine: Engine): void => {
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   renderer.domElement.addEventListener('mousedown', (e) => {
-    if (!input.locked || compression.locksInput) {
-      return;
-    }
-    const hit = raycast(eye(), lookDir(), reach, isSolid);
-    if (!hit) {
-      return;
-    }
-    if (e.button === 0) {
-      streamer.markEdited(world.setBlock(...hit.block, 0));
-    } else if (e.button === 2) {
-      const target: Vec3 = [hit.block[0] + hit.normal[0], hit.block[1] + hit.normal[1], hit.block[2] + hit.normal[2]];
-      const block = placeable[selected];
-      if (block && !bodyOverlapsBlock(body, target)) {
-        streamer.markEdited(world.setBlock(...target, blockId(registry, block.id)));
-      }
+    if (input.locked && !compression.locksInput) {
+      build.click(e.button, eye(), lookDir());
     }
   });
 
@@ -222,16 +273,6 @@ export const startPlay = (engine: Engine): void => {
 
   let last = performance.now();
   let fps = 0;
-
-  /** Outlines the targeted block and returns it. */
-  const target = () => {
-    const hit = input.locked ? raycast(eye(), lookDir(), reach, isSolid) : undefined;
-    outline.visible = hit !== undefined;
-    if (hit) {
-      outline.position.set((hit.block[0] + 0.5) * s, (hit.block[1] + 0.5) * s, (hit.block[2] + 0.5) * s);
-    }
-    return hit;
-  };
 
   const clockText = (): string => {
     const speed = compression.c > 1.05 ? `   ×${compression.c.toFixed(0)}` : '';
@@ -243,17 +284,18 @@ export const startPlay = (engine: Engine): void => {
     return `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`;
   };
 
-  const hudText = (hit: ReturnType<typeof target>): string => {
+  const hudText = (looking: string): string => {
     const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
     return [
       clockText(),
       needsText(),
-      config.debug ? `debug: T rest, N noise, U danger (${danger ? 'on' : 'off'})` : '',
+      `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg${build.on ? '   BUILD MODE (B)' : ''}`,
+      config.debug ? `debug: B build, T rest, N noise, U danger (${danger ? 'on' : 'off'})` : '',
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
       `chunks ${meshes.count} meshed, ${streamer.pending} pending`,
-      hit ? `looking at ${registry.blocks[world.getBlock(...hit.block)]?.name}` : '',
+      looking ? `looking at ${looking}` : '',
     ]
       .filter((line) => line !== '')
       .join('\n');
@@ -267,6 +309,16 @@ export const startPlay = (engine: Engine): void => {
     return lines.join('\n');
   };
 
+  let quickbarDrawn = '';
+  const drawQuickbar = () => {
+    const key = `${inventory.version}|${quickbar.slots.map((i) => i?.uid ?? 0).join(',')}`;
+    if (key !== quickbarDrawn) {
+      quickbarDrawn = key;
+      renderQuickbar(quickbarBox, quickbar, inventory);
+    }
+    quickbarBox.hidden = build.on;
+  };
+
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -276,14 +328,22 @@ export const startPlay = (engine: Engine): void => {
     sim.paused = !overlay.hidden; // the pause card is up
     sim.frame(dt);
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
+    piles.sync(inventory);
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);
     camera.rotation.set(input.pitch, input.yaw, 0);
 
-    hud.textContent = hudText(target());
+    hud.textContent = hudText(build.target(eye(), lookDir(), input.locked));
     prompt.textContent = promptText(now);
     prompt.hidden = prompt.textContent === '';
+    screen.update();
+    drawQuickbar();
+    if (screen.isOpen) {
+      handlingBox.hidden = true;
+    } else {
+      renderHandling(handlingBox, queue);
+    }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   };

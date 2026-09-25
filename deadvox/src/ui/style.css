@@ -148,56 +148,405 @@ body {
   margin: 0;
 }
 
+/* ---- inventory screen ---- */
 #inventory {
   position: fixed;
-  right: 16px;
-  top: 16px;
-  width: min(420px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
-  overflow: auto;
-  padding: 16px;
+  inset: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--panel);
+  background: rgb(16 18 22 / 94%);
+  user-select: none;
 }
-#inventory h2 {
-  margin: 0 0 10px;
-  font-size: 16px;
+.inv-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
 }
-#inventory table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.inv-head h2 {
+  margin: 0;
+  font-size: 20px;
 }
-#inventory th {
-  text-align: left;
-  color: var(--muted);
-  font-weight: 500;
-  border-bottom: 1px solid var(--line);
-  padding: 4px;
+.inv-weight {
+  font:
+    13px ui-monospace,
+    monospace;
 }
-#inventory td {
-  padding: 3px 4px;
-}
-#inventory td:not(:first-child),
-#inventory th:not(:first-child) {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-#inventory tr.category td {
-  padding-top: 10px;
-  color: var(--accent);
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-}
-#inventory .totals {
-  margin: 12px 0 0;
-}
-#inventory .hint {
-  margin: 4px 0 0;
+.inv-help {
+  margin-left: auto;
   color: var(--muted);
   font-size: 12px;
+}
+.inv-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 300px;
+  gap: 12px;
+}
+.inv-pane,
+.inv-details {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #2a3038;
+  border-radius: 8px;
+  background: #15171b;
+}
+.inv-details {
+  gap: 6px;
+  background: #1b1e23;
+}
+.inv-pane h3,
+.inv-details h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.inv-details h3 {
+  font-size: 19px;
+}
+.inv-hands {
+  display: flex;
+  gap: 10px;
+}
+.inv-slot {
+  position: relative;
+  min-width: 170px;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px dashed #39414b;
+  border-radius: 6px;
+}
+.inv-slot-worn {
+  min-height: 34px;
+  align-self: flex-start;
+}
+.inv-slot-label,
+.inv-kicker {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.inv-kicker {
+  margin-top: 6px;
+}
+.inv-worn,
+.inv-pocket,
+.inv-pile,
+.inv-bag {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.inv-pockets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding-left: 12px;
+}
+.inv-pocket-label,
+.inv-pile-label {
+  font:
+    11px ui-monospace,
+    monospace;
+  color: var(--muted);
+}
+.inv-grid {
+  position: relative;
+  background-color: #111317;
+  background-image: linear-gradient(#262b31 1px, transparent 1px), linear-gradient(90deg, #262b31 1px, transparent 1px);
+  background-size: 32px 32px;
+  outline: 1px solid #39414b;
+  border-radius: 2px;
+}
+.inv-item,
+.inv-ghost {
+  box-sizing: border-box;
+  padding: 2px 4px;
+  border: 1px solid #4a525c;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 1.15;
+  overflow: hidden;
+}
+.inv-item {
+  position: absolute;
+  cursor: grab;
+}
+.inv-item-slot {
+  position: relative;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+.inv-item.selected {
+  border: 2px solid var(--accent);
+}
+.inv-item-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inv-item-tall .inv-item-name {
+  writing-mode: vertical-rl;
+  max-height: 100%;
+}
+.inv-item-count {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: 10px;
+}
+.inv-item-slot .inv-item-count {
+  position: static;
+  margin-left: 6px;
+}
+.inv-item-slot .inv-item-name {
+  display: inline;
+}
+.cat-food,
+.cat-drink {
+  background: #3a3f2b;
+}
+.cat-medical {
+  background: #472f2d;
+}
+.cat-tool,
+.cat-weapon {
+  background: #2f3642;
+}
+.cat-light,
+.cat-battery {
+  background: #453b24;
+}
+.cat-clothing,
+.cat-bag {
+  background: #37323f;
+}
+.cat-material,
+.cat-book,
+.cat-misc {
+  background: #35363a;
+}
+.inv-ghost {
+  position: fixed;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.85;
+  border-color: var(--accent);
+}
+.inv-preview {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  border-radius: 3px;
+}
+.inv-preview.drop-ok,
+.inv-slot.drop-ok {
+  background: rgb(224 176 74 / 22%);
+  border: 1px dashed var(--accent);
+}
+.inv-preview.drop-no,
+.inv-slot.drop-no {
+  background: rgb(224 135 110 / 22%);
+  border: 1px dashed #e0876e;
+}
+.inv-condition {
+  color: #f3dca6;
+  text-transform: capitalize;
+}
+.inv-line {
+  font:
+    12px ui-monospace,
+    monospace;
+  color: #c4cad2;
+}
+.inv-muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.inv-option {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: left;
+}
+button.inv-option {
+  border: 1px solid #39414b;
+  background: #22262c;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+button.inv-option:hover,
+button.inv-option:focus-visible {
+  border-color: var(--accent);
+}
+.inv-option-no {
+  color: #8a929c;
+}
+.inv-reason {
+  color: #e0876e;
+  text-align: right;
+}
+.inv-time {
+  font:
+    12px ui-monospace,
+    monospace;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.inv-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid #2a3038;
+  border-radius: 8px;
+  background: #15171b;
+}
+.inv-queue-title {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.inv-job {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 120px 52px;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.inv-job-n {
+  color: var(--muted);
+}
+.inv-job-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inv-bar,
+.hd-bar {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #262a30;
+}
+.inv-bar-fill,
+.hd-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+/* ---- quickbar and handling ---- */
+#quickbar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+.qb-slot {
+  width: 150px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border: 1px solid #39414b;
+  border-radius: 6px;
+  background: var(--panel);
+}
+.qb-empty {
+  border-style: dashed;
+  color: #6f7780;
+}
+.qb-key {
+  font:
+    11px ui-monospace,
+    monospace;
+  color: var(--accent);
+}
+.qb-name,
+.qb-where {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qb-name {
+  font-size: 13px;
+}
+.qb-where {
+  font-size: 11px;
+  color: var(--muted);
+}
+#handling {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  width: 440px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  pointer-events: none;
+}
+.hd-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.hd-muted {
+  font-size: 12px;
+  color: var(--muted);
+}
+.hd-time {
+  font:
+    12px ui-monospace,
+    monospace;
+  color: #c4cad2;
+}
+.hd-slow {
+  font-size: 12px;
+  color: var(--accent);
+}
+/* The inventory screen covers the play HUD. */
+body.inventory-open #hud,
+body.inventory-open #quickbar,
+body.inventory-open #crosshair {
+  display: none;
+}
+#hotbar[hidden],
+#quickbar[hidden],
+#handling[hidden] {
+  display: none;
 }
 #errors {
   position: fixed;
@@ -226,7 +575,8 @@ body {
 
 /* Benchmark and report pages have no crosshair or hotbar. */
 body.bench #crosshair,
-body.bench #hotbar {
+body.bench #hotbar,
+body.bench #quickbar {
   display: none;
 }
 #overlay .card.report {
