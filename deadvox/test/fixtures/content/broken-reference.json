@@ -1,7 +1,5 @@
 {
-  "items": [
-    { "id": "fixture_trinket", "name": "Trinket", "category": "misc", "weight": 10, "volume": 10, "length": 30 }
-  ],
+  "items": [{ "id": "fixture_trinket", "name": "Trinket", "category": "misc", "weight": 10, "size": [1, 1] }],
   "loot": [
     {
       "id": "fixture_drawer",

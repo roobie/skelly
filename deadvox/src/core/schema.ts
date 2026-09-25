@@ -1,7 +1,7 @@
 // Content schemas (Valibot). Each schema checks one kind of content's shape, and the
 // TypeScript types are inferred from it. References between content (loot tables,
 // furniture, zombie types) are checked after all files are merged (content.ts).
-// Units: grams, millilitres, millimetres for item length, metres and seconds.
+// Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
 import {
   array,
@@ -77,15 +77,18 @@ export const ITEM_CATEGORIES = [
 
 export const WEAR_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 
+export type WearSlot = (typeof WEAR_SLOTS)[number];
+
+const Cells = pipe(Count, minValue(1, 'must be at least 1'));
+
+/** Width and height in inventory cells. */
+const Area = tuple([Cells, Cells]);
+
 const PocketSchema = strictObject({
   name: optional(Name),
-  /** The most it holds: millilitres, grams, and the longest item in millimetres. */
-  volume: Positive,
-  weight: Positive,
-  length: Positive,
-  /** A rigid pocket keeps its size; a soft one grows with what's in it. */
-  rigid: vBoolean(),
-  /** Seconds to take an item out or put one in, before the per-litre part. */
+  /** Its grid: the only limit on what fits (DESIGN.md, "The item model"). */
+  grid: Area,
+  /** Seconds to take an item out or put one in, before the per-cell part. */
   handling: NonNegative,
 });
 
@@ -145,12 +148,13 @@ export const ItemSchema = strictObject({
   name: Name,
   category: picklist(ITEM_CATEGORIES),
   weight: NonNegative,
-  volume: NonNegative,
-  /** Millimetres: the longest side, for pocket limits. */
-  length: Positive,
+  /** Cells it takes in a grid, as [w, h]; it can be rotated. */
+  size: Area,
   description: optional(string()),
-  /** Identical instances stack (matches, nails). */
-  stackable: optional(vBoolean()),
+  /** Identical, stateless instances stack, up to this many (nails, batteries). */
+  stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
+  /** Held in both hands. */
+  twoHanded: optional(vBoolean()),
   container: optional(ContainerSchema),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),

@@ -5,8 +5,7 @@
       "name": "Can of beans",
       "category": "food",
       "weight": 450,
-      "volume": 400,
-      "length": 110,
+      "size": [1, 2],
       "description": "Dented but sealed.",
       "food": {
         "calories": 350,
@@ -18,8 +17,7 @@
       "name": "Can of soup",
       "category": "food",
       "weight": 430,
-      "volume": 400,
-      "length": 110,
+      "size": [1, 2],
       "food": {
         "calories": 200,
         "water": 250
@@ -30,8 +28,7 @@
       "name": "Box of crackers",
       "category": "food",
       "weight": 250,
-      "volume": 600,
-      "length": 200,
+      "size": [2, 2],
       "food": {
         "calories": 1100,
         "water": 0
@@ -42,8 +39,7 @@
       "name": "Apple",
       "category": "food",
       "weight": 180,
-      "volume": 250,
-      "length": 80,
+      "size": [1, 1],
       "food": {
         "calories": 95,
         "water": 150,
@@ -55,8 +51,7 @@
       "name": "Chocolate bar",
       "category": "food",
       "weight": 100,
-      "volume": 120,
-      "length": 150,
+      "size": [2, 1],
       "food": {
         "calories": 530,
         "water": 0
@@ -67,8 +62,7 @@
       "name": "Can of soda",
       "category": "drink",
       "weight": 360,
-      "volume": 350,
-      "length": 120,
+      "size": [1, 2],
       "food": {
         "calories": 140,
         "water": 300
@@ -79,8 +73,7 @@
       "name": "Bottle of water",
       "category": "drink",
       "weight": 1050,
-      "volume": 1100,
-      "length": 300,
+      "size": [1, 3],
       "food": {
         "calories": 0,
         "water": 1000
@@ -91,8 +84,7 @@
       "name": "Carton of juice",
       "category": "drink",
       "weight": 1050,
-      "volume": 1050,
-      "length": 200,
+      "size": [1, 3],
       "food": {
         "calories": 450,
         "water": 900

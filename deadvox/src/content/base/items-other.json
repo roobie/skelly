@@ -5,9 +5,8 @@
       "name": "AA battery",
       "category": "battery",
       "weight": 23,
-      "volume": 8,
-      "length": 50,
-      "stackable": true,
+      "size": [1, 1],
+      "stack": 10,
       "battery": {
         "capacity": 1
       }
@@ -17,61 +16,54 @@
       "name": "Bandage",
       "category": "medical",
       "weight": 20,
-      "volume": 50,
-      "length": 100,
-      "description": "Stops bleeding on one body part.",
-      "stackable": true
+      "size": [1, 1],
+      "stack": 4,
+      "description": "Stops bleeding on one body part."
     },
     {
       "id": "painkillers",
       "name": "Painkillers",
       "category": "medical",
       "weight": 50,
-      "volume": 60,
-      "length": 80
+      "size": [1, 1]
     },
     {
       "id": "rag",
       "name": "Rag",
       "category": "material",
       "weight": 50,
-      "volume": 100,
-      "length": 300,
-      "stackable": true
+      "size": [1, 1],
+      "stack": 6
     },
     {
       "id": "duct_tape",
       "name": "Duct tape",
       "category": "material",
       "weight": 150,
-      "volume": 200,
-      "length": 100
+      "size": [1, 1]
     },
     {
       "id": "nails",
       "name": "Nails",
       "category": "material",
       "weight": 5,
-      "volume": 1,
-      "length": 60,
-      "stackable": true
+      "size": [1, 1],
+      "stack": 100
     },
     {
       "id": "scrap_metal",
       "name": "Scrap metal",
       "category": "material",
       "weight": 500,
-      "volume": 200,
-      "length": 250,
-      "stackable": true
+      "size": [1, 2],
+      "stack": 5
     },
     {
       "id": "paperback",
       "name": "Paperback novel",
       "category": "book",
       "weight": 300,
-      "volume": 450,
-      "length": 180,
+      "size": [2, 2],
       "description": "Water-stained. Someone underlined things."
     }
   ]

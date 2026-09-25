@@ -5,8 +5,7 @@
       "name": "Crowbar",
       "category": "tool",
       "weight": 1500,
-      "volume": 900,
-      "length": 600,
+      "size": [1, 5],
       "description": "Pries open doors and crates. Also a weapon.",
       "tool": {
         "qualities": {
@@ -29,8 +28,7 @@
       "name": "Hammer",
       "category": "tool",
       "weight": 700,
-      "volume": 400,
-      "length": 330,
+      "size": [1, 3],
       "tool": {
         "qualities": {
           "hammering": 2
@@ -51,8 +49,7 @@
       "name": "Kitchen knife",
       "category": "tool",
       "weight": 150,
-      "volume": 200,
-      "length": 300,
+      "size": [1, 3],
       "tool": {
         "qualities": {
           "cutting": 2
@@ -73,8 +70,7 @@
       "name": "Can opener",
       "category": "tool",
       "weight": 100,
-      "volume": 100,
-      "length": 150,
+      "size": [1, 1],
       "tool": {
         "qualities": {
           "opening": 1
@@ -86,8 +82,8 @@
       "name": "Baseball bat",
       "category": "weapon",
       "weight": 900,
-      "volume": 1500,
-      "length": 840,
+      "size": [1, 6],
+      "twoHanded": true,
       "weapon": {
         "melee": {
           "damage": 15,
@@ -103,8 +99,7 @@
       "name": "Steel pipe",
       "category": "weapon",
       "weight": 1800,
-      "volume": 800,
-      "length": 800,
+      "size": [1, 6],
       "weapon": {
         "melee": {
           "damage": 13,
@@ -120,8 +115,7 @@
       "name": "Flashlight",
       "category": "light",
       "weight": 250,
-      "volume": 300,
-      "length": 200,
+      "size": [1, 2],
       "description": "Lets you see. Lets them see you.",
       "light": {
         "radius": 20,
@@ -138,8 +132,7 @@
       "name": "Lighter",
       "category": "light",
       "weight": 20,
-      "volume": 30,
-      "length": 80,
+      "size": [1, 1],
       "light": {
         "radius": 2,
         "seenFrom": 10
@@ -150,8 +143,7 @@
       "name": "Box of matches",
       "category": "light",
       "weight": 20,
-      "volume": 30,
-      "length": 50,
+      "size": [1, 1],
       "light": {
         "radius": 2,
         "seenFrom": 10
