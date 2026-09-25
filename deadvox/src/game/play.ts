@@ -1,18 +1,23 @@
-// Normal play: walk, look, break and place blocks, open the inventory.
+// Normal play: walk, look, break and place blocks, open the inventory. The simulation
+// core runs the clock, the player's physics and needs; Esc pauses it.
 
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments, Vector3 } from 'three';
+import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import { blockId } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Stack } from '../core/inventory.ts';
 import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
+import { Simulation } from '../core/sim.ts';
+import { skyAt } from '../core/sky.ts';
+import { applySky } from '../render/sky.ts';
 import { renderInventory } from '../ui/inventory.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './player.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const STEP = 1 / 60;
+const PHYSICS_RATE = 60;
 const DIGIT_KEY = /^Digit([1-9])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 
@@ -39,6 +44,29 @@ export const startPlay = (engine: Engine): void => {
   const input = new Input(renderer.domElement);
   input.yaw = engine.spawn.yaw;
 
+  /** Debug stand-in for a hostile nearby (U), until shamblers exist. */
+  let danger: string | undefined;
+  const sim = new Simulation({
+    seed: config.seed,
+    clock: { ratio: CLOCK_RATIO, start: config.start },
+    unsafe: () => danger,
+  });
+  const { compression } = sim;
+
+  // The player is held still until there is ground under them. Inputs are locked
+  // while time is compressed.
+  sim.scheduler.register({
+    id: 'player',
+    rate: PHYSICS_RATE,
+    tick: (dt) => {
+      if (!streamer.isReady(body.pos[0], body.pos[2])) {
+        return;
+      }
+      steer(body, scale, input.yaw, input.locked && !compression.locksInput ? input.intent() : IDLE);
+      stepBody(body, dt, isSolid, physics);
+    },
+  });
+
   // Outline of the targeted block, in metres.
   const outline = new LineSegments(
     new EdgesGeometry(new BoxGeometry(s * 1.002, s * 1.002, s * 1.002)),
@@ -53,10 +81,14 @@ export const startPlay = (engine: Engine): void => {
   const inventoryPanel = $('inventory');
   const hud = $('hud');
   const hotbar = $('hotbar');
+  const prompt = $('prompt');
   $('errors').textContent = engine.contentErrors;
 
+  let started = false;
   const syncOverlay = () => {
+    started ||= input.locked;
     overlay.hidden = input.locked || !inventoryPanel.hidden;
+    $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
   };
   overlay.addEventListener('click', (e) => {
     if (!(e.target instanceof HTMLAnchorElement)) {
@@ -84,20 +116,64 @@ export const startPlay = (engine: Engine): void => {
   };
   drawHotbar();
 
+  /** A message that isn't an interruption, such as why compression was refused. */
+  let notice = '';
+  let noticeUntil = 0;
+  const showNotice = (text: string) => {
+    notice = text;
+    noticeUntil = performance.now() + 3000;
+  };
+  const compress = () => {
+    const result = sim.compress();
+    if (!result.ok) {
+      showNotice(`Can't rest: ${result.reason}`);
+    }
+  };
+
+  /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger. */
+  const debugKeys = new Map<string, () => void>([
+    ['KeyT', () => (compression.active ? compression.stop() : compress())],
+    ['KeyN', () => sim.emit({ kind: 'interrupt', reason: 'You hear something outside' })],
+    [
+      'KeyU',
+      () => {
+        danger = danger ? undefined : 'Something is close';
+      },
+    ],
+  ]);
+
+  /** C continues and X stops after an interruption. */
+  const timeKeys = (code: string) => {
+    if (compression.interruption === undefined) {
+      if (config.debug) {
+        debugKeys.get(code)?.();
+      }
+    } else if (code === 'KeyC') {
+      compress();
+    } else if (code === 'KeyX') {
+      compression.stop();
+    }
+  };
+
+  const toggleInventory = () => {
+    const open = inventoryPanel.hidden;
+    inventoryPanel.hidden = !open;
+    if (open) {
+      renderInventory(inventoryPanel, inventory, registry);
+      input.unlock();
+    } else {
+      input.lock();
+    }
+    syncOverlay();
+  };
+
   globalThis.addEventListener('keydown', (e) => {
     if (e.repeat) {
       return;
     }
-    if (e.code === 'Tab') {
-      const open = inventoryPanel.hidden;
-      inventoryPanel.hidden = !open;
-      if (open) {
-        renderInventory(inventoryPanel, inventory, registry);
-        input.unlock();
-      } else {
-        input.lock();
-      }
-      syncOverlay();
+    timeKeys(e.code);
+    if (e.code === 'Tab' && !compression.locksInput) {
+      toggleInventory();
     }
     const digit = DIGIT_KEY.exec(e.code);
     if (digit && Number(digit[1]) <= Math.min(9, placeable.length)) {
@@ -124,7 +200,7 @@ export const startPlay = (engine: Engine): void => {
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   renderer.domElement.addEventListener('mousedown', (e) => {
-    if (!input.locked) {
+    if (!input.locked || compression.locksInput) {
       return;
     }
     const hit = raycast(eye(), lookDir(), reach, isSolid);
@@ -145,21 +221,7 @@ export const startPlay = (engine: Engine): void => {
   // ---- loop ----
 
   let last = performance.now();
-  let acc = 0;
   let fps = 0;
-
-  /** Fixed-step movement; the player is held still until there is ground under them. */
-  const simulate = (dt: number) => {
-    if (!streamer.isReady(body.pos[0], body.pos[2])) {
-      return;
-    }
-    acc += dt;
-    while (acc >= STEP) {
-      steer(body, scale, input.yaw, input.locked ? input.intent() : IDLE);
-      stepBody(body, STEP, isSolid, physics);
-      acc -= STEP;
-    }
-  };
 
   /** Outlines the targeted block and returns it. */
   const target = () => {
@@ -171,15 +233,38 @@ export const startPlay = (engine: Engine): void => {
     return hit;
   };
 
+  const clockText = (): string => {
+    const speed = compression.c > 1.05 ? `   ×${compression.c.toFixed(0)}` : '';
+    return `${formatClock(sim.calendar)}${speed}${sim.paused ? '   paused' : ''}`;
+  };
+
+  const needsText = (): string => {
+    const { calories, hydration, fatigue } = sim.needs;
+    return `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`;
+  };
+
   const hudText = (hit: ReturnType<typeof target>): string => {
     const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
     return [
+      clockText(),
+      needsText(),
+      config.debug ? `debug: T rest, N noise, U danger (${danger ? 'on' : 'off'})` : '',
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
       `chunks ${meshes.count} meshed, ${streamer.pending} pending`,
       hit ? `looking at ${registry.blocks[world.getBlock(...hit.block)]?.name}` : '',
-    ].join('\n');
+    ]
+      .filter((line) => line !== '')
+      .join('\n');
+  };
+
+  const promptText = (now: number): string => {
+    const lines = now < noticeUntil ? [notice] : [];
+    if (compression.interruption !== undefined) {
+      lines.push(`${compression.interruption}.   C: continue   X: stop`);
+    }
+    return lines.join('\n');
   };
 
   const frame = (now: number) => {
@@ -188,13 +273,17 @@ export const startPlay = (engine: Engine): void => {
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     streamer.update(body.pos[0], body.pos[2]);
-    simulate(dt);
+    sim.paused = !overlay.hidden; // the pause card is up
+    sim.frame(dt);
+    applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);
     camera.rotation.set(input.pitch, input.yaw, 0);
 
     hud.textContent = hudText(target());
+    prompt.textContent = promptText(now);
+    prompt.hidden = prompt.textContent === '';
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   };

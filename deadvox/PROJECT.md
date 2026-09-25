@@ -12,6 +12,10 @@ This file describes the code as it is. The game's design and roadmap are in
 - `?seed=N` picks a world.
 - `?radius=N` sets the view distance in metres (default 96; the start card offers
   64, 96 and 128).
+- `?time=HH:MM` sets the time of day at the start (default 19:30).
+- `?debug=1` turns on debug keys: T starts or stops compressed time (a stand-in
+  for resting), N makes a noise that interrupts it, and U toggles a pretend
+  danger that makes compression unsafe.
 - `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
   results. See [SLICE-1.md](SLICE-1.md#running-it).
 
@@ -42,6 +46,10 @@ This file describes the code as it is. The game's design and roadmap are in
 | Meshing | Greedy meshing with per-vertex AO (`core/mesher.ts`): faces with the same block and AO merge into larger quads. Built in Web Workers; buffers are transferred, not shared. Per-block colour variation is computed in the chunk shader (`render/chunks.ts`) |
 | Scale | 0.5 m blocks (`BLOCK_SIZE` in `core/scale.ts`, chosen in milestone 1.0). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres. The benchmark can build other block sizes to compare |
 | Chunks | 32³ blocks of runtime block ids, y-major. A chunk where every block is the same stores a single id. The world spans −48 m to +80 m, 8 chunks tall. Unedited chunk data far out of range is dropped and regenerated from the seed when needed |
+| Simulation | `core/sim.ts` ties together the clock (`core/clock.ts`, 1:8), the fixed-step scheduler (`core/scheduler.ts`), the compression controller (`core/compression.ts`), the event queue (`core/events.ts`) and pause. Systems register a rate; under compression slow systems take bigger steps up to their `maxStep` instead of more ticks, and every tick is followed by an interruption check. The player's physics is a 60 Hz system whose step never grows; needs tick at 1 Hz and grow to 30 s steps. The pause card (Esc) pauses the simulation; the inventory doesn't |
+| Randomness | Worldgen uses stateless hashed noise. Systems draw from their own seeded stream (`Rng.stream(seed, systemId)`, sfc32), never `Math.random` |
+| Entities | Behind the `EntityStore` interface (`core/entities.ts`); a Map of plain objects for now |
+| Time of day | `core/sky.ts` interpolates keyframes (night, dawn, day, dusk) for the sky colour, sun or moon light, ambient light and fog; `render/sky.ts` applies them each frame. The benchmark stays in daylight |
 | Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
 | Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
@@ -57,10 +65,11 @@ This file describes the code as it is. The game's design and roadmap are in
 ```
 src/
   core/        pure logic: coords, scale, chunk, world, worldgen, structure, storage, mesher,
-               raycast, physics, content, inventory
+               raycast, physics, content, inventory; the simulation core: sim, clock,
+               scheduler, compression, events, random, entities, needs, sky
   content/     JSON content packs (base/)
   worker/      mesh worker + message types
-  render/      three.js chunk meshes
+  render/      three.js chunk meshes, sky and lights
   game/        engine setup, play mode, streaming, player controller, input, test house
   bench/       milestone 1.0 benchmark: runner, stats, results page
   ui/          HUD/inventory DOM + CSS
@@ -84,6 +93,8 @@ npm run validate   # base content; add paths to validate a mod on top
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (roads, towns, buildings).
+- Needs only run down: eating, drinking and sleep arrive in 1.6 and 1.8. Nights
+  are dark with no flashlight until 1.6.
 - Nothing is saved yet, and edited chunks stay in memory until saves exist
   (milestone 1.9).
 - Pointer lock only works on desktop. There are no touch controls.
