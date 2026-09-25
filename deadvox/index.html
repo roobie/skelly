@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>deadvox</title>
+    <link rel="stylesheet" href="./src/ui/style.css" />
+  </head>
+  <body>
+    <main id="view"></main>
+    <div id="crosshair"></div>
+    <div id="hud"></div>
+    <div id="hotbar"></div>
+    <section id="inventory" hidden></section>
+    <div id="errors"></div>
+    <div id="overlay">
+      <div class="card">
+        <h1>deadvox</h1>
+        <p>Singleplayer voxel survival prototype.</p>
+        <dl>
+          <dt>WASD</dt><dd>Move</dd>
+          <dt>Shift</dt><dd>Sprint</dd>
+          <dt>Space</dt><dd>Jump</dd>
+          <dt>Mouse</dt><dd>Look</dd>
+          <dt>LMB / RMB</dt><dd>Break / place block</dd>
+          <dt>1–9, wheel</dt><dd>Choose block</dd>
+          <dt>Tab</dt><dd>Inventory</dd>
+          <dt>Esc</dt><dd>Pause</dd>
+        </dl>
+        <p class="go">Click to play</p>
+      </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
