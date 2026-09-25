@@ -148,7 +148,10 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
-- Voxel light (dark interiors), and body temperature, clothing warmth and rain.
+- Voxel light: interiors pitch black at night and dim by day.
+- Body temperature, clothing warmth, and rain.
+- The night sky: the moon and stars, moon phases, and overcast nights that come
+  with the rain.
 - Driveable surfaces in worldgen, ready for vehicles.
 - The dystopian dressing: notices, marked doors, roadblocks and triage sites
   in the templates, a radio with the emergency broadcast, and distant sounds

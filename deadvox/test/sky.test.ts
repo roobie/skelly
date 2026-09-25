@@ -22,6 +22,11 @@ describe('sky', () => {
     }
   });
 
+  it('is darkest in the dead of night', () => {
+    expect(brightness(1)).toBeLessThan(brightness(21.5));
+    expect(skyAt(1).fogFar).toBeLessThan(skyAt(21.5).fogFar);
+  });
+
   it('is dark at night, with the fog closer in', () => {
     expect(brightness(0)).toBeLessThan(brightness(12) / 5);
     expect(skyAt(0).fogFar).toBeLessThan(skyAt(12).fogFar);

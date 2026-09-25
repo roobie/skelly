@@ -443,10 +443,16 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   palette is muted and grey; the saturated colours are the ones that mean
   something: warning signs, blood, fire and the glow of hot zombies.
 - **Day and night** from sun and sky colour and fog. Nights are dark enough
-  that a flashlight matters.
+  that a flashlight matters, and darkest in the dead of night (about 23:00 to
+  03:30).
+- **The night sky:** the moon and stars show on clear nights. The moon goes
+  through its phases over about a month of game days. On a clear night near
+  full moon you can see shapes and find your way outdoors without a light; on
+  a new moon, or when it's overcast, you can't. Clouds hide the moon and stars.
 - **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
-  spread through the block grid. It's needed for dark interiors and comes after
-  Slice 1.
+  spread through the block grid. Inside buildings it's pitch black at night and
+  dim by day, lit only by what comes in through doors and windows. It comes
+  after Slice 1.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.

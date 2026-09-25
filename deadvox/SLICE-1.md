@@ -88,7 +88,7 @@ save, and continue the next day.
 | --- | --- |
 | Crafting, disassembly, repair, skills, books | 2 |
 | Body parts and wounds, firearms, noise from walls (and sound muffled by walls), other zombie types, hordes | 3 |
-| Region map, towns, far terrain, voxel light, temperature and weather, the dystopian dressing and the radio broadcast | 4 |
+| Region map, towns, far terrain, voxel light (dark interiors), the night sky (moon, stars, overcast), temperature and weather, the dystopian dressing and the radio broadcast | 4 |
 | Construction, locks, bashing doors, electricity, fire | 5 |
 | Vehicles | 6 |
 
