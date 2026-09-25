@@ -184,9 +184,9 @@ measurement found:
 **Done when:** a new benchmark run on the reference laptop meets the frame
 budget from 1.0, and the Results below are updated.
 
-**Status:** implemented. The first benchmark run missed the frame budget (see
-Results, "1.1 first run"); the fix is in, and a new run on the reference laptop
-is next.
+**Status:** done. The first benchmark run missed the frame budget (see
+Results, "1.1 first run"); after the fix, the run on the reference laptop meets
+it at every radius (Results, "1.1 final run").
 The walk toggle is on Z (Ctrl would collide with browser shortcuts such as
 Ctrl+W).
 
@@ -555,3 +555,37 @@ In Node, the mesh jobs around spawn fell from 264 to 113, and each takes 1.4 ms
 run. In headless Chromium, meshing went from 5.7 / 14.0 ms (p50 / p95) to 1.5 /
 4.8 ms. The frame budget needs a new run on the reference laptop.
 
+### 1.1 final run (2026-09-25)
+
+Same laptop, browser and canvas as the 1.0 run, after the fix above.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 10.6 / 60.5 / 1.3 | 3.0 / 5.0 | 926 | 60 / 17.2 / 0% | 30 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 3.0 / 6.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 19.4 / 112.5 / 2.3 | 3.0 / 6.0 | 930 | 60 / 17.2 / 0% | 51 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 10.0 |
+| 0.5 m | 128 m | 3.0 | 2888 | 31.8 / 180.5 / 3.8 | 3.0 / 5.0 | 926 | 60 / 17.2 / 0% | 83 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 4.0 / 6.0 / 9.0 |
+
+An earlier run the same day gave almost the same numbers (mesh 2.0 / 4–5 ms,
+work p95 at 96 m 5 / 6 / 8 ms, no slow frames or holes). Firefox reported 12 CPU
+threads in that run and 8 in this one; both give 3 mesh workers, so the
+difference doesn't change the setup.
+
+**Findings.**
+
+1. **The frame budget holds:** 60 fps, no slow frames in any phase and no holes
+   at sprint speed, at every radius, 128 m included.
+2. **Headroom:** at 96 m the main thread's work p95 is 3 ms looking around,
+   4 ms jogging and 10 ms sprinting, out of 16.7 ms. Sprinting streams the most
+   terrain, which is still generated on the main thread. Work time doesn't
+   include the GPU's own time.
+3. **Meshing:** 3 ms median and 5–6 ms p95 per chunk, against 21–23 / 53–226 ms
+   in the first 1.1 run and 12–15 / 19–28 ms in 1.0. This matches the Node and
+   headless Chromium measurements of the fix.
+4. **Load time:** 1.9 s at 96 m and 3.0 s at 128 m, half or less of 1.0's 4.0
+   and 6.9 s.
+5. **Geometry:** 51 draw calls at 96 m (119 in 1.0) and about 930 triangles per
+   chunk (2,048 in 1.0). Memory is unchanged from the first 1.1 run: 19.4 MiB
+   held at 96 m.
+
+The 96 m default stays: 128 m also meets the budget, and the headroom at 96 m is
+what later milestones (the simulation, zombies, lighting) will spend.
