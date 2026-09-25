@@ -184,9 +184,8 @@ measurement found:
 **Done when:** a new benchmark run on the reference laptop meets the frame
 budget from 1.0, and the Results below are updated.
 
-**Status:** implemented. The first benchmark run missed the frame budget (see
-Results, "1.1 first run"); the fix is in, and a new run on the reference laptop
-is next.
+**Status:** done. The first benchmark run missed the frame budget; after the
+fix, 0.5 m at 96 m meets it (see Results, "1.1 second run").
 The walk toggle is on Z (Ctrl would collide with browser shortcuts such as
 Ctrl+W).
 
@@ -554,4 +553,24 @@ In Node, the mesh jobs around spawn fell from 264 to 113, and each takes 1.4 ms
 (4.4 ms for 1.0's mesher): about 7 times less meshing work than the first 1.1
 run. In headless Chromium, meshing went from 5.7 / 14.0 ms (p50 / p95) to 1.5 /
 4.8 ms. The frame budget needs a new run on the reference laptop.
+
+### 1.1 second run (2026-09-25): done
+
+After the fix. Same laptop, browser and canvas.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 5.5 | 968 | 10.6 / 60.5 / 1.3 | 4.0 / 47.0 | 926 | 60 / 17.2 / 0% | 44 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 3.0 / 7.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 19.4 / 112.5 / 2.3 | 3.0 / 6.0 | 930 | 60 / 17.2 / 0% | 79 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 9.0 |
+| 0.5 m | 128 m | 3.0 | 2888 | 31.8 / 180.5 / 3.8 | 4.0 / 32.0 | 926 | 60 / 17.2 / 0% | 132 | 17.2 / 0% / 0 | 83.1 / 17% / 0 | 5.0 / 12.0 / 72.0 |
+
+- **The frame budget holds at 96 m:** no slow frames in any phase, no holes, and
+  CPU work per frame at most 9 ms (p95) of the 16.7 ms a frame has.
+- Meshing is 3–4 ms median, down from 21–23 ms in the first 1.1 run and 12–15 ms
+  in 1.0.
+- **128 m is the limit of the high setting:** looking and jogging are clean, but
+  sprinting has 17% slow frames with main-thread work spiking to 72 ms (p95).
+  The likely cause is terrain generation and mesh uploads on the main thread
+  when many new columns come into range at once. Moving worldgen to a worker
+  (planned for Slice 4) is the fix if 128 m needs to be smooth.
 
