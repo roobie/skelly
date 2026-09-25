@@ -41,7 +41,19 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
+  /** Speed factor from load and handling (paceFactor); 1 when absent. */
+  pace?: number;
 }
+
+/** Grams: carrying more than `light` slows you, down to `slowest` at `heavy`. */
+export const LOAD = { light: 20_000, heavy: 40_000, slowest: 0.6 } as const;
+
+/** Handling an item halves your pace (DESIGN.md, "Handling time"). */
+export const paceFactor = (grams: number, handling: boolean): number => {
+  const over = Math.max(0, grams - LOAD.light) / (LOAD.heavy - LOAD.light);
+  const load = Math.max(LOAD.slowest, 1 - (1 - LOAD.slowest) * over);
+  return handling ? load * 0.5 : load;
+};
 
 /** Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. */
 export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent): void => {
@@ -52,7 +64,7 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     right /= len;
   }
   const pace = intent.walk ? PLAYER.walk : PLAYER.jog;
-  const speed = (intent.sprint ? PLAYER.sprint : pace) / scale.blockSize;
+  const speed = ((intent.sprint ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.

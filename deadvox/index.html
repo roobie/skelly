@@ -10,7 +10,9 @@
     <main id="view"></main>
     <div id="crosshair"></div>
     <div id="hud"></div>
-    <div id="hotbar"></div>
+    <div id="hotbar" hidden></div>
+    <div id="quickbar"></div>
+    <div id="handling" hidden></div>
     <div id="prompt" hidden></div>
     <section id="inventory" hidden></section>
     <div id="errors"></div>
@@ -24,9 +26,9 @@
           <dt>Z</dt><dd>Walk / jog</dd>
           <dt>Space</dt><dd>Jump</dd>
           <dt>Mouse</dt><dd>Look</dd>
-          <dt>LMB / RMB</dt><dd>Break / place block</dd>
-          <dt>1–9, wheel</dt><dd>Choose block</dd>
-          <dt>Tab</dt><dd>Inventory</dd>
+          <dt>Tab</dt><dd>Inventory: drag items between grids, R rotates</dd>
+          <dt>1–5</dt><dd>Quickbar: take into your hands</dd>
+          <dt>X</dt><dd>Cancel what you're handling</dd>
           <dt>Esc</dt><dd>Pause</dd>
         </dl>
         <p class="go" id="go">Click to play</p>
