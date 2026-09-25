@@ -122,6 +122,36 @@ chosen block size and view radius run at 60 fps (16.7 ms a frame) on the
 reference laptop, with meshing keeping up at sprint speed. This is the Slice 1
 version of EPIC.md's 60 fps quality criterion.
 
+#### Running it
+
+The block size is a URL parameter for now, so one build covers both scales.
+
+- **Feel:** open the game with `?block=0.5` and with `?block=1`. The test house
+  stands in front of the spawn point. Walk through the door, look at the
+  counter, table and bed, and climb the stairs to the roof. With 0.5 m blocks
+  you walk up the stairs; with 1 m blocks every step needs a jump.
+- **Numbers:** open `?bench=1` on the reference laptop, in a maximised window,
+  and leave the tab visible. It runs the six configurations one after another,
+  reloading the page between them, and takes about 6 minutes. Each run loads
+  the world around spawn, turns the camera once around for 12 s, then flies
+  away across the terrain for 15 s at jog speed and 15 s at sprint speed. The
+  report page at the end has a table and a **Copy Markdown** button. Paste the
+  table here, together with the CPU model and browser version.
+
+What the benchmark can and can't tell us:
+
+- Frame times are the time between animation frames, which the browser caps at
+  the display's refresh rate. They show whether 60 fps holds, not how much
+  headroom there is above it. The GPU's own time isn't measured separately.
+- "Holes" are columns within one chunk of the view radius that aren't meshed
+  yet. They show whether streaming keeps up with the player.
+- Memory is calculated from the chunks in the world for the three layouts in
+  [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). Only the full layout is
+  implemented today.
+- Terrain is still generated on the main thread, 2 columns per frame. Holes at
+  sprint speed with 0.5 m blocks would point at that limit rather than at
+  meshing.
+
 ### 1.1 Metres and half-metre blocks
 
 - `BLOCK_SIZE` converts between blocks and metres. Physics, player and

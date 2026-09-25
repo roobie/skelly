@@ -3,7 +3,9 @@
 // workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
 // and AO at chunk borders are correct and never need a second pass.
 
-import { CHUNK, chunkKey, MAX_CY, MIN_CY, toChunk, type Vec3 } from '../core/coords.ts';
+import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
+import type { Scale } from '../core/scale.ts';
+import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
 import { extractPadded } from '../core/world.ts';
 import { generateColumn, type TerrainBlocks } from '../core/worldgen.ts';
@@ -18,8 +20,22 @@ export interface StreamerOptions {
   seed: number;
   terrain: TerrainBlocks;
   colors: Uint8Array;
+  scale: Scale;
+  /** Stamped into every column as it generates. */
+  structures: readonly BlockBox[];
   /** Mesh radius in chunks (square). Terrain is generated one column further out. */
   radius: number;
+  /** When given, per-column and per-chunk timings are appended here. */
+  stats?: StreamerStats;
+}
+
+export interface StreamerStats {
+  /** Main-thread milliseconds to generate each column. */
+  genMs: number[];
+  /** Worker milliseconds to mesh each chunk. */
+  meshMs: number[];
+  /** Triangles in each chunk mesh that wasn't empty. */
+  triangles: number[];
 }
 
 export class Streamer {
@@ -64,6 +80,28 @@ export class Streamer {
     return this.neighboursGenerated(toChunk(Math.floor(x)), toChunk(Math.floor(z)));
   }
 
+  /**
+   * Columns within `within` chunks of (x, z) (square) that aren't fully meshed yet:
+   * not generated, or with a chunk waiting for or being meshed. Zero means no holes.
+   */
+  unmeshedColumns(x: number, z: number, within: number): number {
+    const pcx = toChunk(Math.floor(x));
+    const pcz = toChunk(Math.floor(z));
+    const { minCy, maxCy } = this.opts.scale;
+    let count = 0;
+    for (let cz = pcz - within; cz <= pcz + within; cz++) {
+      for (let cx = pcx - within; cx <= pcx + within; cx++) {
+        let done = this.generated.has(`${cx},${cz}`);
+        for (let cy = minCy; done && cy <= maxCy; cy++) {
+          const key = chunkKey(cx, cy, cz);
+          done = !(this.dirty.has(key) || this.inFlight.has(key));
+        }
+        count += done ? 0 : 1;
+      }
+    }
+    return count;
+  }
+
   /** Call after editing blocks with the chunks World.setBlock returned. */
   markEdited(chunks: Vec3[]): void {
     for (const [cx, cy, cz] of chunks) {
@@ -101,7 +139,7 @@ export class Streamer {
       if (!this.neighboursGenerated(cx, cz)) {
         continue;
       }
-      for (let cy = MIN_CY; cy <= MAX_CY && this.inFlight.size < this.maxInFlight; cy++) {
+      for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy && this.inFlight.size < this.maxInFlight; cy++) {
         const key = chunkKey(cx, cy, cz);
         if (this.dirty.has(key) && !this.inFlight.has(key)) {
           this.requestMesh(key, cx, cy, cz);
@@ -142,8 +180,11 @@ export class Streamer {
     if (this.generated.has(col)) {
       return false;
     }
-    const { world, seed, terrain } = this.opts;
-    for (const chunk of generateColumn(seed, terrain, cx, cz)) {
+    const { world, seed, terrain, scale, structures, stats } = this.opts;
+    const start = performance.now();
+    const column = generateColumn({ seed, blocks: terrain, scale }, cx, cz, structures);
+    stats?.genMs.push(performance.now() - start);
+    for (const chunk of column) {
       if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {
         continue; // already edited; keep it
       }
@@ -173,6 +214,13 @@ export class Streamer {
 
   private receive(msg: FromMesher): void {
     this.inFlight.delete(msg.key);
+    const { stats } = this.opts;
+    if (stats) {
+      stats.meshMs.push(msg.ms);
+      if (msg.mesh.indices.length > 0) {
+        stats.triangles.push(msg.mesh.indices.length / 3);
+      }
+    }
     if ((this.versions.get(msg.key) ?? 0) !== msg.version) {
       return; // edited meanwhile; already dirty again
     }

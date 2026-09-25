@@ -9,4 +9,6 @@ export interface FromMesher {
   key: string;
   version: number;
   mesh: MeshData;
+  /** Time spent in buildMesh, in milliseconds. */
+  ms: number;
 }

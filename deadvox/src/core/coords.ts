@@ -7,10 +7,6 @@ export const CHUNK_BITS = 5;
 export const CHUNK = 1 << CHUNK_BITS;
 export const CHUNK_VOLUME = CHUNK * CHUNK * CHUNK;
 
-/** Vertical extent of the world, in chunks (inclusive). Terrain lives inside this range. */
-export const MIN_CY = -1;
-export const MAX_CY = 2;
-
 /** Chunk coordinate of an integer block coordinate (floors negatives correctly). */
 export const toChunk = (n: number): number => n >> CHUNK_BITS;
 
