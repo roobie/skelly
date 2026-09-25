@@ -572,6 +572,18 @@ body.inventory-open #crosshair {
 #overlay a {
   color: var(--accent);
 }
+#credits {
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  cursor: default;
+}
+#overlay .credits {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+#overlay .credits li {
+  margin: 0 0 8px;
+}
 
 /* Benchmark and report pages have no crosshair or hotbar. */
 body.bench #crosshair,

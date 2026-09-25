@@ -69,6 +69,8 @@ save, and continue the next day.
 - The inventory screen (two panes, drag and drop, keyboard) and a quickbar.
 - Item models: glTF files as content, drawn in piles and in your hands. The
   flashlight has one; other items fall back to simple shapes.
+- An asset manifest per pack, and a credits screen drawn from it (DESIGN.md,
+  ["Assets and credits"](DESIGN.md#assets-and-credits)).
 - Block entities: containers and doors. A block entity can span several cells.
 - A hamlet near spawn: 5 building templates, flattened lots, loot tables, and a
   search action.
@@ -337,12 +339,11 @@ it.
   animations yet.
 - The base pack's first model is the flashlight, from
   ["Torch" on OpenGameArt](https://opengameart.org/content/torch) (CC0).
-  Model files are small and made for the game or CC0.
-- The asset manifest (`content/base/assets/manifest.json`, see the data
-  sketches) lists where every file under `assets/` came from, CC0 included.
-  The validator checks it: every file under `assets/` comes from exactly one
-  source, every file a source lists exists, and every licence is one we
-  accept.
+  Model files are small, and made for the game, CC0 or CC BY.
+- The asset manifest and the credits screen came before this milestone (see
+  PROJECT.md), and already check licences, authors and files listed twice.
+  1.5.5 adds the checks that need files: every file under `assets/` comes from
+  a source in the manifest, and every file a source lists exists.
 
 **Done when:** the validator fails on a missing model id or file, and on an
 asset file the manifest doesn't list (fixture tests, like the one for broken
@@ -518,17 +519,19 @@ the file's metres; an item names it with `"model": "flashlight"`:
   "anchors": { "lens": [0.18, 0, 0] } }
 ```
 
-The asset manifest, `assets/manifest.json` in each pack (1.5.5). It isn't a
-content file: it records where each file under `assets/` came from. A source
-is one download; `licence` is an SPDX identifier, `author` is `null` until
-it's known, and `files` are the pack's files made from it, as paths within the
-pack:
+The asset manifest, `assets/manifest.json` in each pack. It isn't a content
+file: it records where each file under `assets/` came from, and the credits
+screen is drawn from it. A source is one download. `licence` is an SPDX
+identifier: `CC0-1.0`, `CC-BY-3.0` or `CC-BY-4.0`. `author` may be `null` for
+CC0, but CC BY needs an author and a `url`. `files` are the pack's files made
+from it, as paths within the pack, and `changes` says what we changed, or is
+`null`:
 
 ```json
 { "sources": [
   { "title": "Torch", "url": "https://opengameart.org/content/torch", "author": null,
     "licence": "CC0-1.0", "download": "torch.zip", "files": ["assets/models/flashlight.glb"],
-    "changes": "To be converted to .glb in milestone 1.5.5" }
+    "changes": null }
 ] }
 ```
 

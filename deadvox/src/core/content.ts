@@ -132,6 +132,10 @@ const fileIssues = (file: ContentFile): [string, string][] => {
   return out;
 };
 
+/** Valibot's issues as content issues, with readable paths. */
+export const schemaIssues = (source: string, issues: readonly Issue[]): ContentIssue[] =>
+  issues.flatMap(flatten).map((issue) => ({ source, path: formatPath(issue), message: messageOf(issue) }));
+
 /** Checks one content file on its own. An empty list means the file is usable. */
 export const validateContent = ({ source, data }: ContentSource): ContentIssue[] => {
   if (!isObject(data)) {
@@ -139,9 +143,7 @@ export const validateContent = ({ source, data }: ContentSource): ContentIssue[]
   }
   const result = safeParse(ContentFileSchema, data);
   if (!result.success) {
-    return result.issues
-      .flatMap(flatten)
-      .map((issue) => ({ source, path: formatPath(issue), message: messageOf(issue) }));
+    return schemaIssues(source, result.issues);
   }
   return fileIssues(result.output).map(([path, message]) => ({ source, path, message }));
 };
