@@ -37,7 +37,8 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
 **When.** The Slice 1 scale measurement (milestone 1.0) compares 1 m and 0.5 m
 blocks with the same code. Milestone 1.1 then does the switch.
 
-**How we'll know.** On the reference laptop (still to be named), a 128 m near
+**How we'll know.** On the [reference laptop](DESIGN.md#reference-hardware)
+(Iris Xe integrated graphics), a 128 m near
 radius runs at 60 fps with meshing keeping up with walking speed. *Measure.*
 
 ## 2. View distance

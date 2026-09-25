@@ -106,15 +106,16 @@ switching one constant, and measure:
 
 | Metric | Details |
 | --- | --- |
-| Frame time | At 64, 96 and 128 m view radius, on the reference laptop and on a desktop |
+| Frame time | At 64, 96 and 128 m view radius, on the [reference laptop](DESIGN.md#reference-hardware) and on a desktop |
 | Meshing | Time per chunk (median and p95); triangles per chunk |
 | Memory | Stored chunks and memory for each radius, with and without the uniform-chunk trick |
 | Walking | Whether meshing keeps up when walking and sprinting |
 | Feel | Doorways, stairs, furniture and interiors, compared with screenshots |
 
 **Done when:** the results and the decision are written into this file (under
-"Results" below), and the reference laptop is named. The default is 0.5 m
-unless the numbers rule it out.
+"Results" below), together with the reference laptop's exact CPU model,
+browser and browser version. The default is 0.5 m unless the numbers rule it
+out.
 
 The outcome also sets **the frame budget** that later milestones must hold: the
 chosen block size and view radius run at 60 fps (16.7 ms a frame) on the
@@ -388,7 +389,6 @@ A zombie type:
 
 ## Open questions
 
-- Which machine is the reference laptop? Decided in 1.0.
 - Is a 1:8 clock ratio right? A 45-minute session is only 6 game hours.
 - Shamblers don't respawn in Slice 1 (see 1.7). Does a cleared hamlet make the
   second night too safe to test sleep interruptions? If so, add night

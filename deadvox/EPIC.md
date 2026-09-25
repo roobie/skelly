@@ -56,7 +56,8 @@ risks in [CHALLENGES.md](CHALLENGES.md), and the first slice in detail in
 **Quality:**
 
 - 60 fps at the chosen near view distance with v1 zombie counts on the
-  reference laptop. The laptop is chosen in Slice 1.
+  [reference laptop](DESIGN.md#reference-hardware) (8-core Intel, 32 GB,
+  Iris Xe).
 - A new world loads in under 10 s. A 10-hour save is under 50 MB.
 - Plays in current Chrome, Firefox and Safari.
 - A new player learns the controls and the inventory without reading this

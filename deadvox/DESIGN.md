@@ -40,6 +40,15 @@ taken apart.
 5. **Browser first.** A static site with no backend, running on a mid-range
    laptop. It's singleplayer, so the player's machine is the whole world.
 
+## Reference hardware
+
+Performance targets are measured on the **reference laptop**: the project
+owner's 8-core Intel laptop with 32 GB of RAM and **Iris Xe integrated
+graphics**. The GPU is the constraint to design for: integrated graphics share
+memory bandwidth with the CPU, so triangle count, overdraw and draw calls
+matter more than CPU time. Milestone 1.0 records the exact CPU model, browser
+and browser version next to its results.
+
 ## Scale and units
 
 | | |
