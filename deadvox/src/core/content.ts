@@ -1,30 +1,23 @@
-// Game content is data: JSON files of block and item definitions. Files are applied
-// in order, so a mod loaded after the base pack can add new ids or override existing ones.
+// Game content is data: JSON files with sections of definitions (schema.ts). Files
+// are applied in order, so a mod loaded after the base pack can add new ids or
+// override existing ones. Each file's shape is checked on its own; references
+// between definitions are checked once every file is merged. A file with any issue
+// is skipped whole, so one broken mod can't leave half-applied content behind.
 
-export interface BlockDef {
-  id: string;
-  name: string;
-  /** "#rrggbb" */
-  color: string;
-  /** Blocks movement. Non-solid blocks still render as cubes for now. */
-  solid: boolean;
-}
+import { type BaseIssue, safeParse } from 'valibot';
+import {
+  type BlockDef,
+  type ContentFile,
+  ContentFileSchema,
+  type ContentSection,
+  type FurnitureDef,
+  type ItemDef,
+  type LootTable,
+  type TemplateDef,
+  type ZombieDef,
+} from './schema.ts';
 
-export interface ItemDef {
-  id: string;
-  name: string;
-  category: string;
-  /** Grams. */
-  weight: number;
-  /** Millilitres. */
-  volume: number;
-  description?: string;
-}
-
-export interface ContentFile {
-  blocks?: BlockDef[];
-  items?: ItemDef[];
-}
+export type { BlockDef, FurnitureDef, ItemDef, LootEntry, LootTable, TemplateDef, ZombieDef } from './schema.ts';
 
 /** A parsed JSON file and where it came from (for error messages). */
 export interface ContentSource {
@@ -43,145 +36,354 @@ export interface Registry {
   blocks: BlockDef[];
   blockIds: Map<string, number>;
   items: Map<string, ItemDef>;
+  furniture: Map<string, FurnitureDef>;
+  loot: Map<string, LootTable>;
+  templates: Map<string, TemplateDef>;
+  zombies: Map<string, ZombieDef>;
 }
 
 export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
-type FieldType = 'string' | 'number' | 'boolean';
-type FieldSpec = Record<string, { type: FieldType; required: boolean }>;
+const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'loot', 'templates', 'zombies'];
 
-const BLOCK_FIELDS: FieldSpec = {
-  id: { type: 'string', required: true },
-  name: { type: 'string', required: true },
-  color: { type: 'string', required: true },
-  solid: { type: 'boolean', required: true },
+// ---- shape (one file) ----
+
+type Issue = BaseIssue<unknown>;
+
+/** "items[0].light.power", with palette characters in brackets: `palette["#"]`. */
+const formatPath = (issue: Issue): string => {
+  const keys = (issue.path ?? []).map((item) => item.key as string | number);
+  return keys
+    .map((key, i) => {
+      if (typeof key === 'number') {
+        return `[${key}]`;
+      }
+      if (keys[i - 1] === 'palette') {
+        return `["${key}"]`;
+      }
+      return i === 0 ? key : `.${key}`;
+    })
+    .join('');
 };
 
-const ITEM_FIELDS: FieldSpec = {
-  id: { type: 'string', required: true },
-  name: { type: 'string', required: true },
-  category: { type: 'string', required: true },
-  weight: { type: 'number', required: true },
-  volume: { type: 'number', required: true },
-  description: { type: 'string', required: false },
+/** A union reports its own "wrong type"; the issues from the branch that nearly matched say more. */
+const flatten = (issue: Issue): Issue[] => {
+  const depth = issue.path?.length ?? 0;
+  const deeper = (issue.issues ?? []).filter((sub) => (sub.path?.length ?? 0) > depth);
+  return issue.type === 'union' && deeper.length > 0 ? deeper.flatMap(flatten) : [issue];
 };
 
-const ID = /^[a-z0-9_]+$/;
-const COLOR = /^#[0-9a-fA-F]{6}$/;
+const messageOf = (issue: Issue): string => {
+  if (issue.type === 'strict_object') {
+    const key = issue.path?.at(-1)?.key;
+    return issue.input === undefined ? 'missing' : `unknown field "${String(key)}"`;
+  }
+  return issue.message;
+};
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
-/** Checks one content file's shape. An empty list means the file is usable. */
-export const validateContent = ({ source, data }: ContentSource): ContentIssue[] => {
-  const issues: ContentIssue[] = [];
-  const issue = (path: string, message: string) => issues.push({ source, path, message });
-
-  if (!isObject(data)) {
-    issue('', 'expected an object with "blocks" and/or "items" arrays');
-    return issues;
+/** Checks inside one template: layer sizes, and that every character is in the palette. */
+const templateIssues = (template: TemplateDef, path: string): [string, string][] => {
+  const [sx, , sz] = template.size;
+  const out: [string, string][] = [];
+  if (template.layers.length !== template.size[1]) {
+    out.push([`${path}.layers`, `has ${template.layers.length} layers; size[1] is ${template.size[1]}`]);
   }
-  for (const key of Object.keys(data)) {
-    if (key !== 'blocks' && key !== 'items') {
-      issue(key, `unknown section "${key}"`);
+  template.layers.forEach((layer, y) => {
+    if (layer.length !== sz) {
+      out.push([`${path}.layers[${y}]`, `has ${layer.length} rows; size[2] is ${sz}`]);
     }
-  }
-
-  const checkList = (
-    key: 'blocks' | 'items',
-    fields: FieldSpec,
-    extra: (def: Record<string, unknown>, path: string) => void,
-  ) => {
-    const list = data[key];
-    if (list === undefined) {
-      return;
-    }
-    if (!Array.isArray(list)) {
-      issue(key, 'expected an array');
-      return;
-    }
-    const seen = new Set<string>();
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
-    list.forEach((def: unknown, i) => {
-      const path = `${key}[${i}]`;
-      if (!isObject(def)) {
-        issue(path, 'expected an object');
-        return;
+    layer.forEach((row, z) => {
+      const cells = [...row];
+      if (cells.length !== sx) {
+        out.push([`${path}.layers[${y}][${z}]`, `has ${cells.length} cells; size[0] is ${sx}`]);
       }
-      for (const [name, spec] of Object.entries(fields)) {
-        const value = def[name];
-        if (value === undefined) {
-          if (spec.required) {
-            issue(`${path}.${name}`, 'missing');
-          }
-        } else if (typeof value !== spec.type) {
-          issue(`${path}.${name}`, `expected a ${spec.type}`);
+      for (const c of new Set(cells)) {
+        if (!(c in template.palette)) {
+          out.push([`${path}.layers[${y}][${z}]`, `"${c}" is not in the palette`]);
         }
       }
-      for (const name of Object.keys(def)) {
-        if (!(name in fields)) {
-          issue(`${path}.${name}`, `unknown field "${name}"`);
-        }
-      }
-      if (typeof def.id === 'string') {
-        if (!ID.test(def.id)) {
-          issue(`${path}.id`, `"${def.id}" must be lowercase letters, digits and _`);
-        }
-        if (seen.has(def.id)) {
-          issue(`${path}.id`, `duplicate id "${def.id}" in this file`);
-        }
-        seen.add(def.id);
-      }
-      extra(def, path);
     });
-  };
-
-  checkList('blocks', BLOCK_FIELDS, (def, path) => {
-    if (def.id === AIR.id) {
-      issue(`${path}.id`, '"air" is built in');
-    }
-    if (typeof def.color === 'string' && !COLOR.test(def.color)) {
-      issue(`${path}.color`, 'expected "#rrggbb"');
-    }
   });
-  checkList('items', ITEM_FIELDS, (def, path) => {
-    for (const name of ['weight', 'volume']) {
-      const value = def[name];
-      if (typeof value === 'number' && !(value >= 0)) {
-        issue(`${path}.${name}`, 'must be 0 or more');
-      }
-    }
-  });
-  return issues;
+  return out;
 };
 
-/**
- * Merges content files in order into a registry. Files with issues are skipped whole,
- * so one broken mod can't leave half-applied content behind.
- */
-export const buildRegistry = (sources: ContentSource[]): { registry: Registry; issues: ContentIssue[] } => {
-  const registry: Registry = { blocks: [AIR], blockIds: new Map([[AIR.id, 0]]), items: new Map() };
-  const issues: ContentIssue[] = [];
-  for (const src of sources) {
-    const found = validateContent(src);
-    if (found.length > 0) {
-      issues.push(...found);
-      continue;
+/** Checks that need only the file itself: duplicate ids, the built-in air block, template sizes. */
+const fileIssues = (file: ContentFile): [string, string][] => {
+  const out: [string, string][] = [];
+  for (const section of SECTIONS) {
+    const seen = new Set<string>();
+    (file[section] ?? []).forEach((def, i) => {
+      if (seen.has(def.id)) {
+        out.push([`${section}[${i}].id`, `duplicate id "${def.id}" in this file`]);
+      }
+      seen.add(def.id);
+    });
+  }
+  (file.blocks ?? []).forEach((block, i) => {
+    if (block.id === AIR.id) {
+      out.push([`blocks[${i}].id`, '"air" is built in']);
     }
-    const file = src.data as ContentFile;
-    for (const block of file.blocks ?? []) {
+  });
+  (file.templates ?? []).forEach((template, i) => {
+    out.push(...templateIssues(template, `templates[${i}]`));
+  });
+  return out;
+};
+
+/** Checks one content file on its own. An empty list means the file is usable. */
+export const validateContent = ({ source, data }: ContentSource): ContentIssue[] => {
+  if (!isObject(data)) {
+    return [{ source, path: '', message: `expected an object with any of: ${SECTIONS.join(', ')}` }];
+  }
+  const result = safeParse(ContentFileSchema, data);
+  if (!result.success) {
+    return result.issues
+      .flatMap(flatten)
+      .map((issue) => ({ source, path: formatPath(issue), message: messageOf(issue) }));
+  }
+  return fileIssues(result.output).map(([path, message]) => ({ source, path, message }));
+};
+
+// ---- merging ----
+
+/** Where the definition that won came from, for issues found after merging. */
+interface Origin {
+  source: string;
+  path: string;
+}
+
+const emptyRegistry = (): Registry => ({
+  blocks: [AIR],
+  blockIds: new Map([[AIR.id, 0]]),
+  items: new Map(),
+  furniture: new Map(),
+  loot: new Map(),
+  templates: new Map(),
+  zombies: new Map(),
+});
+
+const merge = (files: readonly { source: string; file: ContentFile }[]) => {
+  const registry = emptyRegistry();
+  const origins = new Map<string, Origin>();
+  const note = (section: ContentSection, id: string, source: string, i: number) =>
+    origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
+
+  for (const { source, file } of files) {
+    (file.blocks ?? []).forEach((block, i) => {
       const existing = registry.blockIds.get(block.id);
       if (existing === undefined) {
         registry.blockIds.set(block.id, registry.blocks.length);
         registry.blocks.push(block);
       } else {
-        registry.blocks[existing] = block; // override keeps the runtime id
+        registry.blocks[existing] = block; // an override keeps the runtime id
       }
-    }
-    for (const item of file.items ?? []) {
-      registry.items.set(item.id, item);
+      note('blocks', block.id, source, i);
+    });
+    const maps = [
+      ['items', registry.items],
+      ['furniture', registry.furniture],
+      ['loot', registry.loot],
+      ['templates', registry.templates],
+      ['zombies', registry.zombies],
+    ] as const;
+    for (const [section, map] of maps) {
+      (file[section] ?? []).forEach((def, i) => {
+        (map as Map<string, typeof def>).set(def.id, def);
+        note(section, def.id, source, i);
+      });
     }
   }
-  return { registry, issues };
+  return { registry, origins };
+};
+
+// ---- references (after merging) ----
+
+type Report = (section: ContentSection, id: string, path: string, message: string) => void;
+
+const checkItems = (registry: Registry, report: Report) => {
+  for (const item of registry.items.values()) {
+    const battery = item.light?.power?.battery;
+    if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
+      report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
+    }
+  }
+};
+
+/** Follows nested tables; a table that leads back to itself would roll forever. */
+const findLoop = (registry: Registry, start: string): string[] | undefined => {
+  const walk = (id: string, trail: string[]): string[] | undefined => {
+    if (trail.includes(id)) {
+      return [...trail, id];
+    }
+    for (const entry of registry.loot.get(id)?.entries ?? []) {
+      const loop = entry.table === undefined ? undefined : walk(entry.table, [...trail, id]);
+      if (loop) {
+        return loop;
+      }
+    }
+    return undefined;
+  };
+  const loop = walk(start, []);
+  return loop?.[0] === start ? loop : undefined;
+};
+
+const checkLoot = (registry: Registry, report: Report) => {
+  for (const table of registry.loot.values()) {
+    table.entries.forEach((entry, i) => {
+      if (entry.item !== undefined && !registry.items.has(entry.item)) {
+        report('loot', table.id, `.entries[${i}].item`, `no item "${entry.item}"`);
+      }
+      if (entry.table !== undefined && !registry.loot.has(entry.table)) {
+        report('loot', table.id, `.entries[${i}].table`, `no loot table "${entry.table}"`);
+      }
+    });
+    const loop = findLoop(registry, table.id);
+    if (loop) {
+      report('loot', table.id, '.entries', `nested tables loop: ${loop.join(' → ')}`);
+    }
+  }
+};
+
+const checkFurniture = (registry: Registry, report: Report) => {
+  for (const furniture of registry.furniture.values()) {
+    if (furniture.loot !== undefined && !registry.loot.has(furniture.loot)) {
+      report('furniture', furniture.id, '.loot', `no loot table "${furniture.loot}"`);
+    }
+    if (furniture.loot !== undefined && furniture.container === undefined) {
+      report('furniture', furniture.id, '.loot', 'has loot but no container to put it in');
+    }
+  }
+};
+
+/** Every [x, y, z] in a box, in (y, z, x) order: lowest layer first, then rows, then cells. */
+function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Generator<[number, number, number]> {
+  for (let y = 0; y < sy; y++) {
+    for (let z = 0; z < sz; z++) {
+      for (let x = 0; x < sx; x++) {
+        yield [x, y, z];
+      }
+    }
+  }
+}
+
+/**
+ * Every cell marked with a furniture character must belong to a whole piece. Pieces
+ * are found from their lowest corner: the first unclaimed marked cell in (y, z, x)
+ * order. Returns why the marks don't split into whole pieces, or undefined.
+ */
+const piecesProblem = (
+  template: TemplateDef,
+  char: string,
+  size: readonly [number, number, number],
+  facing?: string,
+): string | undefined => {
+  const piece: [number, number, number] = facing === 'e' || facing === 'w' ? [size[2], size[1], size[0]] : [...size];
+  const marked = (x: number, y: number, z: number) => [...(template.layers[y]?.[z] ?? '')][x] === char;
+  const claimed = new Set<string>();
+  /** Claims the piece anchored at a cell; false if any of its cells isn't marked or is taken. */
+  const claim = (x: number, y: number, z: number): boolean => {
+    for (const [dx, dy, dz] of cellsOf(piece)) {
+      const key = `${x + dx},${y + dy},${z + dz}`;
+      if (!marked(x + dx, y + dy, z + dz) || claimed.has(key)) {
+        return false;
+      }
+      claimed.add(key);
+    }
+    return true;
+  };
+  for (const [x, y, z] of cellsOf(template.size)) {
+    if (marked(x, y, z) && !claimed.has(`${x},${y},${z}`) && !claim(x, y, z)) {
+      return `the piece at [${x}, ${y}, ${z}] needs ${piece.join(' × ')} cells marked "${char}"`;
+    }
+  }
+  return undefined;
+};
+
+type PaletteThing = Exclude<TemplateDef['palette'][string], string>;
+
+const checkPaletteThing = (registry: Registry, template: TemplateDef, char: string, entry: PaletteThing) => {
+  const found: [string, string][] = [];
+  const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
+  if (entry.furniture !== undefined && !furniture) {
+    found.push(['.furniture', `no furniture "${entry.furniture}"`]);
+  }
+  const problem = furniture && piecesProblem(template, char, furniture.size, entry.facing);
+  if (problem) {
+    found.push(['.furniture', problem]);
+  }
+  if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
+    found.push(['.loot', `no loot table "${entry.loot}"`]);
+  }
+  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
+    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
+  }
+  return found;
+};
+
+const checkTemplates = (registry: Registry, report: Report) => {
+  for (const template of registry.templates.values()) {
+    for (const [char, entry] of Object.entries(template.palette)) {
+      const at = `.palette["${char}"]`;
+      if (typeof entry !== 'string') {
+        for (const [path, message] of checkPaletteThing(registry, template, char, entry)) {
+          report('templates', template.id, `${at}${path}`, message);
+        }
+      } else if (!registry.blockIds.has(entry)) {
+        report('templates', template.id, at, `no block "${entry}"`);
+      }
+    }
+  }
+};
+
+const checkZombies = (registry: Registry, report: Report) => {
+  for (const zombie of registry.zombies.values()) {
+    if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
+      report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+    }
+  }
+};
+
+const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
+  const issues: ContentIssue[] = [];
+  const report: Report = (section, id, path, message) => {
+    const origin = origins.get(`${section}:${id}`)!;
+    issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
+  };
+  checkItems(registry, report);
+  checkLoot(registry, report);
+  checkFurniture(registry, report);
+  checkTemplates(registry, report);
+  checkZombies(registry, report);
+  return issues;
+};
+
+/**
+ * Merges content files in order into a registry. A file with a shape issue is
+ * skipped. Then references are checked; files with broken references are dropped
+ * and the rest merged again, until what's left is consistent.
+ */
+export const buildRegistry = (sources: readonly ContentSource[]): { registry: Registry; issues: ContentIssue[] } => {
+  const issues: ContentIssue[] = [];
+  let files: { source: string; file: ContentFile }[] = [];
+  for (const src of sources) {
+    const found = validateContent(src);
+    issues.push(...found);
+    if (found.length === 0) {
+      files.push({ source: src.source, file: src.data as ContentFile });
+    }
+  }
+  for (;;) {
+    const { registry, origins } = merge(files);
+    const broken = referenceIssues(registry, origins);
+    if (broken.length === 0) {
+      return { registry, issues };
+    }
+    issues.push(...broken);
+    const bad = new Set(broken.map((i) => i.source));
+    files = files.filter((f) => !bad.has(f.source));
+  }
 };
 
 /** Looks up a block's runtime id, failing loudly if content doesn't define it. */

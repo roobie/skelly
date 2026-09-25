@@ -29,7 +29,13 @@ const { registry, issues } = buildRegistry(sources);
 for (const issue of issues) {
   console.log(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
 }
-console.log(
-  `${files.length} file(s): ${registry.blocks.length - 1} blocks, ${registry.items.size} items, ${issues.length + broken} issue(s)`,
-);
+const counts = [
+  `${registry.blocks.length - 1} blocks`,
+  `${registry.items.size} items`,
+  `${registry.furniture.size} furniture`,
+  `${registry.loot.size} loot tables`,
+  `${registry.templates.size} templates`,
+  `${registry.zombies.size} zombie types`,
+];
+console.log(`${files.length} file(s): ${counts.join(', ')}; ${issues.length + broken} issue(s)`);
 process.exitCode = issues.length + broken > 0 ? 1 : 0;

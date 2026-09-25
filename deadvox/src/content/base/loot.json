@@ -1,0 +1,281 @@
+{
+  "loot": [
+    {
+      "id": "kitchen_cupboard",
+      "rolls": [1, 4],
+      "entries": [
+        {
+          "item": "canned_beans",
+          "weight": 5,
+          "count": [1, 2]
+        },
+        {
+          "item": "canned_soup",
+          "weight": 4,
+          "count": [1, 2]
+        },
+        {
+          "item": "crackers",
+          "weight": 3
+        },
+        {
+          "table": "kitchen_tools",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "id": "kitchen_tools",
+      "rolls": [1, 1],
+      "entries": [
+        {
+          "item": "kitchen_knife",
+          "weight": 3,
+          "condition": [0.4, 1]
+        },
+        {
+          "item": "can_opener",
+          "weight": 3
+        },
+        {
+          "item": "lighter",
+          "weight": 1
+        },
+        {
+          "item": "matches",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "fridge",
+      "rolls": [0, 3],
+      "entries": [
+        {
+          "item": "soda_can",
+          "weight": 4,
+          "count": [1, 3]
+        },
+        {
+          "item": "juice_carton",
+          "weight": 2
+        },
+        {
+          "item": "water_bottle",
+          "weight": 3
+        },
+        {
+          "item": "apple",
+          "weight": 3,
+          "count": [1, 3]
+        },
+        {
+          "nothing": true,
+          "weight": 4
+        }
+      ]
+    },
+    {
+      "id": "wardrobe",
+      "rolls": [1, 3],
+      "entries": [
+        {
+          "item": "jeans",
+          "weight": 3,
+          "condition": [0.5, 1]
+        },
+        {
+          "item": "cargo_pants",
+          "weight": 2,
+          "condition": [0.5, 1]
+        },
+        {
+          "item": "hoodie",
+          "weight": 3,
+          "condition": [0.5, 1]
+        },
+        {
+          "item": "jacket",
+          "weight": 2,
+          "condition": [0.5, 1]
+        },
+        {
+          "item": "school_backpack",
+          "weight": 1,
+          "condition": [0.6, 1]
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "desk",
+      "rolls": [1, 3],
+      "entries": [
+        {
+          "item": "paperback",
+          "weight": 3
+        },
+        {
+          "item": "aa_battery",
+          "weight": 3,
+          "count": [1, 4]
+        },
+        {
+          "item": "flashlight",
+          "weight": 1,
+          "condition": [0.5, 1]
+        },
+        {
+          "item": "painkillers",
+          "weight": 1
+        },
+        {
+          "item": "duct_tape",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "id": "shelf",
+      "rolls": [1, 3],
+      "entries": [
+        {
+          "item": "paperback",
+          "weight": 3
+        },
+        {
+          "table": "snacks",
+          "weight": 2
+        },
+        {
+          "table": "junk",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "snacks",
+      "rolls": [1, 1],
+      "entries": [
+        {
+          "item": "chocolate_bar",
+          "weight": 3,
+          "count": [1, 2]
+        },
+        {
+          "item": "crackers",
+          "weight": 2
+        },
+        {
+          "item": "soda_can",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "junk",
+      "rolls": [1, 3],
+      "entries": [
+        {
+          "item": "rag",
+          "weight": 4,
+          "count": [1, 3]
+        },
+        {
+          "item": "duct_tape",
+          "weight": 2
+        },
+        {
+          "item": "nails",
+          "weight": 2,
+          "count": [5, 20]
+        },
+        {
+          "item": "scrap_metal",
+          "weight": 3,
+          "count": [1, 2]
+        },
+        {
+          "item": "aa_battery",
+          "weight": 1,
+          "count": [1, 2]
+        },
+        {
+          "nothing": true,
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "id": "shed_tools",
+      "rolls": [1, 3],
+      "entries": [
+        {
+          "item": "hammer",
+          "weight": 3,
+          "condition": [0.4, 1]
+        },
+        {
+          "item": "crowbar",
+          "weight": 1,
+          "condition": [0.4, 1]
+        },
+        {
+          "item": "steel_pipe",
+          "weight": 2
+        },
+        {
+          "item": "nails",
+          "weight": 3,
+          "count": [10, 40]
+        },
+        {
+          "table": "junk",
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "id": "shambler_pockets",
+      "rolls": [0, 2],
+      "entries": [
+        {
+          "item": "lighter",
+          "weight": 1
+        },
+        {
+          "item": "aa_battery",
+          "weight": 1,
+          "count": [1, 2]
+        },
+        {
+          "item": "bandage",
+          "weight": 1
+        },
+        {
+          "item": "chocolate_bar",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 6
+        }
+      ]
+    }
+  ]
+}

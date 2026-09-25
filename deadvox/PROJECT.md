@@ -53,8 +53,8 @@ This file describes the code as it is. The game's design and roadmap are in
 | Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
 | Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
-| Content | JSON in `src/content/base`, validated (`core/content.ts`) and merged in order. An override keeps the block's runtime id. A file with any issue is skipped whole |
-| Units | Weight in grams, volume in millilitres |
+| Content | JSON in `src/content/base`, with sections for blocks, items, furniture, loot tables, templates and zombie types. Valibot schemas (`core/schema.ts`) check each file and give the TypeScript types; `core/content.ts` merges files in order and then checks references between them. An override keeps the block's runtime id. A file with any issue, including a broken reference, is skipped whole |
+| Units | Weight in grams, volume in millilitres, item length in millimetres |
 | Tests | Vitest, on the core only |
 | Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | CI | `.github/workflows/deadvox.yml`: typecheck, tests, content validation, build |
@@ -65,9 +65,9 @@ This file describes the code as it is. The game's design and roadmap are in
 ```
 src/
   core/        pure logic: coords, scale, chunk, world, worldgen, structure, storage, mesher,
-               raycast, physics, content, inventory; the simulation core: sim, clock,
+               raycast, physics, content and schema, inventory; the simulation core: sim, clock,
                scheduler, compression, events, random, entities, needs, sky
-  content/     JSON content packs (base/)
+  content/     JSON content packs (base/): blocks, items, furniture, loot, templates, zombies
   worker/      mesh worker + message types
   render/      three.js chunk meshes, sky and lights
   game/        engine setup, play mode, streaming, player controller, input, test house
@@ -75,7 +75,7 @@ src/
   ui/          HUD/inventory DOM + CSS
   cli/         content validator (npm run validate -- mod/*.json)
   main.ts      picks play, benchmark or results page from the URL
-test/          Vitest specs for core
+test/          Vitest specs for core, and content fixtures (fixtures/content/)
 ```
 
 ## Running

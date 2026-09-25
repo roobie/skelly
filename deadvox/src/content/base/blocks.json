@@ -71,6 +71,18 @@
       "name": "Roofing",
       "color": "#4a4b50",
       "solid": true
+    },
+    {
+      "id": "carpet",
+      "name": "Carpet",
+      "color": "#6b4f4a",
+      "solid": true
+    },
+    {
+      "id": "window_frame",
+      "name": "Window frame",
+      "color": "#e6e2d8",
+      "solid": true
     }
   ]
 }

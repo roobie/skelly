@@ -1,0 +1,304 @@
+{
+  "items": [
+    {
+      "id": "jeans",
+      "name": "Jeans",
+      "category": "clothing",
+      "weight": 700,
+      "volume": 900,
+      "length": 1000,
+      "wearable": {
+        "slot": "legs",
+        "encumbrance": 10,
+        "warmth": 10
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "front left",
+            "volume": 400,
+            "weight": 1500,
+            "length": 150,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "front right",
+            "volume": 400,
+            "weight": 1500,
+            "length": 150,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "back left",
+            "volume": 300,
+            "weight": 1000,
+            "length": 150,
+            "rigid": false,
+            "handling": 0.6
+          },
+          {
+            "name": "back right",
+            "volume": 300,
+            "weight": 1000,
+            "length": 150,
+            "rigid": false,
+            "handling": 0.6
+          }
+        ]
+      }
+    },
+    {
+      "id": "cargo_pants",
+      "name": "Cargo pants",
+      "category": "clothing",
+      "weight": 800,
+      "volume": 1100,
+      "length": 1000,
+      "wearable": {
+        "slot": "legs",
+        "encumbrance": 12,
+        "warmth": 12
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "front left",
+            "volume": 400,
+            "weight": 1500,
+            "length": 150,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "front right",
+            "volume": 400,
+            "weight": 1500,
+            "length": 150,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "cargo left",
+            "volume": 1000,
+            "weight": 2000,
+            "length": 250,
+            "rigid": false,
+            "handling": 0.8
+          },
+          {
+            "name": "cargo right",
+            "volume": 1000,
+            "weight": 2000,
+            "length": 250,
+            "rigid": false,
+            "handling": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "hoodie",
+      "name": "Hoodie",
+      "category": "clothing",
+      "weight": 600,
+      "volume": 1200,
+      "length": 700,
+      "wearable": {
+        "slot": "torso",
+        "encumbrance": 8,
+        "warmth": 25
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "front",
+            "volume": 1000,
+            "weight": 2000,
+            "length": 250,
+            "rigid": false,
+            "handling": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "jacket",
+      "name": "Jacket",
+      "category": "clothing",
+      "weight": 1200,
+      "volume": 2000,
+      "length": 800,
+      "wearable": {
+        "slot": "torso",
+        "encumbrance": 12,
+        "warmth": 35
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "left",
+            "volume": 800,
+            "weight": 2000,
+            "length": 250,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "right",
+            "volume": 800,
+            "weight": 2000,
+            "length": 250,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "inner",
+            "volume": 300,
+            "weight": 500,
+            "length": 200,
+            "rigid": false,
+            "handling": 0.7
+          }
+        ]
+      }
+    },
+    {
+      "id": "utility_vest",
+      "name": "Utility vest",
+      "category": "clothing",
+      "weight": 900,
+      "volume": 1500,
+      "length": 600,
+      "wearable": {
+        "slot": "torso",
+        "encumbrance": 6,
+        "warmth": 5
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "pouch 1",
+            "volume": 400,
+            "weight": 1000,
+            "length": 180,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "pouch 2",
+            "volume": 400,
+            "weight": 1000,
+            "length": 180,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "pouch 3",
+            "volume": 400,
+            "weight": 1000,
+            "length": 180,
+            "rigid": false,
+            "handling": 0.5
+          },
+          {
+            "name": "pouch 4",
+            "volume": 400,
+            "weight": 1000,
+            "length": 180,
+            "rigid": false,
+            "handling": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "fanny_pack",
+      "name": "Fanny pack",
+      "category": "bag",
+      "weight": 200,
+      "volume": 300,
+      "length": 350,
+      "wearable": {
+        "slot": "waist",
+        "encumbrance": 3
+      },
+      "container": {
+        "pockets": [
+          {
+            "volume": 1500,
+            "weight": 3000,
+            "length": 300,
+            "rigid": false,
+            "handling": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "school_backpack",
+      "name": "School backpack",
+      "category": "bag",
+      "weight": 600,
+      "volume": 1500,
+      "length": 450,
+      "wearable": {
+        "slot": "back",
+        "encumbrance": 10
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "main",
+            "volume": 20000,
+            "weight": 15000,
+            "length": 450,
+            "rigid": false,
+            "handling": 1.5
+          },
+          {
+            "name": "front",
+            "volume": 2000,
+            "weight": 3000,
+            "length": 250,
+            "rigid": false,
+            "handling": 1.2
+          }
+        ]
+      }
+    },
+    {
+      "id": "hiking_backpack",
+      "name": "Hiking backpack",
+      "category": "bag",
+      "weight": 1400,
+      "volume": 3000,
+      "length": 600,
+      "wearable": {
+        "slot": "back",
+        "encumbrance": 12
+      },
+      "container": {
+        "pockets": [
+          {
+            "name": "main",
+            "volume": 35000,
+            "weight": 30000,
+            "length": 700,
+            "rigid": false,
+            "handling": 1.5
+          },
+          {
+            "name": "lid",
+            "volume": 2000,
+            "weight": 3000,
+            "length": 250,
+            "rigid": false,
+            "handling": 1.0
+          }
+        ]
+      }
+    }
+  ]
+}

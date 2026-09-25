@@ -1,0 +1,148 @@
+{
+  "furniture": [
+    {
+      "id": "kitchen_cupboard",
+      "name": "Kitchen cupboard",
+      "size": [2, 2, 1],
+      "color": "#8a6a48",
+      "container": {
+        "pockets": [
+          {
+            "volume": 60000,
+            "weight": 50000,
+            "length": 900,
+            "rigid": true,
+            "handling": 1.0
+          }
+        ]
+      },
+      "loot": "kitchen_cupboard"
+    },
+    {
+      "id": "counter",
+      "name": "Kitchen counter",
+      "size": [2, 2, 1],
+      "color": "#b8b2a6",
+      "container": {
+        "pockets": [
+          {
+            "volume": 50000,
+            "weight": 40000,
+            "length": 600,
+            "rigid": true,
+            "handling": 1.0
+          }
+        ]
+      },
+      "loot": "kitchen_cupboard"
+    },
+    {
+      "id": "fridge",
+      "name": "Fridge",
+      "size": [2, 4, 2],
+      "color": "#d8dcd8",
+      "container": {
+        "pockets": [
+          {
+            "volume": 150000,
+            "weight": 80000,
+            "length": 700,
+            "rigid": true,
+            "handling": 1.0
+          }
+        ]
+      },
+      "loot": "fridge"
+    },
+    {
+      "id": "wardrobe",
+      "name": "Wardrobe",
+      "size": [2, 4, 1],
+      "color": "#6e5037",
+      "container": {
+        "pockets": [
+          {
+            "volume": 400000,
+            "weight": 60000,
+            "length": 1500,
+            "rigid": true,
+            "handling": 1.2
+          }
+        ]
+      },
+      "loot": "wardrobe"
+    },
+    {
+      "id": "desk",
+      "name": "Desk",
+      "size": [3, 2, 2],
+      "color": "#7a5c3e",
+      "container": {
+        "pockets": [
+          {
+            "volume": 30000,
+            "weight": 20000,
+            "length": 600,
+            "rigid": true,
+            "handling": 1.0
+          }
+        ]
+      },
+      "loot": "desk"
+    },
+    {
+      "id": "shelf",
+      "name": "Shelf",
+      "size": [2, 4, 1],
+      "color": "#8d7355",
+      "container": {
+        "pockets": [
+          {
+            "volume": 80000,
+            "weight": 60000,
+            "length": 900,
+            "rigid": true,
+            "handling": 0.8
+          }
+        ]
+      },
+      "loot": "shelf"
+    },
+    {
+      "id": "crate",
+      "name": "Crate",
+      "size": [2, 2, 2],
+      "color": "#9a7b4f",
+      "container": {
+        "pockets": [
+          {
+            "volume": 150000,
+            "weight": 80000,
+            "length": 900,
+            "rigid": true,
+            "handling": 1.2
+          }
+        ]
+      },
+      "loot": "junk"
+    },
+    {
+      "id": "bed",
+      "name": "Bed",
+      "size": [2, 1, 4],
+      "color": "#6f7f95",
+      "bed": {
+        "quality": 1
+      }
+    },
+    {
+      "id": "wood_door",
+      "name": "Wooden door",
+      "size": [2, 4, 1],
+      "color": "#7a5534",
+      "door": {
+        "handling": 0.6
+      }
+    }
+  ]
+}

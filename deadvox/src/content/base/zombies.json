@@ -1,0 +1,23 @@
+{
+  "zombies": [
+    {
+      "id": "shambler",
+      "name": "Shambler",
+      "health": 60,
+      "speed": {
+        "wander": 0.8,
+        "chase": 2.8
+      },
+      "sight": 25,
+      "hearing": 1,
+      "attack": {
+        "damage": 8,
+        "reach": 1.2,
+        "cooldown": 1.5
+      },
+      "abilities": [],
+      "loot": "shambler_pockets",
+      "model": "figure_basic"
+    }
+  ]
+}

@@ -457,9 +457,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 
 ## Content and modding
 
-- **Content types are defined with a schema library.** Valibot is preferred for
-  its bundle size. The schema gives both the TypeScript types and the runtime
-  validation, replacing today's hand-written checks.
+- **Content types are defined with Valibot schemas,** chosen for its bundle
+  size. The schema gives both the TypeScript types and the runtime validation.
 - **Packs.** A pack is a folder of JSON files. The base pack loads first; mods
   load after it and can add new ids or override existing ones. Ids are strings,
   namespaced by pack when they would clash (for example `base:shambler`).
