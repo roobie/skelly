@@ -70,7 +70,8 @@ src/
   core/        pure logic: coords, scale, chunk, world, worldgen, structure, storage, mesher,
                raycast, physics, content and schema, items, inventory, handling; the simulation core: sim, clock,
                scheduler, compression, events, random, entities, needs, sky
-  content/     JSON content packs (base/): blocks, items, furniture, loot, templates, zombies
+  content/     JSON content packs (base/): blocks, items, furniture, loot, templates, zombies;
+               assets/manifest.json lists where each asset file came from (URL, author, licence)
   worker/      mesh worker + message types
   render/      three.js chunk meshes, sky and lights, piles
   game/        engine setup, play mode, streaming, player controller, input, test house,

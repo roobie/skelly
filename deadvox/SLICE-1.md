@@ -319,7 +319,7 @@ it.
 
 - Models are content: a `models` section lists each model's id and file, and
   an item names its model by id, as zombie types already do. The files are
-  glTF binaries (`.glb`) in `content/base/models/`, loaded with three.js's
+  glTF binaries (`.glb`) in `content/base/assets/models/`, loaded with three.js's
   `GLTFLoader`; a model in another format is converted to `.glb` once and the
   converted file is committed.
 - A file is in metres, lying at rest on the ground, with its long side along
@@ -337,12 +337,16 @@ it.
   animations yet.
 - The base pack's first model is the flashlight, from
   ["Torch" on OpenGameArt](https://opengameart.org/content/torch) (CC0).
-  Model files are small and made for the game or CC0, and
-  `content/base/models/CREDITS.md` lists the source, author and licence of
-  each one, CC0 included.
+  Model files are small and made for the game or CC0.
+- The asset manifest (`content/base/assets/manifest.json`, see the data
+  sketches) lists where every file under `assets/` came from, CC0 included.
+  The validator checks it: every file under `assets/` comes from exactly one
+  source, every file a source lists exists, and every licence is one we
+  accept.
 
-**Done when:** the validator fails on a missing model id or file (a fixture
-test, like the one for broken references), a unit test places a pile's items
+**Done when:** the validator fails on a missing model id or file, and on an
+asset file the manifest doesn't list (fixture tests, like the one for broken
+references), a unit test places a pile's items
 at their grid cells with their rotation and leaves items without a model in the
 bundle, and the flashlight shows in the spawn pile and in your hands.
 
@@ -417,7 +421,8 @@ test), and the golden save loads.
 - Shamblers: shuffling, groans, hits, and bumping into doors. At night they're
   heard beyond the 10 m they can be seen, so sound comes first.
 - Ambience: wind, quieter at night. No music during play.
-- Sounds are content: ids in the base pack, checked by the validator.
+- Sounds are content: ids in the base pack, checked by the validator. Their
+  files go in `assets/sounds/` and are listed in the asset manifest.
 
 **Done when:** the validator fails on a missing sound id or file, and a
 scenario test shows every noise event (footsteps, doors, fights) also emits a
@@ -508,9 +513,23 @@ A model (1.5.5), with the point the hand holds and the flashlight's lens, in
 the file's metres; an item names it with `"model": "flashlight"`:
 
 ```json
-{ "id": "flashlight", "file": "models/flashlight.glb",
+{ "id": "flashlight", "file": "assets/models/flashlight.glb",
   "grip": { "at": [0.06, 0, 0], "turn": [0, 0, 90] },
   "anchors": { "lens": [0.18, 0, 0] } }
+```
+
+The asset manifest, `assets/manifest.json` in each pack (1.5.5). It isn't a
+content file: it records where each file under `assets/` came from. A source
+is one download; `licence` is an SPDX identifier, `author` is `null` until
+it's known, and `files` are the pack's files made from it, as paths within the
+pack:
+
+```json
+{ "sources": [
+  { "title": "Torch", "url": "https://opengameart.org/content/torch", "author": null,
+    "licence": "CC0-1.0", "download": "torch.zip", "files": ["assets/models/flashlight.glb"],
+    "changes": "To be converted to .glb in milestone 1.5.5" }
+] }
 ```
 
 A zombie type:

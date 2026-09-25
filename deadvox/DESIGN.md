@@ -324,8 +324,11 @@ Items have simple, low-poly models: glTF files in the content pack, named by id
 and checked by the validator, like sounds. A model says where the hand holds
 the item and names points such as a flashlight's lens. It's what you see in a
 pile and in your hands; an item without one is a bundle on the ground and a
-plain box in your hands. Files are small and made for the game or CC0, and each
-pack credits its sources.
+plain box in your hands. Files are small and made for the game or CC0.
+
+Every asset file (models, sounds, textures) is listed in its pack's asset
+manifest with where it came from: the source's page, author and licence. The
+validator refuses a file the manifest doesn't list.
 
 ## Crafting
 
@@ -554,7 +557,8 @@ decoration.
   should make you guess.
 - Web Audio, started by the first click (browsers block sound until then).
   Sounds are content: ids in the pack, checked by the validator. Files are
-  small and made for the game or CC0.
+  small and made for the game or CC0, and listed in the pack's asset manifest
+  (see [Item models](#item-models)).
 
 ## UI principles
 
