@@ -200,7 +200,7 @@ export class Streamer {
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
     this.dirty.delete(key);
     this.inFlight.add(key);
-    const padded = extractPadded(this.opts.world, cx, cy, cz);
+    const padded = extractPadded(this.opts.world, [cx, cy, cz], this.opts.scale.minCy);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     this.send(worker, {
