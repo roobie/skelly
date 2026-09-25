@@ -232,8 +232,10 @@ sources move.
 - **Moving lights** (flashlight, hot zombies, muzzle flashes) are real three.js
   lights, limited to the nearest few, not voxel light updates.
 
-**When.** Slice 1 has only day and night from the sky, plus the flashlight.
-Voxel light comes in Slice 4.
+**When.** Slice 1 has only day and night from the sky, plus the flashlight, so
+until Slice 4 interiors are no darker than outdoors. That's a known gap in the
+Slice 1 playtest; SLICE-1.md ("Dark interiors") lists what Slice 1 keeps ready
+for voxel light. Voxel light comes in Slice 4.
 
 **How we'll know.** Interiors are dark at noon, and placing a lamp relights a
 room within one frame of the mesh update.
