@@ -184,7 +184,9 @@ measurement found:
 **Done when:** a new benchmark run on the reference laptop meets the frame
 budget from 1.0, and the Results below are updated.
 
-**Status:** implemented. Waiting for the benchmark run on the reference laptop.
+**Status:** implemented. The first benchmark run missed the frame budget (see
+Results, "1.1 first run"); the fix is in, and a new run on the reference laptop
+is next.
 The walk toggle is on Z (Ctrl would collide with browser shortcuts such as
 Ctrl+W).
 
@@ -507,3 +509,49 @@ interiors read at a human scale, and stairs are walked instead of jumped.
 
 The decision is final: 0.5 m blocks, a 96 m default view distance, and a view
 distance setting (64, 96 or 128 m) for other hardware.
+
+### 1.1 first run (2026-09-25): regression
+
+Same laptop, browser and canvas as the 1.0 run.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 3.2 | 968 | 10.6 / 60.5 / 1.3 | 23.0 / 226.0 | 914 | 60 / 17.1 / 0% | 44 | 33.6 / 11% / 0 | 166.2 / 22% / 8 | 2.0 / 23.0 / 149.0 |
+| 0.5 m | 96 m | 6.5 | 1800 | 19.4 / 112.5 / 2.3 | 21.0 / 53.0 | 930 | 52 / 33.5 / 14% | 79 | 33.6 / 6% / 0 | 17.2 / 4% / 0 | 13.0 / 19.0 / 20.0 |
+| 0.5 m | 128 m | 7.8 | 2888 | 31.8 / 180.5 / 3.8 | 18.0 / 131.0 | 926 | 60 / 17.2 / 0% | 83 | 17.2 / 1% / 0 | 133.5 / 34% / 20 | 4.0 / 15.0 / 126.0 |
+
+**What improved:** memory held fell to a sixth (19.4 MiB instead of 112.5 at
+96 m), and triangles per chunk fell from 2,048 (mostly the world's underside) to
+about 930.
+
+**What got worse:** meshing took 21–23 ms median with p95 up to 226 ms (12–15 and
+19–28 ms in 1.0), frames slowed while looking around at 96 m (14% slow), and
+sprinting at 64 m and 128 m left holes, with main-thread work spiking past
+120 ms. The frame budget was not met.
+
+**Diagnosis.**
+
+- Three quarters of all mesh jobs were **enclosed chunks**: solid all through,
+  with solid neighbours, so they can't produce a single face. In Node, 200 of
+  264 mesh jobs around spawn were like this.
+- The greedy mesher **allocated small arrays for every face it examined**,
+  including every block of those enclosed chunks. Node's engine hid the cost,
+  but Firefox's didn't; garbage-collection pauses explain the p95 of 226 ms.
+- The workers were heavily oversubscribed: 4 workers plus the main thread on 4
+  physical cores. Busy workers took CPU time from the main thread, and on an
+  integrated GPU they also share its power budget, which fits the slow frames
+  while looking around.
+
+**Fix.**
+
+1. Enclosed chunks are never sent to a worker.
+2. The mesher's inner loop uses index arithmetic into the padded array and
+   allocates nothing.
+3. The number of workers leaves a physical core for the main thread: 3 on the
+   reference laptop (8 logical cores), and 1 on a 4-thread machine.
+
+In Node, the mesh jobs around spawn fell from 264 to 113, and each takes 1.4 ms
+(4.4 ms for 1.0's mesher): about 7 times less meshing work than the first 1.1
+run. In headless Chromium, meshing went from 5.7 / 14.0 ms (p50 / p95) to 1.5 /
+4.8 ms. The frame budget needs a new run on the reference laptop.
+

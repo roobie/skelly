@@ -7,7 +7,7 @@ import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { Scale } from '../core/scale.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
-import { extractPadded } from '../core/world.ts';
+import { extractPadded, isEnclosed } from '../core/world.ts';
 import { generateColumn, type TerrainBlocks } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
@@ -61,7 +61,8 @@ export class Streamer {
 
   constructor(opts: StreamerOptions) {
     this.opts = opts;
-    const count = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+    // Leave a physical core for the main thread: hardwareConcurrency counts hyperthreads.
+    const count = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2) - 1));
     for (let i = 0; i < count; i++) {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(e.data);
@@ -229,8 +230,13 @@ export class Streamer {
 
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
     this.dirty.delete(key);
+    const { world, scale, meshes } = this.opts;
+    if (isEnclosed(world, [cx, cy, cz], scale.minCy)) {
+      meshes.remove(key); // nothing visible; skip the worker entirely
+      return;
+    }
     this.inFlight.add(key);
-    const padded = extractPadded(this.opts.world, [cx, cy, cz], this.opts.scale.minCy);
+    const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     this.send(worker, {

@@ -63,6 +63,31 @@ export const affectedChunks = (x: number, y: number, z: number): Vec3[] => {
   return out;
 };
 
+const FACE_NEIGHBOURS: readonly Vec3[] = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+  [0, 0, 1],
+  [0, 0, -1],
+];
+
+/**
+ * True if a chunk can't have visible faces: every block in it is solid, and so is
+ * every block of its six neighbours (layers below `bottomCy` count as solid). Deep
+ * underground chunks are like this, and meshing them would produce nothing.
+ */
+export const isEnclosed = (world: World, [cx, cy, cz]: Vec3, bottomCy = Number.NEGATIVE_INFINITY): boolean => {
+  const solidThrough = (x: number, y: number, z: number) => {
+    if (y < bottomCy) {
+      return true;
+    }
+    const id = world.getChunk(x, y, z)?.uniformId;
+    return id !== undefined && id !== 0;
+  };
+  return solidThrough(cx, cy, cz) && FACE_NEIGHBOURS.every(([dx, dy, dz]) => solidThrough(cx + dx, cy + dy, cz + dz));
+};
+
 /** Side of the padded block array handed to the mesher: the chunk plus a 1-block border. */
 export const PADDED = CHUNK + 2;
 
