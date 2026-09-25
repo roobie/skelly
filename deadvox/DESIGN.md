@@ -68,8 +68,9 @@ voxel model.
 
 ### Two scales
 
-- The **clock ratio** `r` converts real time to calendar time. The starting
-  value is 1:8, so a game day is 3 real hours. Content rates are written per
+- The **clock ratio** `r` is how many calendar seconds pass per simulation
+  second. The starting value is `r = 8` (written 1:8), so a game day is 3 real
+  hours. Content rates are written per
   game hour (for example "thirst +1 per hour"), so tuning `r` doesn't touch
   content.
 - **Compression** `c` speeds up the whole simulation. It is 1 during normal

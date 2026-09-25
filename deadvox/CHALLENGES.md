@@ -15,7 +15,7 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
 
 - One chunk is 64 KiB.
 - A 128 m view radius covers 17 × 17 columns × 8 chunks = 2,312 chunks, which
-  is about **148 MiB** if every chunk is stored in full.
+  is about **145 MiB** if every chunk is stored in full.
 - The meshing workload rises by roughly 4× for flat ground, since a 16 m chunk
   top has 1,024 block faces instead of 256.
 
@@ -23,7 +23,7 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
 
 - **Uniform chunks as a single value.** Most chunks are all air or all stone;
   only the surface band needs full storage. That takes the example above to
-  roughly 700 stored chunks (about 45 MiB).
+  roughly 700 stored chunks (about 44 MiB).
 - **Palette-packed chunks.** Few chunks hold more than 16 block types, so 4 bits
   per block suffices. That's 16 KiB a chunk, and the total drops to around
   11 MiB.

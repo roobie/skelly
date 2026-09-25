@@ -116,6 +116,11 @@ switching one constant, and measure:
 "Results" below), and the reference laptop is named. The default is 0.5 m
 unless the numbers rule it out.
 
+The outcome also sets **the frame budget** that later milestones must hold: the
+chosen block size and view radius run at 60 fps (16.7 ms a frame) on the
+reference laptop, with meshing keeping up at sprint speed. This is the Slice 1
+version of EPIC.md's 60 fps quality criterion.
+
 ### 1.1 Metres and half-metre blocks
 
 - `BLOCK_SIZE` converts between blocks and metres. Physics, player and
@@ -130,7 +135,8 @@ unless the numbers rule it out.
   (property test), storage round-trips for uniform chunks, and the step-up
   physics.
 
-**Done when:** the 1.0 budget holds in the real game at the chosen radius.
+**Done when:** the frame budget from 1.0 holds in the real game at the chosen
+radius.
 
 ### 1.2 Simulation core
 
@@ -384,8 +390,9 @@ A zombie type:
 
 - Which machine is the reference laptop? Decided in 1.0.
 - Is a 1:8 clock ratio right? A 45-minute session is only 6 game hours.
-- Should shamblers respawn at night in Slice 1, or is the hamlet cleared for
-  good?
+- Shamblers don't respawn in Slice 1 (see 1.7). Does a cleared hamlet make the
+  second night too safe to test sleep interruptions? If so, add night
+  wanderers after the first playtest.
 - After death, does a new run in the same world keep the old piles? That's the
   version 1 design, but maybe not in Slice 1.
 
