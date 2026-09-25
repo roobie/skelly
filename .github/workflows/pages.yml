@@ -3,6 +3,7 @@ name: pages
 # Publishes the site to GitHub Pages on every push to main:
 #   /          site/index.html (landing page)
 #   /gungen/   the gungen viewer
+#   /deadvox/  the deadvox game
 # Requires Settings → Pages → Source: "GitHub Actions".
 
 on:
@@ -29,7 +30,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: gungen/package-lock.json
+          cache-dependency-path: |
+            gungen/package-lock.json
+            deadvox/package-lock.json
       - name: Check and build gungen
         working-directory: gungen
         run: |
@@ -37,11 +40,20 @@ jobs:
           npm run typecheck
           npm test
           npx vite build
+      - name: Check and build deadvox
+        working-directory: deadvox
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+          npm run validate
+          npx vite build
       - name: Assemble the site
         run: |
           mkdir -p _site
           cp -r site/. _site/
           cp -r gungen/dist _site/gungen
+          cp -r deadvox/dist _site/deadvox
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

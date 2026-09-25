@@ -1,0 +1,11 @@
+{
+  "blocks": [
+    { "id": "grass", "name": "Grass", "color": "#5b8c3a", "solid": true },
+    { "id": "dirt", "name": "Dirt", "color": "#7a5a3a", "solid": true },
+    { "id": "stone", "name": "Stone", "color": "#8a8d91", "solid": true },
+    { "id": "sand", "name": "Sand", "color": "#d6c68f", "solid": true },
+    { "id": "asphalt", "name": "Asphalt", "color": "#3b3d40", "solid": true },
+    { "id": "concrete", "name": "Concrete", "color": "#b5b3ad", "solid": true },
+    { "id": "planks", "name": "Wooden planks", "color": "#a0763f", "solid": true }
+  ]
+}
