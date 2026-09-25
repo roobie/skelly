@@ -1,12 +1,13 @@
-// Estimates of chunk storage cost under the layouts CHALLENGES.md §1 discusses.
-// Only the full layout is implemented today; the others are what milestone 1.1 would
-// build if the numbers say it's needed.
+// Chunk storage: what's held in memory, and estimates under the layouts CHALLENGES.md
+// §1 discusses (every chunk in full, uniform chunks as one id, palette packing).
 
 import type { Chunk } from './chunk.ts';
 import { CHUNK_VOLUME } from './coords.ts';
 
 export interface StorageStats {
   chunks: number;
+  /** Block data actually held in memory. */
+  bytesStored: number;
   /** Chunks where every block is the same id (all air, all stone…). */
   uniform: number;
   /** Every chunk stored as 16-bit ids. */
@@ -20,7 +21,7 @@ export interface StorageStats {
 const FULL_BYTES = CHUNK_VOLUME * 2;
 
 /** Distinct ids in a chunk, stopping early once more than `limit` are found. */
-const distinctIds = (blocks: Uint16Array, limit: number): number => {
+const distinctIds = (blocks: Readonly<Uint16Array>, limit: number): number => {
   const seen: number[] = [];
   for (const id of blocks) {
     if (!seen.includes(id)) {
@@ -40,11 +41,13 @@ export const paletteBits = (n: number): number => {
 };
 
 export const storageStats = (chunks: Iterable<Chunk>): StorageStats => {
-  const stats: StorageStats = { chunks: 0, uniform: 0, bytesFull: 0, bytesUniform: 0, bytesPalette: 0 };
+  const stats: StorageStats = { chunks: 0, bytesStored: 0, uniform: 0, bytesFull: 0, bytesUniform: 0, bytesPalette: 0 };
   for (const chunk of chunks) {
     stats.chunks += 1;
+    stats.bytesStored += chunk.bytes;
     stats.bytesFull += FULL_BYTES;
-    const n = distinctIds(chunk.blocks, 256);
+    const raw = chunk.raw();
+    const n = raw ? distinctIds(raw, 256) : 1;
     if (n === 1) {
       stats.uniform += 1;
       stats.bytesUniform += 2;

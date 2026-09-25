@@ -13,12 +13,16 @@ export class World {
     this.chunks.set(chunkKey(chunk.cx, chunk.cy, chunk.cz), chunk);
   }
 
+  removeChunk(cx: number, cy: number, cz: number): void {
+    this.chunks.delete(chunkKey(cx, cy, cz));
+  }
+
   getBlock(x: number, y: number, z: number): number {
     const chunk = this.getChunk(toChunk(x), toChunk(y), toChunk(z));
     return chunk ? chunk.get(toLocal(x), toLocal(y), toLocal(z)) : 0;
   }
 
-  /** Sets a block, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
+  /** Sets a block during play, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
   setBlock(x: number, y: number, z: number, id: number): Vec3[] {
     const cx = toChunk(x);
     const cy = toChunk(y);
@@ -29,6 +33,7 @@ export class World {
       this.addChunk(chunk);
     }
     chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
+    chunk.edited = true;
     return affectedChunks(x, y, z);
   }
 }
@@ -105,7 +110,7 @@ export const extractPadded = (world: World, coords: Vec3, bottomCy = Number.NEGA
         const [ox, lx] = split(x);
         const chunk = around[ox + 3 * (oz + 3 * oy)];
         if (chunk) {
-          out[paddedIndex(x, y, z)] = chunk.blocks[localIndex(lx, ly, lz)]!;
+          out[paddedIndex(x, y, z)] = chunk.at(localIndex(lx, ly, lz));
         }
       }
     }

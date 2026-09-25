@@ -60,8 +60,12 @@ export const generateChunk = (
   [cx, cy, cz]: Vec3,
   heights = columnHeights(seed, scale, cx, cz),
 ): Chunk => {
-  const chunk = new Chunk(cx, cy, cz);
   const y0 = cy * CHUNK;
+  // Entirely below the dirt layer of every column: all stone, no per-block writes.
+  if (y0 + CHUNK - 1 <= Math.min(...heights) - DIRT_DEPTH_M / scale.blockSize) {
+    return new Chunk(cx, cy, cz, blocks.stone);
+  }
+  const chunk = new Chunk(cx, cy, cz);
   for (let lz = 0; lz < CHUNK; lz++) {
     for (let lx = 0; lx < CHUNK; lx++) {
       const h = heights[lx + CHUNK * lz]!;
@@ -90,6 +94,7 @@ export const generateColumn = (
   for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
     const chunk = generateChunk(terrain, [cx, cy, cz], heights);
     stampChunk(chunk, structures);
+    chunk.compact();
     out.push(chunk);
   }
   return out;

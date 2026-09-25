@@ -64,6 +64,7 @@ describe('storageStats', () => {
     const stats = storageStats([air, mixed]);
     expect(stats.chunks).toBe(2);
     expect(stats.uniform).toBe(1);
+    expect(stats.bytesStored).toBe(2 + 2 * CHUNK_VOLUME);
     expect(stats.bytesFull).toBe(4 * CHUNK_VOLUME);
     expect(stats.bytesUniform).toBe(2 * CHUNK_VOLUME + 2);
     // 3 distinct ids → 2 bits per block, plus a 3-entry palette.
