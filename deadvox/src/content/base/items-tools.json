@@ -1,0 +1,161 @@
+{
+  "items": [
+    {
+      "id": "crowbar",
+      "name": "Crowbar",
+      "category": "tool",
+      "weight": 1500,
+      "volume": 900,
+      "length": 600,
+      "description": "Pries open doors and crates. Also a weapon.",
+      "tool": {
+        "qualities": {
+          "prying": 3,
+          "hammering": 1
+        }
+      },
+      "weapon": {
+        "melee": {
+          "damage": 14,
+          "reach": 0.9,
+          "cooldown": 1.1,
+          "stamina": 8,
+          "type": "blunt"
+        }
+      }
+    },
+    {
+      "id": "hammer",
+      "name": "Hammer",
+      "category": "tool",
+      "weight": 700,
+      "volume": 400,
+      "length": 330,
+      "tool": {
+        "qualities": {
+          "hammering": 2
+        }
+      },
+      "weapon": {
+        "melee": {
+          "damage": 10,
+          "reach": 0.6,
+          "cooldown": 0.8,
+          "stamina": 5,
+          "type": "blunt"
+        }
+      }
+    },
+    {
+      "id": "kitchen_knife",
+      "name": "Kitchen knife",
+      "category": "tool",
+      "weight": 150,
+      "volume": 200,
+      "length": 300,
+      "tool": {
+        "qualities": {
+          "cutting": 2
+        }
+      },
+      "weapon": {
+        "melee": {
+          "damage": 8,
+          "reach": 0.4,
+          "cooldown": 0.5,
+          "stamina": 3,
+          "type": "cut"
+        }
+      }
+    },
+    {
+      "id": "can_opener",
+      "name": "Can opener",
+      "category": "tool",
+      "weight": 100,
+      "volume": 100,
+      "length": 150,
+      "tool": {
+        "qualities": {
+          "opening": 1
+        }
+      }
+    },
+    {
+      "id": "baseball_bat",
+      "name": "Baseball bat",
+      "category": "weapon",
+      "weight": 900,
+      "volume": 1500,
+      "length": 840,
+      "weapon": {
+        "melee": {
+          "damage": 15,
+          "reach": 1.0,
+          "cooldown": 1.2,
+          "stamina": 9,
+          "type": "blunt"
+        }
+      }
+    },
+    {
+      "id": "steel_pipe",
+      "name": "Steel pipe",
+      "category": "weapon",
+      "weight": 1800,
+      "volume": 800,
+      "length": 800,
+      "weapon": {
+        "melee": {
+          "damage": 13,
+          "reach": 0.9,
+          "cooldown": 1.2,
+          "stamina": 9,
+          "type": "blunt"
+        }
+      }
+    },
+    {
+      "id": "flashlight",
+      "name": "Flashlight",
+      "category": "light",
+      "weight": 250,
+      "volume": 300,
+      "length": 200,
+      "description": "Lets you see. Lets them see you.",
+      "light": {
+        "radius": 20,
+        "seenFrom": 40,
+        "beam": 30,
+        "power": {
+          "battery": "aa_battery",
+          "perHour": 0.25
+        }
+      }
+    },
+    {
+      "id": "lighter",
+      "name": "Lighter",
+      "category": "light",
+      "weight": 20,
+      "volume": 30,
+      "length": 80,
+      "light": {
+        "radius": 2,
+        "seenFrom": 10
+      }
+    },
+    {
+      "id": "matches",
+      "name": "Box of matches",
+      "category": "light",
+      "weight": 20,
+      "volume": 30,
+      "length": 50,
+      "light": {
+        "radius": 2,
+        "seenFrom": 10
+      }
+    }
+  ]
+}

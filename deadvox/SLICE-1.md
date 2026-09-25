@@ -242,6 +242,17 @@ night look is a first guess, to be tuned with the flashlight in 1.6.
 **Done when:** `npm run validate` covers every content kind, and a broken
 reference in a fixture fails CI.
 
+**Status:** implemented. Schemas are in `core/schema.ts` and the types are
+inferred from them. After all files are merged, the validator checks loot entries
+(items and nested tables, including tables that loop), furniture and zombie loot,
+a light's battery item, and templates: layer sizes, palette characters, the
+blocks, furniture, loot and zombie types they name, and that furniture marks form
+whole pieces. A file with a broken reference is dropped whole, and so is any file
+that relied on it. `test/validateCli.test.ts` runs `npm run validate` on
+`test/fixtures/content/broken-reference.json` and expects it to fail. The base
+pack now has Slice 1's blocks, items, furniture and loot tables, the shed template
+and the shambler. Sounds join the validator in 1.10, when they exist.
+
 ### 1.4 Items and inventory
 
 - Item instances, stacks, and the `container` (pockets), `wearable`, `food`,
@@ -375,7 +386,10 @@ file and their notes.
 
 ## Data format sketches
 
-These are illustrative. The Valibot schemas in 1.3 are the real definitions.
+The real definitions are the Valibot schemas in `src/core/schema.ts`, and the
+base pack in `src/content/base` has every kind. A content file has any of the
+sections `blocks`, `items`, `furniture`, `loot`, `templates` and `zombies`, each a
+list. Units: grams, millilitres, and millimetres for an item's length.
 
 An item with pockets:
 
@@ -383,6 +397,7 @@ An item with pockets:
 {
   "id": "hiking_backpack",
   "name": "Hiking backpack",
+  "category": "bag",
   "weight": 1400,
   "volume": 3000,
   "length": 600,
@@ -415,16 +430,19 @@ A loot table (`rolls` and `count` are inclusive ranges):
 ```
 
 A template: layers from the bottom up; each layer is rows along z of
-characters along x. Only the first two of the shed's six layers are shown.
+characters along x. A palette entry is a block id, or furniture (doors are
+furniture too) or a spawn point. Furniture is marked on every cell it fills, and
+each piece is anchored at its lowest corner. Only the first two of the shed's six
+layers are shown.
 
 ```json
 { "id": "shed", "size": [8, 6, 6],
   "palette": { "=": "concrete", "#": "planks", ".": "air",
-               "D": { "door": "wood_door" }, "C": { "furniture": "crate", "loot": "shed_tools" },
+               "D": { "furniture": "wood_door" }, "C": { "furniture": "crate", "loot": "shed_tools" },
                "z": { "spawn": "shambler", "chance": 0.3 } },
   "layers": [
     ["========", "========", "========", "========", "========", "========"],
-    ["###DD###", "#......#", "#.z....#", "#......#", "#....CC#", "########"]
+    ["###DD###", "#......#", "#.z....#", "#....CC#", "#....CC#", "########"]
   ] }
 ```
 

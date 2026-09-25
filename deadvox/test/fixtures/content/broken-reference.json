@@ -1,0 +1,12 @@
+{
+  "items": [
+    { "id": "fixture_trinket", "name": "Trinket", "category": "misc", "weight": 10, "volume": 10, "length": 30 }
+  ],
+  "loot": [
+    {
+      "id": "fixture_drawer",
+      "rolls": [1, 2],
+      "entries": [{ "item": "fixture_trinket", "weight": 1 }, { "item": "golden_toilet", "weight": 1 }]
+    }
+  ]
+}
