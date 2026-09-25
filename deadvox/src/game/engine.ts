@@ -2,13 +2,15 @@
 // renderer and scene. The voxel grid and physics are in blocks; the scene is in
 // metres, so chunk meshes are scaled by the block size.
 
-import { Color, DirectionalLight, Fog, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { DAY_SKY } from '../core/sky.ts';
 import { rasterize } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { terrainHeightMetres } from '../core/worldgen.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
+import { applySky, type SkyTargets } from '../render/sky.ts';
 import type { GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse } from './testHouse.ts';
@@ -25,6 +27,8 @@ export interface Engine {
   scene: Scene;
   camera: PerspectiveCamera;
   meshes: ChunkMeshes;
+  /** The scene's lights and fog, for time of day. Starts in daylight, which the benchmark keeps. */
+  sky: SkyTargets;
   /** Player start in metres (feet), and the yaw that faces the test house. */
   spawn: { pos: Vec3; yaw: number };
 }
@@ -71,14 +75,10 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   view.appendChild(renderer.domElement);
 
-  const sky = new Color(0xa9_bf_d0);
   const scene = new Scene();
-  scene.background = sky;
-  scene.fog = new Fog(sky, radiusM * 0.6, radiusM * 0.95);
-  scene.add(new HemisphereLight(0xdf_e8_f0, 0x5a_4a_3a, 1.3));
-  const sun = new DirectionalLight(0xff_f2_dd, 1.6);
-  sun.position.set(0.4, 1, 0.25);
-  scene.add(sun);
+  const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), radiusM };
+  scene.add(sky.ambient, sky.light);
+  applySky(sky, DAY_SKY);
 
   const camera = new PerspectiveCamera(75, 1, 0.05, radiusM * 1.6);
   camera.rotation.order = 'YXZ';
@@ -118,6 +118,7 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     scene,
     camera,
     meshes,
+    sky,
     spawn: { pos: spawn, yaw: SPAWN_YAW },
   };
 };

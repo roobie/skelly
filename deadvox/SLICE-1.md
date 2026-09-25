@@ -211,6 +211,15 @@ Ctrl+W).
 **Done when:** scenario tests show that a compressed hour and an uncompressed
 hour give the same needs and clock state, within tolerance.
 
+**Status:** implemented. The scenario test (`test/sim.test.ts`) runs an hour at
+1× (27,000 frames) and compressed (about 960 frames): the clocks match, and needs
+may differ by at most one grown needs step (4 game minutes). Other tests show an
+interruption stops the simulation at the tick that raised it, compression is
+refused while unsafe, and a frame at 30× costs at most one needs tick. Needs
+only have their rates so far (the rest is 1.6). In the game, `?debug=1` gives
+keys to compress time, interrupt it and make it unsafe (see PROJECT.md). The
+night look is a first guess, to be tuned with the flashlight in 1.6.
+
 ### 1.3 Content v2
 
 - Valibot schemas for all Slice 1 content. TypeScript types are inferred from

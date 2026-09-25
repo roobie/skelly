@@ -85,6 +85,23 @@ body {
   vertical-align: -1px;
 }
 
+#prompt {
+  position: fixed;
+  left: 50%;
+  top: calc(50% + 48px);
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  pointer-events: none;
+  background: var(--panel);
+  text-align: center;
+  white-space: pre;
+}
+#prompt[hidden] {
+  display: none;
+}
+
 #overlay {
   position: fixed;
   inset: 0;
