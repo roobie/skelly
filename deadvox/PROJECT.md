@@ -4,6 +4,9 @@ A browser-based, singleplayer survival game in the spirit of DayZ (a large open
 world, scavenging, zombies, staying alive) with the simulation depth of
 Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxels.
 
+This file describes the code as it is. The game's design and roadmap are in
+[DESIGN.md](DESIGN.md) and [EPIC.md](EPIC.md).
+
 **Play:** <https://roobie.github.io/skelly/deadvox/> (`?seed=N` picks a world,
 `?radius=N` sets the view distance in chunks).
 
@@ -75,22 +78,11 @@ npm run validate   # base content; add paths to validate a mod on top
 - Nothing is saved yet.
 - Pointer lock only works on desktop. There are no touch controls.
 
-## Next steps
+## Design and roadmap
 
-1. **Saves.** Store edited chunks in OPFS (IndexedDB as a fallback), plus
-   player state, and call `navigator.storage.persist()`. Save chunks with a
-   per-chunk palette of *string* block ids, because runtime ids depend on which
-   content is loaded. Offer save export and import.
-2. **Time and simulation tick.** Separate a game clock from frame time: hunger,
-   thirst, day and night. Add catch-up ticks for unloaded areas.
-3. **Body and health model.** CDDA-style body parts with wounds, bleeding and
-   infection, all as data. The HTML UI is where this pays off.
-4. **Items in the world.** Loot containers, pickups, nested containers with
-   volume limits.
-5. **Towns.** Roads, buildings and loot tables in worldgen, using the asphalt,
-   concrete and planks blocks.
-6. **Zombies.** Entities, pathfinding on the voxel grid (in a worker),
-   hearing and sight.
-7. **Mods at runtime.** Load extra JSON packs from URLs or local folders (File
-   System Access API) through the same `buildRegistry` path.
-8. **Weapons.** gungen assemblies are good candidates for in-game guns.
+- [DESIGN.md](DESIGN.md): the core design (pillars, scale, time, items,
+  crafting, zombies, bases, vehicles, world, tone).
+- [EPIC.md](EPIC.md): what version 1 is, and the slices that get there.
+- [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle
+  them.
+- [SLICE-1.md](SLICE-1.md): the first playable deliverable ("The loot run").
