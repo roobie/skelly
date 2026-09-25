@@ -13,12 +13,16 @@ export class World {
     this.chunks.set(chunkKey(chunk.cx, chunk.cy, chunk.cz), chunk);
   }
 
+  removeChunk(cx: number, cy: number, cz: number): void {
+    this.chunks.delete(chunkKey(cx, cy, cz));
+  }
+
   getBlock(x: number, y: number, z: number): number {
     const chunk = this.getChunk(toChunk(x), toChunk(y), toChunk(z));
     return chunk ? chunk.get(toLocal(x), toLocal(y), toLocal(z)) : 0;
   }
 
-  /** Sets a block, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
+  /** Sets a block during play, creating its chunk if needed. Returns the chunks whose meshes are now stale. */
   setBlock(x: number, y: number, z: number, id: number): Vec3[] {
     const cx = toChunk(x);
     const cy = toChunk(y);
@@ -29,6 +33,7 @@ export class World {
       this.addChunk(chunk);
     }
     chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
+    chunk.edited = true;
     return affectedChunks(x, y, z);
   }
 }
@@ -63,13 +68,11 @@ export const PADDED = CHUNK + 2;
 
 export const paddedIndex = (x: number, y: number, z: number): number => x + PADDED * (z + PADDED * y);
 
-/**
- * Copies a chunk and a 1-block border from its neighbours into one array, so the
- * mesher can cull faces at chunk edges without seeing the world.
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
-export const extractPadded = (world: World, cx: number, cy: number, cz: number): Uint16Array => {
-  const out = new Uint16Array(PADDED * PADDED * PADDED);
+/** Stands in for everything below the world's bottom layer: solid, and never drawn. */
+export const BEDROCK = 0xff_ff;
+
+/** The 27 chunks around (and including) a chunk, x fastest, then z, then y. */
+const neighbourhood = (world: World, [cx, cy, cz]: Vec3): (Chunk | undefined)[] => {
   const around: (Chunk | undefined)[] = [];
   for (let dy = -1; dy <= 1; dy++) {
     for (let dz = -1; dz <= 1; dz++) {
@@ -78,14 +81,27 @@ export const extractPadded = (world: World, cx: number, cy: number, cz: number):
       }
     }
   }
+  return around;
+};
 
-  const split = (p: number): [number, number] => {
-    const w = p - 1; // padded -> chunk-local, may be -1 or CHUNK
-    if (w < 0) {
-      return [0, w + CHUNK];
-    }
-    return w >= CHUNK ? [2, w - CHUNK] : [1, w];
-  };
+/** A padded coordinate as [neighbour offset 0..2, chunk-local coordinate]. */
+const split = (p: number): [number, number] => {
+  const w = p - 1; // padded -> chunk-local, may be -1 or CHUNK
+  if (w < 0) {
+    return [0, w + CHUNK];
+  }
+  return w >= CHUNK ? [2, w - CHUNK] : [1, w];
+};
+
+/**
+ * Copies a chunk and a 1-block border from its neighbours into one array, so the
+ * mesher can cull faces at chunk edges without seeing the world. Missing chunks
+ * read as air, except below `bottomCy` (the world's lowest layer), which reads as
+ * BEDROCK so the underside of the world is never meshed.
+ */
+export const extractPadded = (world: World, coords: Vec3, bottomCy = Number.NEGATIVE_INFINITY): Uint16Array => {
+  const out = new Uint16Array(PADDED * PADDED * PADDED);
+  const around = neighbourhood(world, coords);
   for (let y = 0; y < PADDED; y++) {
     const [oy, ly] = split(y);
     for (let z = 0; z < PADDED; z++) {
@@ -94,10 +110,13 @@ export const extractPadded = (world: World, cx: number, cy: number, cz: number):
         const [ox, lx] = split(x);
         const chunk = around[ox + 3 * (oz + 3 * oy)];
         if (chunk) {
-          out[paddedIndex(x, y, z)] = chunk.blocks[localIndex(lx, ly, lz)]!;
+          out[paddedIndex(x, y, z)] = chunk.at(localIndex(lx, ly, lz));
         }
       }
     }
+  }
+  if (coords[1] - 1 < bottomCy) {
+    out.fill(BEDROCK, 0, PADDED * PADDED); // padded layer y = 0
   }
   return out;
 };

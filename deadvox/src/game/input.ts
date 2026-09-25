@@ -8,6 +8,8 @@ export class Input {
   readonly held = new Set<string>();
   yaw = 0;
   pitch = 0;
+  /** Toggled with Z: walk instead of jog. */
+  walking = false;
   private readonly target: HTMLElement;
 
   constructor(target: HTMLElement) {
@@ -15,6 +17,9 @@ export class Input {
     globalThis.addEventListener('keydown', (e) => {
       if (e.code === 'Tab') {
         e.preventDefault();
+      }
+      if (e.code === 'KeyZ' && !e.repeat) {
+        this.walking = !this.walking;
       }
       this.held.add(e.code);
     });
@@ -51,6 +56,7 @@ export class Input {
       right: on('KeyD') - on('KeyA'),
       jump: this.held.has('Space'),
       sprint: this.held.has('ShiftLeft') || this.held.has('ShiftRight'),
+      walk: this.walking,
     };
   }
 }

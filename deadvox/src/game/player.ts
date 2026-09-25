@@ -8,6 +8,7 @@ export const PLAYER = {
   halfWidth: 0.3,
   height: 1.8,
   eye: 1.62,
+  walk: 1.8,
   jog: 4.3,
   sprint: 6.5,
   /** Take-off speed; with GRAVITY it clears about 1.1 m. */
@@ -38,6 +39,8 @@ export interface MoveIntent {
   right: number; // -1..1
   jump: boolean;
   sprint: boolean;
+  /** Walk instead of jog. Sprinting wins over walking. */
+  walk: boolean;
 }
 
 /** Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. */
@@ -48,7 +51,8 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     forward /= len;
     right /= len;
   }
-  const speed = (intent.sprint ? PLAYER.sprint : PLAYER.jog) / scale.blockSize;
+  const pace = intent.walk ? PLAYER.walk : PLAYER.jog;
+  const speed = (intent.sprint ? PLAYER.sprint : pace) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.

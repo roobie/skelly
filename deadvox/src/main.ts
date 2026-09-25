@@ -1,5 +1,5 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
-// results; otherwise the game starts (`?block=` and `?radius=` in metres, `?seed=`).
+// results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
 import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
@@ -22,6 +22,6 @@ if (bench === 'report') {
   const run = benchRunFromUrl(params);
   const { blockSize, radiusM } = currentConfig(run);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
-  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, blockSize, radiusM);
+  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, blockSize);
   startBench(createEngine(config, view, stats), run, stats);
 }

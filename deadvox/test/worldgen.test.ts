@@ -19,8 +19,8 @@ describe('worldgen', () => {
     const a = generateChunk({ seed: 42, blocks, scale: half }, [3, 1, -2]);
     const b = generateChunk({ seed: 42, blocks, scale: half }, [3, 1, -2]);
     const c = generateChunk({ seed: 43, blocks, scale: half }, [3, 1, -2]);
-    expect(a.blocks).toEqual(b.blocks);
-    expect(a.blocks).not.toEqual(c.blocks);
+    expect(a.toArray()).toEqual(b.toArray());
+    expect(a.toArray()).not.toEqual(c.toArray());
   });
 
   it('keeps heights in range', () => {
@@ -66,5 +66,12 @@ describe('worldgen', () => {
     ]);
     const top = column.find((c) => c.cy === 4)!;
     expect(top.get(2, 150 - 4 * CHUNK, 2)).toBe(9);
+  });
+
+  it('stores chunks that are all one block as a single id', () => {
+    const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0);
+    expect(column[0]?.uniformId).toBe(blocks.stone); // deep underground
+    expect(column.at(-1)?.uniformId).toBe(0); // sky
+    expect(column.filter((c) => c.uniformId === undefined).length).toBeLessThanOrEqual(2);
   });
 });

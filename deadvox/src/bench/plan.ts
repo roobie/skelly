@@ -9,10 +9,8 @@ export interface BenchConfig {
   radiusM: number;
 }
 
-/** Milestone 1.0: both block sizes at 64, 96 and 128 m. */
-export const DEFAULT_PLAN: readonly BenchConfig[] = [1, 0.5].flatMap((blockSize) =>
-  [64, 96, 128].map((radiusM) => ({ blockSize, radiusM })),
-);
+/** The game's 0.5 m blocks at each view distance on offer. Compare sizes with `?plan=1:96,0.5:96`. */
+export const DEFAULT_PLAN: readonly BenchConfig[] = [64, 96, 128].map((radiusM) => ({ blockSize: 0.5, radiusM }));
 
 /** Parses "1:64,0.5:96"; returns undefined if anything is malformed. */
 export const parsePlan = (text: string): BenchConfig[] | undefined => {
@@ -29,7 +27,12 @@ export const parsePlan = (text: string): BenchConfig[] | undefined => {
 export const formatPlan = (plan: readonly BenchConfig[]): string =>
   plan.map(({ blockSize, radiusM }) => `${blockSize}:${radiusM}`).join(',');
 
-export interface MovingStats extends FrameStats {
+/** CPU milliseconds per frame spent streaming, simulating and submitting the render (not GPU time). */
+export interface WorkStats {
+  work: SampleStats;
+}
+
+export interface MovingStats extends FrameStats, WorkStats {
   /** Most columns near the player still unmeshed in any frame. */
   holesMax: number;
   /** Fraction of frames with any unmeshed column near the player. */
@@ -45,7 +48,7 @@ export interface RunResult {
   gen: SampleStats;
   meshMs: SampleStats;
   meshTriangles: SampleStats;
-  look: FrameStats & { drawCalls: number; triangles: number };
+  look: FrameStats & WorkStats & { drawCalls: number; triangles: number };
   jog: MovingStats;
   sprint: MovingStats;
   /** The tab was hidden during the run, so its frame times are unreliable. */
@@ -69,7 +72,7 @@ export interface BenchRecord {
   runs: RunResult[];
 }
 
-const KEY = 'deadvox.bench.v1';
+const KEY = 'deadvox.bench.v2';
 
 // Storage can be unavailable (private windows, blocked site data); callers show why.
 export const loadRecord = (): BenchRecord | undefined => {

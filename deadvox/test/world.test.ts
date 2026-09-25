@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK, toChunk, toLocal } from '../src/core/coords.ts';
-import { affectedChunks, extractPadded, PADDED, paddedIndex, World } from '../src/core/world.ts';
+import { buildMesh } from '../src/core/mesher.ts';
+import { affectedChunks, BEDROCK, extractPadded, PADDED, paddedIndex, World } from '../src/core/world.ts';
+import { unitFaces } from './meshFaces.ts';
 
 describe('coords', () => {
   it('floors negative block coordinates into the right chunk', () => {
@@ -37,10 +39,28 @@ describe('World', () => {
     world.setBlock(-1, 0, 0, 2); // chunk -1: left border
     world.setBlock(CHUNK, CHUNK, CHUNK, 3); // chunk 1,1,1: far corner
     world.setBlock(-2, 0, 0, 9); // two blocks out: not in the padding
-    const padded = extractPadded(world, 0, 0, 0);
+    const padded = extractPadded(world, [0, 0, 0]);
     expect(padded[paddedIndex(1, 1, 1)]).toBe(1);
     expect(padded[paddedIndex(0, 1, 1)]).toBe(2);
     expect(padded[paddedIndex(PADDED - 1, PADDED - 1, PADDED - 1)]).toBe(3);
     expect(padded.filter((b) => b !== 0).length).toBe(3);
+  });
+
+  it('treats everything below the bottom layer as solid, so the world has no underside', () => {
+    const world = new World();
+    for (let x = 0; x < CHUNK; x++) {
+      for (let z = 0; z < CHUNK; z++) {
+        world.setBlock(x, 0, z, 1); // a floor on the bottom layer's lowest row
+      }
+    }
+    const open = extractPadded(world, [0, 0, 0]);
+    const closed = extractPadded(world, [0, 0, 0], 0);
+    expect(open[paddedIndex(5, 0, 5)]).toBe(0);
+    expect(closed[paddedIndex(5, 0, 5)]).toBe(BEDROCK);
+    const colors = new Uint8Array(6).fill(100);
+    const downFaces = (padded: Uint16Array) =>
+      [...unitFaces(buildMesh(padded, colors))].filter((f) => f.endsWith(',1,-1')).length;
+    expect(downFaces(open)).toBe(CHUNK * CHUNK);
+    expect(downFaces(closed)).toBe(0);
   });
 });

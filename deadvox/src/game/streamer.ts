@@ -13,6 +13,15 @@ import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
 const COLUMNS_PER_FRAME = 2;
+/** Chunk data is dropped this many columns beyond the generated ring, so walking back and forth doesn't regenerate. */
+const UNLOAD_MARGIN = 2;
+
+/** Column keys ("cx,cz") farther than `keep` columns (square distance) from the centre column. */
+export const farColumns = (columns: Iterable<string>, [pcx, pcz]: readonly [number, number], keep: number): string[] =>
+  [...columns].filter((col) => {
+    const [cx, cz] = col.split(',').map(Number) as [number, number];
+    return Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) > keep;
+  });
 
 export interface StreamerOptions {
   world: World;
@@ -153,9 +162,30 @@ export class Streamer {
         const [cx, , cz] = key.split(',').map(Number) as Vec3;
         if (!this.inRange(cx, cz)) {
           this.opts.meshes.remove(key);
-          this.dirty.add(key); // chunk data stays; remesh when we come back
+          this.dirty.add(key); // remesh when we come back
         }
       }
+      this.unloadFar();
+    }
+  }
+
+  /**
+   * Drops chunk data far out of range. Unedited chunks regenerate from the seed when
+   * the player returns; edited ones stay in memory (until saves exist, milestone 1.9).
+   */
+  private unloadFar(): void {
+    const { world, scale, radius } = this.opts;
+    for (const col of farColumns(this.generated, this.center, radius + 1 + UNLOAD_MARGIN)) {
+      const [cx, cz] = col.split(',').map(Number) as [number, number];
+      for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+        const key = chunkKey(cx, cy, cz);
+        if (!world.getChunk(cx, cy, cz)?.edited) {
+          world.removeChunk(cx, cy, cz);
+          this.dirty.delete(key);
+          this.versions.delete(key);
+        }
+      }
+      this.generated.delete(col);
     }
   }
 
@@ -200,14 +230,13 @@ export class Streamer {
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
     this.dirty.delete(key);
     this.inFlight.add(key);
-    const padded = extractPadded(this.opts.world, cx, cy, cz);
+    const padded = extractPadded(this.opts.world, [cx, cy, cz], this.opts.scale.minCy);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     this.send(worker, {
       type: 'mesh',
       key,
       version: this.versions.get(key) ?? 0,
-      origin: [cx * CHUNK, cy * CHUNK, cz * CHUNK],
       padded,
     });
   }
@@ -226,7 +255,9 @@ export class Streamer {
     }
     const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;
     if (!this.inRange(cx, cz)) {
-      this.dirty.add(msg.key);
+      if (this.opts.world.getChunk(cx, cy, cz)) {
+        this.dirty.add(msg.key);
+      }
       return;
     }
     this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);

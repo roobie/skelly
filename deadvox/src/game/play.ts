@@ -14,7 +14,7 @@ import { createPlayerBody, PLAYER, physicsFor, steer } from './player.ts';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const STEP = 1 / 60;
 const DIGIT_KEY = /^Digit([1-9])$/;
-const IDLE = { forward: 0, right: 0, jump: false, sprint: false };
+const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 
 export const startPlay = (engine: Engine): void => {
   const { config, registry, world, isSolid, streamer, renderer, scene, camera, meshes } = engine;
@@ -148,42 +148,53 @@ export const startPlay = (engine: Engine): void => {
   let acc = 0;
   let fps = 0;
 
+  /** Fixed-step movement; the player is held still until there is ground under them. */
+  const simulate = (dt: number) => {
+    if (!streamer.isReady(body.pos[0], body.pos[2])) {
+      return;
+    }
+    acc += dt;
+    while (acc >= STEP) {
+      steer(body, scale, input.yaw, input.locked ? input.intent() : IDLE);
+      stepBody(body, STEP, isSolid, physics);
+      acc -= STEP;
+    }
+  };
+
+  /** Outlines the targeted block and returns it. */
+  const target = () => {
+    const hit = input.locked ? raycast(eye(), lookDir(), reach, isSolid) : undefined;
+    outline.visible = hit !== undefined;
+    if (hit) {
+      outline.position.set((hit.block[0] + 0.5) * s, (hit.block[1] + 0.5) * s, (hit.block[2] + 0.5) * s);
+    }
+    return hit;
+  };
+
+  const hudText = (hit: ReturnType<typeof target>): string => {
+    const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
+    return [
+      `${fps.toFixed(0)} fps   seed ${config.seed}`,
+      `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
+      `pos ${x} ${y} ${z} m`,
+      `chunks ${meshes.count} meshed, ${streamer.pending} pending`,
+      hit ? `looking at ${registry.blocks[world.getBlock(...hit.block)]?.name}` : '',
+    ].join('\n');
+  };
+
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     streamer.update(body.pos[0], body.pos[2]);
-
-    // Hold the player still until there is ground under them.
-    if (streamer.isReady(body.pos[0], body.pos[2])) {
-      acc += dt;
-      while (acc >= STEP) {
-        steer(body, scale, input.yaw, input.locked ? input.intent() : IDLE);
-        stepBody(body, STEP, isSolid, physics);
-        acc -= STEP;
-      }
-    }
+    simulate(dt);
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);
     camera.rotation.set(input.pitch, input.yaw, 0);
 
-    const hit = input.locked ? raycast(eye(), lookDir(), reach, isSolid) : undefined;
-    outline.visible = hit !== undefined;
-    if (hit) {
-      outline.position.set((hit.block[0] + 0.5) * s, (hit.block[1] + 0.5) * s, (hit.block[2] + 0.5) * s);
-    }
-
-    const [x, y, z] = body.pos;
-    hud.textContent = [
-      `${fps.toFixed(0)} fps   seed ${config.seed}`,
-      `block ${s} m   radius ${config.radiusM} m`,
-      `pos ${(x * s).toFixed(1)} ${(y * s).toFixed(1)} ${(z * s).toFixed(1)} m`,
-      `chunks ${meshes.count} meshed, ${streamer.pending} pending`,
-      hit ? `looking at ${registry.blocks[world.getBlock(...hit.block)]?.name}` : '',
-    ].join('\n');
-
+    hud.textContent = hudText(target());
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   };

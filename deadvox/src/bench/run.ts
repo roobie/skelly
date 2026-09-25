@@ -67,8 +67,9 @@ const environment = (engine: Engine): Environment => {
   };
 };
 
-const movingStats = (frames: number[], holes: number[]): MovingStats => ({
+const movingStats = (frames: number[], work: number[], holes: number[]): MovingStats => ({
   ...frameStats(frames),
+  work: sampleStats(work),
   holesMax: holes.length === 0 ? 0 : Math.max(...holes),
   holeFraction: holes.length === 0 ? 0 : holes.filter((h) => h > 0).length / holes.length,
 });
@@ -99,6 +100,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   }
 
   const frames: Record<'look' | 'jog' | 'sprint', number[]> = { look: [], jog: [], sprint: [] };
+  const work: Record<'look' | 'jog' | 'sprint', number[]> = { look: [], jog: [], sprint: [] };
   const holes: Record<'jog' | 'sprint', number[]> = { jog: [], sprint: [] };
   const drawCalls: number[] = [];
   const triangles: number[] = [];
@@ -126,6 +128,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   let phaseStart = performance.now();
   let last = phaseStart;
   let skipFrame = true; // the first frame of a phase includes the transition
+  let recorded = false; // this frame's time went into a bucket, so its work time should too
   const enter = (next: Phase, now: number) => {
     phase = next;
     phaseStart = now;
@@ -136,6 +139,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
       skipFrame = false;
     } else {
       bucket.push(ms);
+      recorded = true;
     }
   };
 
@@ -149,9 +153,14 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
       gen: sampleStats(stats.genMs),
       meshMs: sampleStats(stats.meshMs),
       meshTriangles: sampleStats(stats.triangles),
-      look: { ...frameStats(frames.look), drawCalls: mean(drawCalls), triangles: mean(triangles) },
-      jog: movingStats(frames.jog, holes.jog),
-      sprint: movingStats(frames.sprint, holes.sprint),
+      look: {
+        ...frameStats(frames.look),
+        work: sampleStats(work.look),
+        drawCalls: mean(drawCalls),
+        triangles: mean(triangles),
+      },
+      jog: movingStats(frames.jog, work.jog, holes.jog),
+      sprint: movingStats(frames.sprint, work.sprint, holes.sprint),
       interrupted,
     };
     record.runs = [...record.runs.slice(0, run.index), result];
@@ -218,14 +227,19 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   };
 
   const frame = (now: number) => {
-    const measuringLook = phase === 'look';
+    const start = performance.now();
+    const measured = phase;
+    recorded = false;
     if (!step(now)) {
       return;
     }
     last = now;
     streamer.update(x / s, z / s);
     renderer.render(scene, camera);
-    if (measuringLook) {
+    if (recorded && measured !== 'load' && measured !== 'settle') {
+      work[measured].push(performance.now() - start);
+    }
+    if (measured === 'look') {
       drawCalls.push(renderer.info.render.calls);
       triangles.push(renderer.info.render.triangles);
     }

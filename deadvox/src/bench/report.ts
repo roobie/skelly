@@ -13,13 +13,14 @@ export const HEADERS = [
   'Radius',
   'Load s',
   'Chunks',
-  'MiB full / uniform / palette',
+  'MiB held / if full / palette',
   'Mesh ms p50 / p95',
   'Tris per chunk p50',
   'Look fps / p95 ms / slow',
   'Draws',
   'Jog p95 ms / slow / holes',
   'Sprint p95 ms / slow / holes',
+  'Work ms p95 look / jog / sprint',
 ] as const;
 
 export const resultRow = (r: RunResult): string[] => [
@@ -27,13 +28,14 @@ export const resultRow = (r: RunResult): string[] => [
   `${r.radiusM} m`,
   `${f(r.load.seconds)}${r.load.timedOut ? ' (timed out)' : ''}`,
   String(r.memory.chunks),
-  `${mib(r.memory.bytesFull)} / ${mib(r.memory.bytesUniform)} / ${mib(r.memory.bytesPalette)}`,
+  `${mib(r.memory.bytesStored)} / ${mib(r.memory.bytesFull)} / ${mib(r.memory.bytesPalette)}`,
   `${f(r.meshMs.median)} / ${f(r.meshMs.p95)}`,
   f(r.meshTriangles.median, 0),
   `${f(r.look.fpsMean, 0)} / ${f(r.look.msP95)} / ${pct(r.look.slowFraction)}`,
   f(r.look.drawCalls, 0),
   `${f(r.jog.msP95)} / ${pct(r.jog.slowFraction)} / ${r.jog.holesMax}`,
   `${f(r.sprint.msP95)} / ${pct(r.sprint.slowFraction)} / ${r.sprint.holesMax}${r.interrupted ? ' ⚠' : ''}`,
+  `${f(r.look.work.p95)} / ${f(r.jog.work.p95)} / ${f(r.sprint.work.p95)}`,
 ];
 
 export const markdownTable = (record: BenchRecord): string => {
@@ -126,7 +128,7 @@ export const showReport = (card: HTMLElement, record: BenchRecord | undefined): 
     element('h1', 'Benchmark results'),
     element(
       'p',
-      'Paste the Markdown back, with your CPU model and browser version. "Slow" is the share of frames over 18 ms; "holes" is the most nearby columns still unmeshed at once.',
+      'Paste the Markdown back. "Slow" is the share of frames over 18 ms; "holes" is the most nearby columns still unmeshed at once; "work" is CPU time per frame (streaming, simulation, submitting the render), out of the 16.7 ms a 60 fps frame has.',
     ),
     table,
     env,
