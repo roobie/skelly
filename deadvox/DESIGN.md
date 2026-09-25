@@ -55,7 +55,8 @@ so keep their number small.
 | | |
 | --- | --- |
 | World unit | **1 unit = 1 metre.** Physics, rendering and content all use metres, and speeds are in m/s |
-| Block size | **0.5 m** (decision, pending the Slice 1 scale measurement). One constant, `BLOCK_SIZE`, converts between blocks and metres, so the choice can be measured and changed |
+| Block size | **0.5 m** (decision; measured and play-tested in milestone 1.0, see SLICE-1.md Results). One constant, `BLOCK_SIZE`, converts between blocks and metres |
+| View distance | **96 m** by default. A setting (64, 96 or 128 m) adapts it to the hardware |
 | Chunk | 32³ blocks = a 16 m cube |
 | Player | 1.8 m tall, 0.6 m wide, eyes at 1.62 m. Steps up 0.5 m (one block) without jumping. A jump clears about 1 m |
 | Buildings | Doors 1 × 2 m (2 × 4 blocks). Storeys 3 m (6 blocks). Walls one block (0.5 m) thick |

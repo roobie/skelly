@@ -1,12 +1,15 @@
 // Block size and what follows from it. Everything the player sees or tunes is in
-// metres; the voxel grid is in blocks. Milestone 1.0 compares 1 m and 0.5 m blocks
-// with the same code, so the block size is a runtime setting for now.
+// metres; the voxel grid is in blocks. The game uses BLOCK_SIZE; the benchmark can
+// build other scales to compare them.
 
 import { CHUNK } from './coords.ts';
 
 /** The world's vertical extent in metres (DESIGN.md, "Scale and units"). */
 export const WORLD_BOTTOM_M = -48;
 export const WORLD_TOP_M = 80;
+
+/** Edge length of a block in metres. Chosen in milestone 1.0 (SLICE-1.md, Results). */
+export const BLOCK_SIZE = 0.5;
 
 export interface Scale {
   /** Edge length of one block, in metres. */

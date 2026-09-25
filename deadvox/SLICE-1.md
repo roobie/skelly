@@ -124,7 +124,9 @@ version of EPIC.md's 60 fps quality criterion.
 
 #### Running it
 
-The block size is a URL parameter for now, so one build covers both scales.
+During milestone 1.0 the block size was a URL parameter, so one build covered
+both scales. After the decision the game always uses 0.5 m blocks; the
+benchmark can still compare sizes, for example with `?bench=1&plan=1:96,0.5:96`.
 
 - **Feel:** open the game with `?block=0.5` and with `?block=1`. The test house
   stands in front of the spawn point. Walk through the door, look at the
@@ -485,7 +487,7 @@ was 1674 × 972 pixels at pixel ratio 1.2.
    chunk meshes, so a large share of the draw calls in the table are invisible.
    Fixing it is the first item in 1.1, and should make frames cheaper.
 
-**Decision (proposed, pending the feel test).**
+**Decision.**
 
 - **Block size: 0.5 m.** The numbers don't rule it out: it holds 60 fps up to
   128 m on the reference laptop.
@@ -495,5 +497,8 @@ was 1674 × 972 pixels at pixel ratio 1.2.
   60 fps on the reference laptop in Firefox, with at most 1% slow frames in
   every benchmark phase and no holes at sprint speed.
 
-**Feel test:** *to be added* (doorways, stairs, furniture and interiors at 1 m
-and at 0.5 m).
+**Feel test:** 0.5 m blocks feel far better than 1 m: doorways, furniture and
+interiors read at a human scale, and stairs are walked instead of jumped.
+
+The decision is final: 0.5 m blocks, a 96 m default view distance, and a view
+distance setting (64, 96 or 128 m) for other hardware.

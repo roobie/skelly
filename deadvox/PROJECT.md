@@ -10,8 +10,8 @@ This file describes the code as it is. The game's design and roadmap are in
 **Play:** <https://roobie.github.io/skelly/deadvox/>. URL parameters:
 
 - `?seed=N` picks a world.
-- `?block=0.5` or `?block=1` sets the block size in metres (default 0.5).
-- `?radius=N` sets the view distance in metres (default 96).
+- `?radius=N` sets the view distance in metres (default 96; the start card offers
+  64, 96 and 128).
 - `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
   results. See [SLICE-1.md](SLICE-1.md#running-it).
 
@@ -40,7 +40,7 @@ This file describes the code as it is. The game's design and roadmap are in
 | Rendering | three.js, in `src/render` |
 | UI | Plain HTML/CSS over the canvas (`src/ui`). No framework yet; pick one when screens get stateful |
 | Meshing | Culled faces with per-vertex AO (`core/mesher.ts`), run in Web Workers. Buffers are transferred, not shared |
-| Scale | Block size is a runtime setting while milestone 1.0 compares 1 m and 0.5 m (`core/scale.ts`). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres |
+| Scale | 0.5 m blocks (`BLOCK_SIZE` in `core/scale.ts`, chosen in milestone 1.0). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres. The benchmark can build other block sizes to compare |
 | Chunks | 32³ blocks, `Uint16Array` of runtime block ids, y-major. The world spans −48 m to +80 m: 5 chunks tall at 1 m blocks, 8 at 0.5 m |
 | Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
 | Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
