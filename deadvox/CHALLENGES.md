@@ -129,8 +129,9 @@ needs a very fast UI.
   are one key.
 - **Batch actions:** take all food, take all of this type, repeat the last move,
   and queued transfers.
-- **Clear information:** handling time is shown on every row, so choosing a
-  pocket is a visible decision rather than a hidden penalty.
+- **Clear information:** every pocket shows its handling time, and dragging an
+  item highlights where it fits, so choosing a pocket is a visible decision
+  rather than a hidden penalty.
 - **Measure it.** The playtest build logs how long looting takes: real seconds
   per container, and the split between handling time and UI time.
 

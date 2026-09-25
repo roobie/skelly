@@ -67,7 +67,7 @@ so keep their number small.
 | Player | 1.8 m tall, 0.6 m wide, eyes at 1.62 m. Steps up 0.5 m (one block) without jumping. A jump clears about 1 m |
 | Buildings | Doors 1 × 2 m (2 × 4 blocks). Storeys 3 m (6 blocks). Walls one block (0.5 m) thick |
 | World height | Start at −48 m to +80 m (256 blocks, 8 chunks). Labs need depth below ground; towers need height above it |
-| Mass, volume, length | Grams, millilitres, millimetres, as whole numbers |
+| Mass, liquids, item size | Grams and millilitres, as whole numbers. In inventories, an item takes w × h cells |
 
 Half-metre blocks make interiors, furniture, vehicles and body-sized details
 readable without a separate prop system. The cost is 8× the blocks per volume;
@@ -239,7 +239,7 @@ need to store loot that nobody has touched yet.
   Identical, stateless items stack (ammo, nails, matches). Everything else is its
   own instance.
 - An **item type** is data with **components**. Examples:
-  - `container` (pockets, below)
+  - `container` (pockets, each a grid; below)
   - `wearable` (slot, warmth, protection, encumbrance)
   - `food` (calories, water, rots after)
   - `tool` (qualities such as `cutting: 2`, `prying: 1`)
@@ -248,13 +248,37 @@ need to store loot that nobody has touched yet.
   - `vehiclePart` (after Slice 1)
 
   Behaviour comes only from components; the game never checks an item's id.
-- **Pockets**, as in CDDA. A container has one or more pockets. Each pocket has
-  limits on volume, weight and length (a rifle won't fit in a jacket pocket),
-  and is rigid or soft. A pocket can be restricted to liquids or to specific
-  kinds of item (holster, sheath, magazine). A soft pocket's size counts toward
-  its container's volume.
-- **The player carries** two hands plus worn items. Carrying capacity is the
-  sum of your worn pockets. Too much weight slows you down and costs stamina.
+- **Space is a grid**, as in DayZ. An item takes w × h cells and can be
+  rotated. A container has one or more **pockets**, each its own grid: a jeans
+  pocket is 1 × 2, a hoodie pocket 3 × 2, a school backpack 5 × 6, a kitchen
+  cupboard 8 × 6. The grid is the only size limit, so a crowbar (1 × 5) doesn't
+  fit in a jeans pocket. A pocket can be restricted to liquids or to kinds of
+  item (holster, sheath, magazine). Liquids are measured in millilitres inside
+  their container.
+- **Only empty bags nest.** A container with anything in it can't go inside
+  another container.
+- **The player carries** two hands plus worn items; their pockets are your
+  carrying space. Pockets have no weight limit, but the total weight you carry
+  slows you down and costs stamina.
+- **Condition** reads as a word: pristine, worn, damaged, badly damaged or
+  ruined. Inspecting an item shows the exact numbers.
+
+### Hands: what you see is what's there
+
+The inventory is diegetic, as in DayZ, with one exception for long actions.
+
+- **You use things from your hands:** eating, drinking, bandaging, reading,
+  striking a match, switching a light on. Getting the item into your hands costs
+  its handling time; using it is a separate action. A two-handed item takes both
+  hands.
+- What you hold shows in first person, what you drop lies on the floor as a
+  pile, and furniture holds what its grid shows.
+- **Long actions gather what they need.** Crafting, repair, disassembly and
+  reading take their items from within reach (your hands, what you wear, and
+  piles and furniture within 2 m) at the start. The gathering time is part of
+  the action, which runs in compressed time with both hands busy.
+- **Numbers are there when you look.** Inspecting an item shows its exact
+  weight, condition, qualities and times (see [UI principles](#ui-principles)).
 
 ### Handling time
 
@@ -263,9 +287,10 @@ core tension of looting.
 
 | Action | Base time (tunable) |
 | --- | --- |
-| From a worn pocket to your hands | 0.5 s, plus a little per litre of the item's volume |
-| From a backpack (worn on your back) | 1.5 s + volume |
-| From a container or pile on the ground | 1.0 s + volume |
+| From a worn pocket to your hands | 0.5 s, plus 0.05 s per cell of the item's size |
+| From a backpack (worn on your back) | 1.5 s + size |
+| From a container or pile on the ground | 1.0 s + size |
+| Moving between two containers | Taking it out of one plus putting it into the other |
 | Search a container you haven't opened | 1–3 s, depending on its size |
 
 Handling stops sprinting, and you walk at half speed while it happens. Actions
@@ -275,13 +300,17 @@ queue up, so you can drag five items and watch them transfer one by one.
 
 HTML over the game view, and keyboard-first:
 
-- Two panes: **you** (hands, then worn items with their pockets as nested rows)
-  and **around** (piles, and containers within reach). Items move by drag and
-  drop, or with keys.
-- Columns: weight, volume, condition, and handling time for each row.
+- Two panes: **you** (hands, then each worn item with its pockets drawn as
+  grids) and **around** (piles, and containers within reach, also as grids).
+  Items move by drag and drop, with the cells where the item fits highlighted,
+  or with keys. R rotates.
+- Each item shows its name, a stack count and its condition word. Each pocket
+  shows its handling time. Weight, exact condition and times are in the item's
+  details.
 - Filters and search, and item details on hover or focus.
-- A **quickbar** of shortcuts to items in your pockets. Using one still costs
-  that pocket's handling time.
+- A **quickbar** of shortcuts to items you carry. A slot's key puts the item in
+  your hands, which costs its pocket's handling time; pressing it again uses
+  it.
 
 ### Piles
 
@@ -294,7 +323,7 @@ renders as a small model, or a generic bundle if the item has no model.
   qualities** (for example `cutting ≥ 1`), and **components** as groups of
   alternatives (`2 × [plank | branch]`). Some recipes also need a workstation.
 - **Where materials come from:** your hands and pockets, and piles and
-  containers within 2 m. A workbench within reach provides its qualities and a
+  containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
 - **Disassembly** is a recipe run in reverse. It returns part of the
   components, depending on skill and the tools used.
