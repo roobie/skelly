@@ -56,6 +56,7 @@ This file describes the code as it is. The game's design and roadmap are in
 | Terrain | Seeded value-noise heightmap in metres, generated one column at a time on the main thread |
 | Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The only structure so far is the test house next to spawn |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
+| Assets and credits | `content/base/assets/manifest.json` lists where each asset file came from; `core/assets.ts` checks it (CC0 and CC BY only, and CC BY needs an author and a link, each file listed once). The start and pause card's Credits link shows `ui/credits.ts`, drawn from it. `npm run validate` checks the base manifest, and any `manifest.json` passed to it |
 | Content | JSON in `src/content/base`, with sections for blocks, items, furniture, loot tables, templates and zombie types. Valibot schemas (`core/schema.ts`) check each file and give the TypeScript types; `core/content.ts` merges files in order and then checks references between them. An override keeps the block's runtime id. A file with any issue, including a broken reference, is skipped whole |
 | Units | Weight in grams, volume in millilitres, item length in millimetres |
 | Tests | Vitest, on the core only |
@@ -68,18 +69,19 @@ This file describes the code as it is. The game's design and roadmap are in
 ```
 src/
   core/        pure logic: coords, scale, chunk, world, worldgen, structure, storage, mesher,
-               raycast, physics, content and schema, items, inventory, handling; the simulation core: sim, clock,
+               raycast, physics, content and schema, assets, items, inventory, handling; the simulation core: sim, clock,
                scheduler, compression, events, random, entities, needs, sky
-  content/     JSON content packs (base/): blocks, items, furniture, loot, templates, zombies
+  content/     JSON content packs (base/): blocks, items, furniture, loot, templates, zombies;
+               assets/manifest.json lists where each asset file came from (URL, author, licence)
   worker/      mesh worker + message types
   render/      three.js chunk meshes, sky and lights, piles
   game/        engine setup, play mode, streaming, player controller, input, test house,
                starting loadout, move targets, build mode
   bench/       milestone 1.0 benchmark: runner, stats, results page
-  ui/          inventory screen, quickbar and handling HUD, CSS
+  ui/          inventory screen, quickbar and handling HUD, credits, CSS
   cli/         content validator (npm run validate -- mod/*.json)
   main.ts      picks play, benchmark or results page from the URL
-test/          Vitest specs for core, and content fixtures (fixtures/content/)
+test/          Vitest specs for core, and content and manifest fixtures (fixtures/content/, fixtures/assets/)
 ```
 
 ## Running

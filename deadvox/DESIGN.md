@@ -314,8 +314,34 @@ HTML over the game view, and keyboard-first:
 
 ### Piles
 
-Items on the ground form **piles** at block positions, like CDDA. A pile
-renders as a small model, or a generic bundle if the item has no model.
+Items on the ground form **piles** at block positions, like CDDA. An item
+with a model lies at its place in the pile's grid; items without one make a
+generic bundle.
+
+### Item models
+
+Items have simple, low-poly models: glTF files in the content pack, named by id
+and checked by the validator, like sounds. A model says where the hand holds
+the item and names points such as a flashlight's lens. It's what you see in a
+pile and in your hands; an item without one is a bundle on the ground and a
+plain box in your hands. Files are small, and follow
+[Assets and credits](#assets-and-credits).
+
+### Assets and credits
+
+- **Licences.** Asset files (models, sounds, textures) are made for the game,
+  or are CC0 1.0, CC BY 3.0 or CC BY 4.0. Other licences, such as share-alike
+  or non-commercial ones, aren't accepted.
+- **The asset manifest.** Each pack has one (`assets/manifest.json`), listing
+  every source the pack's files came from: its title, page, author, licence,
+  the file downloaded, the pack's files made from it, and what we changed. The
+  validator refuses a licence we don't accept, a CC BY source with no author or
+  link, a file listed twice, a file under `assets/` the manifest doesn't list,
+  and a listed file that's missing.
+- **The credits screen** lists every source, CC0 included: the title linked to
+  its page, the author, the licence linked to its text, and what we changed. It
+  opens from the start and pause card, and it's how we give the credit CC BY
+  asks for.
 
 ## Crafting
 
@@ -544,7 +570,7 @@ decoration.
   should make you guess.
 - Web Audio, started by the first click (browsers block sound until then).
   Sounds are content: ids in the pack, checked by the validator. Files are
-  small and made for the game or CC0.
+  small, and follow [Assets and credits](#assets-and-credits).
 
 ## UI principles
 

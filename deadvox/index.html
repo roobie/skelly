@@ -18,26 +18,30 @@
     <div id="errors"></div>
     <div id="overlay">
       <div class="card">
-        <h1>deadvox</h1>
-        <p>Singleplayer voxel survival prototype.</p>
-        <dl>
-          <dt>WASD</dt><dd>Move</dd>
-          <dt>Shift</dt><dd>Sprint</dd>
-          <dt>Z</dt><dd>Walk / jog</dd>
-          <dt>Space</dt><dd>Jump</dd>
-          <dt>Mouse</dt><dd>Look</dd>
-          <dt>Tab</dt><dd>Inventory: drag items between grids, R rotates</dd>
-          <dt>1–5</dt><dd>Quickbar: take into your hands</dd>
-          <dt>X</dt><dd>Cancel what you're handling</dd>
-          <dt>Esc</dt><dd>Pause</dd>
-        </dl>
-        <p class="go" id="go">Click to play</p>
-        <p class="scale">
-          View distance: <a href="?radius=64">64 m</a> ·
-          <a href="?radius=96">96 m (default)</a> ·
-          <a href="?radius=128">128 m</a>.
-          Slower hardware: try 64 m. <a href="?bench=1">Run the benchmark</a> (about 3 minutes)
-        </p>
+        <div id="about">
+          <h1>deadvox</h1>
+          <p>Singleplayer voxel survival prototype.</p>
+          <dl>
+            <dt>WASD</dt><dd>Move</dd>
+            <dt>Shift</dt><dd>Sprint</dd>
+            <dt>Z</dt><dd>Walk / jog</dd>
+            <dt>Space</dt><dd>Jump</dd>
+            <dt>Mouse</dt><dd>Look</dd>
+            <dt>Tab</dt><dd>Inventory: drag items between grids, R rotates</dd>
+            <dt>1–5</dt><dd>Quickbar: take into your hands</dd>
+            <dt>X</dt><dd>Cancel what you're handling</dd>
+            <dt>Esc</dt><dd>Pause</dd>
+          </dl>
+          <p class="go" id="go">Click to play</p>
+          <p class="scale">
+            View distance: <a href="?radius=64">64 m</a> ·
+            <a href="?radius=96">96 m (default)</a> ·
+            <a href="?radius=128">128 m</a>.
+            Slower hardware: try 64 m. <a href="?bench=1">Run the benchmark</a> (about 3 minutes)
+          </p>
+          <p class="scale"><a href="#credits" id="show-credits">Credits</a></p>
+        </div>
+        <div id="credits" hidden></div>
       </div>
     </div>
     <script type="module" src="./src/main.ts"></script>

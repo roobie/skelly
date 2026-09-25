@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "title": "Torch",
+      "url": "https://opengameart.org/content/torch",
+      "author": null,
+      "licence": "CC0-1.0",
+      "download": "torch.zip",
+      "files": ["assets/models/flashlight.glb"],
+      "changes": null
+    }
+  ]
+}

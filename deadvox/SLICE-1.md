@@ -67,6 +67,10 @@ save, and continue the next day.
   - piles on the ground
   - handling time and an action queue
 - The inventory screen (two panes, drag and drop, keyboard) and a quickbar.
+- Item models: glTF files as content, drawn in piles and in your hands. The
+  flashlight has one; other items fall back to simple shapes.
+- An asset manifest per pack, and a credits screen drawn from it (DESIGN.md,
+  ["Assets and credits"](DESIGN.md#assets-and-credits)).
 - Block entities: containers and doors. A block entity can span several cells.
 - A hamlet near spawn: 5 building templates, flattened lots, loot tables, and a
   search action.
@@ -310,6 +314,43 @@ yet. The block-editing tools moved to build mode (B), only with `?debug=1`.
 **Done when:** the hamlet generates the same in any chunk order (property
 test), and every template passes the validator.
 
+### 1.5.5 Item models
+
+Numbered to fit between 1.5 and 1.6 without renumbering the milestones after
+it.
+
+- Models are content: a `models` section lists each model's id and file, and
+  an item names its model by id, as zombie types already do. The files are
+  glTF binaries (`.glb`) in `content/base/assets/models/`, loaded with three.js's
+  `GLTFLoader`; a model in another format is converted to `.glb` once and the
+  converted file is committed.
+- A file is in metres, lying at rest on the ground, with its long side along
+  x. The model entry adds only what the file can't say: its `grip` (where the
+  hand holds it) and named `anchors`. The flashlight's `lens` anchor is where
+  its light goes in 1.6.
+- Piles: an item with a model lies at its place in the pile's grid, turned as
+  it is there. Items without a model stay in the generic bundle.
+- Hands: what you hold shows in first person (DESIGN.md,
+  ["Hands"](DESIGN.md#hands-what-you-see-is-whats-there)): the right hand, the
+  left hand, or both for a two-handed item. Held items are drawn in their own
+  pass, so they never clip into walls, but they're lit by the same sky, so
+  they're dark at night. An item without a model shows as a plain box sized
+  from its cells. What you hold changes when the move finishes; there are no
+  animations yet.
+- The base pack's first model is the flashlight, from
+  ["Torch" on OpenGameArt](https://opengameart.org/content/torch) (CC0).
+  Model files are small, and made for the game, CC0 or CC BY.
+- The asset manifest and the credits screen came before this milestone (see
+  PROJECT.md), and already check licences, authors and files listed twice.
+  1.5.5 adds the checks that need files: every file under `assets/` comes from
+  a source in the manifest, and every file a source lists exists.
+
+**Done when:** the validator fails on a missing model id or file, and on an
+asset file the manifest doesn't list (fixture tests, like the one for broken
+references), a unit test places a pile's items
+at their grid cells with their rotation and leaves items without a model in the
+bundle, and the flashlight shows in the spawn pile and in your hands.
+
 ### 1.6 Survival
 
 - Needs: calories, hydration, fatigue and stamina, with rates per game hour.
@@ -318,7 +359,8 @@ test), and every template passes the validator.
 - Health as a single pool, with regeneration while needs are met. Eating and
   drinking are short actions.
 - The flashlight uses battery charge. Swapping batteries is handling. It's a
-  three.js spot light (see "Dark interiors" under Scope).
+  three.js spot light at the model's `lens` anchor (see "Dark interiors" under
+  Scope).
 - Death: a screen with the time survived and a looting summary, then a new
   world.
 
@@ -380,7 +422,8 @@ test), and the golden save loads.
 - Shamblers: shuffling, groans, hits, and bumping into doors. At night they're
   heard beyond the 10 m they can be seen, so sound comes first.
 - Ambience: wind, quieter at night. No music during play.
-- Sounds are content: ids in the base pack, checked by the validator.
+- Sounds are content: ids in the base pack, checked by the validator. Their
+  files go in `assets/sounds/` and are listed in the asset manifest.
 
 **Done when:** the validator fails on a missing sound id or file, and a
 scenario test shows every noise event (footsteps, doors, fights) also emits a
@@ -409,9 +452,9 @@ file and their notes.
 The real definitions are the Valibot schemas in `src/core/schema.ts`, and the
 base pack in `src/content/base` has every kind. A content file has any of the
 sections `blocks`, `items`, `furniture`, `loot`, `templates` and `zombies`, each a
-list. Units: grams and millilitres. The item and pocket examples below are in
-the grid format that milestone 1.4 moves to (DESIGN.md, "Items and
-inventory"); until then, the schemas still use volume and length.
+list; `models` joins them in 1.5.5. Units: grams and millilitres, and metres in
+model files. Items and pockets use grid cells (DESIGN.md, "Items and
+inventory").
 
 An item with pockets:
 
@@ -467,6 +510,31 @@ layers are shown.
   ] }
 ```
 
+A model (1.5.5), with the point the hand holds and the flashlight's lens, in
+the file's metres; an item names it with `"model": "flashlight"`:
+
+```json
+{ "id": "flashlight", "file": "assets/models/flashlight.glb",
+  "grip": { "at": [0.06, 0, 0], "turn": [0, 0, 90] },
+  "anchors": { "lens": [0.18, 0, 0] } }
+```
+
+The asset manifest, `assets/manifest.json` in each pack. It isn't a content
+file: it records where each file under `assets/` came from, and the credits
+screen is drawn from it. A source is one download. `licence` is an SPDX
+identifier: `CC0-1.0`, `CC-BY-3.0` or `CC-BY-4.0`. `author` may be `null` for
+CC0, but CC BY needs an author and a `url`. `files` are the pack's files made
+from it, as paths within the pack, and `changes` says what we changed, or is
+`null`:
+
+```json
+{ "sources": [
+  { "title": "Torch", "url": "https://opengameart.org/content/torch", "author": null,
+    "licence": "CC0-1.0", "download": "torch.zip", "files": ["assets/models/flashlight.glb"],
+    "changes": null }
+] }
+```
+
 A zombie type:
 
 ```json
@@ -484,6 +552,7 @@ A zombie type:
 | Wearables with pockets | 8 | jeans, cargo pants, hoodie, jacket, vest, fanny pack, school backpack, hiking backpack |
 | Food and drink | 8 | canned beans, crackers, apple, chocolate, soda, water bottle, juice, canned soup |
 | Tools and weapons | 8 | crowbar, hammer, kitchen knife, baseball bat, pipe, flashlight, lighter, can opener |
+| Models | 1 | flashlight ("Torch" from OpenGameArt, CC0) |
 | Sounds | about 20 | footsteps on grass, asphalt, wood and carpet (walk, jog, sprint); door open and close; shambler shuffle, groan, hit and door bump; flashlight switch; eating; drinking; breathing; wind |
 | Other | about 8 | batteries, bandage, painkillers, rag, duct tape, nails, scrap metal, book (inert until Slice 2) |
 
@@ -495,7 +564,7 @@ A zombie type:
 | Compression cap `c` | 30× |
 | Safe radius for compression | 30 m |
 | Spawn time and state | 19:30. Calories 40%, hydration 35%, fatigue 70% |
-| Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.2 s per litre. Opening a door 0.6 s |
+| Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.05 s per cell. Opening a door 0.6 s |
 | Shambler perception | Sight 25 m by day, 10 m at night; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: jogging 8 m, sprinting 15 m |
 | Shambler count | 6–10 in the hamlet |
 

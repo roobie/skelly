@@ -3,6 +3,8 @@
 // Build mode (B, with ?debug=1) is a development tool for editing blocks.
 
 import { Vector3 } from 'three';
+import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
+import { validateManifest } from '../core/assets.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { HandlingQueue } from '../core/handling.ts';
@@ -12,6 +14,7 @@ import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
+import { mountCredits } from '../ui/credits.ts';
 import { Quickbar, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { BuildMode } from './build.ts';
@@ -98,7 +101,11 @@ export const startPlay = (engine: Engine): void => {
   const prompt = $('prompt');
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
-  $('errors').textContent = engine.contentErrors;
+  const credits = validateManifest('assets/manifest.json', assetManifest);
+  $('errors').textContent = [engine.contentErrors, ...credits.issues.map((i) => `${i.source} ${i.path}: ${i.message}`)]
+    .filter(Boolean)
+    .join('\n');
+  mountCredits({ about: $('about'), box: $('credits'), show: $('show-credits') }, credits.manifest);
 
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';

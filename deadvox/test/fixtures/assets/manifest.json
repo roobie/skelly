@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "title": "Rusty can",
+      "url": "https://opengameart.org/content/rusty-can",
+      "author": null,
+      "licence": "CC-BY-4.0",
+      "download": "can.zip",
+      "files": ["assets/models/can.glb"],
+      "changes": null
+    }
+  ]
+}
