@@ -1,0 +1,27 @@
+name: lint
+
+# Biome over the whole repo: formatting, lint and import order (see biome.jsonc).
+# Subproject dependencies are installed so module-graph rules can resolve imports.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  biome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            gungen/package-lock.json
+            deadvox/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix gungen
+      - run: npm ci --prefix deadvox
+      - run: npx biome ci --reporter=github

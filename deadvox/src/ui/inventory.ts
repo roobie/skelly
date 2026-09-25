@@ -2,11 +2,12 @@
 // than in a game UI toolkit, and content from mods shows up without code changes.
 
 import type { Registry } from '../core/content.ts';
-import { type Stack, inventoryTotals } from '../core/inventory.ts';
+import { inventoryTotals, type Stack } from '../core/inventory.ts';
 
 const kg = (grams: number) => `${(grams / 1000).toFixed(2)} kg`;
 const litres = (ml: number) => `${(ml / 1000).toFixed(2)} L`;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
 export const renderInventory = (root: HTMLElement, stacks: Stack[], registry: Registry): void => {
   const totals = inventoryTotals(stacks, registry);
   const byCategory = new Map<string, Stack[]>();
@@ -27,7 +28,9 @@ export const renderInventory = (root: HTMLElement, stacks: Stack[], registry: Re
     for (const { item, count } of list) {
       const def = registry.items.get(item);
       const row = body.insertRow();
-      if (def?.description) row.title = def.description;
+      if (def?.description) {
+        row.title = def.description;
+      }
       for (const text of [
         def?.name ?? `?? ${item}`,
         String(count),

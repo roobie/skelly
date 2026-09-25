@@ -86,7 +86,7 @@ export interface ParamSpec {
 export interface PartFamily {
   readonly name: string;
   readonly params: Readonly<Record<string, ParamSpec>>;
-  build(params: Readonly<Record<string, string>>): PartDef;
+  readonly build: (params: Readonly<Record<string, string>>) => PartDef;
 }
 
 export interface AxisRule {
@@ -99,7 +99,7 @@ export interface AxisRule {
 export interface Rule {
   readonly id: string;
   readonly title: string;
-  check(r: Resolved): Issue[];
+  readonly check: (r: Resolved) => Issue[];
 }
 
 export interface Domain {

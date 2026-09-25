@@ -1,4 +1,19 @@
-import * as THREE from 'three';
+import {
+  Box3,
+  Color,
+  DirectionalLight,
+  GridHelper,
+  HemisphereLight,
+  MathUtils,
+  type Object3D,
+  PerspectiveCamera,
+  Raycaster,
+  Scene,
+  Sphere,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
@@ -6,7 +21,7 @@ import type { Assembly } from '../core/schema.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
-import { type Layers, buildLayers, disposeGroup } from './scene.ts';
+import { buildLayers, disposeGroup, type Layers } from './scene.ts';
 
 const fixtures = Object.values(
   import.meta.glob<Assembly>('../../fixtures/*.json', { eager: true, import: 'default' }),
@@ -27,21 +42,21 @@ const layerToggles = [...document.querySelectorAll<HTMLInputElement>('#layers in
 
 // ---- three.js setup ----
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+const renderer = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 view.appendChild(renderer.domElement);
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x16181c);
-scene.add(new THREE.HemisphereLight(0xdfe6ee, 0x2a2622, 1.6));
-const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+const scene = new Scene();
+scene.background = new Color(0x16_18_1c);
+scene.add(new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6));
+const sun = new DirectionalLight(0xff_ff_ff, 2.2);
 sun.position.set(20, 40, 30);
 scene.add(sun);
-const grid = new THREE.GridHelper(120, 60, 0x3a3f46, 0x262a30);
+const grid = new GridHelper(120, 60, 0x3a_3f_46, 0x26_2a_30);
 grid.position.y = -16;
 scene.add(grid);
 
-const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
+const camera = new PerspectiveCamera(40, 1, 0.1, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
@@ -54,6 +69,17 @@ const resize = () => {
 resize();
 new ResizeObserver(resize).observe(view);
 
+const GROUP_LABELS: Readonly<Record<string, string>> = { archetype: 'Archetypes', broken: 'Broken (one rule each)' };
+
+const expectationNote = (expected: string[] | undefined, failed: string[]): string => {
+  if (expected === undefined) {
+    return '';
+  }
+  return expected.join() === failed.join()
+    ? ' <span class="note">· as expected</span>'
+    : ` <span class="fail">· expected ${expected.join(', ') || 'pass'}</span>`;
+};
+
 // ---- state ----
 
 let current: Assembly | undefined;
@@ -63,7 +89,9 @@ let focused: Issue | undefined;
 let framed = false;
 
 const redraw = () => {
-  if (!report) return;
+  if (!report) {
+    return;
+  }
   if (layers) {
     for (const g of Object.values(layers)) {
       scene.remove(g);
@@ -81,34 +109,33 @@ const redraw = () => {
   }
 };
 
-const frame = (group: THREE.Object3D) => {
+const frame = (group: Object3D) => {
   group.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(group);
-  if (box.isEmpty()) return;
-  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const box = new Box3().setFromObject(group);
+  if (box.isEmpty()) {
+    return;
+  }
+  const sphere = box.getBoundingSphere(new Sphere());
   // Fit the bounding sphere to the narrower of the two fields of view.
-  const vfov = THREE.MathUtils.degToRad(camera.fov);
+  const vfov = MathUtils.degToRad(camera.fov);
   const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
   const distance = sphere.radius / Math.sin(Math.min(vfov, hfov) / 2);
   controls.target.copy(sphere.center);
-  camera.position.copy(sphere.center).add(new THREE.Vector3(0.2, 0.3, 1).normalize().multiplyScalar(distance));
+  camera.position.copy(sphere.center).add(new Vector3(0.2, 0.3, 1).normalize().multiplyScalar(distance));
   controls.update();
 };
 
 const renderPanel = (assembly: Assembly) => {
-  if (!report) return;
+  if (!report) {
+    return;
+  }
   description.textContent = assembly.description ?? '';
   const failed = [...new Set(report.issues.map((i) => i.rule))].sort();
   const expected = assembly.expect ? [...assembly.expect].sort() : undefined;
   const verdict = report.ok
     ? '<span class="pass">PASS</span>'
     : `<span class="fail">FAIL</span> <span class="note">(${report.issues.length} issue${report.issues.length === 1 ? '' : 's'})</span>`;
-  const note =
-    expected === undefined
-      ? ''
-      : expected.join() === failed.join()
-        ? ' <span class="note">· as expected</span>'
-        : ` <span class="fail">· expected ${expected.join(', ') || 'pass'}</span>`;
+  const note = expectationNote(expected, failed);
   status.innerHTML = verdict + note;
 
   issueList.replaceChildren(
@@ -146,7 +173,7 @@ for (const f of fixtures) {
   let group = groups.get(kind);
   if (!group) {
     group = document.createElement('optgroup');
-    group.label = kind === 'archetype' ? 'Archetypes' : kind === 'broken' ? 'Broken (one rule each)' : kind;
+    group.label = GROUP_LABELS[kind] ?? kind;
     groups.set(kind, group);
     select.append(group);
   }
@@ -154,14 +181,18 @@ for (const f of fixtures) {
 }
 select.addEventListener('change', () => {
   const f = fixtures.find((x) => x.name === select.value);
-  if (!f) return;
+  if (!f) {
+    return;
+  }
   framed = false;
   load(f);
 });
 
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files?.[0];
-  if (!file) return;
+  if (!file) {
+    return;
+  }
   try {
     const assembly = JSON.parse(await file.text()) as Assembly;
     select.querySelector('option[value=""]')?.remove();
@@ -178,15 +209,19 @@ fileInput.addEventListener('change', async () => {
 for (const t of layerToggles) {
   t.addEventListener('change', () => {
     const group = layers?.[t.dataset.layer as keyof Layers];
-    if (group) group.visible = t.checked;
+    if (group) {
+      group.visible = t.checked;
+    }
   });
 }
 
 // Name whatever is under the pointer.
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
+const raycaster = new Raycaster();
+const pointer = new Vector2();
 renderer.domElement.addEventListener('pointermove', (e) => {
-  if (!layers) return;
+  if (!layers) {
+    return;
+  }
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
@@ -200,27 +235,32 @@ renderer.domElement.addEventListener('pointermove', (e) => {
 
 // ---- generation ----
 
-for (const t of TEMPLATES) templateSelect.add(new Option(t.name, t.name));
+for (const t of TEMPLATES) {
+  templateSelect.add(new Option(t.name, t.name));
+}
 
 const runGenerator = (step = 0) => {
   const template = TEMPLATES.find((t) => t.name === templateSelect.value);
-  if (!template) return;
+  if (!template) {
+    return;
+  }
   let seed = (Number.parseInt(seedInput.value, 10) || 0) + step;
   let assembly: Assembly;
   if (onlyValid.checked) {
     // Walk in the direction of the step until a seed passes.
     const dir = step < 0 ? -1 : 1;
-    let found;
+    let found: ReturnType<typeof generateValid>;
     for (let i = 0; i < 100 && !found; i++) {
       const g = generateValid(template, gunDomain, seed + dir * i, 1);
-      if (g) found = g;
+      if (g) {
+        found = g;
+      }
     }
     if (!found) {
       status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
       return;
     }
-    seed = found.seed;
-    assembly = found.assembly;
+    ({ seed, assembly } = found);
   } else {
     assembly = generate(template, gunDomain, seed);
   }
@@ -242,7 +282,9 @@ $<HTMLButtonElement>('prev-seed').addEventListener('click', () => runGenerator(-
 seedInput.addEventListener('change', () => runGenerator());
 
 $<HTMLButtonElement>('save').addEventListener('click', () => {
-  if (!current) return;
+  if (!current) {
+    return;
+  }
   const url = URL.createObjectURL(new Blob([`${JSON.stringify(current, null, 2)}\n`], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;

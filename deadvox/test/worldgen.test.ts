@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
-import { MAX_HEIGHT, MIN_HEIGHT, generateChunk, generateColumn, terrainHeight } from '../src/core/worldgen.ts';
+import { generateChunk, generateColumn, MAX_HEIGHT, MIN_HEIGHT, terrainHeight } from '../src/core/worldgen.ts';
 
 const blocks = { grass: 1, dirt: 2, stone: 3, sand: 4 };
 
 describe('worldgen', () => {
   it('is deterministic for a seed and varies between seeds', () => {
-    const a = generateChunk(42, blocks, 3, 0, -2);
-    const b = generateChunk(42, blocks, 3, 0, -2);
-    const c = generateChunk(43, blocks, 3, 0, -2);
+    const a = generateChunk(42, blocks, [3, 0, -2]);
+    const b = generateChunk(42, blocks, [3, 0, -2]);
+    const c = generateChunk(43, blocks, [3, 0, -2]);
     expect(a.blocks).toEqual(b.blocks);
     expect(a.blocks).not.toEqual(c.blocks);
   });
@@ -27,7 +27,11 @@ describe('worldgen', () => {
       const chunk = column.find((c) => c.cy === Math.floor(y / CHUNK))!;
       return chunk.get(x, y - chunk.cy * CHUNK, z);
     };
-    for (const [x, z] of [[0, 0], [17, 3], [31, 31]] as const) {
+    for (const [x, z] of [
+      [0, 0],
+      [17, 3],
+      [31, 31],
+    ] as const) {
       const h = terrainHeight(5, x, z);
       expect([blocks.grass, blocks.sand]).toContain(at(x, h, z));
       expect(at(x, h + 1, z)).toBe(0);

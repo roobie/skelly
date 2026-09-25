@@ -6,49 +6,195 @@
   --accent: #e0b04a;
   color-scheme: dark;
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1013; color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
-#view { position: fixed; inset: 0; }
-#view canvas { display: block; }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0e1013;
+  color: var(--text);
+  font:
+    14px / 1.4 system-ui,
+    sans-serif;
+}
+#view {
+  position: fixed;
+  inset: 0;
+}
+#view canvas {
+  display: block;
+}
 
 #crosshair {
-  position: fixed; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; pointer-events: none;
-  background: linear-gradient(var(--text), var(--text)) center / 2px 100% no-repeat,
-              linear-gradient(var(--text), var(--text)) center / 100% 2px no-repeat;
-  opacity: 0.8; mix-blend-mode: difference;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--text), var(--text)) center / 2px 100% no-repeat,
+    linear-gradient(var(--text), var(--text)) center / 100% 2px no-repeat;
+  opacity: 0.8;
+  mix-blend-mode: difference;
 }
 #hud {
-  position: fixed; left: 12px; top: 12px; padding: 8px 10px; border-radius: 6px; pointer-events: none;
-  background: var(--panel); font: 12px/1.5 ui-monospace, monospace; white-space: pre;
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  background: var(--panel);
+  font:
+    12px / 1.5 ui-monospace,
+    monospace;
+  white-space: pre;
 }
-#hotbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: none; }
-#hotbar div { white-space: nowrap; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--muted); }
-#hotbar div.selected { border-color: var(--accent); color: var(--text); }
-#hotbar span { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
+#hotbar {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+#hotbar div {
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--muted);
+}
+#hotbar div.selected {
+  border-color: var(--accent);
+  color: var(--text);
+}
+#hotbar span {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
 
 #overlay {
-  position: fixed; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / 55%); cursor: pointer;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 55%);
+  cursor: pointer;
 }
-#overlay[hidden], #inventory[hidden] { display: none; }
-#overlay .card { max-width: 420px; padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-#overlay h1 { margin: 0 0 4px; font-size: 22px; }
-#overlay p { margin: 0 0 12px; color: var(--muted); }
-#overlay dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 0 0 16px; }
-#overlay dt { font-family: ui-monospace, monospace; color: var(--accent); }
-#overlay dd { margin: 0; }
-#overlay .go { color: var(--text); font-weight: 600; margin: 0; }
+#overlay[hidden],
+#inventory[hidden] {
+  display: none;
+}
+#overlay .card {
+  max-width: 420px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+#overlay h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+#overlay p {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+#overlay dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 14px;
+  margin: 0 0 16px;
+}
+#overlay dt {
+  font-family: ui-monospace, monospace;
+  color: var(--accent);
+}
+#overlay dd {
+  margin: 0;
+}
+#overlay .go {
+  color: var(--text);
+  font-weight: 600;
+  margin: 0;
+}
 
 #inventory {
-  position: fixed; right: 16px; top: 16px; width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
-  padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
 }
-#inventory h2 { margin: 0 0 10px; font-size: 16px; }
-#inventory table { width: 100%; border-collapse: collapse; font-size: 13px; }
-#inventory th { text-align: left; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--line); padding: 4px; }
-#inventory td { padding: 3px 4px; }
-#inventory td:not(:first-child), #inventory th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
-#inventory tr.category td { padding-top: 10px; color: var(--accent); text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
-#inventory .totals { margin: 12px 0 0; }
-#inventory .hint { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
-#errors { position: fixed; left: 12px; bottom: 12px; max-width: 60ch; padding: 8px 10px; border-radius: 6px; background: #5a1d1d; white-space: pre-wrap; font: 12px ui-monospace, monospace; }
-#errors:empty { display: none; }
+#inventory h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+#inventory table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+#inventory th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--line);
+  padding: 4px;
+}
+#inventory td {
+  padding: 3px 4px;
+}
+#inventory td:not(:first-child),
+#inventory th:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+#inventory tr.category td {
+  padding-top: 10px;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+#inventory .totals {
+  margin: 12px 0 0;
+}
+#inventory .hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+#errors {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  max-width: 60ch;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #5a1d1d;
+  white-space: pre-wrap;
+  font:
+    12px ui-monospace,
+    monospace;
+}
+#errors:empty {
+  display: none;
+}

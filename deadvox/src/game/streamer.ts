@@ -3,10 +3,10 @@
 // workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
 // and AO at chunk borders are correct and never need a second pass.
 
-import { CHUNK, MAX_CY, MIN_CY, type Vec3, chunkKey, toChunk } from '../core/coords.ts';
+import { CHUNK, chunkKey, MAX_CY, MIN_CY, toChunk, type Vec3 } from '../core/coords.ts';
 import type { World } from '../core/world.ts';
 import { extractPadded } from '../core/world.ts';
-import { type TerrainBlocks, generateColumn } from '../core/worldgen.ts';
+import { generateColumn, type TerrainBlocks } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
@@ -47,7 +47,11 @@ export class Streamer {
 
     // Nearest columns first.
     const r = opts.radius + 1;
-    for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) this.offsets.push([dx, dz]);
+    for (let dz = -r; dz <= r; dz++) {
+      for (let dx = -r; dx <= r; dx++) {
+        this.offsets.push([dx, dz]);
+      }
+    }
     this.offsets.sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
   }
 
@@ -69,6 +73,7 @@ export class Streamer {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   update(x: number, z: number): void {
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
@@ -76,19 +81,31 @@ export class Streamer {
 
     let budget = COLUMNS_PER_FRAME;
     for (const [dx, dz] of this.offsets) {
-      if (budget === 0) break;
-      if (this.generate(pcx + dx, pcz + dz)) budget--;
+      if (budget === 0) {
+        break;
+      }
+      if (this.generate(pcx + dx, pcz + dz)) {
+        budget -= 1;
+      }
     }
 
     for (const [dx, dz] of this.offsets) {
-      if (this.inFlight.size >= this.maxInFlight) break;
-      if (Math.max(Math.abs(dx), Math.abs(dz)) > radius) continue;
+      if (this.inFlight.size >= this.maxInFlight) {
+        break;
+      }
+      if (Math.max(Math.abs(dx), Math.abs(dz)) > radius) {
+        continue;
+      }
       const cx = pcx + dx;
       const cz = pcz + dz;
-      if (!this.neighboursGenerated(cx, cz)) continue;
+      if (!this.neighboursGenerated(cx, cz)) {
+        continue;
+      }
       for (let cy = MIN_CY; cy <= MAX_CY && this.inFlight.size < this.maxInFlight; cy++) {
         const key = chunkKey(cx, cy, cz);
-        if (this.dirty.has(key) && !this.inFlight.has(key)) this.requestMesh(key, cx, cy, cz);
+        if (this.dirty.has(key) && !this.inFlight.has(key)) {
+          this.requestMesh(key, cx, cy, cz);
+        }
       }
     }
 
@@ -109,20 +126,31 @@ export class Streamer {
   }
 
   private neighboursGenerated(cx: number, cz: number): boolean {
-    for (let dz = -1; dz <= 1; dz++)
-      for (let dx = -1; dx <= 1; dx++) if (!this.generated.has(`${cx + dx},${cz + dz}`)) return false;
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!this.generated.has(`${cx + dx},${cz + dz}`)) {
+          return false;
+        }
+      }
+    }
     return true;
   }
 
   /** Generates a column if it doesn't exist yet. Returns true if it did work. */
   private generate(cx: number, cz: number): boolean {
     const col = `${cx},${cz}`;
-    if (this.generated.has(col)) return false;
+    if (this.generated.has(col)) {
+      return false;
+    }
     const { world, seed, terrain } = this.opts;
     for (const chunk of generateColumn(seed, terrain, cx, cz)) {
-      if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) continue; // already edited; keep it
+      if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {
+        continue; // already edited; keep it
+      }
       world.addChunk(chunk);
-      if (!chunk.isEmpty()) this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
+      if (!chunk.isEmpty()) {
+        this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
+      }
     }
     this.generated.add(col);
     return true;
@@ -132,7 +160,8 @@ export class Streamer {
     this.dirty.delete(key);
     this.inFlight.add(key);
     const padded = extractPadded(this.opts.world, cx, cy, cz);
-    const worker = this.workers[this.nextWorker++ % this.workers.length]!;
+    const worker = this.workers[this.nextWorker % this.workers.length]!;
+    this.nextWorker += 1;
     this.send(worker, {
       type: 'mesh',
       key,
@@ -144,7 +173,9 @@ export class Streamer {
 
   private receive(msg: FromMesher): void {
     this.inFlight.delete(msg.key);
-    if ((this.versions.get(msg.key) ?? 0) !== msg.version) return; // edited meanwhile; already dirty again
+    if ((this.versions.get(msg.key) ?? 0) !== msg.version) {
+      return; // edited meanwhile; already dirty again
+    }
     const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;
     if (!this.inRange(cx, cz)) {
       this.dirty.add(msg.key);

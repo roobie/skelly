@@ -4,11 +4,7 @@
 export type Vec3 = readonly [number, number, number];
 
 /** 3x3 rotation matrix, row-major. */
-export type Mat3 = readonly [
-  number, number, number,
-  number, number, number,
-  number, number, number,
-];
+export type Mat3 = readonly [number, number, number, number, number, number, number, number, number];
 
 /** Rigid transform: p' = r * p + t. */
 export interface Transform {
@@ -32,24 +28,18 @@ export const cross = (a: Vec3, b: Vec3): Vec3 => [
 export const length = (a: Vec3): number => Math.hypot(a[0], a[1], a[2]);
 export const normalize = (a: Vec3): Vec3 => {
   const l = length(a);
-  if (l === 0) throw new Error('cannot normalize a zero vector');
+  if (l === 0) {
+    throw new Error('cannot normalize a zero vector');
+  }
   return scale(a, 1 / l);
 };
 
 /** Matrix whose columns are x, y, z. */
-export const fromColumns = (x: Vec3, y: Vec3, z: Vec3): Mat3 => [
-  x[0], y[0], z[0],
-  x[1], y[1], z[1],
-  x[2], y[2], z[2],
-];
+export const fromColumns = (x: Vec3, y: Vec3, z: Vec3): Mat3 => [x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]];
 
 export const column = (m: Mat3, i: 0 | 1 | 2): Vec3 => [m[i], m[3 + i]!, m[6 + i]!];
 
-export const transpose = (m: Mat3): Mat3 => [
-  m[0], m[3], m[6],
-  m[1], m[4], m[7],
-  m[2], m[5], m[8],
-];
+export const transpose = (m: Mat3): Mat3 => [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]];
 
 export const mulMV = (m: Mat3, v: Vec3): Vec3 => [
   m[0] * v[0] + m[1] * v[1] + m[2] * v[2],

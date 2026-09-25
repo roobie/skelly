@@ -10,9 +10,11 @@ const rulesFailed = (a: Assembly, domain: Domain = gunDomain) =>
 describe('rules', () => {
   it('port-compat: rejects mismatched mounts', () => {
     const a = variant('archetype-rifle', (x) => {
-      x.connections = x.connections.map((c) =>
-        c.to === 'stock.front' ? { from: 'receiver.stock', to: 'grip.top' } : c.to === 'grip.top' ? { from: 'lower.grip', to: 'stock.front' } : c,
-      );
+      const swapped: Record<string, (typeof x.connections)[number]> = {
+        'stock.front': { from: 'receiver.stock', to: 'grip.top' },
+        'grip.top': { from: 'lower.grip', to: 'stock.front' },
+      };
+      x.connections = x.connections.map((c) => swapped[c.to] ?? c);
     });
     const issues = validate(a, gunDomain).issues.filter((i) => i.rule === 'port-compat');
     expect(issues.map((i) => i.message)).toEqual([
@@ -26,7 +28,9 @@ describe('rules', () => {
       x.parts.sight2 = { family: 'sight' };
       x.connections.push({ from: 'receiver.rail', slot: 3, to: 'sight2.base' });
     });
-    const messages = validate(a, gunDomain).issues.filter((i) => i.rule === 'port-compat').map((i) => i.message);
+    const messages = validate(a, gunDomain)
+      .issues.filter((i) => i.rule === 'port-compat')
+      .map((i) => i.message);
     expect(messages).toEqual(['receiver.rail[3] is used by both connection #7 and #8.']);
   });
 
@@ -46,18 +50,20 @@ describe('rules', () => {
         },
       },
     };
-    const issues = validate(variant('archetype-rifle', () => {}), domain).issues;
+    const { issues } = validate(loadFixture('archetype-rifle'), domain);
     expect(issues.map((i) => i.message)).toEqual(['The bore axis of barrel is 1u off the main axis.']);
   });
 
   it('axis-alignment: rejects an assembly not rooted on the bore line', () => {
-    const a = variant('archetype-rifle', (x) => { x.root = 'grip'; });
+    const a = variant('archetype-rifle', (x) => {
+      x.root = 'grip';
+    });
     expect(rulesFailed(a)).toEqual(['axis-alignment']);
   });
 
   it('keep-out: the part attached at the allowed port may occupy the volume', () => {
     // archetype-rifle's magazine sits in the receiver's magazine-path volume.
-    expect(rulesFailed(variant('archetype-rifle', () => {}))).toEqual([]);
+    expect(rulesFailed(loadFixture('archetype-rifle'))).toEqual([]);
   });
 
   it('keep-out: without the allowance, the magazine intrudes', () => {
@@ -75,15 +81,13 @@ describe('rules', () => {
         },
       },
     };
-    const issues = validate(variant('archetype-rifle', () => {}), domain).issues;
-    expect(issues.map((i) => i.message)).toEqual([
-      'magazine intrudes 2u into the magazine-path volume of lower.',
-    ]);
+    const { issues } = validate(loadFixture('archetype-rifle'), domain);
+    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2u into the magazine-path volume of lower.']);
   });
 
   it('solid-overlap: allows directly connected parts to nest a little', () => {
     // The grip's tilted top corner dips into the receiver by about 0.46u.
-    const r = validate(variant('archetype-rifle', () => {}), gunDomain);
+    const r = validate(loadFixture('archetype-rifle'), gunDomain);
     expect(r.issues).toEqual([]);
   });
 
@@ -94,7 +98,7 @@ describe('rules', () => {
   });
 
   it('feed-match: box-fed receiver on a trigger-only lower', () => {
-    const issues = validate(loadFixture('broken-feed-match'), gunDomain).issues;
+    const { issues } = validate(loadFixture('broken-feed-match'), gunDomain);
     expect(issues.map((i) => i.message)).toEqual(['receiver is box-fed, but lower (trigger) has no magazine well.']);
   });
 
@@ -104,8 +108,12 @@ describe('rules', () => {
       x.parts.magazine = { family: 'magazine' };
       x.connections.push({ from: 'lower.magazine', to: 'magazine.top' });
     });
-    const messages = validate(a, gunDomain).issues.filter((i) => i.rule === 'feed-match').map((i) => i.message);
-    expect(messages).toEqual(["receiver is tube-fed, but lower (conventional) has a magazine well it can't feed from."]);
+    const messages = validate(a, gunDomain)
+      .issues.filter((i) => i.rule === 'feed-match')
+      .map((i) => i.message);
+    expect(messages).toEqual([
+      "receiver is tube-fed, but lower (conventional) has a magazine well it can't feed from.",
+    ]);
   });
 
   it('feed-match: top-fed receivers take a magazine well too', () => {

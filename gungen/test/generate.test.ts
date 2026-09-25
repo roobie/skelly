@@ -25,9 +25,7 @@ describe('generate', () => {
 
   it('varies with the seed', () => {
     for (const t of TEMPLATES) {
-      const keys = new Set(
-        Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)),
-      );
+      const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)));
       expect(keys.size).toBeGreaterThan(5);
     }
   });
@@ -58,6 +56,7 @@ describe('generate', () => {
 describe('templates', () => {
   for (const t of TEMPLATES) {
     describe(t.name, () => {
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
       it('only chooses families and param values that exist', () => {
         for (const slot of t.slots) {
           const family = gunDomain.families[slot.family];
@@ -65,21 +64,30 @@ describe('templates', () => {
           for (const [name, choice] of Object.entries(slot.params ?? {})) {
             const spec = family!.params[name];
             expect(spec, `${slot.id}.${name}`).toBeDefined();
-            for (const v of Array.isArray(choice) ? choice : [choice]) expect(spec!.values).toContain(v);
+            for (const v of Array.isArray(choice) ? choice : [choice]) {
+              expect(spec!.values).toContain(v);
+            }
           }
         }
       });
 
       it(`never produces a structurally broken file (${SEEDS} seeds)`, () => {
         for (let seed = 0; seed < SEEDS; seed++) {
-          const issues = validate(generate(t, gunDomain, seed), gunDomain).issues;
-          expect(issues.filter((i) => i.rule === 'structure'), `seed ${seed}`).toEqual([]);
+          const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
+          expect(
+            issues.filter((i) => i.rule === 'structure'),
+            `seed ${seed}`,
+          ).toEqual([]);
         }
       });
 
       it(`is valid at least half the time (${SEEDS} seeds)`, () => {
         let valid = 0;
-        for (let seed = 0; seed < SEEDS; seed++) if (validate(generate(t, gunDomain, seed), gunDomain).ok) valid++;
+        for (let seed = 0; seed < SEEDS; seed++) {
+          if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
+            valid += 1;
+          }
+        }
         expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
       });
 

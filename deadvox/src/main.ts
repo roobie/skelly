@@ -1,13 +1,26 @@
-import * as THREE from 'three';
+import {
+  BoxGeometry,
+  Color,
+  DirectionalLight,
+  EdgesGeometry,
+  Fog,
+  HemisphereLight,
+  LineBasicMaterial,
+  LineSegments,
+  PerspectiveCamera,
+  Scene,
+  Vector3,
+  WebGLRenderer,
+} from 'three';
+import { blockColors, blockId, buildRegistry, type ContentSource } from './core/content.ts';
 import { CHUNK } from './core/coords.ts';
-import { type ContentSource, blockColors, blockId, buildRegistry } from './core/content.ts';
 import type { Stack } from './core/inventory.ts';
 import { bodyOverlapsBlock, stepBody } from './core/physics.ts';
 import { raycast } from './core/raycast.ts';
 import { World } from './core/world.ts';
 import { terrainHeight } from './core/worldgen.ts';
 import { Input } from './game/input.ts';
-import { EYE_HEIGHT, REACH, createPlayerBody, steer } from './game/player.ts';
+import { createPlayerBody, EYE_HEIGHT, REACH, steer } from './game/player.ts';
 import { Streamer } from './game/streamer.ts';
 import { ChunkMeshes } from './render/chunks.ts';
 import { renderInventory } from './ui/inventory.ts';
@@ -55,28 +68,28 @@ const isSolid = (x: number, y: number, z: number) => {
 // ---- rendering ----
 
 const view = $('view');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const renderer = new WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
 view.appendChild(renderer.domElement);
 
-const sky = new THREE.Color(0xa9bfd0);
-const scene = new THREE.Scene();
+const sky = new Color(0xa9_bf_d0);
+const scene = new Scene();
 scene.background = sky;
-scene.fog = new THREE.Fog(sky, RADIUS * CHUNK * 0.55, RADIUS * CHUNK * 0.95);
-scene.add(new THREE.HemisphereLight(0xdfe8f0, 0x5a4a3a, 1.3));
-const sun = new THREE.DirectionalLight(0xfff2dd, 1.6);
+scene.fog = new Fog(sky, RADIUS * CHUNK * 0.55, RADIUS * CHUNK * 0.95);
+scene.add(new HemisphereLight(0xdf_e8_f0, 0x5a_4a_3a, 1.3));
+const sun = new DirectionalLight(0xff_f2_dd, 1.6);
 sun.position.set(0.4, 1, 0.25);
 scene.add(sun);
 
-const camera = new THREE.PerspectiveCamera(75, 1, 0.05, RADIUS * CHUNK * 1.5);
+const camera = new PerspectiveCamera(75, 1, 0.05, RADIUS * CHUNK * 1.5);
 camera.rotation.order = 'YXZ';
 
 const meshes = new ChunkMeshes();
 scene.add(meshes.group);
 
-const outline = new THREE.LineSegments(
-  new THREE.EdgesGeometry(new THREE.BoxGeometry(1.002, 1.002, 1.002)),
-  new THREE.LineBasicMaterial({ color: 0x111111 }),
+const outline = new LineSegments(
+  new EdgesGeometry(new BoxGeometry(1.002, 1.002, 1.002)),
+  new LineBasicMaterial({ color: 0x11_11_11 }),
 );
 outline.visible = false;
 scene.add(outline);
@@ -107,7 +120,9 @@ const syncOverlay = () => {
 };
 overlay.addEventListener('click', () => input.lock());
 renderer.domElement.addEventListener('click', () => {
-  if (!input.locked) input.lock();
+  if (!input.locked) {
+    input.lock();
+  }
 });
 document.addEventListener('pointerlockchange', syncOverlay);
 
@@ -125,8 +140,12 @@ const drawHotbar = () => {
 };
 drawHotbar();
 
-window.addEventListener('keydown', (e) => {
-  if (e.repeat) return;
+const DIGIT_KEY = /^Digit([1-9])$/;
+
+globalThis.addEventListener('keydown', (e) => {
+  if (e.repeat) {
+    return;
+  }
   if (e.code === 'Tab') {
     const open = inventoryPanel.hidden;
     inventoryPanel.hidden = !open;
@@ -138,14 +157,16 @@ window.addEventListener('keydown', (e) => {
     }
     syncOverlay();
   }
-  const digit = /^Digit([1-9])$/.exec(e.code);
+  const digit = DIGIT_KEY.exec(e.code);
   if (digit && Number(digit[1]) <= Math.min(9, placeable.length)) {
     selected = Number(digit[1]) - 1;
     drawHotbar();
   }
 });
-window.addEventListener('wheel', (e) => {
-  if (!input.locked) return;
+globalThis.addEventListener('wheel', (e) => {
+  if (!input.locked) {
+    return;
+  }
   const n = Math.min(9, placeable.length);
   selected = (selected + (e.deltaY > 0 ? 1 : -1) + n) % n;
   drawHotbar();
@@ -154,16 +175,20 @@ window.addEventListener('wheel', (e) => {
 // ---- block editing ----
 
 const lookDir = (): [number, number, number] => {
-  const d = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+  const d = new Vector3(0, 0, -1).applyEuler(camera.rotation);
   return [d.x, d.y, d.z];
 };
 const eye = (): [number, number, number] => [body.pos[0], body.pos[1] + EYE_HEIGHT, body.pos[2]];
 
 renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 renderer.domElement.addEventListener('mousedown', (e) => {
-  if (!input.locked) return;
+  if (!input.locked) {
+    return;
+  }
   const hit = raycast(eye(), lookDir(), REACH, isSolid);
-  if (!hit) return;
+  if (!hit) {
+    return;
+  }
   if (e.button === 0) {
     streamer.markEdited(world.setBlock(...hit.block, 0));
   } else if (e.button === 2) {
@@ -172,9 +197,13 @@ renderer.domElement.addEventListener('mousedown', (e) => {
       hit.block[1] + hit.normal[1],
       hit.block[2] + hit.normal[2],
     ];
-    if (bodyOverlapsBlock(body, target)) return;
+    if (bodyOverlapsBlock(body, target)) {
+      return;
+    }
     const block = placeable[selected];
-    if (block) streamer.markEdited(world.setBlock(...target, blockId(registry, block.id)));
+    if (block) {
+      streamer.markEdited(world.setBlock(...target, blockId(registry, block.id)));
+    }
   }
 });
 
@@ -208,7 +237,9 @@ const frame = (now: number) => {
 
   const hit = input.locked ? raycast(eye(), lookDir(), REACH, isSolid) : undefined;
   outline.visible = hit !== undefined;
-  if (hit) outline.position.set(hit.block[0] + 0.5, hit.block[1] + 0.5, hit.block[2] + 0.5);
+  if (hit) {
+    outline.position.set(hit.block[0] + 0.5, hit.block[1] + 0.5, hit.block[2] + 0.5);
+  }
 
   const [x, y, z] = body.pos;
   hud.textContent = [

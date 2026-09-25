@@ -1,5 +1,5 @@
 import { Chunk } from './chunk.ts';
-import { CHUNK, type Vec3, chunkKey, localIndex, toChunk, toLocal } from './coords.ts';
+import { CHUNK, chunkKey, localIndex, toChunk, toLocal, type Vec3 } from './coords.ts';
 
 /** Sparse block storage. Missing chunks read as air. */
 export class World {
@@ -33,6 +33,14 @@ export class World {
   }
 }
 
+/** -1 or 1 if a chunk-local coordinate is on the low or high face of its chunk, else 0. */
+const borderStep = (local: number): number => {
+  if (local === 0) {
+    return -1;
+  }
+  return local === CHUNK - 1 ? 1 : 0;
+};
+
 /** The chunk holding a block plus any neighbour chunk that shares a face with it. */
 export const affectedChunks = (x: number, y: number, z: number): Vec3[] => {
   const c: Vec3 = [toChunk(x), toChunk(y), toChunk(z)];
@@ -40,7 +48,7 @@ export const affectedChunks = (x: number, y: number, z: number): Vec3[] => {
   const local = [toLocal(x), toLocal(y), toLocal(z)];
   for (let axis = 0; axis < 3; axis++) {
     const l = local[axis]!;
-    const step = l === 0 ? -1 : l === CHUNK - 1 ? 1 : 0;
+    const step = borderStep(l);
     if (step !== 0) {
       const n: Vec3 = [...c];
       n[axis] = n[axis]! + step;
@@ -59,16 +67,24 @@ export const paddedIndex = (x: number, y: number, z: number): number => x + PADD
  * Copies a chunk and a 1-block border from its neighbours into one array, so the
  * mesher can cull faces at chunk edges without seeing the world.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
 export const extractPadded = (world: World, cx: number, cy: number, cz: number): Uint16Array => {
   const out = new Uint16Array(PADDED * PADDED * PADDED);
   const around: (Chunk | undefined)[] = [];
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dz = -1; dz <= 1; dz++)
-      for (let dx = -1; dx <= 1; dx++) around.push(world.getChunk(cx + dx, cy + dy, cz + dz));
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        around.push(world.getChunk(cx + dx, cy + dy, cz + dz));
+      }
+    }
+  }
 
   const split = (p: number): [number, number] => {
     const w = p - 1; // padded -> chunk-local, may be -1 or CHUNK
-    return w < 0 ? [0, w + CHUNK] : w >= CHUNK ? [2, w - CHUNK] : [1, w];
+    if (w < 0) {
+      return [0, w + CHUNK];
+    }
+    return w >= CHUNK ? [2, w - CHUNK] : [1, w];
   };
   for (let y = 0; y < PADDED; y++) {
     const [oy, ly] = split(y);
@@ -77,7 +93,9 @@ export const extractPadded = (world: World, cx: number, cy: number, cz: number):
       for (let x = 0; x < PADDED; x++) {
         const [ox, lx] = split(x);
         const chunk = around[ox + 3 * (oz + 3 * oy)];
-        if (chunk) out[paddedIndex(x, y, z)] = chunk.blocks[localIndex(lx, ly, lz)]!;
+        if (chunk) {
+          out[paddedIndex(x, y, z)] = chunk.blocks[localIndex(lx, ly, lz)]!;
+        }
       }
     }
   }

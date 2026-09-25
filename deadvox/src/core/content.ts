@@ -81,17 +81,26 @@ export const validateContent = ({ source, data }: ContentSource): ContentIssue[]
     return issues;
   }
   for (const key of Object.keys(data)) {
-    if (key !== 'blocks' && key !== 'items') issue(key, `unknown section "${key}"`);
+    if (key !== 'blocks' && key !== 'items') {
+      issue(key, `unknown section "${key}"`);
+    }
   }
 
-  const checkList = (key: 'blocks' | 'items', fields: FieldSpec, extra: (def: Record<string, unknown>, path: string) => void) => {
+  const checkList = (
+    key: 'blocks' | 'items',
+    fields: FieldSpec,
+    extra: (def: Record<string, unknown>, path: string) => void,
+  ) => {
     const list = data[key];
-    if (list === undefined) return;
+    if (list === undefined) {
+      return;
+    }
     if (!Array.isArray(list)) {
       issue(key, 'expected an array');
       return;
     }
     const seen = new Set<string>();
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
     list.forEach((def: unknown, i) => {
       const path = `${key}[${i}]`;
       if (!isObject(def)) {
@@ -101,17 +110,25 @@ export const validateContent = ({ source, data }: ContentSource): ContentIssue[]
       for (const [name, spec] of Object.entries(fields)) {
         const value = def[name];
         if (value === undefined) {
-          if (spec.required) issue(`${path}.${name}`, 'missing');
+          if (spec.required) {
+            issue(`${path}.${name}`, 'missing');
+          }
         } else if (typeof value !== spec.type) {
           issue(`${path}.${name}`, `expected a ${spec.type}`);
         }
       }
       for (const name of Object.keys(def)) {
-        if (!(name in fields)) issue(`${path}.${name}`, `unknown field "${name}"`);
+        if (!(name in fields)) {
+          issue(`${path}.${name}`, `unknown field "${name}"`);
+        }
       }
       if (typeof def.id === 'string') {
-        if (!ID.test(def.id)) issue(`${path}.id`, `"${def.id}" must be lowercase letters, digits and _`);
-        if (seen.has(def.id)) issue(`${path}.id`, `duplicate id "${def.id}" in this file`);
+        if (!ID.test(def.id)) {
+          issue(`${path}.id`, `"${def.id}" must be lowercase letters, digits and _`);
+        }
+        if (seen.has(def.id)) {
+          issue(`${path}.id`, `duplicate id "${def.id}" in this file`);
+        }
         seen.add(def.id);
       }
       extra(def, path);
@@ -119,13 +136,19 @@ export const validateContent = ({ source, data }: ContentSource): ContentIssue[]
   };
 
   checkList('blocks', BLOCK_FIELDS, (def, path) => {
-    if (def.id === AIR.id) issue(`${path}.id`, '"air" is built in');
-    if (typeof def.color === 'string' && !COLOR.test(def.color)) issue(`${path}.color`, 'expected "#rrggbb"');
+    if (def.id === AIR.id) {
+      issue(`${path}.id`, '"air" is built in');
+    }
+    if (typeof def.color === 'string' && !COLOR.test(def.color)) {
+      issue(`${path}.color`, 'expected "#rrggbb"');
+    }
   });
   checkList('items', ITEM_FIELDS, (def, path) => {
     for (const name of ['weight', 'volume']) {
       const value = def[name];
-      if (typeof value === 'number' && !(value >= 0)) issue(`${path}.${name}`, 'must be 0 or more');
+      if (typeof value === 'number' && !(value >= 0)) {
+        issue(`${path}.${name}`, 'must be 0 or more');
+      }
     }
   });
   return issues;
@@ -154,7 +177,9 @@ export const buildRegistry = (sources: ContentSource[]): { registry: Registry; i
         registry.blocks[existing] = block; // override keeps the runtime id
       }
     }
-    for (const item of file.items ?? []) registry.items.set(item.id, item);
+    for (const item of file.items ?? []) {
+      registry.items.set(item.id, item);
+    }
   }
   return { registry, issues };
 };
@@ -162,7 +187,9 @@ export const buildRegistry = (sources: ContentSource[]): { registry: Registry; i
 /** Looks up a block's runtime id, failing loudly if content doesn't define it. */
 export const blockId = (registry: Registry, id: string): number => {
   const n = registry.blockIds.get(id);
-  if (n === undefined) throw new Error(`content does not define block "${id}"`);
+  if (n === undefined) {
+    throw new Error(`content does not define block "${id}"`);
+  }
   return n;
 };
 

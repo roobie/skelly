@@ -35,5 +35,7 @@ export const steer = (body: Body, yaw: number, intent: MoveIntent): void => {
   // yaw 0 looks down -z; +x is to the right.
   body.vel[0] = (-sin * forward + cos * right) * speed;
   body.vel[2] = (-cos * forward - sin * right) * speed;
-  if (intent.jump && body.onGround) body.vel[1] = JUMP_SPEED;
+  if (intent.jump && body.onGround) {
+    body.vel[1] = JUMP_SPEED;
+  }
 };

@@ -24,17 +24,27 @@ const offsets = (body: Body, axis: Axis): [number, number] =>
 const overlapsSolid = (body: Body, isSolid: SolidAt): boolean => {
   const [x, y, z] = body.pos;
   const w = body.halfWidth;
-  for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++)
-    for (let bz = Math.floor(z - w); bz < Math.ceil(z + w); bz++)
-      for (let bx = Math.floor(x - w); bx < Math.ceil(x + w); bx++) if (isSolid(bx, by, bz)) return true;
+  for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++) {
+    for (let bz = Math.floor(z - w); bz < Math.ceil(z + w); bz++) {
+      for (let bx = Math.floor(x - w); bx < Math.ceil(x + w); bx++) {
+        if (isSolid(bx, by, bz)) {
+          return true;
+        }
+      }
+    }
+  }
   return false;
 };
 
 /** Moves along one axis; on contact, snaps to the block face and stops. Returns true on contact. */
 const moveAxis = (body: Body, axis: Axis, delta: number, isSolid: SolidAt): boolean => {
-  if (delta === 0) return false;
+  if (delta === 0) {
+    return false;
+  }
   body.pos[axis] += delta;
-  if (!overlapsSolid(body, isSolid)) return false;
+  if (!overlapsSolid(body, isSolid)) {
+    return false;
+  }
   const [lo, hi] = offsets(body, axis);
   body.pos[axis] =
     delta > 0 ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - EPS : Math.floor(body.pos[axis]! + lo) + 1 - lo + EPS;
@@ -51,7 +61,9 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt): void => {
   body.onGround = false;
   for (let i = 0; i < substeps; i++) {
     const falling = body.vel[1] < 0;
-    if (moveAxis(body, 1, body.vel[1] * h, isSolid) && falling) body.onGround = true;
+    if (moveAxis(body, 1, body.vel[1] * h, isSolid) && falling) {
+      body.onGround = true;
+    }
     moveAxis(body, 0, body.vel[0] * h, isSolid);
     moveAxis(body, 2, body.vel[2] * h, isSolid);
   }
@@ -62,8 +74,11 @@ export const bodyOverlapsBlock = (body: Body, block: Vec3): boolean => {
   const [x, y, z] = body.pos;
   const w = body.halfWidth;
   return (
-    block[0] + 1 > x - w && block[0] < x + w &&
-    block[1] + 1 > y && block[1] < y + body.height &&
-    block[2] + 1 > z - w && block[2] < z + w
+    block[0] + 1 > x - w &&
+    block[0] < x + w &&
+    block[1] + 1 > y &&
+    block[1] < y + body.height &&
+    block[2] + 1 > z - w &&
+    block[2] < z + w
   );
 };

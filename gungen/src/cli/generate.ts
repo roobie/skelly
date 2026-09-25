@@ -5,8 +5,10 @@
 // Prints the assembly JSON (or writes it with --out) and a summary on stderr.
 
 import { writeFileSync } from 'node:fs';
+import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { generate, generateValid } from '../core/generate.ts';
+import type { Assembly } from '../core/schema.ts';
 import { validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
@@ -32,22 +34,27 @@ if (!Number.isInteger(seed)) {
   process.exit(2);
 }
 
-let assembly;
+let assembly: Assembly;
 if (values.valid) {
   const found = generateValid(template, gunDomain, seed);
   if (!found) {
     console.error(`No valid ${template.name} in 100 seeds from ${seed}.`);
     process.exit(1);
   }
-  assembly = found.assembly;
+  ({ assembly } = found);
   console.error(`seed ${found.seed} (after ${found.attempts} attempt${found.attempts === 1 ? '' : 's'}): PASS`);
 } else {
   assembly = generate(template, gunDomain, seed);
   const report = validate(assembly, gunDomain);
   console.error(`seed ${seed}: ${report.ok ? 'PASS' : 'FAIL'}`);
-  for (const issue of report.issues) console.error(`  [${issue.rule}] ${issue.message}`);
+  for (const issue of report.issues) {
+    console.error(`  [${issue.rule}] ${issue.message}`);
+  }
 }
 
 const json = `${JSON.stringify(assembly, null, 2)}\n`;
-if (values.out) writeFileSync(values.out, json);
-else process.stdout.write(json);
+if (values.out) {
+  writeFileSync(values.out, json);
+} else {
+  process.stdout.write(json);
+}

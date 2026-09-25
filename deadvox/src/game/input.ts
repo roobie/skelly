@@ -12,14 +12,18 @@ export class Input {
 
   constructor(target: HTMLElement) {
     this.target = target;
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Tab') e.preventDefault();
+    globalThis.addEventListener('keydown', (e) => {
+      if (e.code === 'Tab') {
+        e.preventDefault();
+      }
       this.held.add(e.code);
     });
-    window.addEventListener('keyup', (e) => this.held.delete(e.code));
-    window.addEventListener('blur', () => this.held.clear());
+    globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
+    globalThis.addEventListener('blur', () => this.held.clear());
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
+      if (!this.locked) {
+        return;
+      }
       this.yaw -= e.movementX * SENSITIVITY;
       this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - e.movementY * SENSITIVITY));
     });
@@ -30,11 +34,14 @@ export class Input {
   }
 
   lock(): void {
-    void this.target.requestPointerLock();
+    // Rejects if the browser refuses (e.g. too soon after Esc); the overlay stays up and the player clicks again.
+    this.target.requestPointerLock().catch(() => undefined);
   }
 
   unlock(): void {
-    if (this.locked) document.exitPointerLock();
+    if (this.locked) {
+      document.exitPointerLock();
+    }
   }
 
   intent(): MoveIntent {

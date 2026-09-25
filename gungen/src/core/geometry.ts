@@ -1,27 +1,16 @@
 // Oriented boxes in the assembly frame, and how deep two of them overlap.
 
+import { applyPoint, column, cross, dot, length, type Mat3, scale, sub, type Transform, type Vec3 } from './math.ts';
 import type { Box } from './schema.ts';
-import {
-  type Mat3,
-  type Transform,
-  type Vec3,
-  applyPoint,
-  column,
-  cross,
-  dot,
-  length,
-  scale,
-  sub,
-} from './math.ts';
 
-export interface OBB {
+export interface Obb {
   readonly center: Vec3;
   /** Columns are the box's local axes in the assembly frame. */
   readonly r: Mat3;
   readonly half: Vec3;
 }
 
-export const worldBox = (t: Transform, box: Box): OBB => ({
+export const worldBox = (t: Transform, box: Box): Obb => ({
   center: applyPoint(t, box.center),
   r: t.r,
   half: box.half,
@@ -32,7 +21,7 @@ export const worldBox = (t: Transform, box: Box): OBB => ({
  * axis: > 0 means the boxes interpenetrate by that much, <= 0 means they are
  * separated (or touching, at 0).
  */
-export const penetration = (a: OBB, b: OBB): number => {
+export const penetration = (a: Obb, b: Obb): number => {
   const aAxes = [column(a.r, 0), column(a.r, 1), column(a.r, 2)] as const;
   const bAxes = [column(b.r, 0), column(b.r, 1), column(b.r, 2)] as const;
   const candidates: Vec3[] = [...aAxes, ...bAxes];
@@ -40,18 +29,24 @@ export const penetration = (a: OBB, b: OBB): number => {
     for (const v of bAxes) {
       const c = cross(u, v);
       const l = length(c);
-      if (l > 1e-9) candidates.push(scale(c, 1 / l));
+      if (l > 1e-9) {
+        candidates.push(scale(c, 1 / l));
+      }
     }
   }
   const d = sub(b.center, a.center);
   const radius = (axes: readonly Vec3[], half: Vec3, l: Vec3): number =>
     axes.reduce((sum, axis, i) => sum + Math.abs(half[i]! * dot(axis, l)), 0);
 
-  let min = Infinity;
+  let min = Number.POSITIVE_INFINITY;
   for (const l of candidates) {
     const overlap = radius(aAxes, a.half, l) + radius(bAxes, b.half, l) - Math.abs(dot(d, l));
-    if (overlap < min) min = overlap;
-    if (min <= 0) return min;
+    if (overlap < min) {
+      min = overlap;
+    }
+    if (min <= 0) {
+      return min;
+    }
   }
   return min;
 };
