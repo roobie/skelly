@@ -30,6 +30,8 @@
       .links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
       .links a { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; text-decoration: none; }
       .links a:hover { border-color: var(--link); }
+      .card .sub { margin: 16px 0 8px; font-size: 14px; }
+      kbd { padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; font: 13px ui-monospace, monospace; }
       footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
     </style>
   </head>
@@ -58,11 +60,26 @@
         <h2><a href="deadvox/">deadvox</a></h2>
         <p>
           A singleplayer voxel survival prototype in the spirit of DayZ and Cataclysm: DDA.
-          Streamed blocky terrain, block editing, and data-driven content with an HTML inventory.
+          Streamed half-metre blocks, block editing, a day and night cycle, compressed time, and
+          data-driven content with an HTML inventory.
         </p>
         <ul class="links">
-          <li><a href="deadvox/">Play</a></li>
+          <li><a href="deadvox/">Play (dusk, 19:30)</a></li>
           <li><a href="deadvox/?seed=42">Seed 42</a></li>
+          <li><a href="deadvox/?time=12:00">Start at noon</a></li>
+          <li><a href="deadvox/?time=01:00">Dead of night</a></li>
+          <li><a href="deadvox/?radius=64">View distance 64 m</a></li>
+          <li><a href="deadvox/?radius=128">View distance 128 m</a></li>
+        </ul>
+        <p class="sub">
+          Debug mode adds keys: <kbd>T</kbd> compresses time, <kbd>N</kbd> makes a noise that interrupts it,
+          <kbd>U</kbd> toggles a pretend danger that makes it unsafe.
+        </p>
+        <ul class="links">
+          <li><a href="deadvox/?debug=1">Debug mode</a></li>
+          <li><a href="deadvox/?debug=1&amp;time=05:30">Debug mode before dawn</a></li>
+          <li><a href="deadvox/?bench=1">Run the benchmark (about 3 minutes)</a></li>
+          <li><a href="deadvox/?bench=report">Last benchmark results (this browser)</a></li>
         </ul>
       </section>
 
