@@ -2,11 +2,11 @@
 
 /** Hash of integer coordinates to [0, 1). */
 export const hash3 = (seed: number, x: number, y: number, z: number): number => {
-  let h = seed ^ Math.imul(x, 0x27d4eb2d) ^ Math.imul(y, 0x165667b1) ^ Math.imul(z, 0x9e3779b1);
-  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  let h = seed ^ Math.imul(x, 0x27_d4_eb_2d) ^ Math.imul(y, 0x16_56_67_b1) ^ Math.imul(z, 0x9e_37_79_b1);
+  h = Math.imul(h ^ (h >>> 15), 0x85_eb_ca_6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2_b2_ae_35);
   h ^= h >>> 16;
-  return (h >>> 0) / 4294967296;
+  return (h >>> 0) / 4_294_967_296;
 };
 
 const smooth = (t: number): number => t * t * (3 - 2 * t);

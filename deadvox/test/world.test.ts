@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CHUNK, toChunk, toLocal } from '../src/core/coords.ts';
-import { PADDED, World, affectedChunks, extractPadded, paddedIndex } from '../src/core/world.ts';
+import { affectedChunks, extractPadded, PADDED, paddedIndex, World } from '../src/core/world.ts';
 
 describe('coords', () => {
   it('floors negative block coordinates into the right chunk', () => {
-    expect([toChunk(0), toChunk(CHUNK - 1), toChunk(CHUNK), toChunk(-1), toChunk(-CHUNK), toChunk(-CHUNK - 1)]).toEqual([
-      0, 0, 1, -1, -1, -2,
-    ]);
+    expect([toChunk(0), toChunk(CHUNK - 1), toChunk(CHUNK), toChunk(-1), toChunk(-CHUNK), toChunk(-CHUNK - 1)]).toEqual(
+      [0, 0, 1, -1, -1, -2],
+    );
     expect([toLocal(-1), toLocal(-CHUNK), toLocal(CHUNK + 3)]).toEqual([CHUNK - 1, 0, 3]);
   });
 });
@@ -24,10 +24,14 @@ describe('World', () => {
 
   it('reports neighbour chunks as stale only for blocks on a chunk face', () => {
     expect(affectedChunks(5, 5, 5)).toEqual([[0, 0, 0]]);
-    expect(affectedChunks(0, 5, CHUNK - 1)).toEqual([[0, 0, 0], [-1, 0, 0], [0, 0, 1]]);
+    expect(affectedChunks(0, 5, CHUNK - 1)).toEqual([
+      [0, 0, 0],
+      [-1, 0, 0],
+      [0, 0, 1],
+    ]);
   });
 
-  it('pads a chunk with its neighbours\' border blocks', () => {
+  it("pads a chunk with its neighbours' border blocks", () => {
     const world = new World();
     world.setBlock(0, 0, 0, 1); // inside chunk 0,0,0
     world.setBlock(-1, 0, 0, 2); // chunk -1: left border

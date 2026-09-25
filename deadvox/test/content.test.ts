@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry } from '../src/core/content.ts';
@@ -15,11 +15,16 @@ describe('content', () => {
     const { registry, issues } = buildRegistry(base);
     expect(issues).toEqual([]);
     expect(registry.blocks[0]!.id).toBe('air');
-    for (const id of ['grass', 'dirt', 'stone', 'sand']) expect(registry.blockIds.has(id)).toBe(true);
+    for (const id of ['grass', 'dirt', 'stone', 'sand']) {
+      expect(registry.blockIds.has(id)).toBe(true);
+    }
   });
 
   it('lets a later file override a block without changing its runtime id', () => {
-    const mod = { source: 'mod.json', data: { blocks: [{ id: 'grass', name: 'Dead grass', color: '#8a7a40', solid: true }] } };
+    const mod = {
+      source: 'mod.json',
+      data: { blocks: [{ id: 'grass', name: 'Dead grass', color: '#8a7a40', solid: true }] },
+    };
     const before = buildRegistry(base).registry;
     const after = buildRegistry([...base, mod]).registry;
     expect(after.blockIds.get('grass')).toBe(before.blockIds.get('grass'));
@@ -54,13 +59,21 @@ describe('content', () => {
   });
 
   it('turns block colours into bytes', () => {
-    const { registry } = buildRegistry([{ source: 'a', data: { blocks: [{ id: 'r', name: 'R', color: '#ff8001', solid: true }] } }]);
+    const { registry } = buildRegistry([
+      { source: 'a', data: { blocks: [{ id: 'r', name: 'R', color: '#ff8001', solid: true }] } },
+    ]);
     expect([...blockColors(registry)]).toEqual([0, 0, 0, 255, 128, 1]);
   });
 
   it('totals inventory weight and volume', () => {
     const { registry } = buildRegistry(base);
-    const totals = inventoryTotals([{ item: 'bandage', count: 3 }, { item: 'gone_mod_item', count: 1 }], registry);
+    const totals = inventoryTotals(
+      [
+        { item: 'bandage', count: 3 },
+        { item: 'gone_mod_item', count: 1 },
+      ],
+      registry,
+    );
     expect(totals).toEqual({ weight: 60, volume: 150, unknown: ['gone_mod_item'] });
   });
 });

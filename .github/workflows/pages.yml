@@ -31,19 +31,24 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             gungen/package-lock.json
             deadvox/package-lock.json
+      - name: Lint (repo-wide)
+        run: |
+          npm ci
+          npm ci --prefix gungen
+          npm ci --prefix deadvox
+          npx biome ci
       - name: Check and build gungen
         working-directory: gungen
         run: |
-          npm ci
           npm run typecheck
           npm test
           npx vite build
       - name: Check and build deadvox
         working-directory: deadvox
         run: |
-          npm ci
           npm run typecheck
           npm test
           npm run validate

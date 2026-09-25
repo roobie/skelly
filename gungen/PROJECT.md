@@ -35,6 +35,7 @@ size classes (see §4), not measurements.
 | Gun data | `src/gun`: part families and the gun domain config |
 | Viewer | three.js, served by Vite, in `src/viewer` |
 | Tests | Vitest |
+| Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | Part definitions | TypeScript code: each family is a function from size-class params to a part |
 | Assemblies | JSON files: part instances plus connections (§7) |
 | Loops | Loops are only *checked* for closure; there is no solver yet |

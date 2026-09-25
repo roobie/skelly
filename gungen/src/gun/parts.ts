@@ -26,8 +26,7 @@ import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid } from '..
 
 const size: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
 const choice = (...values: string[]): ParamSpec => ({ values, default: values[0]! });
-const cls = (params: Readonly<Record<string, string>>, name: string): SizeClass =>
-  params[name] as SizeClass;
+const cls = (params: Readonly<Record<string, string>>, name: string): SizeClass => params[name] as SizeClass;
 
 const X: Vec3 = [1, 0, 0];
 const NEG_X: Vec3 = [-1, 0, 0];
@@ -69,7 +68,15 @@ export const receiver: PartFamily = {
     const ports: PortDef[] = [
       { id: 'barrel', mount: 'barrel', gender: 'female', size: bore, pos: [0, 0, 0], normal: X, up: Y, required: true },
       { id: 'handguard', mount: 'handguard', gender: 'female', pos: [0, 0, 0], normal: X, up: Y },
-      { id: 'rail', mount: 'rail', gender: 'female', pos: [-14, 2.5, 0], normal: Y, up: X, slots: { count: 7, pitch: 2 } },
+      {
+        id: 'rail',
+        mount: 'rail',
+        gender: 'female',
+        pos: [-14, 2.5, 0],
+        normal: Y,
+        up: X,
+        slots: { count: 7, pitch: 2 },
+      },
       { id: 'lower', mount: 'lower', gender: 'female', pos: [0, -2.5, 0], normal: NEG_Y, up: X, required: true },
       { id: 'stock', mount: 'stock', gender: 'female', pos: [-16, 0, 0], normal: NEG_X, up: Y },
     ];
@@ -87,6 +94,9 @@ export const receiver: PartFamily = {
           keepOut('bolt-handle', [-24, -1, 2], [-12, 3, 6]),
         );
         break;
+      default:
+        // pump: the forend's travel is kept clear by the forend part itself.
+        break;
     }
 
     switch (params.feed) {
@@ -94,8 +104,19 @@ export const receiver: PartFamily = {
         keepOuts.push(keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]));
         break;
       case 'tube':
-        ports.push({ id: 'tube', mount: 'tube', gender: 'female', pos: [0, -TUBE_DROP, 0], normal: X, up: Y, required: true });
+        ports.push({
+          id: 'tube',
+          mount: 'tube',
+          gender: 'female',
+          pos: [0, -TUBE_DROP, 0],
+          normal: X,
+          up: Y,
+          required: true,
+        });
         keepOuts.push(keepOut('loading-port', [-7, -6, -1.5], [-2, -2.5, 1.5]));
+        break;
+      default:
+        // box: the magazine well and its keep-out belong to the lower.
         break;
     }
 
@@ -123,9 +144,32 @@ export const lower: PartFamily = {
   name: 'lower',
   params: { layout: choice('conventional', 'bullpup', 'trigger') },
   build(params): PartDef {
-    const top: PortDef = { id: 'top', mount: 'lower', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true };
-    const grip = (x: number): PortDef => ({ id: 'grip', mount: 'grip', gender: 'female', pos: [x, -1.5, 0], normal: NEG_Y, up: X });
-    const magazine: PortDef = { id: 'magazine', mount: 'magazine', gender: 'female', pos: [-5, -1.5, 0], normal: NEG_Y, up: X, required: true };
+    const top: PortDef = {
+      id: 'top',
+      mount: 'lower',
+      gender: 'male',
+      pos: [0, 0, 0],
+      normal: Y,
+      up: X,
+      required: true,
+    };
+    const grip = (x: number): PortDef => ({
+      id: 'grip',
+      mount: 'grip',
+      gender: 'female',
+      pos: [x, -1.5, 0],
+      normal: NEG_Y,
+      up: X,
+    });
+    const magazine: PortDef = {
+      id: 'magazine',
+      mount: 'magazine',
+      gender: 'female',
+      pos: [-5, -1.5, 0],
+      normal: NEG_Y,
+      up: X,
+      required: true,
+    };
     const magazinePath = keepOut('magazine-path', [-6.5, -40, -1], [-3.5, -1.5, 1], 'magazine');
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
 
@@ -133,10 +177,7 @@ export const lower: PartFamily = {
       case 'bullpup':
         return {
           family: 'lower',
-          solids: [
-            solid('frame', [-16, -1.5, -1.5], [9, 0, 1.5]),
-            solid('butt', [-18, -7, -1.75], [-16, 5, 1.75]),
-          ],
+          solids: [solid('frame', [-16, -1.5, -1.5], [9, 0, 1.5]), solid('butt', [-18, -7, -1.75], [-16, 5, 1.75])],
           ports: [top, grip(3), magazine],
           keepOuts: [trigger(5), magazinePath],
           axes: [],
@@ -176,7 +217,16 @@ export const barrel: PartFamily = {
       family: 'barrel',
       solids: [solid('tube', [0, -r, -r], [len, r, r])],
       ports: [
-        { id: 'rear', mount: 'barrel', gender: 'male', size: bore, pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
+        {
+          id: 'rear',
+          mount: 'barrel',
+          gender: 'male',
+          size: bore,
+          pos: [0, 0, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
       ],
@@ -206,7 +256,15 @@ export const handguard: PartFamily = {
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'front', mount: 'clamp', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
-        { id: 'rail', mount: 'rail', gender: 'female', pos: [2, outer, 0], normal: Y, up: X, slots: { count: (len - 4) / 2 + 1, pitch: 2 } },
+        {
+          id: 'rail',
+          mount: 'rail',
+          gender: 'female',
+          pos: [2, outer, 0],
+          normal: Y,
+          up: X,
+          slots: { count: (len - 4) / 2 + 1, pitch: 2 },
+        },
       ],
       keepOuts: [],
       axes: [],
@@ -312,7 +370,15 @@ export const stock: PartFamily = {
   params: { length: size, style: choice('straight', 'sporting') },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
-    const port: PortDef = { id: 'front', mount: 'stock', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true };
+    const port: PortDef = {
+      id: 'front',
+      mount: 'stock',
+      gender: 'male',
+      pos: [0, 0, 0],
+      normal: X,
+      up: Y,
+      required: true,
+    };
     if (params.style === 'sporting') {
       return {
         family: 'stock',
@@ -329,10 +395,7 @@ export const stock: PartFamily = {
     }
     return {
       family: 'stock',
-      solids: [
-        solid('comb', [-len, -1, -1.5], [0, 2.5, 1.5]),
-        solid('butt', [-len - 1, -8, -1.75], [-len, 3, 1.75]),
-      ],
+      solids: [solid('comb', [-len, -1, -1.5], [0, 2.5, 1.5]), solid('butt', [-len - 1, -8, -1.75], [-len, 3, 1.75])],
       ports: [port],
       keepOuts: [],
       axes: [],
@@ -349,9 +412,7 @@ export const sight: PartFamily = {
       solids: [solid('body', [-2, 0, -1], [2, 1.5, 1])],
       ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       // A thin tube around the line of sight, starting at the sight's front.
-      keepOuts: [
-        { id: 'sightline', kind: 'sightline', box: boxFromMinMax([2, 0.25, -0.75], [42, 1.75, 0.75]) },
-      ],
+      keepOuts: [{ id: 'sightline', kind: 'sightline', box: boxFromMinMax([2, 0.25, -0.75], [42, 1.75, 0.75]) }],
       axes: [{ kind: 'sight', origin: [0, 1, 0], dir: X }],
     };
   },

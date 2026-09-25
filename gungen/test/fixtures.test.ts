@@ -10,7 +10,9 @@ describe('fixtures', () => {
   it('has a broken fixture for every core and gun rule', () => {
     const covered = new Set(fixtures.flatMap((f) => f.expect ?? []));
     const rules = [...CORE_RULE_IDS.filter((r) => r !== 'structure'), ...(gunDomain.rules ?? []).map((r) => r.id)];
-    for (const rule of rules) expect(covered).toContain(rule);
+    for (const rule of rules) {
+      expect(covered).toContain(rule);
+    }
   });
 
   it('covers every archetype, and every archetype is valid', () => {
@@ -23,7 +25,9 @@ describe('fixtures', () => {
       'archetype-rifle',
       'archetype-smg',
     ]);
-    for (const f of archetypes) expect(f.expect).toEqual([]);
+    for (const f of archetypes) {
+      expect(f.expect).toEqual([]);
+    }
   });
 
   for (const fixture of fixtures) {

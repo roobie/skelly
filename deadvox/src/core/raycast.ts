@@ -7,14 +7,22 @@ export interface RayHit {
   distance: number;
 }
 
+/** The axis whose next grid boundary is closest along the ray. */
+const nearestAxis = (tMax: Vec3): 0 | 1 | 2 => {
+  if (tMax[0] < tMax[1]) {
+    return tMax[0] < tMax[2] ? 0 : 2;
+  }
+  return tMax[1] < tMax[2] ? 1 : 2;
+};
+
 export type SolidAt = (x: number, y: number, z: number) => boolean;
 
 /** Walks the voxel grid along a ray (Amanatides & Woo) and returns the first solid block. */
 export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: SolidAt): RayHit | undefined => {
   const pos: Vec3 = [Math.floor(origin[0]), Math.floor(origin[1]), Math.floor(origin[2])];
   const step: Vec3 = [0, 0, 0];
-  const tMax: Vec3 = [Infinity, Infinity, Infinity];
-  const tDelta: Vec3 = [Infinity, Infinity, Infinity];
+  const tMax: Vec3 = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const tDelta: Vec3 = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
   for (let a = 0; a < 3; a++) {
     const d = dir[a]!;
     if (d > 0) {
@@ -28,12 +36,16 @@ export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: S
     }
   }
 
-  if (isSolid(...pos)) return { block: [...pos], normal: [0, 0, 0], distance: 0 };
+  if (isSolid(...pos)) {
+    return { block: [...pos], normal: [0, 0, 0], distance: 0 };
+  }
 
   for (;;) {
-    const a = tMax[0] < tMax[1] ? (tMax[0] < tMax[2] ? 0 : 2) : tMax[1] < tMax[2] ? 1 : 2;
+    const a = nearestAxis(tMax);
     const t = tMax[a];
-    if (t > maxDistance) return undefined;
+    if (t > maxDistance) {
+      return undefined;
+    }
     pos[a] += step[a];
     tMax[a] += tDelta[a];
     if (isSolid(...pos)) {

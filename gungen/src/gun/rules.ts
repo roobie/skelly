@@ -10,7 +10,9 @@ export const firingGrip: Rule = {
   title: 'There is a firing grip',
   check(r) {
     const held = [...r.placed.keys()].some((part) => r.defs.get(part)!.tags?.includes(FIRING_GRIP));
-    if (held || r.placed.size === 0) return [];
+    if (held || r.placed.size === 0) {
+      return [];
+    }
     return [
       {
         rule: 'firing-grip',
@@ -34,7 +36,9 @@ export const feedMatch: Rule = {
       const ends = [rc.from, rc.to];
       const receiver = ends.find((e) => r.defs.get(e.part)!.family === 'receiver' && e.port.id === 'lower');
       const lower = ends.find((e) => e !== receiver);
-      if (!receiver || !lower) continue;
+      if (!(receiver && lower)) {
+        continue;
+      }
       const feed = r.params.get(receiver.part)!.feed!.value;
       const lowerDef = r.defs.get(lower.part)!;
       const hasWell = lowerDef.ports.some((p) => p.mount === 'magazine');

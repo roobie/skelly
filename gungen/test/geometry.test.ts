@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { type OBB, boxFromMinMax, penetration, worldBox } from '../src/core/geometry.ts';
+import { boxFromMinMax, type Obb, penetration, worldBox } from '../src/core/geometry.ts';
 import { IDENTITY, rotZ } from '../src/core/math.ts';
 
-const aabb = (min: [number, number, number], max: [number, number, number]): OBB =>
+const aabb = (min: [number, number, number], max: [number, number, number]): Obb =>
   worldBox(IDENTITY, boxFromMinMax(min, max));
 
 describe('penetration', () => {
@@ -22,10 +22,10 @@ describe('penetration', () => {
 
   it('handles rotated boxes', () => {
     // A unit cube rotated 45° about Z reaches √2/2 from its centre along X.
-    const diamond: OBB = { center: [2, 0.5, 0.5], r: rotZ(45), half: [0.5, 0.5, 0.5] };
+    const diamond: Obb = { center: [2, 0.5, 0.5], r: rotZ(45), half: [0.5, 0.5, 0.5] };
     const reach = Math.SQRT1_2;
     expect(penetration(unit, diamond)).toBeCloseTo(reach - 1);
-    const closer: OBB = { ...diamond, center: [1.5, 0.5, 0.5] };
+    const closer: Obb = { ...diamond, center: [1.5, 0.5, 0.5] };
     expect(penetration(unit, closer)).toBeCloseTo(reach - 0.5);
   });
 });

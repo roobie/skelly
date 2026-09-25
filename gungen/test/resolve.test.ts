@@ -10,8 +10,12 @@ const valid = loadFixture('archetype-rifle');
 const at = (r: ReturnType<typeof resolve>, part: string, p: [number, number, number] = [0, 0, 0]) =>
   applyPoint(r.placed.get(part)!, p);
 
-const expectVec = (actual: readonly number[], expected: readonly number[]) =>
-  actual.forEach((v, i) => expect(v).toBeCloseTo(expected[i]!));
+const expectVec = (actual: readonly number[], expected: readonly number[]) => {
+  for (const [i, v] of actual.entries()) {
+    // biome-ignore lint/suspicious/noMisplacedAssertion: helper, only called from inside it()
+    expect(v).toBeCloseTo(expected[i]!);
+  }
+};
 
 describe('resolve', () => {
   const r = resolve(valid, gunDomain);
@@ -46,9 +50,7 @@ describe('resolve', () => {
 
   it('places the same whichever side of a connection comes first', () => {
     const flipped = variant('archetype-rifle', (a) => {
-      a.connections = a.connections.map((c) =>
-        c.slot === undefined ? { from: c.to, to: c.from } : c,
-      );
+      a.connections = a.connections.map((c) => (c.slot === undefined ? { from: c.to, to: c.from } : c));
     });
     const rf = resolve(flipped, gunDomain);
     for (const part of Object.keys(valid.parts)) {
@@ -89,27 +91,43 @@ describe('resolve: structure issues', () => {
     resolve(variant('archetype-rifle', edit), gunDomain).issues.map((i) => i.message);
 
   it('reports unknown families and bad params', () => {
-    expect(structure((a) => { a.parts.grip = { family: 'wing' }; })).toEqual([
-      'Part "grip" uses unknown family "wing".',
-    ]);
-    expect(structure((a) => { a.parts.grip = { family: 'grip', params: { length: 'XL' } }; })).toEqual([
-      'Part "grip": length="XL" is not one of S, M, L.',
-    ]);
+    expect(
+      structure((a) => {
+        a.parts.grip = { family: 'wing' };
+      }),
+    ).toEqual(['Part "grip" uses unknown family "wing".']);
+    expect(
+      structure((a) => {
+        a.parts.grip = { family: 'grip', params: { length: 'XL' } };
+      }),
+    ).toEqual(['Part "grip": length="XL" is not one of S, M, L.']);
   });
 
   it('reports unknown ports, bad slots and bad rolls', () => {
-    expect(structure((a) => { a.connections[1] = { from: 'receiver.nose', to: 'barrel.rear' }; }))
-      .toEqual(['Connection #1: part "receiver" (receiver) has no port "nose".']);
-    expect(structure((a) => { a.connections[7] = { from: 'receiver.rail', slot: 7, to: 'sight.base' }; }))
-      .toEqual(['Connection #7: slot 7 is outside receiver.rail (0–6).']);
-    expect(structure((a) => { a.connections[7] = { from: 'receiver.rail', slot: 1, to: 'sight.base', roll: 45 }; }))
-      .toEqual(['Connection #7: roll 45 is not a multiple of 90.']);
+    expect(
+      structure((a) => {
+        a.connections[1] = { from: 'receiver.nose', to: 'barrel.rear' };
+      }),
+    ).toEqual(['Connection #1: part "receiver" (receiver) has no port "nose".']);
+    expect(
+      structure((a) => {
+        a.connections[7] = { from: 'receiver.rail', slot: 7, to: 'sight.base' };
+      }),
+    ).toEqual(['Connection #7: slot 7 is outside receiver.rail (0–6).']);
+    expect(
+      structure((a) => {
+        a.connections[7] = { from: 'receiver.rail', slot: 1, to: 'sight.base', roll: 45 };
+      }),
+    ).toEqual(['Connection #7: roll 45 is not a multiple of 90.']);
   });
 
   it('leaves parts that nothing connects unplaced', () => {
-    const r = resolve(variant('archetype-rifle', (a) => {
-      a.connections = a.connections.filter((c) => c.to !== 'stock.front');
-    }), gunDomain);
+    const r = resolve(
+      variant('archetype-rifle', (a) => {
+        a.connections = a.connections.filter((c) => c.to !== 'stock.front');
+      }),
+      gunDomain,
+    );
     expect(r.placed.has('stock')).toBe(false);
     expect(r.issues).toEqual([]);
   });
@@ -127,7 +145,9 @@ describe('resolve: params from neighbours', () => {
 
   it('re-sizes a clamped handguard to whatever barrel it clamps to', () => {
     for (const length of ['S', 'M', 'L']) {
-      const a = variant('archetype-rifle', (x) => { x.parts.barrel!.params = { length }; });
+      const a = variant('archetype-rifle', (x) => {
+        x.parts.barrel!.params = { length };
+      });
       const report = validate(a, gunDomain);
       expect(param(report.resolved, 'handguard', 'length').value).toBe(length);
       expect(report.issues).toEqual([]);
@@ -136,7 +156,9 @@ describe('resolve: params from neighbours', () => {
 
   it('re-sizes a tube magazine to the barrel its cap fixes to', () => {
     for (const length of ['S', 'M', 'L']) {
-      const a = variant('archetype-pump-shotgun', (x) => { x.parts.barrel!.params = { length }; });
+      const a = variant('archetype-pump-shotgun', (x) => {
+        x.parts.barrel!.params = { length };
+      });
       const report = validate(a, gunDomain);
       expect(param(report.resolved, 'tube', 'length').value).toBe(length);
       expect(report.issues).toEqual([]);
@@ -174,7 +196,8 @@ describe('resolve: params from neighbours', () => {
   it('resolves chains of neighbours', () => {
     const a = variant('archetype-rifle', (x) => {
       x.parts.receiver!.params = { ...x.parts.receiver!.params, bore: 'L' };
-      delete x.parts.handguard!.params;
+      const { params: _, ...withoutParams } = x.parts.handguard!;
+      x.parts.handguard = withoutParams;
     });
     const r = resolve(a, chained());
     expect(param(r, 'barrel', 'bore').value).toBe('L');
@@ -184,7 +207,8 @@ describe('resolve: params from neighbours', () => {
   it('reports a neighbour value the param does not allow', () => {
     const a = variant('archetype-rifle', (x) => {
       x.parts.receiver!.params = { ...x.parts.receiver!.params, bore: 'L' };
-      delete x.parts.handguard!.params;
+      const { params: _, ...withoutParams } = x.parts.handguard!;
+      x.parts.handguard = withoutParams;
     });
     const r = resolve(a, chained(['S', 'M']));
     expect(r.issues.map((i) => i.message)).toEqual([
@@ -239,4 +263,3 @@ describe('resolve: params from neighbours', () => {
     expect(param(r, 'tube', 'length')).toEqual({ value: 'S', source: 'default' });
   });
 });
-

@@ -6,20 +6,20 @@
 
 import type { Issue } from './issue.ts';
 import {
-  IDENTITY,
-  type Transform,
   add,
   compose,
   cross,
   fromColumns,
+  IDENTITY,
   invert,
-  rotX,
-  rotY,
+  length,
   rotation,
   rotationAngle,
-  length,
+  rotX,
+  rotY,
   scale,
   sub,
+  type Transform,
 } from './math.ts';
 import type { Assembly, Connection, Domain, PartDef, PortDef } from './schema.ts';
 
@@ -64,6 +64,14 @@ export interface Resolved {
 const FLIP = rotation(rotY(180));
 
 /** A port's frame in its part's local frame, at the given slot. */
+/** The port ref at the other end of a connection, if ref is one of its ends. */
+const otherEnd = (c: { readonly from: string; readonly to: string }, ref: string): string | undefined => {
+  if (c.from === ref) {
+    return c.to;
+  }
+  return c.to === ref ? c.from : undefined;
+};
+
 export const portFrame = (port: PortDef, slot = 0): Transform => ({
   r: fromColumns(port.normal, port.up, cross(port.normal, port.up)),
   t: add(port.pos, scale(port.up, slot * (port.slots?.pitch ?? 0))),
@@ -71,10 +79,7 @@ export const portFrame = (port: PortDef, slot = 0): Transform => ({
 
 /** The `from` port's frame in the assembly, including slot and roll. */
 const fromSideFrame = (rc: ResolvedConnection, fromPart: Transform): Transform =>
-  compose(
-    compose(fromPart, portFrame(rc.from.port, rc.conn.slot)),
-    rotation(rotX(rc.conn.roll ?? 0)),
-  );
+  compose(compose(fromPart, portFrame(rc.from.port, rc.conn.slot)), rotation(rotX(rc.conn.roll ?? 0)));
 
 const placeTo = (rc: ResolvedConnection, fromPart: Transform): Transform =>
   compose(compose(fromSideFrame(rc, fromPart), FLIP), invert(portFrame(rc.to.port)));
@@ -94,7 +99,9 @@ export const connectionMismatch = (
 ): { distance: number; angle: number } | undefined => {
   const a = placed.get(rc.from.part);
   const b = placed.get(rc.to.part);
-  if (!a || !b) return undefined;
+  if (!(a && b)) {
+    return undefined;
+  }
   const expected = compose(fromSideFrame(rc, a), FLIP);
   const actual = compose(b, portFrame(rc.to.port));
   return {
@@ -105,7 +112,9 @@ export const connectionMismatch = (
 
 const splitRef = (ref: string): [string, string] | undefined => {
   const dot = ref.indexOf('.');
-  if (dot <= 0 || dot === ref.length - 1) return undefined;
+  if (dot <= 0 || dot === ref.length - 1) {
+    return undefined;
+  }
   return [ref.slice(0, dot), ref.slice(dot + 1)];
 };
 
@@ -115,12 +124,12 @@ const splitRef = (ref: string): [string, string] | undefined => {
  * needs the connection list, not placement, so it runs before parts are built.
  * Parts with an unknown family or a bad param are reported and left out.
  */
-const resolveParams = (
-  assembly: Assembly,
-  domain: Domain,
-  structure: (message: string, parts?: string[]) => void,
-): Map<string, Record<string, ResolvedParam>> => {
-  const result = new Map<string, Record<string, ResolvedParam>>();
+type ParamTable = Map<string, Record<string, ResolvedParam>>;
+type ReportStructure = (message: string, parts?: string[]) => void;
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
+const resolveParams = (assembly: Assembly, domain: Domain, structure: ReportStructure): ParamTable => {
+  const result: ParamTable = new Map();
   const pending: { part: string; name: string }[] = [];
 
   for (const [id, inst] of Object.entries(assembly.parts)) {
@@ -140,13 +149,19 @@ const resolveParams = (
         ok = false;
       }
     }
-    if (!ok) continue;
+    if (!ok) {
+      continue;
+    }
     const values: Record<string, ResolvedParam> = {};
     for (const [name, spec] of Object.entries(family.params)) {
       const set = inst.params?.[name];
-      if (set !== undefined) values[name] = { value: set, source: 'set' };
-      else if (spec.from?.length) pending.push({ part: id, name });
-      else values[name] = { value: spec.default, source: 'default' };
+      if (set !== undefined) {
+        values[name] = { value: set, source: 'set' };
+      } else if (spec.from?.length) {
+        pending.push({ part: id, name });
+      } else {
+        values[name] = { value: spec.default, source: 'default' };
+      }
     }
     result.set(id, values);
   }
@@ -155,7 +170,7 @@ const resolveParams = (
   const neighbours = (part: string, port: string): string[] => {
     const ref = `${part}.${port}`;
     return assembly.connections.flatMap((c) => {
-      const other = c.from === ref ? c.to : c.to === ref ? c.from : undefined;
+      const other = otherEnd(c, ref);
       const split = other === undefined ? undefined : splitRef(other);
       return split ? [split[0]] : [];
     });
@@ -177,23 +192,27 @@ const resolveParams = (
         const hit = neighbours(part, src.port)
           .map((n) => ({ n, v: result.get(n)?.[src.param] }))
           .find((x) => x.v !== undefined);
-        if (!hit) continue;
+        if (!hit) {
+          continue;
+        }
         const from = `${hit.n}.${src.param}`;
-        if (!spec.values.includes(hit.v!.value)) {
+        if (spec.values.includes(hit.v!.value)) {
+          values[name] = { value: hit.v!.value, source: 'inherited', from };
+        } else {
           structure(
             `Part "${part}": ${name} would come from ${from}="${hit.v!.value}", which is not one of ${spec.values.join(', ')}.`,
             [part],
           );
           values[name] = { value: spec.default, source: 'default' };
-        } else {
-          values[name] = { value: hit.v!.value, source: 'inherited', from };
         }
         pending.splice(i, 1);
         progress = true;
         break;
       }
     }
-    if (progress) continue;
+    if (progress) {
+      continue;
+    }
     // Stuck. Params with no connected source take their default, which may
     // unblock params reading from them. If every source is connected, the
     // rest wait on each other in a cycle: default them all.
@@ -209,6 +228,7 @@ const resolveParams = (
   return result;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
 export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
   const issues: Issue[] = [];
   const structure = (message: string, parts: string[] = []): void => {
@@ -238,38 +258,39 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
       return undefined;
     }
     const def = defs.get(part);
-    if (!def) return undefined; // already reported above
+    if (!def) {
+      return undefined; // already reported above
+    }
     const port = def.ports.find((p) => p.id === portId);
     if (!port) {
-      structure(
-        `Connection #${index}: part "${part}" (${def.family}) has no port "${portId}".`,
-        [part],
-      );
+      structure(`Connection #${index}: part "${part}" (${def.family}) has no port "${portId}".`, [part]);
       return undefined;
     }
     return { part, port };
   };
 
   const pending: Omit<ResolvedConnection, 'role'>[] = [];
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   assembly.connections.forEach((conn, index) => {
     const from = lookup(conn.from, index);
     const to = lookup(conn.to, index);
-    if (!from || !to) return;
+    if (!(from && to)) {
+      return;
+    }
     if (from.part === to.part) {
       structure(`Connection #${index} connects "${from.part}" to itself.`, [from.part]);
       return;
     }
     if (conn.slot !== undefined) {
-      const slots = from.port.slots;
+      const { slots } = from.port;
       if (!slots) {
         structure(`Connection #${index}: ${conn.from} has no slots.`, [from.part]);
         return;
       }
       if (!Number.isInteger(conn.slot) || conn.slot < 0 || conn.slot >= slots.count) {
-        structure(
-          `Connection #${index}: slot ${conn.slot} is outside ${conn.from} (0–${slots.count - 1}).`,
-          [from.part],
-        );
+        structure(`Connection #${index}: slot ${conn.slot} is outside ${conn.from} (0–${slots.count - 1}).`, [
+          from.part,
+        ]);
         return;
       }
     }
@@ -291,7 +312,9 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
     while (progress) {
       progress = false;
       for (const c of pending) {
-        if (roles.has(c.index)) continue;
+        if (roles.has(c.index)) {
+          continue;
+        }
         const a = placed.get(c.from.part);
         const b = placed.get(c.to.part);
         const rc = { ...c, role: 'tree' as const };

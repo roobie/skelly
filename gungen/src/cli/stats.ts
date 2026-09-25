@@ -25,7 +25,7 @@ for (const t of TEMPLATES) {
     distinct.add(key);
     const report = validate(a, gunDomain);
     if (report.ok) {
-      valid++;
+      valid += 1;
       distinctValid.add(key);
     }
     // Name the volume for keep-out failures: "keep-out (sightline)".
@@ -33,9 +33,14 @@ for (const t of TEMPLATES) {
       const ko = i.keepOut && report.resolved.defs.get(i.keepOut.part)?.keepOuts.find((k) => k.id === i.keepOut!.id);
       return ko ? `${i.rule} (${ko.kind})` : i.rule;
     });
-    for (const kind of new Set(kinds)) failures.set(kind, (failures.get(kind) ?? 0) + 1);
+    for (const kind of new Set(kinds)) {
+      failures.set(kind, (failures.get(kind) ?? 0) + 1);
+    }
   }
-  const top = [...failures].sort((a, b) => b[1] - a[1]).map(([rule, c]) => `${rule} ${pct(c).trim()}`).join(', ');
+  const top = [...failures]
+    .sort((a, b) => b[1] - a[1])
+    .map(([rule, c]) => `${rule} ${pct(c).trim()}`)
+    .join(', ');
   console.log(
     `${t.name.padEnd(15)} ${pct(valid)}  ${String(distinct.size).padStart(8)}  ${String(distinctValid.size).padStart(14)}  ${top || '-'}`,
   );

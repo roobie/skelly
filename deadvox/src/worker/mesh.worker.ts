@@ -5,14 +5,14 @@ import type { FromMesher, ToMesher } from './protocol.ts';
 
 let colors: Uint8Array = new Uint8Array(0);
 
-self.onmessage = (e: MessageEvent<ToMesher>) => {
-  const msg = e.data;
+globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   if (msg.type === 'init') {
-    colors = msg.colors;
+    ({ colors } = msg);
     return;
   }
-  const mesh = buildMesh(msg.padded, colors, msg.origin);
-  const reply: FromMesher = { type: 'mesh', key: msg.key, version: msg.version, mesh };
+  const { key, version, padded, origin } = msg;
+  const mesh = buildMesh(padded, colors, origin);
+  const reply: FromMesher = { type: 'mesh', key, version, mesh };
   postMessage(reply, {
     transfer: [mesh.positions.buffer, mesh.normals.buffer, mesh.colors.buffer, mesh.indices.buffer],
   });

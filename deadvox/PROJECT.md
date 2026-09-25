@@ -38,6 +38,7 @@ Cataclysm: DDA (detailed items, bodies, crafting). The graphics are blocky voxel
 | Content | JSON in `src/content/base`, validated (`core/content.ts`) and merged in order. An override keeps the block's runtime id. A file with any issue is skipped whole |
 | Units | Weight in grams, volume in millilitres |
 | Tests | Vitest, on the core only |
+| Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | CI | `.github/workflows/deadvox.yml`: typecheck, tests, content validation, build |
 | Hosting | GitHub Pages via `.github/workflows/pages.yml`, published under `/deadvox/` |
 

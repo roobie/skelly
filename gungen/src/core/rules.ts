@@ -5,10 +5,11 @@ import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
 import { penetration, worldBox } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import { angleBetween, applyDir, applyPoint, cross, length, sub } from './math.ts';
-import { type Resolved, connectionMismatch } from './resolve.ts';
+import { connectionMismatch, type Resolved } from './resolve.ts';
 import type { Rule } from './schema.ts';
 
-const fmt = (n: number): string => n.toFixed(2).replace(/\.?0+$/, '');
+const TRAILING_ZEROS = /\.?0+$/;
+const fmt = (n: number): string => n.toFixed(2).replace(TRAILING_ZEROS, '');
 const qualified = (part: string, port: string): string => `${part}.${port}`;
 const label = (r: Resolved, part: string): string => {
   const family = r.defs.get(part)?.family;
@@ -19,6 +20,7 @@ const label = (r: Resolved, part: string): string => {
 export const portCompat: Rule = {
   id: 'port-compat',
   title: 'Ports are compatible',
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   check(r) {
     const issues: Issue[] = [];
     const used = new Map<string, number>();
@@ -51,21 +53,18 @@ export const portCompat: Rule = {
           ports,
         });
       }
-      const keys = [
-        rc.conn.slot === undefined ? rc.conn.from : `${rc.conn.from}[${rc.conn.slot}]`,
-        rc.conn.to,
-      ];
+      const keys = [rc.conn.slot === undefined ? rc.conn.from : `${rc.conn.from}[${rc.conn.slot}]`, rc.conn.to];
       for (const key of keys) {
         const prev = used.get(key);
-        if (prev !== undefined) {
+        if (prev === undefined) {
+          used.set(key, rc.index);
+        } else {
           issues.push({
             rule: 'port-compat',
             message: `${key} is used by both connection #${prev} and #${rc.index}.`,
             parts,
             ports,
           });
-        } else {
-          used.set(key, rc.index);
         }
       }
     }
@@ -77,12 +76,15 @@ export const portCompat: Rule = {
 export const axisAlignment: Rule = {
   id: 'axis-alignment',
   title: 'Axes line up with the main axis',
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   check(r) {
     const issues: Issue[] = [];
     for (const [part, t] of r.placed) {
       for (const axis of r.defs.get(part)!.axes) {
         const rule = r.domain.axisRules.find((a) => a.kind === axis.kind);
-        if (!rule) continue;
+        if (!rule) {
+          continue;
+        }
         const dir = applyDir(t, axis.dir);
         const angle = angleBetween(dir, MAIN_AXIS.dir);
         if (angle > TOLERANCE.angle) {
@@ -122,7 +124,7 @@ const connectedPairs = (r: Resolved): Set<string> => {
 const worstPenetration = (r: Resolved, a: string, b: string): number => {
   const ta = r.placed.get(a)!;
   const tb = r.placed.get(b)!;
-  let worst = -Infinity;
+  let worst = Number.NEGATIVE_INFINITY;
   for (const sa of r.defs.get(a)!.solids) {
     for (const sb of r.defs.get(b)!.solids) {
       worst = Math.max(worst, penetration(worldBox(ta, sa.box), worldBox(tb, sb.box)));
@@ -162,6 +164,7 @@ export const solidOverlap: Rule = {
 export const keepOut: Rule = {
   id: 'keep-out',
   title: 'Keep-out volumes are empty',
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   check(r) {
     const issues: Issue[] = [];
     for (const [owner, ownerT] of r.placed) {
@@ -170,13 +173,19 @@ export const keepOut: Rule = {
         const allowed = new Set([owner]);
         if (ko.allowPort) {
           for (const rc of r.connections) {
-            if (rc.from.part === owner && rc.from.port.id === ko.allowPort) allowed.add(rc.to.part);
-            if (rc.to.part === owner && rc.to.port.id === ko.allowPort) allowed.add(rc.from.part);
+            if (rc.from.part === owner && rc.from.port.id === ko.allowPort) {
+              allowed.add(rc.to.part);
+            }
+            if (rc.to.part === owner && rc.to.port.id === ko.allowPort) {
+              allowed.add(rc.from.part);
+            }
           }
         }
         for (const [other, otherT] of r.placed) {
-          if (allowed.has(other)) continue;
-          let worst = -Infinity;
+          if (allowed.has(other)) {
+            continue;
+          }
+          let worst = Number.NEGATIVE_INFINITY;
           for (const s of r.defs.get(other)!.solids) {
             worst = Math.max(worst, penetration(koBox, worldBox(otherT, s.box)));
           }
@@ -230,7 +239,9 @@ export const loopClosure: Rule = {
   check(r) {
     const issues: Issue[] = [];
     for (const rc of r.connections) {
-      if (rc.role !== 'loop') continue;
+      if (rc.role !== 'loop') {
+        continue;
+      }
       const m = connectionMismatch(rc, r.placed)!;
       if (m.distance > TOLERANCE.position || m.angle > TOLERANCE.angle) {
         issues.push({
