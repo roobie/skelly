@@ -237,7 +237,6 @@ export class Streamer {
       type: 'mesh',
       key,
       version: this.versions.get(key) ?? 0,
-      origin: [cx * CHUNK, cy * CHUNK, cz * CHUNK],
       padded,
     });
   }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHUNK, toChunk, toLocal } from '../src/core/coords.ts';
 import { buildMesh } from '../src/core/mesher.ts';
 import { affectedChunks, BEDROCK, extractPadded, PADDED, paddedIndex, World } from '../src/core/world.ts';
+import { unitFaces } from './meshFaces.ts';
 
 describe('coords', () => {
   it('floors negative block coordinates into the right chunk', () => {
@@ -57,10 +58,8 @@ describe('World', () => {
     expect(open[paddedIndex(5, 0, 5)]).toBe(0);
     expect(closed[paddedIndex(5, 0, 5)]).toBe(BEDROCK);
     const colors = new Uint8Array(6).fill(100);
-    const downFaces = (padded: Uint16Array) => {
-      const { normals } = buildMesh(padded, colors);
-      return normals.filter((n, i) => i % 3 === 1 && n === -1).length / 4;
-    };
+    const downFaces = (padded: Uint16Array) =>
+      [...unitFaces(buildMesh(padded, colors))].filter((f) => f.endsWith(',1,-1')).length;
     expect(downFaces(open)).toBe(CHUNK * CHUNK);
     expect(downFaces(closed)).toBe(0);
   });

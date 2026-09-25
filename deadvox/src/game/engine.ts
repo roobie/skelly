@@ -83,8 +83,7 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   const camera = new PerspectiveCamera(75, 1, 0.05, radiusM * 1.6);
   camera.rotation.order = 'YXZ';
 
-  const meshes = new ChunkMeshes();
-  meshes.group.scale.setScalar(scale.blockSize);
+  const meshes = new ChunkMeshes(scale.blockSize);
   scene.add(meshes.group);
 
   const resize = () => {

@@ -10,9 +10,9 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
     ({ colors } = msg);
     return;
   }
-  const { key, version, padded, origin } = msg;
+  const { key, version, padded } = msg;
   const start = performance.now();
-  const mesh = buildMesh(padded, colors, origin);
+  const mesh = buildMesh(padded, colors);
   const reply: FromMesher = { type: 'mesh', key, version, mesh, ms: performance.now() - start };
   postMessage(reply, {
     transfer: [mesh.positions.buffer, mesh.normals.buffer, mesh.colors.buffer, mesh.indices.buffer],
