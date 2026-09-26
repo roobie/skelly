@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PLAN, formatPlan, parsePlan, type RunResult } from '../src/bench/plan.ts';
-import { HEADERS, markdownTable, resultRow } from '../src/bench/report.ts';
+import { HEADERS, markdownReport, markdownTable, resultRow } from '../src/bench/report.ts';
+import { benchRunFromUrl } from '../src/bench/run.ts';
 import { frameStats, percentile } from '../src/bench/stats.ts';
 
 describe('bench stats', () => {
@@ -20,6 +21,12 @@ describe('bench stats', () => {
 });
 
 describe('bench plan', () => {
+  it('keeps a valid time of day from the URL, and drops anything else', () => {
+    expect(benchRunFromUrl(new URLSearchParams('bench=1&time=23:30')).time).toBe('23:30');
+    expect(benchRunFromUrl(new URLSearchParams('bench=1&time=25:00')).time).toBeUndefined();
+    expect(benchRunFromUrl(new URLSearchParams('bench=1')).time).toBeUndefined();
+  });
+
   it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {
     expect(formatPlan(DEFAULT_PLAN)).toBe('0.5:64,0.5:96,0.5:128');
   });
@@ -53,9 +60,10 @@ describe('bench report', () => {
     gen: { count: 1, median: 3, p95: 4 },
     meshMs: { count: 1, median: 2, p95: 5 },
     meshTriangles: { count: 1, median: 1234, p95: 2000 },
-    look: { ...frames, work: { count: 10, median: 4, p95: 6 }, drawCalls: 300, triangles: 1e6 },
+    look: { ...frames, work: { count: 10, median: 4, p95: 6 }, drawCalls: 300, triangles: 123_456 },
     jog: { ...frames, work: { count: 10, median: 5, p95: 7.5 }, holesMax: 0, holeFraction: 0 },
     sprint: { ...frames, work: { count: 10, median: 6, p95: 9 }, holesMax: 3, holeFraction: 0.2 },
+    render: { count: 10, median: 3, p95: 4.5 },
     interrupted: false,
   };
 
@@ -63,8 +71,23 @@ describe('bench report', () => {
     const row = resultRow(result);
     expect(row).toHaveLength(HEADERS.length);
     expect(row[4]).toBe('2.5 / 6.3 / 1.0');
+    expect(row[8]).toBe('300 / 123');
     expect(row[10]).toBe('17.0 / 10% / 3');
     expect(row[11]).toBe('6.0 / 7.5 / 9.0');
+    expect(row[12]).toBe('3.0 / 4.5');
+  });
+
+  it('shows a dash for render time in runs from before it existed', () => {
+    const { render: _, ...old } = result;
+    expect(resultRow(old).at(-1)).toBe('–');
+  });
+
+  it('says what time of day it ran at, noon for older records', () => {
+    const env = { userAgent: 'test', cores: 8, gpu: 'test', canvas: '1×1', pixelRatio: 1 };
+    const report = (time?: string) =>
+      markdownReport({ startedAt: 'now', quick: false, env, runs: [result], ...(time ? { time } : {}) });
+    expect(report('23:30')).toContain('- Time: 23:30');
+    expect(report()).toContain('- Time: 12:00');
   });
 
   it('renders a Markdown table', () => {

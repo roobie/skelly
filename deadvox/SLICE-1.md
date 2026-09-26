@@ -160,19 +160,31 @@ benchmark can still compare sizes, for example with `?bench=1&plan=1:96,0.5:96`.
   the world around spawn, turns the camera once around for 12 s, then flies
   away across the terrain for 15 s at jog speed and 15 s at sprint speed. The
   report page at the end has a table and a **Copy Markdown** button. Paste the
-  table here, together with the CPU model and browser version.
+  table here, together with the CPU model and browser version. Between looking
+  around and jogging, each run turns once more for 6 s, timing every render
+  until the GPU has drawn it (the "Render ms" column).
 - **A town's cost:** `?bench=1&site=city` runs the same benchmark in the
   stress-test city instead of by the test house, and `&storeys=6` makes its
   buildings 1 to 6 storeys tall. The camera starts at a crossroads in the middle
   and flies through the buildings. The report says which site it ran. The
   benchmark doesn't add furniture, so the game's block entities aren't
   measured; `?site=city` in the game has them.
+- **At night:** `&time=01:00` (any `HH:MM`) runs at that time of day instead of
+  noon. The fog comes in closer at night, and the far plane with it, so fewer
+  chunks are drawn. The report says what time it ran.
 
 What the benchmark can and can't tell us:
 
 - Frame times are the time between animation frames, which the browser caps at
   the display's refresh rate. They show whether 60 fps holds, not how much
-  headroom there is above it. The GPU's own time isn't measured separately.
+  headroom there is above it.
+- "Render ms" is the render call plus the wait for the GPU to draw the frame,
+  forced by reading back one pixel (browsers don't expose GPU timers reliably;
+  Firefox not at all). The CPU and GPU work one after the other there, instead of
+  overlapping as in a normal frame, so it's an upper bound on what drawing costs.
+  Runs from before it existed show a dash.
+- "Draws / k tris" is the mean number of draw calls and thousands of triangles
+  per frame while looking around.
 - "Holes" are columns within one chunk of the view radius that aren't meshed
   yet. They show whether streaming keeps up with the player.
 - Memory is calculated from the chunks in the world for the three layouts in
@@ -762,3 +774,157 @@ difference doesn't change the setup.
 
 The 96 m default stays: 128 m also meets the budget, and the headroom at 96 m is
 what later milestones (the simulation, zombies, lighting) will spend.
+
+### 1.5 stress-test city (2026-09-26)
+
+Same laptop, browser and canvas as the 1.0 run. The benchmark ran in the
+stress-test city (`?bench=1&site=city&storeys=N`) instead of by the test house:
+a flat grid of streets about 400 m across, packed with the hamlet's templates
+stacked to 1–N storeys, without furniture. Two runs, up to 3 and up to 6
+storeys.
+
+Up to 3 storeys:
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 10.1 / 60.5 / 2.4 | 3.0 / 7.0 | 800 | 60 / 17.2 / 0% | 43 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 3.0 / 4.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 18.9 / 112.5 / 4.6 | 3.0 / 6.0 | 774 | 60 / 17.2 / 0% | 83 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 4.0 / 4.0 / 9.0 |
+| 0.5 m | 128 m | 3.0 | 2888 | 31.2 / 180.5 / 7.5 | 3.0 / 6.0 | 800 | 60 / 17.2 / 0% | 137 | 17.2 / 0% / 0 | 17.2 / 1% / 0 | 5.0 / 8.0 / 13.0 |
+
+Up to 6 storeys:
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 12.8 / 60.5 / 3.1 | 4.0 / 7.0 | 880 | 60 / 17.2 / 0% | 54 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 2.0 / 6.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 24.0 / 112.5 / 5.8 | 4.0 / 8.0 | 878 | 60 / 17.2 / 0% | 104 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 11.0 |
+| 0.5 m | 128 m | 3.0 | 2888 | 39.4 / 180.5 / 9.4 | 3.0 / 6.0 | 902 | 60 / 17.2 / 0% | 173 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 5.0 / 9.0 / 12.0 |
+
+**Findings,** against the 1.1 final run by the test house:
+
+1. **The frame budget holds in a town, up to 6 storeys:** 60 fps and no holes
+   at every radius. The only slow frames were 1% while sprinting at 128 m with
+   3 storeys, at the budget's limit; the 6-storey run had none, so that 1% is
+   noise around the limit rather than a trend.
+2. **Draw calls grow with height:** at 96 m, 51 by the test house, 83 with 3
+   storeys and 104 with 6; at 128 m, 83, 137 and 173. Chunks above the ground
+   that were empty air now hold walls and roofs, and each chunk is its own mesh.
+3. **Main-thread work** barely moved at 96 m: p95 3 / 4 / 11 ms (look / jog /
+   sprint) with 6 storeys, against 3 / 4 / 10. At 128 m it grew to about
+   5 / 9 / 12 ms against 4 / 6 / 9: sprinting there leaves about 4 ms of the
+   16.7 ms frame.
+4. **Memory:** the palette-packed size is 2–2.5 times the test house's (5.8 MiB
+   at 96 m with 6 storeys, against 2.3), because chunks with buildings use more
+   block types and there are more of them. Memory held grows less: 24.0 MiB at
+   96 m, against 19.4.
+5. **Meshing, load time and triangles** barely move: 3–4 ms median and 6–8 ms
+   p95 per chunk, the same load times, and a median of 774–902 triangles per
+   chunk against about 930. Flat streets are cheaper than hills, which makes up
+   for the buildings.
+
+What these runs don't show: the cost of furniture and block entities (the
+benchmark adds none), a town on hilly ground, and the GPU's own time, which the
+capped 60 fps hides. Draw calls are the number that grows fastest with a town,
+so they're what culling should aim at.
+
+The 96 m default stays. 128 m still meets the budget in a town, with little
+headroom left for sprinting through one.
+
+### Culling (2026-09-26)
+
+The city runs showed draw calls growing fastest with a town, so we measured how
+much of what's drawn is seen. A throwaway probe in headless Chromium loaded the
+city with up to 6 storeys at 96 m and, from 16 eye-level views, counted the
+chunk meshes drawn, and which of them reach at least one pixel (a render with one
+colour per chunk). Headless draw counts run higher than Firefox's, so the ratios
+are what matter.
+
+| Chunk meshes per view (mean) | Meshes | Triangles |
+| --- | --- | --- |
+| Drawn (whole-chunk spheres, far plane at 1.6 × radius) | 113 | 112k |
+| Culled with tight boxes | 104 | 106k |
+| Also skipping what's beyond the fog, by day | 86 | 91k |
+| The same, at night (fog ends at 0.5 of the radius) | 39 | 44k |
+| The same, in the dead of night (0.35) | 25 | 30k |
+| Reaching any pixel, by day | 26 | 29k |
+
+By the test house 32% of the drawn chunks reach a pixel, and in the city at
+128 m 26%. About 43% of the drawn triangles face away from the camera, and
+grouping each chunk's faces by direction could skip about a third of them.
+
+**What changed.**
+
+1. The camera's far plane is where the fog ends. Fog and clipping both go by
+   depth along the view, and at the fog's end a surface is exactly the
+   background colour, so nothing past it can show.
+2. Chunk meshes are culled against their tight bounding boxes instead of a
+   sphere around the whole chunk.
+3. The benchmark reports draw calls with triangles, times each render until the
+   GPU has drawn it, and can run at night (`&time=`); see "Running it".
+
+**Checks.** From the crossroads in the 6-storey city at 96 m, draw calls fell
+from 100 to 86 at noon (−15%), to 40 at 21:00 (−60%) and to 26 at 01:00
+(−74%). Rendered with and without the change, every pixel matches except a few
+isolated ones by day (at most 9 of 360,000 per view): each change alone matches
+exactly, so they come from the nearer far plane rounding depth differently where
+faces nearly touch, not from anything missing.
+
+**Not done yet.** Occlusion culling: by day only about a quarter of the drawn
+chunks reach a pixel, but three.js draws solid meshes front to back, so hidden
+chunks cost draw calls and vertex work more than pixels. Whether that's worth
+GPU occlusion queries or batching chunks into one draw depends on the render
+time the benchmark now measures.
+
+**Reference laptop, by day** (2026-09-26). Same laptop, browser and canvas as
+the 1.0 run; `?bench=1&site=city&storeys=6`, at noon.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws / k tris | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint | Render ms p50 / p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 12.8 / 60.5 / 3.1 | 4.0 / 6.0 | 880 | 60 / 17.2 / 0% | 43 / 46 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 3.0 / 5.0 | 10.0 / 18.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 24.0 / 112.5 / 5.8 | 3.0 / 6.0 | 878 | 60 / 17.2 / 0% | 84 / 89 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 10.0 | 10.0 / 17.0 |
+| 0.5 m | 128 m | 3.1 | 2888 | 39.4 / 180.5 / 9.4 | 4.0 / 40.0 | 900 | 60 / 17.2 / 0% | 141 / 146 | 17.1 / 1% / 0 | 116.6 / 27% / 1 | 4.0 / 12.0 / 106.0 | 10.0 / 16.0 |
+
+1. **Draw calls fell by about a fifth:** 43 / 84 / 141 at 64 / 96 / 128 m,
+   against 54 / 104 / 173 in the 6-storey run before the change (−20%, −19%,
+   −18%). That's more than headless Chromium showed (−15%), as expected from
+   the ratios above.
+2. **Drawing a frame takes about 10 ms** (median, render call plus the wait for
+   the GPU), 16–18 ms at p95, and **the same at every radius**, although 128 m
+   draws three times the triangles and calls of 64 m. So the cost is per pixel
+   (1674 × 972 drawing-buffer pixels, 1.6 million, with antialiasing),
+   not per chunk. Part of it may be the wait itself: Firefox runs WebGL in
+   another process, and reading a pixel back is a round trip. Either way,
+   culling more chunks won't buy much GPU time; the pixel count and
+   antialiasing would.
+3. **The 128 m sprint went wrong,** with main-thread work spiking past 100 ms
+   (27% slow frames, one hole), where the 6-storey run before the change had
+   none. The change doesn't explain it: in Node, culling 1,000 meshes takes
+   0.05 ms a frame and the new bounds under 0.1 ms per mesh. Meshing, which runs
+   in the workers and didn't change, also jumped to 40 ms at p95 in the same
+   run, which points at the whole machine being busy. 64 and 96 m were clean.
+
+**Reference laptop, at night** (2026-09-26). Same setup, with `&time=01:00`:
+the dead of night, when the fog ends at 0.35 of the view radius.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws / k tris | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint | Render ms p50 / p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 12.8 / 60.5 / 3.1 | 4.0 / 7.0 | 880 | 60 / 17.2 / 0% | 15 / 20 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 2.0 / 6.0 | 9.0 / 16.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 24.0 / 112.5 / 5.8 | 3.0 / 6.0 | 878 | 60 / 17.2 / 0% | 25 / 30 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 10.0 | 11.0 / 15.0 |
+| 0.5 m | 128 m | 3.2 | 2888 | 39.4 / 180.5 / 9.4 | 4.0 / 7.0 | 902 | 60 / 17.2 / 0% | 36 / 42 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 4.0 / 9.0 / 11.0 | 10.0 / 17.0 |
+
+4. **At night, a quarter of the draw calls:** 15 / 25 / 36 at 64 / 96 / 128 m,
+   against 54 / 104 / 173 before the change (−72%, −76%, −79%), and 20–42k
+   triangles instead of 46–146k by day. At night, 128 m draws fewer chunks than
+   64 m does by day.
+5. **Drawing still takes about 10 ms** (9–11 ms median, 15–17 ms at p95), the
+   same as by day with four times the draw calls and triangles. That settles
+   it: the GPU's time on this laptop is per pixel or fixed per frame, and the
+   number of chunks drawn barely touches it.
+6. **The 128 m sprint spike didn't repeat:** sprinting at 128 m was clean again
+   (no slow frames, no holes, work p95 11 ms, meshing p95 7 ms), in line with
+   every run before it. The day run's spike was the machine, not the change.
+
+**Decision.** The culling stays: it costs nothing, hides nothing that was
+visible, and cuts draw calls by a fifth by day and three quarters at night.
+Occlusion culling is not worth doing now, because the GPU's time doesn't follow
+the chunks drawn. If a later milestone needs GPU headroom, the place to look is
+per-pixel cost: pixel ratio, antialiasing, and the chunk shader.

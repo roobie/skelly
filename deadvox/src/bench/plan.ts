@@ -49,6 +49,13 @@ export interface RunResult {
   meshMs: SampleStats;
   meshTriangles: SampleStats;
   look: FrameStats & WorkStats & { drawCalls: number; triangles: number };
+  /**
+   * Milliseconds for `renderer.render` until the GPU has drawn the frame (a one-pixel
+   * read waits for it), while looking around: the CPU's submit and the GPU's drawing,
+   * one after the other. Runs from before it existed
+   * don't have it.
+   */
+  render?: SampleStats;
   jog: MovingStats;
   sprint: MovingStats;
   /** The tab was hidden during the run, so its frame times are unreliable. */
@@ -70,6 +77,8 @@ export interface BenchRecord {
   quick: boolean;
   /** What stood around spawn; records from before the city don't say (the test house). */
   site?: string;
+  /** Time of day (`&time=HH:MM`); records from before it existed ran at noon. */
+  time?: string;
   env?: Environment;
   runs: RunResult[];
 }
