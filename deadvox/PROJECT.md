@@ -118,9 +118,9 @@ npm run validate   # base content; add paths to validate a mod on top
 - A light that's switched on shines only from your hands; put away, it goes off.
 - The death screen's "time survived" is game time; its looting summary counts
   items taken out of furniture, not ones picked up from the ground.
-- The base pack has no models yet: the flashlight's file ("Torch" from
-  OpenGameArt) is still to be added (see SLICE-1.md, 1.5.5), so every item is a
-  bundle in a pile and a box in your hands. Furniture is plain boxes.
+- The base pack's only model is the flashlight ("Torch" from OpenGameArt, see
+  SLICE-1.md, 1.5.5); every other item is a bundle in a pile and a box in your
+  hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
 - Zombie types name a `model`, but it isn't checked against the `models` section

@@ -1,3 +1,13 @@
 {
-  "sources": []
+  "sources": [
+    {
+      "title": "Torch",
+      "url": "https://opengameart.org/content/torch",
+      "author": "jpsweber",
+      "licence": "CC0-1.0",
+      "download": "torch.zip",
+      "files": ["assets/models/flashlight.glb"],
+      "changes": "Converted torch.obj to glTF binary, scaled to 0.2 m long, turned to lie along +x with the lens at +x, lens no longer emissive"
+    }
+  ]
 }
