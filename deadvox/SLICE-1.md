@@ -902,8 +902,29 @@ the 1.0 run; `?bench=1&site=city&storeys=6`, at noon.
    in the workers and didn't change, also jumped to 40 ms at p95 in the same
    run, which points at the whole machine being busy. 64 and 96 m were clean.
 
-**Next:**
-- Re-run 128 m alone to see if the sprint spike repeats:
-  `?bench=1&site=city&storeys=6&plan=0.5:128`.
-- The night run: `?bench=1&site=city&storeys=6&time=01:00`.
-- Occlusion culling waits: the GPU's time doesn't depend on the chunks drawn.
+**Reference laptop, at night** (2026-09-26). Same setup, with `&time=01:00`:
+the dead of night, when the fog ends at 0.35 of the view radius.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws / k tris | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint | Render ms p50 / p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 12.8 / 60.5 / 3.1 | 4.0 / 7.0 | 880 | 60 / 17.2 / 0% | 15 / 20 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 2.0 / 6.0 | 9.0 / 16.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 24.0 / 112.5 / 5.8 | 3.0 / 6.0 | 878 | 60 / 17.2 / 0% | 25 / 30 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 10.0 | 11.0 / 15.0 |
+| 0.5 m | 128 m | 3.2 | 2888 | 39.4 / 180.5 / 9.4 | 4.0 / 7.0 | 902 | 60 / 17.2 / 0% | 36 / 42 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 4.0 / 9.0 / 11.0 | 10.0 / 17.0 |
+
+4. **At night, a quarter of the draw calls:** 15 / 25 / 36 at 64 / 96 / 128 m,
+   against 54 / 104 / 173 before the change (−72%, −76%, −79%), and 20–42k
+   triangles instead of 46–146k by day. At night, 128 m draws fewer chunks than
+   64 m does by day.
+5. **Drawing still takes about 10 ms** (9–11 ms median, 15–17 ms at p95), the
+   same as by day with four times the draw calls and triangles. That settles
+   it: the GPU's time on this laptop is per pixel or fixed per frame, and the
+   number of chunks drawn barely touches it.
+6. **The 128 m sprint spike didn't repeat:** sprinting at 128 m was clean again
+   (no slow frames, no holes, work p95 11 ms, meshing p95 7 ms), in line with
+   every run before it. The day run's spike was the machine, not the change.
+
+**Decision.** The culling stays: it is free, changes no pixel, and cuts draw
+calls by a fifth by day and three quarters at night. Occlusion culling is not
+worth doing now, because the GPU's time doesn't follow the chunks drawn. If a
+later milestone needs GPU headroom, the place to look is per-pixel cost: pixel
+ratio, antialiasing, and the chunk shader.
