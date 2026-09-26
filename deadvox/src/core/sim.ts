@@ -4,15 +4,12 @@
 import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
 import { Compression } from './compression.ts';
 import { EventQueue, type EventReader } from './events.ts';
-import { type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import { causeOf, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler } from './scheduler.ts';
 
 /** Events systems emit. Noise, damage and block changes join as their systems arrive. */
-export interface SimEvent {
-  kind: 'interrupt';
-  reason: string;
-}
+export type SimEvent = { kind: 'interrupt'; reason: string } | { kind: 'death'; cause: string };
 
 export type Timed<E> = E & { readonly time: number };
 
@@ -39,6 +36,8 @@ export class Simulation {
   readonly needs: Needs = { ...SPAWN_NEEDS };
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
+  /** Set when health reaches 0; from then on nothing advances. */
+  dead: { cause: string; time: number } | undefined;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private readonly unsafe: () => string | undefined;
 
@@ -54,6 +53,9 @@ export class Simulation {
       tick: (dt) => {
         for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt))) {
           this.emit({ kind: 'interrupt', reason });
+        }
+        if (this.needs.health <= 0) {
+          this.die(causeOf(this.needs) ?? 'your injuries');
         }
       },
     });
@@ -78,6 +80,29 @@ export class Simulation {
     this.events.emit({ ...event, time: this.time });
   }
 
+  /** Takes health (a fall, food poisoning, later a bite); at 0 you die of `cause`. */
+  hurt(amount: number, cause: string): void {
+    if (this.dead) {
+      return;
+    }
+    this.needs.health = Math.max(0, this.needs.health - amount);
+    if (this.needs.health <= 0) {
+      this.die(cause);
+    } else {
+      this.emit({ kind: 'interrupt', reason: "You're hurt" });
+    }
+  }
+
+  private die(cause: string): void {
+    if (this.dead) {
+      return;
+    }
+    this.dead = { cause, time: this.time };
+    this.compression.stop();
+    this.compression.snap();
+    this.emit({ kind: 'death', cause });
+  }
+
   /** Starts compression for a long action. Refused, with the reason, when it isn't safe. */
   compress(): { ok: true } | { ok: false; reason: string } {
     return this.compression.start(this.unsafe());
@@ -89,7 +114,7 @@ export class Simulation {
    * advanced.
    */
   frame(realDt: number, until?: number): number {
-    if (this.paused) {
+    if (this.paused || this.dead) {
       return 0;
     }
     this.compression.update(realDt);
@@ -97,7 +122,7 @@ export class Simulation {
     this.checkInterruptions();
     const { c } = this.compression;
     const dt = until === undefined ? realDt * c : Math.min(realDt * c, Math.max(0, until - this.time));
-    return this.scheduler.advance(dt, c, () => this.checkInterruptions());
+    return this.scheduler.advance(dt, c, () => this.dead !== undefined || this.checkInterruptions());
   }
 
   /**
@@ -105,7 +130,9 @@ export class Simulation {
    * safe. Returns true when it did, so the scheduler stops before the next step.
    */
   private checkInterruptions(): boolean {
-    const emitted = this.interrupts.read().find((e) => e.kind === 'interrupt');
+    const emitted = this.interrupts
+      .read()
+      .find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
     const { compression } = this;
     if (!(compression.active || compression.c > 1)) {
       return false;
