@@ -762,3 +762,42 @@ difference doesn't change the setup.
 
 The 96 m default stays: 128 m also meets the budget, and the headroom at 96 m is
 what later milestones (the simulation, zombies, lighting) will spend.
+
+### 1.5 stress-test city, up to 3 storeys (2026-09-26)
+
+Same laptop, browser and canvas as the 1.0 run. The benchmark ran in the
+stress-test city (`?bench=1&site=city&storeys=3`) instead of by the test house:
+a flat grid of streets about 400 m across, packed with the hamlet's templates
+stacked to 1–3 storeys, without furniture.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 10.1 / 60.5 / 2.4 | 3.0 / 7.0 | 800 | 60 / 17.2 / 0% | 43 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 3.0 / 4.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 18.9 / 112.5 / 4.6 | 3.0 / 6.0 | 774 | 60 / 17.2 / 0% | 83 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 4.0 / 4.0 / 9.0 |
+| 0.5 m | 128 m | 3.0 | 2888 | 31.2 / 180.5 / 7.5 | 3.0 / 6.0 | 800 | 60 / 17.2 / 0% | 137 | 17.2 / 0% / 0 | 17.2 / 1% / 0 | 5.0 / 8.0 / 13.0 |
+
+**Findings,** against the 1.1 final run by the test house:
+
+1. **The frame budget holds in a town:** 60 fps, no slow frames and no holes at
+   64 and 96 m. At 128 m sprinting gave 1% slow frames, which is at the
+   budget's limit.
+2. **Draw calls** rose by about 60%: 83 at 96 m (51 by the test house) and 137
+   at 128 m (83). Chunks above the ground that were empty air now hold walls
+   and roofs, and each chunk is its own mesh.
+3. **Main-thread work** barely moved at 96 m (p95 4 / 4 / 9 ms against 3 / 4 /
+   10). At 128 m it grew to 5 / 8 / 13 ms against 4 / 6 / 9: sprinting there
+   leaves under 4 ms of the 16.7 ms frame.
+4. **Memory:** the palette-packed size doubled (4.6 MiB at 96 m against 2.3),
+   because chunks with buildings use more block types. Memory held is slightly
+   lower (18.9 MiB against 19.4), because the city's ground is flat.
+5. **Meshing, load time and triangles** are unchanged or lower: 3 ms median
+   and 6–7 ms p95 per chunk, the same load times, and a median of 774–800
+   triangles per chunk against about 930. Flat streets are cheaper than hills,
+   and most chunks are street or ground.
+
+What this run doesn't show: the cost of furniture and block entities (the
+benchmark adds none), taller buildings (`&storeys=6` is still to run), a town on
+hilly ground, and the GPU's own time, which the capped 60 fps hides.
+
+The 96 m default stays. 128 m still meets the budget in a town, but with little
+headroom left for sprinting through one.
