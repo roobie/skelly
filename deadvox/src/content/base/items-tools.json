@@ -1,4 +1,12 @@
 {
+  "models": [
+    {
+      "id": "flashlight",
+      "file": "assets/models/flashlight.glb",
+      "grip": { "at": [0.085, 0, 0] },
+      "anchors": { "lens": [0.199, 0, 0] }
+    }
+  ],
   "items": [
     {
       "id": "crowbar",
@@ -117,6 +125,7 @@
       "weight": 250,
       "size": [1, 2],
       "description": "Lets you see. Lets them see you.",
+      "model": "flashlight",
       "light": {
         "radius": 20,
         "seenFrom": 40,
