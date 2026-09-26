@@ -239,7 +239,7 @@ describe('handling time', () => {
     expect(inv.locate(beans)?.kind).toBe('pile'); // still on the floor until the time is up
     expect(queue.busy).toBe(true);
     const result = queue.tick(0.2);
-    expect(result.done.map((j) => j.item)).toEqual([beans]);
+    expect(result.done.map((j) => (j.kind === 'move' ? j.item : undefined))).toEqual([beans]);
     expect(inv.locate(beans)).toMatchObject({ kind: 'pocket', owner: backpack });
     expect(queue.jobs).toHaveLength(1);
     queue.tick(10);

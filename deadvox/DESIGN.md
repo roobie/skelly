@@ -228,8 +228,9 @@ the source of the weirdness: mutation pressure and hazard zones spread from them
 Loot tables are data. A table has entries with weights, count ranges and
 condition ranges, and entries can be nested tables. Room types and furniture
 point at tables, and the point-of-interest tier scales them. Loot is rolled when
-the chunk first generates, from the chunk's own random stream, so a save doesn't
-need to store loot that nobody has touched yet.
+the chunk first generates, from a random stream keyed by the container's
+position, so a save doesn't need to store loot that nobody has touched yet, and
+chunks can generate in any order.
 
 ## Items and inventory
 

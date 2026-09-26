@@ -5,13 +5,17 @@
 import { Vector3 } from 'three';
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
+import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
-import { stepBody } from '../core/physics.ts';
+import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
+import { raycast } from '../core/raycast.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
+import { cellsOf } from '../core/templates.ts';
+import { FurnitureMeshes } from '../render/furniture.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
 import { mountCredits } from '../ui/credits.ts';
@@ -27,8 +31,12 @@ import { toHands } from './targets.ts';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const PHYSICS_RATE = 60;
 const HANDLING_RATE = 20;
-/** Metres: how far away you can loot a pile. */
+/** Metres: how far away you can loot a pile or furniture. */
 const LOOT_REACH = 2;
+/** Metres: how far away you can open a door or search a container you're looking at. */
+const USE_REACH = 2;
+/** Metres above the feet that reach to furniture is measured from. */
+const CHEST = 1;
 const QUICK_KEY = /^Digit([1-5])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 
@@ -52,14 +60,25 @@ export const startPlay = (engine: Engine): void => {
 
   // ---- items ----
 
-  const inventory = new Inventory(registry);
+  const { entities } = engine;
+  const inventory = new Inventory(registry, undefined, entities);
   inventory.canReach = (pos) => pileDistance(pos) <= LOOT_REACH;
-  const [fx, fy, fz] = [Math.floor(sx / s), Math.floor(sy / s + 0.01), Math.floor(sz / s)];
-  startingLoadout(inventory, [fx + 2, fy, fz + 1]);
+  const chest = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
+  /** Metres from the player's chest to the nearest part of a piece of furniture. */
+  const entityDistance = (entity: BlockEntity) => entities.distance(entity, chest()) * s;
+  inventory.canReachEntity = (entity) => entityDistance(entity) <= LOOT_REACH;
+  startingLoadout(inventory);
+  // Furniture, with the loot rolled for it, arrives with its column.
+  streamer.onColumn = (cx, cz) => {
+    for (const { spec, loot } of engine.site?.furnitureIn(cx, cz) ?? []) {
+      inventory.furnish(spec, loot);
+    }
+  };
   const queue = new HandlingQueue(inventory);
   const quickbar = new Quickbar();
   const piles = new PileMeshes(s);
-  scene.add(piles.group);
+  const furniture = new FurnitureMeshes(s);
+  scene.add(piles.group, furniture.group);
 
   // ---- simulation ----
 
@@ -129,10 +148,50 @@ export const startPlay = (engine: Engine): void => {
     },
   });
 
+  // ---- furniture: searching and doors ----
+
+  /** Containers with a search queued, so pressing again doesn't queue another. */
+  const searching = new Set<BlockEntity>();
+  const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+
+  const search = (entity: BlockEntity): string | undefined => {
+    if (entity.searched || searching.has(entity)) {
+      return undefined;
+    }
+    searching.add(entity);
+    queue.enqueueAction(`Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), () => {
+      searching.delete(entity);
+      const reached = inventory.canReachEntity(entity);
+      if (reached) {
+        entities.markSearched(entity);
+      }
+      return reached ? undefined : 'Too far away';
+    });
+    return undefined;
+  };
+
+  const toggleDoor = (entity: BlockEntity) => {
+    const closing = entity.open;
+    const time = entities.defOf(entity).door?.handling ?? 0;
+    queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, () => {
+      const [x0, y0, z0] = entity.pos;
+      const inTheWay = [...cellsOf(entity.size)].some(([x, y, z]) => bodyOverlapsBlock(body, [x0 + x, y0 + y, z0 + z]));
+      const blocked = closing && inTheWay;
+      if (!blocked) {
+        entities.setOpen(entity, !closing);
+      }
+      return blocked ? "You're in the way" : undefined;
+    });
+  };
+
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
     feet,
     nearby: () => inventory.pilesNear(body.pos, LOOT_REACH / s),
     distance: (pile: Pile) => pileDistance(pile.pos),
+    containers: () => entities.containersNear(chest(), LOOT_REACH / s),
+    entityDistance,
+    search,
+    searching: (entity) => searching.has(entity),
     notice: showNotice,
     assign: (slot, item) => {
       quickbar.assign(slot, item);
@@ -233,6 +292,8 @@ export const startPlay = (engine: Engine): void => {
     const quick = QUICK_KEY.exec(code);
     if (code === 'KeyB' && config.debug) {
       build.toggle();
+    } else if (code === 'KeyE' && !compression.locksInput) {
+      use();
     } else if (code === 'KeyX') {
       queue.cancel();
     } else if (!build.key(code) && quick && !compression.locksInput) {
@@ -268,6 +329,44 @@ export const startPlay = (engine: Engine): void => {
     return [d.x, d.y, d.z];
   };
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
+
+  /** The furniture in the crosshair, open doors included. */
+  const lookedAt = (): BlockEntity | undefined => {
+    const hit = raycast(
+      eye(),
+      lookDir(),
+      USE_REACH / s,
+      (x, y, z) => engine.isSolid(x, y, z) || entities.at(x, y, z) !== undefined,
+    );
+    return hit && entities.at(...hit.block);
+  };
+
+  /** What E would do to it, for the prompt. */
+  const useText = (entity: BlockEntity): string => {
+    if (entities.defOf(entity).door) {
+      return `E: ${entity.open ? 'close' : 'open'} the ${nameOf(entity)}`;
+    }
+    if (entity.pockets) {
+      return `E: ${entity.searched ? 'look in' : 'search'} the ${nameOf(entity)}`;
+    }
+    return entities.defOf(entity).name;
+  };
+
+  /** E: opens or closes a door; searches a container and opens the inventory beside it. */
+  function use(): void {
+    const entity = lookedAt();
+    if (!entity) {
+      return;
+    }
+    if (entities.defOf(entity).door) {
+      toggleDoor(entity);
+    } else if (entity.pockets) {
+      search(entity);
+      if (!screen.isOpen) {
+        toggleInventory();
+      }
+    }
+  }
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   renderer.domElement.addEventListener('mousedown', (e) => {
@@ -310,6 +409,10 @@ export const startPlay = (engine: Engine): void => {
 
   const promptText = (now: number): string => {
     const lines = now < noticeUntil ? [notice] : [];
+    const entity = input.locked && !build.on ? lookedAt() : undefined;
+    if (entity) {
+      lines.push(useText(entity));
+    }
     if (compression.interruption !== undefined) {
       lines.push(`${compression.interruption}.   C: continue   X: stop`);
     }
@@ -336,6 +439,7 @@ export const startPlay = (engine: Engine): void => {
     sim.frame(dt);
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
+    furniture.sync(entities);
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);

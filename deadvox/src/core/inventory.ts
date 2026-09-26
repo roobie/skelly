@@ -1,7 +1,8 @@
-// What the player holds and wears, and the piles on the ground. Moves are planned
-// first (does it fit, how long does it take) and applied when the handling time is
-// up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
+// What the player holds and wears, the piles on the ground, and what's in furniture.
+// Moves are planned first (does it fit, how long does it take) and applied when the
+// handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
+import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import {
@@ -20,6 +21,7 @@ import {
   stackRoom,
   weightOf,
 } from './items.ts';
+import type { Rolled } from './loot.ts';
 import type { WearSlot } from './schema.ts';
 
 /** Handling tunables in seconds (DESIGN.md, "Handling time"). */
@@ -54,14 +56,19 @@ export type Location =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn'; slot: WearSlot }
   | { kind: 'pocket'; owner: Item; pocket: number; placed: Placed }
-  | { kind: 'pile'; pile: Pile; placed: Placed };
+  | { kind: 'pile'; pile: Pile; placed: Placed }
+  | { kind: 'furniture'; entity: BlockEntity; pocket: number; placed: Placed };
 
 /** Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. */
 export type Target =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn' }
   | { kind: 'pocket'; owner: Item; pocket: number; at?: Spot }
-  | { kind: 'pile'; pos: Vec3; at?: Spot };
+  | { kind: 'pile'; pos: Vec3; at?: Spot }
+  | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot };
+
+/** Where in the world an item lies, if it isn't on the player: a pile, or furniture. */
+type Place = { kind: 'pile'; pile: Pile } | { kind: 'furniture'; entity: BlockEntity };
 
 export type Plan = { ok: true; time: number; merge?: Item; at?: Spot } | { ok: false; reason: string };
 
@@ -76,14 +83,35 @@ export class Inventory {
   readonly hands: Partial<Record<HandSide, Item>> = {};
   readonly worn: Partial<Record<WearSlot, Item>> = {};
   readonly piles = new Map<string, Pile>();
+  readonly entities: BlockEntities;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
   /** Whether a pile's block is within reach; the game sets it from the player's position. */
   canReach: (pos: Vec3) => boolean = () => true;
+  /** Whether a piece of furniture is within reach. */
+  canReachEntity: (entity: BlockEntity) => boolean = () => true;
 
-  constructor(registry: Registry, factory = new ItemFactory()) {
+  constructor(registry: Registry, factory = new ItemFactory(), entities = new BlockEntities(registry)) {
     this.registry = registry;
     this.factory = factory;
+    this.entities = entities;
+  }
+
+  /**
+   * Adds a piece of furniture with the items worldgen rolled for it, filling its
+   * pockets in order; what doesn't fit is left out. Returns undefined if it's
+   * already there.
+   */
+  furnish(spec: Parameters<BlockEntities['add']>[0], loot: readonly Rolled[] = []): BlockEntity | undefined {
+    const entity = this.entities.add(spec);
+    if (!entity) {
+      return undefined;
+    }
+    for (const { type, count, condition } of loot) {
+      const item = this.create(type, count, condition);
+      (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
+    }
+    return entity;
   }
 
   create(type: string, count = 1, condition = 1): Item {
@@ -135,6 +163,10 @@ export class Inventory {
         return { kind: 'pile', pile, placed };
       }
     }
+    const inFurniture = this.inFurniture(item);
+    if (inFurniture) {
+      return inFurniture;
+    }
     for (const root of this.roots()) {
       const found = this.searchPockets(root, item);
       if (found) {
@@ -163,9 +195,13 @@ export class Inventory {
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
     }
-    const source = this.pileUnder(from);
-    if ((source && !this.canReach(source.pos)) || !this.targetInReach(target)) {
+    const source = this.placeOf(from);
+    const destination = this.targetPlace(target);
+    if (!(this.reachable(source) && this.reachable(destination))) {
       return refuse('Too far away');
+    }
+    if (!(this.searched(source) && this.searched(destination))) {
+      return refuse('Search it first');
     }
     const placement = this.placement(item, target, count, from);
     if (!placement.ok) {
@@ -222,16 +258,20 @@ export class Inventory {
     return true;
   }
 
-  /** The pile an item is in, directly or inside a bag lying there. */
-  pileUnder(location: Location): Pile | undefined {
-    if (location.kind === 'pile') {
-      return location.pile;
+  /** The pile or furniture an item is in, directly or inside a bag lying there; undefined if it's on you. */
+  placeOf(location: Location): Place | undefined {
+    switch (location.kind) {
+      case 'pile':
+        return { kind: 'pile', pile: location.pile };
+      case 'furniture':
+        return { kind: 'furniture', entity: location.entity };
+      case 'pocket': {
+        const owner = this.locate(location.owner);
+        return owner ? this.placeOf(owner) : undefined;
+      }
+      default:
+        return undefined;
     }
-    if (location.kind === 'pocket') {
-      const owner = this.locate(location.owner);
-      return owner ? this.pileUnder(owner) : undefined;
-    }
-    return undefined;
   }
 
   /** Seconds to take an item out of where it is and put it where it's going. */
@@ -246,6 +286,8 @@ export class Inventory {
           return HANDLING.wear;
         case 'pocket':
           return this.pocketHandling(from.owner, from.pocket) + perCell;
+        case 'furniture':
+          return this.furnitureHandling(from.entity, from.pocket) + perCell;
         default:
           return HANDLING.ground + perCell;
       }
@@ -258,6 +300,8 @@ export class Inventory {
           return HANDLING.wear;
         case 'pocket':
           return this.pocketHandling(target.owner, target.pocket) + perCell;
+        case 'furniture':
+          return this.furnitureHandling(target.entity, target.pocket) + perCell;
         default:
           return HANDLING.ground + perCell;
       }
@@ -265,23 +309,56 @@ export class Inventory {
     return out + into;
   }
 
+  furnitureHandling(entity: BlockEntity, pocket: number): number {
+    return this.entities.defOf(entity).container?.pockets[pocket]?.handling ?? 0;
+  }
+
   // ---- internals ----
 
-  private targetInReach(target: Target): boolean {
-    if (target.kind === 'pile') {
-      return this.canReach(target.pos);
+  /** An item lying directly in a piece of furniture. */
+  private inFurniture(item: Item): Location | undefined {
+    for (const entity of this.entities.all) {
+      for (const [pocket, grid] of (entity.pockets ?? []).entries()) {
+        const placed = grid.find((p) => p.item === item);
+        if (placed) {
+          return { kind: 'furniture', entity, pocket, placed };
+        }
+      }
     }
-    if (target.kind === 'pocket') {
-      const owner = this.locate(target.owner);
-      const pile = owner ? this.pileUnder(owner) : undefined;
-      return !pile || this.canReach(pile.pos);
+    return undefined;
+  }
+
+  /** Where a move would put the item, if not on the player. A pile that doesn't exist yet counts by its position. */
+  private targetPlace(target: Target): Place | undefined {
+    switch (target.kind) {
+      case 'pile':
+        return { kind: 'pile', pile: this.pileAt(target.pos) ?? { pos: target.pos, items: [] } };
+      case 'furniture':
+        return { kind: 'furniture', entity: target.entity };
+      case 'pocket': {
+        const owner = this.locate(target.owner);
+        return owner ? this.placeOf(owner) : undefined;
+      }
+      default:
+        return undefined;
     }
-    return true;
+  }
+
+  private reachable(place: Place | undefined): boolean {
+    if (!place) {
+      return true;
+    }
+    return place.kind === 'pile' ? this.canReach(place.pile.pos) : this.canReachEntity(place.entity);
+  }
+
+  private searched(place: Place | undefined): boolean {
+    return place?.kind !== 'furniture' || place.entity.searched;
   }
 
   private roots(): Item[] {
     const inPiles = [...this.piles.values()].flatMap((p) => p.items.map((placed) => placed.item));
-    return [...this.carried(), ...inPiles];
+    const inFurniture = [...this.entities.all].flatMap((e) => (e.pockets ?? []).flat().map((placed) => placed.item));
+    return [...this.carried(), ...inPiles, ...inFurniture];
   }
 
   private searchPockets(owner: Item, item: Item): Location | undefined {
@@ -350,15 +427,24 @@ export class Inventory {
     return { ok: true, time: 0 };
   }
 
-  /** The grid a pocket or pile target points at. */
-  private gridOf(target: Extract<Target, { kind: 'pocket' | 'pile' }>): GridState {
-    if (target.kind === 'pocket') {
-      return {
-        size: this.pocketGrid(target.owner, target.pocket),
-        placed: target.owner.pockets?.[target.pocket] ?? [],
-      };
+  /** The grid a pocket, pile or furniture target points at. */
+  private gridOf(target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>): GridState {
+    switch (target.kind) {
+      case 'pocket':
+        return {
+          size: this.pocketGrid(target.owner, target.pocket),
+          placed: target.owner.pockets?.[target.pocket] ?? [],
+        };
+      case 'furniture': {
+        const spec = this.entities.defOf(target.entity).container?.pockets[target.pocket];
+        if (!spec) {
+          throw new Error(`${target.entity.type} has no pocket ${target.pocket}`);
+        }
+        return { size: { w: spec.grid[0], h: spec.grid[1] }, placed: target.entity.pockets?.[target.pocket] ?? [] };
+      }
+      default:
+        return { size: PILE_GRID, placed: this.pileAt(target.pos)?.items ?? [] };
     }
-    return { size: PILE_GRID, placed: this.pileAt(target.pos)?.items ?? [] };
   }
 
   private gridPlacement(item: Item, count: number, grid: GridState, at?: Spot): Plan {
@@ -399,6 +485,11 @@ export class Inventory {
         grid.splice(grid.indexOf(from.placed), 1);
         return;
       }
+      case 'furniture': {
+        const grid = from.entity.pockets![from.pocket]!;
+        grid.splice(grid.indexOf(from.placed), 1);
+        return;
+      }
       default:
         from.pile.items.splice(from.pile.items.indexOf(from.placed), 1);
         if (from.pile.items.length === 0) {
@@ -419,6 +510,9 @@ export class Inventory {
       case 'pocket':
         target.owner.pockets![target.pocket]!.push({ item, ...spot });
         return;
+      case 'furniture':
+        target.entity.pockets![target.pocket]!.push({ item, ...spot });
+        return;
       default: {
         const key = pileKey(target.pos);
         const pile = this.piles.get(key) ?? { pos: [...target.pos], items: [] };
@@ -428,6 +522,27 @@ export class Inventory {
     }
   }
 }
+
+/** Where an item lies in a grid, if it's in one. */
+export const spotOf = (at: Location): Spot | undefined =>
+  at.kind === 'hand' || at.kind === 'worn' ? undefined : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
+
+/** A target in the same grid as a location, at a spot: for turning an item where it lies. */
+export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefined => {
+  if (!spot) {
+    return undefined;
+  }
+  switch (at.kind) {
+    case 'pocket':
+      return { kind: 'pocket', owner: at.owner, pocket: at.pocket, at: spot };
+    case 'pile':
+      return { kind: 'pile', pos: at.pile.pos, at: spot };
+    case 'furniture':
+      return { kind: 'furniture', entity: at.entity, pocket: at.pocket, at: spot };
+    default:
+      return undefined;
+  }
+};
 
 /** A short description of a target, for the action queue. */
 export const describeTarget = (inventory: Inventory, target: Target): string => {
@@ -441,6 +556,8 @@ export const describeTarget = (inventory: Inventory, target: Target): string => 
       const name = inventory.name(target.owner);
       return pocket?.name ? `${name} · ${pocket.name}` : name;
     }
+    case 'furniture':
+      return inventory.entities.defOf(target.entity).name.toLowerCase();
     default:
       return 'the floor';
   }

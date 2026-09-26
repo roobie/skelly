@@ -16,6 +16,7 @@ import {
   type TemplateDef,
   type ZombieDef,
 } from './schema.ts';
+import { findPieces, pieceSize } from './templates.ts';
 
 export type { BlockDef, FurnitureDef, ItemDef, LootEntry, LootTable, TemplateDef, ZombieDef } from './schema.ts';
 
@@ -259,50 +260,6 @@ const checkFurniture = (registry: Registry, report: Report) => {
   }
 };
 
-/** Every [x, y, z] in a box, in (y, z, x) order: lowest layer first, then rows, then cells. */
-function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Generator<[number, number, number]> {
-  for (let y = 0; y < sy; y++) {
-    for (let z = 0; z < sz; z++) {
-      for (let x = 0; x < sx; x++) {
-        yield [x, y, z];
-      }
-    }
-  }
-}
-
-/**
- * Every cell marked with a furniture character must belong to a whole piece. Pieces
- * are found from their lowest corner: the first unclaimed marked cell in (y, z, x)
- * order. Returns why the marks don't split into whole pieces, or undefined.
- */
-const piecesProblem = (
-  template: TemplateDef,
-  char: string,
-  size: readonly [number, number, number],
-  facing?: string,
-): string | undefined => {
-  const piece: [number, number, number] = facing === 'e' || facing === 'w' ? [size[2], size[1], size[0]] : [...size];
-  const marked = (x: number, y: number, z: number) => [...(template.layers[y]?.[z] ?? '')][x] === char;
-  const claimed = new Set<string>();
-  /** Claims the piece anchored at a cell; false if any of its cells isn't marked or is taken. */
-  const claim = (x: number, y: number, z: number): boolean => {
-    for (const [dx, dy, dz] of cellsOf(piece)) {
-      const key = `${x + dx},${y + dy},${z + dz}`;
-      if (!marked(x + dx, y + dy, z + dz) || claimed.has(key)) {
-        return false;
-      }
-      claimed.add(key);
-    }
-    return true;
-  };
-  for (const [x, y, z] of cellsOf(template.size)) {
-    if (marked(x, y, z) && !claimed.has(`${x},${y},${z}`) && !claim(x, y, z)) {
-      return `the piece at [${x}, ${y}, ${z}] needs ${piece.join(' × ')} cells marked "${char}"`;
-    }
-  }
-  return undefined;
-};
-
 type PaletteThing = Exclude<TemplateDef['palette'][string], string>;
 
 const checkPaletteThing = (registry: Registry, template: TemplateDef, char: string, entry: PaletteThing) => {
@@ -311,7 +268,7 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.furniture !== undefined && !furniture) {
     found.push(['.furniture', `no furniture "${entry.furniture}"`]);
   }
-  const problem = furniture && piecesProblem(template, char, furniture.size, entry.facing);
+  const problem = furniture && findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n')).problem;
   if (problem) {
     found.push(['.furniture', problem]);
   }

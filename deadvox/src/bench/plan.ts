@@ -68,6 +68,8 @@ export interface Environment {
 export interface BenchRecord {
   startedAt: string;
   quick: boolean;
+  /** What stood around spawn; records from before the city don't say (the test house). */
+  site?: string;
   env?: Environment;
   runs: RunResult[];
 }

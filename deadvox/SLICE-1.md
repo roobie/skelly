@@ -161,6 +161,12 @@ benchmark can still compare sizes, for example with `?bench=1&plan=1:96,0.5:96`.
   away across the terrain for 15 s at jog speed and 15 s at sprint speed. The
   report page at the end has a table and a **Copy Markdown** button. Paste the
   table here, together with the CPU model and browser version.
+- **A town's cost:** `?bench=1&site=city` runs the same benchmark in the
+  stress-test city instead of by the test house, and `&storeys=6` makes its
+  buildings 1 to 6 storeys tall. The camera starts at a crossroads in the middle
+  and flies through the buildings. The report says which site it ran. The
+  benchmark doesn't add furniture, so the game's block entities aren't
+  measured; `?site=city` in the game has them.
 
 What the benchmark can and can't tell us:
 
@@ -309,10 +315,21 @@ yet. The block-editing tools moved to build mode (B), only with `?debug=1`.
   the buildings. Loot is rolled per container from its loot table when the
   chunk generates.
 - Searching a container you haven't opened takes a moment before its contents
-  show.
+  show. E opens and closes the door or searches the container in the crosshair.
 
 **Done when:** the hamlet generates the same in any chunk order (property
 test), and every template passes the validator.
+
+**Status:** implemented. `test/hamlet.test.ts` generates every column the
+hamlet touches in order, shuffled and reversed, each with a fresh hamlet, and
+compares every chunk and every piece of furniture with its loot; it runs for two
+seeds. The base pack's five templates pass the validator, and the tests also
+check that furniture stands in air on a floor, doors have wall above them, lots
+are flat and the road is asphalt. Furniture and doors are drawn as plain boxes
+and panels until 1.5.5. Loot is rolled from a stream keyed by each container's
+position, so no chunk's loot depends on another's. The hamlet goes on the
+flattest site within 160 m of the origin. The starting pile of things by the
+spawn point is gone: the player starts on the road in jeans and a hoodie.
 
 ### 1.5.5 Item models
 

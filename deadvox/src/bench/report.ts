@@ -54,6 +54,7 @@ const environmentLines = (record: BenchRecord): string[] => {
     `Canvas: ${env.canvas} at pixel ratio ${env.pixelRatio}`,
     `Browser: ${env.userAgent}`,
     `Run: ${record.startedAt}${record.quick ? ' (quick mode: not valid results)' : ''}`,
+    `Site: ${record.site ?? 'test house'}`,
   ];
 };
 

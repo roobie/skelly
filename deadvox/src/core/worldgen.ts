@@ -12,11 +12,31 @@ export interface TerrainBlocks {
   sand: number;
 }
 
+/**
+ * Changes to the natural ground, such as flattened lots and roads. Both are pure
+ * functions of the column, so any chunk can be generated on its own.
+ */
+export interface Surface {
+  /** The top block's height in blocks, given the natural one. */
+  height: (x: number, z: number, natural: number) => number;
+  /** The top block's id, or undefined for the natural one. */
+  top: (x: number, z: number) => number | undefined;
+}
+
 /** Everything terrain generation depends on. */
 export interface Terrain {
   seed: number;
   blocks: TerrainBlocks;
   scale: Scale;
+  surface?: Surface | undefined;
+  /** Writes buildings into a chunk once its terrain is done. */
+  stamp?: ((chunk: Chunk) => void) | undefined;
+}
+
+/** A column's top block heights and any top blocks the surface replaces (-1 keeps the natural one). */
+export interface ColumnSurface {
+  heights: Int32Array;
+  tops: Int32Array;
 }
 
 // Terrain is defined in metres, so every block size gives the same landscape.
@@ -47,19 +67,37 @@ export const columnHeights = (seed: number, scale: Scale, cx: number, cz: number
   return out;
 };
 
-/** The block at height y in a column whose top block is at h (both in blocks). */
-const blockAt = (blocks: TerrainBlocks, scale: Scale, y: number, h: number): number => {
+/** A column's heights with the surface's changes applied. */
+export const columnSurface = ({ seed, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
+  const heights = columnHeights(seed, scale, cx, cz);
+  const tops = new Int32Array(CHUNK * CHUNK).fill(-1);
+  if (surface) {
+    for (let lz = 0; lz < CHUNK; lz++) {
+      for (let lx = 0; lx < CHUNK; lx++) {
+        const [x, z] = [cx * CHUNK + lx, cz * CHUNK + lz];
+        const i = lx + CHUNK * lz;
+        heights[i] = surface.height(x, z, heights[i]!);
+        tops[i] = surface.top(x, z) ?? -1;
+      }
+    }
+  }
+  return { heights, tops };
+};
+
+/** The block at height y in a column whose top block is at h (both in blocks), unless `top` replaces it. */
+const blockAt = ({ blocks, scale }: Terrain, y: number, h: number, top: number): number => {
   if (y === h) {
+    if (top >= 0) {
+      return top;
+    }
     return h * scale.blockSize < BEACH_BELOW_M ? blocks.sand : blocks.grass;
   }
   return y > h - DIRT_DEPTH_M / scale.blockSize ? blocks.dirt : blocks.stone;
 };
 
-export const generateChunk = (
-  { seed, blocks, scale }: Terrain,
-  [cx, cy, cz]: Vec3,
-  heights = columnHeights(seed, scale, cx, cz),
-): Chunk => {
+export const generateChunk = (terrain: Terrain, [cx, cy, cz]: Vec3, column = columnSurface(terrain, cx, cz)): Chunk => {
+  const { blocks, scale } = terrain;
+  const { heights, tops } = column;
   const y0 = cy * CHUNK;
   // Entirely below the dirt layer of every column: all stone, no per-block writes.
   if (y0 + CHUNK - 1 <= Math.min(...heights) - DIRT_DEPTH_M / scale.blockSize) {
@@ -71,7 +109,7 @@ export const generateChunk = (
       const h = heights[lx + CHUNK * lz]!;
       const top = Math.min(h - y0, CHUNK - 1);
       for (let ly = 0; ly <= top; ly++) {
-        chunk.set(lx, ly, lz, blockAt(blocks, scale, y0 + ly, h));
+        chunk.set(lx, ly, lz, blockAt(terrain, y0 + ly, h, tops[lx + CHUNK * lz]!));
       }
     }
   }
@@ -80,7 +118,7 @@ export const generateChunk = (
 
 /**
  * Every chunk of the column (cx, cz) inside the world's vertical range, bottom first,
- * with any structures stamped in.
+ * with any structures stamped in, then whatever the terrain's `stamp` writes.
  */
 export const generateColumn = (
   terrain: Terrain,
@@ -88,12 +126,13 @@ export const generateColumn = (
   cz: number,
   structures: readonly BlockBox[] = [],
 ): Chunk[] => {
-  const { seed, scale } = terrain;
-  const heights = columnHeights(seed, scale, cx, cz);
+  const { scale } = terrain;
+  const column = columnSurface(terrain, cx, cz);
   const out: Chunk[] = [];
   for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
-    const chunk = generateChunk(terrain, [cx, cy, cz], heights);
+    const chunk = generateChunk(terrain, [cx, cy, cz], column);
     stampChunk(chunk, structures);
+    terrain.stamp?.(chunk);
     chunk.compact();
     out.push(chunk);
   }

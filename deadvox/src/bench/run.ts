@@ -4,7 +4,7 @@
 
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
-import { terrainHeightMetres } from '../core/worldgen.ts';
+import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
 import type { StreamerStats } from '../game/streamer.ts';
@@ -26,6 +26,9 @@ export interface BenchRun {
   plan: BenchConfig[];
   index: number;
   quick: boolean;
+  /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
+  site: SiteName;
+  storeys: number;
 }
 
 /** Seconds per phase. Quick mode is for checking the benchmark itself, not for results. */
@@ -46,6 +49,7 @@ export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
     plan,
     index: Number.isInteger(index) && index >= 0 && index < plan.length ? index : 0,
     quick: params.has('quick'),
+    ...siteFromUrl(params, 'testHouse'),
   };
 };
 
@@ -79,7 +83,8 @@ const nextUrl = (run: BenchRun, seed: number): string => {
     return '?bench=report';
   }
   const quick = run.quick ? '&quick' : '';
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${quick}`;
+  const site = run.site === 'city' ? `&site=city&storeys=${run.storeys}` : '';
+  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${quick}`;
 };
 
 export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats): void => {
@@ -92,7 +97,13 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
 
   const record: BenchRecord | undefined =
     run.index === 0
-      ? { startedAt: new Date().toISOString(), quick: run.quick, env: environment(engine), runs: [] }
+      ? {
+          startedAt: new Date().toISOString(),
+          quick: run.quick,
+          site: run.site === 'city' ? `city, up to ${run.storeys} storeys` : 'test house',
+          env: environment(engine),
+          runs: [],
+        }
       : loadRecord();
   if (!record) {
     hud.textContent = 'The benchmark needs site storage (localStorage) to keep results between runs.';
@@ -118,7 +129,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   const dir = [HEADING[0] / heading, HEADING[1] / heading] as const;
   let [x, , z] = engine.spawn.pos;
   const place = (yaw: number, pitch: number) => {
-    const ground = Math.floor(terrainHeightMetres(config.seed, x, z) / s) * s + s;
+    const ground = engine.groundAt(x, z);
     camera.position.set(x, Math.max(ground, engine.spawn.pos[1]) + PLAYER.eye, z);
     camera.rotation.set(pitch, yaw, 0);
   };
@@ -244,7 +255,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
       triangles.push(renderer.info.render.triangles);
     }
     hud.textContent = [
-      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius`,
+      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius${run.site === 'city' ? `, city (≤ ${run.storeys} storeys)` : ''}`,
       `${phase} ${((now - phaseStart) / 1000).toFixed(1)} s`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,
       interrupted ? 'Tab was hidden: this run will be marked unreliable.' : 'Keep this tab visible.',
