@@ -128,15 +128,17 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   view.appendChild(renderer.domElement);
 
   const scene = new Scene();
-  const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), radiusM };
+  // The far plane is set by the sky: it ends where the fog does.
+  const camera = new PerspectiveCamera(75, 1, 0.05, radiusM);
+  camera.rotation.order = 'YXZ';
+  const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM };
   scene.add(sky.ambient, sky.light);
   applySky(sky, DAY_SKY);
 
-  const camera = new PerspectiveCamera(75, 1, 0.05, radiusM * 1.6);
-  camera.rotation.order = 'YXZ';
-
   const meshes = new ChunkMeshes(scale.blockSize);
   scene.add(meshes.group);
+  // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
+  scene.onBeforeRender = (_renderer, _scene, cam) => meshes.cull(cam);
 
   const resize = () => {
     renderer.setSize(view.clientWidth, view.clientHeight);

@@ -160,19 +160,31 @@ benchmark can still compare sizes, for example with `?bench=1&plan=1:96,0.5:96`.
   the world around spawn, turns the camera once around for 12 s, then flies
   away across the terrain for 15 s at jog speed and 15 s at sprint speed. The
   report page at the end has a table and a **Copy Markdown** button. Paste the
-  table here, together with the CPU model and browser version.
+  table here, together with the CPU model and browser version. Between looking
+  around and jogging, each run turns once more for 6 s, timing every render
+  until the GPU has drawn it (the "Render ms" column).
 - **A town's cost:** `?bench=1&site=city` runs the same benchmark in the
   stress-test city instead of by the test house, and `&storeys=6` makes its
   buildings 1 to 6 storeys tall. The camera starts at a crossroads in the middle
   and flies through the buildings. The report says which site it ran. The
   benchmark doesn't add furniture, so the game's block entities aren't
   measured; `?site=city` in the game has them.
+- **At night:** `&time=01:00` (any `HH:MM`) runs at that time of day instead of
+  noon. The fog comes in closer at night, and the far plane with it, so fewer
+  chunks are drawn. The report says what time it ran.
 
 What the benchmark can and can't tell us:
 
 - Frame times are the time between animation frames, which the browser caps at
   the display's refresh rate. They show whether 60 fps holds, not how much
-  headroom there is above it. The GPU's own time isn't measured separately.
+  headroom there is above it.
+- "Render ms" is the render call plus the wait for the GPU to draw the frame,
+  forced by reading back one pixel (browsers don't expose GPU timers reliably;
+  Firefox not at all). The CPU and GPU work one after the other there, instead of
+  overlapping as in a normal frame, so it's an upper bound on what drawing costs.
+  Runs from before it existed show a dash.
+- "Draws / k tris" is the mean number of draw calls and thousands of triangles
+  per frame while looking around.
 - "Holes" are columns within one chunk of the view radius that aren't meshed
   yet. They show whether streaming keeps up with the player.
 - Memory is calculated from the chunks in the world for the three layouts in
@@ -816,3 +828,51 @@ so they're what culling should aim at.
 
 The 96 m default stays. 128 m still meets the budget in a town, with little
 headroom left for sprinting through one.
+
+### Culling (2026-09-26)
+
+The city runs showed draw calls growing fastest with a town, so we measured how
+much of what's drawn is seen. A throwaway probe in headless Chromium loaded the
+city with up to 6 storeys at 96 m and, from 16 eye-level views, counted the
+chunk meshes drawn, and which of them reach at least one pixel (a render with one
+colour per chunk). Headless draw counts run higher than Firefox's, so the ratios
+are what matter.
+
+| Chunk meshes per view (mean) | Meshes | Triangles |
+| --- | --- | --- |
+| Drawn (whole-chunk spheres, far plane at 1.6 × radius) | 113 | 112k |
+| Culled with tight boxes | 104 | 106k |
+| Also skipping what's beyond the fog, by day | 86 | 91k |
+| The same, at night (fog ends at 0.5 of the radius) | 39 | 44k |
+| The same, in the dead of night (0.35) | 25 | 30k |
+| Reaching any pixel, by day | 26 | 29k |
+
+By the test house 32% of the drawn chunks reach a pixel, and in the city at
+128 m 26%. About 43% of the drawn triangles face away from the camera, and
+grouping each chunk's faces by direction could skip about a third of them.
+
+**What changed.**
+
+1. The camera's far plane is where the fog ends. Fog and clipping both go by
+   depth along the view, and at the fog's end a surface is exactly the
+   background colour, so nothing past it can show.
+2. Chunk meshes are culled against their tight bounding boxes instead of a
+   sphere around the whole chunk.
+3. The benchmark reports draw calls with triangles, times each render until the
+   GPU has drawn it, and can run at night (`&time=`); see "Running it".
+
+**Checks.** From the crossroads in the 6-storey city at 96 m, draw calls fell
+from 100 to 86 at noon (−15%), to 40 at 21:00 (−60%) and to 26 at 01:00
+(−74%). Rendered with and without the change, every pixel matches except a few
+isolated ones by day (at most 9 of 360,000 per view): each change alone matches
+exactly, so they come from the nearer far plane rounding depth differently where
+faces nearly touch, not from anything missing.
+
+**Not done yet.** Occlusion culling: by day only about a quarter of the drawn
+chunks reach a pixel, but three.js draws solid meshes front to back, so hidden
+chunks cost draw calls and vertex work more than pixels. Whether that's worth
+GPU occlusion queries or batching chunks into one draw depends on the render
+time the benchmark now measures.
+
+**Next:** re-run the city benchmark on the reference laptop by day and at night:
+`?bench=1&site=city&storeys=6` and the same with `&time=01:00`.

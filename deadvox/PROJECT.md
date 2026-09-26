@@ -18,7 +18,8 @@ This file describes the code as it is. The game's design and roadmap are in
   makes a noise that interrupts it, and U toggles a pretend danger that makes
   compression unsafe.
 - `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
-  results. See [SLICE-1.md](SLICE-1.md#running-it).
+  results. `&time=HH:MM` runs it at that time of day instead of noon. See
+  [SLICE-1.md](SLICE-1.md#running-it).
 - `?site=city` replaces the hamlet with a stress-test city about 400 m across,
   and `&storeys=N` (up to 20) makes its buildings 1 to N storeys tall. It works
   in the game (with furniture) and in the benchmark (`?bench=1&site=city`,
@@ -48,6 +49,7 @@ This file describes the code as it is. The game's design and roadmap are in
 | Language | TypeScript (strict), same toolchain as gungen |
 | Core | Pure library in `src/core`: no DOM or three.js imports, so it runs in tests, workers and Node |
 | Rendering | three.js, in `src/render` |
+| Culling | The camera's far plane is where the fog ends (`render/sky.ts`): fog and clipping both go by view depth, and at the fog's end a surface is exactly the background colour, so nothing past it can show. By day that's 0.95 of the view radius; at night it's a half to a third, and most chunks are skipped. Chunk meshes are culled against their tight bounding boxes (`ChunkMeshes.cull` in `render/chunks.ts`, run from the scene's `onBeforeRender`) rather than three.js's spheres. Stars and a moon (Slice 4) will have to draw without fog, past the far plane |
 | UI | Plain HTML/CSS over the canvas (`src/ui`). No framework yet; pick one when screens get stateful |
 | Meshing | Greedy meshing with per-vertex AO (`core/mesher.ts`): faces with the same block and AO merge into larger quads. Built in Web Workers; buffers are transferred, not shared. Per-block colour variation is computed in the chunk shader (`render/chunks.ts`) |
 | Scale | 0.5 m blocks (`BLOCK_SIZE` in `core/scale.ts`, chosen in milestone 1.0). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres. The benchmark can build other block sizes to compare |

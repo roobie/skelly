@@ -1,5 +1,15 @@
-import { BufferAttribute, BufferGeometry, Group, Mesh, MeshLambertMaterial, Sphere, Vector3 } from 'three';
-import { CHUNK } from '../core/coords.ts';
+import {
+  Box3,
+  BufferAttribute,
+  BufferGeometry,
+  type Camera,
+  Frustum,
+  Group,
+  Matrix4,
+  Mesh,
+  MeshLambertMaterial,
+  Sphere,
+} from 'three';
 import type { MeshData } from '../core/mesher.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
@@ -35,15 +45,24 @@ const chunkMaterial = (blockSize: number): MeshLambertMaterial => {
   return material;
 };
 
-/** Owns the three.js meshes for chunks, keyed by chunk key. */
+/**
+ * Owns the three.js meshes for chunks, keyed by chunk key, and culls them: `cull` hides
+ * the meshes whose tight box is outside the camera's frustum, far plane included.
+ */
 export class ChunkMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<string, Mesh>();
+  /** Each mesh's tight box, in metres. */
+  private readonly boxes = new Map<Mesh, Box3>();
   private readonly material: MeshLambertMaterial;
+  private readonly blockSize: number;
+  private readonly frustum = new Frustum();
+  private readonly viewProjection = new Matrix4();
 
   /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number) {
     this.material = chunkMaterial(blockSize);
+    this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
   }
 
@@ -65,13 +84,31 @@ export class ChunkMeshes {
     geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
     geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
     geometry.setIndex(new BufferAttribute(data.indices, 1));
-    geometry.boundingSphere = new Sphere(new Vector3(CHUNK / 2, CHUNK / 2, CHUNK / 2), (CHUNK * Math.sqrt(3)) / 2);
+    // Tight bounds: a chunk with only ground in its bottom blocks gets a flat box, not a
+    // box around the whole chunk.
+    geometry.computeBoundingBox();
+    geometry.boundingSphere = geometry.boundingBox!.getBoundingSphere(new Sphere());
     const mesh = new Mesh(geometry, this.material);
     mesh.position.set(...origin);
     mesh.matrixAutoUpdate = false;
     mesh.updateMatrix();
+    mesh.frustumCulled = false; // `cull` does it, with the box
+    // The group only scales, so a box in blocks becomes metres by the block size.
+    const box = geometry.boundingBox!.clone().translate(mesh.position);
+    box.min.multiplyScalar(this.blockSize);
+    box.max.multiplyScalar(this.blockSize);
     this.meshes.set(key, mesh);
+    this.boxes.set(mesh, box);
     this.group.add(mesh);
+  }
+
+  /** Shows only the meshes whose box meets the camera's frustum. The camera's matrices must be current. */
+  cull(camera: Camera): void {
+    this.viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    this.frustum.setFromProjectionMatrix(this.viewProjection);
+    for (const [mesh, box] of this.boxes) {
+      mesh.visible = this.frustum.intersectsBox(box);
+    }
   }
 
   remove(key: string): void {
@@ -82,5 +119,6 @@ export class ChunkMeshes {
     this.group.remove(mesh);
     mesh.geometry.dispose();
     this.meshes.delete(key);
+    this.boxes.delete(mesh);
   }
 }

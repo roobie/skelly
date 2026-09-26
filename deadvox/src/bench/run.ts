@@ -1,13 +1,17 @@
-// One benchmark run: load the world around spawn, look around, then fly away at jog
-// and sprint speed while streaming. Each phase records frame times; moving phases also
-// record holes (nearby columns not meshed yet). The next run starts from a fresh page.
+// One benchmark run: load the world around spawn, look around, look around again
+// timing each render until the GPU has drawn it, then fly away at jog and sprint
+// speed while streaming. Each phase records frame times; moving phases also record
+// holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
+import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
 import type { StreamerStats } from '../game/streamer.ts';
+import { applySky } from '../render/sky.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -29,27 +33,31 @@ export interface BenchRun {
   /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
   site: SiteName;
   storeys: number;
+  /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
+  time?: string;
 }
 
 /** Seconds per phase. Quick mode is for checking the benchmark itself, not for results. */
 const DURATIONS = {
-  full: { settle: 2, look: 12, jog: 15, sprint: 15, loadTimeout: 120 },
-  quick: { settle: 0.5, look: 3, jog: 3, sprint: 3, loadTimeout: 60 },
+  full: { settle: 2, look: 12, render: 6, jog: 15, sprint: 15, loadTimeout: 120 },
+  quick: { settle: 0.5, look: 3, render: 1, jog: 3, sprint: 3, loadTimeout: 60 },
 } as const;
 
 /** Away from the house, across open terrain. */
 const HEADING: readonly [number, number] = [-0.9, 0.44];
 
-type Phase = 'load' | 'settle' | 'look' | 'jog' | 'sprint';
+type Phase = 'load' | 'settle' | 'look' | 'render' | 'jog' | 'sprint';
 
 export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
   const plan = parsePlan(params.get('plan') ?? '') ?? [...DEFAULT_PLAN];
   const index = Number(params.get('i') ?? 0);
+  const time = params.get('time') ?? '';
   return {
     plan,
     index: Number.isInteger(index) && index >= 0 && index < plan.length ? index : 0,
     quick: params.has('quick'),
     ...siteFromUrl(params, 'testHouse'),
+    ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
 };
 
@@ -84,7 +92,8 @@ const nextUrl = (run: BenchRun, seed: number): string => {
   }
   const quick = run.quick ? '&quick' : '';
   const site = run.site === 'city' ? `&site=city&storeys=${run.storeys}` : '';
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${quick}`;
+  const time = run.time === undefined ? '' : `&time=${run.time}`;
+  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${quick}`;
 };
 
 export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats): void => {
@@ -94,6 +103,11 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
+  if (run.time !== undefined) {
+    applySky(engine.sky, skyAt(hourOfDay(parseTimeOfDay(run.time)!)));
+  }
+  const gl = renderer.getContext();
+  const pixel = new Uint8Array(4);
 
   const record: BenchRecord | undefined =
     run.index === 0
@@ -101,6 +115,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
           startedAt: new Date().toISOString(),
           quick: run.quick,
           site: run.site === 'city' ? `city, up to ${run.storeys} storeys` : 'test house',
+          time: run.time ?? '12:00',
           env: environment(engine),
           runs: [],
         }
@@ -115,6 +130,8 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   const holes: Record<'jog' | 'sprint', number[]> = { jog: [], sprint: [] };
   const drawCalls: number[] = [];
   const triangles: number[] = [];
+  const renderMs: number[] = [];
+  let renderWarm = false;
   const within = Math.max(1, config.radiusChunks - 1);
   let memory: StorageStats | undefined;
   let loadSeconds = Number.NaN;
@@ -170,6 +187,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
         drawCalls: mean(drawCalls),
         triangles: mean(triangles),
       },
+      render: sampleStats(renderMs),
       jog: movingStats(frames.jog, work.jog, holes.jog),
       sprint: movingStats(frames.sprint, work.sprint, holes.sprint),
       interrupted,
@@ -196,6 +214,14 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
     place(engine.spawn.yaw + (2 * Math.PI * t) / durations.look, -0.1);
     recordFrame(frames.look, ms);
     if (t >= durations.look) {
+      enter('render', now);
+    }
+  };
+
+  // Turns a full circle like the look phase; `frame` times each render until the GPU has drawn it.
+  const renderStep = (now: number, t: number) => {
+    place(engine.spawn.yaw + (2 * Math.PI * t) / durations.render, -0.1);
+    if (t >= durations.render) {
       enter('jog', now);
     }
   };
@@ -231,6 +257,8 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
       }
     } else if (phase === 'look') {
       lookStep(now, t, ms);
+    } else if (phase === 'render') {
+      renderStep(now, t);
     } else {
       return moveStep(phase, now, t, ms);
     }
@@ -246,8 +274,19 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
     }
     last = now;
     streamer.update(x / s, z / s);
+    const renderStart = performance.now();
     renderer.render(scene, camera);
-    if (recorded && measured !== 'load' && measured !== 'settle') {
+    if (measured === 'render') {
+      // Reading a pixel waits for the GPU to finish the frame (gl.finish() needn't, in
+      // browsers that run WebGL in another process). The stall is why this phase's frame
+      // times aren't recorded.
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+      if (renderWarm) {
+        renderMs.push(performance.now() - renderStart);
+      }
+      renderWarm = true; // the phase's first frame includes the transition
+    }
+    if (recorded && measured !== 'load' && measured !== 'settle' && measured !== 'render') {
       work[measured].push(performance.now() - start);
     }
     if (measured === 'look') {
