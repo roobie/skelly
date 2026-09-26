@@ -1,7 +1,8 @@
 // Normal play: walk, look, loot, manage what you carry, eat, drink and light your way.
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
-// Build mode (B, with ?debug=1) is a development tool for editing blocks.
+// Build mode (B, with ?debug=1) is a development tool for editing blocks, and the
+// spawn menu (G) drops any item at your feet.
 
 import { Vector3 } from 'three';
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
@@ -28,6 +29,7 @@ import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { Quickbar, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { SpawnMenu } from '../ui/spawnMenu.ts';
 import { BuildMode } from './build.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
@@ -226,10 +228,17 @@ export const startPlay = (engine: Engine): void => {
 
   const build = new BuildMode(engine, $('hotbar'), body, PLAYER.reach / s);
 
+  const spawnMenu = new SpawnMenu($('spawn'), registry, (type) => {
+    const item = inventory.create(type);
+    return inventory.add(item, { kind: 'pile', pos: feet() })
+      ? `${inventory.name(item)} is at your feet`
+      : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
+  });
+
   let started = false;
   const syncOverlay = () => {
     started ||= input.locked;
-    overlay.hidden = input.locked || screen.isOpen || sim.dead !== undefined;
+    overlay.hidden = input.locked || screen.isOpen || spawnMenu.isOpen || sim.dead !== undefined;
     $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
   };
   overlay.addEventListener('click', (e) => {
@@ -238,7 +247,7 @@ export const startPlay = (engine: Engine): void => {
     }
   });
   renderer.domElement.addEventListener('click', () => {
-    if (!(input.locked || screen.isOpen || sim.dead)) {
+    if (!(input.locked || screen.isOpen || spawnMenu.isOpen || sim.dead)) {
       input.lock();
     }
   });
@@ -294,6 +303,31 @@ export const startPlay = (engine: Engine): void => {
     syncOverlay();
   };
 
+  const toggleSpawnMenu = () => {
+    if (spawnMenu.isOpen) {
+      spawnMenu.close();
+      input.lock();
+    } else {
+      spawnMenu.open();
+      input.unlock();
+    }
+    syncOverlay();
+  };
+
+  /**
+   * While the spawn menu is open it takes every key, so typing in its filter does nothing
+   * else; only Esc, or G outside the filter, closes it. Returns true if the key was used.
+   */
+  const spawnMenuKey = (e: KeyboardEvent): boolean => {
+    if (!spawnMenu.isOpen) {
+      return false;
+    }
+    if (e.code === 'Escape' || (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement))) {
+      toggleSpawnMenu();
+    }
+    return true;
+  };
+
   /** A quickbar key puts its item in your hands; pressing it again uses it. */
   const quickKey = (slot: number) => {
     const item = quickbar.slots[slot];
@@ -321,6 +355,8 @@ export const startPlay = (engine: Engine): void => {
     const quick = QUICK_KEY.exec(code);
     if (code === 'KeyB' && config.debug) {
       build.toggle();
+    } else if (code === 'KeyG' && config.debug) {
+      toggleSpawnMenu();
     } else if (code === 'KeyE' && !compression.locksInput) {
       use();
     } else if (code === 'KeyX') {
@@ -334,7 +370,7 @@ export const startPlay = (engine: Engine): void => {
     if (e.code === 'Tab') {
       e.preventDefault();
     }
-    if (e.repeat || sim.dead || timeKeys(e.code)) {
+    if (spawnMenuKey(e) || e.repeat || sim.dead || timeKeys(e.code)) {
       return;
     }
     if (e.code === 'Tab' && !compression.locksInput) {
@@ -429,7 +465,7 @@ export const startPlay = (engine: Engine): void => {
       clockText(),
       needsText(),
       `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg${build.on ? '   BUILD MODE (B)' : ''}`,
-      config.debug ? `debug: B build, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt` : '',
+      config.debug ? `debug: B build, G spawn, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt` : '',
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
