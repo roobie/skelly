@@ -11,15 +11,16 @@ import {
   HemisphereLight,
   Mesh,
   MeshLambertMaterial,
-  type Object3D,
+  Object3D,
   PerspectiveCamera,
   Scene,
+  type Vector3,
   type WebGLRenderer,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import type { ModelLibrary } from './models.ts';
+import { LENS, type ModelLibrary } from './models.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Where a held item's grip sits, in metres from the eye (x right, y up, −z forward). */
@@ -44,6 +45,8 @@ export class HeldItems {
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';
+  /** What's drawn for each held item, by uid. */
+  private readonly shown = new Map<number, Object3D>();
 
   constructor(inventory: Inventory, models?: ModelLibrary) {
     this.inventory = inventory;
@@ -51,9 +54,26 @@ export class HeldItems {
     this.scene.add(this.view, this.light, this.ambient);
   }
 
+  /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */
+  update(main: PerspectiveCamera): void {
+    this.sync();
+    this.camera.quaternion.copy(main.quaternion);
+    this.view.quaternion.copy(main.quaternion);
+    this.view.updateMatrixWorld(true);
+  }
+
+  /** Where a held item's lens is, in world metres; false if it isn't held. Call after `update`. */
+  lensOf(item: Item, main: PerspectiveCamera, out: Vector3): boolean {
+    const lens = this.shown.get(item.uid)?.getObjectByName(LENS);
+    if (!lens) {
+      return false;
+    }
+    lens.getWorldPosition(out).add(main.position);
+    return true;
+  }
+
   /** Draws what's in your hands over the frame the main camera just rendered. */
   render(renderer: WebGLRenderer, main: PerspectiveCamera, sky: SkyTargets): void {
-    this.sync();
     if (this.view.children.length === 0) {
       return;
     }
@@ -68,8 +88,6 @@ export class HeldItems {
       this.camera.aspect = main.aspect;
       this.camera.updateProjectionMatrix();
     }
-    this.camera.quaternion.copy(main.quaternion);
-    this.view.quaternion.copy(main.quaternion);
     const { autoClear } = renderer;
     renderer.autoClear = false;
     renderer.clearDepth();
@@ -85,6 +103,7 @@ export class HeldItems {
     }
     this.drawn = version;
     this.view.clear();
+    this.shown.clear();
     const { hands, registry } = this.inventory;
     for (const side of ['right', 'left'] as const) {
       const item = hands[side];
@@ -92,6 +111,7 @@ export class HeldItems {
         const held = this.shape(item);
         held.position.set(...HOLD[defOf(registry, item.type).twoHanded ? 'both' : side]);
         this.view.add(held);
+        this.shown.set(item.uid, held);
       }
     }
   }
@@ -108,6 +128,9 @@ export class HeldItems {
     const box = new Mesh(this.geometry, this.material);
     box.scale.set(short, short * 0.6, long);
     box.position.z = -long / 2 + short / 2; // the hand holds its near end
-    return new Group().add(box);
+    const lens = new Object3D();
+    lens.name = LENS;
+    lens.position.z = -long + short / 2;
+    return new Group().add(box, lens);
   }
 }

@@ -15,8 +15,8 @@ This file describes the code as it is. The game's design and roadmap are in
 - `?time=HH:MM` sets the time of day at the start (default 19:30).
 - `?debug=1` turns on debug keys: B toggles build mode (break and place blocks,
   1–9 to choose), T starts or stops compressed time (a stand-in for resting), N
-  makes a noise that interrupts it, and U toggles a pretend danger that makes
-  compression unsafe.
+  makes a noise that interrupts it, U toggles a pretend danger that makes
+  compression unsafe, and K takes 25 health (four presses show the death screen).
 - `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
   results. `&time=HH:MM` runs it at that time of day instead of noon. See
   [SLICE-1.md](SLICE-1.md#running-it).
@@ -57,6 +57,7 @@ This file describes the code as it is. The game's design and roadmap are in
 | Simulation | `core/sim.ts` ties together the clock (`core/clock.ts`, 1:8), the fixed-step scheduler (`core/scheduler.ts`), the compression controller (`core/compression.ts`), the event queue (`core/events.ts`) and pause. Systems register a rate; under compression slow systems take bigger steps up to their `maxStep` instead of more ticks, and every tick is followed by an interruption check. The player's physics is a 60 Hz system whose step never grows; needs tick at 1 Hz and grow to 30 s steps. The pause card (Esc) pauses the simulation; the inventory doesn't |
 | Randomness | Worldgen uses stateless hashed noise. Systems draw from their own seeded stream (`Rng.stream(seed, systemId)`, sfc32), never `Math.random` |
 | Entities | Behind the `EntityStore` interface (`core/entities.ts`); a Map of plain objects for now |
+| Survival | `core/needs.ts`: calories, hydration and fatigue change per game hour; health is one pool that comes back while needs are met and drains while starving or parched; stamina is spent sprinting and recovered by the second. `stepNeeds` advances exactly from one threshold to the next, so a step of hours (compressed time, catch-up) lands where ticking every second would. Health at 0 ends the simulation with a cause (`Simulation.dead`); `hurt` takes health from outside. Food rots on the clock (`core/food.ts`): an item's age is the calendar minus when it was made, so rotting keeps no state. A light's charge drains in closed form while it's on (`core/lights.ts`); swapping a battery gives back the old one if it had charge left. `game/survival.ts` uses what's in your hands (quickbar key again, or U in the inventory): eating and drinking are short actions, a light switches on and off, a battery goes into the light you hold, and a dead light takes a spare from your pockets. Only a light in your hands shines: a spot light at the held item's lens (`render/flashlight.ts`). `ui/death.ts` shows the cause, the time survived and what you took from furniture, and "New world" reloads with the next seed |
 | Items | Instances (`core/items.ts`) with a uid, count, condition and one grid per pocket. Items take w × h cells and rotate; identical, stateless items stack up to their type's limit. `core/inventory.ts` holds the hands, worn items and piles (an 8 × 6 grid per block of floor), plans moves (fit, reach, reasons) and works out handling times; `core/handling.ts` queues moves, which happen when their time is up and are checked again then. The queue runs as a 20 Hz system and pauses while time is compressed |
 | Inventory screen | `ui/inventoryScreen.ts`, plain DOM: pockets and piles drawn as grids, pointer-based drag and drop with a preview of the cells, R to rotate while dragging, keys for the common moves, and a details panel that lists every place an item can go with its time or the reason it can't. The quickbar and handling progress are in `ui/hud.ts` |
 | Time of day | `core/sky.ts` interpolates keyframes (night, dawn, day, dusk) for the sky colour, sun or moon light, ambient light and fog; `render/sky.ts` applies them each frame. The benchmark stays in daylight |
@@ -112,8 +113,11 @@ npm run validate   # base content; add paths to validate a mod on top
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (towns, a region map).
-- Needs only run down: eating, drinking and sleep arrive in 1.6 and 1.8. Nights
-  are dark with no flashlight until 1.6. Items can be held but not used yet.
+- Fatigue only rises: sleep arrives in 1.8. The status is numbers in the HUD
+  for now. Only food, drink, lights and batteries can be used.
+- A light that's switched on shines only from your hands; put away, it goes off.
+- The death screen's "time survived" is game time; its looting summary counts
+  items taken out of furniture, not ones picked up from the ground.
 - The base pack has no models yet: the flashlight's file ("Torch" from
   OpenGameArt) is still to be added (see SLICE-1.md, 1.5.5), so every item is a
   bundle in a pile and a box in your hands. Furniture is plain boxes.

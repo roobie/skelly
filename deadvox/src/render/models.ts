@@ -3,7 +3,7 @@
 // over the origin, for piles; and held at its grip, pointing forward, for the hands.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
-import { Box3, Group, MathUtils, type Object3D, Vector3 } from 'three';
+import { Box3, Group, MathUtils, Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 
@@ -19,12 +19,24 @@ interface Prepared {
   held: Object3D;
 }
 
-/** Wraps a copy of the model so the wrapper's origin is at `origin` in the model's metres. */
-const around = (scene: Object3D, origin: Vector3): Group => {
+/** The empty object marking where a held light shines from. */
+export const LENS = 'lens';
+
+/**
+ * Wraps a copy of the model so the wrapper's origin is at `origin` in the model's
+ * metres, with a `LENS` marker at `lens` if given.
+ */
+const around = (scene: Object3D, origin: Vector3, lens?: Vector3): Group => {
   const copy = scene.clone();
   const offset = new Group();
   offset.position.copy(origin).negate();
   offset.add(copy);
+  if (lens) {
+    const marker = new Object3D();
+    marker.name = LENS;
+    marker.position.copy(lens);
+    offset.add(marker);
+  }
   return new Group().add(offset);
 };
 
@@ -35,7 +47,9 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   // Lying: centred on x and z over the origin, resting on y = 0.
   const ground = around(scene, new Vector3(centre.x, box.min.y, centre.z));
   // Held: the grip at the origin, turned as the entry says, then the model's +x forward (−z).
-  const turned = around(scene, def.grip ? new Vector3(...def.grip.at) : centre);
+  // The lens is the `lens` anchor, or else the middle of the model's front end.
+  const lens = def.anchors?.lens ? new Vector3(...def.anchors.lens) : new Vector3(box.max.x, centre.y, centre.z);
+  const turned = around(scene, def.grip ? new Vector3(...def.grip.at) : centre, lens);
   const [tx, ty, tz] = def.grip?.turn ?? [0, 0, 0];
   turned.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
   const held = new Group().add(turned);

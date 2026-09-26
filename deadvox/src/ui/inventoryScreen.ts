@@ -43,6 +43,10 @@ export interface ScreenHooks {
   /** Whether a search of it is queued. */
   searching: (entity: BlockEntity) => boolean;
   notice: (text: string) => void;
+  /** Uses an item (eat, drink, switch a light, load a battery); says why not, or undefined. */
+  use: (item: Item) => string | undefined;
+  /** Extra lines for the details panel: freshness, charge. */
+  describe: (item: Item) => string[];
   /** Assigns a quickbar slot (0–4). */
   assign: (slot: number, item: Item) => void;
 }
@@ -182,6 +186,10 @@ export class InventoryScreen {
       case 'KeyA':
         this.takeAllLike(item);
         return true;
+      case 'KeyU':
+        this.report(this.hooks.use(item));
+        this.drawn = '';
+        return true;
       default:
         return false;
     }
@@ -264,7 +272,7 @@ export class InventoryScreen {
       el(
         'span',
         'inv-help',
-        'Drag items · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close',
+        'Drag items · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close',
       ),
     );
     const body = el('div', 'inv-body');
@@ -498,6 +506,7 @@ export class InventoryScreen {
     if (def.wearable) {
       lines.push(`Worn on the ${def.wearable.slot} · encumbrance ${def.wearable.encumbrance}`);
     }
+    lines.push(...this.hooks.describe(item));
     if (def.container) {
       lines.push(`Pockets: ${def.container.pockets.map((p) => `${p.grid[0]} × ${p.grid[1]}`).join(', ')}`);
     }

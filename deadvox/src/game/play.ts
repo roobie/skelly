@@ -1,5 +1,6 @@
-// Normal play: walk, look, loot, and manage what you carry. The simulation core runs
-// the clock, the player's physics, needs and the handling queue; Esc pauses it.
+// Normal play: walk, look, loot, manage what you carry, eat, drink and light your way.
+// The simulation core runs the clock, the player's physics, needs and the handling
+// queue; Esc pauses it. When health runs out, the death screen offers a new world.
 // Build mode (B, with ?debug=1) is a development tool for editing blocks.
 
 import { Vector3 } from 'three';
@@ -10,17 +11,21 @@ import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
+import { chargeShare } from '../core/lights.ts';
+import { canSprint, stepStamina } from '../core/needs.ts';
 import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { cellsOf } from '../core/templates.ts';
+import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
 import { mountCredits } from '../ui/credits.ts';
+import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { Quickbar, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { BuildMode } from './build.ts';
@@ -28,6 +33,7 @@ import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
 import { startingLoadout } from './loadout.ts';
 import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer } from './player.ts';
+import { Survival } from './survival.ts';
 import { toHands } from './targets.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -85,6 +91,7 @@ export const startPlay = (engine: Engine): void => {
   const piles = new PileMeshes(s, models);
   const furniture = new FurnitureMeshes(s);
   const held = new HeldItems(inventory, models);
+  const flashlight = new Flashlight(scene);
   scene.add(piles.group, furniture.group);
 
   // ---- simulation ----
@@ -97,9 +104,15 @@ export const startPlay = (engine: Engine): void => {
     unsafe: () => danger,
   });
   const { compression } = sim;
+  const survival = new Survival(sim, inventory, queue, {
+    feet: () => ({ kind: 'pile', pos: feet() }),
+    notice: (text) => showNotice(text),
+  });
 
   // The player is held still until there is ground under them. Inputs are locked
-  // while time is compressed. Handling and a heavy load slow you down.
+  // while time is compressed. Handling and a heavy load slow you down, and sprinting
+  // spends stamina: once winded, you jog until you've got your breath back.
+  let sprinting = false;
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
@@ -110,9 +123,12 @@ export const startPlay = (engine: Engine): void => {
       const moving = input.locked && !compression.locksInput;
       const intent = moving ? input.intent() : IDLE;
       const handling = queue.busy;
+      const going = intent.forward !== 0 || intent.right !== 0;
+      sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
+      stepStamina(sim.needs, dt, sprinting);
       steer(body, scale, input.yaw, {
         ...intent,
-        sprint: intent.sprint && !handling,
+        sprint: sprinting,
         pace: paceFactor(inventory.carriedWeight(), handling),
       });
       stepBody(body, dt, engine.isSolid, physics);
@@ -200,6 +216,8 @@ export const startPlay = (engine: Engine): void => {
     search,
     searching: (entity) => searching.has(entity),
     notice: showNotice,
+    use: (item) => survival.use(item),
+    describe: (item) => survival.describe(item),
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
@@ -211,7 +229,7 @@ export const startPlay = (engine: Engine): void => {
   let started = false;
   const syncOverlay = () => {
     started ||= input.locked;
-    overlay.hidden = input.locked || screen.isOpen;
+    overlay.hidden = input.locked || screen.isOpen || sim.dead !== undefined;
     $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
   };
   overlay.addEventListener('click', (e) => {
@@ -220,7 +238,7 @@ export const startPlay = (engine: Engine): void => {
     }
   });
   renderer.domElement.addEventListener('click', () => {
-    if (!(input.locked || screen.isOpen)) {
+    if (!(input.locked || screen.isOpen || sim.dead)) {
       input.lock();
     }
   });
@@ -234,8 +252,9 @@ export const startPlay = (engine: Engine): void => {
     }
   };
 
-  /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger. */
+  /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger, K hurts. */
   const debugKeys = new Map<string, () => void>([
+    ['KeyK', () => sim.hurt(25, 'a debug key')],
     ['KeyT', () => (compression.active ? compression.stop() : compress())],
     ['KeyN', () => sim.emit({ kind: 'interrupt', reason: 'You hear something outside' })],
     [
@@ -285,8 +304,11 @@ export const startPlay = (engine: Engine): void => {
     const at = inventory.locate(item);
     if (!at) {
       showNotice(`The ${inventory.name(item).toLowerCase()} isn't with you`);
-    } else if (at.kind === 'hand') {
-      showNotice(`Nothing to do with the ${inventory.name(item).toLowerCase()} yet`);
+    } else if (at.kind === 'hand' || registry.items.get(item.type)?.battery) {
+      const reason = survival.use(item);
+      if (reason) {
+        showNotice(reason);
+      }
     } else {
       const reason = toHands(inventory, queue, item, feet());
       if (reason) {
@@ -312,7 +334,7 @@ export const startPlay = (engine: Engine): void => {
     if (e.code === 'Tab') {
       e.preventDefault();
     }
-    if (e.repeat || timeKeys(e.code)) {
+    if (e.repeat || sim.dead || timeKeys(e.code)) {
       return;
     }
     if (e.code === 'Tab' && !compression.locksInput) {
@@ -393,8 +415,12 @@ export const startPlay = (engine: Engine): void => {
   };
 
   const needsText = (): string => {
-    const { calories, hydration, fatigue } = sim.needs;
-    return `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`;
+    const { calories, hydration, fatigue, health, stamina } = sim.needs;
+    const light = survival.lit ? `   light ${Math.round((chargeShare(registry, survival.lit) ?? 0) * 100)}%` : '';
+    return [
+      `health ${health.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
+      `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`,
+    ].join('\n');
   };
 
   const hudText = (looking: string): string => {
@@ -403,7 +429,7 @@ export const startPlay = (engine: Engine): void => {
       clockText(),
       needsText(),
       `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg${build.on ? '   BUILD MODE (B)' : ''}`,
-      config.debug ? `debug: B build, T rest, N noise, U danger (${danger ? 'on' : 'off'})` : '',
+      config.debug ? `debug: B build, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt` : '',
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
@@ -462,9 +488,32 @@ export const startPlay = (engine: Engine): void => {
     } else {
       renderHandling(handlingBox, queue);
     }
+    camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
+    held.update(camera);
+    flashlight.update(registry, survival.lit, held, camera);
     renderer.render(scene, camera);
     held.render(renderer, camera, engine.sky);
+    if (sim.dead) {
+      die(sim.dead);
+      return;
+    }
     requestAnimationFrame(frame);
+  };
+
+  /** Stops play and shows what happened; "New world" reloads with the next seed. */
+  const die = ({ cause, time }: { cause: string; time: number }) => {
+    input.unlock();
+    screen.close();
+    inventoryPanel.hidden = true;
+    overlay.hidden = true;
+    prompt.hidden = true;
+    const summary = {
+      cause,
+      survived: time * sim.clock.ratio,
+      looted: inventory.looted,
+      searched: [...entities.all].filter((e) => e.searched).length,
+    };
+    showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
   };
   requestAnimationFrame(frame);
 };

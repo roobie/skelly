@@ -426,6 +426,38 @@ To add the flashlight's model:
 **Done when:** scenario tests cover need rates, catch-up of needs and food
 decay (compared against live ticking), and death.
 
+**Status:** implemented.
+- `test/survival.test.ts`:
+  - **Need rates:** an hour of the simulation moves calories, hydration and
+    fatigue by their rates. Health comes back while needs are met, and drains
+    while starving or parched, faster with both.
+  - **Catch-up:** one 16-hour step lands where ticking every second does, across
+    every threshold: hydration running out at 7 h, calories at 13⅓ h, and health
+    coming back or not.
+  - **Food decay:** an apple checked every game minute for 12 days is going off
+    at exactly 120 h and rotten at 240 h, the same as checking once. Food keeps
+    no rot state: its age is the clock minus when it was made (DESIGN.md,
+    "Catch-up simulation").
+  - **Batteries:** a flashlight's battery drains the same in one step as every
+    second, goes out after 4 game hours, and a swap gives back the old battery
+    if it had charge left.
+  - **Death:** from the spawn state, thirst and then hunger kill you at 17.4
+    game hours, the same compressed as at 1×. Nothing moves after death, and an
+    injury kills you with its own cause.
+- `test/useItems.test.ts` eats from your hands, gets sick from rotten food,
+  switches the light, drains it, and takes a spare battery from your pockets.
+- **Stamina:** sprinting spends it (20 s from full), and once winded you jog
+  until it's back to 10.
+- **HUD:** health and stamina join the needs, as numbers for now.
+- **Death:** the death screen shows the cause, the time survived, and what you
+  took from furniture; "New world" reloads with the next seed.
+- **Flashlight:** a spot light at the held item's lens, with the light's beam
+  and radius.
+- **Checked in headless Chromium:**
+  - the beam on the hamlet at night;
+  - `?debug=1` and K four times shows the death screen, and "New world" starts
+    seed 8 after seed 7.
+
 ### 1.7 Shamblers
 
 - Zombie types are data. Slice 1 has only the shambler: slow when wandering,
@@ -624,7 +656,11 @@ A zombie type:
 | Clock ratio `r` | 1:8 (a game day is 3 real hours) |
 | Compression cap `c` | 30× |
 | Safe radius for compression | 30 m |
-| Spawn time and state | 19:30. Calories 40%, hydration 35%, fatigue 70% |
+| Spawn time and state | 19:30. Calories 40%, hydration 35%, fatigue 70%, health and stamina 100% |
+| Need rates per game hour | Calories −3%, hydration −5%, fatigue +4%. 100% is 2,500 kcal and 2,500 ml |
+| Health per game hour | +2 while calories and hydration are at least 25% and fatigue at most 80%; −4 starving, −8 parched (both add up). Rotten food −15 |
+| Stamina per second | −5 sprinting, +4 otherwise (half when exhausted, starving or parched); winded below 10 |
+| Eating, drinking, battery swap | 3 s, 2 s, 2 s |
 | Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.05 s per cell. Opening a door 0.6 s |
 | Shambler perception | Sight 25 m by day, 10 m at night; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: jogging 8 m, sprinting 15 m |
 | Shambler count | 6–10 in the hamlet |
