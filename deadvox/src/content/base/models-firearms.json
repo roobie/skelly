@@ -1,0 +1,64 @@
+{
+  "models": [
+    {
+      "id": "pistol_compact",
+      "file": "assets/models/pistol_compact.glb",
+      "grip": { "at": [0.0866, 0, 0.0266], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.1832, 0, 0.0501] }
+    },
+    {
+      "id": "pistol_full",
+      "file": "assets/models/pistol_full.glb",
+      "grip": { "at": [0.0885, 0, 0.0312], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.2107, 0, 0.0618] }
+    },
+    {
+      "id": "rifle_assault",
+      "file": "assets/models/rifle_assault.glb",
+      "grip": { "at": [0.2947, 0.0024, 0.0231], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.6624, 0.0024, 0.0669] }
+    },
+    {
+      "id": "rifle_battle",
+      "file": "assets/models/rifle_battle.glb",
+      "grip": { "at": [0.3158, 0.0004, -0.0138], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.8005, 0.0004, 0.0394] }
+    },
+    {
+      "id": "shotgun_auto",
+      "file": "assets/models/shotgun_auto.glb",
+      "grip": { "at": [0.2903, -0.0007, 0.0123], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.7572, -0.0007, 0.0566] }
+    },
+    {
+      "id": "shotgun_pump",
+      "file": "assets/models/shotgun_pump.glb",
+      "grip": { "at": [0.1531, 0.0001, -0.0052], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.5966, -0.0001, 0.0401] }
+    },
+    {
+      "id": "smg_compact",
+      "file": "assets/models/smg_compact.glb",
+      "grip": { "at": [0.2868, 0.0001, 0.057], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.4214, 0.0001, 0.0766] }
+    },
+    {
+      "id": "smg_full",
+      "file": "assets/models/smg_full.glb",
+      "grip": { "at": [0.2944, 0, 0.0365], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.5293, 0, 0.0742] }
+    },
+    {
+      "id": "sniper_material",
+      "file": "assets/models/sniper_material.glb",
+      "grip": { "at": [0.3172, 0.0111, -0.0181], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [1.0624, 0.0111, 0.0418] }
+    },
+    {
+      "id": "sniper_rifle",
+      "file": "assets/models/sniper_rifle.glb",
+      "grip": { "at": [0.296, 0.0078, -0.0179], "turn": [-90, 0, 0] },
+      "anchors": { "muzzle": [0.916, 0.0078, 0.0337] }
+    }
+  ]
+}

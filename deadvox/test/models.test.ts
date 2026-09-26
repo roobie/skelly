@@ -91,3 +91,22 @@ describe('model forms', () => {
     expect(box.max.x - box.min.x).toBeCloseTo(0.1);
   });
 });
+
+describe('base pack guns', () => {
+  const base = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
+  const guns = [...base.models.values()].filter((m) => m.anchors?.muzzle);
+
+  it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
+    const bytes = readFileSync(`src/content/base/${def.file}`);
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    const { held } = prepareModel(def, (await new GLTFLoader().parseAsync(buffer, '')).scene);
+    held.updateMatrixWorld(true);
+    // held > turned > offset: the offset group maps the file's coordinates into the hand's.
+    const offset = held.children[0]!.children[0]!;
+    const muzzle = new Vector3(...def.anchors!.muzzle!).applyMatrix4(offset.matrixWorld);
+    // The files lie on their side; grip.turn stands them up, so the muzzle sits above the grip.
+    expect(muzzle.z).toBeLessThan(-0.05);
+    expect(muzzle.y).toBeGreaterThan(0.01);
+    expect(Math.abs(muzzle.x)).toBeLessThan(0.02);
+  });
+});
