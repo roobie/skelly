@@ -10,21 +10,26 @@ import { validateManifest } from '../core/assets.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { MapEntityStore } from '../core/entities.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
+import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { cellsOf } from '../core/templates.ts';
+import { ZombieSpawner } from '../core/zombieSpawns.ts';
+import { FISTS_MELEE, type PlayerMovement, type Zombie, ZombieSystem } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
+import { ZombieMeshes } from '../render/zombies.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { Quickbar, renderHandling, renderQuickbar } from '../ui/hud.ts';
@@ -72,6 +77,8 @@ export const startPlay = (engine: Engine): void => {
 
   const { entities } = engine;
   const inventory = new Inventory(registry, undefined, entities);
+  let zombieSystem: ZombieSystem | undefined;
+  const zombieSpawner = new ZombieSpawner();
   inventory.canReach = (pos) => pileDistance(pos) <= LOOT_REACH;
   const chest = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
   /** Metres from the player's chest to the nearest part of a piece of furniture. */
@@ -82,6 +89,9 @@ export const startPlay = (engine: Engine): void => {
   streamer.onColumn = (cx, cz) => {
     for (const { spec, loot } of engine.site?.furnitureIn(cx, cz) ?? []) {
       inventory.furnish(spec, loot);
+    }
+    if (engine.site && zombieSystem) {
+      zombieSpawner.onColumn({ cx, cz, site: engine.site, registry, zombies: zombieSystem });
     }
   };
   const queue = new HandlingQueue(inventory);
@@ -98,18 +108,66 @@ export const startPlay = (engine: Engine): void => {
 
   // ---- simulation ----
 
-  /** Debug stand-in for a hostile nearby (U), until shamblers exist. */
+  /** Debug control for the compression interruption test (U). */
   let danger: string | undefined;
   const sim = new Simulation({
     seed: config.seed,
     clock: { ratio: CLOCK_RATIO, start: config.start },
-    unsafe: () => danger,
+    unsafe: () => danger ?? zombieSystem?.unsafeReason(),
   });
   const { compression } = sim;
   const survival = new Survival(sim, inventory, queue, {
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: (text) => showNotice(text),
   });
+  const zombieStore = new MapEntityStore<Zombie>();
+  zombieSystem = new ZombieSystem({
+    store: zombieStore,
+    isSolid: engine.isSolid,
+    blockSize: s,
+    physics,
+    jumpSpeed: PLAYER.jump,
+    player: () => {
+      const moving = input.locked && !compression.locksInput ? input.intent() : IDLE;
+      const hasDirection = moving.forward !== 0 || moving.right !== 0;
+      let movement: PlayerMovement = 'still';
+      if (hasDirection) {
+        if (sprinting) {
+          movement = 'sprinting';
+        } else if (moving.walk) {
+          movement = 'walking';
+        } else {
+          movement = 'jogging';
+        }
+      }
+      return {
+        pos: [body.pos[0], body.pos[1], body.pos[2]],
+        facing: [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)],
+        movement,
+        lit: survival.lit?.on === true,
+        lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
+      };
+    },
+    hour: () => hourOfDay(sim.calendar),
+    hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
+    onDeath: (zombie) => {
+      const table = zombie.type.loot;
+      if (!table) {
+        return;
+      }
+      const pos: Vec3 = [
+        Math.floor(zombie.body.pos[0]),
+        Math.floor(zombie.body.pos[1]),
+        Math.floor(zombie.body.pos[2]),
+      ];
+      for (const drop of rollLoot(registry, table, sim.rng(`zombie-loot:${zombie.body.pos.join(',')}`))) {
+        inventory.add(inventory.create(drop.type, drop.count, drop.condition), { kind: 'pile', pos });
+      }
+    },
+  });
+  sim.scheduler.register({ id: 'zombies', rate: 20, tick: (dt) => zombieSystem?.tick(dt) });
+  const zombieMeshes = new ZombieMeshes(s);
+  scene.add(zombieMeshes.group);
 
   // The player is held still until there is ground under them. Inputs are locked
   // while time is compressed. Handling and a heavy load slow you down, and sprinting
@@ -261,7 +319,7 @@ export const startPlay = (engine: Engine): void => {
     }
   };
 
-  /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger, K hurts. */
+  /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger, K hurts, V spawns a shambler. */
   const debugKeys = new Map<string, () => void>([
     ['KeyK', () => sim.hurt(25, 'a debug key')],
     ['KeyT', () => (compression.active ? compression.stop() : compress())],
@@ -270,6 +328,19 @@ export const startPlay = (engine: Engine): void => {
       'KeyU',
       () => {
         danger = danger ? undefined : 'Something is close';
+      },
+    ],
+    [
+      'KeyV',
+      () => {
+        const type = registry.zombies.get('shambler');
+        if (!type) {
+          return;
+        }
+        const forward: Vec3 = [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)];
+        const pos: Vec3 = [body.pos[0] + (forward[0] * 6) / s, body.pos[1], body.pos[2] + (forward[2] * 6) / s];
+        zombieSystem?.add(type, pos, [-forward[0], 0, -forward[2]]);
+        showNotice('A shambler is approaching');
       },
     ],
   ]);
@@ -434,9 +505,29 @@ export const startPlay = (engine: Engine): void => {
   }
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+  const swing = () => {
+    const heldWeapon = [inventory.hands.right, inventory.hands.left]
+      .filter((item) => item !== undefined)
+      .map((item) => registry.items.get(item.type)?.weapon?.melee)
+      .find((attack) => attack !== undefined);
+    const melee = heldWeapon ?? FISTS_MELEE;
+    if (sim.needs.stamina < melee.stamina) {
+      showNotice('You are too tired to swing');
+      return;
+    }
+    if (zombieSystem?.swing(eye(), lookDir(), melee) !== undefined) {
+      sim.needs.stamina = Math.max(0, sim.needs.stamina - melee.stamina);
+    }
+  };
+
   renderer.domElement.addEventListener('mousedown', (e) => {
-    if (input.locked && !compression.locksInput) {
+    if (!input.locked || compression.locksInput) {
+      return;
+    }
+    if (build.on) {
       build.click(e.button, eye(), lookDir());
+    } else if (e.button === 0) {
+      swing();
     }
   });
 
@@ -465,7 +556,10 @@ export const startPlay = (engine: Engine): void => {
       clockText(),
       needsText(),
       `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg${build.on ? '   BUILD MODE (B)' : ''}`,
-      config.debug ? `debug: B build, G spawn, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt` : '',
+      config.debug
+        ? `debug: B build, G spawn, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt, V shambler`
+        : '',
+      config.debug ? `shamblers ${zombieStore.size}` : '',
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
@@ -509,6 +603,7 @@ export const startPlay = (engine: Engine): void => {
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
+    zombieMeshes.sync(zombieStore);
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);

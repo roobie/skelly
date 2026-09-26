@@ -475,6 +475,12 @@ decay (compared against live ticking), and death.
 open door, not through a closed one, and loses the player after losing sight
 of them.
 
+**Status:** block — implementation and automated checks are in place; awaiting
+BR's visual and play-feel review. `test/zombies.test.ts` exercises the real
+`wood_door` entity for open/closed traversal, with further checks for perception,
+movement, melee, no-respawn, rendering geometry, and update cost. Playtest and
+headless-browser measurements remain part of the review report.
+
 ### 1.8 Rest and sleep
 
 - Rest (anywhere) and sleep (better on a bed) as long actions. They use the
