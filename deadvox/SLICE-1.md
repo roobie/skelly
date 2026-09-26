@@ -890,7 +890,7 @@ the 1.0 run; `?bench=1&site=city&storeys=6`, at noon.
 2. **Drawing a frame takes about 10 ms** (median, render call plus the wait for
    the GPU), 16–18 ms at p95, and **the same at every radius**, although 128 m
    draws three times the triangles and calls of 64 m. So the cost is per pixel
-   (2009 × 1166 drawing-buffer pixels at pixel ratio 1.2, with antialiasing),
+   (1674 × 972 drawing-buffer pixels, 1.6 million, with antialiasing),
    not per chunk. Part of it may be the wait itself: Firefox runs WebGL in
    another process, and reading a pixel back is a round trip. Either way,
    culling more chunks won't buy much GPU time; the pixel count and
