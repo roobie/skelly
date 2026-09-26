@@ -763,12 +763,15 @@ difference doesn't change the setup.
 The 96 m default stays: 128 m also meets the budget, and the headroom at 96 m is
 what later milestones (the simulation, zombies, lighting) will spend.
 
-### 1.5 stress-test city, up to 3 storeys (2026-09-26)
+### 1.5 stress-test city (2026-09-26)
 
 Same laptop, browser and canvas as the 1.0 run. The benchmark ran in the
-stress-test city (`?bench=1&site=city&storeys=3`) instead of by the test house:
+stress-test city (`?bench=1&site=city&storeys=N`) instead of by the test house:
 a flat grid of streets about 400 m across, packed with the hamlet's templates
-stacked to 1–3 storeys, without furniture.
+stacked to 1–N storeys, without furniture. Two runs, up to 3 and up to 6
+storeys.
+
+Up to 3 storeys:
 
 | Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -776,28 +779,40 @@ stacked to 1–3 storeys, without furniture.
 | 0.5 m | 96 m | 1.9 | 1800 | 18.9 / 112.5 / 4.6 | 3.0 / 6.0 | 774 | 60 / 17.2 / 0% | 83 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 4.0 / 4.0 / 9.0 |
 | 0.5 m | 128 m | 3.0 | 2888 | 31.2 / 180.5 / 7.5 | 3.0 / 6.0 | 800 | 60 / 17.2 / 0% | 137 | 17.2 / 0% / 0 | 17.2 / 1% / 0 | 5.0 / 8.0 / 13.0 |
 
+Up to 6 storeys:
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 12.8 / 60.5 / 3.1 | 4.0 / 7.0 | 880 | 60 / 17.2 / 0% | 54 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 2.0 / 6.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 24.0 / 112.5 / 5.8 | 4.0 / 8.0 | 878 | 60 / 17.2 / 0% | 104 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 11.0 |
+| 0.5 m | 128 m | 3.0 | 2888 | 39.4 / 180.5 / 9.4 | 3.0 / 6.0 | 902 | 60 / 17.2 / 0% | 173 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 5.0 / 9.0 / 12.0 |
+
 **Findings,** against the 1.1 final run by the test house:
 
-1. **The frame budget holds in a town:** 60 fps, no slow frames and no holes at
-   64 and 96 m. At 128 m sprinting gave 1% slow frames, which is at the
-   budget's limit.
-2. **Draw calls** rose by about 60%: 83 at 96 m (51 by the test house) and 137
-   at 128 m (83). Chunks above the ground that were empty air now hold walls
-   and roofs, and each chunk is its own mesh.
-3. **Main-thread work** barely moved at 96 m (p95 4 / 4 / 9 ms against 3 / 4 /
-   10). At 128 m it grew to 5 / 8 / 13 ms against 4 / 6 / 9: sprinting there
-   leaves under 4 ms of the 16.7 ms frame.
-4. **Memory:** the palette-packed size doubled (4.6 MiB at 96 m against 2.3),
-   because chunks with buildings use more block types. Memory held is slightly
-   lower (18.9 MiB against 19.4), because the city's ground is flat.
-5. **Meshing, load time and triangles** are unchanged or lower: 3 ms median
-   and 6–7 ms p95 per chunk, the same load times, and a median of 774–800
-   triangles per chunk against about 930. Flat streets are cheaper than hills,
-   and most chunks are street or ground.
+1. **The frame budget holds in a town, up to 6 storeys:** 60 fps and no holes
+   at every radius. The only slow frames were 1% while sprinting at 128 m with
+   3 storeys, at the budget's limit; the 6-storey run had none, so that 1% is
+   noise around the limit rather than a trend.
+2. **Draw calls grow with height:** at 96 m, 51 by the test house, 83 with 3
+   storeys and 104 with 6; at 128 m, 83, 137 and 173. Chunks above the ground
+   that were empty air now hold walls and roofs, and each chunk is its own mesh.
+3. **Main-thread work** barely moved at 96 m: p95 3 / 4 / 11 ms (look / jog /
+   sprint) with 6 storeys, against 3 / 4 / 10. At 128 m it grew to about
+   5 / 9 / 12 ms against 4 / 6 / 9: sprinting there leaves about 4 ms of the
+   16.7 ms frame.
+4. **Memory:** the palette-packed size is 2–2.5 times the test house's (5.8 MiB
+   at 96 m with 6 storeys, against 2.3), because chunks with buildings use more
+   block types and there are more of them. Memory held grows less: 24.0 MiB at
+   96 m, against 19.4.
+5. **Meshing, load time and triangles** barely move: 3–4 ms median and 6–8 ms
+   p95 per chunk, the same load times, and a median of 774–902 triangles per
+   chunk against about 930. Flat streets are cheaper than hills, which makes up
+   for the buildings.
 
-What this run doesn't show: the cost of furniture and block entities (the
-benchmark adds none), taller buildings (`&storeys=6` is still to run), a town on
-hilly ground, and the GPU's own time, which the capped 60 fps hides.
+What these runs don't show: the cost of furniture and block entities (the
+benchmark adds none), a town on hilly ground, and the GPU's own time, which the
+capped 60 fps hides. Draw calls are the number that grows fastest with a town,
+so they're what culling should aim at.
 
-The 96 m default stays. 128 m still meets the budget in a town, but with little
+The 96 m default stays. 128 m still meets the budget in a town, with little
 headroom left for sprinting through one.
