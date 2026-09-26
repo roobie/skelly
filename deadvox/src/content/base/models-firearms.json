@@ -60,5 +60,17 @@
       "grip": { "at": [0.296, 0.0078, -0.0179], "turn": [-90, 0, 0] },
       "anchors": { "muzzle": [0.916, 0.0078, 0.0337] }
     }
+  ],
+  "items": [
+    {
+      "id": "debug_shotgun_pump",
+      "name": "Pump shotgun (debug)",
+      "category": "weapon",
+      "weight": 3000,
+      "size": [1, 5],
+      "twoHanded": true,
+      "description": "A stand-in for trying the model in piles and hands. No loot table has it; spawn it with G (?debug=1). It doesn't fire.",
+      "model": "shotgun_pump"
+    }
   ]
 }

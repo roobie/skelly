@@ -22,8 +22,8 @@ describe('npm run validate', () => {
 
   it('passes on a pack with a model, its file and a manifest that lists it', () => {
     const run = validate('test/fixtures/packs/lamp/lamp.json', 'test/fixtures/packs/lamp/assets/manifest.json');
-    // The fixture is validated on top of the base pack: its flashlight and the lamp.
-    expect(run.stdout).toContain('2 models');
+    // The fixture is validated on top of the base pack: its flashlight and ten guns, and the lamp.
+    expect(run.stdout).toContain('12 models');
     expect(run.stdout).toContain('0 issue(s)');
     expect(run.status).toBe(0);
   });
