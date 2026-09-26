@@ -52,6 +52,11 @@ const FORE_LENGTH: Record<SizeClass, number> = { S: 16, M: 24, L: 32 };
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
 
+// A box magazine's section: front to back, and side to side. 1.8× the first
+// 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
+const MAGAZINE_DEPTH = 5.5;
+const MAGAZINE_WIDTH = 3.5;
+
 // ---- receiver ----
 
 export const receiver: PartFamily = {
@@ -161,16 +166,29 @@ export const lower: PartFamily = {
       normal: NEG_Y,
       up: X,
     });
-    const magazine: PortDef = {
-      id: 'magazine',
-      mount: 'magazine',
-      gender: 'female',
-      pos: [-5, -1.5, 0],
-      normal: NEG_Y,
-      up: X,
-      required: true,
-    };
-    const magazinePath = keepOut('magazine-path', [-6.5, -40, -1], [-3.5, -1.5, 1], 'magazine');
+    // The magazine well at x, with the path a magazine takes into it.
+    const well = (x: number) => ({
+      port: {
+        id: 'magazine',
+        mount: 'magazine',
+        gender: 'female',
+        pos: [x, -1.5, 0],
+        normal: NEG_Y,
+        up: X,
+        required: true,
+      } satisfies PortDef,
+      path: keepOut(
+        'magazine-path',
+        [x - MAGAZINE_DEPTH / 2, -40, -MAGAZINE_WIDTH / 2],
+        [x + MAGAZINE_DEPTH / 2, -1.5, MAGAZINE_WIDTH / 2],
+        'magazine',
+      ),
+    });
+    // Conventional: the rear face meets the trigger-finger volume (it ends at
+    // x = −7) without entering it. Bullpup: the front face stays at x = −3.5,
+    // behind the grip, which leans back from x = 3.
+    const conventionalWell = well(-7 + MAGAZINE_DEPTH / 2);
+    const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
 
     switch (params.layout) {
@@ -178,8 +196,8 @@ export const lower: PartFamily = {
         return {
           family: 'lower',
           solids: [solid('frame', [-16, -1.5, -1.5], [9, 0, 1.5]), solid('butt', [-18, -7, -1.75], [-16, 5, 1.75])],
-          ports: [top, grip(3), magazine],
-          keepOuts: [trigger(5), magazinePath],
+          ports: [top, grip(3), bullpupWell.port],
+          keepOuts: [trigger(5), bullpupWell.path],
           axes: [],
         };
       case 'trigger':
@@ -194,8 +212,8 @@ export const lower: PartFamily = {
         return {
           family: 'lower',
           solids: [solid('frame', [-14, -1.5, -1.5], [-2, 0, 1.5])],
-          ports: [top, grip(-12), magazine],
-          keepOuts: [trigger(-10), magazinePath],
+          ports: [top, grip(-12), conventionalWell.port],
+          keepOuts: [trigger(-10), conventionalWell.path],
           axes: [],
         };
     }
@@ -352,7 +370,10 @@ export const magazine: PartFamily = {
     const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
     return {
       family: 'magazine',
-      solids: [solid('body', [-1.5, -len, -1], [1.5, 0, 1])],
+      // MAGAZINE_DEPTH × MAGAZINE_WIDTH in section; the lower's well and magazine path match it.
+      solids: [
+        solid('body', [-MAGAZINE_DEPTH / 2, -len, -MAGAZINE_WIDTH / 2], [MAGAZINE_DEPTH / 2, 0, MAGAZINE_WIDTH / 2]),
+      ],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],

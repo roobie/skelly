@@ -29,7 +29,7 @@ describe('resolve', () => {
     expectVec(at(r, 'barrel', [36, 0, 0]), [36, 0, 0]); // muzzle points forward
     expectVec(at(r, 'stock', [-16, 0, 0]), [-32, 0, 0]); // stock extends backward
     expectVec(at(r, 'lower'), [0, -2.5, 0]); // lower hangs under the receiver
-    expectVec(at(r, 'magazine', [0, -10, 0]), [-5, -14, 0]); // magazine hangs from the lower
+    expectVec(at(r, 'magazine', [0, -10, 0]), [-4.25, -14, 0]); // magazine hangs from the lower
   });
 
   it('offsets slotted connections along the port', () => {
