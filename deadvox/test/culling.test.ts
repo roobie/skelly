@@ -20,7 +20,13 @@ const setup = () => {
   const scene = new Scene();
   const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 1000);
   camera.rotation.order = 'YXZ';
-  const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM: RADIUS_M };
+  const sky: SkyTargets = {
+    scene,
+    light: new DirectionalLight(),
+    ambient: new HemisphereLight(),
+    camera,
+    radiusM: RADIUS_M,
+  };
   const meshes = new ChunkMeshes(0.5);
   scene.add(meshes.group);
   return { scene, camera, sky, meshes };

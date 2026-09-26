@@ -265,6 +265,20 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
     return true;
   };
 
+  /** Renders and waits for the GPU to draw the frame, timing both. */
+  const timedRender = () => {
+    const renderStart = performance.now();
+    renderer.render(scene, camera);
+    // Reading a pixel waits for the GPU to finish the frame (gl.finish() needn't, in
+    // browsers that run WebGL in another process). The stall is why this phase's frame
+    // times aren't recorded.
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    if (renderWarm) {
+      renderMs.push(performance.now() - renderStart);
+    }
+    renderWarm = true; // the phase's first frame includes the transition
+  };
+
   const frame = (now: number) => {
     const start = performance.now();
     const measured = phase;
@@ -274,17 +288,10 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
     }
     last = now;
     streamer.update(x / s, z / s);
-    const renderStart = performance.now();
-    renderer.render(scene, camera);
     if (measured === 'render') {
-      // Reading a pixel waits for the GPU to finish the frame (gl.finish() needn't, in
-      // browsers that run WebGL in another process). The stall is why this phase's frame
-      // times aren't recorded.
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
-      if (renderWarm) {
-        renderMs.push(performance.now() - renderStart);
-      }
-      renderWarm = true; // the phase's first frame includes the transition
+      timedRender();
+    } else {
+      renderer.render(scene, camera);
     }
     if (recorded && measured !== 'load' && measured !== 'settle' && measured !== 'render') {
       work[measured].push(performance.now() - start);
