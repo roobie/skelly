@@ -6,6 +6,8 @@ together with:
 - [EPIC.md](EPIC.md): the road to version 1.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle them.
 - [SLICE-1.md](SLICE-1.md): the first playable deliverable.
+- [INTERACTIONS.md](INTERACTIONS.md): how moving, using, crafting and appliances
+  work in the code, and the contract with the UI (draft).
 - [PROJECT.md](PROJECT.md): the current code, how to run it, and technical decisions.
 
 **Status:** agreed direction. The numbers in this document are starting points to
