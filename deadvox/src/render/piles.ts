@@ -1,32 +1,50 @@
-// Piles on the ground, drawn as generic bundles until items have models
-// (DESIGN.md, "Piles"). One low box per pile, taller the more it holds.
+// Piles on the ground (DESIGN.md, "Piles"). An item with a model lies at its place in
+// the pile's grid (core/pileLayout.ts); everything else is one low bundle per pile,
+// taller the more it holds.
 
 import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
 import { type Inventory, PILE_GRID } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
+import { pileLayout } from '../core/pileLayout.ts';
+import type { ModelLibrary } from './models.ts';
 
 export class PileMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly material = new MeshLambertMaterial({ color: 0x5a_50_46 });
   private readonly blockSize: number;
-  private drawn = -1;
+  private readonly models: ModelLibrary | undefined;
+  private drawn = '';
 
-  constructor(blockSize: number) {
+  constructor(blockSize: number, models?: ModelLibrary) {
     this.blockSize = blockSize;
+    this.models = models;
   }
 
-  /** Rebuilds the meshes when the inventory changed. */
+  /** Rebuilds the meshes when the inventory changed or a model loaded. */
   sync(inventory: Inventory): void {
-    if (inventory.version === this.drawn) {
+    const version = `${inventory.version}:${this.models?.version ?? 0}`;
+    if (version === this.drawn) {
       return;
     }
-    this.drawn = inventory.version;
+    this.drawn = version;
     this.group.clear();
-    const s = this.blockSize;
+    const { blockSize: s, models } = this;
     const capacity = PILE_GRID.w * PILE_GRID.h;
     for (const pile of inventory.piles.values()) {
-      const cells = pile.items.reduce((sum, p) => {
+      const layout = pileLayout(inventory.registry, pile, s, (id) => models?.has(id) ?? false);
+      for (const piled of layout.models) {
+        const model = models?.ground(piled.model);
+        if (model) {
+          model.position.set(...piled.at);
+          model.rotation.y = piled.yaw;
+          this.group.add(model);
+        }
+      }
+      if (layout.bundle.length === 0) {
+        continue;
+      }
+      const cells = layout.bundle.reduce((sum, p) => {
         const [w, h] = defOf(inventory.registry, p.item.type).size;
         return sum + w * h;
       }, 0);

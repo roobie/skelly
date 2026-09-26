@@ -124,7 +124,10 @@ later as an accessibility option.
 When a chunk loads, it is advanced by the time it was unloaded. Each system
 catches up in closed form where it can, and in coarse steps otherwise:
 
-- Food decay and fuel burn: closed form (rate × elapsed time).
+- Food decay: none needed. An item's age is the clock minus when it was made,
+  so food in a chunk that was unloaded for a week is exactly as rotten as food
+  you carried.
+- Fuel burn: closed form (rate × elapsed time).
 - Batteries: charge balance over the elapsed time, including when they ran out.
 - Fires: coarse steps with a cap.
 - Crops (after version 1): closed form.

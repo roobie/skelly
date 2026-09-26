@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "title": "Test lamp",
+      "url": null,
+      "author": null,
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/lamp.glb"],
+      "changes": null
+    }
+  ]
+}

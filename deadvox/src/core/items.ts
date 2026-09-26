@@ -11,8 +11,15 @@ export interface Item {
   count: number;
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
-  /** Battery charge, fuel and the like. */
+  /** Battery charge, fuel and the like; absent means full (as found). */
   charges?: number;
+  /** A light that's switched on. */
+  on?: boolean;
+  /**
+   * Calendar seconds when it was made; absent means before the world began (day 1,
+   * 00:00). Food rots from then (core/food.ts).
+   */
+  made?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
   pockets?: Placed[][];
 }
@@ -78,6 +85,9 @@ export class ItemFactory {
     if (item.charges !== undefined) {
       part.charges = item.charges;
     }
+    if (item.made !== undefined) {
+      part.made = item.made;
+    }
     return part;
   }
 }
@@ -121,6 +131,7 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.type === item.type &&
     onto.condition === item.condition &&
     onto.charges === item.charges &&
+    onto.made === item.made &&
     isEmpty(onto) &&
     isEmpty(item);
   return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;
