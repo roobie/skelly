@@ -123,6 +123,12 @@ npm run validate   # base content; add paths to validate a mod on top
   hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
+- `models-firearms.json` has ten gun models ("CC0 Flat Guns West" from
+  OpenGameArt). Only a debug item uses one (`debug_shotgun_pump`: in no loot
+  table, spawned with G, doesn't fire): firearms come in Slice 3, and DESIGN.md
+  has them built from gungen assemblies, so these may end up as placeholders or
+  go. Their grip is the trigger, not the palm, and their `muzzle` anchor isn't
+  read by anything yet.
 - Zombie types name a `model`, but it isn't checked against the `models` section
   yet; shamblers are box figures in 1.7.
 - The hamlet's templates are drawn in half-metre blocks, so only the game's
