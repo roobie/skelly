@@ -874,5 +874,36 @@ chunks cost draw calls and vertex work more than pixels. Whether that's worth
 GPU occlusion queries or batching chunks into one draw depends on the render
 time the benchmark now measures.
 
-**Next:** re-run the city benchmark on the reference laptop by day and at night:
-`?bench=1&site=city&storeys=6` and the same with `&time=01:00`.
+**Reference laptop, by day** (2026-09-26). Same laptop, browser and canvas as
+the 1.0 run; `?bench=1&site=city&storeys=6`, at noon.
+
+| Block | Radius | Load s | Chunks | MiB held / if full / palette | Mesh ms p50 / p95 | Tris per chunk p50 | Look fps / p95 ms / slow | Draws / k tris | Jog p95 ms / slow / holes | Sprint p95 ms / slow / holes | Work ms p95 look / jog / sprint | Render ms p50 / p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 m | 64 m | 1.0 | 968 | 12.8 / 60.5 / 3.1 | 4.0 / 6.0 | 880 | 60 / 17.2 / 0% | 43 / 46 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 2.0 / 3.0 / 5.0 | 10.0 / 18.0 |
+| 0.5 m | 96 m | 1.9 | 1800 | 24.0 / 112.5 / 5.8 | 3.0 / 6.0 | 878 | 60 / 17.2 / 0% | 84 / 89 | 17.2 / 0% / 0 | 17.2 / 0% / 0 | 3.0 / 4.0 / 10.0 | 10.0 / 17.0 |
+| 0.5 m | 128 m | 3.1 | 2888 | 39.4 / 180.5 / 9.4 | 4.0 / 40.0 | 900 | 60 / 17.2 / 0% | 141 / 146 | 17.1 / 1% / 0 | 116.6 / 27% / 1 | 4.0 / 12.0 / 106.0 | 10.0 / 16.0 |
+
+1. **Draw calls fell by about a fifth:** 43 / 84 / 141 at 64 / 96 / 128 m,
+   against 54 / 104 / 173 in the 6-storey run before the change (−20%, −19%,
+   −18%). That's more than headless Chromium showed (−15%), as expected from
+   the ratios above.
+2. **Drawing a frame takes about 10 ms** (median, render call plus the wait for
+   the GPU), 16–18 ms at p95, and **the same at every radius**, although 128 m
+   draws three times the triangles and calls of 64 m. So the cost is per pixel
+   (2009 × 1166 drawing-buffer pixels at pixel ratio 1.2, with antialiasing),
+   not per chunk. Part of it may be the wait itself: Firefox runs WebGL in
+   another process, and reading a pixel back is a round trip. Either way,
+   culling more chunks won't buy much GPU time; the pixel count and
+   antialiasing would.
+3. **The 128 m sprint went wrong,** with main-thread work spiking past 100 ms
+   (27% slow frames, one hole), where the 6-storey run before the change had
+   none. The change doesn't explain it: in Node, culling 1,000 meshes takes
+   0.05 ms a frame and the new bounds under 0.1 ms per mesh. Meshing, which runs
+   in the workers and didn't change, also jumped to 40 ms at p95 in the same
+   run, which points at the whole machine being busy. 64 and 96 m were clean.
+
+**Next:**
+- Re-run 128 m alone to see if the sprint spike repeats:
+  `?bench=1&site=city&storeys=6&plan=0.5:128`.
+- The night run: `?bench=1&site=city&storeys=6&time=01:00`.
+- Occlusion culling waits: the GPU's time doesn't depend on the chunks drawn.
