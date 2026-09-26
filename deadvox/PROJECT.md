@@ -16,7 +16,8 @@ This file describes the code as it is. The game's design and roadmap are in
 - `?debug=1` turns on debug keys: B toggles build mode (break and place blocks,
   1–9 to choose), T starts or stops compressed time (a stand-in for resting), N
   makes a noise that interrupts it, U toggles a pretend danger that makes
-  compression unsafe, and K takes 25 health (four presses show the death screen).
+  compression unsafe, K takes 25 health (four presses show the death screen),
+  and G opens a spawn menu that drops any item at your feet.
 - `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
   results. `&time=HH:MM` runs it at that time of day instead of noon. See
   [SLICE-1.md](SLICE-1.md#running-it).
@@ -118,9 +119,9 @@ npm run validate   # base content; add paths to validate a mod on top
 - A light that's switched on shines only from your hands; put away, it goes off.
 - The death screen's "time survived" is game time; its looting summary counts
   items taken out of furniture, not ones picked up from the ground.
-- The only item with a model is the flashlight ("Torch" from OpenGameArt, see
-  SLICE-1.md, 1.5.5); every other item is a bundle in a pile and a box in your
-  hands. Furniture is plain boxes.
+- The only item found in the world with a model is the flashlight ("Torch" from
+  OpenGameArt, see SLICE-1.md, 1.5.5); every other one is a bundle in a pile and
+  a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
 - `models-firearms.json` has ten gun models ("CC0 Flat Guns West" from

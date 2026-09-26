@@ -381,10 +381,18 @@ at their grid cells with their rotation and leaves items without a model in the
 bundle, and the flashlight shows in a pile and in your hands. (The spawn pile
 this first named went away in 1.5; flashlights are found in the hamlet.)
 
-**Status:** implemented. The flashlight's model file was added later, from a
-session that could reach `opengameart.org`: `torch.obj` converted in Blender
-to 0.20 m along +x, lens at +x, its lens no longer emissive; grip at
-`[0.085, 0, 0]` (middle of the body tube), lens at `[0.199, 0, 0]`.
+**Status:** done. The flashlight's model file was added later, from a session
+that could reach `opengameart.org` (PR #20): `torch.obj` converted in Blender to
+0.20 m along +x, lens at +x; grip at `[0.085, 0, 0]` (middle of the body tube),
+lens at `[0.199, 0, 0]`. The project owner checked it in the game on
+2026-09-26: lying in a pile, held, and switched on at night.
+- **Converting an OBJ:** Blender's OBJ importer read the file's `Ke` as
+  emission and its `Tf 1 1 1` as full transmission, so the first export was a
+  glowing, glass flashlight (it looked flat in the hands' pass, which has
+  nothing behind it). Both are reset before export now; check a converted
+  file's materials for `KHR_materials_transmission` and emission.
+- **Seeing a model in game:** with `?debug=1`, G opens a spawn menu that drops
+  any item at your feet (`ui/spawnMenu.ts`).
 - The validator fixtures: `test/fixtures/content/missing-model.json` (an item
   naming a model that doesn't exist), `missing-model-file.json` (a model whose
   file isn't in the pack) and `test/fixtures/packs/stray` (a file the manifest
@@ -398,18 +406,6 @@ to 0.20 m along +x, lens at +x, its lens no longer emissive; grip at
 - In headless Chromium, the lamp fixture showed in a pile (along x, and turned
   along z) beside the bundle, and in the right hand pointing forward with a box
   in the left, lit by day and dark at night.
-
-To add the flashlight's model:
-1. Download the zip from ["Torch"](https://opengameart.org/content/torch),
-   convert the model to `.glb` if it isn't one (for example by importing it in
-   Blender and exporting glTF binary), in metres, lying on the ground with its
-   long side along x and the lens towards +x. Save it as
-   `src/content/base/assets/models/flashlight.glb`.
-2. Put the Torch source back in `assets/manifest.json` (see the sketch below),
-   with the author if the page names one, and what the conversion changed.
-3. Add the model entry (the sketch below, with the grip and lens measured in the
-   file) and `"model": "flashlight"` to the flashlight in `items-tools.json`.
-4. `npm run validate` checks all three.
 
 ### 1.6 Survival
 
