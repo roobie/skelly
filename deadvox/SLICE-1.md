@@ -381,9 +381,10 @@ at their grid cells with their rotation and leaves items without a model in the
 bundle, and the flashlight shows in a pile and in your hands. (The spawn pile
 this first named went away in 1.5; flashlights are found in the hamlet.)
 
-**Status:** implemented, except the flashlight's model file. `opengameart.org`
-is blocked from the sessions that write code, so the Torch entry is out of the
-asset manifest until its file is in the pack, and the flashlight is still a box.
+**Status:** implemented. The flashlight's model file was added later, from a
+session that could reach `opengameart.org`: `torch.obj` converted in Blender
+to 0.20 m along +x, lens at +x, its lens no longer emissive; grip at
+`[0.085, 0, 0]` (middle of the body tube), lens at `[0.199, 0, 0]`.
 - The validator fixtures: `test/fixtures/content/missing-model.json` (an item
   naming a model that doesn't exist), `missing-model-file.json` (a model whose
   file isn't in the pack) and `test/fixtures/packs/stray` (a file the manifest
