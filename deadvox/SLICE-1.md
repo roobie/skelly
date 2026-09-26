@@ -923,8 +923,8 @@ the dead of night, when the fog ends at 0.35 of the view radius.
    (no slow frames, no holes, work p95 11 ms, meshing p95 7 ms), in line with
    every run before it. The day run's spike was the machine, not the change.
 
-**Decision.** The culling stays: it is free, changes no pixel, and cuts draw
-calls by a fifth by day and three quarters at night. Occlusion culling is not
-worth doing now, because the GPU's time doesn't follow the chunks drawn. If a
-later milestone needs GPU headroom, the place to look is per-pixel cost: pixel
-ratio, antialiasing, and the chunk shader.
+**Decision.** The culling stays: it costs nothing, hides nothing that was
+visible, and cuts draw calls by a fifth by day and three quarters at night.
+Occlusion culling is not worth doing now, because the GPU's time doesn't follow
+the chunks drawn. If a later milestone needs GPU headroom, the place to look is
+per-pixel cost: pixel ratio, antialiasing, and the chunk shader.
