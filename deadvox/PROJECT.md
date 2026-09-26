@@ -19,6 +19,11 @@ This file describes the code as it is. The game's design and roadmap are in
   compression unsafe.
 - `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
   results. See [SLICE-1.md](SLICE-1.md#running-it).
+- `?site=city` replaces the hamlet with a stress-test city about 400 m across,
+  and `&storeys=N` (up to 20) makes its buildings 1 to N storeys tall. It works
+  in the game (with furniture) and in the benchmark (`?bench=1&site=city`,
+  without furniture). It's for measuring what a town costs, not for playing:
+  upper storeys have no stairs.
 
 ## Aim
 
@@ -57,6 +62,7 @@ This file describes the code as it is. The game's design and roadmap are in
 | Structures | Boxes in metres, applied in order and rasterized for the block size (`core/structure.ts`). The benchmark's test house is built this way |
 | Templates | ASCII layers in half-metre blocks (`core/templates.ts`). A template is compiled once against the registry: each cell gets a block id, and furniture marks become pieces anchored at their lowest corner. A placement turns it by quarter turns and stamps whatever part falls inside a chunk |
 | The hamlet | `core/hamlet.ts`, the game's world near spawn (the benchmark keeps the test house): an asphalt road with five buildings on lots beside it, on the flattest site within 160 m of the origin. Lots and the road are flattened and blended into the ground by a `Surface` that worldgen applies per column; buildings are stamped per chunk; furniture comes with its column, with loot rolled from a stream keyed by its position (`core/loot.ts`). All of it is a pure function of the seed and position, so chunks can generate in any order |
+| Stress-test city | `core/city.ts`: a flat grid of streets around the origin, each city block holding two back-to-back rows of the hamlet's templates, stacked to 1–N storeys (`stackTemplate` in `core/templates.ts`). Buildings are indexed by the chunk columns they overlap, so stamping and furniture look only at their own column. The hamlet and the city share the `Site` interface (`core/site.ts`) |
 | Block entities | `core/blockEntities.ts`: furniture and doors, each anchored at its lowest corner with every cell pointing back at it. Closed doors and solid furniture count as solid for physics and ray casts. A container shows its contents once searched (1–3 s by size); `core/inventory.ts` treats its pockets as another place items can be, within 2 m. They're drawn as boxes in their colour, and doors as panels that swing inward (`render/furniture.ts`). E opens and closes the door or searches the container in the crosshair; searching and doors are timed actions in the handling queue. Entities stay in memory once added, so a column that generates again doesn't duplicate them |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
 | Assets and credits | `content/base/assets/manifest.json` lists where each asset file came from; `core/assets.ts` checks it (CC0 and CC BY only, and CC BY needs an author and a link, each file listed once). The start and pause card's Credits link shows `ui/credits.ts`, drawn from it. `npm run validate` checks the base manifest, and any `manifest.json` passed to it |

@@ -70,7 +70,7 @@ export const startPlay = (engine: Engine): void => {
   startingLoadout(inventory);
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => {
-    for (const { spec, loot } of engine.hamlet?.furnitureIn(cx, cz) ?? []) {
+    for (const { spec, loot } of engine.site?.furnitureIn(cx, cz) ?? []) {
       inventory.furnish(spec, loot);
     }
   };

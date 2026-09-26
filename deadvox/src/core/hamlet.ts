@@ -4,14 +4,13 @@
 // its buildings put in a chunk, and what each container holds. So any chunk can be
 // generated on its own, in any order, and comes out the same.
 
-import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { CHUNK, toChunk, type Vec3 } from './coords.ts';
-import { type Rolled, rollLoot } from './loot.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
-import { compileTemplate, footprint, type Placement, placedPieces, stampPlacement, type Turn } from './templates.ts';
+import { type FurnitureSpawn, furnitureOf, grow, type Rect, rectDistance, type Site, smoothstep } from './site.ts';
+import { compileTemplate, footprint, type Placement, stampPlacement, type Turn } from './templates.ts';
 import { type Surface, terrainHeight } from './worldgen.ts';
 
 /** Templates are drawn in half-metre blocks. */
@@ -42,14 +41,6 @@ export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE
 /** Where the hamlet may go: offsets from the world origin in metres, on a grid. */
 const SITE = { step: 32, reach: 160, sample: 4, lowest: 15 } as const;
 
-export interface Rect {
-  x0: number;
-  z0: number;
-  /** Exclusive. */
-  x1: number;
-  z1: number;
-}
-
 export interface Lot {
   readonly placement: Placement;
   /** The flattened ground, in blocks. */
@@ -58,33 +49,16 @@ export interface Lot {
   readonly floor: number;
 }
 
-/** A piece of furniture and what worldgen put in it. */
-export interface FurnitureSpawn {
-  spec: EntitySpec;
-  loot: Rolled[];
-}
-
-const smoothstep = (t: number) => t * t * (3 - 2 * t);
-
-/** Blocks from a column to a rectangle; 0 inside. */
-const rectDistance = (r: Rect, x: number, z: number): number => {
-  const dx = x < r.x0 ? r.x0 - x : Math.max(0, x - (r.x1 - 1));
-  const dz = z < r.z0 ? r.z0 - z : Math.max(0, z - (r.z1 - 1));
-  return Math.hypot(dx, dz);
-};
-
-const grow = (r: Rect, by: number): Rect => ({ x0: r.x0 - by, z0: r.z0 - by, x1: r.x1 + by, z1: r.z1 + by });
-
-export class Hamlet {
+export class Hamlet implements Site {
   readonly road: Rect;
   readonly lots: readonly Lot[];
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
   /** Where the player starts: feet in metres, and a yaw that looks down the road. */
   readonly spawn: { pos: Vec3; yaw: number };
-  private readonly seed: number;
+  readonly seed: number;
+  readonly registry: Registry;
   private readonly scale: Scale;
-  private readonly registry: Registry;
   private readonly asphalt: number;
   /** Road heights from `roadHeights[0]` at x = road.x0. */
   private readonly roadHeights: Int32Array;
@@ -170,20 +144,7 @@ export class Hamlet {
    * from a stream of its own, keyed by where it is.
    */
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    const out: FurnitureSpawn[] = [];
-    for (const lot of this.lots) {
-      for (const piece of placedPieces(lot.placement)) {
-        if (toChunk(piece.pos[0]) !== cx || toChunk(piece.pos[2]) !== cz) {
-          continue;
-        }
-        const rng = Rng.stream(this.seed, `loot:${piece.pos.join(',')}`);
-        out.push({
-          spec: { type: piece.furniture, pos: piece.pos, size: piece.size, facing: piece.facing },
-          loot: piece.loot === undefined ? [] : rollLoot(this.registry, piece.loot, rng),
-        });
-      }
-    }
-    return out;
+    return this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz]));
   }
 
   // ---- internals ----

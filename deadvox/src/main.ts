@@ -4,7 +4,7 @@
 import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
-import { configFromUrl, makeConfig } from './game/config.ts';
+import { configFromUrl, makeConfig, siteFromUrl } from './game/config.ts';
 import { createEngine } from './game/engine.ts';
 import { startPlay } from './game/play.ts';
 import type { StreamerStats } from './game/streamer.ts';
@@ -23,6 +23,7 @@ if (bench === 'report') {
   const { blockSize, radiusM } = currentConfig(run);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
   const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, blockSize);
-  config.site = 'testHouse'; // defined in metres, so it compares across block sizes
+  // The test house is defined in metres, so it compares across block sizes; `&site=city` benchmarks the city.
+  Object.assign(config, siteFromUrl(params, 'testHouse'));
   startBench(createEngine(config, view, stats), run, stats);
 }

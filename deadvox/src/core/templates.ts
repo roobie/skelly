@@ -197,3 +197,26 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
       size: [Math.abs(bx - ax) + 1, piece.size[1], Math.abs(bz - az) + 1],
     };
   });
+
+/**
+ * A template with its storeys repeated: layer 0 once, then every layer above it
+ * (the top one, the roof, becomes the next storey's floor) `storeys` times. For the
+ * stress-test city: there are no stairs between the storeys.
+ */
+export const stackTemplate = (template: CompiledTemplate, storeys: number): CompiledTemplate => {
+  if (storeys <= 1) {
+    return template;
+  }
+  const [sx, sy, sz] = template.size;
+  const layer = sx * sz;
+  const perStorey = sy - 1;
+  const height = 1 + perStorey * storeys;
+  const blocks = new Uint16Array(sx * height * sz);
+  blocks.set(template.blocks.subarray(0, layer), 0);
+  const pieces: Piece[] = [];
+  for (let k = 0; k < storeys; k++) {
+    blocks.set(template.blocks.subarray(layer), layer * (1 + k * perStorey));
+    pieces.push(...template.pieces.map((p) => ({ ...p, pos: [p.pos[0], p.pos[1] + k * perStorey, p.pos[2]] as Vec3 })));
+  }
+  return { id: `${template.id}×${storeys}`, size: [sx, height, sz], blocks, pieces };
+};

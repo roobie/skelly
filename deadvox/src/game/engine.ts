@@ -1,17 +1,20 @@
 // Builds everything play and benchmark modes share: content, world, streaming,
 // renderer and scene. The voxel grid and physics are in blocks; the scene is in
 // metres, so chunk meshes are scaled by the block size. The game's world has the
-// hamlet near spawn; the benchmark's has milestone 1.0's test house.
+// hamlet near spawn; the benchmark's has milestone 1.0's test house. Either can have
+// the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { BlockEntities } from '../core/blockEntities.ts';
+import { StressCity } from '../core/city.ts';
 import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
+import type { Site } from '../core/site.ts';
 import { DAY_SKY } from '../core/sky.ts';
 import { type BlockBox, rasterize } from '../core/structure.ts';
 import { World } from '../core/world.ts';
-import { terrainHeightMetres } from '../core/worldgen.ts';
+import { terrainHeight, terrainHeightMetres } from '../core/worldgen.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import type { GameConfig } from './config.ts';
@@ -26,8 +29,10 @@ export interface Engine {
   world: World;
   /** Furniture and doors. The game adds them as their columns generate. */
   entities: BlockEntities;
-  /** The hamlet, when this world has one. */
-  hamlet: Hamlet | undefined;
+  /** The hamlet or the city, when this world has one. */
+  site: Site | undefined;
+  /** The top of the ground in metres at a point in metres, the site's flattening included. */
+  groundAt: (xm: number, zm: number) => number;
   /** Blocks and block entities that stop movement. */
   isSolid: (x: number, y: number, z: number) => boolean;
   streamer: Streamer;
@@ -65,12 +70,22 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
   return { structures: rasterize(house, scale.blockSize), spawn: { pos: spawn, yaw: SPAWN_YAW } };
 };
 
-/** Whether content has what the hamlet needs; broken content falls back to the test house. */
-const canBuildHamlet = (config: GameConfig, registry: Registry): boolean =>
-  config.site === 'hamlet' &&
-  config.scale.blockSize === HAMLET_BLOCK_SIZE &&
-  registry.blockIds.has('asphalt') &&
-  HAMLET_TEMPLATES.every((t) => registry.templates.has(t));
+/**
+ * The hamlet or the city, if the config asks for one and content has what it needs.
+ * Otherwise (other block sizes, broken content) the world has the test house.
+ */
+const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
+  const buildable =
+    config.scale.blockSize === HAMLET_BLOCK_SIZE &&
+    registry.blockIds.has('asphalt') &&
+    HAMLET_TEMPLATES.every((t) => registry.templates.has(t));
+  if (!buildable || config.site === 'testHouse') {
+    return undefined;
+  }
+  return config.site === 'city'
+    ? new StressCity(config.seed, registry, config.scale, config.storeys)
+    : new Hamlet(config.seed, registry, config.scale);
+};
 
 const loadContent = (): { registry: Registry; contentErrors: string } => {
   // Base content is bundled. Mods would be appended to this list (from URLs or local files).
@@ -87,10 +102,19 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   const { seed, scale, radiusM } = config;
   const id = (name: string) => blockId(registry, name);
 
-  const hamlet = canBuildHamlet(config, registry) ? new Hamlet(seed, registry, scale) : undefined;
-  const site: { structures: BlockBox[]; spawn: Engine['spawn'] } = hamlet
-    ? { structures: [], spawn: hamlet.spawn }
+  const built = buildSite(config, registry);
+  const site: { structures: BlockBox[]; spawn: Engine['spawn'] } = built
+    ? { structures: [], spawn: built.spawn }
     : testHouseSite(config, registry);
+  const s = scale.blockSize;
+  // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
+  const groundAt = (xm: number, zm: number): number => {
+    if (!built) {
+      return Math.floor(terrainHeightMetres(seed, xm, zm) / s) * s + s;
+    }
+    const [x, z] = [Math.floor(xm / s), Math.floor(zm / s)];
+    return (built.surface.height(x, z, terrainHeight(seed, scale, x, z)) + 1) * s;
+  };
 
   const world = new World();
   const entities = new BlockEntities(registry);
@@ -130,8 +154,8 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     colors: blockColors(registry),
     scale,
     structures: site.structures,
-    surface: hamlet?.surface,
-    stamp: hamlet ? (chunk) => hamlet.stamp(chunk) : undefined,
+    surface: built?.surface,
+    stamp: built ? (chunk) => built.stamp(chunk) : undefined,
     radius: config.radiusChunks,
     ...(stats ? { stats } : {}),
   });
@@ -142,7 +166,8 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     contentErrors,
     world,
     entities,
-    hamlet,
+    site: built,
+    groundAt,
     isSolid,
     streamer,
     renderer,

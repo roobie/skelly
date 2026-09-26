@@ -161,6 +161,12 @@ benchmark can still compare sizes, for example with `?bench=1&plan=1:96,0.5:96`.
   away across the terrain for 15 s at jog speed and 15 s at sprint speed. The
   report page at the end has a table and a **Copy Markdown** button. Paste the
   table here, together with the CPU model and browser version.
+- **A town's cost:** `?bench=1&site=city` runs the same benchmark in the
+  stress-test city instead of by the test house, and `&storeys=6` makes its
+  buildings 1 to 6 storeys tall. The camera starts at a crossroads in the middle
+  and flies through the buildings. The report says which site it ran. The
+  benchmark doesn't add furniture, so the game's block entities aren't
+  measured; `?site=city` in the game has them.
 
 What the benchmark can and can't tell us:
 
