@@ -1,6 +1,6 @@
 // Content schemas (Valibot). Each schema checks one kind of content's shape, and the
 // TypeScript types are inferred from it. References between content (loot tables,
-// furniture, zombie types) are checked after all files are merged (content.ts).
+// furniture, zombie types, models) are checked after all files are merged (content.ts).
 // Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
 import {
@@ -162,6 +162,30 @@ export const ItemSchema = strictObject({
   weapon: optional(WeaponSchema),
   light: optional(LightSchema),
   battery: optional(BatterySchema),
+  /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
+  model: optional(Id),
+});
+
+// ---- models ----
+
+/** [x, y, z] in the model file's metres. */
+const Point = tuple([number(), number(), number()]);
+
+/**
+ * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
+ * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
+ */
+export const ModelSchema = strictObject({
+  id: Id,
+  /** The `.glb` file, as a path within the pack. */
+  file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
+  /**
+   * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
+   * that order). Held, the model's +x points forward and +y up.
+   */
+  grip: optional(strictObject({ at: Point, turn: optional(Point) })),
+  /** Named points, such as the flashlight's `lens`. */
+  anchors: optional(record(Id, Point)),
 });
 
 // ---- furniture ----
@@ -283,6 +307,7 @@ export const ContentFileSchema = strictObject({
   loot: optional(array(LootTableSchema)),
   templates: optional(array(TemplateSchema)),
   zombies: optional(array(ZombieSchema)),
+  models: optional(array(ModelSchema)),
 });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
@@ -292,5 +317,6 @@ export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
+export type ModelDef = InferOutput<typeof ModelSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

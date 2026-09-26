@@ -16,6 +16,8 @@ import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { cellsOf } from '../core/templates.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
+import { HeldItems } from '../render/hands.ts';
+import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
 import { mountCredits } from '../ui/credits.ts';
@@ -76,8 +78,13 @@ export const startPlay = (engine: Engine): void => {
   };
   const queue = new HandlingQueue(inventory);
   const quickbar = new Quickbar();
-  const piles = new PileMeshes(s);
+  const models = new ModelLibrary(registry, (message) => {
+    const box = $('errors');
+    box.textContent = [box.textContent, message].filter(Boolean).join('\n');
+  });
+  const piles = new PileMeshes(s, models);
   const furniture = new FurnitureMeshes(s);
+  const held = new HeldItems(inventory, models);
   scene.add(piles.group, furniture.group);
 
   // ---- simulation ----
@@ -456,6 +463,7 @@ export const startPlay = (engine: Engine): void => {
       renderHandling(handlingBox, queue);
     }
     renderer.render(scene, camera);
+    held.render(renderer, camera, engine.sky);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

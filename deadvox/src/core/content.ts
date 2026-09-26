@@ -13,12 +13,22 @@ import {
   type FurnitureDef,
   type ItemDef,
   type LootTable,
+  type ModelDef,
   type TemplateDef,
   type ZombieDef,
 } from './schema.ts';
 import { findPieces, pieceSize } from './templates.ts';
 
-export type { BlockDef, FurnitureDef, ItemDef, LootEntry, LootTable, TemplateDef, ZombieDef } from './schema.ts';
+export type {
+  BlockDef,
+  FurnitureDef,
+  ItemDef,
+  LootEntry,
+  LootTable,
+  ModelDef,
+  TemplateDef,
+  ZombieDef,
+} from './schema.ts';
 
 /** A parsed JSON file and where it came from (for error messages). */
 export interface ContentSource {
@@ -41,11 +51,14 @@ export interface Registry {
   loot: Map<string, LootTable>;
   templates: Map<string, TemplateDef>;
   zombies: Map<string, ZombieDef>;
+  models: Map<string, ModelDef>;
+  /** Where each model was defined; its file is a path within that content file's pack. */
+  modelOrigins: Map<string, { source: string; path: string }>;
 }
 
 export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
-const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'loot', 'templates', 'zombies'];
+const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'loot', 'templates', 'zombies', 'models'];
 
 // ---- shape (one file) ----
 
@@ -165,6 +178,8 @@ const emptyRegistry = (): Registry => ({
   loot: new Map(),
   templates: new Map(),
   zombies: new Map(),
+  models: new Map(),
+  modelOrigins: new Map(),
 });
 
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
@@ -190,6 +205,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       ['loot', registry.loot],
       ['templates', registry.templates],
       ['zombies', registry.zombies],
+      ['models', registry.models],
     ] as const;
     for (const [section, map] of maps) {
       (file[section] ?? []).forEach((def, i) => {
@@ -197,6 +213,9 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
         note(section, def.id, source, i);
       });
     }
+    (file.models ?? []).forEach((model, i) => {
+      registry.modelOrigins.set(model.id, { source, path: `models[${i}]` });
+    });
   }
   return { registry, origins };
 };
@@ -210,6 +229,9 @@ const checkItems = (registry: Registry, report: Report) => {
     const battery = item.light?.power?.battery;
     if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
+    }
+    if (item.model !== undefined && !registry.models.has(item.model)) {
+      report('items', item.id, '.model', `no model "${item.model}"`);
     }
   }
 };

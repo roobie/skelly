@@ -2,11 +2,14 @@
 //   npm run validate                      the base pack and its asset manifest
 //   npm run validate -- mods/foo/*.json   specific files, applied in order after the base pack;
 //                                         a file named manifest.json is checked as an asset manifest
+// A content file's pack is its folder, so a model's file is found next to it. A
+// manifest's pack is the folder above its `assets/`, and every file in there must
+// come from a listed source.
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { basename, dirname, join, relative } from 'node:path';
 import process from 'node:process';
-import { validateManifest } from '../core/assets.ts';
+import { assetFileIssues, MANIFEST_PATH, modelFileIssues, validateManifest } from '../core/assets.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
 
 const BASE = 'src/content/base';
@@ -17,7 +20,13 @@ const base = readdirSync(BASE)
 const args = process.argv.slice(2);
 const isManifest = (f: string) => basename(f) === 'manifest.json';
 const files = [...base, ...args.filter((f) => !isManifest(f))];
-const manifests = [join(BASE, 'assets/manifest.json'), ...args.filter(isManifest)];
+const manifests = [join(BASE, MANIFEST_PATH), ...args.filter(isManifest)];
+
+/** Every file under a pack's `assets/`, as paths within the pack. */
+const assetFiles = (pack: string): string[] =>
+  readdirSync(join(pack, 'assets'), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => relative(pack, join(entry.parentPath, entry.name)).split('\\').join('/'));
 
 let broken = 0;
 const read = (source: string): unknown => {
@@ -43,9 +52,10 @@ for (const source of manifests) {
   if (data !== undefined) {
     const checked = validateManifest(source, data);
     assets += checked.manifest.sources.length;
-    issues.push(...checked.issues);
+    issues.push(...checked.issues, ...assetFileIssues(source, checked.manifest, assetFiles(dirname(dirname(source)))));
   }
 }
+issues.push(...modelFileIssues(registry, (contentFile, file) => existsSync(join(dirname(contentFile), file))));
 
 for (const issue of issues) {
   console.log(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
@@ -57,6 +67,7 @@ const counts = [
   `${registry.loot.size} loot tables`,
   `${registry.templates.size} templates`,
   `${registry.zombies.size} zombie types`,
+  `${registry.models.size} models`,
   `${assets} asset sources`,
 ];
 console.log(`${files.length} file(s): ${counts.join(', ')}; ${issues.length + broken} issue(s)`);

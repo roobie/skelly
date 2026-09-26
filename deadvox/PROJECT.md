@@ -67,10 +67,11 @@ This file describes the code as it is. The game's design and roadmap are in
 | Stress-test city | `core/city.ts`: a flat grid of streets around the origin, each city block holding two back-to-back rows of the hamlet's templates, stacked to 1–N storeys (`stackTemplate` in `core/templates.ts`). Buildings are indexed by the chunk columns they overlap, so stamping and furniture look only at their own column. The hamlet and the city share the `Site` interface (`core/site.ts`) |
 | Block entities | `core/blockEntities.ts`: furniture and doors, each anchored at its lowest corner with every cell pointing back at it. Closed doors and solid furniture count as solid for physics and ray casts. A container shows its contents once searched (1–3 s by size); `core/inventory.ts` treats its pockets as another place items can be, within 2 m. They're drawn as boxes in their colour, and doors as panels that swing inward (`render/furniture.ts`). E opens and closes the door or searches the container in the crosshair; searching and doors are timed actions in the handling queue. Entities stay in memory once added, so a column that generates again doesn't duplicate them |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
-| Assets and credits | `content/base/assets/manifest.json` lists where each asset file came from; `core/assets.ts` checks it (CC0 and CC BY only, and CC BY needs an author and a link, each file listed once). The start and pause card's Credits link shows `ui/credits.ts`, drawn from it. `npm run validate` checks the base manifest, and any `manifest.json` passed to it |
-| Content | JSON in `src/content/base`, with sections for blocks, items, furniture, loot tables, templates and zombie types. Valibot schemas (`core/schema.ts`) check each file and give the TypeScript types; `core/content.ts` merges files in order and then checks references between them. An override keeps the block's runtime id. A file with any issue, including a broken reference, is skipped whole |
+| Assets and credits | `content/base/assets/manifest.json` lists where each asset file came from; `core/assets.ts` checks it (CC0 and CC BY only, and CC BY needs an author and a link, each file listed once) and, given the pack's files, that every file under `assets/` comes from a listed source and every listed file exists. The start and pause card's Credits link shows `ui/credits.ts`, drawn from it. `npm run validate` checks the base manifest, and any `manifest.json` passed to it, against the files in its pack |
+| Item models | glTF binaries in the pack, named by a `models` entry (file, `grip`, `anchors`) that an item points at with `model`. The validator checks the id, and that the file exists next to the content file that names it. `render/models.ts` loads them with `GLTFLoader` and prepares each twice: lying on the ground, and held at its grip pointing forward. In piles (`render/piles.ts`) an item with a model lies at its place in the pile's grid, turned as it lies there (`core/pileLayout.ts`); the rest form the bundle. In your hands (`render/hands.ts`) items are drawn after the world in their own scene with the depth cleared, so they never clip into walls, with lights copied from the sky; an item without a model is a plain box sized from its cells. A model that hasn't loaded, or can't, falls back the same way and is reported with the content errors |
+| Content | JSON in `src/content/base`, with sections for blocks, items, furniture, loot tables, templates, zombie types and models. Valibot schemas (`core/schema.ts`) check each file and give the TypeScript types; `core/content.ts` merges files in order and then checks references between them. An override keeps the block's runtime id. A file with any issue, including a broken reference, is skipped whole |
 | Units | Weight in grams, volume in millilitres, item length in millimetres |
-| Tests | Vitest, on the core only |
+| Tests | Vitest, on the core, plus the render code that has logic of its own (culling, model forms) |
 | Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
 | CI | `.github/workflows/deadvox.yml`: typecheck, tests, content validation, build |
 | Hosting | GitHub Pages via `.github/workflows/pages.yml`, published under `/deadvox/` |
@@ -113,8 +114,13 @@ npm run validate   # base content; add paths to validate a mod on top
   column. Move it to the workers when worldgen grows (towns, a region map).
 - Needs only run down: eating, drinking and sleep arrive in 1.6 and 1.8. Nights
   are dark with no flashlight until 1.6. Items can be held but not used yet.
-- Items in piles render as one generic bundle per block of floor, and furniture
-  as plain boxes.
+- The base pack has no models yet: the flashlight's file ("Torch" from
+  OpenGameArt) is still to be added (see SLICE-1.md, 1.5.5), so every item is a
+  bundle in a pile and a box in your hands. Furniture is plain boxes.
+- A pile's bundle is drawn over the middle of its block, so it can overlap items
+  with models lying in the same pile.
+- Zombie types name a `model`, but it isn't checked against the `models` section
+  yet; shamblers are box figures in 1.7.
 - The hamlet's templates are drawn in half-metre blocks, so only the game's
   block size has it; the benchmark's other sizes use the test house.
 - An open door doesn't block movement anywhere; its swung panel is only drawn.

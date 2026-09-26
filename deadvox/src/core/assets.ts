@@ -1,7 +1,8 @@
 // The asset manifest: where each file under a pack's `assets/` came from (DESIGN.md,
-// "Item models"). A source is one download; the credits screen is drawn from it.
-// Only licences we accept are allowed, and the ones that need credit need an author
-// and a link.
+// "Assets and credits"). A source is one download; the credits screen is drawn from
+// it. Only licences we accept are allowed, and the ones that need credit need an
+// author and a link. The checks against the files themselves take a list of them, so
+// they stay pure; the validator reads the disk.
 
 import {
   array,
@@ -15,7 +16,7 @@ import {
   strictObject,
   string,
 } from 'valibot';
-import { type ContentIssue, schemaIssues } from './content.ts';
+import { type ContentIssue, type Registry, schemaIssues } from './content.ts';
 
 export const LICENCES = {
   'CC0-1.0': { name: 'CC0 1.0', url: 'https://creativecommons.org/publicdomain/zero/1.0/', credit: false },
@@ -83,3 +84,42 @@ export const validateManifest = (source: string, data: unknown): { manifest: Man
   });
   return { manifest: result.output, issues };
 };
+
+/** The manifest's own path within its pack; it's the one file under `assets/` it doesn't list. */
+export const MANIFEST_PATH = 'assets/manifest.json';
+
+/**
+ * Checks a pack's files against its manifest: every file under `assets/` comes from a
+ * listed source, and every file a source lists exists. `files` are the pack's files
+ * under `assets/`, as paths within the pack.
+ */
+export const assetFileIssues = (source: string, manifest: Manifest, files: readonly string[]): ContentIssue[] => {
+  const present = new Set(files);
+  const listed = new Set(manifest.sources.flatMap((s) => s.files));
+  const issues: ContentIssue[] = [];
+  manifest.sources.forEach((asset, i) => {
+    asset.files.forEach((file, j) => {
+      if (!present.has(file)) {
+        issues.push({ source, path: `sources[${i}].files[${j}]`, message: `"${file}" is not in the pack` });
+      }
+    });
+  });
+  for (const file of [...present].sort()) {
+    if (file !== MANIFEST_PATH && !listed.has(file)) {
+      issues.push({ source, path: 'sources', message: `"${file}" is in the pack but no source lists it` });
+    }
+  }
+  return issues;
+};
+
+/** Checks that every model's file exists; `exists` answers for a path within the pack of the content file. */
+export const modelFileIssues = (
+  registry: Registry,
+  exists: (contentFile: string, file: string) => boolean,
+): ContentIssue[] =>
+  [...registry.models.values()].flatMap((model) => {
+    const origin = registry.modelOrigins.get(model.id)!;
+    return exists(origin.source, model.file)
+      ? []
+      : [{ source: origin.source, path: `${origin.path}.file`, message: `"${model.file}" is not in the pack` }];
+  });
