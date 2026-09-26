@@ -82,7 +82,8 @@ describe('rules', () => {
       },
     };
     const { issues } = validate(loadFixture('archetype-rifle'), domain);
-    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2u into the magazine-path volume of lower.']);
+    // The whole magazine sits in the volume, so it intrudes by its smallest extent, its 3.5u width.
+    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 3.5u into the magazine-path volume of lower.']);
   });
 
   it('solid-overlap: allows directly connected parts to nest a little', () => {
