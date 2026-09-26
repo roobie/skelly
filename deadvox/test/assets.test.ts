@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { validateManifest } from '../src/core/assets.ts';
+import { assetFileIssues, modelFileIssues, validateManifest } from '../src/core/assets.ts';
+import { buildRegistry } from '../src/core/content.ts';
 
 const source = (fields: Record<string, unknown> = {}) => ({
   title: 'Torch',
@@ -18,9 +19,7 @@ const check = (...sources: unknown[]) => validateManifest('manifest.json', { sou
 describe('asset manifest', () => {
   it('the base manifest has no issues', () => {
     const data = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as unknown;
-    const { manifest, issues } = validateManifest('base', data);
-    expect(issues).toEqual([]);
-    expect(manifest.sources.length).toBeGreaterThan(0);
+    expect(validateManifest('base', data).issues).toEqual([]);
   });
 
   it('accepts CC0 and CC BY, and refuses other licences', () => {
@@ -57,5 +56,36 @@ describe('asset manifest', () => {
     expect(manifest.sources).toEqual([]);
     expect(issues.map((i) => `${i.path}: ${i.message}`)).toContain('sources[0].extra: unknown field "extra"');
     expect(issues.map((i) => `${i.path}: ${i.message}`)).toContain('sources[0].author: missing');
+  });
+});
+
+describe('asset files', () => {
+  const { manifest } = check(source());
+
+  it('passes when the listed files and the pack agree', () => {
+    expect(assetFileIssues('m', manifest, ['assets/manifest.json', 'assets/models/flashlight.glb'])).toEqual([]);
+  });
+
+  it('refuses a listed file that is missing, and a file no source lists', () => {
+    expect(assetFileIssues('m', manifest, ['assets/models/stray.glb'])).toEqual([
+      { source: 'm', path: 'sources[0].files[0]', message: '"assets/models/flashlight.glb" is not in the pack' },
+      { source: 'm', path: 'sources', message: '"assets/models/stray.glb" is in the pack but no source lists it' },
+    ]);
+  });
+
+  it("finds each model's file next to the content file that defines it", () => {
+    const { registry } = buildRegistry([
+      { source: 'pack/models.json', data: { models: [{ id: 'lamp', file: 'assets/models/lamp.glb' }] } },
+    ]);
+    const asked: string[] = [];
+    const issues = modelFileIssues(registry, (contentFile, file) => {
+      asked.push(`${contentFile} ${file}`);
+      return false;
+    });
+    expect(asked).toEqual(['pack/models.json assets/models/lamp.glb']);
+    expect(issues).toEqual([
+      { source: 'pack/models.json', path: 'models[0].file', message: '"assets/models/lamp.glb" is not in the pack' },
+    ]);
+    expect(modelFileIssues(registry, () => true)).toEqual([]);
   });
 });

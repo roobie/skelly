@@ -83,6 +83,8 @@ export class Inventory {
   readonly hands: Partial<Record<HandSide, Item>> = {};
   readonly worn: Partial<Record<WearSlot, Item>> = {};
   readonly piles = new Map<string, Pile>();
+  /** What's been taken out of furniture, by item type: the death screen's looting summary. */
+  readonly looted = new Map<string, number>();
   readonly entities: BlockEntities;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -217,6 +219,9 @@ export class Inventory {
       return plan;
     }
     const from = this.locate(item)!;
+    if (from.kind === 'furniture' && target.kind !== 'furniture') {
+      this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
+    }
     let moving = item;
     if (count < item.count) {
       moving = this.factory.split(item, count);
@@ -470,6 +475,21 @@ export class Inventory {
     }
     const spot = findSpot(this.registry, grid, item, ignore);
     return spot ? { ok: true, time: 0, at: spot } : refuse('No room');
+  }
+
+  /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
+  consume(item: Item, count = 1): boolean {
+    const at = this.locate(item);
+    if (!at || count > item.count) {
+      return false;
+    }
+    if (count < item.count) {
+      item.count -= count;
+    } else {
+      this.remove(at);
+    }
+    this.version += 1;
+    return true;
   }
 
   private remove(from: Location): void {

@@ -378,7 +378,37 @@ it.
 asset file the manifest doesn't list (fixture tests, like the one for broken
 references), a unit test places a pile's items
 at their grid cells with their rotation and leaves items without a model in the
-bundle, and the flashlight shows in the spawn pile and in your hands.
+bundle, and the flashlight shows in a pile and in your hands. (The spawn pile
+this first named went away in 1.5; flashlights are found in the hamlet.)
+
+**Status:** implemented, except the flashlight's model file. `opengameart.org`
+is blocked from the sessions that write code, so the Torch entry is out of the
+asset manifest until its file is in the pack, and the flashlight is still a box.
+- The validator fixtures: `test/fixtures/content/missing-model.json` (an item
+  naming a model that doesn't exist), `missing-model-file.json` (a model whose
+  file isn't in the pack) and `test/fixtures/packs/stray` (a file the manifest
+  doesn't list) fail; `test/fixtures/packs/lamp`, a pack with a model, its file
+  and a manifest, passes (`test/validateCli.test.ts`).
+- `test/models.test.ts` lays out a pile with the lamp fixture: items with a model
+  at the middle of their cells, turned as they lie, and the rest in the bundle,
+  which also holds items whose model hasn't loaded. It also loads the fixture's
+  `.glb` with `GLTFLoader` and checks both forms: lying centred on the ground,
+  and held at its grip pointing forward.
+- In headless Chromium, the lamp fixture showed in a pile (along x, and turned
+  along z) beside the bundle, and in the right hand pointing forward with a box
+  in the left, lit by day and dark at night.
+
+To add the flashlight's model:
+1. Download the zip from ["Torch"](https://opengameart.org/content/torch),
+   convert the model to `.glb` if it isn't one (for example by importing it in
+   Blender and exporting glTF binary), in metres, lying on the ground with its
+   long side along x and the lens towards +x. Save it as
+   `src/content/base/assets/models/flashlight.glb`.
+2. Put the Torch source back in `assets/manifest.json` (see the sketch below),
+   with the author if the page names one, and what the conversion changed.
+3. Add the model entry (the sketch below, with the grip and lens measured in the
+   file) and `"model": "flashlight"` to the flashlight in `items-tools.json`.
+4. `npm run validate` checks all three.
 
 ### 1.6 Survival
 
@@ -395,6 +425,38 @@ bundle, and the flashlight shows in the spawn pile and in your hands.
 
 **Done when:** scenario tests cover need rates, catch-up of needs and food
 decay (compared against live ticking), and death.
+
+**Status:** implemented.
+- `test/survival.test.ts`:
+  - **Need rates:** an hour of the simulation moves calories, hydration and
+    fatigue by their rates. Health comes back while needs are met, and drains
+    while starving or parched, faster with both.
+  - **Catch-up:** one 16-hour step lands where ticking every second does, across
+    every threshold: hydration running out at 7 h, calories at 13⅓ h, and health
+    coming back or not.
+  - **Food decay:** an apple checked every game minute for 12 days is going off
+    at exactly 120 h and rotten at 240 h, the same as checking once. Food keeps
+    no rot state: its age is the clock minus when it was made (DESIGN.md,
+    "Catch-up simulation").
+  - **Batteries:** a flashlight's battery drains the same in one step as every
+    second, goes out after 4 game hours, and a swap gives back the old battery
+    if it had charge left.
+  - **Death:** from the spawn state, thirst and then hunger kill you at 17.4
+    game hours, the same compressed as at 1×. Nothing moves after death, and an
+    injury kills you with its own cause.
+- `test/useItems.test.ts` eats from your hands, gets sick from rotten food,
+  switches the light, drains it, and takes a spare battery from your pockets.
+- **Stamina:** sprinting spends it (20 s from full), and once winded you jog
+  until it's back to 10.
+- **HUD:** health and stamina join the needs, as numbers for now.
+- **Death:** the death screen shows the cause, the time survived, and what you
+  took from furniture; "New world" reloads with the next seed.
+- **Flashlight:** a spot light at the held item's lens, with the light's beam
+  and radius.
+- **Checked in headless Chromium:**
+  - the beam on the hamlet at night;
+  - `?debug=1` and K four times shows the death screen, and "New world" starts
+    seed 8 after seed 7.
 
 ### 1.7 Shamblers
 
@@ -540,11 +602,13 @@ layers are shown.
 ```
 
 A model (1.5.5), with the point the hand holds and the flashlight's lens, in
-the file's metres; an item names it with `"model": "flashlight"`:
+the file's metres; an item names it with `"model": "flashlight"`. Held, the
+model's +x points forward and +y up; `grip.turn` (degrees about x, y and z)
+turns it in the hand when that isn't right, and is usually left out:
 
 ```json
 { "id": "flashlight", "file": "assets/models/flashlight.glb",
-  "grip": { "at": [0.06, 0, 0], "turn": [0, 0, 90] },
+  "grip": { "at": [0.06, 0, 0] },
   "anchors": { "lens": [0.18, 0, 0] } }
 ```
 
@@ -592,7 +656,11 @@ A zombie type:
 | Clock ratio `r` | 1:8 (a game day is 3 real hours) |
 | Compression cap `c` | 30× |
 | Safe radius for compression | 30 m |
-| Spawn time and state | 19:30. Calories 40%, hydration 35%, fatigue 70% |
+| Spawn time and state | 19:30. Calories 40%, hydration 35%, fatigue 70%, health and stamina 100% |
+| Need rates per game hour | Calories −3%, hydration −5%, fatigue +4%. 100% is 2,500 kcal and 2,500 ml |
+| Health per game hour | +2 while calories and hydration are at least 25% and fatigue at most 80%; −4 starving, −8 parched (both add up). Rotten food −15 |
+| Stamina per second | −5 sprinting, +4 otherwise (half when exhausted, starving or parched); winded below 10 |
+| Eating, drinking, battery swap | 3 s, 2 s, 2 s |
 | Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.05 s per cell. Opening a door 0.6 s |
 | Shambler perception | Sight 25 m by day, 10 m at night; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: jogging 8 m, sprinting 15 m |
 | Shambler count | 6–10 in the hamlet |
