@@ -1,1 +1,3 @@
 node_modules/
+# Agent mail (maildirs and scratch) lives in the main checkout, untracked.
+.agent-mail/
