@@ -186,6 +186,8 @@ export const ModelSchema = strictObject({
   grip: optional(strictObject({ at: Point, turn: optional(Point) })),
   /** Held with its long axis aimed forward or upright, grip at the origin. */
   hold: optional(picklist(['forward', 'upright'])),
+  /** Degrees to roll around the model's long +x axis before applying the hold pose. */
+  roll: optional(pipe(number(), minValue(-180), maxValue(180))),
   /** Named points, such as the flashlight's `lens`. */
   anchors: optional(record(Id, Point)),
 });

@@ -9,7 +9,8 @@
       "anchors": {
         "strike": [0.4273, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": 0
     },
     {
       "id": "baton",
@@ -20,7 +21,8 @@
       "anchors": {
         "strike": [0.4291, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": 0
     },
     {
       "id": "cleaver",
@@ -31,7 +33,8 @@
       "anchors": {
         "strike": [0.2145, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "crowbar",
@@ -42,7 +45,8 @@
       "anchors": {
         "strike": [0.2306, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "fire_axe",
@@ -53,7 +57,8 @@
       "anchors": {
         "strike": [0.3174, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "frying_pan",
@@ -64,7 +69,8 @@
       "anchors": {
         "strike": [0.2212, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "golf_club",
@@ -75,7 +81,8 @@
       "anchors": {
         "strike": [0.0935, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "hammer",
@@ -86,7 +93,8 @@
       "anchors": {
         "strike": [0.0939, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "hand_axe",
@@ -97,7 +105,8 @@
       "anchors": {
         "strike": [0.2222, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "kabar",
@@ -119,7 +128,8 @@
       "anchors": {
         "strike": [0.1594, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "kitchen_knife",
@@ -141,7 +151,8 @@
       "anchors": {
         "strike": [0.2447, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "pickaxe",
@@ -152,7 +163,8 @@
       "anchors": {
         "strike": [0.3131, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "pocket_knife",
@@ -174,7 +186,8 @@
       "anchors": {
         "strike": [0.4195, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "sickle",
@@ -185,7 +198,8 @@
       "anchors": {
         "strike": [0.2822, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "sledgehammer",
@@ -196,7 +210,8 @@
       "anchors": {
         "strike": [0.2731, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "tanto",
@@ -218,19 +233,20 @@
       "anchors": {
         "strike": [0.1047, 0, 0]
       },
-      "hold": "upright"
+      "hold": "upright",
+      "roll": -90
     },
     {
       "id": "steel_pipe",
       "file": "assets/models/steel_pipe.glb",
       "grip": {
-        "at": [0, 0, 0],
-        "turn": [90, 0, 0]
+        "at": [0, 0, 0]
       },
       "hold": "upright",
       "anchors": {
-        "strike": [0.927, 0, -0.36]
-      }
+        "strike": [0.927, 0, -0.1]
+      },
+      "roll": 0
     }
   ]
 }

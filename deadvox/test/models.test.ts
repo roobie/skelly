@@ -165,6 +165,64 @@ describe('base pack melee', () => {
     },
   );
 
+  it('keeps melee-model cross-sections at hand scale', async () => {
+    const dimensions = async (id: string): Promise<Vector3> => {
+      const model = melee.models.get(id)!;
+      const bytes = readFileSync(`${BASE}/${model.file}`);
+      const { scene } = await parseGlb(bytes);
+      return new Box3().setFromObject(scene).getSize(new Vector3());
+    };
+    const pipe = await dimensions('steel_pipe');
+    expect(pipe.x).toBeGreaterThanOrEqual(0.9);
+    expect(pipe.x).toBeLessThanOrEqual(1.0);
+    expect(pipe.y).toBeGreaterThanOrEqual(0.025);
+    expect(pipe.y).toBeLessThanOrEqual(0.045);
+    // The elbow is the pipe's other short axis after conversion; keep its full reach <= 13 cm.
+    expect(pipe.z).toBeGreaterThanOrEqual(0.1);
+    expect(pipe.z).toBeLessThanOrEqual(0.13);
+
+    const bat = await dimensions('baseball_bat');
+    expect(bat.y).toBeGreaterThanOrEqual(0.05);
+    expect(bat.y).toBeLessThanOrEqual(0.08);
+    expect(bat.z).toBeGreaterThanOrEqual(0.05);
+    expect(bat.z).toBeLessThanOrEqual(0.08);
+
+    const crowbar = await dimensions('crowbar');
+    expect(crowbar.z).toBeGreaterThanOrEqual(0.025);
+    expect(crowbar.z).toBeLessThanOrEqual(0.04);
+    // The hook spans Y; this is its maximum extent, not shaft thickness.
+    expect(crowbar.y).toBeLessThanOrEqual(0.26);
+  });
+
+  it('rolls the hammer head away from the player in the upright pose', async () => {
+    const def = melee.models.get('hammer')!;
+    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const { scene } = await parseGlb(bytes);
+    const { held } = prepareModel(def, scene);
+    held.updateMatrixWorld(true);
+    const offset = held.children[0]!.children[0]!;
+    // The hammer's head is its widest transverse model axis (local +y), 0.201 m vs 0.044 m.
+    const headAxis = new Vector3(0, 1, 0).transformDirection(offset.matrixWorld);
+    const viewSize = new Box3().setFromObject(held).getSize(new Vector3());
+    expect(viewSize.x).toBeLessThanOrEqual(0.06);
+    expect(viewSize.z).toBeGreaterThanOrEqual(0.18);
+    const forward = new Vector3(0, 0, -1);
+    const angle = (Math.acos(Math.min(1, Math.abs(headAxis.dot(forward)))) * 180) / Math.PI;
+    expect(angle).toBeLessThanOrEqual(5);
+  });
+
+  it('holds the pipe elbow forward while its shaft stays upright', async () => {
+    const def = melee.models.get('steel_pipe')!;
+    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const { scene } = await parseGlb(bytes);
+    const { held } = prepareModel(def, scene);
+    held.updateMatrixWorld(true);
+    const offset = held.children[0]!.children[0]!;
+    const strike = new Vector3(...def.anchors!.strike!).applyMatrix4(offset.matrixWorld);
+    expect(strike.y).toBeGreaterThanOrEqual(0.9);
+    expect(strike.z).toBeLessThanOrEqual(-0.09);
+  });
+
   it('holds the knife forward and hammer upright within centimetre bounds', async () => {
     const strikeInHand = async (id: string): Promise<Vector3> => {
       const def = melee.models.get(id)!;
