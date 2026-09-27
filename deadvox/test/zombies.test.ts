@@ -54,6 +54,19 @@ const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   }
 };
 const metres = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]) * BLOCK_SIZE;
+const runChaserAtWall = (isSolid: SolidAt, seconds: number) => {
+  const target = player([12, 1, 0], [-1, 0, 0]);
+  const system = new ZombieSystem(senses(() => target, isSolid));
+  const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+  const zombie = system.store.get(id)!;
+  const states: { mode: string; verticalVelocity: number; onGround: boolean }[] = [];
+  for (let frame = 0; frame < seconds * 60; frame++) {
+    system.tick(1 / 60);
+    states.push({ mode: zombie.mode, verticalVelocity: zombie.body.vel[1], onGround: zombie.body.onGround });
+  }
+  const wallGap = (6 - zombie.body.pos[0] - zombie.body.halfWidth) * BLOCK_SIZE;
+  return { states, wallGap };
+};
 const standing = (position: Vec3, facing: Vec3 = [0, 0, -1]) => {
   const system = new ZombieSystem(senses(() => player([1000, 1, 1000])));
   const id = system.add(SHAMBLER, position, facing);
@@ -263,6 +276,26 @@ describe('shambler scenarios', () => {
       run(system, seconds);
       expect(system.store.get(id)!.body.pos[0] * BLOCK_SIZE, `obstacle height ${height}`).toBeGreaterThan(3.25);
     }
+  });
+
+  it('does not jump forever at a 2 m wall with a see-through window at eye height', () => {
+    const windowWall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 6 && y >= 1 && y <= 4 && y !== 3);
+    const result = runChaserAtWall(windowWall, 30);
+    expect(result.states.every((state) => state.verticalVelocity <= 0)).toBe(true);
+    expect(result.states.every((state) => state.mode === 'chase')).toBe(true);
+    expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
+    expect(result.wallGap).toBeGreaterThanOrEqual(-0.001);
+    expect(result.wallGap).toBeLessThanOrEqual(1);
+  });
+
+  it('does not jump a 1 m wall when a low ceiling leaves too little headroom', () => {
+    const lowCeiling: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 6 && (y === 1 || y === 2 || y === 5));
+    const result = runChaserAtWall(lowCeiling, 5);
+    expect(result.states.every((state) => state.verticalVelocity <= 0)).toBe(true);
+    expect(result.states.every((state) => state.mode === 'chase')).toBe(true);
+    expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
+    expect(result.wallGap).toBeGreaterThanOrEqual(-0.001);
+    expect(result.wallGap).toBeLessThanOrEqual(1);
   });
 
   it('F: melee hits obey cooldown, exact damage and range; fists and real crowbar data kill shamblers', () => {

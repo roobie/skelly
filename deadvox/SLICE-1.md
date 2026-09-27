@@ -463,8 +463,10 @@ decay (compared against live ticking), and death.
   player footstep noise (more when sprinting). A lit flashlight is seen from
   much further than the player in the dark. Whether the player is lit is one
   function, ready for voxel light (see "Dark interiors" under Scope).
-- Movement: steering, with step-up and a jump when blocked, using the same body
-  physics as the player. A lost shambler wanders back.
+- Movement: steering, with step-up and a jump only when the obstacle and
+  shambler's headroom fit the same body physics as the player. A shambler that
+  cannot clear a wall still faces and steers toward a visible player; it does
+  not jump indefinitely. A lost shambler wanders back.
 - Melee in both directions: the zombie attack has reach and a cooldown; the
   player swings the wielded item (or fists) with a hit check.
 - Rendering: instanced box figures with a continuous leg swing. Required content
@@ -480,12 +482,15 @@ its cells; and loses the player after losing sight of them.
 
 **Status:** block — implementation and automated checks are in place; awaiting
 BR's visual and play-feel review. `test/zombies.test.ts` exercises the real
-`wood_door` entity for open/closed traversal, safe closing, and attack occlusion,
-with further checks for perception, movement, distance-driven gait cadence
-(12–15 steps/10 s wandering at 0.8 m/s; 42–52 steps/10 s chasing at 2.8 m/s;
-no steps against a wall; at most 0.05 rad leg-angle change per 1/60 s walking
-frame), melee, no-respawn, rendering geometry, and update cost. Playtest and headless-browser measurements remain part of the
-review report.
+`wood_door` entity for open/closed traversal, safe closing, attack occlusion, and
+jump clearance (including a window wall and low ceiling). `test/furniture.test.ts`
+checks panel picking, an open ray through to furniture behind the doorway, and
+renderer/core panel agreement within 1 mm for every facing and state. Further
+zombie checks cover perception, distance-driven gait cadence (12–15 steps/10 s
+wandering at 0.8 m/s; 42–52 steps/10 s chasing at 2.8 m/s; no steps against a
+wall; at most 0.05 rad leg-angle change per 1/60 s walking frame), melee,
+no-respawn, rendering geometry, and update cost. Playtest and headless-browser
+measurements remain part of the review report.
 
 ### 1.8 Rest and sleep
 

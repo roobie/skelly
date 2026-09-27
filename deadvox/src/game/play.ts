@@ -11,13 +11,13 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { MapEntityStore } from '../core/entities.ts';
+import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { stepBody } from '../core/physics.ts';
-import { raycast } from '../core/raycast.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
@@ -469,16 +469,16 @@ export const startPlay = (engine: Engine): void => {
   };
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
 
-  /** The furniture in the crosshair, open doors included. */
-  const lookedAt = (): BlockEntity | undefined => {
-    const hit = raycast(
-      eye(),
-      lookDir(),
-      USE_REACH / s,
-      (x, y, z) => engine.isSolid(x, y, z) || entities.at(x, y, z) !== undefined,
-    );
-    return hit && entities.at(...hit.block);
-  };
+  /** The nearest visible furniture panel or cell in the crosshair. */
+  const lookedAt = (): BlockEntity | undefined =>
+    pickFurniture({
+      entities,
+      origin: eye(),
+      direction: lookDir(),
+      maxDistance: USE_REACH / s,
+      blockSize: s,
+      isSolid: engine.isSolid,
+    });
 
   /** What E would do to it, for the prompt. */
   const useText = (entity: BlockEntity): string => {

@@ -36,6 +36,38 @@ export interface EntitySpec {
 
 /** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (DESIGN.md, "Handling time"). */
 export const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
+const DOOR_PANEL_THICKNESS = 0.06;
+const DOOR_OPEN_TURN = { n: -Math.PI / 2, s: Math.PI / 2, e: -Math.PI / 2, w: Math.PI / 2 } as const;
+
+/** Oriented door-panel box: metre dimensions and local centre around a world-metre hinge. */
+export interface DoorPanelBox {
+  pivot: Vec3;
+  center: Vec3;
+  size: Vec3;
+  rotationY: number;
+}
+
+/** The visible/pickable thin panel, open or closed, shared by renderer and core picking. */
+export const doorPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
+  const [x, y, z] = entity.pos;
+  const [w, h, d] = entity.size;
+  const alongX = entity.facing === 'n' || entity.facing === 's';
+  const width = (alongX ? w : d) * blockSize;
+  const height = h * blockSize;
+  return alongX
+    ? {
+        pivot: [x * blockSize, y * blockSize, (z + d / 2) * blockSize],
+        center: [width / 2, height / 2, 0],
+        size: [width, height, DOOR_PANEL_THICKNESS],
+        rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
+      }
+    : {
+        pivot: [(x + w / 2) * blockSize, y * blockSize, z * blockSize],
+        center: [0, height / 2, width / 2],
+        size: [DOOR_PANEL_THICKNESS, height, width],
+        rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
+      };
+};
 
 export const searchTime = (def: FurnitureDef): number => {
   const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);

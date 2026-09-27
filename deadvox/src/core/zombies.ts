@@ -53,6 +53,40 @@ const unit = (v: Vec3): Vec3 => {
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
 
+interface JumpObstacleProbe {
+  body: Body;
+  direction: Vec3;
+  isSolid: SolidAt;
+  physics: PhysicsParams;
+  jumpSpeed: number;
+  blockSize: number;
+}
+
+const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSize }: JumpObstacleProbe): boolean => {
+  const maxJumpMetres = (jumpSpeed * jumpSpeed) / (2 * physics.gravity * blockSize);
+  const probeX = Math.floor(body.pos[0] + (direction[0] * 0.65) / blockSize);
+  const probeZ = Math.floor(body.pos[2] + (direction[2] * 0.65) / blockSize);
+  const footCell = Math.floor(body.pos[1] + 0.01);
+  const maxTop = Math.floor(body.pos[1] + maxJumpMetres / blockSize);
+  let top = footCell;
+  while (top <= maxTop && isSolid(probeX, top, probeZ)) {
+    top += 1;
+  }
+  if (top === footCell) {
+    return false;
+  }
+  const riseMetres = (top - body.pos[1]) * blockSize;
+  if (riseMetres <= physics.stepHeight * blockSize || riseMetres > maxJumpMetres) {
+    return false;
+  }
+  for (let y = top; y < Math.ceil(top + body.height); y++) {
+    if (isSolid(probeX, y, probeZ)) {
+      return false;
+    }
+  }
+  return true;
+};
+
 /** Daylight follows the sky's 06:30 dawn and 19:30 dusk keys. */
 export const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
 
@@ -202,13 +236,17 @@ export class ZombieSystem {
         zombie.body.vel[0] = (dir[0] * speed) / blockSize;
         zombie.body.vel[2] = (dir[2] * speed) / blockSize;
         zombie.facing = dir;
-        // If a solid is immediately ahead, jump using the same take-off as the player.
-        const probe: Vec3 = [
-          pos[0] + (dir[0] * 0.65) / blockSize,
-          pos[1] + 0.1 / blockSize,
-          pos[2] + (dir[2] * 0.65) / blockSize,
-        ];
-        if (zombie.body.onGround && isSolid(Math.floor(probe[0]), Math.floor(probe[1]), Math.floor(probe[2]))) {
+        if (
+          zombie.body.onGround &&
+          canJumpObstacle({
+            body: zombie.body,
+            direction: dir,
+            isSolid,
+            physics: this.options.physics,
+            jumpSpeed: this.options.jumpSpeed,
+            blockSize,
+          })
+        ) {
           zombie.body.vel[1] = this.options.jumpSpeed / blockSize;
         }
       } else {
