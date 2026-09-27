@@ -21,6 +21,14 @@ describe('restViewModel', () => {
     expect(vm.clock).toBe('Day 1, 19:30');
   });
 
+  it('shows how to stop it, by kind (SLICE-1.md 1.8 follow-up)', () => {
+    const sim = new Simulation({ seed: 1 });
+    const rest: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
+    expect(restViewModel(rest, sim).stopHint).toBe('R or X to stop');
+    const sleep: RestAction = { kind: 'sleep', label: 'Sleeping', rate: -30, startFatigue: 40 };
+    expect(restViewModel(sleep, sim).stopHint).toBe('L or X to stop');
+  });
+
   it('carries the interruption reason as the prompt', () => {
     let danger: string | undefined;
     const sim = new Simulation({ seed: 1, unsafe: () => danger });

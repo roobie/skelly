@@ -156,6 +156,33 @@ describe('RestController start/resume/stop', () => {
   });
 });
 
+describe('RestController.toggle (manual stop, SLICE-1.md 1.8 follow-up)', () => {
+  it('starts the action when nothing is running', () => {
+    const { rest } = makeRest();
+    expect(rest.toggle('rest')).toBeUndefined();
+    expect(rest.action?.kind).toBe('rest');
+  });
+
+  it('stops the same kind on a second press, ramping compression down as a normal end does', () => {
+    const { sim, rest } = makeRest();
+    expect(rest.toggle('sleep')).toBeUndefined();
+    for (let i = 0; i < 120; i++) {
+      rest.frame(1 / 60);
+    }
+    expect(sim.compression.c).toBeGreaterThan(1);
+    const fatigueAtStop = sim.needs.fatigue;
+    expect(rest.toggle('sleep')).toBeUndefined();
+    expect(rest.action).toBeUndefined();
+    expect(sim.compression.active).toBe(false);
+    expect(sim.compression.c).toBeGreaterThan(1); // not snapped; it ramps down like any normal end
+    expect(sim.needs.fatigue).toBe(fatigueAtStop); // kept whatever was recovered, right at the stop
+    for (let i = 0; i < 60; i++) {
+      rest.frame(1 / 60);
+    }
+    expect(sim.compression.c).toBe(1);
+  });
+});
+
 describe('long-action interruptions (SLICE-1.md, 1.8)', () => {
   it('stops resting at most one step after a shambler becomes aware, even beyond 30 m', () => {
     const player: PlayerSense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'still', lit: true, lightSeenFrom: 40 };

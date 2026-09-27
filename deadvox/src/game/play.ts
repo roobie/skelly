@@ -245,10 +245,24 @@ export const startPlay = (engine: Engine): void => {
     notice: showNotice,
   });
 
-  /** Cancels any handling, then starts resting or sleeping. Shows why not, if refused. */
-  const startRest = (kind: RestKind): void => {
-    queue.cancel();
-    const reason = rest?.start(kind);
+  /**
+   * R/L: starts resting or sleeping, or stops it on a second press of the same key
+   * (SLICE-1.md, 1.8 follow-up). Does nothing during the Continue/Stop prompt, which
+   * owns C and X instead, or while busy with something else (e.g. the other kind, or
+   * the debug compression test).
+   */
+  const toggleRest = (kind: RestKind): void => {
+    if (compression.interruption !== undefined) {
+      return;
+    }
+    const already = rest?.action?.kind === kind;
+    if (!already) {
+      if (compression.locksInput) {
+        return;
+      }
+      queue.cancel();
+    }
+    const reason = rest?.toggle(kind);
     if (reason) {
       showNotice(`Can't ${kind}: ${reason}`);
     }
@@ -503,10 +517,18 @@ export const startPlay = (engine: Engine): void => {
     ['KeyB', () => config.debug && build.toggle()],
     ['KeyG', () => config.debug && toggleSpawnMenu()],
     ['KeyE', () => !compression.locksInput && use()],
-    ['KeyX', () => queue.cancel()],
-    // R also descends in noclip (debug); resting there is unlikely to matter.
-    ['KeyR', () => !(compression.locksInput || noclip) && startRest('rest')],
-    ['KeyL', () => !compression.locksInput && startRest('sleep')],
+    [
+      'KeyX',
+      () => {
+        queue.cancel();
+        if (rest?.action) {
+          rest.stop(); // also stops resting/sleeping at once, same as Stop after an interruption
+        }
+      },
+    ],
+    // R also descends in noclip (debug), but only while starting; stopping an active rest is fine.
+    ['KeyR', () => (rest?.action?.kind === 'rest' || !noclip) && toggleRest('rest')],
+    ['KeyL', () => toggleRest('sleep')],
   ]);
 
   const playKeys = (code: string) => {

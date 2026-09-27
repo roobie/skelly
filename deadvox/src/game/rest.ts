@@ -74,6 +74,18 @@ export class RestController {
     this.sim.compression.stop();
   }
 
+  /**
+   * The same key pressed again: starts `kind`, or stops it if it's already running (a manual
+   * stop, same as an interruption's Stop). Returns why not when refused to start.
+   */
+  toggle(kind: RestKind): string | undefined {
+    if (this.action?.kind === kind) {
+      this.stop();
+      return undefined;
+    }
+    return this.start(kind);
+  }
+
   /** Advances one real frame. Ends the action on its own once fatigue reaches 0. */
   frame(realDt: number): void {
     this.sim.frame(realDt);

@@ -5,19 +5,23 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Simulation } from '../core/sim.ts';
-import type { RestAction } from '../game/rest.ts';
+import type { RestAction, RestKind } from '../game/rest.ts';
+
+/** The key that toggles each kind off again (SLICE-1.md, 1.8 follow-up: a manual stop). */
+const STOP_KEY: Readonly<Record<RestKind, string>> = { rest: 'R', sleep: 'L' };
 
 export interface RestViewModel {
   readonly visible: boolean;
   readonly label: string;
   readonly clock: string;
   readonly percent: number;
+  readonly stopHint: string;
   readonly prompt: string | undefined;
 }
 
 export const restViewModel = (action: RestAction | undefined, sim: Simulation): RestViewModel => {
   if (!action) {
-    return { visible: false, label: '', clock: '', percent: 0, prompt: undefined };
+    return { visible: false, label: '', clock: '', percent: 0, stopHint: '', prompt: undefined };
   }
   const percent =
     action.startFatigue > 0
@@ -28,6 +32,7 @@ export const restViewModel = (action: RestAction | undefined, sim: Simulation): 
     label: action.label,
     clock: formatClock(sim.calendar),
     percent,
+    stopHint: `${STOP_KEY[action.kind]} or X to stop`,
     prompt: sim.compression.interruption,
   };
 };
@@ -39,6 +44,7 @@ const restTemplate = (vm: RestViewModel): TemplateResult => html`
     <h2>${vm.label}…</h2>
     <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
     <p class="rest-time">${vm.clock}</p>
+    <p class="hd-muted">${vm.stopHint}</p>
     ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   C: continue   X: stop</p>` : ''}
   </div>
 `;
