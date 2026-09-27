@@ -1,8 +1,8 @@
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
-import { Rng } from './random.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
+import { Rng } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
@@ -26,6 +26,19 @@ export interface Zombie {
   headYaw: number;
   headYawTarget: number;
   lookTimer: number;
+  swayValue: number;
+  swayStart: number;
+  swayTarget: number;
+  swayElapsed: number;
+  swayDuration: number;
+  lurchValue: number;
+  lurchStart: number;
+  lurchTarget: number;
+  lurchElapsed: number;
+  lurchDuration: number;
+  stumbleFactor: number;
+  stumbleElapsed: number;
+  stumbleDuration: number;
   /** Previous fixed-step pose used only by rendering interpolation. */
   renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number };
   health: number;
@@ -73,6 +86,8 @@ const headingAt = (angle: number): Vec3 => [Math.sin(angle), 0, Math.cos(angle)]
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const approach = (current: number, target: number, amount: number): number =>
   current < target ? Math.min(target, current + amount) : Math.max(target, current - amount);
+const smooth01 = (value: number): number => value * value * (3 - 2 * value);
+const lerp = (from: number, to: number, amount: number): number => from + (to - from) * amount;
 const approachAngle = (current: number, target: number, amount: number): number =>
   current + Math.sign(wrapAngle(target - current)) * Math.min(Math.abs(wrapAngle(target - current)), amount);
 const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
@@ -145,23 +160,41 @@ export interface HeardNoise {
 }
 
 const hearingRange = (zombie: ZombieDef, movement: PlayerMovement): number => {
-  if (movement === 'sprinting') return zombie.hearingRange.sprint * zombie.hearing;
-  if (movement === 'jogging') return zombie.hearingRange.jog * zombie.hearing;
-  if (movement === 'walking') return zombie.hearingRange.walk * zombie.hearing;
+  if (movement === 'sprinting') {
+    return zombie.hearingRange.sprint * zombie.hearing;
+  }
+  if (movement === 'jogging') {
+    return zombie.hearingRange.jog * zombie.hearing;
+  }
+  if (movement === 'walking') {
+    return zombie.hearingRange.walk * zombie.hearing;
+  }
   return 0;
 };
 
-const hearingTier = ({ zombie, from, player, blockSize, isSolid }: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
+const hearingTier = ({
+  zombie,
+  from,
+  player,
+  blockSize,
+  isSolid,
+}: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
   const range = hearingRange(zombie, player.movement);
-  if (range <= 0) return undefined;
+  if (range <= 0) {
+    return undefined;
+  }
   const distance = Math.hypot(...sub(player.pos, from)) * blockSize;
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
   const crossings = countSolidRuns(origin, source, isSolid);
   const apparentDistance = distance + crossings * zombie.hearingModel.wallRunCostMetres;
-  if (apparentDistance <= range) return 'near';
-  if (apparentDistance <= range * zombie.hearingModel.farMultiplier) return 'far';
+  if (apparentDistance <= range) {
+    return 'near';
+  }
+  if (apparentDistance <= range * zombie.hearingModel.farMultiplier) {
+    return 'far';
+  }
   return undefined;
 };
 
@@ -176,7 +209,9 @@ const farBearingTarget = ({ zombie, from, player, blockSize, rng }: HearingInput
 /** Returns an exact near-noise position or a seeded, uncertain far bearing. */
 export const hearPlayer = (input: HearingInput): HeardNoise | undefined => {
   const tier = hearingTier(input);
-  if (!tier) return undefined;
+  if (!tier) {
+    return undefined;
+  }
   return { tier, target: tier === 'near' ? copy(input.player.pos) : farBearingTarget(input) };
 };
 
@@ -187,7 +222,9 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: 
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
   const inCone = dot >= Math.cos((zombie.sightCone * Math.PI) / 180);
-  if (!inCone || metres <= 0) return false;
+  if (!inCone || metres <= 0) {
+    return false;
+  }
   const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
   const rayTarget: Vec3 = [player.pos[0], player.pos[1] + 1.3 / blockSize, player.pos[2]];
   const toTarget = sub(rayTarget, rayOrigin);
@@ -195,7 +232,9 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: 
   const clear = raycast(rayOrigin, unit(toTarget), rayDistance, isSolid) === undefined;
   const lit = isLit(isSolid, player.pos, hour, player.lit);
   let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  if (lit && player.lit) sightRange = player.lightSeenFrom;
+  if (lit && player.lit) {
+    sightRange = player.lightSeenFrom;
+  }
   return clear && metres <= sightRange;
 };
 
@@ -248,6 +287,57 @@ export class ZombieSystem {
     zombie.headYawTarget = 0;
   }
 
+  private stepChaseMotion(zombie: Zombie, dt: number): { sway: number; speedFactor: number } {
+    const { chaseMotion } = zombie.type;
+    const rng = zombie.behaviorRng;
+    if (zombie.swayDuration === 0 || zombie.swayElapsed >= zombie.swayDuration) {
+      zombie.swayStart = zombie.swayValue;
+      zombie.swayTarget = rng.range(-chaseMotion.swayDegrees, chaseMotion.swayDegrees);
+      zombie.swayDuration = inRange(rng, chaseMotion.swayIntervalSeconds);
+      zombie.swayElapsed = 0;
+    } else {
+      zombie.swayElapsed = Math.min(zombie.swayDuration, zombie.swayElapsed + dt);
+    }
+    zombie.swayValue = lerp(zombie.swayStart, zombie.swayTarget, smooth01(zombie.swayElapsed / zombie.swayDuration));
+
+    if (zombie.lurchDuration === 0 || zombie.lurchElapsed >= zombie.lurchDuration) {
+      zombie.lurchStart = zombie.lurchValue;
+      zombie.lurchTarget = inRange(rng, chaseMotion.speedMultiplier);
+      zombie.lurchDuration = chaseMotion.lurchSeconds;
+      zombie.lurchElapsed = 0;
+    } else {
+      zombie.lurchElapsed = Math.min(zombie.lurchDuration, zombie.lurchElapsed + dt);
+    }
+    zombie.lurchValue = lerp(
+      zombie.lurchStart,
+      zombie.lurchTarget,
+      smooth01(zombie.lurchElapsed / zombie.lurchDuration),
+    );
+
+    if (zombie.stumbleDuration === 0 && rng.chance(chaseMotion.stumbleChancePerSecond * dt)) {
+      zombie.stumbleDuration = inRange(rng, chaseMotion.stumbleDurationSeconds);
+      zombie.stumbleElapsed = 0;
+    }
+    if (zombie.stumbleDuration > 0) {
+      zombie.stumbleElapsed = Math.min(zombie.stumbleDuration, zombie.stumbleElapsed + dt);
+      const entering = smooth01(Math.min(1, zombie.stumbleElapsed / chaseMotion.stumbleEaseSeconds));
+      const leaving = smooth01(
+        Math.min(1, (zombie.stumbleDuration - zombie.stumbleElapsed) / chaseMotion.stumbleEaseSeconds),
+      );
+      const depth = Math.min(entering, leaving);
+      zombie.stumbleFactor = 1 - depth * (1 - chaseMotion.stumbleSpeedFraction);
+      if (zombie.stumbleElapsed >= zombie.stumbleDuration) {
+        zombie.stumbleDuration = 0;
+        zombie.stumbleElapsed = 0;
+        zombie.stumbleFactor = 1;
+      }
+    }
+    return {
+      sway: zombie.swayValue * (Math.PI / 180),
+      speedFactor: zombie.lurchValue * zombie.stumbleFactor,
+    };
+  }
+
   add(type: ZombieDef, position: Vec3, facing: Vec3 = [0, 0, -1]): EntityId {
     const direction = unit(facing);
     const zombie: Zombie = {
@@ -271,6 +361,19 @@ export class ZombieSystem {
       headYaw: 0,
       headYawTarget: 0,
       lookTimer: 0,
+      swayValue: 0,
+      swayStart: 0,
+      swayTarget: 0,
+      swayElapsed: 0,
+      swayDuration: 0,
+      lurchValue: 1,
+      lurchStart: 1,
+      lurchTarget: 1,
+      lurchElapsed: 0,
+      lurchDuration: 0,
+      stumbleFactor: 1,
+      stumbleElapsed: 0,
+      stumbleDuration: 0,
       renderPrevious: { pos: copy(position), facing: copy(direction), headYaw: 0, gaitPhase: 0 },
       health: type.health,
       attackWait: 0,
@@ -287,7 +390,9 @@ export class ZombieSystem {
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
   tick(dt: number): void {
-    if (dt <= 0) return;
+    if (dt <= 0) {
+      return;
+    }
     const player = this.options.player();
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
@@ -325,14 +430,17 @@ export class ZombieSystem {
 
       let target: Vec3 = zombie.home;
       let direction: Vec3 = [0, 0, 0];
+      let aimDirection: Vec3 | undefined;
       let desiredSpeed = 0;
-      let stroll = zombie.mode === 'stroll';
+      let returnArrived = false;
+      const stroll = zombie.mode === 'stroll';
       if (zombie.mode === 'idle') {
         zombie.modeTimer -= dt;
         zombie.lookTimer -= dt;
         if (zombie.lookTimer <= 0) {
           zombie.bodyLookTarget =
-            angleOf(zombie.facing) + rng.range(-type.wander.bodyLookArcDegrees, type.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
+            angleOf(zombie.facing) +
+            rng.range(-type.wander.bodyLookArcDegrees, type.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
           zombie.headYawTarget =
             rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
           zombie.lookTimer = inRange(rng, type.wander.lookIntervalSeconds);
@@ -347,7 +455,9 @@ export class ZombieSystem {
           zombie.headYawTarget,
           (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
         );
-        if (zombie.modeTimer <= 0) this.beginStroll(zombie);
+        if (zombie.modeTimer <= 0) {
+          this.beginStroll(zombie);
+        }
       } else if (zombie.mode === 'stroll') {
         zombie.modeTimer -= dt;
         direction = zombie.strollHeading;
@@ -357,11 +467,7 @@ export class ZombieSystem {
           direction,
           (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
         );
-        zombie.headYaw = approachAngle(
-          zombie.headYaw,
-          0,
-          (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
-        );
+        zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
       } else {
         if (zombie.mode === 'chase') {
           target = player.pos;
@@ -374,35 +480,35 @@ export class ZombieSystem {
           target = zombie.home;
           metresToTarget = horizontalDistance(target, pos) * blockSize;
         }
-        if (zombie.mode === 'return' && metresToTarget < 0.4) {
-          this.beginIdle(zombie);
-        } else {
-          direction = unit([target[0] - pos[0], 0, target[2] - pos[2]]);
-          const moving = metresToTarget > (zombie.mode === 'chase' ? type.attack.reach * 0.9 : 0.25);
-          if (moving) {
-            desiredSpeed = zombie.mode === 'chase' ? type.speed.chase : type.speed.wander;
-            zombie.facing = turnToward(
-              zombie.facing,
-              direction,
-              (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
-            );
-          } else {
-            direction = [0, 0, 0];
+        returnArrived = zombie.mode === 'return' && metresToTarget < 0.4;
+        direction = unit([target[0] - pos[0], 0, target[2] - pos[2]]);
+        const moving = returnArrived || metresToTarget > (zombie.mode === 'chase' ? type.attack.reach * 0.9 : 0.25);
+        if (moving) {
+          if (zombie.mode === 'chase' || zombie.mode === 'investigate') {
+            aimDirection = direction;
+            const motion = this.stepChaseMotion(zombie, dt);
+            direction = headingAt(angleOf(direction) + motion.sway);
+            desiredSpeed = type.speed.chase * motion.speedFactor;
+          } else if (!returnArrived) {
+            desiredSpeed = type.speed.wander;
           }
-          zombie.headYaw = approachAngle(
-            zombie.headYaw,
-            0,
-            (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
+          zombie.facing = turnToward(
+            zombie.facing,
+            direction,
+            (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
           );
+        } else {
+          direction = [0, 0, 0];
         }
+        zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
       }
 
       // A stroll remains a stroll while it gently brakes at the end of its interval.
-      zombie.horizontalSpeed = approach(
-        zombie.horizontalSpeed,
-        desiredSpeed,
-        type.wander.movementAcceleration * dt,
-      );
+      const acceleration =
+        zombie.stumbleFactor < 1 && zombie.horizontalSpeed > desiredSpeed
+          ? type.chaseMotion.stumbleDeceleration
+          : type.wander.movementAcceleration;
+      zombie.horizontalSpeed = approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt);
       zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
       zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
       if (
@@ -422,9 +528,43 @@ export class ZombieSystem {
       const beforeStep = copy(pos);
       const obstacles = player.body ? [player.body] : [];
       stepBody(zombie.body, dt, isSolid, { ...this.options.physics, obstacles });
-      const travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
+      let travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
+      if (aimDirection && zombie.horizontalSpeed > 0.01) {
+        const dx = zombie.body.pos[0] - beforeStep[0];
+        const dz = zombie.body.pos[2] - beforeStep[2];
+        const forward = (dx * aimDirection[0] + dz * aimDirection[2]) * blockSize;
+        if (forward < zombie.horizontalSpeed * dt * 0.1) {
+          const wallAhead =
+            raycast(
+              [beforeStep[0], beforeStep[1] + 0.1 / blockSize, beforeStep[2]],
+              aimDirection,
+              0.7 / blockSize,
+              isSolid,
+            ) !== undefined;
+          const jumpClear =
+            wallAhead &&
+            canJumpObstacle({
+              body: zombie.body,
+              direction: aimDirection,
+              isSolid,
+              physics: this.options.physics,
+              jumpSpeed: this.options.jumpSpeed,
+              blockSize,
+            });
+          if (wallAhead && !jumpClear) {
+            zombie.body.pos[0] = beforeStep[0];
+            zombie.body.pos[2] = beforeStep[2];
+            travelled = 0;
+            zombie.horizontalSpeed = 0;
+            zombie.body.vel[0] = 0;
+            zombie.body.vel[2] = 0;
+          }
+        }
+      }
       zombie.gaitPhase += (travelled / type.stepLength) * Math.PI;
-      if (zombie.mode === 'idle' || zombie.mode === 'stroll') zombie.wanderClock += dt;
+      if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
+        zombie.wanderClock += dt;
+      }
       if (stroll && zombie.mode === 'stroll' && zombie.horizontalSpeed > 0.01) {
         const requested = zombie.horizontalSpeed * dt;
         if (travelled + 1e-4 < requested * 0.1) {
@@ -451,12 +591,18 @@ export class ZombieSystem {
           zombie.attackWait = type.attack.cooldown;
         }
       }
-      if (zombie.mode === 'return' && horizontalDistance(zombie.home, zombie.body.pos) * blockSize < 0.4) {
+      if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
         this.beginIdle(zombie);
         zombie.lastPerceived = undefined;
       }
     }
-    separateBodies({ bodies: entries.map(([, zombie]) => zombie.body), dt, isSolid, blockSize, obstacles: player.body ? [player.body] : [] });
+    separateBodies({
+      bodies: entries.map(([, zombie]) => zombie.body),
+      dt,
+      isSolid,
+      blockSize,
+      obstacles: player.body ? [player.body] : [],
+    });
     if (player.body) {
       for (const [, zombie] of entries) {
         separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });

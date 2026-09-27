@@ -43,11 +43,15 @@ export const countSolidRuns = (origin: Vec3, target: Vec3, isSolid: SolidAt): nu
   while (distance > 0) {
     const axis = nearestAxis(tMax);
     const t = tMax[axis];
-    if (t > distance) break;
+    if (t > distance) {
+      break;
+    }
     pos[axis] += step[axis];
     tMax[axis] += tDelta[axis];
     const solid = isSolid(...pos);
-    if (solid && !wasSolid) runs++;
+    if (solid && !wasSolid) {
+      runs += 1;
+    }
     wasSolid = solid;
   }
   return runs;

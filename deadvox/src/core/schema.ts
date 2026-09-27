@@ -315,6 +315,35 @@ export const ZombieSchema = strictObject({
     investigationDistanceMetres: Positive,
     wallRunCostMetres: NonNegative,
   }),
+  chaseMotion: pipe(
+    strictObject({
+      swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+      swayIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+      speedMultiplier: strictObject({ min: Positive, max: Positive }),
+      lurchSeconds: Positive,
+      stumbleChancePerSecond: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      stumbleDurationSeconds: strictObject({ min: Positive, max: Positive }),
+      stumbleEaseSeconds: Positive,
+      stumbleSpeedFraction: Fraction,
+      stumbleDeceleration: Positive,
+    }),
+    check(
+      (motion) => motion.swayIntervalSeconds.min <= motion.swayIntervalSeconds.max,
+      'minimum sway interval must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.speedMultiplier.min <= motion.speedMultiplier.max,
+      'minimum speed multiplier must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.stumbleDurationSeconds.min <= motion.stumbleDurationSeconds.max,
+      'minimum stumble duration must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.stumbleDurationSeconds.min >= 2 * motion.stumbleEaseSeconds,
+      'stumble duration must allow easing in and out',
+    ),
+  ),
   attack: strictObject({ damage: Positive, reach: Positive, cooldown: Positive }),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */
