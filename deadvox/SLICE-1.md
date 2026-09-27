@@ -508,6 +508,14 @@ wall; at most 0.05 rad leg-angle change per 1/60 s walking frame), melee,
 no-respawn, rendering geometry, and update cost. Playtest and headless-browser
 measurements remain part of the review report.
 
+For BR's per-machine frame budget, run `?bench=shamblers&n=10,25,50,100&seed=1&time=23:30`
+(or omit `n` for that default list); `?bench=report` stores and displays frame,
+ZombieSystem tick, render-submit and hole results plus a pasteable summary. Run
+it on the target machine with its normal renderer: headless/software-renderer
+numbers only prove the harness runs. CPU-only scaling check: run
+`npm run bench:shamblers -- 10 50 100`. The ten-shambler test H remains the CI
+guard.
+
 ### 1.8 Rest and sleep
 
 - Rest (anywhere) and sleep (better on a bed) as long actions. They use the

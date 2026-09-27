@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "test": "vitest run",
-    "validate": "node src/cli/validate.ts"
+    "validate": "node src/cli/validate.ts",
+    "bench:shamblers": "node --experimental-strip-types src/bench/shamblers-cpu.mjs"
   },
   "dependencies": {
     "three": "^0.186.0",

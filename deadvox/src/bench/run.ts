@@ -63,7 +63,7 @@ export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
 
 export const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 
-const environment = (engine: Engine): Environment => {
+export const environment = (engine: Engine): Environment => {
   const { renderer } = engine;
   const gl = renderer.getContext();
   const info = gl.getExtension('WEBGL_debug_renderer_info');
