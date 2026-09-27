@@ -133,6 +133,26 @@ describe('shambler perception', () => {
 });
 
 describe('shambler scenarios', () => {
+  it('refuses to close a real door on the player or a shambler, then closes with a 1 m clearance', () => {
+    const { entities, door } = makeDoorWorld();
+    const body = (pos: Vec3) => ({ pos, vel: [0, 0, 0] as Vec3, halfWidth: 0.56, height: 3.4, onGround: true });
+    const playerBody = body([5, 1, 0]);
+    const safePlayer = body([10, 1, 10]);
+    const inDoor = body([5, 1, 0.3]);
+    const oneMetreAway = body([5, 1, 3.56]);
+
+    entities.setOpen(door, true);
+    expect(entities.closeDoor(door, playerBody, [])).toBe('player');
+    expect(door.open).toBe(true);
+
+    expect(entities.closeDoor(door, safePlayer, [inDoor])).toBe('other');
+    expect(door.open).toBe(true);
+
+    expect(entities.bodyIntersects(door, oneMetreAway)).toBe(false);
+    expect(entities.closeDoor(door, safePlayer, [oneMetreAway])).toBeUndefined();
+    expect(door.open).toBe(false);
+  });
+
   it('A: reaches the player through a real open wood_door entity within 20 seconds', () => {
     const { entities, door, solid } = makeDoorWorld();
     entities.setOpen(door, true);
@@ -146,22 +166,63 @@ describe('shambler scenarios', () => {
   it('B: hears the sprinting player but cannot enter through the real closed door for 120 seconds', () => {
     const { entities, door, solid } = makeDoorWorld();
     entities.setOpen(door, false);
-    const target = [5, 1, -6] as Vec3;
-    const system = new ZombieSystem(senses(() => player(target, [0, 0, 1], 'sprinting'), solid));
+    const target = [5, 1, -0.56] as Vec3;
+    let damage = 0;
+    let firstMinuteDamage: number | undefined;
+    let frames = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player(target, [0, 0, 1], 'sprinting'),
+        solid,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
     const id = system.add(SHAMBLER, [5, 1, 6], [0, 0, -1]);
     const positions: Vec3[] = [];
     let awareFrames = 0;
     run(system, 120, () => {
       const zombie = system.store.get(id)!;
       positions.push([...zombie.body.pos]);
+      expect(entities.bodyIntersects(door, zombie.body)).toBe(false);
       if (zombie.mode === 'chase' || zombie.mode === 'investigate') {
         awareFrames += 1;
       }
+      frames += 1;
+      if (frames === 60 * 60) {
+        firstMinuteDamage = damage;
+      }
     });
     expect(awareFrames).toBeGreaterThan(120 * 60 * 0.9);
+    expect(firstMinuteDamage).toBe(0);
+    expect(damage).toBe(0);
     expect(positions.every((position) => position[2] > 1)).toBe(true);
+    entities.setOpen(door, true);
+    system.tick(1 / 60);
+    expect(damage).toBe(8);
     const end = positions.at(-1)!;
     expect((end[2] - 1) * BLOCK_SIZE).toBeLessThanOrEqual(1.5);
+  });
+
+  it('still hits through a real open wood_door with a clear chest ray', () => {
+    const { entities, door, solid } = makeDoorWorld();
+    entities.setOpen(door, true);
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([5, 1, -0.56]),
+        solid,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
+    system.tick(1 / 60);
+    expect(damage).toBe(8);
   });
 
   it('C: reaches the last-perceived point, loses sight, then returns within 3 m in 120 seconds', () => {

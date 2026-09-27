@@ -16,11 +16,10 @@ import { Inventory, type Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
-import { bodyOverlapsBlock, stepBody } from '../core/physics.ts';
+import { stepBody } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
-import { cellsOf } from '../core/templates.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import { FISTS_MELEE, type PlayerMovement, type Zombie, ZombieSystem } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
@@ -54,6 +53,7 @@ const USE_REACH = 2;
 const CHEST = 1;
 const QUICK_KEY = /^Digit([1-5])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
+const DOOR_CLOSE_MESSAGES = { player: "You're in the way", other: "Something's in the way" } as const;
 
 export const startPlay = (engine: Engine): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
@@ -256,14 +256,17 @@ export const startPlay = (engine: Engine): void => {
   const toggleDoor = (entity: BlockEntity) => {
     const closing = entity.open;
     const time = entities.defOf(entity).door?.handling ?? 0;
-    queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, () => {
-      const [x0, y0, z0] = entity.pos;
-      const inTheWay = [...cellsOf(entity.size)].some(([x, y, z]) => bodyOverlapsBlock(body, [x0 + x, y0 + y, z0 + z]));
-      const blocked = closing && inTheWay;
-      if (!blocked) {
-        entities.setOpen(entity, !closing);
+    queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, (): string | undefined => {
+      if (!closing) {
+        entities.setOpen(entity, true);
+        return;
       }
-      return blocked ? "You're in the way" : undefined;
+      const blocker = entities.closeDoor(
+        entity,
+        body,
+        [...zombieStore.entries()].map(([, zombie]) => zombie.body),
+      );
+      return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
     });
   };
 

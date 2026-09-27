@@ -6,7 +6,8 @@
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Placed } from './items.ts';
-import type { Facing } from './templates.ts';
+import { type Body, bodyOverlapsBlock } from './physics.ts';
+import { cellsOf, type Facing } from './templates.ts';
 
 export interface BlockEntity {
   readonly uid: number;
@@ -118,7 +119,35 @@ export class BlockEntities {
     return entity !== undefined && this.blocks(entity);
   }
 
-  /** Opens or closes a door. */
+  /** Whether a body's box overlaps any cell occupied by an entity. */
+  bodyIntersects(entity: BlockEntity, body: Body): boolean {
+    const [x0, y0, z0] = entity.pos;
+    for (const [x, y, z] of cellsOf(entity.size)) {
+      if (bodyOverlapsBlock(body, [x0 + x, y0 + y, z0 + z])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Close an open door only when neither the player nor any other body occupies its cells. */
+  closeDoor(entity: BlockEntity, player: Body, otherBodies: Iterable<Body>): 'player' | 'other' | undefined {
+    if (!(this.defOf(entity).door && entity.open)) {
+      return undefined;
+    }
+    if (this.bodyIntersects(entity, player)) {
+      return 'player';
+    }
+    for (const body of otherBodies) {
+      if (this.bodyIntersects(entity, body)) {
+        return 'other';
+      }
+    }
+    this.setOpen(entity, false);
+    return undefined;
+  }
+
+  /** Opens a door or sets state during restore. Use closeDoor for a gameplay close. */
   setOpen(entity: BlockEntity, open: boolean): void {
     entity.open = open;
     this.version += 1;

@@ -475,16 +475,16 @@ decay (compared against live ticking), and death.
   Slice 1.
 
 **Done when:** scenario tests show a shambler reaches the player through an
-open door, not through a closed one, and loses the player after losing sight
-of them.
+open door, not through a closed one; cannot hit through a closed door or occupy
+its cells; and loses the player after losing sight of them.
 
 **Status:** block — implementation and automated checks are in place; awaiting
 BR's visual and play-feel review. `test/zombies.test.ts` exercises the real
-`wood_door` entity for open/closed traversal, with further checks for perception,
-movement, distance-driven gait cadence (12–15 steps/10 s wandering at 0.8 m/s;
-42–52 steps/10 s chasing at 2.8 m/s; no steps against a wall; at most 0.05 rad
-leg-angle change per 1/60 s walking frame), melee, no-respawn, rendering geometry,
-and update cost. Playtest and headless-browser measurements remain part of the
+`wood_door` entity for open/closed traversal, safe closing, and attack occlusion,
+with further checks for perception, movement, distance-driven gait cadence
+(12–15 steps/10 s wandering at 0.8 m/s; 42–52 steps/10 s chasing at 2.8 m/s;
+no steps against a wall; at most 0.05 rad leg-angle change per 1/60 s walking
+frame), melee, no-respawn, rendering geometry, and update cost. Playtest and headless-browser measurements remain part of the
 review report.
 
 ### 1.8 Rest and sleep

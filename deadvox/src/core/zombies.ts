@@ -229,8 +229,15 @@ export class ZombieSystem {
         Math.abs(player.pos[1] - zombie.body.pos[1]) * blockSize < 1.7 &&
         zombie.attackWait <= 0
       ) {
-        this.options.hurtPlayer(zombie.type.attack.damage);
-        zombie.attackWait = zombie.type.attack.cooldown;
+        const chestOffset = 1 / blockSize;
+        const zombieChest: Vec3 = [pos[0], pos[1] + chestOffset, pos[2]];
+        const playerChest: Vec3 = [player.pos[0], player.pos[1] + chestOffset, player.pos[2]];
+        const toPlayer = sub(playerChest, zombieChest);
+        const chestDistance = Math.hypot(...toPlayer);
+        if (chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined) {
+          this.options.hurtPlayer(zombie.type.attack.damage);
+          zombie.attackWait = zombie.type.attack.cooldown;
+        }
       }
       if (zombie.mode === 'return' && horizontalDistance(zombie.home, zombie.body.pos) * blockSize < 0.4) {
         zombie.mode = 'wander';
