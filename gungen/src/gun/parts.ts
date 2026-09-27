@@ -217,7 +217,8 @@ export const lower: PartFamily = {
       default:
         return {
           family: 'lower',
-          solids: [solid('frame', [-14, -1.5, -1.5], [-2, 0, 1.5])],
+          // Extend to the magazine's forward face; the real magazine well is a later step.
+          solids: [solid('frame', [-14, -1.5, -1.5], [-1.5, 0, 1.5])],
           ports: [top, grip(-12), conventionalWell.port],
           keepOuts: [trigger(-10), conventionalWell.path],
           axes: [],

@@ -32,6 +32,28 @@ describe('resolve', () => {
     expectVec(at(r, 'magazine', [0, -10, 0]), [-4.25, -14, 0]); // magazine hangs from the lower
   });
 
+  it('extends the conventional lower to the front edge of the magazine', () => {
+    const lowerFrame = r.defs.get('lower')!.solids[0]!;
+    const magazineBody = r.defs.get('magazine')!.solids[0]!;
+    expect(lowerFrame.kind).toBe('box');
+    expect(magazineBody.kind).toBe('box');
+    if (lowerFrame.kind !== 'box' || magazineBody.kind !== 'box') {
+      return;
+    }
+    const lowerFrontX = at(r, 'lower', [
+      lowerFrame.box.center[0] + lowerFrame.box.half[0],
+      lowerFrame.box.center[1],
+      lowerFrame.box.center[2],
+    ])[0];
+    const magazineFrontX = at(r, 'magazine', [
+      magazineBody.box.center[0] + magazineBody.box.half[0],
+      magazineBody.box.center[1],
+      magazineBody.box.center[2],
+    ])[0];
+    expect(lowerFrontX).toBeCloseTo(-1.5);
+    expect(lowerFrontX).toBeCloseTo(magazineFrontX);
+  });
+
   it('offsets slotted connections along the port', () => {
     expectVec(at(r, 'sight'), [-14 + 3 * 2, 2.5, 0]);
   });
