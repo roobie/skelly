@@ -97,6 +97,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     const simulation = new Simulation({ seed: run.seed, clock: { ratio: CLOCK_RATIO, start: startTime } });
     simulation.godMode = true;
     zombies = new ZombieSystem({
+      seed: run.seed,
       isSolid: engine.isSolid,
       blockSize: s,
       physics: physicsFor(scale),
