@@ -231,6 +231,7 @@ try {
     true,
     'unlock pointerlockchange opens main menu',
   );
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'unlock closes the spawn menu');
   assert.deepEqual(
     await evaluate('window.__pointerCalls'),
     { request: 0, exit: 0 },
