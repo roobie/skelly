@@ -366,7 +366,7 @@ if (initialTemplate) {
 } else {
   const storedFixtureName = uiState.assembly.kind === 'fixture' ? uiState.assembly.name : undefined;
   const storedFixture = fixtures.find((f) => f.name === storedFixtureName);
-  const start = storedFixture ?? fixtures.find((f) => f.name === 'archetype-rifle') ?? fixtures[0];
+  const start = storedFixture ?? fixtures.find((f) => f.name === 'archetype-battle-rifle') ?? fixtures[0];
   if (start) {
     select.value = start.name;
     uiState.assembly = { kind: 'fixture', name: start.name };

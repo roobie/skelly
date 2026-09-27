@@ -10,9 +10,9 @@ import type { Template } from '../core/template.ts';
 
 const SML = ['S', 'M', 'L'] as const;
 
-export const rifle: Template = {
-  name: 'rifle',
-  description: 'Rifle, conventional layout: magazine ahead of the pistol grip, straight stock.',
+export const battleRifle: Template = {
+  name: 'battle-rifle',
+  description: 'Battle rifle, conventional FAL/FNC-like layout: magazine ahead of the pistol grip and straight stock.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: ['M', 'L'] } },
@@ -38,7 +38,7 @@ export const rifle: Template = {
 
 export const smg: Template = {
   name: 'smg',
-  description: 'Submachine gun: the rifle layout at small bore, short barrel, stock optional.',
+  description: 'Submachine gun: the battle-rifle layout at small bore, short barrel, stock optional.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'S' } },
@@ -164,4 +164,4 @@ export const bullpup: Template = {
   ],
 };
 
-export const TEMPLATES: readonly Template[] = [rifle, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];
+export const TEMPLATES: readonly Template[] = [battleRifle, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];

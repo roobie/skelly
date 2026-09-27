@@ -6,7 +6,7 @@ import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixture, variant } from './helpers.ts';
 
-const valid = loadFixture('archetype-rifle');
+const valid = loadFixture('archetype-battle-rifle');
 const at = (r: ReturnType<typeof resolve>, part: string, p: [number, number, number] = [0, 0, 0]) =>
   applyPoint(r.placed.get(part)!, p);
 
@@ -87,7 +87,7 @@ describe('resolve', () => {
   });
 
   it('places the same whichever side of a connection comes first', () => {
-    const flipped = variant('archetype-rifle', (a) => {
+    const flipped = variant('archetype-battle-rifle', (a) => {
       a.connections = a.connections.map((c) => (c.slot === undefined ? { from: c.to, to: c.from } : c));
     });
     const rf = resolve(flipped, gunDomain);
@@ -97,7 +97,7 @@ describe('resolve', () => {
   });
 
   it('places the same when placing a rolled part from its own side', () => {
-    const rolled = variant('archetype-rifle', (a) => {
+    const rolled = variant('archetype-battle-rifle', (a) => {
       a.connections.find((c) => c.to === 'sight.base')!.roll = 90;
     });
     // Root the assembly at the sight: the receiver is placed from the sight.
@@ -126,7 +126,7 @@ describe('resolve', () => {
 
 describe('resolve: structure issues', () => {
   const structure = (edit: Parameters<typeof variant>[1]) =>
-    resolve(variant('archetype-rifle', edit), gunDomain).issues.map((i) => i.message);
+    resolve(variant('archetype-battle-rifle', edit), gunDomain).issues.map((i) => i.message);
 
   it('reports unknown families and bad params', () => {
     expect(
@@ -163,7 +163,7 @@ describe('resolve: structure issues', () => {
         },
       },
     };
-    const r = resolve(loadFixture('archetype-rifle'), domain);
+    const r = resolve(loadFixture('archetype-battle-rifle'), domain);
     expect(r.issues.map((i) => i.message)).toContain('Part "grip" solid "bad-profile" is invalid: profile is self-intersecting.');
     expect(r.defs.get('grip')?.solids).toEqual([]);
   });
@@ -188,7 +188,7 @@ describe('resolve: structure issues', () => {
 
   it('leaves parts that nothing connects unplaced', () => {
     const r = resolve(
-      variant('archetype-rifle', (a) => {
+      variant('archetype-battle-rifle', (a) => {
         a.connections = a.connections.filter((c) => c.to !== 'stock.front');
       }),
       gunDomain,
@@ -210,7 +210,7 @@ describe('resolve: params from neighbours', () => {
 
   it('re-sizes a clamped handguard to whatever barrel it clamps to', () => {
     for (const length of ['S', 'M', 'L']) {
-      const a = variant('archetype-rifle', (x) => {
+      const a = variant('archetype-battle-rifle', (x) => {
         x.parts.barrel!.params = { length };
       });
       const report = validate(a, gunDomain);
@@ -259,7 +259,7 @@ describe('resolve: params from neighbours', () => {
   });
 
   it('resolves chains of neighbours', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.parts.receiver!.params = { ...x.parts.receiver!.params, bore: 'L' };
       const { params: _, ...withoutParams } = x.parts.handguard!;
       x.parts.handguard = withoutParams;
@@ -270,7 +270,7 @@ describe('resolve: params from neighbours', () => {
   });
 
   it('reports a neighbour value the param does not allow', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.parts.receiver!.params = { ...x.parts.receiver!.params, bore: 'L' };
       const { params: _, ...withoutParams } = x.parts.handguard!;
       x.parts.handguard = withoutParams;

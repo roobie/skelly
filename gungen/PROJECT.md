@@ -249,8 +249,8 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 
 | Fixture | Archetype | Built from |
 | --- | --- | --- |
-| `archetype-rifle` | Rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
-| `archetype-smg` | Submachine gun | Same layout as the rifle at small bore, with a short barrel and stock and a long magazine |
+| `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
+| `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
 | `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
@@ -272,7 +272,7 @@ archetype:
   trigger-only lower has no magazine, and nothing flags it. A tube-fed
   receiver on a conventional lower is only caught because the lower happens
   to hit the loading port. *(Fixed in 1.2.)*
-- **The SMG differs from the rifle only in proportions and bore.** Nothing
+- **The SMG differs from the battle rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
 - **Parts still don't read their neighbours' params.** Barrel length, and the
   handguard or tube length that has to match it, are still matched by hand.
@@ -311,7 +311,7 @@ archetype:
 
 ### Still open
 
-- The SMG is still the rifle at a different size and bore.
+- The SMG is still the battle rifle at a different size and bore.
 - Ergonomics is still only "is there a firing grip".
 - Neighbour-reading copies values as they are. There's no mapping between
   them (e.g. "one size smaller than the barrel"), and a part can't compute
@@ -360,7 +360,7 @@ The validator then judges it like any hand-written fixture.
 
 | Template | Valid | Distinct builds | Distinct valid | Failures |
 | --- | --- | --- | --- | --- |
-| rifle | 80.6% | 959 | 776 | keep-out (sightline) 19.4% |
+| battle-rifle | 80.6% | 959 | 776 | keep-out (sightline) 19.4% |
 | smg | 100% | 430 | 430 | – |
 | bolt-rifle | 76.3% | 308 | 234 | keep-out (loading-port) 23.7% |
 | bolt-rifle-box | 100% | 560 | 560 | – |
@@ -410,7 +410,7 @@ Generator valid-rate comparison (`npm run stats`, 1000 seeds/template):
 
 | Template | Before | After | Change |
 | --- | ---: | ---: | --- |
-| rifle | 80.6% | 80.6% | none |
+| battle-rifle | 80.6% | 80.6% | none |
 | smg | 100% | 100% | none |
 | bolt-rifle | 76.3% | 76.3% | none |
 | bolt-rifle-box | 100% | 100% | none |
@@ -429,15 +429,15 @@ npm test               # unit tests plus every fixture
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json
-npm run generate -- --template rifle --seed 42          # print a generated assembly
-npm run generate -- --template rifle --seed 42 --valid  # skip to the next valid seed
+npm run generate -- --template battle-rifle --seed 42  # print a generated assembly
+npm run generate -- --template battle-rifle --seed 42 --valid # skip to the next valid seed
 npm run stats          # generator metrics over 1000 seeds per template
 npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>
 ```
 
 The same viewer is live at <https://roobie.github.io/skelly/gungen/>, and the
 query parameters work there too, e.g.
-<https://roobie.github.io/skelly/gungen/?template=rifle&seed=7>.
+<https://roobie.github.io/skelly/gungen/?template=battle-rifle&seed=7>.
 
 ## Open questions
 

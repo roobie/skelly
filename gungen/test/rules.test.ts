@@ -9,7 +9,7 @@ const rulesFailed = (a: Assembly, domain: Domain = gunDomain) =>
 
 describe('rules', () => {
   it('port-compat: rejects mismatched mounts', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       const swapped: Record<string, (typeof x.connections)[number]> = {
         'stock.front': { from: 'receiver.stock', to: 'grip.top' },
         'grip.top': { from: 'lower.grip', to: 'stock.front' },
@@ -24,7 +24,7 @@ describe('rules', () => {
   });
 
   it('port-compat: rejects two parts on one rail slot', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.parts.sight2 = { family: 'sight' };
       x.connections.push({ from: 'receiver.rail', slot: 3, to: 'sight2.base' });
     });
@@ -50,20 +50,20 @@ describe('rules', () => {
         },
       },
     };
-    const { issues } = validate(loadFixture('archetype-rifle'), domain);
+    const { issues } = validate(loadFixture('archetype-battle-rifle'), domain);
     expect(issues.map((i) => i.message)).toEqual(['The bore axis of barrel is 1u off the main axis.']);
   });
 
   it('axis-alignment: rejects an assembly not rooted on the bore line', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.root = 'grip';
     });
     expect(rulesFailed(a)).toEqual(['axis-alignment']);
   });
 
   it('keep-out: the part attached at the allowed port may occupy the volume', () => {
-    // archetype-rifle's magazine sits in the receiver's magazine-path volume.
-    expect(rulesFailed(loadFixture('archetype-rifle'))).toEqual([]);
+    // The magazine sits in the lower's magazine-path volume.
+    expect(rulesFailed(loadFixture('archetype-battle-rifle'))).toEqual([]);
   });
 
   it('keep-out: without the allowance, the magazine intrudes', () => {
@@ -81,18 +81,18 @@ describe('rules', () => {
         },
       },
     };
-    const { issues } = validate(loadFixture('archetype-rifle'), domain);
+    const { issues } = validate(loadFixture('archetype-battle-rifle'), domain);
     // The enlarged well path contains the magazine, with 0.25u of clearance per side.
     expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2.75u into the magazine-path volume of lower.']);
   });
 
   it('solid-overlap: beveled grip mates without relying on the old global allowance', () => {
-    const r = validate(loadFixture('archetype-rifle'), gunDomain);
+    const r = validate(loadFixture('archetype-battle-rifle'), gunDomain);
     expect(r.issues).toEqual([]);
   });
 
   it('solid-overlap: mount-specific zero allowance rejects a too-tight clamp', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.parts.handguard = { family: 'handguard', params: { inner: 'S' } };
     });
     const issues = validate(a, gunDomain).issues.filter((issue) => issue.rule === 'solid-overlap');

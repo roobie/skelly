@@ -1,6 +1,6 @@
 {
   "name": "archetype-smg",
-  "description": "Submachine gun: rifle layout at small bore, with a short barrel, short stock and long magazine.",
+  "description": "Submachine gun: battle-rifle layout at small bore, with a short barrel, short stock and long magazine.",
   "expect": [],
   "root": "receiver",
   "parts": {

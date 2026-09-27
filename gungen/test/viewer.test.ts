@@ -7,7 +7,7 @@ import { loadFixture } from './helpers.ts';
 
 describe('viewer geometry', () => {
   it('renders the beveled grip as one extruded mesh', () => {
-    const layers = buildLayers(validate(loadFixture('archetype-rifle'), gunDomain), []);
+    const layers = buildLayers(validate(loadFixture('archetype-battle-rifle'), gunDomain), []);
     try {
       const grip = layers.solids.children.find((child) => String(child.userData.label).includes('grip (grip) · solid body'));
       expect(grip).toBeInstanceOf(Mesh);

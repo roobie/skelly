@@ -21,8 +21,8 @@ export interface UiState {
 
 export const DEFAULT_UI_STATE: UiState = {
   version: 1,
-  assembly: { kind: 'fixture', name: 'archetype-rifle' },
-  template: 'rifle',
+  assembly: { kind: 'fixture', name: 'archetype-battle-rifle' },
+  template: 'battle-rifle',
   seed: '0',
   onlyValid: false,
   layers: { solids: true, ports: true, keepOuts: true, axes: true },
