@@ -90,9 +90,10 @@ const moveAxis = (body: Body, axis: Axis, delta: number, { isSolid, bodies = [] 
   if (delta === 0) {
     return false;
   }
+  const alreadyOverlapping = new Set(bodies.filter((other) => overlapsBody(body, other)));
   body.pos[axis] += delta;
   const terrainHit = overlapsTerrain(body, isSolid);
-  const bodyHits = bodies.filter((other) => overlapsBody(body, other));
+  const bodyHits = bodies.filter((other) => !alreadyOverlapping.has(other) && overlapsBody(body, other));
   if (!terrainHit && bodyHits.length === 0) {
     return false;
   }
@@ -230,6 +231,24 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
 };
 
 /** Pairwise horizontal shambler separation, capped per push and clipped against terrain and supplied blockers. */
+export const separateBodyPair = ({
+  first,
+  second,
+  dt,
+  isSolid,
+  blockSize,
+  obstacles = [],
+}: {
+  first: Body;
+  second: Body;
+  dt: number;
+  isSolid: SolidAt;
+  blockSize: number;
+  obstacles?: readonly Body[];
+}): void => {
+  separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles });
+};
+
 export const separateBodies = ({
   bodies,
   dt,
@@ -243,12 +262,11 @@ export const separateBodies = ({
   blockSize: number;
   obstacles?: readonly Body[];
 }): void => {
-  const maxPushBlocks = dt / blockSize;
   for (let i = 0; i < bodies.length; i++) {
     const first = bodies[i]!;
     for (let j = i + 1; j < bodies.length; j++) {
       const second = bodies[j]!;
-      separatePair(first, second, maxPushBlocks, { isSolid, bodies: obstacles });
+      separateBodyPair({ first, second, dt, isSolid, blockSize, obstacles });
     }
   }
 };

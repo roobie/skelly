@@ -432,6 +432,51 @@ describe('shambler scenarios', () => {
     expect(playerBody.pos[1]).toBeCloseTo(1, 3);
   });
 
+  it('resolves an existing player/shambler overlap softly beside a wall', () => {
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 5 && z === 0 && y >= 1 && y <= 5);
+    const playerBody = createPlayerBody(SCALE, 4, 5, 0);
+    const target = () => ({ ...player(playerBody.pos, [1, 0, 0]), body: playerBody });
+    const system = new ZombieSystem(senses(target, wall));
+    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const id = system.add(stillShambler, [3.4, 1, 0]);
+    const zombieBody = system.store.get(id)!.body;
+    zombieBody.onGround = true;
+    for (let frame = 0; frame < 120; frame++) {
+      stepBody(playerBody, 1 / 60, wall, { ...PHYSICS, obstacles: [zombieBody] });
+    }
+    expect(playerBody.onGround).toBe(true);
+    expect(boxesOverlap(playerBody, zombieBody)).toBe(true);
+    const wallGap = (5 - playerBody.pos[0] - playerBody.halfWidth) * BLOCK_SIZE;
+    expect(wallGap).toBeGreaterThanOrEqual(0);
+    expect(wallGap).toBeLessThanOrEqual(0.3);
+
+    const dt = 1 / 20;
+    const walk = (right: -1 | 1) => {
+      for (let tick = 0; tick < 3 * 20; tick++) {
+        const playerBefore = [...playerBody.pos] as Vec3;
+        const zombieBefore = [...zombieBody.pos] as Vec3;
+        system.tick(dt);
+        steer(playerBody, SCALE, 0, {
+          forward: 0,
+          right,
+          jump: false,
+          sprint: false,
+          walk: true,
+        });
+        stepBody(playerBody, dt, wall, { ...PHYSICS, obstacles: [zombieBody] });
+        expect(bodyHitsSolid(playerBody, wall)).toBe(false);
+        expect(bodyHitsSolid(zombieBody, wall)).toBe(false);
+        expect(metres(playerBefore, playerBody.pos)).toBeLessThanOrEqual(PLAYER.walk * dt + dt + 0.001);
+        expect(metres(zombieBefore, zombieBody.pos)).toBeLessThanOrEqual(dt + 0.001);
+        if (right === 1 && tick >= 2 * 20) {
+          expect(boxesOverlap(playerBody, zombieBody)).toBe(false);
+        }
+      }
+    };
+    walk(1);
+    walk(-1);
+  });
+
   it('lets a chaser attack a player against a wall without overlapping either box', () => {
     const playerBody = createPlayerBody(SCALE, 0.4, 1, 0);
     playerBody.onGround = true;

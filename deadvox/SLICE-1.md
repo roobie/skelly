@@ -494,8 +494,9 @@ checks panel picking, an open ray through to furniture behind the doorway, and
 renderer/core panel agreement within 1 mm for every facing and state.
 `test/debugTools.test.ts`, `test/sim.test.ts`, and `test/zombies.test.ts` cover
 noclip collision/gravity and god-mode immunity without suppressing zombie attacks.
-`test/zombies.test.ts` also covers hard player/shambler contact, chaser attacks at
-wall contact, three close-spaced shamblers passing through a real open door,
+`test/zombies.test.ts` also covers hard player/shambler contact, soft resolution
+of an existing player/shambler overlap beside a wall, chaser attacks at wall
+contact, three close-spaced shamblers passing through a real open door,
 five-body crowd separation, and a corridor-wall case; shambler pairs use soft
 separation only, not hard movement blockers. `test/physics.test.ts` and
 `test/zombies.test.ts` prove vertical movement lands on terrain only (including

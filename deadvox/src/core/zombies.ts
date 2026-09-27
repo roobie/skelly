@@ -1,7 +1,7 @@
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
-import { type Body, type PhysicsParams, separateBodies, stepBody } from './physics.ts';
+import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
@@ -293,6 +293,11 @@ export class ZombieSystem {
       blockSize,
       obstacles: player.body ? [player.body] : [],
     });
+    if (player.body) {
+      for (const [, zombie] of entries) {
+        separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });
+      }
+    }
     this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
   }
 
