@@ -635,7 +635,9 @@ A zombie type:
 
 ```json
 { "id": "shambler", "name": "Shambler", "health": 60, "speed": { "wander": 0.8, "chase": 2.8 },
-  "sight": 25, "hearing": 1.0, "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
+  "sight": 25, "nightSight": 10, "sightCone": 60, "hearing": 1.0,
+  "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
+  "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
   "abilities": [], "loot": "shambler_pockets", "model": "figure_basic" }
 ```
 
@@ -665,7 +667,7 @@ A zombie type:
 | Stamina per second | −5 sprinting, +4 otherwise (half when exhausted, starving or parched); winded below 10 |
 | Eating, drinking, battery swap | 3 s, 2 s, 2 s |
 | Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.05 s per cell. Opening a door 0.6 s |
-| Shambler perception | Sight 25 m by day, 10 m at night; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: jogging 8 m, sprinting 15 m |
+| Shambler perception | Sight 25 m by day, 10 m at night; 60° cone; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: walking 3 m, jogging 8 m, sprinting 15 m |
 | Shambler count | 6–10 in the hamlet |
 
 ## Playtest plan

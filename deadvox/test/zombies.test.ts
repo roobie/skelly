@@ -126,7 +126,9 @@ describe('shambler perception', () => {
     expect(sees([17, 2, 0], 12, false, opaque, 'jogging')).toBe(false);
     expect(sees([29, 2, 0], 12, false, opaque, 'sprinting')).toBe(true);
     expect(sees([31, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
-    expect(sees([15, 2, 0], 12, false, opaque, 'walking')).toBe(false);
+    expect(sees([5, 2, 0], 12, false, opaque, 'walking')).toBe(true);
+    expect(sees([7, 2, 0], 12, false, opaque, 'walking')).toBe(false);
+    expect(sees([5, 2, 0], 12, false, opaque, 'still')).toBe(false);
   });
 });
 
@@ -134,9 +136,9 @@ describe('shambler scenarios', () => {
   it('A: reaches the player through a real open wood_door entity within 20 seconds', () => {
     const { entities, door, solid } = makeDoorWorld();
     entities.setOpen(door, true);
-    const target = [4.5, 1, -6] as Vec3;
+    const target = [5, 1, -6] as Vec3;
     const system = new ZombieSystem(senses(() => player(target, [0, 0, 1]), solid));
-    const id = system.add(SHAMBLER, [9, 1, 6], [0, 0, -1]);
+    const id = system.add(SHAMBLER, [5, 1, 6], [0, 0, -1]);
     run(system, 20);
     expect(metres(system.store.get(id)!.body.pos, target)).toBeLessThanOrEqual(1.2);
   });
@@ -144,9 +146,9 @@ describe('shambler scenarios', () => {
   it('B: hears the sprinting player but cannot enter through the real closed door for 120 seconds', () => {
     const { entities, door, solid } = makeDoorWorld();
     entities.setOpen(door, false);
-    const target = [4.5, 1, -6] as Vec3;
+    const target = [5, 1, -6] as Vec3;
     const system = new ZombieSystem(senses(() => player(target, [0, 0, 1], 'sprinting'), solid));
-    const id = system.add(SHAMBLER, [4.5, 1, 6], [0, 0, -1]);
+    const id = system.add(SHAMBLER, [5, 1, 6], [0, 0, -1]);
     const positions: Vec3[] = [];
     let awareFrames = 0;
     run(system, 120, () => {

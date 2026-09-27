@@ -82,7 +82,7 @@ export const perceivePlayer = ({
   const dir = unit(delta);
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
-  const inCone = dot >= Math.cos(((zombie.sightCone ?? 60) * Math.PI) / 180);
+  const inCone = dot >= Math.cos((zombie.sightCone * Math.PI) / 180);
   if (inCone && metres > 0) {
     const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
     const rayTarget: Vec3 = [player.pos[0], player.pos[1] + 1.3 / blockSize, player.pos[2]];
@@ -107,6 +107,8 @@ export const perceivePlayer = ({
     hearingRange = zombie.hearingRange.sprint;
   } else if (player.movement === 'jogging') {
     hearingRange = zombie.hearingRange.jog;
+  } else if (player.movement === 'walking') {
+    hearingRange = zombie.hearingRange.walk;
   }
   return hearingRange > 0 && metres <= hearingRange * zombie.hearing;
 };

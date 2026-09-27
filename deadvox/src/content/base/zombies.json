@@ -12,7 +12,7 @@
       "nightSight": 10,
       "sightCone": 60,
       "hearing": 1,
-      "hearingRange": { "jog": 8, "sprint": 15 },
+      "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
       "attack": {
         "damage": 8,
         "reach": 1.2,

@@ -56,6 +56,30 @@ describe('content', () => {
     expect(registry.blockIds.has('ok')).toBe(false);
   });
 
+  it('requires sightCone on every zombie type', () => {
+    const missingCone = {
+      source: 'missing-cone.json',
+      data: {
+        zombies: [
+          {
+            id: 'missing_cone',
+            name: 'Missing cone',
+            health: 50,
+            speed: { wander: 0.8, chase: 2.5 },
+            sight: 20,
+            nightSight: 10,
+            hearing: 1,
+            hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            attack: { damage: 5, reach: 1, cooldown: 1.5 },
+            abilities: [],
+            model: 'figure_basic',
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...base, missingCone]).issues.map((issue) => issue.path)).toContain('zombies[0].sightCone');
+  });
+
   it('reports a duplicate id within a file', () => {
     const block = { id: 'ok', name: 'Fine', color: '#ffffff', solid: true };
     const issues = validateContent({ source: 'dup.json', data: { blocks: [block, block] } });
@@ -126,8 +150,9 @@ describe('content references', () => {
             speed: { wander: 0.8, chase: 2.5 },
             sight: 20,
             nightSight: 10,
+            sightCone: 60,
             hearing: 1,
-            hearingRange: { jog: 8, sprint: 15 },
+            hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
             loot: 'till',
