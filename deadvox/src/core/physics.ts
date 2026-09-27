@@ -58,7 +58,7 @@ const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
   return false;
 };
 
-const overlapsBody = (body: Body, other: Body): boolean =>
+export const overlapsBody = (body: Body, other: Body): boolean =>
   body.pos[0] - body.halfWidth < other.pos[0] + other.halfWidth &&
   body.pos[0] + body.halfWidth > other.pos[0] - other.halfWidth &&
   body.pos[1] < other.pos[1] + other.height &&
@@ -190,6 +190,9 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
 };
 
 const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
+  if (!overlapsBody(first, second)) {
+    return;
+  }
   const deltaX = second.pos[0] - first.pos[0];
   const deltaZ = second.pos[2] - first.pos[2];
   const overlapX = first.halfWidth + second.halfWidth - Math.abs(deltaX);

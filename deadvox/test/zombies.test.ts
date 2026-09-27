@@ -432,6 +432,48 @@ describe('shambler scenarios', () => {
     expect(playerBody.pos[1]).toBeCloseTo(1, 3);
   });
 
+  it('does not separate a player standing two metres above a shambler footprint', () => {
+    const platform: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
+    const playerBody = createPlayerBody(SCALE, 0.5, 5, 0.5);
+    playerBody.onGround = true;
+    const target = () => ({ ...player(playerBody.pos), body: playerBody });
+    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const system = new ZombieSystem(senses(target, platform));
+    const id = system.add(stillShambler, [0.5, 1, 0.5]);
+    system.store.get(id)!.body.onGround = true;
+    const start = [...playerBody.pos] as Vec3;
+
+    for (let tick = 0; tick < 60; tick++) {
+      system.tick(1 / 20);
+    }
+
+    expect(playerBody.pos[0]).toBeCloseTo(start[0], 6);
+    expect(playerBody.pos[2]).toBeCloseTo(start[2], 6);
+  });
+
+  it('does not separate overlapping shambler footprints when one stands two metres above the other', () => {
+    const ledge: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
+    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const system = new ZombieSystem(senses(() => player([100, 1, 100]), ledge));
+    const lowerId = system.add(stillShambler, [0.5, 1, 0.5]);
+    const upperId = system.add(stillShambler, [0.5, 5, 0.5]);
+    const lower = system.store.get(lowerId)!.body;
+    const upper = system.store.get(upperId)!.body;
+    lower.onGround = true;
+    upper.onGround = true;
+    const lowerStart = [...lower.pos] as Vec3;
+    const upperStart = [...upper.pos] as Vec3;
+
+    for (let tick = 0; tick < 60; tick++) {
+      system.tick(1 / 20);
+    }
+
+    expect(lower.pos[0]).toBeCloseTo(lowerStart[0], 6);
+    expect(lower.pos[2]).toBeCloseTo(lowerStart[2], 6);
+    expect(upper.pos[0]).toBeCloseTo(upperStart[0], 6);
+    expect(upper.pos[2]).toBeCloseTo(upperStart[2], 6);
+  });
+
   it('resolves an existing player/shambler overlap softly beside a wall', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 5 && z === 0 && y >= 1 && y <= 5);
     const playerBody = createPlayerBody(SCALE, 4, 5, 0);
