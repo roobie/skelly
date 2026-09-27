@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
+import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
@@ -13,8 +14,17 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const cwd = process.cwd();
 const profile = await mkdtemp(join(tmpdir(), 'deadvox-ui-contract-'));
-const port = Number(process.env.UI_TEST_PORT ?? 5198);
-const cdpPort = Number(process.env.UI_TEST_CDP_PORT ?? 9238);
+const freePort = async () =>
+  new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      server.close((error) => (error ? reject(error) : resolve(address.port)));
+    });
+  });
+const port = Number(process.env.UI_TEST_PORT ?? (await freePort()));
+const cdpPort = Number(process.env.UI_TEST_CDP_PORT ?? (await freePort()));
 const vite = spawn(
   process.execPath,
   ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', `${port}`, '--strictPort'],
@@ -28,6 +38,7 @@ const chrome = spawn(
   [
     '--headless=new',
     '--no-sandbox',
+    '--disable-dev-shm-usage',
     '--disable-extensions',
     '--enable-webgl',
     '--use-gl=swiftshader',
