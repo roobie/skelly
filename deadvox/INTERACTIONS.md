@@ -330,8 +330,8 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 ## Order of work
 
-1. **ADR 0001:** the spawn menu and the death screen moved to lit-html as
-   small examples of the pattern (done), then the credits and the HUD.
+1. **ADR 0001 (done):** the spawn menu and the death screen moved to lit-html
+   as small examples of the pattern, then the credits and the HUD.
 2. **1.8, rest and sleep:** build the long action as the general mechanism, with
    rest and sleep as its first users.
 3. **1.9, saves:** long actions and item state as plain data, as above.

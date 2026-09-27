@@ -27,7 +27,7 @@ import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
-import { Quickbar, renderHandling, renderQuickbar } from '../ui/hud.ts';
+import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { SpawnMenu } from '../ui/spawnMenu.ts';
 import { BuildMode } from './build.ts';
@@ -490,7 +490,7 @@ export const startPlay = (engine: Engine): void => {
 
   let quickbarDrawn = '';
   const drawQuickbar = () => {
-    const key = `${inventory.version}|${quickbar.slots.map((i) => i?.uid ?? 0).join(',')}`;
+    const key = quickbarKey(quickbar, inventory);
     if (key !== quickbarDrawn) {
       quickbarDrawn = key;
       renderQuickbar(quickbarBox, quickbar, inventory);
