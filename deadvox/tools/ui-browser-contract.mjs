@@ -268,6 +268,7 @@ try {
     { request: 0, exit: 0 },
     'unlock event does not call lock APIs',
   );
+  assert.fail('intentional CI failure-path probe');
   process.stdout.write(
     'UI browser contract passed: G search, menu pointer-lock behavior, cursor clicks/focus, unlock, F10, inventory stats.\n',
   );
