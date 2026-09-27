@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Box3, Vector3 } from 'three';
+import { Box3, type Loader, LoadingManager, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
@@ -8,11 +8,29 @@ import { pileLayout } from '../src/core/pileLayout.ts';
 import { prepareModel } from '../src/render/models.ts';
 
 const BASE = 'src/content/base';
+const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
+const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
+const imageLoader = {
+  isImageBitmapLoader: true,
+  load(_url: string, onLoad: (image: ImageBitmap) => void) {
+    onLoad({ width: 8, height: 8 } as ImageBitmap);
+  },
+};
+const loader = new GLTFLoader(new LoadingManager());
+Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
+loader.manager.addHandler(/.*/, imageLoader as unknown as Loader);
+const parseGlb = async (bytes: Buffer) => loader.parseAsync(Uint8Array.from(bytes).buffer, '');
+const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box3): boolean =>
+  (['x', 'y', 'z'] as const).every((axis) => {
+    const coordinate = anchor[AXIS_INDEX[axis]];
+    return coordinate >= bounds.min[axis] - 0.02 && coordinate <= bounds.max[axis] + 0.02;
+  });
 const { registry, issues } = buildRegistry([
   ...['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map((f) =>
     read(`${BASE}/${f}`),
   ),
+  read(`${BASE}/models-melee.json`),
   read('test/fixtures/packs/lamp/lamp.json'),
 ]);
 
@@ -67,8 +85,7 @@ describe('piles with models', () => {
 describe('model forms', () => {
   const load = async () => {
     const bytes = readFileSync('test/fixtures/packs/lamp/assets/models/lamp.glb');
-    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-    const gltf = await new GLTFLoader().parseAsync(buffer, '');
+    const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     return prepareModel(registry.models.get('lamp')!, gltf.scene);
   };
 
@@ -92,14 +109,72 @@ describe('model forms', () => {
   });
 });
 
+describe('base pack melee', () => {
+  const melee = buildRegistry([read(`${BASE}/models-melee.json`)]).registry;
+  const models = [...melee.models.values()];
+
+  it('maps only the four matching Slice 1 items', () => {
+    expect(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat'].map((id) => registry.items.get(id)?.model)).toEqual([
+      'crowbar',
+      'hammer',
+      'kitchen_knife',
+      'baseball_bat',
+    ]);
+    expect(registry.items.get('steel_pipe')?.model).toBeUndefined();
+  });
+
+  it.each(models.map((model) => [model.id, model] as const))(
+    '%s loads, rests on x, and has usable palm and strike anchors at real-world scale',
+    async (_, def) => {
+      const bytes = readFileSync(`${BASE}/${def.file}`);
+      const { scene } = await parseGlb(bytes);
+      const sourceBox = new Box3().setFromObject(scene);
+      const { ground } = prepareModel(def, scene);
+      ground.updateMatrixWorld(true);
+      const groundBox = new Box3().setFromObject(ground);
+      const length = sourceBox.max.x - sourceBox.min.x;
+      const grip = def.grip?.at;
+      const strike = def.anchors?.strike;
+
+      expect(grip).toBeDefined();
+      expect(strike).toBeDefined();
+      expect(strike![0]).toBeGreaterThan(grip![0]);
+      expect(
+        [grip!, strike!].every((anchor) => anchorIsInBounds(anchor, sourceBox)),
+        `${def.id} anchors`,
+      ).toBe(true);
+      expect(groundBox.min.y).toBeCloseTo(0, 5);
+      expect(groundBox.getCenter(new Vector3()).x).toBeCloseTo(0, 5);
+      expect(groundBox.getCenter(new Vector3()).z).toBeCloseTo(0, 5);
+      expect(length).toBeGreaterThan(0.15);
+      expect(length).toBeLessThan(1.0);
+      expect(def.file).toMatch(MODEL_FILE);
+    },
+  );
+
+  it('keeps the kitchen knife under 0.4 m and baseball bat within 0.7–1.1 m', async () => {
+    const dimensions = async (id: string): Promise<number> => {
+      const model = melee.models.get(id)!;
+      const bytes = readFileSync(`${BASE}/${model.file}`);
+      const { scene } = await parseGlb(bytes);
+      const box = new Box3().setFromObject(scene);
+      const { max, min } = box;
+      return max.x - min.x;
+    };
+    expect(await dimensions('kitchen_knife')).toBeLessThan(0.4);
+    expect(await dimensions('baseball_bat')).toBeGreaterThanOrEqual(0.7);
+    expect(await dimensions('baseball_bat')).toBeLessThanOrEqual(1.1);
+  });
+});
+
 describe('base pack guns', () => {
   const base = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
   const guns = [...base.models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
     const bytes = readFileSync(`src/content/base/${def.file}`);
-    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-    const { held } = prepareModel(def, (await new GLTFLoader().parseAsync(buffer, '')).scene);
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+    const { held } = prepareModel(def, scene);
     held.updateMatrixWorld(true);
     // held > turned > offset: the offset group maps the file's coordinates into the hand's.
     const offset = held.children[0]!.children[0]!;
