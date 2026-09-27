@@ -90,8 +90,13 @@ Cues per state (a starting set; BR's list is the sound column):
 | Thirst | a dry, washed-out edge when it's bad | lip smacking, a dry swallow |
 | Fatigue | slow blinks (the view darkening and returning), heavier head bob | yawning |
 | Low health, pain | desaturation and a slower view settle | moaning, pained breathing |
+| Injured leg (BR: "limping too!") | a limp: an uneven head bob, one step short and dipping, at a slower pace | uneven footsteps, a hiss on the bad step |
 | Low stamina | a pulse of narrowed view after a sprint | panting, heavy breathing |
 | Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
+
+The limp is also movement, not only a look: the pace really drops, so it belongs
+with the body model. Wounds per body part come in Slice 3 (SLICE-1.md's scope
+table); until then a limp can follow low health.
 
 **The game has no audio yet** (nothing in `src` creates a Web Audio context). The
 sound half needs a small player-sound system first: Web Audio started by the
