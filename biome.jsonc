@@ -94,6 +94,16 @@
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
     {
+      // The CPU-only benchmark entrypoint imports the same game system under Node and prints measurements.
+      "includes": ["**/src/bench/shamblers-cpu.mjs"],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" },
+          "suspicious": { "noConsole": "off" }
+        }
+      }
+    },
+    {
       // CLIs talk to the terminal.
       "includes": ["**/src/cli/**"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" } } }

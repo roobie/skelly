@@ -6,7 +6,8 @@
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Placed } from './items.ts';
-import type { Facing } from './templates.ts';
+import { type Body, bodyOverlapsBlock } from './physics.ts';
+import { cellsOf, type Facing } from './templates.ts';
 
 export interface BlockEntity {
   readonly uid: number;
@@ -35,6 +36,38 @@ export interface EntitySpec {
 
 /** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (DESIGN.md, "Handling time"). */
 export const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
+const DOOR_PANEL_THICKNESS = 0.06;
+const DOOR_OPEN_TURN = { n: -Math.PI / 2, s: Math.PI / 2, e: -Math.PI / 2, w: Math.PI / 2 } as const;
+
+/** Oriented door-panel box: metre dimensions and local centre around a world-metre hinge. */
+export interface DoorPanelBox {
+  pivot: Vec3;
+  center: Vec3;
+  size: Vec3;
+  rotationY: number;
+}
+
+/** The visible/pickable thin panel, open or closed, shared by renderer and core picking. */
+export const doorPanel = (entity: BlockEntity, blockSize: number): DoorPanelBox => {
+  const [x, y, z] = entity.pos;
+  const [w, h, d] = entity.size;
+  const alongX = entity.facing === 'n' || entity.facing === 's';
+  const width = (alongX ? w : d) * blockSize;
+  const height = h * blockSize;
+  return alongX
+    ? {
+        pivot: [x * blockSize, y * blockSize, (z + d / 2) * blockSize],
+        center: [width / 2, height / 2, 0],
+        size: [width, height, DOOR_PANEL_THICKNESS],
+        rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
+      }
+    : {
+        pivot: [(x + w / 2) * blockSize, y * blockSize, z * blockSize],
+        center: [0, height / 2, width / 2],
+        size: [DOOR_PANEL_THICKNESS, height, width],
+        rotationY: entity.open ? DOOR_OPEN_TURN[entity.facing] : 0,
+      };
+};
 
 export const searchTime = (def: FurnitureDef): number => {
   const cells = (def.container?.pockets ?? []).reduce((sum, p) => sum + p.grid[0] * p.grid[1], 0);
@@ -118,7 +151,35 @@ export class BlockEntities {
     return entity !== undefined && this.blocks(entity);
   }
 
-  /** Opens or closes a door. */
+  /** Whether a body's box overlaps any cell occupied by an entity. */
+  bodyIntersects(entity: BlockEntity, body: Body): boolean {
+    const [x0, y0, z0] = entity.pos;
+    for (const [x, y, z] of cellsOf(entity.size)) {
+      if (bodyOverlapsBlock(body, [x0 + x, y0 + y, z0 + z])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Close an open door only when neither the player nor any other body occupies its cells. */
+  closeDoor(entity: BlockEntity, player: Body, otherBodies: Iterable<Body>): 'player' | 'other' | undefined {
+    if (!(this.defOf(entity).door && entity.open)) {
+      return undefined;
+    }
+    if (this.bodyIntersects(entity, player)) {
+      return 'player';
+    }
+    for (const body of otherBodies) {
+      if (this.bodyIntersects(entity, body)) {
+        return 'other';
+      }
+    }
+    this.setOpen(entity, false);
+    return undefined;
+  }
+
+  /** Opens a door or sets state during restore. Use closeDoor for a gameplay close. */
   setOpen(entity: BlockEntity, open: boolean): void {
     entity.open = open;
     this.version += 1;

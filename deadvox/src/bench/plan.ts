@@ -12,6 +12,30 @@ export interface BenchConfig {
 /** The game's 0.5 m blocks at each view distance on offer. Compare sizes with `?plan=1:96,0.5:96`. */
 export const DEFAULT_PLAN: readonly BenchConfig[] = [64, 96, 128].map((radiusM) => ({ blockSize: 0.5, radiusM }));
 
+export const DEFAULT_SHAMBLER_COUNTS = [10, 25, 50, 100] as const;
+export const MAX_SHAMBLER_COUNT = 500;
+const SHAMBLER_COUNTS_PATTERN = /^\d+(,\d+)*$/;
+
+export const parseShamblerCounts = (text: string): number[] | undefined => {
+  if (!SHAMBLER_COUNTS_PATTERN.test(text)) {
+    return undefined;
+  }
+  const counts = text.split(',').map(Number);
+  return counts.every((n) => Number.isSafeInteger(n) && n > 0 && n <= MAX_SHAMBLER_COUNT) &&
+    new Set(counts).size === counts.length
+    ? counts
+    : undefined;
+};
+
+const SHAMBLER_SEED_PATTERN = /^-?\d+$/;
+export const parseShamblerSeed = (text: string): number | undefined => {
+  if (!SHAMBLER_SEED_PATTERN.test(text)) {
+    return undefined;
+  }
+  const seed = Number(text);
+  return Number.isInteger(seed) && seed >= -2_147_483_648 && seed <= 2_147_483_647 ? seed : undefined;
+};
+
 /** Parses "1:64,0.5:96"; returns undefined if anything is malformed. */
 export const parsePlan = (text: string): BenchConfig[] | undefined => {
   const plan = text.split(',').map((part) => {
@@ -72,6 +96,17 @@ export interface Environment {
   pixelRatio: number;
 }
 
+export interface ShamblerRunResult {
+  n: number;
+  seed: number;
+  frame: FrameStats;
+  zombieTick: SampleStats;
+  renderSubmit: SampleStats;
+  holesMax: number;
+  holeFraction: number;
+  interrupted: boolean;
+}
+
 export interface BenchRecord {
   startedAt: string;
   quick: boolean;
@@ -81,6 +116,7 @@ export interface BenchRecord {
   time?: string;
   env?: Environment;
   runs: RunResult[];
+  shamblers?: ShamblerRunResult[];
 }
 
 const KEY = 'deadvox.bench.v2';

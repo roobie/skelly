@@ -128,6 +128,10 @@ export class StressCity implements Site {
     return (this.byColumn.get(`${cx},${cz}`) ?? []).flatMap((p) => furnitureOf(this, p, [cx, cz]));
   }
 
+  zombiesIn(): [] {
+    return [];
+  }
+
   // ---- internals ----
 
   /** Two rows of buildings in the city block (i, j): the north row faces north, the south row south. */

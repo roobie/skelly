@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
+import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
@@ -30,6 +30,40 @@ describe('stepBody', () => {
     });
     expect(body.pos[0] + body.halfWidth).toBeLessThanOrEqual(3);
     expect(body.pos[0] + body.halfWidth).toBeGreaterThan(2.99);
+  });
+
+  it('stops at a body face when moving from either side', () => {
+    const obstacle = createPlayerBody(metre, 0, 10.001, 0.5);
+    obstacle.onGround = true;
+    const body = createPlayerBody(metre, 2, 10.001, 0.5);
+    body.onGround = true;
+    run(60, () => {
+      body.vel[0] = -6;
+      stepBody(body, 1 / 60, floor, { ...physicsFor(metre), obstacles: [obstacle] });
+    });
+    expect(body.pos[0] - body.halfWidth).toBeGreaterThanOrEqual(obstacle.pos[0] + obstacle.halfWidth - 0.001);
+    expect(body.pos[0]).toBeCloseTo(0.6, 3);
+  });
+
+  it('does not land a jumping player on a shambler instead of terrain', () => {
+    const shambler: Body = {
+      pos: [0, 10, 0],
+      vel: [0, 0, 0],
+      halfWidth: 0.56,
+      height: 3.4,
+      onGround: true,
+    };
+    const body = createPlayerBody(metre, 0, 14, 0);
+    body.vel[1] = PLAYER.jump;
+    let [, highest] = body.pos;
+    run(120, () => {
+      stepBody(body, 1 / 60, floor, { ...physicsFor(metre), obstacles: [shambler] });
+      highest = Math.max(highest, body.pos[1]);
+    });
+    expect(highest).toBeGreaterThan(14);
+    expect(body.onGround).toBe(true);
+    expect(body.pos[1]).toBeCloseTo(10, 3);
+    expect(body.pos[1]).toBeLessThan(shambler.pos[1] + shambler.height);
   });
 
   describe('step-up (0.5 m)', () => {

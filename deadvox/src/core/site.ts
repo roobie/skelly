@@ -38,6 +38,12 @@ export interface FurnitureSpawn {
   loot: Rolled[];
 }
 
+export interface ZombieSpawn {
+  type: string;
+  /** Feet position in world blocks. */
+  pos: Vec3;
+}
+
 export interface Site {
   /** The ground under the site, blended into the natural ground around it. */
   readonly surface: Surface;
@@ -47,6 +53,8 @@ export interface Site {
   stamp: (chunk: Chunk) => void;
   /** Furniture anchored in the column (cx, cz), with its loot. */
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
+  /** Zombie spawns anchored in the column, deterministic for the site seed. */
+  zombiesIn: (cx: number, cz: number) => ZombieSpawn[];
 }
 
 /**
