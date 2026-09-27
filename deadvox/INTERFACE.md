@@ -157,6 +157,11 @@ to use it:
   only: while right-click is held, a middle click or Shift switches between hip
   and sights (the view narrows through the sights). Shift is also sprint today
   (`src/game/input.ts:59`); while ready, Shift means sights, not sprint.
+- **Ready is slow.** While ready you don't jog or sprint; the top speed is a
+  hurried march, faster than a walk and slower than a jog. That is deliberate:
+  readiness trades mobility for being able to fight.
+- **Blocking is a ready-only move:** holding right-click and backing off (S)
+  blocks incoming melee. Unreadied, S is only a step back.
 - **Left click acts only while ready:** a strike, or a shot from the hip or the
   sights. Unreadied, a left click does not attack, so looking around with a
   weapon in hand is safe.
