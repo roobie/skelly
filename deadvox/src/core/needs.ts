@@ -138,13 +138,15 @@ const segmentRate = (needs: Needs): number => {
 /**
  * Advances needs and health by `hours` game hours, in place, exactly: the step is
  * split wherever a rate changes. Returns the messages for needs that became critical
- * during the step. Stamina isn't touched; it moves by the second (`stepStamina`).
+ * during the step. `damageImmune` suppresses health loss while preserving need decay
+ * and recovery. Stamina isn't touched; it moves by the second (`stepStamina`).
  */
-export const stepNeeds = (needs: Needs, hours: number): string[] => {
+export const stepNeeds = (needs: Needs, hours: number, damageImmune = false): string[] => {
   const before = { ...needs };
   let left = hours;
   while (left > 0 && needs.health > 0) {
-    const health = segmentRate(needs);
+    const rate = segmentRate(needs);
+    const health = damageImmune ? Math.max(0, rate) : rate;
     const h = Math.min(left, nextBreak(needs, health));
     for (const need of Object.keys(NEED_RATES) as Need[]) {
       needs[need] = clamp(needs[need] + NEED_RATES[need] * h);

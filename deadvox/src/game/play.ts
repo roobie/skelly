@@ -38,7 +38,7 @@ import { BuildMode } from './build.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
 import { startingLoadout } from './loadout.ts';
-import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer } from './player.ts';
+import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer, stepNoclip } from './player.ts';
 import { Survival } from './survival.ts';
 import { toHands } from './targets.ts';
 
@@ -173,6 +173,7 @@ export const startPlay = (engine: Engine): void => {
   // while time is compressed. Handling and a heavy load slow you down, and sprinting
   // spends stamina: once winded, you jog until you've got your breath back.
   let sprinting = false;
+  let noclip = false;
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
@@ -186,11 +187,24 @@ export const startPlay = (engine: Engine): void => {
       const going = intent.forward !== 0 || intent.right !== 0;
       sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
       stepStamina(sim.needs, dt, sprinting);
-      steer(body, scale, input.yaw, {
+      const pacedIntent = {
         ...intent,
         sprint: sprinting,
         pace: paceFactor(inventory.carriedWeight(), handling),
-      });
+      };
+      if (noclip) {
+        stepNoclip({
+          body,
+          scale,
+          yaw: input.yaw,
+          pitch: input.pitch,
+          intent: pacedIntent,
+          descend: input.held.has('KeyR'),
+          dt,
+        });
+        return;
+      }
+      steer(body, scale, input.yaw, pacedIntent);
       stepBody(body, dt, engine.isSolid, physics);
     },
   });
@@ -325,6 +339,20 @@ export const startPlay = (engine: Engine): void => {
   /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger, K hurts, V spawns a shambler. */
   const debugKeys = new Map<string, () => void>([
     ['KeyK', () => sim.hurt(25, 'a debug key')],
+    [
+      'KeyH',
+      () => {
+        sim.godMode = !sim.godMode;
+      },
+    ],
+    [
+      'KeyF',
+      () => {
+        noclip = !noclip;
+        body.vel = [0, 0, 0];
+        body.onGround = false;
+      },
+    ],
     ['KeyT', () => (compression.active ? compression.stop() : compress())],
     ['KeyN', () => sim.emit({ kind: 'interrupt', reason: 'You hear something outside' })],
     [
@@ -553,15 +581,18 @@ export const startPlay = (engine: Engine): void => {
     ].join('\n');
   };
 
+  const debugText = (): string =>
+    config.debug
+      ? `debug: B build, G spawn, H god (${sim.godMode ? 'on' : 'off'}), F noclip (${noclip ? 'on' : 'off'}), Space rise/R descend, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt, V shambler`
+      : '';
+
   const hudText = (looking: string): string => {
     const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
     return [
       clockText(),
       needsText(),
       `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg${build.on ? '   BUILD MODE (B)' : ''}`,
-      config.debug
-        ? `debug: B build, G spawn, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt, V shambler`
-        : '',
+      debugText(),
       config.debug ? `shamblers ${zombieStore.size}` : '',
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,

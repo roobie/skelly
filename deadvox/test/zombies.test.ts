@@ -9,6 +9,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { Simulation } from '../src/core/sim.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import { FISTS_MELEE, type PlayerSense, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -378,6 +379,37 @@ describe('shambler scenarios', () => {
         (item) => registry.items.get(item)?.weapon?.melee,
       ),
     ).toBe(true);
+  });
+
+  it('god mode blocks shambler damage without stopping attacks or their cooldown', () => {
+    const simulateAttacks = (godMode: boolean) => {
+      const sim = new Simulation({ seed: 9 });
+      sim.godMode = godMode;
+      let hits = 0;
+      const system = new ZombieSystem(
+        senses(
+          () => player([0, 2, 0]),
+          FLOOR,
+          () => 12,
+          (damage) => {
+            hits += 1;
+            sim.hurt(damage, 'a shambler');
+          },
+        ),
+      );
+      system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+      for (let frame = 0; frame < 60 * 60; frame++) {
+        system.tick(1 / 60);
+        sim.frame(1 / 60);
+      }
+      return { health: sim.needs.health, hits };
+    };
+    const protectedRun = simulateAttacks(true);
+    const ordinaryRun = simulateAttacks(false);
+    expect(protectedRun.health).toBe(100);
+    expect(protectedRun.hits).toBeGreaterThan(0);
+    expect(protectedRun.hits).toBe(ordinaryRun.hits);
+    expect(ordinaryRun.health).toBeLessThan(100);
   });
 
   it('G: a hamlet shambler killed by swings stays gone when its column reloads and through 48 game hours', () => {

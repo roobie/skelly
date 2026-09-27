@@ -38,6 +38,8 @@ export class Simulation {
   paused = false;
   /** Set when health reaches 0; from then on nothing advances. */
   dead: { cause: string; time: number } | undefined;
+  /** Debug-only control is owned by the game; damage sources still run normally. */
+  godMode = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private readonly unsafe: () => string | undefined;
 
@@ -51,7 +53,7 @@ export class Simulation {
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt))) {
+        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt), this.godMode)) {
           this.emit({ kind: 'interrupt', reason });
         }
         if (this.needs.health <= 0) {
@@ -83,6 +85,9 @@ export class Simulation {
   /** Takes health (a fall, food poisoning, later a bite); at 0 you die of `cause`. */
   hurt(amount: number, cause: string): void {
     if (this.dead) {
+      return;
+    }
+    if (this.godMode) {
       return;
     }
     this.needs.health = Math.max(0, this.needs.health - amount);
