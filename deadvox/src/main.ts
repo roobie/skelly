@@ -8,11 +8,17 @@ import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { parseTimeOfDay } from './core/clock.ts';
 import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { createEngine } from './game/engine.ts';
+import { KEY_BINDINGS } from './game/input.ts';
 import { startPlay } from './game/play.ts';
 import type { StreamerStats } from './game/streamer.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
+const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
+if (menuKeyLabel) {
+  menuKeyLabel.textContent = KEY_BINDINGS.mainMenu.label;
+  menuKeyLabel.dataset.code = KEY_BINDINGS.mainMenu.code;
+}
 const bench = params.get('bench');
 
 if (bench === 'report') {
