@@ -464,9 +464,9 @@ decay (compared against live ticking), and death.
   much further than the player in the dark. Whether the player is lit is one
   function, ready for voxel light (see "Dark interiors" under Scope).
 - Movement: steering, with step-up and a jump only when the obstacle and
-  shambler's headroom fit the same body physics as the player. A shambler that
-  cannot clear a wall still faces and steers toward a visible player; it does
-  not jump indefinitely. A lost shambler wanders back.
+  shambler's headroom fit the same body physics as the player. No pathfinding in
+  Slice 1 (BR, 2026-09-27): a shambler that can't reach the player stops at the
+  obstacle, still aware of them. A lost shambler wanders back.
 - Melee in both directions: the zombie attack has reach and a cooldown; the
   player swings the wielded item (or fists) with a hit check.
 - Rendering: instanced box figures with a continuous leg swing. Required content
