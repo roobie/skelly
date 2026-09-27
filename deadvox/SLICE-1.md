@@ -484,11 +484,12 @@ decay (compared against live ticking), and death.
 open door, not through a closed one; cannot hit through a closed door or occupy
 its cells; and loses the player after losing sight of them.
 
-**Status:** awaiting-br — BR approved fixes 21 (jump clearance) and 22 (swung
-door-panel targeting) in-game on 2026-09-27 at 11:51, and item 24 (body
-collision) in-game on 2026-09-27 at 14:30. Item 23 (god mode/noclip), gait,
-chase feel, and the frame budget remain open for BR review; milestone 1.7 stays
-awaiting BR approval. `test/zombies.test.ts` exercises the real
+**Status:** done — BR approved milestone 1.7 in-game on 2026-09-27 at 20:36,
+covering god mode/noclip, gait and chase feel, night lighting (26), step
+smoothing (27), and the pillar collision fix (29); the frame budget stands as
+measured. Earlier approvals: fixes 21 (jump clearance) and 22 (swung door-panel
+targeting) at 11:51, and item 24 (body collision) at 14:30 on 2026-09-27.
+`test/zombies.test.ts` exercises the real
 `wood_door` entity for open/closed traversal, safe closing, attack occlusion, and
 jump clearance (including a window wall and low ceiling). `test/furniture.test.ts`
 checks panel picking, an open ray through to furniture behind the doorway, and
@@ -512,11 +513,11 @@ For BR's per-machine frame budget, run `?bench=shamblers&n=10,25,50,100&seed=1&t
 (or omit `n` for that default list); `?bench=report` stores and displays frame,
 ZombieSystem tick, render-submit and hole results plus a pasteable summary. Run
 it on the target machine with its normal renderer: headless/software-renderer
-numbers only prove the harness runs. CPU-only chasing-AI check: run
-`npm run bench:shamblers -- 10 50 100`. It uses the same night-time lit-player
-setup, with non-overlapping shamblers on a flat 8–20 m ring; the fixed seed is
-1 and the output is 15 seconds of tick timings after a 3-second warmup. The
-ten-shambler test H remains the CI guard.
+numbers only prove the harness runs. CPU-only chasing-AI check on the generated
+hamlet: run `npm run bench:shamblers -- 10 50 100` (optional `--seed N`, default
+1). It uses the same shared player/ring placement, night-time lit-player setup,
+terrain and furniture solidity, then prints 20 Hz tick timings after 60 warm-up
+and 300 measured ticks. The ten-shambler test H remains the CI guard.
 
 ### 1.8 Rest and sleep
 

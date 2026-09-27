@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { Matrix4, Vector3 } from 'three';
+import { Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -432,6 +432,48 @@ describe('shambler scenarios', () => {
     expect(playerBody.pos[1]).toBeCloseTo(1, 3);
   });
 
+  it('does not separate a player standing two metres above a shambler footprint', () => {
+    const platform: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
+    const playerBody = createPlayerBody(SCALE, 0.5, 5, 0.5);
+    playerBody.onGround = true;
+    const target = () => ({ ...player(playerBody.pos), body: playerBody });
+    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const system = new ZombieSystem(senses(target, platform));
+    const id = system.add(stillShambler, [0.5, 1, 0.5]);
+    system.store.get(id)!.body.onGround = true;
+    const start = [...playerBody.pos] as Vec3;
+
+    for (let tick = 0; tick < 60; tick++) {
+      system.tick(1 / 20);
+    }
+
+    expect(playerBody.pos[0]).toBeCloseTo(start[0], 6);
+    expect(playerBody.pos[2]).toBeCloseTo(start[2], 6);
+  });
+
+  it('does not separate overlapping shambler footprints when one stands two metres above the other', () => {
+    const ledge: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
+    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const system = new ZombieSystem(senses(() => player([100, 1, 100]), ledge));
+    const lowerId = system.add(stillShambler, [0.5, 1, 0.5]);
+    const upperId = system.add(stillShambler, [0.5, 5, 0.5]);
+    const lower = system.store.get(lowerId)!.body;
+    const upper = system.store.get(upperId)!.body;
+    lower.onGround = true;
+    upper.onGround = true;
+    const lowerStart = [...lower.pos] as Vec3;
+    const upperStart = [...upper.pos] as Vec3;
+
+    for (let tick = 0; tick < 60; tick++) {
+      system.tick(1 / 20);
+    }
+
+    expect(lower.pos[0]).toBeCloseTo(lowerStart[0], 6);
+    expect(lower.pos[2]).toBeCloseTo(lowerStart[2], 6);
+    expect(upper.pos[0]).toBeCloseTo(upperStart[0], 6);
+    expect(upper.pos[2]).toBeCloseTo(upperStart[2], 6);
+  });
+
   it('resolves an existing player/shambler overlap softly beside a wall', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 5 && z === 0 && y >= 1 && y <= 5);
     const playerBody = createPlayerBody(SCALE, 4, 5, 0);
@@ -770,6 +812,62 @@ describe('shambler scenarios', () => {
     }
     const used = process.cpuUsage(start);
     expect((used.user + used.system) / 1000 / 600).toBeLessThan(1);
+  });
+
+  it('keeps every shambler part free of emissive light', () => {
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    expect(parts).toHaveLength(6);
+    for (const mesh of parts) {
+      expect(mesh.material).toBeInstanceOf(MeshLambertMaterial);
+      expect((mesh.material as MeshLambertMaterial).emissive.getHex()).toBe(0);
+    }
+  });
+
+  it('smooths a shambler stepping up while keeping its physics and horizontal render position exact', () => {
+    const stepWorld: SolidAt = (x, y) => y === 0 || (x === 2 && y === 1);
+    const { system, zombie } = standing([1.4, 1, 0], [1, 0, 0]);
+    zombie.body.vel[0] = 2.8 / BLOCK_SIZE;
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    const legs = [parts[4]!, parts[5]!];
+    const feet = () => {
+      const boxes = legs.map((leg) => instanceBox(leg));
+      return {
+        y: Math.min(...boxes.flatMap(({ points }) => points.map(({ y }) => y))),
+        x: boxes.reduce((sum, { center }) => sum + center.x, 0) / boxes.length,
+      };
+    };
+    const syncFrame = (dt: number) => {
+      meshes.sync(system.store, dt);
+      const drawn = feet();
+      expect(drawn.x).toBeCloseTo(zombie.body.pos[0] * BLOCK_SIZE, 5);
+      return drawn.y;
+    };
+
+    const beforeStep = syncFrame(0);
+    stepBody(zombie.body, 1 / 20, stepWorld, PHYSICS);
+    expect(zombie.body.pos[1]).toBeCloseTo(2, 3);
+    expect(zombie.body.onGround).toBe(true);
+    let previousDrawnY = syncFrame(1 / 60);
+    expect(Math.abs(previousDrawnY - beforeStep)).toBeLessThanOrEqual(0.06);
+    for (let frame = 1; frame < 15; frame++) {
+      const drawnY = syncFrame(1 / 60);
+      expect(Math.abs(drawnY - previousDrawnY)).toBeLessThanOrEqual(0.06);
+      previousDrawnY = drawnY;
+    }
+    expect(previousDrawnY).toBeCloseTo(zombie.body.pos[1] * BLOCK_SIZE, 5);
+
+    const beforeSnapDown = previousDrawnY;
+    zombie.body.pos[1] -= 1;
+    previousDrawnY = syncFrame(1 / 60);
+    expect(Math.abs(previousDrawnY - beforeSnapDown)).toBeLessThanOrEqual(0.06);
+    for (let frame = 1; frame < 15; frame++) {
+      const drawnY = syncFrame(1 / 60);
+      expect(Math.abs(drawnY - previousDrawnY)).toBeLessThanOrEqual(0.06);
+      previousDrawnY = drawnY;
+    }
+    expect(previousDrawnY).toBeCloseTo(zombie.body.pos[1] * BLOCK_SIZE, 5);
   });
 
   it('renders collision-sized figures at game scale and swings each leg forward/back about its hip', () => {

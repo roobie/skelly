@@ -2,13 +2,12 @@
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
-import { type Body, bodyOverlapsBlock, stepBody } from '../core/physics.ts';
-import { raycast } from '../core/raycast.ts';
+import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { ZombieSystem } from '../core/zombies.ts';
 import type { Engine } from '../game/engine.ts';
-import { createPlayerBody, PLAYER, physicsFor } from '../game/player.ts';
+import { PLAYER, physicsFor } from '../game/player.ts';
 import { applySky } from '../render/sky.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
 import {
@@ -21,6 +20,7 @@ import {
   saveRecord,
 } from './plan.ts';
 import { environment } from './run.ts';
+import { findShamblerBenchPlayer, placeShamblerRing } from './shamblerPlacement.ts';
 import { frameStats, sampleStats } from './stats.ts';
 
 export interface ShamblerBenchRun {
@@ -54,90 +54,6 @@ const nextUrl = (run: ShamblerBenchRun): string => {
   return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}`;
 };
 
-const fract = (x: number): number => x - Math.floor(x);
-
-const bodyIsClear = (body: Body, isSolid: Engine['isSolid']): boolean => {
-  for (let y = Math.floor(body.pos[1]); y < Math.ceil(body.pos[1] + body.height); y++) {
-    for (let z = Math.floor(body.pos[2] - body.halfWidth); z < Math.ceil(body.pos[2] + body.halfWidth); z++) {
-      for (let x = Math.floor(body.pos[0] - body.halfWidth); x < Math.ceil(body.pos[0] + body.halfWidth); x++) {
-        if (isSolid(x, y, z) && bodyOverlapsBlock(body, [x, y, z])) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
-};
-
-const findPlayer = (engine: Engine): Body => {
-  const s = engine.config.scale.blockSize;
-  const [baseX, , baseZ] = engine.spawn.pos;
-  for (let ring = 0; ring <= 12; ring++) {
-    const radius = ring * 0.5;
-    const attempts = ring === 0 ? 1 : 24;
-    for (let i = 0; i < attempts; i++) {
-      const angle = (i / attempts) * Math.PI * 2 + ring * 0.13;
-      const x = baseX + radius * Math.cos(angle);
-      const z = baseZ + radius * Math.sin(angle);
-      const body = createPlayerBody(engine.config.scale, x / s, engine.groundAt(x, z) / s, z / s);
-      body.onGround = true;
-      if (bodyIsClear(body, engine.isSolid)) {
-        return body;
-      }
-    }
-  }
-  throw new Error('Could not find open terrain near the hamlet spawn for the player.');
-};
-
-const rayIsClear = (from: Body, to: Body, isSolid: Engine['isSolid'], blockSize: number): boolean => {
-  const origin: [number, number, number] = [from.pos[0], from.pos[1] + 1.3 / blockSize, from.pos[2]];
-  const target: [number, number, number] = [to.pos[0], to.pos[1] + 1.3 / blockSize, to.pos[2]];
-  const direction = target.map((value, axis) => value - origin[axis]!) as [number, number, number];
-  const distance = Math.hypot(...direction);
-  if (distance === 0) {
-    return false;
-  }
-  const unit = direction.map((value) => value / distance) as [number, number, number];
-  return raycast(origin, unit, distance, isSolid) === undefined;
-};
-
-const findShambler = ({
-  index,
-  seed,
-  player,
-  engine,
-  occupied,
-}: {
-  index: number;
-  seed: number;
-  player: Body;
-  engine: Engine;
-  occupied: readonly Body[];
-}): [number, number, number] => {
-  const s = engine.config.scale.blockSize;
-  for (let attempt = 0; attempt < 256; attempt++) {
-    const key = seed * 12.9898 + index * 78.233 + attempt * 37.719;
-    const radius = Math.sqrt(64 + fract(Math.sin(key) * 43_758.5453) * 336);
-    const angle = fract(Math.sin(key + 19.19) * 19_349.123) * Math.PI * 2;
-    const x = player.pos[0] * s + radius * Math.cos(angle);
-    const z = player.pos[2] * s + radius * Math.sin(angle);
-    const body = createPlayerBody(engine.config.scale, x / s, engine.groundAt(x, z) / s, z / s);
-    body.halfWidth = 0.28 / s;
-    body.height = 1.7 / s;
-    body.onGround = true;
-    const overlapsSpawn = occupied.some(
-      (other) =>
-        Math.abs(body.pos[0] - other.pos[0]) < body.halfWidth + other.halfWidth &&
-        Math.abs(body.pos[2] - other.pos[2]) < body.halfWidth + other.halfWidth,
-    );
-    if (overlapsSpawn || !bodyIsClear(body, engine.isSolid) || !rayIsClear(body, player, engine.isSolid, s)) {
-      continue;
-    }
-    return [body.pos[0], body.pos[1], body.pos[2]];
-  }
-  throw new Error(`Could not place shambler ${index + 1} in the clear-sight 8–20 m ring.`);
-};
-
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
 
 export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void => {
@@ -147,6 +63,11 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
   document.getElementById('overlay')!.hidden = true;
   const startTime = parseTimeOfDay(run.time)!;
   applySky(engine.sky, skyAt(hourOfDay(startTime)));
+  streamer.onColumn = (cx, cz) => {
+    for (const { spec } of engine.site?.furnitureIn(cx, cz) ?? []) {
+      engine.entities.add(spec);
+    }
+  };
 
   const record: BenchRecord | undefined =
     run.index === 0
@@ -172,7 +93,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
   let zombies!: ZombieSystem;
   let zombieMeshes!: ZombieMeshes;
   const prepare = (): void => {
-    playerBody = findPlayer(engine);
+    playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({ seed: run.seed, clock: { ratio: CLOCK_RATIO, start: startTime } });
     simulation.godMode = true;
     zombies = new ZombieSystem({
@@ -196,14 +117,10 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     if (!type) {
       throw new Error('Cannot run the shambler benchmark: shambler content is missing.');
     }
-    const occupied: Body[] = [playerBody];
-    for (let i = 0; i < count; i++) {
-      const pos = findShambler({ index: i, seed: run.seed, player: playerBody, engine, occupied });
+    for (const pos of placeShamblerRing({ count, seed: run.seed, player: playerBody, engine })) {
       const direction: [number, number, number] = [playerBody.pos[0] - pos[0], 0, playerBody.pos[2] - pos[2]];
       const id = zombies.add(type, pos, direction);
-      const { body } = zombies.store.get(id)!;
-      body.onGround = true;
-      occupied.push(body);
+      zombies.store.get(id)!.body.onGround = true;
     }
     zombies.tick(1 / 20);
     if ([...zombies.store.entries()].some(([, zombie]) => zombie.mode !== 'chase')) {
