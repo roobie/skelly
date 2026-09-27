@@ -4,6 +4,7 @@ import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
+import type { SoundEventId } from './soundEvents.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
@@ -19,6 +20,10 @@ export interface Zombie {
   investigationTier?: 'near' | 'far' | undefined;
   /** Per-body behavior stream; draws never perturb another body. */
   behaviorRng: Rng;
+  /** Separate seeded stream keeps ambient sound timing from changing movement decisions. */
+  soundRng: Rng;
+  idleSoundTimer: number;
+  lastVocalNoiseId?: number | undefined;
   modeTimer: number;
   searchAnchor?: Vec3 | undefined;
   searchTimer: number;
@@ -54,6 +59,13 @@ export interface Zombie {
   wanderClock: number;
 }
 
+export interface VocalNoise {
+  id: number;
+  pos: Vec3;
+  radiusMetres: number;
+  expiresAt: number;
+}
+
 export interface PlayerSense {
   pos: Vec3;
   /** When present, the solid player box used for hard movement collisions. */
@@ -63,6 +75,7 @@ export interface PlayerSense {
   movement: PlayerMovement;
   lit: boolean;
   lightSeenFrom: number;
+  vocalNoise?: VocalNoise | undefined;
 }
 
 export interface ZombieSystemOptions {
@@ -76,6 +89,8 @@ export interface ZombieSystemOptions {
   hour: () => number;
   hurtPlayer: (amount: number) => void;
   onDeath?: (zombie: Zombie) => void;
+  /** Sound-source position is in block coordinates. */
+  onSound?: (event: SoundEventId, position: Vec3) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -202,8 +217,20 @@ const hearingTier = ({
   return undefined;
 };
 
-const farBearingTarget = ({ zombie, from, player, blockSize, rng }: HearingInput): Vec3 => {
-  const angle = Math.atan2(player.pos[0] - from[0], player.pos[2] - from[2]);
+const farBearingTarget = ({
+  zombie,
+  from,
+  source,
+  blockSize,
+  rng,
+}: {
+  zombie: ZombieDef;
+  from: Vec3;
+  source: Vec3;
+  blockSize: number;
+  rng: Rng;
+}): Vec3 => {
+  const angle = Math.atan2(source[0] - from[0], source[2] - from[2]);
   const error = rng.range(-zombie.hearingModel.bearingErrorRadians, zombie.hearingModel.bearingErrorRadians);
   const bearing = headingAt(angle + error);
   const distance = zombie.hearingModel.investigationDistanceMetres / blockSize;
@@ -216,7 +243,52 @@ export const hearPlayer = (input: HearingInput): HeardNoise | undefined => {
   if (!tier) {
     return undefined;
   }
-  return { tier, target: tier === 'near' ? copy(input.player.pos) : farBearingTarget(input) };
+  return {
+    tier,
+    target: tier === 'near' ? copy(input.player.pos) : farBearingTarget({ ...input, source: input.player.pos }),
+  };
+};
+
+export interface VocalNoiseInput {
+  zombie: ZombieDef;
+  from: Vec3;
+  noise: VocalNoise;
+  time: number;
+  blockSize: number;
+  isSolid: SolidAt;
+  rng: Rng;
+}
+
+/** Applies the same solid-run wall cost and two-tier bearing model to a player sound. */
+export const hearVocalNoise = ({
+  zombie,
+  from,
+  noise,
+  time,
+  blockSize,
+  isSolid,
+  rng,
+}: VocalNoiseInput): HeardNoise | undefined => {
+  if (time > noise.expiresAt) {
+    return undefined;
+  }
+  const distance = Math.hypot(...sub(noise.pos, from)) * blockSize;
+  const earOffset = 1.3 / blockSize;
+  const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
+  const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
+  const crossings = countSolidRuns(origin, source, isSolid);
+  const apparentDistance = distance + crossings * zombie.hearingModel.wallRunCostMetres;
+  const hearingRadius = noise.radiusMetres * zombie.hearing;
+  if (apparentDistance <= hearingRadius) {
+    return { tier: 'near', target: copy(noise.pos) };
+  }
+  if (apparentDistance <= hearingRadius * zombie.hearingModel.farMultiplier) {
+    return {
+      tier: 'far',
+      target: farBearingTarget({ zombie, from, source: noise.pos, blockSize, rng }),
+    };
+  }
+  return undefined;
 };
 
 const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: PerceptionInput): boolean => {
@@ -429,6 +501,8 @@ export class ZombieSystem {
       mode: 'idle',
       investigationTier: undefined,
       behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
+      soundRng: Rng.stream(this.options.seed ?? 0, `zombie-sound:${this.store.size + 1}`),
+      idleSoundTimer: 8,
       modeTimer: 0,
       searchAnchor: undefined,
       searchTimer: 0,
@@ -462,13 +536,15 @@ export class ZombieSystem {
     const id = this.store.add(zombie);
     // EntityStore ids are stable within the world's entity lifetime.
     zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `zombie:${id}`);
+    zombie.soundRng = Rng.stream(this.options.seed ?? 0, `zombie-sound:${id}`);
+    zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
     this.beginIdle(zombie);
     return id;
   }
 
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
-  tick(dt: number): void {
+  tick(dt: number, time = 0): void {
     if (dt <= 0) {
       return;
     }
@@ -489,7 +565,24 @@ export class ZombieSystem {
       const perception = { zombie: type, from: pos, facing: zombie.facing, player, hour, blockSize, isSolid };
       const sees = seesPlayer(perception);
       const hearingInput = { zombie: type, from: pos, player, blockSize, isSolid };
-      const tier = sees ? undefined : hearingTier(hearingInput);
+      let vocal: HeardNoise | undefined;
+      if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
+        zombie.lastVocalNoiseId = player.vocalNoise.id;
+        vocal = hearVocalNoise({
+          zombie: type,
+          from: pos,
+          noise: player.vocalNoise,
+          time,
+          blockSize,
+          isSolid,
+          rng,
+        });
+      }
+      const tier = sees ? undefined : (vocal?.tier ?? hearingTier(hearingInput));
+      const wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
+      if ((sees || tier) && !wasAware) {
+        this.options.onSound?.('shambler_alert', copy(pos));
+      }
       if (sees) {
         zombie.mode = 'chase';
         zombie.investigationTier = undefined;
@@ -503,14 +596,15 @@ export class ZombieSystem {
         zombie.searchAnchor = undefined;
         zombie.searchTimer = 0;
         zombie.searchStrolling = false;
-        zombie.lastPerceived = copy(player.pos);
+        zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
       } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'far';
         zombie.searchAnchor = undefined;
         zombie.searchTimer = 0;
         zombie.searchStrolling = false;
-        zombie.lastPerceived = farBearingTarget({ ...hearingInput, rng });
+        zombie.lastPerceived =
+          vocal?.tier === 'far' ? vocal.target : farBearingTarget({ ...hearingInput, source: player.pos, rng });
       } else if (zombie.mode === 'chase') {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'near';
@@ -529,6 +623,13 @@ export class ZombieSystem {
       let desiredSpeed = 0;
       let returnArrived = false;
       const stroll = zombie.mode === 'stroll';
+      if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
+        zombie.idleSoundTimer -= dt;
+        if (zombie.idleSoundTimer <= 0) {
+          this.options.onSound?.('shambler_idle', copy(pos));
+          zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
+        }
+      }
       if (zombie.mode === 'idle') {
         zombie.modeTimer -= dt;
         this.tickLookAround(zombie, dt);
@@ -720,6 +821,7 @@ export class ZombieSystem {
         const toPlayer = sub(playerChest, zombieChest);
         const chestDistance = Math.hypot(...toPlayer);
         if (chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined) {
+          this.options.onSound?.('shambler_attack', copy(pos));
           this.options.hurtPlayer(type.attack.damage);
           zombie.attackWait = type.attack.cooldown;
         }
@@ -763,6 +865,7 @@ export class ZombieSystem {
     if (this.playerAttackWait > 0) {
       return undefined;
     }
+    this.options.onSound?.('melee_swing', copy(origin));
     const dir = unit(direction);
     let found: [EntityId, Zombie, number] | undefined;
     for (const [id, zombie] of this.store.entries()) {
@@ -788,6 +891,8 @@ export class ZombieSystem {
     }
     this.playerAttackWait = weapon.cooldown;
     const [id, zombie] = found;
+    this.options.onSound?.('melee_hit', copy(zombie.body.pos));
+    this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     zombie.health -= weapon.damage;
     if (zombie.health <= 0) {
       this.store.remove(id);

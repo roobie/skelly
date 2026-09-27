@@ -8,8 +8,11 @@ import { causeOf, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler } from './scheduler.ts';
 
-/** Events systems emit. Noise, damage and block changes join as their systems arrive. */
-export type SimEvent = { kind: 'interrupt'; reason: string } | { kind: 'death'; cause: string };
+/** Events systems emit. Noise and block changes join as their systems arrive. */
+export type SimEvent =
+  | { kind: 'interrupt'; reason: string }
+  | { kind: 'death'; cause: string }
+  | { kind: 'damage'; amount: number; cause: string };
 
 export type Timed<E> = E & { readonly time: number };
 
@@ -91,6 +94,7 @@ export class Simulation {
       return;
     }
     this.needs.health = Math.max(0, this.needs.health - amount);
+    this.emit({ kind: 'damage', amount, cause });
     if (this.needs.health <= 0) {
       this.die(cause);
     } else {

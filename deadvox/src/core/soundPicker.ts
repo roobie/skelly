@@ -52,6 +52,6 @@ export class SoundPicker {
     state.lastPlayedAt = now;
     const pitch = state.rng.range(sound.pitchJitter[0], sound.pitchJitter[1]);
     const gain = sound.gain * state.rng.range(sound.gainJitter[0], sound.gainJitter[1]);
-    return { file: sound.variants[variant]!, pitch, gain: Math.min(1, gain) };
+    return { file: sound.variants[variant]!, pitch, gain };
   }
 }

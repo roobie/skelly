@@ -20,8 +20,9 @@ import { canSprint, stepStamina } from '../core/needs.ts';
 import { stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
+import type { SoundEventId } from '../core/soundEvents.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
-import { FISTS_MELEE, type PlayerMovement, type Zombie, ZombieSystem } from '../core/zombies.ts';
+import { FISTS_MELEE, type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
@@ -35,6 +36,8 @@ import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { SpawnMenu } from '../ui/spawnMenu.ts';
+import { GameAudio } from './audio.ts';
+import { mountAudioSettings } from './audioSettings.ts';
 import { BuildMode } from './build.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
@@ -118,6 +121,39 @@ export const startPlay = (engine: Engine): void => {
     unsafe: () => danger ?? zombieSystem?.unsafeReason(),
   });
   const { compression } = sim;
+  const audioEvents = sim.events.reader();
+  const audio = new GameAudio({
+    registry,
+    seed: sim.seed,
+    blockSize: s,
+    isSolid: engine.isSolid,
+    report: (message) => {
+      const errors = $('errors');
+      errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
+    },
+  });
+  document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+  let vocalNoiseId = 0;
+  let vocalNoise: VocalNoise | undefined;
+  const playerSoundPosition = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
+  const playWorldSound = (event: SoundEventId, position: Vec3, time = sim.time) =>
+    audio.play(event, position.map((value) => value * s) as Vec3, time);
+  const playPlayerSound = (event: SoundEventId, time = sim.time) => {
+    const position = playerSoundPosition();
+    if (!playWorldSound(event, position, time)) {
+      return;
+    }
+    const definition = registry.sounds.get(event);
+    if (definition?.noise.enabled) {
+      vocalNoiseId += 1;
+      vocalNoise = {
+        id: vocalNoiseId,
+        pos: position,
+        radiusMetres: definition.noise.radiusMetres,
+        expiresAt: time + 0.5,
+      };
+    }
+  };
   const survival = new Survival(sim, inventory, queue, {
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: (text) => showNotice(text),
@@ -140,6 +176,7 @@ export const startPlay = (engine: Engine): void => {
     body: noclip ? undefined : body,
     facing: [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)] as Vec3,
     movement: playerMovement(),
+    vocalNoise: vocalNoise && sim.time <= vocalNoise.expiresAt ? vocalNoise : undefined,
     lit: survival.lit?.on === true,
     lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
   });
@@ -153,6 +190,7 @@ export const startPlay = (engine: Engine): void => {
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
+    onSound: (event, position) => playWorldSound(event, position),
     onDeath: (zombie) => {
       const table = zombie.type.loot;
       if (!table) {
@@ -173,7 +211,7 @@ export const startPlay = (engine: Engine): void => {
     id: 'zombies',
     rate: 20,
     tick: (dt, time) => {
-      zombieSystem?.tick(dt);
+      zombieSystem?.tick(dt, time);
       lastZombieStep = time;
     },
   });
@@ -186,7 +224,7 @@ export const startPlay = (engine: Engine): void => {
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
-    tick: (dt) => {
+    tick: (dt, time) => {
       if (!streamer.isReady(body.pos[0], body.pos[2])) {
         return;
       }
@@ -213,7 +251,11 @@ export const startPlay = (engine: Engine): void => {
         });
         return;
       }
+      const jumpStarted = pacedIntent.jump && body.onGround;
       steer(body, scale, input.yaw, pacedIntent);
+      if (jumpStarted) {
+        playPlayerSound('player_strain', time);
+      }
       const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
       stepBody(body, dt, engine.isSolid, { ...physics, obstacles: zombieBodies });
     },
@@ -280,9 +322,15 @@ export const startPlay = (engine: Engine): void => {
   const toggleDoor = (entity: BlockEntity) => {
     const closing = entity.open;
     const time = entities.defOf(entity).door?.handling ?? 0;
+    const center: Vec3 = [
+      entity.pos[0] + entity.size[0] / 2,
+      entity.pos[1] + entity.size[1] / 2,
+      entity.pos[2] + entity.size[2] / 2,
+    ];
     queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, (): string | undefined => {
       if (!closing) {
         entities.setOpen(entity, true);
+        playWorldSound('door_open', center);
         return;
       }
       const blocker = entities.closeDoor(
@@ -290,7 +338,12 @@ export const startPlay = (engine: Engine): void => {
         body,
         [...zombieStore.entries()].map(([, zombie]) => zombie.body),
       );
-      return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
+      if (blocker) {
+        playWorldSound('door_blocked_close', center);
+        return DOOR_CLOSE_MESSAGES[blocker];
+      }
+      playWorldSound('door_close', center);
+      return undefined;
     });
   };
 
@@ -320,6 +373,7 @@ export const startPlay = (engine: Engine): void => {
       : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
   });
 
+  const audioSettingsPanel = $('audio-settings');
   let started = false;
   const syncOverlay = () => {
     started ||= input.locked;
@@ -337,6 +391,26 @@ export const startPlay = (engine: Engine): void => {
     }
   });
   document.addEventListener('pointerlockchange', syncOverlay);
+
+  let resumeAfterAudioSettings = false;
+  const closeAudioSettings = () => {
+    audioSettingsPanel.hidden = true;
+    if (resumeAfterAudioSettings) {
+      input.lock();
+    }
+    syncOverlay();
+  };
+  mountAudioSettings(audioSettingsPanel, audio, closeAudioSettings);
+  const toggleAudioSettings = () => {
+    if (audioSettingsPanel.hidden) {
+      resumeAfterAudioSettings = input.locked;
+      audioSettingsPanel.hidden = false;
+      input.unlock();
+    } else {
+      closeAudioSettings();
+    }
+    syncOverlay();
+  };
 
   const compress = () => {
     queue.cancel();
@@ -479,11 +553,26 @@ export const startPlay = (engine: Engine): void => {
     }
   };
 
+  const audioSettingsKey = (e: KeyboardEvent): boolean => {
+    if (e.code === 'F10' && !sim.dead) {
+      e.preventDefault();
+      toggleAudioSettings();
+      return true;
+    }
+    if (audioSettingsPanel.hidden) {
+      return false;
+    }
+    if (e.code === 'Escape') {
+      closeAudioSettings();
+    }
+    return true;
+  };
+
   globalThis.addEventListener('keydown', (e) => {
     if (e.code === 'Tab') {
       e.preventDefault();
     }
-    if (spawnMenuKey(e) || e.repeat || sim.dead || timeKeys(e.code)) {
+    if (audioSettingsKey(e) || spawnMenuKey(e) || e.repeat || sim.dead || timeKeys(e.code)) {
       return;
     }
     if (e.code === 'Tab' && !compression.locksInput) {
@@ -647,6 +736,11 @@ export const startPlay = (engine: Engine): void => {
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = !overlay.hidden; // the pause card is up
     sim.frame(dt);
+    for (const event of audioEvents.read()) {
+      if (event.kind === 'damage') {
+        playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+      }
+    }
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
@@ -662,6 +756,7 @@ export const startPlay = (engine: Engine): void => {
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s + cameraOffset, ez * s);
     camera.rotation.set(input.pitch, input.yaw, 0);
+    audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
 
     hud.textContent = hudText(build.target(eye(), lookDir(), input.locked));
     prompt.textContent = promptText(now);
@@ -691,6 +786,7 @@ export const startPlay = (engine: Engine): void => {
     screen.close();
     inventoryPanel.hidden = true;
     overlay.hidden = true;
+    audioSettingsPanel.hidden = true;
     prompt.hidden = true;
     const summary = {
       cause,

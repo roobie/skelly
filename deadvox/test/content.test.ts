@@ -37,6 +37,13 @@ describe('content', () => {
     expect(missingLight).toBe(true);
   });
 
+  it('requires the blocked door-close sound event', () => {
+    const { registry } = buildRegistry(base.filter(({ source }) => source !== 'sounds.json'));
+    expect(requiredSoundIssues(registry).map((issue) => issue.message)).toContain(
+      'missing required sound event "door_blocked_close"',
+    );
+  });
+
   it('fails when a required sound event has no definition', () => {
     const sounds = {
       source: 'sounds.json',

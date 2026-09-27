@@ -12,7 +12,7 @@
       "gainJitter": [0.88, 1.12],
       "minIntervalSeconds": 0.2,
       "category": "body",
-      "noise": { "enabled": true, "radiusMetres": 8 }
+      "noise": { "enabled": true, "radiusMetres": 6 }
     },
     {
       "id": "player_hurt_heavy",
@@ -26,7 +26,7 @@
       "gainJitter": [0.88, 1.12],
       "minIntervalSeconds": 0.35,
       "category": "body",
-      "noise": { "enabled": true, "radiusMetres": 8 }
+      "noise": { "enabled": true, "radiusMetres": 6 }
     },
     {
       "id": "player_strain",
@@ -52,7 +52,7 @@
       "gain": 0.55,
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.9, 1.1],
-      "minIntervalSeconds": 0.08,
+      "minIntervalSeconds": 0.5,
       "category": "world",
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
@@ -151,6 +151,20 @@
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.9, 1.1],
       "minIntervalSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "door_blocked_close",
+      "variants": [
+        "assets/audio/door-close-01.ogg",
+        "assets/audio/door-close-02.ogg",
+        "assets/audio/door-close-03.ogg"
+      ],
+      "gain": 0.5,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.2,
       "category": "world",
       "noise": { "enabled": false, "radiusMetres": 1 }
     }
