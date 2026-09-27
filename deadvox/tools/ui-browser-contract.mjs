@@ -164,6 +164,21 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
     window.__f10Prevented = false;
+    const hitTest = document.elementFromPoint.bind(document);
+    document.elementFromPoint = (x, y) => {
+      window.__lastHitTest = { x, y, target: hitTest(x, y) };
+      return window.__lastHitTest.target;
+    };
+    document.addEventListener('click', (event) => {
+      if (event.target !== canvas) {
+        window.__lastForwardedClick = {
+          x: event.clientX,
+          y: event.clientY,
+          target: event.target,
+          hitTest: window.__lastHitTest,
+        };
+      }
+    }, true);
     window.addEventListener('keydown', (event) => {
       if (event.code === 'F10') setTimeout(() => { window.__f10Prevented = event.defaultPrevented; }, 0);
     });
@@ -172,18 +187,37 @@ try {
   })()`);
   await delay(150);
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
-  const clickAt = async (selector) => {
+  const clickAt = async (selector, anchor = 'center') => {
+    await evaluate('window.__lastForwardedClick = null');
     const position = await evaluate(`(() => {
       const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      return ${JSON.stringify(anchor)} === 'edge'
+        ? { x: rect.left + 1, y: rect.top + 1 }
+        : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     })()`);
     await evaluate(`(() => {
       const event = new MouseEvent('mousemove', { bubbles: true });
       Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
       document.dispatchEvent(event);
-      document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
     })()`);
     cursor = position;
+    await delay(120);
+    await evaluate(`window.__cursorBeforeClick = (() => {
+      const cursor = document.querySelector('#game-cursor');
+      const rect = cursor.getBoundingClientRect();
+      const style = getComputedStyle(cursor);
+      return {
+        left: rect.left,
+        top: rect.top,
+        hand: cursor.classList.contains('hand'),
+        hitTest: window.__lastHitTest,
+        mask: style.maskImage,
+        background: style.backgroundColor,
+        blend: style.mixBlendMode,
+        rootBlend: getComputedStyle(document.querySelector('#game-cursor-root')).mixBlendMode,
+      };
+    })()`);
+    await evaluate(`document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))`);
     await delay(120);
   };
 
@@ -195,8 +229,34 @@ try {
   await press('F10', 'F10', 121);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'F10 opens main menu');
   assert.equal(await evaluate('window.__f10Prevented'), true, 'F10 keydown is default-prevented');
-  await press('F10', 'F10', 121);
-  assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'F10 closes main menu');
+  await clickAt('#go', 'edge');
+  const arrowTip = await evaluate(`(() => {
+    const click = window.__lastForwardedClick;
+    const cursor = window.__cursorBeforeClick;
+    return {
+      hand: cursor.hand,
+      x: cursor.left,
+      y: cursor.top,
+      mask: cursor.mask,
+      background: cursor.background,
+      blend: cursor.blend,
+      rootBlend: cursor.rootBlend,
+      hitGo: click.hitTest.target?.closest('#go') === document.querySelector('#go'),
+      hitX: click.hitTest.x,
+      hitY: click.hitTest.y,
+    };
+  })()`);
+  assert.equal(arrowTip.hand, false, 'main-menu cursor uses the standard arrow');
+  assert.match(arrowTip.mask, /cursor\.png/, 'cursor sprite is used as a silhouette mask');
+  assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
+  assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
+  assert.equal(arrowTip.rootBlend, 'difference', 'the cursor layer blends over the canvas');
+  assert.equal(arrowTip.hitGo, true, 'elementFromPoint at the arrow tip targets the known button edge');
+  assert.ok(Math.abs(arrowTip.x - cursor.x) < 0.1, 'standard arrow tip is at cursor x');
+  assert.ok(Math.abs(arrowTip.y - cursor.y) < 0.1, 'standard arrow tip is at cursor y');
+  assert.ok(Math.abs(arrowTip.hitX - cursor.x) < 0.1, 'arrow-tip hit test uses cursor x');
+  assert.ok(Math.abs(arrowTip.hitY - cursor.y) < 0.1, 'arrow-tip hit test uses cursor y');
+  assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'edge click resumes play');
   await press('KeyG', 'g', 71);
   assert.equal(await evaluate("!document.querySelector('#spawn').hidden"), true, 'G opens spawn menu');
   assert.equal(
@@ -275,6 +335,24 @@ try {
   await evaluate('window.__setPointerLocked(true)');
   await delay(100);
   await clickAt('#spawn .spawn-list button');
+  const hotspot = await evaluate(`(() => {
+    const cursor = document.querySelector('#game-cursor').getBoundingClientRect();
+    const button = document.querySelector('#spawn .spawn-list button');
+    return {
+      tipX: cursor.left + 4,
+      tipY: cursor.top,
+      hitTest: window.__lastHitTest,
+      forwarded: window.__lastForwardedClick,
+      hitButton: window.__lastHitTest.target?.closest('button') === button,
+    };
+  })()`);
+  assert.ok(Math.abs(hotspot.tipX - cursor.x) < 0.1, 'pointing-hand fingertip sits at cursor x');
+  assert.ok(Math.abs(hotspot.tipY - cursor.y) < 0.1, 'pointing-hand fingertip sits at cursor y');
+  assert.ok(Math.abs(hotspot.hitTest.x - cursor.x) < 0.1, 'elementFromPoint receives cursor tip x');
+  assert.ok(Math.abs(hotspot.hitTest.y - cursor.y) < 0.1, 'elementFromPoint receives cursor tip y');
+  assert.equal(hotspot.hitButton, true, 'elementFromPoint at the tip targets the button');
+  assert.ok(Math.abs(hotspot.forwarded.x - cursor.x) < 1, 'forwarded click x uses the cursor tip');
+  assert.ok(Math.abs(hotspot.forwarded.y - cursor.y) < 1, 'forwarded click y uses the cursor tip');
   assert.notEqual(
     await evaluate("document.querySelector('#spawn .spawn-status').textContent"),
     '',

@@ -36,7 +36,7 @@
       "licence": "CC0-1.0",
       "download": "cursor.png",
       "files": ["assets/cursors/cursor.png"],
-      "changes": "Kept only the arrow and hand sprites from cursor.png"
+      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor"
     }
   ]
 }
