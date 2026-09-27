@@ -308,6 +308,12 @@ export const ZombieSchema = strictObject({
   model: Id,
 });
 
+/** Actor palettes are content so appearance doesn't live in renderer code. */
+export const FigureSchema = strictObject({
+  id: Id,
+  palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
+});
+
 // ---- files ----
 
 /** One content file: any of these sections, each a list of definitions. */
@@ -318,6 +324,7 @@ export const ContentFileSchema = strictObject({
   loot: optional(array(LootTableSchema)),
   templates: optional(array(TemplateSchema)),
   zombies: optional(array(ZombieSchema)),
+  figures: optional(array(FigureSchema)),
   models: optional(array(ModelSchema)),
 });
 
@@ -328,6 +335,7 @@ export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
+export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

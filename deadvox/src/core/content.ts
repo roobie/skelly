@@ -10,6 +10,7 @@ import {
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
+  type FigureDef,
   type FurnitureDef,
   type ItemDef,
   type LootTable,
@@ -21,6 +22,7 @@ import { findPieces, pieceSize } from './templates.ts';
 
 export type {
   BlockDef,
+  FigureDef,
   FurnitureDef,
   ItemDef,
   LootEntry,
@@ -48,6 +50,7 @@ export interface Registry {
   blockIds: Map<string, number>;
   items: Map<string, ItemDef>;
   furniture: Map<string, FurnitureDef>;
+  figures: Map<string, FigureDef>;
   loot: Map<string, LootTable>;
   templates: Map<string, TemplateDef>;
   zombies: Map<string, ZombieDef>;
@@ -58,7 +61,7 @@ export interface Registry {
 
 export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
-const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'loot', 'templates', 'zombies', 'models'];
+const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'figures', 'loot', 'templates', 'zombies', 'models'];
 
 // ---- shape (one file) ----
 
@@ -182,6 +185,7 @@ const emptyRegistry = (): Registry => ({
   blockIds: new Map([[AIR.id, 0]]),
   items: new Map(),
   furniture: new Map(),
+  figures: new Map(),
   loot: new Map(),
   templates: new Map(),
   zombies: new Map(),
@@ -209,6 +213,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     const maps = [
       ['items', registry.items],
       ['furniture', registry.furniture],
+      ['figures', registry.figures],
       ['loot', registry.loot],
       ['templates', registry.templates],
       ['zombies', registry.zombies],

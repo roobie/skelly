@@ -1,0 +1,12 @@
+{
+  "figures": [
+    {
+      "id": "player",
+      "palette": {
+        "skin": "#c58f70",
+        "shirt": "#52677d",
+        "trousers": "#4a4b55"
+      }
+    }
+  ]
+}

@@ -117,9 +117,10 @@ describe('content', () => {
   it('has every kind of content in the base pack', () => {
     const { registry } = buildRegistry(base);
     expect(registry.items.size).toBeGreaterThan(30);
-    for (const map of [registry.furniture, registry.loot, registry.templates, registry.zombies]) {
+    for (const map of [registry.furniture, registry.figures, registry.loot, registry.templates, registry.zombies]) {
       expect(map.size).toBeGreaterThan(0);
     }
+    expect(registry.figures.get('player')?.palette).toEqual({ skin: '#c58f70', shirt: '#52677d', trousers: '#4a4b55' });
   });
 });
 
