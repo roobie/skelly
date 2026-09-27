@@ -33,12 +33,14 @@ import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { renderRest } from '../ui/rest.ts';
 import { SpawnMenu } from '../ui/spawnMenu.ts';
 import { BuildMode } from './build.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
 import { startingLoadout } from './loadout.ts';
 import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer, stepNoclip } from './player.ts';
+import { RestController, type RestKind } from './rest.ts';
 import { Survival } from './survival.ts';
 import { toHands } from './targets.ts';
 
@@ -110,10 +112,12 @@ export const startPlay = (engine: Engine): void => {
 
   /** Debug control for the compression interruption test (U). */
   let danger: string | undefined;
+  let rest: RestController | undefined;
   const sim = new Simulation({
     seed: config.seed,
     clock: { ratio: CLOCK_RATIO, start: config.start },
     unsafe: () => danger ?? zombieSystem?.unsafeReason(),
+    restRate: () => rest?.action?.rate,
   });
   const { compression } = sim;
   const survival = new Survival(sim, inventory, queue, {
@@ -216,6 +220,7 @@ export const startPlay = (engine: Engine): void => {
   const prompt = $('prompt');
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
+  const restBox = $('rest');
   const credits = validateManifest('assets/manifest.json', assetManifest);
   $('errors').textContent = [engine.contentErrors, ...credits.issues.map((i) => `${i.source} ${i.path}: ${i.message}`)]
     .filter(Boolean)
@@ -228,6 +233,23 @@ export const startPlay = (engine: Engine): void => {
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = performance.now() + 3000;
+  };
+
+  rest = new RestController(sim, {
+    bedQuality: () => {
+      const bed = entities.bedNear(chest(), LOOT_REACH / s);
+      return bed ? entities.defOf(bed).bed!.quality : undefined;
+    },
+    notice: showNotice,
+  });
+
+  /** Cancels any handling, then starts resting or sleeping. Shows why not, if refused. */
+  const startRest = (kind: RestKind): void => {
+    queue.cancel();
+    const reason = rest?.start(kind);
+    if (reason) {
+      showNotice(`Can't ${kind}: ${reason}`);
+    }
   };
 
   sim.scheduler.register({
@@ -375,6 +397,27 @@ export const startPlay = (engine: Engine): void => {
     ],
   ]);
 
+  /** Continues: resumes a rest/sleep action, or the debug compression test. */
+  const continueAction = (): void => {
+    if (rest?.action) {
+      const reason = rest.resume();
+      if (reason) {
+        showNotice(`Can't continue: ${reason}`);
+      }
+    } else {
+      compress();
+    }
+  };
+
+  /** Stops: ends a rest/sleep action, or the debug compression test. */
+  const stopAction = (): void => {
+    if (rest?.action) {
+      rest.stop();
+    } else {
+      compression.stop();
+    }
+  };
+
   /** C continues and X stops after an interruption. Returns true if the key was used. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
@@ -383,11 +426,11 @@ export const startPlay = (engine: Engine): void => {
       return debug !== undefined;
     }
     if (code === 'KeyC') {
-      compress();
+      continueAction();
       return true;
     }
     if (code === 'KeyX') {
-      compression.stop();
+      stopAction();
       return true;
     }
     return false;
@@ -452,17 +495,25 @@ export const startPlay = (engine: Engine): void => {
     }
   };
 
+  /** Single-key actions, each responsible for its own guard. */
+  const playActions = new Map<string, () => void>([
+    ['KeyB', () => config.debug && build.toggle()],
+    ['KeyG', () => config.debug && toggleSpawnMenu()],
+    ['KeyE', () => !compression.locksInput && use()],
+    ['KeyX', () => queue.cancel()],
+    // R also descends in noclip (debug); resting there is unlikely to matter.
+    ['KeyR', () => !(compression.locksInput || noclip) && startRest('rest')],
+    ['KeyL', () => !compression.locksInput && startRest('sleep')],
+  ]);
+
   const playKeys = (code: string) => {
+    const action = playActions.get(code);
+    if (action) {
+      action();
+      return;
+    }
     const quick = QUICK_KEY.exec(code);
-    if (code === 'KeyB' && config.debug) {
-      build.toggle();
-    } else if (code === 'KeyG' && config.debug) {
-      toggleSpawnMenu();
-    } else if (code === 'KeyE' && !compression.locksInput) {
-      use();
-    } else if (code === 'KeyX') {
-      queue.cancel();
-    } else if (!build.key(code) && quick && !compression.locksInput) {
+    if (!build.key(code) && quick && !compression.locksInput) {
       quickKey(Number(quick[1]) - 1);
     }
   };
@@ -582,7 +633,7 @@ export const startPlay = (engine: Engine): void => {
 
   const debugText = (): string =>
     config.debug
-      ? `debug: B build, G spawn, H god (${sim.godMode ? 'on' : 'off'}), F noclip (${noclip ? 'on' : 'off'}), Space rise/R descend, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt, V shambler`
+      ? `debug: B build, G spawn, H god (${sim.godMode ? 'on' : 'off'}), F noclip (${noclip ? 'on' : 'off'}), Space rise/R descend, T compress, N noise, U danger (${danger ? 'on' : 'off'}), K hurt, V shambler`
       : '';
 
   const hudText = (looking: string): string => {
@@ -611,7 +662,8 @@ export const startPlay = (engine: Engine): void => {
     if (entity) {
       lines.push(useText(entity));
     }
-    if (compression.interruption !== undefined) {
+    // The rest screen carries its own Continue/Stop prompt while a long action is running.
+    if (compression.interruption !== undefined && !rest?.action) {
       lines.push(`${compression.interruption}.   C: continue   X: stop`);
     }
     return lines.join('\n');
@@ -634,7 +686,11 @@ export const startPlay = (engine: Engine): void => {
 
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = !overlay.hidden; // the pause card is up
-    sim.frame(dt);
+    if (rest) {
+      rest.frame(dt);
+    } else {
+      sim.frame(dt);
+    }
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
@@ -647,6 +703,8 @@ export const startPlay = (engine: Engine): void => {
     hud.textContent = hudText(build.target(eye(), lookDir(), input.locked));
     prompt.textContent = promptText(now);
     prompt.hidden = prompt.textContent === '';
+    document.body.classList.toggle('resting', rest?.action !== undefined);
+    renderRest(restBox, rest?.action, sim);
     screen.update();
     drawQuickbar();
     if (screen.isOpen) {

@@ -579,6 +579,14 @@ body.inventory-open #quickbar,
 body.inventory-open #crosshair {
   display: none;
 }
+/* The rest screen (1.8) covers the play HUD too, and carries its own prompt. */
+body.resting #hud,
+body.resting #quickbar,
+body.resting #crosshair,
+body.resting #prompt,
+body.resting #handling {
+  display: none;
+}
 #hotbar[hidden],
 #quickbar[hidden],
 #handling[hidden] {
@@ -754,4 +762,71 @@ body.bench #quickbar {
   font:
     11px / 1.4 ui-monospace,
     monospace;
+}
+
+/* ---- rest and sleep (1.8) ---- */
+#rest {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 45%);
+}
+#rest[hidden] {
+  display: none;
+}
+.rest-edge {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 140px 50px rgb(0 0 0 / 85%);
+}
+.rest-card {
+  width: min(360px, calc(100vw - 32px));
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  text-align: center;
+}
+#rest h2 {
+  margin: 10px 0 14px;
+  font-size: 18px;
+}
+.rest-clock {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  position: relative;
+}
+.rest-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  background: var(--accent);
+  transform-origin: 50% 0%;
+  animation: rest-spin 2s linear infinite;
+}
+@keyframes rest-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rest-time {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font:
+    12px ui-monospace,
+    monospace;
+}
+.rest-prompt {
+  margin: 10px 0 0;
+  color: var(--accent);
 }
