@@ -341,11 +341,24 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
     $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
   };
-  overlay.addEventListener('click', (e) => {
-    if (!((e.target instanceof Element && e.target.closest('a')) || input.locked)) {
-      mainMenuOpen = false;
-      syncOverlay();
+  const resume = () => {
+    screen.close();
+    debugTools?.closeMenus();
+    mainMenuOpen = false;
+    if (!input.locked) {
       input.lock();
+    }
+    if (input.locked) {
+      syncOverlay();
+    }
+  };
+  overlay.addEventListener('click', (e) => {
+    const target = e.target instanceof Element ? e.target : undefined;
+    if (target?.closest('a')) {
+      return;
+    }
+    if (target?.closest('#go') || (!input.locked && target === overlay)) {
+      resume();
     }
   });
   let forwardingClick = false;
@@ -382,9 +395,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     true,
   );
   renderer.domElement.addEventListener('click', () => {
-    if (!(input.locked || screen.isOpen || debugTools?.menuOpen || sim.dead)) {
-      input.lock();
+    if (mainMenuOpen) {
+      resume();
+      return;
     }
+    if (input.locked || screen.isOpen || debugTools?.menuOpen || sim.dead) {
+      return;
+    }
+    resume();
   });
   document.addEventListener('pointerlockchange', syncOverlay);
 

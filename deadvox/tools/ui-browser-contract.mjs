@@ -268,6 +268,59 @@ try {
     { request: 0, exit: 0 },
     'unlock event does not call lock APIs',
   );
+
+  await evaluate(
+    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
+  );
+  await delay(100);
+  if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
+    await clickAt('#go');
+  }
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'canvas or locked-card click resumes after pointer unlock',
+  );
+
+  await press('Tab', 'Tab', 9);
+  await evaluate('window.__setPointerLocked(false)');
+  await delay(100);
+  assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'unlock closes an open inventory');
+  await evaluate(
+    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
+  );
+  await delay(100);
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'canvas click resumes after inventory unlock',
+  );
+
+  await press('Backquote', '`', 192);
+  await evaluate('window.__setPointerLocked(false)');
+  await delay(100);
+  assert.equal(
+    await evaluate("document.querySelector('.debug-panel').hidden"),
+    true,
+    'unlock closes an open debug panel',
+  );
+  await evaluate(
+    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
+  );
+  await delay(100);
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'canvas click resumes after debug-panel unlock',
+  );
+
+  await press('F10', 'F10', 121);
+  await clickAt('#go');
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'locked cursor click on continue resumes play',
+  );
   process.stdout.write(
     'UI browser contract passed: G search, menu pointer-lock behavior, cursor clicks/focus, unlock, F10, inventory stats.\n',
   );
