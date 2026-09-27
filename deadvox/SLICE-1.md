@@ -467,6 +467,8 @@ decay (compared against live ticking), and death.
   shambler's headroom fit the same body physics as the player. No pathfinding in
   Slice 1 (BR, 2026-09-27): a shambler that can't reach the player stops at the
   obstacle, still aware of them. A lost shambler wanders back.
+- Bodies: player and shamblers collide as solid bodies; overlapping shamblers
+  separate gently without moving through terrain.
 - Debug mob testing (`?debug=1`): H toggles god mode; F toggles noclip; Space
   rises and R descends while noclipping. Both toggles start off and are not saved.
 - Melee in both directions: the zombie attack has reach and a cooldown; the
@@ -490,6 +492,8 @@ checks panel picking, an open ray through to furniture behind the doorway, and
 renderer/core panel agreement within 1 mm for every facing and state.
 `test/debugTools.test.ts`, `test/sim.test.ts`, and `test/zombies.test.ts` cover
 noclip collision/gravity and god-mode immunity without suppressing zombie attacks.
+`test/zombies.test.ts` also covers player/shambler body contact, chaser attacks at
+wall contact, five-body crowd separation, and a corridor-wall separation case.
 Further zombie checks cover perception, distance-driven gait cadence (12–15 steps/10 s
 wandering at 0.8 m/s; 42–52 steps/10 s chasing at 2.8 m/s; no steps against a
 wall; at most 0.05 rad leg-angle change per 1/60 s walking frame), melee,

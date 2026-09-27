@@ -7,12 +7,13 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
+import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import { FISTS_MELEE, type PlayerSense, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
-import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 
 const BASE = 'src/content/base';
@@ -55,6 +56,31 @@ const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   }
 };
 const metres = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]) * BLOCK_SIZE;
+const boxesOverlap = (a: Body, b: Body): boolean =>
+  Math.abs(a.pos[0] - b.pos[0]) < a.halfWidth + b.halfWidth &&
+  Math.abs(a.pos[2] - b.pos[2]) < a.halfWidth + b.halfWidth &&
+  a.pos[1] < b.pos[1] + b.height &&
+  a.pos[1] + a.height > b.pos[1];
+const overlapDepthMetres = (a: Body, b: Body): number => {
+  if (a.pos[1] >= b.pos[1] + b.height || b.pos[1] >= a.pos[1] + a.height) {
+    return 0;
+  }
+  const overlapX = a.halfWidth + b.halfWidth - Math.abs(a.pos[0] - b.pos[0]);
+  const overlapZ = a.halfWidth + b.halfWidth - Math.abs(a.pos[2] - b.pos[2]);
+  return Math.max(0, Math.min(overlapX, overlapZ) * BLOCK_SIZE);
+};
+const bodyHitsSolid = (body: Body, isSolid: SolidAt): boolean => {
+  for (let y = Math.floor(body.pos[1]); y < Math.ceil(body.pos[1] + body.height); y++) {
+    for (let z = Math.floor(body.pos[2] - body.halfWidth); z < Math.ceil(body.pos[2] + body.halfWidth); z++) {
+      for (let x = Math.floor(body.pos[0] - body.halfWidth); x < Math.ceil(body.pos[0] + body.halfWidth); x++) {
+        if (isSolid(x, y, z) && bodyOverlapsBlock(body, [x, y, z])) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
 const runChaserAtWall = (isSolid: SolidAt, seconds: number) => {
   const target = player([12, 1, 0], [-1, 0, 0]);
   const system = new ZombieSystem(senses(() => target, isSolid));
@@ -297,6 +323,104 @@ describe('shambler scenarios', () => {
     expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
     expect(result.wallGap).toBeGreaterThanOrEqual(-0.001);
     expect(result.wallGap).toBeLessThanOrEqual(1);
+  });
+
+  it('stops a walking player at a standing shambler without stepping onto its body', () => {
+    const { zombie } = standing([2, 1, 0]);
+    zombie.body.onGround = true;
+    const playerBody = createPlayerBody(SCALE, 0, 1, 0);
+    playerBody.onGround = true;
+    const obstacles = [zombie.body];
+    for (let frame = 0; frame < 3 * 60; frame++) {
+      steer(playerBody, SCALE, 0, {
+        forward: 0,
+        right: 1,
+        jump: false,
+        sprint: false,
+        walk: false,
+      });
+      stepBody(playerBody, 1 / 60, FLOOR, { ...PHYSICS, obstacles });
+      expect(boxesOverlap(playerBody, zombie.body)).toBe(false);
+    }
+    const gap = (zombie.body.pos[0] - zombie.body.halfWidth - playerBody.pos[0] - playerBody.halfWidth) * BLOCK_SIZE;
+    expect(gap).toBeGreaterThanOrEqual(-0.001);
+    expect(gap).toBeLessThanOrEqual(0.05);
+    expect(playerBody.pos[1]).toBeCloseTo(1, 3);
+  });
+
+  it('lets a chaser attack a player against a wall without overlapping either box', () => {
+    const playerBody = createPlayerBody(SCALE, 0.4, 1, 0);
+    playerBody.onGround = true;
+    const target = { ...player([0.4, 1, 0]), body: playerBody };
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 1 && y >= 1 && y <= 5);
+    expect(bodyHitsSolid(playerBody, wall)).toBe(false);
+    let hits = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => target,
+        wall,
+        () => 12,
+        () => {
+          hits += 1;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [-5, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    run(system, 3, () => expect(boxesOverlap(playerBody, zombie.body)).toBe(false));
+    expect(zombie.mode).toBe('chase');
+    expect(hits).toBeGreaterThan(0);
+  });
+
+  it('separates five shamblers converging for 10 s without terrain intersections', () => {
+    const playerBody = createPlayerBody(SCALE, 0, 1, 0);
+    const target = { ...player([0, 1, 0]), body: playerBody };
+    const system = new ZombieSystem(senses(() => target));
+    const starts: Vec3[] = [
+      [4, 1, 0],
+      [6, 1, 0],
+      [8, 1, 0],
+      [10, 1, 0],
+      [12, 1, 0],
+    ];
+    for (const start of starts) {
+      system.add(SHAMBLER, start, [-1, 0, 0]);
+    }
+    for (let tick = 0; tick < 10 * 20; tick++) {
+      system.tick(1 / 20);
+      for (const [, zombie] of system.store.entries()) {
+        expect(bodyHitsSolid(zombie.body, FLOOR)).toBe(false);
+        expect(boxesOverlap(playerBody, zombie.body)).toBe(false);
+      }
+    }
+    const finalBodies = [...system.store.entries()].map(([, zombie]) => zombie.body);
+    for (let i = 0; i < finalBodies.length; i++) {
+      for (let j = i + 1; j < finalBodies.length; j++) {
+        expect(
+          overlapDepthMetres(finalBodies[i]!, finalBodies[j]!),
+          `${i}/${j}: ${finalBodies[i]!.pos} vs ${finalBodies[j]!.pos}`,
+        ).toBeLessThanOrEqual(0.05);
+      }
+    }
+  });
+
+  it('pushes two overlapping shamblers apart in a one-metre corridor without wall intersections', () => {
+    const corridor: SolidAt = (x, y, z) => FLOOR(x, y, z) || (y >= 1 && (x === 0 || x === 3));
+    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const system = new ZombieSystem(senses(() => player([1000, 1, 1000]), corridor));
+    const first = system.store.get(system.add(stillShambler, [2, 1, 2]))!;
+    const second = system.store.get(system.add(stillShambler, [2, 1, 2]))!;
+    system.tick(1 / 20);
+    expect(Math.abs(first.body.pos[0] - 2) * BLOCK_SIZE).toBeCloseTo(0.05, 5);
+    expect(Math.abs(second.body.pos[0] - 2) * BLOCK_SIZE).toBeCloseTo(0.05, 5);
+    for (let tick = 1; tick < 10 * 20; tick++) {
+      system.tick(1 / 20);
+      for (const [, zombie] of system.store.entries()) {
+        expect(bodyHitsSolid(zombie.body, corridor)).toBe(false);
+      }
+    }
+    expect(first.body.pos[0]).toBeLessThan(2);
+    expect(second.body.pos[0]).toBeGreaterThan(2);
   });
 
   it('F: melee hits obey cooldown, exact damage and range; fists and real crowbar data kill shamblers', () => {

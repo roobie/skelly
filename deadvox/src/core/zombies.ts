@@ -1,7 +1,7 @@
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
-import { type Body, type PhysicsParams, stepBody } from './physics.ts';
+import { type Body, type PhysicsParams, separateBodies, stepBody } from './physics.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
@@ -26,6 +26,8 @@ export interface Zombie {
 
 export interface PlayerSense {
   pos: Vec3;
+  /** When present, the solid player box used for hard movement collisions. */
+  body?: Body | undefined;
   /** Direction the player faces, in the x/z plane. */
   facing: Vec3;
   movement: PlayerMovement;
@@ -189,7 +191,8 @@ export class ZombieSystem {
     const player = this.options.player();
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
-    for (const [, zombie] of this.store.entries()) {
+    const entries = [...this.store.entries()];
+    for (const [id, zombie] of entries) {
       zombie.attackWait = Math.max(0, zombie.attackWait - dt);
       const { pos } = zombie.body;
       const sees = perceivePlayer({
@@ -254,7 +257,11 @@ export class ZombieSystem {
         zombie.body.vel[2] = 0;
       }
       const beforeStep: Vec3 = [...pos];
-      stepBody(zombie.body, dt, isSolid, this.options.physics);
+      const obstacles = entries.filter(([otherId]) => otherId !== id).map(([, other]) => other.body);
+      if (player.body) {
+        obstacles.push(player.body);
+      }
+      stepBody(zombie.body, dt, isSolid, { ...this.options.physics, obstacles });
       const travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
       zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
       if (zombie.mode === 'wander') {
@@ -282,6 +289,13 @@ export class ZombieSystem {
         zombie.lastPerceived = undefined;
       }
     }
+    separateBodies({
+      bodies: entries.map(([, zombie]) => zombie.body),
+      dt,
+      isSolid,
+      blockSize,
+      obstacles: player.body ? [player.body] : [],
+    });
     this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
   }
 

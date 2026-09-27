@@ -121,33 +121,33 @@ export const startPlay = (engine: Engine): void => {
     notice: (text) => showNotice(text),
   });
   const zombieStore = new MapEntityStore<Zombie>();
+  let sprinting = false;
+  let noclip = false;
+  const playerMovement = (): PlayerMovement => {
+    const moving = input.locked && !compression.locksInput ? input.intent() : IDLE;
+    if (moving.forward === 0 && moving.right === 0) {
+      return 'still';
+    }
+    if (sprinting) {
+      return 'sprinting';
+    }
+    return moving.walk ? 'walking' : 'jogging';
+  };
+  const playerSense = () => ({
+    pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
+    body: noclip ? undefined : body,
+    facing: [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)] as Vec3,
+    movement: playerMovement(),
+    lit: survival.lit?.on === true,
+    lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
+  });
   zombieSystem = new ZombieSystem({
     store: zombieStore,
     isSolid: engine.isSolid,
     blockSize: s,
     physics,
     jumpSpeed: PLAYER.jump,
-    player: () => {
-      const moving = input.locked && !compression.locksInput ? input.intent() : IDLE;
-      const hasDirection = moving.forward !== 0 || moving.right !== 0;
-      let movement: PlayerMovement = 'still';
-      if (hasDirection) {
-        if (sprinting) {
-          movement = 'sprinting';
-        } else if (moving.walk) {
-          movement = 'walking';
-        } else {
-          movement = 'jogging';
-        }
-      }
-      return {
-        pos: [body.pos[0], body.pos[1], body.pos[2]],
-        facing: [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)],
-        movement,
-        lit: survival.lit?.on === true,
-        lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
-      };
-    },
+    player: playerSense,
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
     onDeath: (zombie) => {
@@ -172,8 +172,6 @@ export const startPlay = (engine: Engine): void => {
   // The player is held still until there is ground under them. Inputs are locked
   // while time is compressed. Handling and a heavy load slow you down, and sprinting
   // spends stamina: once winded, you jog until you've got your breath back.
-  let sprinting = false;
-  let noclip = false;
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
@@ -205,7 +203,8 @@ export const startPlay = (engine: Engine): void => {
         return;
       }
       steer(body, scale, input.yaw, pacedIntent);
-      stepBody(body, dt, engine.isSolid, physics);
+      const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
+      stepBody(body, dt, engine.isSolid, { ...physics, obstacles: zombieBodies });
     },
   });
 

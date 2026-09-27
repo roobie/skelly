@@ -1,4 +1,4 @@
-// Axis-aligned box movement against the voxel grid.
+// Axis-aligned box movement against the voxel grid and other moving bodies.
 
 import type { Vec3 } from './coords.ts';
 import type { SolidAt } from './raycast.ts';
@@ -18,6 +18,8 @@ export interface PhysicsParams {
   gravity: number;
   /** Tallest ledge a grounded body walks up without jumping, in blocks. 0 disables. */
   stepHeight: number;
+  /** Other bodies treated as solid obstacles; omitted for collision-free actors. */
+  obstacles?: readonly Body[];
 }
 
 const EPS = 1e-4;
@@ -28,99 +30,7 @@ type Axis = 0 | 1 | 2;
 const offsets = (body: Body, axis: Axis): [number, number] =>
   axis === 1 ? [0, body.height] : [-body.halfWidth, body.halfWidth];
 
-const overlapsSolid = (body: Body, isSolid: SolidAt): boolean => {
-  const [x, y, z] = body.pos;
-  const w = body.halfWidth;
-  for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++) {
-    for (let bz = Math.floor(z - w); bz < Math.ceil(z + w); bz++) {
-      for (let bx = Math.floor(x - w); bx < Math.ceil(x + w); bx++) {
-        if (isSolid(bx, by, bz)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-};
-
-/** Moves along one axis; on contact, snaps to the block face and stops. Returns true on contact. */
-const moveAxis = (body: Body, axis: Axis, delta: number, isSolid: SolidAt): boolean => {
-  if (delta === 0) {
-    return false;
-  }
-  body.pos[axis] += delta;
-  if (!overlapsSolid(body, isSolid)) {
-    return false;
-  }
-  const [lo, hi] = offsets(body, axis);
-  body.pos[axis] =
-    delta > 0 ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - EPS : Math.floor(body.pos[axis]! + lo) + 1 - lo + EPS;
-  body.vel[axis] = 0;
-  return true;
-};
-
-/** What a horizontal move needs besides the axis and distance. */
-interface MoveContext {
-  body: Body;
-  isSolid: SolidAt;
-  stepHeight: number;
-  grounded: boolean;
-}
-
-/** Tries to move along a horizontal axis from a raised position, then settles back down. */
-const tryStepUp = ({ body, isSolid, stepHeight }: MoveContext, axis: Axis, delta: number): boolean => {
-  body.pos[1] += stepHeight;
-  if (overlapsSolid(body, isSolid)) {
-    body.pos[1] -= stepHeight;
-    return false;
-  }
-  body.pos[axis] += delta;
-  if (overlapsSolid(body, isSolid)) {
-    body.pos[axis] -= delta;
-    body.pos[1] -= stepHeight;
-    return false;
-  }
-  moveAxis(body, 1, -stepHeight, isSolid); // lands on the step, or back where it was
-  return true;
-};
-
-/** Horizontal move that climbs ledges up to stepHeight when grounded. */
-const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
-  const { body, isSolid, stepHeight, grounded } = ctx;
-  const start = body.pos[axis]!;
-  const speed = body.vel[axis]!;
-  if (!(moveAxis(body, axis, delta, isSolid) && grounded) || stepHeight <= 0) {
-    return;
-  }
-  // Blocked: retry the whole move from a raised position.
-  body.pos[axis] = start;
-  body.vel[axis] = speed;
-  if (!tryStepUp(ctx, axis, delta)) {
-    moveAxis(body, axis, delta, isSolid);
-  }
-};
-
-/** Applies gravity and velocity for dt seconds, resolving collisions axis by axis (y first). */
-export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): void => {
-  const wasGrounded = body.onGround;
-  body.vel[1] -= params.gravity * dt;
-  const largest = Math.max(...body.vel.map((v) => Math.abs(v * dt)));
-  const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
-  const h = dt / substeps;
-  body.onGround = false;
-  for (let i = 0; i < substeps; i++) {
-    const falling = body.vel[1] < 0;
-    if (moveAxis(body, 1, body.vel[1] * h, isSolid) && falling) {
-      body.onGround = true;
-    }
-    const ctx: MoveContext = { body, isSolid, stepHeight: params.stepHeight, grounded: wasGrounded || body.onGround };
-    moveHorizontal(ctx, 0, body.vel[0] * h);
-    moveHorizontal(ctx, 2, body.vel[2] * h);
-  }
-};
-
-/** True if the box at pos would overlap the given block (used to stop placing blocks inside the player). */
-export const bodyOverlapsBlock = (body: Body, block: Vec3): boolean => {
+const overlapsBlock = (body: Body, block: Vec3): boolean => {
   const [x, y, z] = body.pos;
   const w = body.halfWidth;
   return (
@@ -132,3 +42,187 @@ export const bodyOverlapsBlock = (body: Body, block: Vec3): boolean => {
     block[2] < z + w
   );
 };
+
+const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
+  const [x, y, z] = body.pos;
+  const w = body.halfWidth;
+  for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++) {
+    for (let bz = Math.floor(z - w); bz < Math.ceil(z + w); bz++) {
+      for (let bx = Math.floor(x - w); bx < Math.ceil(x + w); bx++) {
+        if (isSolid(bx, by, bz) && overlapsBlock(body, [bx, by, bz])) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+
+const overlapsBody = (body: Body, other: Body): boolean =>
+  body.pos[0] - body.halfWidth < other.pos[0] + other.halfWidth &&
+  body.pos[0] + body.halfWidth > other.pos[0] - other.halfWidth &&
+  body.pos[1] < other.pos[1] + other.height &&
+  body.pos[1] + body.height > other.pos[1] &&
+  body.pos[2] - body.halfWidth < other.pos[2] + other.halfWidth &&
+  body.pos[2] + body.halfWidth > other.pos[2] - other.halfWidth;
+
+const overlapsSolid = (body: Body, isSolid: SolidAt, bodies: readonly Body[]): boolean =>
+  overlapsTerrain(body, isSolid) || bodies.some((other) => overlapsBody(body, other));
+
+interface CollisionContext {
+  isSolid: SolidAt;
+  bodies?: readonly Body[];
+}
+
+const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number => {
+  if (axis === 1) {
+    return delta > 0 ? other.pos[1] - body.height : other.pos[1] + other.height;
+  }
+  const halfWidths = body.halfWidth + other.halfWidth;
+  return delta > 0 ? other.pos[axis] - halfWidths : other.pos[axis] + halfWidths;
+};
+
+/** Moves along one axis; on contact, snaps to the nearest obstacle face. Returns true on contact. */
+const moveAxis = (body: Body, axis: Axis, delta: number, { isSolid, bodies = [] }: CollisionContext): boolean => {
+  if (delta === 0) {
+    return false;
+  }
+  body.pos[axis] += delta;
+  const terrainHit = overlapsTerrain(body, isSolid);
+  const bodyHits = bodies.filter((other) => overlapsBody(body, other));
+  if (!terrainHit && bodyHits.length === 0) {
+    return false;
+  }
+  let contact: number | undefined;
+  if (terrainHit) {
+    const [lo, hi] = offsets(body, axis);
+    contact =
+      delta > 0 ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - EPS : Math.floor(body.pos[axis]! + lo) + 1 - lo + EPS;
+  }
+  for (const other of bodyHits) {
+    const face = bodyContact(body, other, axis, delta);
+    if (contact === undefined) {
+      contact = face;
+    } else if (delta > 0) {
+      contact = Math.min(contact, face);
+    } else {
+      contact = Math.max(contact, face);
+    }
+  }
+  body.pos[axis] = contact!;
+  body.vel[axis] = 0;
+  return true;
+};
+
+/** What a horizontal move needs besides the axis and distance. */
+interface MoveContext {
+  body: Body;
+  isSolid: SolidAt;
+  stepHeight: number;
+  grounded: boolean;
+  bodies: readonly Body[];
+}
+
+/** Tries to move along a horizontal axis from a raised position, then settles back down. */
+const tryStepUp = ({ body, isSolid, stepHeight, bodies }: MoveContext, axis: Axis, delta: number): boolean => {
+  body.pos[1] += stepHeight;
+  if (overlapsSolid(body, isSolid, bodies)) {
+    body.pos[1] -= stepHeight;
+    return false;
+  }
+  body.pos[axis] += delta;
+  if (overlapsSolid(body, isSolid, bodies)) {
+    body.pos[axis] -= delta;
+    body.pos[1] -= stepHeight;
+    return false;
+  }
+  moveAxis(body, 1, -stepHeight, { isSolid, bodies }); // lands on the step, or back where it was
+  return true;
+};
+
+/** Horizontal move that climbs terrain ledges up to stepHeight when grounded, never bodies. */
+const moveHorizontal = (ctx: MoveContext, axis: Axis, delta: number): void => {
+  const { body, isSolid, stepHeight, grounded, bodies } = ctx;
+  const start = body.pos[axis]!;
+  const speed = body.vel[axis]!;
+  if (!(moveAxis(body, axis, delta, { isSolid, bodies }) && grounded) || stepHeight <= 0) {
+    return;
+  }
+  // Blocked: retry the whole move from a raised position.
+  body.pos[axis] = start;
+  body.vel[axis] = speed;
+  if (!tryStepUp(ctx, axis, delta)) {
+    moveAxis(body, axis, delta, { isSolid, bodies });
+  }
+};
+
+/** Applies gravity and velocity for dt seconds, resolving collisions axis by axis (y first). */
+export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: PhysicsParams): void => {
+  const obstacles = params.obstacles ?? [];
+  const wasGrounded = body.onGround;
+  body.vel[1] -= params.gravity * dt;
+  const largest = Math.max(...body.vel.map((v) => Math.abs(v * dt)));
+  const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
+  const h = dt / substeps;
+  body.onGround = false;
+  for (let i = 0; i < substeps; i++) {
+    const falling = body.vel[1] < 0;
+    if (moveAxis(body, 1, body.vel[1] * h, { isSolid, bodies: obstacles }) && falling) {
+      body.onGround = true;
+    }
+    const ctx: MoveContext = {
+      body,
+      isSolid,
+      stepHeight: params.stepHeight,
+      grounded: wasGrounded || body.onGround,
+      bodies: obstacles,
+    };
+    moveHorizontal(ctx, 0, body.vel[0] * h);
+    moveHorizontal(ctx, 2, body.vel[2] * h);
+  }
+};
+
+const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
+  const deltaX = second.pos[0] - first.pos[0];
+  const deltaZ = second.pos[2] - first.pos[2];
+  const overlapX = first.halfWidth + second.halfWidth - Math.abs(deltaX);
+  const overlapZ = first.halfWidth + second.halfWidth - Math.abs(deltaZ);
+  if (overlapX <= 0 || overlapZ <= 0) {
+    return;
+  }
+  const axis: Axis = overlapX <= overlapZ ? 0 : 2;
+  const overlap = axis === 0 ? overlapX : overlapZ;
+  const component = axis === 0 ? deltaX : deltaZ;
+  const direction = component === 0 ? 1 : Math.sign(component);
+  const push = Math.min(overlap / 2, maxPushBlocks);
+  moveAxis(first, axis, -direction * push, collision);
+  moveAxis(second, axis, direction * push, collision);
+};
+
+/** Pairwise horizontal shambler separation, capped per body and clipped against all obstacles. */
+export const separateBodies = ({
+  bodies,
+  dt,
+  isSolid,
+  blockSize,
+  obstacles = [],
+}: {
+  bodies: readonly Body[];
+  dt: number;
+  isSolid: SolidAt;
+  blockSize: number;
+  obstacles?: readonly Body[];
+}): void => {
+  const maxPushBlocks = dt / blockSize;
+  for (let i = 0; i < bodies.length; i++) {
+    const first = bodies[i]!;
+    for (let j = i + 1; j < bodies.length; j++) {
+      const second = bodies[j]!;
+      const blockers = [...obstacles, ...bodies.filter((other) => other !== first && other !== second)];
+      separatePair(first, second, maxPushBlocks, { isSolid, bodies: blockers });
+    }
+  }
+};
+
+/** True if the box at pos would overlap the given block (used to stop placing blocks inside the player). */
+export const bodyOverlapsBlock = (body: Body, block: Vec3): boolean => overlapsBlock(body, block);
