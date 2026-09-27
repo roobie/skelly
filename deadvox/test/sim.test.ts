@@ -148,6 +148,22 @@ describe('Simulation', () => {
     expect(sim.frame(0.5)).toBeCloseTo(0.5, 9);
   });
 
+  it('god mode prevents hunger and thirst health loss while needs still advance', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.godMode = true;
+    sim.needs.calories = 0;
+    sim.needs.hydration = 0;
+    sim.frame(HOUR);
+    expect(sim.needs.health).toBe(100);
+    expect(sim.needs.calories).toBe(0);
+    expect(sim.needs.hydration).toBe(0);
+    expect(sim.dead).toBeUndefined();
+
+    sim.godMode = false;
+    sim.frame(HOUR);
+    expect(sim.needs.health).toBeLessThan(100);
+  });
+
   it('gives each system its own repeatable random stream', () => {
     const a = new Simulation({ seed: 7 });
     const b = new Simulation({ seed: 7 });

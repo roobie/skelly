@@ -9,8 +9,25 @@ import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
-import { type FurnitureSpawn, furnitureOf, grow, type Rect, rectDistance, type Site, smoothstep } from './site.ts';
-import { compileTemplate, footprint, type Placement, stampPlacement, type Turn } from './templates.ts';
+import {
+  type FurnitureSpawn,
+  furnitureOf,
+  grow,
+  type Rect,
+  rectDistance,
+  type Site,
+  smoothstep,
+  type ZombieSpawn,
+} from './site.ts';
+import {
+  compileTemplate,
+  footprint,
+  type Placement,
+  placedSpawns,
+  type SpawnMarker,
+  stampPlacement,
+  type Turn,
+} from './templates.ts';
 import { type Surface, terrainHeight } from './worldgen.ts';
 
 /** Templates are drawn in half-metre blocks. */
@@ -38,6 +55,27 @@ const SOUTH_SIDE = ['gas_station', 'shed'] as const;
 /** Every template the hamlet uses. */
 export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE];
 
+/** Deterministic marker rolls plus enough roadside wanderers to reach the 6–10 population target. */
+export const hamletZombieSpawns = (
+  seed: number,
+  road: Rect,
+  markers: readonly SpawnMarker[],
+  roadHeightAt: (x: number) => number,
+): ZombieSpawn[] => {
+  const rng = Rng.stream(seed, 'hamlet-zombies');
+  const selected = markers.filter((spawn) => rng.chance(spawn.chance));
+  const count = rng.int(6, 10);
+  const spawns = selected.slice(0, count).map(({ zombie, pos }) => ({ type: zombie, pos }));
+  const wanderers = count - spawns.length;
+  for (let i = 0; i < wanderers; i++) {
+    const x = Math.floor(road.x0 + ((i + 1) * (road.x1 - road.x0)) / (wanderers + 1));
+    const side = i % 2 === 0 ? -1 : 1;
+    const z = Math.floor((road.z0 + road.z1) / 2 + side * (HAMLET.road / 2 + 2));
+    spawns.push({ type: 'shambler', pos: [x, roadHeightAt(x) + 1, z] });
+  }
+  return spawns;
+};
+
 /** Where the hamlet may go: offsets from the world origin in metres, on a grid. */
 const SITE = { step: 32, reach: 160, sample: 4, lowest: 15 } as const;
 
@@ -62,6 +100,7 @@ export class Hamlet implements Site {
   private readonly asphalt: number;
   /** Road heights from `roadHeights[0]` at x = road.x0. */
   private readonly roadHeights: Int32Array;
+  private readonly zombieSpawns: ZombieSpawn[] = [];
 
   constructor(seed: number, registry: Registry, scale: Scale) {
     if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
@@ -108,6 +147,7 @@ export class Hamlet implements Site {
       ],
       yaw: -Math.PI / 2, // east, down the road
     };
+    this.makeZombieSpawns();
   }
 
   /** The ground under the road and lots, blended into the natural ground around them. */
@@ -145,6 +185,17 @@ export class Hamlet implements Site {
    */
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     return this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz]));
+  }
+
+  zombiesIn(cx: number, cz: number): ZombieSpawn[] {
+    return this.zombieSpawns.filter(
+      ({ pos }) => Math.floor(pos[0] / CHUNK) === cx && Math.floor(pos[2] / CHUNK) === cz,
+    );
+  }
+
+  private makeZombieSpawns(): void {
+    const markers = this.lots.flatMap(({ placement }) => placedSpawns(placement));
+    this.zombieSpawns.push(...hamletZombieSpawns(this.seed, this.road, markers, (x) => this.roadHeightAt(x)));
   }
 
   // ---- internals ----

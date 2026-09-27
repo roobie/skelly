@@ -4,7 +4,9 @@
 import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
-import { configFromUrl, makeConfig, siteFromUrl } from './game/config.ts';
+import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import { parseTimeOfDay } from './core/clock.ts';
+import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { createEngine } from './game/engine.ts';
 import { startPlay } from './game/play.ts';
 import type { StreamerStats } from './game/streamer.ts';
@@ -18,6 +20,16 @@ if (bench === 'report') {
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
   startPlay(createEngine(configFromUrl(params), view));
+} else if (bench === 'shamblers') {
+  const run = shamblerRunFromUrl(params);
+  if (run) {
+    const config = makeConfig(run.seed, DEFAULT_RADIUS_M);
+    config.start = parseTimeOfDay(run.time)!;
+    startShamblerBench(createEngine(config, view), run);
+  } else {
+    document.getElementById('hud')!.textContent =
+      'Invalid shambler benchmark parameters. Use n as unique positive integers up to 500, seed as a signed 32-bit integer, and time as HH:MM (default 23:30).';
+  }
 } else {
   const run = benchRunFromUrl(params);
   const { blockSize, radiusM } = currentConfig(run);
