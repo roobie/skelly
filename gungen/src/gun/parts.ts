@@ -341,23 +341,10 @@ export const grip: PartFamily = {
   build(params): PartDef {
     const len = { S: 8, M: 10, L: 12 }[cls(params, 'length')];
     const a = (GRIP_ANGLE * Math.PI) / 180;
-    const bevelSteps = 12;
-    const bevelStep = 0.25;
-    const body = Array.from({ length: bevelSteps }, (_, i) => {
-      const x0 = -1.5 + i * bevelStep;
-      const x1 = x0 + bevelStep;
-      // The port's mounting plane is perpendicular to its tilted normal. Keep
-      // each stepped section below that plane so the grip meets the lower
-      // without the gap/penetration a flat, rotated box creates.
-      const top = Math.floor((Math.tan(a) * x0 + 1e-9) / bevelStep) * bevelStep;
-      // Preserve clearance from the lower's trigger-finger keep-out at the front edge.
-      const clearanceTop = i === bevelSteps - 1 ? top - bevelStep : top;
-      return solid(`body-${i}`, [x0, -len, -1.25], [x1, clearanceTop, 1.25]);
-    });
     return {
       family: 'grip',
       // Authored upright; the tilted port makes it lean back once mounted.
-      solids: body,
+      solids: [solid('body', [-1.5, -len, -1.25], [1.5, 0, 1.25])],
       ports: [
         {
           id: 'top',
