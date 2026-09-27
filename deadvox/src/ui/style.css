@@ -28,6 +28,34 @@ body {
   display: block;
 }
 
+#game-cursor-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+#game-cursor {
+  position: absolute;
+  width: 32px;
+  height: 28px;
+  background: url("../content/base/assets/cursors/cursor.png") no-repeat -16px -9px / 32px 56px;
+}
+#game-cursor.hand {
+  background-position: -14px -37px;
+}
+#game-cursor[hidden] {
+  display: none;
+}
+
+#damage {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgb(190 0 0 / 82%) 100%);
+}
+
 #crosshair {
   position: fixed;
   left: 50%;
@@ -116,6 +144,8 @@ body {
 }
 #overlay .card {
   max-width: 420px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -430,7 +460,8 @@ button.inv-option {
   cursor: pointer;
 }
 button.inv-option:hover,
-button.inv-option:focus-visible {
+button.inv-option:focus-visible,
+button.inv-option.game-cursor-hover {
   border-color: var(--accent);
 }
 .inv-option-no {
@@ -609,6 +640,42 @@ body.resting #handling {
   display: none;
 }
 
+#inventory-stats {
+  position: fixed;
+  z-index: 12;
+  top: 38px;
+  right: 38px;
+  max-width: 34ch;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--panel);
+  white-space: pre;
+  font:
+    12px / 1.5 ui-monospace,
+    monospace;
+  pointer-events: none;
+}
+#inventory-stats[hidden] {
+  display: none;
+}
+.hud-options {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.hud-options h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.hud-options label {
+  display: block;
+  margin: 3px 0;
+  cursor: pointer;
+}
+.hud-options input {
+  accent-color: var(--accent);
+}
+
 #overlay .scale {
   margin: 12px 0 0;
   font-size: 13px;
@@ -688,7 +755,8 @@ body.resting #handling {
   cursor: pointer;
 }
 #spawn button:hover,
-#spawn button:focus-visible {
+#spawn button:focus-visible,
+#spawn button.game-cursor-hover {
   border-color: var(--accent);
 }
 #spawn button span:last-child {
@@ -829,4 +897,90 @@ body.bench #quickbar {
 .rest-prompt {
   margin: 10px 0 0;
   color: var(--accent);
+}
+
+/* Dynamically inserted by src/debug; absent outside ?debug=1. */
+#debug-ui-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+#debug-ui-root .debug-marker {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  padding: 2px 6px;
+  color: var(--muted);
+  background: rgb(18 20 24 / 70%);
+  font:
+    10px ui-monospace,
+    monospace;
+  cursor: pointer;
+  pointer-events: auto;
+}
+#debug-ui-root .debug-panel {
+  position: fixed;
+  top: 36px;
+  right: 12px;
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
+  pointer-events: auto;
+}
+#debug-ui-root .debug-panel .debug-panel-header,
+#debug-ui-root .debug-readout,
+#debug-ui-root .debug-shambler-count,
+#debug-ui-root .debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+#debug-ui-root .debug-panel .debug-panel-header {
+  justify-content: space-between;
+  align-items: center;
+}
+#debug-ui-root .debug-panel .debug-readout span,
+#debug-ui-root .debug-panel .debug-shambler-count button,
+#debug-ui-root .debug-panel .debug-shambler-count output,
+#debug-ui-root .debug-panel .debug-actions button,
+#debug-ui-root .debug-panel .debug-panel-header button {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 22%);
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+}
+#debug-ui-root .debug-panel .debug-actions button,
+#debug-ui-root .debug-panel .debug-shambler-count button {
+  cursor: pointer;
+}
+#debug-ui-root .debug-panel .debug-shambler-count {
+  align-items: center;
+}
+#debug-ui-root .debug-panel .debug-shambler-count button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+#debug-ui-root .debug-panel .debug-actions button:hover,
+#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover {
+  border-color: var(--accent);
+}
+#debug-ui-root .debug-panel p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+#debug-ui-root #hotbar,
+#debug-ui-root #spawn {
+  pointer-events: auto;
 }

@@ -19,7 +19,9 @@ if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
-  startPlay(createEngine(configFromUrl(params), view));
+  const config = configFromUrl(params);
+  const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
+  startPlay(createEngine(config, view), debugModule);
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(params);
   if (run) {

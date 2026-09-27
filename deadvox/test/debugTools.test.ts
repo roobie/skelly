@@ -5,7 +5,8 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { createPlayerBody, physicsFor, stepNoclip } from '../src/game/player.ts';
+import { stepNoclip } from '../src/debug/noclip.ts';
+import { createPlayerBody, physicsFor } from '../src/game/player.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
