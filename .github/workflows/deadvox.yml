@@ -19,8 +19,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: deadvox/package-lock.json
+          cache-dependency-path: |
+            deadvox/package-lock.json
+            deadvox/tools/lit-check/package-lock.json
       - run: npm ci
+      - run: npm ci --prefix tools/lit-check
+      - run: npm run lint:lit
       - run: npm run typecheck
       - run: npm test
       - run: npm run validate

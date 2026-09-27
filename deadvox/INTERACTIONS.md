@@ -3,7 +3,7 @@ id: skelly::deadvox-interactions
 description: Design for how the player acts on items, recipes and appliances, and how the simulation and the UI divide that work
 tags: [deadvox, design, inventory, crafting, appliances, ui]
 created: 2026-09-26
-status: draft
+status: active
 ---
 
 # deadvox — interactions
@@ -24,10 +24,10 @@ contract between the simulation and the UI. Read it with:
 [[THIS is_grounded_by: CHALLENGES.md]]
 [[THIS is_grounded_by: docs/decisions/0001-ui-rendering-with-lit-html.md]]
 
-**Status:** draft for discussion. Crafting lands in Slice 2 and appliances in
-Slice 5 ([EPIC.md](EPIC.md)); some of it shapes milestones 1.8 (rest and sleep)
-and 1.9 (saves) in Slice 1. The open questions at the end need answers before
-Slice 2 starts.
+**Status:** agreed. Crafting lands in Slice 2 and appliances in Slice 5
+([EPIC.md](EPIC.md)); some of it shapes milestones 1.8 (rest and sleep) and 1.9
+(saves) in Slice 1. The questions it left open are answered under "Decisions"
+at the end.
 
 ## Why this needs a design
 
@@ -90,7 +90,8 @@ The arrow only points one way: `ui` reads `core` and calls its commands;
 `reach(player)` is a snapshot of every item the player can use without walking:
 
 - the hands, worn items, and every pocket inside them
-- piles within 2 m
+- piles within 2 m, and the pockets of containers lying in them (a backpack
+  on the ground)
 - searched furniture within 2 m, and its pockets; unsearched furniture shows
   as "search first", never with its contents (the UI only shows what the
   character knows)
@@ -185,8 +186,9 @@ How it chooses:
   choice would have worked. A recipe with more than 1,024 combinations is a
   validator error, which keeps this bounded.
 - **Which items.** Among items of the chosen type: fewest gathering seconds
-  first, then worst condition first (use up the damaged ones), and never an
-  item that's a container with something in it.
+  first, then smaller stacks first (use up the leftovers), then worst condition
+  first (use up the damaged ones), and never an item that's a container with
+  something in it.
 - **Tools.** One item can give several qualities (a multitool). A tool isn't
   also a component in the same craft.
 - **The player's choice.** `prefer` overrides the alternative in a group
@@ -203,22 +205,27 @@ A craft is a **long action**: one object in the core, registered with the
 scheduler like needs (1 Hz, steps up to 30 s under compression), so it advances
 at any compression and in catch-up by the same code.
 
-1. **Start.** `craft(recipe, prefer)` plans again. If the plan holds, the
+1. **Start.** Both hands must be empty. Nothing puts away what you hold for
+   you: clearing your hands is the player's own act, so with anything in them
+   the craft option carries the reason ("Hands full") instead of a time.
+   `craft(recipe, prefer)` plans again. If the plan holds, the
    components are taken out of the world into a **work item**: an item of a
    generic `work_in_progress` type that holds the recipe id, the progress, and
    the components in its own pocket. It goes into your hands, both of them, as
    DESIGN.md asks ("both hands busy"), so the half-made thing shows in first
    person. Then compression starts (`Simulation.compress`).
 2. **Working.** Progress goes up by the game seconds that pass: gathering
-   first, then work.
+   first, then work. Every step checks that the tools and the workstation are
+   still within reach and usable. If one has been moved away, destroyed or
+   otherwise lost, the craft stops at once, as if you had chosen Stop, with
+   the reason; the work item keeps its progress, and "Continue" works again
+   once the tool is back.
 3. **Interrupted.** Compression drops to 1× and asks Continue or Stop
    (the compression controller does this already; 1.8 gives it its screen). Stop leaves the work item in your hands with its
    progress. You can walk away with it, put it down, and later choose
    "Continue: torch" from its options.
-4. **Finishing.** When progress reaches the total, the tools and the
-   workstation are checked again, like a move at the end of its handling time.
-   If one is gone, the craft stops with the reason and the work item keeps its
-   progress. Otherwise the work item becomes the result, and skills go up.
+4. **Finishing.** When progress reaches the total, the work item becomes the
+   result, and skills go up.
 5. **Cancelling.** "Take apart" on a work item gives back its components.
 
 Because the components live inside the work item, nothing else can take them
@@ -323,31 +330,31 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 ## Order of work
 
-1. **Now:** ADR 0001. Move the spawn menu and the death screen to lit-html
-   first, as small examples of the pattern; the inventory screen moves the next
-   time it changes substantially.
+1. **ADR 0001 (done):** the spawn menu and the death screen moved to lit-html
+   as small examples of the pattern, then the credits and the HUD.
 2. **1.8, rest and sleep:** build the long action as the general mechanism, with
    rest and sleep as its first users.
 3. **1.9, saves:** long actions and item state as plain data, as above.
-4. **Slice 2:** the reach query and `options`, recipes in the schema and the
+4. **Slice 2:** first, port the inventory screen to lit-html, with its
+   behaviour unchanged, which completes ADR 0001. Then the reach query and `options`, recipes in the schema and the
    validator, the planner, crafting and disassembly as long actions, the
    crafting panel, and workbenches as block entities with `workstation`.
 5. **Slice 5:** `controls`, `process` and `power` on block entities, settling on
    change, and the appliance panel.
 
-## Open questions
+## Decisions
 
-1. **Hands for crafting.** Crafting takes both hands. Should starting a craft
-   put away what you hold (adding that handling time to gathering), or refuse
-   until your hands are free?
-2. **Tools.** Tools stay where they are and are checked at the end. Should a
-   tool moved out of reach mid-craft stop it at once instead of at the end?
-3. **Where materials can be.** DESIGN.md says "your hands and pockets, and
-   piles and containers within 2 m". Does that include items inside a backpack
-   lying on the ground, or only top-level items in piles?
-4. **Partial stacks.** When a recipe needs 2 rags and a stack has 5, the craft
-   splits the stack. Should gathering prefer whole stacks, to leave fewer small
-   stacks behind?
-5. **Per-place versions.** When a stove ticks every second next to an open
-   inventory, is redrawing on the one inventory counter cheap enough? Measure in
-   Slice 5 before splitting counters.
+The draft's open questions, answered by BR on 2026-09-27 (issue #26):
+
+1. **Hands for crafting.** A craft refuses until both hands are empty. Putting
+   things away is a deliberate act of the player, never done for them.
+2. **Tools.** A tool (or workstation) moved away, destroyed or otherwise lost
+   mid-craft stops the craft at once, not at the end. The work item keeps its
+   progress, so stopping is a pause.
+3. **Where materials can be.** Items inside containers lying within the 2 m
+   reach count, such as a backpack on the ground, at their pocket's handling
+   time.
+4. **Partial stacks.** Gathering uses smaller stacks first when the gathering
+   time is equal, so leftovers get used up.
+5. **Per-place versions.** Not a decision yet: redrawing on the one inventory
+   counter stays until profiling in Slice 5 shows it costs too much.

@@ -3,7 +3,7 @@ id: skelly::deadvox-adr-0001
 description: Decision record choosing lit-html to render deadvox's HTML screens, and the redraw contract it works under
 tags: [deadvox, adr, ui, lit-html]
 created: 2026-09-26
-status: draft
+status: active
 ---
 
 # 1. Render the UI with lit-html
@@ -11,7 +11,7 @@ status: draft
 [[THIS grounds: ../../INTERACTIONS.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
-**Status:** proposed (2026-09-26).
+**Status:** accepted (2026-09-27, issue #25). Proposed 2026-09-26.
 
 ## Context
 
@@ -63,8 +63,15 @@ Draw the HTML screens with **lit-html**:
 - Events call core commands. Drag and drop stays a small controller that owns
   its UI state and produces a move target.
 - Nothing in `src/core` imports lit-html.
-- Screens move over one at a time: the spawn menu and the death screen first,
-  the inventory screen the next time it changes substantially.
+- Every screen moves to lit-html, and no screen stays plain DOM. New screens are
+  written in lit-html from the start.
+- The move goes one screen at a time. The spawn menu and the death screen came first,
+  then the credits and the HUD (quickbar and handling bar). The inventory screen is
+  ported as the first step of Slice 2's inventory and crafting work, before any
+  of that work changes it (INTERACTIONS.md, "Order of work").
+- `test/uiLitHtml.test.ts` fails on hand-built DOM in `src/ui` outside a list of
+  screens not yet ported. The list only shrinks, and the port is done when it is
+  empty.
 
 ## Consequences
 
@@ -75,10 +82,15 @@ Draw the HTML screens with **lit-html**:
   hover and CSS transitions survive, and coarse version counters stay cheap
   (INTERACTIONS.md, "Reach").
 - Templates are strings to TypeScript, so a mistyped attribute or binding isn't
-  a type error. `lit-analyzer` (a CLI) and `ts-lit-plugin` (its TypeScript
-  plugin) can check templates; we haven't tried either with TypeScript 7.
-- View models can be tested in Node without a DOM. Templates themselves are
-  still checked by looking at them, as the DOM code is now.
+  a type error on its own. `lit-analyzer` checks them, but it needs the classic
+  TypeScript Compiler API, which TypeScript 7 (the app's compiler) doesn't have;
+  `deadvox/tools/lit-check` runs it under a pinned TypeScript 5 instead, isolated
+  from the app's dependencies, as `npm run lint:lit`, and CI fails on any finding.
+  Its last release is 2.0.3 (2024-01): if it stops working with a later
+  TypeScript 5 or lit-html, the pin holds until there is a replacement.
+- View models can be tested in Node without a DOM. lit-analyzer checks the
+  templates' HTML, bindings and types; what they look like is still checked
+  by eye.
 - Reversing the choice means rewriting templates, not the core: the view models
   and the command boundary don't depend on lit-html.
-- PROJECT.md's UI row changes to lit-html once this is accepted.
+- PROJECT.md's UI row names lit-html.
