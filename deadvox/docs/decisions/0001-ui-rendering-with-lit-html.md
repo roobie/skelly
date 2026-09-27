@@ -85,9 +85,12 @@ Draw the HTML screens with **lit-html**:
   a type error on its own. `lit-analyzer` checks them, but it needs the classic
   TypeScript Compiler API, which TypeScript 7 (the app's compiler) doesn't have;
   `deadvox/tools/lit-check` runs it under a pinned TypeScript 5 instead, isolated
-  from the app's dependencies, as `npm run lint:lit`.
-- View models can be tested in Node without a DOM. Templates themselves are
-  still checked by looking at them, as the DOM code is now.
+  from the app's dependencies, as `npm run lint:lit`, and CI fails on any finding.
+  Its last release is 2.0.3 (2024-01): if it stops working with a later
+  TypeScript 5 or lit-html, the pin holds until there is a replacement.
+- View models can be tested in Node without a DOM. lit-analyzer checks the
+  templates' HTML, bindings and types; what they look like is still checked
+  by eye.
 - Reversing the choice means rewriting templates, not the core: the view models
   and the command boundary don't depend on lit-html.
 - PROJECT.md's UI row names lit-html.
