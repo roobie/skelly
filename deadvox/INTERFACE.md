@@ -194,10 +194,12 @@ ruling; if agreed, DESIGN.md's line is amended to say so.
    first run?
 5. The playtest profile: a URL flag (`?playtest=1`), or the hint setting in the
    F10 menu?
-6. Are the character's own sounds noise events? A cough or a groan in a dark
-   house that shamblers can hear fits "the player hears what the zombies hear"
-   and makes a need dangerous, not just uncomfortable. If yes, which cues, and how
-   loud?
+6. ~~Are the character's own sounds noise events?~~ **BR, 2026-09-27: "Let's
+   try"**, with OpenGameArt packs to curate from (vocal pain and strain, creature,
+   RPG, zombie and hit sounds) and "variation is nice - random, but curated picks
+   for the events we have". The first audio item makes the player's vocal sounds
+   (pain now, coughs and groans with the bodily cues) noise events with a radius
+   in data, so the effect can be judged in game and tuned or turned off.
 
 ## Order of work
 
