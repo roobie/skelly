@@ -39,6 +39,14 @@ const chrome = spawn(
   ],
   { stdio: 'ignore' },
 );
+let viteStartupError;
+let chromeStartupError;
+vite.on('error', (error) => {
+  viteStartupError = error;
+});
+chrome.on('error', (error) => {
+  chromeStartupError = error;
+});
 
 const waitFor = async (test, message, timeout = 30_000) => {
   const until = Date.now() + timeout;
@@ -58,14 +66,26 @@ const getPage = async () => {
 let ws;
 try {
   await waitFor(async () => {
+    if (viteStartupError || vite.exitCode !== null) {
+      throw new Error(`Vite failed to start: ${viteStartupError?.message ?? vite.exitCode}`);
+    }
     try {
-      await fetch(`http://127.0.0.1:${port}/`);
-      return true;
+      const response = await fetch(`http://127.0.0.1:${port}/`);
+      return response.ok;
     } catch {
       return false;
     }
   }, 'Vite server');
-  await waitFor(async () => Boolean(await getPage()), 'Chrome page');
+  await waitFor(async () => {
+    if (chromeStartupError || chrome.exitCode !== null) {
+      throw new Error(`Chrome failed to start: ${chromeStartupError?.message ?? chrome.exitCode}`);
+    }
+    try {
+      return Boolean(await getPage());
+    } catch {
+      return false;
+    }
+  }, 'Chrome page');
   const page = await getPage();
   ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
