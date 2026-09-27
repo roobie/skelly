@@ -1,0 +1,11 @@
+{
+  "name": "lit-check",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "lit-analyzer pinned to a Compiler-API-era TypeScript, isolated from deadvox's TS 7.",
+  "dependencies": {
+    "lit-analyzer": "2.0.3",
+    "typescript": "5.9.3"
+  }
+}
