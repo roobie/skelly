@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 // ADR 0001: every screen in src/ui is drawn with lit-html. These files still build DOM by hand
 // and are the port's remaining work; remove each one as it moves over. The list only shrinks.
-const NOT_YET_PORTED = new Set(['credits.ts', 'hud.ts', 'inventoryScreen.ts']);
+const NOT_YET_PORTED = new Set(['inventoryScreen.ts']);
 
 // Hand-built DOM: creating, attaching or rewriting nodes instead of rendering a template.
 const HAND_DOM =

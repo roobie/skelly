@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { cellCount, defOf } from '../src/core/items.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { cellCount, defOf } from '../src/core/items.ts';
 import { handlingViewModel, Quickbar, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
 
 const BASE = 'src/content/base';

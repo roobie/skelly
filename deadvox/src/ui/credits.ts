@@ -40,20 +40,24 @@ export const creditsViewModel = (manifest: Manifest): CreditsViewModel => ({
 
 const entryTemplate = (entry: CreditsEntryViewModel): TemplateResult => html`
   <li>
-    ${entry.url === null
-      ? html`<strong>${entry.title}</strong>`
-      : html`<a href=${entry.url} target="_blank" rel="noopener">${entry.title}</a>`}${entry.author !== null ? ` by ${entry.author}` : ''}${entry.host !== null ? `, from ${entry.host}` : ''}
+    ${
+      entry.url === null
+        ? html`<strong>${entry.title}</strong>`
+        : html`<a href=${entry.url} target="_blank" rel="noopener">${entry.title}</a>`
+    }${entry.author === null ? '' : ` by ${entry.author}`}${entry.host === null ? '' : `, from ${entry.host}`}
     <br />
-    Licence: <a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>${entry.changes !== null ? html`<br />Changes: ${entry.changes}` : ''}
+    Licence: <a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>${entry.changes === null ? '' : html`<br />Changes: ${entry.changes}`}
   </li>
 `;
 
 const creditsTemplate = (vm: CreditsViewModel, onBack: (e: Event) => void): TemplateResult => html`
   <h1>Credits</h1>
   <p>deadvox uses these assets. Thank you to the people who made them.</p>
-  ${vm.entries.length === 0
-    ? html`<p>No assets yet.</p>`
-    : html`<ul class="credits">${vm.entries.map(entryTemplate)}</ul>`}
+  ${
+    vm.entries.length === 0
+      ? html`<p>No assets yet.</p>`
+      : html`<ul class="credits">${vm.entries.map(entryTemplate)}</ul>`
+  }
   <p><a href="#" rel="noopener" @click=${onBack}>Back</a></p>
 `;
 
