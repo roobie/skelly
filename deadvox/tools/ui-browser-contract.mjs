@@ -186,6 +186,17 @@ try {
     window.__pointerCalls.request = 0;
   })()`);
   await delay(150);
+  assert.equal(
+    await evaluate(`(() => {
+      const slots = [...document.querySelectorAll('#quickbar .qb-empty')];
+      return slots.length === 5 && slots.every((slot) => {
+        const text = slot.textContent.toLowerCase();
+        return text.includes('empty') && !text.includes('inventory');
+      });
+    })()`),
+    true,
+    'rendered empty quickbar slots contain no inventory help text',
+  );
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
   const clickAt = async (selector, anchor = 'center') => {
     await evaluate('window.__lastForwardedClick = null');
