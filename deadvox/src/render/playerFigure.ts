@@ -9,7 +9,6 @@ import {
   Mesh,
   MeshLambertMaterial,
   Object3D,
-  Quaternion,
   Vector3,
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
@@ -64,7 +63,6 @@ const SHIRT_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
 };
 const SEGMENT_UP = new Vector3(0, 1, 0);
 const segmentDirection = new Vector3();
-const segmentRotation = new Quaternion();
 
 const placeSegment = (mesh: Mesh, start: Vector3, end: Vector3, width: number, depth: number): void => {
   segmentDirection.subVectors(end, start);

@@ -27,6 +27,7 @@ import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
+import { PlayerMeshes } from '../render/playerFigure.ts';
 import { applySky } from '../render/sky.ts';
 import { StepOffset } from '../render/stepOffset.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
@@ -66,6 +67,7 @@ export const startPlay = (engine: Engine): void => {
   const [sx, sy, sz] = engine.spawn.pos;
   const body = createPlayerBody(scale, sx / s, sy / s + 0.01, sz / s);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
+  let playerGaitPhase = 0;
   const input = new Input(renderer.domElement);
   input.yaw = engine.spawn.yaw;
 
@@ -102,11 +104,13 @@ export const startPlay = (engine: Engine): void => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
+  const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models);
   const furniture = new FurnitureMeshes(s);
-  const held = new HeldItems(inventory, models);
+  const playerMeshes = new PlayerMeshes(s, playerPalette);
+  const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
-  scene.add(piles.group, furniture.group);
+  scene.add(piles.group, furniture.group, playerMeshes.group);
 
   // ---- simulation ----
 
@@ -649,6 +653,19 @@ export const startPlay = (engine: Engine): void => {
       dt,
       noclip,
     );
+    const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
+    const playerMoving = travel > 0.001 && !sim.paused;
+    if (playerMoving) {
+      playerGaitPhase += (travel / 0.6) * Math.PI;
+    }
+    playerMeshes.sync({
+      body,
+      yaw: input.yaw,
+      stepOffset: cameraOffset,
+      gaitPhase: playerGaitPhase,
+      moving: playerMoving,
+      inventory,
+    });
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s + cameraOffset, ez * s);
     camera.rotation.set(input.pitch, input.yaw, 0);

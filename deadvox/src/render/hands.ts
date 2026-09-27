@@ -17,10 +17,12 @@ import {
   type Vector3,
   type WebGLRenderer,
 } from 'three';
+import type { FigureDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { LENS, type ModelLibrary } from './models.ts';
+import { createFirstPersonArm } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Where a held item's grip sits, in metres from the eye (x right, y up, −z forward). */
@@ -48,9 +50,12 @@ export class HeldItems {
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
 
-  constructor(inventory: Inventory, models?: ModelLibrary) {
+  private readonly palette: FigureDef['palette'];
+
+  constructor(inventory: Inventory, models: ModelLibrary | undefined, palette: FigureDef['palette']) {
     this.inventory = inventory;
     this.models = models;
+    this.palette = palette;
     this.scene.add(this.view, this.light, this.ambient);
   }
 
@@ -108,10 +113,21 @@ export class HeldItems {
     for (const side of ['right', 'left'] as const) {
       const item = hands[side];
       if (item) {
+        const def = defOf(registry, item.type);
+        const heldAt = HOLD[def.twoHanded ? 'both' : side];
         const held = this.shape(item);
-        held.position.set(...HOLD[defOf(registry, item.type).twoHanded ? 'both' : side]);
+        held.position.set(...heldAt);
         this.view.add(held);
         this.shown.set(item.uid, held);
+        this.view.add(createFirstPersonArm(this.palette, side, heldAt));
+        if (def.twoHanded) {
+          const otherSide: HandSide = side === 'right' ? 'left' : 'right';
+          const pose = def.model ? registry.models.get(def.model)?.hold : undefined;
+          const offhandGrip: Vec3 = pose === 'upright'
+            ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]]
+            : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
+          this.view.add(createFirstPersonArm(this.palette, otherSide, offhandGrip));
+        }
       }
     }
   }
