@@ -37,7 +37,7 @@ import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { SpawnMenu } from '../ui/spawnMenu.ts';
 import { GameAudio } from './audio.ts';
-import { mountAudioSettings } from './audioSettings.ts';
+import { isAudioSettingsShortcut, mountAudioSettings } from './audioSettings.ts';
 import { BuildMode } from './build.ts';
 import type { Engine } from './engine.ts';
 import { Input } from './input.ts';
@@ -554,7 +554,7 @@ export const startPlay = (engine: Engine): void => {
   };
 
   const audioSettingsKey = (e: KeyboardEvent): boolean => {
-    if (e.code === 'F10' && !sim.dead) {
+    if (isAudioSettingsShortcut(e.code) && !sim.dead) {
       e.preventDefault();
       toggleAudioSettings();
       return true;

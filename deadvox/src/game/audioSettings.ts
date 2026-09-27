@@ -1,5 +1,7 @@
 import type { AudioVolumes, GameAudio } from './audio.ts';
 
+export const isAudioSettingsShortcut = (code: string): boolean => code === 'F9';
+
 const VOLUME_LABELS: Record<keyof AudioVolumes, string> = {
   master: 'Master',
   world: 'World',
