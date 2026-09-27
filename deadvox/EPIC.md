@@ -199,6 +199,16 @@ See [SLICE-1.md](SLICE-1.md). It covers:
   save migration.
 - Content filled up to the minimums.
 
+## Later, after the game is more playable
+
+**Shambler polish — not scheduled; take up once the game is more playable.** BR's
+later notes (2026-09-27):
+- “a sickly, fleshy look, not a swamp monster”;
+- “minor details: nose, neck, feet, hands”;
+- “dismemberment when hit hard enough”;
+- “at least three basic attack animations, and animations for taking damage”.
+- “Q and E are reserved for later actions” (nothing is bound to them in the world today).
+
 ## Cut list
 
 If version 1 is running late, drop these in this order:

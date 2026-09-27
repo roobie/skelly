@@ -19,6 +19,16 @@ describe('content', () => {
     }
   });
 
+  it('validates the shambler search-duration range', () => {
+    const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombiePack.data) as {
+      zombies: Array<{ hearingModel: { searchSeconds: { min: number; max: number } } }>;
+    };
+    data.zombies[0]!.hearingModel.searchSeconds = { min: 51, max: 50 };
+    const issues = validateContent({ source: zombiePack.source, data });
+    expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
+  });
+
   it('lets a later file override a block without changing its runtime id', () => {
     const mod = {
       source: 'mod.json',
@@ -177,11 +187,42 @@ describe('content references', () => {
             health: 50,
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,
+            wander: {
+              idleSeconds: { min: 3, max: 10 },
+              strollSeconds: { min: 3, max: 12 },
+              leashMetres: 12,
+              lookIntervalSeconds: { min: 0.8, max: 1.8 },
+              bodyLookArcDegrees: 150,
+              headLookArcDegrees: 100,
+              bodyTurnDegreesPerSecond: 90,
+              headTurnDegreesPerSecond: 120,
+              movementAcceleration: 4,
+            },
             sight: 20,
             nightSight: 10,
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            hearingModel: {
+              farMultiplier: 2,
+              bearingErrorRadians: 0.61,
+              investigationDistanceMetres: 8,
+              wallRunCostMetres: 6,
+              searchSeconds: { min: 40, max: 50 },
+              searchRadiusMetres: 4,
+              searchStrollSeconds: { min: 1, max: 3 },
+            },
+            chaseMotion: {
+              swayDegrees: 25,
+              swayIntervalSeconds: { min: 0.7, max: 1.1 },
+              speedMultiplier: { min: 0.6, max: 1.2 },
+              lurchSeconds: 1,
+              stumbleChancePerSecond: 0.16,
+              stumbleDurationSeconds: { min: 0.55, max: 0.75 },
+              stumbleEaseSeconds: 0.2,
+              stumbleSpeedFraction: 0.04,
+              stumbleDeceleration: 14,
+            },
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
             loot: 'till',

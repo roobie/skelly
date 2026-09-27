@@ -196,7 +196,8 @@ describe('long-action interruptions (SLICE-1.md, 1.8)', () => {
       rest.frame(1 / 60);
     }
     expect(sim.compression.c).toBeGreaterThan(1);
-    expect(zombie.mode).toBe('wander');
+    // Unaware: 1.7b split the old 'wander' mode into idle and stroll.
+    expect(['idle', 'stroll']).toContain(zombie.mode);
     zombie.facing = [-1, 0, 0]; // it turns to face you
     zombieSystem.tick(1 / 60); // the tick that notices you
     expect(zombie.mode).toBe('chase');
@@ -224,7 +225,7 @@ describe('long-action interruptions (SLICE-1.md, 1.8)', () => {
     expect(sim.compression.c).toBeGreaterThan(1);
     zombie.body.pos = [50, 1, 0]; // 25 m: inside the safe radius, still never perceived
     rest.frame(1 / 60);
-    expect(zombie.mode).toBe('wander');
+    expect(['idle', 'stroll']).toContain(zombie.mode);
     expect(sim.compression.interruption).toBe('A shambler is close');
     expect(sim.compression.c).toBe(1);
   });
