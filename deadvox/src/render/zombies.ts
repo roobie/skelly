@@ -1,5 +1,6 @@
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
 import type { EntityId, EntityStore } from '../core/entities.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { Zombie } from '../core/zombies.ts';
 import { StepOffset } from './stepOffset.ts';
 
@@ -35,18 +36,14 @@ export class ZombieMeshes {
     }
   }
 
-  private verticalOffset(id: EntityId, zombie: Zombie, realDt: number): number {
+  private verticalOffset(id: EntityId, position: Vec3, grounded: boolean, realDt: number): number {
     let stepOffset = this.stepOffsets.get(id);
     if (!stepOffset) {
       stepOffset = new StepOffset(0.5);
       this.stepOffsets.set(id, stepOffset);
     }
-    const [x, y, z] = zombie.body.pos;
-    return stepOffset.update(
-      [x * this.blockSize, y * this.blockSize, z * this.blockSize],
-      zombie.body.onGround,
-      realDt,
-    );
+    const [x, y, z] = position;
+    return stepOffset.update([x * this.blockSize, y * this.blockSize, z * this.blockSize], grounded, realDt);
   }
 
   private discardMissingOffsets(activeIds: ReadonlySet<EntityId>): void {
@@ -57,29 +54,46 @@ export class ZombieMeshes {
     }
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0): void {
-    const zombies = [...store.entries()].map(([id, zombie]) => ({
-      id,
-      zombie,
-      verticalOffset: this.verticalOffset(id, zombie, realDt),
-    }));
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
+    const blend = Math.max(0, Math.min(1, alpha));
+    const zombies = [...store.entries()].map(([id, zombie]) => {
+      const previous = zombie.renderPrevious;
+      const position: Vec3 = [
+        previous.pos[0] + (zombie.body.pos[0] - previous.pos[0]) * blend,
+        previous.pos[1] + (zombie.body.pos[1] - previous.pos[1]) * blend,
+        previous.pos[2] + (zombie.body.pos[2] - previous.pos[2]) * blend,
+      ];
+      const yawBefore = Math.atan2(-previous.facing[0], -previous.facing[2]);
+      const yawAfter = Math.atan2(-zombie.facing[0], -zombie.facing[2]);
+      const yawDelta = Math.atan2(Math.sin(yawAfter - yawBefore), Math.cos(yawAfter - yawBefore));
+      const yaw = yawBefore + yawDelta * blend;
+      return {
+        id,
+        zombie,
+        position,
+        yaw,
+        headYaw: previous.headYaw + (zombie.headYaw - previous.headYaw) * blend,
+        gaitPhase: previous.gaitPhase + (zombie.gaitPhase - previous.gaitPhase) * blend,
+        verticalOffset: this.verticalOffset(id, position, zombie.body.onGround, realDt),
+      };
+    });
     this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
     const s = this.blockSize;
     for (const part of PARTS) {
       const mesh = this.meshes.get(part)!;
       mesh.count = Math.min(zombies.length, mesh.instanceMatrix.count);
       for (let i = 0; i < mesh.count; i++) {
-        const { zombie, verticalOffset } = zombies[i]!;
+        const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = zombies[i]!;
         const box = BOXES[part];
-        const [x, y, z] = zombie.body.pos;
-        const yaw = Math.atan2(-zombie.facing[0], -zombie.facing[2]);
+        const [x, y, z] = position;
+        const partYaw = yaw + (part === 'head' ? headYaw : 0);
         const offsetX = box.at[0] * Math.cos(yaw) + box.at[2] * Math.sin(yaw);
         const offsetZ = -box.at[0] * Math.sin(yaw) + box.at[2] * Math.cos(yaw);
         const moving = Math.hypot(zombie.body.vel[0], zombie.body.vel[2]) > 0.05;
         const isLeg = part === 'leftLeg' || part === 'rightLeg';
-        const stride = (part === 'leftLeg' ? 1 : -1) * Math.sin(zombie.gaitPhase) * 0.22;
+        const stride = (part === 'leftLeg' ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
         this.dummy.position.set(x * s + offsetX, y * s + verticalOffset + box.at[1], z * s + offsetZ);
-        this.dummy.rotation.set(0, yaw, 0);
+        this.dummy.rotation.set(0, partYaw, 0);
         if (isLeg && moving) {
           this.dummy.rotateX(stride);
         }

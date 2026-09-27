@@ -9,6 +9,17 @@
         "chase": 2.8
       },
       "stepLength": 0.6,
+      "wander": {
+        "idleSeconds": { "min": 3, "max": 10 },
+        "strollSeconds": { "min": 3, "max": 12 },
+        "leashMetres": 12,
+        "lookIntervalSeconds": { "min": 0.8, "max": 1.8 },
+        "bodyLookArcDegrees": 150,
+        "headLookArcDegrees": 100,
+        "bodyTurnDegreesPerSecond": 90,
+        "headTurnDegreesPerSecond": 120,
+        "movementAcceleration": 4
+      },
       "sight": 25,
       "nightSight": 10,
       "sightCone": 60,

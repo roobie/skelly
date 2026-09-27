@@ -294,6 +294,18 @@ export const ZombieSchema = strictObject({
   nightSight: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
+  /** Idle/stroll timing, home leash and eased look controls. */
+  wander: strictObject({
+    idleSeconds: strictObject({ min: Positive, max: Positive }),
+    strollSeconds: strictObject({ min: Positive, max: Positive }),
+    leashMetres: Positive,
+    lookIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+    bodyLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
+    headLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
+    bodyTurnDegreesPerSecond: Positive,
+    headTurnDegreesPerSecond: Positive,
+    movementAcceleration: Positive,
+  }),
   /** 1 is normal hearing. */
   hearing: NonNegative,
   hearingRange: strictObject({ walk: Positive, jog: Positive, sprint: Positive }),

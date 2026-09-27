@@ -145,6 +145,7 @@ export const startPlay = (engine: Engine): void => {
   });
   zombieSystem = new ZombieSystem({
     store: zombieStore,
+    seed: sim.seed,
     isSolid: engine.isSolid,
     blockSize: s,
     physics,
@@ -167,7 +168,15 @@ export const startPlay = (engine: Engine): void => {
       }
     },
   });
-  sim.scheduler.register({ id: 'zombies', rate: 20, tick: (dt) => zombieSystem?.tick(dt) });
+  let lastZombieStep = 0;
+  sim.scheduler.register({
+    id: 'zombies',
+    rate: 20,
+    tick: (dt, time) => {
+      zombieSystem?.tick(dt);
+      lastZombieStep = time;
+    },
+  });
   const zombieMeshes = new ZombieMeshes(s);
   scene.add(zombieMeshes.group);
 
@@ -641,7 +650,8 @@ export const startPlay = (engine: Engine): void => {
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
-    zombieMeshes.sync(zombieStore, dt);
+    const zombieAlpha = Math.max(0, Math.min(1, (sim.time - lastZombieStep) * 20));
+    zombieMeshes.sync(zombieStore, dt, zombieAlpha);
 
     const cameraOffset = cameraStepOffset.update(
       [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],

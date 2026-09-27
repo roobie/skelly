@@ -371,8 +371,14 @@ describe('shambler scenarios', () => {
     expect(reached).toBe(true);
     run(system, 15);
     expect(system.store.get(id)!.mode).not.toBe('chase');
-    run(system, 120);
-    expect(metres(system.store.get(id)!.body.pos, [0, 1, 0])).toBeLessThanOrEqual(3);
+    const chaser = system.store.get(id)!;
+    let closestHome = metres(chaser.body.pos, chaser.home);
+    for (let frame = 0; frame < 120 * 60; frame++) {
+      system.tick(1 / 60);
+      closestHome = Math.min(closestHome, metres(chaser.body.pos, chaser.home));
+    }
+    expect(closestHome).toBeLessThanOrEqual(3);
+    expect(metres(chaser.body.pos, chaser.home)).toBeLessThanOrEqual(12.5);
   });
 
   it('E: steps a 0.5 m block and jumps a 1 m obstacle using player physics at game scale', () => {
@@ -770,10 +776,14 @@ describe('shambler scenarios', () => {
     const wander = new ZombieSystem(senses(() => player([1000, 1, 1000])));
     const wanderId = wander.add(slow, [0, 1, 0]);
     const wanderer = wander.store.get(wanderId)!;
-    run(wander, 10);
-    const wanderingSteps = Math.floor(wanderer.gaitPhase / Math.PI);
-    expect(wanderingSteps).toBeGreaterThanOrEqual(12);
-    expect(wanderingSteps).toBeLessThanOrEqual(15);
+    let wandered = 0;
+    for (let tick = 0; tick < 10 * 60; tick++) {
+      const before = [...wanderer.body.pos] as Vec3;
+      wander.tick(1 / 60);
+      wandered += metres(before, wanderer.body.pos);
+    }
+    expect(wandered).toBeGreaterThan(0);
+    expect(wanderer.gaitPhase).toBeCloseTo((wandered / slow.stepLength) * Math.PI, 6);
 
     let target: Vec3 = [20, 1, 0];
     const chase = new ZombieSystem(senses(() => player(target, [-1, 0, 0])));
@@ -935,5 +945,137 @@ describe('shambler scenarios', () => {
       expect(up.distanceTo(new Vector3(0, 1, 0))).toBeLessThan(0.001);
     }
     expect(system.store.get(id)).toBeDefined();
+  });
+});
+
+describe('idle and stroll shambling', () => {
+  it('uses seeded idle and straight stroll intervals over ten simulated minutes', () => {
+    const sense = senses(() => player([1000, 1, 1000]));
+    const system = new ZombieSystem({ ...sense, seed: 73 });
+    const replay = new ZombieSystem({ ...sense, seed: 73 });
+    const withExtraBody = new ZombieSystem({ ...sense, seed: 73 });
+    const id = system.add(SHAMBLER, [0, 1, 0]);
+    const replayId = replay.add(SHAMBLER, [0, 1, 0]);
+    const independentId = withExtraBody.add(SHAMBLER, [0, 1, 0]);
+    withExtraBody.add(SHAMBLER, [100, 1, 100]);
+    const zombie = system.store.get(id)!;
+    const replayed = replay.store.get(replayId)!;
+    const independent = withExtraBody.store.get(independentId)!;
+    zombie.body.onGround = true;
+    replayed.body.onGround = true;
+    independent.body.onGround = true;
+    let idleTicks = 0;
+    let strollTicks = 0;
+    for (let tick = 0; tick < 10 * 60 * 20; tick++) {
+      system.tick(1 / 20);
+      replay.tick(1 / 20);
+      withExtraBody.tick(1 / 20);
+      if (tick % 100 === 0) {
+        expect(replayed.body.pos).toEqual(zombie.body.pos);
+        expect(independent.body.pos).toEqual(zombie.body.pos);
+        expect(replayed.behaviorRng.state()).toEqual(zombie.behaviorRng.state());
+        expect(independent.behaviorRng.state()).toEqual(zombie.behaviorRng.state());
+      }
+      if (String(zombie.mode) === 'idle') idleTicks++;
+      if (String(zombie.mode) === 'stroll') strollTicks++;
+      expect(metres(zombie.body.pos, zombie.home)).toBeLessThanOrEqual(12.5);
+    }
+    expect(idleTicks / (10 * 60 * 20)).toBeGreaterThanOrEqual(0.2);
+    expect(strollTicks / (10 * 60 * 20)).toBeGreaterThanOrEqual(0.2);
+  });
+
+  it('keeps strolls straight and turns the body and head during idle', () => {
+    const system = new ZombieSystem(senses(() => player([1000, 1, 1000])));
+    const id = system.add(SHAMBLER, [0, 1, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.body.onGround = true;
+    let idleTurned = false;
+    let strollingTicks = 0;
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    const yaw = (mesh: import('three').InstancedMesh): number => {
+      const matrix = new Matrix4();
+      mesh.getMatrixAt(0, matrix);
+      return Math.atan2(matrix.elements[8]!, matrix.elements[0]!);
+    };
+    let headLookObserved = false;
+    for (let tick = 0; tick < 1200; tick++) {
+      const mode = String(zombie.mode);
+      const beforeFacing = Math.atan2(zombie.facing[0], zombie.facing[2]);
+      const beforePosition = [...zombie.body.pos] as Vec3;
+      system.tick(1 / 20);
+      const afterFacing = Math.atan2(zombie.facing[0], zombie.facing[2]);
+      const turn = Math.abs(Math.atan2(Math.sin(afterFacing - beforeFacing), Math.cos(afterFacing - beforeFacing)));
+      if (mode === 'stroll') {
+        strollingTicks++;
+        expect((turn * 180) / Math.PI).toBeLessThanOrEqual(5);
+      }
+      if (mode === 'idle') {
+        expect(metres(zombie.body.pos, beforePosition)).toBeLessThanOrEqual(0.01);
+        idleTurned ||= turn > 1e-5;
+        meshes.sync(system.store);
+        headLookObserved ||=
+          Math.abs(Math.atan2(Math.sin(yaw(parts[1]!) - yaw(parts[0]!)), Math.cos(yaw(parts[1]!) - yaw(parts[0]!)))) > 0.01;
+      }
+    }
+    expect(strollingTicks).toBeGreaterThan(0);
+    expect(idleTurned).toBe(true);
+    expect(headLookObserved).toBe(true);
+  });
+
+  it('interpolates 20 Hz chase poses between 60 Hz draws within facing and speed bounds', () => {
+    let target: Vec3 = [20, 1, 0];
+    const system = new ZombieSystem(senses(() => player(target)));
+    const id = system.add({ ...SHAMBLER, sightCone: 180 }, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.body.onGround = true;
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const bodyMesh = meshes.group.children[0] as import('three').InstancedMesh;
+    meshes.sync(system.store);
+    const pose = () => {
+      const matrix = new Matrix4();
+      bodyMesh.getMatrixAt(0, matrix);
+      return { x: matrix.elements[12]!, z: matrix.elements[14]!, yaw: Math.atan2(matrix.elements[8]!, matrix.elements[0]!) };
+    };
+    let previous = pose();
+    let previousSpeed = 0;
+    for (let frame = 0; frame < 180; frame++) {
+      if (frame % 3 === 0) {
+        const angle = (frame / 60) * Math.PI;
+        target = [20 * Math.cos(angle), 1, 20 * Math.sin(angle)];
+        system.tick(1 / 20);
+      }
+      Reflect.apply(meshes.sync, meshes, [system.store, 1 / 60, (frame % 3) / 3]);
+      const current = pose();
+      const speed = Math.hypot(current.x - previous.x, current.z - previous.z) * BLOCK_SIZE * 60;
+      const turn = Math.abs(Math.atan2(Math.sin(current.yaw - previous.yaw), Math.cos(current.yaw - previous.yaw)));
+      expect((turn * 180) / Math.PI).toBeLessThanOrEqual(4);
+      expect(Math.abs(speed - previousSpeed)).toBeLessThanOrEqual(0.25);
+      previous = current;
+      previousSpeed = speed;
+    }
+
+    const idleSystem = new ZombieSystem(senses(() => player([1000, 1, 1000])));
+    const idleId = idleSystem.add(SHAMBLER, [0, 1, 0]);
+    const idleZombie = idleSystem.store.get(idleId)!;
+    idleZombie.body.onGround = true;
+    idleZombie.modeTimer = 100;
+    const idleMeshes = new ZombieMeshes(BLOCK_SIZE);
+    const idleBody = idleMeshes.group.children[0] as import('three').InstancedMesh;
+    idleMeshes.sync(idleSystem.store);
+    const idlePose = () => {
+      const matrix = new Matrix4();
+      idleBody.getMatrixAt(0, matrix);
+      return Math.atan2(matrix.elements[8]!, matrix.elements[0]!);
+    };
+    let previousYaw = idlePose();
+    for (let frame = 0; frame < 180; frame++) {
+      if (frame % 3 === 0) idleSystem.tick(1 / 20);
+      Reflect.apply(idleMeshes.sync, idleMeshes, [idleSystem.store, 1 / 60, (frame % 3) / 3]);
+      const currentYaw = idlePose();
+      const turn = Math.abs(Math.atan2(Math.sin(currentYaw - previousYaw), Math.cos(currentYaw - previousYaw)));
+      expect((turn * 180) / Math.PI).toBeLessThanOrEqual(6);
+      previousYaw = currentYaw;
+    }
   });
 });
