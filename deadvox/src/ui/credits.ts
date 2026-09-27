@@ -3,40 +3,59 @@
 // swaps them back. Every source is listed, CC0 too, with its title, author, where it
 // came from, its licence and what we changed.
 
+import { html, render, type TemplateResult } from 'lit-html';
 import { type AssetSource, LICENCES, type Manifest } from '../core/assets.ts';
 
-const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string): HTMLElementTagNameMap[K] => {
-  const node = document.createElement(tag);
-  if (text !== undefined) {
-    node.textContent = text;
-  }
-  return node;
-};
+export interface CreditsEntryViewModel {
+  readonly title: string;
+  readonly url: string | null;
+  readonly author: string | null;
+  /** The hostname the source came from, when it has a link. */
+  readonly host: string | null;
+  readonly licenceName: string;
+  readonly licenceUrl: string;
+  readonly changes: string | null;
+}
 
-const link = (text: string, href: string): HTMLAnchorElement => {
-  const a = el('a', text);
-  a.href = href;
-  a.target = '_blank';
-  a.rel = 'noopener';
-  return a;
-};
-
-const entry = (source: AssetSource): HTMLLIElement => {
-  const li = el('li');
-  li.append(source.url === null ? el('strong', source.title) : link(source.title, source.url));
-  if (source.author !== null) {
-    li.append(` by ${source.author}`);
-  }
-  if (source.url !== null) {
-    li.append(`, from ${new URL(source.url).hostname}`);
-  }
+const entryViewModel = (source: AssetSource): CreditsEntryViewModel => {
   const licence = LICENCES[source.licence];
-  li.append(el('br'), 'Licence: ', link(licence.name, licence.url));
-  if (source.changes !== null) {
-    li.append(el('br'), `Changes: ${source.changes}`);
-  }
-  return li;
+  return {
+    title: source.title,
+    url: source.url,
+    author: source.author,
+    host: source.url === null ? null : new URL(source.url).hostname,
+    licenceName: licence.name,
+    licenceUrl: licence.url,
+    changes: source.changes,
+  };
 };
+
+export interface CreditsViewModel {
+  readonly entries: readonly CreditsEntryViewModel[];
+}
+
+export const creditsViewModel = (manifest: Manifest): CreditsViewModel => ({
+  entries: manifest.sources.map(entryViewModel),
+});
+
+const entryTemplate = (entry: CreditsEntryViewModel): TemplateResult => html`
+  <li>
+    ${entry.url === null
+      ? html`<strong>${entry.title}</strong>`
+      : html`<a href=${entry.url} target="_blank" rel="noopener">${entry.title}</a>`}${entry.author !== null ? ` by ${entry.author}` : ''}${entry.host !== null ? `, from ${entry.host}` : ''}
+    <br />
+    Licence: <a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>${entry.changes !== null ? html`<br />Changes: ${entry.changes}` : ''}
+  </li>
+`;
+
+const creditsTemplate = (vm: CreditsViewModel, onBack: (e: Event) => void): TemplateResult => html`
+  <h1>Credits</h1>
+  <p>deadvox uses these assets. Thank you to the people who made them.</p>
+  ${vm.entries.length === 0
+    ? html`<p>No assets yet.</p>`
+    : html`<ul class="credits">${vm.entries.map(entryTemplate)}</ul>`}
+  <p><a href="#" rel="noopener" @click=${onBack}>Back</a></p>
+`;
 
 export interface CreditsElements {
   /** What the card shows otherwise: the controls. */
@@ -48,35 +67,20 @@ export interface CreditsElements {
 }
 
 export const mountCredits = ({ about, box, show }: CreditsElements, manifest: Manifest): void => {
-  const back = link('Back', '#');
-  back.removeAttribute('target');
-  box.replaceChildren(
-    el('h1', 'Credits'),
-    el('p', 'deadvox uses these assets. Thank you to the people who made them.'),
-  );
-  if (manifest.sources.length === 0) {
-    box.append(el('p', 'No assets yet.'));
-  } else {
-    const list = el('ul');
-    list.className = 'credits';
-    list.append(...manifest.sources.map(entry));
-    box.append(list);
-  }
-  const foot = el('p');
-  foot.append(back);
-  box.append(foot);
-
   const showCredits = (visible: boolean) => {
     about.hidden = visible;
     box.hidden = !visible;
   };
+  render(
+    creditsTemplate(creditsViewModel(manifest), (e) => {
+      e.preventDefault();
+      showCredits(false);
+    }),
+    box,
+  );
   show.addEventListener('click', (e) => {
     e.preventDefault();
     showCredits(true);
-  });
-  back.addEventListener('click', (e) => {
-    e.preventDefault();
-    showCredits(false);
   });
   // Reading the credits shouldn't start the game; only the rest of the overlay does.
   box.addEventListener('click', (e) => e.stopPropagation());
