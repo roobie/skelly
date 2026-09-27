@@ -563,7 +563,9 @@ export const startPlay = (engine: Engine): void => {
       `${fps.toFixed(0)} fps   seed ${config.seed}`,
       `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`,
       `pos ${x} ${y} ${z} m`,
-      `chunks ${meshes.count} meshed, ${streamer.pending} pending`,
+      config.debug
+        ? `chunks ${meshes.count} meshed, ${streamer.pending} pending; ${streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks)} holes`
+        : `chunks ${meshes.count} meshed, ${streamer.pending} pending`,
       looking ? `looking at ${looking}` : '',
     ]
       .filter((line) => line !== '')
