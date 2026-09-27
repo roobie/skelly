@@ -55,7 +55,7 @@ const TUBE_DROP = 2.25;
 // A box magazine's section: front to back, and side to side. 1.8× the first
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
 const MAGAZINE_DEPTH = 5.5;
-const MAGAZINE_WIDTH = 3.5;
+const MAGAZINE_WIDTH = 2.5;
 
 // ---- receiver ----
 
