@@ -145,6 +145,19 @@ so class 4 is made mechanical:
 - **Review asks one question:** could the player learn this from the world or
   their hands? If yes, the text goes.
 
+## Readying before acting (BR, 2026-09-27)
+
+**Combat is modal, as in DayZ.** Holding a weapon is not the same as being ready
+to use it:
+
+- **Right mouse button readies:** raise a melee weapon, or aim a firearm down its
+  sights. Readying is a stance the body shows (the weapon comes up, the view
+  narrows for sights), not a HUD mode.
+- **Left click acts only while ready:** a strike or a shot. Unreadied, a left
+  click does not attack, so looking around with a weapon in hand is safe.
+- Lowered, a held item may block part of the view (as held models do today);
+  readying is what brings it to where it's used.
+
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
