@@ -193,6 +193,12 @@ describe('content references', () => {
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            hearingModel: {
+              farMultiplier: 1.5,
+              bearingErrorRadians: 0.61,
+              investigationDistanceMetres: 8,
+              wallRunCostMetres: 6,
+            },
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
             loot: 'till',

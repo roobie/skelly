@@ -309,6 +309,12 @@ export const ZombieSchema = strictObject({
   /** 1 is normal hearing. */
   hearing: NonNegative,
   hearingRange: strictObject({ walk: Positive, jog: Positive, sprint: Positive }),
+  hearingModel: strictObject({
+    farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
+    bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
+    investigationDistanceMetres: Positive,
+    wallRunCostMetres: NonNegative,
+  }),
   attack: strictObject({ damage: Positive, reach: Positive, cooldown: Positive }),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */

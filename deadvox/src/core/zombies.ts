@@ -3,7 +3,7 @@ import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { Rng } from './random.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
-import { raycast, type SolidAt } from './raycast.ts';
+import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'chase' | 'investigate' | 'return';
@@ -16,6 +16,7 @@ export interface Zombie {
   facing: Vec3;
   home: Vec3;
   mode: ZombieMode;
+  investigationTier?: 'near' | 'far' | undefined;
   /** Per-body behavior stream; draws never perturb another body. */
   behaviorRng: Rng;
   modeTimer: number;
@@ -129,51 +130,78 @@ export interface PerceptionInput {
   isSolid: SolidAt;
 }
 
-/** Returns sight/hearing perception using metres for all distances and angles. */
-export const perceivePlayer = ({
-  zombie,
-  from,
-  facing,
-  player,
-  hour,
-  blockSize,
-  isSolid,
-}: PerceptionInput): boolean => {
+export type HearingTier = 'near' | 'far';
+export interface HearingInput {
+  zombie: ZombieDef;
+  from: Vec3;
+  player: PlayerSense;
+  blockSize: number;
+  isSolid: SolidAt;
+  rng: Rng;
+}
+export interface HeardNoise {
+  tier: HearingTier;
+  target: Vec3;
+}
+
+const hearingRange = (zombie: ZombieDef, movement: PlayerMovement): number => {
+  if (movement === 'sprinting') return zombie.hearingRange.sprint * zombie.hearing;
+  if (movement === 'jogging') return zombie.hearingRange.jog * zombie.hearing;
+  if (movement === 'walking') return zombie.hearingRange.walk * zombie.hearing;
+  return 0;
+};
+
+const hearingTier = ({ zombie, from, player, blockSize, isSolid }: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
+  const range = hearingRange(zombie, player.movement);
+  if (range <= 0) return undefined;
+  const distance = Math.hypot(...sub(player.pos, from)) * blockSize;
+  const earOffset = 1.3 / blockSize;
+  const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
+  const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
+  const crossings = countSolidRuns(origin, source, isSolid);
+  const apparentDistance = distance + crossings * zombie.hearingModel.wallRunCostMetres;
+  if (apparentDistance <= range) return 'near';
+  if (apparentDistance <= range * zombie.hearingModel.farMultiplier) return 'far';
+  return undefined;
+};
+
+const farBearingTarget = ({ zombie, from, player, blockSize, rng }: HearingInput): Vec3 => {
+  const angle = Math.atan2(player.pos[0] - from[0], player.pos[2] - from[2]);
+  const error = rng.range(-zombie.hearingModel.bearingErrorRadians, zombie.hearingModel.bearingErrorRadians);
+  const bearing = headingAt(angle + error);
+  const distance = zombie.hearingModel.investigationDistanceMetres / blockSize;
+  return [from[0] + bearing[0] * distance, from[1], from[2] + bearing[2] * distance];
+};
+
+/** Returns an exact near-noise position or a seeded, uncertain far bearing. */
+export const hearPlayer = (input: HearingInput): HeardNoise | undefined => {
+  const tier = hearingTier(input);
+  if (!tier) return undefined;
+  return { tier, target: tier === 'near' ? copy(input.player.pos) : farBearingTarget(input) };
+};
+
+const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: PerceptionInput): boolean => {
   const delta = sub(player.pos, from);
   const metres = Math.hypot(...delta) * blockSize;
   const dir = unit(delta);
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
   const inCone = dot >= Math.cos((zombie.sightCone * Math.PI) / 180);
-  if (inCone && metres > 0) {
-    const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
-    const rayTarget: Vec3 = [player.pos[0], player.pos[1] + 1.3 / blockSize, player.pos[2]];
-    const toTarget = sub(rayTarget, rayOrigin);
-    const rayDistance = Math.hypot(...toTarget);
-    const clear = raycast(rayOrigin, unit(toTarget), rayDistance, isSolid) === undefined;
-    const lit = isLit(isSolid, player.pos, hour, player.lit);
-    let sightRange = zombie.sight;
-    if (!isDaylight(hour)) {
-      sightRange = zombie.nightSight;
-    }
-    if (lit && player.lit) {
-      sightRange = player.lightSeenFrom;
-    }
-    if (clear && metres <= sightRange) {
-      return true;
-    }
-  }
-
-  let hearingRange = 0;
-  if (player.movement === 'sprinting') {
-    hearingRange = zombie.hearingRange.sprint;
-  } else if (player.movement === 'jogging') {
-    hearingRange = zombie.hearingRange.jog;
-  } else if (player.movement === 'walking') {
-    hearingRange = zombie.hearingRange.walk;
-  }
-  return hearingRange > 0 && metres <= hearingRange * zombie.hearing;
+  if (!inCone || metres <= 0) return false;
+  const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
+  const rayTarget: Vec3 = [player.pos[0], player.pos[1] + 1.3 / blockSize, player.pos[2]];
+  const toTarget = sub(rayTarget, rayOrigin);
+  const rayDistance = Math.hypot(...toTarget);
+  const clear = raycast(rayOrigin, unit(toTarget), rayDistance, isSolid) === undefined;
+  const lit = isLit(isSolid, player.pos, hour, player.lit);
+  let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
+  if (lit && player.lit) sightRange = player.lightSeenFrom;
+  return clear && metres <= sightRange;
 };
+
+/** Returns true for sight or either audible tier, using metres for distances and angles. */
+export const perceivePlayer = (input: PerceptionInput): boolean =>
+  seesPlayer(input) || hearingTier(input) !== undefined;
 
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
@@ -187,6 +215,7 @@ export class ZombieSystem {
 
   private beginIdle(zombie: Zombie): void {
     zombie.mode = 'idle';
+    zombie.investigationTier = undefined;
     zombie.modeTimer = inRange(zombie.behaviorRng, zombie.type.wander.idleSeconds);
     zombie.lookTimer = 0;
     zombie.bodyLookTarget = angleOf(zombie.facing);
@@ -212,6 +241,7 @@ export class ZombieSystem {
       heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
     }
     zombie.mode = 'stroll';
+    zombie.investigationTier = undefined;
     zombie.modeTimer = duration;
     zombie.strollHeading = heading;
     zombie.bodyLookTarget = angleOf(heading);
@@ -232,6 +262,7 @@ export class ZombieSystem {
       facing: direction,
       home: copy(position),
       mode: 'idle',
+      investigationTier: undefined,
       behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
       modeTimer: 0,
       strollHeading: copy(direction),
@@ -271,12 +302,25 @@ export class ZombieSystem {
       zombie.attackWait = Math.max(0, zombie.attackWait - dt);
       const { pos } = zombie.body;
       const { type, behaviorRng: rng } = zombie;
-      const sees = perceivePlayer({ zombie: type, from: pos, facing: zombie.facing, player, hour, blockSize, isSolid });
+      const perception = { zombie: type, from: pos, facing: zombie.facing, player, hour, blockSize, isSolid };
+      const sees = seesPlayer(perception);
+      const hearingInput = { zombie: type, from: pos, player, blockSize, isSolid };
+      const tier = sees ? undefined : hearingTier(hearingInput);
       if (sees) {
         zombie.mode = 'chase';
+        zombie.investigationTier = undefined;
         zombie.lastPerceived = copy(player.pos);
+      } else if (tier === 'near') {
+        zombie.mode = 'investigate';
+        zombie.investigationTier = 'near';
+        zombie.lastPerceived = copy(player.pos);
+      } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll')) {
+        zombie.mode = 'investigate';
+        zombie.investigationTier = 'far';
+        zombie.lastPerceived = farBearingTarget({ ...hearingInput, rng });
       } else if (zombie.mode === 'chase') {
         zombie.mode = 'investigate';
+        zombie.investigationTier = 'near';
       }
 
       let target: Vec3 = zombie.home;

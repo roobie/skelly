@@ -12,7 +12,8 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
-import { FISTS_MELEE, type PlayerSense, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import { FISTS_MELEE, type PlayerSense, hearPlayer, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import { Rng } from '../src/core/random.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 
@@ -223,13 +224,24 @@ describe('shambler perception', () => {
     expect(atAngle(70)).toBe(false);
     expect(sees([10, 2, 0], 12, false, (x, y, z) => x === 4 && y === 4 && z === 0)).toBe(false);
     const opaque = (x: number, y: number, _z: number) => x === 4 && y === 4;
-    expect(sees([15, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
-    expect(sees([17, 2, 0], 12, false, opaque, 'jogging')).toBe(false);
+    expect(sees([10, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
+    expect(sees([13, 2, 0], 12, false, opaque, 'jogging')).toBe(false);
     expect(sees([29, 2, 0], 12, false, opaque, 'sprinting')).toBe(true);
-    expect(sees([31, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
-    expect(sees([5, 2, 0], 12, false, opaque, 'walking')).toBe(true);
-    expect(sees([7, 2, 0], 12, false, opaque, 'walking')).toBe(false);
-    expect(sees([5, 2, 0], 12, false, opaque, 'still')).toBe(false);
+    expect(sees([34, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
+    const hears = (at: Vec3, movement: PlayerSense['movement'], wall: SolidAt = () => false) =>
+      perceivePlayer({
+        zombie: { ...SHAMBLER, sight: 1, nightSight: 1 },
+        from: [0, 2, 0],
+        facing: [1, 0, 0],
+        player: player(at, [-1, 0, 0], movement),
+        hour: 12,
+        blockSize: BLOCK_SIZE,
+        isSolid: wall,
+      });
+    expect(hears([5, 2, 0], 'walking')).toBe(true);
+    expect(hears([7, 2, 0], 'walking')).toBe(true);
+    expect(hears([10, 2, 0], 'walking')).toBe(false);
+    expect(hears([5, 2, 0], 'still')).toBe(false);
   });
 });
 
@@ -802,7 +814,7 @@ describe('shambler scenarios', () => {
     const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     const blockedZombie = blocked.store.get(blockedId)!;
     run(blocked, 2);
-    expect(blockedZombie.mode).toBe('chase');
+    expect(blockedZombie.mode).toBe('investigate');
     expect(blockedZombie.body.pos[0]).toBeLessThan(1);
     const stuckAt = [...blockedZombie.body.pos] as Vec3;
     const phaseAtWall = blockedZombie.gaitPhase;
@@ -945,6 +957,74 @@ describe('shambler scenarios', () => {
       expect(up.distanceTo(new Vector3(0, 1, 0))).toBeLessThan(0.001);
     }
     expect(system.store.get(id)).toBeDefined();
+  });
+});
+
+describe('two-tier shambler hearing', () => {
+  const hearing = (seed: number, from: Vec3, source: PlayerSense, isSolid: SolidAt = () => false) =>
+    hearPlayer({ zombie: SHAMBLER, from, player: source, blockSize: BLOCK_SIZE, isSolid, rng: Rng.stream(seed, 'hearing-test') });
+
+  it('reports the exact near source and bounded, approximate far bearings over fifty seeds', () => {
+    const from: Vec3 = [0, 1, 0];
+    const near = hearing(1, from, player([20, 1, 0], [-1, 0, 0], 'sprinting'));
+    expect(near?.tier).toBe('near');
+    expect(near?.target).toEqual([20, 1, 0]);
+    for (let seed = 0; seed < 50; seed++) {
+      const source = player([35, 1, 0], [-1, 0, 0], 'sprinting');
+      const far = hearing(seed, from, source);
+      expect(far?.tier).toBe('far');
+      expect(far?.target).not.toEqual(source.pos);
+      expect(metres(far!.target, from)).toBeCloseTo(8, 5);
+      const actualBearing = Math.atan2(source.pos[0] - from[0], source.pos[2] - from[2]);
+      const guessedBearing = Math.atan2(far!.target[0] - from[0], far!.target[2] - from[2]);
+      const error = Math.abs(Math.atan2(Math.sin(guessedBearing - actualBearing), Math.cos(guessedBearing - actualBearing)));
+      expect(error).toBeLessThanOrEqual(0.61);
+    }
+  });
+
+  it('counts each solid run once and lets a wall demote a near noise to far', () => {
+    const from: Vec3 = [0, 1, 0];
+    const source = player([28, 1, 0], [-1, 0, 0], 'sprinting');
+    const clear = hearing(4, from, source);
+    const wall: SolidAt = (x, y) => y === 0 || (x >= 12 && x <= 15 && y >= 1 && y <= 5);
+    const muffled = hearing(4, from, source, wall);
+    expect(clear?.tier).toBe('near');
+    expect(muffled?.tier).toBe('far');
+    expect(muffled?.target).not.toEqual(source.pos);
+  });
+
+  it('investigates near noises exactly but lets far rumours affect only idle or strolling bodies', () => {
+    const nearPlayer = player([20, 1, 0], [-1, 0, 0], 'sprinting');
+    const nearSystem = new ZombieSystem({ ...senses(() => nearPlayer), seed: 17 });
+    const nearId = nearSystem.add({ ...SHAMBLER, sight: 1, nightSight: 1 }, [0, 1, 0]);
+    nearSystem.tick(1 / 20);
+    const nearZombie = nearSystem.store.get(nearId)!;
+    expect(nearZombie.mode).toBe('investigate');
+    expect(nearZombie.investigationTier).toBe('near');
+    expect(nearZombie.lastPerceived).toEqual(nearPlayer.pos);
+
+    const distant = player([35, 1, 0], [-1, 0, 0], 'sprinting');
+    const farSystem = new ZombieSystem({ ...senses(() => distant), seed: 17 });
+    const farId = farSystem.add({ ...SHAMBLER, sight: 1, nightSight: 1 }, [0, 1, 0]);
+    farSystem.tick(1 / 20);
+    const curious = farSystem.store.get(farId)!;
+    expect(curious.mode).toBe('investigate');
+    expect(curious.investigationTier).toBe('far');
+    expect(curious.lastPerceived).not.toEqual(distant.pos);
+
+    curious.mode = 'chase';
+    curious.lastPerceived = [3, 1, 0];
+    farSystem.tick(1 / 20);
+    expect(curious.mode).toBe('investigate');
+    expect(curious.investigationTier).toBe('near');
+    expect(curious.lastPerceived).toEqual([3, 1, 0]);
+    curious.mode = 'investigate';
+    curious.investigationTier = 'near';
+    curious.lastPerceived = [4, 1, 0];
+    farSystem.tick(1 / 20);
+    expect(curious.mode).toBe('investigate');
+    expect(curious.investigationTier).toBe('near');
+    expect(curious.lastPerceived).toEqual([4, 1, 0]);
   });
 });
 
