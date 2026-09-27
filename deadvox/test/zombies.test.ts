@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { Matrix4, Vector3 } from 'three';
+import { Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -770,6 +770,16 @@ describe('shambler scenarios', () => {
     }
     const used = process.cpuUsage(start);
     expect((used.user + used.system) / 1000 / 600).toBeLessThan(1);
+  });
+
+  it('keeps every shambler part free of emissive light', () => {
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    expect(parts).toHaveLength(6);
+    for (const mesh of parts) {
+      expect(mesh.material).toBeInstanceOf(MeshLambertMaterial);
+      expect((mesh.material as MeshLambertMaterial).emissive.getHex()).toBe(0);
+    }
   });
 
   it('renders collision-sized figures at game scale and swings each leg forward/back about its hip', () => {

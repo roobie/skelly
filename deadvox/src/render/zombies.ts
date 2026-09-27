@@ -24,10 +24,7 @@ export class ZombieMeshes {
     this.blockSize = blockSize;
     for (const part of PARTS) {
       const flesh = part === 'body' || part === 'head';
-      const material = new MeshLambertMaterial({
-        color: flesh ? 0x87_96_78 : 0x68_6f_5e,
-        emissive: flesh ? 0x17_22_14 : 0x11_15_0f,
-      });
+      const material = new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e });
       const mesh = new InstancedMesh(new BoxGeometry(1, 1, 1), material, capacity);
       mesh.count = 0;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
