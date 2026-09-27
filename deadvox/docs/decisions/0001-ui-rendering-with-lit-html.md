@@ -63,8 +63,15 @@ Draw the HTML screens with **lit-html**:
 - Events call core commands. Drag and drop stays a small controller that owns
   its UI state and produces a move target.
 - Nothing in `src/core` imports lit-html.
-- Screens move over one at a time: the spawn menu and the death screen first,
-  the inventory screen the next time it changes substantially.
+- Every screen moves to lit-html, and no screen stays plain DOM. New screens are
+  written in lit-html from the start.
+- The move goes one screen at a time. The spawn menu and the death screen came first,
+  then the credits and the HUD (quickbar and handling bar). The inventory screen is
+  ported as the first step of Slice 2's inventory and crafting work, before any
+  of that work changes it (INTERACTIONS.md, "Order of work").
+- `test/uiLitHtml.test.ts` fails on hand-built DOM in `src/ui` outside a list of
+  screens not yet ported. The list only shrinks, and the port is done when it is
+  empty.
 
 ## Consequences
 
