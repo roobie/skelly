@@ -150,11 +150,16 @@ so class 4 is made mechanical:
 **Combat is modal, as in DayZ.** Holding a weapon is not the same as being ready
 to use it:
 
-- **Right mouse button readies:** raise a melee weapon, or aim a firearm down its
-  sights. Readying is a stance the body shows (the weapon comes up, the view
-  narrows for sights), not a HUD mode.
-- **Left click acts only while ready:** a strike or a shot. Unreadied, a left
-  click does not attack, so looking around with a weapon in hand is safe.
+- **Holding the right mouse button readies:** it raises a melee weapon, or brings
+  a firearm up to fire from the hip. Readying is a stance the body shows (the
+  weapon comes up), not a HUD mode; releasing the button lowers it.
+- **Aiming down the sights is a toggle within the ready stance,** for firearms
+  only: while right-click is held, a middle click or Shift switches between hip
+  and sights (the view narrows through the sights). Shift is also sprint today
+  (`src/game/input.ts:59`); while ready, Shift means sights, not sprint.
+- **Left click acts only while ready:** a strike, or a shot from the hip or the
+  sights. Unreadied, a left click does not attack, so looking around with a
+  weapon in hand is safe.
 - Lowered, a held item may block part of the view (as held models do today);
   readying is what brings it to where it's used.
 
