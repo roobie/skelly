@@ -58,6 +58,46 @@ as a checklist):
 A new element names its kind in its view model's comment, and the pull request
 that adds it says why the kind above it wasn't enough.
 
+## Bodily cues: the body tells, the HUD doesn't
+
+**The damage vignette is the reference example** (BR, 2026-09-27: "good diegetic
+affordance"). A hit shows as a red edge and a quick tilt of the view, scaled by
+how hard it was, gone within a second. There's no number and no text, and the
+player still knows exactly what happened and roughly how bad it was. Every need
+and bodily state gets cues of that kind, **seen and heard**, so the HUD stats
+can become an option nobody needs.
+
+The rules for a cue:
+
+- **It scales with severity.** Faint and rare when a need starts to bite,
+  stronger and more frequent as it becomes critical. A player learns the scale by
+  living with it.
+- **It's short and it fades.** Like the vignette: a moment, then gone. A cue that
+  stays on screen is a HUD element.
+- **Sound cues are the character's own sounds,** positioned at the player, and
+  follow DESIGN.md's "Audio": part of the simulation, not decoration.
+- **It never spams.** Each cue has a minimum interval that shrinks with severity,
+  and two cues don't start in the same second.
+- **It's tunable data** (thresholds, intervals, strengths) in the content pack,
+  like the other tunables, and judged by BR in game.
+
+Cues per state (a starting set; BR's list is the sound column):
+
+| State | Seen | Heard |
+|---|---|---|
+| Damage | red edge vignette, quick tilt (done) | a grunt or gasp |
+| Hunger | a short weak sway when it's bad | stomach gurgle |
+| Thirst | a dry, washed-out edge when it's bad | lip smacking, a dry swallow |
+| Fatigue | slow blinks (the view darkening and returning), heavier head bob | yawning |
+| Low health, pain | desaturation and a slower view settle | moaning, pained breathing |
+| Low stamina | a pulse of narrowed view after a sprint | panting, heavy breathing |
+| Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
+
+**The game has no audio yet** (nothing in `src` creates a Web Audio context). The
+sound half needs a small player-sound system first: Web Audio started by the
+first click, as DESIGN.md says, sounds as content ids in the pack, and CC0 sources
+recorded in the asset manifest like the models.
+
 ## Afford, don't instruct
 
 **The interface shows what can be done; it doesn't write out how.** An empty
@@ -114,7 +154,7 @@ so class 4 is made mechanical:
 
 | Element | Kind now | Target | Gap |
 |---|---|---|---|
-| HUD stats (health, food, fatigue…) | meta, opt-in | bodily | replace with body cues: breathing, vision, pace, stomach sounds |
+| HUD stats (health, food, fatigue…) | meta, opt-in | bodily | the cues in "Bodily cues"; the opt-in stays for development |
 | Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
 | Crosshair | meta, opt-in | spatial or none | open question |
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | an outline on what you can use; no key name |
@@ -149,6 +189,10 @@ ruling; if agreed, DESIGN.md's line is amended to say so.
    first run?
 5. The playtest profile: a URL flag (`?playtest=1`), or the hint setting in the
    F10 menu?
+6. Are the character's own sounds noise events? A cough or a groan in a dark
+   house that shamblers can hear fits "the player hears what the zombies hear"
+   and makes a need dangerous, not just uncomfortable. If yes, which cues, and how
+   loud?
 
 ## Order of work
 
@@ -157,5 +201,6 @@ ruling; if agreed, DESIGN.md's line is amended to say so.
    item, the way ADR 0001's guard landed), moving today's instructional strings
    into the table.
 3. The playtest profile.
-4. The bodily cues that replace HUD stats, one at a time, each judged by BR in
-   game before the HUD line it replaces is retired.
+4. The player-sound system (Web Audio, sounds as content, CC0 sources).
+5. The bodily cues, one state at a time (seen and heard together), each judged
+   by BR in game before the HUD line it replaces is retired.
