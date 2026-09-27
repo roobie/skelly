@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { blockColors, buildRegistry, validateContent } from '../src/core/content.ts';
+import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -27,6 +27,39 @@ describe('content', () => {
     data.zombies[0]!.hearingModel.searchSeconds = { min: 51, max: 50 };
     const issues = validateContent({ source: zombiePack.source, data });
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
+  });
+
+  it('fails when the sounds.json content file is missing required events', () => {
+    const { registry } = buildRegistry(base.filter(({ source }) => source !== 'sounds.json'));
+    const missingLight = requiredSoundIssues(registry).some(
+      (issue) => issue.message === 'missing required sound event "player_hurt_light"',
+    );
+    expect(missingLight).toBe(true);
+  });
+
+  it('fails when a required sound event has no definition', () => {
+    const sounds = {
+      source: 'sounds.json',
+      data: {
+        sounds: [
+          {
+            id: 'player_hurt_light',
+            variants: ['assets/audio/player-hurt-light-01.ogg'],
+            gain: 0.8,
+            pitchJitter: [0.95, 1.05],
+            gainJitter: [0.9, 1.1],
+            minIntervalSeconds: 0.1,
+            category: 'body',
+            noise: { enabled: true, radiusMetres: 8 },
+          },
+        ],
+      },
+    };
+    const { registry } = buildRegistry([...base.filter(({ source }) => source !== 'sounds.json'), sounds]);
+    const missingHeavy = requiredSoundIssues(registry).some(
+      (issue) => issue.message === 'missing required sound event "player_hurt_heavy"',
+    );
+    expect(missingHeavy).toBe(true);
   });
 
   it('lets a later file override a block without changing its runtime id', () => {

@@ -9,8 +9,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import process from 'node:process';
-import { assetFileIssues, MANIFEST_PATH, modelFileIssues, validateManifest } from '../core/assets.ts';
-import { buildRegistry, type ContentSource } from '../core/content.ts';
+import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
+import { buildRegistry, type ContentSource, requiredSoundIssues } from '../core/content.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -46,6 +46,7 @@ for (const source of files) {
   }
 }
 const { registry, issues } = buildRegistry(sources);
+issues.push(...requiredSoundIssues(registry, join(BASE, 'sounds.json')));
 let assets = 0;
 for (const source of manifests) {
   const data = read(source);
@@ -56,6 +57,7 @@ for (const source of manifests) {
   }
 }
 issues.push(...modelFileIssues(registry, (contentFile, file) => existsSync(join(dirname(contentFile), file))));
+issues.push(...soundFileIssues(registry, (contentFile, file) => existsSync(join(dirname(contentFile), file))));
 
 for (const issue of issues) {
   console.log(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);

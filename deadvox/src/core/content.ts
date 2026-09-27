@@ -14,9 +14,11 @@ import {
   type ItemDef,
   type LootTable,
   type ModelDef,
+  type SoundDef,
   type TemplateDef,
   type ZombieDef,
 } from './schema.ts';
+import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { findPieces, pieceSize } from './templates.ts';
 
 export type {
@@ -26,6 +28,7 @@ export type {
   LootEntry,
   LootTable,
   ModelDef,
+  SoundDef,
   TemplateDef,
   ZombieDef,
 } from './schema.ts';
@@ -52,13 +55,25 @@ export interface Registry {
   templates: Map<string, TemplateDef>;
   zombies: Map<string, ZombieDef>;
   models: Map<string, ModelDef>;
+  sounds: Map<string, SoundDef>;
   /** Where each model was defined; its file is a path within that content file's pack. */
   modelOrigins: Map<string, { source: string; path: string }>;
+  /** Where each sound event was defined; variant paths are relative to this content file's pack. */
+  soundOrigins: Map<string, { source: string; path: string }>;
 }
 
 export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
-const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'loot', 'templates', 'zombies', 'models'];
+const SECTIONS: readonly ContentSection[] = [
+  'blocks',
+  'items',
+  'furniture',
+  'loot',
+  'templates',
+  'zombies',
+  'models',
+  'sounds',
+];
 
 // ---- shape (one file) ----
 
@@ -179,7 +194,9 @@ const emptyRegistry = (): Registry => ({
   templates: new Map(),
   zombies: new Map(),
   models: new Map(),
+  sounds: new Map(),
   modelOrigins: new Map(),
+  soundOrigins: new Map(),
 });
 
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
@@ -206,6 +223,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       ['templates', registry.templates],
       ['zombies', registry.zombies],
       ['models', registry.models],
+      ['sounds', registry.sounds],
     ] as const;
     for (const [section, map] of maps) {
       (file[section] ?? []).forEach((def, i) => {
@@ -215,6 +233,9 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     }
     (file.models ?? []).forEach((model, i) => {
       registry.modelOrigins.set(model.id, { source, path: `models[${i}]` });
+    });
+    (file.sounds ?? []).forEach((sound, i) => {
+      registry.soundOrigins.set(sound.id, { source, path: `sounds[${i}]` });
     });
   }
   return { registry, origins };
@@ -339,6 +360,13 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkZombies(registry, report);
   return issues;
 };
+
+export const requiredSoundIssues = (registry: Registry, source = 'sounds.json'): ContentIssue[] =>
+  SOUND_EVENT_IDS.filter((id) => !registry.sounds.has(id)).map((id) => ({
+    source,
+    path: 'sounds',
+    message: `missing required sound event "${id}"`,
+  }));
 
 /**
  * Merges content files in order into a registry. A file with a shape issue is
