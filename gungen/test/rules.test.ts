@@ -82,8 +82,8 @@ describe('rules', () => {
       },
     };
     const { issues } = validate(loadFixture('archetype-rifle'), domain);
-    // The whole magazine sits in the volume, so it intrudes by its smallest extent, its 2.5u width.
-    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2.5u into the magazine-path volume of lower.']);
+    // The enlarged well path contains the magazine, with 0.25u of clearance per side.
+    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2.75u into the magazine-path volume of lower.']);
   });
 
   it('solid-overlap: beveled grip mates without relying on the old global allowance', () => {

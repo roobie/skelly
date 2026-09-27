@@ -32,26 +32,30 @@ describe('resolve', () => {
     expectVec(at(r, 'magazine', [0, -10, 0]), [-4.25, -14, 0]); // magazine hangs from the lower
   });
 
-  it('extends the conventional lower to the front edge of the magazine', () => {
-    const lowerFrame = r.defs.get('lower')!.solids[0]!;
-    const magazineBody = r.defs.get('magazine')!.solids[0]!;
-    expect(lowerFrame.kind).toBe('box');
-    expect(magazineBody.kind).toBe('box');
-    if (lowerFrame.kind !== 'box' || magazineBody.kind !== 'box') {
-      return;
+  it('gives the conventional magazine a well with material thickness', () => {
+    const lowerSolids = r.defs.get('lower')!.solids;
+    const lowerBoxes = lowerSolids.flatMap((s) => (s.kind === 'box' ? [s.box] : []));
+    const contains = (p: readonly number[], box: (typeof lowerBoxes)[number]) =>
+      p.every((n, axis) => n >= box.center[axis]! - box.half[axis]! && n <= box.center[axis]! + box.half[axis]!);
+    const lowerFrontX = Math.max(
+      ...lowerBoxes.map((box) => at(r, 'lower', [box.center[0] + box.half[0], box.center[1], box.center[2]])[0]),
+    );
+    expect(lowerFrontX).toBeCloseTo(-1.0);
+    expect(lowerBoxes.every((box) => !contains([-4.25, -1, 0], box))).toBe(true);
+    expect(lowerBoxes.some((box) => contains([-1.1, -1, 0], box))).toBe(true);
+    expect(lowerBoxes.some((box) => contains([-4.25, -1, 1.625], box))).toBe(true);
+
+    const magazine = r.defs.get('magazine')!.solids[0]!;
+    expect(magazine.kind).toBe('box');
+    if (magazine.kind === 'box') {
+      const magazineFrontX = at(r, 'magazine', [
+        magazine.box.center[0] + magazine.box.half[0],
+        magazine.box.center[1],
+        magazine.box.center[2],
+      ])[0];
+      expect(lowerFrontX - magazineFrontX).toBeCloseTo(0.5);
+      expect(magazine.box.center[1] + magazine.box.half[1]).toBeCloseTo(0.75);
     }
-    const lowerFrontX = at(r, 'lower', [
-      lowerFrame.box.center[0] + lowerFrame.box.half[0],
-      lowerFrame.box.center[1],
-      lowerFrame.box.center[2],
-    ])[0];
-    const magazineFrontX = at(r, 'magazine', [
-      magazineBody.box.center[0] + magazineBody.box.half[0],
-      magazineBody.box.center[1],
-      magazineBody.box.center[2],
-    ])[0];
-    expect(lowerFrontX).toBeCloseTo(-1.5);
-    expect(lowerFrontX).toBeCloseTo(magazineFrontX);
   });
 
   it('offsets slotted connections along the port', () => {

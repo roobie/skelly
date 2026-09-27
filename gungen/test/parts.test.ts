@@ -42,13 +42,13 @@ describe('part library', () => {
         const tag = JSON.stringify(params);
 
         it(`${tag}: positions and extents are on the ${GRID}u grid`, () => {
+          const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
+            box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
           const numbers = [
             ...def.solids.flatMap((s) =>
-              s.kind === 'box' && !(family.name === 'magazine' && params.profile === 'smg')
-                ? [...s.box.center, ...s.box.half]
-                : [],
+              s.kind === 'box' && !(family.name === 'magazine' && params.profile === 'smg') ? bounds(s.box) : [],
             ),
-            ...def.keepOuts.flatMap((k) => [...k.box.center, ...k.box.half]),
+            ...def.keepOuts.flatMap((k) => bounds(k.box)),
             ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
             ...def.axes.flatMap((a) => [...a.origin]),
           ];

@@ -398,6 +398,11 @@ it also means their variety comes from proportions, not layout.
   compares both paths within `1e-9`.
 - The grip is one five-vertex extruded profile; its beveled mating edge follows
   the angled grip mount. The viewer renders it as one Three.js extruded mesh.
+- Conventional and bullpup lowers have a one-unit-deep box magazine well with
+  0.25u clearance per side and surrounding material. The magazine inserts 0.75u
+  into the well, leaving a 0.25u roof; the conventional lower also has a 0.25u
+  front wall beyond the well. This is a simple solid model, not a detailed feed
+  interface.
 - Mount-specific interface tolerance removes the grip's former 0.75u
   dependency and makes an over-tight handguard clamp fail.
 

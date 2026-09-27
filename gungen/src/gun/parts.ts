@@ -62,6 +62,12 @@ const TUBE_DROP = 2.25;
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
 const MAGAZINE_DEPTH = 5.5;
 const MAGAZINE_WIDTH = 2.5;
+const MAGAZINE_WELL_CLEARANCE = 0.25;
+const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
+const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
+const MAGAZINE_WELL_HEIGHT = 1;
+const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
+const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 
 // ---- receiver ----
 
@@ -185,11 +191,25 @@ export const lower: PartFamily = {
       } satisfies PortDef,
       path: keepOut(
         'magazine-path',
-        [x - MAGAZINE_DEPTH / 2, -40, -MAGAZINE_WIDTH / 2],
-        [x + MAGAZINE_DEPTH / 2, -1.5, MAGAZINE_WIDTH / 2],
+        [x - MAGAZINE_WELL_DEPTH / 2, -40, -MAGAZINE_WELL_WIDTH / 2],
+        [x + MAGAZINE_WELL_DEPTH / 2, -1.5 + MAGAZINE_WELL_HEIGHT, MAGAZINE_WELL_WIDTH / 2],
         'magazine',
       ),
     });
+    const magazineWellFrame = (minX: number, maxX: number, centerX: number): Solid[] => {
+      const x0 = centerX - MAGAZINE_WELL_DEPTH / 2;
+      const x1 = centerX + MAGAZINE_WELL_DEPTH / 2;
+      const z0 = MAGAZINE_WELL_WIDTH / 2;
+      const outerZ = LOWER_HALF_WIDTH;
+      const roofY = -1.5 + MAGAZINE_WELL_HEIGHT;
+      return [
+        solid('frame-rear', [minX, -1.5, -outerZ], [x0, 0, outerZ]),
+        solid('frame-front', [x1, -1.5, -outerZ], [maxX, 0, outerZ]),
+        solid('well-wall-left', [x0, -1.5, -outerZ], [x1, 0, -z0]),
+        solid('well-wall-right', [x0, -1.5, z0], [x1, 0, outerZ]),
+        solid('well-roof', [x0, roofY, -z0], [x1, 0, z0]),
+      ];
+    };
     // Conventional: the rear face meets the trigger-finger volume (it ends at
     // x = −7) without entering it. Bullpup: the front face stays at x = −3.5,
     // behind the grip, which leans back from x = 3.
@@ -201,7 +221,10 @@ export const lower: PartFamily = {
       case 'bullpup':
         return {
           family: 'lower',
-          solids: [solid('frame', [-16, -1.5, -1.5], [9, 0, 1.5]), solid('butt', [-18, -7, -1.75], [-16, 5, 1.75])],
+          solids: [
+            ...magazineWellFrame(-16, 9, bullpupWell.port.pos[0]),
+            solid('butt', [-18, -7, -1.75], [-16, 5, 1.75]),
+          ],
           ports: [top, grip(3), bullpupWell.port],
           keepOuts: [trigger(5), bullpupWell.path],
           axes: [],
@@ -217,8 +240,12 @@ export const lower: PartFamily = {
       default:
         return {
           family: 'lower',
-          // Extend to the magazine's forward face; the real magazine well is a later step.
-          solids: [solid('frame', [-14, -1.5, -1.5], [-1.5, 0, 1.5])],
+          // Extend past the magazine's forward face to leave material around the well.
+          solids: magazineWellFrame(
+            -14,
+            conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
+            conventionalWell.port.pos[0],
+          ),
           ports: [top, grip(-12), conventionalWell.port],
           keepOuts: [trigger(-10), conventionalWell.path],
           axes: [],
@@ -392,7 +419,13 @@ export const magazine: PartFamily = {
     return {
       family: 'magazine',
       // The lower's well and magazine path retain the standard envelope; SMG magazines are scaled within it.
-      solids: [solid('body', [-depth / 2, -len, -width / 2], [depth / 2, 0, width / 2])],
+      solids: [
+        solid(
+          'body',
+          [-depth / 2, -len + MAGAZINE_INSERTION, -width / 2],
+          [depth / 2, MAGAZINE_INSERTION, width / 2],
+        ),
+      ],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],
