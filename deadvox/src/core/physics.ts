@@ -18,7 +18,7 @@ export interface PhysicsParams {
   gravity: number;
   /** Tallest ledge a grounded body walks up without jumping, in blocks. 0 disables. */
   stepHeight: number;
-  /** Other bodies treated as solid obstacles; omitted for collision-free actors. */
+  /** Other bodies block horizontal motion only; vertical motion always resolves against terrain. */
   obstacles?: readonly Body[];
 }
 
@@ -129,7 +129,7 @@ interface MoveContext {
 /** Tries to move along a horizontal axis from a raised position, then settles back down. */
 const tryStepUp = ({ body, isSolid, stepHeight, bodies }: MoveContext, axis: Axis, delta: number): boolean => {
   body.pos[1] += stepHeight;
-  if (overlapsSolid(body, isSolid, bodies)) {
+  if (overlapsTerrain(body, isSolid)) {
     body.pos[1] -= stepHeight;
     return false;
   }
@@ -139,7 +139,7 @@ const tryStepUp = ({ body, isSolid, stepHeight, bodies }: MoveContext, axis: Axi
     body.pos[1] -= stepHeight;
     return false;
   }
-  moveAxis(body, 1, -stepHeight, { isSolid, bodies }); // lands on the step, or back where it was
+  moveAxis(body, 1, -stepHeight, { isSolid }); // lands on terrain, never a body
   return true;
 };
 
@@ -170,7 +170,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
   body.onGround = false;
   for (let i = 0; i < substeps; i++) {
     const falling = body.vel[1] < 0;
-    if (moveAxis(body, 1, body.vel[1] * h, { isSolid, bodies: obstacles }) && falling) {
+    if (moveAxis(body, 1, body.vel[1] * h, { isSolid }) && falling) {
       body.onGround = true;
     }
     const ctx: MoveContext = {
@@ -182,6 +182,9 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
     };
     moveHorizontal(ctx, 0, body.vel[0] * h);
     moveHorizontal(ctx, 2, body.vel[2] * h);
+    if (body.onGround) {
+      body.onGround = moveAxis(body, 1, -2 * EPS, { isSolid });
+    }
   }
 };
 

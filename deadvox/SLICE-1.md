@@ -497,7 +497,9 @@ noclip collision/gravity and god-mode immunity without suppressing zombie attack
 `test/zombies.test.ts` also covers hard player/shambler contact, chaser attacks at
 wall contact, three close-spaced shamblers passing through a real open door,
 five-body crowd separation, and a corridor-wall case; shambler pairs use soft
-separation only, not hard movement blockers.
+separation only, not hard movement blockers. `test/physics.test.ts` and
+`test/zombies.test.ts` prove vertical movement lands on terrain only (including
+four chasing shamblers down three steps and no player landing on a shambler).
 Further zombie checks cover perception, distance-driven gait cadence (12–15 steps/10 s
 wandering at 0.8 m/s; 42–52 steps/10 s chasing at 2.8 m/s; no steps against a
 wall; at most 0.05 rad leg-angle change per 1/60 s walking frame), melee,

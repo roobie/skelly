@@ -81,6 +81,67 @@ const bodyHitsSolid = (body: Body, isSolid: SolidAt): boolean => {
   }
   return false;
 };
+const stairTop = (z: number): number => {
+  if (z >= 6) {
+    return 4;
+  }
+  if (z >= 5) {
+    return 3;
+  }
+  if (z >= 4) {
+    return 2;
+  }
+  return 1;
+};
+const terrainUnder = (body: Body): number => {
+  let top = 0;
+  for (let z = Math.floor(body.pos[2] - body.halfWidth); z <= Math.floor(body.pos[2] + body.halfWidth); z++) {
+    for (let x = Math.floor(body.pos[0] - body.halfWidth); x <= Math.floor(body.pos[0] + body.halfWidth); x++) {
+      const overlapsColumn =
+        body.pos[0] - body.halfWidth < x + 1 &&
+        body.pos[0] + body.halfWidth > x &&
+        body.pos[2] - body.halfWidth < z + 1 &&
+        body.pos[2] + body.halfWidth > z;
+      if (overlapsColumn) {
+        top = Math.max(top, stairTop(z));
+      }
+    }
+  }
+  return top;
+};
+const bodyTerrainViolations = (body: Body, stairs: SolidAt): string[] => {
+  const violations: string[] = [];
+  if (bodyHitsSolid(body, stairs)) {
+    violations.push(`solid intersection: ${body.pos}`);
+  }
+  if (body.onGround && Math.abs(body.pos[1] - terrainUnder(body)) > 0.01) {
+    violations.push(`feet ${body.pos[1]} != terrain ${terrainUnder(body)} at ${body.pos}`);
+  }
+  return violations;
+};
+const stackedBodyViolations = (bodies: readonly Body[]): string[] => {
+  const violations: string[] = [];
+  for (let i = 0; i < bodies.length; i++) {
+    for (let j = i + 1; j < bodies.length; j++) {
+      const a = bodies[i]!;
+      const b = bodies[j]!;
+      const overlapsHorizontally =
+        Math.abs(a.pos[0] - b.pos[0]) < a.halfWidth + b.halfWidth &&
+        Math.abs(a.pos[2] - b.pos[2]) < a.halfWidth + b.halfWidth;
+      if (overlapsHorizontally && a.pos[1] > b.pos[1] + b.height + 0.01) {
+        violations.push(`body ${i} stacked on ${j}: ${a.pos} / ${b.pos}`);
+      }
+      if (overlapsHorizontally && b.pos[1] > a.pos[1] + a.height + 0.01) {
+        violations.push(`body ${j} stacked on ${i}: ${b.pos} / ${a.pos}`);
+      }
+    }
+  }
+  return violations;
+};
+const terrainBodyViolations = (bodies: readonly Body[], stairs: SolidAt): string[] => [
+  ...bodies.flatMap((body) => bodyTerrainViolations(body, stairs)),
+  ...stackedBodyViolations(bodies),
+];
 const runChaserAtWall = (isSolid: SolidAt, seconds: number) => {
   const target = player([12, 1, 0], [-1, 0, 0]);
   const system = new ZombieSystem(senses(() => target, isSolid));
@@ -425,6 +486,27 @@ describe('shambler scenarios', () => {
         ).toBeLessThanOrEqual(0.05);
       }
     }
+  });
+
+  it('keeps four chasing shamblers grounded on terrain rather than stacking down three steps', () => {
+    const stairs: SolidAt = (_x, y, z) => y < stairTop(z);
+    const target = [0.25, 1, 0] as Vec3;
+    const system = new ZombieSystem(senses(() => player(target, [0, 0, 1], 'sprinting'), stairs));
+    const ids = [
+      system.add(SHAMBLER, [-Math.SQRT1_2, 4, 8 - Math.SQRT1_2]),
+      system.add(SHAMBLER, [Math.SQRT1_2, 4, 8 - Math.SQRT1_2]),
+      system.add(SHAMBLER, [-Math.SQRT1_2, 4, 8 + Math.SQRT1_2]),
+      system.add(SHAMBLER, [Math.SQRT1_2, 4, 8 + Math.SQRT1_2]),
+    ];
+    const bodies = ids.map((id) => system.store.get(id)!.body);
+    for (let tick = 0; tick < 20 * 20; tick++) {
+      system.tick(1 / 20);
+      for (const id of ids) {
+        expect(system.store.get(id)!.mode).toBe('chase');
+      }
+      expect(terrainBodyViolations(bodies, stairs), `tick ${tick}`).toEqual([]);
+    }
+    expect(ids.every((id) => system.store.get(id)!.body.pos[2] < 4)).toBe(true);
   });
 
   it('pushes two overlapping shamblers apart in a one-metre corridor without wall intersections', () => {
