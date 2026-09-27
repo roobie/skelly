@@ -192,7 +192,7 @@ export class ZombieSystem {
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
     const entries = [...this.store.entries()];
-    for (const [id, zombie] of entries) {
+    for (const [, zombie] of entries) {
       zombie.attackWait = Math.max(0, zombie.attackWait - dt);
       const { pos } = zombie.body;
       const sees = perceivePlayer({
@@ -257,10 +257,7 @@ export class ZombieSystem {
         zombie.body.vel[2] = 0;
       }
       const beforeStep: Vec3 = [...pos];
-      const obstacles = entries.filter(([otherId]) => otherId !== id).map(([, other]) => other.body);
-      if (player.body) {
-        obstacles.push(player.body);
-      }
+      const obstacles = player.body ? [player.body] : [];
       stepBody(zombie.body, dt, isSolid, { ...this.options.physics, obstacles });
       const travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
       zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;

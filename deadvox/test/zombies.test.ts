@@ -203,6 +203,29 @@ describe('shambler scenarios', () => {
     expect(metres(system.store.get(id)!.body.pos, target)).toBeLessThanOrEqual(1.2);
   });
 
+  it('routes three close-spaced shamblers through an open real door with no body jams', () => {
+    const { entities, door, solid } = makeDoorWorld();
+    entities.setOpen(door, true);
+    const playerBody = createPlayerBody(SCALE, 5, 1, -6);
+    playerBody.onGround = true;
+    const target = { ...player([5, 1, -6], [0, 0, 1]), body: playerBody };
+    const system = new ZombieSystem(senses(() => target, solid));
+    const ids = [
+      system.add(SHAMBLER, [5, 1, 4], [0, 0, -1]),
+      system.add(SHAMBLER, [5, 1, 5], [0, 0, -1]),
+      system.add(SHAMBLER, [5, 1, 6], [0, 0, -1]),
+    ];
+    for (let tick = 0; tick < 20 * 20; tick++) {
+      system.tick(1 / 20);
+      for (const id of ids) {
+        const zombie = system.store.get(id)!;
+        expect(bodyHitsSolid(zombie.body, solid)).toBe(false);
+        expect(boxesOverlap(zombie.body, playerBody)).toBe(false);
+      }
+    }
+    expect(ids.every((id) => system.store.get(id)!.body.pos[2] < -2)).toBe(true);
+  });
+
   it('B: hears the sprinting player but cannot enter through the real closed door for 120 seconds', () => {
     const { entities, door, solid } = makeDoorWorld();
     entities.setOpen(door, false);
@@ -390,7 +413,7 @@ describe('shambler scenarios', () => {
       system.tick(1 / 20);
       for (const [, zombie] of system.store.entries()) {
         expect(bodyHitsSolid(zombie.body, FLOOR)).toBe(false);
-        expect(boxesOverlap(playerBody, zombie.body)).toBe(false);
+        expect(boxesOverlap(playerBody, zombie.body), `${tick} ${zombie.body.pos}`).toBe(false);
       }
     }
     const finalBodies = [...system.store.entries()].map(([, zombie]) => zombie.body);

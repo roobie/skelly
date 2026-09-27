@@ -32,6 +32,19 @@ describe('stepBody', () => {
     expect(body.pos[0] + body.halfWidth).toBeGreaterThan(2.99);
   });
 
+  it('stops at a body face when moving from either side', () => {
+    const obstacle = createPlayerBody(metre, 0, 10.001, 0.5);
+    obstacle.onGround = true;
+    const body = createPlayerBody(metre, 2, 10.001, 0.5);
+    body.onGround = true;
+    run(60, () => {
+      body.vel[0] = -6;
+      stepBody(body, 1 / 60, floor, { ...physicsFor(metre), obstacles: [obstacle] });
+    });
+    expect(body.pos[0] - body.halfWidth).toBeGreaterThanOrEqual(obstacle.pos[0] + obstacle.halfWidth - 0.001);
+    expect(body.pos[0]).toBeCloseTo(0.6, 3);
+  });
+
   describe('step-up (0.5 m)', () => {
     const ledge = (height: number) => (x: number, y: number, _z: number) => y < 10 || (x >= 3 && y < 10 + height);
     const walkEast = (scale: typeof half, height: number) => {

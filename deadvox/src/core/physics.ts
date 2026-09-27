@@ -75,11 +75,14 @@ interface CollisionContext {
 }
 
 const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number => {
+  const bodyCenter = body.pos[axis]! - delta + (axis === 1 ? body.height / 2 : 0);
+  const otherCenter = other.pos[axis]! + (axis === 1 ? other.height / 2 : 0);
+  const onNegativeSide = bodyCenter < otherCenter || (bodyCenter === otherCenter && delta < 0);
   if (axis === 1) {
-    return delta > 0 ? other.pos[1] - body.height : other.pos[1] + other.height;
+    return onNegativeSide ? other.pos[1] - body.height : other.pos[1] + other.height;
   }
   const halfWidths = body.halfWidth + other.halfWidth;
-  return delta > 0 ? other.pos[axis] - halfWidths : other.pos[axis] + halfWidths;
+  return onNegativeSide ? other.pos[axis] - halfWidths : other.pos[axis] + halfWidths;
 };
 
 /** Moves along one axis; on contact, snaps to the nearest obstacle face. Returns true on contact. */
@@ -195,11 +198,35 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
   const component = axis === 0 ? deltaX : deltaZ;
   const direction = component === 0 ? 1 : Math.sign(component);
   const push = Math.min(overlap / 2, maxPushBlocks);
+  const firstStart = [...first.pos] as Vec3;
+  const secondStart = [...second.pos] as Vec3;
   moveAxis(first, axis, -direction * push, collision);
   moveAxis(second, axis, direction * push, collision);
+
+  const firstMoved = Math.abs(first.pos[axis]! - firstStart[axis]!);
+  const secondMoved = Math.abs(second.pos[axis]! - secondStart[axis]!);
+  if (firstMoved >= push - EPS && secondMoved >= push - EPS) {
+    return;
+  }
+  const otherAxis: Axis = axis === 0 ? 2 : 0;
+  const otherOverlap = otherAxis === 0 ? overlapX : overlapZ;
+  if (otherOverlap <= 0) {
+    return;
+  }
+  const otherComponent = second.pos[otherAxis]! - first.pos[otherAxis]!;
+  const otherDirection = otherComponent === 0 ? 1 : Math.sign(otherComponent);
+  const otherPush = Math.min(otherOverlap / 2, maxPushBlocks);
+  const firstBudget = Math.max(0, maxPushBlocks - firstMoved);
+  const secondBudget = Math.max(0, maxPushBlocks - secondMoved);
+  if (firstBudget > 0) {
+    moveAxis(first, otherAxis, -otherDirection * Math.min(otherPush, firstBudget), collision);
+  }
+  if (secondBudget > 0) {
+    moveAxis(second, otherAxis, otherDirection * Math.min(otherPush, secondBudget), collision);
+  }
 };
 
-/** Pairwise horizontal shambler separation, capped per body and clipped against all obstacles. */
+/** Pairwise horizontal shambler separation, capped per push and clipped against terrain and supplied blockers. */
 export const separateBodies = ({
   bodies,
   dt,
@@ -218,8 +245,7 @@ export const separateBodies = ({
     const first = bodies[i]!;
     for (let j = i + 1; j < bodies.length; j++) {
       const second = bodies[j]!;
-      const blockers = [...obstacles, ...bodies.filter((other) => other !== first && other !== second)];
-      separatePair(first, second, maxPushBlocks, { isSolid, bodies: blockers });
+      separatePair(first, second, maxPushBlocks, { isSolid, bodies: obstacles });
     }
   }
 };
