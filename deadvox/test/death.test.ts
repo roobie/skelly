@@ -24,7 +24,7 @@ const summary = (partial: Partial<DeathSummary>): DeathSummary => ({
 
 describe('deathViewModel', () => {
   it('shows the cause and the time survived', () => {
-    const vm = deathViewModel(registry, summary({ cause: 'starvation', survived: 62640 }));
+    const vm = deathViewModel(registry, summary({ cause: 'starvation', survived: 62_640 }));
     expect(vm.cause).toBe('starvation');
     expect(vm.span).toBe('17 h 24 min');
   });
@@ -55,7 +55,7 @@ describe('formatSpan', () => {
   });
 
   it('formats an hour or more as hours and minutes', () => {
-    expect(formatSpan(62640)).toBe('17 h 24 min');
+    expect(formatSpan(62_640)).toBe('17 h 24 min');
   });
 });
 

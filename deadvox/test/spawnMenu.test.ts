@@ -8,7 +8,14 @@ const { registry } = buildRegistry([
     data: {
       models: [{ id: 'flashlight_model', file: 'assets/models/flashlight_model.glb' }],
       items: [
-        { id: 'flashlight', name: 'Flashlight', category: 'tool', weight: 200, size: [1, 1], model: 'flashlight_model' },
+        {
+          id: 'flashlight',
+          name: 'Flashlight',
+          category: 'tool',
+          weight: 200,
+          size: [1, 1],
+          model: 'flashlight_model',
+        },
         { id: 'rag', name: 'Rag', category: 'material', weight: 20, size: [1, 1] },
         { id: 'can_of_beans', name: 'Can of beans', category: 'food', weight: 400, size: [1, 1] },
       ],
