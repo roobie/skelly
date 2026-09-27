@@ -112,6 +112,15 @@ describe('model forms', () => {
 describe('base pack melee', () => {
   const melee = buildRegistry([read(`${BASE}/models-melee.json`)]).registry;
   const models = [...melee.models.values()];
+  const heldAnchor = async (id: string, name: string): Promise<Vector3> => {
+    const def = melee.models.get(id)!;
+    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const { scene } = await parseGlb(bytes);
+    const { held } = prepareModel(def, scene);
+    held.updateMatrixWorld(true);
+    const offset = held.children[0]!.children[0]!;
+    return new Vector3(...def.anchors![name]!).applyMatrix4(offset.matrixWorld);
+  };
 
   it('maps the five matching Slice 1 items', () => {
     expect(
@@ -152,8 +161,9 @@ describe('base pack melee', () => {
       expect(grip).toBeDefined();
       expect(strike).toBeDefined();
       expect(strike![0]).toBeGreaterThan(grip![0]);
+      const anchors = Object.values(def.anchors ?? {});
       expect(
-        [grip!, strike!].every((anchor) => anchorIsInBounds(anchor, sourceBox)),
+        [grip!, ...anchors].every((anchor) => anchorIsInBounds(anchor, sourceBox)),
         `${def.id} anchors`,
       ).toBe(true);
       expect(groundBox.min.y).toBeCloseTo(0, 5);
@@ -194,21 +204,22 @@ describe('base pack melee', () => {
     expect(crowbar.y).toBeLessThanOrEqual(0.26);
   });
 
-  it('rolls the hammer head away from the player in the upright pose', async () => {
-    const def = melee.models.get('hammer')!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
-    const { scene } = await parseGlb(bytes);
-    const { held } = prepareModel(def, scene);
-    held.updateMatrixWorld(true);
-    const offset = held.children[0]!.children[0]!;
-    // The hammer's head is its widest transverse model axis (local +y), 0.201 m vs 0.044 m.
-    const headAxis = new Vector3(0, 1, 0).transformDirection(offset.matrixWorld);
-    const viewSize = new Box3().setFromObject(held).getSize(new Vector3());
-    expect(viewSize.x).toBeLessThanOrEqual(0.06);
-    expect(viewSize.z).toBeGreaterThanOrEqual(0.18);
-    const forward = new Vector3(0, 0, -1);
-    const angle = (Math.acos(Math.min(1, Math.abs(headAxis.dot(forward)))) * 180) / Math.PI;
-    expect(angle).toBeLessThanOrEqual(5);
+  it('points the hammer striking face forward and its claw back', async () => {
+    const face = await heldAnchor('hammer', 'face');
+    const claw = await heldAnchor('hammer', 'claw');
+    // From the grip, the face must be at least 8 cm down -z; the claw must be at least 8 cm back.
+    expect(face.z * 100).toBeLessThanOrEqual(-8);
+    expect(claw.z * 100).toBeGreaterThanOrEqual(8);
+  });
+
+  it('points the fire-axe cutting edge forward', async () => {
+    const edge = await heldAnchor('fire_axe', 'edge');
+    expect(edge.z * 100).toBeLessThanOrEqual(-9);
+  });
+
+  it('points the crowbar claw forward', async () => {
+    const claw = await heldAnchor('crowbar', 'claw');
+    expect(claw.z * 100).toBeLessThanOrEqual(-10);
   });
 
   it('holds the pipe elbow forward while its shaft stays upright', async () => {
