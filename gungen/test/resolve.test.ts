@@ -36,6 +36,18 @@ describe('resolve', () => {
     expectVec(at(r, 'sight'), [-14 + 3 * 2, 2.5, 0]);
   });
 
+  it('mates the grip bevel flush to its lower port', () => {
+    const solid = r.defs.get('grip')!.solids[0]!;
+    expect(solid.kind).toBe('extruded-polygon');
+    if (solid.kind !== 'extruded-polygon') {
+      return;
+    }
+    const face = solid.profile.slice(3, 5).map(([x, y]) => at(r, 'grip', [x, y, 0]));
+    const mount = at(r, 'lower', [-12, -1.5, 0]);
+    expect(face[0]![1]).toBeCloseTo(face[1]![1]);
+    expect(face[0]![1]).toBeCloseTo(mount[1]);
+  });
+
   it('leans the grip back', () => {
     const bottom = at(r, 'grip', [0, -10, 0]);
     expect(bottom[0]).toBeLessThan(-12);
@@ -101,6 +113,33 @@ describe('resolve: structure issues', () => {
         a.parts.grip = { family: 'grip', params: { length: 'XL' } };
       }),
     ).toEqual(['Part "grip": length="XL" is not one of S, M, L.']);
+  });
+
+  it('reports an invalid extruded solid as a structural issue and omits it', () => {
+    const grip = gunDomain.families.grip!;
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        grip: {
+          ...grip,
+          build: (params) => ({
+            ...grip.build(params),
+            solids: [
+              {
+                id: 'bad-profile',
+                kind: 'extruded-polygon',
+                profile: [[0, 0], [2, 2], [0, 2], [2, 0]],
+                z: [-1, 1],
+              },
+            ],
+          }),
+        },
+      },
+    };
+    const r = resolve(loadFixture('archetype-rifle'), domain);
+    expect(r.issues.map((i) => i.message)).toContain('Part "grip" solid "bad-profile" is invalid: profile is self-intersecting.');
+    expect(r.defs.get('grip')?.solids).toEqual([]);
   });
 
   it('reports unknown ports, bad slots and bad rolls', () => {

@@ -6,6 +6,7 @@ import {
   BoxGeometry,
   BufferGeometry,
   EdgesGeometry,
+  ExtrudeGeometry,
   Group,
   Line,
   LineBasicMaterial,
@@ -15,12 +16,14 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  Shape,
   type Object3D,
   Vector3,
 } from 'three';
 import { MAIN_AXIS } from '../core/conventions.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
+import type { Solid } from '../core/schema.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
 import { portFrame } from '../core/resolve.ts';
@@ -62,6 +65,18 @@ const placeBox = (obj: Object3D, obb: Obb) => {
 
 const boxGeometry = (obb: Obb) => new BoxGeometry(obb.half[0] * 2, obb.half[1] * 2, obb.half[2] * 2);
 
+const solidGeometry = (solid: Solid) => {
+  if (solid.kind === 'box') {
+    return new BoxGeometry(solid.box.half[0] * 2, solid.box.half[1] * 2, solid.box.half[2] * 2);
+  }
+  const profile = new Shape();
+  solid.profile.forEach(([x, y], i) => (i === 0 ? profile.moveTo(x, y) : profile.lineTo(x, y)));
+  profile.closePath();
+  const geometry = new ExtrudeGeometry(profile, { depth: solid.z[1] - solid.z[0], bevelEnabled: false });
+  geometry.translate(0, 0, solid.z[0]);
+  return geometry;
+};
+
 /** Which parts, ports and keep-outs the given issues point at. */
 const highlights = (issues: readonly Issue[]) => ({
   parts: new Set(issues.flatMap((i) => i.parts)),
@@ -89,9 +104,9 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     const failing = hl.parts.has(part);
 
     for (const s of def.solids) {
-      const obb = worldBox(t, s.box);
+      const obb = s.kind === 'box' ? worldBox(t, s.box) : undefined;
       const mesh = new Mesh(
-        boxGeometry(obb),
+        solidGeometry(s),
         new MeshStandardMaterial({
           color: failing ? FAIL : (FAMILY_COLORS[def.family] ?? 0x88_88_88),
           flatShading: true,
@@ -99,7 +114,12 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
           metalness: 0.05,
         }),
       );
-      placeBox(mesh, obb);
+      if (obb) {
+        placeBox(mesh, obb);
+      } else {
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.copy(matrixOf(t.r, t.t));
+      }
       mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
       const edges = new LineSegments(
         new EdgesGeometry(mesh.geometry),

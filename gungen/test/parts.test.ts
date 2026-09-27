@@ -14,10 +14,25 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 const onGrid = (n: number) => Math.abs(n / GRID - Math.round(n / GRID)) < 1e-9;
 
 describe('part library', () => {
+  it('models the grip as one beveled prism matching its mount face', () => {
+    const solids = FAMILIES.grip!.build({ length: 'M' }).solids;
+    expect(solids).toHaveLength(1);
+    const [body] = solids;
+    expect(body?.kind).toBe('extruded-polygon');
+    if (body?.kind === 'extruded-polygon') {
+      expect(body.profile).toHaveLength(5);
+      expect(body.profile[3]![1]).toBeCloseTo(Math.tan((18 * Math.PI) / 180) * body.profile[3]![0]);
+      expect(body.profile[4]![1]).toBeCloseTo(Math.tan((18 * Math.PI) / 180) * body.profile[4]![0]);
+    }
+  });
+
   it('scales the SMG magazine section by 0.6 in X and 0.8 in Z', () => {
-    const body = FAMILIES.magazine!.build({ length: 'L', profile: 'smg' }).solids[0]!.box;
-    expect(body.half[0] * 2).toBeCloseTo(5.5 * 0.6);
-    expect(body.half[2] * 2).toBeCloseTo(2.5 * 0.8);
+    const body = FAMILIES.magazine!.build({ length: 'L', profile: 'smg' }).solids[0]!;
+    expect(body.kind).toBe('box');
+    if (body.kind === 'box') {
+      expect(body.box.half[0] * 2).toBeCloseTo(5.5 * 0.6);
+      expect(body.box.half[2] * 2).toBeCloseTo(2.5 * 0.8);
+    }
   });
 
   for (const family of Object.values(FAMILIES)) {
@@ -28,7 +43,11 @@ describe('part library', () => {
 
         it(`${tag}: positions and extents are on the ${GRID}u grid`, () => {
           const numbers = [
-            ...(family.name === 'magazine' && params.profile === 'smg' ? [] : def.solids.flatMap((s) => [...s.box.center, ...s.box.half])),
+            ...def.solids.flatMap((s) =>
+              s.kind === 'box' && !(family.name === 'magazine' && params.profile === 'smg')
+                ? [...s.box.center, ...s.box.half]
+                : [],
+            ),
             ...def.keepOuts.flatMap((k) => [...k.box.center, ...k.box.half]),
             ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
             ...def.axes.flatMap((a) => [...a.origin]),
@@ -44,7 +63,7 @@ describe('part library', () => {
             expect(length(cross(p.normal, p.up))).toBeCloseTo(1);
           }
           expect(new Set(def.ports.map((p) => p.id)).size).toBe(def.ports.length);
-          expect(def.solids.every((s) => s.box.half.every((h) => h > 0))).toBe(true);
+          expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
         });
       }
     });

@@ -1,8 +1,8 @@
 // Feasibility rules (PROJECT.md §1). Each rule checks a resolved assembly and
 // returns readable issues; none of them simulates anything.
 
-import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
-import { penetration, worldBox } from './geometry.ts';
+import { INTERFACE_TOLERANCE_BY_MOUNT, MAIN_AXIS, TOLERANCE } from './conventions.ts';
+import { penetrationWorld, worldBox, worldSolid, type WorldSolid } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import { angleBetween, applyDir, applyPoint, cross, length, sub } from './math.ts';
 import { connectionMismatch, type Resolved } from './resolve.ts';
@@ -111,23 +111,31 @@ export const axisAlignment: Rule = {
   },
 };
 
-const connectedPairs = (r: Resolved): Set<string> => {
-  const pairs = new Set<string>();
+const connectionAllowances = (r: Resolved): Map<string, number> => {
+  const allowances = new Map<string, number>();
   for (const rc of r.connections) {
-    pairs.add(`${rc.from.part}|${rc.to.part}`);
-    pairs.add(`${rc.to.part}|${rc.from.part}`);
+    const pair = [rc.from.part, rc.to.part].sort().join('|');
+    const allowance = INTERFACE_TOLERANCE_BY_MOUNT[rc.from.port.mount] ?? TOLERANCE.interface;
+    allowances.set(pair, Math.max(allowances.get(pair) ?? 0, allowance));
   }
-  return pairs;
+  return allowances;
 };
 
-/** Worst penetration between any solid of part a and any solid of part b. */
-const worstPenetration = (r: Resolved, a: string, b: string): number => {
-  const ta = r.placed.get(a)!;
-  const tb = r.placed.get(b)!;
+/** Transform every placed solid once per rule check. */
+const placedSolids = (r: Resolved): Map<string, WorldSolid[]> => {
+  const placed = new Map<string, WorldSolid[]>();
+  for (const [part, transform] of r.placed) {
+    placed.set(part, r.defs.get(part)!.solids.map((solid) => worldSolid(transform, solid)));
+  }
+  return placed;
+};
+
+/** Worst penetration between any solid of two parts. */
+const worstPenetration = (a: readonly WorldSolid[], b: readonly WorldSolid[]): number => {
   let worst = Number.NEGATIVE_INFINITY;
-  for (const sa of r.defs.get(a)!.solids) {
-    for (const sb of r.defs.get(b)!.solids) {
-      worst = Math.max(worst, penetration(worldBox(ta, sa.box), worldBox(tb, sb.box)));
+  for (const sa of a) {
+    for (const sb of b) {
+      worst = Math.max(worst, penetrationWorld(sa, sb));
     }
   }
   return worst;
@@ -139,14 +147,15 @@ export const solidOverlap: Rule = {
   title: 'Solids do not overlap',
   check(r) {
     const issues: Issue[] = [];
-    const connected = connectedPairs(r);
+    const allowances = connectionAllowances(r);
+    const solids = placedSolids(r);
     const ids = [...r.placed.keys()];
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
         const a = ids[i]!;
         const b = ids[j]!;
-        const allowed = connected.has(`${a}|${b}`) ? TOLERANCE.interface : TOLERANCE.contact;
-        const depth = worstPenetration(r, a, b);
+        const allowed = allowances.get([a, b].sort().join('|')) ?? TOLERANCE.contact;
+        const depth = worstPenetration(solids.get(a)!, solids.get(b)!);
         if (depth > allowed) {
           issues.push({
             rule: 'solid-overlap',
@@ -167,6 +176,7 @@ export const keepOut: Rule = {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   check(r) {
     const issues: Issue[] = [];
+    const solids = placedSolids(r);
     for (const [owner, ownerT] of r.placed) {
       for (const ko of r.defs.get(owner)!.keepOuts) {
         const koBox = worldBox(ownerT, ko.box);
@@ -181,13 +191,13 @@ export const keepOut: Rule = {
             }
           }
         }
-        for (const [other, otherT] of r.placed) {
+        for (const other of r.placed.keys()) {
           if (allowed.has(other)) {
             continue;
           }
           let worst = Number.NEGATIVE_INFINITY;
-          for (const s of r.defs.get(other)!.solids) {
-            worst = Math.max(worst, penetration(koBox, worldBox(otherT, s.box)));
+          for (const s of solids.get(other)!) {
+            worst = Math.max(worst, penetrationWorld(koBox, s));
           }
           if (worst > TOLERANCE.contact) {
             issues.push({

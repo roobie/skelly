@@ -22,7 +22,7 @@
 import { SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
-import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid } from '../core/schema.ts';
+import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 
 const size: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
 const choice = (...values: string[]): ParamSpec => ({ values, default: values[0]! });
@@ -33,7 +33,13 @@ const NEG_X: Vec3 = [-1, 0, 0];
 const Y: Vec3 = [0, 1, 0];
 const NEG_Y: Vec3 = [0, -1, 0];
 
-const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, box: boxFromMinMax(min, max) });
+const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
+const extrudedPolygon = (id: string, profile: readonly Vec2[], z: readonly [number, number]): Solid => ({
+  id,
+  kind: 'extruded-polygon',
+  profile,
+  z,
+});
 const keepOut = (id: string, min: Vec3, max: Vec3, allowPort?: string): KeepOut => ({
   id,
   kind: id,
@@ -343,8 +349,20 @@ export const grip: PartFamily = {
     const a = (GRIP_ANGLE * Math.PI) / 180;
     return {
       family: 'grip',
-      // Authored upright; the tilted port makes it lean back once mounted.
-      solids: [solid('body', [-1.5, -len, -1.25], [1.5, 0, 1.25])],
+      // The single beveled face is coplanar with the tilted grip mount; the body remains leaned once mounted.
+      solids: [
+        extrudedPolygon(
+          'body',
+          [
+            [-1.5, -len],
+            [1.5, -len],
+            [1.5, 0],
+            [1.25, Math.tan(a) * 1.25],
+            [-1.5, -Math.tan(a) * 1.5],
+          ],
+          [-1.25, 1.25],
+        ),
+      ],
       ports: [
         {
           id: 'top',

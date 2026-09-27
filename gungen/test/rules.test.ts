@@ -86,10 +86,17 @@ describe('rules', () => {
     expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2.5u into the magazine-path volume of lower.']);
   });
 
-  it('solid-overlap: allows directly connected parts to nest a little', () => {
-    // The grip's tilted top corner dips into the receiver by about 0.46u.
+  it('solid-overlap: beveled grip mates without relying on the old global allowance', () => {
     const r = validate(loadFixture('archetype-rifle'), gunDomain);
     expect(r.issues).toEqual([]);
+  });
+
+  it('solid-overlap: mount-specific zero allowance rejects a too-tight clamp', () => {
+    const a = variant('archetype-rifle', (x) => {
+      x.parts.handguard = { family: 'handguard', params: { inner: 'S' } };
+    });
+    const issues = validate(a, gunDomain).issues.filter((issue) => issue.rule === 'solid-overlap');
+    expect(issues.some((issue) => issue.parts.includes('handguard') && issue.parts.includes('barrel'))).toBe(true);
   });
 
   it('domain rules are pluggable: without them, a gripless rifle passes', () => {

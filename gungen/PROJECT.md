@@ -162,7 +162,8 @@ the generator later has something independent to be tested against (§9).
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
 - **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes only),
-  parts, part families, domains, and the JSON assembly format.
+  box and convex extruded-polygon solids, parts, part families, domains, and
+  the JSON assembly format.
 - **Placement** (`src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.
@@ -172,7 +173,7 @@ the generator later has something independent to be tested against (§9).
   | --- | --- |
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
-  | `solid-overlap` | Solids don't overlap. Directly connected parts may nest by up to 0.75u |
+  | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
   | `keep-out` | No solid is inside another part's keep-out volume, except the part attached at the port the volume allows |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
@@ -180,18 +181,19 @@ the generator later has something independent to be tested against (§9).
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
 - **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
-  barrel, handguard, grip, magazine, stock and sight, built from boxes. The handguard can clamp to the barrel as
-  well as the receiver, which creates the loop. There are 7 mount types, not
-  the 3–4 first planned: each socket needs its own type so a stock can't go
-  in a grip socket.
+  barrel, handguard, grip, magazine, stock and sight, built from boxes plus
+  the grip's convex extruded profile. The handguard can clamp to the barrel as
+  well as the receiver, which creates the loop. There are 11 mount types: each
+  socket needs its own type so a stock can't go in a grip socket.
 - **Keep-out volumes:** ejection path, trigger finger, magazine insertion
   path, charging handle travel (receiver); sight line (sight); muzzle
   (barrel).
 - **Fixtures** (`fixtures/`): one valid assembly and one broken assembly per
   rule. Each file lists the rules it is expected to fail in `expect`, and the
   tests check each one fails exactly those.
-- **Viewer** (`src/viewer/`): solids, port frames (normal and up arrows),
-  keep-out volumes and the bore line, with failing parts and volumes in red.
+- **Viewer** (`src/viewer/`): box and extruded-profile solids, port frames
+  (normal and up arrows), keep-out volumes and the bore line, with failing
+  parts and volumes in red.
   Click an issue to isolate it; hover to name what's under the pointer; open
   your own assembly JSON.
 
@@ -372,16 +374,46 @@ it also means their variety comes from proportions, not layout.
 
 ### Known gaps
 
-- **A clamped handguard that's too tight passes.** Directly connected parts
-  may nest by up to 0.75u (needed for the grip's tilted corner), and a
-  handguard clamped to the barrel counts as directly connected. Found while
-  writing templates, which avoid the `S` inner size for now. The fix is an
-  allowance per mount type instead of one global value.
+- **A clamped handguard that's too tight passes.** *(Fixed in Milestone 2.1.)*
+  Interface allowances are now mount-specific: grip is 0.01u for numeric
+  tolerance, clamp is 0u, and other mounts retain the 0.75u fallback. The `S`
+  inner handguard on a larger barrel is now rejected at the clamp.
 - **Distinct builds are counted by file, not shape.** Two builds whose files
   differ but look the same count as two, e.g. a clamped and a floating
   handguard of the same length.
 - **Retrying is linear** (seed, seed + 1, …). Fine at these valid rates; a
   template with a low valid rate would need smarter search.
+
+## Milestone 2.1: convex solids and fitted grip interface
+
+**Status:** done.
+
+- `Solid` is a discriminated union of boxes and convex polygons extruded along
+  Z. Polygon profiles are checked for finite coordinates, non-zero area,
+  counter-clockwise winding, convexity, self-intersection, and non-empty
+  extrusion depth. Invalid shapes produce a `structure` issue and are omitted
+  from rendering/collision checks. Keep-out volumes remain boxes.
+- SAT collision checks handle convex polyhedra while preserving the box fast
+  path's signed-overlap result. A 300-pair deterministic randomized test
+  compares both paths within `1e-9`.
+- The grip is one five-vertex extruded profile; its beveled mating edge follows
+  the angled grip mount. The viewer renders it as one Three.js extruded mesh.
+- Mount-specific interface tolerance removes the grip's former 0.75u
+  dependency and makes an over-tight handguard clamp fail.
+
+Generator valid-rate comparison (`npm run stats`, 1000 seeds/template):
+
+| Template | Before | After | Change |
+| --- | ---: | ---: | --- |
+| rifle | 80.6% | 80.6% | none |
+| smg | 100% | 100% | none |
+| bolt-rifle | 76.3% | 76.3% | none |
+| bolt-rifle-box | 100% | 100% | none |
+| pump-shotgun | 100% | 100% | none |
+| bullpup | 100% | 100% | none |
+
+Rates are unchanged: the existing templates use only handguard sizes that
+clear the barrel, and the new grip bevel fits without increasing overlaps.
 
 ## Running it
 

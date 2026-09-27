@@ -33,10 +33,24 @@ export interface PortDef {
   readonly slots?: { readonly count: number; readonly pitch: number };
 }
 
-export interface Solid {
+export interface BoxSolid {
   readonly id: string;
+  readonly kind: 'box';
   readonly box: Box;
 }
+
+export type Vec2 = readonly [number, number];
+
+export interface ExtrudedPolygonSolid {
+  readonly id: string;
+  readonly kind: 'extruded-polygon';
+  /** Convex profile in local X–Y coordinates, listed counter-clockwise. */
+  readonly profile: readonly Vec2[];
+  /** Local Z bounds of the extrusion. */
+  readonly z: readonly [number, number];
+}
+
+export type Solid = BoxSolid | ExtrudedPolygonSolid;
 
 /** Space that must stay empty (PROJECT.md §3). */
 export interface KeepOut {
