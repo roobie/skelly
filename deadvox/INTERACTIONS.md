@@ -330,13 +330,13 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 ## Order of work
 
-1. **Now:** ADR 0001. Move the spawn menu and the death screen to lit-html
-   first, as small examples of the pattern; the inventory screen moves the next
-   time it changes substantially.
+1. **ADR 0001:** the spawn menu and the death screen moved to lit-html as
+   small examples of the pattern (done), then the credits and the HUD.
 2. **1.8, rest and sleep:** build the long action as the general mechanism, with
    rest and sleep as its first users.
 3. **1.9, saves:** long actions and item state as plain data, as above.
-4. **Slice 2:** the reach query and `options`, recipes in the schema and the
+4. **Slice 2:** first, port the inventory screen to lit-html, with its
+   behaviour unchanged, which completes ADR 0001. Then the reach query and `options`, recipes in the schema and the
    validator, the planner, crafting and disassembly as long actions, the
    crafting panel, and workbenches as block entities with `workstation`.
 5. **Slice 5:** `controls`, `process` and `power` on block entities, settling on
