@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMenuOpeningKey, nextMenuCursor, worldActionForKey } from '../src/game/input.ts';
+import { Input, isMenuOpeningKey, nextMenuCursor, worldActionForKey } from '../src/game/input.ts';
 
 describe('menu input', () => {
   it('identifies G as the opening key so its text default can be cancelled', () => {
@@ -13,6 +13,43 @@ describe('menu input', () => {
     expect(worldActionForKey('KeyF')).toBe('interact');
     expect(worldActionForKey('KeyQ')).toBeUndefined();
     expect(worldActionForKey('KeyE')).toBeUndefined();
+  });
+
+  it('moves only the menu cursor while pointer lock is held', () => {
+    const descriptors = ['document', 'innerWidth', 'innerHeight', 'addEventListener'].map(
+      (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+    );
+    const target = {} as HTMLElement;
+    let mousemove: ((event: MouseEvent) => void) | undefined;
+    const documentStub = {
+      pointerLockElement: target,
+      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+        mousemove = listener as (event: MouseEvent) => void;
+      },
+    } as unknown as Document;
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: documentStub });
+    Object.defineProperty(globalThis, 'innerWidth', { configurable: true, value: 640 });
+    Object.defineProperty(globalThis, 'innerHeight', { configurable: true, value: 480 });
+    Object.defineProperty(globalThis, 'addEventListener', { configurable: true, value: () => undefined });
+    try {
+      const input = new Input(target);
+      input.menuPointer = true;
+      input.yaw = 0.7;
+      input.pitch = -0.3;
+      const event = new Event('mousemove') as MouseEvent;
+      Object.defineProperties(event, { movementX: { value: 24 }, movementY: { value: -12 } });
+      mousemove?.(event);
+      expect({ x: input.cursorX, y: input.cursorY }).toEqual({ x: 344, y: 228 });
+      expect({ yaw: input.yaw, pitch: input.pitch }).toEqual({ yaw: 0.7, pitch: -0.3 });
+    } finally {
+      for (const [key, descriptor] of descriptors) {
+        if (descriptor) {
+          Object.defineProperty(globalThis, key, descriptor);
+        } else {
+          Reflect.deleteProperty(globalThis, key);
+        }
+      }
+    }
   });
 
   it('moves the menu cursor and clamps it to the viewport', () => {

@@ -106,8 +106,6 @@ export class SpawnMenu {
     if (input) {
       input.value = this.filter;
     }
-    input?.focus();
-    input?.select();
   }
 
   close(): void {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
+import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
+import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
+import type { DebugHooks } from '../src/game/debugInterface.ts';
 
 const { registry } = buildRegistry([
   {
@@ -49,5 +51,38 @@ describe('spawnMenuViewModel', () => {
     const vm = spawnMenuViewModel(registry, 'rag', 'Rag is at your feet');
     expect(vm.filter).toBe('rag');
     expect(vm.status).toBe('Rag is at your feet');
+  });
+
+  it('leaves the search field empty when the G keydown opens the spawn menu', () => {
+    const field = { value: 'g' };
+    const root = { hidden: true, querySelector: () => field } as unknown as HTMLElement;
+    const menu = new SpawnMenu(
+      registry,
+      () => 'spawned',
+      () => undefined,
+    );
+    menu.setRoot(root);
+    const sim = {
+      godMode: false,
+      compression: { active: false, stop: () => undefined },
+      emit: () => undefined,
+      hurt: () => undefined,
+    };
+    const hooks = { sim, compress: () => undefined } as unknown as DebugHooks;
+    const actions = createDebugActions({
+      hooks,
+      build: { on: false, toggle: () => undefined },
+      spawnMenu: menu,
+      toggleSpawn: () => menu.open(),
+      isNoclip: () => false,
+      toggleNoclip: () => undefined,
+      isDanger: () => false,
+      toggleDanger: () => undefined,
+      spawnShambler: () => undefined,
+    });
+
+    expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);
+    expect(menu.isOpen).toBe(true);
+    expect(field.value).toBe('');
   });
 });
