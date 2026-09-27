@@ -224,10 +224,15 @@ describe('shambler perception', () => {
     expect(atAngle(70)).toBe(false);
     expect(sees([10, 2, 0], 12, false, (x, y, z) => x === 4 && y === 4 && z === 0)).toBe(false);
     const opaque = (x: number, y: number, _z: number) => x === 4 && y === 4;
+    const muffledHearingEdge = (movement: 'jog' | 'sprint') =>
+      (SHAMBLER.hearingRange[movement] * SHAMBLER.hearing * SHAMBLER.hearingModel.farMultiplier -
+        SHAMBLER.hearingModel.wallRunCostMetres) /
+      BLOCK_SIZE;
     expect(sees([10, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
-    expect(sees([13, 2, 0], 12, false, opaque, 'jogging')).toBe(false);
-    expect(sees([29, 2, 0], 12, false, opaque, 'sprinting')).toBe(true);
-    expect(sees([34, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
+    expect(sees([muffledHearingEdge('jog') - 1, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
+    expect(sees([muffledHearingEdge('jog') + 1, 2, 0], 12, false, opaque, 'jogging')).toBe(false);
+    expect(sees([muffledHearingEdge('sprint') - 1, 2, 0], 12, false, opaque, 'sprinting')).toBe(true);
+    expect(sees([muffledHearingEdge('sprint') + 1, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
     const hears = (at: Vec3, movement: PlayerSense['movement'], wall: SolidAt = () => false) =>
       perceivePlayer({
         zombie: { ...SHAMBLER, sight: 1, nightSight: 1 },
@@ -240,7 +245,10 @@ describe('shambler perception', () => {
       });
     expect(hears([5, 2, 0], 'walking')).toBe(true);
     expect(hears([7, 2, 0], 'walking')).toBe(true);
-    expect(hears([10, 2, 0], 'walking')).toBe(false);
+    const walkingFarEdge =
+      (SHAMBLER.hearingRange.walk * SHAMBLER.hearing * SHAMBLER.hearingModel.farMultiplier) / BLOCK_SIZE;
+    expect(hears([walkingFarEdge - 1, 2, 0], 'walking')).toBe(true);
+    expect(hears([walkingFarEdge + 1, 2, 0], 'walking')).toBe(false);
     expect(hears([5, 2, 0], 'still')).toBe(false);
   });
 });
@@ -610,7 +618,7 @@ describe('shambler scenarios', () => {
     for (let tick = 0; tick < 20 * 20; tick++) {
       system.tick(1 / 20);
       for (const id of ids) {
-        expect(['chase', 'investigate', 'return']).toContain(system.store.get(id)!.mode);
+        expect(['chase', 'investigate', 'search', 'return']).toContain(system.store.get(id)!.mode);
       }
       expect(terrainBodyViolations(bodies, stairs), `tick ${tick}`).toEqual([]);
     }
@@ -1040,6 +1048,79 @@ describe('lurching chase', () => {
   });
 });
 
+describe('facing-directed movement', () => {
+  type TravelMode = 'stroll' | 'investigate' | 'return' | 'chase';
+  const createScenario = (mode: TravelMode) => {
+    let sensed = player(mode === 'chase' ? [10, 1, 0] : [1000, 1, 1000]);
+    const type = { ...SHAMBLER, sight: 100, nightSight: 100, sightCone: 180 };
+    const system = new ZombieSystem(senses(() => sensed));
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.body.onGround = true;
+    switch (mode) {
+      case 'stroll':
+        zombie.mode = 'stroll';
+        zombie.modeTimer = 10;
+        zombie.strollHeading = [0, 0, 1];
+        break;
+      case 'investigate':
+        zombie.mode = 'investigate';
+        zombie.investigationTier = 'near';
+        zombie.lastPerceived = [10, 1, 0];
+        break;
+      case 'return':
+        zombie.body.pos = [10, 1, 0];
+        zombie.mode = 'return';
+        break;
+      default:
+        break;
+    }
+    return {
+      system,
+      zombie,
+      reverseTarget: () => {
+        sensed = player([-10, 1, 0]);
+      },
+    };
+  };
+  const velocityFacingErrorDegrees = (zombie: ReturnType<ZombieSystem['store']['get']>): number | undefined => {
+    if (!zombie || Math.hypot(zombie.body.vel[0], zombie.body.vel[2]) < 0.01) {
+      return undefined;
+    }
+    const velocityYaw = Math.atan2(zombie.body.vel[0], zombie.body.vel[2]);
+    const facingYaw = Math.atan2(zombie.facing[0], zombie.facing[2]);
+    const error = Math.abs(Math.atan2(Math.sin(velocityYaw - facingYaw), Math.cos(velocityYaw - facingYaw)));
+    return (error * 180) / Math.PI;
+  };
+  const exercise = (mode: TravelMode): { observed: Set<string>; errors: number[] } => {
+    const { system, zombie, reverseTarget } = createScenario(mode);
+    const observed = new Set<string>();
+    const errors: number[] = [];
+    for (let tick = 0; tick < 80; tick++) {
+      if (mode === 'chase' && tick === 20) {
+        reverseTarget();
+      }
+      system.tick(1 / 20);
+      observed.add(zombie.mode);
+      const error = velocityFacingErrorDegrees(zombie);
+      if (error !== undefined) {
+        errors.push(error);
+      }
+    }
+    return { observed, errors };
+  };
+
+  it('keeps velocity within two degrees of facing through a sharp chase reversal and every travel mode', () => {
+    for (const mode of ['stroll', 'investigate', 'return', 'chase'] as const) {
+      const result = exercise(mode);
+      expect(result.observed.has(mode)).toBe(true);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(Math.max(...result.errors)).toBeLessThanOrEqual(2);
+    }
+    expect(exercise('investigate').observed.has('search')).toBe(true);
+  });
+});
+
 describe('two-tier shambler hearing', () => {
   const hearing = (seed: number, from: Vec3, source: PlayerSense, isSolid: SolidAt = () => false) =>
     hearPlayer({
@@ -1053,6 +1134,7 @@ describe('two-tier shambler hearing', () => {
 
   it('reports the exact near source and bounded, approximate far bearings over fifty seeds', () => {
     const from: Vec3 = [0, 1, 0];
+    expect(SHAMBLER.hearingModel.farMultiplier).toBe(2);
     const near = hearing(1, from, player([20, 1, 0], [-1, 0, 0], 'sprinting'));
     expect(near?.tier).toBe('near');
     expect(near?.target).toEqual([20, 1, 0]);
@@ -1067,8 +1149,21 @@ describe('two-tier shambler hearing', () => {
       const error = Math.abs(
         Math.atan2(Math.sin(guessedBearing - actualBearing), Math.cos(guessedBearing - actualBearing)),
       );
-      expect(error).toBeLessThanOrEqual(0.61);
+      expect(error).toBeLessThanOrEqual(SHAMBLER.hearingModel.bearingErrorRadians);
     }
+    const sprintRange = SHAMBLER.hearingRange.sprint * SHAMBLER.hearing;
+    const withinFarLimit = hearing(
+      51,
+      from,
+      player([(sprintRange * (SHAMBLER.hearingModel.farMultiplier - 0.1)) / BLOCK_SIZE, 1, 0], [-1, 0, 0], 'sprinting'),
+    );
+    const outsideFarLimit = hearing(
+      52,
+      from,
+      player([(sprintRange * (SHAMBLER.hearingModel.farMultiplier + 0.1)) / BLOCK_SIZE, 1, 0], [-1, 0, 0], 'sprinting'),
+    );
+    expect(withinFarLimit?.tier).toBe('far');
+    expect(outsideFarLimit).toBeUndefined();
   });
 
   it('counts each solid run once and lets a wall demote a near noise to far', () => {
@@ -1114,6 +1209,100 @@ describe('two-tier shambler hearing', () => {
     expect(curious.mode).toBe('investigate');
     expect(curious.investigationTier).toBe('near');
     expect(curious.lastPerceived).toEqual([4, 1, 0]);
+  });
+
+  it('lets a far noise during search restart investigation from a new bearing', () => {
+    const distant = player([50, 1, 0], [-1, 0, 0], 'sprinting');
+    const system = new ZombieSystem({ ...senses(() => distant), seed: 27 });
+    const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.body.onGround = true;
+    zombie.mode = 'search';
+    zombie.searchAnchor = [0, 1, 0];
+    zombie.searchTimer = 30;
+    zombie.searchStrolling = false;
+    const before = [...zombie.body.pos] as Vec3;
+    system.tick(1 / 20);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.investigationTier).toBe('far');
+    expect(zombie.lastPerceived).not.toEqual(distant.pos);
+    expect(metres(zombie.lastPerceived!, before)).toBeCloseTo(SHAMBLER.hearingModel.investigationDistanceMetres, 5);
+  });
+
+  const advanceToMode = (
+    system: ZombieSystem,
+    zombie: NonNullable<ReturnType<ZombieSystem['store']['get']>>,
+    mode: string,
+    maxTicks: number,
+  ): boolean => {
+    for (let tick = 0; tick < maxTicks && zombie.mode !== mode; tick++) {
+      system.tick(1 / 20);
+    }
+    return zombie.mode === mode;
+  };
+  const stayInsideSearch = (
+    system: ZombieSystem,
+    zombie: NonNullable<ReturnType<ZombieSystem['store']['get']>>,
+    ticks: number,
+    radius: number,
+  ): boolean => {
+    let sawStroll = false;
+    for (let tick = 0; tick < ticks; tick++) {
+      system.tick(1 / 20);
+      if (zombie.mode !== 'search' || metres(zombie.body.pos, zombie.searchAnchor!) > radius + 0.01) {
+        return false;
+      }
+      sawStroll ||= zombie.searchStrolling;
+    }
+    return sawStroll;
+  };
+  const finishSearch = (
+    system: ZombieSystem,
+    zombie: NonNullable<ReturnType<ZombieSystem['store']['get']>>,
+    maxTicks: number,
+    radius: number,
+  ): boolean => {
+    for (let tick = 0; tick < maxTicks && zombie.mode === 'search'; tick++) {
+      system.tick(1 / 20);
+      if (zombie.mode === 'search' && metres(zombie.body.pos, zombie.searchAnchor!) > radius + 0.01) {
+        return false;
+      }
+    }
+    return zombie.mode === 'return';
+  };
+
+  it('searches around a near sound for its data duration and restarts around a second exact sound', () => {
+    let noise = player([20, 1, 0], [-1, 0, 0], 'sprinting');
+    const system = new ZombieSystem({ ...senses(() => noise), seed: 113 });
+    const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    const zombie = system.store.get(system.add(type, [0, 1, 0]))!;
+    zombie.body.onGround = true;
+    expect(advanceToMode(system, zombie, 'investigate', 200)).toBe(true);
+    noise = { ...noise, movement: 'still' };
+    expect(advanceToMode(system, zombie, 'search', 200)).toBe(true);
+    expect(zombie.searchAnchor).toEqual([20, 1, 0]);
+    for (let tick = 0; tick < 20; tick++) {
+      system.tick(1 / 20);
+      expect(zombie.mode).toBe('search');
+    }
+
+    noise = player([24, 1, 0], [-1, 0, 0], 'sprinting');
+    system.tick(1 / 20);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.investigationTier).toBe('near');
+    expect(zombie.lastPerceived).toEqual(noise.pos);
+    noise = { ...noise, movement: 'still' };
+    expect(advanceToMode(system, zombie, 'search', 200)).toBe(true);
+    expect(zombie.searchAnchor).toEqual([24, 1, 0]);
+    expect(zombie.searchTimer).toBeGreaterThanOrEqual(type.hearingModel.searchSeconds.min);
+    expect(zombie.searchTimer).toBeLessThanOrEqual(type.hearingModel.searchSeconds.max);
+
+    const minSearchTicks = Math.floor((type.hearingModel.searchSeconds.min - 0.1) * 20);
+    expect(stayInsideSearch(system, zombie, minSearchTicks, type.hearingModel.searchRadiusMetres)).toBe(true);
+    expect(
+      finishSearch(system, zombie, type.hearingModel.searchSeconds.max * 20 + 5, type.hearingModel.searchRadiusMetres),
+    ).toBe(true);
+    expect(advanceToMode(system, zombie, 'idle', 20 * 20)).toBe(true);
   });
 });
 

@@ -309,12 +309,25 @@ export const ZombieSchema = strictObject({
   /** 1 is normal hearing. */
   hearing: NonNegative,
   hearingRange: strictObject({ walk: Positive, jog: Positive, sprint: Positive }),
-  hearingModel: strictObject({
-    farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
-    bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
-    investigationDistanceMetres: Positive,
-    wallRunCostMetres: NonNegative,
-  }),
+  hearingModel: pipe(
+    strictObject({
+      farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
+      bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
+      investigationDistanceMetres: Positive,
+      wallRunCostMetres: NonNegative,
+      searchSeconds: strictObject({ min: Positive, max: Positive }),
+      searchRadiusMetres: Positive,
+      searchStrollSeconds: strictObject({ min: Positive, max: Positive }),
+    }),
+    check(
+      (model) => model.searchSeconds.min <= model.searchSeconds.max,
+      'minimum search duration must not exceed maximum',
+    ),
+    check(
+      (model) => model.searchStrollSeconds.min <= model.searchStrollSeconds.max,
+      'minimum search stroll must not exceed maximum',
+    ),
+  ),
   chaseMotion: pipe(
     strictObject({
       swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),

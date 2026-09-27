@@ -6,7 +6,7 @@ import { Rng } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
-export type ZombieMode = 'idle' | 'stroll' | 'chase' | 'investigate' | 'return';
+export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
 export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4 } as const;
 
@@ -20,6 +20,10 @@ export interface Zombie {
   /** Per-body behavior stream; draws never perturb another body. */
   behaviorRng: Rng;
   modeTimer: number;
+  searchAnchor?: Vec3 | undefined;
+  searchTimer: number;
+  searchStrolling: boolean;
+  searchHeading: Vec3;
   strollHeading: Vec3;
   horizontalSpeed: number;
   bodyLookTarget: number;
@@ -252,9 +256,35 @@ export class ZombieSystem {
     this.store = options.store ?? new MapEntityStore<Zombie>();
   }
 
+  private tickLookAround(zombie: Zombie, dt: number): void {
+    const { type, behaviorRng: rng } = zombie;
+    zombie.lookTimer -= dt;
+    if (zombie.lookTimer <= 0) {
+      zombie.bodyLookTarget =
+        angleOf(zombie.facing) +
+        rng.range(-type.wander.bodyLookArcDegrees, type.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
+      zombie.headYawTarget =
+        rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
+      zombie.lookTimer = inRange(rng, type.wander.lookIntervalSeconds);
+    }
+    zombie.facing = turnToward(
+      zombie.facing,
+      headingAt(zombie.bodyLookTarget),
+      (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
+    );
+    zombie.headYaw = approachAngle(
+      zombie.headYaw,
+      zombie.headYawTarget,
+      (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
+    );
+  }
+
   private beginIdle(zombie: Zombie): void {
     zombie.mode = 'idle';
     zombie.investigationTier = undefined;
+    zombie.searchAnchor = undefined;
+    zombie.searchTimer = 0;
+    zombie.searchStrolling = false;
     zombie.modeTimer = inRange(zombie.behaviorRng, zombie.type.wander.idleSeconds);
     zombie.lookTimer = 0;
     zombie.bodyLookTarget = angleOf(zombie.facing);
@@ -281,8 +311,53 @@ export class ZombieSystem {
     }
     zombie.mode = 'stroll';
     zombie.investigationTier = undefined;
+    zombie.searchAnchor = undefined;
+    zombie.searchTimer = 0;
+    zombie.searchStrolling = false;
     zombie.modeTimer = duration;
     zombie.strollHeading = heading;
+    zombie.bodyLookTarget = angleOf(heading);
+    zombie.headYawTarget = 0;
+  }
+
+  private beginSearch(zombie: Zombie): void {
+    const { type, behaviorRng: rng } = zombie;
+    zombie.mode = 'search';
+    zombie.investigationTier = undefined;
+    zombie.searchAnchor = copy(zombie.lastPerceived ?? zombie.body.pos);
+    zombie.searchTimer = inRange(rng, type.hearingModel.searchSeconds);
+    zombie.searchStrolling = false;
+    zombie.searchHeading = copy(zombie.facing);
+    zombie.modeTimer = inRange(rng, type.wander.idleSeconds);
+    zombie.lookTimer = 0;
+    zombie.bodyLookTarget = angleOf(zombie.facing);
+    zombie.headYawTarget = 0;
+    zombie.horizontalSpeed = 0;
+    zombie.body.vel[0] = 0;
+    zombie.body.vel[2] = 0;
+  }
+
+  private beginSearchStroll(zombie: Zombie): void {
+    const { type, body, searchAnchor, behaviorRng: rng } = zombie;
+    if (!searchAnchor) {
+      return;
+    }
+    const duration = Math.min(inRange(rng, type.hearingModel.searchStrollSeconds), zombie.searchTimer);
+    let heading = headingAt(rng.range(-Math.PI, Math.PI));
+    const endpoint: Vec3 = [
+      body.pos[0] + (heading[0] * type.speed.wander * duration) / this.options.blockSize,
+      body.pos[1],
+      body.pos[2] + (heading[2] * type.speed.wander * duration) / this.options.blockSize,
+    ];
+    if (horizontalDistance(endpoint, searchAnchor) * this.options.blockSize > type.hearingModel.searchRadiusMetres) {
+      heading = unit([searchAnchor[0] - body.pos[0], 0, searchAnchor[2] - body.pos[2]]);
+    }
+    if (Math.hypot(...heading) === 0) {
+      heading = headingAt(rng.range(-Math.PI, Math.PI));
+    }
+    zombie.searchStrolling = true;
+    zombie.searchHeading = heading;
+    zombie.modeTimer = duration;
     zombie.bodyLookTarget = angleOf(heading);
     zombie.headYawTarget = 0;
   }
@@ -355,6 +430,10 @@ export class ZombieSystem {
       investigationTier: undefined,
       behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
       modeTimer: 0,
+      searchAnchor: undefined,
+      searchTimer: 0,
+      searchStrolling: false,
+      searchHeading: copy(direction),
       strollHeading: copy(direction),
       horizontalSpeed: 0,
       bodyLookTarget: angleOf(direction),
@@ -414,18 +493,34 @@ export class ZombieSystem {
       if (sees) {
         zombie.mode = 'chase';
         zombie.investigationTier = undefined;
+        zombie.searchAnchor = undefined;
+        zombie.searchTimer = 0;
+        zombie.searchStrolling = false;
         zombie.lastPerceived = copy(player.pos);
       } else if (tier === 'near') {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'near';
+        zombie.searchAnchor = undefined;
+        zombie.searchTimer = 0;
+        zombie.searchStrolling = false;
         zombie.lastPerceived = copy(player.pos);
-      } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll')) {
+      } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'far';
+        zombie.searchAnchor = undefined;
+        zombie.searchTimer = 0;
+        zombie.searchStrolling = false;
         zombie.lastPerceived = farBearingTarget({ ...hearingInput, rng });
       } else if (zombie.mode === 'chase') {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'near';
+      }
+
+      if (
+        zombie.mode === 'investigate' &&
+        horizontalDistance(zombie.lastPerceived ?? zombie.home, pos) * blockSize <= 1
+      ) {
+        this.beginSearch(zombie);
       }
 
       let target: Vec3 = zombie.home;
@@ -436,25 +531,7 @@ export class ZombieSystem {
       const stroll = zombie.mode === 'stroll';
       if (zombie.mode === 'idle') {
         zombie.modeTimer -= dt;
-        zombie.lookTimer -= dt;
-        if (zombie.lookTimer <= 0) {
-          zombie.bodyLookTarget =
-            angleOf(zombie.facing) +
-            rng.range(-type.wander.bodyLookArcDegrees, type.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
-          zombie.headYawTarget =
-            rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
-          zombie.lookTimer = inRange(rng, type.wander.lookIntervalSeconds);
-        }
-        zombie.facing = turnToward(
-          zombie.facing,
-          headingAt(zombie.bodyLookTarget),
-          (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
-        );
-        zombie.headYaw = approachAngle(
-          zombie.headYaw,
-          zombie.headYawTarget,
-          (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
-        );
+        this.tickLookAround(zombie, dt);
         if (zombie.modeTimer <= 0) {
           this.beginStroll(zombie);
         }
@@ -467,19 +544,58 @@ export class ZombieSystem {
           direction,
           (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
         );
+        direction = zombie.facing;
         zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
+      } else if (zombie.mode === 'search') {
+        zombie.searchTimer -= dt;
+        if (zombie.searchTimer <= 0) {
+          zombie.mode = 'return';
+          zombie.searchAnchor = undefined;
+          zombie.searchStrolling = false;
+          target = zombie.home;
+          direction = unit([target[0] - pos[0], 0, target[2] - pos[2]]);
+          zombie.facing = turnToward(
+            zombie.facing,
+            direction,
+            (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
+          );
+          direction = zombie.facing;
+          desiredSpeed = type.speed.wander;
+        } else if (zombie.searchStrolling) {
+          zombie.modeTimer -= dt;
+          if (zombie.modeTimer <= 0) {
+            zombie.searchStrolling = false;
+            zombie.modeTimer = inRange(rng, type.wander.idleSeconds);
+            this.tickLookAround(zombie, dt);
+          } else {
+            direction = zombie.searchHeading;
+            desiredSpeed = type.speed.wander;
+            zombie.facing = turnToward(
+              zombie.facing,
+              direction,
+              (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
+            );
+            direction = zombie.facing;
+            zombie.headYaw = approachAngle(
+              zombie.headYaw,
+              0,
+              (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
+            );
+          }
+        } else {
+          zombie.modeTimer -= dt;
+          this.tickLookAround(zombie, dt);
+          if (zombie.modeTimer <= 0) {
+            this.beginSearchStroll(zombie);
+          }
+        }
       } else {
         if (zombie.mode === 'chase') {
           target = player.pos;
         } else if (zombie.mode === 'investigate') {
           target = zombie.lastPerceived ?? zombie.home;
         }
-        let metresToTarget = horizontalDistance(target, pos) * blockSize;
-        if (zombie.mode === 'investigate' && metresToTarget <= 1) {
-          zombie.mode = 'return';
-          target = zombie.home;
-          metresToTarget = horizontalDistance(target, pos) * blockSize;
-        }
+        const metresToTarget = horizontalDistance(target, pos) * blockSize;
         returnArrived = zombie.mode === 'return' && metresToTarget < 0.4;
         direction = unit([target[0] - pos[0], 0, target[2] - pos[2]]);
         const moving = returnArrived || metresToTarget > (zombie.mode === 'chase' ? type.attack.reach * 0.9 : 0.25);
@@ -497,6 +613,7 @@ export class ZombieSystem {
             direction,
             (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
           );
+          direction = zombie.facing;
         } else {
           direction = [0, 0, 0];
         }
@@ -509,6 +626,15 @@ export class ZombieSystem {
           ? type.chaseMotion.stumbleDeceleration
           : type.wander.movementAcceleration;
       zombie.horizontalSpeed = approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt);
+      if (zombie.mode === 'search' && zombie.searchStrolling && zombie.searchAnchor) {
+        const radius = horizontalDistance(pos, zombie.searchAnchor) * blockSize;
+        const away = unit([pos[0] - zombie.searchAnchor[0], 0, pos[2] - zombie.searchAnchor[2]]);
+        const outward = zombie.facing[0] * away[0] + zombie.facing[2] * away[2];
+        if (outward > 0) {
+          const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
+          zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, remaining / (dt * outward));
+        }
+      }
       zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
       zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
       if (
@@ -573,6 +699,13 @@ export class ZombieSystem {
       }
       if (stroll && zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
         this.beginIdle(zombie);
+      }
+      if (zombie.mode === 'search' && zombie.searchStrolling && zombie.horizontalSpeed > 0.01) {
+        const requested = zombie.horizontalSpeed * dt;
+        if (travelled + 1e-4 < requested * 0.1) {
+          zombie.searchStrolling = false;
+          zombie.modeTimer = inRange(rng, type.wander.idleSeconds);
+        }
       }
 
       if (

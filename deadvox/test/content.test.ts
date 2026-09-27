@@ -19,6 +19,16 @@ describe('content', () => {
     }
   });
 
+  it('validates the shambler search-duration range', () => {
+    const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombiePack.data) as {
+      zombies: Array<{ hearingModel: { searchSeconds: { min: number; max: number } } }>;
+    };
+    data.zombies[0]!.hearingModel.searchSeconds = { min: 51, max: 50 };
+    const issues = validateContent({ source: zombiePack.source, data });
+    expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
+  });
+
   it('lets a later file override a block without changing its runtime id', () => {
     const mod = {
       source: 'mod.json',
@@ -194,10 +204,13 @@ describe('content references', () => {
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             hearingModel: {
-              farMultiplier: 1.5,
+              farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
               wallRunCostMetres: 6,
+              searchSeconds: { min: 40, max: 50 },
+              searchRadiusMetres: 4,
+              searchStrollSeconds: { min: 1, max: 3 },
             },
             chaseMotion: {
               swayDegrees: 25,
