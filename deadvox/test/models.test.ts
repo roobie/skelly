@@ -217,6 +217,26 @@ describe('base pack melee', () => {
     expect(edge.z * 100).toBeLessThanOrEqual(-9);
   });
 
+  it('points the sledgehammer striking face forward', async () => {
+    const face = await heldAnchor('sledgehammer', 'face');
+    expect(face.z * 100).toBeLessThanOrEqual(-7.5);
+  });
+
+  it('points the hand-axe cutting edge forward', async () => {
+    const edge = await heldAnchor('hand_axe', 'edge');
+    expect(edge.z * 100).toBeLessThanOrEqual(-8);
+  });
+
+  it('points the machete cutting edge forward', async () => {
+    const edge = await heldAnchor('machete', 'edge');
+    expect(edge.z * 100).toBeLessThanOrEqual(-3);
+  });
+
+  it('points the pickaxe point forward', async () => {
+    const point = await heldAnchor('pickaxe', 'point');
+    expect(point.z * 100).toBeLessThanOrEqual(-27);
+  });
+
   it('points the crowbar claw forward', async () => {
     const claw = await heldAnchor('crowbar', 'claw');
     expect(claw.z * 100).toBeLessThanOrEqual(-10);
