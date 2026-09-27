@@ -137,12 +137,16 @@ try {
     await send('Input.dispatchKeyEvent', { type: 'keyUp', code, key, windowsVirtualKeyCode: virtualKey });
     await delay(80);
   };
+  const lastKeyEvent = async (code) =>
+    evaluate(`window.__keyEvents.filter((event) => event.code === ${JSON.stringify(code)}).at(-1)`);
 
   await send('Runtime.enable');
   await waitFor(
     () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
     'debug UI mount',
   );
+  const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
+  const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
   await evaluate(`(() => {
     const canvas = document.querySelector('canvas');
     let locked = false;
@@ -163,27 +167,75 @@ try {
       locked = value;
       document.dispatchEvent(new Event('pointerlockchange'));
     };
-    window.__f10Prevented = false;
+    window.__keyEvents = [];
+    const hitTest = document.elementFromPoint.bind(document);
+    document.elementFromPoint = (x, y) => {
+      window.__lastHitTest = { x, y, target: hitTest(x, y) };
+      return window.__lastHitTest.target;
+    };
+    document.addEventListener('click', (event) => {
+      if (event.target !== canvas) {
+        window.__lastForwardedClick = {
+          x: event.clientX,
+          y: event.clientY,
+          target: event.target,
+          hitTest: window.__lastHitTest,
+        };
+      }
+    }, true);
     window.addEventListener('keydown', (event) => {
-      if (event.code === 'F10') setTimeout(() => { window.__f10Prevented = event.defaultPrevented; }, 0);
+      const { code } = event;
+      setTimeout(() => window.__keyEvents.push({ code, defaultPrevented: event.defaultPrevented }), 0);
     });
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
   })()`);
   await delay(150);
+  assert.equal(
+    await evaluate(`(() => {
+      const slots = [...document.querySelectorAll('#quickbar .qb-empty')];
+      return slots.length === 5 && slots.every((slot) => {
+        const text = slot.textContent.toLowerCase();
+        return text.includes('empty') && !text.includes('inventory');
+      });
+    })()`),
+    true,
+    'rendered empty quickbar slots contain no inventory help text',
+  );
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
-  const clickAt = async (selector) => {
+  const clickAt = async (selector, anchor = 'center') => {
+    await evaluate('window.__lastForwardedClick = null');
     const position = await evaluate(`(() => {
       const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      return ${JSON.stringify(anchor)} === 'edge'
+        ? { x: rect.left + 1, y: rect.top + 1 }
+        : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     })()`);
     await evaluate(`(() => {
       const event = new MouseEvent('mousemove', { bubbles: true });
       Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
       document.dispatchEvent(event);
-      document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
     })()`);
     cursor = position;
+    await delay(120);
+    await evaluate(`window.__cursorBeforeClick = (() => {
+      const cursor = document.querySelector('#game-cursor');
+      const rect = cursor.getBoundingClientRect();
+      const style = getComputedStyle(cursor);
+      return {
+        left: rect.left,
+        top: rect.top,
+        hand: cursor.classList.contains('hand'),
+        hitTest: window.__lastHitTest,
+        mask: style.maskImage,
+        background: style.backgroundColor,
+        blend: style.mixBlendMode,
+        rootBlend: getComputedStyle(document.querySelector('#game-cursor-root')).mixBlendMode,
+      };
+    })()`);
+    await evaluate(
+      `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))`,
+    );
     await delay(120);
   };
 
@@ -192,11 +244,79 @@ try {
   assert.equal(await evaluate("!document.querySelector('#inventory').hidden"), true, 'Tab opens inventory');
   await press('Tab', 'Tab', 9);
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'Tab closes inventory');
-  await press('F10', 'F10', 121);
-  assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'F10 opens main menu');
-  assert.equal(await evaluate('window.__f10Prevented'), true, 'F10 keydown is default-prevented');
-  await press('F10', 'F10', 121);
-  assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'F10 closes main menu');
+  assert.equal(
+    await evaluate("document.querySelector('[data-key-binding=mainMenu]').textContent"),
+    keyBindings.mainMenu.label,
+    'help label comes from the key binding table',
+  );
+  await pressBinding(keyBindings.mainMenu);
+  assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key opens main menu');
+  assert.equal(
+    (await lastKeyEvent(keyBindings.mainMenu.code)).defaultPrevented,
+    true,
+    'menu key is consumed by the game',
+  );
+  const clockOption =
+    "[...document.querySelectorAll('#hud-options label')].find((label) => label.textContent.includes('Clock and time compression')).querySelector('input')";
+  const toggleClockOption = `(() => { const input = ${clockOption}; input.checked = !input.checked; input.dispatchEvent(new Event('change', { bubbles: true })); })()`;
+  await evaluate(toggleClockOption);
+  await delay(300);
+  assert.match(
+    await evaluate("document.querySelector('#hud').textContent"),
+    /paused/,
+    'main menu pauses the simulation',
+  );
+  await pressBinding(keyBindings.mainMenu);
+  assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'menu key closes the menu');
+  await delay(300);
+  assert.doesNotMatch(
+    await evaluate("document.querySelector('#hud').textContent"),
+    /paused/,
+    'closing the menu resumes the simulation',
+  );
+  await pressBinding(keyBindings.mainMenu);
+  assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');
+  await evaluate(toggleClockOption);
+  await clickAt('#go', 'edge');
+  const arrowTip = await evaluate(`(() => {
+    const click = window.__lastForwardedClick;
+    const cursor = window.__cursorBeforeClick;
+    return {
+      hand: cursor.hand,
+      x: cursor.left,
+      y: cursor.top,
+      mask: cursor.mask,
+      background: cursor.background,
+      blend: cursor.blend,
+      rootBlend: cursor.rootBlend,
+      hitGo: click.hitTest.target?.closest('#go') === document.querySelector('#go'),
+      hitX: click.hitTest.x,
+      hitY: click.hitTest.y,
+    };
+  })()`);
+  assert.equal(arrowTip.hand, false, 'main-menu cursor uses the standard arrow');
+  assert.match(arrowTip.mask, /cursor\.png/, 'cursor sprite is used as a silhouette mask');
+  assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
+  assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
+  assert.equal(arrowTip.rootBlend, 'difference', 'the cursor layer blends over the canvas');
+  assert.equal(arrowTip.hitGo, true, 'elementFromPoint at the arrow tip targets the known button edge');
+  assert.ok(Math.abs(arrowTip.x - cursor.x) < 0.1, 'standard arrow tip is at cursor x');
+  assert.ok(Math.abs(arrowTip.y - cursor.y) < 0.1, 'standard arrow tip is at cursor y');
+  assert.ok(Math.abs(arrowTip.hitX - cursor.x) < 0.1, 'arrow-tip hit test uses cursor x');
+  assert.ok(Math.abs(arrowTip.hitY - cursor.y) < 0.1, 'arrow-tip hit test uses cursor y');
+  assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'edge click resumes play');
+  const browserKeyEventsBefore = await evaluate('window.__keyEvents.length');
+  await pressBinding(keyBindings.browserMenuBar);
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'browser-owned key does nothing in game',
+  );
+  const browserKeyEvent = await evaluate(
+    `window.__keyEvents.slice(${browserKeyEventsBefore}).find((event) => event.code === ${JSON.stringify(keyBindings.browserMenuBar.code)})`,
+  );
+  assert.ok(browserKeyEvent, 'browser-owned key reaches the page in Chrome');
+  assert.equal(browserKeyEvent.defaultPrevented, false, 'game leaves the browser-owned key unprevented');
   await press('KeyG', 'g', 71);
   assert.equal(await evaluate("!document.querySelector('#spawn').hidden"), true, 'G opens spawn menu');
   assert.equal(
@@ -275,6 +395,24 @@ try {
   await evaluate('window.__setPointerLocked(true)');
   await delay(100);
   await clickAt('#spawn .spawn-list button');
+  const hotspot = await evaluate(`(() => {
+    const cursor = document.querySelector('#game-cursor').getBoundingClientRect();
+    const button = document.querySelector('#spawn .spawn-list button');
+    return {
+      tipX: cursor.left + 4,
+      tipY: cursor.top,
+      hitTest: window.__lastHitTest,
+      forwarded: window.__lastForwardedClick,
+      hitButton: window.__lastHitTest.target?.closest('button') === button,
+    };
+  })()`);
+  assert.ok(Math.abs(hotspot.tipX - cursor.x) < 0.1, 'pointing-hand fingertip sits at cursor x');
+  assert.ok(Math.abs(hotspot.tipY - cursor.y) < 0.1, 'pointing-hand fingertip sits at cursor y');
+  assert.ok(Math.abs(hotspot.hitTest.x - cursor.x) < 0.1, 'elementFromPoint receives cursor tip x');
+  assert.ok(Math.abs(hotspot.hitTest.y - cursor.y) < 0.1, 'elementFromPoint receives cursor tip y');
+  assert.equal(hotspot.hitButton, true, 'elementFromPoint at the tip targets the button');
+  assert.ok(Math.abs(hotspot.forwarded.x - cursor.x) < 1, 'forwarded click x uses the cursor tip');
+  assert.ok(Math.abs(hotspot.forwarded.y - cursor.y) < 1, 'forwarded click y uses the cursor tip');
   assert.notEqual(
     await evaluate("document.querySelector('#spawn .spawn-status').textContent"),
     '',
@@ -347,7 +485,7 @@ try {
     'canvas click resumes after debug-panel unlock',
   );
 
-  await press('F10', 'F10', 121);
+  await pressBinding(keyBindings.mainMenu);
   await clickAt('#go');
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
@@ -355,7 +493,7 @@ try {
     'locked cursor click on continue resumes play',
   );
   process.stdout.write(
-    'UI browser contract passed: G search, pointer-locked menus, cursor clicks/focus, spawn count, V status, unlock, F10, inventory stats.\n',
+    'UI browser contract passed: G search, pointer-locked menus, cursor clicks/focus, spawn count, V status, unlock, menu/browser keys, inventory stats.\n',
   );
 } finally {
   ws?.close();

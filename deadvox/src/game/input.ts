@@ -4,6 +4,12 @@ import type { MoveIntent } from './player.ts';
 
 const SENSITIVITY = 0.0022;
 
+/** UI key bindings and browser-owned keys referenced by the help and browser contract. */
+export const KEY_BINDINGS = {
+  mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
+  browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
+} as const;
+
 export const isMenuOpeningKey = (code: string, debug: boolean, menuOpen: boolean): boolean =>
   code === 'KeyG' && debug && !menuOpen;
 

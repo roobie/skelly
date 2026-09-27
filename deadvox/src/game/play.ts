@@ -38,7 +38,7 @@ import { renderRest } from '../ui/rest.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import type { Engine } from './engine.ts';
-import { Input, isMenuOpeningKey, worldActionForKey } from './input.ts';
+import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './input.ts';
 import { startingLoadout } from './loadout.ts';
 import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer } from './player.ts';
 import { RestController, type RestKind } from './rest.ts';
@@ -549,8 +549,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
   };
 
-  const handleF10Key = (e: KeyboardEvent): boolean => {
-    if (e.code !== 'F10') {
+  const handleMainMenuKey = (e: KeyboardEvent): boolean => {
+    if (e.code !== KEY_BINDINGS.mainMenu.code) {
       return false;
     }
     e.preventDefault();
@@ -584,7 +584,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
 
   globalThis.addEventListener('keydown', (e) => {
-    if (handleF10Key(e)) {
+    if (handleMainMenuKey(e)) {
       return;
     }
     if (e.code === 'Tab') {

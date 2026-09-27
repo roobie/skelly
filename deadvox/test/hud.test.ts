@@ -28,10 +28,10 @@ const kitchen = () => {
 };
 
 describe('quickbarViewModel', () => {
-  it('shows an empty slot as empty, set it in the inventory', () => {
+  it('shows only the key and empty label in an empty slot', () => {
     const vm = quickbarViewModel(new Quickbar(), new Inventory(registry));
     expect(vm.slots).toHaveLength(5);
-    expect(vm.slots[0]).toEqual({ key: '1', filled: false, name: 'empty', where: 'set it in the inventory' });
+    expect(vm.slots[0]).toEqual({ key: '1', filled: false, name: 'empty', where: '' });
   });
 
   it('shows an item in a hand', () => {

@@ -33,15 +33,22 @@ body {
   inset: 0;
   z-index: 1000;
   pointer-events: none;
+  mix-blend-mode: difference;
 }
 #game-cursor {
   position: absolute;
   width: 32px;
   height: 28px;
-  background: url("../content/base/assets/cursors/cursor.png") no-repeat -16px -9px / 32px 56px;
+  margin: 0;
+  background: #fff;
+  mix-blend-mode: difference;
+  -webkit-mask: url("../content/base/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
+  mask: url("../content/base/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
 }
 #game-cursor.hand {
-  background-position: -14px -37px;
+  margin-left: -4px;
+  -webkit-mask-position: 0 -28px;
+  mask-position: 0 -28px;
 }
 #game-cursor[hidden] {
   display: none;
