@@ -3,7 +3,7 @@ id: skelly::deadvox-adr-0001
 description: Decision record choosing lit-html to render deadvox's HTML screens, and the redraw contract it works under
 tags: [deadvox, adr, ui, lit-html]
 created: 2026-09-26
-status: draft
+status: active
 ---
 
 # 1. Render the UI with lit-html
@@ -11,7 +11,7 @@ status: draft
 [[THIS grounds: ../../INTERACTIONS.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
-**Status:** proposed (2026-09-26).
+**Status:** accepted (2026-09-27, issue #25). Proposed 2026-09-26.
 
 ## Context
 
@@ -81,4 +81,4 @@ Draw the HTML screens with **lit-html**:
   still checked by looking at them, as the DOM code is now.
 - Reversing the choice means rewriting templates, not the core: the view models
   and the command boundary don't depend on lit-html.
-- PROJECT.md's UI row changes to lit-html once this is accepted.
+- PROJECT.md's UI row names lit-html.
