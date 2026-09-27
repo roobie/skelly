@@ -22,6 +22,7 @@ import { type Report, validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { buildLayers, disposeGroup, type Layers } from './scene.ts';
+import { DEFAULT_UI_STATE, parseUiState, UI_STATE_KEY, type UiState } from './uiState.ts';
 
 const fixtures = Object.values(
   import.meta.glob<Assembly>('../../fixtures/*.json', { eager: true, import: 'default' }),
@@ -39,6 +40,22 @@ const templateSelect = $<HTMLSelectElement>('template');
 const seedInput = $<HTMLInputElement>('seed');
 const onlyValid = $<HTMLInputElement>('only-valid');
 const layerToggles = [...document.querySelectorAll<HTMLInputElement>('#layers input')];
+
+const readUiState = (): UiState => {
+  try {
+    return parseUiState(localStorage.getItem(UI_STATE_KEY));
+  } catch {
+    return structuredClone(DEFAULT_UI_STATE);
+  }
+};
+let uiState = readUiState();
+const saveUiState = () => {
+  try {
+    localStorage.setItem(UI_STATE_KEY, JSON.stringify(uiState));
+  } catch {
+    // Keep the viewer usable when storage is disabled or full.
+  }
+};
 
 // ---- three.js setup ----
 
@@ -185,6 +202,8 @@ select.addEventListener('change', () => {
     return;
   }
   framed = false;
+  uiState.assembly = { kind: 'fixture', name: f.name };
+  saveUiState();
   load(f);
 });
 
@@ -199,6 +218,8 @@ fileInput.addEventListener('change', async () => {
     select.add(new Option(`${assembly.name} (file)`, ''), 0);
     select.selectedIndex = 0;
     framed = false;
+    uiState.assembly = { kind: 'upload' };
+    saveUiState();
     load(assembly);
   } catch (err) {
     status.innerHTML = '';
@@ -208,7 +229,10 @@ fileInput.addEventListener('change', async () => {
 
 for (const t of layerToggles) {
   t.addEventListener('change', () => {
-    const group = layers?.[t.dataset.layer as keyof Layers];
+    const layer = t.dataset.layer as keyof UiState['layers'];
+    uiState.layers[layer] = t.checked;
+    saveUiState();
+    const group = layers?.[layer];
     if (group) {
       group.visible = t.checked;
     }
@@ -239,6 +263,19 @@ for (const t of TEMPLATES) {
   templateSelect.add(new Option(t.name, t.name));
 }
 
+if (TEMPLATES.some((t) => t.name === uiState.template)) {
+  templateSelect.value = uiState.template;
+} else {
+  uiState.template = DEFAULT_UI_STATE.template;
+  templateSelect.value = uiState.template;
+}
+seedInput.value = uiState.seed;
+onlyValid.checked = uiState.onlyValid;
+for (const t of layerToggles) {
+  const layer = t.dataset.layer as keyof UiState['layers'];
+  t.checked = uiState.layers[layer];
+}
+
 const runGenerator = (step = 0) => {
   const template = TEMPLATES.find((t) => t.name === templateSelect.value);
   if (!template) {
@@ -265,21 +302,36 @@ const runGenerator = (step = 0) => {
     assembly = generate(template, gunDomain, seed);
   }
   seedInput.value = String(seed);
+  uiState.assembly = { kind: 'generated' };
+  uiState.template = template.name;
+  uiState.seed = String(seed);
+  uiState.onlyValid = onlyValid.checked;
   const option = new Option(`${assembly.name} (generated)`, '');
   select.querySelector('option[value=""]')?.remove();
   select.add(option, 0);
   select.selectedIndex = 0;
+  saveUiState();
   load(assembly);
 };
 
 templateSelect.addEventListener('change', () => {
   framed = false;
+  uiState.template = templateSelect.value;
+  saveUiState();
   runGenerator();
 });
 $<HTMLButtonElement>('generate-btn').addEventListener('click', () => runGenerator());
 $<HTMLButtonElement>('next-seed').addEventListener('click', () => runGenerator(1));
 $<HTMLButtonElement>('prev-seed').addEventListener('click', () => runGenerator(-1));
-seedInput.addEventListener('change', () => runGenerator());
+seedInput.addEventListener('change', () => {
+  uiState.seed = seedInput.value;
+  saveUiState();
+  runGenerator();
+});
+onlyValid.addEventListener('change', () => {
+  uiState.onlyValid = onlyValid.checked;
+  saveUiState();
+});
 
 $<HTMLButtonElement>('save').addEventListener('click', () => {
   if (!current) {
@@ -296,18 +348,32 @@ $<HTMLButtonElement>('save').addEventListener('click', () => {
 // ?fixture=<name> opens a fixture; ?template=<name>&seed=<n> generates one.
 const query = new URLSearchParams(location.search);
 const initialTemplate = TEMPLATES.find((t) => t.name === query.get('template'));
+const queryFixture = fixtures.find((f) => f.name === query.get('fixture'));
 if (initialTemplate) {
   templateSelect.value = initialTemplate.name;
   seedInput.value = query.get('seed') ?? '0';
+  uiState.template = initialTemplate.name;
+  uiState.seed = seedInput.value;
+  uiState.assembly = { kind: 'generated' };
+  runGenerator();
+} else if (queryFixture) {
+  select.value = queryFixture.name;
+  uiState.assembly = { kind: 'fixture', name: queryFixture.name };
+  saveUiState();
+  load(queryFixture);
+} else if (uiState.assembly.kind === 'generated') {
   runGenerator();
 } else {
-  const start =
-    fixtures.find((f) => f.name === query.get('fixture')) ??
-    fixtures.find((f) => f.name === 'archetype-rifle') ??
-    fixtures[0];
+  const storedFixtureName = uiState.assembly.kind === 'fixture' ? uiState.assembly.name : undefined;
+  const storedFixture = fixtures.find((f) => f.name === storedFixtureName);
+  const start = storedFixture ?? fixtures.find((f) => f.name === 'archetype-rifle') ?? fixtures[0];
   if (start) {
     select.value = start.name;
+    uiState.assembly = { kind: 'fixture', name: start.name };
+    saveUiState();
     load(start);
+  } else {
+    saveUiState();
   }
 }
 
