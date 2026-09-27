@@ -1,8 +1,9 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import type { Vec3 } from '../core/coords.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { BuildMode } from './build.ts';
 import { stepNoclip } from './noclip.ts';
+import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
+import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
 export interface Action {
@@ -29,17 +30,35 @@ const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
   <span>shamblers ${readout.zombies}</span>
 `;
 
-const panelTemplate = (
-  open: boolean,
-  actions: readonly ActionView[],
-  spawnOpen: boolean,
-  toggleOpen: () => void,
-): TemplateResult => html`
+const panelTemplate = ({
+  open,
+  actions,
+  spawnOpen,
+  shamblerCount,
+  spawnStatus,
+  setShamblerCount,
+  toggleOpen,
+}: {
+  open: boolean;
+  actions: readonly ActionView[];
+  spawnOpen: boolean;
+  shamblerCount: number;
+  spawnStatus: string;
+  setShamblerCount: (count: number) => void;
+  toggleOpen: () => void;
+}): TemplateResult => html`
   <div id="debug-ui-root">
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <div id="debug-readout" class="debug-readout"></div>
+    <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
+      <span>Shambler count</span>
+      <button type="button" aria-label="Decrease shambler count" ?disabled=${shamblerCount <= 1} @click=${() => setShamblerCount(shamblerCount - 1)}>−</button>
+      <output aria-label="Current shambler spawn count" aria-live="polite">${shamblerCount}</output>
+      <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
+    </div>
+    <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
     <div class="debug-actions">
       ${actions.map(
         (action) => html`
@@ -77,7 +96,8 @@ interface ActionContext {
   toggleNoclip: () => void;
   isDanger: () => boolean;
   toggleDanger: () => void;
-  spawnShambler: () => void;
+  shamblerCount: () => number;
+  spawnShambler: (count: number) => void;
 }
 
 export const createDebugActions = ({
@@ -89,6 +109,7 @@ export const createDebugActions = ({
   toggleNoclip,
   isDanger,
   toggleDanger,
+  shamblerCount,
   spawnShambler,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
@@ -124,7 +145,7 @@ export const createDebugActions = ({
   },
   { code: 'KeyU', key: 'U', label: 'Danger test', state: isDanger, run: toggleDanger },
   { code: 'KeyK', key: 'K', label: 'Take 25 damage', run: () => hooks.sim.hurt(25, 'a debug key') },
-  { code: 'KeyV', key: 'V', label: 'Spawn shambler', run: spawnShambler },
+  { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
 ];
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
@@ -147,6 +168,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let danger = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize);
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
+  let shamblerCount = readShamblerCount();
+  let spawnStatus = '';
   const actions = createDebugActions({
     hooks,
     build,
@@ -160,7 +183,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     toggleDanger: () => {
       danger = !danger;
     },
-    spawnShambler,
+    shamblerCount: () => shamblerCount,
+    spawnShambler: (count) => {
+      const zombies = hooks.zombies();
+      const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
+      spawnStatus = `Placed ${placed} of ${count}`;
+      if (placed > 0) {
+        hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
+      }
+    },
   });
   function viewState(action: Action): string {
     if (!action.state) {
@@ -171,7 +202,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   function actionViews(): ActionView[] {
     return actions.map((action) => ({
       key: action.key,
-      label: action.label,
+      label: action.code === 'KeyV' ? `Spawn ${shamblerCount} shamblers` : action.label,
       state: viewState(action),
       run: () => {
         action.run();
@@ -182,10 +213,27 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   }
   function drawShell(): void {
     const views = actionViews();
-    const key = JSON.stringify([panelOpen, spawnMenu.isOpen, views.map((view) => [view.label, view.state])]);
+    const key = JSON.stringify([
+      panelOpen,
+      spawnMenu.isOpen,
+      shamblerCount,
+      spawnStatus,
+      views.map((view) => [view.label, view.state]),
+    ]);
     if (key !== shellKey) {
       shellKey = key;
-      render(panelTemplate(panelOpen, views, spawnMenu.isOpen, togglePanel), host);
+      render(
+        panelTemplate({
+          open: panelOpen,
+          actions: views,
+          spawnOpen: spawnMenu.isOpen,
+          shamblerCount,
+          spawnStatus,
+          setShamblerCount: changeShamblerCount,
+          toggleOpen: togglePanel,
+        }),
+        host,
+      );
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
     }
@@ -193,6 +241,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (root) {
       render(readoutTemplate(readout), root);
     }
+  }
+  function changeShamblerCount(count: number): void {
+    shamblerCount = writeShamblerCount(count);
+    spawnStatus = '';
+    shellKey = '';
+    drawShell();
   }
   function togglePanel(): void {
     panelOpen = !panelOpen;
@@ -206,22 +260,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnMenu.open();
     }
     drawShell();
-  }
-  function spawnShambler(): void {
-    const type = hooks.engine.registry.zombies.get('shambler');
-    const zombies = hooks.zombies();
-    if (!(type && zombies)) {
-      return;
-    }
-    const forward: Vec3 = [-Math.sin(hooks.input.yaw), 0, -Math.cos(hooks.input.yaw)];
-    const size = hooks.engine.config.scale.blockSize;
-    const pos: Vec3 = [
-      hooks.body.pos[0] + (forward[0] * 6) / size,
-      hooks.body.pos[1],
-      hooks.body.pos[2] + (forward[2] * 6) / size,
-    ];
-    zombies.add(type, pos, [-forward[0], 0, -forward[2]]);
-    hooks.showNotice('A shambler is approaching');
   }
   function handleKey(e: KeyboardEvent): boolean {
     if (e.code === 'Backquote') {

@@ -14,7 +14,7 @@ describe('debug action table', () => {
       ['N', 'Emit noise'],
       ['U', 'Danger test'],
       ['K', 'Take 25 damage'],
-      ['V', 'Spawn shambler'],
+      ['V', 'Spawn shamblers'],
     ]);
   });
 
@@ -31,6 +31,14 @@ describe('debug action table', () => {
     },
   );
 
+  it('V spawns the selected count and does not repeat on key repeat', () => {
+    const { actions, spawnCounts } = makeActions(25);
+    expect(dispatchDebugAction(actions, 'KeyV')).toBe(true);
+    expect(spawnCounts).toEqual([25]);
+    expect(dispatchDebugAction(actions, 'KeyV', true)).toBe(true);
+    expect(spawnCounts).toEqual([25]);
+  });
+
   it('consumes repeated action keys without repeating their action', () => {
     const { actions } = makeActions();
     const godMode = actions.find((candidate) => candidate.code === 'KeyH')!;
@@ -40,7 +48,7 @@ describe('debug action table', () => {
   });
 });
 
-const makeActions = (): { actions: Action[] } => {
+const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: number[] } => {
   const sim = {
     godMode: false,
     compression: {
@@ -71,6 +79,7 @@ const makeActions = (): { actions: Action[] } => {
   const spawnMenu = { isOpen: false };
   let noclip = false;
   let danger = false;
+  const spawnCounts: number[] = [];
   const actions = createDebugActions({
     hooks,
     build,
@@ -86,9 +95,10 @@ const makeActions = (): { actions: Action[] } => {
     toggleDanger: () => {
       danger = !danger;
     },
-    spawnShambler() {
-      throw new Error('not exercised');
+    shamblerCount: () => shamblerCount,
+    spawnShambler(count) {
+      spawnCounts.push(count);
     },
   });
-  return { actions };
+  return { actions, spawnCounts };
 };

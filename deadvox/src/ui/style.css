@@ -860,6 +860,7 @@ body.bench #quickbar {
 }
 #debug-ui-root .debug-panel .debug-panel-header,
 #debug-ui-root .debug-readout,
+#debug-ui-root .debug-shambler-count,
 #debug-ui-root .debug-actions {
   display: flex;
   flex-wrap: wrap;
@@ -871,6 +872,8 @@ body.bench #quickbar {
   align-items: center;
 }
 #debug-ui-root .debug-panel .debug-readout span,
+#debug-ui-root .debug-panel .debug-shambler-count button,
+#debug-ui-root .debug-panel .debug-shambler-count output,
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-panel-header button {
   padding: 4px 7px;
@@ -882,8 +885,16 @@ body.bench #quickbar {
     11px ui-monospace,
     monospace;
 }
-#debug-ui-root .debug-panel .debug-actions button {
+#debug-ui-root .debug-panel .debug-actions button,
+#debug-ui-root .debug-panel .debug-shambler-count button {
   cursor: pointer;
+}
+#debug-ui-root .debug-panel .debug-shambler-count {
+  align-items: center;
+}
+#debug-ui-root .debug-panel .debug-shambler-count button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 #debug-ui-root .debug-panel .debug-actions button:hover,
 #debug-ui-root .debug-panel .debug-actions button.game-cursor-hover {

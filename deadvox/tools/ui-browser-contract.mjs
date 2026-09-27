@@ -171,6 +171,21 @@ try {
     window.__pointerCalls.request = 0;
   })()`);
   await delay(150);
+  let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
+  const clickAt = async (selector) => {
+    const position = await evaluate(`(() => {
+      const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    })()`);
+    await evaluate(`(() => {
+      const event = new MouseEvent('mousemove', { bubbles: true });
+      Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
+      document.dispatchEvent(event);
+      document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+    })()`);
+    cursor = position;
+    await delay(120);
+  };
 
   // Each menu route is exercised with real browser key events; none may recapture/release pointer lock.
   await press('Tab', 'Tab', 9);
@@ -193,8 +208,41 @@ try {
   assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'G closes spawn menu');
   await press('Backquote', '`', 192);
   assert.equal(await evaluate("!document.querySelector('.debug-panel').hidden"), true, 'Backquote opens debug panel');
+  assert.equal(
+    await evaluate("Boolean(document.querySelector('.debug-shambler-count output'))"),
+    true,
+    'debug panel has a shambler count control',
+  );
+  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
+  assert.match(
+    await evaluate("document.querySelector('.debug-actions button:last-child').textContent"),
+    /Spawn 1 shamblers \(V\)/,
+  );
+  await clickAt('[aria-label="Increase shambler count"]');
+  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
+  assert.equal(await evaluate("localStorage.getItem('deadvox.shambler-spawn-count')"), '2');
+  assert.match(
+    await evaluate("document.querySelector('.debug-actions button:last-child').textContent"),
+    /Spawn 2 shamblers \(V\)/,
+  );
   await press('Backquote', '`', 192);
   assert.equal(await evaluate("document.querySelector('.debug-panel').hidden"), true, 'Backquote closes debug panel');
+  await press('Backquote', '`', 192);
+  assert.equal(
+    await evaluate("document.querySelector('.debug-shambler-count output').textContent"),
+    '2',
+    'spawn count remains selected',
+  );
+  await clickAt('[aria-label="Decrease shambler count"]');
+  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
+  assert.equal(await evaluate('document.querySelector(\'[aria-label="Decrease shambler count"]\').disabled'), true);
+  await press('KeyV', 'v', 86);
+  assert.match(
+    await evaluate("document.querySelector('#shambler-spawn-status').textContent"),
+    /^Placed \d+ of 1$/,
+    'V reports the number placed out of the selected count',
+  );
+  await press('Backquote', '`', 192);
   assert.deepEqual(
     await evaluate('window.__pointerCalls'),
     { request: 0, exit: 0 },
@@ -226,21 +274,6 @@ try {
   await press('KeyG', 'g', 71);
   await evaluate('window.__setPointerLocked(true)');
   await delay(100);
-  let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
-  const clickAt = async (selector) => {
-    const position = await evaluate(`(() => {
-      const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    })()`);
-    await evaluate(`(() => {
-      const event = new MouseEvent('mousemove', { bubbles: true });
-      Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
-      document.dispatchEvent(event);
-      document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
-    })()`);
-    cursor = position;
-    await delay(120);
-  };
   await clickAt('#spawn .spawn-list button');
   assert.notEqual(
     await evaluate("document.querySelector('#spawn .spawn-status').textContent"),
@@ -322,7 +355,7 @@ try {
     'locked cursor click on continue resumes play',
   );
   process.stdout.write(
-    'UI browser contract passed: G search, menu pointer-lock behavior, cursor clicks/focus, unlock, F10, inventory stats.\n',
+    'UI browser contract passed: G search, pointer-locked menus, cursor clicks/focus, spawn count, V status, unlock, F10, inventory stats.\n',
   );
 } finally {
   ws?.close();

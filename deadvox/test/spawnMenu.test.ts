@@ -78,6 +78,7 @@ describe('spawnMenuViewModel', () => {
       toggleNoclip: () => undefined,
       isDanger: () => false,
       toggleDanger: () => undefined,
+      shamblerCount: () => 1,
       spawnShambler: () => undefined,
     });
 
