@@ -323,6 +323,42 @@ describe('shambler scenarios', () => {
     expect(system.store.size).toBe(survivors);
   });
 
+  it('gait phase tracks travelled distance at wander and chase speeds and stops at a wall', () => {
+    const slow = { ...SHAMBLER, speed: { ...SHAMBLER.speed, wander: 0.8 } };
+    const wander = new ZombieSystem(senses(() => player([1000, 1, 1000])));
+    const wanderId = wander.add(slow, [0, 1, 0]);
+    const wanderer = wander.store.get(wanderId)!;
+    run(wander, 10);
+    const wanderingSteps = Math.floor(wanderer.gaitPhase / Math.PI);
+    expect(wanderingSteps).toBeGreaterThanOrEqual(12);
+    expect(wanderingSteps).toBeLessThanOrEqual(15);
+
+    let target: Vec3 = [20, 1, 0];
+    const chase = new ZombieSystem(senses(() => player(target, [-1, 0, 0])));
+    const chaseId = chase.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    const chaser = chase.store.get(chaseId)!;
+    for (let frame = 0; frame < 600; frame++) {
+      target = [target[0] + 2.8 / 60 / BLOCK_SIZE, target[1], target[2]];
+      chase.tick(1 / 60);
+    }
+    const chasingSteps = Math.floor(chaser.gaitPhase / Math.PI);
+    expect(chasingSteps).toBeGreaterThanOrEqual(42);
+    expect(chasingSteps).toBeLessThanOrEqual(52);
+
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 1 && y >= 1 && y <= 10);
+    const blocked = new ZombieSystem(senses(() => player([10, 1, 0], [-1, 0, 0], 'sprinting'), wall));
+    const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    const blockedZombie = blocked.store.get(blockedId)!;
+    run(blocked, 2);
+    expect(blockedZombie.mode).toBe('chase');
+    expect(blockedZombie.body.pos[0]).toBeLessThan(1);
+    const stuckAt = [...blockedZombie.body.pos] as Vec3;
+    const phaseAtWall = blockedZombie.gaitPhase;
+    run(blocked, 10);
+    expect(metres(blockedZombie.body.pos, stuckAt)).toBe(0);
+    expect(blockedZombie.gaitPhase).toBe(phaseAtWall);
+  });
+
   it('H: ten active shamblers update below the 1 ms/60 Hz CPU budget on average', () => {
     const system = new ZombieSystem(senses(() => player([0, 2, 0])));
     for (let i = 0; i < 10; i++) {
@@ -355,8 +391,8 @@ describe('shambler scenarios', () => {
 
     const legs = [parts[4]!, parts[5]!];
     const feetAtFrame = (frame: number) => {
-      zombie.body.vel[0] = 1;
-      zombie.shuffle = frame === 0 ? 0 : 0.3;
+      zombie.body.vel[0] = 1.6;
+      zombie.gaitPhase = frame === 0 ? 0 : 0.12;
       meshes.sync(system.store);
       return legs.map((leg) => {
         const matrix = new Matrix4();
@@ -373,6 +409,32 @@ describe('shambler scenarios', () => {
       expect(frame0[leg]!.foot.x).not.toBe(frame1[leg]!.foot.x);
       expect(Math.abs(frame0[leg]!.foot.z - frame1[leg]!.foot.z)).toBeLessThan(0.01);
       expect(frame0[leg]!.hip.distanceTo(frame1[leg]!.hip)).toBeLessThan(0.01);
+    }
+    const upDirectionsAtPhase = (phase: number) => {
+      zombie.body.vel[0] = 1.6;
+      zombie.gaitPhase = phase;
+      meshes.sync(system.store);
+      return legs.map((leg) => {
+        const matrix = new Matrix4();
+        leg.getMatrixAt(0, matrix);
+        return new Vector3(0, 1, 0).transformDirection(matrix);
+      });
+    };
+    const walkingPhaseStep = (Math.PI * 0.8) / (SHAMBLER.stepLength * 60);
+    const previousUp = upDirectionsAtPhase(0);
+    const nextUp = upDirectionsAtPhase(walkingPhaseStep);
+    for (let leg = 0; leg < 2; leg++) {
+      const angle = Math.acos(Math.max(-1, Math.min(1, previousUp[leg]!.dot(nextUp[leg]!))));
+      expect(angle).toBeLessThanOrEqual(0.05);
+    }
+    zombie.body.vel[0] = 0;
+    zombie.gaitPhase = Math.PI / 2;
+    meshes.sync(system.store);
+    for (const leg of legs) {
+      const matrix = new Matrix4();
+      leg.getMatrixAt(0, matrix);
+      const up = new Vector3(0, 1, 0).transformDirection(matrix);
+      expect(up.distanceTo(new Vector3(0, 1, 0))).toBeLessThan(0.001);
     }
     expect(system.store.get(id)).toBeDefined();
   });

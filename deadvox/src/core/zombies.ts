@@ -18,7 +18,10 @@ export interface Zombie {
   health: number;
   lastPerceived?: Vec3 | undefined;
   attackWait: number;
-  shuffle: number;
+  /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
+  gaitPhase: number;
+  /** Elapsed wandering time, independent of the distance-driven gait. */
+  wanderClock: number;
 }
 
 export interface PlayerSense {
@@ -138,7 +141,8 @@ export class ZombieSystem {
       mode: 'wander',
       health: type.health,
       attackWait: 0,
-      shuffle: 0,
+      gaitPhase: 0,
+      wanderClock: 0,
     });
   }
 
@@ -170,12 +174,14 @@ export class ZombieSystem {
         zombie.mode = 'investigate';
       }
 
+      const wanderRadius = 1.5;
+      const wanderAngle = (zombie.wanderClock * zombie.type.speed.wander) / wanderRadius;
       const homeTarget: Vec3 =
         zombie.mode === 'wander'
           ? [
-              zombie.home[0] + (Math.sin(zombie.shuffle * 0.2) * 1.5) / blockSize,
+              zombie.home[0] + (Math.sin(wanderAngle) * wanderRadius) / blockSize,
               zombie.home[1],
-              zombie.home[2] + (Math.cos(zombie.shuffle * 0.2) * 1.5) / blockSize,
+              zombie.home[2] + (Math.cos(wanderAngle) * wanderRadius) / blockSize,
             ]
           : zombie.home;
       let target = homeTarget;
@@ -196,7 +202,6 @@ export class ZombieSystem {
         zombie.body.vel[0] = (dir[0] * speed) / blockSize;
         zombie.body.vel[2] = (dir[2] * speed) / blockSize;
         zombie.facing = dir;
-        zombie.shuffle += dt;
         // If a solid is immediately ahead, jump using the same take-off as the player.
         const probe: Vec3 = [
           pos[0] + (dir[0] * 0.65) / blockSize,
@@ -210,10 +215,13 @@ export class ZombieSystem {
         zombie.body.vel[0] = 0;
         zombie.body.vel[2] = 0;
       }
-      if (zombie.mode === 'wander') {
-        zombie.shuffle += dt;
-      }
+      const beforeStep: Vec3 = [...pos];
       stepBody(zombie.body, dt, isSolid, this.options.physics);
+      const travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
+      zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
+      if (zombie.mode === 'wander') {
+        zombie.wanderClock += dt;
+      }
 
       if (
         zombie.mode === 'chase' &&

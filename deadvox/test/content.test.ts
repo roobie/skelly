@@ -66,6 +66,7 @@ describe('content', () => {
             name: 'Missing cone',
             health: 50,
             speed: { wander: 0.8, chase: 2.5 },
+            stepLength: 0.6,
             sight: 20,
             nightSight: 10,
             hearing: 1,
@@ -78,6 +79,33 @@ describe('content', () => {
       },
     };
     expect(buildRegistry([...base, missingCone]).issues.map((issue) => issue.path)).toContain('zombies[0].sightCone');
+  });
+
+  it('requires stepLength on every zombie type', () => {
+    const missingStepLength = {
+      source: 'missing-step-length.json',
+      data: {
+        zombies: [
+          {
+            id: 'missing_step_length',
+            name: 'Missing step length',
+            health: 50,
+            speed: { wander: 0.8, chase: 2.5 },
+            sight: 20,
+            nightSight: 10,
+            sightCone: 60,
+            hearing: 1,
+            hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            attack: { damage: 5, reach: 1, cooldown: 1.5 },
+            abilities: [],
+            model: 'figure_basic',
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...base, missingStepLength]).issues.map((issue) => issue.path)).toContain(
+      'zombies[0].stepLength',
+    );
   });
 
   it('reports a duplicate id within a file', () => {
@@ -148,6 +176,7 @@ describe('content references', () => {
             name: 'Clerk',
             health: 50,
             speed: { wander: 0.8, chase: 2.5 },
+            stepLength: 0.6,
             sight: 20,
             nightSight: 10,
             sightCone: 60,

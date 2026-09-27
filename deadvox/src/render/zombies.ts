@@ -36,7 +36,6 @@ export class ZombieMeshes {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: builds every body part's transform in a single render synchronization pass.
   sync(store: EntityStore<Zombie>): void {
     const zombies = [...store.entries()];
     const s = this.blockSize;
@@ -51,9 +50,8 @@ export class ZombieMeshes {
         const offsetX = box.at[0] * Math.cos(yaw) + box.at[2] * Math.sin(yaw);
         const offsetZ = -box.at[0] * Math.sin(yaw) + box.at[2] * Math.cos(yaw);
         const moving = Math.hypot(zombie.body.vel[0], zombie.body.vel[2]) > 0.05;
-        const frame = moving && Math.floor(zombie.shuffle * 4) % 2 === 0 ? 1 : -1;
         const isLeg = part === 'leftLeg' || part === 'rightLeg';
-        const stride = part === 'leftLeg' ? frame * 0.22 : -frame * 0.22;
+        const stride = (part === 'leftLeg' ? 1 : -1) * Math.sin(zombie.gaitPhase) * 0.22;
         this.dummy.position.set(x * s + offsetX, y * s + box.at[1], z * s + offsetZ);
         this.dummy.rotation.set(0, yaw, 0);
         if (isLeg && moving) {

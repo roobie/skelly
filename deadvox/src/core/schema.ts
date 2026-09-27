@@ -286,6 +286,8 @@ export const ZombieSchema = strictObject({
   health: Positive,
   /** Metres per second. */
   speed: strictObject({ wander: Positive, chase: Positive }),
+  /** Metres advanced by one half-cycle of the leg gait. */
+  stepLength: Positive,
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */

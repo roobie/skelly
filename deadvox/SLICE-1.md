@@ -467,7 +467,10 @@ decay (compared against live ticking), and death.
   physics as the player. A lost shambler wanders back.
 - Melee in both directions: the zombie attack has reach and a cooldown; the
   player swings the wielded item (or fists) with a hit check.
-- Rendering: instanced box figures with a two-frame shuffle.
+- Rendering: instanced box figures with a continuous leg swing. Required content
+  `stepLength` (metres; 0.6 for shamblers) sets each half-cycle. Gait phase
+  advances only by horizontal distance actually travelled; an independent
+  clock steers the wander circle.
 - Spawning: markers in templates, plus a few wanderers. They don't respawn in
   Slice 1.
 
@@ -478,8 +481,11 @@ of them.
 **Status:** block — implementation and automated checks are in place; awaiting
 BR's visual and play-feel review. `test/zombies.test.ts` exercises the real
 `wood_door` entity for open/closed traversal, with further checks for perception,
-movement, melee, no-respawn, rendering geometry, and update cost. Playtest and
-headless-browser measurements remain part of the review report.
+movement, distance-driven gait cadence (12–15 steps/10 s wandering at 0.8 m/s;
+42–52 steps/10 s chasing at 2.8 m/s; no steps against a wall; at most 0.05 rad
+leg-angle change per 1/60 s walking frame), melee, no-respawn, rendering geometry,
+and update cost. Playtest and headless-browser measurements remain part of the
+review report.
 
 ### 1.8 Rest and sleep
 
