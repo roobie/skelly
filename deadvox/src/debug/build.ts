@@ -2,20 +2,31 @@
 // chosen block with the right, and pick it with 1–9 or the wheel. Outside build
 // mode, those keys belong to the quickbar.
 
+import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
 import { blockId } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import type { Engine } from './engine.ts';
+import type { Engine } from '../game/engine.ts';
 
 const DIGIT_KEY = /^Digit([1-9])$/;
+
+const hotbarTemplate = (blocks: readonly { color: string; name: string }[], selected: number) => html`
+  ${blocks.slice(0, 9).map(
+    (block, i) => html`
+    <div class=${i === selected ? 'selected' : ''}>
+      <span style=${`background: ${block.color}`}></span>${i + 1} ${block.name}
+    </div>
+  `,
+  )}
+`;
 
 export class BuildMode {
   on = false;
   private selected = 0;
   private readonly engine: Engine;
-  private readonly hotbar: HTMLElement;
+  private hotbar: HTMLElement;
   private readonly body: Body;
   private readonly reach: number;
   private readonly outline: LineSegments;
@@ -37,6 +48,11 @@ export class BuildMode {
 
   private get placeable() {
     return this.engine.registry.blocks.slice(1);
+  }
+
+  setHotbar(hotbar: HTMLElement): void {
+    this.hotbar = hotbar;
+    this.draw();
   }
 
   toggle(): void {
@@ -98,15 +114,6 @@ export class BuildMode {
 
   private draw(): void {
     this.hotbar.hidden = !this.on;
-    this.hotbar.replaceChildren(
-      ...this.placeable.slice(0, 9).map((block, i) => {
-        const slot = document.createElement('div');
-        slot.className = i === this.selected ? 'selected' : '';
-        const swatch = document.createElement('span');
-        swatch.style.background = block.color;
-        slot.append(swatch, `${i + 1} ${block.name}`);
-        return slot;
-      }),
-    );
+    render(hotbarTemplate(this.placeable, this.selected), this.hotbar);
   }
 }

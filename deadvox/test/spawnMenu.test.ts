@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { spawnMenuViewModel } from '../src/ui/spawnMenu.ts';
+import { spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 
 const { registry } = buildRegistry([
   {

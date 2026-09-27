@@ -61,7 +61,8 @@ const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): T
 `;
 
 export class SpawnMenu {
-  private readonly root: HTMLElement;
+  private root: HTMLElement;
+  private opened = false;
   private readonly registry: Registry;
   private readonly spawn: (type: string) => string;
   private filter = '';
@@ -76,10 +77,19 @@ export class SpawnMenu {
   }
 
   get isOpen(): boolean {
-    return !this.root.hidden;
+    return this.opened;
+  }
+
+  setRoot(root: HTMLElement): void {
+    this.root = root;
+    this.root.hidden = !this.opened;
+    if (this.opened) {
+      this.render();
+    }
   }
 
   open(): void {
+    this.opened = true;
     this.root.hidden = false;
     this.filter = '';
     this.status = '';
@@ -91,6 +101,7 @@ export class SpawnMenu {
   }
 
   close(): void {
+    this.opened = false;
     this.root.hidden = true;
   }
 

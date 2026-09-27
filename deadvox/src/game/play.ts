@@ -1,8 +1,6 @@
 // Normal play: walk, look, loot, manage what you carry, eat, drink and light your way.
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
-// Build mode (B, with ?debug=1) is a development tool for editing blocks, and the
-// spawn menu (G) drops any item at your feet.
 
 import { Vector3 } from 'three';
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
@@ -35,13 +33,12 @@ import { mountGameCursor } from '../ui/gameCursor.ts';
 import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
-import { SpawnMenu } from '../ui/spawnMenu.ts';
-import { BuildMode } from './build.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
+import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import type { Engine } from './engine.ts';
-import { Input, isMenuOpeningKey } from './input.ts';
+import { Input, isMenuOpeningKey, worldActionForKey } from './input.ts';
 import { startingLoadout } from './loadout.ts';
-import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer, stepNoclip } from './player.ts';
+import { createPlayerBody, PLAYER, paceFactor, physicsFor, steer } from './player.ts';
 import { Survival } from './survival.ts';
 import { toHands } from './targets.ts';
 
@@ -58,7 +55,7 @@ const QUICK_KEY = /^Digit([1-5])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 const DOOR_CLOSE_MESSAGES = { player: "You're in the way", other: "Something's in the way" } as const;
 
-export const startPlay = (engine: Engine): void => {
+export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
   const { scale } = config;
   const s = scale.blockSize;
@@ -69,6 +66,7 @@ export const startPlay = (engine: Engine): void => {
   const body = createPlayerBody(scale, sx / s, sy / s + 0.01, sz / s);
   const input = new Input(renderer.domElement);
   input.yaw = engine.spawn.yaw;
+  let debugTools: DebugRuntime | undefined;
 
   /** The air block at the player's feet, where drops land. */
   const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
@@ -111,12 +109,10 @@ export const startPlay = (engine: Engine): void => {
 
   // ---- simulation ----
 
-  /** Debug control for the compression interruption test (U). */
-  let danger: string | undefined;
   const sim = new Simulation({
     seed: config.seed,
     clock: { ratio: CLOCK_RATIO, start: config.start },
-    unsafe: () => danger ?? zombieSystem?.unsafeReason(),
+    unsafe: () => debugTools?.dangerReason() ?? zombieSystem?.unsafeReason(),
   });
   const { compression } = sim;
   const damageEvents = sim.events.reader();
@@ -127,7 +123,6 @@ export const startPlay = (engine: Engine): void => {
   });
   const zombieStore = new MapEntityStore<Zombie>();
   let sprinting = false;
-  let noclip = false;
   const playerMovement = (): PlayerMovement => {
     const moving = input.locked && !input.menuPointer && !compression.locksInput ? input.intent() : IDLE;
     if (moving.forward === 0 && moving.right === 0) {
@@ -140,7 +135,7 @@ export const startPlay = (engine: Engine): void => {
   };
   const playerSense = () => ({
     pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
-    body: noclip ? undefined : body,
+    body: debugTools?.noclip ? undefined : body,
     facing: [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)] as Vec3,
     movement: playerMovement(),
     lit: survival.lit?.on === true,
@@ -195,8 +190,8 @@ export const startPlay = (engine: Engine): void => {
         sprint: sprinting,
         pace: paceFactor(inventory.carriedWeight(), handling),
       };
-      if (noclip) {
-        stepNoclip({
+      if (debugTools?.noclip) {
+        debugTools.stepNoclip({
           body,
           scale,
           yaw: input.yaw,
@@ -315,13 +310,22 @@ export const startPlay = (engine: Engine): void => {
     },
   });
 
-  const build = new BuildMode(engine, $('hotbar'), body, PLAYER.reach / s);
-
-  const spawnMenu = new SpawnMenu($('spawn'), registry, (type) => {
+  const spawnItem = (type: string): string => {
     const item = inventory.create(type);
     return inventory.add(item, { kind: 'pile', pos: feet() })
       ? `${inventory.name(item)} is at your feet`
       : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
+  };
+  debugTools = debugModule?.attachDebugTools({
+    engine,
+    body,
+    sim,
+    input,
+    zombies: () => zombieSystem,
+    feet,
+    showNotice,
+    spawnItem,
+    compress: () => compress(),
   });
 
   let started = false;
@@ -331,10 +335,10 @@ export const startPlay = (engine: Engine): void => {
     if (started && !input.locked && !sim.dead) {
       mainMenuOpen = true;
       screen.close();
-      spawnMenu.close();
+      debugTools?.closeMenus();
     }
-    overlay.hidden = (input.locked && !mainMenuOpen) || screen.isOpen || spawnMenu.isOpen || sim.dead !== undefined;
-    input.menuPointer = mainMenuOpen || screen.isOpen || spawnMenu.isOpen;
+    overlay.hidden = (input.locked && !mainMenuOpen) || screen.isOpen || sim.dead !== undefined;
+    input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
     $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
   };
   overlay.addEventListener('click', (e) => {
@@ -378,7 +382,7 @@ export const startPlay = (engine: Engine): void => {
     true,
   );
   renderer.domElement.addEventListener('click', () => {
-    if (!(input.locked || screen.isOpen || spawnMenu.isOpen || sim.dead)) {
+    if (!(input.locked || screen.isOpen || debugTools?.menuOpen || sim.dead)) {
       input.lock();
     }
   });
@@ -392,52 +396,10 @@ export const startPlay = (engine: Engine): void => {
     }
   };
 
-  /** Debug keys (`?debug=1`): T starts or stops compression, N makes a noise, U toggles danger, K hurts, V spawns a shambler. */
-  const debugKeys = new Map<string, () => void>([
-    ['KeyK', () => sim.hurt(25, 'a debug key')],
-    [
-      'KeyH',
-      () => {
-        sim.godMode = !sim.godMode;
-      },
-    ],
-    [
-      'KeyF',
-      () => {
-        noclip = !noclip;
-        body.vel = [0, 0, 0];
-        body.onGround = false;
-      },
-    ],
-    ['KeyT', () => (compression.active ? compression.stop() : compress())],
-    ['KeyN', () => sim.emit({ kind: 'interrupt', reason: 'You hear something outside' })],
-    [
-      'KeyU',
-      () => {
-        danger = danger ? undefined : 'Something is close';
-      },
-    ],
-    [
-      'KeyV',
-      () => {
-        const type = registry.zombies.get('shambler');
-        if (!type) {
-          return;
-        }
-        const forward: Vec3 = [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)];
-        const pos: Vec3 = [body.pos[0] + (forward[0] * 6) / s, body.pos[1], body.pos[2] + (forward[2] * 6) / s];
-        zombieSystem?.add(type, pos, [-forward[0], 0, -forward[2]]);
-        showNotice('A shambler is approaching');
-      },
-    ],
-  ]);
-
   /** C continues and X stops after an interruption. Returns true if the key was used. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
-      const debug = config.debug ? debugKeys.get(code) : undefined;
-      debug?.();
-      return debug !== undefined;
+      return false;
     }
     if (code === 'KeyC') {
       compress();
@@ -458,30 +420,6 @@ export const startPlay = (engine: Engine): void => {
       mainMenuOpen = false;
     }
     syncOverlay();
-  };
-
-  const toggleSpawnMenu = () => {
-    if (spawnMenu.isOpen) {
-      spawnMenu.close();
-    } else {
-      mainMenuOpen = false;
-      spawnMenu.open();
-    }
-    syncOverlay();
-  };
-
-  /**
-   * While the spawn menu is open it takes every key, so typing in its filter does nothing
-   * else; G outside the filter closes it. Returns true if the key was used.
-   */
-  const spawnMenuKey = (e: KeyboardEvent): boolean => {
-    if (!spawnMenu.isOpen) {
-      return false;
-    }
-    if (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement)) {
-      toggleSpawnMenu();
-    }
-    return true;
   };
 
   /** A quickbar key puts its item in your hands; pressing it again uses it. */
@@ -509,15 +447,12 @@ export const startPlay = (engine: Engine): void => {
 
   const playKeys = (code: string) => {
     const quick = QUICK_KEY.exec(code);
-    if (code === 'KeyB' && config.debug) {
-      build.toggle();
-    } else if (code === 'KeyG' && config.debug) {
-      toggleSpawnMenu();
-    } else if (code === 'KeyE' && !compression.locksInput) {
+    const action = worldActionForKey(code);
+    if (action === 'interact' && !compression.locksInput) {
       use();
-    } else if (code === 'KeyX') {
+    } else if (action === 'cancel') {
       queue.cancel();
-    } else if (!build.key(code) && quick && !compression.locksInput) {
+    } else if (quick && !compression.locksInput) {
       quickKey(Number(quick[1]) - 1);
     }
   };
@@ -531,7 +466,7 @@ export const startPlay = (engine: Engine): void => {
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
         screen.close();
-        spawnMenu.close();
+        debugTools?.closeMenus();
       }
       syncOverlay();
     }
@@ -539,7 +474,8 @@ export const startPlay = (engine: Engine): void => {
   };
 
   const handleMenuKey = (e: KeyboardEvent): boolean => {
-    if (spawnMenuKey(e)) {
+    if (debugTools?.handleKey(e)) {
+      input.menuPointer = mainMenuOpen || screen.isOpen || debugTools.menuOpen;
       return true;
     }
     if (e.code === 'Tab' && !compression.locksInput) {
@@ -563,7 +499,7 @@ export const startPlay = (engine: Engine): void => {
       e.preventDefault();
     }
     // Prevent the opening key from becoming text in a field focused by the menu.
-    if (!e.repeat && isMenuOpeningKey(e.code, config.debug, spawnMenu.isOpen)) {
+    if (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false)) {
       e.preventDefault();
     }
     if (e.repeat || sim.dead) {
@@ -579,7 +515,7 @@ export const startPlay = (engine: Engine): void => {
   });
   globalThis.addEventListener('wheel', (e) => {
     if (input.locked && !input.menuPointer) {
-      build.wheel(e.deltaY);
+      debugTools?.wheel(e.deltaY);
     }
   });
 
@@ -600,18 +536,18 @@ export const startPlay = (engine: Engine): void => {
       isSolid: engine.isSolid,
     });
 
-  /** What E would do to it, for the prompt. */
+  /** What F would do to it, for the prompt. */
   const useText = (entity: BlockEntity): string => {
     if (entities.defOf(entity).door) {
-      return `E: ${entity.open ? 'close' : 'open'} the ${nameOf(entity)}`;
+      return `F: ${entity.open ? 'close' : 'open'} the ${nameOf(entity)}`;
     }
     if (entity.pockets) {
-      return `E: ${entity.searched ? 'look in' : 'search'} the ${nameOf(entity)}`;
+      return `F: ${entity.searched ? 'look in' : 'search'} the ${nameOf(entity)}`;
     }
     return entities.defOf(entity).name;
   };
 
-  /** E: opens or closes a door; searches a container and opens the inventory beside it. */
+  /** F: opens or closes a door; searches a container and opens the inventory beside it. */
   function use(): void {
     const entity = lookedAt();
     if (!entity) {
@@ -647,8 +583,8 @@ export const startPlay = (engine: Engine): void => {
     if (!input.locked || input.menuPointer || compression.locksInput) {
       return;
     }
-    if (build.on) {
-      build.click(e.button, eye(), lookDir());
+    if (debugTools?.buildOn) {
+      debugTools.click(e.button, eye(), lookDir());
     } else if (e.button === 0) {
       swing();
     }
@@ -657,6 +593,7 @@ export const startPlay = (engine: Engine): void => {
   // ---- loop ----
 
   let last = performance.now();
+  let lastDebugUpdate = 0;
   let fps = 0;
 
   const clockText = (): string => {
@@ -673,32 +610,18 @@ export const startPlay = (engine: Engine): void => {
     ].join('\n');
   };
 
-  const debugText = (): string =>
-    config.debug
-      ? `debug: B build, G spawn, H god (${sim.godMode ? 'on' : 'off'}), F noclip (${noclip ? 'on' : 'off'}), Space rise/R descend, T rest, N noise, U danger (${danger ? 'on' : 'off'}), K hurt, V shambler`
-      : '';
-
   const optionalHudLine = (visible: boolean, text: string): string => (visible ? text : '');
   const hudText = (looking: string): string => {
     const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
-    const visible = hudVisibility(hudOptions, config.debug);
+    const visible = hudVisibility(hudOptions);
     const detailed = visible.details;
     return [
       optionalHudLine(visible.clock, clockText()),
       optionalHudLine(visible.stats, needsText()),
-      optionalHudLine(
-        visible.stats,
-        `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg${build.on ? '   BUILD MODE (B)' : ''}`,
-      ),
-      debugText(),
-      optionalHudLine(config.debug, `shamblers ${zombieStore.size}`),
+      optionalHudLine(visible.stats, `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg`),
       optionalHudLine(detailed, `${fps.toFixed(0)} fps   seed ${config.seed}`),
       optionalHudLine(detailed, `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`),
       optionalHudLine(detailed, `pos ${x} ${y} ${z} m`),
-      optionalHudLine(
-        config.debug,
-        `chunks ${meshes.count} meshed, ${streamer.pending} pending; ${streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks)} holes`,
-      ),
       optionalHudLine(detailed, `chunks ${meshes.count} meshed, ${streamer.pending} pending`),
       optionalHudLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
     ]
@@ -707,9 +630,9 @@ export const startPlay = (engine: Engine): void => {
   };
 
   const promptText = (now: number): string => {
-    const { messages, interaction } = hudVisibility(hudOptions, config.debug);
+    const { messages, interaction } = hudVisibility(hudOptions);
     const lines = messages && now < noticeUntil ? [notice] : [];
-    const entity = interaction && input.locked && !build.on ? lookedAt() : undefined;
+    const entity = interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
     if (entity) {
       lines.push(useText(entity));
     }
@@ -726,7 +649,7 @@ export const startPlay = (engine: Engine): void => {
       quickbarDrawn = key;
       renderQuickbar(quickbarBox, quickbar, inventory);
     }
-    quickbarBox.hidden = build.on;
+    quickbarBox.hidden = debugTools?.buildOn ?? false;
   };
 
   const updateVisualFeedback = (dt: number): void => {
@@ -751,11 +674,30 @@ export const startPlay = (engine: Engine): void => {
     hoveredElement?.classList.add('game-cursor-hover');
   };
 
+  const updateDebugReadout = (now: number): void => {
+    if (!debugTools || now - lastDebugUpdate < 250) {
+      return;
+    }
+    lastDebugUpdate = now;
+    debugTools.update({
+      fps,
+      seed: config.seed,
+      radius: config.radiusM,
+      movement: input.walking ? 'walking' : 'jogging',
+      position: [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
+      chunks: meshes.count,
+      pending: streamer.pending,
+      holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
+      zombies: zombieStore.size,
+    });
+  };
+
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
+    input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = !overlay.hidden; // the pause card is up
     sim.frame(dt);
@@ -763,23 +705,24 @@ export const startPlay = (engine: Engine): void => {
     piles.sync(inventory);
     furniture.sync(entities);
     zombieMeshes.sync(zombieStore);
+    updateDebugReadout(now);
 
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s, ez * s);
     updateVisualFeedback(dt);
     updateGameCursor();
 
-    hud.textContent = hudText(build.target(eye(), lookDir(), input.locked));
-    hud.hidden = !config.debug && hud.textContent === '';
-    $('crosshair').hidden = !hudVisibility(hudOptions, config.debug).crosshair;
+    hud.textContent = hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '');
+    hud.hidden = hud.textContent === '';
+    $('crosshair').hidden = !hudVisibility(hudOptions).crosshair;
     prompt.textContent = promptText(now);
     prompt.hidden = prompt.textContent === '';
     screen.update();
     inventoryStats.hidden = !screen.isOpen;
     inventoryStats.textContent = needsText();
     drawQuickbar();
-    quickbarBox.hidden = build.on || !hudVisibility(hudOptions, config.debug).quickbar;
-    if (screen.isOpen || !hudVisibility(hudOptions, config.debug).handling) {
+    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
+    if (screen.isOpen || !hudVisibility(hudOptions).handling) {
       handlingBox.hidden = true;
     } else {
       renderHandling(handlingBox, queue);

@@ -7,6 +7,16 @@ const SENSITIVITY = 0.0022;
 export const isMenuOpeningKey = (code: string, debug: boolean, menuOpen: boolean): boolean =>
   code === 'KeyG' && debug && !menuOpen;
 
+export const worldActionForKey = (code: string): 'interact' | 'cancel' | undefined => {
+  if (code === 'KeyF') {
+    return 'interact';
+  }
+  if (code === 'KeyX') {
+    return 'cancel';
+  }
+  return undefined;
+};
+
 export const nextMenuCursor = (
   position: { x: number; y: number },
   movement: { x: number; y: number },

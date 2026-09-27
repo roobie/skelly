@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMenuOpeningKey, nextMenuCursor } from '../src/game/input.ts';
+import { isMenuOpeningKey, nextMenuCursor, worldActionForKey } from '../src/game/input.ts';
 
 describe('menu input', () => {
   it('identifies G as the opening key so its text default can be cancelled', () => {
@@ -7,6 +7,12 @@ describe('menu input', () => {
     expect(isMenuOpeningKey('KeyG', true, true)).toBe(false);
     expect(isMenuOpeningKey('KeyG', false, false)).toBe(false);
     expect(isMenuOpeningKey('KeyF10', true, false)).toBe(false);
+  });
+
+  it('binds world interaction to F and leaves Q and E unbound', () => {
+    expect(worldActionForKey('KeyF')).toBe('interact');
+    expect(worldActionForKey('KeyQ')).toBeUndefined();
+    expect(worldActionForKey('KeyE')).toBeUndefined();
   });
 
   it('moves the menu cursor and clamps it to the viewport', () => {
