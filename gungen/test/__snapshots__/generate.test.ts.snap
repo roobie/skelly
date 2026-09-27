@@ -1230,6 +1230,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "profile": "smg",
         },
       },
       "receiver": {
@@ -1316,6 +1317,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "profile": "smg",
         },
       },
       "receiver": {
@@ -1399,6 +1401,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "profile": "smg",
         },
       },
       "receiver": {

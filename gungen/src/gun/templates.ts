@@ -46,7 +46,7 @@ export const smg: Template = {
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'] } },
     { id: 'handguard', family: 'handguard', params: { inner: 'M' }, chance: 0.7 },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'] } },
+    { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'], profile: 'smg' } },
     { id: 'stock', family: 'stock', params: { length: ['S', 'M'], style: 'straight' }, chance: 0.6 },
     { id: 'sight', family: 'sight', chance: 0.8 },
   ],

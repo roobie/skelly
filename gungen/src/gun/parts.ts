@@ -341,10 +341,23 @@ export const grip: PartFamily = {
   build(params): PartDef {
     const len = { S: 8, M: 10, L: 12 }[cls(params, 'length')];
     const a = (GRIP_ANGLE * Math.PI) / 180;
+    const bevelSteps = 12;
+    const bevelStep = 0.25;
+    const body = Array.from({ length: bevelSteps }, (_, i) => {
+      const x0 = -1.5 + i * bevelStep;
+      const x1 = x0 + bevelStep;
+      // The port's mounting plane is perpendicular to its tilted normal. Keep
+      // each stepped section below that plane so the grip meets the lower
+      // without the gap/penetration a flat, rotated box creates.
+      const top = Math.floor((Math.tan(a) * x0 + 1e-9) / bevelStep) * bevelStep;
+      // Preserve clearance from the lower's trigger-finger keep-out at the front edge.
+      const clearanceTop = i === bevelSteps - 1 ? top - bevelStep : top;
+      return solid(`body-${i}`, [x0, -len, -1.25], [x1, clearanceTop, 1.25]);
+    });
     return {
       family: 'grip',
       // Authored upright; the tilted port makes it lean back once mounted.
-      solids: [solid('body', [-1.5, -len, -1.25], [1.5, 0, 1.25])],
+      solids: body,
       ports: [
         {
           id: 'top',
@@ -365,15 +378,15 @@ export const grip: PartFamily = {
 
 export const magazine: PartFamily = {
   name: 'magazine',
-  params: { length: size },
+  params: { length: size, profile: choice('standard', 'smg') },
   build(params): PartDef {
     const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
+    const depth = MAGAZINE_DEPTH * (params.profile === 'smg' ? 0.6 : 1);
+    const width = MAGAZINE_WIDTH * (params.profile === 'smg' ? 0.8 : 1);
     return {
       family: 'magazine',
-      // MAGAZINE_DEPTH × MAGAZINE_WIDTH in section; the lower's well and magazine path match it.
-      solids: [
-        solid('body', [-MAGAZINE_DEPTH / 2, -len, -MAGAZINE_WIDTH / 2], [MAGAZINE_DEPTH / 2, 0, MAGAZINE_WIDTH / 2]),
-      ],
+      // The lower's well and magazine path retain the standard envelope; SMG magazines are scaled within it.
+      solids: [solid('body', [-depth / 2, -len, -width / 2], [depth / 2, 0, width / 2])],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],

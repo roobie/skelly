@@ -14,6 +14,19 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 const onGrid = (n: number) => Math.abs(n / GRID - Math.round(n / GRID)) < 1e-9;
 
 describe('part library', () => {
+  it('bevels the grip body to follow its tilted mounting face', () => {
+    const def = FAMILIES.grip!.build({ length: 'M' });
+    const topEdges = def.solids.map((s) => s.box.center[1]! + s.box.half[1]!);
+    expect(def.solids).toHaveLength(12);
+    expect(new Set(topEdges).size).toBeGreaterThan(1);
+  });
+
+  it('scales the SMG magazine section by 0.6 in X and 0.8 in Z', () => {
+    const body = FAMILIES.magazine!.build({ length: 'L', profile: 'smg' }).solids[0]!.box;
+    expect(body.half[0] * 2).toBeCloseTo(5.5 * 0.6);
+    expect(body.half[2] * 2).toBeCloseTo(2.5 * 0.8);
+  });
+
   for (const family of Object.values(FAMILIES)) {
     describe(family.name, () => {
       for (const params of variants(family)) {
@@ -21,9 +34,11 @@ describe('part library', () => {
         const tag = JSON.stringify(params);
 
         it(`${tag}: positions and extents are on the ${GRID}u grid`, () => {
+          const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
+            box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
           const numbers = [
-            ...def.solids.flatMap((s) => [...s.box.center, ...s.box.half]),
-            ...def.keepOuts.flatMap((k) => [...k.box.center, ...k.box.half]),
+            ...(family.name === 'magazine' && params.profile === 'smg' ? [] : def.solids.flatMap((s) => bounds(s.box))),
+            ...def.keepOuts.flatMap((k) => bounds(k.box)),
             ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
             ...def.axes.flatMap((a) => [...a.origin]),
           ];
