@@ -39,7 +39,7 @@ interface SpawnMenuActions {
 const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): TemplateResult => html`
   <div class="card">
     <h2>Spawn an item</h2>
-    <p>Drops it at your feet. Esc or G closes.</p>
+    <p>Drops it at your feet. Press G to close.</p>
     <input
       type="search"
       placeholder="Filter by name, id or category"

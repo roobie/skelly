@@ -9,7 +9,10 @@ import { Rng } from './random.ts';
 import { Scheduler } from './scheduler.ts';
 
 /** Events systems emit. Noise, damage and block changes join as their systems arrive. */
-export type SimEvent = { kind: 'interrupt'; reason: string } | { kind: 'death'; cause: string };
+export type SimEvent =
+  | { kind: 'interrupt'; reason: string }
+  | { kind: 'damage'; amount: number; cause: string }
+  | { kind: 'death'; cause: string };
 
 export type Timed<E> = E & { readonly time: number };
 
@@ -90,7 +93,11 @@ export class Simulation {
     if (this.godMode) {
       return;
     }
+    const applied = Math.min(amount, this.needs.health);
     this.needs.health = Math.max(0, this.needs.health - amount);
+    if (applied > 0) {
+      this.emit({ kind: 'damage', amount: applied, cause });
+    }
     if (this.needs.health <= 0) {
       this.die(cause);
     } else {

@@ -28,6 +28,15 @@
         "assets/models/sniper_rifle.glb"
       ],
       "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed"
+    },
+    {
+      "title": "Cursor pack",
+      "url": "https://opengameart.org/content/cursor-pack",
+      "author": "Ivan Voirol",
+      "licence": "CC0-1.0",
+      "download": "cursor.png",
+      "files": ["assets/cursors/cursor.png"],
+      "changes": "Kept only the arrow and hand sprites from cursor.png"
     }
   ]
 }
