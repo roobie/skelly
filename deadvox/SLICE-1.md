@@ -484,10 +484,11 @@ decay (compared against live ticking), and death.
 open door, not through a closed one; cannot hit through a closed door or occupy
 its cells; and loses the player after losing sight of them.
 
-**Status:** block — BR approved fixes 21 (jump clearance) and 22 (swung
-door-panel targeting) in-game on 2026-09-27 at 11:51. Items 23 (god mode/noclip)
-and 24 (body collision) remain open for BR review; 1.7 remains blocked pending
-visual and play-feel approval. `test/zombies.test.ts` exercises the real
+**Status:** awaiting-br — BR approved fixes 21 (jump clearance) and 22 (swung
+door-panel targeting) in-game on 2026-09-27 at 11:51, and item 24 (body
+collision) in-game on 2026-09-27 at 14:30. Item 23 (god mode/noclip), gait,
+chase feel, and the frame budget remain open for BR review; milestone 1.7 stays
+awaiting BR approval. `test/zombies.test.ts` exercises the real
 `wood_door` entity for open/closed traversal, safe closing, attack occlusion, and
 jump clearance (including a window wall and low ceiling). `test/furniture.test.ts`
 checks panel picking, an open ray through to furniture behind the doorway, and
