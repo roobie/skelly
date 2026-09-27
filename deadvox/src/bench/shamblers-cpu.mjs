@@ -1,71 +1,96 @@
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { buildRegistry } from '../core/content.ts';
 import { ZombieSystem } from '../core/zombies.ts';
+import { PLAYER, physicsFor } from '../game/player.ts';
+import { parseShamblerSeed } from './plan.ts';
+import { findShamblerBenchPlayer, placeShamblerRing } from './shamblerPlacement.ts';
+import { createHeadlessShamblerWorld } from './shamblerWorld.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const shamblerData = JSON.parse(readFileSync(resolve(root, 'src/content/base/zombies.json'), 'utf8'));
-const shambler = shamblerData.zombies.find(({ id }) => id === 'shambler');
-const blockSize = 0.5;
-const physics = { gravity: 28 / blockSize, stepHeight: 0.5 / blockSize };
-const floor = (_x, y) => y === 0;
+const base = resolve(root, 'src/content/base');
+const { registry } = buildRegistry(
+  readdirSync(base)
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
+);
+const shambler = registry.zombies.get('shambler');
+if (!shambler) {
+  console.error('The base content has no shambler definition.');
+  process.exit(1);
+}
+
+const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1];
+const args = process.argv.slice(2);
+const requestedCounts = [];
+let seed = 1;
+let sawSeed = false;
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === '--seed') {
+    if (sawSeed || i + 1 >= args.length) {
+      console.error('Usage: npm run bench:shamblers -- [N ...] [--seed signed-32-bit-integer]');
+      process.exit(2);
+    }
+    i += 1;
+    seed = parseShamblerSeed(args[i]);
+    sawSeed = true;
+  } else if (arg.startsWith('--seed=')) {
+    if (sawSeed) {
+      console.error('Specify --seed only once.');
+      process.exit(2);
+    }
+    seed = parseShamblerSeed(arg.slice('--seed='.length));
+    sawSeed = true;
+  } else {
+    requestedCounts.push(Number(arg));
+  }
+}
+if (seed === undefined) {
+  console.error('--seed must be a signed 32-bit integer.');
+  process.exit(2);
+}
+const counts = requestedCounts.length > 0 ? requestedCounts : [10, 50, 100];
+if (counts.some((n) => !Number.isSafeInteger(n) || n <= 0 || n > 500) || new Set(counts).size !== counts.length) {
+  console.error('N values must be unique positive integers no greater than 500.');
+  process.exit(2);
+}
+
+const engine = createHeadlessShamblerWorld(seed, registry);
+const playerBody = findShamblerBenchPlayer(engine);
 const player = {
-  pos: [0, 1, 0],
-  facing: [-1, 0, 0],
+  pos: playerBody.pos,
+  body: playerBody,
+  facing: [1, 0, 0],
   movement: 'still',
   lit: true,
   lightSeenFrom: 40,
 };
-const percentile = (samples, p) => [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1];
-const fract = (x) => x - Math.floor(x);
-const seed = 1;
-
-const requested = process.argv.slice(2).map(Number);
-const counts = requested.length > 0 ? requested : [10, 50, 100];
-if (counts.some((n) => !Number.isSafeInteger(n) || n <= 0 || n > 500)) {
-  console.error('N must be a positive integer no greater than 500.');
-  process.exit(2);
-}
+const startTime = parseTimeOfDay('23:30');
+const hour = hourOfDay(startTime);
 
 for (const count of counts) {
   const system = new ZombieSystem({
-    isSolid: floor,
-    blockSize,
-    physics,
-    jumpSpeed: 7.9,
+    isSolid: engine.isSolid,
+    blockSize: engine.config.scale.blockSize,
+    physics: physicsFor(engine.config.scale),
+    jumpSpeed: PLAYER.jump,
     player: () => player,
-    hour: () => 23.5,
+    hour: () => hour,
     hurtPlayer: () => undefined,
   });
-  const placed = [];
-  for (let i = 0; i < count; i++) {
-    let position;
-    for (let attempt = 0; attempt < 256; attempt++) {
-      const key = seed * 12.9898 + i * 78.233 + attempt * 37.719;
-      const radius = Math.sqrt(64 + fract(Math.sin(key) * 43_758.5453) * 336);
-      const angle = fract(Math.sin(key + 19.19) * 19_349.123) * Math.PI * 2;
-      const candidate = [(radius * Math.cos(angle)) / blockSize, 1, (radius * Math.sin(angle)) / blockSize];
-      const overlaps = placed.some(
-        (other) => Math.hypot(candidate[0] - other[0], candidate[2] - other[2]) < 1.12 / blockSize,
-      );
-      if (!overlaps) {
-        position = candidate;
-        break;
-      }
-    }
-    if (!position) {
-      console.error(`Could not place shambler ${i + 1} without overlap for N=${count}.`);
-      process.exit(1);
-    }
-    const direction = [-position[0], 0, -position[2]];
-    const id = system.add(shambler, position, direction);
+  for (const position of placeShamblerRing({ count, seed, player: playerBody, engine })) {
+    const facing = [playerBody.pos[0] - position[0], 0, playerBody.pos[2] - position[2]];
+    const id = system.add(shambler, position, facing);
     system.store.get(id).body.onGround = true;
-    placed.push(position);
   }
 
-  // Match the browser harness's first perception/AI tick and fail rather than
-  // reporting timings for shamblers that did not enter the intended chase state.
+  // Match the browser harness's checked first perception tick; never time a setup
+  // where a placed shambler failed to acquire the lit player in the seeded hamlet.
   system.tick(1 / 20);
   const notChasing = [...system.store.entries()].filter(([, zombie]) => zombie.mode !== 'chase').length;
   if (notChasing > 0) {
@@ -73,18 +98,17 @@ for (const count of counts) {
     process.exit(1);
   }
 
-  for (let tick = 1; tick < 60; tick++) {
+  for (let tick = 0; tick < 60; tick++) {
     system.tick(1 / 20);
   }
   const samples = [];
   for (let tick = 0; tick < 300; tick++) {
     const start = process.hrtime.bigint();
     system.tick(1 / 20);
-    const elapsed = Number(process.hrtime.bigint() - start) / 1e6;
-    samples.push(elapsed);
+    samples.push(Number(process.hrtime.bigint() - start) / 1e6);
   }
   const mean = samples.reduce((sum, ms) => sum + ms, 0) / samples.length;
   console.log(
-    `N=${count}: chasing ZombieSystem CPU ms/tick mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)} (${samples.length} measured ticks; seed=${seed}, hour=23.5)`,
+    `N=${count}: ZombieSystem CPU ms/tick mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)} (${samples.length} measured ticks; seed=${seed}, hour=23.5, ${engine.loadedChunks} chunks/${engine.loadedColumns} columns loaded)`,
   );
 }

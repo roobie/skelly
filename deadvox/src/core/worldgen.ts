@@ -56,6 +56,29 @@ export const terrainHeight = (seed: number, scale: Scale, x: number, z: number):
   return Math.floor(terrainHeightMetres(seed, (x + 0.5) * s, (z + 0.5) * s) / s);
 };
 
+/** Ground surface height in metres, matching the game engine for natural or site-shaped terrain. */
+export const worldGroundAt = ({
+  seed,
+  scale,
+  surface,
+  xm,
+  zm,
+}: {
+  seed: number;
+  scale: Scale;
+  surface: Surface | undefined;
+  xm: number;
+  zm: number;
+}): number => {
+  const s = scale.blockSize;
+  if (!surface) {
+    return Math.floor(terrainHeightMetres(seed, xm, zm) / s) * s + s;
+  }
+  const x = Math.floor(xm / s);
+  const z = Math.floor(zm / s);
+  return (surface.height(x, z, terrainHeight(seed, scale, x, z)) + 1) * s;
+};
+
 /** Top block heights for a chunk column, CHUNK×CHUNK, indexed x + CHUNK * z. */
 export const columnHeights = (seed: number, scale: Scale, cx: number, cz: number): Int32Array => {
   const out = new Int32Array(CHUNK * CHUNK);
