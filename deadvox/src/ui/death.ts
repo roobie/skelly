@@ -1,6 +1,7 @@
 // The death screen (SLICE-1.md, 1.6): what killed you, how long you lasted, and what
 // you took from the houses. "New world" starts over in a fresh world, with the next seed.
 
+import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
 import { defOf } from '../core/items.ts';
 
@@ -37,32 +38,35 @@ export const lootedText = (registry: Registry, looted: ReadonlyMap<string, numbe
     .map(([type, count]) => `${count > 1 ? `${count} × ` : ''}${defOf(registry, type).name.toLowerCase()}`)
     .join(', ');
 
-const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string): HTMLElementTagNameMap[K] => {
-  const node = document.createElement(tag);
-  if (text !== undefined) {
-    node.textContent = text;
-  }
-  return node;
-};
+export interface DeathViewModel {
+  readonly cause: string;
+  readonly span: string;
+  /** "You searched 3 containers and took can of beans." / "You searched nothing." */
+  readonly summary: string;
+}
 
-export const showDeath = (root: HTMLElement, registry: Registry, summary: DeathSummary, newWorld: () => void): void => {
-  const card = el('div');
-  card.className = 'card';
+export const deathViewModel = (registry: Registry, summary: DeathSummary): DeathViewModel => {
   const looted = lootedText(registry, summary.looted);
-  const button = el('button', 'New world');
-  button.type = 'button';
-  button.addEventListener('click', newWorld);
-  card.append(
-    el('h1', 'You died'),
-    el('p', `Of ${summary.cause}, after ${formatSpan(summary.survived)}.`),
-    el(
-      'p',
+  return {
+    cause: summary.cause,
+    span: formatSpan(summary.survived),
+    summary:
       summary.searched === 0
         ? 'You searched nothing.'
         : `You searched ${summary.searched} ${summary.searched === 1 ? 'container' : 'containers'}${looted ? ` and took ${looted}` : ' and took nothing'}.`,
-    ),
-    button,
-  );
-  root.replaceChildren(card);
+  };
+};
+
+const deathTemplate = (vm: DeathViewModel, newWorld: () => void): TemplateResult => html`
+  <div class="card">
+    <h1>You died</h1>
+    <p>Of ${vm.cause}, after ${vm.span}.</p>
+    <p>${vm.summary}</p>
+    <button type="button" @click=${newWorld}>New world</button>
+  </div>
+`;
+
+export const showDeath = (root: HTMLElement, registry: Registry, summary: DeathSummary, newWorld: () => void): void => {
+  render(deathTemplate(deathViewModel(registry, summary), newWorld), root);
   root.hidden = false;
 };
