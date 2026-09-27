@@ -7,6 +7,7 @@
 import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { BlockEntities } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
+import { worldSolid } from '../core/collision.ts';
 import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
@@ -14,7 +15,7 @@ import type { Site } from '../core/site.ts';
 import { DAY_SKY } from '../core/sky.ts';
 import { type BlockBox, rasterize } from '../core/structure.ts';
 import { World } from '../core/world.ts';
-import { terrainHeight, terrainHeightMetres } from '../core/worldgen.ts';
+import { terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import type { GameConfig } from './config.ts';
@@ -106,22 +107,12 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   const site: { structures: BlockBox[]; spawn: Engine['spawn'] } = built
     ? { structures: [], spawn: built.spawn }
     : testHouseSite(config, registry);
-  const s = scale.blockSize;
   // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
-  const groundAt = (xm: number, zm: number): number => {
-    if (!built) {
-      return Math.floor(terrainHeightMetres(seed, xm, zm) / s) * s + s;
-    }
-    const [x, z] = [Math.floor(xm / s), Math.floor(zm / s)];
-    return (built.surface.height(x, z, terrainHeight(seed, scale, x, z)) + 1) * s;
-  };
+  const groundAt = (xm: number, zm: number): number => worldGroundAt({ seed, scale, surface: built?.surface, xm, zm });
 
   const world = new World();
   const entities = new BlockEntities(registry);
-  const isSolid = (x: number, y: number, z: number) => {
-    const block = world.getBlock(x, y, z);
-    return (block !== 0 && registry.blocks[block]!.solid) || entities.isSolid(x, y, z);
-  };
+  const isSolid = worldSolid(world, registry, entities);
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));

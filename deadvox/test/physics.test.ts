@@ -3,6 +3,7 @@ import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
+import { StepOffset } from '../src/render/stepOffset.ts';
 
 const metre = makeScale(1);
 const half = makeScale(0.5);
@@ -93,6 +94,69 @@ describe('stepBody', () => {
       const body = walkEast(metre, 1);
       expect(body.pos[0] + body.halfWidth).toBeLessThanOrEqual(3);
     });
+  });
+
+  it('smooths the player camera over grounded step snaps but not a jump', () => {
+    const ledge = (x: number, y: number) => y === 0 || (x === 3 && y === 1);
+    const body = createPlayerBody(half, 2.4, 1, 0.5);
+    body.onGround = true;
+    body.vel[0] = PLAYER.walk / half.blockSize;
+    const visual = new StepOffset(PLAYER.stepHeight);
+    const position = () =>
+      [body.pos[0] * half.blockSize, body.pos[1] * half.blockSize, body.pos[2] * half.blockSize] as [
+        number,
+        number,
+        number,
+      ];
+    const cameraY = (verticalOffset: number) => body.pos[1] * half.blockSize + PLAYER.eye + verticalOffset;
+    visual.update(position(), body.onGround, 0);
+
+    const beforeStep = cameraY(0);
+    stepBody(body, 1 / 60, ledge, physicsFor(half));
+    expect(body.pos[1]).toBeCloseTo(2, 3);
+    let offset = visual.update(position(), body.onGround, 1 / 60);
+    let previousDrawnY = cameraY(offset);
+    expect(Math.abs(previousDrawnY - beforeStep)).toBeLessThanOrEqual(0.06);
+    expect(Math.abs(offset)).toBeLessThanOrEqual(PLAYER.stepHeight);
+    expect(body.pos[0] * half.blockSize).toBeCloseTo(1.23, 3);
+    for (let frame = 1; frame < 15; frame++) {
+      offset = visual.update(position(), body.onGround, 1 / 60);
+      const drawnY = cameraY(offset);
+      expect(Math.abs(drawnY - previousDrawnY)).toBeLessThanOrEqual(0.06);
+      expect(Math.abs(offset)).toBeLessThanOrEqual(PLAYER.stepHeight);
+      expect(body.pos[0] * half.blockSize).toBeCloseTo(1.23, 3);
+      previousDrawnY = drawnY;
+    }
+    expect(offset).toBe(0);
+    expect(cameraY(offset)).toBeCloseTo(body.pos[1] * half.blockSize + PLAYER.eye);
+
+    // A grounded snap down one block gets the opposite compensation.
+    const beforeDescent = cameraY(0);
+    body.pos[1] -= 1;
+    offset = visual.update(position(), body.onGround, 1 / 60);
+    previousDrawnY = cameraY(offset);
+    expect(Math.abs(previousDrawnY - beforeDescent)).toBeLessThanOrEqual(0.06);
+    for (let frame = 1; frame < 15; frame++) {
+      offset = visual.update(position(), body.onGround, 1 / 60);
+      const drawnY = cameraY(offset);
+      expect(Math.abs(drawnY - previousDrawnY)).toBeLessThanOrEqual(0.06);
+      previousDrawnY = drawnY;
+    }
+    expect(offset).toBe(0);
+
+    body.pos[1] += 1;
+    offset = visual.update(position(), true, 1 / 60);
+    expect(Math.abs(offset)).toBeGreaterThan(0);
+    expect(visual.update(position(), true, 1 / 60, true)).toBe(0);
+    body.pos[1] -= 1;
+
+    body.onGround = true;
+    body.vel[1] = PLAYER.jump / half.blockSize;
+    stepBody(body, 1 / 60, ledge, physicsFor(half));
+    expect(body.onGround).toBe(false);
+    offset = visual.update(position(), body.onGround, 1 / 60);
+    expect(offset).toBe(0);
+    expect(cameraY(offset)).toBeCloseTo(body.pos[1] * half.blockSize + PLAYER.eye);
   });
 
   it('detects blocks inside the body', () => {

@@ -512,11 +512,11 @@ For BR's per-machine frame budget, run `?bench=shamblers&n=10,25,50,100&seed=1&t
 (or omit `n` for that default list); `?bench=report` stores and displays frame,
 ZombieSystem tick, render-submit and hole results plus a pasteable summary. Run
 it on the target machine with its normal renderer: headless/software-renderer
-numbers only prove the harness runs. CPU-only chasing-AI check: run
-`npm run bench:shamblers -- 10 50 100`. It uses the same night-time lit-player
-setup, with non-overlapping shamblers on a flat 8–20 m ring; the fixed seed is
-1 and the output is 15 seconds of tick timings after a 3-second warmup. The
-ten-shambler test H remains the CI guard.
+numbers only prove the harness runs. CPU-only chasing-AI check on the generated
+hamlet: run `npm run bench:shamblers -- 10 50 100` (optional `--seed N`, default
+1). It uses the same shared player/ring placement, night-time lit-player setup,
+terrain and furniture solidity, then prints 20 Hz tick timings after 60 warm-up
+and 300 measured ticks. The ten-shambler test H remains the CI guard.
 
 ### 1.8 Rest and sleep
 
