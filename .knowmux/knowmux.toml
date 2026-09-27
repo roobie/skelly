@@ -1,0 +1,75 @@
+[instance]
+db = "knowmux.db"
+collections_dir = "collections"
+
+[cache]
+embedding_db = "embeddings.db"
+
+# Paths are relative to this directory (.knowmux/), except game-design's, which is
+# another checkout and is named absolutely so the config works from any worktree
+# of this repo too.
+
+# --- skelly -------------------------------------------------------------------
+# This repo's own prose: deadvox's design, slice plans and ADRs, gungen's
+# PROJECT.md. Same exclusions as game-design's games wing, for the same reasons:
+# session state (.planning/, .claude/ with its worktrees, .agents/), the agent
+# maildirs (.agent-mail/: transport, not canon), vendored packages, and the
+# ambient layer (CLAUDE.md/AGENTS.md), which is already in every turn.
+[[sources]]
+path = ".."
+adapter = "markdown"
+include = [".*\\.md$"]
+exclude = [
+    "(^|/)\\.planning/",
+    "(^|/)\\.claude/",
+    "(^|/)\\.agents/",
+    "(^|/)\\.agent-mail/",
+    "(^|/)node_modules/",
+    "(^|/)CLAUDE\\.md$",
+    "(^|/)AGENTS\\.md$",
+]
+
+# --- game-design --------------------------------------------------------------
+# Indexed from ~/devel/game-design, mirroring that repo's own
+# .knowmux/knowmux.toml (read it for why each wing exists and is separate).
+# Its collections are real directories under collections/ whose collection.toml
+# is a symlink to game-design's, so their gating (godot is pile-exclusive) stays
+# defined in one place. (Symlinking the whole directory registered no collection
+# on the first sync; linking the file does.) A new game-design collection needs
+# its own directory and link here. Keep these sources in step with that file.
+[[sources]]
+path = "/home/jani/devel/game-design/reference/docs"
+adapter = "markdown"
+include = [".*\\.md$"]
+
+[[sources]]
+path = "/home/jani/devel/game-design/techref/docs"
+adapter = "markdown"
+include = [".*\\.md$"]
+
+[[sources]]
+path = "/home/jani/devel/game-design/games"
+adapter = "markdown"
+include = [".*\\.md$"]
+exclude = [
+    "(^|/)\\.planning/",
+    "(^|/)\\.claude/",
+    "(^|/)\\.agents/",
+    "(^|/)archive/",
+    "(^|/)node_modules/",
+    "(^|/)CLAUDE\\.md$",
+    "(^|/)AGENTS\\.md$",
+    "(^|/)AnalyzerReleases\\.(Shipped|Unshipped)\\.md$",
+    "(^|/)models/poses/",
+    "(^|/)harness/test/fixtures/",
+]
+
+[[sources]]
+path = "/home/jani/devel/game-design/meta"
+adapter = "markdown"
+include = [".*\\.md$"]
+
+[[sources]]
+path = "/home/jani/devel/game-design/godot-ref/docs"
+adapter = "markdown"
+include = [".*\\.md$"]
