@@ -782,6 +782,52 @@ describe('shambler scenarios', () => {
     }
   });
 
+  it('smooths a shambler stepping up while keeping its physics and horizontal render position exact', () => {
+    const stepWorld: SolidAt = (x, y) => y === 0 || (x === 2 && y === 1);
+    const { system, zombie } = standing([1.4, 1, 0], [1, 0, 0]);
+    zombie.body.vel[0] = 2.8 / BLOCK_SIZE;
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    const legs = [parts[4]!, parts[5]!];
+    const feet = () => {
+      const boxes = legs.map((leg) => instanceBox(leg));
+      return {
+        y: Math.min(...boxes.flatMap(({ points }) => points.map(({ y }) => y))),
+        x: boxes.reduce((sum, { center }) => sum + center.x, 0) / boxes.length,
+      };
+    };
+    const syncFrame = (dt: number) => {
+      meshes.sync(system.store, dt);
+      const drawn = feet();
+      expect(drawn.x).toBeCloseTo(zombie.body.pos[0] * BLOCK_SIZE, 5);
+      return drawn.y;
+    };
+
+    const beforeStep = syncFrame(0);
+    stepBody(zombie.body, 1 / 20, stepWorld, PHYSICS);
+    expect(zombie.body.pos[1]).toBeCloseTo(2, 3);
+    expect(zombie.body.onGround).toBe(true);
+    let previousDrawnY = syncFrame(1 / 60);
+    expect(Math.abs(previousDrawnY - beforeStep)).toBeLessThanOrEqual(0.06);
+    for (let frame = 1; frame < 15; frame++) {
+      const drawnY = syncFrame(1 / 60);
+      expect(Math.abs(drawnY - previousDrawnY)).toBeLessThanOrEqual(0.06);
+      previousDrawnY = drawnY;
+    }
+    expect(previousDrawnY).toBeCloseTo(zombie.body.pos[1] * BLOCK_SIZE, 5);
+
+    const beforeSnapDown = previousDrawnY;
+    zombie.body.pos[1] -= 1;
+    previousDrawnY = syncFrame(1 / 60);
+    expect(Math.abs(previousDrawnY - beforeSnapDown)).toBeLessThanOrEqual(0.06);
+    for (let frame = 1; frame < 15; frame++) {
+      const drawnY = syncFrame(1 / 60);
+      expect(Math.abs(drawnY - previousDrawnY)).toBeLessThanOrEqual(0.06);
+      previousDrawnY = drawnY;
+    }
+    expect(previousDrawnY).toBeCloseTo(zombie.body.pos[1] * BLOCK_SIZE, 5);
+  });
+
   it('renders collision-sized figures at game scale and swings each leg forward/back about its hip', () => {
     const meshes = new ZombieMeshes(BLOCK_SIZE);
     const { system, id, zombie } = standing([4, 1, 4], [1, 0, 0]);

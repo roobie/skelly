@@ -28,6 +28,7 @@ import { HeldItems } from '../render/hands.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
+import { StepOffset } from '../render/stepOffset.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
@@ -64,6 +65,7 @@ export const startPlay = (engine: Engine): void => {
 
   const [sx, sy, sz] = engine.spawn.pos;
   const body = createPlayerBody(scale, sx / s, sy / s + 0.01, sz / s);
+  const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   const input = new Input(renderer.domElement);
   input.yaw = engine.spawn.yaw;
 
@@ -348,6 +350,7 @@ export const startPlay = (engine: Engine): void => {
       'KeyF',
       () => {
         noclip = !noclip;
+        cameraStepOffset.clear();
         body.vel = [0, 0, 0];
         body.onGround = false;
       },
@@ -638,10 +641,16 @@ export const startPlay = (engine: Engine): void => {
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
-    zombieMeshes.sync(zombieStore);
+    zombieMeshes.sync(zombieStore, dt);
 
+    const cameraOffset = cameraStepOffset.update(
+      [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
+      body.onGround,
+      dt,
+      noclip,
+    );
     const [ex, ey, ez] = eye();
-    camera.position.set(ex * s, ey * s, ez * s);
+    camera.position.set(ex * s, ey * s + cameraOffset, ez * s);
     camera.rotation.set(input.pitch, input.yaw, 0);
 
     hud.textContent = hudText(build.target(eye(), lookDir(), input.locked));
