@@ -1,0 +1,161 @@
+---
+id: skelly::deadvox-interface
+description: Design for what the game's interface may show and say to the player, how far it is diegetic, and how development builds are allowed to break that
+tags: [deadvox, design, ui, ux, diegesis, hud]
+created: 2026-09-27
+status: draft
+---
+
+# deadvox — interface
+
+What the player sees and reads besides the world itself: the HUD, menus,
+screens, cursors, prompts and feedback. [INTERACTIONS.md](INTERACTIONS.md) says
+how the UI and the core divide the work; this document says **what the interface
+may tell the player, and in what voice**. Read it with:
+
+- [DESIGN.md](DESIGN.md): "Hands: what you see is what's there", "UI principles",
+  "Audio" and "Dread".
+- [INTERACTIONS.md](INTERACTIONS.md): the UI contract.
+- [ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md): screens are
+  lit-html.
+
+[[THIS is_grounded_by: DESIGN.md]]
+[[THIS is_grounded_by: INTERACTIONS.md]]
+[[THIS is_grounded_by: docs/decisions/0001-ui-rendering-with-lit-html.md]]
+[[THIS contradicts: DESIGN.md]]
+
+**Status:** draft, for BR. The rules below come from BR's direction on
+2026-09-27: "the end state should be as diegetic as possible", and the quickbar's
+"set it in the inventory" is the kind of thing that should be afforded, not typed
+out. The open questions are at the end.
+
+## The goal
+
+**The shipped game is as diegetic as it can be.** What the player knows comes
+from the world, their body and their hands: what they see, hear and hold, and how
+their character feels. The interface adds as little as it can, and says nothing
+the world could have shown.
+
+**Development breaks that on purpose, all the time.** Debug readouts, key
+legends, instructional hints and test controls are how the game gets built and
+playtested. They are allowed, as long as they're **labelled as development** and
+**removable by one switch**, never woven into the shipped interface. The rules
+below exist so that turning development off leaves a clean game, not a pile of
+text to hunt down.
+
+## Four kinds of interface element
+
+Every element on screen is one of these (the usual game-design split, used here
+as a checklist):
+
+| Kind | Lives in | Example | Shipped game |
+|---|---|---|---|
+| **Diegetic** | the world, visible to the character | the flashlight's beam, a note, a door's state, the item in your hands | preferred |
+| **Bodily** | the character's senses and body | the damage vignette and tilt, blurred vision when exhausted, heavy breathing | allowed, and preferred over a number |
+| **Spatial** | drawn in the world but not part of it | an outline on the thing you look at | only where the world can't carry it |
+| **Meta** | over the screen, outside the world | the inventory grid, the main menu, a clock readout | minimal, opt-in, off by default |
+
+A new element names its kind in its view model's comment, and the pull request
+that adds it says why the kind above it wasn't enough.
+
+## Afford, don't instruct
+
+**The interface shows what can be done; it doesn't write out how.** An empty
+quickbar slot looks like an empty slot (a numbered, empty frame); dragging an
+item onto it is something the inventory makes obvious by allowing it. The words
+"set it in the inventory" are an instruction, and an instruction means the
+affordance failed.
+
+Text on screen falls into four classes, and only three of them ship:
+
+1. **World text:** notes, signs, labels on tins, the radio. Diegetic, and ships.
+2. **Names and facts the character knows:** an item's name, its weight when you
+   heft it. Ships, on the meta surfaces that need them (the inventory).
+3. **The character's voice, when something is refused or noticed:** "You're not
+   tired", "Something's in the way", "You hear something outside". Short, first
+   person, about the world, never about keys or menus. Ships.
+4. **Instructions:** anything naming a key, a click, a menu or a procedure
+   ("press R", "open the inventory", "C: continue"). **Development only.**
+
+### How it's encoded
+
+A rule that lives only in prose gets broken the next time someone is in a hurry,
+so class 4 is made mechanical:
+
+- **One hint channel.** Every instruction is an entry in one table of hints
+  (id, text, the binding it names), shown through one function. Nothing else in
+  the UI may name a key or give a procedure.
+- **Key names come from the bindings.** A hint that mentions a key reads its
+  label from the key-binding table, so a rebinding can't leave a stale "press E"
+  behind (as the swap of E to F nearly did).
+- **A profile decides whether hints show.** Development and playtest builds show
+  hints; the shipped profile doesn't. A first-run tutorial, if the game gets one,
+  is a *diegetic* problem to solve first (a note, a radio message), and hints
+  only as a fallback.
+- **A guard test enforces it,** like `test/uiLitHtml.test.ts` does for ADR 0001.
+  Templates and view models under `src/ui` may not contain key names
+  (`Key[A-Z]`, `Digit`, "press", "click", "Tab", "F10" and so on) or
+  instruction phrasing outside the hint table. Anything in `src/debug` is exempt,
+  since none of it ships.
+- **Review asks one question:** could the player learn this from the world or
+  their hands? If yes, the text goes.
+
+## Development and playtest
+
+- **`?debug=1` is the development profile.** Its panel, readouts and tools live in
+  `src/debug` and load only there (ui.2's split). They can say anything.
+- **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
+  a build) shows the hint channel and nothing from `src/debug`, so a tester sees
+  the game close to how it ships, with the instructions it still needs.
+- **The shipped profile** shows no hints and no debug, and its HUD defaults are
+  empty (as ui.1 already made them).
+
+## Where the current interface stands
+
+| Element | Kind now | Target | Gap |
+|---|---|---|---|
+| HUD stats (health, food, fatigue…) | meta, opt-in | bodily | replace with body cues: breathing, vision, pace, stomach sounds |
+| Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
+| Crosshair | meta, opt-in | spatial or none | open question |
+| Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | an outline on what you can use; no key name |
+| Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
+| Damage vignette and tilt | bodily | bodily | shipped as it is |
+| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; "R or X to stop" becomes a hint |
+| Interruption prompt ("C: continue X: stop") | meta, instruction | meta, choice | a two-button choice drawn as such, with the key names from the hint channel |
+| Main menu (F10) | meta | meta | fine; settings and help live here |
+| Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
+| Notices ("Quickbar 1 is empty: open the inventory…") | mixed | voice | keep the voice part, move the procedure to the hint channel |
+| Drawn menu cursor | meta | meta | fine |
+
+## Contradiction with DESIGN.md
+
+DESIGN.md's "UI principles" say *"Every number the simulation uses (weight,
+time, condition, noise) can be seen somewhere in the UI. Depth is only fun when
+you can read it."* That pulls the other way from "as diegetic as possible". This
+draft proposes to keep both by where the number appears, not whether: **numbers
+are available on request, on meta surfaces the player opens** (inspecting an
+item, the inventory), and never pushed at the player during play. It needs BR's
+ruling; if agreed, DESIGN.md's line is amended to say so.
+
+## Open questions
+
+1. The crosshair: none at all, a dot only while aiming a ranged weapon, or opt-in
+   as now?
+2. Interaction affordance: an outline (spatial) on usable things you look at, or
+   nothing but the world (a door looks like a door)?
+3. The numbers ruling above: numbers only on request, on meta surfaces?
+4. Onboarding: the first minutes of a new player's game, with hints off. Is the
+   plan a diegetic tutorial (a note, a radio), or hints on by default for a
+   first run?
+5. The playtest profile: a URL flag (`?playtest=1`), or the hint setting in the
+   F10 menu?
+
+## Order of work
+
+1. BR rules on the open questions; this document goes to `status: active`.
+2. The hint channel, the bindings-sourced key labels and the guard test (one
+   item, the way ADR 0001's guard landed), moving today's instructional strings
+   into the table.
+3. The playtest profile.
+4. The bodily cues that replace HUD stats, one at a time, each judged by BR in
+   game before the HUD line it replaces is retired.
