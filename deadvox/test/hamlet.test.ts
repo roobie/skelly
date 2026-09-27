@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
-import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
+import { HAMLET, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
 import { rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -89,7 +89,11 @@ describe('the hamlet', () => {
 
   it('has five buildings on flat lots beside an asphalt road', () => {
     const hamlet = new Hamlet(3, registry, scale);
-    const { world } = generate(hamlet, 3, columnsOf(hamlet));
+    const columns = columnsOf(hamlet);
+    const spawns = columns.flatMap(([cx, cz]) => hamlet.zombiesIn(cx, cz));
+    expect(spawns.length).toBeGreaterThanOrEqual(6);
+    expect(spawns.length).toBeLessThanOrEqual(10);
+    const { world } = generate(hamlet, 3, columns);
     expect(hamlet.lots.map((l) => l.placement.template.id).sort()).toEqual(
       ['bungalow', 'corner_store', 'gas_station', 'shed', 'small_house'].sort(),
     );
@@ -142,6 +146,16 @@ describe('the hamlet', () => {
     expect(loot.length).toBeGreaterThan(10);
     const again = columnsOf(hamlet).flatMap(([cx, cz]) => new Hamlet(5, registry, scale).furnitureIn(cx, cz));
     expect(again).toEqual(pieces);
+  });
+
+  it('spawns six to ten deterministic shamblers across twenty seeds', () => {
+    const road = { x0: 0, z0: 0, x1: 64, z1: 12 };
+    for (let seed = 1; seed <= 20; seed++) {
+      const spawns = hamletZombieSpawns(seed, road, [], () => 10);
+      expect(spawns.length, `seed ${seed}`).toBeGreaterThanOrEqual(6);
+      expect(spawns.length, `seed ${seed}`).toBeLessThanOrEqual(10);
+      expect(hamletZombieSpawns(seed, road, [], () => 10)).toEqual(spawns);
+    }
   });
 
   it('keeps lots and the road far enough apart to stay flat', () => {

@@ -1,7 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PLAN, formatPlan, parsePlan, type RunResult } from '../src/bench/plan.ts';
-import { HEADERS, markdownReport, markdownTable, resultRow } from '../src/bench/report.ts';
+import {
+  DEFAULT_PLAN,
+  DEFAULT_SHAMBLER_COUNTS,
+  formatPlan,
+  parsePlan,
+  parseShamblerCounts,
+  parseShamblerSeed,
+  type RunResult,
+  type ShamblerRunResult,
+} from '../src/bench/plan.ts';
+import {
+  HEADERS,
+  markdownReport,
+  markdownTable,
+  resultRow,
+  SHAMBLER_HEADERS,
+  shamblerResultRow,
+  shamblerSummary,
+} from '../src/bench/report.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
+import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats, percentile } from '../src/bench/stats.ts';
 
 describe('bench stats', () => {
@@ -21,6 +39,35 @@ describe('bench stats', () => {
 });
 
 describe('bench plan', () => {
+  it('defaults and validates shambler benchmark counts, seed, and time', () => {
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers'))).toEqual({
+      counts: [...DEFAULT_SHAMBLER_COUNTS],
+      index: 0,
+      seed: 1,
+      time: '23:30',
+    });
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1'))).toEqual({
+      counts: [10, 25],
+      index: 1,
+      seed: 77,
+      time: '21:15',
+    });
+    expect(parseShamblerCounts('1,500')).toEqual([1, 500]);
+    expect(parseShamblerSeed('-2147483648')).toBe(-2_147_483_648);
+    expect(parseShamblerSeed('2147483647')).toBe(2_147_483_647);
+    for (const nonsense of ['', '1.5', '2147483648', '-2147483649', '0x10', 'nope']) {
+      expect(parseShamblerSeed(nonsense), nonsense).toBeUndefined();
+    }
+    for (const nonsense of ['', '0', '-1', '1.5', '501', '10,nope', '10,10']) {
+      expect(parseShamblerCounts(nonsense), nonsense).toBeUndefined();
+    }
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=501'))).toBeUndefined();
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10&i=1'))).toBeUndefined();
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&seed=nope'))).toBeUndefined();
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&seed=2147483648'))).toBeUndefined();
+    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&time=25:99'))).toBeUndefined();
+  });
+
   it('keeps a valid time of day from the URL, and drops anything else', () => {
     expect(benchRunFromUrl(new URLSearchParams('bench=1&time=23:30')).time).toBe('23:30');
     expect(benchRunFromUrl(new URLSearchParams('bench=1&time=25:00')).time).toBeUndefined();
@@ -41,6 +88,7 @@ describe('bench plan', () => {
 });
 
 const ROW_START = /^\| 0\.5 m \| 96 m \|/;
+const SHAMBLER_ROW_START = /^\| 25 \| 12 \|/;
 
 describe('bench report', () => {
   const frames = { frames: 10, fpsMean: 60, msMedian: 16.7, msP95: 17, msP99: 20, msMax: 25, slowFraction: 0.1 };
@@ -75,6 +123,33 @@ describe('bench report', () => {
     expect(row[10]).toBe('17.0 / 10% / 3');
     expect(row[11]).toBe('6.0 / 7.5 / 9.0');
     expect(row[12]).toBe('3.0 / 4.5');
+  });
+
+  it('formats one report cell per shambler header and a pasteable summary', () => {
+    const shambler: ShamblerRunResult = {
+      n: 25,
+      seed: 12,
+      frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
+      zombieTick: { count: 300, median: 0.4, p95: 0.8 },
+      renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
+      holesMax: 3,
+      holeFraction: 0.1,
+      interrupted: false,
+    };
+    expect(shamblerResultRow(shambler)).toHaveLength(SHAMBLER_HEADERS.length);
+    expect(shamblerResultRow(shambler)).toEqual([
+      '25',
+      '12',
+      '16.5 / 19.0 / 20%',
+      '0.4 / 0.8',
+      '1.1 / 2.2',
+      '3 / 10%',
+      'no',
+    ]);
+    expect(shamblerSummary([shambler])).toContain('N=25 seed=12');
+    const report = markdownReport({ startedAt: 'now', quick: false, runs: [], shamblers: [shambler] });
+    expect(report).toContain('Shambler summary: N=25 seed=12');
+    expect(report.split('\n')[2]).toMatch(SHAMBLER_ROW_START);
   });
 
   it('shows a dash for render time in runs from before it existed', () => {

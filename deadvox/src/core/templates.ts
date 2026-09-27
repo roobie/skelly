@@ -82,21 +82,41 @@ export interface Piece {
   size: Vec3;
 }
 
+export interface SpawnMarker {
+  zombie: string;
+  chance: number;
+  pos: Vec3;
+}
+
 export interface CompiledTemplate {
   readonly id: string;
   readonly size: Vec3;
   /** A block id per cell, x + sx * (z + sz * y). Furniture and spawn cells are air. */
   readonly blocks: Uint16Array;
   readonly pieces: readonly Piece[];
+  readonly spawns: readonly SpawnMarker[];
 }
 
 /** Resolves a template's palette against the registry. The validator has already checked it. */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: palette compilation resolves the template's block, furniture, and spawn encodings in one pass.
 export const compileTemplate = (registry: Registry, template: TemplateDef): CompiledTemplate => {
   const [sx, sy, sz] = template.size;
   const blocks = new Uint16Array(sx * sy * sz);
   const pieces: Piece[] = [];
+  const spawns: SpawnMarker[] = [];
   for (const [char, entry] of Object.entries(template.palette)) {
-    if (typeof entry === 'string' || entry.furniture === undefined) {
+    if (typeof entry === 'string') {
+      continue;
+    }
+    if (entry.spawn !== undefined) {
+      for (const pos of cellsOf(template.size)) {
+        if (charAt(template, ...pos) === char) {
+          spawns.push({ zombie: entry.spawn, chance: entry.chance ?? 1, pos });
+        }
+      }
+      continue;
+    }
+    if (entry.furniture === undefined) {
       continue;
     }
     const def = registry.furniture.get(entry.furniture)!;
@@ -110,7 +130,7 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     const entry = template.palette[charAt(template, x, y, z) ?? ''];
     blocks[x + sx * (z + sz * y)] = typeof entry === 'string' ? registry.blockIds.get(entry)! : 0;
   }
-  return { id: template.id, size: [sx, sy, sz], blocks, pieces };
+  return { id: template.id, size: [sx, sy, sz], blocks, pieces, spawns };
 };
 
 /** A template put in the world. `origin` is the lowest corner of its turned footprint; layer 0 is at origin[1]. */
@@ -198,6 +218,12 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
     };
   });
 
+export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker[] =>
+  template.spawns.map((spawn) => {
+    const [x, z] = turned(template.size, turn, spawn.pos[0], spawn.pos[2]);
+    return { ...spawn, pos: [origin[0] + x, origin[1] + spawn.pos[1], origin[2] + z] };
+  });
+
 /**
  * A template with its storeys repeated: layer 0 once, then every layer above it
  * (the top one, the roof, becomes the next storey's floor) `storeys` times. For the
@@ -214,9 +240,16 @@ export const stackTemplate = (template: CompiledTemplate, storeys: number): Comp
   const blocks = new Uint16Array(sx * height * sz);
   blocks.set(template.blocks.subarray(0, layer), 0);
   const pieces: Piece[] = [];
+  const spawns: SpawnMarker[] = [];
   for (let k = 0; k < storeys; k++) {
     blocks.set(template.blocks.subarray(layer), layer * (1 + k * perStorey));
     pieces.push(...template.pieces.map((p) => ({ ...p, pos: [p.pos[0], p.pos[1] + k * perStorey, p.pos[2]] as Vec3 })));
+    spawns.push(
+      ...template.spawns.map((spawn) => ({
+        ...spawn,
+        pos: [spawn.pos[0], spawn.pos[1] + k * perStorey, spawn.pos[2]] as Vec3,
+      })),
+    );
   }
-  return { id: `${template.id}×${storeys}`, size: [sx, height, sz], blocks, pieces };
+  return { id: `${template.id}×${storeys}`, size: [sx, height, sz], blocks, pieces, spawns };
 };

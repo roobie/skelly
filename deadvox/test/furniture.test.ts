@@ -1,12 +1,22 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { type Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { searchTime } from '../src/core/blockEntities.ts';
+import { BlockEntities, doorPanel, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
+import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
-import { cellsOf, compileTemplate, placedPieces, stampPlacement, type Turn } from '../src/core/templates.ts';
+import {
+  cellsOf,
+  compileTemplate,
+  type Facing,
+  placedPieces,
+  stampPlacement,
+  type Turn,
+} from '../src/core/templates.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -15,6 +25,31 @@ const { registry } = buildRegistry(
     .sort()
     .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown })),
 );
+
+const cubeCorners = (point: (x: number, y: number, z: number) => Vector3): Vector3[] => {
+  const corners: Vector3[] = [];
+  for (const x of [-0.5, 0.5]) {
+    for (const y of [-0.5, 0.5]) {
+      for (const z of [-0.5, 0.5]) {
+        corners.push(point(x, y, z));
+      }
+    }
+  }
+  return corners;
+};
+
+const renderedCorners = (matrix: Matrix4): Vector3[] =>
+  cubeCorners((x, y, z) => new Vector3(x, y, z).applyMatrix4(matrix));
+
+const panelCorners = (box: ReturnType<typeof doorPanel>): Vector3[] =>
+  cubeCorners((x, y, z) =>
+    new Vector3(box.center[0] + x * box.size[0], box.center[1] + y * box.size[1], box.center[2] + z * box.size[2])
+      .applyAxisAngle(new Vector3(0, 1, 0), box.rotationY)
+      .add(new Vector3(...box.pivot)),
+  );
+
+const maxCornerError = (expected: Vector3[], actual: Vector3[]): number =>
+  Math.max(...expected.map((point) => Math.min(...actual.map((other) => point.distanceTo(other)))));
 
 /** A cupboard next to a player in a hoodie, and a can of beans in the cupboard. */
 const kitchen = () => {
@@ -91,6 +126,66 @@ describe('furniture', () => {
     const bed = inv.furnish({ type: 'bed', pos: [0, 0, 4], size: [2, 1, 4], facing: 'n' })!;
     expect(inv.entities.isSolid(0, 0, 4)).toBe(true);
     expect(bed.pockets).toBeUndefined();
+  });
+
+  it('picks a door by its panel and lets an open doorway ray reach furniture behind it', () => {
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    const empty = () => false;
+    const pick = (origin: [number, number, number], direction: [number, number, number], maxDistance: number) =>
+      pickFurniture({ entities, origin, direction, maxDistance, blockSize: 0.5, isSolid: empty });
+    const closedHit = pick([5, 3.24, 4], [0, 0, -1], 8);
+    expect(closedHit).toBe(door);
+    const closedOffPanel = pick([8, 3.24, 0.1], [-1, 0, 0], 8);
+    expect(closedOffPanel).toBeUndefined();
+
+    entities.setOpen(door, true);
+    const swungHit = pick([8, 3.24, 1.5], [-1, 0, 0], 10);
+    expect(swungHit).toBe(door);
+
+    const fridge = entities.add({ type: 'fridge', pos: [5, 1, -4], size: [2, 4, 2], facing: 'n' })!;
+    const throughDoor = pick([5, 3.24, 4], [0, 0, -1], 12);
+    expect(throughDoor).toBe(fridge);
+    expect(throughDoor).not.toBe(door);
+    const stoppedByWall = pickFurniture({
+      entities,
+      origin: [5, 3.24, 4],
+      direction: [0, 0, -1],
+      maxDistance: 12,
+      blockSize: 0.5,
+      isSolid: (x, y, z) => x === 5 && y === 3 && z === 2,
+    });
+    expect(stoppedByWall).toBeUndefined();
+  });
+
+  it('shares the renderer door-panel transform with the core box within 1 mm for every facing/state', () => {
+    const entities = new BlockEntities(registry);
+    const facings: Facing[] = ['n', 'e', 's', 'w'];
+    const doors = facings.map(
+      (facing, index) =>
+        entities.add({
+          type: 'wood_door',
+          pos: [index * 4, 1, 0],
+          size: facing === 'n' || facing === 's' ? [2, 4, 1] : [1, 4, 2],
+          facing,
+        })!,
+    );
+    const furniture = new FurnitureMeshes(0.5);
+    for (const open of [false, true]) {
+      for (const door of doors) {
+        entities.setOpen(door, open);
+      }
+      furniture.sync(entities);
+      furniture.group.updateMatrixWorld(true);
+      for (let index = 0; index < doors.length; index++) {
+        const door = doors[index]!;
+        const box = doorPanel(door, 0.5);
+        const group = furniture.group.children[index]!;
+        const panel = group.children[0] as import('three').Mesh;
+        const error = maxCornerError(panelCorners(box), renderedCorners(panel.matrixWorld));
+        expect(error, `${door.facing} door ${open ? 'open' : 'closed'}`).toBeLessThan(0.001);
+      }
+    }
   });
 });
 

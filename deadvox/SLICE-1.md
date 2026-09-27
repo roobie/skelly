@@ -463,17 +463,61 @@ decay (compared against live ticking), and death.
   player footstep noise (more when sprinting). A lit flashlight is seen from
   much further than the player in the dark. Whether the player is lit is one
   function, ready for voxel light (see "Dark interiors" under Scope).
-- Movement: steering, with step-up and a jump when blocked, using the same body
-  physics as the player. A lost shambler wanders back.
+- Movement: steering, with step-up and a jump only when the obstacle and
+  shambler's headroom fit the same body physics as the player. No pathfinding in
+  Slice 1 (BR, 2026-09-27): a shambler that can't reach the player stops at the
+  obstacle, still aware of them. A lost shambler wanders back.
+- Bodies: player and shamblers collide as solid bodies; overlapping shamblers
+  separate gently without moving through terrain.
+- Debug mob testing (`?debug=1`): H toggles god mode; F toggles noclip; Space
+  rises and R descends while noclipping. Both toggles start off and are not saved.
 - Melee in both directions: the zombie attack has reach and a cooldown; the
   player swings the wielded item (or fists) with a hit check.
-- Rendering: instanced box figures with a two-frame shuffle.
+- Rendering: instanced box figures with a continuous leg swing. Required content
+  `stepLength` (metres; 0.6 for shamblers) sets each half-cycle. Gait phase
+  advances only by horizontal distance actually travelled; an independent
+  clock steers the wander circle.
 - Spawning: markers in templates, plus a few wanderers. They don't respawn in
   Slice 1.
 
 **Done when:** scenario tests show a shambler reaches the player through an
-open door, not through a closed one, and loses the player after losing sight
-of them.
+open door, not through a closed one; cannot hit through a closed door or occupy
+its cells; and loses the player after losing sight of them.
+
+**Status:** done — BR approved milestone 1.7 in-game on 2026-09-27 at 20:36,
+covering god mode/noclip, gait and chase feel, night lighting (26), step
+smoothing (27), and the pillar collision fix (29); the frame budget stands as
+measured. Earlier approvals: fixes 21 (jump clearance) and 22 (swung door-panel
+targeting) at 11:51, and item 24 (body collision) at 14:30 on 2026-09-27.
+`test/zombies.test.ts` exercises the real
+`wood_door` entity for open/closed traversal, safe closing, attack occlusion, and
+jump clearance (including a window wall and low ceiling). `test/furniture.test.ts`
+checks panel picking, an open ray through to furniture behind the doorway, and
+renderer/core panel agreement within 1 mm for every facing and state.
+`test/debugTools.test.ts`, `test/sim.test.ts`, and `test/zombies.test.ts` cover
+noclip collision/gravity and god-mode immunity without suppressing zombie attacks.
+`test/zombies.test.ts` also covers hard player/shambler contact, soft resolution
+of an existing player/shambler overlap beside a wall, chaser attacks at wall
+contact, three close-spaced shamblers passing through a real open door,
+five-body crowd separation, and a corridor-wall case; shambler pairs use soft
+separation only, not hard movement blockers. `test/physics.test.ts` and
+`test/zombies.test.ts` prove vertical movement lands on terrain only (including
+four chasing shamblers down three steps and no player landing on a shambler).
+Further zombie checks cover perception, distance-driven gait cadence (12–15 steps/10 s
+wandering at 0.8 m/s; 42–52 steps/10 s chasing at 2.8 m/s; no steps against a
+wall; at most 0.05 rad leg-angle change per 1/60 s walking frame), melee,
+no-respawn, rendering geometry, and update cost. Playtest and headless-browser
+measurements remain part of the review report.
+
+For BR's per-machine frame budget, run `?bench=shamblers&n=10,25,50,100&seed=1&time=23:30`
+(or omit `n` for that default list); `?bench=report` stores and displays frame,
+ZombieSystem tick, render-submit and hole results plus a pasteable summary. Run
+it on the target machine with its normal renderer: headless/software-renderer
+numbers only prove the harness runs. CPU-only chasing-AI check on the generated
+hamlet: run `npm run bench:shamblers -- 10 50 100` (optional `--seed N`, default
+1). It uses the same shared player/ring placement, night-time lit-player setup,
+terrain and furniture solidity, then prints 20 Hz tick timings after 60 warm-up
+and 300 measured ticks. The ten-shambler test H remains the CI guard.
 
 ### 1.8 Rest and sleep
 
@@ -629,7 +673,9 @@ A zombie type:
 
 ```json
 { "id": "shambler", "name": "Shambler", "health": 60, "speed": { "wander": 0.8, "chase": 2.8 },
-  "sight": 25, "hearing": 1.0, "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
+  "sight": 25, "nightSight": 10, "sightCone": 60, "hearing": 1.0,
+  "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
+  "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
   "abilities": [], "loot": "shambler_pockets", "model": "figure_basic" }
 ```
 
@@ -659,7 +705,7 @@ A zombie type:
 | Stamina per second | −5 sprinting, +4 otherwise (half when exhausted, starving or parched); winded below 10 |
 | Eating, drinking, battery swap | 3 s, 2 s, 2 s |
 | Handling times | A worn pocket 0.5 s, a backpack 1.5 s, the ground or a container 1.0 s, plus 0.05 s per cell. Opening a door 0.6 s |
-| Shambler perception | Sight 25 m by day, 10 m at night; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: jogging 8 m, sprinting 15 m |
+| Shambler perception | Sight 25 m by day, 10 m at night; 60° cone; a lit flashlight is seen from 40 m (see [Light](DESIGN.md#light)). Hearing: walking 3 m, jogging 8 m, sprinting 15 m |
 | Shambler count | 6–10 in the hamlet |
 
 ## Playtest plan

@@ -286,10 +286,17 @@ export const ZombieSchema = strictObject({
   health: Positive,
   /** Metres per second. */
   speed: strictObject({ wander: Positive, chase: Positive }),
+  /** Metres advanced by one half-cycle of the leg gait. */
+  stepLength: Positive,
   /** Metres by day. */
   sight: Positive,
+  /** Metres by night. */
+  nightSight: Positive,
+  /** Half-angle of the sight cone, in degrees. */
+  sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** 1 is normal hearing. */
   hearing: NonNegative,
+  hearingRange: strictObject({ walk: Positive, jog: Positive, sprint: Positive }),
   attack: strictObject({ damage: Positive, reach: Positive, cooldown: Positive }),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */

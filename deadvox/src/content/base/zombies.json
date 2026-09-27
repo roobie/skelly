@@ -8,8 +8,12 @@
         "wander": 0.8,
         "chase": 2.8
       },
+      "stepLength": 0.6,
       "sight": 25,
+      "nightSight": 10,
+      "sightCone": 60,
       "hearing": 1,
+      "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
       "attack": {
         "damage": 8,
         "reach": 1.2,
