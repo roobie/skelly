@@ -35,8 +35,9 @@ const panelTemplate = (
   spawnOpen: boolean,
   toggleOpen: () => void,
 ): TemplateResult => html`
-  <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
-  <section class="debug-panel" ?hidden=${!open}>
+  <div id="debug-ui-root">
+    <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
+    <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <div id="debug-readout" class="debug-readout"></div>
     <div class="debug-actions">
@@ -48,10 +49,11 @@ const panelTemplate = (
       `,
       )}
     </div>
-    <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote.</p>
-  </section>
-  <div id="hotbar" hidden></div>
-  <div id="spawn" ?hidden=${!spawnOpen}></div>
+      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote.</p>
+    </section>
+    <div id="hotbar" hidden></div>
+    <div id="spawn" ?hidden=${!spawnOpen}></div>
+  </div>
 `;
 
 const emptyReadout: DebugReadout = {
@@ -137,21 +139,14 @@ export const dispatchDebugAction = (actions: readonly Action[], code: string, re
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
-  const host = document.createElement('div');
-  host.id = 'debug-ui-root';
-  document.body.append(host);
+  const host = document.body;
   let panelOpen = false;
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
   let danger = false;
-  const build = new BuildMode(
-    hooks.engine,
-    document.createElement('div'),
-    hooks.body,
-    hooks.engine.config.scale.blockSize,
-  );
-  const spawnMenu = new SpawnMenu(document.createElement('div'), hooks.engine.registry, hooks.spawnItem);
+  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize);
+  const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   const actions = createDebugActions({
     hooks,
     build,

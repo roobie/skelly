@@ -9,7 +9,7 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "validate": "node src/cli/validate.ts",
-    "lint:lit": "tools/lit-check/node_modules/.bin/lit-analyzer 'src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0",
+    "lint:lit": "tools/lit-check/node_modules/.bin/lit-analyzer 'src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && tools/lit-check/node_modules/.bin/lit-analyzer 'src/debug/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && vitest run test/uiLitHtml.test.ts",
     "bench:shamblers": "node --experimental-strip-types src/bench/shamblers-cpu.mjs"
   },
   "dependencies": {

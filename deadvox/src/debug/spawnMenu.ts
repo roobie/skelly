@@ -61,19 +61,24 @@ const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): T
 `;
 
 export class SpawnMenu {
-  private root: HTMLElement;
+  private root: HTMLElement | undefined;
   private opened = false;
   private readonly registry: Registry;
   private readonly spawn: (type: string) => string;
+  private readonly drawTemplate: (template: TemplateResult, root: HTMLElement) => void;
   private filter = '';
   private status = '';
   private drawn = '';
 
   /** `spawn` makes one of the item type and says what happened. */
-  constructor(root: HTMLElement, registry: Registry, spawn: (type: string) => string) {
-    this.root = root;
+  constructor(
+    registry: Registry,
+    spawn: (type: string) => string,
+    drawTemplate: (template: TemplateResult, root: HTMLElement) => void = render,
+  ) {
     this.registry = registry;
     this.spawn = spawn;
+    this.drawTemplate = drawTemplate;
   }
 
   get isOpen(): boolean {
@@ -90,29 +95,39 @@ export class SpawnMenu {
 
   open(): void {
     this.opened = true;
-    this.root.hidden = false;
+    if (this.root) {
+      this.root.hidden = false;
+    }
     this.filter = '';
     this.status = '';
     this.drawn = '';
     this.render();
-    const input = this.root.querySelector('input');
+    const input = this.root?.querySelector('input');
+    if (input) {
+      input.value = this.filter;
+    }
     input?.focus();
     input?.select();
   }
 
   close(): void {
     this.opened = false;
-    this.root.hidden = true;
+    if (this.root) {
+      this.root.hidden = true;
+    }
   }
 
   /** Redraws when the filter or the status changed. */
   private render(): void {
+    if (!this.root) {
+      return;
+    }
     const key = `${this.filter}|${this.status}`;
     if (key === this.drawn) {
       return;
     }
     this.drawn = key;
-    render(
+    this.drawTemplate(
       spawnMenuTemplate(spawnMenuViewModel(this.registry, this.filter, this.status), {
         onFilter: (value) => {
           this.filter = value;

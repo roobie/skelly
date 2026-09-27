@@ -26,14 +26,13 @@ export class BuildMode {
   on = false;
   private selected = 0;
   private readonly engine: Engine;
-  private hotbar: HTMLElement;
+  private hotbar: HTMLElement | undefined;
   private readonly body: Body;
   private readonly reach: number;
   private readonly outline: LineSegments;
 
-  constructor(engine: Engine, hotbar: HTMLElement, body: Body, reachBlocks: number) {
+  constructor(engine: Engine, body: Body, reachBlocks: number) {
     this.engine = engine;
-    this.hotbar = hotbar;
     this.body = body;
     this.reach = reachBlocks;
     const s = engine.config.scale.blockSize;
@@ -43,7 +42,6 @@ export class BuildMode {
     );
     this.outline.visible = false;
     engine.scene.add(this.outline);
-    this.draw();
   }
 
   private get placeable() {
@@ -113,6 +111,9 @@ export class BuildMode {
   }
 
   private draw(): void {
+    if (!this.hotbar) {
+      return;
+    }
     this.hotbar.hidden = !this.on;
     render(hotbarTemplate(this.placeable, this.selected), this.hotbar);
   }
