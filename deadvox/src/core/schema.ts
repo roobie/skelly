@@ -184,6 +184,8 @@ export const ModelSchema = strictObject({
    * that order). Held, the model's +x points forward and +y up.
    */
   grip: optional(strictObject({ at: Point, turn: optional(Point) })),
+  /** Held with its long axis aimed forward or upright, grip at the origin. */
+  hold: optional(picklist(['forward', 'upright'])),
   /** Named points, such as the flashlight's `lens`. */
   anchors: optional(record(Id, Point)),
 });

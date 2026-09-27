@@ -124,7 +124,7 @@ const templateIssues = (template: TemplateDef, path: string): [string, string][]
 };
 
 /** Checks that need only the file itself: duplicate ids, the built-in air block, template sizes. */
-const fileIssues = (file: ContentFile): [string, string][] => {
+const fileIssues = (file: ContentFile, source: string): [string, string][] => {
   const out: [string, string][] = [];
   for (const section of SECTIONS) {
     const seen = new Set<string>();
@@ -143,6 +143,13 @@ const fileIssues = (file: ContentFile): [string, string][] => {
   (file.templates ?? []).forEach((template, i) => {
     out.push(...templateIssues(template, `templates[${i}]`));
   });
+  if (source.endsWith('/models-melee.json') || source === 'models-melee.json') {
+    (file.models ?? []).forEach((model, i) => {
+      if (model.hold === undefined) {
+        out.push([`models[${i}].hold`, 'missing']);
+      }
+    });
+  }
   return out;
 };
 
@@ -159,7 +166,7 @@ export const validateContent = ({ source, data }: ContentSource): ContentIssue[]
   if (!result.success) {
     return schemaIssues(source, result.issues);
   }
-  return fileIssues(result.output).map(([path, message]) => ({ source, path, message }));
+  return fileIssues(result.output, source).map(([path, message]) => ({ source, path, message }));
 };
 
 // ---- merging ----

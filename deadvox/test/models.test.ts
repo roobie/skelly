@@ -113,14 +113,27 @@ describe('base pack melee', () => {
   const melee = buildRegistry([read(`${BASE}/models-melee.json`)]).registry;
   const models = [...melee.models.values()];
 
-  it('maps only the four matching Slice 1 items', () => {
-    expect(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat'].map((id) => registry.items.get(id)?.model)).toEqual([
-      'crowbar',
-      'hammer',
-      'kitchen_knife',
-      'baseball_bat',
-    ]);
-    expect(registry.items.get('steel_pipe')?.model).toBeUndefined();
+  it('maps the five matching Slice 1 items', () => {
+    expect(
+      ['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe'].map((id) => registry.items.get(id)?.model),
+    ).toEqual(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe']);
+  });
+
+  it('assigns the forward pose only to the four stabbing blades', () => {
+    const forward = models
+      .filter((model) => model.hold === 'forward')
+      .map((model) => model.id)
+      .sort();
+    expect(forward).toEqual(['kabar', 'kitchen_knife', 'pocket_knife', 'tanto']);
+    expect(models.filter((model) => model.hold !== 'forward').every((model) => model.hold === 'upright')).toBe(true);
+  });
+
+  it('requires a hold pose for every melee model', () => {
+    const { hold, ...missingHold } = models[0]!;
+    expect(hold).toBeDefined();
+    const source = `${BASE}/models-melee.json`;
+    const { issues: found } = buildRegistry([{ source, data: { models: [missingHold] } }]);
+    expect(found).toContainEqual({ source, path: 'models[0].hold', message: 'missing' });
   });
 
   it.each(models.map((model) => [model.id, model] as const))(
@@ -152,7 +165,31 @@ describe('base pack melee', () => {
     },
   );
 
-  it('keeps the kitchen knife under 0.4 m and baseball bat within 0.7–1.1 m', async () => {
+  it('holds the knife forward and hammer upright within centimetre bounds', async () => {
+    const strikeInHand = async (id: string): Promise<Vector3> => {
+      const def = melee.models.get(id)!;
+      const bytes = readFileSync(`${BASE}/${def.file}`);
+      const { scene } = await parseGlb(bytes);
+      const { held } = prepareModel(def, scene);
+      held.updateMatrixWorld(true);
+      const offset = held.children[0]!.children[0]!;
+      return new Vector3(...def.anchors!.strike!).applyMatrix4(offset.matrixWorld);
+    };
+    const knife = await strikeInHand('kitchen_knife');
+    const hammer = await strikeInHand('hammer');
+
+    // Relative to the grip at the origin: knife strike 29–31 cm ahead; hammer strike 27–29 cm above.
+    expect(knife.z * 100).toBeGreaterThanOrEqual(-31);
+    expect(knife.z * 100).toBeLessThanOrEqual(-29);
+    expect(Math.abs(knife.x * 100)).toBeLessThan(1);
+    expect(Math.abs(knife.y * 100)).toBeLessThan(1);
+    expect(hammer.y * 100).toBeGreaterThanOrEqual(27);
+    expect(hammer.y * 100).toBeLessThanOrEqual(29);
+    expect(Math.abs(hammer.x * 100)).toBeLessThan(1);
+    expect(Math.abs(hammer.z * 100)).toBeLessThan(1);
+  });
+
+  it('keeps the kitchen knife under 0.4 m, baseball bat within 0.7–1.1 m, and steel pipe at 0.9–1.0 m', async () => {
     const dimensions = async (id: string): Promise<number> => {
       const model = melee.models.get(id)!;
       const bytes = readFileSync(`${BASE}/${model.file}`);
@@ -164,6 +201,8 @@ describe('base pack melee', () => {
     expect(await dimensions('kitchen_knife')).toBeLessThan(0.4);
     expect(await dimensions('baseball_bat')).toBeGreaterThanOrEqual(0.7);
     expect(await dimensions('baseball_bat')).toBeLessThanOrEqual(1.1);
+    expect(await dimensions('steel_pipe')).toBeGreaterThanOrEqual(0.9);
+    expect(await dimensions('steel_pipe')).toBeLessThanOrEqual(1.0);
   });
 });
 

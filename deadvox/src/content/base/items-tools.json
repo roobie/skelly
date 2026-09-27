@@ -3,8 +3,12 @@
     {
       "id": "flashlight",
       "file": "assets/models/flashlight.glb",
-      "grip": { "at": [0.085, 0, 0] },
-      "anchors": { "lens": [0.199, 0, 0] }
+      "grip": {
+        "at": [0.085, 0, 0]
+      },
+      "anchors": {
+        "lens": [0.199, 0, 0]
+      }
     }
   ],
   "items": [
@@ -120,7 +124,8 @@
           "stamina": 9,
           "type": "blunt"
         }
-      }
+      },
+      "model": "steel_pipe"
     },
     {
       "id": "flashlight",

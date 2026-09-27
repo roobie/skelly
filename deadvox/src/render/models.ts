@@ -1,6 +1,6 @@
 // Item models (DESIGN.md, "Item models"): glTF binaries in the base pack, loaded once
 // with three.js's GLTFLoader. Each is prepared twice: lying on the ground, centred
-// over the origin, for piles; and held at its grip, pointing forward, for the hands.
+// over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
 import { Box3, Group, MathUtils, Object3D, Vector3 } from 'three';
@@ -46,14 +46,18 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   const centre = box.getCenter(new Vector3());
   // Lying: centred on x and z over the origin, resting on y = 0.
   const ground = around(scene, new Vector3(centre.x, box.min.y, centre.z));
-  // Held: the grip at the origin, turned as the entry says, then the model's +x forward (−z).
+  // Held: the grip at the origin, turned as the entry says, then oriented by its hold pose.
   // The lens is the `lens` anchor, or else the middle of the model's front end.
   const lens = def.anchors?.lens ? new Vector3(...def.anchors.lens) : new Vector3(box.max.x, centre.y, centre.z);
   const turned = around(scene, def.grip ? new Vector3(...def.grip.at) : centre, lens);
   const [tx, ty, tz] = def.grip?.turn ?? [0, 0, 0];
   turned.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
   const held = new Group().add(turned);
-  held.rotation.y = Math.PI / 2;
+  if (def.hold === 'upright') {
+    held.rotation.z = Math.PI / 2;
+  } else {
+    held.rotation.y = Math.PI / 2;
+  }
   return { ground, held };
 };
 
@@ -96,7 +100,7 @@ export class ModelLibrary {
     return this.ready.get(id)?.ground.clone();
   }
 
-  /** A copy held at its grip: the grip at its origin, pointing along −z. */
+  /** A copy held at its grip in the model's configured pose. */
   held(id: string): Object3D | undefined {
     return this.ready.get(id)?.held.clone();
   }
