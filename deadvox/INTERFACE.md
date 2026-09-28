@@ -3,7 +3,7 @@ id: skelly::deadvox-interface
 description: Design for what the game's interface may show and say to the player, how far it is diegetic, and how development builds are allowed to break that
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
-status: draft
+status: active
 ---
 
 # deadvox — interface
@@ -22,12 +22,10 @@ may tell the player, and in what voice**. Read it with:
 [[THIS is_grounded_by: DESIGN.md]]
 [[THIS is_grounded_by: INTERACTIONS.md]]
 [[THIS is_grounded_by: docs/decisions/0001-ui-rendering-with-lit-html.md]]
-[[THIS contradicts: DESIGN.md]]
-
-**Status:** draft, for BR. The rules below come from BR's direction on
-2026-09-27: "the end state should be as diegetic as possible", and the quickbar's
-"set it in the inventory" is the kind of thing that should be afforded, not typed
-out. The open questions are at the end.
+**Status:** active. The rules below come from BR's direction on 2026-09-27: "the
+end state should be as diegetic as possible", and the quickbar's "set it in the
+inventory" is the kind of thing that should be afforded, not typed out. BR ruled
+on the open questions on 2026-09-28; the rulings are at the end.
 
 ## The goal
 
@@ -139,7 +137,7 @@ so class 4 is made mechanical:
   only as a fallback.
 - **A guard test enforces it,** like `test/uiLitHtml.test.ts` does for ADR 0001.
   Templates and view models under `src/ui` may not contain key names
-  (`Key[A-Z]`, `Digit`, "press", "click", "Tab", "F10" and so on) or
+  (`Key[A-Z]`, `Digit`, "press", "click", "Tab", "F9" and so on) or
   instruction phrasing outside the hint table. Anything in `src/debug` is exempt,
   since none of it ships.
 - **Review asks one question:** could the player learn this from the world or
@@ -184,39 +182,41 @@ to use it:
 |---|---|---|---|
 | HUD stats (health, food, fatigue…) | meta, opt-in | bodily | the cues in "Bodily cues"; the opt-in stays for development |
 | Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
-| Crosshair | meta, opt-in | spatial or none | open question |
-| Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | an outline on what you can use; no key name |
+| Crosshair | meta, opt-in | none | shipped: none, ever; aiming down the sights uses the weapon's sights, and hip fire is imprecise by design. The opt-in dot stays for development |
+| Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; "R or X to stop" becomes a hint |
 | Interruption prompt ("C: continue X: stop") | meta, instruction | meta, choice | a two-button choice drawn as such, with the key names from the hint channel |
-| Main menu (F10) | meta | meta | fine; settings and help live here |
+| Main menu (F9) | meta | meta | fine; settings and help live here |
 | Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
 | Notices ("Quickbar 1 is empty: open the inventory…") | mixed | voice | keep the voice part, move the procedure to the hint channel |
 | Drawn menu cursor | meta | meta | fine |
 
-## Contradiction with DESIGN.md
+## Numbers and diegesis
 
-DESIGN.md's "UI principles" say *"Every number the simulation uses (weight,
-time, condition, noise) can be seen somewhere in the UI. Depth is only fun when
-you can read it."* That pulls the other way from "as diegetic as possible". This
-draft proposes to keep both by where the number appears, not whether: **numbers
-are available on request, on meta surfaces the player opens** (inspecting an
-item, the inventory), and never pushed at the player during play. It needs BR's
-ruling; if agreed, DESIGN.md's line is amended to say so.
+DESIGN.md's "UI principles" said every number the simulation uses can be seen
+somewhere in the UI, which pulls the other way from "as diegetic as possible".
+BR ruled on 2026-09-28 to keep both by where the number appears, not whether:
+**numbers are available on request, on meta surfaces the player opens**
+(inspecting an item, the inventory), and never pushed at the player during play.
+DESIGN.md's line is amended to say so.
 
-## Open questions
+## Rulings (formerly open questions)
 
-1. The crosshair: none at all, a dot only while aiming a ranged weapon, or opt-in
-   as now?
-2. Interaction affordance: an outline (spatial) on usable things you look at, or
-   nothing but the world (a door looks like a door)?
-3. The numbers ruling above: numbers only on request, on meta surfaces?
-4. Onboarding: the first minutes of a new player's game, with hints off. Is the
-   plan a diegetic tutorial (a note, a radio), or hints on by default for a
-   first run?
-5. The playtest profile: a URL flag (`?playtest=1`), or the hint setting in the
-   F10 menu?
+1. **Crosshair (BR, 2026-09-28): none in the shipped game.** Aiming down the
+   sights uses the weapon's own sights; hip fire and melee have no reticle. The
+   opt-in dot remains a development setting.
+2. **Interaction affordance (BR, 2026-09-28): a subtle outline** on the one usable
+   thing you look at within reach. No text and no key name; the outline is the
+   affordance.
+3. **Numbers (BR, 2026-09-28): on request only,** on meta surfaces, as above.
+4. **Onboarding (BR, 2026-09-28): diegetic, designed after the playtest.** The
+   shipped first run gets a diegetic introduction (a note, a radio), shaped by
+   where playtesters get stuck; hints remain a fallback setting in the F9 menu,
+   off by default.
+5. **Playtest profile (BR, 2026-09-28): a URL flag, `?playtest=1`,** which turns
+   the hint channel on and loads nothing from `src/debug`.
 6. ~~Are the character's own sounds noise events?~~ **BR, 2026-09-27: "Let's
    try"**, with OpenGameArt packs to curate from (vocal pain and strain, creature,
    RPG, zombie and hit sounds) and "variation is nice - random, but curated picks
@@ -226,7 +226,8 @@ ruling; if agreed, DESIGN.md's line is amended to say so.
 
 ## Order of work
 
-1. BR rules on the open questions; this document goes to `status: active`.
+1. ~~BR rules on the open questions; this document goes to `status: active`.~~
+   Done 2026-09-28.
 2. The hint channel, the bindings-sourced key labels and the guard test (one
    item, the way ADR 0001's guard landed), moving today's instructional strings
    into the table.
