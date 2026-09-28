@@ -59,17 +59,17 @@ export const FIRING_GRIP = 'firing-grip';
 // magazines) come in lengths paired with barrel length classes: a barrel's
 // clamp and lug sit where a part of the same length class ends.
 const FORE_LENGTH: Record<SizeClass, number> = { S: 16, M: 24, L: 32 };
-const AK_GAS_BLOCK_OFFSET = 8;
+const AK_GAS_PORT_OFFSET = 8;
 const AK_HANDGUARD_RATIO = 0.8;
 
-/** AK gas block locations from the receiver face; handguards end at 80% of this span. */
-const AK_GAS_BLOCK_X: Record<SizeClass, number> = {
-  S: 26 - AK_GAS_BLOCK_OFFSET,
-  M: 36 - AK_GAS_BLOCK_OFFSET,
-  L: 46 - AK_GAS_BLOCK_OFFSET,
+/** AK barrel gas-port stations from the receiver face; handguards end at 80% of this span. */
+const AK_GAS_PORT_X: Record<SizeClass, number> = {
+  S: 26 - AK_GAS_PORT_OFFSET,
+  M: 36 - AK_GAS_PORT_OFFSET,
+  L: 46 - AK_GAS_PORT_OFFSET,
 };
 const akHandguardLength = (length: SizeClass): number =>
-  Math.round((AK_GAS_BLOCK_X[length] * AK_HANDGUARD_RATIO) / 2) * 2;
+  Math.round((AK_GAS_PORT_X[length] * AK_HANDGUARD_RATIO) / 2) * 2;
 
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
@@ -162,7 +162,7 @@ export const LOWER_LAYOUTS = {
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
-const AK_GAS_TUBE_Y = 2;
+const AK_GAS_CYLINDER_Y = 2;
 const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
@@ -373,7 +373,7 @@ export const receiver: PartFamily = {
   },
 };
 
-/** AK-style stamped receiver with a removable dust cover, gas-tube and rear-sight interfaces. */
+/** AK-style stamped receiver with a removable dust cover, gas-cylinder and rear-sight interfaces. */
 export const akReceiver: PartFamily = {
   name: 'receiver',
   params: { action: choice('bolt'), feed: choice('box'), bore: size },
@@ -399,10 +399,10 @@ export const akReceiver: PartFamily = {
       ports: [
         ...base.ports,
         {
-          id: 'gas-tube',
-          mount: 'gas-tube',
+          id: 'gas-cylinder',
+          mount: 'gas-cylinder',
           gender: 'female',
-          pos: [0, AK_GAS_TUBE_Y, 0],
+          pos: [0, AK_GAS_CYLINDER_Y, 0],
           normal: X,
           up: Y,
           required: true,
@@ -790,11 +790,11 @@ export const barrel: PartFamily = {
         ...(params.profile === 'standard'
           ? [
               {
-                id: 'gas-block',
+                id: 'gas-port',
                 mount: 'gas-block',
                 gender: 'male' as const,
                 size: bore,
-                pos: [AK_GAS_BLOCK_X[lengthClass], 0, 0] as Vec3,
+                pos: [AK_GAS_PORT_X[lengthClass], 0, 0] as Vec3,
                 normal: X,
                 up: Y,
               },
@@ -826,7 +826,7 @@ export const frontSight: PartFamily = {
   },
 };
 
-/** A raised AK gas block joins the barrel to the gas tube behind the front sight. */
+/** A raised AK gas block joins the barrel to the gas cylinder behind the front sight. */
 export const gasBlock: PartFamily = {
   name: 'gas-block',
   params: {
@@ -839,7 +839,7 @@ export const gasBlock: PartFamily = {
       family: 'gas-block',
       solids: [
         solid('saddle', [-1, radius, -1.5], [1, radius + 0.5, 1.5]),
-        solid('tube-support', [-0.5, radius + 0.5, -0.5], [0.5, AK_GAS_TUBE_Y, 0.5]),
+        solid('cylinder-support', [-0.5, radius + 0.5, -0.5], [0.5, AK_GAS_CYLINDER_Y, 0.5]),
       ],
       ports: [
         {
@@ -853,10 +853,10 @@ export const gasBlock: PartFamily = {
           required: true,
         },
         {
-          id: 'gas-tube',
+          id: 'gas-cylinder',
           mount: 'gas-block',
           gender: 'female',
-          pos: [0, AK_GAS_TUBE_Y, 0],
+          pos: [0, AK_GAS_CYLINDER_Y, 0],
           normal: NEG_X,
           up: Y,
           required: true,
@@ -868,24 +868,24 @@ export const gasBlock: PartFamily = {
   },
 };
 
-/** The AK gas tube runs under the rear handguard cover and is exposed ahead of it. */
-export const gasTube: PartFamily = {
-  name: 'gas-tube',
+/** The AK gas cylinder runs under the rear handguard cover and is exposed ahead of it. */
+export const gasCylinder: PartFamily = {
+  name: 'gas-cylinder',
   params: {
     barrelLength: { ...size, from: [{ port: 'front', param: 'barrelLength' }] },
   },
   build(params): PartDef {
-    const len = AK_GAS_BLOCK_X[cls(params, 'barrelLength')];
+    const len = AK_GAS_PORT_X[cls(params, 'barrelLength')];
     return {
-      family: 'gas-tube',
-      solids: [solid('tube', [0, -0.25, -0.5], [len, 0.25, 0.5])],
+      family: 'gas-cylinder',
+      solids: [solid('cylinder', [0, -0.25, -0.5], [len, 0.25, 0.5])],
       ports: [
-        { id: 'rear', mount: 'gas-tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'handguard', mount: 'gas-tube', gender: 'female', pos: [8, 0, 0], normal: X, up: Y, required: true },
+        { id: 'rear', mount: 'gas-cylinder', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
+        { id: 'handguard', mount: 'gas-cylinder', gender: 'female', pos: [8, 0, 0], normal: X, up: Y, required: true },
         { id: 'front', mount: 'gas-block', gender: 'male', pos: [len, 0, 0], normal: X, up: Y, required: true },
       ],
       keepOuts: [],
-      axes: [{ kind: 'gas-system', origin: [0, 0, 0], dir: X }],
+      axes: [{ kind: 'gas-cylinder', origin: [0, 0, 0], dir: X }],
     };
   },
 };
@@ -988,11 +988,11 @@ export const handguard: PartFamily = {
       params.fit === 'oversized'
         ? RECEIVER_FRONT_HALF_WIDTH + 1
         : Math.min(RECEIVER_FRONT_HALF_WIDTH, inner + HANDGUARD_WALL_THICKNESS);
-    const tubeRadius = 0.25;
-    const tubeBottom = AK_GAS_TUBE_Y - tubeRadius;
-    const tubeTop = AK_GAS_TUBE_Y + tubeRadius;
-    const topInner = akLayout ? tubeTop : inner;
-    const sideTop = akLayout ? tubeBottom : inner;
+    const cylinderRadius = 0.25;
+    const cylinderBottom = AK_GAS_CYLINDER_Y - cylinderRadius;
+    const cylinderTop = AK_GAS_CYLINDER_Y + cylinderRadius;
+    const topInner = akLayout ? cylinderTop : inner;
+    const sideTop = akLayout ? cylinderBottom : inner;
     const clampRadius = params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
     const clamp = clampRadius
       ? [
@@ -1023,10 +1023,10 @@ export const handguard: PartFamily = {
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'front', mount: 'clamp', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
         {
-          id: 'gas-tube',
-          mount: 'gas-tube',
+          id: 'gas-cylinder',
+          mount: 'gas-cylinder',
           gender: 'male',
-          pos: [8, akLayout ? AK_GAS_TUBE_Y : 2.5, 0],
+          pos: [8, akLayout ? AK_GAS_CYLINDER_Y : 2.5, 0],
           normal: NEG_X,
           up: Y,
         },
@@ -1657,7 +1657,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   barrel,
   cylinder,
   'front-sight': frontSight,
-  'gas-tube': gasTube,
+  'gas-cylinder': gasCylinder,
   'gas-block': gasBlock,
   'ak-rear-sight': akRearSight,
   handguard,

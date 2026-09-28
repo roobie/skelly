@@ -33,20 +33,20 @@ exports[`templates > ak > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.gas-tube",
-        "to": "gas-tube.rear",
+        "from": "receiver.gas-cylinder",
+        "to": "gas-cylinder.rear",
       },
       {
-        "from": "barrel.gas-block",
+        "from": "barrel.gas-port",
         "to": "gas-block.barrel",
       },
       {
-        "from": "gas-block.gas-tube",
-        "to": "gas-tube.front",
+        "from": "gas-block.gas-cylinder",
+        "to": "gas-cylinder.front",
       },
       {
-        "from": "gas-tube.handguard",
-        "to": "handguard.gas-tube",
+        "from": "gas-cylinder.handguard",
+        "to": "handguard.gas-cylinder",
       },
       {
         "from": "receiver.rear-sight",
@@ -72,8 +72,8 @@ exports[`templates > ak > known-good seeds 1`] = `
       "gas-block": {
         "family": "gas-block",
       },
-      "gas-tube": {
-        "family": "gas-tube",
+      "gas-cylinder": {
+        "family": "gas-cylinder",
       },
       "grip": {
         "family": "grip",
@@ -152,20 +152,20 @@ exports[`templates > ak > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.gas-tube",
-        "to": "gas-tube.rear",
+        "from": "receiver.gas-cylinder",
+        "to": "gas-cylinder.rear",
       },
       {
-        "from": "barrel.gas-block",
+        "from": "barrel.gas-port",
         "to": "gas-block.barrel",
       },
       {
-        "from": "gas-block.gas-tube",
-        "to": "gas-tube.front",
+        "from": "gas-block.gas-cylinder",
+        "to": "gas-cylinder.front",
       },
       {
-        "from": "gas-tube.handguard",
-        "to": "handguard.gas-tube",
+        "from": "gas-cylinder.handguard",
+        "to": "handguard.gas-cylinder",
       },
       {
         "from": "receiver.rear-sight",
@@ -191,8 +191,8 @@ exports[`templates > ak > known-good seeds 1`] = `
       "gas-block": {
         "family": "gas-block",
       },
-      "gas-tube": {
-        "family": "gas-tube",
+      "gas-cylinder": {
+        "family": "gas-cylinder",
       },
       "grip": {
         "family": "grip",
@@ -271,20 +271,20 @@ exports[`templates > ak > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.gas-tube",
-        "to": "gas-tube.rear",
+        "from": "receiver.gas-cylinder",
+        "to": "gas-cylinder.rear",
       },
       {
-        "from": "barrel.gas-block",
+        "from": "barrel.gas-port",
         "to": "gas-block.barrel",
       },
       {
-        "from": "gas-block.gas-tube",
-        "to": "gas-tube.front",
+        "from": "gas-block.gas-cylinder",
+        "to": "gas-cylinder.front",
       },
       {
-        "from": "gas-tube.handguard",
-        "to": "handguard.gas-tube",
+        "from": "gas-cylinder.handguard",
+        "to": "handguard.gas-cylinder",
       },
       {
         "from": "receiver.rear-sight",
@@ -310,8 +310,8 @@ exports[`templates > ak > known-good seeds 1`] = `
       "gas-block": {
         "family": "gas-block",
       },
-      "gas-tube": {
-        "family": "gas-tube",
+      "gas-cylinder": {
+        "family": "gas-cylinder",
       },
       "grip": {
         "family": "grip",

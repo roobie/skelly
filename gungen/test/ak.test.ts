@@ -123,11 +123,11 @@ describe('AK-pattern archetype', () => {
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 
-  it('keeps the gas tube parallel to and above the bore axis', () => {
+  it('keeps the gas cylinder parallel to and above the bore axis', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.ok).toBe(true);
-    const placed = report.resolved.placed.get('gas-tube')!;
-    const axis = report.resolved.defs.get('gas-tube')!.axes[0]!;
+    const placed = report.resolved.placed.get('gas-cylinder')!;
+    const axis = report.resolved.defs.get('gas-cylinder')!.axes[0]!;
     expect(applyPoint(placed, axis.origin)).toEqual([0, 2, 0]);
     const direction = applyDir(placed, axis.dir);
     expect(direction[0]).toBeCloseTo(1);
@@ -135,7 +135,7 @@ describe('AK-pattern archetype', () => {
     expect(direction[2]).toBeCloseTo(0);
   });
 
-  it('mounts a gas block on the barrel and leaves a visible gas-tube span ahead of the AK handguard', () => {
+  it('mounts a gas block on the barrel and leaves a visible gas-cylinder span ahead of the AK handguard', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.ok).toBe(true);
     const handguard = report.resolved.defs.get('handguard')!;
@@ -146,30 +146,30 @@ describe('AK-pattern archetype', () => {
     );
     const gasBlockOnBarrel = applyPoint(
       report.resolved.placed.get('barrel')!,
-      barrel.ports.find(({ id }) => id === 'gas-block')!.pos,
+      barrel.ports.find(({ id }) => id === 'gas-port')!.pos,
     );
     expect(gasBlockOnBarrel[0] - handguardEnd[0]).toBe(6);
     expect(gasBlockOnBarrel[0]).toBe(28);
-    expect(report.resolved.connections.some(({ conn }) => conn.from === 'barrel.gas-block')).toBe(true);
-    expect(report.resolved.connections.some(({ conn }) => conn.to === 'gas-tube.front')).toBe(true);
-    const tube = report.resolved.defs.get('gas-tube')!.solids[0]!;
-    expect(tube.kind).toBe('box');
-    if (tube.kind === 'box') {
-      expect(tube.box.center[0] + tube.box.half[0]).toBe(28);
+    expect(report.resolved.connections.some(({ conn }) => conn.from === 'barrel.gas-port')).toBe(true);
+    expect(report.resolved.connections.some(({ conn }) => conn.to === 'gas-cylinder.front')).toBe(true);
+    const cylinder = report.resolved.defs.get('gas-cylinder')!.solids[0]!;
+    expect(cylinder.kind).toBe('box');
+    if (cylinder.kind === 'box') {
+      expect(cylinder.box.center[0] + cylinder.box.half[0]).toBe(28);
     }
   });
 
-  it('rejects a misaligned gas-system axis', () => {
-    const gasTube = FAMILIES['gas-tube']!;
+  it('rejects a misaligned gas-cylinder axis', () => {
+    const gasCylinder = FAMILIES['gas-cylinder']!;
     const domain: Domain = {
       ...gunDomain,
       families: {
         ...gunDomain.families,
-        'gas-tube': {
-          ...gasTube,
+        'gas-cylinder': {
+          ...gasCylinder,
           build: () => {
-            const def = gasTube.build({});
-            return { ...def, axes: [{ kind: 'gas-system', origin: [0, 0, 0], dir: [0, 1, 0] }] };
+            const def = gasCylinder.build({});
+            return { ...def, axes: [{ kind: 'gas-cylinder', origin: [0, 0, 0], dir: [0, 1, 0] }] };
           },
         },
       },
@@ -178,7 +178,7 @@ describe('AK-pattern archetype', () => {
       validate(akFixture, domain)
         .issues.filter(({ rule }) => rule === 'axis-alignment')
         .map(({ message }) => message),
-    ).toEqual(['The gas-system axis of gas-tube is 90° off the main axis.']);
+    ).toEqual(['The gas-cylinder axis of gas-cylinder is 90° off the main axis.']);
   });
 
   it('fits AK-74 and AKM magazine silhouette ratios to their measured reference images', () => {
@@ -270,15 +270,15 @@ describe('AK-pattern archetype', () => {
     expect(straight.solids.find(({ id }) => id === 'comb')?.kind).toBe('box');
   });
 
-  it('passes the complete fixture and reports missing gas-tube interfaces clearly', () => {
+  it('passes the complete fixture and reports missing gas-cylinder interfaces clearly', () => {
     expect(validate(akFixture, gunDomain).issues).toEqual([]);
-    const { issues } = validate(loadFixture('broken-ak-gas-tube'), gunDomain);
+    const { issues } = validate(loadFixture('broken-ak-gas-cylinder'), gunDomain);
     expect(issues.filter(({ rule }) => rule === 'required-ports').map(({ message }) => message)).toContain(
-      'receiver.gas-tube (gas-tube mount on receiver) is required but empty.',
+      'receiver.gas-cylinder (gas-cylinder mount on receiver) is required but empty.',
     );
     const missingBlock = validate(loadFixture('broken-ak-gas-block'), gunDomain).issues;
     expect(missingBlock.filter(({ rule }) => rule === 'required-ports').map(({ message }) => message)).toContain(
-      'gas-tube.front (gas-block mount on gas-tube) is required but empty.',
+      'gas-cylinder.front (gas-block mount on gas-cylinder) is required but empty.',
     );
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "broken-ak-gas-block",
-  "description": "AK gas tube has no barrel-mounted gas block.",
+  "description": "AK gas cylinder has no barrel-mounted gas block.",
   "root": "receiver",
   "parts": {
     "receiver": {
@@ -27,8 +27,8 @@
         "layout": "ak"
       }
     },
-    "gas-tube": {
-      "family": "gas-tube"
+    "gas-cylinder": {
+      "family": "gas-cylinder"
     },
     "grip": {
       "family": "grip",
@@ -87,12 +87,12 @@
       "to": "stock.front"
     },
     {
-      "from": "receiver.gas-tube",
-      "to": "gas-tube.rear"
+      "from": "receiver.gas-cylinder",
+      "to": "gas-cylinder.rear"
     },
     {
-      "from": "gas-tube.handguard",
-      "to": "handguard.gas-tube"
+      "from": "gas-cylinder.handguard",
+      "to": "handguard.gas-cylinder"
     },
     {
       "from": "receiver.rear-sight",

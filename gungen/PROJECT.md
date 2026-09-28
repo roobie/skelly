@@ -542,9 +542,10 @@ explicitly named `battle-rifle`.
   while retaining the stock port on the rear face and the flat dust-cover seat.
   Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
   A leaf rear sight mounts on a receiver sight-block port.
-- The raised gas tube has its own axis, checked parallel to the bore, and
-  connects the receiver to the upper handguard. The front sight block uses the
-  barrel's existing port four units from the muzzle.
+- The gas cylinder runs from the receiver's gas-cylinder port under the rear
+  handguard to the gas block. The block seats on the barrel at the declared
+  gas-port station; the cylinder axis is checked parallel to the bore. The
+  front sight block uses the barrel's separate port four units from the muzzle.
 - Added an `ak` lower layout with the conventional well and a forward-extended
   box keep-out for the magazine's rock-in sweep. The magazine remains vertical
   in its insertion well; the broad box is a conservative swept envelope, not an
@@ -555,7 +556,7 @@ explicitly named `battle-rifle`.
   and barrel-facing sides of different lengths; its top interface is slanted
   5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
   angled end face without arbitrary X-axis compensation. Added an intermediate dropped-stock style.
-- A passing fixture and a missing-gas-tube fixture exercise the layout. At
+- A passing fixture and a missing-gas-cylinder fixture exercise the layout. At
   1000 seeds, AK is 100% valid with 32 distinct builds. Individual rounds,
   magazine latching and the actual rock-in motion are not simulated.
 

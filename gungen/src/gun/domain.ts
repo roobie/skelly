@@ -9,7 +9,7 @@ export const gunDomain: Domain = {
   axisRules: [
     { kind: 'bore', mode: 'collinear' },
     { kind: 'sight', mode: 'parallel' },
-    { kind: 'gas-system', mode: 'parallel' },
+    { kind: 'gas-cylinder', mode: 'parallel' },
   ],
   rules: [firingGrip, feedMatch, pistolBarrelCrown, handguardFit, magazineWellAxis],
 };
