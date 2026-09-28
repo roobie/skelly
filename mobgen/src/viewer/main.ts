@@ -18,7 +18,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, type Realized, realize } from '../core/generate.ts';
 import { IDENTITY_POSE } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
-import { footRestExtents, strideLength, walkPose } from '../mob/gait.ts';
+import { footRestExtents, type LegGeometry, legGeometryFor, strideLength, walkPose } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
@@ -104,17 +104,12 @@ interface Loaded {
   readonly actor: Actor;
   readonly params: HumanoidParams;
   readonly extents: ReturnType<typeof footRestExtents>;
-  readonly legLen: number;
+  readonly legGeometry: LegGeometry;
 }
 
 let current: Loaded | undefined;
 let phase = 0;
 let gridZ = 0;
-
-const boneLength = (bones: Realized['body']['bones'], id: string): number => {
-  const b = bones.find((x) => x.id === id)!;
-  return Math.hypot(b.tail[0] - b.head[0], b.tail[1] - b.head[1], b.tail[2] - b.head[2]);
-};
 
 const frame = (): void => {
   if (!current) {
@@ -223,8 +218,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   scene.add(actor.root);
   actor.applyPose(IDENTITY_POSE);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
-  const legLen = boneLength(realized.body.bones, 'thigh.L') + boneLength(realized.body.bones, 'shin.L');
-  current = { genome, realized, actor, params: genome.params as HumanoidParams, extents, legLen };
+  const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
+  current = { genome, realized, actor, params: genome.params as HumanoidParams, extents, legGeometry };
   phase = 0;
   gridZ = 0;
   groundGroup.position.z = 0;
@@ -372,7 +367,7 @@ renderer.setAnimationLoop(() => {
     const walking = walkOn.checked;
     const speed = walking ? Number(speedInput.value) : 0;
     if (walking && speed > 0) {
-      const stride = strideLength(current.params, current.legLen, speed);
+      const stride = strideLength(current.params, current.legGeometry, speed);
       phase = (phase + (speed * dt) / stride) % 1;
       gridZ = (gridZ + speed * dt) % 0.5;
       groundGroup.position.z = gridZ;

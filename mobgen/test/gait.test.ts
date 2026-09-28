@@ -3,7 +3,7 @@ import { build, generateValid } from '../src/core/generate.ts';
 import { applyPoint, type Mat3 } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
-import { corners, footRestExtents, strideLength, walkPose } from '../src/mob/gait.ts';
+import { corners, footRestExtents, legGeometryFor, strideLength, walkPose } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
@@ -145,12 +145,7 @@ describe('walkPose', () => {
         it(`${name} seed ${seed}: the planted foot doesn't slide at ${speed} m/s`, () => {
           const found = setup(name, seed);
           const { body, voxels, extents, params } = found;
-          const thigh = body.bones.find((b) => b.id === 'thigh.L')!;
-          const shin = body.bones.find((b) => b.id === 'shin.L')!;
-          const legLen =
-            Math.hypot(thigh.tail[0] - thigh.head[0], thigh.tail[1] - thigh.head[1], thigh.tail[2] - thigh.head[2]) +
-            Math.hypot(shin.tail[0] - shin.head[0], shin.tail[1] - shin.head[1], shin.tail[2] - shin.head[2]);
-          const stride = strideLength(params, legLen, speed);
+          const stride = strideLength(params, legGeometryFor(body.bones, extents, 'L'), speed);
 
           // Heel corner (rest-pose max Z: furthest behind the ankle) and toe corner (min Z), each
           // tracked only while actually grounded — heel from heel-strike through flat, toe from flat
@@ -175,8 +170,11 @@ describe('walkPose', () => {
           // the drift checks below would be silently checking nothing).
           expect(heel.touchedDown).toBe(true);
           expect(toe.touchedDown).toBe(true);
-          expect(heel.maxDrift).toBeLessThan(voxels.size);
-          expect(toe.maxDrift).toBeLessThan(voxels.size);
+          // 0.6 voxel: measured worst case (all templates, seeds 1-10) is ~45% of a voxel, at 2.8 m/s
+          // where the longest strides push closest to full leg reach — this catches skating regressions
+          // without chasing that last, reach-limited sliver.
+          expect(heel.maxDrift).toBeLessThan(0.6 * voxels.size);
+          expect(toe.maxDrift).toBeLessThan(0.6 * voxels.size);
         });
       }
     }
@@ -276,45 +274,52 @@ describe('the walk has no snaps', () => {
 });
 
 describe('strideLength', () => {
-  // Canonical figure from the doc comment: legLen ~0.75 m (1.75 m figure), strideFactor 1.
+  // Canonical figure: legLen 0.75 m, ankleRestY near "ground" (0) as real body geometry has it — see
+  // legGeometryFor — not near -legLen, or the roll math (rotateYZ) reads it as a near-fully-extended leg.
   const legLen = 0.75;
-  const params = { strideFactor: 1 } as HumanoidParams;
+  const geom = { legLen, hipY: 0.14 + legLen, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
+  const params = { strideFactor: 1, footLift: 0.04 } as HumanoidParams;
 
   it('0.8 m/s (deadvox wander): ~1.0 m cycle, close to the ~90 steps/min human-walking target', () => {
-    const cycle = strideLength(params, legLen, 0.8);
-    expect(cycle).toBeGreaterThan(0.85);
+    const cycle = strideLength(params, geom, 0.8);
+    expect(cycle).toBeGreaterThan(0.9);
     expect(cycle).toBeLessThan(1.15);
     const stepsPerMin = ((2 * 0.8) / cycle) * 60;
-    expect(stepsPerMin).toBeGreaterThan(70);
-    expect(stepsPerMin).toBeLessThan(120);
+    expect(stepsPerMin).toBeGreaterThan(80);
+    expect(stepsPerMin).toBeLessThan(110);
   });
 
-  it(
-    '1.4 m/s: stride keeps growing past the wander speed, but the crouch cap (see doc comment) keeps ' +
-      'it short of the naive human-walking target of 1.4-1.5 m',
-    () => {
-      const cycle08 = strideLength(params, legLen, 0.8);
-      const cycle = strideLength(params, legLen, 1.4);
-      expect(cycle).toBeGreaterThan(cycle08);
-      expect(cycle).toBeLessThan(1.2);
-    },
-  );
+  it('1.4 m/s: stride keeps growing, now landing close to the human-walking target of 1.4-1.5 m', () => {
+    const cycle08 = strideLength(params, geom, 0.8);
+    const cycle = strideLength(params, geom, 1.4);
+    expect(cycle).toBeGreaterThan(cycle08);
+    expect(cycle).toBeGreaterThan(1.3);
+    expect(cycle).toBeLessThan(1.6);
+    const stepsPerMin = ((2 * 1.4) / cycle) * 60;
+    expect(stepsPerMin).toBeGreaterThan(100);
+    expect(stepsPerMin).toBeLessThan(130);
+  });
 
-  it('2.8 m/s (deadvox chase): the cap is already saturated, so cadence alone carries the rest of the speed', () => {
-    const cycle14 = strideLength(params, legLen, 1.4);
-    const cycle = strideLength(params, legLen, 2.8);
-    expect(cycle).toBeCloseTo(cycle14, 6); // both past the cap: same cycle length
+  it('2.8 m/s (deadvox chase): the bob-budget cap is saturated well before this, so cadence carries it', () => {
+    const cycleAtCap = strideLength(params, geom, 2.1); // already past the cap (see mobgen's report)
+    const cycle = strideLength(params, geom, 2.8);
+    expect(cycle).toBeCloseTo(cycleAtCap, 6);
     const stepsPerMin = ((2 * 2.8) / cycle) * 60;
-    // Short of the "chase cadence <= ~200 steps/min" target: reaching it needs a stride the crouch cap
-    // (see doc comment) rules out — see mobgen's report on this change.
-    expect(stepsPerMin).toBeGreaterThan(200);
+    expect(stepsPerMin).toBeGreaterThan(180);
   });
 
-  it('never exceeds 1.5x leg length, for any strideFactor or speed (the crouch cap)', () => {
+  it('the reach cap is independent of strideFactor (only the raw pre-cap target scales with it)', () => {
+    const capA = strideLength({ ...params, strideFactor: 1 }, geom, 100);
+    const capB = strideLength({ ...params, strideFactor: 3 }, geom, 100);
+    expect(capB).toBeCloseTo(capA, 6);
+  });
+
+  it('never exceeds that same cap, for any strideFactor or speed', () => {
+    const cap = strideLength(params, geom, 100); // speed 100 guarantees saturation
     for (const strideFactor of [0.7, 0.85, 1, 1.15, 1.4]) {
       for (const speed of [0.8, 1.4, 2.8, 6]) {
-        const cycle = strideLength({ strideFactor } as HumanoidParams, legLen, speed);
-        expect(cycle).toBeLessThanOrEqual(1.5 * legLen + 1e-9);
+        const cycle = strideLength({ ...params, strideFactor }, geom, speed);
+        expect(cycle).toBeLessThanOrEqual(cap + 1e-9);
       }
     }
   });
