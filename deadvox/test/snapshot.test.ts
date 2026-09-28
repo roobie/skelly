@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { hourOfDay } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -873,21 +874,32 @@ describe('canonical save format', () => {
     );
   });
 
+  it('rejects user objects that collide with the reserved negative-zero tag', async () => {
+    const snapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
+    (snapshot.character.player as unknown as Record<string, unknown>).surprise = { [NEGATIVE_ZERO_TAG]: '-0' };
+    await expect(encodeFixture(snapshot)).rejects.toThrow('Reserved number tag');
+  });
+
   it('refuses an exact version mismatch before content lookup and never mutates the input bytes', async () => {
     const bytes = await encodeFixture(capture(createRuntime()));
     const original = bytes.slice();
     let lookups = 0;
     const otherVersion = { ...formatVersion, buildRevision: 'different-build' };
-    await expect(
-      decodeSave(bytes, {
+    let mismatch: unknown;
+    try {
+      await decodeSave(bytes, {
         version: otherVersion,
         contentLookup: () => {
           lookups += 1;
           return true;
         },
-      }),
-    ).rejects.toThrow('Save version mismatch');
+      });
+    } catch (error) {
+      mismatch = error;
+    }
     expect(lookups).toBe(0);
+    expect(mismatch).toBeInstanceOf(Error);
+    expect((mismatch as Error).message).toContain('Save version mismatch');
     expect(bytes).toEqual(original);
   });
 
@@ -936,6 +948,26 @@ describe('canonical save format', () => {
     const firstRun = (firstChunk.runs as Record<string, unknown>[])[0]!;
     firstRun.id = (firstChunk.palette as unknown[]).length;
     malformed.push({ name: 'RLE', bytes: sealEnvelope(badRle), message: 'Malformed RLE run' });
+    const adjacentSnapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
+    const changedChunk = adjacentSnapshot.world.diffs.chunks[0]!;
+    changedChunk.cells.push({ ...changedChunk.cells[0]!, index: changedChunk.cells[0]!.index + 1 });
+    const nonMaximalRle = parseEnvelope(await encodeFixture(adjacentSnapshot));
+    const nonMaximalPayload = getObject(nonMaximalRle.payload);
+    const nonMaximalWorld = getObject(nonMaximalPayload.world);
+    const nonMaximalRegion = Object.values(getObject(nonMaximalWorld.regions))[0] as Record<string, unknown>;
+    const nonMaximalChunk = (nonMaximalRegion.chunks as Record<string, unknown>[])[0]!;
+    const nonMaximalRuns = nonMaximalChunk.runs as Record<string, unknown>[];
+    const maximalRun = nonMaximalRuns[0]!;
+    const runStart = Number(maximalRun.start);
+    const runLength = Number(maximalRun.length);
+    expect(runLength).toBeGreaterThan(1);
+    nonMaximalRuns.splice(
+      0,
+      1,
+      { ...maximalRun, length: 1 },
+      { ...maximalRun, start: runStart + 1, length: runLength - 1 },
+    );
+    malformed.push({ name: 'non-maximal RLE', bytes: sealEnvelope(nonMaximalRle), message: 'Non-maximal RLE runs' });
 
     const duplicate = parseEnvelope(valid);
     const duplicatePayload = getObject(duplicate.payload);
@@ -983,10 +1015,14 @@ describe('canonical save format', () => {
     await Promise.all(
       malformed.map(async (test) => {
         const bytes = await test.bytes;
-        await expect(
-          decodeSave(bytes, { version: formatVersion, contentLookup, ...test.options }),
-          test.name,
-        ).rejects.toThrow(test.message);
+        let rejection: unknown;
+        try {
+          await decodeSave(bytes, { version: formatVersion, contentLookup, ...test.options });
+        } catch (error) {
+          rejection = error;
+        }
+        expect(rejection, test.name).toBeInstanceOf(Error);
+        expect((rejection as Error).message, test.name).toContain(test.message);
       }),
     );
   }, 20_000);

@@ -1,4 +1,9 @@
 import type { BlockEntityState } from './blockEntities.ts';
+import {
+  canonicalJsonBytes as canonicalBytes,
+  canonicalJsonAt as canonicalStringify,
+  decodeCanonicalNumbers as decodeNumberTags,
+} from './canonicalJson.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState, PlacedState } from './items.ts';
@@ -110,7 +115,6 @@ const MAGIC = 'DEADVOX_SAVE';
 const SCHEMA_VERSION = 1;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
-const NEGATIVE_ZERO_TAG = '\u0000deadvox-number';
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
@@ -370,20 +374,20 @@ const wirePayloadSchema = obj({
 });
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one schema dispatcher keeps exact required/unknown-field semantics auditable.
-function validateSchema(schema: Schema, value: unknown, path: string): void {
+function validateSchema(schema: Schema, value: unknown, path: string, acceptTaggedNegativeZero = false): void {
   if (schema.kind === 'lazy') {
-    validateSchema(schema.get(), value, path);
+    validateSchema(schema.get(), value, path, acceptTaggedNegativeZero);
     return;
   }
   if (schema.kind === 'optional') {
     if (value !== undefined) {
-      validateSchema(schema.schema, value, path);
+      validateSchema(schema.schema, value, path, acceptTaggedNegativeZero);
     }
     return;
   }
   if (schema.kind === 'nullable') {
     if (value !== null) {
-      validateSchema(schema.schema, value, path);
+      validateSchema(schema.schema, value, path, acceptTaggedNegativeZero);
     }
     return;
   }
@@ -427,7 +431,7 @@ function validateSchema(schema: Schema, value: unknown, path: string): void {
       throw new Error(`Invalid array at ${path}`);
     }
     for (const [index, child] of value.entries()) {
-      validateSchema(schema.item, child, `${path}[${index}]`);
+      validateSchema(schema.item, child, `${path}[${index}]`, acceptTaggedNegativeZero);
     }
     return;
   }
@@ -436,7 +440,7 @@ function validateSchema(schema: Schema, value: unknown, path: string): void {
       throw new Error(`Invalid tuple at ${path}`);
     }
     for (const [index, child] of schema.items.entries()) {
-      validateSchema(child, value[index], `${path}[${index}]`);
+      validateSchema(child, value[index], `${path}[${index}]`, acceptTaggedNegativeZero);
     }
     return;
   }
@@ -451,7 +455,7 @@ function validateSchema(schema: Schema, value: unknown, path: string): void {
     }
     for (const [key, field] of Object.entries(schema.fields)) {
       if (Object.hasOwn(value, key)) {
-        validateSchema(field, value[key], `${path}.${key}`);
+        validateSchema(field, value[key], `${path}.${key}`, acceptTaggedNegativeZero);
       } else if (field.kind !== 'optional') {
         throw new Error(`Missing field ${path}.${key}`);
       }
@@ -463,12 +467,12 @@ function validateSchema(schema: Schema, value: unknown, path: string): void {
       throw new Error(`Invalid record at ${path}`);
     }
     for (const [key, child] of Object.entries(value)) {
-      validateSchema(schema.value, child, `${path}.${key}`);
+      validateSchema(schema.value, child, `${path}.${key}`, acceptTaggedNegativeZero);
     }
     return;
   }
   if (schema.kind === 'json') {
-    canonicalStringify(value, path);
+    canonicalStringify(value, path, { acceptTaggedNegativeZero });
     return;
   }
   throw new Error(`Unsupported schema at ${path}`);
@@ -481,72 +485,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     !Array.isArray(value) &&
     Object.getPrototypeOf(value) === Object.prototype
   );
-}
-
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: canonical recursion handles every JSON scalar/container in one deterministic pass.
-function canonicalStringify(value: unknown, path = '$', ancestors = new WeakSet<object>()): string {
-  if (value === null) {
-    return 'null';
-  }
-  if (typeof value === 'boolean') {
-    return value ? 'true' : 'false';
-  }
-  if (typeof value === 'string') {
-    return JSON.stringify(value);
-  }
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      throw new Error(`Non-finite number at ${path}`);
-    }
-    if (Object.is(value, -0)) {
-      return `{${JSON.stringify(NEGATIVE_ZERO_TAG)}:"-0"}`;
-    }
-    return JSON.stringify(value);
-  }
-  if (typeof value !== 'object') {
-    throw new Error(`Unsupported value at ${path}`);
-  }
-  if (ancestors.has(value)) {
-    throw new Error(`Cycle at ${path}`);
-  }
-  ancestors.add(value);
-  let result: string;
-  if (Array.isArray(value)) {
-    result = `[${value.map((child, index) => canonicalStringify(child, `${path}[${index}]`, ancestors)).join(',')}]`;
-  } else {
-    if (!isRecord(value)) {
-      throw new Error(`Non-plain object at ${path}`);
-    }
-    const keys = Object.keys(value).sort();
-    if (keys.length === 1 && keys[0] === NEGATIVE_ZERO_TAG && value[NEGATIVE_ZERO_TAG] === '-0') {
-      result = `{${JSON.stringify(NEGATIVE_ZERO_TAG)}:"-0"}`;
-    } else {
-      if (Object.hasOwn(value, NEGATIVE_ZERO_TAG)) {
-        throw new Error(`Reserved number tag at ${path}.${NEGATIVE_ZERO_TAG}`);
-      }
-      result = `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalStringify(value[key], `${path}.${key}`, ancestors)}`).join(',')}}`;
-    }
-  }
-  ancestors.delete(value);
-  return result;
-}
-
-function decodeNumberTags(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(decodeNumberTags);
-  }
-  if (!isRecord(value)) {
-    return value;
-  }
-  const keys = Object.keys(value);
-  if (keys.length === 1 && keys[0] === NEGATIVE_ZERO_TAG && value[NEGATIVE_ZERO_TAG] === '-0') {
-    return -0;
-  }
-  return Object.fromEntries(keys.map((key) => [key, decodeNumberTags(value[key])]));
-}
-
-function canonicalBytes(value: unknown): Uint8Array {
-  return new TextEncoder().encode(canonicalStringify(value));
 }
 
 async function sha256(bytes: Uint8Array): Promise<string> {
@@ -1166,7 +1104,7 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
     checksum: str(),
     payload: record(anyJson),
   });
-  validateSchema(headerSchema, envelope, 'envelope');
+  validateSchema(headerSchema, envelope, 'envelope', true);
   const parsed = envelope as unknown as Envelope;
   if (parsed.schemaVersion !== SCHEMA_VERSION) {
     throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SCHEMA_VERSION}`);
@@ -1188,7 +1126,7 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
       `Save version mismatch: saved ${canonicalStringify(parsed.versionIdentity.components)}, running ${canonicalStringify(running)}`,
     );
   }
-  const payloadBytes = canonicalBytes(parsed.payload);
+  const payloadBytes = canonicalBytes(parsed.payload, { acceptTaggedNegativeZero: true });
   if (parsed.payloadByteLength > maxPayloadBytes || payloadBytes.byteLength > maxPayloadBytes) {
     throw new Error(`Payload exceeds configured limit (${payloadBytes.byteLength} > ${maxPayloadBytes} bytes)`);
   }
@@ -1198,7 +1136,7 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   if (!HASH.test(parsed.checksum) || (await sha256(payloadBytes)) !== parsed.checksum) {
     throw new Error('Save checksum mismatch');
   }
-  if (canonicalStringify(envelope) !== raw) {
+  if (canonicalStringify(envelope, '$', { acceptTaggedNegativeZero: true }) !== raw) {
     throw new Error('Non-canonical save encoding');
   }
   const payload = decodeNumberTags(parsed.payload) as WirePayload;

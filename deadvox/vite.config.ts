@@ -3,28 +3,10 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { buildRevisionFromGit } from './src/core/buildRevision.ts';
+import { canonicalJson } from './src/core/canonicalJson.ts';
 
 const contentDirectory = fileURLToPath(new URL('./src/content/base/', import.meta.url));
-const canonical = (value: unknown): string => {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(canonical).join(',')}]`;
-  }
-  return `{${Object.entries(value as Record<string, unknown>)
-    .sort(([left], [right]) => {
-      if (left < right) {
-        return -1;
-      }
-      if (left > right) {
-        return 1;
-      }
-      return 0;
-    })
-    .map(([key, child]) => `${JSON.stringify(key)}:${canonical(child)}`)
-    .join(',')}}`;
-};
 const filesUnder = (directory: string, prefix: string): { name: string; path: string }[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const relative = `${prefix}${entry.name}`;
@@ -48,7 +30,7 @@ const contentFiles = filesUnder(contentDirectory, 'base/').sort((left, right) =>
 });
 const baseContentHash = createHash('sha256')
   .update(
-    canonical(
+    canonicalJson(
       contentFiles.map(({ name, path }) => {
         const bytes = readFileSync(path);
         const content = name.endsWith('.json')
@@ -61,14 +43,17 @@ const baseContentHash = createHash('sha256')
   .digest('hex');
 let buildRevision: string;
 try {
-  buildRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: fileURLToPath(new URL('.', import.meta.url)),
-    encoding: 'utf8',
-  }).trim();
+  buildRevision = buildRevisionFromGit((args) =>
+    execFileSync('git', [...args], {
+      cwd: fileURLToPath(new URL('.', import.meta.url)),
+      encoding: 'utf8',
+    }),
+  );
 } catch {
   buildRevision = 'development';
 }
 
+// Vite snapshots build identity at config load; restart the dev server after editing base-pack content.
 const buildRevisionDefine = '__DEADVOX_BUILD_REVISION__';
 const baseContentHashDefine = '__DEADVOX_BASE_CONTENT_HASH__';
 
