@@ -1115,7 +1115,7 @@ export const forend: PartFamily = {
 // ---- held parts ----
 
 // Hand-derived S/M/L lengths: about four fingers through a hand-and-a-bit; lean stays at 18°.
-const GRIP_BANDS = { lengthU: { S: 8, M: 9, L: 10 }, leanDegrees: 18 } as const;
+const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
 
 export const grip: PartFamily = {
   name: 'grip',
@@ -1207,7 +1207,7 @@ export const grip: PartFamily = {
             keepOut(
               'magazine-path',
               [-PISTOL_WELL_DEPTH / 2, -40, -PISTOL_WELL_WIDTH / 2],
-              [PISTOL_WELL_DEPTH / 2, roofY, PISTOL_WELL_WIDTH / 2],
+              [PISTOL_WELL_DEPTH / 2, roofY - MAGAZINE_WELL_CLEARANCE, PISTOL_WELL_WIDTH / 2],
               'magazine',
             ),
           ]
@@ -1254,6 +1254,17 @@ const rotatedBoxBounds = (box: { center: Vec3; half: Vec3 }, angle: number, offs
   );
 };
 
+const removeAdjacentProfileDuplicates = (profile: readonly Vec2[]): Vec2[] => {
+  const unique = profile.filter(
+    (point, index) =>
+      index === 0 || Math.hypot(point[0] - profile[index - 1]![0], point[1] - profile[index - 1]![1]) > 1e-9,
+  );
+  if (unique.length > 1 && Math.hypot(unique[0]![0] - unique.at(-1)![0], unique[0]![1] - unique.at(-1)![1]) <= 1e-9) {
+    unique.pop();
+  }
+  return unique;
+};
+
 const integratedPistolGrip = (gripLength: string): PartDef => {
   const angle = -(GRIP_BANDS.leanDegrees * Math.PI) / 180;
   const offset: Vec3 = [PISTOL_GRIP_X, 0, 0];
@@ -1270,10 +1281,12 @@ const integratedPistolGrip = (gripLength: string): PartDef => {
         : part.profile;
     return extrudedPolygon(
       part.id,
-      profile.map(([x, y]) => {
-        const [worldX, worldY] = rotateGripPoint([x, y, 0], angle, offset);
-        return [snapGrid(worldX), snapGrid(worldY)] as const;
-      }),
+      removeAdjacentProfileDuplicates(
+        profile.map(([x, y]) => {
+          const [worldX, worldY] = rotateGripPoint([x, y, 0], angle, offset);
+          return [snapGrid(worldX), snapGrid(worldY)] as const;
+        }),
+      ),
       part.kind === 'box' ? [part.box.center[2] - part.box.half[2], part.box.center[2] + part.box.half[2]] : part.z,
     );
   });

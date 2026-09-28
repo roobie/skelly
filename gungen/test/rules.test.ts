@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Assembly, Domain } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { pistolBarrelCrown } from '../src/gun/rules.ts';
 import { loadFixture, variant } from './helpers.ts';
 
 const rulesFailed = (a: Assembly, domain: Domain = gunDomain) =>
@@ -115,6 +116,17 @@ describe('rules', () => {
     expect(report.ok).toBe(true);
     expect(report.issues.filter((issue) => issue.rule === 'solid-overlap')).toEqual([]);
     expect(report.issues.filter((issue) => issue.rule === 'pistol-barrel-crown')).toEqual([]);
+  });
+
+  it('measures the pistol crown between the placed barrel and slide ends', () => {
+    const { resolved } = validate(loadFixture('archetype-pistol'), gunDomain);
+    const placed = new Map(resolved.placed);
+    const barrel = placed.get('barrel')!;
+    placed.set('barrel', { ...barrel, t: [barrel.t[0] + 2, barrel.t[1], barrel.t[2]] });
+    const issues = pistolBarrelCrown.check({ ...resolved, placed });
+    expect(issues.map(({ message }) => message)).toEqual([
+      'The barrel protrudes 3.00u past the slide; the pistol crown must be 0.5–1.5u.',
+    ]);
   });
 
   it('pistol crown rule rejects a barrel that extends more than 1.5u past the slide', () => {

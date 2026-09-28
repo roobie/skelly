@@ -3,7 +3,7 @@ import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometr
 import type { Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { loadFixture } from './helpers.ts';
+import { loadFixture, variant } from './helpers.ts';
 
 const assembly = loadFixture('archetype-pistol');
 const report = validate(assembly, gunDomain);
@@ -40,6 +40,18 @@ describe('pistol model', () => {
     expect(resolved.connections.find(({ conn }) => conn.from === 'frame.barrel')?.role).toBe('loop');
     expect(maxLocalX(barrel.solids) - maxLocalX(slide.solids)).toBeCloseTo(1);
     expect(barrel.ports.find((port) => port.id === 'muzzle')).toMatchObject({ mount: 'muzzle', gender: 'female' });
+  });
+
+  it('keeps the integrated frame magazine path clear across the measured grip bands', () => {
+    for (const gripLength of ['S', 'M', 'L']) {
+      const variantReport = validate(
+        variant('archetype-pistol', (draft) => {
+          draft.parts.frame!.params!.gripLength = gripLength;
+        }),
+        gunDomain,
+      );
+      expect(variantReport.ok, `${gripLength} grip`).toBe(true);
+    }
   });
 
   it('puts the integrated grip behind the trigger and beneath the slide rear third', () => {

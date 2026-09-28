@@ -146,6 +146,19 @@ describe('part library', () => {
     expect(eight.axes[0]!.origin[1]).toBeCloseTo(3);
   });
 
+  it('uses the measured grip length bands for detached and integrated pistol grips', () => {
+    const expected = { S: 7.5, M: 8.5, L: 9.5 };
+    for (const size of ['S', 'M', 'L'] as const) {
+      const body = FAMILIES.grip!.build({ length: size }).solids[0]!;
+      expect(body.kind).toBe('extruded-polygon');
+      if (body.kind === 'extruded-polygon') {
+        expect(-Math.min(...body.profile.map(([, y]) => y))).toBe(expected[size]);
+      }
+      const frame = FAMILIES.frame!.build({ bore: 'M', gripLength: size, slideLength: 'M' });
+      expect(frame.solids.some(({ id }) => id === 'well-wall-right')).toBe(true);
+    }
+  });
+
   it('models the grip as one beveled prism matching its mount face', () => {
     const { solids } = FAMILIES.grip!.build({ length: 'M' });
     expect(solids).toHaveLength(1);
