@@ -18,7 +18,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Pose } from '../core/pose.ts';
 import { chance, range, seededRng } from '../core/random.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
-import { advanceClock, type GaitClock, walkPose } from '../mob/gait.ts';
+import { advanceClock, createGaitCache, type GaitClock, type WalkActor, walkPose } from '../mob/gait.ts';
 import {
   buildPoolRender,
   createActor,
@@ -40,6 +40,25 @@ const SWEEP_MEASURE_MS = 4000;
 const HUD_WINDOW_MS = 2000;
 const SAMPLE_RETENTION_MS = 20_000; // comfortably covers the sweep's own SWEEP_MEASURE_MS window
 
+// Distance-based LOD (mobgen/CHALLENGES.md §1's "pose far actors less often"): an actor further than
+// LOD_NEAR_M from the camera is re-posed every 2nd frame, further than LOD_FAR_M every 3rd — its
+// GaitClock/path/attack state still advances every frame (cheap: no trig-heavy IK, no FK), only the
+// walkPose/attackPose + boneTransformsInto + matrix-write step (the expensive part) is skipped on the
+// frames it's due to sit out. Which actors skip which frame is staggered by actor index (`(frameCounter +
+// index) % interval === 0`), not by a fixed phase, so a LOD tier's cost spreads evenly across frames
+// instead of every actor in that tier updating (and every one skipping) in lockstep.
+const LOD_NEAR_M = 15;
+const LOD_FAR_M = 30;
+const lodIntervalFor = (distance: number): number => {
+  if (distance > LOD_FAR_M) {
+    return 3;
+  }
+  if (distance > LOD_NEAR_M) {
+    return 2;
+  }
+  return 1;
+};
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
 const hud = $<HTMLPreElement>('hud');
@@ -49,6 +68,7 @@ const actorsMinus = $<HTMLButtonElement>('actors-minus');
 const actorsPlus = $<HTMLButtonElement>('actors-plus');
 const actorsDouble = $<HTMLButtonElement>('actors-double');
 const pauseToggle = $<HTMLInputElement>('pause-toggle');
+const lodToggle = $<HTMLInputElement>('lod-toggle');
 const sweepBtn = $<HTMLButtonElement>('sweep-btn');
 const sweepStatus = $<HTMLDivElement>('sweep-status');
 const sweepOutput = $<HTMLPreElement>('sweep-output');
@@ -121,6 +141,8 @@ const query = new URLSearchParams(location.search);
 let mode: Mode = query.get('mode') === 'bones' ? 'bones' : 'skinned';
 let actorCount = Math.max(1, Number.parseInt(query.get('n') ?? '60', 10) || 60);
 const poolSize = Math.max(1, Number.parseInt(query.get('pool') ?? '12', 10) || 12);
+let lodEnabled = query.get('lod') !== '0'; // on by default
+lodToggle.checked = lodEnabled;
 
 const updateUrl = (): void => {
   const params = new URLSearchParams();
@@ -128,6 +150,9 @@ const updateUrl = (): void => {
   params.set('n', String(actorCount));
   if (poolSize !== 12) {
     params.set('pool', String(poolSize));
+  }
+  if (!lodEnabled) {
+    params.set('lod', '0');
   }
   history.replaceState(null, '', `?${params.toString()}`);
 };
@@ -170,6 +195,11 @@ interface PathState {
 interface CrowdMember {
   readonly actor: StressActor;
   readonly poolIndex: number;
+  /** This member's own WalkActor: shares the pool entry's bones/extents/params/seed, but with its own
+   * GaitCache (see mob/gait.ts's GaitCache) — several members reference the same pool entry (and so the
+   * same params object) with different speeds and different current stepIndex, and footfallPeak's cache
+   * must be per member or it thrashes on almost every call (see mobgen's report). */
+  readonly walkActor: WalkActor;
   readonly path: PathState;
   readonly speed: number;
   readonly attacker: boolean;
@@ -221,6 +251,7 @@ const buildCrowd = (n: number): void => {
     crowd.push({
       actor,
       poolIndex,
+      walkActor: { ...pool[poolIndex]!.walkActor, cache: createGaitCache() },
       path,
       speed,
       attacker,
@@ -308,6 +339,7 @@ const updateHud = (): void => {
   hud.textContent = [
     `mode        ${mode}`,
     `actors      ${actorCount}`,
+    `lod         ${lodEnabled ? `on (${LOD_NEAR_M}/${LOD_FAR_M} m)` : 'off'}`,
     `fps         ${fmt1(mean)}  (1% low ${fmt1(low1)})`,
     `frame time  ${fmt2(meanDt)} ms`,
     `cpu/update  ${fmt2(meanCpu)} ms`,
@@ -324,21 +356,24 @@ setInterval(updateHud, 500);
 // ---- simulation + render loop ----
 
 const poseFor = (member: CrowdMember): Pose => {
-  const entry = pool[member.poolIndex]!;
-  const basePose = walkPose(entry.walkActor, member.clock, member.speed);
+  const basePose = walkPose(member.walkActor, member.clock, member.speed);
   return member.attackTime === undefined
     ? basePose
-    : attackPose(entry.walkActor, LUNGE_GRAB, member.attackTime, basePose);
+    : attackPose(member.walkActor, LUNGE_GRAB, member.attackTime, basePose);
 };
 
 const advanceMember = (member: CrowdMember, dt: number): void => {
   const entry = pool[member.poolIndex]!;
   const distance = member.speed * dt;
+  // geomL (leg geometry) and the basis's params/seed are shared across every member of this pool entry —
+  // fine: they're constant for a given body, so strideCap's own cache (keyed on params, validated against
+  // the geometry — see gait.ts) is correctly shared too. Only footfallPeak (inside walkPose/attackPose
+  // above) needs a *per-member* cache, since it also depends on this member's own speed.
   member.clock = advanceClock(member.clock, distance, {
-    params: entry.walkActor.params,
+    params: member.walkActor.params,
     geomL: entry.legGeometryL,
     speed: member.speed,
-    seed: entry.walkActor.seed,
+    seed: member.walkActor.seed,
   });
   member.path.angle += (distance / member.path.radius) * member.path.dir;
   if (member.attacker) {
@@ -357,6 +392,7 @@ const advanceMember = (member: CrowdMember, dt: number): void => {
 };
 
 let lastFrameTime = performance.now();
+let frameCounter = 0; // drives the LOD stagger (frameCounter + actor index) % interval — see lodIntervalFor
 renderer.setAnimationLoop(() => {
   const now = performance.now();
   const frameMs = now - lastFrameTime;
@@ -379,7 +415,8 @@ renderer.setAnimationLoop(() => {
       advanceMember(member, dt);
     }
   }
-  for (const member of crowd) {
+  frameCounter += 1;
+  for (const [index, member] of crowd.entries()) {
     const { cx, cz, radius, angle, dir } = member.path;
     const x = cx + radius * Math.cos(angle);
     const z = cz + radius * Math.sin(angle);
@@ -388,6 +425,15 @@ renderer.setAnimationLoop(() => {
     const tx = -Math.sin(angle) * dir;
     const tz = Math.cos(angle) * dir;
     const yaw = Math.atan2(-tx, -tz);
+    if (lodEnabled) {
+      const dx = camera.position.x - x;
+      const dy = camera.position.y - 0.9; // roughly pelvis height; camera.position.y varies with orbit
+      const dz = camera.position.z - z;
+      const interval = lodIntervalFor(Math.sqrt(dx * dx + dy * dy + dz * dz));
+      if (interval > 1 && (frameCounter + index) % interval !== 0) {
+        continue; // sits this frame out: clock/path already advanced above, only pose + matrix write skip
+      }
+    }
     member.actor.place(x, z, yaw, poseFor(member));
   }
   const cpuMs = performance.now() - cpuStart;
@@ -437,6 +483,10 @@ actorsDouble.addEventListener('click', () => setActorCount(actorCount * 2));
 pauseToggle.addEventListener('change', () => {
   paused = pauseToggle.checked;
 });
+lodToggle.addEventListener('change', () => {
+  lodEnabled = lodToggle.checked;
+  updateUrl();
+});
 
 // ---- sweep ----
 
@@ -445,6 +495,7 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 interface SweepRow {
   readonly mode: Mode;
   readonly n: number;
+  readonly lod: boolean;
   readonly meanFps: number;
   readonly low1: number;
   readonly cpuMs: number;
@@ -483,11 +534,11 @@ const setControlsDisabled = (disabled: boolean): void => {
 };
 
 const sweepTable = (rows: readonly SweepRow[]): string => {
-  const header = '| mode | n | mean fps | 1% low | pose cpu ms | render cpu ms | draws | triangles |';
-  const rule = '|---|---|---|---|---|---|---|---|';
+  const header = '| mode | n | lod | mean fps | 1% low | pose cpu ms | render cpu ms | draws | triangles |';
+  const rule = '|---|---|---|---|---|---|---|---|---|';
   const body = rows.map(
     (r) =>
-      `| ${r.mode} | ${r.n} | ${fmt1(r.meanFps)} | ${fmt1(r.low1)} | ${fmt2(r.cpuMs)} | ${fmt2(r.renderMs)} | ${r.draws} | ${r.triangles} |`,
+      `| ${r.mode} | ${r.n} | ${r.lod ? 'on' : 'off'} | ${fmt1(r.meanFps)} | ${fmt1(r.low1)} | ${fmt2(r.cpuMs)} | ${fmt2(r.renderMs)} | ${r.draws} | ${r.triangles} |`,
   );
   return [header, rule, ...body].join('\n');
 };
@@ -517,7 +568,17 @@ const runSweep = async (): Promise<void> => {
         await sleep(SWEEP_MEASURE_MS);
         const to = performance.now();
         const { fps, cpuMs, renderMs, draws, triangles } = measureWindow(from, to);
-        rows.push({ mode: m, n, meanFps: fps.mean, low1: fps.low1, cpuMs, renderMs, draws, triangles });
+        rows.push({
+          mode: m,
+          n,
+          lod: lodEnabled,
+          meanFps: fps.mean,
+          low1: fps.low1,
+          cpuMs,
+          renderMs,
+          draws,
+          triangles,
+        });
       }
     }
     const table = sweepTable(rows);

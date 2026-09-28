@@ -30,13 +30,20 @@ import {
   Bone as ThreeBone,
 } from 'three';
 import { generate, type Realized, realize } from '../core/generate.ts';
-import { compose, rotation, rotY, type Transform, translation } from '../core/math.ts';
-import { boneLocalTransform, boneTransforms, type Pose } from '../core/pose.ts';
+import { compose, IDENTITY_M, rotation, rotY, type Transform, translation } from '../core/math.ts';
+import {
+  allocateBoneTransforms,
+  boneTransformsInto,
+  indexBonesByParent,
+  type MutableTransform,
+  type ParentIndex,
+  type Pose,
+} from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { type Extent, footRestExtents, type LegGeometry, legGeometryFor, type WalkActor } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { TEMPLATES } from '../mob/templates.ts';
-import { geometryOf, matrixOf, vertexColors } from './scene.ts';
+import { geometryOf, vertexColors } from './scene.ts';
 
 export type Mode = 'bones' | 'skinned';
 
@@ -212,6 +219,17 @@ export interface StressActor {
   readonly place: (x: number, z: number, yawRad: number, pose: Pose) => void;
 }
 
+/** Writes a Transform's r/t into an existing Matrix4 in place (Matrix4.set, not `new Matrix4()` —
+ * mobgen/CHALLENGES.md §1: this runs for every bone of every actor of every frame, so the difference
+ * between mutating one pre-allocated Matrix4 and allocating a fresh one really is the whole point). */
+const writeMatrix = (
+  target: Matrix4,
+  r: readonly [number, number, number, number, number, number, number, number, number],
+  t: readonly [number, number, number],
+): void => {
+  target.set(r[0], r[1], r[2], t[0], r[3], r[4], r[5], t[1], r[6], r[7], r[8], t[2], 0, 0, 0, 1);
+};
+
 const buildBonesActor = (entry: PoolEntry, render: BonesPoolRender): StressActor => {
   const group = new Group();
   const meshes = new Map<number, Mesh>();
@@ -222,17 +240,22 @@ const buildBonesActor = (entry: PoolEntry, render: BonesPoolRender): StressActor
     meshes.set(boneIndex, mesh);
   }
   const { bones } = entry.realized.body;
+  // Allocated once per actor, reused every frame: boneTransformsInto writes into these in place instead
+  // of building a fresh Map<string, Transform> (and a fresh Transform per bone) on every call.
+  const parentIndex: ParentIndex = indexBonesByParent(bones);
+  const scratch: MutableTransform[] = allocateBoneTransforms(bones.length);
 
   const place = (x: number, z: number, yawRad: number, pose: Pose): void => {
     group.position.set(x, 0, z);
     group.rotation.set(0, yawRad, 0);
-    const transforms = boneTransforms(bones, pose);
-    for (const [boneIndex, bone] of bones.entries()) {
+    boneTransformsInto(bones, pose, parentIndex, scratch);
+    for (let boneIndex = 0; boneIndex < bones.length; boneIndex++) {
       const mesh = meshes.get(boneIndex);
       if (!mesh) {
         continue;
       }
-      mesh.matrix.copy(matrixOf(transforms.get(bone.id)!));
+      const t = scratch[boneIndex]!;
+      writeMatrix(mesh.matrix, t.r, t.t);
       mesh.matrixWorldNeedsUpdate = true;
     }
   };
@@ -256,16 +279,16 @@ const buildBonesActor = (entry: PoolEntry, render: BonesPoolRender): StressActor
 const buildSkinnedActor = (entry: PoolEntry, render: SkinnedPoolRender): StressActor => {
   const { bones } = entry.realized.body;
   const threeBones = bones.map(() => new ThreeBone());
-  const indexById = new Map(bones.map((bone, i) => [bone.id, i]));
+  const parentIndex: ParentIndex = indexBonesByParent(bones);
   let rootIndex = -1;
-  for (const [i, bone] of bones.entries()) {
+  for (let i = 0; i < bones.length; i++) {
     threeBones[i]!.matrixAutoUpdate = false;
-    if (bone.parent === null) {
+    const pi = parentIndex[i]!;
+    if (pi < 0) {
       rootIndex = i;
       continue;
     }
-    const parentIndex = indexById.get(bone.parent)!;
-    threeBones[parentIndex]!.add(threeBones[i]!);
+    threeBones[pi]!.add(threeBones[i]!);
   }
   if (rootIndex < 0) {
     throw new Error('body has no root bone (every bone has a non-null parent)');
@@ -284,11 +307,29 @@ const buildSkinnedActor = (entry: PoolEntry, render: SkinnedPoolRender): StressA
   // bind()'s own calculateInverses() call, which would otherwise overwrite the identity boneInverses above.
 
   const place = (x: number, z: number, yawRad: number, pose: Pose): void => {
-    const crowd: Transform = compose(translation([x, 0, z]), rotation(rotY((yawRad * 180) / Math.PI)));
-    for (const [i, bone] of bones.entries()) {
-      const local = boneLocalTransform(bone, pose);
-      const final = i === rootIndex ? compose(crowd, local) : local;
-      threeBones[i]!.matrix.copy(matrixOf(final));
+    // The root alone needs a real compose() (crowd ∘ local) — cheap, once per actor per frame. Every
+    // other bone's local (parent-relative) transform is computed directly (same closed form as
+    // core/pose.ts's boneLocalTransform: r = R, t = head - R·head), skipping that function's own
+    // allocation since this loop already has to write straight into each THREE.Bone's matrix anyway.
+    for (let i = 0; i < bones.length; i++) {
+      const bone = bones[i]!;
+      const r = pose.rotations[bone.id] ?? IDENTITY_M;
+      const head = bone.head;
+      const hx = head[0];
+      const hy = head[1];
+      const hz = head[2];
+      const ltx = hx - (r[0] * hx + r[1] * hy + r[2] * hz);
+      const lty = hy - (r[3] * hx + r[4] * hy + r[5] * hz);
+      const ltz = hz - (r[6] * hx + r[7] * hy + r[8] * hz);
+      if (i === rootIndex) {
+        const root = pose.root;
+        const local: Transform = { r, t: [ltx + root[0], lty + root[1], ltz + root[2]] };
+        const crowd: Transform = compose(translation([x, 0, z]), rotation(rotY((yawRad * 180) / Math.PI)));
+        const final = compose(crowd, local);
+        writeMatrix(threeBones[i]!.matrix, final.r, final.t);
+      } else {
+        writeMatrix(threeBones[i]!.matrix, r, [ltx, lty, ltz]);
+      }
       threeBones[i]!.matrixWorldNeedsUpdate = true;
     }
   };
