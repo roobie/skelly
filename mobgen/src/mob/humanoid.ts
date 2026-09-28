@@ -298,6 +298,7 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams): Feature[] => {
   // (mobgen/reference/README.md); FLESH_SCALE brings total body volume in line without re-deriving
   // every constant.
   const g = p.girth * FLESH_SCALE;
+  const chestCenter = mid(layout.chest.head, layout.chest.tail);
   const features: Feature[] = [
     ellipsoidFeature('pelvis', mid(layout.pelvis.bottom, layout.pelvis.top), [
       (REF.hipLat * h * p.hipWidth + 0.05 * h) * g,
@@ -305,7 +306,7 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams): Feature[] => {
       0.09 * h * g,
     ]),
     capsuleFeature('spine', layout.spine.head, layout.spine.tail, [0.065 * h * g, 0.075 * h * g]),
-    ellipsoidFeature('chest', mid(layout.chest.head, layout.chest.tail), [
+    ellipsoidFeature('chest', chestCenter, [
       REF.shoulderLat * h * p.shoulderWidth * 0.85 * g,
       0.15 * h * g,
       0.11 * h * g,
@@ -364,10 +365,30 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams): Feature[] => {
     const rbUpper = 0.038 * h * g;
     const raFore = 0.036 * h * g;
     const rbFore = 0.028 * h * g;
-    const raThigh = 0.082 * h * g;
-    const rbThigh = 0.06 * h * g;
+    // Trimmed from 0.082/0.06: a full raThigh sphere centred on the (lateral) hip joint made the
+    // hip/thigh silhouette flare out past the pelvis ("jodhpurs" — see mobgen user feedback). The
+    // thigh capsule's top end is also pulled in off the joint below, so raThigh no longer sets the
+    // outer hip contour directly.
+    const raThigh = 0.062 * h * g;
+    const rbThigh = 0.058 * h * g;
     const raShin = 0.055 * h * g;
     const rbShin = 0.038 * h * g;
+    // Real thigh mass sits medial/forward of the hip joint (a lateral pivot deep in the pelvis), not
+    // centred on it. Offsetting the capsule's top end this way (rather than shrinking raThigh further)
+    // keeps the thigh visibly thick while pulling its outer edge in under the pelvis. Both offsets are
+    // along axes gait.ts's walk cycle never rotates the leg out of (X: rotX is the only leg/pelvis
+    // rotation; Z: fixed in the rest-pose local frame), so this stays put through the whole stride.
+    const thighTop = add(leg.hip, [sideSign(side) * -0.4 * raThigh, 0, -0.3 * raThigh]);
+    // The shoulder joint sits laterally outside the chest's own ellipsoid by design (the arm attaches
+    // beyond the torso, more so at low girth since chest's X radius scales with g but the shoulder's
+    // skeletal offset doesn't) — voxelize.ts's repairJointAdjacency bridges that gap with a single
+    // forced marrow voxel, which isn't reliably 6-adjacent to the rest of chest's own flesh (seen as an
+    // occasional `floaters` failure on lean, broad-shouldered builds). A chest-owned sphere at the
+    // midpoint, sized to reach both the chest's flesh and the shoulder's own roundJoint below, makes
+    // the join robust without depending on that single voxel.
+    const shoulderMid = mid(chestCenter, arm.shoulder);
+    const bridgeR = Math.max(0.02 * h * g, length(sub(arm.shoulder, shoulderMid)) - raUpper + 0.03 * h * g);
+    features.push(ellipsoidFeature('chest', shoulderMid, [bridgeR, bridgeR, bridgeR]));
     features.push(
       capsuleFeature(`upperArm.${side}`, arm.shoulder, arm.elbow, [raUpper, rbUpper]),
       capsuleFeature(`forearm.${side}`, arm.elbow, arm.wrist, [raFore, rbFore]),
@@ -378,13 +399,16 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams): Feature[] => {
         0.05 * h + 0.03 * h * g,
         0.022 * h * g,
       ]),
-      capsuleFeature(`thigh.${side}`, leg.hip, leg.knee, [raThigh, rbThigh]),
+      capsuleFeature(`thigh.${side}`, thighTop, leg.knee, [raThigh, rbThigh]),
       capsuleFeature(`shin.${side}`, leg.knee, leg.ankle, [raShin, rbShin]),
       footFeature(`foot.${side}`, [leg.ankle, leg.toe], [h, g]),
       roundJoint(`upperArm.${side}`, arm.shoulder, raUpper),
       roundJoint(`forearm.${side}`, arm.elbow, raFore),
       roundJoint(`hand.${side}`, arm.wrist, 0.032 * h * g),
-      roundJoint(`thigh.${side}`, leg.hip, raThigh),
+      // Smaller than raThigh: it only needs to bridge the (small, fixed) gap between the true hip
+      // pivot and the inset thighTop above so the joint hides through the walk cycle — sized to the
+      // pivot itself, it would undo the trim above by flaring back out to the old width.
+      roundJoint(`thigh.${side}`, leg.hip, raThigh * 0.55),
       roundJoint(`shin.${side}`, leg.knee, raShin),
       roundJoint(`foot.${side}`, leg.ankle, 0.04 * h * g),
     );

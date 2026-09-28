@@ -59,7 +59,7 @@ exports[`templates > brute: known-good seeds (genome + voxel-grid hash) 1`] = `
         },
       ],
     },
-    "gridHash": "d0f6eed7",
+    "gridHash": "57dc879b",
   },
   {
     "genome": {
@@ -112,7 +112,7 @@ exports[`templates > brute: known-good seeds (genome + voxel-grid hash) 1`] = `
         },
       ],
     },
-    "gridHash": "d6b56920",
+    "gridHash": "c8e9c157",
   },
   {
     "genome": {
@@ -158,7 +158,7 @@ exports[`templates > brute: known-good seeds (genome + voxel-grid hash) 1`] = `
       "voxelSize": 0.05,
       "wounds": [],
     },
-    "gridHash": "f0a5bed4",
+    "gridHash": "8fd77dbc",
   },
 ]
 `;
@@ -216,7 +216,7 @@ exports[`templates > runner: known-good seeds (genome + voxel-grid hash) 1`] = `
         },
       ],
     },
-    "gridHash": "6304d70f",
+    "gridHash": "7ad8efa0",
   },
   {
     "genome": {
@@ -262,7 +262,7 @@ exports[`templates > runner: known-good seeds (genome + voxel-grid hash) 1`] = `
       "voxelSize": 0.041666666666666664,
       "wounds": [],
     },
-    "gridHash": "93a91274",
+    "gridHash": "92ae63df",
   },
   {
     "genome": {
@@ -308,7 +308,7 @@ exports[`templates > runner: known-good seeds (genome + voxel-grid hash) 1`] = `
       "voxelSize": 0.041666666666666664,
       "wounds": [],
     },
-    "gridHash": "2611e5b0",
+    "gridHash": "1086858b",
   },
 ]
 `;
@@ -372,7 +372,7 @@ exports[`templates > shambler: known-good seeds (genome + voxel-grid hash) 1`] =
         },
       ],
     },
-    "gridHash": "915bba72",
+    "gridHash": "1f21548a",
   },
   {
     "genome": {
@@ -425,7 +425,7 @@ exports[`templates > shambler: known-good seeds (genome + voxel-grid hash) 1`] =
         },
       ],
     },
-    "gridHash": "20c94357",
+    "gridHash": "b045155c",
   },
   {
     "genome": {
@@ -471,7 +471,7 @@ exports[`templates > shambler: known-good seeds (genome + voxel-grid hash) 1`] =
       "voxelSize": 0.041666666666666664,
       "wounds": [],
     },
-    "gridHash": "ca38c689",
+    "gridHash": "1e6fc800",
   },
 ]
 `;
