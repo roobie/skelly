@@ -33,6 +33,23 @@ describe('barrel-fitted handguards', () => {
     }
   });
 
+  it('uses independent 65% standard reach and the shorter AK gas-port reach', () => {
+    const expectedStandard = { S: 17, M: 23.5, L: 30 };
+    const expectedAk = { S: 14, M: 22, L: 30 };
+    for (const size of ['S', 'M', 'L'] as const) {
+      const reach = (layout: 'standard' | 'ak') => {
+        const handguard = FAMILIES.handguard!.build({ length: size, layout, mount: 'free-float' });
+        return Math.max(
+          ...handguard.solids.map((solid) =>
+            solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
+          ),
+        );
+      };
+      expect(reach('standard')).toBe(expectedStandard[size]);
+      expect(reach('ak')).toBe(expectedAk[size]);
+    }
+  });
+
   it('keeps every generated template handguard within its receiver over 1,000 seeds', () => {
     for (const template of TEMPLATES) {
       for (let seed = 0; seed < 1000; seed++) {

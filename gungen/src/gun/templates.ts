@@ -62,7 +62,7 @@ export const ar: Template = {
       params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full' },
     },
     { id: 'lower', family: 'lower', params: { layout: 'ar' } },
-    { id: 'barrel', family: 'barrel', params: { length: SML } },
+    { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     {
       id: 'handguard',
       family: 'handguard',

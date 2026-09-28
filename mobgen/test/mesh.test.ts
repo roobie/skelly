@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest';
+import { meshBones } from '../src/core/mesh.ts';
+import type { Voxels } from '../src/core/voxelize.ts';
+
+const grid = (dims: readonly [number, number, number], owner: readonly number[], color: readonly number[]): Voxels => ({
+  size: 0.1,
+  origin: [0, 0, 0],
+  dims,
+  owner: Uint8Array.from(owner),
+  color: Uint8Array.from(color),
+});
+
+describe('meshBones', () => {
+  it('a single voxel gives 12 triangles (6 faces)', () => {
+    const voxels = grid([1, 1, 1], [1], [0]);
+    const meshes = meshBones(voxels, 1);
+    expect(meshes.get(0)?.triangles).toBe(12);
+  });
+
+  it('two adjacent same-colour voxels merge into 12 triangles', () => {
+    const voxels = grid([2, 1, 1], [1, 1], [5, 5]);
+    const meshes = meshBones(voxels, 1);
+    expect(meshes.get(0)?.triangles).toBe(12);
+  });
+
+  it('two adjacent different-colour voxels do not merge: 20 triangles', () => {
+    const voxels = grid([2, 1, 1], [1, 1], [5, 7]);
+    const meshes = meshBones(voxels, 1);
+    expect(meshes.get(0)?.triangles).toBe(20);
+  });
+
+  it('faces between voxels of different bones are emitted on both sides', () => {
+    const voxels = grid([2, 1, 1], [1, 2], [5, 5]);
+    const meshes = meshBones(voxels, 2);
+    expect(meshes.get(0)?.triangles).toBe(12);
+    expect(meshes.get(1)?.triangles).toBe(12);
+  });
+
+  it('leaves out bones that own no voxels', () => {
+    const voxels = grid([1, 1, 1], [1], [0]);
+    const meshes = meshBones(voxels, 3);
+    expect([...meshes.keys()]).toEqual([0]);
+  });
+
+  it('every quad is two triangles with a consistent winding (6 indices per quad, CCW from outside)', () => {
+    const voxels = grid([1, 1, 1], [1], [0]);
+    const mesh = meshBones(voxels, 1).get(0)!;
+    expect(mesh.indices.length).toBe(mesh.triangles * 3);
+    expect(mesh.positions.length).toBe((mesh.indices.length / 6) * 4 * 3); // 4 verts per quad, unmerged single voxel
+  });
+});

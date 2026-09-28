@@ -105,7 +105,12 @@ export const pistolBarrelCrown: Rule = {
     if (!(slide && barrel) || r.params.get(barrel)?.profile?.value !== 'pistol') {
       return [];
     }
-    const crown = maximumLocalX(r, barrel) - maximumLocalX(r, slide);
+    const barrelTransform = r.placed.get(barrel)!;
+    const slideTransform = r.placed.get(slide)!;
+    const barrelEnd = applyPoint(barrelTransform, [maximumLocalX(r, barrel), 0, 0]);
+    const slideEnd = applyPoint(slideTransform, [maximumLocalX(r, slide), 0, 0]);
+    const axis = applyDir(barrelTransform, [1, 0, 0]);
+    const crown = dotProduct(sub(barrelEnd, slideEnd), axis);
     if (crown >= 0.5 && crown <= 1.5) {
       return [];
     }
