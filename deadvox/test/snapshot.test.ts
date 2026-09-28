@@ -697,7 +697,7 @@ describe('hamlet save/load continuation', () => {
 });
 
 const formatVersion: SaveVersionComponents = {
-  buildRevision: 'test-build-2026-09-30',
+  simulationHash: 'a'.repeat(64),
   schemaVersion: 1,
   generators: { worldgen: 'worldgen-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
@@ -848,7 +848,8 @@ describe('canonical save format', () => {
     expect(await encodeFixture(snapshot)).toEqual(bytes);
     const buildBytes = await encodeSave(snapshot, { generation: 8, worldOptions: formatWorldOptions });
     const buildDecoded = await decodeSave(buildBytes, { contentLookup });
-    expect(buildDecoded.versionIdentity.components.buildRevision.length).toBeGreaterThan(0);
+    expect(buildDecoded.versionIdentity.components.simulationHash).toMatch(hashPattern);
+    expect(buildDecoded.versionIdentity.buildRevision.length).toBeGreaterThan(0);
     expect(buildDecoded.versionIdentity.components.contentPacks[0]!.canonicalHash).toMatch(hashPattern);
     expect(buildDecoded.generation).toBe(8);
     expect(encodedAt - started).toBeGreaterThanOrEqual(0);
@@ -880,15 +881,38 @@ describe('canonical save format', () => {
     await expect(encodeFixture(snapshot)).rejects.toThrow('Reserved number tag');
   });
 
+  it('keeps the Git revision as diagnostic metadata, outside save compatibility', async () => {
+    const snapshot = capture(createRuntime());
+    const bytes = await encodeSave(snapshot, {
+      generation: 1,
+      version: formatVersion,
+      buildRevision: 'saved-git-revision',
+      worldOptions: formatWorldOptions,
+    });
+    const decoded = await decodeSave(bytes, {
+      version: formatVersion,
+      buildRevision: 'running-git-revision',
+      contentLookup,
+    });
+    expect(decoded.versionIdentity.buildRevision).toBe('saved-git-revision');
+    expect(decoded.versionIdentity.components.simulationHash).toBe(formatVersion.simulationHash);
+  });
+
   it('refuses an exact version mismatch before content lookup and never mutates the input bytes', async () => {
-    const bytes = await encodeFixture(capture(createRuntime()));
+    const bytes = await encodeSave(capture(createRuntime()), {
+      generation: 1,
+      version: formatVersion,
+      buildRevision: 'saved-build',
+      worldOptions: formatWorldOptions,
+    });
     const original = bytes.slice();
     let lookups = 0;
-    const otherVersion = { ...formatVersion, buildRevision: 'different-build' };
+    const otherVersion = { ...formatVersion, simulationHash: 'f'.repeat(64) };
     let mismatch: unknown;
     try {
       await decodeSave(bytes, {
         version: otherVersion,
+        buildRevision: 'running-build',
         contentLookup: () => {
           lookups += 1;
           return true;
@@ -900,6 +924,8 @@ describe('canonical save format', () => {
     expect(lookups).toBe(0);
     expect(mismatch).toBeInstanceOf(Error);
     expect((mismatch as Error).message).toContain('Save version mismatch');
+    expect((mismatch as Error).message).toContain('saved-build');
+    expect((mismatch as Error).message).toContain('running-build');
     expect(bytes).toEqual(original);
   });
 
