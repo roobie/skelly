@@ -46,9 +46,9 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { renderRest } from '../ui/rest.ts';
 import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
-import { DOOR_ACTION, registerDoorAction } from './doorAction.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
+import { DOOR_ACTION, registerDoorAction } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './input.ts';
 import { startingLoadout } from './loadout.ts';
@@ -412,13 +412,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
     return reached ? undefined : 'Too far away';
   });
-  registerDoorAction(
+  registerDoorAction({
     queue,
     entities,
-    () => body,
-    () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
+    player: () => body,
+    others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
     playWorldSound,
-  );
+  });
 
   const search = (entity: BlockEntity): string | undefined => {
     if (entity.searched || searching.has(entity)) {

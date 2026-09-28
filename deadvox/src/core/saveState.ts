@@ -9,9 +9,10 @@ import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import type { SoundPickerState } from './soundPicker.ts';
 import type { World, WorldDiffs } from './world.ts';
 import type { ZombieSpawner } from './zombieSpawns.ts';
-import type { ZombieSystem, ZombieSystemState } from './zombies.ts';
+import type { VocalNoise, ZombieSystem, ZombieSystemState } from './zombies.ts';
 
 export interface SaveSnapshot {
   world: {
@@ -29,7 +30,14 @@ export interface SaveSnapshot {
     lightUid: number | null;
     quickbar: readonly (number | null)[];
     handling: HandlingQueueState;
+    playerAudio: PlayerAudioSnapshot;
   };
+}
+
+export interface PlayerAudioSnapshot {
+  vocalNoiseId: number;
+  vocalNoise: VocalNoise | null;
+  soundPicker: SoundPickerState;
 }
 
 export interface SnapshotSessionInput {
@@ -47,6 +55,9 @@ export interface SnapshotSessionInput {
   zombies: ZombieSystem;
   spawner: ZombieSpawner;
   handling: HandlingQueue;
+  vocalNoiseId: number;
+  vocalNoise?: VocalNoise | undefined;
+  audio: { snapshotState: () => Readonly<SoundPickerState> };
 }
 
 /** Takes isolated component copies synchronously; pending handling jobs are omitted only in this copy. */
@@ -64,6 +75,9 @@ export const snapshotSession = ({
   zombies,
   spawner,
   handling,
+  vocalNoiseId,
+  vocalNoise,
+  audio,
 }: SnapshotSessionInput): Readonly<SaveSnapshot> =>
   freezeSnapshot({
     world: {
@@ -81,8 +95,60 @@ export const snapshotSession = ({
       lightUid: survival.snapshotState().litUid ?? null,
       quickbar: [...quickbar],
       handling: handling.snapshotCancelled() as HandlingQueueState,
+      playerAudio: {
+        vocalNoiseId,
+        vocalNoise:
+          vocalNoise === undefined || simulation.time > vocalNoise.expiresAt
+            ? null
+            : {
+                id: vocalNoise.id,
+                pos: [...vocalNoise.pos],
+                radiusMetres: vocalNoise.radiusMetres,
+                expiresAt: vocalNoise.expiresAt,
+              },
+        soundPicker: audio.snapshotState() as SoundPickerState,
+      },
     },
   });
+
+export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<PlayerAudioSnapshot> => {
+  if (
+    !(state && Number.isSafeInteger(state.vocalNoiseId)) ||
+    state.vocalNoiseId < 0 ||
+    !state.soundPicker ||
+    !Array.isArray(state.soundPicker.events)
+  ) {
+    throw new Error('Invalid player audio state');
+  }
+  const noise = state.vocalNoise;
+  if (
+    noise !== null &&
+    (!(noise && Number.isSafeInteger(noise.id)) ||
+      noise.id < 1 ||
+      noise.id > state.vocalNoiseId ||
+      !Array.isArray(noise.pos) ||
+      noise.pos.length !== 3 ||
+      noise.pos.some((value) => !Number.isFinite(value)) ||
+      !Number.isFinite(noise.radiusMetres) ||
+      noise.radiusMetres <= 0 ||
+      !Number.isFinite(noise.expiresAt))
+  ) {
+    throw new Error('Invalid active vocal noise');
+  }
+  return freezeSnapshot({
+    vocalNoiseId: state.vocalNoiseId,
+    vocalNoise:
+      noise === null
+        ? null
+        : {
+            id: noise.id,
+            pos: [...noise.pos],
+            radiusMetres: noise.radiusMetres,
+            expiresAt: noise.expiresAt,
+          },
+    soundPicker: structuredClone(state.soundPicker),
+  });
+};
 
 /** Content-addressed base chunks are regenerated first; this overlays only changed cells. */
 export const restoreWorldDiffs = (world: World, snapshot: SaveSnapshot, blockId: (contentId: string) => number): void =>

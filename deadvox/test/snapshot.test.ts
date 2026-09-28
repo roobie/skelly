@@ -10,9 +10,10 @@ import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
-import { snapshotSession } from '../src/core/saveState.ts';
+import { restorePlayerAudioState, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
@@ -94,6 +95,44 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const { entities } = inventory;
   const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
   const physics = physicsFor(scale);
+  const restoredPlayerAudio = snapshot ? restorePlayerAudioState(snapshot.character.playerAudio) : undefined;
+  const playerAudio = {
+    vocalNoiseId: restoredPlayerAudio?.vocalNoiseId ?? 0,
+    vocalNoise: restoredPlayerAudio?.vocalNoise ?? null,
+  };
+  const audioPicker = new SoundPicker(seed, registry.sounds);
+  if (restoredPlayerAudio) {
+    audioPicker.restoreState(restoredPlayerAudio.soundPicker);
+  }
+  const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
+  const emitWorldSound = (
+    event: import('../src/core/soundEvents.ts').SoundEventId,
+    position: [number, number, number],
+  ) => {
+    const pick = audioPicker.pick(event, sim.time);
+    if (pick) {
+      heardSounds.push({ event, file: pick.file, time: sim.time, position: [...position] });
+    }
+  };
+  const emitPlayerSound = (event: import('../src/core/soundEvents.ts').SoundEventId, time = sim.time): boolean => {
+    const pick = audioPicker.pick(event, time);
+    if (!pick) {
+      return false;
+    }
+    const position = [...player.body.pos] as [number, number, number];
+    heardSounds.push({ event, file: pick.file, time, position });
+    const sound = registry.sounds.get(event);
+    if (sound?.noise.enabled) {
+      playerAudio.vocalNoiseId += 1;
+      playerAudio.vocalNoise = {
+        id: playerAudio.vocalNoiseId,
+        pos: position,
+        radiusMetres: sound.noise.radiusMetres,
+        expiresAt: time + 0.5,
+      };
+    }
+    return true;
+  };
   const zombies = new ZombieSystem({
     seed,
     isSolid,
@@ -105,14 +144,17 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       body: player.body,
       facing: [Math.sin(player.yaw), 0, -Math.cos(player.yaw)],
       movement: 'still',
+      vocalNoise:
+        playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
       lit: false,
       lightSeenFrom: 40,
     }),
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
+    onSound: emitWorldSound,
   });
   sim.scheduler.register({ id: 'player-physics', rate: 60, tick: (dt) => stepBody(player.body, dt, isSolid, physics) });
-  sim.scheduler.register({ id: 'zombies', rate: 20, tick: (dt) => zombies.tick(dt) });
+  sim.scheduler.register({ id: 'zombies', rate: 20, tick: (dt, time) => zombies.tick(dt, time) });
   const survival = new Survival(sim, inventory, handling, {
     feet: () => ({ kind: 'pile', pos: player.body.pos.map(Math.floor) as [number, number, number] }),
     notice: () => undefined,
@@ -171,6 +213,10 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     rest,
     survival,
     quickbar,
+    playerAudio,
+    audioPicker,
+    heardSounds,
+    emitPlayerSound,
   };
 };
 
@@ -189,6 +235,9 @@ const capture = (runtime: Runtime) =>
     zombies: runtime.zombies,
     spawner: runtime.spawner,
     handling: runtime.handling,
+    vocalNoiseId: runtime.playerAudio.vocalNoiseId,
+    vocalNoise: runtime.playerAudio.vocalNoise ?? undefined,
+    audio: runtime.audioPicker,
   });
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
@@ -265,9 +314,23 @@ const inspect = (runtime: Runtime): unknown => {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       playerAttackWait: (runtime.zombies as unknown as { playerAttackWait: number }).playerAttackWait,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const { type, behaviorRng, renderPrevious, ...fields } = zombie;
-        return [id, { ...structuredClone(fields), type: type.id, behaviorRng: behaviorRng.state(), renderPrevious }];
+        const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
+        return [
+          id,
+          {
+            ...structuredClone(fields),
+            type: type.id,
+            behaviorRng: behaviorRng.state(),
+            soundRng: soundRng.state(),
+            renderPrevious,
+          },
+        ];
       }),
+    },
+    audio: {
+      vocalNoiseId: runtime.playerAudio.vocalNoiseId,
+      vocalNoise: runtime.playerAudio.vocalNoise,
+      soundPicker: runtime.audioPicker.snapshotState(),
     },
     spawned: [...spawns].sort(),
     rest: runtime.rest.action && { ...runtime.rest.action },
@@ -418,6 +481,44 @@ describe('snapshot state components', () => {
   });
 });
 
+const prepareAudioContinuation = (runtime: Runtime): void => {
+  const playerPos = [...runtime.player.body.pos] as [number, number, number];
+  const firstZombie = runtime.zombies.store.entries().next().value as
+    | [number, import('../src/core/zombies.ts').Zombie]
+    | undefined;
+  if (!firstZombie) {
+    throw new Error('Hamlet continuation requires a live shambler');
+  }
+  const [, listener] = firstZombie;
+  listener.body.pos = [playerPos[0] + 0.25, playerPos[1], playerPos[2]];
+  listener.body.vel = [0, 0, 0];
+  listener.body.onGround = true;
+  listener.facing = [0, 0, 1];
+  listener.mode = 'idle';
+  listener.modeTimer = 100;
+  listener.idleSoundTimer = 100;
+  listener.lastVocalNoiseId = 0;
+
+  const playerNoise = runtime.emitPlayerSound('player_strain', runtime.sim.time);
+  if (!(playerNoise && runtime.playerAudio.vocalNoise)) {
+    throw new Error('Could not seed player vocal noise');
+  }
+  runtime.playerAudio.vocalNoise.expiresAt -= 0.25;
+
+  const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
+    playerPos[0] + 30,
+    playerPos[1],
+    playerPos[2],
+  ]);
+  const idle = runtime.zombies.store.get(groaner)!;
+  idle.body.onGround = true;
+  idle.mode = 'idle';
+  idle.modeTimer = 100;
+  idle.idleSoundTimer = 0.6;
+  idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
+  runtime.heardSounds.length = 0;
+};
+
 describe('hamlet save/load continuation', () => {
   for (const interruption of [false, true]) {
     it(`deeply matches N steps with K/save/load/N−K (${interruption ? 'interrupted' : 'active'} rest)`, () => {
@@ -440,13 +541,26 @@ describe('hamlet save/load continuation', () => {
       advance(uninterrupted, 40);
       advance(split, 40);
       expect(split.player.body.onGround).toBe(false);
+      prepareAudioContinuation(uninterrupted);
+      prepareAudioContinuation(split);
       const snapshot = capture(split);
+      expect(Object.keys(snapshot.character.playerAudio).sort()).toEqual(['soundPicker', 'vocalNoise', 'vocalNoiseId']);
+      expect(snapshot.character.playerAudio.vocalNoise).not.toBeNull();
+      expect(snapshot.character.playerAudio.vocalNoise!.expiresAt - split.sim.time).toBeCloseTo(0.25);
+      expect(snapshot.world.zombies.zombies[0]!.zombie).not.toHaveProperty('footstepClock');
+      expect(snapshot.character.playerAudio.soundPicker.events).toContainEqual(
+        expect.objectContaining({ event: 'player_strain', lastPlayedAt: split.sim.time }),
+      );
+      expect(snapshot.world.zombies.zombies.some(({ zombie }) => zombie.idleSoundTimer > 0)).toBe(true);
       expect(snapshot.character.handling.jobs).toEqual([]);
       expect(plainDataTree(snapshot)).toBe(true);
       expect(frozenTree(snapshot)).toBe(true);
       advance(uninterrupted, 80, interruption ? -1 : 20);
+      const continuedSounds = [...uninterrupted.heardSounds];
       const loaded = createRuntime(snapshot);
       advance(loaded, 80, interruption ? -1 : 20);
+      expect(loaded.heardSounds).toEqual(continuedSounds);
+      expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
       expect(inspect(loaded)).toEqual(inspect(uninterrupted));
     }, 15_000);
   }
@@ -493,10 +607,11 @@ describe('hamlet save/load continuation', () => {
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   }, 15_000);
 
-  it('detects omission of an RNG word, scheduler cursor, item allocator, or world delta', () => {
+  it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
     const original = createRuntime();
     original.rest.start('rest');
     advance(original, 12);
+    prepareAudioContinuation(original);
     const saved = capture(original);
     const baseline = createRuntime(saved);
     advance(baseline, 20);
@@ -522,5 +637,59 @@ describe('hamlet save/load continuation', () => {
     const [a, b, c] = noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng;
     noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng = [a, b, c] as never;
     expect(() => createRuntime(noRngWord)).toThrow('Invalid zombie state');
+
+    const noZombieSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noZombieSoundRng.world.zombies.zombies[0]!.zombie, 'soundRng');
+    expect(() => createRuntime(noZombieSoundRng)).toThrow('Invalid zombie state');
+
+    const noIdleSoundTimer = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noIdleSoundTimer.world.zombies.zombies[0]!.zombie, 'idleSoundTimer');
+    expect(() => createRuntime(noIdleSoundTimer)).toThrow('Invalid zombie state');
+
+    const noLastNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noLastNoiseId.world.zombies.zombies[0]!.zombie, 'lastVocalNoiseId');
+    expect(() => createRuntime(noLastNoiseId)).toThrow('Invalid zombie state');
+
+    const noVocalNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noVocalNoiseId.character.playerAudio, 'vocalNoiseId');
+    expect(() => restorePlayerAudioState(noVocalNoiseId.character.playerAudio)).toThrow('Invalid player audio state');
+
+    const noVocalNoise = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noVocalNoise.character.playerAudio, 'vocalNoise');
+    expect(() => restorePlayerAudioState(noVocalNoise.character.playerAudio)).toThrow('Invalid active vocal noise');
+
+    for (const field of ['id', 'pos', 'radiusMetres', 'expiresAt'] as const) {
+      const noNoiseField = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+      Reflect.deleteProperty(noNoiseField.character.playerAudio.vocalNoise!, field);
+      expect(() => restorePlayerAudioState(noNoiseField.character.playerAudio)).toThrow('Invalid active vocal noise');
+    }
+
+    const noPickerState = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noPickerState.character.playerAudio, 'soundPicker');
+    expect(() => restorePlayerAudioState(noPickerState.character.playerAudio)).toThrow('Invalid player audio state');
+
+    const noPickerEvent = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noPickerEvent.character.playerAudio.soundPicker.events[0]!, 'event');
+    expect(() =>
+      new SoundPicker(seed, registry.sounds).restoreState(noPickerEvent.character.playerAudio.soundPicker),
+    ).toThrow('Invalid sound picker state');
+
+    const noPickerRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noPickerRng.character.playerAudio.soundPicker.events[0]!, 'rng');
+    expect(() =>
+      new SoundPicker(seed, registry.sounds).restoreState(noPickerRng.character.playerAudio.soundPicker),
+    ).toThrow('Invalid sound picker state');
+
+    const noPickerVariant = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noPickerVariant.character.playerAudio.soundPicker.events[0]!, 'lastVariant');
+    expect(() =>
+      new SoundPicker(seed, registry.sounds).restoreState(noPickerVariant.character.playerAudio.soundPicker),
+    ).toThrow('Invalid sound picker state');
+
+    const noPickerTime = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noPickerTime.character.playerAudio.soundPicker.events[0]!, 'lastPlayedAt');
+    expect(() =>
+      new SoundPicker(seed, registry.sounds).restoreState(noPickerTime.character.playerAudio.soundPicker),
+    ).toThrow('Invalid sound picker state');
   }, 15_000);
 });

@@ -3,7 +3,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
-import { SoundPicker } from '../core/soundPicker.ts';
+import { SoundPicker, type SoundPickerState } from '../core/soundPicker.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -112,6 +112,14 @@ export class GameAudio {
     this.isSolid = isSolid;
     this.report = report;
     this.picker = new SoundPicker(seed, registry.sounds);
+  }
+
+  snapshotState(): Readonly<SoundPickerState> {
+    return this.picker.snapshotState();
+  }
+
+  restoreState(state: SoundPickerState): void {
+    this.picker.restoreState(state);
   }
 
   get settings(): AudioVolumes {

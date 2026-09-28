@@ -13,13 +13,15 @@ const doorCenter = (entity: BlockEntity): Vec3 => [
   entity.pos[2] + entity.size[2] / 2,
 ];
 
-export const registerDoorAction = (
-  queue: HandlingQueue,
-  entities: BlockEntities,
-  player: () => Body,
-  others: () => Iterable<Body>,
-  playWorldSound: (event: SoundEventId, position: Vec3) => void,
-): void => {
+export interface DoorActionOptions {
+  queue: HandlingQueue;
+  entities: BlockEntities;
+  player: () => Body;
+  others: () => Iterable<Body>;
+  playWorldSound: (event: SoundEventId, position: Vec3) => void;
+}
+
+export const registerDoorAction = ({ queue, entities, player, others, playWorldSound }: DoorActionOptions): void => {
   queue.registerAction(DOOR_ACTION, (params) => {
     const uid = params.entityUid;
     if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
@@ -41,6 +43,6 @@ export const registerDoorAction = (
       return DOOR_CLOSE_MESSAGES[blocker];
     }
     playWorldSound('door_close', center);
-    return undefined;
+    return;
   });
 };

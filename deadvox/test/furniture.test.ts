@@ -8,6 +8,7 @@ import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
+import type { Body } from '../src/core/physics.ts';
 import {
   cellsOf,
   compileTemplate,
@@ -16,9 +17,8 @@ import {
   stampPlacement,
   type Turn,
 } from '../src/core/templates.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
-import type { Body } from '../src/core/physics.ts';
+import { FurnitureMeshes } from '../src/render/furniture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -133,10 +133,17 @@ describe('furniture', () => {
     });
     let player = bodyAt([0, 0, 0]);
     const sounds: { event: string; position: [number, number, number] }[] = [];
-    registerDoorAction(queue, inv.entities, () => player, () => [], (event, position) => {
-      sounds.push({ event, position: [...position] });
+    registerDoorAction({
+      queue,
+      entities: inv.entities,
+      player: () => player,
+      others: () => [],
+      playWorldSound: (event, position) => {
+        sounds.push({ event, position: [...position] });
+      },
     });
-    const enqueue = (closing: boolean) => queue.enqueueAction(DOOR_ACTION, 'Door', 0.1, { entityUid: door.uid, closing });
+    const enqueue = (closing: boolean) =>
+      queue.enqueueAction(DOOR_ACTION, 'Door', 0.1, { entityUid: door.uid, closing });
 
     enqueue(false);
     queue.tick(0.1);

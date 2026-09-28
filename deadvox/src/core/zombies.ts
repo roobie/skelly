@@ -65,9 +65,14 @@ export interface Zombie {
   wanderClock: number;
 }
 
-export type ZombieState = Omit<Zombie, 'type' | 'behaviorRng' | 'renderPrevious'> & {
+export type ZombieState = Omit<
+  Zombie,
+  'type' | 'behaviorRng' | 'soundRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
+> & {
   type: string;
   behaviorRng: RngState;
+  soundRng: RngState;
+  lastVocalNoiseId: number | null;
 };
 
 export interface ZombieSystemState {
@@ -355,7 +360,9 @@ export class ZombieSystem {
         const {
           type,
           behaviorRng,
+          soundRng,
           renderPrevious: _renderPrevious,
+          footstepClock: _footstepClock,
           searchAnchor,
           lastPerceived,
           investigationTier,
@@ -367,6 +374,8 @@ export class ZombieSystem {
             ...state,
             type: type.id,
             behaviorRng: [...behaviorRng.state()] as RngState,
+            soundRng: [...soundRng.state()] as RngState,
+            lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
             ...(investigationTier === undefined ? {} : { investigationTier }),
             body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
             facing: [...zombie.facing],
@@ -389,8 +398,16 @@ export class ZombieSystem {
       if (
         !Number.isSafeInteger(id) ||
         id < 1 ||
+        !Array.isArray(zombie.behaviorRng) ||
         zombie.behaviorRng.length !== 4 ||
-        zombie.behaviorRng.some((word) => !Number.isSafeInteger(word))
+        zombie.behaviorRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Array.isArray(zombie.soundRng) ||
+        zombie.soundRng.length !== 4 ||
+        zombie.soundRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Number.isFinite(zombie.idleSoundTimer) ||
+        zombie.idleSoundTimer < 0 ||
+        (zombie.lastVocalNoiseId !== null &&
+          (!Number.isSafeInteger(zombie.lastVocalNoiseId) || zombie.lastVocalNoiseId < 0))
       ) {
         throw new Error(`Invalid zombie state for entity ${id}`);
       }
@@ -398,11 +415,14 @@ export class ZombieSystem {
       if (!type) {
         throw new Error(`Missing zombie type ${zombie.type}`);
       }
-      const { type: _type, behaviorRng, ...fields } = zombie;
+      const { type: _type, behaviorRng, soundRng, lastVocalNoiseId, ...fields } = zombie;
       const restored: Zombie = {
         ...fields,
         type,
-        behaviorRng: new Rng([...behaviorRng]),
+        behaviorRng: new Rng(behaviorRng),
+        soundRng: new Rng(soundRng),
+        lastVocalNoiseId: lastVocalNoiseId ?? undefined,
+        footstepClock: initialShamblerFootstepClock(type.stepLength),
         body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
         facing: [...zombie.facing],
         home: [...zombie.home],
