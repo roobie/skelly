@@ -16,11 +16,19 @@ status: accepted
 ## Context
 
 Milestone 1.9 needs one local save slot, Continue/New world, autosave, and a CI
-fixture that survives later updates. This is not just serializing a few counters:
-the game is a mutable simulation whose state is spread across the scheduler,
-player physics, items, piles, block entities, and shamblers. A restored session
-must not silently re-roll the world, duplicate a killed spawn, lose an item, or
-advance a scheduler on a different tick boundary.
+fixture that round-trips through the current build. This is not just serializing
+a few counters: the game is a mutable simulation whose state is spread across
+the scheduler, player physics, items, piles, block entities, and shamblers. A
+restored session must not silently re-roll the world, duplicate a killed spawn,
+lose an item, or advance a scheduler on a different tick boundary.
+
+The save deliberately matches one exact game version rather than migrating
+across deploys. BR's rationale (2026-09-28): code will churn heavily, there will
+not be permanent players for some time, and playtesting is feature-focused—not
+keeping one character alive for months. A playtester's save ceasing to load on
+the next deploy is acceptable for these short, feature-focused sessions. Revisit
+this tradeoff when players need to carry characters across releases; that would
+be a hard fork.
 
 The existing code provides useful foundations but no save API yet:
 
@@ -288,9 +296,12 @@ generation until the new world's first snapshot commits.
   detect damage, not malicious tampering. A/B slots and
   persistence requests reduce corruption/eviction risk but are not backups.
 - Compatibility is intentionally strict: changing the build, schema, worldgen,
-  or content identity prevents loading that save in the changed version. The
-  version-keyed storage preserves it for a matching build instead of silently
-  applying new rules.
+  or content identity prevents loading that save in the changed version. Thus a
+  playtester's save stops loading on the next deploy; this is acceptable while
+  sessions are short and feature-focused, and permanent players are not yet the
+  product. Version-keyed storage preserves it for a matching build rather than
+  silently applying new rules. Revisit when characters need to persist across
+  releases; version selection or migration would then be a hard fork.
 - Save frame time and size are estimates until the implementation benchmark
   proves them. The stated targets are gates, not claimed measurements.
 
