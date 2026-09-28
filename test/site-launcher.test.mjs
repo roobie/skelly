@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const read = (path) => readFileSync(join(ROOT, path), 'utf8');
+const page = read('site/index.html');
+
+const paramsReadBy = (sources) => {
+  const found = new Set();
+  for (const source of sources) {
+    for (const match of read(source).matchAll(/\b(?:params|query)\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      found.add(match[1]);
+    }
+  }
+  return [...found].sort();
+};
+
+const paramsOfferedBy = (formId) => {
+  const form = page.match(new RegExp(`<form\\b[^>]*id="${formId}"[^>]*>([\\s\\S]*?)<\\/form>`))?.[1];
+  if (!form) {
+    throw new Error(`launcher form ${formId} is missing`);
+  }
+  return [...new Set([...form.matchAll(/data-url-param="([^"]+)"/g)].map((match) => match[1]))].sort();
+};
+
+const optionValues = (selectId) => {
+  const select = page.match(new RegExp(`<select\\b[^>]*id="${selectId}"[^>]*>([\\s\\S]*?)<\\/select>`))?.[1];
+  if (!select) {
+    throw new Error(`launcher select ${selectId} is missing`);
+  }
+  return [...select.matchAll(/<option\s+value="([^"]+)"/g)].map((match) => match[1]);
+};
+
+describe('site launchers track the games’ URL parameters', () => {
+  it('offers exactly the parameters deadvox reads', () => {
+    assert.deepEqual(
+      paramsOfferedBy('deadvox-form'),
+      paramsReadBy([
+        'deadvox/src/main.ts',
+        'deadvox/src/game/config.ts',
+        'deadvox/src/bench/run.ts',
+        'deadvox/src/bench/shamblers.ts',
+      ]),
+    );
+  });
+
+  it('offers exactly the parameters gungen reads', () => {
+    assert.deepEqual(paramsOfferedBy('gungen-form'), paramsReadBy(['gungen/src/viewer/main.ts']));
+  });
+
+  it('lists the current gungen templates and fixtures', () => {
+    const templateNames = [...read('gungen/src/gun/templates.ts').matchAll(/\bname:\s*'([^']+)'/g)].map(
+      (match) => match[1],
+    );
+    assert.deepEqual(optionValues('gungen-template'), templateNames);
+
+    const fixtureNames = readdirSync(join(ROOT, 'gungen/fixtures'))
+      .filter((name) => name.endsWith('.json'))
+      .map((name) => JSON.parse(read(`gungen/fixtures/${name}`)).name)
+      .sort();
+    assert.deepEqual(optionValues('gungen-fixture').sort(), fixtureNames);
+  });
+});

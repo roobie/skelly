@@ -22,6 +22,7 @@ import {
   ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
+import { FIGURE_BOXES, FIGURE_PARTS } from '../src/render/figure.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 
 const BASE = 'src/content/base';
@@ -856,10 +857,23 @@ describe('shambler scenarios', () => {
     expect((used.user + used.system) / 1000 / 600).toBeLessThan(1);
   });
 
-  it('keeps every shambler part free of emissive light', () => {
+  it('keeps the shared figure layout and shambler parts unchanged', () => {
+    expect(FIGURE_PARTS).toEqual(['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg']);
+    expect(FIGURE_BOXES).toEqual({
+      body: { size: [0.42, 0.78, 0.28], at: [0, 1.02, 0] },
+      head: { size: [0.3, 0.32, 0.3], at: [0, 1.58, 0] },
+      leftArm: { size: [0.15, 0.68, 0.16], at: [-0.225, 1.02, 0] },
+      rightArm: { size: [0.15, 0.68, 0.16], at: [0.225, 1.02, 0] },
+      leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
+      rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
+    });
+
     const meshes = new ZombieMeshes(BLOCK_SIZE);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     expect(parts).toHaveLength(6);
+    expect(parts.map((mesh) => (mesh.material as MeshLambertMaterial).color.getHex())).toEqual([
+      0x87_96_78, 0x87_96_78, 0x68_6f_5e, 0x68_6f_5e, 0x68_6f_5e, 0x68_6f_5e,
+    ]);
     for (const mesh of parts) {
       expect(mesh.material).toBeInstanceOf(MeshLambertMaterial);
       expect((mesh.material as MeshLambertMaterial).emissive.getHex()).toBe(0);

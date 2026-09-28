@@ -5,7 +5,8 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "ci": "biome ci"
+    "ci": "biome ci",
+    "test:site": "node --test test/site-launcher.test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14"
