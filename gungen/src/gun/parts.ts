@@ -183,6 +183,8 @@ export const LOWER_LAYOUTS = {
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
+const LOWER_TRIGGER_X = { conventional: -12, bullpup: 4.75, trigger: -11.5, ak: -12, ar: -12 } as const;
+const LOWER_GRIP_X = { conventional: -14.75, bullpup: 2, trigger: -14, ak: -14.75, ar: -14.75 } as const;
 const AK_GAS_CYLINDER_Y = 2;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -210,12 +212,39 @@ const PISTOL_CROWN_LENGTH = 1;
 const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
 const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
-const PISTOL_TRIGGER_GUARD_CENTER_X = -2;
-const PISTOL_TRIGGER_GUARD_X_SCALE = 2;
-const PISTOL_TRIGGER_GUARD_Z_SCALE = 0.5;
-const triggerGuardX = (x: number): number =>
-  PISTOL_TRIGGER_GUARD_CENTER_X + (x - PISTOL_TRIGGER_GUARD_CENTER_X) * PISTOL_TRIGGER_GUARD_X_SCALE;
-const triggerGuardZ = (z: number): number => z * PISTOL_TRIGGER_GUARD_Z_SCALE;
+const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
+export const TRIGGER_GUARD = { innerXClearance: 0.75, sideWall: 0.5, verticalWall: 0.25, zRatio: 0.625 } as const;
+const LOWER_TRIGGER_GUARD = { ...TRIGGER_GUARD, innerXClearance: 0.5 };
+const triggerGuardSolids = (
+  triggerFinger: KeepOut,
+  gripContactX?: number,
+  dimensions: { innerXClearance: number; sideWall: number; verticalWall: number; zRatio: number } = TRIGGER_GUARD,
+): Solid[] => {
+  const { center, half } = triggerFinger.box;
+  const minX = center[0] - half[0];
+  const maxX = center[0] + half[0];
+  const minY = center[1] - half[1];
+  const maxY = center[1] + half[1];
+  const innerRearX = minX - dimensions.innerXClearance;
+  const outerRearX = gripContactX ?? innerRearX - dimensions.sideWall;
+  const innerFrontX = maxX + dimensions.innerXClearance;
+  const outerFrontX = innerFrontX + dimensions.sideWall;
+  const lowerY = minY - dimensions.verticalWall;
+  const upperY = maxY + dimensions.verticalWall;
+  const zHalf = half[2] * dimensions.zRatio;
+  const minZ = center[2] - zHalf;
+  const maxZ = center[2] + zHalf;
+  return [
+    solid('trigger-guard-top', [outerRearX, maxY, minZ], [outerFrontX, upperY, maxZ]),
+    solid('trigger-guard-rear', [outerRearX, lowerY, minZ], [innerRearX, upperY, maxZ]),
+    solid('trigger-guard-front', [innerFrontX, lowerY, minZ], [outerFrontX, upperY, maxZ]),
+    solid('trigger-guard-bottom', [outerRearX, lowerY, minZ], [outerFrontX, minY, maxZ]),
+  ];
+};
+const lowerGripContactX = (layout: string, gripXOverride?: number): number => {
+  const gripX = gripXOverride ?? LOWER_GRIP_X[layout as keyof typeof LOWER_GRIP_X] ?? LOWER_GRIP_X.conventional;
+  return gripX + 1.5 * Math.cos((GRIP_BANDS.leanDegrees * Math.PI) / 180);
+};
 const pistolSlideChannelHalfWidth = (bore: SizeClass): number =>
   PISTOL_BARREL_RADIUS[bore] + PISTOL_SLIDE_CHANNEL_CLEARANCE;
 const pistolSlideHalfWidth = (bore: SizeClass): number =>
@@ -448,6 +477,7 @@ export const lower: PartFamily = {
   name: 'lower',
   params: {
     layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
+    triggerGuard: { values: ['present', 'missing'], default: 'present' },
     magazineWell: choice('standard', 'recessed'),
     magazineOrientation: {
       values: MAGAZINE_ORIENTATIONS,
@@ -460,6 +490,7 @@ export const lower: PartFamily = {
       from: [{ port: 'magazine', param: 'profile' }],
     },
   },
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: lower layouts have distinct well, contact, and grip contracts that share placement data.
   build(params): PartDef {
     const orientation = orientationParts(params.magazineOrientation ?? 'straight');
     const layout = params.layout ?? 'conventional';
@@ -578,7 +609,11 @@ export const lower: PartFamily = {
     // Conventional: the rear face meets the trigger-finger volume (it ends at
     // x = −7) without entering it. Bullpup: the front face stays at x = −3.5,
     // behind the grip, which leans back from x = 3.
-    const conventionalWell = well(MAGAZINE_WELL_CENTER_X + (orientation.kind === 'tilt' ? 0.25 : 0));
+    const conventionalWellX = MAGAZINE_WELL_CENTER_X + (orientation.kind === 'tilt' ? 0.25 : 0);
+    const conventionalWell = well(conventionalWellX);
+    const recessedConventional = params.layout === 'conventional' && params.magazineWell === 'recessed';
+    const conventionalGripX = recessedConventional ? -14 : LOWER_GRIP_X.conventional;
+    const conventionalTriggerX = recessedConventional ? -11.5 : LOWER_TRIGGER_X.conventional;
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
     const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
       const halfDepth = MAGAZINE_WELL_DEPTH / 2;
@@ -634,12 +669,25 @@ export const lower: PartFamily = {
         ),
       ];
     };
-    const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
+    const trigger = (x: number) => keepOut('trigger-finger', [x, -4.5, -1], [x + 2, -1.75, 1]);
+    const triggerX =
+      params.layout === 'conventional'
+        ? conventionalTriggerX
+        : (LOWER_TRIGGER_X[layout as keyof typeof LOWER_TRIGGER_X] ?? LOWER_TRIGGER_X.conventional);
+    const triggerFinger = trigger(triggerX);
+    const triggerGuards =
+      params.triggerGuard === 'missing'
+        ? []
+        : triggerGuardSolids(
+            triggerFinger,
+            lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
+            LOWER_TRIGGER_GUARD,
+          );
 
     switch (params.layout) {
       case 'ar': {
         const frame = magazineWellFrame(
-          -14,
+          -14.75,
           conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
           conventionalWell.port.pos[0],
         );
@@ -653,9 +701,10 @@ export const lower: PartFamily = {
           solids: [
             ...frame,
             ...magazineHousing('magazine-housing', conventionalWell.port.pos[0], 0, frontPanelThickness),
+            ...triggerGuards,
           ],
-          ports: [top, grip(-12), conventionalWell.port],
-          keepOuts: [trigger(-10), conventionalWell.path],
+          ports: [top, grip(LOWER_GRIP_X.ar), conventionalWell.port],
+          keepOuts: [triggerFinger, conventionalWell.path],
           axes: [],
         };
       }
@@ -665,19 +714,20 @@ export const lower: PartFamily = {
           solids: [
             ...magazineWellFrame(-16, 9, bullpupWell.port.pos[0]),
             solid('butt', [-18, -7, -1.75], [-16, 5, 1.75]),
+            ...triggerGuards,
           ],
-          ports: [top, grip(3), bullpupWell.port],
-          keepOuts: [trigger(5), bullpupWell.path],
+          ports: [top, grip(LOWER_GRIP_X.bullpup), bullpupWell.port],
+          keepOuts: [triggerFinger, bullpupWell.path],
           axes: [],
         };
       case 'ak': {
         const frontHookX = conventionalWell.port.pos[0] + MAGAZINE_DEPTH / 2;
         return {
           family: 'lower',
-          solids: [solid('frame', [-14, -1.5, -LOWER_HALF_WIDTH], [0, 0, LOWER_HALF_WIDTH])],
-          ports: [top, grip(-12), conventionalWell.port],
+          solids: [solid('frame', [-14.75, -1.5, -LOWER_HALF_WIDTH], [0, 0, LOWER_HALF_WIDTH]), ...triggerGuards],
+          ports: [top, grip(LOWER_GRIP_X.ak), conventionalWell.port],
           keepOuts: [
-            trigger(-10),
+            triggerFinger,
             keepOut(
               'magazine-rock-in-sweep',
               [frontHookX, -40, -MAGAZINE_WELL_WIDTH / 2],
@@ -691,14 +741,14 @@ export const lower: PartFamily = {
       case 'trigger':
         return {
           family: 'lower',
-          solids: [solid('frame', [-16, -1.5, -1.5], [-9, 0, 1.5])],
-          ports: [top, grip(-14)],
-          keepOuts: [trigger(-12.5)],
+          solids: [solid('frame', [-16, -1.5, -1.5], [-9, 0, 1.5]), ...triggerGuards],
+          ports: [top, grip(LOWER_GRIP_X.trigger)],
+          keepOuts: [triggerFinger],
           axes: [],
         };
       default: {
         const frame = magazineWellFrame(
-          -14,
+          recessedConventional ? -14 : -14.75,
           conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
           conventionalWell.port.pos[0],
         );
@@ -709,10 +759,10 @@ export const lower: PartFamily = {
         return {
           family: 'lower',
           // The well stays upright; only the rear housing plate is longer, so the opening plane tips the seated magazine.
-          solids: [...frame, ...tiltedHousing],
-          ports: [top, grip(-12), conventionalWell.port],
+          solids: [...frame, ...tiltedHousing, ...triggerGuards],
+          ports: [top, grip(conventionalGripX), conventionalWell.port],
           keepOuts: [
-            trigger(-10),
+            triggerFinger,
             conventionalWell.path,
             ...(conventionalWell.wellPath ? [conventionalWell.wellPath] : []),
           ],
@@ -1115,8 +1165,6 @@ export const forend: PartFamily = {
 // ---- held parts ----
 
 // Hand-derived S/M/L lengths: about four fingers through a hand-and-a-bit; lean stays at 18°.
-const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
-
 export const grip: PartFamily = {
   name: 'grip',
   params: { length: size, well: choice('none', 'magazine') },
@@ -1321,6 +1369,7 @@ export const pistolFrame: PartFamily = {
     bore: size,
     gripLength: size,
     slideLength: { ...size, from: [{ port: 'slide', param: 'length' }] },
+    triggerGuard: { values: ['present', 'missing'], default: 'present' },
   },
   build(params): PartDef {
     const gripDef = integratedPistolGrip(params.gripLength!);
@@ -1328,6 +1377,8 @@ export const pistolFrame: PartFamily = {
     const slideEnd = pistolSlideEnd(params.slideLength!);
     const channelHalfWidth = pistolSlideChannelHalfWidth(bore);
     const slideHalfWidth = pistolSlideHalfWidth(bore);
+    const triggerFinger = keepOut('trigger-finger', [-2.75, -3.75, -1], [-1.25, -1.75, 1]);
+    const pistolTriggerGuard = params.triggerGuard === 'missing' ? [] : triggerGuardSolids(triggerFinger);
     return {
       family: 'frame',
       solids: [
@@ -1346,26 +1397,7 @@ export const pistolFrame: PartFamily = {
         solid('dust-cover', [0, -2.5, -slideHalfWidth], [slideEnd, -1, slideHalfWidth]),
         solid('slide-rail-left', [PISTOL_SLIDE_REAR, -1.5, -slideHalfWidth], [slideEnd, -1, -channelHalfWidth]),
         solid('slide-rail-right', [PISTOL_SLIDE_REAR, -1.5, channelHalfWidth], [slideEnd, -1, slideHalfWidth]),
-        solid(
-          'trigger-guard-top',
-          [triggerGuardX(-3), -1.75, triggerGuardZ(-1.25)],
-          [triggerGuardX(-1), -1.5, triggerGuardZ(1.25)],
-        ),
-        solid(
-          'trigger-guard-rear',
-          [triggerGuardX(-3), -4, triggerGuardZ(-1.25)],
-          [triggerGuardX(-2.75), -1.5, triggerGuardZ(1.25)],
-        ),
-        solid(
-          'trigger-guard-front',
-          [triggerGuardX(-1.25), -4, triggerGuardZ(-1.25)],
-          [triggerGuardX(-1), -1.5, triggerGuardZ(1.25)],
-        ),
-        solid(
-          'trigger-guard-bottom',
-          [triggerGuardX(-3), -4, triggerGuardZ(-1.25)],
-          [triggerGuardX(-1), -3.75, triggerGuardZ(1.25)],
-        ),
+        ...pistolTriggerGuard,
       ],
       ports: [
         { id: 'slide', mount: 'slide-rails', gender: 'female', pos: [0, -1.5, 0], normal: Y, up: X, required: true },
@@ -1383,7 +1415,7 @@ export const pistolFrame: PartFamily = {
       ],
       keepOuts: [
         ...gripDef.keepOuts,
-        keepOut('trigger-finger', [-2.75, -3.75, -1], [-1.25, -1.75, 1]),
+        triggerFinger,
         keepOut('slide-travel', [-16, -1, -slideHalfWidth], [PISTOL_SLIDE_REAR, 1.5, slideHalfWidth], 'slide'),
       ],
       axes: [],

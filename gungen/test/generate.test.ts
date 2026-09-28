@@ -89,7 +89,8 @@ describe('templates', () => {
             ).toEqual([]);
           }
         },
-        t.name === 'ak' ? 15_000 : undefined,
+        // AR's 300-seed sweep now exercises the geometry-heavy trigger-guard rule on every build.
+        t.name === 'ak' || t.name === 'ar' ? 15_000 : undefined,
       );
 
       it(
