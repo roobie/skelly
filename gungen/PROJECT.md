@@ -290,6 +290,24 @@ The lengths below remain abstract units on the existing grid.
   per lower layout: conventional and AR layouts support the standard magazine
   profile; bullpup, AK, and trigger layouts do not. Unsupported combinations
   are rejected by `magazine-well-axis`, not surfaced as contact gaps.
+- `handguard.mount` is `clamped` by default. AR templates choose free-float 75%
+  of the time; battle-rifle templates choose free-float 50% of the time when the
+  optional handguard is present. AK, SMG, and bolt-rifle templates stay clamped.
+  A free-float handguard attaches at the receiver only, has no front clamp port,
+  and owns an explicit `length` value initialized from the selected barrel band.
+  It clears the barrel by at least `0.25u` (S/M) or `0.5u` (L) and ends behind
+  both the front sight and muzzle; `free-float-clearance` reports contact or an
+  undersized gap.
+
+| Family/profile | S (u / mm) | M (u / mm) | L (u / mm) | Measurement basis |
+| --- | ---: | ---: | ---: | --- |
+| Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
+| Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
+| AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
+| AKM curved magazine | 6 / 69 | 10 / 115 | 19.25 / 221 | Pixel-traced body centreline ratio, `br-ref-akm-mag.jpg` |
+| STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
+| Standard handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
+| AK handguard | 14 / 161 | 22 / 253 | 30 / 345 | 80% of the gas-port station (18/28/38u), snapped to the 2u AK grid |
 
 On top of one broken fixture per rule, these check constraints specific to an
 archetype:

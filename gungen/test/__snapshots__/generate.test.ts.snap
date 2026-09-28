@@ -400,13 +400,13 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "front-sight.base",
       },
     ],
-    "description": "Generated from the "ar" template with seed 101.",
-    "name": "ar-101",
+    "description": "Generated from the "ar" template with seed 100.",
+    "name": "ar-100",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "L",
+          "length": "M",
         },
       },
       "front-sight": {
@@ -421,7 +421,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "length": "L",
+          "length": "M",
           "mount": "free-float",
         },
       },
@@ -498,7 +498,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "M",
+          "length": "L",
         },
       },
       "front-sight": {
@@ -513,7 +513,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "length": "M",
+          "length": "L",
           "mount": "free-float",
         },
       },
@@ -565,6 +565,10 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -586,13 +590,13 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "front-sight.base",
       },
     ],
-    "description": "Generated from the "ar" template with seed 302.",
-    "name": "ar-302",
+    "description": "Generated from the "ar" template with seed 300.",
+    "name": "ar-300",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "L",
+          "length": "M",
         },
       },
       "front-sight": {
@@ -601,14 +605,14 @@ exports[`templates > ar > known-good seeds 1`] = `
       "grip": {
         "family": "grip",
         "params": {
-          "length": "S",
+          "length": "M",
         },
       },
       "handguard": {
         "family": "handguard",
         "params": {
-          "length": "L",
-          "mount": "free-float",
+          "length": "M",
+          "mount": "clamped",
         },
       },
       "lower": {

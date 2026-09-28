@@ -40,6 +40,51 @@ describe('magazine length bands', () => {
     }
   });
 
+  it('builds the S/M/L magazine bands for each straight and curved profile', () => {
+    const straightBands = {
+      standard: { S: 6, M: 10, L: 16 },
+      smg: { S: 6, M: 10, L: 16 },
+      pistol: { S: 6, M: 10, L: 16 },
+    } as const;
+    for (const [profile, bands] of Object.entries(straightBands)) {
+      for (const size of ['S', 'M', 'L'] as const) {
+        const body = FAMILIES.magazine!.build({ profile, length: size }).solids[0]!;
+        expect(body.kind, `${profile} ${size}`).toBe('box');
+        if (body.kind === 'box') {
+          expect(body.box.half[1] * 2, `${profile} ${size} body length`).toBe(bands[size]);
+        }
+      }
+    }
+    const curvedEnvelopes = {
+      ak74: { S: 6.984_469, M: 10.785_429, L: 16.961_987 },
+      akm: { S: 7.207_943, M: 10.763_855, L: 18.986_902 },
+      stanag: { S: 6.448_83, M: 10.429_695, L: 16.152_188 },
+    } as const;
+    for (const size of ['S', 'M', 'L'] as const) {
+      for (const [akVariant, expectedYEnvelope] of Object.entries({
+        ak74: curvedEnvelopes.ak74[size],
+        akm: curvedEnvelopes.akm[size],
+      })) {
+        const { solids } = FAMILIES.magazine!.build({ profile: 'ak-curved', variant: akVariant, length: size });
+        const yValues = solids.flatMap((solid) =>
+          solid.kind === 'box' ? [] : solid.profile.map(([, yCoordinate]) => yCoordinate),
+        );
+        expect(Math.max(...yValues) - Math.min(...yValues), `AK ${akVariant} ${size}`).toBeCloseTo(
+          expectedYEnvelope,
+          5,
+        );
+      }
+      const { solids } = FAMILIES.magazine!.build({ profile: 'stanag-curved', length: size });
+      const yValues = solids.flatMap((solid) =>
+        solid.kind === 'box' ? [] : solid.profile.map(([, yCoordinate]) => yCoordinate),
+      );
+      expect(Math.max(...yValues) - Math.min(...yValues), `STANAG ${size}`).toBeCloseTo(
+        curvedEnvelopes.stanag[size],
+        5,
+      );
+    }
+  });
+
   it('keeps the five-round box-magazine body at 4.5u (about 52mm)', () => {
     const magazine = FAMILIES.magazine!.build({ length: '5-round' });
     const body = magazine.solids[0]!;
