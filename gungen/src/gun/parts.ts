@@ -55,12 +55,10 @@ const keepOut = (id: string, min: Vec3, max: Vec3, allowPort?: string): KeepOut 
 /** Tag for parts the firing hand can hold (see rules.ts). */
 export const FIRING_GRIP = 'firing-grip';
 
-// Things that run along the barrel and fix to it (handguards, tube
-// magazines) come in lengths paired with barrel length classes: a barrel's
-// clamp and lug sit where a part of the same length class ends.
-const FORE_LENGTH: Record<SizeClass, number> = { S: 16, M: 24, L: 32 };
+// The handguard reaches 65% of the exposed barrel on standard layouts; AK
+// handguards stop at 80% of the gas-port station. See the references in PROJECT.md.
+const HANDGUARD_REACH = { barrelFraction: 0.65, akGasPortFraction: 0.8 } as const;
 const AK_GAS_PORT_OFFSET = 8;
-const AK_HANDGUARD_RATIO = 0.8;
 
 /** AK barrel gas-port stations from the receiver face; handguards end at 80% of this span. */
 const AK_GAS_PORT_X: Record<SizeClass, number> = {
@@ -69,7 +67,7 @@ const AK_GAS_PORT_X: Record<SizeClass, number> = {
   L: 46 - AK_GAS_PORT_OFFSET,
 };
 const akHandguardLength = (length: SizeClass): number =>
-  Math.round((AK_GAS_PORT_X[length] * AK_HANDGUARD_RATIO) / 2) * 2;
+  Math.round((AK_GAS_PORT_X[length] * HANDGUARD_REACH.akGasPortFraction) / 2) * 2;
 
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
@@ -86,17 +84,41 @@ const MAGAZINE_WELL_CENTER_X = -7 + MAGAZINE_DEPTH / 2;
 const RECESSED_MAGAZINE_PORT_Y = 2;
 const RECESSED_MAGAZINE_WELL_TOP_Y = 0.5;
 type MagazineLength = '5-round' | '10-round' | SizeClass;
-const MAGAZINE_BODY_LENGTH: Readonly<Record<MagazineLength, number>> = {
-  '5-round': 4.5,
-  '10-round': 5.5,
-  S: 6,
-  M: 10,
-  L: 16,
+type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved';
+type MagazineBands = Readonly<Record<SizeClass, number>>;
+const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
+  readonly compact: Readonly<Record<'5-round' | '10-round', number>>;
+  readonly standard: MagazineBands;
+  readonly smg: MagazineBands;
+  readonly pistol: MagazineBands;
+  readonly 'ak-curved': Readonly<Record<'ak74' | 'akm', MagazineBands>>;
+  readonly 'stanag-curved': MagazineBands;
+}> = {
+  compact: { '5-round': 4.5, '10-round': 5.5 },
+  standard: { S: 6, M: 10, L: 16 },
+  smg: { S: 6, M: 10, L: 16 },
+  pistol: { S: 6, M: 10, L: 16 },
+  'ak-curved': {
+    ak74: { S: 6, M: 10, L: 16.5 },
+    akm: { S: 6, M: 10, L: 19.25 },
+  },
+  'stanag-curved': { S: 6, M: 10, L: 15.75 },
 };
-const magazineLengthData = (value: string | undefined): { size: SizeClass; length: number } => {
+const magazineLengthData = (
+  value: string | undefined,
+  profile: MagazineProfile,
+  variant: string | undefined,
+): { size: SizeClass; length: number } => {
   const requested = (value ?? 'M') as MagazineLength;
   const sizeClass = requested === '5-round' || requested === '10-round' ? 'S' : requested;
-  return { size: sizeClass, length: MAGAZINE_BODY_LENGTH[requested] };
+  if (requested === '5-round' || requested === '10-round') {
+    return { size: sizeClass, length: MAGAZINE_PROFILE_LENGTHS_U.compact[requested] };
+  }
+  const bands =
+    profile === 'ak-curved'
+      ? MAGAZINE_PROFILE_LENGTHS_U['ak-curved'][variant === 'akm' ? 'akm' : 'ak74']
+      : MAGAZINE_PROFILE_LENGTHS_U[profile];
+  return { size: sizeClass, length: bands[sizeClass] };
 };
 interface MagazineShape {
   readonly length: SizeClass;
@@ -141,7 +163,6 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
   },
 };
 const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
-const CURVED_MAGAZINE_CLASS_SCALE: Record<SizeClass, number> = { S: 0.375, M: 0.625, L: 1 };
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
 const AK_RECEIVER_REAR_CUT_DEPTH = 2;
 const AK_RECEIVER_REAR_CUT_DROP = 1.5;
@@ -729,7 +750,10 @@ export const barrel: PartFamily = {
     const lengthClass = cls(params, 'length');
     const len = barrelLength(params);
     const r = PISTOL_BARREL_RADIUS[bore];
-    const fore = params.handguardLayout === 'ak' ? akHandguardLength(lengthClass) : FORE_LENGTH[lengthClass];
+    const fore =
+      params.handguardLayout === 'ak'
+        ? akHandguardLength(lengthClass)
+        : snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
     return {
       family: 'barrel',
       solids: [solid('tube', [0, -r, -r], [len, r, r])],
@@ -964,7 +988,10 @@ export const handguard: PartFamily = {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mounting controls both clamp geometry and the exposed front port.
   build(params): PartDef {
     const lengthClass = cls(params, 'length');
-    const len = params.layout === 'ak' ? akHandguardLength(lengthClass) : FORE_LENGTH[lengthClass];
+    const len =
+      params.layout === 'ak'
+        ? akHandguardLength(lengthClass)
+        : snapAkGrid(barrelLength({ length: lengthClass }) * HANDGUARD_REACH.barrelFraction);
     const bore = (params.barrelBore ?? (params.bore === 'none' ? 'M' : (params.bore ?? 'M'))) as SizeClass;
     const inner =
       params.fit === 'too-tight'
@@ -1050,7 +1077,7 @@ export const tubeMagazine: PartFamily = {
   // Length follows the barrel whose lug the cap fixes to, unless set.
   params: { length: { ...size, from: [{ port: 'cap', param: 'length' }] } },
   build(params): PartDef {
-    const len = FORE_LENGTH[cls(params, 'length')];
+    const len = snapAkGrid(barrelLength({ length: cls(params, 'length') }) * HANDGUARD_REACH.barrelFraction);
     return {
       family: 'tube-magazine',
       solids: [solid('tube', [0, -1, -1], [len, 1, 1])],
@@ -1087,14 +1114,15 @@ export const forend: PartFamily = {
 
 // ---- held parts ----
 
-const GRIP_ANGLE = 18; // degrees the grip leans back
+// Hand-derived S/M/L lengths: about four fingers through a hand-and-a-bit; lean stays at 18°.
+const GRIP_BANDS = { lengthU: { S: 8, M: 9, L: 10 }, leanDegrees: 18 } as const;
 
 export const grip: PartFamily = {
   name: 'grip',
   params: { length: size, well: choice('none', 'magazine') },
   build(params): PartDef {
-    const len = { S: 8, M: 10, L: 12 }[cls(params, 'length')];
-    const a = (GRIP_ANGLE * Math.PI) / 180;
+    const len = GRIP_BANDS.lengthU[cls(params, 'length')];
+    const a = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
     const magazineWell = params.well === 'magazine';
     const profile = magazineWell
       ? ([
@@ -1227,7 +1255,7 @@ const rotatedBoxBounds = (box: { center: Vec3; half: Vec3 }, angle: number, offs
 };
 
 const integratedPistolGrip = (gripLength: string): PartDef => {
-  const angle = -(GRIP_ANGLE * Math.PI) / 180;
+  const angle = -(GRIP_BANDS.leanDegrees * Math.PI) / 180;
   const offset: Vec3 = [PISTOL_GRIP_X, 0, 0];
   const local = grip.build({ length: gripLength, well: 'magazine' });
   const solids = local.solids.map((part): Solid => {
@@ -1409,11 +1437,12 @@ interface DerivedMagazineGeometry {
 }
 
 const curvedMagazineGeometry = (shape: MagazineShape, description: CurvedMagazineProfile): DerivedMagazineGeometry => {
-  const scale = CURVED_MAGAZINE_CLASS_SCALE[shape.length];
+  const sweep = (description.arc.sweepDegrees * Math.PI) / 180;
+  const referenceLength = description.straightTop + description.arc.radius * sweep + description.straightBottom;
+  const scale = shape.bodyLength / referenceLength;
   const topLength = description.straightTop * scale;
   const bottomLength = description.straightBottom * scale;
   const radius = description.arc.radius * scale;
-  const sweep = (description.arc.sweepDegrees * Math.PI) / 180;
   const topSlope = (description.topSlopeDegrees * Math.PI) / 180;
   const rise = shape.depth * Math.tan(topSlope);
   const topBack: Vec2 = [-shape.depth / 2, shape.insertion - topLength];
@@ -1520,8 +1549,10 @@ export const magazine: PartFamily = {
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: profile-specific dimensions feed one shared magazine solid and seat implementation.
   build(params): PartDef {
-    const magazineLength = magazineLengthData(params.length);
+    const profile = (params.profile ?? 'standard') as MagazineProfile;
+    const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const len = magazineLength.length;
     const depth =

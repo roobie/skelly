@@ -271,17 +271,25 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
 | `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
-Magazine body-length bands use `S = 6u` (about 69mm) as the ordinary 10-round
-floor; `M = 10u` and `L = 16u` remain longer options. The detachable-box bolt
-rifle alone has compact `5-round` (`4.5u`, about 52mm) and `10-round` (`5.5u`,
-about 63mm) values, seated in a recessed well. Their floorplates protrude
-0.25u and 1.25u below the well/stock line respectively; the receiver cavity
-and lower well are controlled by `magazineWell: recessed` data. The top-loaded
-bolt rifle is not a box-magazine user; other archetypes do not offer the compact
-values. Tilted magazine seating is declared per lower layout: conventional and
-AR layouts support the standard magazine profile; bullpup, AK, and trigger
-layouts do not. Unsupported layout/profile combinations are rejected by the
-`magazine-well-axis` rule rather than surfacing as a contact gap.
+Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
+The lengths below remain abstract units on the existing grid.
+
+- Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
+  integrated pistol-frame grip.
+- Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
+  `6/10/16u`; AK-74 curved `6/10/16.5u`; AKM curved `6/10/19.25u`; STANAG
+  curved `6/10/15.75u`. The curved L values follow the traced reference
+  lengths: AK-74/AKM ratios and STANAG 30-round, with STANAG 20-round anchoring
+  M near `10u`. Ordinary S begins at the plausible 10-round length (`6u`).
+- The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
+  `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
+  and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
+  is not a box-magazine user; other archetypes do not offer this exception.
+- Standard handguards occupy 65% of exposed barrel length; AK handguards occupy
+  80% of the barrel-to-gas-port station. Tilted magazine seating is declared
+  per lower layout: conventional and AR layouts support the standard magazine
+  profile; bullpup, AK, and trigger layouts do not. Unsupported combinations
+  are rejected by `magazine-well-axis`, not surfaced as contact gaps.
 
 On top of one broken fixture per rule, these check constraints specific to an
 archetype:
