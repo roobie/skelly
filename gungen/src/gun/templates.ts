@@ -197,16 +197,17 @@ export const boltRifle: Template = {
 
 export const boltRifleBox: Template = {
   name: 'bolt-rifle-box',
-  description: 'Bolt-action rifle with a detachable box magazine, pistol grip and sporting stock.',
+  description:
+    'Bolt-action rifle with a recessed well, compact 5- or 10-round magazine, pistol grip and sporting stock.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'box', bore: ['M', 'L'] } },
-    { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
+    { id: 'lower', family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     // Free-floating, so its length is set rather than read from the barrel.
     { id: 'handguard', family: 'handguard', params: { length: ['M', 'L'], clearance: 'M' }, chance: 0.7 },
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
-    { id: 'magazine', family: 'magazine', params: { length: ['S', 'M'] } },
+    { id: 'magazine', family: 'magazine', params: { length: ['5-round', '10-round'] } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'sporting' } },
     { id: 'sight', family: 'sight', chance: 0.9 },
   ],

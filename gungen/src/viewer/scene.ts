@@ -41,6 +41,7 @@ const FAMILY_COLORS: Record<string, number> = {
   stock: 0x8a_6a_52,
   sight: 0x3f_46_50,
 };
+const MAGAZINE_FLOORPLATE = 0x35_42_58;
 const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
 const NORMAL = 0xf0_a2_4a;
@@ -109,10 +110,17 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
 
     for (const s of def.displaySolids ?? def.solids) {
       const obb = s.kind === 'box' ? worldBox(t, s.box) : undefined;
+      let color = FAMILY_COLORS[def.family] ?? 0x88_88_88;
+      if (s.id === 'floorplate') {
+        color = MAGAZINE_FLOORPLATE;
+      }
+      if (failing) {
+        color = FAIL;
+      }
       const mesh = new Mesh(
         solidGeometry(s),
         new MeshStandardMaterial({
-          color: failing ? FAIL : (FAMILY_COLORS[def.family] ?? 0x88_88_88),
+          color,
           flatShading: true,
           roughness: 0.85,
           metalness: 0.05,

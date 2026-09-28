@@ -271,6 +271,18 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
 | `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
+Magazine body-length bands use `S = 6u` (about 69mm) as the ordinary 10-round
+floor; `M = 10u` and `L = 16u` remain longer options. The detachable-box bolt
+rifle alone has compact `5-round` (`4.5u`, about 52mm) and `10-round` (`5.5u`,
+about 63mm) values, seated in a recessed well. Their floorplates protrude
+0.25u and 1.25u below the well/stock line respectively; the receiver cavity
+and lower well are controlled by `magazineWell: recessed` data. The top-loaded
+bolt rifle is not a box-magazine user; other archetypes do not offer the compact
+values. Tilted magazine seating is declared per lower layout: conventional and
+AR layouts support the standard magazine profile; bullpup, AK, and trigger
+layouts do not. Unsupported layout/profile combinations are rejected by the
+`magazine-well-axis` rule rather than surfacing as a contact gap.
+
 On top of one broken fixture per rule, these check constraints specific to an
 archetype:
 

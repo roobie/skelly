@@ -3,7 +3,7 @@
 import type { Issue } from '../core/issue.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Rule, Solid } from '../core/schema.ts';
-import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT } from './parts.ts';
+import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, LOWER_LAYOUTS } from './parts.ts';
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const firingGrip: Rule = {
@@ -164,6 +164,42 @@ export const handguardFit: Rule = {
   },
 };
 
+const tiltedWellSupportError = (layout: string, profile: string): string | undefined => {
+  const layoutData = LOWER_LAYOUTS[layout as keyof typeof LOWER_LAYOUTS];
+  const profiles: readonly string[] | undefined = layoutData?.tiltedMagazineProfiles;
+  if (profiles?.includes(profile)) {
+    return undefined;
+  }
+  return layoutData?.tiltedMagazineProfiles.length === 0
+    ? `tilted magazines need a slanted well; the ${layout} layout has none.`
+    : `tilted magazines need a slanted well; the ${layout} layout does not support the ${profile} profile.`;
+};
+
+const magazineAxisError = (
+  r: Resolved,
+  lower: PortRef,
+  magazine: PortRef,
+  styles: { mag: string; well: string },
+): Issue | undefined => {
+  const { mag: magStyle, well: wellStyle } = styles;
+  const angle = magStyle === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
+  const expected: readonly [number, number, number] = [Math.sin(angle), -Math.cos(angle), 0];
+  const port = r.defs.get(lower.part)!.ports.find(({ id }) => id === 'magazine')!;
+  const dot = expected[0] * port.normal[0] + expected[1] * port.normal[1] + expected[2] * port.normal[2];
+  const error = (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI;
+  if (magStyle === wellStyle && error <= 0.5) {
+    return undefined;
+  }
+  return {
+    rule: 'magazine-well-axis',
+    message:
+      magStyle === wellStyle
+        ? `${lower.part}'s well axis is ${error.toFixed(1)}° off ${magazine.part}'s ${magStyle} magazine axis.`
+        : `${lower.part} declares ${wellStyle}, but ${magazine.part} uses ${magStyle}; the well must follow the magazine axis.`,
+    parts: [lower.part, magazine.part],
+  };
+};
+
 export const magazineWellAxis: Rule = {
   id: 'magazine-well-axis',
   title: 'The magazine well follows the magazine axis',
@@ -176,24 +212,23 @@ export const magazineWellAxis: Rule = {
       if (!(lower && magazine)) {
         continue;
       }
-      const magStyle = r.params.get(magazine.part)?.orientation?.value ?? 'straight';
-      const wellStyle = r.params.get(lower.part)?.magazineOrientation?.value ?? 'straight';
-      const angle = magStyle === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
-      const expected: readonly [number, number, number] = [Math.sin(angle), -Math.cos(angle), 0];
-      const port = r.defs.get(lower.part)!.ports.find(({ id }) => id === 'magazine')!;
-      const dot = expected[0] * port.normal[0] + expected[1] * port.normal[1] + expected[2] * port.normal[2];
-      const error = (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI;
-      if (magStyle === wellStyle && error <= 0.5) {
-        continue;
+      const magParams = r.params.get(magazine.part);
+      const lowerParams = r.params.get(lower.part);
+      const magStyle = magParams?.orientation?.value ?? 'straight';
+      const wellStyle = lowerParams?.magazineOrientation?.value ?? 'straight';
+      const layout = lowerParams?.layout?.value ?? 'conventional';
+      const profile = magParams?.profile?.value ?? 'standard';
+      if (magStyle === 'tilt') {
+        const supportError = tiltedWellSupportError(layout, profile);
+        if (supportError) {
+          issues.push({ rule: 'magazine-well-axis', message: supportError, parts: [lower.part, magazine.part] });
+          continue;
+        }
       }
-      issues.push({
-        rule: 'magazine-well-axis',
-        message:
-          magStyle === wellStyle
-            ? `${lower.part}'s well axis is ${error.toFixed(1)}° off ${magazine.part}'s ${magStyle} magazine axis.`
-            : `${lower.part} declares ${wellStyle}, but ${magazine.part} uses ${magStyle}; the well must follow the magazine axis.`,
-        parts: [lower.part, magazine.part],
-      });
+      const axisError = magazineAxisError(r, lower, magazine, { mag: magStyle, well: wellStyle });
+      if (axisError) {
+        issues.push(axisError);
+      }
     }
     return issues;
   },

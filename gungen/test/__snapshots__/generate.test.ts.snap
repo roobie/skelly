@@ -1225,12 +1225,13 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "lower",
         "params": {
           "layout": "conventional",
+          "magazineWell": "recessed",
         },
       },
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "M",
+          "length": "10-round",
         },
       },
       "receiver": {
@@ -1312,12 +1313,13 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "lower",
         "params": {
           "layout": "conventional",
+          "magazineWell": "recessed",
         },
       },
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "length": "5-round",
         },
       },
       "receiver": {
@@ -1388,12 +1390,13 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "lower",
         "params": {
           "layout": "conventional",
+          "magazineWell": "recessed",
         },
       },
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "length": "5-round",
         },
       },
       "receiver": {

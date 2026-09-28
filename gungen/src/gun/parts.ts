@@ -82,6 +82,22 @@ const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_HEIGHT = 1;
+const MAGAZINE_WELL_CENTER_X = -7 + MAGAZINE_DEPTH / 2;
+const RECESSED_MAGAZINE_PORT_Y = 2;
+const RECESSED_MAGAZINE_WELL_TOP_Y = 0.5;
+type MagazineLength = '5-round' | '10-round' | SizeClass;
+const MAGAZINE_BODY_LENGTH: Readonly<Record<MagazineLength, number>> = {
+  '5-round': 4.5,
+  '10-round': 5.5,
+  S: 6,
+  M: 10,
+  L: 16,
+};
+const magazineLengthData = (value: string | undefined): { size: SizeClass; length: number } => {
+  const requested = (value ?? 'M') as MagazineLength;
+  const sizeClass = requested === '5-round' || requested === '10-round' ? 'S' : requested;
+  return { size: sizeClass, length: MAGAZINE_BODY_LENGTH[requested] };
+};
 interface MagazineShape {
   readonly length: SizeClass;
   readonly depth: number;
@@ -139,6 +155,13 @@ const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
 const MAGAZINE_ORIENTATION_PATTERN = /^(slant)-(5|8|10)$/;
+export const LOWER_LAYOUTS = {
+  conventional: { tiltedMagazineProfiles: ['standard'] },
+  bullpup: { tiltedMagazineProfiles: [] },
+  trigger: { tiltedMagazineProfiles: [] },
+  ak: { tiltedMagazineProfiles: [] },
+  ar: { tiltedMagazineProfiles: ['standard'] },
+} as const;
 const AK_GAS_TUBE_Y = 2;
 const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -194,6 +217,11 @@ export const receiver: PartFamily = {
     bore: size,
     chargingHandle: choice('side', 'rear-top'),
     rail: choice('full', 'none'),
+    magazineWell: {
+      values: ['standard', 'recessed'],
+      default: 'standard',
+      from: [{ port: 'lower', param: 'magazineWell' }],
+    },
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
@@ -280,34 +308,61 @@ export const receiver: PartFamily = {
       });
     }
 
-    const solids =
-      params.action === 'revolver'
-        ? [
-            solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
-            extrudedPolygon(
-              'beavertail-grip-safety',
-              [
-                [-17.5, 0.75],
-                [-15, 0.75],
-                [-15, 2.5],
-                [-16.5, 2.5],
-                [-17.25, 1.75],
-              ],
-              [-1.25, 1.25],
-            ),
-            solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
-            solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
-            solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
-            solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
-            solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
-          ]
-        : [
-            solid(
-              'body',
-              [-16, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
-              [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-            ),
-          ];
+    let solids: Solid[];
+    if (params.action === 'revolver') {
+      solids = [
+        solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
+        extrudedPolygon(
+          'beavertail-grip-safety',
+          [
+            [-17.5, 0.75],
+            [-15, 0.75],
+            [-15, 2.5],
+            [-16.5, 2.5],
+            [-17.25, 1.75],
+          ],
+          [-1.25, 1.25],
+        ),
+        solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
+        solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
+        solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
+        solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
+        solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
+      ];
+    } else if (params.magazineWell === 'recessed') {
+      const x0 = MAGAZINE_WELL_CENTER_X - MAGAZINE_WELL_DEPTH / 2;
+      const x1 = MAGAZINE_WELL_CENTER_X + MAGAZINE_WELL_DEPTH / 2;
+      const z0 = MAGAZINE_WELL_WIDTH / 2;
+      const y0 = -RECEIVER_FRONT_HALF_HEIGHT;
+      const top = RECESSED_MAGAZINE_WELL_TOP_Y;
+      solids = [
+        solid(
+          'body-rear',
+          [-16, y0, -RECEIVER_FRONT_HALF_WIDTH],
+          [x0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+        ),
+        solid(
+          'body-front',
+          [x1, y0, -RECEIVER_FRONT_HALF_WIDTH],
+          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+        ),
+        solid('magwell-wall-left', [x0, y0, -RECEIVER_FRONT_HALF_WIDTH], [x1, top, -z0]),
+        solid('magwell-wall-right', [x0, y0, z0], [x1, top, RECEIVER_FRONT_HALF_WIDTH]),
+        solid(
+          'magwell-roof',
+          [x0, top, -RECEIVER_FRONT_HALF_WIDTH],
+          [x1, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+        ),
+      ];
+    } else {
+      solids = [
+        solid(
+          'body',
+          [-16, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+        ),
+      ];
+    }
     return {
       family: 'receiver',
       solids,
@@ -371,15 +426,26 @@ export const akReceiver: PartFamily = {
 export const lower: PartFamily = {
   name: 'lower',
   params: {
-    layout: choice('conventional', 'bullpup', 'trigger', 'ak', 'ar'),
+    layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
+    magazineWell: choice('standard', 'recessed'),
     magazineOrientation: {
       values: MAGAZINE_ORIENTATIONS,
       default: 'straight',
       from: [{ port: 'magazine', param: 'orientation' }],
     },
+    magazineProfile: {
+      values: ['standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'],
+      default: 'standard',
+      from: [{ port: 'magazine', param: 'profile' }],
+    },
   },
   build(params): PartDef {
     const orientation = orientationParts(params.magazineOrientation ?? 'straight');
+    const layout = params.layout ?? 'conventional';
+    const magazineProfile = params.magazineProfile ?? 'standard';
+    const layoutData = LOWER_LAYOUTS[layout as keyof typeof LOWER_LAYOUTS];
+    const tiltedMagazineProfiles: readonly string[] | undefined = layoutData?.tiltedMagazineProfiles;
+    const supportsTiltedMagazineWell = tiltedMagazineProfiles?.includes(magazineProfile) ?? false;
     const tilt = orientation.kind === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
     const top: PortDef = {
       id: 'top',
@@ -400,8 +466,12 @@ export const lower: PartFamily = {
     });
     // The magazine well at x, with a sloped opening only for the G3-style fit.
     const well = (x: number) => {
-      const portY =
-        orientation.kind === 'tilt' ? -1.5 - (MAGAZINE_HOUSING_FRONT_LENGTH + MAGAZINE_HOUSING_REAR_LENGTH) / 2 : -1.5;
+      let portY = -1.5;
+      if (orientation.kind === 'tilt' && supportsTiltedMagazineWell) {
+        portY = -1.5 - (MAGAZINE_HOUSING_FRONT_LENGTH + MAGAZINE_HOUSING_REAR_LENGTH) / 2;
+      } else if (params.magazineWell === 'recessed') {
+        portY = RECESSED_MAGAZINE_PORT_Y;
+      }
       const port: PortDef = {
         id: 'magazine',
         mount: 'magazine',
@@ -414,7 +484,13 @@ export const lower: PartFamily = {
       const path = keepOut(
         'magazine-path',
         [x - MAGAZINE_WELL_DEPTH / 2, -40, -MAGAZINE_WELL_WIDTH / 2],
-        [x + MAGAZINE_WELL_DEPTH / 2, -1.5 + MAGAZINE_WELL_HEIGHT, MAGAZINE_WELL_WIDTH / 2],
+        [
+          x + MAGAZINE_WELL_DEPTH / 2,
+          params.magazineWell === 'recessed'
+            ? RECESSED_MAGAZINE_PORT_Y + MAGAZINE_WELL_HEIGHT
+            : -1.5 + MAGAZINE_WELL_HEIGHT,
+          MAGAZINE_WELL_WIDTH / 2,
+        ],
         'magazine',
       );
       if (tilt === 0) {
@@ -475,13 +551,13 @@ export const lower: PartFamily = {
         solid('frame-front', [x1, -1.5, -outerZ], [maxX, 0, outerZ]),
         solid('well-wall-left', [x0, -1.5, -outerZ], [x1, 0, -z0]),
         solid('well-wall-right', [x0, -1.5, z0], [x1, 0, outerZ]),
-        solid('well-roof', [x0, roofY, -z0], [x1, 0, z0]),
+        ...(params.magazineWell === 'recessed' ? [] : [solid('well-roof', [x0, roofY, -z0], [x1, 0, z0])]),
       ];
     };
     // Conventional: the rear face meets the trigger-finger volume (it ends at
     // x = −7) without entering it. Bullpup: the front face stays at x = −3.5,
     // behind the grip, which leans back from x = 3.
-    const conventionalWell = well(-7 + MAGAZINE_DEPTH / 2 + (orientation.kind === 'tilt' ? 0.25 : 0));
+    const conventionalWell = well(MAGAZINE_WELL_CENTER_X + (orientation.kind === 'tilt' ? 0.25 : 0));
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
     const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
       const halfDepth = MAGAZINE_WELL_DEPTH / 2;
@@ -613,7 +689,7 @@ export const lower: PartFamily = {
           conventionalWell.port.pos[0],
         );
         const tiltedHousing =
-          orientation.kind === 'tilt'
+          orientation.kind === 'tilt' && supportsTiltedMagazineWell
             ? magazineHousing('tilt-housing', conventionalWell.port.pos[0], 0, MAGAZINE_WELL_CLEARANCE)
             : [];
         return {
@@ -1441,13 +1517,15 @@ const magazineGeometryFor = (
 export const magazine: PartFamily = {
   name: 'magazine',
   params: {
-    length: size,
+    length: { values: ['5-round', '10-round', ...SIZE_CLASSES], default: 'M' },
     profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'),
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
   build(params): PartDef {
-    const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
+    const magazineLength = magazineLengthData(params.length);
+    const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
+    const len = magazineLength.length;
     const depth =
       params.profile === 'pistol' ? PISTOL_MAGAZINE_DEPTH : MAGAZINE_DEPTH * (params.profile === 'smg' ? 0.6 : 1);
     const width =
@@ -1461,17 +1539,26 @@ export const magazine: PartFamily = {
     const insertion = params.profile === 'pistol' ? PISTOL_MAGAZINE_INSERTION : MAGAZINE_INSERTION;
     const resolvedInsertion = curveProfile?.seat === 'face' ? 0 : insertion;
     const shape: MagazineShape = {
-      length: cls(params, 'length'),
+      length: magazineLength.size,
       depth,
       width,
       insertion: resolvedInsertion,
       bodyLength: len,
     };
     const geometry = magazineGeometryFor(params, shape);
+    const floorplate = isCompactBoltMagazine
+      ? [
+          solid(
+            'floorplate',
+            [-depth / 2, resolvedInsertion - len, -width / 2 - 0.25],
+            [depth / 2 + 0.25, resolvedInsertion - len + 0.25, width / 2 + 0.25],
+          ),
+        ]
+      : [];
     return {
       family: 'magazine',
-      solids: geometry.collision,
-      displaySolids: geometry.display,
+      solids: [...geometry.collision, ...floorplate],
+      displaySolids: [...geometry.display, ...floorplate],
       ports: [
         {
           id: 'top',
