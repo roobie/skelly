@@ -4,6 +4,7 @@
 import {
   ArrowHelper,
   BoxGeometry,
+  BufferAttribute,
   BufferGeometry,
   EdgesGeometry,
   ExtrudeGeometry,
@@ -25,6 +26,7 @@ import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
+import { meshForSolid } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
@@ -63,6 +65,17 @@ const placeBox = (obj: Object3D, obb: Obb) => {
   obj.matrix.copy(matrixOf(obb.r, obb.center));
 };
 
+/** Converts a core TriangleMesh (positions/normals/indices only) to a three.js BufferGeometry. */
+const meshGeometry = (solid: Solid) => {
+  const mesh = meshForSolid(solid);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
+  geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
+  geometry.setIndex(new BufferAttribute(mesh.indices, 1));
+  return geometry;
+};
+
+/** Keep-outs stay plain boxes/extrusions; only rendered solids are beveled. */
 const solidGeometry = (solid: Solid) => {
   if (solid.kind === 'box') {
     return new BoxGeometry(solid.box.half[0] * 2, solid.box.half[1] * 2, solid.box.half[2] * 2);
@@ -108,9 +121,8 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     const failing = hl.parts.has(part);
 
     for (const s of def.displaySolids ?? def.solids) {
-      const obb = s.kind === 'box' ? worldBox(t, s.box) : undefined;
       const mesh = new Mesh(
-        solidGeometry(s),
+        meshGeometry(s),
         new MeshStandardMaterial({
           color: failing ? FAIL : (FAMILY_COLORS[def.family] ?? 0x88_88_88),
           flatShading: true,
@@ -118,12 +130,9 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
           metalness: 0.05,
         }),
       );
-      if (obb) {
-        placeBox(mesh, obb);
-      } else {
-        mesh.matrixAutoUpdate = false;
-        mesh.matrix.copy(matrixOf(t.r, t.t));
-      }
+      // The solid's own box.center/profile is already baked into its mesh's positions.
+      mesh.matrixAutoUpdate = false;
+      mesh.matrix.copy(matrixOf(t.r, t.t));
       mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
       const edges = new LineSegments(
         new EdgesGeometry(mesh.geometry),
