@@ -136,7 +136,7 @@ export interface Domain {
 
 export interface PrefabReference {
   readonly id: string;
-  /** Positive integer catalogue revision. */
+  /** Positive integer catalogue revision; the design loader/catalogue check this at runtime. */
   readonly version: number;
 }
 

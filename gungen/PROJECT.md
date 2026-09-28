@@ -683,15 +683,18 @@ palette as arguments.
 
   Loading is a runtime parse, not a type assertion. A malformed file fails to
   parse. Unknown format versions are refused. A file that is well formed but
-  infeasible loads as a draft.
+  infeasible loads as a draft; `DesignLoadResult.declaredStatus` preserves the
+  status it declared so the publish gate still rejects an invalid published
+  design.
 
-  Change policy (a snapshot): a design stores an explicit value for every
-  param, so a later change to a family's defaults doesn't change existing
-  designs. A family's geometry change still changes how a design looks, so
-  each published design has a snapshot test of its resolved solids. That
-  test fails on any such change, which forces a deliberate review. A design
-  whose template no longer offers one of its choices loads as a draft with
-  issues listed.
+  **BR ruling (2026-09-28):** a design stores only chosen values: values set
+  by the designer, picked by its template (including a seed pick the designer
+  kept), or fixed by a prefab. Inherited params (`ParamSpec.from` and template
+  `ParamReference`) and family defaults remain implicit and resolve on load;
+  this preserves inheritance during editing and suggesting. A family's
+  default or geometry change is guarded by each published design's snapshot
+  test of resolved solids, forcing deliberate review. A design whose template
+  no longer offers one of its chosen values loads as a draft with issues.
 - **Prefab reference.** A part can carry `prefab: { id, version }`.
   - Choosing a prefab copies its params and records the reference.
   - Editing any param the prefab fixes detaches it: the reference is removed.
@@ -702,23 +705,27 @@ palette as arguments.
     listed.
   - Templates don't generate prefabs in this milestone.
 - **Hold anchors.** Part families declare named anchors in gun-domain data,
-  not in core. Each anchor is a frame: a position, a forward direction and an
-  up direction, so the export can derive deadvox's `grip.turn`.
-  - `hold` (the firing hand) is required.
-  - `support` (the other hand) and `muzzle` are optional.
-  - Precedence: a separate grip part's `hold` wins over a stock that carries
-    `FIRING_GRIP` (`src/gun/parts.ts:1652`). The stock's own `hold` applies
-    only when there's no grip part.
-  - Two `hold` anchors of equal rank make the design ambiguous, and it can't
-    be published.
-- **Palette.** One table of family colours (plus special cases like the
-  magazine floorplate), shared by the viewer and the export.
-- **Export metadata** (frozen here for lane B), per port:
-  - a stable id, `<part>.<port>`;
-  - mount, gender and size;
-  - the full mating frame (position, normal, up);
-  - for rails: the slot count and pitch, with one node per rail rather than
-    per slot.
+  not in core. Each anchor is a local position, forward direction and up
+  direction, later transformed to gungen assembly coordinates so export can
+  derive deadvox's `grip.turn`.
+  - `hold` (the firing hand) is required; `support` and `muzzle` are optional.
+  - Precedence: a separate or integrated grip's `hold` wins over a stock that
+    carries `FIRING_GRIP` (`src/gun/parts.ts:1652`). The stock's own `hold`
+    applies only when there is no grip. Equal-rank `hold` anchors are
+    ambiguous, and the design cannot be published. `SelectGunAnchors` applies
+    this policy before the core exporter receives `SelectedAnchors`.
+- **Palette.** One table of family colours and special colours keyed by solid
+  id, shared by viewer and export. A solid-id special colour wins over its
+  part-family colour; if the family is unknown, use the palette's
+  `fallbackColor` (the current viewer grey, `#888888`). `fallbackColor` is
+  explicit so the exporter cannot invent its own fallback.
+- **Export metadata** (frozen here for lane B), per port: stable id
+  `<part>.<port>`, mount, gender, optional size, and the full assembly-space
+  mating frame (position, normal, up). Rails carry one count/pitch record for
+  the whole port and export one node per rail, not per slot. The core exporter
+  accepts resolved assembly-space frames only after gun anchor selection. It
+  returns an error variant rather than exporting a `Resolved` with structure
+  issues or unplaced parts.
 
 Proof: parse and round-trip tests, including a malformed file and every
 refused version. Tests for the change policy: a default change, a template
@@ -730,42 +737,73 @@ The viewer's rendering is unchanged after the palette moves.
 #### 3.0a contracts (frozen)
 
 Types only; 3.0b supplies parsing and values. The contracts live in
-`src/core/design.ts` (`Design`, `DesignOrigin`, `DesignLocks`, `DesignIssue`,
-`DesignLoadError`, `DesignLoadResult`, `AnchorFrame`, `PartAnchorDeclaration`,
-`ResolvedAnchors`, `Palette`, `ExportPortMetadata`, `DeadvoxModelEntry`,
-`GlbExportInput`/`GlbExportResult`/`ExportGlb`, and
+`src/core/design.ts` (`Design`/`DesignFormat`/`DesignStatus`, `DesignOrigin`,
+`DesignLocks`, `DesignIssue`, `DesignLoadError`/`DesignLoadResult`,
+`AnchorFrame`, `PartAnchorDeclaration`/`PartAnchorDeclarations`/
+`ResolveAnchors`, `ResolvedAnchors`/`SelectedAnchors`/`AnchorSelectionError`,
+`Palette`, `PartPortId`/`ExportPortMetadata`, `DeadvoxModelFile`/
+`DeadvoxModelEntry`/`GlbAssetIdentity`, `GlbExportInput`/`GlbExportResult`/
+`GlbExportError`/`ExportGlb`, and `EffectiveSuggestionLocks`/
 `SuggestionResult`/`Suggest`). `PartInstance.prefab` uses the core
 `PrefabReference` in `src/core/schema.ts`; the gun catalogue types are
 `PrefabCatalogueEntry` and `PrefabCatalogue` in `src/gun/prefabs.ts`. Gun
 anchor names and policy are in `src/gun/anchors.ts`, not core. The type test
-is `test/m3Contracts.test.ts`; it also guards the no-`src/gun` core boundary.
+is `test/m3Contracts.test.ts`; its import-boundary guard uses `es-module-lexer`
+to follow relative imports/re-exports transitively, catching direct side-effect
+and template-literal imports as well as paths through intermediary modules.
+Unresolved dynamic-import globs fail closed.
 
 Decisions where the plan left representation open:
 
 - `format` is numeric literal `1`. Prefab versions are positive integer
-  numbers. Unknown format or prefab id/version is a fatal load error.
+  numbers; the loader checks them because the type cannot. Unknown format or
+  prefab id/version is a fatal load error. BR's ruling (2026-09-28) is to store
+  only chosen values; inherited and default params stay absent and resolve on
+  load. Snapshot tests of resolved solids protect defaults and geometry.
 - `locks.params` maps part ids to locked parameter names;
   `locks.optionalParts` lists locked template slot ids, with current presence
   kept in the assembly. `origin.overrides` uses the viewer's existing
   `params`/`presence` shape, but has no viewer dependency.
 - Non-fatal feasibility, stale-template-choice, or prefab-value issues return
-  a non-empty issue list and a draft, even if the file said `published`.
-  Invalid syntax/shape is a load error. Clean loads have no issues.
+  a non-empty issue list and a draft, even if the file said `published`;
+  `declaredStatus` preserves the original status for CI publishing gates.
+  Fatal load results also carry the readable declared status, or `undefined`
+  when malformed input has none. Invalid syntax/shape is a load error. Clean
+  loads have no issues.
 - Anchor declarations return family-local frames; core transforms them to
-  assembly coordinates. Gun ranks group an integrated/separate grip as
-  `grip`, ahead of `firing-grip-stock`; equal-rank `hold` candidates are
-  ambiguous. `hold`, `support`, and `muzzle` are gun-only names.
-- Palette RGB channels are normalized sRGB triples; `specialColors` uses
-  domain-defined keys such as `floorplate`. Export converts them to linear
-  space. Port metadata ids are `<part>.<port>`; frames are world-space
-  position/normal/up, and a rail carries one count/pitch record for the whole
-  port. The exporter receives the model id/file explicitly and returns a
-  deadvox-shaped entry with required `grip.at`/`grip.turn` plus optional named
-  anchor positions.
-- `Suggest` returns `Design` variants and `exhausted` is true when its attempt
-  budget ends before it finds `n` results. These signatures are contracts
-  only; this package adds no parser, anchor values, palette migration,
-  suggester, or exporter implementation.
+  gungen assembly coordinates in abstract units. `AnchorFrame` and port
+  mating frames stay in that space. Gun ranks group an integrated/separate
+  grip as `grip`, ahead of `firing-grip-stock`; equal-rank `hold` candidates
+  are ambiguous. `SelectGunAnchors` applies this gun policy and returns a
+  `SelectedAnchors` (required `hold`, other selected names) or an
+  `AnchorSelectionError` for a missing or ambiguous hold. The core exporter
+  accepts only that selection; it never chooses gun anchors. `hold`,
+  `support`, and `muzzle` are gun-only names.
+- Palette RGB channels are normalized sRGB triples; `specialColors` is keyed
+  by solid id and wins over `familyColors`, then `fallbackColor` handles an
+  unknown family (`#888888` for the current viewer). Export converts sRGB to
+  linear space. Types cannot bound finite color channels to `[0,1]`; palette
+  construction and export validate them. Port metadata ids are
+  `<part>.<port>`; frames are in gungen assembly coordinates and units, and a
+  rail carries one count/pitch record. `PartPortId` cannot exclude empty
+  components or embedded dots, so export validates both ids. The exporter
+  receives model id/file explicitly and checks the file name against
+  deadvox's `assets/models/<name>.glb` pattern. Its output converts positions
+  to metres and deadvox axes (`+x` forward, `+y` up) before emitting `grip.at`
+  and optional anchor positions. `grip.turn` is always emitted; deadvox
+  `hold` and `roll` are intentionally omitted.
+- `Suggest` takes `effectiveLocks`, precomputed by the caller from design
+  locks plus only the fixed parameter names of referenced prefabs; core does
+  not import or need a gun catalogue, and unrelated prefab params remain
+  unlocked. It returns draft variants, retains the original `origin` as
+  lineage, and preserves locks/prefab references for surviving parts. If it
+  removes an unlocked optional part, it removes that part's param locks and
+  prefab reference too. Distinctness compares part ids/families/chosen params
+  and canonical sorted connections (including slot/roll), excluding name,
+  origin, locks and prefab metadata. `exhausted` is true when budget ends
+  before `n` variants are found. These signatures are contracts only; this
+  package adds no parser, anchor values, palette migration, suggester, or
+  exporter implementation.
 
 **3.1 Designs and prefabs.**
 
@@ -782,14 +820,20 @@ cards as you edit. Drafts can be invalid; publishing requires a valid design.
 A dedicated check (not `npm run validate`) fails on any invalid published
 design, and runs in CI.
 
-**3.3 Variant suggester.** `suggest(design, template, domain, seed, n,
-budget)`, a pure core function:
+**3.3 Variant suggester.** `suggest(design, template, domain, effectiveLocks,
+seed, n, budget)`, a pure core function. The caller resolves prefab
+references and passes design locks merged with only prefab-fixed parameter
+names, keeping the core independent of gun catalogue data:
 
 - re-rolls only unlocked params and unlocked optional parts, within the
   template's choices. Prefab-fixed params count as locked;
-- returns up to `n` distinct valid variants that differ from the design.
-  "Distinct" compares parts, params and connections, not names or origin.
-  An accepted suggestion keeps the design's locks and prefab references;
+- returns up to `n` distinct valid **draft** variants that differ from the
+  design. `origin` remains the original provenance. "Distinct" compares part
+  ids/families/chosen params and canonical sorted connections including slot
+  and roll; it ignores names, origin, locks and prefab metadata. Accepting a
+  suggestion preserves locks and prefab references on surviving parts. When
+  an unlocked optional part is removed, its parameter-lock entry and prefab
+  reference are removed with it;
 - stops after `budget` attempts and reports whether it ran out;
 - respects inherited params and conditional connections.
 

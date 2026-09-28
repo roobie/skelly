@@ -1,4 +1,5 @@
-import type { NamedAnchors, PartAnchorDeclaration } from '../core/design.ts';
+import type { AnchorSelectionError, NamedAnchors, PartAnchorDeclaration, SelectedAnchors } from '../core/design.ts';
+import type { Resolved } from '../core/resolve.ts';
 
 /** Gun-domain names; core treats these as caller-supplied strings. */
 export type GunAnchorName = 'hold' | 'support' | 'muzzle';
@@ -26,6 +27,13 @@ export interface GunAnchorSelectionPolicy {
   readonly holdPrecedence: GunHoldAnchorPrecedence;
   readonly equalRank: 'ambiguous';
 }
+
+/** Signature only; gun-domain policy selects the hold before the generic core exporter runs. */
+export type SelectGunAnchors = (
+  resolved: Resolved,
+  declarations: GunAnchorDeclarations,
+  policy: GunAnchorSelectionPolicy,
+) => SelectedAnchors | AnchorSelectionError;
 
 // Keep AnchorFrame named at the domain boundary without redefining its core shape.
 export type { AnchorFrame } from '../core/design.ts';
