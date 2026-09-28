@@ -420,6 +420,85 @@ Generator valid-rate comparison (`npm run stats`, 1000 seeds/template):
 Rates are unchanged: the existing templates use only handguard sizes that
 clear the barrel, and the new grip bevel fits without increasing overlaps.
 
+## Milestone 2.2: handguns — pistols, then revolvers
+
+**Goal:** add distinct handgun archetypes without conflating a pistol's grip-fed
+magazine with a rifle-style lower or a revolver's cylinder with a magazine.
+
+**Status:** planned.
+
+### Pistols (first)
+
+- Add a pistol lower layout: trigger guard and grip directly under the
+  receiver, with no magazine well. Add a short, narrow magazine profile and a
+  grip variant whose frame surrounds a magazine cavity, reusing the lower
+  well's box-built material-around-a-cavity construction. The grip owns the
+  magazine port and insertion keep-out.
+- Extend `feed-match` so box feed may be supplied by a magazine well on either
+  the lower or the grip. Add a `slide` receiver action with slide-travel and
+  ejection-port keep-outs. The existing optional rail, stock and handguard
+  ports remain unused by the pistol template.
+- Use the existing size-S barrel family for the short, exposed pistol barrel;
+  a barrel enclosed inside the slide is out of scope. Add a pistol template,
+  passing fixture, broken fixture for the new feed rule, snapshots and stats.
+
+### Revolvers (second)
+
+- Add `cylinder` feed, a cylinder family built as a hexagonal or octagonal
+  prism below and parallel to the bore, and a rule requiring its top chamber
+  to be collinear with the bore. `feed-match` must accept cylinder feed without
+  a magazine well.
+- Add a revolver receiver/frame with a cylinder window and top strap, built
+  from several solids. Frame, cylinder and barrel form a loop; loop closure
+  checks only closure, so proportions stay fixed rather than depending on a
+  solver. Keep-outs cover cylinder gap, swing-out (or loading-gate) clearance
+  and hammer travel.
+- Add a grip without a well, a revolver template, passing and broken fixtures,
+  snapshots and stats. Grip-reach ergonomics (§5) remains unbuilt, so handgun
+  proportions are not checked against a hand. Open question: does the current
+  seven-slot receiver sight rail fit a pistol-length receiver, or does the
+  slide need its own short rail?
+
+## Milestone 2.3: AR and AK archetypes
+
+**Goal:** distinguish common service-rifle layouts using the shared receiver,
+lower and procedural geometry while keeping the current FAL/FNC-like design
+explicitly named `battle-rifle`.
+
+**Status:** planned.
+
+### AR
+
+- Existing pieces already express the separate upper/lower, an inline `straight`
+  stock, a flat-top seven-slot receiver rail, conventional vertical well and
+  angled pistol grip. Missing: a charging-handle placement param (the current
+  `auto` handle keep-out is on the receiver's left side), a front sight/gas
+  block near the muzzle, and perhaps a carry-handle option.
+
+### AK
+
+- Existing pieces express a right-side bolt handle with `action: bolt`, a
+  conventional magazine well, pistol grip, barrel and handguard. Missing: a
+  dust-cover/no-receiver-rail variant with a rear sight on a handguard or sight
+  block; a gas tube on a second axis parallel to the bore; a curved magazine
+  and rock-in insertion path; an intermediate dropped-stock style; and a front
+  sight block near the muzzle. The current magazine well is vertical and its
+  keep-out is a straight box path; a forward well angle or a rock-in sweep is
+  not present in the pushed code. Curved convex segments are now representable,
+  but an arc-aware keep-out may require a domain-specific extension to core.
+
+**Known risks and open questions:** the current `auto` charging-handle
+keep-out sits on the left; the `bolt` handle keep-out is on the right. The
+seven-slot receiver rail may be too long for a pistol and should be checked in
+the viewer. The existing `rifle` name has been renamed to `battle-rifle` now;
+there is no compatibility alias.
+
+Each new archetype requires a passing fixture, a broken fixture for every new
+rule with readable failure text, snapshots of three known-good seeds, and
+before/after generator stats. Review generated builds in the viewer before
+updating snapshots. Report milestone results with viewer links; visual
+proportions await BR's judgment.
+
 ## Running it
 
 ```sh
