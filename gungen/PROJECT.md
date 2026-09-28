@@ -727,6 +727,46 @@ one `hold`, including the integrated pistol, a stock-wrist rifle and a grip
 plus a `FIRING_GRIP` stock, plus a test that an ambiguous `hold` is refused.
 The viewer's rendering is unchanged after the palette moves.
 
+#### 3.0a contracts (frozen)
+
+Types only; 3.0b supplies parsing and values. The contracts live in
+`src/core/design.ts` (`Design`, `DesignOrigin`, `DesignLocks`, `DesignIssue`,
+`DesignLoadError`, `DesignLoadResult`, `AnchorFrame`, `PartAnchorDeclaration`,
+`ResolvedAnchors`, `Palette`, `ExportPortMetadata`, `DeadvoxModelEntry`,
+`GlbExportInput`/`GlbExportResult`/`ExportGlb`, and
+`SuggestionResult`/`Suggest`). `PartInstance.prefab` uses the core
+`PrefabReference` in `src/core/schema.ts`; the gun catalogue types are
+`PrefabCatalogueEntry` and `PrefabCatalogue` in `src/gun/prefabs.ts`. Gun
+anchor names and policy are in `src/gun/anchors.ts`, not core. The type test
+is `test/m3Contracts.test.ts`; it also guards the no-`src/gun` core boundary.
+
+Decisions where the plan left representation open:
+
+- `format` is numeric literal `1`. Prefab versions are positive integer
+  numbers. Unknown format or prefab id/version is a fatal load error.
+- `locks.params` maps part ids to locked parameter names;
+  `locks.optionalParts` lists locked template slot ids, with current presence
+  kept in the assembly. `origin.overrides` uses the viewer's existing
+  `params`/`presence` shape, but has no viewer dependency.
+- Non-fatal feasibility, stale-template-choice, or prefab-value issues return
+  a non-empty issue list and a draft, even if the file said `published`.
+  Invalid syntax/shape is a load error. Clean loads have no issues.
+- Anchor declarations return family-local frames; core transforms them to
+  assembly coordinates. Gun ranks group an integrated/separate grip as
+  `grip`, ahead of `firing-grip-stock`; equal-rank `hold` candidates are
+  ambiguous. `hold`, `support`, and `muzzle` are gun-only names.
+- Palette RGB channels are normalized sRGB triples; `specialColors` uses
+  domain-defined keys such as `floorplate`. Export converts them to linear
+  space. Port metadata ids are `<part>.<port>`; frames are world-space
+  position/normal/up, and a rail carries one count/pitch record for the whole
+  port. The exporter receives the model id/file explicitly and returns a
+  deadvox-shaped entry with required `grip.at`/`grip.turn` plus optional named
+  anchor positions.
+- `Suggest` returns `Design` variants and `exhausted` is true when its attempt
+  budget ends before it finds `n` results. These signatures are contracts
+  only; this package adds no parser, anchor values, palette migration,
+  suggester, or exporter implementation.
+
 **3.1 Designs and prefabs.**
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs

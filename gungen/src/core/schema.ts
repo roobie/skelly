@@ -134,9 +134,17 @@ export interface Domain {
 
 // ---- Assembly file format (JSON) ----
 
+export interface PrefabReference {
+  readonly id: string;
+  /** Positive integer catalogue revision. */
+  readonly version: number;
+}
+
 export interface PartInstance {
   readonly family: string;
   readonly params?: Readonly<Record<string, string>>;
+  /** Present on curated designs; legacy assemblies need no prefab reference. */
+  readonly prefab?: PrefabReference;
 }
 
 export interface Connection {
