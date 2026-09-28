@@ -106,13 +106,15 @@ schema” is not permission to reset it on load. The current audio branch alread
 has an ID allocator and active noise stimulus, so both are included above;
 queued acoustic playback remains disposable.
 
-### World and character boundary
+### Open question for BR — world and character boundary
 
-A save is one persistent world with its permadead character inside it, as in
-`EPIC.md`. The record has separate stable `worldId` and `characterId` keys; 1.9
-holds one active character per world. Death ends the character, not the world.
-Whether a later new character can enter that same world remains open, but this
-layout preserves the world and any remains/piles without redesigning the record.
+Should a save be one persistent world with its character inside it? **Recommendation:**
+yes. This fits `DESIGN.md`'s permanent death and the option of starting a new
+character in the same world, with prior item piles left behind. Key `worldId`
+and `characterId` separately; keep one active character per world in 1.9, while
+leaving whether a later character may enter the same world for BR to decide.
+This layout preserves world state and remains/piles without redesigning the
+record if that option is chosen.
 
 World state is region-keyed: `world.regions[(regionX, regionZ)]` follows
 `DESIGN.md`'s 512 × 512 m region map; chunk diffs, block entities, piles and
