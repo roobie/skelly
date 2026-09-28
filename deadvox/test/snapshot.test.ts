@@ -386,19 +386,16 @@ describe('snapshot state components', () => {
     expect(loaded.godMode).toBe(false);
   });
 
-  it('preserves structured-clone number edges exactly', () => {
-    const values = [
-      -0,
-      Number.MIN_VALUE,
-      Number.EPSILON,
-      1.797_693_134_862_315_7e308,
-      Number.NaN,
-      Number.POSITIVE_INFINITY,
-    ];
-    const cloned = structuredClone(values);
-    values.forEach((value, index) => {
-      expect(Object.is(cloned[index], value)).toBe(true);
-    });
+  it('round-trips signed zero and subnormal numbers through the snapshot', () => {
+    const original = createRuntime();
+    original.player.body.pos[0] = -0;
+    original.player.body.vel[1] = Number.MIN_VALUE;
+    original.sim.needs.fatigue = Number.MIN_VALUE;
+    const restored = createRuntime(capture(original));
+
+    expect(Object.is(restored.player.body.pos[0], -0)).toBe(true);
+    expect(Object.is(restored.player.body.vel[1], Number.MIN_VALUE)).toBe(true);
+    expect(Object.is(restored.sim.needs.fatigue, Number.MIN_VALUE)).toBe(true);
   });
 });
 
@@ -425,6 +422,7 @@ describe('hamlet save/load continuation', () => {
       advance(split, 40);
       expect(split.player.body.onGround).toBe(false);
       const snapshot = capture(split);
+      expect(snapshot.character.handling.jobs).toEqual([]);
       expect(plainDataTree(snapshot)).toBe(true);
       expect(frozenTree(snapshot)).toBe(true);
       advance(uninterrupted, 80, interruption ? -1 : 20);
@@ -433,6 +431,28 @@ describe('hamlet save/load continuation', () => {
       expect(inspect(loaded)).toEqual(inspect(uninterrupted));
     }, 15_000);
   }
+
+  it('refuses a snapshot until a pending sleep interruption reaches the next frame', () => {
+    const uninterrupted = createRuntime();
+    const split = createRuntime();
+    expect(uninterrupted.rest.start('sleep')).toBeUndefined();
+    expect(split.rest.start('sleep')).toBeUndefined();
+    advance(uninterrupted, 40);
+    advance(split, 40);
+
+    uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    expect(() => capture(split)).toThrow('Cannot snapshot with an unread interruption');
+    expect(split.sim.compression.active).toBe(true);
+    expect(split.sim.compression.interruption).toBeUndefined();
+
+    advance(uninterrupted, 1);
+    advance(split, 1);
+    const loaded = createRuntime(capture(split));
+    advance(uninterrupted, 80);
+    advance(loaded, 80);
+    expect(inspect(loaded)).toEqual(inspect(uninterrupted));
+  }, 15_000);
 
   it('detects omission of an RNG word, scheduler cursor, item allocator, or world delta', () => {
     const original = createRuntime();

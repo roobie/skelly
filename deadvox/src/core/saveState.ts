@@ -28,8 +28,8 @@ export interface SaveSnapshot {
     rest: { action?: { kind: 'rest' | 'sleep'; label: string; rate: number; startFatigue: number } };
     lightUid: number | null;
     quickbar: readonly (number | null)[];
+    handling: HandlingQueueState;
   };
-  handling: HandlingQueueState;
 }
 
 export interface SnapshotSessionInput {
@@ -64,8 +64,9 @@ export const snapshotSession = ({
   zombies,
   spawner,
   handling,
-}: SnapshotSessionInput): Readonly<SaveSnapshot> =>
-  freezeSnapshot({
+}: SnapshotSessionInput): Readonly<SaveSnapshot> => {
+  simulation.assertSnapshotReady();
+  return freezeSnapshot({
     world: {
       id: worldId,
       diffs: world.snapshotDiffs(blockContentId) as WorldDiffs,
@@ -80,9 +81,10 @@ export const snapshotSession = ({
       rest: rest.snapshotState() as SaveSnapshot['character']['rest'],
       lightUid: survival.snapshotState().litUid ?? null,
       quickbar: [...quickbar],
+      handling: handling.snapshotCancelled() as HandlingQueueState,
     },
-    handling: handling.snapshotCancelled() as HandlingQueueState,
   });
+};
 
 /** Content-addressed base chunks are regenerated first; this overlays only changed cells. */
 export const restoreWorldDiffs = (world: World, snapshot: SaveSnapshot, blockId: (contentId: string) => number): void =>

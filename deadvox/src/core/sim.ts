@@ -60,6 +60,7 @@ export class Simulation {
   /** Debug-only control is owned by the game; damage sources still run normally. */
   godMode = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
+  private hasUnreadInterrupt = false;
   private readonly unsafe: () => string | undefined;
   private readonly restRate: () => number | undefined;
 
@@ -86,8 +87,16 @@ export class Simulation {
     });
   }
 
+  /** Refuse snapshots at a frame boundary if an interrupt has not yet been applied. */
+  assertSnapshotReady(): void {
+    if (this.hasUnreadInterrupt) {
+      throw new Error('Cannot snapshot with an unread interruption');
+    }
+  }
+
   /** Isolated plain-data continuation state. Runtime callbacks and transient events are excluded. */
   snapshotState(): Readonly<SimulationState> {
+    this.assertSnapshotReady();
     return freezeSnapshot({
       seed: this.seed,
       clock: { ratio: this.clock.ratio, start: this.clock.start },
@@ -137,6 +146,9 @@ export class Simulation {
   }
 
   emit(event: SimEvent): void {
+    if (event.kind === 'interrupt') {
+      this.hasUnreadInterrupt = true;
+    }
     this.events.emit({ ...event, time: this.time });
   }
 
@@ -197,9 +209,9 @@ export class Simulation {
    * safe. Returns true when it did, so the scheduler stops before the next step.
    */
   private checkInterruptions(): boolean {
-    const emitted = this.interrupts
-      .read()
-      .find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
+    const events = this.interrupts.read();
+    this.hasUnreadInterrupt = false;
+    const emitted = events.find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
     const { compression } = this;
     if (!(compression.active || compression.c > 1)) {
       return false;
