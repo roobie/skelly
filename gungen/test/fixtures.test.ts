@@ -18,6 +18,7 @@ describe('fixtures', () => {
   it('covers every archetype, and every archetype is valid', () => {
     const archetypes = fixtures.filter((f) => f.name.startsWith('archetype-'));
     expect(archetypes.map((f) => f.name).sort()).toEqual([
+      'archetype-ar',
       'archetype-battle-rifle',
       'archetype-bolt-rifle',
       'archetype-bolt-rifle-box',

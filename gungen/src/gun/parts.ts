@@ -95,13 +95,19 @@ export const receiver: PartFamily = {
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. cylinder: revolver. */
     feed: choice('box', 'top', 'tube', 'cylinder'),
     bore: size,
+    chargingHandle: choice('side', 'rear-top'),
+    rail: choice('full', 'none'),
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const ports: PortDef[] = [
       { id: 'barrel', mount: 'barrel', gender: 'female', size: bore, pos: [0, 0, 0], normal: X, up: Y, required: true },
       { id: 'handguard', mount: 'handguard', gender: 'female', pos: [0, 0, 0], normal: X, up: Y },
-      {
+      { id: 'lower', mount: 'lower', gender: 'female', pos: [0, -2.5, 0], normal: NEG_Y, up: X, required: true },
+      { id: 'stock', mount: 'stock', gender: 'female', pos: [-16, 0, 0], normal: NEG_X, up: Y },
+    ];
+    if (params.rail !== 'none') {
+      ports.push({
         id: 'rail',
         mount: 'rail',
         gender: 'female',
@@ -109,15 +115,17 @@ export const receiver: PartFamily = {
         normal: Y,
         up: X,
         slots: { count: 7, pitch: 2 },
-      },
-      { id: 'lower', mount: 'lower', gender: 'female', pos: [0, -2.5, 0], normal: NEG_Y, up: X, required: true },
-      { id: 'stock', mount: 'stock', gender: 'female', pos: [-16, 0, 0], normal: NEG_X, up: Y },
-    ];
+      });
+    }
     const keepOuts: KeepOut[] = params.action === 'revolver' ? [] : [keepOut('ejection', [-9, -1, 2], [-5, 2, 10])];
 
     switch (params.action) {
       case 'auto':
-        keepOuts.push(keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]));
+        if (params.chargingHandle === 'rear-top') {
+          keepOuts.push(keepOut('charging-handle', [-18, 2.5, -1.5], [-16, 5, 1.5]));
+        } else {
+          keepOuts.push(keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]));
+        }
         break;
       case 'revolver':
         keepOuts.push(
@@ -357,6 +365,15 @@ export const barrel: PartFamily = {
               },
             ]
           : []),
+        {
+          id: 'front-sight',
+          mount: 'sight-block',
+          gender: 'female',
+          size: bore,
+          pos: [len - 4, 0, 0],
+          normal: NEG_X,
+          up: Y,
+        },
         ...(params.profile === 'revolver'
           ? [
               {
@@ -376,6 +393,22 @@ export const barrel: PartFamily = {
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
+    };
+  },
+};
+
+/** A front sight block and post mounted near the muzzle. */
+export const frontSight: PartFamily = {
+  name: 'front-sight',
+  params: { bore: { ...size, from: [{ port: 'base', param: 'bore' }] } },
+  build(params): PartDef {
+    const radius = { S: 0.75, M: 1, L: 1.25 }[cls(params, 'bore')];
+    return {
+      family: 'front-sight',
+      solids: [solid('block', [-1, radius, -1.25], [1, 2, 1.25]), solid('post', [-0.25, 2, -0.25], [0.25, 5, 0.25])],
+      ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
+      keepOuts: [],
+      axes: [{ kind: 'sight', origin: [0, 5, 0], dir: X }],
     };
   },
 };
@@ -874,6 +907,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   slide: pistolSlide,
   barrel,
   cylinder,
+  'front-sight': frontSight,
   handguard,
   'tube-magazine': tubeMagazine,
   forend,

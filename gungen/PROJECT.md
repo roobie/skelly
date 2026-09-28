@@ -254,6 +254,7 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 
 | Fixture | Archetype | Built from |
 | --- | --- | --- |
+| `archetype-ar` | AR-pattern service rifle | conventional lower, straight stock, seven-slot flat-top rail, rear-top charging handle, front-sight block |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
@@ -483,15 +484,18 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 lower and procedural geometry while keeping the current FAL/FNC-like design
 explicitly named `battle-rifle`.
 
-**Status:** planned.
+**Status:** AR implemented; AK planned.
 
 ### AR
 
-- Existing pieces already express the separate upper/lower, an inline `straight`
-  stock, a flat-top seven-slot receiver rail, conventional vertical well and
-  angled pistol grip. Missing: a charging-handle placement param (the current
-  `auto` handle keep-out is on the receiver's left side), a front sight/gas
-  block near the muzzle, and perhaps a carry-handle option.
+- Added the AR template using the conventional lower, straight stock, and
+  seven-slot flat-top rail. Its receiver has an explicit rear-top charging
+  handle keep-out; the barrel has a sight-block port four units from the
+  muzzle, with a front-sight block/post mounted there. Optional sight uses
+  rail slot 0, avoiding the earlier sightline collision at arbitrary slots.
+- The passing fixture and focused part tests cover the geometry and placement.
+  At 1000 seeds, AR is 100% valid with 16 distinct builds. The
+  remaining optional carry-handle style is not modeled.
 
 ### AK
 

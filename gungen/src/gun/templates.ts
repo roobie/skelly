@@ -36,6 +36,38 @@ export const battleRifle: Template = {
   ],
 };
 
+export const ar: Template = {
+  name: 'ar',
+  description: 'AR-pattern service rifle: inline stock, rear charging handle, flat-top rail, and front sight block.',
+  root: 'receiver',
+  slots: [
+    {
+      id: 'receiver',
+      family: 'receiver',
+      params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full' },
+    },
+    { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
+    { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
+    { id: 'handguard', family: 'handguard' },
+    { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
+    { id: 'magazine', family: 'magazine', params: { length: 'M' } },
+    { id: 'stock', family: 'stock', params: { length: 'M', style: 'straight' } },
+    { id: 'front-sight', family: 'front-sight' },
+    { id: 'sight', family: 'sight', chance: 0.7 },
+  ],
+  connections: [
+    { from: 'receiver.lower', to: 'lower.top' },
+    { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.handguard', to: 'handguard.rear' },
+    { from: 'handguard.front', to: 'barrel.clamp' },
+    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'lower.magazine', to: 'magazine.top' },
+    { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.rail', slot: 0, to: 'sight.base' },
+    { from: 'barrel.front-sight', to: 'front-sight.base' },
+  ],
+};
+
 export const pistol: Template = {
   name: 'pistol',
   description: 'Semi-automatic pistol: integrated frame/grip, hollow slide, internal barrel, and a short crown.',
@@ -206,6 +238,7 @@ export const bullpup: Template = {
 
 export const TEMPLATES: readonly Template[] = [
   battleRifle,
+  ar,
   pistol,
   revolver,
   smg,

@@ -1,5 +1,290 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`templates > ar > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ar" template with seed 100.",
+    "name": "ar-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "S",
+          "chargingHandle": "rear-top",
+          "feed": "box",
+          "rail": "full",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ar" template with seed 200.",
+    "name": "ar-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "S",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "S",
+          "chargingHandle": "rear-top",
+          "feed": "box",
+          "rail": "full",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ar" template with seed 300.",
+    "name": "ar-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "M",
+          "chargingHandle": "rear-top",
+          "feed": "box",
+          "rail": "full",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
 exports[`templates > battle-rifle > known-good seeds 1`] = `
 [
   {
