@@ -4,6 +4,7 @@ name: pages
 #   /          site/index.html (landing page)
 #   /gungen/   the gungen viewer
 #   /deadvox/  the deadvox game
+#   /mobgen/   the mobgen viewer
 # Requires Settings → Pages → Source: "GitHub Actions".
 
 on:
@@ -34,11 +35,13 @@ jobs:
             package-lock.json
             gungen/package-lock.json
             deadvox/package-lock.json
+            mobgen/package-lock.json
       - name: Lint (repo-wide)
         run: |
           npm ci
           npm ci --prefix gungen
           npm ci --prefix deadvox
+          npm ci --prefix mobgen
           npx biome ci
       - name: Check and build gungen
         working-directory: gungen
@@ -53,12 +56,19 @@ jobs:
           npm test
           npm run validate
           npx vite build
+      - name: Check and build mobgen
+        working-directory: mobgen
+        run: |
+          npm run typecheck
+          npm test
+          npx vite build
       - name: Assemble the site
         run: |
           mkdir -p _site
           cp -r site/. _site/
           cp -r gungen/dist _site/gungen
           cp -r deadvox/dist _site/deadvox
+          cp -r mobgen/dist _site/mobgen
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

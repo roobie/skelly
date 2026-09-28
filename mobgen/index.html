@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mobgen viewer</title>
+    <link rel="stylesheet" href="./src/viewer/style.css" />
+  </head>
+  <body>
+    <aside id="panel">
+      <h1>mobgen viewer</h1>
+      <fieldset id="generate">
+        <legend>Generate</legend>
+        <label class="field">
+          Template
+          <select id="template"></select>
+        </label>
+        <div class="row">
+          <button id="prev-seed" type="button" title="Previous seed">◀</button>
+          <label class="seed">Seed <input id="seed" type="number" step="1" value="0" /></label>
+          <button id="next-seed" type="button" title="Next seed">▶</button>
+        </div>
+        <label><input id="only-valid" type="checkbox" /> Skip to the next valid seed</label>
+        <label class="field">
+          Voxel size
+          <select id="voxel-size">
+            <option value="template">Template default</option>
+            <option value="0.08333333333333333">1/6 of a block</option>
+            <option value="0.0625">1/8 of a block</option>
+            <option value="0.05">1/10 of a block</option>
+            <option value="0.041666666666666664">1/12 of a block</option>
+            <option value="0.03571428571428571">1/14 of a block</option>
+            <option value="0.03125">1/16 of a block</option>
+          </select>
+        </label>
+        <div class="row">
+          <button id="generate-btn" type="button">Generate</button>
+          <button id="save" type="button" title="Download the current genome as JSON">Save genome</button>
+        </div>
+      </fieldset>
+      <fieldset id="walk">
+        <legend><label><input id="walk-on" type="checkbox" /> Walk</label></legend>
+        <label class="field">
+          Speed <span id="speed-value">0.8</span> m/s
+          <input id="speed" type="range" min="0" max="3" step="0.05" value="0.8" />
+        </label>
+        <div class="row">
+          <button id="preset-wander" type="button">Wander (0.8)</button>
+          <button id="preset-chase" type="button">Chase (2.8)</button>
+        </div>
+      </fieldset>
+      <p id="description"></p>
+      <div id="status"></div>
+      <ol id="issues"></ol>
+      <div id="stats"></div>
+      <fieldset id="layers">
+        <legend>Show</legend>
+        <label><input type="checkbox" data-layer="flesh" checked /> Flesh</label>
+        <label><input type="checkbox" data-layer="skeleton" /> Skeleton</label>
+        <label><input type="checkbox" data-layer="colorByBone" /> Colour by bone</label>
+        <label><input type="checkbox" data-layer="shambler" /> Shambler (for scale)</label>
+      </fieldset>
+      <p class="hint">Drag to orbit, scroll to zoom.</p>
+      <p id="hover"></p>
+    </aside>
+    <main id="view"></main>
+    <script type="module" src="./src/viewer/main.ts"></script>
+  </body>
+</html>
