@@ -16,8 +16,9 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, type Realized, realize } from '../core/generate.ts';
-import { IDENTITY_POSE } from '../core/pose.ts';
+import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
+import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { footRestExtents, type LegGeometry, legGeometryFor, strideLength, walkPose } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { TEMPLATES } from '../mob/templates.ts';
@@ -32,6 +33,8 @@ const voxelSelect = $<HTMLSelectElement>('voxel-size');
 const walkOn = $<HTMLInputElement>('walk-on');
 const speedInput = $<HTMLInputElement>('speed');
 const speedValue = $<HTMLSpanElement>('speed-value');
+const attackBtn = $<HTMLButtonElement>('attack-btn');
+const attackLoop = $<HTMLInputElement>('attack-loop');
 const description = $<HTMLParagraphElement>('description');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
@@ -110,6 +113,13 @@ interface Loaded {
 let current: Loaded | undefined;
 let phase = 0;
 let gridZ = 0;
+const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
+let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
+let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
+
+const playAttack = (): void => {
+  attackTime = 0; // (re)starts even if one is already playing
+};
 
 const frame = (): void => {
   if (!current) {
@@ -222,6 +232,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   current = { genome, realized, actor, params: genome.params as HumanoidParams, extents, legGeometry };
   phase = 0;
   gridZ = 0;
+  attackTime = undefined;
+  attackCooldown = 0;
   groundGroup.position.z = 0;
   updateFineGrid(genome.voxelSize);
   applyLayerVisibility();
@@ -310,6 +322,14 @@ $<HTMLButtonElement>('preset-chase').addEventListener('click', () => {
   setSpeed(2.8);
 });
 
+attackBtn.addEventListener('click', playAttack);
+globalThis.addEventListener('keydown', (e) => {
+  // Ignore while typing into a field (e.g. the seed number input).
+  if (e.key.toLowerCase() === 'a' && document.activeElement?.tagName !== 'INPUT') {
+    playAttack();
+  }
+});
+
 for (const t of layerToggles) {
   t.addEventListener('change', () => {
     applyLayerVisibility();
@@ -356,6 +376,34 @@ generateAndLoad();
 resize();
 renderer.render(scene, camera);
 
+/** Advances phase/gridZ if walking — keeps advancing through an attack too. */
+const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
+  if (!(walking && speed > 0 && current)) {
+    return;
+  }
+  const stride = strideLength(current.params, current.legGeometry, speed);
+  phase = (phase + (speed * dt) / stride) % 1;
+  gridZ = (gridZ + speed * dt) % 0.5;
+  groundGroup.position.z = gridZ;
+};
+
+/** Advances the attack clock: fires the loop's next attack (if checked) and ends one that's finished. */
+const advanceAttack = (dt: number, clipDuration: number): void => {
+  if (attackLoop.checked) {
+    attackCooldown -= dt;
+    if (attackCooldown <= 0) {
+      attackTime = 0;
+      attackCooldown = ATTACK_COOLDOWN_S;
+    }
+  }
+  if (attackTime !== undefined) {
+    attackTime += dt;
+    if (attackTime > clipDuration) {
+      attackTime = undefined;
+    }
+  }
+};
+
 let lastFrameTime = performance.now();
 renderer.setAnimationLoop(() => {
   const now = performance.now();
@@ -366,15 +414,13 @@ renderer.setAnimationLoop(() => {
   if (current) {
     const walking = walkOn.checked;
     const speed = walking ? Number(speedInput.value) : 0;
-    if (walking && speed > 0) {
-      const stride = strideLength(current.params, current.legGeometry, speed);
-      phase = (phase + (speed * dt) / stride) % 1;
-      gridZ = (gridZ + speed * dt) % 0.5;
-      groundGroup.position.z = gridZ;
-    }
-    const pose = walking
-      ? walkPose({ bones: current.realized.body.bones, extents: current.extents, params: current.params }, phase, speed)
-      : IDENTITY_POSE;
+    advanceWalk(dt, walking, speed);
+    const clip = ATTACK_CLIPS.LUNGE_GRAB!;
+    advanceAttack(dt, clip.duration);
+
+    const actor = { bones: current.realized.body.bones, extents: current.extents, params: current.params };
+    const basePose: Pose = walking ? walkPose(actor, phase, speed) : IDENTITY_POSE;
+    const pose = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
     current.actor.applyPose(pose);
   }
 

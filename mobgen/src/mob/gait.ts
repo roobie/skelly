@@ -477,7 +477,9 @@ const armRotations = (phase: number, params: HumanoidParams): Record<string, Mat
   return out;
 };
 
-const groundOffset = (
+/** Root Y that puts the lowest extent corner (over all bones in `extents`, e.g. just the feet) on the
+ * ground, for the given rotations — reused by attack.ts to re-ground after layering a pose on top. */
+export const groundOffset = (
   bones: readonly Bone[],
   extents: ReadonlyMap<string, Extent>,
   rotations: Record<string, Mat3>,
