@@ -9,7 +9,13 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { MapEntityStore } from '../core/entities.ts';
-import { advanceFootsteps, footstepEventForBlock, initialFootstepClock, isHardLanding } from '../core/footsteps.ts';
+import {
+  advanceFootsteps,
+  footstepEventForBlock,
+  initialFootstepClock,
+  isHardLanding,
+  shamblerFootstepEventAt,
+} from '../core/footsteps.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
@@ -39,7 +45,7 @@ import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { renderRest } from '../ui/rest.ts';
-import { GameAudio } from './audio.ts';
+import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import type { Engine } from './engine.ts';
@@ -146,13 +152,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let vocalNoiseId = 0;
   let vocalNoise: VocalNoise | undefined;
   const playerSoundPosition = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
-  const playWorldSound = (event: SoundEventId, position: Vec3, time = sim.time, emittedAsNoise = false) =>
-    audio.play(event, position.map((value) => value * s) as Vec3, time, emittedAsNoise);
+  const playWorldSound = (event: SoundEventId, position: Vec3, time = sim.time, metadata: SoundPlaybackMeta = {}) =>
+    audio.play(event, position.map((value) => value * s) as Vec3, time, metadata);
   const playPlayerSound = (event: SoundEventId, time = sim.time) => {
     const position = playerSoundPosition();
     const definition = registry.sounds.get(event);
     const emittedAsNoise = definition?.noise.enabled ?? false;
-    if (!playWorldSound(event, position, time, emittedAsNoise)) {
+    if (!playWorldSound(event, position, time, { emittedAsNoise })) {
       return;
     }
     if (definition?.noise.enabled) {
@@ -224,6 +230,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
     onSound: (event, position) => playWorldSound(event, position),
+    onFootstep: (position, id, mode) => {
+      const event = shamblerFootstepEventAt(position, (x, y, z) => {
+        const block = engine.world.getBlock(x, y, z);
+        return registry.blocks[block]?.id ?? 'unknown';
+      });
+      playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
+    },
     onDeath: (zombie) => {
       const table = zombie.type.loot;
       if (!table) {

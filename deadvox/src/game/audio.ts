@@ -60,9 +60,15 @@ export interface GameAudioOptions {
   report: (message: string) => void;
 }
 
+export interface SoundPlaybackMeta {
+  emittedAsNoise?: boolean;
+  sourceLabel?: string | null;
+}
+
 export interface HeardSound {
   readonly event: SoundEventId;
   readonly file: string;
+  readonly sourceLabel: string | null;
   readonly distanceMetres: number;
   readonly wallRuns: number;
   readonly lowpassHz: number | null;
@@ -81,6 +87,7 @@ interface SourceStartOptions {
   buffer: AudioBuffer;
   positionMetres: Vec3;
   emittedAsNoise: boolean;
+  sourceLabel: string | null;
 }
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
@@ -172,7 +179,8 @@ export class GameAudio {
     }
   }
 
-  play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, emittedAsNoise = false): boolean {
+  play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, metadata: SoundPlaybackMeta = {}): boolean {
+    const { emittedAsNoise = false, sourceLabel = null } = metadata;
     const sound = this.registry.sounds.get(event);
     const pick = this.picker.pick(event, simulationTime);
     if (!(sound && pick)) {
@@ -191,7 +199,7 @@ export class GameAudio {
         if (!buffer || this.context !== context || context.state !== 'running') {
           return;
         }
-        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise });
+        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise, sourceLabel });
       });
     }
     return true;
@@ -225,7 +233,17 @@ export class GameAudio {
         }
       }
       if (context.state === 'running') {
-        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise: false });
+        this.startSource({
+          context,
+          nodes,
+          event,
+          sound,
+          pick,
+          buffer,
+          positionMetres,
+          emittedAsNoise: false,
+          sourceLabel: null,
+        });
       }
     });
     return true;
@@ -280,6 +298,7 @@ export class GameAudio {
     buffer,
     positionMetres,
     emittedAsNoise,
+    sourceLabel,
   }: SourceStartOptions): void {
     const source = context.createBufferSource();
     const gain = context.createGain();
@@ -340,6 +359,7 @@ export class GameAudio {
     this.recentSounds.push({
       event,
       file: pick.file,
+      sourceLabel,
       distanceMetres,
       wallRuns: occlusion.wallRuns,
       lowpassHz: uiSound ? null : occlusion.cutoffHz,

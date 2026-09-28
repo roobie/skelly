@@ -143,6 +143,96 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "shambler_step_grass",
+      "variants": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg"
+      ],
+      "gain": 0.34,
+      "pitchJitter": [0.68, 0.82],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.12,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shambler_step_mud",
+      "variants": [
+        "assets/audio/footstep-mud-01.ogg",
+        "assets/audio/footstep-mud-02.ogg",
+        "assets/audio/footstep-mud-03.ogg",
+        "assets/audio/footstep-mud-04.ogg"
+      ],
+      "gain": 0.34,
+      "pitchJitter": [0.68, 0.82],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.12,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shambler_step_sand",
+      "variants": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg"
+      ],
+      "gain": 0.34,
+      "pitchJitter": [0.68, 0.82],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.12,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shambler_step_stone",
+      "variants": [
+        "assets/audio/footstep-stone-01.ogg",
+        "assets/audio/footstep-stone-02.ogg",
+        "assets/audio/footstep-stone-03.ogg",
+        "assets/audio/footstep-stone-04.ogg",
+        "assets/audio/footstep-stone-05.ogg",
+        "assets/audio/footstep-stone-06.ogg"
+      ],
+      "gain": 0.34,
+      "pitchJitter": [0.68, 0.82],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.12,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shambler_step_wood",
+      "variants": [
+        "assets/audio/footstep-wood-01.ogg",
+        "assets/audio/footstep-wood-02.ogg",
+        "assets/audio/footstep-wood-03.ogg"
+      ],
+      "gain": 0.34,
+      "pitchJitter": [0.68, 0.82],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.12,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shambler_step_leaves",
+      "variants": ["assets/audio/footstep-leaves-01.ogg", "assets/audio/footstep-leaves-02.ogg"],
+      "gain": 0.34,
+      "pitchJitter": [0.68, 0.82],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.12,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "melee_swing",
       "variants": [
         "assets/audio/melee-swing-01.ogg",

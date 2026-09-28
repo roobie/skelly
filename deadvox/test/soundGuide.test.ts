@@ -19,6 +19,17 @@ describe('audio listening guide', () => {
     );
   });
 
+  it('includes each surface-specific shambler step in the generated sheet', () => {
+    const ids = ['grass', 'mud', 'sand', 'stone', 'wood', 'leaves'].map((surface) => `shambler_step_${surface}`);
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(sounds.filter(({ id }) => id.startsWith('shambler_step_')).map(({ id }) => id)).toEqual(ids);
+    const steps = guide.filter(({ id }) => id.startsWith('shambler_step_'));
+    expect(steps.map(({ id }) => id)).toEqual(ids);
+    expect(steps.every(({ category, noiseRadiusMetres }) => category === 'world' && noiseRadiusMetres === null)).toBe(
+      true,
+    );
+  });
+
   it('credits every listed variant from its manifest source', () => {
     const guide = buildSoundGuide(sounds, manifest);
     expect(

@@ -46,8 +46,62 @@ const TRIGGER_ENTRIES = [
   [
     'shambler_idle',
     {
-      trigger: 'Stand within hearing range of an idle shambler.',
+      trigger: 'Wait within hearing range while a shambler idles or strolls; it occasionally groans.',
       debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+    },
+  ],
+  [
+    'shambler_step_grass',
+    {
+      trigger:
+        'Listen near a shambler on grass: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
+      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      note: 'MVP stand-in: player grass/sand CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
+    },
+  ],
+  [
+    'shambler_step_mud',
+    {
+      trigger:
+        'Listen near a shambler on dirt or mud: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
+      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      note: 'MVP stand-in: player mud CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
+    },
+  ],
+  [
+    'shambler_step_sand',
+    {
+      trigger:
+        'Listen near a shambler on sand: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
+      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      note: 'MVP stand-in: player grass/sand CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
+    },
+  ],
+  [
+    'shambler_step_stone',
+    {
+      trigger:
+        'Listen near a shambler on hard ground: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
+      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      note: 'MVP stand-in: player stone CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
+    },
+  ],
+  [
+    'shambler_step_wood',
+    {
+      trigger:
+        'Listen near a shambler on planks: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
+      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      note: 'MVP stand-in: player wood CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
+    },
+  ],
+  [
+    'shambler_step_leaves',
+    {
+      trigger:
+        'Listen near a shambler on fabric or carpet: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
+      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      note: 'MVP stand-in: player leaves CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
   [

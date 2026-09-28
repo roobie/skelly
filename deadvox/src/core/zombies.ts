@@ -1,6 +1,7 @@
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
+import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
@@ -10,6 +11,8 @@ export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
 export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4 } as const;
+/** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
+export const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
   type: ZombieDef;
@@ -55,6 +58,8 @@ export interface Zombie {
   attackWait: number;
   /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
   gaitPhase: number;
+  /** Surface footfall cadence advances only with grounded travel. */
+  footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
 }
@@ -91,6 +96,8 @@ export interface ZombieSystemOptions {
   onDeath?: (zombie: Zombie) => void;
   /** Sound-source position is in block coordinates. */
   onSound?: (event: SoundEventId, position: Vec3) => void;
+  /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
+  onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -531,6 +538,7 @@ export class ZombieSystem {
       health: type.health,
       attackWait: 0,
       gaitPhase: 0,
+      footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
     };
     const id = this.store.add(zombie);
@@ -552,7 +560,9 @@ export class ZombieSystem {
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
     const entries = [...this.store.entries()];
+    const groundedAtTickStart = new Map<Zombie, boolean>();
     for (const [, zombie] of entries) {
+      groundedAtTickStart.set(zombie, zombie.body.onGround);
       zombie.renderPrevious = {
         pos: copy(zombie.body.pos),
         facing: copy(zombie.facing),
@@ -841,6 +851,38 @@ export class ZombieSystem {
     if (player.body) {
       for (const [, zombie] of entries) {
         separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });
+      }
+    }
+    const footfallCandidates = entries.flatMap(([id, zombie]) => {
+      if (
+        zombie.type.id !== 'shambler' ||
+        !groundedAtTickStart.get(zombie) ||
+        !zombie.body.onGround ||
+        zombie.horizontalSpeed <= 0.01
+      ) {
+        return [];
+      }
+      const travelledMetres = horizontalDistance(zombie.renderPrevious.pos, zombie.body.pos) * blockSize;
+      const advance = advanceShamblerFootsteps(zombie.footstepClock, travelledMetres, zombie.type.stepLength);
+      zombie.footstepClock = advance.clock;
+      return travelledMetres > 0 ? [{ id, zombie, steps: advance.steps }] : [];
+    });
+    const footstepVoices = new Set(
+      [...footfallCandidates]
+        .sort(
+          (a, b) =>
+            horizontalDistance(a.zombie.body.pos, player.pos) - horizontalDistance(b.zombie.body.pos, player.pos) ||
+            a.id - b.id,
+        )
+        .slice(0, SHAMBLER_FOOTSTEP_VOICE_CAP)
+        .map(({ zombie }) => zombie),
+    );
+    for (const { id, zombie, steps } of footfallCandidates) {
+      if (!footstepVoices.has(zombie)) {
+        continue;
+      }
+      for (let step = 0; step < steps; step++) {
+        this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode);
       }
     }
     this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);

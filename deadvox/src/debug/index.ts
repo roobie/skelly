@@ -28,6 +28,9 @@ const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
   <span>position ${readout.position.map((v) => v.toFixed(1)).join(', ')}</span>
   <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes</span>
   <span>shamblers ${readout.zombies}</span>
+`;
+
+const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
   <section class="debug-sound-log" aria-label="Recent sounds actually played">
     <strong>Recent sounds · newest first</strong>
     <ol>
@@ -36,7 +39,8 @@ const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
           ? [...readout.sounds].reverse().map(
               (sound) => html`
               <li data-sound-event=${sound.event}>
-                <code>${sound.event}</code> · <code>${sound.file}</code><br />
+                <code>${sound.event}</code> · <code>${sound.file}</code>
+                ${sound.sourceLabel ? html` · ${sound.sourceLabel}` : ''}<br />
                 ${sound.distanceMetres.toFixed(1)} m · ${sound.wallRuns} walls ·
                 LP ${sound.lowpassHz === null ? '—' : `${Math.round(sound.lowpassHz)} Hz`} ·
                 gain ${sound.gain.toFixed(3)} ·
@@ -88,6 +92,7 @@ const panelTemplate = ({
       `,
       )}
     </div>
+      <div id="debug-sound-log-root"></div>
       <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote.</p>
     </section>
     <div id="hotbar" hidden></div>
@@ -261,6 +266,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
       render(readoutTemplate(readout), root);
+    }
+    const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');
+    if (soundRoot) {
+      render(soundLogTemplate(readout), soundRoot);
     }
   }
   function changeShamblerCount(count: number): void {

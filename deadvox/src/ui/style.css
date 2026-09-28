@@ -1024,7 +1024,7 @@ body.bench #quickbar {
     monospace;
 }
 #debug-ui-root .debug-sound-log ol {
-  max-height: 190px;
+  max-height: 400px;
   overflow: auto;
   margin: 5px 0 0;
   padding-left: 20px;
