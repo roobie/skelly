@@ -264,7 +264,13 @@ describe('AK-pattern archetype', () => {
     const magazine = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant: 'ak74' });
     const lowerPort = lower.ports.find(({ id }) => id === 'magazine')!;
     const topPort = magazine.ports.find(({ id }) => id === 'top')!;
-    expect(lower.solids.map(({ id }) => id)).toEqual(['frame']);
+    expect(lower.solids.map(({ id }) => id)).toEqual([
+      'frame',
+      'trigger-guard-top',
+      'trigger-guard-rear',
+      'trigger-guard-front',
+      'trigger-guard-bottom',
+    ]);
     expect(lowerPort.pos[1]).toBe(-1.5);
     expect(topPort.seat).toBe('face');
     expect(topPort.pos[1]).toBe(0);
