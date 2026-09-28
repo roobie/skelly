@@ -761,6 +761,14 @@ can stand in for the design.
   keep-out, touching it but not inside it. Candidates beyond those three,
   for BR to choose from: the AR forward assist, magazine and bolt releases,
   and the safety selector;
+- per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
+  shapes are one surface built from many solids, like the curved STANAG
+  magazine's run of ring sectors. Bevelling and outlining each segment
+  breaks the curve up; they look best plain and without outlines. Proposed:
+  display hints on a solid (no bevel, no outline), set by the part family,
+  which the viewer (`src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
+  3.4 export both honour. Collision and the rules ignore the hints. This
+  changes the `Solid` type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
   (gungen.2), with the deadvox schema change they need.
 
