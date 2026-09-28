@@ -3,7 +3,7 @@ id: deadvox::adr-0002-saves
 description: Decision for exact, versioned, crash-safe local saves of the Deadvox simulation
 tags: [deadvox, adr, saves, persistence, determinism]
 created: 2026-09-28
-status: proposed
+status: accepted
 ---
 
 # 2. Save the simulation, not the runtime
@@ -11,7 +11,7 @@ status: proposed
 [[THIS is_grounded_by: ../../SLICE-1.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
-**Status:** proposed (2026-09-28).
+**Status:** accepted (2026-09-28). BR's rulings are recorded under [Rulings](#rulings-2026-09-28).
 
 ## Context
 
@@ -81,8 +81,8 @@ references:
 
 | State | On disk | Reason / restoration rule |
 | --- | --- | --- |
-| World identity | Save schema version; game/build revision; worldgen version; seed; clock ratio/start; site and generation options; ordered pack IDs, versions and canonical content hashes | These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
-| Clock/simulation | Simulation time, clock settings, needs, death cause/time, god mode only for explicitly debug saves, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; reject unknown system IDs rather than silently resetting their phase. |
+| Version and world identity | Exact `versionIdentity` plus its components: game build revision, save schema version, worldgen version, and ordered pack IDs/versions/canonical content hashes; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of those four version components. Require exact equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
+| Clock/simulation | Simulation time, clock settings, needs, death cause/time, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; do not save or restore god mode/noclip/build toggles (force them off on load). Debug interventions already made to the world remain in its saved state. Reject unknown system IDs rather than silently resetting their phase. |
 | Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. |
 | Items | Recursive items including UID, type ID, count, condition, charges/on/made, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and lights. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
 | Furniture/block entities | Anchor, type ID, size/facing, open/searched state and container pocket trees; `BlockEntities.nextUid` | Address entities by world anchor/type, not load-order-dependent object identity. Restore saved overrides when deterministic worldgen creates an anchor. |
@@ -110,13 +110,11 @@ number handling), not only a checksum. Save at a scheduler/frame barrier; record
 all per-system cursors because recreating them from global time changes tick
 ordering.
 
-Worldgen version is a separate contract from save schema version. `worldgen-v1`
-output is frozen by golden chunk fixtures over named seeds/coordinates. A later
-generator must either keep the old generator available for old saves, or perform
-an explicit, tested migration that materializes the old generated base before
-switching versions. Never load an old world by silently applying current
-worldgen to its seed. Content-dependent generation follows the same rule and
-uses the recorded pack set/hashes.
+The exact version identity binds the worldgen and content rules to the save.
+Worldgen determinism is required within that exact build and is exercised by the
+save/load equivalence tests; old generator implementations are not retained for
+cross-version restore. A different worldgen, schema, build revision, or content
+hash is a different identity and is refused before any content lookup.
 
 JSON numeric values use ECMAScript's shortest round-trip representation. Encode
 negative zero with a reserved tagged value (JSON otherwise writes it as `0`);
@@ -125,40 +123,40 @@ edge values, signed zero, subnormal values, and all live numeric fields. IDs and
 counters must be safe integers and range-checked. This keeps the v1 save
 inspectable without reducing simulation doubles to Float32.
 
-### Format, IDs, and migrations
+### Format and exact version refusal
 
 Use canonical UTF-8 JSON for the envelope, metadata, entities, items, and chunk
-records in v1; chunk records use a per-chunk string palette plus maximal RLE
-runs of changed blocks. This is inspectable and easy to migrate, and the
-current workload stores only edited chunks, not the 1,800 loaded render chunks
-at 96 m. Track per-cell deltas as edits happen so snapshotting copies the delta
-journal instead of rescanning/regenerating whole chunks. Do not serialize runtime
-block IDs or binary/Float32 simulation numbers. Include a format magic, `schemaVersion`, monotonically increasing
-`generation`, exact payload byte length, and SHA-256 checksum over the canonical
-payload (checksum excluded from its own input). Payloads over configured limits,
-unknown required fields, duplicate IDs, invalid ranges, or malformed RLE are
-rejected before restore.
+records; chunk records use a per-chunk string palette plus maximal RLE runs of
+changed blocks. This keeps the current workload to edited chunks rather than
+the 1,800 loaded render chunks at 96 m. Track per-cell deltas as edits happen
+so snapshotting copies the delta journal instead of rescanning/regenerating
+whole chunks. Do not serialize runtime block IDs or binary/Float32 simulation
+numbers. Include a format magic, `schemaVersion`, `versionIdentity`,
+monotonically increasing `generation`, exact payload byte length, and SHA-256
+checksum over the canonical payload (checksum excluded from its own input).
+Payloads over configured limits, unknown required fields, duplicate IDs,
+invalid ranges, malformed RLE, or an identity mismatch are rejected before
+restore.
 
-Keep schema migrations as pure `vN -> vN+1` functions. Migrate in memory, run
-all validation, and only then commit to the inactive slot; never overwrite the
-last readable old save with a failed migration. A save from a newer unsupported
-version is refused with an explanation and left intact. Record pack identity,
-version and canonical content hash. A renamed ID needs an explicit migration
-mapping. If an item ID is missing, preserve it as an inert unknown-item record
-with its original ID and complete opaque payload (count, condition, charge,
-contents, placement); never drop or merge it. Apply the same preserve-or-refuse
-rule to unknown block/furniture/zombie IDs. If a required pack/worldgen version
-is absent, refuse playable restore and offer recovery/export rather than
-silently replacing its content.
+The save's exact version identity is the SHA-256 of a canonical tuple containing
+the game build revision, save schema version, worldgen version, and ordered
+content-pack IDs/versions/canonical hashes; store the components as well as the
+digest for diagnosis. Require an exact identity match before looking up any
+content IDs. On mismatch, explain the save's build/version identity and refuse
+the load; leave its bytes untouched and never upgrade or overwrite it. Under an
+exact match, missing/renamed IDs indicate corruption or a violated build
+contract and are rejected; there is no unknown-content preservation or ID
+migration in v1. There are no `vN -> vN+1` functions or cross-version restore
+path in 1.9.
 
-Golden saves are immutable historical fixtures. CI loads every supported
-fixture through every required migration and checks its expected semantic state.
-Regenerate a **new current-version** golden only for an intentional format or
-content/worldgen change, never to make a broken migration pass; retain old
-fixtures and migration coverage. The v1 golden is made from a deterministic
-hamlet scenario with edits, nested items, a searched container and a killed
-shambler. Separate equivalence scenarios cover mid-air saves and active or
-interrupted rest.
+CI's save round-trip fixture is generated by the current build, not retained as
+an immutable historical save: generate a deterministic hamlet scenario with
+edits, nested items, a searched container, and a killed shambler; write it with
+the current serializer, load it with the current reader, and compare the exact
+semantic state. This tests the format the build actually ships without
+promising old-build compatibility. Separate equivalence scenarios cover
+mid-air saves and active or interrupted rest. A version-mismatch refusal test
+must verify both the clear refusal and byte-for-byte preservation of the save.
 
 ### Storage, browsers, and recovery
 
@@ -187,15 +185,18 @@ still not a backup and may be cleared by the user/profile. Quota or I/O failure
 must leave the previous valid slot intact and surface a visible error; offer
 save export/import as recovery rather than silently starting over.
 
-The logical one-slot save is stored as internal A/B records. Under one exclusive
-origin-wide Web Lock, read both generations, validate them, write the inactive
-slot as generation+1, flush/close it, and only then report success. In OPFS,
-truncate/write/flush the inactive file; in IndexedDB, read both slots, select
-the next generation, and write the inactive record in one read-write
-transaction. On load, validate length, schema and SHA-256 for each
-slot and choose the highest-generation valid record. If one is corrupt, warn
-but load the other. If both fail, refuse Continue loudly, retain/export both
-records, and do not create a blank world over them. If Web Locks is unavailable,
+Each exact `versionIdentity` has its own logical one-slot save, stored as
+internal A/B records in a version-keyed namespace. Under one exclusive
+origin-wide Web Lock, read both generations in the current identity namespace,
+validate them, write the inactive slot as generation+1, flush/close it, and only
+then report success. In OPFS, truncate/write/flush the inactive file; in
+IndexedDB, read both slots, select the next generation, and write the inactive
+record in one read-write transaction. Continue reads only the current build's
+namespace; it never adopts or overwrites another identity's records. On load,
+validate length, schema, identity and SHA-256 for each slot and choose the
+highest-generation valid record. If one is corrupt, warn but load the other. If
+both fail, refuse Continue loudly, retain/export both records, and do not
+create a blank world over them. If Web Locks is unavailable,
 use the IndexedDB-only atomic read/write transaction path; do not pretend
 BroadcastChannel alone is a lock. Web Locks cover same-origin tabs, not another
 browser profile or device.
@@ -225,16 +226,19 @@ disk I/O are worker work. This is an estimate, not a result. Keep a hard
 instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 16.7 ms); if measurement misses, reduce the snapshot surface or copy incrementally
 at barriers, never move serialization/disk work onto the frame. CI also checks a
-10-game-hour save is under 50 MiB and loads/migrates in under 5 s, matching
+10-game-hour save is under 50 MiB and validates/loads in under 5 s, matching
 `CHALLENGES.md`'s save targets.
 
 ### Continue, New world, and implementation plan
 
-Continue is enabled only after one slot validates and migrations complete; it
-restores a paused world, then rebuilds derived renderer/streamer state. New
-world asks before replacing the logical save. Keep the old A/B generation until
-the new world's first snapshot is committed, so a crash during world creation
-cannot destroy the previous run.
+Continue is enabled only after one slot validates and its `versionIdentity`
+exactly matches the running build; it restores a paused world, then rebuilds
+derived renderer/streamer state. Keep save namespaces keyed by exact version
+identity, each with its own A/B records. An incompatible save remains in its
+original namespace and is never overwritten by Continue or New world in another
+version, so it can be opened later with its matching build. New world asks
+before replacing the current version's logical save and keeps its prior A/B
+generation until the new world's first snapshot commits.
 
 1. **Snapshot/restore without storage.** Add explicit state export/restore APIs
    for scheduler, simulation, world diffs, player, inventory, furniture,
@@ -246,11 +250,12 @@ cannot destroy the previous run.
    active/interrupted rest, and vocal noise. An autosave during a handling job
    must not change that live job's outcome or timing; after restore, its target
    is untouched and the player may retry.
-2. **Format and migrations.** Implement canonical JSON, validators, stable IDs,
-   unknown-content preservation, `worldgen-v1`, and schema migration dispatch.
-   Done when number round trips are `Object.is`-exact, malformed/unknown
-   payloads refuse loudly, ID renames use explicit maps, and the immutable v1
-   golden loads with exact state.
+2. **Format and version refusal.** Implement canonical JSON, validators, stable
+   IDs, and exact `versionIdentity` matching; do not implement migrations or
+   unknown-content preservation. Done when number round trips are
+   `Object.is`-exact, malformed payloads refuse loudly, and a version-mismatch
+   test proves refusal occurs before content lookup and leaves the save bytes
+   unchanged.
 3. **Storage layer.** Implement worker-side OPFS A/B writes, SHA-256 and flush;
    feature-detected IndexedDB path; Web Lock; persist/quota reporting; corruption
    and truncation corpus. Done when kill-at-each-write-stage tests always load
@@ -260,45 +265,54 @@ cannot destroy the previous run.
    pre-sleep triggers; Continue/New world and explicit errors/recovery. Done
    when browser tests cover each trigger, refresh/resume, both backends, and a
    failed storage write leaves Continue on the previous valid generation.
-5. **Golden CI and budget.** Keep immutable old fixtures and migration tests;
-   add save-size/load-time checks and a hamlet snapshot-frame benchmark. Done
-   when CI checks the 10-hour <50 MiB and <5 s limits, the 1 ms p95 snapshot
-   bound is demonstrated on the reference laptop, and every historical golden
-   still migrates.
+5. **Round-trip CI and budget.** Generate a deterministic save with the current
+   build in CI and require the same build to read it back exactly; add
+   save-size/load-time checks and a hamlet snapshot-frame benchmark. Done when CI
+   checks the 10-hour <50 MiB and <5 s limits, the 1 ms p95 snapshot bound is
+   demonstrated on the reference laptop, and the current-build round trip
+   passes.
 
 ## Consequences
 
 - Exact resume requires explicit state contracts in systems that currently hide
   state in private fields (scheduler cursors, entity allocators, zombie spawn
-  ledger). Adding a stateful system also adds a save/migration obligation.
+  ledger). Adding a stateful system also adds a save-contract obligation within
+  this exact version.
 - A save omits partially completed handling actions; their targets have not
   been applied, so the restored player may retry and loses the saved job's
   elapsed progress. This is a projection in the immutable snapshot only: taking
   an autosave never cancels or changes the live job's outcome or timing. Player
   mid-air state and active rest/compression are preserved rather than teleported
   or reset.
-- JSON is inspectable and migration-friendly; RLE chunk diffs keep ordinary
-  saves small. Checksums detect damage, not malicious tampering. A/B slots and
+- JSON is inspectable; RLE chunk diffs keep ordinary saves small. Checksums
+  detect damage, not malicious tampering. A/B slots and
   persistence requests reduce corruption/eviction risk but are not backups.
-- Worldgen compatibility is a long-lived obligation: changing generation
-  algorithms requires retaining old code or an explicit materializing
-  migration. The format does not silently trade old-world correctness for the
-  convenience of using latest worldgen.
+- Compatibility is intentionally strict: changing the build, schema, worldgen,
+  or content identity prevents loading that save in the changed version. The
+  version-keyed storage preserves it for a matching build instead of silently
+  applying new rules.
 - Save frame time and size are estimates until the implementation benchmark
   proves them. The stated targets are gates, not claimed measurements.
 
-## Open questions for BR
+## Rulings (2026-09-28)
 
-1. Should a save made under `?debug=1` preserve debug-only god mode/noclip/build
-   toggles? **Recommendation:** keep debug worlds outside the player-save
-   contract and force those toggles off on load; debug interventions already
-   made to world state remain saved.
-2. Should pagehide attempt to block for the worker's final flush? **Recommendation:**
-   no; browsers do not guarantee async work survives page teardown, so use the
-   already-built snapshot best-effort and rely on periodic A/B checkpoints.
-3. Is retaining old worldgen code acceptable when a later generator changes?
-   **Recommendation:** yes for supported saves; otherwise an explicit,
-   tested materializing migration is required before releasing that generator.
+BR accepted the recommendations for debug saves and `pagehide`, and ruled for
+strict version identity:
+
+1. **Debug saves:** keep god mode/noclip/build toggles outside the save contract
+   and force them off on load; world changes already made remain saved.
+2. **`pagehide`:** do not block for a worker flush. Treat it as best-effort and
+   rely on periodic A/B checkpoints.
+3. **Versions:** require an exact version match and refuse mismatches without
+   modifying the save. Future version selection and migration are a hard fork,
+   not part of 1.9.
+
+## Future work (out of scope for 1.9)
+
+A version picker may launch a specifically selected game build (for example,
+versioned deploy paths on Pages) so an old save can be played with its matching
+version. Schema/worldgen/content migrations may be considered later as a hard
+fork; 1.9 neither implements nor promises them.
 
 ## Grounding and browser facts
 
