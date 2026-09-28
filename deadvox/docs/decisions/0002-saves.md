@@ -106,15 +106,16 @@ schema” is not permission to reset it on load. The current audio branch alread
 has an ID allocator and active noise stimulus, so both are included above;
 queued acoustic playback remains disposable.
 
-### Open question for BR — world and character boundary
+### World and character boundary
 
-Should a save be one persistent world with its character inside it? **Recommendation:**
-yes. This fits `DESIGN.md`'s permanent death and the option of starting a new
-character in the same world, with prior item piles left behind. Key `worldId`
-and `characterId` separately; keep one active character per world in 1.9, while
-leaving whether a later character may enter the same world for BR to decide.
-This layout preserves world state and remains/piles without redesigning the
-record if that option is chosen.
+BR ruled (2026-09-28): “a save is a world and a character, because you can't
+world-hop; it's committed to that world, and the world is the foundational
+state.” The world is the save root; its character is nested under it with
+separate stable `worldId` and `characterId` keys. A character belongs to exactly
+one world and cannot be detached, transferred or imported into another save.
+Save export/import copies the whole world-and-character record together.
+Whether a new character may later enter that same world after death remains an
+open question for BR; 1.9 stores one active character per world.
 
 World state is region-keyed: `world.regions[(regionX, regionZ)]` follows
 `DESIGN.md`'s 512 × 512 m region map; chunk diffs, block entities, piles and
@@ -347,8 +348,8 @@ generation until the new world's first snapshot commits.
 
 ## Rulings (2026-09-28)
 
-BR accepted the recommendations for debug saves and `pagehide`, and ruled for
-strict version identity:
+BR accepted the recommendations for debug saves and `pagehide`, and ruled on
+strict version identity and the world/character boundary:
 
 1. **Debug saves:** keep god mode/noclip/build toggles outside the save contract
    and force them off on load; world changes already made remain saved.
@@ -357,6 +358,10 @@ strict version identity:
 3. **Versions:** require an exact version match and refuse mismatches without
    modifying the save. Future version selection and migration are a hard fork,
    not part of 1.9.
+4. **World and character:** a save is one world plus its character; the world is
+   root state and the character is bound to exactly that world, never moved
+   between saves. A new character entering that same world after death remains
+   undecided.
 
 [[THIS contradicts: ../../EPIC.md]]
 
