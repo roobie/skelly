@@ -4,14 +4,29 @@
 import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
 import { Compression } from './compression.ts';
 import { EventQueue, type EventReader } from './events.ts';
-import { causeOf, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
-import { Scheduler } from './scheduler.ts';
+import { Scheduler, type SchedulerState } from './scheduler.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 
 /** Events systems emit. Noise, damage and block changes join as their systems arrive. */
-export type SimEvent = { kind: 'interrupt'; reason: string } | { kind: 'death'; cause: string };
+export type SimEvent =
+  | { kind: 'interrupt'; reason: string }
+  | { kind: 'damage'; amount: number; cause: string }
+  | { kind: 'death'; cause: string };
 
 export type Timed<E> = E & { readonly time: number };
+
+export interface SimulationState {
+  seed: number;
+  clock: ClockSettings;
+  time: number;
+  scheduler: SchedulerState;
+  needs: Needs;
+  compression: { c: number; active: boolean; interruption?: string };
+  pendingInterrupt?: string;
+  dead?: { cause: string; time: number };
+}
 
 export interface SimOptions {
   seed: number;
@@ -21,6 +36,11 @@ export interface SimOptions {
    * one is near), or undefined when it is. Asked before and after every step.
    */
   unsafe?: () => string | undefined;
+  /**
+   * The fatigue rate a resting or sleeping long action wants right now, in percent
+   * per game hour, or undefined for the normal rate. Asked once per needs tick.
+   */
+  restRate?: () => number | undefined;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -41,19 +61,24 @@ export class Simulation {
   /** Debug-only control is owned by the game; damage sources still run normally. */
   godMode = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
+  private pendingInterrupt: string | undefined;
   private readonly unsafe: () => string | undefined;
+  private readonly restRate: () => number | undefined;
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
     this.clock = options.clock ?? defaultClock;
     this.unsafe = options.unsafe ?? (() => undefined);
+    this.restRate = options.restRate ?? (() => undefined);
     this.interrupts = this.events.reader();
     this.scheduler.register({
       id: 'needs',
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt), this.godMode)) {
+        const rate = this.restRate();
+        const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
+        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt), this.godMode, rates)) {
           this.emit({ kind: 'interrupt', reason });
         }
         if (this.needs.health <= 0) {
@@ -61,6 +86,51 @@ export class Simulation {
         }
       },
     });
+  }
+
+  /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */
+  snapshotState(): Readonly<SimulationState> {
+    return freezeSnapshot({
+      seed: this.seed,
+      clock: { ratio: this.clock.ratio, start: this.clock.start },
+      time: this.time,
+      scheduler: this.scheduler.snapshotState() as SchedulerState,
+      needs: { ...this.needs },
+      compression: {
+        c: this.compression.c,
+        active: this.compression.active,
+        ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
+      },
+      ...(this.dead === undefined && this.pendingInterrupt !== undefined
+        ? { pendingInterrupt: this.pendingInterrupt }
+        : {}),
+      ...(this.dead === undefined ? {} : { dead: { ...this.dead } }),
+    });
+  }
+
+  /** Restores onto a freshly constructed runtime after registering its systems. */
+  restoreState(state: SimulationState): void {
+    if (state.seed !== this.seed || state.clock.ratio !== this.clock.ratio || state.clock.start !== this.clock.start) {
+      throw new Error('Simulation identity does not match snapshot');
+    }
+    if (!Number.isFinite(state.compression.c) || state.compression.c < 1) {
+      throw new Error('Invalid compression state');
+    }
+    if (state.pendingInterrupt !== undefined && (typeof state.pendingInterrupt !== 'string' || state.dead)) {
+      throw new Error('Invalid pending interruption state');
+    }
+    Object.assign(this.needs, state.needs);
+    this.compression.c = state.compression.c;
+    this.compression.active = state.compression.active;
+    this.compression.interruption = state.compression.interruption;
+    this.dead = state.dead === undefined ? undefined : { ...state.dead };
+    this.pendingInterrupt = undefined;
+    this.scheduler.restoreState(state.scheduler);
+    if (state.pendingInterrupt !== undefined) {
+      this.emit({ kind: 'interrupt', reason: state.pendingInterrupt });
+    }
+    this.paused = true;
+    this.godMode = false;
   }
 
   /** Simulation seconds since the start. */
@@ -79,6 +149,9 @@ export class Simulation {
   }
 
   emit(event: SimEvent): void {
+    if (event.kind === 'interrupt' && this.pendingInterrupt === undefined) {
+      this.pendingInterrupt = event.reason;
+    }
     this.events.emit({ ...event, time: this.time });
   }
 
@@ -90,7 +163,11 @@ export class Simulation {
     if (this.godMode) {
       return;
     }
+    const applied = Math.min(amount, this.needs.health);
     this.needs.health = Math.max(0, this.needs.health - amount);
+    if (applied > 0) {
+      this.emit({ kind: 'damage', amount: applied, cause });
+    }
     if (this.needs.health <= 0) {
       this.die(cause);
     } else {
@@ -103,6 +180,7 @@ export class Simulation {
       return;
     }
     this.dead = { cause, time: this.time };
+    this.pendingInterrupt = undefined;
     this.compression.stop();
     this.compression.snap();
     this.emit({ kind: 'death', cause });
@@ -135,9 +213,9 @@ export class Simulation {
    * safe. Returns true when it did, so the scheduler stops before the next step.
    */
   private checkInterruptions(): boolean {
-    const emitted = this.interrupts
-      .read()
-      .find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
+    const events = this.interrupts.read();
+    this.pendingInterrupt = undefined;
+    const emitted = events.find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
     const { compression } = this;
     if (!(compression.active || compression.c > 1)) {
       return false;

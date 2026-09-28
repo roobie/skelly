@@ -1,15 +1,15 @@
 {
   "name": "archetype-smg",
-  "description": "Submachine gun: rifle layout at small bore, with a short barrel, short stock and long magazine.",
+  "description": "Submachine gun: battle-rifle layout at small bore, with a short barrel, short stock and long magazine.",
   "expect": [],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "S" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "S" } },
-    "handguard": { "family": "handguard", "params": { "inner": "M" } },
+    "handguard": { "family": "handguard", "params": {} },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "L" } },
+    "magazine": { "family": "magazine", "params": { "length": "L", "profile": "smg" } },
     "stock": { "family": "stock", "params": { "length": "S", "style": "straight" } },
     "sight": { "family": "sight" }
   },

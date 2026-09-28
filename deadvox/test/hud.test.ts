@@ -28,10 +28,10 @@ const kitchen = () => {
 };
 
 describe('quickbarViewModel', () => {
-  it('shows an empty slot as empty, set it in the inventory', () => {
+  it('shows only the key and empty label in an empty slot', () => {
     const vm = quickbarViewModel(new Quickbar(), new Inventory(registry));
     expect(vm.slots).toHaveLength(5);
-    expect(vm.slots[0]).toEqual({ key: '1', filled: false, name: 'empty', where: 'set it in the inventory' });
+    expect(vm.slots[0]).toEqual({ key: '1', filled: false, name: 'empty', where: '' });
   });
 
   it('shows an item in a hand', () => {
@@ -125,6 +125,11 @@ describe('quickbarKey', () => {
 });
 
 describe('handlingViewModel', () => {
+  const queueForTest = (inventory: Inventory) => {
+    const queue = new HandlingQueue(inventory);
+    queue.registerAction('test.noop', () => undefined);
+    return queue;
+  };
   it('is invisible when the queue is empty', () => {
     const inv = new Inventory(registry);
     const queue = new HandlingQueue(inv);
@@ -133,8 +138,8 @@ describe('handlingViewModel', () => {
 
   it('shows the current job label, elapsed and total time, and the progress percent', () => {
     const inv = new Inventory(registry);
-    const queue = new HandlingQueue(inv);
-    queue.enqueueAction('Search the cupboard', 4, () => undefined);
+    const queue = queueForTest(inv);
+    queue.enqueueAction('test.noop', 'Search the cupboard', 4);
     queue.tick(1);
     const vm = handlingViewModel(queue);
     expect(vm.visible).toBe(true);
@@ -145,16 +150,16 @@ describe('handlingViewModel', () => {
 
   it('shows the next job when there is one queued after the current one', () => {
     const inv = new Inventory(registry);
-    const queue = new HandlingQueue(inv);
-    queue.enqueueAction('Search the cupboard', 4, () => undefined);
-    queue.enqueueAction('Search the drawer', 2, () => undefined);
+    const queue = queueForTest(inv);
+    queue.enqueueAction('test.noop', 'Search the cupboard', 4);
+    queue.enqueueAction('test.noop', 'Search the drawer', 2);
     expect(handlingViewModel(queue).next).toBe('Then: Search the drawer');
   });
 
   it('has no next-job text when nothing is queued after the current one', () => {
     const inv = new Inventory(registry);
-    const queue = new HandlingQueue(inv);
-    queue.enqueueAction('Search the cupboard', 4, () => undefined);
+    const queue = queueForTest(inv);
+    queue.enqueueAction('test.noop', 'Search the cupboard', 4);
     expect(handlingViewModel(queue).next).toBe('');
   });
 });

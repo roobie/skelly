@@ -1,7 +1,7 @@
 // Generate an assembly from a template:
 //   npm run generate -- --template pump-shotgun --seed 42
-//   npm run generate -- --template rifle --seed 7 --valid      retry until valid
-//   npm run generate -- --template rifle --seed 7 --out a.json
+//   npm run generate -- --template battle-rifle --seed 7 --valid  retry until valid
+//   npm run generate -- --template battle-rifle --seed 7 --out a.json
 // Prints the assembly JSON (or writes it with --out) and a summary on stderr.
 
 import { writeFileSync } from 'node:fs';

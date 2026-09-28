@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Assembly, Domain } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { pistolBarrelCrown } from '../src/gun/rules.ts';
 import { loadFixture, variant } from './helpers.ts';
 
 const rulesFailed = (a: Assembly, domain: Domain = gunDomain) =>
@@ -9,7 +10,7 @@ const rulesFailed = (a: Assembly, domain: Domain = gunDomain) =>
 
 describe('rules', () => {
   it('port-compat: rejects mismatched mounts', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       const swapped: Record<string, (typeof x.connections)[number]> = {
         'stock.front': { from: 'receiver.stock', to: 'grip.top' },
         'grip.top': { from: 'lower.grip', to: 'stock.front' },
@@ -24,7 +25,7 @@ describe('rules', () => {
   });
 
   it('port-compat: rejects two parts on one rail slot', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.parts.sight2 = { family: 'sight' };
       x.connections.push({ from: 'receiver.rail', slot: 3, to: 'sight2.base' });
     });
@@ -50,20 +51,20 @@ describe('rules', () => {
         },
       },
     };
-    const { issues } = validate(loadFixture('archetype-rifle'), domain);
+    const { issues } = validate(loadFixture('archetype-battle-rifle'), domain);
     expect(issues.map((i) => i.message)).toEqual(['The bore axis of barrel is 1u off the main axis.']);
   });
 
   it('axis-alignment: rejects an assembly not rooted on the bore line', () => {
-    const a = variant('archetype-rifle', (x) => {
+    const a = variant('archetype-battle-rifle', (x) => {
       x.root = 'grip';
     });
     expect(rulesFailed(a)).toEqual(['axis-alignment']);
   });
 
   it('keep-out: the part attached at the allowed port may occupy the volume', () => {
-    // archetype-rifle's magazine sits in the receiver's magazine-path volume.
-    expect(rulesFailed(loadFixture('archetype-rifle'))).toEqual([]);
+    // The magazine sits in the lower's magazine-path volume.
+    expect(rulesFailed(loadFixture('archetype-battle-rifle'))).toEqual([]);
   });
 
   it('keep-out: without the allowance, the magazine intrudes', () => {
@@ -81,15 +82,22 @@ describe('rules', () => {
         },
       },
     };
-    const { issues } = validate(loadFixture('archetype-rifle'), domain);
-    // The whole magazine sits in the volume, so it intrudes by its smallest extent, its 3.5u width.
-    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 3.5u into the magazine-path volume of lower.']);
+    const { issues } = validate(loadFixture('archetype-battle-rifle'), domain);
+    // The enlarged well path contains the magazine, with 0.25u of clearance per side.
+    expect(issues.map((i) => i.message)).toEqual(['magazine intrudes 2.75u into the magazine-path volume of lower.']);
   });
 
-  it('solid-overlap: allows directly connected parts to nest a little', () => {
-    // The grip's tilted top corner dips into the receiver by about 0.46u.
-    const r = validate(loadFixture('archetype-rifle'), gunDomain);
+  it('solid-overlap: beveled grip mates without relying on the old global allowance', () => {
+    const r = validate(loadFixture('archetype-battle-rifle'), gunDomain);
     expect(r.issues).toEqual([]);
+  });
+
+  it('solid-overlap: mount-specific zero allowance rejects a too-tight clamp', () => {
+    const a = variant('archetype-battle-rifle', (x) => {
+      x.parts.handguard = { family: 'handguard', params: { barrelBore: 'S', fit: 'too-tight' } };
+    });
+    const issues = validate(a, gunDomain).issues.filter((issue) => issue.rule === 'solid-overlap');
+    expect(issues.some((issue) => issue.parts.includes('handguard') && issue.parts.includes('barrel'))).toBe(true);
   });
 
   it('domain rules are pluggable: without them, a gripless rifle passes', () => {
@@ -101,6 +109,31 @@ describe('rules', () => {
   it('feed-match: box-fed receiver on a trigger-only lower', () => {
     const { issues } = validate(loadFixture('broken-feed-match'), gunDomain);
     expect(issues.map((i) => i.message)).toEqual(['receiver is box-fed, but lower (trigger) has no magazine well.']);
+  });
+
+  it('pistol frame, hollow slide, and barrel close without solid overlap', () => {
+    const report = validate(loadFixture('archetype-pistol'), gunDomain);
+    expect(report.ok).toBe(true);
+    expect(report.issues.filter((issue) => issue.rule === 'solid-overlap')).toEqual([]);
+    expect(report.issues.filter((issue) => issue.rule === 'pistol-barrel-crown')).toEqual([]);
+  });
+
+  it('measures the pistol crown between the placed barrel and slide ends', () => {
+    const { resolved } = validate(loadFixture('archetype-pistol'), gunDomain);
+    const placed = new Map(resolved.placed);
+    const barrel = placed.get('barrel')!;
+    placed.set('barrel', { ...barrel, t: [barrel.t[0] + 2, barrel.t[1], barrel.t[2]] });
+    const issues = pistolBarrelCrown.check({ ...resolved, placed });
+    expect(issues.map(({ message }) => message)).toEqual([
+      'The barrel protrudes 3.00u past the slide; the pistol crown must be 0.5–1.5u.',
+    ]);
+  });
+
+  it('pistol crown rule rejects a barrel that extends more than 1.5u past the slide', () => {
+    const { issues } = validate(loadFixture('broken-pistol-barrel-crown'), gunDomain);
+    expect(issues.filter((issue) => issue.rule === 'pistol-barrel-crown').map((issue) => issue.message)).toEqual([
+      'The barrel protrudes 5.00u past the slide; the pistol crown must be 0.5–1.5u.',
+    ]);
   });
 
   it('feed-match: tube-fed receiver on a lower with a magazine well', () => {
@@ -119,5 +152,18 @@ describe('rules', () => {
 
   it('feed-match: top-fed receivers take a magazine well too', () => {
     expect(rulesFailed(loadFixture('archetype-bolt-rifle'))).toEqual([]);
+  });
+
+  it('feed-match: cylinder-fed revolver needs no magazine well', () => {
+    expect(rulesFailed(loadFixture('archetype-revolver'))).toEqual([]);
+    const { issues } = validate(loadFixture('broken-revolver-misaligned-cylinder'), gunDomain);
+    expect(issues.map((issue) => issue.rule)).toContain('axis-alignment');
+  });
+
+  it('feed-match: revolver action and cylinder feed are inseparable', () => {
+    const { issues } = validate(loadFixture('broken-revolver-feed-mismatch'), gunDomain);
+    expect(issues.filter((issue) => issue.rule === 'feed-match').map((issue) => issue.message)).toEqual([
+      'receiver uses revolver action with box feed; revolvers require cylinder feed and other actions do not use it.',
+    ]);
   });
 });

@@ -1,14 +1,19 @@
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
+import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
-import { Rng } from './random.ts';
+import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
+import { freezeSnapshot } from './snapshotData.ts';
+import type { SoundEventId } from './soundEvents.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
 export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4 } as const;
+/** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
+export const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
   type: ZombieDef;
@@ -19,6 +24,10 @@ export interface Zombie {
   investigationTier?: 'near' | 'far' | undefined;
   /** Per-body behavior stream; draws never perturb another body. */
   behaviorRng: Rng;
+  /** Separate seeded stream keeps ambient sound timing from changing movement decisions. */
+  soundRng: Rng;
+  idleSoundTimer: number;
+  lastVocalNoiseId?: number | undefined;
   modeTimer: number;
   searchAnchor?: Vec3 | undefined;
   searchTimer: number;
@@ -50,8 +59,33 @@ export interface Zombie {
   attackWait: number;
   /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
   gaitPhase: number;
+  /** Surface footfall cadence advances only with grounded travel. */
+  footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
+}
+
+export type ZombieState = Omit<
+  Zombie,
+  'type' | 'behaviorRng' | 'soundRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
+> & {
+  type: string;
+  behaviorRng: RngState;
+  soundRng: RngState;
+  lastVocalNoiseId: number | null;
+};
+
+export interface ZombieSystemState {
+  playerAttackWait: number;
+  nextEntityId: number;
+  zombies: { id: number; zombie: ZombieState }[];
+}
+
+export interface VocalNoise {
+  id: number;
+  pos: Vec3;
+  radiusMetres: number;
+  expiresAt: number;
 }
 
 export interface PlayerSense {
@@ -63,6 +97,7 @@ export interface PlayerSense {
   movement: PlayerMovement;
   lit: boolean;
   lightSeenFrom: number;
+  vocalNoise?: VocalNoise | undefined;
 }
 
 export interface ZombieSystemOptions {
@@ -76,6 +111,10 @@ export interface ZombieSystemOptions {
   hour: () => number;
   hurtPlayer: (amount: number) => void;
   onDeath?: (zombie: Zombie) => void;
+  /** Sound-source position is in block coordinates. */
+  onSound?: (event: SoundEventId, position: Vec3) => void;
+  /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
+  onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -202,8 +241,20 @@ const hearingTier = ({
   return undefined;
 };
 
-const farBearingTarget = ({ zombie, from, player, blockSize, rng }: HearingInput): Vec3 => {
-  const angle = Math.atan2(player.pos[0] - from[0], player.pos[2] - from[2]);
+const farBearingTarget = ({
+  zombie,
+  from,
+  source,
+  blockSize,
+  rng,
+}: {
+  zombie: ZombieDef;
+  from: Vec3;
+  source: Vec3;
+  blockSize: number;
+  rng: Rng;
+}): Vec3 => {
+  const angle = Math.atan2(source[0] - from[0], source[2] - from[2]);
   const error = rng.range(-zombie.hearingModel.bearingErrorRadians, zombie.hearingModel.bearingErrorRadians);
   const bearing = headingAt(angle + error);
   const distance = zombie.hearingModel.investigationDistanceMetres / blockSize;
@@ -216,7 +267,52 @@ export const hearPlayer = (input: HearingInput): HeardNoise | undefined => {
   if (!tier) {
     return undefined;
   }
-  return { tier, target: tier === 'near' ? copy(input.player.pos) : farBearingTarget(input) };
+  return {
+    tier,
+    target: tier === 'near' ? copy(input.player.pos) : farBearingTarget({ ...input, source: input.player.pos }),
+  };
+};
+
+export interface VocalNoiseInput {
+  zombie: ZombieDef;
+  from: Vec3;
+  noise: VocalNoise;
+  time: number;
+  blockSize: number;
+  isSolid: SolidAt;
+  rng: Rng;
+}
+
+/** Applies the same solid-run wall cost and two-tier bearing model to a player sound. */
+export const hearVocalNoise = ({
+  zombie,
+  from,
+  noise,
+  time,
+  blockSize,
+  isSolid,
+  rng,
+}: VocalNoiseInput): HeardNoise | undefined => {
+  if (time > noise.expiresAt) {
+    return undefined;
+  }
+  const distance = Math.hypot(...sub(noise.pos, from)) * blockSize;
+  const earOffset = 1.3 / blockSize;
+  const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
+  const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
+  const crossings = countSolidRuns(origin, source, isSolid);
+  const apparentDistance = distance + crossings * zombie.hearingModel.wallRunCostMetres;
+  const hearingRadius = noise.radiusMetres * zombie.hearing;
+  if (apparentDistance <= hearingRadius) {
+    return { tier: 'near', target: copy(noise.pos) };
+  }
+  if (apparentDistance <= hearingRadius * zombie.hearingModel.farMultiplier) {
+    return {
+      tier: 'far',
+      target: farBearingTarget({ zombie, from, source: noise.pos, blockSize, rng }),
+    };
+  }
+  return undefined;
 };
 
 const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: PerceptionInput): boolean => {
@@ -254,6 +350,100 @@ export class ZombieSystem {
   constructor(options: ZombieSystemOptions) {
     this.options = options;
     this.store = options.store ?? new MapEntityStore<Zombie>();
+  }
+
+  snapshotState(): Readonly<ZombieSystemState> {
+    return freezeSnapshot({
+      playerAttackWait: this.playerAttackWait,
+      nextEntityId: this.store.nextId,
+      zombies: [...this.store.entries()].map(([id, zombie]) => {
+        const {
+          type,
+          behaviorRng,
+          soundRng,
+          renderPrevious: _renderPrevious,
+          footstepClock: _footstepClock,
+          searchAnchor,
+          lastPerceived,
+          investigationTier,
+          ...state
+        } = zombie;
+        return {
+          id,
+          zombie: {
+            ...state,
+            type: type.id,
+            behaviorRng: [...behaviorRng.state()] as RngState,
+            soundRng: [...soundRng.state()] as RngState,
+            lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
+            ...(investigationTier === undefined ? {} : { investigationTier }),
+            body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
+            facing: [...zombie.facing],
+            home: [...zombie.home],
+            ...(searchAnchor === undefined ? {} : { searchAnchor: [...searchAnchor] }),
+            searchHeading: [...zombie.searchHeading],
+            strollHeading: [...zombie.strollHeading],
+            ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
+          },
+        };
+      }),
+    });
+  }
+
+  restoreState(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined): void {
+    if (this.store.size > 0) {
+      throw new Error('Zombie state restores only into an empty entity store');
+    }
+    const entries = state.zombies.map(({ id, zombie }) => {
+      if (
+        !Number.isSafeInteger(id) ||
+        id < 1 ||
+        !Array.isArray(zombie.behaviorRng) ||
+        zombie.behaviorRng.length !== 4 ||
+        zombie.behaviorRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Array.isArray(zombie.soundRng) ||
+        zombie.soundRng.length !== 4 ||
+        zombie.soundRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Number.isFinite(zombie.idleSoundTimer) ||
+        zombie.idleSoundTimer < 0 ||
+        (zombie.lastVocalNoiseId !== null &&
+          (!Number.isSafeInteger(zombie.lastVocalNoiseId) || zombie.lastVocalNoiseId < 0))
+      ) {
+        throw new Error(`Invalid zombie state for entity ${id}`);
+      }
+      const type = resolveType(zombie.type);
+      if (!type) {
+        throw new Error(`Missing zombie type ${zombie.type}`);
+      }
+      const { type: _type, behaviorRng, soundRng, lastVocalNoiseId, ...fields } = zombie;
+      const restored: Zombie = {
+        ...fields,
+        type,
+        behaviorRng: new Rng(behaviorRng),
+        soundRng: new Rng(soundRng),
+        lastVocalNoiseId: lastVocalNoiseId ?? undefined,
+        footstepClock: initialShamblerFootstepClock(type.stepLength),
+        body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
+        facing: [...zombie.facing],
+        home: [...zombie.home],
+        ...(zombie.searchAnchor === undefined ? {} : { searchAnchor: [...zombie.searchAnchor] }),
+        searchHeading: [...zombie.searchHeading],
+        strollHeading: [...zombie.strollHeading],
+        ...(zombie.lastPerceived === undefined ? {} : { lastPerceived: [...zombie.lastPerceived] }),
+        renderPrevious: {
+          pos: [...zombie.body.pos],
+          facing: [...zombie.facing],
+          headYaw: zombie.headYaw,
+          gaitPhase: zombie.gaitPhase,
+        },
+      };
+      return [id, restored] as const;
+    });
+    if (!Number.isFinite(state.playerAttackWait) || state.playerAttackWait < 0) {
+      throw new Error('Invalid player attack cooldown');
+    }
+    this.store.restore(entries, state.nextEntityId);
+    this.playerAttackWait = state.playerAttackWait;
   }
 
   private tickLookAround(zombie: Zombie, dt: number): void {
@@ -429,6 +619,8 @@ export class ZombieSystem {
       mode: 'idle',
       investigationTier: undefined,
       behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
+      soundRng: Rng.stream(this.options.seed ?? 0, `zombie-sound:${this.store.size + 1}`),
+      idleSoundTimer: 8,
       modeTimer: 0,
       searchAnchor: undefined,
       searchTimer: 0,
@@ -457,18 +649,21 @@ export class ZombieSystem {
       health: type.health,
       attackWait: 0,
       gaitPhase: 0,
+      footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
     };
     const id = this.store.add(zombie);
     // EntityStore ids are stable within the world's entity lifetime.
     zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `zombie:${id}`);
+    zombie.soundRng = Rng.stream(this.options.seed ?? 0, `zombie-sound:${id}`);
+    zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
     this.beginIdle(zombie);
     return id;
   }
 
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
-  tick(dt: number): void {
+  tick(dt: number, time = 0): void {
     if (dt <= 0) {
       return;
     }
@@ -476,7 +671,9 @@ export class ZombieSystem {
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
     const entries = [...this.store.entries()];
+    const groundedAtTickStart = new Map<Zombie, boolean>();
     for (const [, zombie] of entries) {
+      groundedAtTickStart.set(zombie, zombie.body.onGround);
       zombie.renderPrevious = {
         pos: copy(zombie.body.pos),
         facing: copy(zombie.facing),
@@ -489,7 +686,24 @@ export class ZombieSystem {
       const perception = { zombie: type, from: pos, facing: zombie.facing, player, hour, blockSize, isSolid };
       const sees = seesPlayer(perception);
       const hearingInput = { zombie: type, from: pos, player, blockSize, isSolid };
-      const tier = sees ? undefined : hearingTier(hearingInput);
+      let vocal: HeardNoise | undefined;
+      if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
+        zombie.lastVocalNoiseId = player.vocalNoise.id;
+        vocal = hearVocalNoise({
+          zombie: type,
+          from: pos,
+          noise: player.vocalNoise,
+          time,
+          blockSize,
+          isSolid,
+          rng,
+        });
+      }
+      const tier = sees ? undefined : (vocal?.tier ?? hearingTier(hearingInput));
+      const wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
+      if ((sees || tier) && !wasAware) {
+        this.options.onSound?.('shambler_alert', copy(pos));
+      }
       if (sees) {
         zombie.mode = 'chase';
         zombie.investigationTier = undefined;
@@ -503,14 +717,15 @@ export class ZombieSystem {
         zombie.searchAnchor = undefined;
         zombie.searchTimer = 0;
         zombie.searchStrolling = false;
-        zombie.lastPerceived = copy(player.pos);
+        zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
       } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'far';
         zombie.searchAnchor = undefined;
         zombie.searchTimer = 0;
         zombie.searchStrolling = false;
-        zombie.lastPerceived = farBearingTarget({ ...hearingInput, rng });
+        zombie.lastPerceived =
+          vocal?.tier === 'far' ? vocal.target : farBearingTarget({ ...hearingInput, source: player.pos, rng });
       } else if (zombie.mode === 'chase') {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'near';
@@ -529,6 +744,13 @@ export class ZombieSystem {
       let desiredSpeed = 0;
       let returnArrived = false;
       const stroll = zombie.mode === 'stroll';
+      if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
+        zombie.idleSoundTimer -= dt;
+        if (zombie.idleSoundTimer <= 0) {
+          this.options.onSound?.('shambler_idle', copy(pos));
+          zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
+        }
+      }
       if (zombie.mode === 'idle') {
         zombie.modeTimer -= dt;
         this.tickLookAround(zombie, dt);
@@ -720,6 +942,7 @@ export class ZombieSystem {
         const toPlayer = sub(playerChest, zombieChest);
         const chestDistance = Math.hypot(...toPlayer);
         if (chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined) {
+          this.options.onSound?.('shambler_attack', copy(pos));
           this.options.hurtPlayer(type.attack.damage);
           zombie.attackWait = type.attack.cooldown;
         }
@@ -739,6 +962,38 @@ export class ZombieSystem {
     if (player.body) {
       for (const [, zombie] of entries) {
         separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });
+      }
+    }
+    const footfallCandidates = entries.flatMap(([id, zombie]) => {
+      if (
+        zombie.type.id !== 'shambler' ||
+        !groundedAtTickStart.get(zombie) ||
+        !zombie.body.onGround ||
+        zombie.horizontalSpeed <= 0.01
+      ) {
+        return [];
+      }
+      const travelledMetres = horizontalDistance(zombie.renderPrevious.pos, zombie.body.pos) * blockSize;
+      const advance = advanceShamblerFootsteps(zombie.footstepClock, travelledMetres, zombie.type.stepLength);
+      zombie.footstepClock = advance.clock;
+      return travelledMetres > 0 ? [{ id, zombie, steps: advance.steps }] : [];
+    });
+    const footstepVoices = new Set(
+      [...footfallCandidates]
+        .sort(
+          (a, b) =>
+            horizontalDistance(a.zombie.body.pos, player.pos) - horizontalDistance(b.zombie.body.pos, player.pos) ||
+            a.id - b.id,
+        )
+        .slice(0, SHAMBLER_FOOTSTEP_VOICE_CAP)
+        .map(({ zombie }) => zombie),
+    );
+    for (const { id, zombie, steps } of footfallCandidates) {
+      if (!footstepVoices.has(zombie)) {
+        continue;
+      }
+      for (let step = 0; step < steps; step++) {
+        this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode);
       }
     }
     this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
@@ -763,6 +1018,7 @@ export class ZombieSystem {
     if (this.playerAttackWait > 0) {
       return undefined;
     }
+    this.options.onSound?.('melee_swing', copy(origin));
     const dir = unit(direction);
     let found: [EntityId, Zombie, number] | undefined;
     for (const [id, zombie] of this.store.entries()) {
@@ -788,6 +1044,8 @@ export class ZombieSystem {
     }
     this.playerAttackWait = weapon.cooldown;
     const [id, zombie] = found;
+    this.options.onSound?.('melee_hit', copy(zombie.body.pos));
+    this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     zombie.health -= weapon.damage;
     if (zombie.health <= 0) {
       this.store.remove(id);

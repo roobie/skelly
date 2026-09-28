@@ -13,26 +13,69 @@
         --muted: #5f6670;
         --line: #dde1e6;
         --link: #1f6feb;
+        --button: #1f6feb;
+        --button-text: #ffffff;
         color-scheme: light dark;
       }
       @media (prefers-color-scheme: dark) {
-        :root { --bg: #16181c; --panel: #1f2227; --text: #d8dbe0; --muted: #8b919a; --line: #2e3238; --link: #6cb6ff; }
+        :root {
+          --bg: #16181c;
+          --panel: #1f2227;
+          --text: #d8dbe0;
+          --muted: #8b919a;
+          --line: #2e3238;
+          --link: #6cb6ff;
+          --button: #3478c8;
+        }
       }
       * { box-sizing: border-box; }
       body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, sans-serif; }
-      main { max-width: 720px; margin: 0 auto; padding: 48px 16px; }
-      h1 { font-size: 28px; margin: 0 0 4px; }
-      .lede { color: var(--muted); margin: 0 0 32px; }
+      main { max-width: 820px; margin: 0 auto; padding: 40px 16px; }
+      h1 { font-size: 30px; margin: 0 0 4px; }
+      h2 { font-size: 19px; margin: 0 0 4px; }
+      h3 { font-size: 14px; margin: 18px 0 8px; }
+      p { margin: 0 0 12px; }
+      .lede, .muted, footer { color: var(--muted); }
+      .lede { margin-bottom: 24px; }
       a { color: var(--link); }
-      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-      .card h2 { font-size: 18px; margin: 0 0 6px; }
-      .card p { margin: 0 0 12px; color: var(--muted); }
-      .links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-      .links a { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 14px; text-decoration: none; }
-      .links a:hover { border-color: var(--link); }
-      .card .sub { margin: 16px 0 8px; font-size: 14px; }
-      kbd { padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; font: 13px ui-monospace, monospace; }
-      footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+      .card-heading { margin-bottom: 16px; }
+      .card-heading p { color: var(--muted); margin: 0; }
+      .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+      legend { font-weight: 650; margin-bottom: 10px; }
+      label { display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+      label.check { display: flex; align-items: center; gap: 8px; min-height: 42px; }
+      input, select, button { font: inherit; }
+      input:not([type="checkbox"]):not([type="radio"]), select {
+        width: 100%; min-width: 0; min-height: 42px; padding: 8px 10px;
+        color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+      }
+      input[type="checkbox"], input[type="radio"] { width: 18px; height: 18px; min-height: 18px; margin: 0; accent-color: var(--button); flex: 0 0 auto; }
+      button { min-height: 42px; padding: 8px 14px; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+      button:hover { border-color: var(--link); }
+      button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+      button.primary { color: var(--button-text); background: var(--button); border-color: var(--button); font-weight: 700; }
+      .choice-row, .action-row, .url-row, .presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .choice-row { margin: 8px 0 14px; }
+      .choice-row label { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; }
+      .action-row { margin-top: 16px; }
+      .url-label { display: block; margin: 16px 0 5px; font-size: 13px; font-weight: 650; }
+      .url-row input { flex: 1 1 280px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 13px; }
+      .status { min-height: 1.5em; margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+      .presets { margin-top: 12px; }
+      .presets button { min-height: 36px; padding: 5px 10px; font-size: 13px; }
+      .section-divider { margin: 18px 0; border: 0; border-top: 1px solid var(--line); }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      [hidden] { display: none; }
+      footer { margin-top: 28px; font-size: 13px; }
+      @media (max-width: 560px) {
+        main { padding: 24px 12px; }
+        .card { padding: 16px; }
+        .form-grid { grid-template-columns: 1fr; }
+        .url-row { align-items: stretch; }
+        .url-row input { flex-basis: 100%; }
+      }
     </style>
   </head>
   <body>
@@ -40,48 +83,183 @@
       <h1>skelly</h1>
       <p class="lede">Experiments in generating, assembling and constraining 3D structure.</p>
 
-      <section class="card">
-        <h2><a href="gungen/">gungen</a></h2>
-        <p>
-          A super-low-poly firearm generator that works out how components connect, so every
-          generated assembly fits together. Stylized proportions only: no real dimensions or
-          mechanisms.
-        </p>
-        <ul class="links">
-          <li><a href="gungen/">Open the viewer</a></li>
-          <li><a href="gungen/?template=rifle&amp;seed=7">Generated rifle</a></li>
-          <li><a href="gungen/?template=bolt-rifle&amp;seed=10">A build that fails</a></li>
-          <li><a href="gungen/?template=pump-shotgun&amp;seed=3">Generated pump shotgun</a></li>
-          <li><a href="gungen/?template=bullpup&amp;seed=5">Generated bullpup</a></li>
-        </ul>
+      <section class="card" aria-labelledby="deadvox-title">
+        <div class="card-heading">
+          <h2 id="deadvox-title"><a href="deadvox/">deadvox</a></h2>
+          <p>A singleplayer voxel survival prototype with a day/night cycle and data-driven content.</p>
+        </div>
+        <form id="deadvox-form">
+          <div class="form-grid">
+            <label>Start mode
+              <select name="bench" data-url-param="bench" id="deadvox-bench">
+                <option value="">Play</option>
+                <option value="1">World benchmark</option>
+                <option value="shamblers">Shambler benchmark</option>
+                <option value="report">Benchmark report</option>
+              </select>
+            </label>
+            <label id="deadvox-seed-field">Seed
+              <input name="seed" data-url-param="seed" type="number" step="1" min="-2147483648" max="2147483647" value="1" required />
+            </label>
+            <label id="deadvox-time-field">Start time
+              <input name="time" data-url-param="time" type="time" value="19:30" data-default-time="19:30" required />
+            </label>
+            <label id="deadvox-radius-field">View distance (m)
+              <input name="radius" data-url-param="radius" type="number" min="32" max="256" step="1" value="96" required />
+            </label>
+            <label id="deadvox-site-field">Site
+              <select name="site" data-url-param="site" id="deadvox-site">
+                <option id="deadvox-default-site" value="">Hamlet (default)</option>
+                <option value="city">Stress-test city</option>
+              </select>
+            </label>
+            <label id="deadvox-storeys-field" hidden>Tallest city building (storeys)
+              <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required />
+            </label>
+            <label class="check" id="deadvox-debug-field">
+              <input name="debug" data-url-param="debug" type="checkbox" /> Enable development tools (?debug=1)
+            </label>
+          </div>
+
+          <div id="deadvox-world-bench" hidden>
+            <hr class="section-divider" />
+            <h3>World benchmark</h3>
+            <div class="form-grid">
+              <label>Benchmark plan (block size:radius m, comma-separated)
+                <input name="plan" data-url-param="plan" type="text" value="0.5:64,0.5:96,0.5:128" autocomplete="off" required />
+              </label>
+              <label>Start at plan entry
+                <input id="deadvox-world-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required />
+              </label>
+              <label class="check">
+                <input name="quick" data-url-param="quick" type="checkbox" /> Quick check (short, not a result)
+              </label>
+              <p class="muted">Plan block sizes: 0.25, 0.5 or 1 m; radius: 16–512 m per entry. Time defaults to noon.</p>
+            </div>
+          </div>
+
+          <div id="deadvox-shambler-bench" hidden>
+            <hr class="section-divider" />
+            <h3>Shambler benchmark</h3>
+            <div class="form-grid">
+              <label>Shambler counts (unique integers, 1–500)
+                <input name="n" data-url-param="n" type="text" value="10,25,50,100" inputmode="numeric" autocomplete="off" required />
+              </label>
+              <label>Start at count entry
+                <input id="deadvox-shambler-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required />
+              </label>
+              <p class="muted">Time defaults to 23:30. The fixture site and view radius are fixed by this benchmark.</p>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <button class="primary" type="submit">Play</button>
+          </div>
+          <label class="url-label" for="deadvox-url">Direct link</label>
+          <div class="url-row">
+            <input id="deadvox-url" type="text" readonly aria-label="Composed deadvox URL" />
+            <button type="button" data-copy="deadvox-url">Copy link</button>
+          </div>
+          <p id="deadvox-status" class="status" role="status" aria-live="polite"></p>
+        </form>
+        <h3>Quick starts</h3>
+        <fieldset class="presets">
+          <legend class="sr-only">Deadvox presets</legend>
+          <button type="button" data-deadvox-preset="dusk">Dusk</button>
+          <button type="button" data-deadvox-preset="noon">Noon</button>
+          <button type="button" data-deadvox-preset="night">Dead of night</button>
+          <button type="button" data-deadvox-preset="city">City</button>
+          <button type="button" data-deadvox-preset="debug">Debug before dawn</button>
+          <button type="button" data-deadvox-preset="benchmark">Benchmark</button>
+        </fieldset>
+        <p class="status">Debug tools and their current keys are documented in-game. A playtest profile will be added when its URL flag is implemented.</p>
       </section>
 
-      <section class="card">
-        <h2><a href="deadvox/">deadvox</a></h2>
-        <p>
-          A singleplayer voxel survival prototype in the spirit of DayZ and Cataclysm: DDA.
-          Streamed half-metre blocks, a day and night cycle, compressed time, and data-driven content
-          with a grid inventory where moving things takes real seconds.
-        </p>
-        <ul class="links">
-          <li><a href="deadvox/">Play (dusk, 19:30)</a></li>
-          <li><a href="deadvox/?seed=42">Seed 42</a></li>
-          <li><a href="deadvox/?time=12:00">Start at noon</a></li>
-          <li><a href="deadvox/?time=01:00">Dead of night</a></li>
-          <li><a href="deadvox/?radius=64">View distance 64 m</a></li>
-          <li><a href="deadvox/?radius=128">View distance 128 m</a></li>
-        </ul>
-        <p class="sub">
-          Debug mode adds keys: <kbd>B</kbd> build mode (break and place blocks), <kbd>T</kbd> compresses
-          time, <kbd>N</kbd> makes a noise that interrupts it, <kbd>U</kbd> toggles a pretend danger that makes
-          it unsafe, <kbd>K</kbd> takes a quarter of your health (four times to see the death screen).
-        </p>
-        <ul class="links">
-          <li><a href="deadvox/?debug=1">Debug mode</a></li>
-          <li><a href="deadvox/?debug=1&amp;time=05:30">Debug mode before dawn</a></li>
-          <li><a href="deadvox/?bench=1">Run the benchmark (about 3 minutes)</a></li>
-          <li><a href="deadvox/?bench=report">Last benchmark results (this browser)</a></li>
-        </ul>
+      <section class="card" aria-labelledby="gungen-title">
+        <div class="card-heading">
+          <h2 id="gungen-title"><a href="gungen/">gungen</a></h2>
+          <p>A super-low-poly firearm generator. Generate from a template, or open a validation fixture.</p>
+        </div>
+        <form id="gungen-form">
+          <fieldset class="choice-row">
+            <legend class="sr-only">Gungen starting point</legend>
+            <label><input type="radio" name="gungen-mode" value="template" checked /> Generate template</label>
+            <label><input type="radio" name="gungen-mode" value="fixture" /> Open fixture</label>
+          </fieldset>
+          <div id="gungen-template-fields" class="form-grid">
+            <label>Template
+              <select name="template" data-url-param="template" id="gungen-template">
+                <option value="battle-rifle">battle-rifle</option>
+                <option value="ar">ar</option>
+                <option value="ak">ak</option>
+                <option value="pistol">pistol</option>
+                <option value="revolver">revolver</option>
+                <option value="smg">smg</option>
+                <option value="bolt-rifle">bolt-rifle</option>
+                <option value="bolt-rifle-box">bolt-rifle-box</option>
+                <option value="pump-shotgun">pump-shotgun</option>
+                <option value="bullpup">bullpup</option>
+              </select>
+            </label>
+            <label>Seed
+              <input name="seed" data-url-param="seed" type="number" step="1" min="-2147483648" max="2147483647" value="0" required />
+            </label>
+            <p class="muted">The viewer has controls to step seeds and search for a valid build.</p>
+          </div>
+          <div id="gungen-fixture-fields" class="form-grid" hidden>
+            <label>Fixture
+              <select name="fixture" data-url-param="fixture" id="gungen-fixture">
+                <option value="archetype-ak">archetype-ak</option>
+                <option value="archetype-ar">archetype-ar</option>
+                <option value="archetype-ar-free-float">archetype-ar-free-float</option>
+                <option value="archetype-battle-rifle">archetype-battle-rifle</option>
+                <option value="archetype-bolt-rifle">archetype-bolt-rifle</option>
+                <option value="archetype-bolt-rifle-box">archetype-bolt-rifle-box</option>
+                <option value="archetype-bullpup">archetype-bullpup</option>
+                <option value="archetype-pistol">archetype-pistol</option>
+                <option value="archetype-pump-shotgun">archetype-pump-shotgun</option>
+                <option value="archetype-revolver">archetype-revolver</option>
+                <option value="archetype-smg">archetype-smg</option>
+                <option value="broken-ak-gas-block">broken-ak-gas-block</option>
+                <option value="broken-ak-gas-cylinder">broken-ak-gas-cylinder</option>
+                <option value="broken-axis-alignment">broken-axis-alignment</option>
+                <option value="broken-bolt-sight-over-loading-port">broken-bolt-sight-over-loading-port</option>
+                <option value="broken-bolt-straight-stock">broken-bolt-straight-stock</option>
+                <option value="broken-bullpup-with-stock">broken-bullpup-with-stock</option>
+                <option value="broken-feed-match">broken-feed-match</option>
+                <option value="broken-firing-grip">broken-firing-grip</option>
+                <option value="broken-free-float-handguard">broken-free-float-handguard</option>
+                <option value="broken-handguard-fit">broken-handguard-fit</option>
+                <option value="broken-keep-out">broken-keep-out</option>
+                <option value="broken-loop-closure">broken-loop-closure</option>
+                <option value="broken-magazine-well-axis">broken-magazine-well-axis</option>
+                <option value="broken-pistol-barrel-crown">broken-pistol-barrel-crown</option>
+                <option value="broken-port-compat">broken-port-compat</option>
+                <option value="broken-pump-tube-mismatch">broken-pump-tube-mismatch</option>
+                <option value="broken-required-ports">broken-required-ports</option>
+                <option value="broken-revolver-feed-mismatch">broken-revolver-feed-mismatch</option>
+                <option value="broken-revolver-misaligned-cylinder">broken-revolver-misaligned-cylinder</option>
+                <option value="broken-solid-overlap">broken-solid-overlap</option>
+              </select>
+            </label>
+            <p class="muted">Fixtures show the assembly and its expected validation result.</p>
+          </div>
+          <div class="form-grid">
+            <label>Overrides (optional)
+              <input name="set" data-url-param="set" id="gungen-set" type="text" placeholder="magazine.variant:akm,rear-sight:off" spellcheck="false" />
+            </label>
+            <p class="muted">Param overrides and optional parts, as the viewer's panel writes them.</p>
+          </div>
+          <div class="action-row">
+            <button class="primary" type="submit">Open viewer</button>
+          </div>
+          <label class="url-label" for="gungen-url">Direct link</label>
+          <div class="url-row">
+            <input id="gungen-url" type="text" readonly aria-label="Composed gungen URL" />
+            <button type="button" data-copy="gungen-url">Copy link</button>
+          </div>
+          <p id="gungen-status" class="status" role="status" aria-live="polite"></p>
+        </form>
       </section>
 
       <section class="card">
@@ -100,5 +278,6 @@
 
       <footer>Source: <a href="https://github.com/roobie/skelly">github.com/roobie/skelly</a></footer>
     </main>
+    <script type="module" src="./launcher.js"></script>
   </body>
 </html>

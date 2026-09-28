@@ -175,7 +175,26 @@ const Point = tuple([number(), number(), number()]);
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
  * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
  */
-export const ModelSchema = strictObject({
+export const SoundMultipliers = pipe(
+  tuple([Positive, Positive]),
+  check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
+);
+
+const SoundSchema = strictObject({
+  id: Id,
+  variants: pipe(
+    array(pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/'))),
+    nonEmpty('needs at least one variant'),
+  ),
+  gain: pipe(Positive, maxValue(1, 'must be at most 1')),
+  pitchJitter: SoundMultipliers,
+  gainJitter: SoundMultipliers,
+  minIntervalSeconds: NonNegative,
+  category: picklist(['world', 'body', 'ui']),
+  noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+});
+
+const ModelSchema = strictObject({
   id: Id,
   /** The `.glb` file, as a path within the pack. */
   file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
@@ -184,6 +203,10 @@ export const ModelSchema = strictObject({
    * that order). Held, the model's +x points forward and +y up.
    */
   grip: optional(strictObject({ at: Point, turn: optional(Point) })),
+  /** Held with its long axis aimed forward or upright, grip at the origin. */
+  hold: optional(picklist(['forward', 'upright'])),
+  /** Degrees to roll around the model's long +x axis before applying the hold pose. */
+  roll: optional(pipe(number(), minValue(-180), maxValue(180))),
   /** Named points, such as the flashlight's `lens`. */
   anchors: optional(record(Id, Point)),
 });
@@ -364,6 +387,12 @@ export const ZombieSchema = strictObject({
   model: Id,
 });
 
+/** Actor palettes are content so appearance doesn't live in renderer code. */
+export const FigureSchema = strictObject({
+  id: Id,
+  palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
+});
+
 // ---- files ----
 
 /** One content file: any of these sections, each a list of definitions. */
@@ -374,7 +403,9 @@ export const ContentFileSchema = strictObject({
   loot: optional(array(LootTableSchema)),
   templates: optional(array(TemplateSchema)),
   zombies: optional(array(ZombieSchema)),
+  figures: optional(array(FigureSchema)),
   models: optional(array(ModelSchema)),
+  sounds: optional(array(SoundSchema)),
 });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
@@ -384,6 +415,8 @@ export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
+export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
+export type SoundDef = InferOutput<typeof SoundSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

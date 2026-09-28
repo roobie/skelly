@@ -5,11 +5,11 @@
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "box", "bore": "M" } },
-    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "lower": { "family": "lower", "params": { "layout": "conventional", "magazineWell": "recessed" } },
     "barrel": { "family": "barrel", "params": { "length": "L" } },
-    "handguard": { "family": "handguard", "params": { "length": "L", "inner": "M" } },
+    "handguard": { "family": "handguard", "params": { "length": "L" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "S" } },
+    "magazine": { "family": "magazine", "params": { "length": "5-round" } },
     "stock": { "family": "stock", "params": { "length": "L", "style": "sporting" } },
     "sight": { "family": "sight" }
   },

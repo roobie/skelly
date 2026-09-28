@@ -558,12 +558,22 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 Sound is the main way threat arrives, so it's part of the simulation, not
 decoration.
 
-- **The player hears what the zombies hear.** Every noise event (see
-  [Combat and noise](#combat-and-noise)) also plays as a positional sound, and
-  walls muffle it the same way for both. A zombie shuffling in the next room
-  is heard before it's seen.
-- **Zombies make sound:** shuffling, groans, breathing, banging on doors. Each
-  type sounds different, so you can learn what's out there from sound alone.
+- **The player should be able to judge a threat by sound:** where it is, how
+  many there are, and what they're doing. Sounds are positional and walls muffle
+  them, so the player can hear danger before seeing it. Noise events (see
+  [Combat and noise](#combat-and-noise)) also play as positional sounds, with
+  occlusion shared by the player's hearing and zombie hearing.
+- **A shambler's presence should be audible even when it stands still.** It
+  should sometimes moan or groan so the player can hear that one is there. Today
+  `shambler_idle` provides an occasional groan while idling or strolling (three
+  variants). A richer idle-presence set—more variants, breathing, shuffling in
+  place, and rate/loudness shaped by state—is future work, not part of the
+  current footsteps change.
+- **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
+  follow actual ground travel; a chase is faster than a stroll. Only the nearest
+  three moving shamblers emit footsteps at once. The MVP reuses pitched-down
+  player footstep recordings as an explicit stand-in. Other shambler cues can
+  follow later; the current change adds footsteps only.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
   (zips, cans), and heavy breathing when stamina is low. You hear how much
   noise you're making.
@@ -585,7 +595,9 @@ decoration.
 - The world never pauses for UI (except the Esc menu). UI should make actions
   fast: search, filters, "take all food", and repeating the last move.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
-  somewhere in the UI. Depth is only fun when you can read it.
+  somewhere in the UI, **on request**: on surfaces the player opens (inspecting an
+  item, the inventory), never pushed at them during play. Depth is only fun when
+  you can read it; play stays as diegetic as possible (see INTERFACE.md).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was.

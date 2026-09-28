@@ -1,0 +1,65 @@
+{
+  "name": "archetype-revolver",
+  "description": "Cylinder-fed revolver with a six/eight-sided cylinder prism.",
+  "expect": [],
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "receiver",
+      "params": {
+        "action": "revolver",
+        "feed": "cylinder",
+        "bore": "M"
+      }
+    },
+    "lower": {
+      "family": "lower",
+      "params": {
+        "layout": "trigger"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "length": "S",
+        "profile": "revolver"
+      }
+    },
+    "cylinder": {
+      "family": "cylinder",
+      "params": {
+        "chambers": "eight",
+        "chamber": "aligned"
+      }
+    },
+    "grip": {
+      "family": "grip",
+      "params": {
+        "length": "L",
+        "well": "none"
+      }
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.lower",
+      "to": "lower.top"
+    },
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "receiver.cylinder",
+      "to": "cylinder.frame"
+    },
+    {
+      "from": "barrel.cylinder",
+      "to": "cylinder.barrel"
+    },
+    {
+      "from": "lower.grip",
+      "to": "grip.top"
+    }
+  ]
+}

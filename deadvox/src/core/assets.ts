@@ -113,6 +113,19 @@ export const assetFileIssues = (source: string, manifest: Manifest, files: reado
 };
 
 /** Checks that every model's file exists; `exists` answers for a path within the pack of the content file. */
+export const soundFileIssues = (
+  registry: Registry,
+  exists: (contentFile: string, file: string) => boolean,
+): ContentIssue[] =>
+  [...registry.sounds.values()].flatMap((sound) => {
+    const origin = registry.soundOrigins.get(sound.id)!;
+    return sound.variants.flatMap((file, i) =>
+      exists(origin.source, file)
+        ? []
+        : [{ source: origin.source, path: `${origin.path}.variants[${i}]`, message: `"${file}" is not in the pack` }],
+    );
+  });
+
 export const modelFileIssues = (
   registry: Registry,
   exists: (contentFile: string, file: string) => boolean,

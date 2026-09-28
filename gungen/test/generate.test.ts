@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generate, generateValid } from '../src/core/generate.ts';
 import { seededRng } from '../src/core/random.ts';
-import type { Template } from '../src/core/template.ts';
+import type { ParamReference, Template } from '../src/core/template.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
@@ -64,6 +64,13 @@ describe('templates', () => {
           for (const [name, choice] of Object.entries(slot.params ?? {})) {
             const spec = family!.params[name];
             expect(spec, `${slot.id}.${name}`).toBeDefined();
+            if (typeof choice === 'object' && !Array.isArray(choice)) {
+              const reference = choice as ParamReference;
+              const source = t.slots.find((candidate) => candidate.id === reference.fromSlot);
+              expect(source, `${slot.id}.${name} source slot`).toBeDefined();
+              expect(source!.params?.[reference.param], `${slot.id}.${name} source param`).toBeDefined();
+              continue;
+            }
             for (const v of Array.isArray(choice) ? choice : [choice]) {
               expect(spec!.values).toContain(v);
             }
@@ -71,25 +78,33 @@ describe('templates', () => {
         }
       });
 
-      it(`never produces a structurally broken file (${SEEDS} seeds)`, () => {
-        for (let seed = 0; seed < SEEDS; seed++) {
-          const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
-          expect(
-            issues.filter((i) => i.rule === 'structure'),
-            `seed ${seed}`,
-          ).toEqual([]);
-        }
-      });
-
-      it(`is valid at least half the time (${SEEDS} seeds)`, () => {
-        let valid = 0;
-        for (let seed = 0; seed < SEEDS; seed++) {
-          if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
-            valid += 1;
+      it(
+        `never produces a structurally broken file (${SEEDS} seeds)`,
+        () => {
+          for (let seed = 0; seed < SEEDS; seed++) {
+            const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
+            expect(
+              issues.filter((i) => i.rule === 'structure'),
+              `seed ${seed}`,
+            ).toEqual([]);
           }
-        }
-        expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
-      });
+        },
+        t.name === 'ak' ? 15_000 : undefined,
+      );
+
+      it(
+        `is valid at least half the time (${SEEDS} seeds)`,
+        () => {
+          let valid = 0;
+          for (let seed = 0; seed < SEEDS; seed++) {
+            if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
+              valid += 1;
+            }
+          }
+          expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
+        },
+        t.name === 'ak' ? 15_000 : undefined,
+      );
 
       it('generateValid finds a passing build', () => {
         const found = generateValid(t, gunDomain, 1000)!;

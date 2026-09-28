@@ -4,6 +4,7 @@
 // from the root; a connection whose parts are both already placed closes a
 // loop, and is only checked (by the loop-closure rule), never solved.
 
+import { validateExtrudedPolygon } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import {
   add,
@@ -242,7 +243,19 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
   for (const [id, resolved] of params) {
     const family = domain.families[assembly.parts[id]!.family]!;
     const values = Object.fromEntries(Object.entries(resolved).map(([k, v]) => [k, v.value]));
-    defs.set(id, family.build(values));
+    const def = family.build(values);
+    const validSolids = def.solids.filter((solid) => {
+      if (solid.kind !== 'extruded-polygon') {
+        return true;
+      }
+      const error = validateExtrudedPolygon(solid.profile, solid.z);
+      if (!error) {
+        return true;
+      }
+      structure(`Part "${id}" solid "${solid.id}" is invalid: ${error}.`, [id]);
+      return false;
+    });
+    defs.set(id, validSolids.length === def.solids.length ? def : { ...def, solids: validSolids });
   }
 
   // Check each connection refers to real parts and ports.

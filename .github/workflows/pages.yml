@@ -42,7 +42,8 @@ jobs:
           npm ci --prefix gungen
           npm ci --prefix deadvox
           npm ci --prefix mobgen
-          npx biome ci
+          npm run ci
+          npm run test:site
       - name: Check and build gungen
         working-directory: gungen
         run: |

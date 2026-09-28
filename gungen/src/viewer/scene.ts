@@ -4,8 +4,10 @@
 import {
   ArrowHelper,
   BoxGeometry,
+  BufferAttribute,
   BufferGeometry,
   EdgesGeometry,
+  ExtrudeGeometry,
   Group,
   Line,
   LineBasicMaterial,
@@ -16,6 +18,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   type Object3D,
+  Shape,
   Vector3,
 } from 'three';
 import { MAIN_AXIS } from '../core/conventions.ts';
@@ -23,7 +26,9 @@ import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
+import { meshForSolid } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
+import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
 
 const FAMILY_COLORS: Record<string, number> = {
@@ -38,6 +43,7 @@ const FAMILY_COLORS: Record<string, number> = {
   stock: 0x8a_6a_52,
   sight: 0x3f_46_50,
 };
+const MAGAZINE_FLOORPLATE = 0x35_42_58;
 const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
 const NORMAL = 0xf0_a2_4a;
@@ -60,7 +66,34 @@ const placeBox = (obj: Object3D, obb: Obb) => {
   obj.matrix.copy(matrixOf(obb.r, obb.center));
 };
 
-const boxGeometry = (obb: Obb) => new BoxGeometry(obb.half[0] * 2, obb.half[1] * 2, obb.half[2] * 2);
+/** Converts a core TriangleMesh (positions/normals/indices only) to a three.js BufferGeometry. */
+const meshGeometry = (solid: Solid) => {
+  const mesh = meshForSolid(solid);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
+  geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
+  geometry.setIndex(new BufferAttribute(mesh.indices, 1));
+  return geometry;
+};
+
+/** Keep-outs stay plain boxes/extrusions; only rendered solids are beveled. */
+const solidGeometry = (solid: Solid) => {
+  if (solid.kind === 'box') {
+    return new BoxGeometry(solid.box.half[0] * 2, solid.box.half[1] * 2, solid.box.half[2] * 2);
+  }
+  const profile = new Shape();
+  solid.profile.forEach(([x, y], i) => {
+    if (i === 0) {
+      profile.moveTo(x, y);
+    } else {
+      profile.lineTo(x, y);
+    }
+  });
+  profile.closePath();
+  const geometry = new ExtrudeGeometry(profile, { depth: solid.z[1] - solid.z[0], bevelEnabled: false });
+  geometry.translate(0, 0, solid.z[0]);
+  return geometry;
+};
 
 /** Which parts, ports and keep-outs the given issues point at. */
 const highlights = (issues: readonly Issue[]) => ({
@@ -88,18 +121,26 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       .join(', ');
     const failing = hl.parts.has(part);
 
-    for (const s of def.solids) {
-      const obb = worldBox(t, s.box);
+    for (const s of def.displaySolids ?? def.solids) {
+      let color = FAMILY_COLORS[def.family] ?? 0x88_88_88;
+      if (s.id === 'floorplate') {
+        color = MAGAZINE_FLOORPLATE;
+      }
+      if (failing) {
+        color = FAIL;
+      }
       const mesh = new Mesh(
-        boxGeometry(obb),
+        meshGeometry(s),
         new MeshStandardMaterial({
-          color: failing ? FAIL : (FAMILY_COLORS[def.family] ?? 0x88_88_88),
+          color,
           flatShading: true,
           roughness: 0.85,
           metalness: 0.05,
         }),
       );
-      placeBox(mesh, obb);
+      // The solid's own box.center/profile is already baked into its mesh's positions.
+      mesh.matrixAutoUpdate = false;
+      mesh.matrix.copy(matrixOf(t.r, t.t));
       mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
       const edges = new LineSegments(
         new EdgesGeometry(mesh.geometry),
@@ -110,14 +151,23 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     }
 
     for (const ko of def.keepOuts) {
-      const obb = worldBox(t, ko.box);
+      const polygon = ko.profile && ko.z;
+      const obb = polygon ? undefined : worldBox(t, ko.box);
+      const shape: Solid = polygon
+        ? { id: ko.id, kind: 'extruded-polygon', profile: ko.profile!, z: ko.z! }
+        : { id: ko.id, kind: 'box', box: ko.box };
       const hit = hl.keepOuts.has(`${part}.${ko.id}`);
       const color = hit ? FAIL : KEEP_OUT;
       const mesh = new Mesh(
-        boxGeometry(obb),
+        solidGeometry(shape),
         new MeshBasicMaterial({ color, transparent: true, opacity: hit ? 0.25 : 0.07, depthWrite: false }),
       );
-      placeBox(mesh, obb);
+      if (obb) {
+        placeBox(mesh, obb);
+      } else {
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.copy(matrixOf(t.r, t.t));
+      }
       mesh.userData = { label: `${part} · keep-out ${ko.id} (${ko.kind})` };
       mesh.add(
         new LineSegments(

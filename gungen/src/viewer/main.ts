@@ -17,11 +17,29 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
-import type { Assembly } from '../core/schema.ts';
+import type { Assembly, Connection } from '../core/schema.ts';
+import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import {
+  applyOverrides,
+  buildPanelModel,
+  clearParam,
+  diffOverrides,
+  EMPTY_OVERRIDES,
+  hasOverrides,
+  type PanelEntry,
+  type PanelParam,
+  type PanelPart,
+  type PanelSlot,
+  parseOverrides,
+  serializeOverrides,
+  setParam,
+  setSlotPresent,
+} from './paramPanel.ts';
 import { buildLayers, disposeGroup, type Layers } from './scene.ts';
+import { DEFAULT_UI_STATE, parseUiState, UI_STATE_KEY, type UiState } from './uiState.ts';
 
 const fixtures = Object.values(
   import.meta.glob<Assembly>('../../fixtures/*.json', { eager: true, import: 'default' }),
@@ -39,6 +57,39 @@ const templateSelect = $<HTMLSelectElement>('template');
 const seedInput = $<HTMLInputElement>('seed');
 const onlyValid = $<HTMLInputElement>('only-valid');
 const layerToggles = [...document.querySelectorAll<HTMLInputElement>('#layers input')];
+const paramPanel = $<HTMLElement>('param-panel');
+
+const readUiState = (): UiState => {
+  try {
+    return parseUiState(localStorage.getItem(UI_STATE_KEY));
+  } catch {
+    return structuredClone(DEFAULT_UI_STATE);
+  }
+};
+const uiState = readUiState();
+const saveUiState = () => {
+  try {
+    localStorage.setItem(UI_STATE_KEY, JSON.stringify(uiState));
+  } catch {
+    // Keep the viewer usable when storage is disabled or full.
+  }
+};
+
+/** Keeps the address bar a shareable link for the current model, including panel overrides. */
+const syncUrl = () => {
+  const params = new URLSearchParams();
+  if (uiState.assembly.kind === 'generated') {
+    params.set('template', uiState.template);
+    params.set('seed', uiState.seed);
+  } else if (uiState.assembly.kind === 'fixture') {
+    params.set('fixture', uiState.assembly.name);
+  }
+  if (hasOverrides(uiState.overrides)) {
+    params.set('set', serializeOverrides(uiState.overrides));
+  }
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+};
 
 // ---- three.js setup ----
 
@@ -87,6 +138,12 @@ let report: Report | undefined;
 let layers: Layers | undefined;
 let focused: Issue | undefined;
 let framed = false;
+/** The un-edited model panel overrides are measured against: a fixture, an upload, or a generated seed. */
+let baseline: Assembly | undefined;
+/** The template `current`/`baseline` were generated from, when they were. Undefined for fixtures and uploads. */
+let activeTemplate: Template | undefined;
+/** Connections the last panel edit pruned (a port the edited part no longer has), for the panel's note. */
+let lastDropped: readonly Connection[] = [];
 
 const redraw = () => {
   if (!report) {
@@ -163,6 +220,161 @@ const load = (assembly: Assembly) => {
   focused = undefined;
   renderPanel(assembly);
   redraw();
+  renderParamPanel();
+};
+
+// ---- parameter panel ----
+//
+// Lists the current model's parts and params (paramPanel.ts, pure), then
+// turns a click into a new Assembly and runs it through the same load() as
+// picking a fixture: no second code path (PROJECT.md item gungen5).
+
+const paramStateText = (state: PanelParam['state']): string => {
+  if (state.kind === 'inherited') {
+    return `← ${state.from}`;
+  }
+  return state.kind === 'user' ? 'set' : 'seed';
+};
+
+const cardTitle = (entry: PanelEntry): HTMLDivElement => {
+  const title = document.createElement('div');
+  title.className = 'part-title';
+  const id = document.createElement('span');
+  id.textContent = entry.id;
+  const family = document.createElement('span');
+  family.className = 'family';
+  family.textContent = entry.family;
+  title.append(id, family);
+  return title;
+};
+
+/** An optional slot the current model doesn't use, with a button to add it. */
+const renderSlotCard = (entry: PanelSlot): HTMLElement => {
+  const card = document.createElement('fieldset');
+  card.className = 'param-part optional';
+  card.append(cardTitle(entry));
+  const row = document.createElement('div');
+  row.className = 'param-slot';
+  const note = document.createElement('span');
+  note.className = 'param-state';
+  note.textContent = 'not present';
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.textContent = 'Add';
+  add.addEventListener('click', () => applyPanelChange(setSlotPresent(current!, activeTemplate!, entry.id, true)));
+  row.append(note, add);
+  card.append(row);
+  return card;
+};
+
+/** One param: its state, a clear button when a user override, and a button per allowed value. */
+const renderParamRow = (partId: string, param: PanelParam): HTMLElement => {
+  const row = document.createElement('div');
+  row.className = 'param-row';
+
+  const head = document.createElement('div');
+  head.className = 'param-head';
+  const label = document.createElement('span');
+  label.textContent = param.name;
+  const state = document.createElement('span');
+  state.className = `param-state ${param.state.kind}`;
+  state.textContent = paramStateText(param.state);
+  head.append(label, state);
+  if (param.state.kind === 'user') {
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'clear';
+    clear.textContent = '×';
+    clear.title = 'Clear override, restoring the seed value';
+    clear.addEventListener('click', () => {
+      const { assembly, dropped } = clearParam(current!, gunDomain, baseline!, { part: partId, name: param.name });
+      applyPanelChange(assembly, dropped);
+    });
+    head.append(clear);
+  }
+  row.append(head);
+
+  const values = document.createElement('div');
+  values.className = 'param-values';
+  for (const v of param.values) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = v.value;
+    btn.classList.toggle('active', v.value === param.current);
+    btn.classList.toggle('not-permitted', v.permitted === false);
+    if (v.permitted === false) {
+      btn.title = "The current template's choices for this param don't offer this value.";
+    }
+    btn.addEventListener('click', () => {
+      const { assembly, dropped } = setParam(current!, gunDomain, { part: partId, name: param.name }, v.value);
+      applyPanelChange(assembly, dropped);
+    });
+    values.append(btn);
+  }
+  row.append(values);
+  return row;
+};
+
+/** A present part: an optional Remove button, then every param row. */
+const renderPartCard = (entry: PanelPart): HTMLElement => {
+  const card = document.createElement('fieldset');
+  card.className = entry.optional ? 'param-part optional' : 'param-part';
+  card.append(cardTitle(entry));
+  if (entry.optional) {
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () =>
+      applyPanelChange(setSlotPresent(current!, activeTemplate!, entry.id, false)),
+    );
+    card.append(remove);
+  }
+  for (const param of entry.params) {
+    card.append(renderParamRow(entry.id, param));
+  }
+  return card;
+};
+
+const renderParamPanel = () => {
+  if (!(current && baseline)) {
+    paramPanel.replaceChildren();
+    return;
+  }
+  const model = buildPanelModel(current, baseline, gunDomain, activeTemplate);
+  const nodes: HTMLElement[] = [];
+
+  if (lastDropped.length > 0) {
+    const note = document.createElement('p');
+    note.className = 'param-note';
+    note.textContent = lastDropped
+      .map((c) => `removed connection ${c.from} → ${c.to}: port no longer exists`)
+      .join('; ');
+    nodes.push(note);
+  }
+  if (hasOverrides(diffOverrides(baseline, current))) {
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'param-reset';
+    reset.textContent = 'Reset to seed';
+    reset.addEventListener('click', () => applyPanelChange(structuredClone(baseline!)));
+    nodes.push(reset);
+  }
+  for (const entry of model) {
+    nodes.push(entry.present ? renderPartCard(entry) : renderSlotCard(entry));
+  }
+  paramPanel.replaceChildren(...nodes);
+};
+
+const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = []) => {
+  if (!baseline) {
+    return;
+  }
+  framed = false;
+  lastDropped = dropped;
+  uiState.overrides = diffOverrides(baseline, next);
+  saveUiState();
+  syncUrl();
+  load(next);
 };
 
 // ---- UI wiring ----
@@ -185,6 +397,13 @@ select.addEventListener('change', () => {
     return;
   }
   framed = false;
+  uiState.assembly = { kind: 'fixture', name: f.name };
+  uiState.overrides = EMPTY_OVERRIDES;
+  baseline = f;
+  activeTemplate = undefined;
+  lastDropped = [];
+  saveUiState();
+  syncUrl();
   load(f);
 });
 
@@ -199,6 +418,13 @@ fileInput.addEventListener('change', async () => {
     select.add(new Option(`${assembly.name} (file)`, ''), 0);
     select.selectedIndex = 0;
     framed = false;
+    uiState.assembly = { kind: 'upload' };
+    uiState.overrides = EMPTY_OVERRIDES;
+    baseline = assembly;
+    activeTemplate = undefined;
+    lastDropped = [];
+    saveUiState();
+    syncUrl();
     load(assembly);
   } catch (err) {
     status.innerHTML = '';
@@ -208,7 +434,10 @@ fileInput.addEventListener('change', async () => {
 
 for (const t of layerToggles) {
   t.addEventListener('change', () => {
-    const group = layers?.[t.dataset.layer as keyof Layers];
+    const layer = t.dataset.layer as keyof UiState['layers'];
+    uiState.layers[layer] = t.checked;
+    saveUiState();
+    const group = layers?.[layer];
     if (group) {
       group.visible = t.checked;
     }
@@ -239,47 +468,95 @@ for (const t of TEMPLATES) {
   templateSelect.add(new Option(t.name, t.name));
 }
 
-const runGenerator = (step = 0) => {
+if (TEMPLATES.some((t) => t.name === uiState.template)) {
+  templateSelect.value = uiState.template;
+} else {
+  uiState.template = DEFAULT_UI_STATE.template;
+  templateSelect.value = uiState.template;
+}
+seedInput.value = uiState.seed;
+onlyValid.checked = uiState.onlyValid;
+for (const t of layerToggles) {
+  const layer = t.dataset.layer as keyof UiState['layers'];
+  t.checked = uiState.layers[layer];
+}
+
+/** Walks seed, seed ± 1, … in the step's direction until a valid build turns up, or gives up after 100 tries. */
+const findValidSeed = (template: Template, seed: number, step: number): ReturnType<typeof generateValid> => {
+  const dir = step < 0 ? -1 : 1;
+  for (let i = 0; i < 100; i++) {
+    const g = generateValid(template, gunDomain, seed + dir * i, 1);
+    if (g) {
+      return g;
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Generates the seed's assembly (the new baseline) and, unless
+ * `preserveOverrides`, drops any panel overrides — a new seed is a new
+ * baseline to explore. `preserveOverrides` is for restoring a session
+ * (uiState or the URL already carries the overrides to reapply).
+ */
+const runGenerator = (step = 0, preserveOverrides = false) => {
   const template = TEMPLATES.find((t) => t.name === templateSelect.value);
   if (!template) {
     return;
   }
   let seed = (Number.parseInt(seedInput.value, 10) || 0) + step;
-  let assembly: Assembly;
+  let generated: Assembly;
   if (onlyValid.checked) {
-    // Walk in the direction of the step until a seed passes.
-    const dir = step < 0 ? -1 : 1;
-    let found: ReturnType<typeof generateValid>;
-    for (let i = 0; i < 100 && !found; i++) {
-      const g = generateValid(template, gunDomain, seed + dir * i, 1);
-      if (g) {
-        found = g;
-      }
-    }
+    const found = findValidSeed(template, seed, step);
     if (!found) {
       status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
       return;
     }
-    ({ seed, assembly } = found);
+    ({ seed, assembly: generated } = found);
   } else {
-    assembly = generate(template, gunDomain, seed);
+    generated = generate(template, gunDomain, seed);
   }
   seedInput.value = String(seed);
+  uiState.assembly = { kind: 'generated' };
+  uiState.template = template.name;
+  uiState.seed = String(seed);
+  uiState.onlyValid = onlyValid.checked;
+  if (!preserveOverrides) {
+    uiState.overrides = EMPTY_OVERRIDES;
+  }
+  baseline = generated;
+  activeTemplate = template;
+  lastDropped = [];
+  const assembly = hasOverrides(uiState.overrides)
+    ? applyOverrides(generated, gunDomain, template, uiState.overrides)
+    : generated;
   const option = new Option(`${assembly.name} (generated)`, '');
   select.querySelector('option[value=""]')?.remove();
   select.add(option, 0);
   select.selectedIndex = 0;
+  saveUiState();
+  syncUrl();
   load(assembly);
 };
 
 templateSelect.addEventListener('change', () => {
   framed = false;
+  uiState.template = templateSelect.value;
+  saveUiState();
   runGenerator();
 });
 $<HTMLButtonElement>('generate-btn').addEventListener('click', () => runGenerator());
 $<HTMLButtonElement>('next-seed').addEventListener('click', () => runGenerator(1));
 $<HTMLButtonElement>('prev-seed').addEventListener('click', () => runGenerator(-1));
-seedInput.addEventListener('change', () => runGenerator());
+seedInput.addEventListener('change', () => {
+  uiState.seed = seedInput.value;
+  saveUiState();
+  runGenerator();
+});
+onlyValid.addEventListener('change', () => {
+  uiState.onlyValid = onlyValid.checked;
+  saveUiState();
+});
 
 $<HTMLButtonElement>('save').addEventListener('click', () => {
   if (!current) {
@@ -293,21 +570,53 @@ $<HTMLButtonElement>('save').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// ?fixture=<name> opens a fixture; ?template=<name>&seed=<n> generates one.
+// ?fixture=<name> opens a fixture; ?template=<name>&seed=<n> generates one;
+// either can add &set=<part.param:value,...> to override params, or
+// &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
+const querySet = query.get('set');
+if (querySet !== null) {
+  uiState.overrides = parseOverrides(querySet);
+}
 const initialTemplate = TEMPLATES.find((t) => t.name === query.get('template'));
+const queryFixture = fixtures.find((f) => f.name === query.get('fixture'));
 if (initialTemplate) {
   templateSelect.value = initialTemplate.name;
   seedInput.value = query.get('seed') ?? '0';
-  runGenerator();
+  uiState.template = initialTemplate.name;
+  uiState.seed = seedInput.value;
+  uiState.assembly = { kind: 'generated' };
+  runGenerator(0, true);
+} else if (queryFixture) {
+  select.value = queryFixture.name;
+  uiState.assembly = { kind: 'fixture', name: queryFixture.name };
+  baseline = queryFixture;
+  activeTemplate = undefined;
+  lastDropped = [];
+  saveUiState();
+  syncUrl();
+  load(
+    hasOverrides(uiState.overrides)
+      ? applyOverrides(queryFixture, gunDomain, undefined, uiState.overrides)
+      : queryFixture,
+  );
+} else if (uiState.assembly.kind === 'generated') {
+  runGenerator(0, true);
 } else {
-  const start =
-    fixtures.find((f) => f.name === query.get('fixture')) ??
-    fixtures.find((f) => f.name === 'archetype-rifle') ??
-    fixtures[0];
+  const storedFixtureName = uiState.assembly.kind === 'fixture' ? uiState.assembly.name : undefined;
+  const storedFixture = fixtures.find((f) => f.name === storedFixtureName);
+  const start = storedFixture ?? fixtures.find((f) => f.name === 'archetype-battle-rifle') ?? fixtures[0];
   if (start) {
     select.value = start.name;
-    load(start);
+    uiState.assembly = { kind: 'fixture', name: start.name };
+    baseline = start;
+    activeTemplate = undefined;
+    lastDropped = [];
+    saveUiState();
+    syncUrl();
+    load(hasOverrides(uiState.overrides) ? applyOverrides(start, gunDomain, undefined, uiState.overrides) : start);
+  } else {
+    saveUiState();
   }
 }
 

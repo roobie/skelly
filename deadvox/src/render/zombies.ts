@@ -2,9 +2,10 @@ import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMateria
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { Zombie } from '../core/zombies.ts';
+import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart } from './figure.ts';
 import { StepOffset } from './stepOffset.ts';
 
-type Part = 'body' | 'head' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+type Part = FigurePart;
 interface RenderZombie {
   id: EntityId;
   zombie: Zombie;
@@ -14,15 +15,7 @@ interface RenderZombie {
   gaitPhase: number;
   verticalOffset: number;
 }
-const PARTS: readonly Part[] = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
-const BOXES: Record<Part, { size: [number, number, number]; at: [number, number, number] }> = {
-  body: { size: [0.42, 0.78, 0.28], at: [0, 1.02, 0] },
-  head: { size: [0.3, 0.32, 0.3], at: [0, 1.58, 0] },
-  leftArm: { size: [0.15, 0.68, 0.16], at: [-0.225, 1.02, 0] },
-  rightArm: { size: [0.15, 0.68, 0.16], at: [0.225, 1.02, 0] },
-  leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
-  rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
-};
+const PARTS: readonly Part[] = FIGURE_PARTS;
 
 /** Six instanced boxes, never one draw object per shambler. */
 export class ZombieMeshes {
@@ -34,7 +27,7 @@ export class ZombieMeshes {
 
   constructor(blockSize: number, capacity = 64) {
     this.blockSize = blockSize;
-    for (const part of PARTS) {
+    for (const part of FIGURE_PARTS) {
       const flesh = part === 'body' || part === 'head';
       const material = new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e });
       const mesh = new InstancedMesh(new BoxGeometry(1, 1, 1), material, capacity);
@@ -90,7 +83,7 @@ export class ZombieMeshes {
     const s = this.blockSize;
     for (let i = 0; i < mesh.count; i++) {
       const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = zombies[i]!;
-      const box = BOXES[part];
+      const box = FIGURE_BOXES[part];
       const [x, y, z] = position;
       const partYaw = yaw + (part === 'head' ? headYaw : 0);
       const offsetX = box.at[0] * Math.cos(yaw) + box.at[2] * Math.sin(yaw);

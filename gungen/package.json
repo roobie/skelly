@@ -10,7 +10,8 @@
     "test": "vitest run",
     "validate": "node src/cli/validate.ts",
     "generate": "node src/cli/generate.ts",
-    "stats": "node src/cli/stats.ts"
+    "stats": "node src/cli/stats.ts",
+    "mesh-stats": "node src/cli/mesh-stats.ts"
   },
   "dependencies": {
     "three": "^0.186.0"
