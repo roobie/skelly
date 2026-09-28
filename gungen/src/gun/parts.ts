@@ -649,31 +649,24 @@ export const lower: PartFamily = {
           keepOuts: [trigger(5), bullpupWell.path],
           axes: [],
         };
-      case 'ak':
+      case 'ak': {
+        const frontHookX = conventionalWell.port.pos[0] + MAGAZINE_DEPTH / 2;
         return {
           family: 'lower',
-          solids: magazineWellFrame(
-            -14,
-            conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
-            conventionalWell.port.pos[0],
-          ),
+          solids: [solid('frame', [-14, -1.5, -LOWER_HALF_WIDTH], [0, 0, LOWER_HALF_WIDTH])],
           ports: [top, grip(-12), conventionalWell.port],
           keepOuts: [
             trigger(-10),
-            conventionalWell.path,
             keepOut(
               'magazine-rock-in-sweep',
-              [conventionalWell.port.pos[0] - MAGAZINE_WELL_DEPTH / 2, -40, -MAGAZINE_WELL_WIDTH / 2],
-              [
-                conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + AK_MAGAZINE_ROCK_IN_SWEEP,
-                -3,
-                MAGAZINE_WELL_WIDTH / 2,
-              ],
+              [frontHookX, -40, -MAGAZINE_WELL_WIDTH / 2],
+              [frontHookX + AK_MAGAZINE_ROCK_IN_SWEEP, -3, MAGAZINE_WELL_WIDTH / 2],
               'magazine',
             ),
           ],
           axes: [],
         };
+      }
       case 'trigger':
         return {
           family: 'lower',

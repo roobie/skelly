@@ -546,10 +546,10 @@ explicitly named `battle-rifle`.
   handguard to the gas block. The block seats on the barrel at the declared
   gas-port station; the cylinder axis is checked parallel to the bore. The
   front sight block uses the barrel's separate port four units from the muzzle.
-- Added an `ak` lower layout with the conventional well and a forward-extended
-  box keep-out for the magazine's rock-in sweep. The magazine remains vertical
-  in its insertion well; the broad box is a conservative swept envelope, not an
-  arc-aware motion simulation.
+- Added an `ak` lower layout with a flat face seat and no magazine-well walls.
+  The curved AK magazine has seat kind `face` and zero insertion depth; its
+  conservative rock-in keep-out starts at the front hook point. This swept box
+  is not an arc-aware motion simulation.
 - The `ak-curved` magazine is three convex prisms: a slanted-bottom upper
   section, a trapezoidal middle section and a forward-turned lower section.
   Their joint faces match exactly. The middle prism has parallel grip-facing

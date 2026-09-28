@@ -259,6 +259,30 @@ describe('AK-pattern archetype', () => {
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 
+  it('face-seats the AK magazine at a flat lower surface with its rock-in sweep starting at the front hook', () => {
+    const lower = FAMILIES.lower!.build({ layout: 'ak' });
+    const magazine = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant: 'ak74' });
+    const lowerPort = lower.ports.find(({ id }) => id === 'magazine')!;
+    const topPort = magazine.ports.find(({ id }) => id === 'top')!;
+    expect(lower.solids.map(({ id }) => id)).toEqual(['frame']);
+    expect(lowerPort.pos[1]).toBe(-1.5);
+    expect(topPort.seat).toBe('face');
+    expect(topPort.pos[1]).toBe(0);
+    const upper = magazine.solids[0]!;
+    expect(upper.kind).toBe('extruded-polygon');
+    if (upper.kind !== 'extruded-polygon') {
+      throw new Error('Expected the AK magazine feed-lip prism.');
+    }
+    expect(Math.max(...upper.profile.map(([, y]) => y))).toBe(0);
+    const sweep = lower.keepOuts.find(({ id }) => id === 'magazine-rock-in-sweep')!;
+    const sweepMinX = sweep.box.center[0] - sweep.box.half[0];
+    const sweepMaxX = sweep.box.center[0] + sweep.box.half[0];
+    const frontHookX = lowerPort.pos[0] + 5.5 / 2;
+    expect(sweepMinX).toBe(frontHookX);
+    expect(sweepMaxX).toBe(frontHookX + 4);
+    expect(lower.keepOuts.some(({ id }) => id === 'magazine-path')).toBe(false);
+  });
+
   it('adds an intermediate dropped stock distinct from straight and sporting styles', () => {
     const dropped = FAMILIES.stock!.build({ length: 'M', style: 'dropped' });
     const straight = FAMILIES.stock!.build({ length: 'M', style: 'straight' });
