@@ -7,6 +7,7 @@ import { defineConfig } from 'vitest/config';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
 import {
+  fingerprintAfterHotChange,
   fingerprintSimulationSources,
   SIMULATION_ENTRIES,
   SIMULATION_EXCLUSIONS,
@@ -65,7 +66,9 @@ const saveFormatPath = resolve(packageRoot, 'src/core/saveFormat.ts');
 const buildRevisionDefine = '__DEADVOX_BUILD_REVISION__';
 const baseContentHashDefine = '__DEADVOX_BASE_CONTENT_HASH__';
 const moduleQueryPattern = /[?#].*$/;
+const simulationHashPlaceholder = '__DEADVOX_SIMULATION_HASH__';
 const simulationHashPattern = /__DEADVOX_SIMULATION_HASH__(?=,)/g;
+const simulationHashValuePattern = /^[0-9a-f]{64}$/;
 
 function simulationFingerprintPlugin() {
   let simulationHash = '';
@@ -101,21 +104,51 @@ function simulationFingerprintPlugin() {
       if (resolve(id.replace(moduleQueryPattern, '')) !== saveFormatPath) {
         return;
       }
+      const occurrences = code.match(simulationHashPattern)?.length ?? 0;
+      if (occurrences !== 1) {
+        throw new Error(`Expected one simulation hash placeholder in ${id}; found ${occurrences}`);
+      }
       return code.replace(simulationHashPattern, JSON.stringify(simulationHash));
     },
-    async handleHotUpdate({ server }: import('vite').HmrContext): Promise<import('vite').ModuleNode[] | undefined> {
+    transformIndexHtml(html: string) {
+      return html.replace(
+        '</head>',
+        `  <meta name="deadvox-simulation-source-hash" content="${simulationHash}">\n</head>`,
+      );
+    },
+    closeBundle() {
+      const builtSources = filesUnder(resolve(packageRoot, 'dist'), '')
+        .filter(({ name }) => name.endsWith('.html') || name.endsWith('.js'))
+        .map(({ path }) => readFileSync(path, 'utf8'));
+      if (
+        !(
+          simulationHashValuePattern.test(simulationHash) &&
+          builtSources.some((source) => source.includes(simulationHash))
+        )
+      ) {
+        throw new Error('Production bundle is missing its 64-hex simulation hash');
+      }
+      if (builtSources.some((source) => source.includes(simulationHashPlaceholder))) {
+        throw new Error('Production bundle contains an unreplaced simulation hash placeholder');
+      }
+    },
+    async hotUpdate(
+      this: { environment: import('vite').DevEnvironment },
+      { type, server }: import('vite').HotUpdateOptions,
+    ): Promise<import('vite').EnvironmentModuleNode[] | undefined> {
       let changed = false;
       const refresh = hmrRefresh.then(async () => {
-        const nextHash = await computeFingerprint();
-        if (nextHash === simulationHash) {
+        const nextHash = await fingerprintAfterHotChange(type, simulationHash, computeFingerprint);
+        if (nextHash === undefined) {
           return;
         }
         simulationHash = nextHash;
         changed = true;
-        for (const module of server.moduleGraph.getModulesByFile(saveFormatPath) ?? []) {
-          server.moduleGraph.invalidateModule(module);
+        const { moduleGraph, hot } = this.environment;
+        for (const module of moduleGraph.getModulesByFile(saveFormatPath) ?? []) {
+          moduleGraph.invalidateModule(module);
         }
-        server.ws.send({ type: 'full-reload' });
+        hot.send({ type: 'full-reload' });
       });
       hmrRefresh = refresh.catch((error: unknown) => {
         server.config.logger.error(error instanceof Error ? (error.stack ?? error.message) : String(error));

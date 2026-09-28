@@ -5,6 +5,7 @@ import { resolveConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
 import {
   collectSimulationSourceGraph,
+  fingerprintAfterHotChange,
   fingerprintSimulationSources,
   SIMULATION_ENTRIES,
   SIMULATION_EXCLUSIONS,
@@ -41,6 +42,10 @@ const hash = (sources: Sources, ...entryPaths: string[]) =>
   fingerprintSimulationSources(entryPaths, root, hostFor(sources), { exclude: ['src/ui'] });
 
 const entries = ['src/core/sim.ts'];
+const UNRESOLVED_DEPENDENCY_ERROR = /Cannot resolve runtime dependency/;
+const UNSUPPORTED_ID_ERROR = /Unsupported virtual runtime dependency|resolves outside src\//;
+const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
+const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
 
 describe('simulation source fingerprint', () => {
   it('pins every excluded module reached from the actual Vite-resolved simulation graph', async () => {
@@ -59,7 +64,20 @@ describe('simulation source fingerprint', () => {
       },
       { exclude: SIMULATION_EXCLUSIONS },
     );
+    expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
+    expect([...graph.sources.keys()]).toEqual(
+      expect.arrayContaining([
+        ...SIMULATION_ENTRIES,
+        'src/core/collision.ts',
+        'src/core/hamlet.ts',
+        'src/core/city.ts',
+        'src/game/testHouse.ts',
+      ]),
+    );
     expect(graph.excludedImports).toEqual([
+      { importer: 'src/game/engine.ts', excluded: 'src/core/sky.ts' },
+      { importer: 'src/game/engine.ts', excluded: 'src/render/chunks.ts' },
+      { importer: 'src/game/engine.ts', excluded: 'src/render/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
@@ -106,6 +124,34 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
+  it('recomputes the identity for create, update, and delete hot changes', async () => {
+    const results = await Promise.all(
+      (['create', 'update', 'delete'] as const).map(async (type) => {
+        let calls = 0;
+        const next = await fingerprintAfterHotChange(type, 'before', () => {
+          calls += 1;
+          return Promise.resolve('after');
+        });
+        return { calls, next };
+      }),
+    );
+    expect(results).toEqual([
+      { calls: 1, next: 'after' },
+      { calls: 1, next: 'after' },
+      { calls: 1, next: 'after' },
+    ]);
+  });
+
+  it('follows a runtime star re-export to its dependency', async () => {
+    const sources: Sources = new Map([
+      [`${root}/src/core/sim.ts`, "export * from './barrel.ts';\n"],
+      [`${root}/src/core/barrel.ts`, "export * from './leaf.ts';\n"],
+      [`${root}/src/core/leaf.ts`, 'export const rule = 1;\n'],
+    ]);
+    const graph = await collectSimulationSourceGraph(entries, root, hostFor(sources));
+    expect([...graph.sources.keys()]).toContain('src/core/leaf.ts');
+  });
+
   it('includes newly imported, untracked source without consulting Git', async () => {
     const before: Sources = new Map([[`${root}/src/core/sim.ts`, 'export const tick = () => 1;\n']]);
     const beforeHash = await hash(before, ...entries);
@@ -114,6 +160,71 @@ describe('simulation source fingerprint', () => {
       [`${root}/src/core/untracked-rule.ts`, 'export const rule = () => 2;\n'],
     ]);
     expect(await hash(after, ...entries)).not.toBe(beforeHash);
+  });
+
+  it('fails closed when a runtime import cannot be resolved', async () => {
+    const sources: Sources = new Map([[`${root}/src/core/sim.ts`, "import './missing.ts';\n"]]);
+    await expect(collectSimulationSourceGraph(entries, root, hostFor(sources))).rejects.toThrow(
+      UNRESOLVED_DEPENDENCY_ERROR,
+    );
+  });
+
+  it('rejects virtual and out-of-project runtime IDs', async () => {
+    const sources: Sources = new Map([[`${root}/src/core/sim.ts`, "import './dependency.ts';\n"]]);
+    await Promise.all(
+      ['\u0000virtual:dependency', '/fixture/outside/dependency.ts'].map(async (resolvedId) => {
+        const host: SimulationModuleGraphHost = {
+          resolve() {
+            return Promise.resolve(resolvedId);
+          },
+          readFile(path) {
+            const source = sources.get(path);
+            return source === undefined
+              ? Promise.reject(new Error(`missing fixture source: ${path}`))
+              : Promise.resolve(source);
+          },
+        };
+        await expect(collectSimulationSourceGraph(entries, root, host)).rejects.toThrow(UNSUPPORTED_ID_ERROR);
+      }),
+    );
+  });
+
+  it('rejects unsupported glob, CommonJS, and worker-URL dependency discovery', async () => {
+    await Promise.all(
+      [
+        "import.meta.glob('./dynamic/*.ts');\n",
+        "const module = require('./dynamic.ts');\n",
+        "new Worker(new URL('./unclassified.worker.ts', import.meta.url));\n",
+      ].map((source) => {
+        const sources: Sources = new Map([[`${root}/src/core/sim.ts`, source]]);
+        return expect(collectSimulationSourceGraph(entries, root, hostFor(sources))).rejects.toThrow(
+          UNSUPPORTED_DISCOVERY_ERROR,
+        );
+      }),
+    );
+  });
+
+  it('fails closed when a runtime dependency is not a classified source, content file, or presentation asset', async () => {
+    await Promise.all(
+      ['.wasm', '.ogg'].map((extension) => {
+        const path = `${root}/src/core/opaque${extension}`;
+        const sources: Sources = new Map([[`${root}/src/core/sim.ts`, `import './opaque${extension}';\n`]]);
+        const host: SimulationModuleGraphHost = {
+          resolve() {
+            return Promise.resolve(path);
+          },
+          readFile(file) {
+            const source = sources.get(file);
+            return source === undefined
+              ? Promise.reject(new Error(`missing fixture source: ${file}`))
+              : Promise.resolve(source);
+          },
+        };
+        return expect(collectSimulationSourceGraph(entries, root, host)).rejects.toThrow(
+          UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR,
+        );
+      }),
+    );
   });
 
   it('is stable across traversal order and LF/CRLF line endings', async () => {

@@ -25,6 +25,20 @@ export interface SimulationSourceGraph {
   excludedImports: readonly ExcludedSimulationImport[];
 }
 
+export type SimulationHotChangeType = 'create' | 'delete' | 'update';
+
+export async function fingerprintAfterHotChange(
+  type: SimulationHotChangeType,
+  currentHash: string,
+  computeFingerprint: () => Promise<string>,
+): Promise<string | undefined> {
+  if (type !== 'create' && type !== 'delete' && type !== 'update') {
+    throw new Error(`Unsupported simulation hot-change type: ${type}`);
+  }
+  const nextHash = await computeFingerprint();
+  return nextHash === currentHash ? undefined : nextHash;
+}
+
 export const SIMULATION_ENTRIES = [
   'src/core/sim.ts',
   'src/core/worldgen.ts',
@@ -35,6 +49,8 @@ export const SIMULATION_ENTRIES = [
   'src/game/rest.ts',
   'src/game/survival.ts',
   'src/game/streamer.ts',
+  'src/game/config.ts',
+  'src/game/engine.ts',
   'src/game/play.ts',
 ] as const;
 
@@ -54,7 +70,35 @@ export const SIMULATION_EXCLUSIONS = [
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
+const PRESENTATION_ASSET_EXTENSIONS = new Set([
+  '.avif',
+  '.css',
+  '.gif',
+  '.glb',
+  '.gltf',
+  '.ico',
+  '.jpeg',
+  '.jpg',
+  '.less',
+  '.otf',
+  '.png',
+  '.sass',
+  '.scss',
+  '.styl',
+  '.svg',
+  '.ttf',
+  '.webm',
+  '.webp',
+  '.woff',
+  '.woff2',
+]);
 const MODULE_QUERY_PATTERN = /[?#].*$/;
+const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
+const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
+const CONTENT_GLOB_PATTERNS = new Set(['../content/base/*.json', '../content/base/assets/audio/**/*.ogg']);
+const REQUIRE_CALL = /\brequire\s*\(/;
+const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
+const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
 const LINE_ENDING_PATTERN = /\r\n?/g;
 
 function comparePaths(left: string, right: string): number {
@@ -67,12 +111,41 @@ function comparePaths(left: string, right: string): number {
   return 0;
 }
 
-async function runtimeImports(path: string, source: string): Promise<string[]> {
-  const transformed = await transformWithOxc(source, path, { target: 'esnext' });
-  const [imports] = parse(transformed.code);
+function assertSupportedDependencyDiscovery(path: string, source: string): void {
+  const globReferences = [...source.matchAll(GLOB_REFERENCE)];
+  const globCalls = [...source.matchAll(GLOB_CALL)];
+  if (globReferences.length !== globCalls.length) {
+    throw new Error(`Unsupported import.meta.glob form in simulation source ${path}`);
+  }
+  if (globCalls.some((call) => !(call[2] && CONTENT_GLOB_PATTERNS.has(call[2])))) {
+    throw new Error(`Unclassified import.meta.glob dependency in simulation source ${path}`);
+  }
+  if (REQUIRE_CALL.test(source)) {
+    throw new Error(`Unsupported require() dependency in simulation source ${path}`);
+  }
+  const importMetaUrlReferences = [...source.matchAll(IMPORT_META_URL_REFERENCE)];
+  const workerUrls = [...source.matchAll(WORKER_URL_CALL)];
+  if (importMetaUrlReferences.length !== workerUrls.length) {
+    throw new Error(`Unclassified import.meta.url dependency in simulation source ${path}`);
+  }
+  const normalizedPath = path.replaceAll('\\', '/');
+  if (
+    workerUrls.some(
+      (call) => normalizedPath.endsWith('/src/game/streamer.ts') && call[2] !== '../worker/mesh.worker.ts',
+    )
+  ) {
+    throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
+  }
+  if (workerUrls.length > 0 && !normalizedPath.endsWith('/src/game/streamer.ts')) {
+    throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
+  }
+}
+
+function importsFromTransformedSource(path: string, code: string): string[] {
+  const [imports] = parse(code);
   const dependencies = new Set<string>();
   for (const entry of imports) {
-    if (entry.type === 'static') {
+    if (entry.type === 'static' || entry.type === 'reexport-star') {
       if (!entry.typeOnly) {
         dependencies.add(entry.specifier);
       }
@@ -84,6 +157,12 @@ async function runtimeImports(path: string, source: string): Promise<string[]> {
     }
   }
   return [...dependencies].sort();
+}
+
+async function runtimeImports(path: string, source: string): Promise<string[]> {
+  assertSupportedDependencyDiscovery(path, source);
+  const transformed = await transformWithOxc(source, path, { target: 'esnext' });
+  return importsFromTransformedSource(path, transformed.code);
 }
 
 function sourcePath(id: string): string | undefined {
@@ -106,9 +185,6 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
     const name = relative(root, file);
     if (name === '' || name === '..' || name.startsWith(`..${sep}`) || isAbsolute(name)) {
       continue;
-    }
-    if (!SOURCE_EXTENSIONS.has(extname(name).toLowerCase())) {
-      return;
     }
     return `${prefix}${name.split(sep).join('/')}`;
   }
@@ -145,6 +221,53 @@ function recordExcludedImport(
   return true;
 }
 
+interface GraphWalkContext {
+  host: SimulationModuleGraphHost;
+  projectRoot: string;
+  sourceRoot: string;
+  excludedImportContext: ExcludedImportContext;
+  visited: Set<string>;
+  sources: Map<string, string>;
+}
+
+interface TrackableModule {
+  file: string;
+  relativePath: string;
+}
+
+async function resolveTrackableModule(
+  specifier: string,
+  importer: string | undefined,
+  context: GraphWalkContext,
+): Promise<TrackableModule | undefined> {
+  const resolvedId = await context.host.resolve(specifier, importer);
+  if (!resolvedId) {
+    throw new Error(`Cannot resolve runtime dependency ${specifier} from ${importer ?? 'simulation entry'}`);
+  }
+  const file = sourcePath(resolvedId);
+  if (!file) {
+    throw new Error(`Unsupported virtual runtime dependency ${specifier} resolved as ${resolvedId}`);
+  }
+  const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
+  if (!relativePath) {
+    throw new Error(`Runtime dependency ${specifier} resolves outside src/ and node_modules: ${resolvedId}`);
+  }
+  if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
+    return;
+  }
+  if (relativePath.startsWith('src/content/base/')) {
+    return;
+  }
+  const extension = extname(relativePath).toLowerCase();
+  if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
+    return;
+  }
+  if (!SOURCE_EXTENSIONS.has(extension)) {
+    throw new Error(`Unsupported runtime dependency ${specifier}: ${relativePath}`);
+  }
+  return { file, relativePath };
+}
+
 /** Resolve the runtime import graph using the caller's Vite resolver. */
 export async function collectSimulationSourceGraph(
   entries: readonly string[],
@@ -158,37 +281,30 @@ export async function collectSimulationSourceGraph(
   const visited = new Set<string>();
   const sources = new Map<string, string>();
   const excludedImports = new Map<string, ExcludedSimulationImport>();
-  const excludedImportContext: ExcludedImportContext = {
+  const context: GraphWalkContext = {
+    host,
     projectRoot,
     sourceRoot,
-    excludedPaths: options.exclude ?? [],
-    excludedImports,
+    excludedImportContext: {
+      projectRoot,
+      sourceRoot,
+      excludedPaths: options.exclude ?? [],
+      excludedImports,
+    },
+    visited,
+    sources,
   };
 
   const visit = async (specifier: string, importer?: string): Promise<void> => {
-    const resolvedId = await host.resolve(specifier, importer);
-    if (!resolvedId) {
+    const module = await resolveTrackableModule(specifier, importer, context);
+    if (!module || context.visited.has(module.file)) {
       return;
     }
-    const file = sourcePath(resolvedId);
-    if (!file) {
-      return;
-    }
-    const relativePath = sourceRelativePath(projectRoot, sourceRoot, file);
-    if (!relativePath) {
-      return;
-    }
-    if (recordExcludedImport(relativePath, importer, excludedImportContext)) {
-      return;
-    }
-    if (visited.has(file)) {
-      return;
-    }
-    visited.add(file);
-    const source = (await host.readFile(file)).replace(LINE_ENDING_PATTERN, '\n');
-    sources.set(relativePath, source);
-    const dependencies = await runtimeImports(file, source);
-    await Promise.all(dependencies.map((dependency) => visit(dependency, file)));
+    context.visited.add(module.file);
+    const source = (await context.host.readFile(module.file)).replace(LINE_ENDING_PATTERN, '\n');
+    context.sources.set(module.relativePath, source);
+    const dependencies = await runtimeImports(module.file, source);
+    await Promise.all(dependencies.map((dependency) => visit(dependency, module.file)));
   };
 
   const sortedEntries = [...entries].sort();

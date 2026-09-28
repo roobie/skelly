@@ -179,24 +179,42 @@ from these entry points: `src/core/sim.ts` (clock, scheduler and needs),
 `src/core/soundPicker.ts` (persisted sound selection state),
 `src/game/player.ts` (movement/body rules), `src/game/rest.ts` and
 `src/game/survival.ts` (stateful controllers), `src/game/streamer.ts` (world
-regeneration and overlays), and `src/game/play.ts` (gameplay system wiring and
-state-changing actions). Vite recomputes the fingerprint for source HMR and
-reloads when it changes. Base content remains separately identified by its
-canonical content-pack hash.
+regeneration and overlays), `src/game/config.ts` (world creation options and
+site/seed parameters), `src/game/engine.ts` (world setup, collision,
+deterministic site construction and spawn state), and `src/game/play.ts`
+(gameplay system wiring and state-changing actions). `play.ts` reaches the
+fingerprinted `src/game/aim.ts`, whose pitch/yaw calculation drives furniture
+and melee targeting independently of camera feedback roll. Vite recomputes the
+fingerprint for source create, update, and delete events and reloads when it
+changes. Base content remains separately identified by its canonical
+content-pack hash.
+
+`engine.ts`'s runtime world imports remain included: block-entity state,
+content registry, collision, hamlet/city and test-house construction,
+structures, world, world generation, and the streamer affect generated or
+mutable world state. Its Three.js imports construct the renderer/camera/lights;
+because those concerns are co-located in this entry, the resolved Three.js
+runtime sources are conservatively fingerprinted too. `GameConfig`, `Site`,
+`Vec3`, `BlockBox`, and streamer-stat imports that are type-only are erased;
+`config.ts` is a separate entry for the runtime configuration logic. The
+excluded render imports are called only to construct/draw meshes or sky and do
+not feed values back into simulation state.
 
 The excluded runtime import edges reached from non-excluded simulation modules
-are pinned by `test/simulationFingerprint.test.ts`; presently all are direct
-imports from `src/game/play.ts`:
+are pinned by `test/simulationFingerprint.test.ts`:
 
-- `src/core/sky.ts`: `skyAt` only supplies values to `applySky` for the rendered
-  sky. No simulation system reads those values; gameplay light perception is
-  separate. Include this source if daylight becomes a simulation input.
-- `src/game/damageFeedback.ts`: camera roll/hit presentation only; it consumes
-  damage events but does not change their source simulation state or future
-  steps.
-- `src/render/{flashlight,furniture,hands,models,piles,playerFigure,sky,stepOffset,zombies}.ts`:
-  mesh construction, draw transforms, and render interpolation only. The
-  simulation never reads these objects back.
+- `src/core/sky.ts`, imported by both `src/game/engine.ts` and
+  `src/game/play.ts`: values only feed rendered sky state; no simulation system
+  reads them. Include this source if daylight becomes a simulation input.
+- `src/game/damageFeedback.ts`, imported by `src/game/play.ts`: vignette and
+  camera-roll animation only. Camera rotation now lives in fingerprinted
+  `src/game/aim.ts`, and targeting uses only its input pitch/yaw function, not
+  the feedback-rolled camera.
+- `src/render/chunks.ts` and `src/render/sky.ts`, imported by
+  `src/game/engine.ts`: mesh and light/fog presentation only.
+- `src/render/{flashlight,furniture,hands,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
+  imported by `src/game/play.ts`: mesh construction, draw transforms, and render
+  interpolation only. The simulation never reads these objects back.
 - `src/ui/audioOptions.ts`: output volume controls only. The `GameAudio` event
   gate is intentionally included in the fingerprint because whether playback
   succeeds can create persisted vocal-noise state.
@@ -210,11 +228,25 @@ imports from `src/game/play.ts`:
   rest/stop input handling and state transitions live in fingerprinted game
   modules.
 
-`src/ui/inventoryScreen.ts` is deliberately not excluded: it routes pointer and
-key actions into inventory and handling mutations. `src/game/audio.ts` is also
-included because its playback-success result gates hearing-relevant vocal noise.
-The debug subtree has no reached runtime import edges (the play module's debug
-interfaces are type-only). Any newly reached excluded edge fails the pinned
+The `src/game/engine.ts` entry makes runtime imports of
+`src/core/collision.ts`, `src/core/hamlet.ts`, `src/core/city.ts`, and
+`src/game/testHouse.ts` part of the fingerprint; each controls world collision,
+site generation, or spawn/structure state. The integration test asserts all
+four remain members. `src/ui/inventoryScreen.ts` is deliberately not excluded:
+it routes pointer and key actions into inventory and handling mutations.
+`src/game/audio.ts` is included because its playback-success result gates
+hearing-relevant vocal noise. The debug subtree has no reached runtime import
+edges (the play module's debug interfaces are type-only). The graph walker
+follows static/dynamic imports and star re-exports, fails closed for unresolved,
+virtual, out-of-root, and unclassified dependencies, and rejects unrecognized
+`require()`/glob discovery. Its explicit dependency allowlist is limited to the
+base-content globs (`../content/base/*.json` and
+`../content/base/assets/audio/**/*.ogg`, both covered by the canonical
+content-pack hash) and known presentation asset extensions. The sole
+`import.meta.url` worker reference is `src/game/streamer.ts`'s
+`../worker/mesh.worker.ts`; it only builds presentation meshes, so it is
+explicitly allowlisted and the integration test confirms the worker is not in
+the simulation source set. Any newly reached excluded edge fails the pinned
 integration test and requires an explicit compatibility decision. Tests and
 docs are never part of the runtime graph.
 
@@ -386,12 +418,15 @@ generation until the new world's first snapshot commits.
   persistence requests reduce corruption/eviction risk but are not backups.
 - Compatibility is intentionally strict: changing simulation source, schema,
   worldgen, any deterministic generator (including gungen), or content identity
-  prevents loading that save. UI, renderer, audio-playback, test, documentation,
-  and unrelated commits do not change the simulation fingerprint, so playtest
-  saves survive those changes. Version-keyed storage preserves incompatible
-  records rather than silently applying new rules. Revisit when characters need
-  to persist across releases; version selection or migration would then be a
-  hard fork.
+  prevents loading that save. Only edits confined to explicitly excluded
+  presentation modules (plus tests, docs, and unrelated commits) leave the
+  fingerprint unchanged. UI or presentation code co-located in fingerprinted
+  modules—such as `play.ts`, `engine.ts`, `inventoryScreen.ts`, or `game/audio.ts`—
+  conservatively invalidates saves too; compatibility follows the module graph,
+  not semantic line-level classification. Version-keyed storage preserves
+  incompatible records rather than silently applying new rules. Revisit when
+  characters need to persist across releases; version selection or migration
+  would then be a hard fork.
 - Save frame time and size are estimates until the implementation benchmark
   proves them. The stated targets are gates, not claimed measurements.
 

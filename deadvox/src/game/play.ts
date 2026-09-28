@@ -2,7 +2,6 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { Vector3 } from 'three';
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
@@ -45,8 +44,9 @@ import { quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { renderRest } from '../ui/rest.ts';
+import { aimDirection, cameraRotation } from './aim.ts';
 import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
-import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
+import { DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION, registerDoorAction } from './doorAction.ts';
 import type { Engine } from './engine.ts';
@@ -796,10 +796,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     { passive: false },
   );
 
-  const lookDir = (): Vec3 => {
-    const d = new Vector3(0, 0, -1).applyEuler(camera.rotation);
-    return [d.x, d.y, d.z];
-  };
+  const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */

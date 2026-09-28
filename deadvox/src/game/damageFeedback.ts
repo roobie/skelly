@@ -1,10 +1,6 @@
 // Short-lived visual feedback for accepted damage. Time is supplied by the frame
 // loop so this remains deterministic in scripted frame-by-frame tests.
 
-import { Euler } from 'three';
-
-export const cameraRotation = (pitch: number, yaw: number, roll: number): Euler => new Euler(pitch, yaw, roll, 'YXZ');
-
 export interface DamageFeedbackState {
   readonly vignetteOpacity: number;
   readonly roll: number;

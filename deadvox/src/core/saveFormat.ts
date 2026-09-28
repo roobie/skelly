@@ -532,6 +532,32 @@ function validateVersion(version: SaveVersionComponents): void {
   }
 }
 
+function versionDifferences(saved: SaveVersionComponents, running: SaveVersionComponents): string[] {
+  const differences: string[] = [];
+  if (saved.simulationHash !== running.simulationHash) {
+    differences.push('simulation source hashes differ');
+  }
+  if (saved.schemaVersion !== running.schemaVersion) {
+    differences.push(`schema versions differ (${saved.schemaVersion} vs ${running.schemaVersion})`);
+  }
+  const generatorNames = [...new Set([...Object.keys(saved.generators), ...Object.keys(running.generators)])].sort();
+  const changedGenerators = generatorNames.filter((name) => saved.generators[name] !== running.generators[name]);
+  if (changedGenerators.length > 0) {
+    differences.push(`generator versions differ for ${changedGenerators.join(', ')}`);
+  }
+  if (canonicalStringify(saved.contentPacks) !== canonicalStringify(running.contentPacks)) {
+    const describePacks = (packs: SaveVersionComponents['contentPacks']) =>
+      packs.map((pack) => `${pack.id}@${pack.version}#${pack.canonicalHash}`).join(', ');
+    differences.push(
+      `content packs differ (saved [${describePacks(saved.contentPacks)}], running [${describePacks(running.contentPacks)}])`,
+    );
+  }
+  if (differences.length === 0) {
+    differences.push('identity digests differ');
+  }
+  return differences;
+}
+
 function identityTuple(version: SaveVersionComponents): unknown[] {
   return [
     version.simulationHash,
@@ -1159,8 +1185,9 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
     parsed.versionIdentity.digest !== runningDigest ||
     canonicalStringify(identityTuple(parsed.versionIdentity.components)) !== canonicalStringify(identityTuple(running))
   ) {
+    const differences = versionDifferences(parsed.versionIdentity.components, running);
     throw new Error(
-      `Save version mismatch: saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? defaultBuildRevision()})`,
+      `Save version mismatch (${differences.join('; ')}): saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? defaultBuildRevision()})`,
     );
   }
   const payloadBytes = canonicalBytes(parsed.payload, { acceptTaggedNegativeZero: true });

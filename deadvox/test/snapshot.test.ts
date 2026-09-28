@@ -931,6 +931,33 @@ describe('canonical save format', () => {
     expect(bytes).toEqual(original);
   });
 
+  it('identifies content-pack-only differences in the refusal message', async () => {
+    const savedVersion = {
+      ...formatVersion,
+      contentPacks: formatVersion.contentPacks.map((pack) => ({ ...pack, canonicalHash: 'f'.repeat(64) })),
+    };
+    const bytes = await encodeSave(capture(createRuntime()), {
+      generation: 1,
+      version: savedVersion,
+      buildRevision: 'saved-content-revision',
+      worldOptions: formatWorldOptions,
+    });
+    let mismatch: unknown;
+    try {
+      await decodeSave(bytes, {
+        version: formatVersion,
+        buildRevision: 'running-content-revision',
+        contentLookup: () => true,
+      });
+    } catch (error) {
+      mismatch = error;
+    }
+    expect(mismatch).toBeInstanceOf(Error);
+    expect((mismatch as Error).message).toContain('content packs');
+    expect((mismatch as Error).message).toContain('deadvox.base');
+    expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
+  });
+
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {
     const valid = await encodeFixture(capture(createRuntime()));
     const malformed: {
