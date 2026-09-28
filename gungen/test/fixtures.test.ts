@@ -20,6 +20,7 @@ describe('fixtures', () => {
     expect(archetypes.map((f) => f.name).sort()).toEqual([
       'archetype-ak',
       'archetype-ar',
+      'archetype-ar-free-float',
       'archetype-battle-rifle',
       'archetype-bolt-rifle',
       'archetype-bolt-rifle-box',

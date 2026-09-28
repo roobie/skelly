@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { worldBox } from '../src/core/geometry.ts';
 import { resolve } from '../src/core/resolve.ts';
+import type { ParamReference } from '../src/core/template.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { variant } from './helpers.ts';
 
-const parameterChoices = (value: string | readonly string[] | undefined): readonly string[] => {
-  if (value === undefined) {
+const parameterChoices = (value: string | readonly string[] | ParamReference | undefined): readonly string[] => {
+  if (value === undefined || (typeof value === 'object' && !Array.isArray(value))) {
     return [];
   }
   return typeof value === 'string' ? [value] : value;

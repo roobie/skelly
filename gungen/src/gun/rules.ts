@@ -1,9 +1,11 @@
 // Gun-specific rules, added to the core rules through the domain.
 
+import { distanceWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
+import { applyDir, applyPoint, dot as dotProduct, sub } from '../core/math.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
-import type { Rule, Solid } from '../core/schema.ts';
-import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, LOWER_LAYOUTS } from './parts.ts';
+import type { PartDef, Rule, Solid } from '../core/schema.ts';
+import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS } from './parts.ts';
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const firingGrip: Rule = {
@@ -161,6 +163,74 @@ export const handguardFit: Rule = {
       });
     }
     return issues;
+  },
+};
+
+const freeFloatFitIssue = (
+  r: Resolved,
+  parts: { handguardPart: string; handguardDef: PartDef; barrelPart: string; barrelDef: PartDef },
+): Issue | undefined => {
+  const { handguardPart, handguardDef, barrelPart, barrelDef } = parts;
+  const handguardTransform = r.placed.get(handguardPart)!;
+  const barrelTransform = r.placed.get(barrelPart)!;
+  const handguardLength = Math.max(
+    ...handguardDef.solids.map((solid) =>
+      solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
+    ),
+  );
+  const axis = applyDir(handguardTransform, [1, 0, 0]);
+  const handguardStart = applyPoint(handguardTransform, [0, 0, 0]);
+  const distanceToPort = (id: string): number => {
+    const port = barrelDef.ports.find((candidate) => candidate.id === id);
+    return port
+      ? dotProduct(sub(applyPoint(barrelTransform, port.pos), handguardStart), axis)
+      : Number.POSITIVE_INFINITY;
+  };
+  const params = r.params.get(handguardPart)!;
+  const requiredClearance = HANDGUARD_CLEARANCE[(params.clearance?.value ?? 'M') as keyof typeof HANDGUARD_CLEARANCE];
+  const barrelSolids = barrelDef.solids.map((solid) => worldSolid(barrelTransform, solid));
+  const handguardSolids = handguardDef.solids.map((solid) => worldSolid(handguardTransform, solid));
+  const actualClearance = Math.min(
+    ...barrelSolids.flatMap((barrelSolid) =>
+      handguardSolids.map((handguardSolid) => distanceWorld(barrelSolid, handguardSolid)),
+    ),
+  );
+  const sightViolation = handguardLength >= distanceToPort('front-sight') - 1e-6;
+  const muzzleViolation = handguardLength >= distanceToPort('muzzle') - 1e-6;
+  if (actualClearance >= requiredClearance - 1e-6 && !sightViolation && !muzzleViolation) {
+    return undefined;
+  }
+  let reason: string;
+  if (actualClearance < requiredClearance - 1e-6) {
+    reason = `has only ${actualClearance.toFixed(2)}u barrel clearance; ${requiredClearance}u is required`;
+  } else if (sightViolation) {
+    reason = 'reaches the front sight';
+  } else {
+    reason = 'reaches the muzzle';
+  }
+  return {
+    rule: 'free-float-clearance',
+    message: `${handguardPart} free-float handguard ${reason}.`,
+    parts: [handguardPart, barrelPart],
+  };
+};
+
+export const freeFloatClearance: Rule = {
+  id: 'free-float-clearance',
+  title: 'The free-float handguard clears the barrel',
+  check(r) {
+    const barrel = [...r.defs].find(([, def]) => def.family === 'barrel');
+    if (!barrel) {
+      return [];
+    }
+    const [barrelPart, barrelDef] = barrel;
+    return [...r.defs].flatMap(([handguardPart, handguardDef]) => {
+      if (handguardDef.family !== 'handguard' || r.params.get(handguardPart)?.mount?.value !== 'free-float') {
+        return [];
+      }
+      const issue = freeFloatFitIssue(r, { handguardPart, handguardDef, barrelPart, barrelDef });
+      return issue ? [issue] : [];
+    });
   },
 };
 

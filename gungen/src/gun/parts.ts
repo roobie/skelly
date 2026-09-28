@@ -163,7 +163,7 @@ export const LOWER_LAYOUTS = {
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
 const AK_GAS_CYLINDER_Y = 2;
-const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
+export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
 const RECEIVER_FRONT_HALF_WIDTH = 2;
@@ -959,7 +959,9 @@ export const handguard: PartFamily = {
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
     layout: choice('standard', 'ak'),
     fit: choice('receiver', 'oversized', 'too-tight'),
+    mount: choice('clamped', 'free-float'),
   },
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mounting controls both clamp geometry and the exposed front port.
   build(params): PartDef {
     const lengthClass = cls(params, 'length');
     const len = params.layout === 'ak' ? akHandguardLength(lengthClass) : FORE_LENGTH[lengthClass];
@@ -986,7 +988,8 @@ export const handguard: PartFamily = {
     const cylinderTop = AK_GAS_CYLINDER_Y + cylinderRadius;
     const topInner = akLayout ? cylinderTop : inner;
     const sideTop = akLayout ? cylinderBottom : inner;
-    const clampRadius = params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
+    const clampRadius =
+      params.mount === 'free-float' || params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
     const clamp = clampRadius
       ? [
           solid(
@@ -1014,7 +1017,9 @@ export const handguard: PartFamily = {
       ],
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'front', mount: 'clamp', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
+        ...(params.mount === 'free-float'
+          ? []
+          : [{ id: 'front', mount: 'clamp', gender: 'male' as const, pos: [len, 0, 0] as Vec3, normal: X, up: Y }]),
         {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',
