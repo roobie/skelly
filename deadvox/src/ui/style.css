@@ -28,6 +28,41 @@ body {
   display: block;
 }
 
+#game-cursor-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+#game-cursor {
+  position: absolute;
+  width: 32px;
+  height: 28px;
+  margin: 0;
+  background: #fff;
+  mix-blend-mode: difference;
+  -webkit-mask: url("../content/base/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
+  mask: url("../content/base/assets/cursors/cursor.png") no-repeat 0 0 / 32px 56px;
+}
+#game-cursor.hand {
+  margin-left: -4px;
+  -webkit-mask-position: 0 -28px;
+  mask-position: 0 -28px;
+}
+#game-cursor[hidden] {
+  display: none;
+}
+
+#damage {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgb(190 0 0 / 82%) 100%);
+}
+
 #crosshair {
   position: fixed;
   left: 50%;
@@ -116,6 +151,8 @@ body {
 }
 #overlay .card {
   max-width: 420px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -430,7 +467,8 @@ button.inv-option {
   cursor: pointer;
 }
 button.inv-option:hover,
-button.inv-option:focus-visible {
+button.inv-option:focus-visible,
+button.inv-option.game-cursor-hover {
   border-color: var(--accent);
 }
 .inv-option-no {
@@ -579,6 +617,14 @@ body.inventory-open #quickbar,
 body.inventory-open #crosshair {
   display: none;
 }
+/* The rest screen (1.8) covers the play HUD too, and carries its own prompt. */
+body.resting #hud,
+body.resting #quickbar,
+body.resting #crosshair,
+body.resting #prompt,
+body.resting #handling {
+  display: none;
+}
 #hotbar[hidden],
 #quickbar[hidden],
 #handling[hidden] {
@@ -599,6 +645,42 @@ body.inventory-open #crosshair {
 }
 #errors:empty {
   display: none;
+}
+
+#inventory-stats {
+  position: fixed;
+  z-index: 12;
+  top: 38px;
+  right: 38px;
+  max-width: 34ch;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--panel);
+  white-space: pre;
+  font:
+    12px / 1.5 ui-monospace,
+    monospace;
+  pointer-events: none;
+}
+#inventory-stats[hidden] {
+  display: none;
+}
+.hud-options {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.hud-options h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.hud-options label {
+  display: block;
+  margin: 3px 0;
+  cursor: pointer;
+}
+.hud-options input {
+  accent-color: var(--accent);
 }
 
 #overlay .scale {
@@ -680,7 +762,8 @@ body.inventory-open #crosshair {
   cursor: pointer;
 }
 #spawn button:hover,
-#spawn button:focus-visible {
+#spawn button:focus-visible,
+#spawn button.game-cursor-hover {
   border-color: var(--accent);
 }
 #spawn button span:last-child {
@@ -754,4 +837,157 @@ body.bench #quickbar {
   font:
     11px / 1.4 ui-monospace,
     monospace;
+}
+
+/* ---- rest and sleep (1.8) ---- */
+#rest {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 45%);
+}
+#rest[hidden] {
+  display: none;
+}
+.rest-edge {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 140px 50px rgb(0 0 0 / 85%);
+}
+.rest-card {
+  width: min(360px, calc(100vw - 32px));
+  padding: 20px 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  text-align: center;
+}
+#rest h2 {
+  margin: 10px 0 14px;
+  font-size: 18px;
+}
+.rest-clock {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  position: relative;
+}
+.rest-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  background: var(--accent);
+  transform-origin: 50% 0%;
+  animation: rest-spin 2s linear infinite;
+}
+@keyframes rest-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rest-time {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font:
+    12px ui-monospace,
+    monospace;
+}
+.rest-prompt {
+  margin: 10px 0 0;
+  color: var(--accent);
+}
+
+/* Dynamically inserted by src/debug; absent outside ?debug=1. */
+#debug-ui-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+#debug-ui-root .debug-marker {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  padding: 2px 6px;
+  color: var(--muted);
+  background: rgb(18 20 24 / 70%);
+  font:
+    10px ui-monospace,
+    monospace;
+  cursor: pointer;
+  pointer-events: auto;
+}
+#debug-ui-root .debug-panel {
+  position: fixed;
+  top: 36px;
+  right: 12px;
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
+  pointer-events: auto;
+}
+#debug-ui-root .debug-panel .debug-panel-header,
+#debug-ui-root .debug-readout,
+#debug-ui-root .debug-shambler-count,
+#debug-ui-root .debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+#debug-ui-root .debug-panel .debug-panel-header {
+  justify-content: space-between;
+  align-items: center;
+}
+#debug-ui-root .debug-panel .debug-readout span,
+#debug-ui-root .debug-panel .debug-shambler-count button,
+#debug-ui-root .debug-panel .debug-shambler-count output,
+#debug-ui-root .debug-panel .debug-actions button,
+#debug-ui-root .debug-panel .debug-panel-header button {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 22%);
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+}
+#debug-ui-root .debug-panel .debug-actions button,
+#debug-ui-root .debug-panel .debug-shambler-count button {
+  cursor: pointer;
+}
+#debug-ui-root .debug-panel .debug-shambler-count {
+  align-items: center;
+}
+#debug-ui-root .debug-panel .debug-shambler-count button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+#debug-ui-root .debug-panel .debug-actions button:hover,
+#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover {
+  border-color: var(--accent);
+}
+#debug-ui-root .debug-panel p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+#debug-ui-root #hotbar,
+#debug-ui-root #spawn {
+  pointer-events: auto;
 }

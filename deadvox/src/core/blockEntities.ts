@@ -206,4 +206,11 @@ export class BlockEntities {
       .filter((e) => e.pockets !== undefined && this.distance(e, point) <= radius)
       .sort((a, b) => this.distance(a, point) - this.distance(b, point));
   }
+
+  /** The nearest bed within `radius` blocks of a point, if any (SLICE-1.md, 1.8: sleep is better on a bed). */
+  bedNear(point: Vec3, radius: number): BlockEntity | undefined {
+    return [...this.byAnchor.values()]
+      .filter((e) => this.defOf(e).bed !== undefined && this.distance(e, point) <= radius)
+      .sort((a, b) => this.distance(a, point) - this.distance(b, point))[0];
+  }
 }
