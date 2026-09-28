@@ -706,7 +706,9 @@ body.resting #handling {
 }
 .audio-options__row output {
   text-align: right;
-  font: 11px ui-monospace, monospace;
+  font:
+    11px ui-monospace,
+    monospace;
 }
 
 #overlay .scale {

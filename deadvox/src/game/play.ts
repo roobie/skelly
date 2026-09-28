@@ -30,17 +30,17 @@ import { PileMeshes } from '../render/piles.ts';
 import { applySky } from '../render/sky.ts';
 import { StepOffset } from '../render/stepOffset.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
+import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
-import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { renderRest } from '../ui/rest.ts';
+import { GameAudio } from './audio.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
-import { GameAudio } from './audio.ts';
 import type { Engine } from './engine.ts';
 import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './input.ts';
 import { startingLoadout } from './loadout.ts';
@@ -952,14 +952,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     });
   };
 
-  const frame = (now: number) => {
-    const dt = Math.min(0.1, (now - last) / 1000);
-    last = now;
-    fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
-
-    input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
-    streamer.update(body.pos[0], body.pos[2]);
-    sim.paused = !overlay.hidden; // the pause card is up
+  const stepSimulationFrame = (dt: number): void => {
     if (rest) {
       rest.frame(dt);
     } else {
@@ -970,6 +963,25 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
       }
     }
+  };
+
+  const renderHandlingFrame = (): void => {
+    if (screen.isOpen || !hudVisibility(hudOptions).handling) {
+      handlingBox.hidden = true;
+      return;
+    }
+    renderHandling(handlingBox, queue);
+  };
+
+  const frame = (now: number) => {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
+
+    input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
+    streamer.update(body.pos[0], body.pos[2]);
+    sim.paused = !overlay.hidden; // the pause card is up
+    stepSimulationFrame(dt);
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
@@ -1001,21 +1013,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     inventoryStats.textContent = needsText();
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
-    if (screen.isOpen || !hudVisibility(hudOptions).handling) {
-      handlingBox.hidden = true;
-    } else {
-      renderHandling(handlingBox, queue);
-    }
+    renderHandlingFrame();
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     held.update(camera);
     flashlight.update(registry, survival.lit, held, camera);
     renderer.render(scene, camera);
     held.render(renderer, camera, engine.sky);
-    if (sim.dead) {
-      die(sim.dead);
-      return;
-    }
-    requestAnimationFrame(frame);
+    finishFrame();
   };
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
@@ -1032,6 +1036,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       searched: [...entities.all].filter((e) => e.searched).length,
     };
     showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
+  };
+  const finishFrame = (): void => {
+    if (sim.dead) {
+      die(sim.dead);
+    } else {
+      requestAnimationFrame(frame);
+    }
   };
   requestAnimationFrame(frame);
 };

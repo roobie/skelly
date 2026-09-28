@@ -23,6 +23,8 @@ try {
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.addInitScript(() => {
+    // The merged menu defaults every HUD line off; enable its clock without an extra pointer gesture.
+    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
     const describe = (element) =>
       element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${element.className && typeof element.className === 'string' ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`
