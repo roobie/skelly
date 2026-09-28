@@ -865,12 +865,7 @@ describe('shambler scenarios', () => {
     const parts = meshes.group.children as import('three').InstancedMesh[];
     expect(parts).toHaveLength(6);
     expect(parts.map((mesh) => (mesh.material as MeshLambertMaterial).color.getHex())).toEqual([
-      0x87_96_78,
-      0x87_96_78,
-      0x68_6f_5e,
-      0x68_6f_5e,
-      0x68_6f_5e,
-      0x68_6f_5e,
+      0x87_96_78, 0x87_96_78, 0x68_6f_5e, 0x68_6f_5e, 0x68_6f_5e, 0x68_6f_5e,
     ]);
     for (const mesh of parts) {
       expect(mesh.material).toBeInstanceOf(MeshLambertMaterial);

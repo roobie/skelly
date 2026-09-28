@@ -61,7 +61,16 @@ export interface Registry {
 
 export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
-const SECTIONS: readonly ContentSection[] = ['blocks', 'items', 'furniture', 'figures', 'loot', 'templates', 'zombies', 'models'];
+const SECTIONS: readonly ContentSection[] = [
+  'blocks',
+  'items',
+  'furniture',
+  'figures',
+  'loot',
+  'templates',
+  'zombies',
+  'models',
+];
 
 // ---- shape (one file) ----
 

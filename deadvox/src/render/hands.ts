@@ -109,27 +109,33 @@ export class HeldItems {
     this.drawn = version;
     this.view.clear();
     this.shown.clear();
-    const { hands, registry } = this.inventory;
-    for (const side of ['right', 'left'] as const) {
-      const item = hands[side];
-      if (item) {
-        const def = defOf(registry, item.type);
-        const heldAt = HOLD[def.twoHanded ? 'both' : side];
-        const held = this.shape(item);
-        held.position.set(...heldAt);
-        this.view.add(held);
-        this.shown.set(item.uid, held);
-        this.view.add(createFirstPersonArm(this.palette, side, heldAt));
-        if (def.twoHanded) {
-          const otherSide: HandSide = side === 'right' ? 'left' : 'right';
-          const pose = def.model ? registry.models.get(def.model)?.hold : undefined;
-          const offhandGrip: Vec3 = pose === 'upright'
-            ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]]
-            : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
-          this.view.add(createFirstPersonArm(this.palette, otherSide, offhandGrip));
-        }
-      }
+    const { hands } = this.inventory;
+    this.syncHand('right', hands.right);
+    this.syncHand('left', hands.left);
+  }
+
+  private syncHand(side: HandSide, item: Item | undefined): void {
+    if (!item) {
+      return;
     }
+    const def = defOf(this.inventory.registry, item.type);
+    const heldAt = HOLD[def.twoHanded ? 'both' : side];
+    const held = this.shape(item);
+    held.position.set(...heldAt);
+    this.view.add(held);
+    this.shown.set(item.uid, held);
+    this.view.add(createFirstPersonArm(this.palette, side, heldAt));
+    if (def.twoHanded) {
+      this.syncOffhandArm(side, heldAt, def.model);
+    }
+  }
+
+  private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined): void {
+    const otherSide: HandSide = side === 'right' ? 'left' : 'right';
+    const pose = modelId ? this.inventory.registry.models.get(modelId)?.hold : undefined;
+    const offhandGrip: Vec3 =
+      pose === 'upright' ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]] : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
+    this.view.add(createFirstPersonArm(this.palette, otherSide, offhandGrip));
   }
 
   private shape(item: Item): Object3D {
