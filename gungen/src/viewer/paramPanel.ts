@@ -7,7 +7,7 @@
 
 import { type ResolvedParam, resolve } from '../core/resolve.ts';
 import type { Assembly, Connection, Domain, PartInstance } from '../core/schema.ts';
-import type { Choice, Template } from '../core/template.ts';
+import type { Choice, ParamReference, Template } from '../core/template.ts';
 
 const partOf = (ref: string): string => ref.slice(0, ref.indexOf('.'));
 const choiceValues = <T>(c: Choice<T>): readonly T[] => (Array.isArray(c) ? (c as readonly T[]) : [c as T]);
@@ -55,9 +55,23 @@ export type PanelEntry = PanelPart | PanelSlot;
 
 const slotOf = (template: Template | undefined, id: string) => template?.slots.find((s) => s.id === id);
 
-const permittedValues = (template: Template | undefined, partId: string, name: string): Set<string> | undefined => {
+const permittedValues = (
+  template: Template | undefined,
+  partId: string,
+  name: string,
+  resolvedParams: ReturnType<typeof resolve>['params'],
+): Set<string> | undefined => {
   const choice = slotOf(template, partId)?.params?.[name];
-  return choice === undefined ? undefined : new Set(choiceValues(choice));
+  if (choice === undefined) {
+    return undefined;
+  }
+  if (typeof choice === 'object' && !Array.isArray(choice)) {
+    // A ParamReference: the template copies the referenced part's value, so
+    // only that value is what generation would produce. Unresolved → no limit.
+    const referenced = resolvedParams.get((choice as ParamReference).fromSlot)?.[(choice as ParamReference).param];
+    return referenced === undefined ? undefined : new Set([referenced.value]);
+  }
+  return new Set(choiceValues(choice as Choice<string>));
 };
 
 /** Where a resolved param's value came from, for the panel: seed, user override, or a neighbour. */
@@ -98,7 +112,7 @@ export const buildPanelModel = (
       const r = resolvedParams[name]!;
       const values = spec.values.map((value) => ({
         value,
-        permitted: template ? (permittedValues(template, id, name)?.has(value) ?? true) : undefined,
+        permitted: template ? (permittedValues(template, id, name, resolved.params)?.has(value) ?? true) : undefined,
       }));
       const state = paramState(r, current.parts[id]?.params?.[name], baseline.parts[id]?.params?.[name]);
       return { name, current: r.value, values, state };

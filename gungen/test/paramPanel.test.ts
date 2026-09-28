@@ -47,6 +47,17 @@ describe('param panel: listing', () => {
     }
   });
 
+  it("permits only the referenced part's value for a param the template copies from another slot", () => {
+    // ar's handguard slot sets length: { fromSlot: 'barrel', param: 'length' }.
+    const assembly = generate(ar, gunDomain, 7);
+    const model = buildPanelModel(assembly, assembly, gunDomain, ar);
+    const handguard = model.find((e) => e.id === 'handguard') as PanelPart;
+    const barrel = model.find((e) => e.id === 'barrel') as PanelPart;
+    const barrelLength = barrel.params.find((p) => p.name === 'length')!.current;
+    const length = handguard.params.find((p) => p.name === 'length')!;
+    expect(length.values.filter((v) => v.permitted).map((v) => v.value)).toEqual([barrelLength]);
+  });
+
   it('marks values the current template does not permit, and leaves fixtures unmarked', () => {
     const seedAssembly = generate(battleRifle, gunDomain, 1);
     const model = buildPanelModel(seedAssembly, seedAssembly, gunDomain, battleRifle);
