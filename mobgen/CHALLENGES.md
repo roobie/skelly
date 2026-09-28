@@ -47,6 +47,21 @@ measures triangles and voxels per actor (`npm run stats`).
 background at 60 fps on the reference laptop, with actor rendering inside
 the frame budget. *Measure.*
 
+**Measured** (2026-09-28, `stress.html` sweep on the reference laptop, 11th
+gen Intel with Iris Xe; actors walking on flat ground, no game running):
+
+| Actors | One mesh per bone: CPU ms (pose + render), fps | One skinned mesh per actor: CPU ms, fps |
+| --- | --- | --- |
+| 60 | 4.3 + 3.5, 60 | 4.6 + 1.5, 60 |
+| 120 | 8.4 + 7.7, 56.5 | 8.1 + 3.0, 59.8 |
+| 240 | 18.0 + 16.9, 28.5 | 18.2 + 6.3, 30.1 |
+
+The GPU is not the limit: 365k triangles in 121 draws held 60 fps. One draw
+per actor cuts render CPU by about 2.5×. The limit is posing in JavaScript,
+about 75 µs per actor per frame, so 60 actors take about 6 ms of the frame
+before the game does anything. Next: make posing allocation-free, pose far
+actors less often, and cache per-step work, aiming for about 20 µs per actor.
+
 ## 2. Reading well at game distance
 
 **Why it's hard.** 1/12 of a block gives a head of about 50 voxels up close,
