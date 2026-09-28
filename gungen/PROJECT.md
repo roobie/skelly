@@ -735,12 +735,21 @@ can stand in for the design.
 - trigger guards on every archetype (gungen.3, in progress);
 - the octagonal barrel as a barrel profile param (gungen.7);
 - a thumbhole stock family plus an AWM-type design (gungen.6);
-- trapezoidal prisms for stocks and pistol grips (BR, 2026-09-28; deferred).
-  Every stock is boxes today (`src/gun/parts.ts:1641-1672`); the grip is one
-  five-point side profile extruded to a constant width. Tapering in side view
-  works with the existing extruded-profile solid. Tapering in width (narrower
-  at the wrist from above) needs a new convex solid kind, since extrusion
-  keeps the width constant;
+- trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
+  deferred). Every stock is boxes today (`src/gun/parts.ts:1641-1672`); the
+  grip is one five-point side profile extruded to a constant width. BR wants
+  the taper in side view, which the existing extruded-profile solid can
+  express:
+  - **stock** (reference `.agent-mail/scratch/br-ref-stock-taper.png`, an
+    870-style wood stock): a narrow wrist at the receiver that widens to a
+    tall butt; the comb line drops toward the butt while the belly line runs
+    down to the toe;
+  - **pistol grip** (reference `.agent-mail/scratch/br-ref-grip-slant.png`,
+    AR-style): raked, with slanted front and back faces rather than a
+    constant-width slab.
+  Keep port positions, the stock's `FIRING_GRIP` role and every existing
+  rule passing. Tapering in width (narrower at the wrist from above) would
+  need a new convex solid kind and is not asked for;
 - after 3.5: attachments with game properties and port compatibility
   (gungen.2), with the deadvox schema change they need.
 
