@@ -179,6 +179,107 @@ button:hover {
 .k.up::before {
   background: var(--up);
 }
+#param-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 32vh;
+  overflow-x: auto;
+  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(31, 34, 39, 0.92);
+  border-top: 1px solid var(--line);
+}
+#param-panel:empty {
+  display: none;
+}
+.param-reset {
+  flex: none;
+  align-self: center;
+}
+.param-note {
+  flex: none;
+  align-self: center;
+  max-width: 260px;
+  margin: 0;
+  color: var(--fail);
+  font-size: 12px;
+}
+.param-part {
+  flex: none;
+  width: 230px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 10px;
+  background: var(--panel);
+}
+.part-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.param-part.optional .part-title {
+  color: var(--normal);
+}
+.part-title .family {
+  color: var(--muted);
+  font-weight: 400;
+}
+.param-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.param-row {
+  margin-bottom: 8px;
+}
+.param-row .param-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.param-row .param-state {
+  font-size: 10px;
+}
+.param-row .param-state.user {
+  color: var(--normal);
+}
+.param-row .param-state.inherited {
+  color: var(--up);
+}
+.param-row .clear {
+  font-size: 10px;
+  padding: 0 4px;
+}
+.param-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.param-values button {
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.param-values button.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+.param-values button.not-permitted {
+  opacity: 0.4;
+  border-style: dashed;
+}
 @media (max-width: 720px) {
   body {
     flex-direction: column;
