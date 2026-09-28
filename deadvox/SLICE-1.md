@@ -561,6 +561,45 @@ test), and the golden save loads.
 scenario test shows every noise event (footsteps, doors, fights) also emits a
 sound event with its position.
 
+**Status (2026-09-28):** 1.10 closes with PR #43.
+
+**Delivered beyond the plan:**
+- Solid-run wall costs already muffle player noise for shambler hearing; sound
+  playback also applies positional distance falloff, wall gain and low-pass.
+- Player pain (and jump-strain) sounds feed the shambler vocal-noise path.
+- The generated `/sounds.html` listening sheet and debug log of the last eight
+  sounds actually started are included.
+- Player and shambler footsteps use ground travel and surface; walking, jogging
+  and sprinting use different stride distances, and shambler chase cadence is
+  faster than stroll.
+
+**Missing, carried forward:**
+- Eating and drinking sounds need cues wired to the completed use-item actions.
+- The flashlight switch needs an on/off cue wired to light use.
+- Low-stamina heavy breathing needs its own sustained/periodic cue; the current
+  `player_strain` is a jump sound.
+- Shamblers bumping into doors needs door-contact behavior and a positional cue.
+- Wind ambience, with quieter levels at night, needs a time-of-day mix.
+- Idle presence beyond `shambler_idle`'s occasional groan needs more moans,
+  breathing and in-place shuffling with state-shaped rate/loudness (see
+  [DESIGN.md](DESIGN.md#audio)).
+- BR's bodily audio cues—yawning, stomach sounds, coughing and a limp's uneven
+  steps—need their corresponding states and audio events.
+- `footstep_sand` needs a sand-specific recording; it currently reuses
+  grass/sand recordings.
+- `shambler_step_*` need shambler-specific heavier, dragging recordings; they
+  currently reuse the player's surface recordings pitched down.
+- Night audibility beyond 10 m is unconfirmed: shambler steps reach 14.5 m at
+  effective gain 0.014; tune falloff/gain so they're clearly heard past 10 m at
+  night, judged by ear.
+- `door_blocked_close` needs a blocked-door recording; it reuses door-close
+  recordings at lower gain.
+- `player_landing_hard` needs a hard-landing-specific recording; it uses a
+  generic landing recording.
+- The scenario half of the done-when is missing: test that each noise event
+  (footsteps, doors and fights) emits a positional sound. The validator half is
+  met: it checks required sound IDs/files and asset-manifest provenance.
+
 ### 1.11 Playtest build
 
 - A debug overlay (F3):

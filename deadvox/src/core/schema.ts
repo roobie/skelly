@@ -175,7 +175,26 @@ const Point = tuple([number(), number(), number()]);
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
  * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
  */
-export const ModelSchema = strictObject({
+export const SoundMultipliers = pipe(
+  tuple([Positive, Positive]),
+  check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
+);
+
+const SoundSchema = strictObject({
+  id: Id,
+  variants: pipe(
+    array(pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/'))),
+    nonEmpty('needs at least one variant'),
+  ),
+  gain: pipe(Positive, maxValue(1, 'must be at most 1')),
+  pitchJitter: SoundMultipliers,
+  gainJitter: SoundMultipliers,
+  minIntervalSeconds: NonNegative,
+  category: picklist(['world', 'body', 'ui']),
+  noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+});
+
+const ModelSchema = strictObject({
   id: Id,
   /** The `.glb` file, as a path within the pack. */
   file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
@@ -386,6 +405,7 @@ export const ContentFileSchema = strictObject({
   zombies: optional(array(ZombieSchema)),
   figures: optional(array(FigureSchema)),
   models: optional(array(ModelSchema)),
+  sounds: optional(array(SoundSchema)),
 });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
@@ -397,5 +417,6 @@ export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
+export type SoundDef = InferOutput<typeof SoundSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

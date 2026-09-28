@@ -30,6 +30,153 @@
       "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed"
     },
     {
+      "title": "15 vocal male strain/hurt/pain/jump sounds",
+      "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds",
+      "author": "qubodup",
+      "licence": "CC0-1.0",
+      "download": "slightscreams.7z",
+      "files": [
+        "assets/audio/player-hurt-light-01.ogg",
+        "assets/audio/player-hurt-light-03.ogg",
+        "assets/audio/player-hurt-light-06.ogg",
+        "assets/audio/player-hurt-heavy-02.ogg",
+        "assets/audio/player-hurt-heavy-05.ogg",
+        "assets/audio/player-hurt-heavy-08.ogg",
+        "assets/audio/player-strain-09.ogg",
+        "assets/audio/player-strain-12.ogg",
+        "assets/audio/player-strain-14.ogg"
+      ],
+      "changes": "Selected nine vocal variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+    },
+    {
+      "title": "80 CC0 creature SFX",
+      "url": "https://opengameart.org/content/80-cc0-creature-sfx",
+      "author": "rubberduck",
+      "licence": "CC0-1.0",
+      "download": "80-CC0-creature-SFX.zip",
+      "files": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hurt-02.ogg",
+        "assets/audio/shambler-hurt-03.ogg"
+      ],
+      "changes": "Selected three hurt variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+    },
+    {
+      "title": "80 CC0 RPG SFX",
+      "url": "https://opengameart.org/content/80-cc0-rpg-sfx",
+      "author": "rubberduck",
+      "licence": "CC0-1.0",
+      "download": "80-CC0-RPG-SFX.zip",
+      "files": [
+        "assets/audio/melee-swing-01.ogg",
+        "assets/audio/melee-swing-02.ogg",
+        "assets/audio/melee-swing-03.ogg",
+        "assets/audio/door-open-01.ogg",
+        "assets/audio/door-open-02.ogg",
+        "assets/audio/door-open-03.ogg",
+        "assets/audio/door-close-01.ogg",
+        "assets/audio/door-close-02.ogg",
+        "assets/audio/door-close-03.ogg"
+      ],
+      "changes": "Selected three blade, three wood and three metal variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+    },
+    {
+      "title": "Zombies Sound Pack",
+      "url": "https://opengameart.org/content/zombies-sound-pack",
+      "author": "artisticdude",
+      "licence": "CC0-1.0",
+      "download": "zombies.zip",
+      "files": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg",
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg",
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ],
+      "changes": "Selected nine zombie vocalizations; converted from WAV to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+    },
+    {
+      "title": "37 hits/punches",
+      "url": "https://opengameart.org/content/37-hitspunches",
+      "author": "Independent.nu",
+      "licence": "CC0-1.0",
+      "download": "independent_nu_ljudbank-hits_and_punches.7z",
+      "files": [
+        "assets/audio/melee-hit-01.ogg",
+        "assets/audio/melee-hit-02.ogg",
+        "assets/audio/melee-hit-03.ogg",
+        "assets/audio/melee-hit-04.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ],
+      "changes": "Selected seven impact variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+    },
+    {
+      "title": "Different steps on wood, stone, leaves, gravel and mud",
+      "url": "https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud",
+      "author": "TinyWorlds",
+      "licence": "CC0-1.0",
+      "download": "[kdd]DifferentSteps_0.zip",
+      "files": [
+        "assets/audio/footstep-wood-01.ogg",
+        "assets/audio/footstep-wood-02.ogg",
+        "assets/audio/footstep-wood-03.ogg",
+        "assets/audio/footstep-stone-01.ogg",
+        "assets/audio/footstep-leaves-01.ogg",
+        "assets/audio/footstep-leaves-02.ogg",
+        "assets/audio/footstep-mud-01.ogg"
+      ],
+      "changes": "Selected wood, stone, leaves and mud steps; converted to mono Opus in Ogg containers; unused gravel sample excluded because the game has no gravel block"
+    },
+    {
+      "title": "Fantozzi's Footsteps (Grass/Sand & Stone)",
+      "url": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "licence": "CC0-1.0",
+      "download": "Fantozzi-footsteps.7z",
+      "files": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg",
+        "assets/audio/footstep-stone-02.ogg",
+        "assets/audio/footstep-stone-03.ogg",
+        "assets/audio/footstep-stone-04.ogg",
+        "assets/audio/footstep-stone-05.ogg",
+        "assets/audio/footstep-stone-06.ogg"
+      ],
+      "changes": "Selected six grass/sand and five stone steps (the source says its sand steps also sound like grass); converted from FLAC to mono Opus in Ogg containers; unused sixth stone sample excluded"
+    },
+    {
+      "title": "25 CC0 mud sfx",
+      "url": "https://opengameart.org/content/25-cc0-mud-sfx",
+      "author": "rubberduck",
+      "licence": "CC0-1.0",
+      "download": "25-CC0-mud-sfx.zip",
+      "files": [
+        "assets/audio/footstep-mud-02.ogg",
+        "assets/audio/footstep-mud-03.ogg",
+        "assets/audio/footstep-mud-04.ogg"
+      ],
+      "changes": "Selected three muddy footfall variations; converted to mono Opus in Ogg containers; unused source effects excluded"
+    },
+    {
+      "title": "Jump Landing Sound",
+      "url": "https://opengameart.org/content/jump-landing-sound",
+      "author": "MentalSanityOff",
+      "licence": "CC0-1.0",
+      "download": "jumpland48000.mp3",
+      "files": ["assets/audio/player-landing-hard-01.ogg"],
+      "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container"
+    },
+    {
       "title": "CC0 Flat Shaded Melee Weapons",
       "url": "https://opengameart.org/content/cc0-flat-shaded-melee-weapons",
       "author": "Pichuliru",

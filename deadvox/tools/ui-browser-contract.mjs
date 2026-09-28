@@ -271,6 +271,39 @@ try {
     true,
     'menu key is consumed by the game',
   );
+  assert.equal(
+    await evaluate("Boolean(document.querySelector('#audio-volume-world'))"),
+    true,
+    'audio controls are in the F9 menu',
+  );
+  const menuCenter = await evaluate(`(() => {
+    const rect = document.querySelector('#overlay .card').getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  })()`);
+  await moveCursorTo(menuCenter);
+  await evaluate(
+    "document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 500 }))",
+  );
+  assert.ok(
+    await evaluate("document.querySelector('#overlay .card').scrollTop > 0"),
+    'wheel scrolls the locked main menu',
+  );
+  await clickAt('#audio-volume-world');
+  const savedWorldVolume = Number(await evaluate("document.querySelector('#audio-volume-world').value"));
+  assert.notEqual(savedWorldVolume, 0.8, 'F9 menu click changes the world volume slider');
+  assert.equal(
+    await evaluate("JSON.parse(localStorage.getItem('deadvox.audio.settings')).world"),
+    savedWorldVolume,
+    'world volume is persisted to localStorage',
+  );
+  const restoredVolumes = await evaluate(`import('/src/game/audio.ts').then(({ GameAudio }) => new GameAudio({
+    registry: { sounds: new Map(), soundOrigins: new Map() },
+    seed: 1,
+    blockSize: 1,
+    isSolid: () => false,
+    report: () => {},
+  }).settings)`);
+  assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
   await clickAt('#hud-options label:nth-of-type(2)');
   assert.equal(
     await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
@@ -293,6 +326,11 @@ try {
   );
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');
+  assert.equal(
+    Number(await evaluate("document.querySelector('#audio-volume-world').value")),
+    savedWorldVolume,
+    'audio volume remains selected when the menu reopens',
+  );
   await clickAt('#hud-options label:nth-of-type(2)');
   assert.equal(
     await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
@@ -566,7 +604,7 @@ try {
     'locked cursor click on continue resumes play',
   );
   process.stdout.write(
-    'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, unlock, menu/browser keys, inventory stats.\n',
+    'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',
   );
 } finally {
   ws?.close();

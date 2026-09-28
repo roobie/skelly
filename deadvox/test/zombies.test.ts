@@ -13,7 +13,14 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
-import { FISTS_MELEE, hearPlayer, type PlayerSense, perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import {
+  FISTS_MELEE,
+  hearPlayer,
+  hearVocalNoise,
+  type PlayerSense,
+  perceivePlayer,
+  ZombieSystem,
+} from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { FIGURE_BOXES, FIGURE_PARTS } from '../src/render/figure.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
@@ -1178,6 +1185,57 @@ describe('two-tier shambler hearing', () => {
     );
     expect(withinFarLimit?.tier).toBe('far');
     expect(outsideFarLimit).toBeUndefined();
+  });
+
+  it('hears player vocal noise within its radius, demotes through a wall, and uses the configured far tier', () => {
+    const from: Vec3 = [0, 1, 0];
+    const noise = { id: 1, pos: [10, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
+    const hear = (pos: Vec3, isSolid: SolidAt = () => false) =>
+      hearVocalNoise({
+        zombie: SHAMBLER,
+        from,
+        noise: { ...noise, pos },
+        time: 0.5,
+        blockSize: BLOCK_SIZE,
+        isSolid,
+        rng: Rng.stream(9, 'voice-test'),
+      });
+
+    expect(hear(noise.pos)?.tier).toBe('near');
+    expect(hear([20, 1, 0])?.tier).toBe('far');
+    expect(hear([22, 1, 0])?.tier).toBe('far');
+    expect(hear([26, 1, 0])).toBeUndefined();
+    const wall: SolidAt = (x, y) => x >= 5 && x <= 6 && y >= 1;
+    expect(hear(noise.pos, wall)?.tier).toBe('far');
+    expect(hear(noise.pos, wall)?.target).not.toEqual(noise.pos);
+  });
+
+  it('makes a still player vocalization alert and investigate once', () => {
+    const noise = { id: 44, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
+    const target = { ...player(noise.pos), vocalNoise: noise };
+    const heard: string[] = [];
+    const system = new ZombieSystem({
+      ...senses(() => target),
+      seed: 21,
+      onSound: (event) => heard.push(event),
+    });
+    const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    const zombie = system.store.get(id)!;
+
+    system.tick(1 / 20, 0.05);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.investigationTier).toBe('near');
+    expect(zombie.lastPerceived).toEqual(noise.pos);
+    expect(heard).toContain('shambler_alert');
+    system.tick(1 / 20, 0.1);
+    expect(heard.filter((event) => event === 'shambler_alert')).toHaveLength(1);
+
+    const distantNoise = { ...noise, id: 45, pos: [26, 1, 0] as Vec3 };
+    const distantPlayer = { ...player(distantNoise.pos), vocalNoise: distantNoise };
+    const distantSystem = new ZombieSystem(senses(() => distantPlayer));
+    const distantId = distantSystem.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
+    distantSystem.tick(1 / 20, 0.05);
+    expect(distantSystem.store.get(distantId)!.mode).toBe('idle');
   });
 
   it('counts each solid run once and lets a wall demote a near noise to far', () => {

@@ -17,6 +17,8 @@ import {
   type Turn,
 } from '../src/core/templates.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import type { Body } from '../src/core/physics.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -116,6 +118,43 @@ describe('furniture', () => {
     const { done } = queue.tick(0.2);
     expect(done).toHaveLength(1);
     expect(cupboard.searched).toBe(true);
+  });
+
+  it('tagged door jobs play open, close, and blocked-close sounds at the door centre', () => {
+    const inv = new Inventory(registry);
+    const door = inv.furnish({ type: 'wood_door', pos: [4, 0, 0], size: [2, 4, 1], facing: 'n' })!;
+    const queue = new HandlingQueue(inv);
+    const bodyAt = (pos: [number, number, number]): Body => ({
+      pos,
+      vel: [0, 0, 0],
+      halfWidth: 0.2,
+      height: 1.8,
+      onGround: true,
+    });
+    let player = bodyAt([0, 0, 0]);
+    const sounds: { event: string; position: [number, number, number] }[] = [];
+    registerDoorAction(queue, inv.entities, () => player, () => [], (event, position) => {
+      sounds.push({ event, position: [...position] });
+    });
+    const enqueue = (closing: boolean) => queue.enqueueAction(DOOR_ACTION, 'Door', 0.1, { entityUid: door.uid, closing });
+
+    enqueue(false);
+    queue.tick(0.1);
+    expect(door.open).toBe(true);
+    expect(sounds).toEqual([{ event: 'door_open', position: [5, 2, 0.5] }]);
+
+    enqueue(true);
+    queue.tick(0.1);
+    expect(door.open).toBe(false);
+    expect(sounds[1]).toEqual({ event: 'door_close', position: [5, 2, 0.5] });
+
+    enqueue(false);
+    queue.tick(0.1);
+    player = bodyAt([5, 0, 0.5]);
+    enqueue(true);
+    expect(queue.tick(0.1).failed[0]?.reason).toBe("You're in the way");
+    expect(door.open).toBe(true);
+    expect(sounds[3]).toEqual({ event: 'door_blocked_close', position: [5, 2, 0.5] });
   });
 
   it('doors stop you only while closed', () => {

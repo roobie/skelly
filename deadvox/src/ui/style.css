@@ -682,6 +682,34 @@ body.resting #handling {
 .hud-options input {
   accent-color: var(--accent);
 }
+.audio-options {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.audio-options h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.audio-options__row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 38px;
+  gap: 8px;
+  align-items: center;
+  margin: 5px 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+.audio-options__row input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.audio-options__row output {
+  text-align: right;
+  font:
+    11px ui-monospace,
+    monospace;
+}
 
 #overlay .scale {
   margin: 12px 0 0;
@@ -986,6 +1014,27 @@ body.bench #quickbar {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 11px;
+}
+#debug-ui-root .debug-sound-log {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  font:
+    10px / 1.5 ui-monospace,
+    monospace;
+}
+#debug-ui-root .debug-sound-log ol {
+  max-height: 400px;
+  overflow: auto;
+  margin: 5px 0 0;
+  padding-left: 20px;
+}
+#debug-ui-root .debug-sound-log li {
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+#debug-ui-root .debug-sound-log li + li {
+  border-top: 1px solid rgb(255 255 255 / 8%);
 }
 #debug-ui-root #hotbar,
 #debug-ui-root #spawn {
