@@ -62,6 +62,22 @@ about 75 µs per actor per frame, so 60 actors take about 6 ms of the frame
 before the game does anything. Next: make posing allocation-free, pose far
 actors less often, and cache per-step work, aiming for about 20 µs per actor.
 
+After that work (2026-09-29, same laptop, distance LOD on: re-pose every 2nd
+frame beyond 15 m, every 3rd beyond 30 m):
+
+| Actors | One mesh per bone: CPU ms (pose + render), fps | One skinned mesh per actor: CPU ms, fps |
+| --- | --- | --- |
+| 60 | 1.2 + 6.0, 60 | 1.1 + 1.9, 60 |
+| 120 | 1.7 + 9.2, 60 | 2.6 + 5.2, 60 |
+| 240 | 3.5 + 21.4, 39.6 | 3.9 + 9.1, 43.1 |
+
+Posing 60 skinned actors fell from 4.6 ms to 1.1 ms, so 60 actors now cost
+about 3 ms of CPU in all. Render CPU is now the larger share, and at 240
+actors the frame no longer fits even though the CPU work does (13 ms): the
+GPU (731k triangles) or unmeasured browser work is the limit there. The
+skinned 240 run also had a 1% low of 2.2 fps, one long stall that is not yet
+explained.
+
 ## 2. Reading well at game distance
 
 **Why it's hard.** 1/12 of a block gives a head of about 50 voxels up close,
