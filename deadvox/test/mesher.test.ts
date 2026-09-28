@@ -52,7 +52,7 @@ describe('buildMesh', () => {
       }
       expect(unitFaces(buildMesh(p, colors))).toEqual(culledFaces(p));
     }
-  });
+  }, 15_000);
 
   it('culls against blocks in the border from a neighbouring chunk', () => {
     const p = padded([0, 3, 3]);

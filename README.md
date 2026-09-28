@@ -32,6 +32,12 @@ every subproject and to all code, tests included.
   one-off exception needs a `biome-ignore` comment with a reason.
 - **CI enforces it:** `.github/workflows/lint.yml` runs `biome ci` on every push
   and PR, and the Pages deploy won't publish unless lint, types and tests pass.
+- **Run it as CI does:** `npm ci` at the repo root, then `npm run ci` from the
+  root (of the worktree, if you're in one). Don't use `npx biome`: without the
+  root install it resolves the unrelated npm package `biome`, which checks
+  nothing and exits 0. The tool is
+  [`@biomejs/biome`](https://www.npmjs.com/package/@biomejs/biome), pinned in
+  the root lockfile.
 - **Tighten, don't loosen:** when a Biome or TypeScript release adds a check,
   turn it on and fix what it finds. Known debt is marked in place with
   `biome-ignore lint/complexity/noExcessiveCognitiveComplexity`: split those

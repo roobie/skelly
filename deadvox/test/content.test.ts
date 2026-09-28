@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { blockColors, buildRegistry, validateContent } from '../src/core/content.ts';
+import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -17,6 +17,72 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('keeps footstep audio in the body mix without a second hearing-noise path', () => {
+    const { registry } = buildRegistry(base);
+    for (const id of [
+      'footstep_grass',
+      'footstep_mud',
+      'footstep_sand',
+      'footstep_stone',
+      'footstep_wood',
+      'footstep_leaves',
+    ]) {
+      const sound = registry.sounds.get(id)!;
+      expect(sound.category, id).toBe('body');
+      expect(sound.noise.enabled, id).toBe(false);
+    }
+  });
+
+  it('validates the shambler search-duration range', () => {
+    const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(zombiePack.data) as {
+      zombies: Array<{ hearingModel: { searchSeconds: { min: number; max: number } } }>;
+    };
+    data.zombies[0]!.hearingModel.searchSeconds = { min: 51, max: 50 };
+    const issues = validateContent({ source: zombiePack.source, data });
+    expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
+  });
+
+  it('fails when the sounds.json content file is missing required events', () => {
+    const { registry } = buildRegistry(base.filter(({ source }) => source !== 'sounds.json'));
+    const missingLight = requiredSoundIssues(registry).some(
+      (issue) => issue.message === 'missing required sound event "player_hurt_light"',
+    );
+    expect(missingLight).toBe(true);
+  });
+
+  it('requires the blocked door-close sound event', () => {
+    const { registry } = buildRegistry(base.filter(({ source }) => source !== 'sounds.json'));
+    expect(requiredSoundIssues(registry).map((issue) => issue.message)).toContain(
+      'missing required sound event "door_blocked_close"',
+    );
+  });
+
+  it('fails when a required sound event has no definition', () => {
+    const sounds = {
+      source: 'sounds.json',
+      data: {
+        sounds: [
+          {
+            id: 'player_hurt_light',
+            variants: ['assets/audio/player-hurt-light-01.ogg'],
+            gain: 0.8,
+            pitchJitter: [0.95, 1.05],
+            gainJitter: [0.9, 1.1],
+            minIntervalSeconds: 0.1,
+            category: 'body',
+            noise: { enabled: true, radiusMetres: 8 },
+          },
+        ],
+      },
+    };
+    const { registry } = buildRegistry([...base.filter(({ source }) => source !== 'sounds.json'), sounds]);
+    const missingHeavy = requiredSoundIssues(registry).some(
+      (issue) => issue.message === 'missing required sound event "player_hurt_heavy"',
+    );
+    expect(missingHeavy).toBe(true);
   });
 
   it('lets a later file override a block without changing its runtime id', () => {
@@ -117,9 +183,10 @@ describe('content', () => {
   it('has every kind of content in the base pack', () => {
     const { registry } = buildRegistry(base);
     expect(registry.items.size).toBeGreaterThan(30);
-    for (const map of [registry.furniture, registry.loot, registry.templates, registry.zombies]) {
+    for (const map of [registry.furniture, registry.figures, registry.loot, registry.templates, registry.zombies]) {
       expect(map.size).toBeGreaterThan(0);
     }
+    expect(registry.figures.get('player')?.palette).toEqual({ skin: '#c58f70', shirt: '#52677d', trousers: '#4a4b55' });
   });
 });
 
@@ -177,11 +244,42 @@ describe('content references', () => {
             health: 50,
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,
+            wander: {
+              idleSeconds: { min: 3, max: 10 },
+              strollSeconds: { min: 3, max: 12 },
+              leashMetres: 12,
+              lookIntervalSeconds: { min: 0.8, max: 1.8 },
+              bodyLookArcDegrees: 150,
+              headLookArcDegrees: 100,
+              bodyTurnDegreesPerSecond: 90,
+              headTurnDegreesPerSecond: 120,
+              movementAcceleration: 4,
+            },
             sight: 20,
             nightSight: 10,
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            hearingModel: {
+              farMultiplier: 2,
+              bearingErrorRadians: 0.61,
+              investigationDistanceMetres: 8,
+              wallRunCostMetres: 6,
+              searchSeconds: { min: 40, max: 50 },
+              searchRadiusMetres: 4,
+              searchStrollSeconds: { min: 1, max: 3 },
+            },
+            chaseMotion: {
+              swayDegrees: 25,
+              swayIntervalSeconds: { min: 0.7, max: 1.1 },
+              speedMultiplier: { min: 0.6, max: 1.2 },
+              lurchSeconds: 1,
+              stumbleChancePerSecond: 0.16,
+              stumbleDurationSeconds: { min: 0.55, max: 0.75 },
+              stumbleEaseSeconds: 0.2,
+              stumbleSpeedFraction: 0.04,
+              stumbleDeceleration: 14,
+            },
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
             loot: 'till',

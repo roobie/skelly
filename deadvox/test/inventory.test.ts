@@ -239,7 +239,7 @@ describe('handling time', () => {
     expect(inv.locate(beans)?.kind).toBe('pile'); // still on the floor until the time is up
     expect(queue.busy).toBe(true);
     const result = queue.tick(0.2);
-    expect(result.done.map((j) => (j.kind === 'move' ? j.item : undefined))).toEqual([beans]);
+    expect(result.done.map((j) => (j.kind === 'move' ? j.itemUid : undefined))).toEqual([beans.uid]);
     expect(inv.locate(beans)).toMatchObject({ kind: 'pocket', owner: backpack });
     expect(queue.jobs).toHaveLength(1);
     queue.tick(10);
@@ -256,7 +256,7 @@ describe('handling time', () => {
     queue.enqueue(soup, spot);
     inv.move(beans, spot); // something else took the spot meanwhile
     const result = queue.tick(10);
-    expect(result.failed).toEqual([{ job: expect.objectContaining({ item: soup }), reason: 'No room there' }]);
+    expect(result.failed).toEqual([{ job: expect.objectContaining({ itemUid: soup.uid }), reason: 'No room there' }]);
     expect(inv.locate(soup)?.kind).toBe('pile');
   });
 });

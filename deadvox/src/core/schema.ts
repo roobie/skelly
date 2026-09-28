@@ -175,7 +175,26 @@ const Point = tuple([number(), number(), number()]);
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
  * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
  */
-export const ModelSchema = strictObject({
+export const SoundMultipliers = pipe(
+  tuple([Positive, Positive]),
+  check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
+);
+
+const SoundSchema = strictObject({
+  id: Id,
+  variants: pipe(
+    array(pipe(string(), regex(/^assets\/audio\/[a-z0-9_.-]+\.ogg$/, 'expected an Ogg file under assets/audio/'))),
+    nonEmpty('needs at least one variant'),
+  ),
+  gain: pipe(Positive, maxValue(1, 'must be at most 1')),
+  pitchJitter: SoundMultipliers,
+  gainJitter: SoundMultipliers,
+  minIntervalSeconds: NonNegative,
+  category: picklist(['world', 'body', 'ui']),
+  noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+});
+
+const ModelSchema = strictObject({
   id: Id,
   /** The `.glb` file, as a path within the pack. */
   file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
@@ -184,6 +203,10 @@ export const ModelSchema = strictObject({
    * that order). Held, the model's +x points forward and +y up.
    */
   grip: optional(strictObject({ at: Point, turn: optional(Point) })),
+  /** Held with its long axis aimed forward or upright, grip at the origin. */
+  hold: optional(picklist(['forward', 'upright'])),
+  /** Degrees to roll around the model's long +x axis before applying the hold pose. */
+  roll: optional(pipe(number(), minValue(-180), maxValue(180))),
   /** Named points, such as the flashlight's `lens`. */
   anchors: optional(record(Id, Point)),
 });
@@ -294,14 +317,80 @@ export const ZombieSchema = strictObject({
   nightSight: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
+  /** Idle/stroll timing, home leash and eased look controls. */
+  wander: strictObject({
+    idleSeconds: strictObject({ min: Positive, max: Positive }),
+    strollSeconds: strictObject({ min: Positive, max: Positive }),
+    leashMetres: Positive,
+    lookIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+    bodyLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
+    headLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
+    bodyTurnDegreesPerSecond: Positive,
+    headTurnDegreesPerSecond: Positive,
+    movementAcceleration: Positive,
+  }),
   /** 1 is normal hearing. */
   hearing: NonNegative,
   hearingRange: strictObject({ walk: Positive, jog: Positive, sprint: Positive }),
+  hearingModel: pipe(
+    strictObject({
+      farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
+      bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
+      investigationDistanceMetres: Positive,
+      wallRunCostMetres: NonNegative,
+      searchSeconds: strictObject({ min: Positive, max: Positive }),
+      searchRadiusMetres: Positive,
+      searchStrollSeconds: strictObject({ min: Positive, max: Positive }),
+    }),
+    check(
+      (model) => model.searchSeconds.min <= model.searchSeconds.max,
+      'minimum search duration must not exceed maximum',
+    ),
+    check(
+      (model) => model.searchStrollSeconds.min <= model.searchStrollSeconds.max,
+      'minimum search stroll must not exceed maximum',
+    ),
+  ),
+  chaseMotion: pipe(
+    strictObject({
+      swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+      swayIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+      speedMultiplier: strictObject({ min: Positive, max: Positive }),
+      lurchSeconds: Positive,
+      stumbleChancePerSecond: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      stumbleDurationSeconds: strictObject({ min: Positive, max: Positive }),
+      stumbleEaseSeconds: Positive,
+      stumbleSpeedFraction: Fraction,
+      stumbleDeceleration: Positive,
+    }),
+    check(
+      (motion) => motion.swayIntervalSeconds.min <= motion.swayIntervalSeconds.max,
+      'minimum sway interval must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.speedMultiplier.min <= motion.speedMultiplier.max,
+      'minimum speed multiplier must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.stumbleDurationSeconds.min <= motion.stumbleDurationSeconds.max,
+      'minimum stumble duration must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.stumbleDurationSeconds.min >= 2 * motion.stumbleEaseSeconds,
+      'stumble duration must allow easing in and out',
+    ),
+  ),
   attack: strictObject({ damage: Positive, reach: Positive, cooldown: Positive }),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */
   loot: optional(Id),
   model: Id,
+});
+
+/** Actor palettes are content so appearance doesn't live in renderer code. */
+export const FigureSchema = strictObject({
+  id: Id,
+  palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
 });
 
 // ---- files ----
@@ -314,7 +403,9 @@ export const ContentFileSchema = strictObject({
   loot: optional(array(LootTableSchema)),
   templates: optional(array(TemplateSchema)),
   zombies: optional(array(ZombieSchema)),
+  figures: optional(array(FigureSchema)),
   models: optional(array(ModelSchema)),
+  sounds: optional(array(SoundSchema)),
 });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
@@ -324,6 +415,8 @@ export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
+export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
+export type SoundDef = InferOutput<typeof SoundSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

@@ -20,7 +20,7 @@ import { Simulation } from '../src/core/sim.ts';
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(
-  ['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map((f) =>
+  ['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json', 'models-melee.json'].map((f) =>
     read(`src/content/base/${f}`),
   ),
 );

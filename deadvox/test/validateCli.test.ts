@@ -22,10 +22,18 @@ describe('npm run validate', () => {
 
   it('passes on a pack with a model, its file and a manifest that lists it', () => {
     const run = validate('test/fixtures/packs/lamp/lamp.json', 'test/fixtures/packs/lamp/assets/manifest.json');
-    // The fixture is validated on top of the base pack: its flashlight and ten guns, and the lamp.
-    expect(run.stdout).toContain('12 models');
+    // The fixture is validated on top of the base pack: flashlight, ten guns, twenty-one melee models, and the lamp.
+    expect(run.stdout).toContain('33 models');
     expect(run.stdout).toContain('0 issue(s)');
     expect(run.status).toBe(0);
+  });
+
+  it("fails on a sound whose variant file isn't in the pack", () => {
+    const run = validate('test/fixtures/content/missing-sound-file.json');
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain(
+      'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
+    );
   });
 
   it('fails on an item whose model is missing', () => {

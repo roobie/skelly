@@ -39,7 +39,7 @@ interface SpawnMenuActions {
 const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): TemplateResult => html`
   <div class="card">
     <h2>Spawn an item</h2>
-    <p>Drops it at your feet. Esc or G closes.</p>
+    <p>Drops it at your feet. Press G to close.</p>
     <input
       type="search"
       placeholder="Filter by name, id or category"
@@ -61,47 +61,71 @@ const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): T
 `;
 
 export class SpawnMenu {
-  private readonly root: HTMLElement;
+  private root: HTMLElement | undefined;
+  private opened = false;
   private readonly registry: Registry;
   private readonly spawn: (type: string) => string;
+  private readonly drawTemplate: (template: TemplateResult, root: HTMLElement) => void;
   private filter = '';
   private status = '';
   private drawn = '';
 
   /** `spawn` makes one of the item type and says what happened. */
-  constructor(root: HTMLElement, registry: Registry, spawn: (type: string) => string) {
-    this.root = root;
+  constructor(
+    registry: Registry,
+    spawn: (type: string) => string,
+    drawTemplate: (template: TemplateResult, root: HTMLElement) => void = render,
+  ) {
     this.registry = registry;
     this.spawn = spawn;
+    this.drawTemplate = drawTemplate;
   }
 
   get isOpen(): boolean {
-    return !this.root.hidden;
+    return this.opened;
+  }
+
+  setRoot(root: HTMLElement): void {
+    this.root = root;
+    this.root.hidden = !this.opened;
+    if (this.opened) {
+      this.render();
+    }
   }
 
   open(): void {
-    this.root.hidden = false;
+    this.opened = true;
+    if (this.root) {
+      this.root.hidden = false;
+    }
     this.filter = '';
     this.status = '';
     this.drawn = '';
     this.render();
-    const input = this.root.querySelector('input');
-    input?.focus();
-    input?.select();
+    const input = this.root?.querySelector('input');
+    if (input) {
+      input.value = this.filter;
+    }
   }
 
   close(): void {
-    this.root.hidden = true;
+    this.opened = false;
+    if (this.root) {
+      this.root.hidden = true;
+    }
   }
 
   /** Redraws when the filter or the status changed. */
   private render(): void {
+    if (!this.root) {
+      return;
+    }
     const key = `${this.filter}|${this.status}`;
     if (key === this.drawn) {
       return;
     }
     this.drawn = key;
-    render(
+    this.drawTemplate(
       spawnMenuTemplate(spawnMenuViewModel(this.registry, this.filter, this.status), {
         onFilter: (value) => {
           this.filter = value;

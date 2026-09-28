@@ -17,6 +17,46 @@ const nearestAxis = (tMax: Vec3): 0 | 1 | 2 => {
 
 export type SolidAt = (x: number, y: number, z: number) => boolean;
 
+/** Counts contiguous solid voxel runs crossed by the segment, regardless of each run's thickness. */
+export const countSolidRuns = (origin: Vec3, target: Vec3, isSolid: SolidAt): number => {
+  const delta: Vec3 = [target[0] - origin[0], target[1] - origin[1], target[2] - origin[2]];
+  const distance = Math.hypot(...delta);
+  const dir: Vec3 = distance > 0 ? [delta[0] / distance, delta[1] / distance, delta[2] / distance] : [0, 0, 0];
+  const pos: Vec3 = [Math.floor(origin[0]), Math.floor(origin[1]), Math.floor(origin[2])];
+  const step: Vec3 = [0, 0, 0];
+  const tMax: Vec3 = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const tDelta: Vec3 = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  for (let axis = 0; axis < 3; axis++) {
+    const d = dir[axis]!;
+    if (d > 0) {
+      step[axis] = 1;
+      tDelta[axis] = 1 / d;
+      tMax[axis] = (pos[axis]! + 1 - origin[axis]!) / d;
+    } else if (d < 0) {
+      step[axis] = -1;
+      tDelta[axis] = -1 / d;
+      tMax[axis] = (origin[axis]! - pos[axis]!) / -d;
+    }
+  }
+  let wasSolid = isSolid(...pos);
+  let runs = wasSolid ? 1 : 0;
+  while (distance > 0) {
+    const axis = nearestAxis(tMax);
+    const t = tMax[axis];
+    if (t > distance) {
+      break;
+    }
+    pos[axis] += step[axis];
+    tMax[axis] += tDelta[axis];
+    const solid = isSolid(...pos);
+    if (solid && !wasSolid) {
+      runs += 1;
+    }
+    wasSolid = solid;
+  }
+  return runs;
+};
+
 /** Walks the voxel grid along a ray (Amanatides & Woo) and returns the first solid block. */
 export const raycast = (origin: Vec3, dir: Vec3, maxDistance: number, isSolid: SolidAt): RayHit | undefined => {
   const pos: Vec3 = [Math.floor(origin[0]), Math.floor(origin[1]), Math.floor(origin[2])];
