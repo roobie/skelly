@@ -203,6 +203,25 @@ try {
     'rendered empty quickbar slots contain no inventory help text',
   );
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
+  const moveCursorTo = async (position) => {
+    await evaluate(`(() => {
+      const event = new MouseEvent('mousemove', { bubbles: true });
+      Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
+      document.dispatchEvent(event);
+    })()`);
+    cursor = position;
+    await delay(120);
+  };
+  const dispatchPointer = async (type, button, buttons) =>
+    evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      button: ${button},
+      buttons: ${buttons},
+    }))`);
   const clickAt = async (selector, anchor = 'center') => {
     await evaluate('window.__lastForwardedClick = null');
     const position = await evaluate(`(() => {
@@ -211,13 +230,7 @@ try {
         ? { x: rect.left + 1, y: rect.top + 1 }
         : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     })()`);
-    await evaluate(`(() => {
-      const event = new MouseEvent('mousemove', { bubbles: true });
-      Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
-      document.dispatchEvent(event);
-    })()`);
-    cursor = position;
-    await delay(120);
+    await moveCursorTo(position);
     await evaluate(`window.__cursorBeforeClick = (() => {
       const cursor = document.querySelector('#game-cursor');
       const rect = cursor.getBoundingClientRect();
@@ -233,6 +246,8 @@ try {
         rootBlend: getComputedStyle(document.querySelector('#game-cursor-root')).mixBlendMode,
       };
     })()`);
+    await dispatchPointer('pointerdown', 0, 1);
+    await dispatchPointer('pointerup', -1, 0);
     await evaluate(
       `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))`,
     );
@@ -256,10 +271,12 @@ try {
     true,
     'menu key is consumed by the game',
   );
-  const clockOption =
-    "[...document.querySelectorAll('#hud-options label')].find((label) => label.textContent.includes('Clock and time compression')).querySelector('input')";
-  const toggleClockOption = `(() => { const input = ${clockOption}; input.checked = !input.checked; input.dispatchEvent(new Event('change', { bubbles: true })); })()`;
-  await evaluate(toggleClockOption);
+  await clickAt('#hud-options label:nth-of-type(2)');
+  assert.equal(
+    await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
+    true,
+    'drawn cursor toggles F9 menu controls',
+  );
   await delay(300);
   assert.match(
     await evaluate("document.querySelector('#hud').textContent"),
@@ -276,7 +293,12 @@ try {
   );
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');
-  await evaluate(toggleClockOption);
+  await clickAt('#hud-options label:nth-of-type(2)');
+  assert.equal(
+    await evaluate("document.querySelectorAll('#hud-options input')[1].checked"),
+    false,
+    'drawn cursor can reset menu controls',
+  );
   await clickAt('#go', 'edge');
   const arrowTip = await evaluate(`(() => {
     const click = window.__lastForwardedClick;
@@ -387,6 +409,57 @@ try {
     ),
     true,
   );
+  const transfer = await evaluate(`(() => {
+    const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
+    const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
+    const grid = [...legs.querySelectorAll('.inv-grid')].find((node) => !node.querySelector('[data-uid]'));
+    const itemRect = item.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
+    return {
+      source: { x: itemRect.left + itemRect.width / 2, y: itemRect.top + itemRect.height / 2 },
+      sourceTarget: item.closest('.inv-grid').dataset.target,
+      destination: { x: gridRect.left + 16, y: gridRect.top + 16 },
+      target: grid.dataset.target,
+    };
+  })()`);
+  assert.match(transfer.sourceTarget, /^pocket:/, 'source item is in a container pocket');
+  await moveCursorTo(transfer.source);
+  await dispatchPointer('pointerdown', 0, 1);
+  assert.equal(
+    await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
+    'Can of beans',
+    'drawn-cursor pointerdown selects an item in a container',
+  );
+  await moveCursorTo(transfer.destination);
+  await dispatchPointer('pointermove', -1, 1);
+  await dispatchPointer('pointerup', -1, 0);
+  await delay(100);
+  assert.match(
+    await evaluate("document.querySelector('#inventory .inv-queue').textContent"),
+    /Can of beans/,
+    'drag queues a container-to-inventory move',
+  );
+  await press('Tab', 'Tab', 9);
+  assert.equal(
+    await evaluate("document.querySelector('#inventory').hidden"),
+    true,
+    'Tab closes inventory while the move runs',
+  );
+  await delay(8000);
+  await press('Tab', 'Tab', 9);
+  assert.equal(
+    await evaluate("!document.querySelector('#inventory').hidden"),
+    true,
+    'Tab reopens inventory to verify the drop',
+  );
+  await delay(100);
+  assert.equal(
+    await evaluate(
+      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans')?.closest('.inv-grid')?.dataset.target",
+    ),
+    transfer.target,
+    'dropped item lands in the target inventory pocket',
+  );
   await press('Tab', 'Tab', 9);
 
   // With a menu open and pointer locked, move the drawn cursor, dispatch a click to its target,
@@ -493,7 +566,7 @@ try {
     'locked cursor click on continue resumes play',
   );
   process.stdout.write(
-    'UI browser contract passed: G search, pointer-locked menus, cursor clicks/focus, spawn count, V status, unlock, menu/browser keys, inventory stats.\n',
+    'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, unlock, menu/browser keys, inventory stats.\n',
   );
 } finally {
   ws?.close();
