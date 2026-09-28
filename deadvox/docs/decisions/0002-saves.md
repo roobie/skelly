@@ -89,7 +89,7 @@ references:
 
 | State | On disk | Reason / restoration rule |
 | --- | --- | --- |
-| Version and world identity | Exact `versionIdentity` plus its components: game build revision, save schema version, worldgen version, and ordered pack IDs/versions/canonical content hashes; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of those four version components. Require exact equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
+| Version and world identity | Exact `versionIdentity` plus its components: game build revision; save schema version; deterministic generator versions (worldgen and, once firearms are introduced, gungen); ordered pack IDs/versions/canonical content hashes; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of those four version components. Require exact equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
 | Clock/simulation | Simulation time, clock settings, needs, death cause/time, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; do not save or restore god mode/noclip/build toggles (force them off on load). Debug interventions already made to the world remain in its saved state. Reject unknown system IDs rather than silently resetting their phase. |
 | Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. |
 | Items | Recursive items including UID, type ID, count, condition, charges/on/made, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and lights. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
@@ -97,7 +97,7 @@ references:
 | World edits | Only changed chunks, each with chunk coordinates, a palette of stable block content IDs, and RLE runs for changed cell offsets/IDs versus the versioned generated base | At the first write to a cell, journal its generated base ID; later writes update or remove the delta if the cell returns to base. Runtime block numbers are registry-order dependent. Store string IDs. Regenerate the base chunk, apply the diff, then rebuild meshes. Preserve explicit air edits. |
 | Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each zombie's `soundRng`, `idleSoundTimer`, and `lastVocalNoiseId` | Recreate current threats and prevent dead or previously considered site spawns from coming back. Sound RNG/timer preserve the ambient audio sequence; `lastVocalNoiseId` is required for exact hearing behavior. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
 | Player audio state | `vocalNoiseId`, active `vocalNoise` (id, position, radius, expiry), and per-event `SoundPicker` RNG/`lastVariant`/`lastPlayedAt`; omit `footstepClock` and `airbornePeakY` | Noise and the picker cooldown gate zombie hearing and must continue exactly. Footstep cadence and landing peak only schedule sounds whose content disables hearing, so reset them on load. |
-| In-flight jobs | Do **not** serialize closures or partial queue jobs. The snapshot copy represents pending `HandlingQueue` jobs as canceled and clears its transient `searching` set; it must not cancel or mutate the live queue/set. | Jobs apply only on completion; a partial move/search/eat/door action has not mutated its target yet. On load, the player can retry; the live session continues its job with its original progress and timing. |
+| In-flight jobs | The live queue uses tagged data descriptors (`jobType` plus serializable parameters, elapsed time and duration), not closures. Step 1 converts the current handling jobs to this representation. The 1.9 snapshot omits pending descriptors and clears its transient `searching` set in the saved copy only; it must not cancel or mutate the live queue/set. | Descriptors leave room for later resumable long actions. In 1.9, jobs still apply only on completion; the saved target is untouched and the player can retry. The live session keeps its original job progress and timing. |
 | Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio playback queues after readers drain, render interpolation/feedback, footstep cadence and airborne peak, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
 
 A future system that adds a persistent counter, RNG stream, or state machine
@@ -105,6 +105,21 @@ must declare its save representation in the same change; “not currently in the
 schema” is not permission to reset it on load. The current audio branch already
 has an ID allocator and active noise stimulus, so both are included above;
 queued acoustic playback remains disposable.
+
+### World and character boundary
+
+A save is one persistent world with its permadead character inside it, as in
+`EPIC.md`. The record has separate stable `worldId` and `characterId` keys; 1.9
+holds one active character per world. Death ends the character, not the world.
+Whether a later new character can enter that same world remains open, but this
+layout preserves the world and any remains/piles without redesigning the record.
+
+World state is region-keyed: `world.regions[(regionX, regionZ)]` follows
+`DESIGN.md`'s 512 × 512 m region map; chunk diffs, block entities, piles and
+individual shamblers remain chunk/area records nested beneath their region.
+This hierarchy is chosen now so the save envelope does not need a Slice 4
+redesign. Slice 4 revisits the exact area/region partition as the region map and
+abstract hordes are implemented.
 
 The determinism contract is: for one game/content/worldgen build, from the same
 snapshot and same subsequent deterministic input trace, N fixed simulation
@@ -118,11 +133,12 @@ number handling), not only a checksum. Save at a scheduler/frame barrier; record
 all per-system cursors because recreating them from global time changes tick
 ordering.
 
-The exact version identity binds the worldgen and content rules to the save.
-Worldgen determinism is required within that exact build and is exercised by the
-save/load equivalence tests; old generator implementations are not retained for
-cross-version restore. A different worldgen, schema, build revision, or content
-hash is a different identity and is refused before any content lookup.
+The exact version identity binds the worldgen, gungen and content rules to the
+save. Worldgen determinism is required within that exact build and is exercised
+by the save/load equivalence tests; old generator implementations are not
+retained for cross-version restore. A different generator version (including
+gungen), schema, build revision, or content hash is a different identity and is
+refused before any content lookup.
 
 JSON numeric values use ECMAScript's shortest round-trip representation. Encode
 negative zero with a reserved tagged value (JSON otherwise writes it as `0`);
@@ -147,9 +163,10 @@ invalid ranges, malformed RLE, or an identity mismatch are rejected before
 restore.
 
 The save's exact version identity is the SHA-256 of a canonical tuple containing
-the game build revision, save schema version, worldgen version, and ordered
-content-pack IDs/versions/canonical hashes; store the components as well as the
-digest for diagnosis. Require an exact identity match before looking up any
+the game build revision, save schema version, the deterministic generator
+version map (including the gungen generator once firearms are introduced), and
+ordered content-pack IDs/versions/canonical hashes; store the components as
+well as the digest for diagnosis. Require an exact identity match before looking up any
 content IDs. On mismatch, explain the save's build/version identity and refuse
 the load; leave its bytes untouched and never upgrade or overwrite it. Under an
 exact match, missing/renamed IDs indicate corruption or a violated build
@@ -165,6 +182,24 @@ semantic state. This tests the format the build actually ships without
 promising old-build compatibility. Separate equivalence scenarios cover
 mid-air saves and active or interrupted rest. A version-mismatch refusal test
 must verify both the clear refusal and byte-for-byte preservation of the save.
+
+### Upcoming state (EPIC.md slices)
+
+BR's framing (2026-09-28) is that strict version checks let the team handle
+future save challenges as their systems arrive. This table records the known
+state ownership and explicit revisit point; it does not design those later
+systems now.
+
+| Slice | Upcoming state | Save representation / revisit |
+| --- | --- | --- |
+| 1 — Loot run | Current clock, needs, character body/inventory, edited chunks, furniture, piles, shamblers, spawn ledger, audio hearing state | Covered by the state table above. Step 1 converts queued handling jobs from closures to tagged descriptors (`jobType` + serializable parameters and progress); 1.9 omits them from the snapshot copy, so current jobs are still canceled on load. |
+| 2 — Craft and mend | Crafting, repair, disassembly and reading as long actions; skills/XP; recipe discovery; in-progress craft holding components | Revisit the exact job parameters, component escrow, skill IDs/XP and discovered-recipe IDs at Slice 2. Put progression under the character record and use the tagged job descriptor so later jobs can resume; no Slice 2 state is guessed into the 1.9 schema. |
+| 3 — Flesh and noise | Body parts/wounds; firearms, ammo, magazines/reloading; wall-attenuated noise; smell trail; zombie LOD tiers/hordes; light as a sense | Revisit schemas at Slice 3. Wounds and bodily conditions (including limp, illness and pain from `INTERFACE.md`) belong to the character. Persist a gun assembly generated from its gungen template and seed as item state, and include the gungen generator version in `versionIdentity`; ammo/magazines use the item tree. Active noise/smell stimuli and hordes are simulation state under the world/region; wall occlusion and light fields are derived from saved geometry and sources. Ready/block stance is held-input state and resets to unready on load; transient bodily cue animation/cooldowns reset, while their wound/condition causes persist. |
+| 4 — The region | Region map, towns/sites, weather/temperature, voxel light, abstract hordes and catch-up | The world is already keyed by 512 m region, with chunk/area records nested within it. Revisit the exact region metadata, catch-up cursors and persistent horde representation at Slice 4; deterministic unmodified terrain regenerates under the matching version. |
+| 5 — Holding ground | Construction, locks, barricades, generators, batteries, electricity, fire/smoke | Constructed blocks remain chunk diffs; doors/machines remain block entities in their region. Revisit power-network state, fuel/charge, fire/smoke timers and away-catch-up state at Slice 5; derived graphs/light are rebuilt. |
+| 6 — Wheels | Vehicle grids, installed parts, fuel, battery, driving, damage and repair | Revisit at Slice 6: vehicles are persistent world entities keyed by stable vehicle ID under their region, with their part/item state and dynamic physics state; exact component fields wait for the vehicle implementation. |
+| 7 — Cordon and labs | Tier 2/3 sites, underground labs, special zombies/evolution, hazard zones, lore | Revisit at Slice 7: generated sites remain version-bound world data; discovered lore belongs to the character and mutable hazards/evolution to world-region state. Exact fields wait for the systems. |
+| 8 — Version 1 | Migration and compatibility hardening | The version picker/migration decision is a hard fork. EPIC's “Old saves migrate” exit criterion remains a version 1 obligation, not a 1.9 feature; resolve the strict-version interim policy before the v1 exit. |
 
 ### Storage, browsers, and recovery
 
@@ -251,8 +286,10 @@ generation until the new world's first snapshot commits.
 1. **Snapshot/restore without storage.** Add explicit state export/restore APIs
    for scheduler, simulation, world diffs, player, inventory, furniture,
    piles, zombie system and spawn ledger. Replace closure-only queued actions
-   with a snapshot barrier that projects pending jobs as canceled in the saved
-   copy only; never cancel or mutate the live queue. Done when a deterministic
+   with tagged data descriptors (`jobType` plus serializable parameters, elapsed
+   time and duration), then make the snapshot barrier project pending
+   descriptors as canceled in the saved copy only; never cancel or mutate the
+   live queue. Done when a deterministic
    scenario fails if any future-affecting field is omitted and the N vs K/save/
    load/N−K deep-state equivalence test passes, including a mid-air player,
    active/interrupted rest, and vocal noise. An autosave during a handling job
@@ -296,7 +333,8 @@ generation until the new world's first snapshot commits.
   detect damage, not malicious tampering. A/B slots and
   persistence requests reduce corruption/eviction risk but are not backups.
 - Compatibility is intentionally strict: changing the build, schema, worldgen,
-  or content identity prevents loading that save in the changed version. Thus a
+  any deterministic generator (including gungen), or content identity prevents
+  loading that save in the changed version. Thus a
   playtester's save stops loading on the next deploy; this is acceptable while
   sessions are short and feature-focused, and permanent players are not yet the
   product. Version-keyed storage preserves it for a matching build rather than
@@ -317,6 +355,12 @@ strict version identity:
 3. **Versions:** require an exact version match and refuse mismatches without
    modifying the save. Future version selection and migration are a hard fork,
    not part of 1.9.
+
+[[THIS contradicts: ../../EPIC.md]]
+
+Strict version checks apply through the hard fork; migration remains a version 1
+obligation under EPIC's “Old saves migrate” exit criterion. This ADR defers that
+obligation, it does not waive it.
 
 ## Future work (out of scope for 1.9)
 
