@@ -537,8 +537,10 @@ Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
 
 - The shambler's single health pool becomes body regions: head, torso, arms and
   legs, each with its own health.
-- A melee hit damages the region it lands on. The swept hit test already knows
-  where it lands.
+- A melee hit damages the region it lands on. Today the hit test only checks the
+  aim ray against one point per shambler, at 0.55 of its height
+  (`src/core/zombies.ts:1025`), so it has to learn which region the ray
+  reaches first.
 - A region at zero is severed: its rigid limb is hidden and a limb prop drops.
   Otherwise behaviour is unchanged, as simple as possible. The one forced
   question, how a shambler with no legs moves, is settled here.
