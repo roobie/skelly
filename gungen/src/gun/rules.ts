@@ -1,9 +1,11 @@
 // Gun-specific rules, added to the core rules through the domain.
 
+import { distanceWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
+import { applyDir, applyPoint, dot as dotProduct, sub } from '../core/math.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
-import type { Rule, Solid } from '../core/schema.ts';
-import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT } from './parts.ts';
+import type { PartDef, Rule, Solid } from '../core/schema.ts';
+import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS } from './parts.ts';
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const firingGrip: Rule = {
@@ -164,6 +166,110 @@ export const handguardFit: Rule = {
   },
 };
 
+const freeFloatFitIssue = (
+  r: Resolved,
+  parts: { handguardPart: string; handguardDef: PartDef; barrelPart: string; barrelDef: PartDef },
+): Issue | undefined => {
+  const { handguardPart, handguardDef, barrelPart, barrelDef } = parts;
+  const handguardTransform = r.placed.get(handguardPart)!;
+  const barrelTransform = r.placed.get(barrelPart)!;
+  const handguardLength = Math.max(
+    ...handguardDef.solids.map((solid) =>
+      solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
+    ),
+  );
+  const axis = applyDir(handguardTransform, [1, 0, 0]);
+  const handguardStart = applyPoint(handguardTransform, [0, 0, 0]);
+  const distanceToPort = (id: string): number => {
+    const port = barrelDef.ports.find((candidate) => candidate.id === id);
+    return port
+      ? dotProduct(sub(applyPoint(barrelTransform, port.pos), handguardStart), axis)
+      : Number.POSITIVE_INFINITY;
+  };
+  const params = r.params.get(handguardPart)!;
+  const requiredClearance = HANDGUARD_CLEARANCE[(params.clearance?.value ?? 'M') as keyof typeof HANDGUARD_CLEARANCE];
+  const barrelSolids = barrelDef.solids.map((solid) => worldSolid(barrelTransform, solid));
+  const handguardSolids = handguardDef.solids.map((solid) => worldSolid(handguardTransform, solid));
+  const actualClearance = Math.min(
+    ...barrelSolids.flatMap((barrelSolid) =>
+      handguardSolids.map((handguardSolid) => distanceWorld(barrelSolid, handguardSolid)),
+    ),
+  );
+  const sightViolation = handguardLength >= distanceToPort('front-sight') - 1e-6;
+  const muzzleViolation = handguardLength >= distanceToPort('muzzle') - 1e-6;
+  if (actualClearance >= requiredClearance - 1e-6 && !sightViolation && !muzzleViolation) {
+    return undefined;
+  }
+  let reason: string;
+  if (actualClearance < requiredClearance - 1e-6) {
+    reason = `has only ${actualClearance.toFixed(2)}u barrel clearance; ${requiredClearance}u is required`;
+  } else if (sightViolation) {
+    reason = 'reaches the front sight';
+  } else {
+    reason = 'reaches the muzzle';
+  }
+  return {
+    rule: 'free-float-clearance',
+    message: `${handguardPart} free-float handguard ${reason}.`,
+    parts: [handguardPart, barrelPart],
+  };
+};
+
+export const freeFloatClearance: Rule = {
+  id: 'free-float-clearance',
+  title: 'The free-float handguard clears the barrel',
+  check(r) {
+    const barrel = [...r.defs].find(([, def]) => def.family === 'barrel');
+    if (!barrel) {
+      return [];
+    }
+    const [barrelPart, barrelDef] = barrel;
+    return [...r.defs].flatMap(([handguardPart, handguardDef]) => {
+      if (handguardDef.family !== 'handguard' || r.params.get(handguardPart)?.mount?.value !== 'free-float') {
+        return [];
+      }
+      const issue = freeFloatFitIssue(r, { handguardPart, handguardDef, barrelPart, barrelDef });
+      return issue ? [issue] : [];
+    });
+  },
+};
+
+const tiltedWellSupportError = (layout: string, profile: string): string | undefined => {
+  const layoutData = LOWER_LAYOUTS[layout as keyof typeof LOWER_LAYOUTS];
+  const profiles: readonly string[] | undefined = layoutData?.tiltedMagazineProfiles;
+  if (profiles?.includes(profile)) {
+    return undefined;
+  }
+  return layoutData?.tiltedMagazineProfiles.length === 0
+    ? `tilted magazines need a slanted well; the ${layout} layout has none.`
+    : `tilted magazines need a slanted well; the ${layout} layout does not support the ${profile} profile.`;
+};
+
+const magazineAxisError = (
+  r: Resolved,
+  lower: PortRef,
+  magazine: PortRef,
+  styles: { mag: string; well: string },
+): Issue | undefined => {
+  const { mag: magStyle, well: wellStyle } = styles;
+  const angle = magStyle === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
+  const expected: readonly [number, number, number] = [Math.sin(angle), -Math.cos(angle), 0];
+  const port = r.defs.get(lower.part)!.ports.find(({ id }) => id === 'magazine')!;
+  const dot = expected[0] * port.normal[0] + expected[1] * port.normal[1] + expected[2] * port.normal[2];
+  const error = (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI;
+  if (magStyle === wellStyle && error <= 0.5) {
+    return undefined;
+  }
+  return {
+    rule: 'magazine-well-axis',
+    message:
+      magStyle === wellStyle
+        ? `${lower.part}'s well axis is ${error.toFixed(1)}° off ${magazine.part}'s ${magStyle} magazine axis.`
+        : `${lower.part} declares ${wellStyle}, but ${magazine.part} uses ${magStyle}; the well must follow the magazine axis.`,
+    parts: [lower.part, magazine.part],
+  };
+};
+
 export const magazineWellAxis: Rule = {
   id: 'magazine-well-axis',
   title: 'The magazine well follows the magazine axis',
@@ -176,24 +282,23 @@ export const magazineWellAxis: Rule = {
       if (!(lower && magazine)) {
         continue;
       }
-      const magStyle = r.params.get(magazine.part)?.orientation?.value ?? 'straight';
-      const wellStyle = r.params.get(lower.part)?.magazineOrientation?.value ?? 'straight';
-      const angle = magStyle === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
-      const expected: readonly [number, number, number] = [Math.sin(angle), -Math.cos(angle), 0];
-      const port = r.defs.get(lower.part)!.ports.find(({ id }) => id === 'magazine')!;
-      const dot = expected[0] * port.normal[0] + expected[1] * port.normal[1] + expected[2] * port.normal[2];
-      const error = (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI;
-      if (magStyle === wellStyle && error <= 0.5) {
-        continue;
+      const magParams = r.params.get(magazine.part);
+      const lowerParams = r.params.get(lower.part);
+      const magStyle = magParams?.orientation?.value ?? 'straight';
+      const wellStyle = lowerParams?.magazineOrientation?.value ?? 'straight';
+      const layout = lowerParams?.layout?.value ?? 'conventional';
+      const profile = magParams?.profile?.value ?? 'standard';
+      if (magStyle === 'tilt') {
+        const supportError = tiltedWellSupportError(layout, profile);
+        if (supportError) {
+          issues.push({ rule: 'magazine-well-axis', message: supportError, parts: [lower.part, magazine.part] });
+          continue;
+        }
       }
-      issues.push({
-        rule: 'magazine-well-axis',
-        message:
-          magStyle === wellStyle
-            ? `${lower.part}'s well axis is ${error.toFixed(1)}° off ${magazine.part}'s ${magStyle} magazine axis.`
-            : `${lower.part} declares ${wellStyle}, but ${magazine.part} uses ${magStyle}; the well must follow the magazine axis.`,
-        parts: [lower.part, magazine.part],
-      });
+      const axisError = magazineAxisError(r, lower, magazine, { mag: magStyle, well: wellStyle });
+      if (axisError) {
+        issues.push(axisError);
+      }
     }
     return issues;
   },
