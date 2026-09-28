@@ -77,7 +77,7 @@ const AK_RECEIVER_REAR_CUT_DEPTH = 2;
 const AK_RECEIVER_REAR_CUT_DROP = 1.5;
 const AK_MAGAZINE_TOP_SLOPE_DEGREES = 5;
 const AR_MAGAZINE_HOUSING_DROP = 1.5;
-const AR_MAGAZINE_HOUSING_WALL = 0.5;
+const AR_MAGAZINE_HOUSING_REAR_WALL = 0.5;
 const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
@@ -340,15 +340,15 @@ export const lower: PartFamily = {
     // behind the grip, which leans back from x = 3.
     const conventionalWell = well(-7 + MAGAZINE_DEPTH / 2);
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
-    const arMagazineHousing = (): Solid[] => {
+    const arMagazineHousing = (frontPanelThickness: number): Solid[] => {
       const x0 = conventionalWell.port.pos[0] - MAGAZINE_WELL_DEPTH / 2;
       const x1 = conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2;
       const z0 = MAGAZINE_WELL_WIDTH / 2;
       const outerZ = LOWER_HALF_WIDTH;
       const bottomY = -1.5 - AR_MAGAZINE_HOUSING_DROP;
       return [
-        solid('magazine-housing-rear', [x0 - AR_MAGAZINE_HOUSING_WALL, bottomY, -outerZ], [x0, -1.5, outerZ]),
-        solid('magazine-housing-front', [x1, bottomY, -outerZ], [x1 + AR_MAGAZINE_HOUSING_WALL, -1.5, outerZ]),
+        solid('magazine-housing-rear', [x0 - AR_MAGAZINE_HOUSING_REAR_WALL, bottomY, -outerZ], [x0, -1.5, outerZ]),
+        solid('magazine-housing-front', [x1, bottomY, -outerZ], [x1 + frontPanelThickness, -1.5, outerZ]),
         solid('magazine-housing-left', [x0, bottomY, -outerZ], [x1, -1.5, -z0]),
         solid('magazine-housing-right', [x0, bottomY, z0], [x1, -1.5, outerZ]),
       ];
@@ -356,21 +356,25 @@ export const lower: PartFamily = {
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
 
     switch (params.layout) {
-      case 'ar':
+      case 'ar': {
+        const frame = magazineWellFrame(
+          -14,
+          conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
+          conventionalWell.port.pos[0],
+        );
+        const frontPanel = frame.find(({ id }) => id === 'frame-front');
+        if (frontPanel?.kind !== 'box') {
+          throw new Error('Expected a box-shaped magazine-well front panel.');
+        }
+        const frontPanelThickness = frontPanel.box.half[0] * 2;
         return {
           family: 'lower',
-          solids: [
-            ...magazineWellFrame(
-              -14,
-              conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
-              conventionalWell.port.pos[0],
-            ),
-            ...arMagazineHousing(),
-          ],
+          solids: [...frame, ...arMagazineHousing(frontPanelThickness)],
           ports: [top, grip(-12), conventionalWell.port],
           keepOuts: [trigger(-10), conventionalWell.path],
           axes: [],
         };
+      }
       case 'bullpup':
         return {
           family: 'lower',

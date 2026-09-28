@@ -42,6 +42,32 @@ describe('AR-pattern parts', () => {
     expect(lower.keepOuts).toEqual(conventional.keepOuts);
   });
 
+  it('keeps magazine-well front walls within their front panels in every well layout', () => {
+    for (const layout of ['conventional', 'bullpup', 'ak', 'ar']) {
+      const lower = FAMILIES.lower!.build({ layout });
+      const panel = lower.solids.find(({ id }) => id === 'frame-front');
+      expect(panel?.kind, `${layout} front panel`).toBe('box');
+      if (panel?.kind !== 'box') {
+        throw new Error(`Expected a box-shaped ${layout} magazine-well front panel.`);
+      }
+      const housingFront = lower.solids.find(({ id }) => id === 'magazine-housing-front');
+      if (layout !== 'ar') {
+        expect(housingFront, `${layout} has no detached front housing`).toBeUndefined();
+        continue;
+      }
+      expect(housingFront?.kind).toBe('box');
+      if (housingFront?.kind !== 'box') {
+        throw new Error('Expected the AR magazine-housing front wall.');
+      }
+      const panelThickness = panel.box.half[0] * 2;
+      const housingThickness = housingFront.box.half[0] * 2;
+      const panelFrontX = panel.box.center[0] + panel.box.half[0];
+      const housingFrontX = housingFront.box.center[0] + housingFront.box.half[0];
+      expect(housingThickness).toBeLessThanOrEqual(panelThickness);
+      expect(housingFrontX).toBe(panelFrontX);
+    }
+  });
+
   it('mounts a front sight block four units from the muzzle', () => {
     const barrel = FAMILIES.barrel!.build({ bore: 'M', length: 'M', profile: 'standard' });
     const port = barrel.ports.find(({ id }) => id === 'front-sight');

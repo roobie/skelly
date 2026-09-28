@@ -178,6 +178,16 @@ describe('part library', () => {
       'well-wall-near',
       'well-wall-far',
     ]);
+    const upper = grip.solids.find(({ id }) => id === 'body-upper');
+    const frontWall = grip.solids.find(({ id }) => id === 'well-wall-right');
+    expect(upper?.kind).toBe('extruded-polygon');
+    expect(frontWall?.kind).toBe('box');
+    if (upper?.kind !== 'extruded-polygon' || frontWall?.kind !== 'box') {
+      throw new Error('Expected the integrated pistol-grip front panel and well wall.');
+    }
+    const gripFrontX = Math.max(...upper.profile.map(([x]) => x));
+    const wellFrontX = frontWall.box.center[0] + frontWall.box.half[0];
+    expect(wellFrontX).toBe(gripFrontX);
     const magazine = FAMILIES.magazine!.build({ length: 'S', profile: 'pistol' }).solids[0]!;
     expect(magazine.kind).toBe('box');
     if (magazine.kind === 'box') {
