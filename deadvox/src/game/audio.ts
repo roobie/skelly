@@ -60,13 +60,27 @@ export interface GameAudioOptions {
   report: (message: string) => void;
 }
 
+export interface HeardSound {
+  readonly event: SoundEventId;
+  readonly file: string;
+  readonly distanceMetres: number;
+  readonly wallRuns: number;
+  readonly lowpassHz: number | null;
+  /** Combined sample, occlusion, saved master/category settings, and inverse-distance gain. */
+  readonly gain: number;
+  readonly emittedAsNoise: boolean;
+  readonly noiseRadiusMetres: number | null;
+}
+
 interface SourceStartOptions {
   context: AudioContext;
   nodes: Nodes;
+  event: SoundEventId;
   sound: SoundDef;
-  pick: { gain: number; pitch: number };
+  pick: { file: string; gain: number; pitch: number };
   buffer: AudioBuffer;
   positionMetres: Vec3;
+  emittedAsNoise: boolean;
 }
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
@@ -83,6 +97,7 @@ export class GameAudio {
   private readonly blockSize: number;
   private readonly isSolid: SolidAt;
   private readonly report: (message: string) => void;
+  private readonly recentSounds: HeardSound[] = [];
 
   constructor({ registry, seed, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
@@ -94,6 +109,10 @@ export class GameAudio {
 
   get settings(): AudioVolumes {
     return { ...this.volumes };
+  }
+
+  get heardSounds(): readonly HeardSound[] {
+    return [...this.recentSounds];
   }
 
   /** Must be called synchronously from a user gesture. */
@@ -153,7 +172,7 @@ export class GameAudio {
     }
   }
 
-  play(event: SoundEventId, positionMetres: Vec3, simulationTime: number): boolean {
+  play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, emittedAsNoise = false): boolean {
     const sound = this.registry.sounds.get(event);
     const pick = this.picker.pick(event, simulationTime);
     if (!(sound && pick)) {
@@ -172,9 +191,43 @@ export class GameAudio {
         if (!buffer || this.context !== context || context.state !== 'running') {
           return;
         }
-        this.startSource({ context, nodes, sound, pick, buffer, positionMetres });
+        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise });
       });
     }
+    return true;
+  }
+
+  /** Plays one exact manifest variant at the event's base gain, with no picker jitter or cooldown. */
+  preview(event: SoundEventId, file: string): boolean {
+    const sound = this.registry.sounds.get(event);
+    if (!sound?.variants.includes(file)) {
+      return false;
+    }
+    const origin = this.registry.soundOrigins.get(event);
+    const packPath = origin?.source.slice(0, origin.source.lastIndexOf('/'));
+    const url = packPath ? PACK_FILES[`${packPath}/${file}`] : undefined;
+    const { context, nodes } = this;
+    if (!(url && context && nodes)) {
+      this.report(`sound file "${file}" is not bundled for "${event}"`);
+      return false;
+    }
+    const pick = { file, gain: sound.gain, pitch: 1 };
+    const positionMetres = [...this.listenerPosition] as Vec3;
+    this.loadBuffer(context, file, url).then(async (buffer) => {
+      if (!buffer || this.context !== context) {
+        return;
+      }
+      if (context.state !== 'running') {
+        try {
+          await context.resume();
+        } catch (error) {
+          this.report(`audio context did not resume: ${String(error)}`);
+        }
+      }
+      if (context.state === 'running') {
+        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise: false });
+      }
+    });
     return true;
   }
 
@@ -218,7 +271,16 @@ export class GameAudio {
     return request;
   }
 
-  private startSource({ context, nodes, sound, pick, buffer, positionMetres }: SourceStartOptions): void {
+  private startSource({
+    context,
+    nodes,
+    event,
+    sound,
+    pick,
+    buffer,
+    positionMetres,
+    emittedAsNoise,
+  }: SourceStartOptions): void {
     const source = context.createBufferSource();
     const gain = context.createGain();
     source.buffer = buffer;
@@ -228,14 +290,25 @@ export class GameAudio {
     const connectedNodes: AudioNode[] = [source, gain];
 
     const category = nodes.categories.get(sound.category)!;
-    if (sound.category === 'ui') {
+    const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
+    const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
+    const uiSound = sound.category === 'ui';
+    const occlusion = uiSound
+      ? { wallRuns: 0, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
+      : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
+    const distanceMetres = uiSound
+      ? 0
+      : Math.hypot(
+          positionMetres[0] - this.listenerPosition[0],
+          positionMetres[1] - this.listenerPosition[1],
+          positionMetres[2] - this.listenerPosition[2],
+        );
+    const distanceGain = uiSound ? 1 : 1 / Math.max(1, Math.min(64, distanceMetres));
+    if (uiSound) {
       gain.connect(category);
     } else {
       const filter = context.createBiquadFilter();
       const wallGain = context.createGain();
-      const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
-      const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
-      const occlusion = soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
       filter.type = 'lowpass';
       filter.frequency.value = occlusion.cutoffHz;
       wallGain.gain.value = occlusion.gain;
@@ -264,5 +337,18 @@ export class GameAudio {
       }
     };
     source.start();
+    this.recentSounds.push({
+      event,
+      file: pick.file,
+      distanceMetres,
+      wallRuns: occlusion.wallRuns,
+      lowpassHz: uiSound ? null : occlusion.cutoffHz,
+      gain: pick.gain * occlusion.gain * this.volumes.master * this.volumes[sound.category] * distanceGain,
+      emittedAsNoise,
+      noiseRadiusMetres: emittedAsNoise && sound.noise.enabled ? sound.noise.radiusMetres : null,
+    });
+    if (this.recentSounds.length > 8) {
+      this.recentSounds.shift();
+    }
   }
 }

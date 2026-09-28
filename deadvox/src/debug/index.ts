@@ -28,6 +28,26 @@ const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
   <span>position ${readout.position.map((v) => v.toFixed(1)).join(', ')}</span>
   <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes</span>
   <span>shamblers ${readout.zombies}</span>
+  <section class="debug-sound-log" aria-label="Recent sounds actually played">
+    <strong>Recent sounds · newest first</strong>
+    <ol>
+      ${
+        readout.sounds.length > 0
+          ? [...readout.sounds].reverse().map(
+              (sound) => html`
+              <li data-sound-event=${sound.event}>
+                <code>${sound.event}</code> · <code>${sound.file}</code><br />
+                ${sound.distanceMetres.toFixed(1)} m · ${sound.wallRuns} walls ·
+                LP ${sound.lowpassHz === null ? '—' : `${Math.round(sound.lowpassHz)} Hz`} ·
+                gain ${sound.gain.toFixed(3)} ·
+                ${sound.emittedAsNoise ? `noise ${sound.noiseRadiusMetres} m` : 'not noise'}
+              </li>
+            `,
+            )
+          : html`<li class="debug-sound-empty">No sounds played yet.</li>`
+      }
+    </ol>
+  </section>
 `;
 
 const panelTemplate = ({
@@ -85,6 +105,7 @@ const emptyReadout: DebugReadout = {
   pending: 0,
   holes: 0,
   zombies: 0,
+  sounds: [],
 };
 
 interface ActionContext {

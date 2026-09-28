@@ -146,14 +146,15 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let vocalNoiseId = 0;
   let vocalNoise: VocalNoise | undefined;
   const playerSoundPosition = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
-  const playWorldSound = (event: SoundEventId, position: Vec3, time = sim.time) =>
-    audio.play(event, position.map((value) => value * s) as Vec3, time);
+  const playWorldSound = (event: SoundEventId, position: Vec3, time = sim.time, emittedAsNoise = false) =>
+    audio.play(event, position.map((value) => value * s) as Vec3, time, emittedAsNoise);
   const playPlayerSound = (event: SoundEventId, time = sim.time) => {
     const position = playerSoundPosition();
-    if (!playWorldSound(event, position, time)) {
+    const definition = registry.sounds.get(event);
+    const emittedAsNoise = definition?.noise.enabled ?? false;
+    if (!playWorldSound(event, position, time, emittedAsNoise)) {
       return;
     }
-    const definition = registry.sounds.get(event);
     if (definition?.noise.enabled) {
       vocalNoiseId += 1;
       vocalNoise = {
@@ -953,6 +954,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       pending: streamer.pending,
       holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
       zombies: zombieStore.size,
+      sounds: audio.heardSounds,
     });
   };
 
