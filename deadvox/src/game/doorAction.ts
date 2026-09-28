@@ -40,9 +40,9 @@ export const registerDoorAction = ({ queue, entities, player, others, playWorldS
     const blocker = entities.closeDoor(entity, player(), others());
     if (blocker) {
       playWorldSound('door_blocked_close', center);
-      return DOOR_CLOSE_MESSAGES[blocker];
+    } else {
+      playWorldSound('door_close', center);
     }
-    playWorldSound('door_close', center);
-    return;
+    return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
   });
 };
