@@ -35,3 +35,4 @@ jobs:
         run: xvfb-run -a npm run test:browser:firefox
       - run: npm run validate
       - run: npx vite build
+      - run: node tools/check-favicon.mjs
