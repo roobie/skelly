@@ -3,6 +3,7 @@
 // items stack up to their type's limit.
 
 import type { ItemDef, Registry } from './content.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 
 export interface Item {
   /** Unique per world; never reused. */
@@ -31,6 +32,64 @@ export interface Placed {
   y: number;
   rotated: boolean;
 }
+
+export interface ItemState {
+  uid: number;
+  type: string;
+  count: number;
+  condition: number;
+  charges?: number;
+  on?: boolean;
+  made?: number;
+  pockets?: PlacedState[][];
+}
+
+export interface PlacedState {
+  item: ItemState;
+  x: number;
+  y: number;
+  rotated: boolean;
+}
+
+/** Immutable, isolated item tree suitable for a save snapshot. */
+export const snapshotItem = (item: Item): Readonly<ItemState> =>
+  freezeSnapshot({
+    uid: item.uid,
+    type: item.type,
+    count: item.count,
+    condition: item.condition,
+    ...(item.charges === undefined ? {} : { charges: item.charges }),
+    ...(item.on === undefined ? {} : { on: item.on }),
+    ...(item.made === undefined ? {} : { made: item.made }),
+    ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+  });
+
+export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
+  freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
+
+export const restoreItem = (registry: Registry, state: ItemState): Item => {
+  defOf(registry, state.type);
+  const item: Item = {
+    uid: state.uid,
+    type: state.type,
+    count: state.count,
+    condition: state.condition,
+    ...(state.charges === undefined ? {} : { charges: state.charges }),
+    ...(state.on === undefined ? {} : { on: state.on }),
+    ...(state.made === undefined ? {} : { made: state.made }),
+    ...(state.pockets === undefined
+      ? {}
+      : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
+  };
+  return item;
+};
+
+export const restorePlaced = (registry: Registry, state: PlacedState): Placed => ({
+  item: restoreItem(registry, state.item),
+  x: state.x,
+  y: state.y,
+  rotated: state.rotated,
+});
 
 export interface GridSize {
   w: number;

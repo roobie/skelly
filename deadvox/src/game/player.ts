@@ -2,6 +2,7 @@
 
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
+import { freezeSnapshot } from '../core/snapshotData.ts';
 
 /** Player constants in metres and metres per second (DESIGN.md, "Scale and units"). */
 export const PLAYER = {
@@ -32,6 +33,40 @@ export const createPlayerBody = (scale: Scale, x: number, y: number, z: number):
   halfWidth: PLAYER.halfWidth / scale.blockSize,
   height: PLAYER.height / scale.blockSize,
   onGround: false,
+});
+
+export interface PlayerState {
+  body: Body;
+  yaw: number;
+  pitch: number;
+  walk: boolean;
+}
+
+export const snapshotPlayer = (body: Body, yaw: number, pitch: number, walk: boolean): Readonly<PlayerState> =>
+  freezeSnapshot({
+    body: {
+      pos: [...body.pos],
+      vel: [...body.vel],
+      halfWidth: body.halfWidth,
+      height: body.height,
+      onGround: body.onGround,
+    },
+    yaw,
+    pitch,
+    walk,
+  });
+
+export const restorePlayer = (state: PlayerState): PlayerState => ({
+  body: {
+    pos: [...state.body.pos],
+    vel: [...state.body.vel],
+    halfWidth: state.body.halfWidth,
+    height: state.body.height,
+    onGround: state.body.onGround,
+  },
+  yaw: state.yaw,
+  pitch: state.pitch,
+  walk: state.walk,
 });
 
 export interface MoveIntent {

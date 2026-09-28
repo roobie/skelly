@@ -15,14 +15,20 @@ import {
   type GridState,
   type Item,
   ItemFactory,
+  type ItemState,
   isEmpty,
   itemAt,
   type Placed,
+  restoreItem,
+  restorePlaced,
+  snapshotItem,
+  snapshotPlaced,
   stackRoom,
   weightOf,
 } from './items.ts';
 import type { Rolled } from './loot.ts';
 import type { WearSlot } from './schema.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 
 /** Handling tunables in seconds (DESIGN.md, "Handling time"). */
 export const HANDLING = {
@@ -60,6 +66,22 @@ export type Location =
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; placed: Placed };
 
 /** Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. */
+export type TargetState =
+  | { kind: 'hand'; side: HandSide }
+  | { kind: 'worn' }
+  | { kind: 'pocket'; ownerUid: number; pocket: number; at?: Spot }
+  | { kind: 'pile'; pos: Vec3; at?: Spot }
+  | { kind: 'furniture'; entityUid: number; pocket: number; at?: Spot };
+
+export interface InventoryState {
+  nextItemUid: number;
+  hands: Partial<Record<HandSide, ItemState>>;
+  worn: Partial<Record<WearSlot, ItemState>>;
+  piles: { pos: Vec3; items: ReturnType<typeof snapshotPlaced>[] }[];
+  looted: [string, number][];
+  entities: ReturnType<BlockEntities['snapshotState']>;
+}
+
 export type Target =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn' }
@@ -93,6 +115,64 @@ export class Inventory {
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
 
+  /** A deep plain-data copy of carried, worn, piled and furnished items and allocators. */
+  snapshotState(): Readonly<InventoryState> {
+    return freezeSnapshot({
+      nextItemUid: this.factory.next,
+      hands: Object.fromEntries(Object.entries(this.hands).map(([side, item]) => [side, snapshotItem(item!)])),
+      worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
+      piles: [...this.piles.values()].map((pile) => ({ pos: [...pile.pos], items: pile.items.map(snapshotPlaced) })),
+      looted: [...this.looted.entries()].map(([type, count]) => [type, count]),
+      entities: this.entities.snapshotState(),
+    });
+  }
+
+  static restoreState(registry: Registry, state: InventoryState): Inventory {
+    if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
+      throw new Error('Invalid next item id');
+    }
+    const entities = BlockEntities.restoreState(registry, state.entities);
+    const inventory = new Inventory(registry, new ItemFactory(state.nextItemUid), entities);
+    for (const [side, item] of Object.entries(state.hands)) {
+      if (item) {
+        inventory.hands[side as HandSide] = restoreItem(registry, item);
+      }
+    }
+    for (const [slot, item] of Object.entries(state.worn)) {
+      if (item) {
+        inventory.worn[slot as WearSlot] = restoreItem(registry, item);
+      }
+    }
+    for (const pile of state.piles) {
+      inventory.piles.set(pile.pos.join(','), {
+        pos: [...pile.pos],
+        items: pile.items.map((placed) => restorePlaced(registry, placed)),
+      });
+    }
+    for (const [type, count] of state.looted) {
+      inventory.looted.set(type, count);
+    }
+    const seen = new Set<number>();
+    let maxUid = 0;
+    const visit = (item: Item) => {
+      if (!Number.isSafeInteger(item.uid) || item.uid < 1 || seen.has(item.uid)) {
+        throw new Error(`Invalid or duplicate item id ${item.uid}`);
+      }
+      seen.add(item.uid);
+      maxUid = Math.max(maxUid, item.uid);
+      for (const placed of (item.pockets ?? []).flat()) {
+        visit(placed.item);
+      }
+    };
+    for (const root of inventory.roots()) {
+      visit(root);
+    }
+    if (state.nextItemUid <= maxUid) {
+      throw new Error('Next item id does not exceed saved item ids');
+    }
+    return inventory;
+  }
+
   constructor(registry: Registry, factory = new ItemFactory(), entities = new BlockEntities(registry)) {
     this.registry = registry;
     this.factory = factory;
@@ -114,6 +194,80 @@ export class Inventory {
       (entity.pockets ?? []).some((_, pocket) => this.add(item, { kind: 'furniture', entity, pocket }));
     }
     return entity;
+  }
+
+  itemByUid(uid: number): Item | undefined {
+    const visit = (item: Item): Item | undefined => {
+      if (item.uid === uid) {
+        return item;
+      }
+      for (const placed of (item.pockets ?? []).flat()) {
+        const found = visit(placed.item);
+        if (found) {
+          return found;
+        }
+      }
+      return undefined;
+    };
+    for (const root of this.roots()) {
+      const found = visit(root);
+      if (found) {
+        return found;
+      }
+    }
+    return undefined;
+  }
+
+  targetState(target: Target): TargetState {
+    switch (target.kind) {
+      case 'hand':
+        return { ...target };
+      case 'worn':
+        return { kind: 'worn' };
+      case 'pocket':
+        return {
+          kind: 'pocket',
+          ownerUid: target.owner.uid,
+          pocket: target.pocket,
+          ...(target.at ? { at: { ...target.at } } : {}),
+        };
+      case 'pile':
+        return { kind: 'pile', pos: [...target.pos], ...(target.at ? { at: { ...target.at } } : {}) };
+      case 'furniture':
+        return {
+          kind: 'furniture',
+          entityUid: target.entity.uid,
+          pocket: target.pocket,
+          ...(target.at ? { at: { ...target.at } } : {}),
+        };
+      default:
+        throw new Error(`Unknown target kind ${String((target as { kind: string }).kind)}`);
+    }
+  }
+
+  resolveTarget(state: TargetState): Target | undefined {
+    switch (state.kind) {
+      case 'hand':
+        return { ...state };
+      case 'worn':
+        return { kind: 'worn' };
+      case 'pocket': {
+        const owner = this.itemByUid(state.ownerUid);
+        return owner
+          ? { kind: 'pocket', owner, pocket: state.pocket, ...(state.at ? { at: { ...state.at } } : {}) }
+          : undefined;
+      }
+      case 'pile':
+        return { kind: 'pile', pos: [...state.pos], ...(state.at ? { at: { ...state.at } } : {}) };
+      case 'furniture': {
+        const entity = this.entities.byUid(state.entityUid);
+        return entity
+          ? { kind: 'furniture', entity, pocket: state.pocket, ...(state.at ? { at: { ...state.at } } : {}) }
+          : undefined;
+      }
+      default:
+        throw new Error(`Unknown target kind ${String((state as { kind: string }).kind)}`);
+    }
   }
 
   create(type: string, count = 1, condition = 1): Item {

@@ -16,6 +16,17 @@ export interface SystemSpec {
   readonly tick: (dt: number, time: number) => void;
 }
 
+export interface SchedulerCursor {
+  id: string;
+  done: number;
+  ticks: number;
+}
+
+export interface SchedulerState {
+  time: number;
+  systems: readonly SchedulerCursor[];
+}
+
 interface Entry {
   readonly spec: SystemSpec;
   readonly step: number;
@@ -32,6 +43,42 @@ export class Scheduler {
   /** Simulation seconds reached. */
   time = 0;
   private readonly entries: Entry[] = [];
+
+  /** Isolated immutable continuation state; callbacks and system definitions stay in the fresh runtime. */
+  snapshotState(): Readonly<SchedulerState> {
+    return Object.freeze({
+      time: this.time,
+      systems: Object.freeze(this.entries.map(({ spec, done, ticks }) => Object.freeze({ id: spec.id, done, ticks }))),
+    });
+  }
+
+  /** Restores cursors only after the same systems have been registered in the same runtime. */
+  restoreState(state: SchedulerState): void {
+    if (!Number.isFinite(state.time) || state.time < 0) {
+      throw new Error('Invalid scheduler time');
+    }
+    const byId = new Map(state.systems.map((cursor) => [cursor.id, cursor]));
+    if (byId.size !== state.systems.length || byId.size !== this.entries.length) {
+      throw new Error('Scheduler system set does not match snapshot');
+    }
+    for (const entry of this.entries) {
+      const cursor = byId.get(entry.spec.id);
+      if (
+        !(cursor && Number.isFinite(cursor.done)) ||
+        cursor.done < 0 ||
+        !Number.isSafeInteger(cursor.ticks) ||
+        cursor.ticks < 0
+      ) {
+        throw new Error(`Invalid scheduler cursor for ${entry.spec.id}`);
+      }
+    }
+    for (const entry of this.entries) {
+      const cursor = byId.get(entry.spec.id)!;
+      entry.done = cursor.done;
+      entry.ticks = cursor.ticks;
+    }
+    this.time = state.time;
+  }
 
   register(spec: SystemSpec): void {
     if (this.entries.some((e) => e.spec.id === spec.id)) {

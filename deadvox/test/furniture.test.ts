@@ -103,13 +103,14 @@ describe('furniture', () => {
   it('searching takes a moment, longer for bigger containers', () => {
     const { inv, cupboard } = kitchen();
     const queue = new HandlingQueue(inv);
+    queue.registerAction('test.search', () => {
+      inv.entities.markSearched(cupboard);
+    });
     const time = searchTime(registry.furniture.get('kitchen_cupboard')!);
     expect(time).toBeGreaterThanOrEqual(1);
     expect(time).toBeLessThan(searchTime(registry.furniture.get('wardrobe')!));
     expect(searchTime(registry.furniture.get('wardrobe')!)).toBeLessThanOrEqual(3);
-    queue.enqueueAction('Search', time, () => {
-      inv.entities.markSearched(cupboard);
-    });
+    queue.enqueueAction('test.search', 'Search', time, { entityUid: cupboard.uid });
     queue.tick(time - 0.1);
     expect(cupboard.searched).toBe(false);
     const { done } = queue.tick(0.2);

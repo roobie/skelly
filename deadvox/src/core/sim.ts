@@ -6,7 +6,8 @@ import { Compression } from './compression.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
-import { Scheduler } from './scheduler.ts';
+import { Scheduler, type SchedulerState } from './scheduler.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 
 /** Events systems emit. Noise, damage and block changes join as their systems arrive. */
 export type SimEvent =
@@ -15,6 +16,16 @@ export type SimEvent =
   | { kind: 'death'; cause: string };
 
 export type Timed<E> = E & { readonly time: number };
+
+export interface SimulationState {
+  seed: number;
+  clock: ClockSettings;
+  time: number;
+  scheduler: SchedulerState;
+  needs: Needs;
+  compression: { c: number; active: boolean; interruption?: string };
+  dead?: { cause: string; time: number };
+}
 
 export interface SimOptions {
   seed: number;
@@ -73,6 +84,41 @@ export class Simulation {
         }
       },
     });
+  }
+
+  /** Isolated plain-data continuation state. Runtime callbacks and transient events are excluded. */
+  snapshotState(): Readonly<SimulationState> {
+    return freezeSnapshot({
+      seed: this.seed,
+      clock: { ratio: this.clock.ratio, start: this.clock.start },
+      time: this.time,
+      scheduler: this.scheduler.snapshotState() as SchedulerState,
+      needs: { ...this.needs },
+      compression: {
+        c: this.compression.c,
+        active: this.compression.active,
+        ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
+      },
+      ...(this.dead === undefined ? {} : { dead: { ...this.dead } }),
+    });
+  }
+
+  /** Restores onto a freshly constructed runtime after registering its systems. */
+  restoreState(state: SimulationState): void {
+    if (state.seed !== this.seed || state.clock.ratio !== this.clock.ratio || state.clock.start !== this.clock.start) {
+      throw new Error('Simulation identity does not match snapshot');
+    }
+    if (!Number.isFinite(state.compression.c) || state.compression.c < 1) {
+      throw new Error('Invalid compression state');
+    }
+    Object.assign(this.needs, state.needs);
+    this.compression.c = state.compression.c;
+    this.compression.active = state.compression.active;
+    this.compression.interruption = state.compression.interruption;
+    this.dead = state.dead === undefined ? undefined : { ...state.dead };
+    this.scheduler.restoreState(state.scheduler);
+    this.paused = true;
+    this.godMode = false;
   }
 
   /** Simulation seconds since the start. */

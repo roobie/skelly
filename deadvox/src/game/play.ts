@@ -310,19 +310,50 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+  queue.registerAction('furniture.search', (params) => {
+    const uid = params.entityUid;
+    if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
+      throw new Error('Invalid furniture search target');
+    }
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return 'It is no longer there';
+    }
+    searching.delete(entity);
+    const reached = inventory.canReachEntity(entity);
+    if (reached) {
+      entities.markSearched(entity);
+    }
+    return reached ? undefined : 'Too far away';
+  });
+  queue.registerAction('furniture.door', (params) => {
+    const uid = params.entityUid;
+    if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
+      throw new Error('Invalid door target');
+    }
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return 'The door is no longer there';
+    }
+    if (params.closing !== true) {
+      entities.setOpen(entity, true);
+      return;
+    }
+    const blocker = entities.closeDoor(
+      entity,
+      body,
+      [...zombieStore.entries()].map(([, zombie]) => zombie.body),
+    );
+    return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
+  });
 
   const search = (entity: BlockEntity): string | undefined => {
     if (entity.searched || searching.has(entity)) {
       return undefined;
     }
     searching.add(entity);
-    queue.enqueueAction(`Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), () => {
-      searching.delete(entity);
-      const reached = inventory.canReachEntity(entity);
-      if (reached) {
-        entities.markSearched(entity);
-      }
-      return reached ? undefined : 'Too far away';
+    queue.enqueueAction('furniture.search', `Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), {
+      entityUid: entity.uid,
     });
     return undefined;
   };
@@ -330,17 +361,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const toggleDoor = (entity: BlockEntity) => {
     const closing = entity.open;
     const time = entities.defOf(entity).door?.handling ?? 0;
-    queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, (): string | undefined => {
-      if (!closing) {
-        entities.setOpen(entity, true);
-        return;
-      }
-      const blocker = entities.closeDoor(
-        entity,
-        body,
-        [...zombieStore.entries()].map(([, zombie]) => zombie.body),
-      );
-      return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
+    queue.enqueueAction('furniture.door', `${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, {
+      entityUid: entity.uid,
+      closing,
     });
   };
 

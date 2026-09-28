@@ -1,10 +1,35 @@
-// The handling queue. Moving an item takes real seconds while the world keeps
-// running; moves queue up and happen one at a time. A move takes effect when its
-// time is up, and is checked again then: the world may have changed meanwhile.
-// Other short actions (searching a cupboard, opening a door) queue the same way.
+// Handling jobs are tagged data, not callbacks or object references. Their handlers
+// live in the freshly-created runtime; a 1.9 snapshot omits pending jobs without
+// mutating the running queue.
 
-import { describeTarget, type Inventory, type Target } from './inventory.ts';
+import { describeTarget, type Inventory, type Target, type TargetState } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+
+export type JobValue = null | boolean | number | string | JobValue[] | { [key: string]: JobValue };
+export interface JobParams {
+  [key: string]: JobValue;
+}
+
+const isJobValue = (value: unknown, seen = new Set<object>()): value is JobValue => {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return true;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value);
+  }
+  if (typeof value !== 'object') {
+    return false;
+  }
+  if (seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+  const valid = Array.isArray(value)
+    ? value.every((item) => isJobValue(item, seen))
+    : Object.getPrototypeOf(value) === Object.prototype && Object.values(value).every((item) => isJobValue(item, seen));
+  seen.delete(value);
+  return valid;
+};
 
 interface JobBase {
   readonly label: string;
@@ -15,18 +40,23 @@ interface JobBase {
 
 export interface MoveJob extends JobBase {
   readonly kind: 'move';
-  readonly item: Item;
-  readonly target: Target;
+  readonly itemUid: number;
+  readonly target: TargetState;
   readonly count: number;
 }
 
 export interface ActionJob extends JobBase {
   readonly kind: 'action';
-  /** Happens when the time is up. Returns why it couldn't, or undefined. */
-  readonly apply: () => string | undefined;
+  readonly jobType: string;
+  readonly params: JobParams;
 }
 
 export type Job = MoveJob | ActionJob;
+
+/** A snapshot intentionally cancels all pending jobs in its copy only. */
+export interface HandlingQueueState {
+  jobs: [];
+}
 
 export interface TickResult {
   done: Job[];
@@ -36,6 +66,7 @@ export interface TickResult {
 export class HandlingQueue {
   readonly jobs: Job[] = [];
   private readonly inventory: Inventory;
+  private readonly handlers = new Map<string, (params: JobParams) => string | undefined>();
 
   constructor(inventory: Inventory) {
     this.inventory = inventory;
@@ -49,6 +80,18 @@ export class HandlingQueue {
   /** Seconds until the queue is empty. */
   get remaining(): number {
     return this.jobs.reduce((sum, job) => sum + job.duration - job.elapsed, 0);
+  }
+
+  /** Save-copy projection: no live jobs are advanced, canceled, or mutated. */
+  snapshotCancelled(): Readonly<HandlingQueueState> {
+    return Object.freeze({ jobs: Object.freeze([]) as [] });
+  }
+
+  registerAction(jobType: string, handler: (params: JobParams) => string | undefined): void {
+    if (!jobType || this.handlers.has(jobType)) {
+      throw new Error(`Action ${jobType} is already registered`);
+    }
+    this.handlers.set(jobType, handler);
   }
 
   /**
@@ -71,8 +114,8 @@ export class HandlingQueue {
     const { name } = defOf(this.inventory.registry, item.type);
     const job: MoveJob = {
       kind: 'move',
-      item,
-      target,
+      itemUid: item.uid,
+      target: this.inventory.targetState(target),
       count,
       label: `${name}${count > 1 ? ` ×${count}` : ''} → ${describeTarget(this.inventory, target)}`,
       duration,
@@ -82,9 +125,15 @@ export class HandlingQueue {
     return { ok: true, job };
   }
 
-  /** Queues an action that takes `duration` seconds and then happens. */
-  enqueueAction(label: string, duration: number, apply: () => string | undefined): ActionJob {
-    const job: ActionJob = { kind: 'action', label, duration, elapsed: 0, apply };
+  /** Queues a tagged action; its handler is runtime wiring, never part of the job data. */
+  enqueueAction(jobType: string, label: string, duration: number, params: JobParams = {}): ActionJob {
+    if (!this.handlers.has(jobType)) {
+      throw new Error(`No handler registered for action ${jobType}`);
+    }
+    if (!isJobValue(params)) {
+      throw new Error(`Action ${jobType} parameters must be plain serializable data`);
+    }
+    const job: ActionJob = { kind: 'action', jobType, params: structuredClone(params), label, duration, elapsed: 0 };
     this.jobs.push(job);
     return job;
   }
@@ -119,9 +168,15 @@ export class HandlingQueue {
 
   private finish(job: Job): string | undefined {
     if (job.kind === 'action') {
-      return job.apply();
+      const handler = this.handlers.get(job.jobType);
+      return handler ? handler(job.params) : `Unknown action ${job.jobType}`;
     }
-    const moved = this.inventory.move(job.item, job.target, job.count);
+    const item = this.inventory.itemByUid(job.itemUid);
+    const target = this.inventory.resolveTarget(job.target);
+    if (!(item && target)) {
+      return "It isn't there any more";
+    }
+    const moved = this.inventory.move(item, target, job.count);
     return moved.ok ? undefined : moved.reason;
   }
 }

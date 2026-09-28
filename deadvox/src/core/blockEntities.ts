@@ -5,8 +5,9 @@
 
 import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { Placed } from './items.ts';
+import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 
 export interface BlockEntity {
@@ -27,6 +28,22 @@ export interface BlockEntity {
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
+export interface BlockEntityState {
+  uid: number;
+  type: string;
+  pos: Vec3;
+  size: Vec3;
+  facing: Facing;
+  searched: boolean;
+  open: boolean;
+  pockets?: PlacedState[][];
+}
+
+export interface BlockEntitiesState {
+  nextUid: number;
+  entities: BlockEntityState[];
+}
+
 export interface EntitySpec {
   type: string;
   pos: Vec3;
@@ -92,6 +109,56 @@ export class BlockEntities {
     return this.byAnchor.values();
   }
 
+  get next(): number {
+    return this.nextUid;
+  }
+
+  byUid(uid: number): BlockEntity | undefined {
+    return [...this.byAnchor.values()].find((entity) => entity.uid === uid);
+  }
+
+  snapshotState(): Readonly<BlockEntitiesState> {
+    return freezeSnapshot({
+      nextUid: this.nextUid,
+      entities: [...this.byAnchor.values()].map((entity) => ({
+        uid: entity.uid,
+        type: entity.type,
+        pos: [...entity.pos],
+        size: [...entity.size],
+        facing: entity.facing,
+        searched: entity.searched,
+        open: entity.open,
+        ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+      })),
+    });
+  }
+
+  static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
+    const entities = new BlockEntities(registry);
+    const ids = new Set<number>();
+    for (const saved of state.entities) {
+      if (!Number.isSafeInteger(saved.uid) || saved.uid < 1 || ids.has(saved.uid)) {
+        throw new Error(`Invalid or duplicate block entity id ${saved.uid}`);
+      }
+      ids.add(saved.uid);
+      const entity = entities.addWithUid(saved, saved.uid);
+      if (!entity) {
+        throw new Error(`Duplicate block entity anchor ${saved.pos.join(',')}`);
+      }
+      entity.searched = saved.searched;
+      entity.open = saved.open;
+      if (saved.pockets) {
+        entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(registry, placed)));
+      }
+    }
+    const maxUid = [...ids].reduce((max, uid) => Math.max(max, uid), 0);
+    if (!Number.isSafeInteger(state.nextUid) || state.nextUid <= maxUid) {
+      throw new Error('Invalid next block entity id');
+    }
+    entities.nextUid = state.nextUid;
+    return entities;
+  }
+
   defOf(entity: BlockEntity): FurnitureDef {
     return this.registry.furniture.get(entity.type)!;
   }
@@ -101,6 +168,14 @@ export class BlockEntities {
    * and returns undefined, so a column that generates again doesn't duplicate it.
    */
   add(spec: EntitySpec): BlockEntity | undefined {
+    const entity = this.addWithUid(spec, this.nextUid);
+    if (entity) {
+      this.nextUid += 1;
+    }
+    return entity;
+  }
+
+  private addWithUid(spec: EntitySpec, uid: number): BlockEntity | undefined {
     const anchor = key(...spec.pos);
     if (this.byAnchor.has(anchor)) {
       return undefined;
@@ -110,7 +185,7 @@ export class BlockEntities {
       throw new Error(`content does not define furniture "${spec.type}"`);
     }
     const entity: BlockEntity = {
-      uid: this.nextUid,
+      uid,
       type: spec.type,
       pos: [...spec.pos],
       size: [...spec.size],
@@ -118,7 +193,6 @@ export class BlockEntities {
       searched: false,
       open: false,
     };
-    this.nextUid += 1;
     if (def.container) {
       entity.pockets = def.container.pockets.map(() => []);
     }
