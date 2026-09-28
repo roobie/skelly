@@ -203,4 +203,13 @@ export const bullpup: Template = {
   ],
 };
 
-export const TEMPLATES: readonly Template[] = [battleRifle, pistol, revolver, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];
+export const TEMPLATES: readonly Template[] = [
+  battleRifle,
+  pistol,
+  revolver,
+  smg,
+  boltRifle,
+  boltRifleBox,
+  pumpShotgun,
+  bullpup,
+];

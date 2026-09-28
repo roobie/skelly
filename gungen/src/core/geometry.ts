@@ -97,20 +97,22 @@ const edgesOf = (poly: ConvexPolyhedron): Vec3[] => {
 };
 
 const faceNormals = (poly: ConvexPolyhedron): Vec3[] =>
-  uniqueDirections(poly.faces.flatMap((face) => {
-    if (face.length < 3) {
-      return [];
-    }
-    const origin = poly.vertices[face[0]!]!;
-    for (let i = 1; i < face.length - 1; i++) {
-      const normal = cross(sub(poly.vertices[face[i]!]!, origin), sub(poly.vertices[face[i + 1]!]!, origin));
-      const magnitude = length(normal);
-      if (magnitude > 1e-9) {
-        return [scale(normal, 1 / magnitude)];
+  uniqueDirections(
+    poly.faces.flatMap((face) => {
+      if (face.length < 3) {
+        return [];
       }
-    }
-    return [];
-  }));
+      const origin = poly.vertices[face[0]!]!;
+      for (let i = 1; i < face.length - 1; i++) {
+        const normal = cross(sub(poly.vertices[face[i]!]!, origin), sub(poly.vertices[face[i + 1]!]!, origin));
+        const magnitude = length(normal);
+        if (magnitude > 1e-9) {
+          return [scale(normal, 1 / magnitude)];
+        }
+      }
+      return [];
+    }),
+  );
 
 /**
  * Separating-axis test for convex polyhedra. Returns signed minimum interval
@@ -185,14 +187,13 @@ export const penetration = (a: Obb, b: Obb): number => {
 };
 
 export const penetrationWorld = (a: WorldSolid, b: WorldSolid): number => {
-  if (!isPolyhedron(a) && !isPolyhedron(b)) {
+  if (!(isPolyhedron(a) || isPolyhedron(b))) {
     return penetration(a, b);
   }
   return penetrationConvex(isPolyhedron(a) ? a : obbPolyhedron(a), isPolyhedron(b) ? b : obbPolyhedron(b));
 };
 
-const orient = (a: Vec2, b: Vec2, c: Vec2): number =>
-  (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+const orient = (a: Vec2, b: Vec2, c: Vec2): number => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
 const onSegment = (a: Vec2, b: Vec2, p: Vec2): boolean =>
   p[0] >= Math.min(a[0], b[0]) - 1e-10 &&
   p[0] <= Math.max(a[0], b[0]) + 1e-10 &&
@@ -203,37 +204,26 @@ const segmentsIntersect = (a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean => {
   const abD = orient(a, b, d);
   const cdA = orient(c, d, a);
   const cdB = orient(c, d, b);
-  if ((abC > 1e-10 && abD < -1e-10 || abC < -1e-10 && abD > 1e-10) &&
-      (cdA > 1e-10 && cdB < -1e-10 || cdA < -1e-10 && cdB > 1e-10)) {
+  if (
+    ((abC > 1e-10 && abD < -1e-10) || (abC < -1e-10 && abD > 1e-10)) &&
+    ((cdA > 1e-10 && cdB < -1e-10) || (cdA < -1e-10 && cdB > 1e-10))
+  ) {
     return true;
   }
-  return (Math.abs(abC) <= 1e-10 && onSegment(a, b, c)) ||
+  return (
+    (Math.abs(abC) <= 1e-10 && onSegment(a, b, c)) ||
     (Math.abs(abD) <= 1e-10 && onSegment(a, b, d)) ||
     (Math.abs(cdA) <= 1e-10 && onSegment(c, d, a)) ||
-    (Math.abs(cdB) <= 1e-10 && onSegment(c, d, b));
+    (Math.abs(cdB) <= 1e-10 && onSegment(c, d, b))
+  );
 };
 
-/** Returns a structural-error explanation, or undefined for a valid extrusion. */
-export const validateExtrudedPolygon = (
-  profile: readonly Vec2[],
-  z: readonly [number, number],
-): string | undefined => {
-  if (!Array.isArray(profile)) {
-    return 'profile must be an array of vertices';
-  }
-  if (!Array.isArray(z) || z.length !== 2) {
-    return 'extrusion bounds must contain exactly two values';
-  }
+const validateProfileVertices = (profile: readonly Vec2[]): string | undefined => {
   if (profile.length < 3) {
     return 'profile needs at least three vertices';
   }
-  if (
-    profile.some((p) => !Array.isArray(p) || p.length !== 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]))
-  ) {
+  if (profile.some((p) => !Array.isArray(p) || p.length !== 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1]))) {
     return 'profile coordinates must be finite 2D vertices';
-  }
-  if (!Number.isFinite(z[0]) || !Number.isFinite(z[1]) || z[1] <= z[0]) {
-    return 'extrusion bounds must be finite and have positive depth';
   }
   for (let i = 0; i < profile.length; i++) {
     const a = profile[i]!;
@@ -241,12 +231,16 @@ export const validateExtrudedPolygon = (
     if (Math.hypot(b[0] - a[0], b[1] - a[1]) <= 1e-10) {
       return 'profile has a repeated adjacent vertex or zero-length edge';
     }
-    for (let j = i + 1; j < profile.length; j++) {
-      if (a[0] === profile[j]![0] && a[1] === profile[j]![1]) {
+    for (const point of profile.slice(i + 1)) {
+      if (a[0] === point[0] && a[1] === point[1]) {
         return 'profile has a repeated vertex and is self-intersecting';
       }
     }
   }
+  return undefined;
+};
+
+const hasSelfIntersectingEdges = (profile: readonly Vec2[]): boolean => {
   for (let i = 0; i < profile.length; i++) {
     const iNext = (i + 1) % profile.length;
     for (let j = i + 1; j < profile.length; j++) {
@@ -255,10 +249,14 @@ export const validateExtrudedPolygon = (
         continue;
       }
       if (segmentsIntersect(profile[i]!, profile[iNext]!, profile[j]!, profile[jNext]!)) {
-        return 'profile is self-intersecting';
+        return true;
       }
     }
   }
+  return false;
+};
+
+const validateProfileConvexity = (profile: readonly Vec2[]): string | undefined => {
   let twiceArea = 0;
   let turnSign = 0;
   for (let i = 0; i < profile.length; i++) {
@@ -282,6 +280,27 @@ export const validateExtrudedPolygon = (
     return 'profile vertices must be counter-clockwise';
   }
   return undefined;
+};
+
+/** Returns a structural-error explanation, or undefined for a valid extrusion. */
+export const validateExtrudedPolygon = (profile: readonly Vec2[], z: readonly [number, number]): string | undefined => {
+  if (!Array.isArray(profile)) {
+    return 'profile must be an array of vertices';
+  }
+  if (!Array.isArray(z) || z.length !== 2) {
+    return 'extrusion bounds must contain exactly two values';
+  }
+  const vertexError = validateProfileVertices(profile);
+  if (vertexError) {
+    return vertexError;
+  }
+  if (!(Number.isFinite(z[0]) && Number.isFinite(z[1])) || z[1] <= z[0]) {
+    return 'extrusion bounds must be finite and have positive depth';
+  }
+  if (hasSelfIntersectingEdges(profile)) {
+    return 'profile is self-intersecting';
+  }
+  return validateProfileConvexity(profile);
 };
 
 export const boxFromMinMax = (min: Vec3, max: Vec3): Box => ({

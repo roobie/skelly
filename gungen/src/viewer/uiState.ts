@@ -1,9 +1,6 @@
 export const UI_STATE_KEY = 'gungen.ui-state';
 
-export type AssemblySelection =
-  | { kind: 'fixture'; name: string }
-  | { kind: 'generated' }
-  | { kind: 'upload' };
+export type AssemblySelection = { kind: 'fixture'; name: string } | { kind: 'generated' } | { kind: 'upload' };
 
 export interface UiState {
   version: 1;
@@ -31,6 +28,19 @@ export const DEFAULT_UI_STATE: UiState = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+const parseAssemblySelection = (assembly: Record<string, unknown>): AssemblySelection => {
+  if (assembly.kind === 'fixture' && typeof assembly.name === 'string') {
+    return { kind: 'fixture', name: assembly.name };
+  }
+  if (assembly.kind === 'generated') {
+    return { kind: 'generated' };
+  }
+  if (assembly.kind === 'upload') {
+    return { kind: 'upload' };
+  }
+  return structuredClone(DEFAULT_UI_STATE.assembly);
+};
+
 export const parseUiState = (serialized: string | null): UiState => {
   if (serialized === null) {
     return structuredClone(DEFAULT_UI_STATE);
@@ -42,14 +52,7 @@ export const parseUiState = (serialized: string | null): UiState => {
     }
     const assembly = isRecord(value.assembly) ? value.assembly : {};
     const layers = isRecord(value.layers) ? value.layers : {};
-    const selectedAssembly: AssemblySelection =
-      assembly.kind === 'fixture' && typeof assembly.name === 'string'
-        ? { kind: 'fixture', name: assembly.name }
-        : assembly.kind === 'generated'
-          ? { kind: 'generated' }
-          : assembly.kind === 'upload'
-            ? { kind: 'upload' }
-            : structuredClone(DEFAULT_UI_STATE.assembly);
+    const selectedAssembly = parseAssemblySelection(assembly);
     return {
       version: 1,
       assembly: selectedAssembly,

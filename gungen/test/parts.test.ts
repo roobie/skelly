@@ -40,11 +40,7 @@ describe('part library', () => {
     expect(frame.solids.map((part) => part.id)).toContain('top-strap');
     expect(frame.solids.map((part) => part.id)).toContain('cylinder-side-near');
     expect(frame.ports.map((port) => port.id)).toContain('cylinder');
-    expect(frame.keepOuts.map((keepOut) => keepOut.id)).toEqual([
-      'cylinder-gap',
-      'cylinder-swing',
-      'hammer-travel',
-    ]);
+    expect(frame.keepOuts.map((keepOut) => keepOut.id)).toEqual(['cylinder-gap', 'cylinder-swing', 'hammer-travel']);
   });
 
   it('adds the barrel-to-cylinder loop port to the revolver barrel profile', () => {
@@ -73,7 +69,7 @@ describe('part library', () => {
   });
 
   it('models the grip as one beveled prism matching its mount face', () => {
-    const solids = FAMILIES.grip!.build({ length: 'M' }).solids;
+    const { solids } = FAMILIES.grip!.build({ length: 'M' });
     expect(solids).toHaveLength(1);
     const [body] = solids;
     expect(body?.kind).toBe('extruded-polygon');

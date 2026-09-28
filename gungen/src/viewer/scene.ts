@@ -16,17 +16,17 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
-  Shape,
   type Object3D,
+  Shape,
   Vector3,
 } from 'three';
 import { MAIN_AXIS } from '../core/conventions.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
-import type { Solid } from '../core/schema.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
 import { portFrame } from '../core/resolve.ts';
+import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
 
 const FAMILY_COLORS: Record<string, number> = {
@@ -70,7 +70,13 @@ const solidGeometry = (solid: Solid) => {
     return new BoxGeometry(solid.box.half[0] * 2, solid.box.half[1] * 2, solid.box.half[2] * 2);
   }
   const profile = new Shape();
-  solid.profile.forEach(([x, y], i) => (i === 0 ? profile.moveTo(x, y) : profile.lineTo(x, y)));
+  solid.profile.forEach(([x, y], i) => {
+    if (i === 0) {
+      profile.moveTo(x, y);
+    } else {
+      profile.lineTo(x, y);
+    }
+  });
   profile.closePath();
   const geometry = new ExtrudeGeometry(profile, { depth: solid.z[1] - solid.z[0], bevelEnabled: false });
   geometry.translate(0, 0, solid.z[0]);

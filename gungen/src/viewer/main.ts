@@ -48,7 +48,7 @@ const readUiState = (): UiState => {
     return structuredClone(DEFAULT_UI_STATE);
   }
 };
-let uiState = readUiState();
+const uiState = readUiState();
 const saveUiState = () => {
   try {
     localStorage.setItem(UI_STATE_KEY, JSON.stringify(uiState));

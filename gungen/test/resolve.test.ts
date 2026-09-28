@@ -48,11 +48,11 @@ describe('resolve', () => {
     const magazine = r.defs.get('magazine')!.solids[0]!;
     expect(magazine.kind).toBe('box');
     if (magazine.kind === 'box') {
-      const magazineFrontX = at(r, 'magazine', [
+      const [magazineFrontX] = at(r, 'magazine', [
         magazine.box.center[0] + magazine.box.half[0],
         magazine.box.center[1],
         magazine.box.center[2],
-      ])[0];
+      ]);
       expect(lowerFrontX - magazineFrontX).toBeCloseTo(0.5);
       expect(magazine.box.center[1] + magazine.box.half[1]).toBeCloseTo(0.75);
     }
@@ -155,7 +155,12 @@ describe('resolve: structure issues', () => {
               {
                 id: 'bad-profile',
                 kind: 'extruded-polygon',
-                profile: [[0, 0], [2, 2], [0, 2], [2, 0]],
+                profile: [
+                  [0, 0],
+                  [2, 2],
+                  [0, 2],
+                  [2, 0],
+                ],
                 z: [-1, 1],
               },
             ],
@@ -164,7 +169,9 @@ describe('resolve: structure issues', () => {
       },
     };
     const r = resolve(loadFixture('archetype-battle-rifle'), domain);
-    expect(r.issues.map((i) => i.message)).toContain('Part "grip" solid "bad-profile" is invalid: profile is self-intersecting.');
+    expect(r.issues.map((i) => i.message)).toContain(
+      'Part "grip" solid "bad-profile" is invalid: profile is self-intersecting.',
+    );
     expect(r.defs.get('grip')?.solids).toEqual([]);
   });
 

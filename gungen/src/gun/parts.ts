@@ -318,6 +318,17 @@ export const lower: PartFamily = {
 
 // ---- along the barrel ----
 
+const barrelLength = (params: Readonly<Record<string, string>>): number => {
+  if (params.profile === 'pistol') {
+    return 8;
+  }
+  const sizeClass = cls(params, 'length');
+  if (params.profile === 'revolver') {
+    return { S: 12, M: 16, L: 20 }[sizeClass];
+  }
+  return { S: 26, M: 36, L: 46 }[sizeClass];
+};
+
 export const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -328,12 +339,7 @@ export const barrel: PartFamily = {
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const len =
-      params.profile === 'pistol'
-        ? 8
-        : params.profile === 'revolver'
-          ? { S: 12, M: 16, L: 20 }[cls(params, 'length')]
-          : { S: 26, M: 36, L: 46 }[cls(params, 'length')];
+    const len = barrelLength(params);
     const r = { S: 0.75, M: 1, L: 1.25 }[bore];
     const fore = FORE_LENGTH[cls(params, 'length')];
     return {
@@ -351,7 +357,17 @@ export const barrel: PartFamily = {
           required: true,
         },
         ...(params.profile === 'revolver'
-          ? [{ id: 'cylinder', mount: 'cylinder', gender: 'female' as const, size: bore, pos: [REVOLVER_CYLINDER_CENTER_X, 0, 0] as Vec3, normal: NEG_X, up: Y }]
+          ? [
+              {
+                id: 'cylinder',
+                mount: 'cylinder',
+                gender: 'female' as const,
+                size: bore,
+                pos: [REVOLVER_CYLINDER_CENTER_X, 0, 0] as Vec3,
+                normal: NEG_X,
+                up: Y,
+              },
+            ]
           : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
@@ -379,13 +395,25 @@ export const cylinder: PartFamily = {
       solids: [extrudedPolygon('body', profile, [-REVOLVER_CYLINDER_LENGTH / 2, REVOLVER_CYLINDER_LENGTH / 2])],
       ports: [
         { id: 'frame', mount: 'cylinder', gender: 'male', pos: [0, 0, 0], normal: [0, 0, 1], up: Y, required: true },
-        { id: 'barrel', mount: 'cylinder', gender: 'male', pos: [0, REVOLVER_CYLINDER_RADIUS, 0], normal: [0, 0, 1], up: Y, required: true },
+        {
+          id: 'barrel',
+          mount: 'cylinder',
+          gender: 'male',
+          pos: [0, REVOLVER_CYLINDER_RADIUS, 0],
+          normal: [0, 0, 1],
+          up: Y,
+          required: true,
+        },
       ],
       keepOuts: [],
       axes: [
         {
           kind: 'bore',
-          origin: [REVOLVER_CYLINDER_RADIUS * Math.cos(chamberAngle), REVOLVER_CYLINDER_RADIUS * Math.sin(chamberAngle), 0],
+          origin: [
+            REVOLVER_CYLINDER_RADIUS * Math.cos(chamberAngle),
+            REVOLVER_CYLINDER_RADIUS * Math.sin(chamberAngle),
+            0,
+          ],
           dir: [0, 0, 1],
         },
       ],
@@ -482,20 +510,20 @@ export const grip: PartFamily = {
     const a = (GRIP_ANGLE * Math.PI) / 180;
     const magazineWell = params.well === 'magazine';
     const profile = magazineWell
-      ? [
+      ? ([
           [-PISTOL_GRIP_HALF_X, -len],
           [PISTOL_GRIP_HALF_X, -len],
           [PISTOL_GRIP_HALF_X, 0],
           [1.25, Math.tan(a) * 1.25],
           [-1.5, -Math.tan(a) * 1.5],
-        ] as const
-      : [
+        ] as const)
+      : ([
           [-1.5, -len],
           [1.5, -len],
           [1.5, 0],
           [1.25, Math.tan(a) * 1.25],
           [-1.5, -Math.tan(a) * 1.5],
-        ] as const;
+        ] as const);
     const roofY = -len + PISTOL_WELL_HEIGHT;
     const solids: Solid[] = magazineWell
       ? [
@@ -510,10 +538,26 @@ export const grip: PartFamily = {
             ],
             [-PISTOL_GRIP_HALF_Z, PISTOL_GRIP_HALF_Z],
           ),
-          solid('well-wall-left', [-PISTOL_GRIP_HALF_X, -len, -PISTOL_GRIP_HALF_Z], [-PISTOL_WELL_DEPTH / 2, roofY, PISTOL_GRIP_HALF_Z]),
-          solid('well-wall-right', [PISTOL_WELL_DEPTH / 2, -len, -PISTOL_GRIP_HALF_Z], [PISTOL_GRIP_HALF_X, roofY, PISTOL_GRIP_HALF_Z]),
-          solid('well-wall-near', [-PISTOL_WELL_DEPTH / 2, -len, -PISTOL_GRIP_HALF_Z], [PISTOL_WELL_DEPTH / 2, roofY, -PISTOL_WELL_WIDTH / 2]),
-          solid('well-wall-far', [-PISTOL_WELL_DEPTH / 2, -len, PISTOL_WELL_WIDTH / 2], [PISTOL_WELL_DEPTH / 2, roofY, PISTOL_GRIP_HALF_Z]),
+          solid(
+            'well-wall-left',
+            [-PISTOL_GRIP_HALF_X, -len, -PISTOL_GRIP_HALF_Z],
+            [-PISTOL_WELL_DEPTH / 2, roofY, PISTOL_GRIP_HALF_Z],
+          ),
+          solid(
+            'well-wall-right',
+            [PISTOL_WELL_DEPTH / 2, -len, -PISTOL_GRIP_HALF_Z],
+            [PISTOL_GRIP_HALF_X, roofY, PISTOL_GRIP_HALF_Z],
+          ),
+          solid(
+            'well-wall-near',
+            [-PISTOL_WELL_DEPTH / 2, -len, -PISTOL_GRIP_HALF_Z],
+            [PISTOL_WELL_DEPTH / 2, roofY, -PISTOL_WELL_WIDTH / 2],
+          ),
+          solid(
+            'well-wall-far',
+            [-PISTOL_WELL_DEPTH / 2, -len, PISTOL_WELL_WIDTH / 2],
+            [PISTOL_WELL_DEPTH / 2, roofY, PISTOL_GRIP_HALF_Z],
+          ),
         ]
       : [extrudedPolygon('body', profile, [-1.25, 1.25])];
     const ports: PortDef[] = [
@@ -528,7 +572,15 @@ export const grip: PartFamily = {
       },
     ];
     if (magazineWell) {
-      ports.push({ id: 'magazine', mount: 'magazine', gender: 'female', pos: [0, -len, 0], normal: NEG_Y, up: X, required: true });
+      ports.push({
+        id: 'magazine',
+        mount: 'magazine',
+        gender: 'female',
+        pos: [0, -len, 0],
+        normal: NEG_Y,
+        up: X,
+        required: true,
+      });
     }
     return {
       family: 'grip',
@@ -564,13 +616,7 @@ export const magazine: PartFamily = {
     return {
       family: 'magazine',
       // The lower or pistol grip owns the corresponding magazine well and insertion path.
-      solids: [
-        solid(
-          'body',
-          [-depth / 2, -len + insertion, -width / 2],
-          [depth / 2, insertion, width / 2],
-        ),
-      ],
+      solids: [solid('body', [-depth / 2, -len + insertion, -width / 2], [depth / 2, insertion, width / 2])],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],

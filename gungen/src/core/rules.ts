@@ -2,7 +2,7 @@
 // returns readable issues; none of them simulates anything.
 
 import { INTERFACE_TOLERANCE_BY_MOUNT, MAIN_AXIS, TOLERANCE } from './conventions.ts';
-import { penetrationWorld, worldBox, worldSolid, type WorldSolid } from './geometry.ts';
+import { penetrationWorld, type WorldSolid, worldBox, worldSolid } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import { angleBetween, applyDir, applyPoint, cross, length, sub } from './math.ts';
 import { connectionMismatch, type Resolved } from './resolve.ts';
@@ -125,7 +125,10 @@ const connectionAllowances = (r: Resolved): Map<string, number> => {
 const placedSolids = (r: Resolved): Map<string, WorldSolid[]> => {
   const placed = new Map<string, WorldSolid[]>();
   for (const [part, transform] of r.placed) {
-    placed.set(part, r.defs.get(part)!.solids.map((solid) => worldSolid(transform, solid)));
+    placed.set(
+      part,
+      r.defs.get(part)!.solids.map((solid) => worldSolid(transform, solid)),
+    );
   }
   return placed;
 };

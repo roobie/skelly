@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   boxFromMinMax,
+  type Obb,
   obbPolyhedron,
   penetration,
   penetrationConvex,
@@ -8,9 +9,14 @@ import {
   validateExtrudedPolygon,
   worldBox,
   worldSolid,
-  type Obb,
 } from '../src/core/geometry.ts';
 import { IDENTITY, mulMM, rotX, rotY, rotZ } from '../src/core/math.ts';
+
+const CONVEX_ERROR = /convex/i;
+const SELF_INTERSECT_ERROR = /self-intersect/i;
+const AREA_ERROR = /area/i;
+const WINDING_ERROR = /counter-clockwise/i;
+const EXTRUSION_ERROR = /extrusion/i;
 
 const aabb = (min: [number, number, number], max: [number, number, number]): Obb =>
   worldBox(IDENTITY, boxFromMinMax(min, max));
@@ -43,7 +49,7 @@ describe('penetration', () => {
     let state = 0x51_a7;
     const next = () => {
       state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
-      return state / 0x1_0000_0000;
+      return state / 0x1_00_00_00_00;
     };
     for (let i = 0; i < 300; i++) {
       const randomObb = (): Obb => ({
@@ -61,23 +67,104 @@ describe('penetration', () => {
     const prism = {
       id: 'test-prism',
       kind: 'extruded-polygon' as const,
-      profile: [[0.5, 0.5], [1.5, 0.5], [1.5, 1.5], [0.5, 1.5]] as const,
+      profile: [
+        [0.5, 0.5],
+        [1.5, 0.5],
+        [1.5, 1.5],
+        [0.5, 1.5],
+      ] as const,
       z: [0.5, 1.5] as const,
     };
     const overlap = worldSolid(IDENTITY, prism);
     expect(penetrationWorld(unit, overlap)).toBeCloseTo(0.5);
-    const touching = worldSolid(IDENTITY, { ...prism, profile: [[1, 0], [2, 0], [2, 1], [1, 1]] as const, z: [0, 1] as const });
+    const touching = worldSolid(IDENTITY, {
+      ...prism,
+      profile: [
+        [1, 0],
+        [2, 0],
+        [2, 1],
+        [1, 1],
+      ] as const,
+      z: [0, 1] as const,
+    });
     expect(penetrationWorld(unit, touching)).toBeCloseTo(0);
-    const separated = worldSolid(IDENTITY, { ...prism, profile: [[2, 0], [3, 0], [3, 1], [2, 1]] as const, z: [0, 1] as const });
+    const separated = worldSolid(IDENTITY, {
+      ...prism,
+      profile: [
+        [2, 0],
+        [3, 0],
+        [3, 1],
+        [2, 1],
+      ] as const,
+      z: [0, 1] as const,
+    });
     expect(penetrationWorld(unit, separated)).toBeCloseTo(-1);
   });
 
   it('validates convex profiles and non-empty extrusion depth', () => {
-    expect(validateExtrudedPolygon([[0, 0], [2, 0], [2, 1], [0, 1]], [-1, 1])).toBeUndefined();
-    expect(validateExtrudedPolygon([[0, 0], [2, 0], [1, 0.5], [2, 1], [0, 1]], [-1, 1])).toMatch(/convex/i);
-    expect(validateExtrudedPolygon([[0, 0], [2, 2], [0, 2], [2, 0]], [-1, 1])).toMatch(/self-intersect/i);
-    expect(validateExtrudedPolygon([[0, 0], [1, 0], [2, 0]], [-1, 1])).toMatch(/area/i);
-    expect(validateExtrudedPolygon([[0, 0], [0, 1], [1, 0]], [-1, 1])).toMatch(/counter-clockwise/i);
-    expect(validateExtrudedPolygon([[0, 0], [1, 0], [0, 1]], [1, 1])).toMatch(/extrusion/i);
+    expect(
+      validateExtrudedPolygon(
+        [
+          [0, 0],
+          [2, 0],
+          [2, 1],
+          [0, 1],
+        ],
+        [-1, 1],
+      ),
+    ).toBeUndefined();
+    expect(
+      validateExtrudedPolygon(
+        [
+          [0, 0],
+          [2, 0],
+          [1, 0.5],
+          [2, 1],
+          [0, 1],
+        ],
+        [-1, 1],
+      ),
+    ).toMatch(CONVEX_ERROR);
+    expect(
+      validateExtrudedPolygon(
+        [
+          [0, 0],
+          [2, 2],
+          [0, 2],
+          [2, 0],
+        ],
+        [-1, 1],
+      ),
+    ).toMatch(SELF_INTERSECT_ERROR);
+    expect(
+      validateExtrudedPolygon(
+        [
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ],
+        [-1, 1],
+      ),
+    ).toMatch(AREA_ERROR);
+    expect(
+      validateExtrudedPolygon(
+        [
+          [0, 0],
+          [0, 1],
+          [1, 0],
+        ],
+        [-1, 1],
+      ),
+    ).toMatch(WINDING_ERROR);
+    expect(
+      validateExtrudedPolygon(
+        [
+          [0, 0],
+          [1, 0],
+          [0, 1],
+        ],
+        [1, 1],
+      ),
+    ).toMatch(EXTRUSION_ERROR);
   });
 });
