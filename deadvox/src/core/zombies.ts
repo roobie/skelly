@@ -3,8 +3,9 @@ import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
-import { Rng } from './random.ts';
+import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
+import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
@@ -62,6 +63,22 @@ export interface Zombie {
   footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
+}
+
+export type ZombieState = Omit<
+  Zombie,
+  'type' | 'behaviorRng' | 'soundRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
+> & {
+  type: string;
+  behaviorRng: RngState;
+  soundRng: RngState;
+  lastVocalNoiseId: number | null;
+};
+
+export interface ZombieSystemState {
+  playerAttackWait: number;
+  nextEntityId: number;
+  zombies: { id: number; zombie: ZombieState }[];
 }
 
 export interface VocalNoise {
@@ -333,6 +350,100 @@ export class ZombieSystem {
   constructor(options: ZombieSystemOptions) {
     this.options = options;
     this.store = options.store ?? new MapEntityStore<Zombie>();
+  }
+
+  snapshotState(): Readonly<ZombieSystemState> {
+    return freezeSnapshot({
+      playerAttackWait: this.playerAttackWait,
+      nextEntityId: this.store.nextId,
+      zombies: [...this.store.entries()].map(([id, zombie]) => {
+        const {
+          type,
+          behaviorRng,
+          soundRng,
+          renderPrevious: _renderPrevious,
+          footstepClock: _footstepClock,
+          searchAnchor,
+          lastPerceived,
+          investigationTier,
+          ...state
+        } = zombie;
+        return {
+          id,
+          zombie: {
+            ...state,
+            type: type.id,
+            behaviorRng: [...behaviorRng.state()] as RngState,
+            soundRng: [...soundRng.state()] as RngState,
+            lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
+            ...(investigationTier === undefined ? {} : { investigationTier }),
+            body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
+            facing: [...zombie.facing],
+            home: [...zombie.home],
+            ...(searchAnchor === undefined ? {} : { searchAnchor: [...searchAnchor] }),
+            searchHeading: [...zombie.searchHeading],
+            strollHeading: [...zombie.strollHeading],
+            ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
+          },
+        };
+      }),
+    });
+  }
+
+  restoreState(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined): void {
+    if (this.store.size > 0) {
+      throw new Error('Zombie state restores only into an empty entity store');
+    }
+    const entries = state.zombies.map(({ id, zombie }) => {
+      if (
+        !Number.isSafeInteger(id) ||
+        id < 1 ||
+        !Array.isArray(zombie.behaviorRng) ||
+        zombie.behaviorRng.length !== 4 ||
+        zombie.behaviorRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Array.isArray(zombie.soundRng) ||
+        zombie.soundRng.length !== 4 ||
+        zombie.soundRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Number.isFinite(zombie.idleSoundTimer) ||
+        zombie.idleSoundTimer < 0 ||
+        (zombie.lastVocalNoiseId !== null &&
+          (!Number.isSafeInteger(zombie.lastVocalNoiseId) || zombie.lastVocalNoiseId < 0))
+      ) {
+        throw new Error(`Invalid zombie state for entity ${id}`);
+      }
+      const type = resolveType(zombie.type);
+      if (!type) {
+        throw new Error(`Missing zombie type ${zombie.type}`);
+      }
+      const { type: _type, behaviorRng, soundRng, lastVocalNoiseId, ...fields } = zombie;
+      const restored: Zombie = {
+        ...fields,
+        type,
+        behaviorRng: new Rng(behaviorRng),
+        soundRng: new Rng(soundRng),
+        lastVocalNoiseId: lastVocalNoiseId ?? undefined,
+        footstepClock: initialShamblerFootstepClock(type.stepLength),
+        body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
+        facing: [...zombie.facing],
+        home: [...zombie.home],
+        ...(zombie.searchAnchor === undefined ? {} : { searchAnchor: [...zombie.searchAnchor] }),
+        searchHeading: [...zombie.searchHeading],
+        strollHeading: [...zombie.strollHeading],
+        ...(zombie.lastPerceived === undefined ? {} : { lastPerceived: [...zombie.lastPerceived] }),
+        renderPrevious: {
+          pos: [...zombie.body.pos],
+          facing: [...zombie.facing],
+          headYaw: zombie.headYaw,
+          gaitPhase: zombie.gaitPhase,
+        },
+      };
+      return [id, restored] as const;
+    });
+    if (!Number.isFinite(state.playerAttackWait) || state.playerAttackWait < 0) {
+      throw new Error('Invalid player attack cooldown');
+    }
+    this.store.restore(entries, state.nextEntityId);
+    this.playerAttackWait = state.playerAttackWait;
   }
 
   private tickLookAround(zombie: Zombie, dt: number): void {

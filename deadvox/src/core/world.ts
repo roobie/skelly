@@ -1,9 +1,29 @@
 import { Chunk } from './chunk.ts';
 import { CHUNK, chunkKey, localIndex, toChunk, toLocal, type Vec3 } from './coords.ts';
+import { freezeSnapshot } from './snapshotData.ts';
+
+export interface BlockDelta {
+  index: number;
+  base: string;
+  id: string;
+}
+
+export interface ChunkDiff {
+  cx: number;
+  cy: number;
+  cz: number;
+  cells: BlockDelta[];
+}
+
+export interface WorldDiffs {
+  chunks: ChunkDiff[];
+}
 
 /** Sparse block storage. Missing chunks read as air. */
 export class World {
   readonly chunks = new Map<string, Chunk>();
+  private readonly deltas = new Map<string, { x: number; y: number; z: number; base: number; id: number }>();
+  private readonly deltaCounts = new Map<string, number>();
 
   getChunk(cx: number, cy: number, cz: number): Chunk | undefined {
     return this.chunks.get(chunkKey(cx, cy, cz));
@@ -15,6 +35,76 @@ export class World {
 
   removeChunk(cx: number, cy: number, cz: number): void {
     this.chunks.delete(chunkKey(cx, cy, cz));
+  }
+
+  /** Changed cells only, with stable content ids; the live world and chunks are untouched. */
+  snapshotDiffs(contentId: (blockId: number) => string): Readonly<WorldDiffs> {
+    const chunks = new Map<string, ChunkDiff>();
+    for (const delta of this.deltas.values()) {
+      const cx = toChunk(delta.x);
+      const cy = toChunk(delta.y);
+      const cz = toChunk(delta.z);
+      const key = chunkKey(cx, cy, cz);
+      let chunk = chunks.get(key);
+      if (!chunk) {
+        chunk = { cx, cy, cz, cells: [] };
+        chunks.set(key, chunk);
+      }
+      chunk.cells.push({
+        index: localIndex(toLocal(delta.x), toLocal(delta.y), toLocal(delta.z)),
+        base: contentId(delta.base),
+        id: contentId(delta.id),
+      });
+    }
+    return freezeSnapshot({
+      chunks: [...chunks.values()]
+        .sort((a, b) => a.cx - b.cx || a.cy - b.cy || a.cz - b.cz)
+        .map((chunk) => ({
+          ...chunk,
+          cells: chunk.cells.sort((a, b) => a.index - b.index),
+        })),
+    });
+  }
+
+  /** Applies saved changes to already-regenerated base chunks, refusing a wrong base. */
+  restoreDiffs(diffs: WorldDiffs, blockId: (contentId: string) => number): void {
+    if (this.deltas.size > 0) {
+      throw new Error('Cannot restore world diffs over an edited world');
+    }
+    for (const diff of diffs.chunks) {
+      const chunk = this.getChunk(diff.cx, diff.cy, diff.cz);
+      if (!chunk) {
+        throw new Error(`Missing generated base chunk ${chunkKey(diff.cx, diff.cy, diff.cz)}`);
+      }
+      for (const cell of diff.cells) {
+        this.restoreCell(chunk, diff, cell, blockId);
+      }
+    }
+  }
+
+  private restoreCell(chunk: Chunk, diff: ChunkDiff, cell: BlockDelta, blockId: (contentId: string) => number): void {
+    if (!Number.isSafeInteger(cell.index) || cell.index < 0 || cell.index >= CHUNK ** 3) {
+      throw new Error(`Invalid block delta index ${cell.index}`);
+    }
+    const base = blockId(cell.base);
+    const id = blockId(cell.id);
+    if (![base, id].every((block) => Number.isSafeInteger(block) && block >= 0 && block <= 0xff_ff)) {
+      throw new Error(`Unknown block content id in delta ${cell.base} → ${cell.id}`);
+    }
+    if (chunk.at(cell.index) !== base) {
+      throw new Error(`Generated base mismatch at ${diff.cx},${diff.cy},${diff.cz}#${cell.index}`);
+    }
+    const lx = cell.index % CHUNK;
+    const lz = Math.floor(cell.index / CHUNK) % CHUNK;
+    const ly = Math.floor(cell.index / (CHUNK * CHUNK));
+    const x = diff.cx * CHUNK + lx;
+    const y = diff.cy * CHUNK + ly;
+    const z = diff.cz * CHUNK + lz;
+    chunk.set(lx, ly, lz, id);
+    chunk.edited = true;
+    this.deltas.set(`${x},${y},${z}`, { x, y, z, base, id });
+    const key = chunkKey(diff.cx, diff.cy, diff.cz);
+    this.deltaCounts.set(key, (this.deltaCounts.get(key) ?? 0) + 1);
   }
 
   getBlock(x: number, y: number, z: number): number {
@@ -32,8 +122,32 @@ export class World {
       chunk = new Chunk(cx, cy, cz);
       this.addChunk(chunk);
     }
-    chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
-    chunk.edited = true;
+    const before = chunk.get(toLocal(x), toLocal(y), toLocal(z));
+    if (before !== id) {
+      const key = `${x},${y},${z}`;
+      const previous = this.deltas.get(key);
+      const base = previous?.base ?? before;
+      chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
+      const editedKey = chunkKey(cx, cy, cz);
+      let count = this.deltaCounts.get(editedKey) ?? 0;
+      if (id === base) {
+        if (previous) {
+          this.deltas.delete(key);
+          count -= 1;
+        }
+      } else {
+        if (!previous) {
+          count += 1;
+        }
+        this.deltas.set(key, { x, y, z, base, id });
+      }
+      if (count > 0) {
+        this.deltaCounts.set(editedKey, count);
+      } else {
+        this.deltaCounts.delete(editedKey);
+      }
+      chunk.edited = count > 0;
+    }
     return affectedChunks(x, y, z);
   }
 }

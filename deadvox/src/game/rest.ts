@@ -6,6 +6,7 @@
 
 import { REST } from '../core/needs.ts';
 import type { Simulation } from '../core/sim.ts';
+import { freezeSnapshot } from '../core/snapshotData.ts';
 
 export type RestKind = 'rest' | 'sleep';
 
@@ -30,6 +31,14 @@ export class RestController {
   action: RestAction | undefined;
   private readonly sim: Simulation;
   private readonly hooks: RestHooks;
+
+  snapshotState(): Readonly<{ action?: RestAction }> {
+    return freezeSnapshot(this.action === undefined ? {} : { action: { ...this.action } });
+  }
+
+  restoreState(state: { action?: RestAction }): void {
+    this.action = state.action === undefined ? undefined : { ...state.action };
+  }
 
   constructor(sim: Simulation, hooks: RestHooks) {
     this.sim = sim;

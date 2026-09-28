@@ -5,7 +5,7 @@
 
 import { gameHours } from '../core/clock.ts';
 import { freshnessWord, isRotten } from '../core/food.ts';
-import type { HandlingQueue } from '../core/handling.ts';
+import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { HandSide, Inventory, Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import {
@@ -23,6 +23,14 @@ import type { Simulation } from '../core/sim.ts';
 /** Seconds to eat or drink something. */
 export const EAT_TIME = 3;
 export const DRINK_TIME = 2;
+
+const numberParam = (params: JobParams, key: string): number => {
+  const value = params[key];
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
+    throw new Error(`Invalid action parameter ${key}`);
+  }
+  return value;
+};
 
 export interface SurvivalHooks {
   /** Where a spent battery with charge left is dropped. */
@@ -43,7 +51,36 @@ export class Survival {
     this.inventory = inventory;
     this.queue = queue;
     this.hooks = hooks;
+    this.queue.registerAction('survival.eat', (params) => {
+      const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
+      if (!item || this.handOf(item) === undefined) {
+        return "It isn't in your hands";
+      }
+      return this.finishEating(item);
+    });
+    this.queue.registerAction('survival.battery', (params) => {
+      const light = this.inventory.itemByUid(numberParam(params, 'lightUid'));
+      const battery = this.inventory.itemByUid(numberParam(params, 'batteryUid'));
+      if (!light || this.handOf(light) === undefined) {
+        return "The light isn't in your hands";
+      }
+      if (!battery) {
+        return "The battery isn't there any more";
+      }
+      return swapBattery(this.inventory, light, battery, this.hooks.feet());
+    });
     sim.scheduler.register({ id: 'lights', rate: 1, maxStep: 30, tick: (dt) => this.tickLights(dt) });
+  }
+
+  snapshotState(): Readonly<{ litUid?: number }> {
+    return Object.freeze(this.lit === undefined ? {} : { litUid: this.lit.uid });
+  }
+
+  restoreState(state: { litUid?: number }): void {
+    this.lit = state.litUid === undefined ? undefined : this.inventory.itemByUid(state.litUid);
+    if (state.litUid !== undefined && !this.lit) {
+      throw new Error(`Missing saved light item ${state.litUid}`);
+    }
   }
 
   /** The hand holding `item`, if one is. */
@@ -96,9 +133,9 @@ export class Survival {
     const def = defOf(registry, item.type);
     const drink = def.category === 'drink';
     const name = def.name.toLowerCase();
-    this.queue.enqueueAction(`${drink ? 'Drink' : 'Eat'} the ${name}`, drink ? DRINK_TIME : EAT_TIME, () =>
-      this.handOf(item) === undefined ? "It isn't in your hands" : this.finishEating(item),
-    );
+    this.queue.enqueueAction('survival.eat', `${drink ? 'Drink' : 'Eat'} the ${name}`, drink ? DRINK_TIME : EAT_TIME, {
+      itemUid: item.uid,
+    });
     return undefined;
   }
 
@@ -157,11 +194,10 @@ export class Survival {
       return 'Hold the light it goes in first';
     }
     const name = defOf(registry, light.type).name.toLowerCase();
-    this.queue.enqueueAction(`Put a battery in the ${name}`, BATTERY_SWAP, () =>
-      this.handOf(light) === undefined
-        ? "The light isn't in your hands"
-        : swapBattery(this.inventory, light, battery, this.hooks.feet()),
-    );
+    this.queue.enqueueAction('survival.battery', `Put a battery in the ${name}`, BATTERY_SWAP, {
+      lightUid: light.uid,
+      batteryUid: battery.uid,
+    });
     return undefined;
   }
 

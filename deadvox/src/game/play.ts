@@ -48,6 +48,7 @@ import { renderRest } from '../ui/rest.ts';
 import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
+import { DOOR_ACTION, registerDoorAction } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './input.ts';
 import { startingLoadout } from './loadout.ts';
@@ -67,7 +68,6 @@ const USE_REACH = 2;
 const CHEST = 1;
 const QUICK_KEY = /^Digit([1-5])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
-const DOOR_CLOSE_MESSAGES = { player: "You're in the way", other: "Something's in the way" } as const;
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
@@ -396,19 +396,37 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+  queue.registerAction('furniture.search', (params) => {
+    const uid = params.entityUid;
+    if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
+      throw new Error('Invalid furniture search target');
+    }
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return 'It is no longer there';
+    }
+    searching.delete(entity);
+    const reached = inventory.canReachEntity(entity);
+    if (reached) {
+      entities.markSearched(entity);
+    }
+    return reached ? undefined : 'Too far away';
+  });
+  registerDoorAction({
+    queue,
+    entities,
+    player: () => body,
+    others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
+    playWorldSound,
+  });
 
   const search = (entity: BlockEntity): string | undefined => {
     if (entity.searched || searching.has(entity)) {
       return undefined;
     }
     searching.add(entity);
-    queue.enqueueAction(`Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), () => {
-      searching.delete(entity);
-      const reached = inventory.canReachEntity(entity);
-      if (reached) {
-        entities.markSearched(entity);
-      }
-      return reached ? undefined : 'Too far away';
+    queue.enqueueAction('furniture.search', `Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), {
+      entityUid: entity.uid,
     });
     return undefined;
   };
@@ -416,28 +434,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const toggleDoor = (entity: BlockEntity) => {
     const closing = entity.open;
     const time = entities.defOf(entity).door?.handling ?? 0;
-    const center: Vec3 = [
-      entity.pos[0] + entity.size[0] / 2,
-      entity.pos[1] + entity.size[1] / 2,
-      entity.pos[2] + entity.size[2] / 2,
-    ];
-    queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, (): string | undefined => {
-      if (!closing) {
-        entities.setOpen(entity, true);
-        playWorldSound('door_open', center);
-        return;
-      }
-      const blocker = entities.closeDoor(
-        entity,
-        body,
-        [...zombieStore.entries()].map(([, zombie]) => zombie.body),
-      );
-      if (blocker) {
-        playWorldSound('door_blocked_close', center);
-        return DOOR_CLOSE_MESSAGES[blocker];
-      }
-      playWorldSound('door_close', center);
-      return undefined;
+    queue.enqueueAction(DOOR_ACTION, `${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, {
+      entityUid: entity.uid,
+      closing,
     });
   };
 
