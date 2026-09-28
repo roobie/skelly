@@ -8,9 +8,9 @@ exports[`validator results are unchanged by the mesh module (display-only) > per
     "valid": 60,
   },
   {
-    "distinct": 26,
+    "distinct": 20,
     "template": "ar",
-    "valid": 43,
+    "valid": 60,
   },
   {
     "distinct": 41,
