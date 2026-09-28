@@ -571,8 +571,7 @@ sound event with its position.
   sounds actually started are included.
 - Player and shambler footsteps use ground travel and surface; walking, jogging
   and sprinting use different stride distances, and shambler chase cadence is
-  faster than stroll. At 21:00, browser smoke started shambler steps at 14.5 m
-  (clear, effective gain 0.014); subjective audibility remains for BR to judge.
+  faster than stroll.
 
 **Missing, carried forward:**
 - Eating and drinking sounds need cues wired to the completed use-item actions.
@@ -588,6 +587,11 @@ sound event with its position.
   steps—need their corresponding states and audio events.
 - `footstep_sand` needs a sand-specific recording; it currently reuses
   grass/sand recordings.
+- `shambler_step_*` need shambler-specific heavier, dragging recordings; they
+  currently reuse the player's surface recordings pitched down.
+- Night audibility beyond 10 m is unconfirmed: shambler steps reach 14.5 m at
+  effective gain 0.014; tune falloff/gain so they're clearly heard past 10 m at
+  night, judged by ear.
 - `door_blocked_close` needs a blocked-door recording; it reuses door-close
   recordings at lower gain.
 - `player_landing_hard` needs a hard-landing-specific recording; it uses a
