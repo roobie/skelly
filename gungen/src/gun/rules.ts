@@ -84,6 +84,39 @@ const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Iss
   return [];
 };
 
+const maximumLocalX = (r: Resolved, part: string): number =>
+  Math.max(
+    ...r.defs
+      .get(part)!
+      .solids.map((solid) =>
+        solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
+      ),
+  );
+
+/** A pistol barrel may show only a short 0.5–1.5u crown beyond the slide. */
+export const pistolBarrelCrown: Rule = {
+  id: 'pistol-barrel-crown',
+  title: 'The pistol barrel fits its slide',
+  check(r) {
+    const slide = [...r.defs].find(([, def]) => def.family === 'slide')?.[0];
+    const barrel = [...r.defs].find(([, def]) => def.family === 'barrel')?.[0];
+    if (!(slide && barrel) || r.params.get(barrel)?.profile?.value !== 'pistol') {
+      return [];
+    }
+    const crown = maximumLocalX(r, barrel) - maximumLocalX(r, slide);
+    if (crown >= 0.5 && crown <= 1.5) {
+      return [];
+    }
+    return [
+      {
+        rule: 'pistol-barrel-crown',
+        message: `The barrel protrudes ${crown.toFixed(2)}u past the slide; the pistol crown must be 0.5–1.5u.`,
+        parts: [barrel, slide],
+      },
+    ];
+  },
+};
+
 export const feedMatch: Rule = {
   id: 'feed-match',
   title: 'The lower suits the feed',

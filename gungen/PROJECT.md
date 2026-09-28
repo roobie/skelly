@@ -221,12 +221,14 @@ archetype in the viewer.
   | Rule id | Checks |
   | --- | --- |
   | `firing-grip` | Something for the firing hand: a part tagged `firing-grip` (a pistol grip, or a stock with a wrist) |
+  | `pistol-barrel-crown` | A pistol barrel protrudes 0.5–1.5u beyond its slide |
 
 - **Receiver split.** The receiver is now only the action body, with two
   params:
   - `action`: `auto` (charging handle), `bolt` (bolt travel out of the back,
-    bolt handle sweep on the right), `pump` (forend-driven), `slide` (pistol)
-    or `revolver` (cylinder frame). Each adds its own keep-out volumes.
+    bolt handle sweep on the right), `pump` (forend-driven) or `revolver`
+    (cylinder frame). Each adds its own keep-out volumes. Pistols use their own
+    frame and slide families, not receiver actions.
   - `feed`: `box` (magazine through the lower), `top` (loading port above the
     action), `tube` (tube magazine port underneath), or `cylinder` (revolver;
     added in Milestone 2.2).
@@ -257,6 +259,8 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
 | `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
+| `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
+| `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
 | `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
 On top of one broken fixture per rule, these check constraints specific to an
@@ -289,8 +293,9 @@ archetype:
 **Status:** done.
 
 - **`feed-match` rule** (gun domain): the receiver feed must have a compatible
-  well. Box- and top-fed receivers need a lower well (or, for pistols, a grip
-  well); a tube-fed receiver can't use either. Fixture: `broken-feed-match`.
+  well. Box- and top-fed receivers need a lower well; a tube-fed receiver
+  can't use one. Pistols now have an integral frame magazine well and do not
+  use the rifle receiver/lower feed path. Fixture: `broken-feed-match`.
 - **Params from neighbours.** A family can declare that a param reads its
   value from the part on one of its ports, when the assembly doesn't set it.
   Resolution needs only the connection list, so it runs before parts are
@@ -432,19 +437,26 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 
 ### Pistols (first)
 
-- Implemented a pistol lower layout with trigger guard and a grip directly
-  under the receiver, without a lower magazine well. The grip variant builds
-  material around a magazine cavity, using the lower well's box-frame model;
-  the grip owns the magazine port and insertion keep-out. The pistol magazine
-  is short and narrow and is seated into the grip.
-- `feed-match` now accepts a grip-owned well for box feed. The `slide` receiver
-  action adds slide-travel and ejection-port keep-outs. Optional rail, stock
-  and handguard ports remain unused by the pistol template.
-- The existing barrel family uses size S with a pistol profile for a short
-  exposed tube; a barrel enclosed inside the slide remains out of scope.
-- `pistol` has a passing fixture, a broken no-grip-well fixture, a broken
-  slide-travel fixture and three known-good snapshots. Its 1000-seed valid
-  rate is 100% (6 distinct valid builds).
+- Reworked the pistol as three mechanically distinct parts: an integral
+  frame/grip with the existing material-thickness magazine-well construction,
+  a hollow slide with an ejection-port opening and short sight rail, and a
+  barrel inside the slide. The frame also carries the trigger-finger keep-out,
+  trigger guard, dust cover, and slide rails. The magazine and optional sight
+  complete the template.
+- Frame, slide, and barrel close a fixed loop; proportions are coupled by
+  inherited size classes rather than a solver. Compact uses a 12u barrel and
+  11u slide; full uses a 16u barrel and 15u slide. In both, the barrel's
+  exposed crown is exactly 1u (bounded by `pistol-barrel-crown` to 0.5–1.5u).
+  The barrel has an optional unused muzzle port for a later suppressor or
+  compensator part.
+- The grip is integral and behind the trigger, under the slide's rear third.
+  The frame exposes a direct magazine port at the bottom of its grip well.
+  Receiver `action: slide` and lower `layout: pistol` were removed. Sights
+  attach to the slide's short rail, not a receiver rail.
+- A passing fixture, a broken overlong-crown fixture, geometry/rule tests,
+  fail-before evidence on the previous model, and three known-good snapshots
+  cover the design. At 1000 seeds, pistol is 100% valid with 24 distinct
+  builds: bore S/M × compact/full × grip S/M/L × sight absent/present.
 
 ### Revolvers (second)
 
@@ -458,13 +470,12 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
   cover the cylinder gap, swing-out clearance and hammer travel.
 - Added a no-well grip, revolver template, passing and broken fixtures, and
   three known-good snapshots. At 1000 seeds, revolver is 100% valid with 24
-  distinct builds; pistol remains 100% valid with 6 distinct builds. Existing
+  distinct builds; pistol remains 100% valid with 24 distinct builds. Existing
   template rates are unchanged. Individual chamber holes and cylinder rotation
   are not modeled; chamber alignment is represented by the bore axis.
 - Grip-reach ergonomics (§5) remains unbuilt, so handgun proportions are not
-  checked against a hand. Open question: does the current seven-slot receiver
-  sight rail fit a pistol-length receiver, or does the slide need its own short
-  rail?
+  checked against a hand. The 1u crown and coupled compact/full dimensions are
+  fixed model choices, not firearm manufacturing tolerances.
 
 ## Milestone 2.3: AR and AK archetypes
 
@@ -496,9 +507,8 @@ explicitly named `battle-rifle`.
 
 **Known risks and open questions:** the current `auto` charging-handle
 keep-out sits on the left; the `bolt` handle keep-out is on the right. The
-seven-slot receiver rail may be too long for a pistol and should be checked in
-the viewer. The existing `rifle` name has been renamed to `battle-rifle` now;
-there is no compatibility alias.
+existing `rifle` name has been renamed to `battle-rifle`; there is no
+compatibility alias.
 
 Each new archetype requires a passing fixture, a broken fixture for every new
 rule with readable failure text, snapshots of three known-good seeds, and

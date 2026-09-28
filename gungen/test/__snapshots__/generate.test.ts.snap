@@ -963,19 +963,19 @@ exports[`templates > pistol > known-good seeds 1`] = `
   {
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top",
+        "from": "frame.slide",
+        "to": "slide.frame",
       },
       {
-        "from": "receiver.barrel",
+        "from": "slide.barrel",
         "to": "barrel.rear",
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top",
+        "from": "frame.barrel",
+        "to": "barrel.frame",
       },
       {
-        "from": "grip.magazine",
+        "from": "frame.magazine",
         "to": "magazine.top",
       },
     ],
@@ -985,21 +985,15 @@ exports[`templates > pistol > known-good seeds 1`] = `
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "S",
+          "length": "M",
           "profile": "pistol",
         },
       },
-      "grip": {
-        "family": "grip",
+      "frame": {
+        "family": "frame",
         "params": {
-          "length": "S",
-          "well": "magazine",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "pistol",
+          "bore": "S",
+          "gripLength": "S",
         },
       },
       "magazine": {
@@ -1009,33 +1003,28 @@ exports[`templates > pistol > known-good seeds 1`] = `
           "profile": "pistol",
         },
       },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "slide",
-          "bore": "S",
-          "feed": "box",
-        },
+      "slide": {
+        "family": "slide",
       },
     },
-    "root": "receiver",
+    "root": "frame",
   },
   {
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top",
+        "from": "frame.slide",
+        "to": "slide.frame",
       },
       {
-        "from": "receiver.barrel",
+        "from": "slide.barrel",
         "to": "barrel.rear",
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top",
+        "from": "frame.barrel",
+        "to": "barrel.frame",
       },
       {
-        "from": "grip.magazine",
+        "from": "frame.magazine",
         "to": "magazine.top",
       },
     ],
@@ -1049,17 +1038,11 @@ exports[`templates > pistol > known-good seeds 1`] = `
           "profile": "pistol",
         },
       },
-      "grip": {
-        "family": "grip",
+      "frame": {
+        "family": "frame",
         "params": {
-          "length": "M",
-          "well": "magazine",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "pistol",
+          "bore": "S",
+          "gripLength": "M",
         },
       },
       "magazine": {
@@ -1069,34 +1052,34 @@ exports[`templates > pistol > known-good seeds 1`] = `
           "profile": "pistol",
         },
       },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "slide",
-          "bore": "S",
-          "feed": "box",
-        },
+      "slide": {
+        "family": "slide",
       },
     },
-    "root": "receiver",
+    "root": "frame",
   },
   {
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top",
+        "from": "frame.slide",
+        "to": "slide.frame",
       },
       {
-        "from": "receiver.barrel",
+        "from": "slide.barrel",
         "to": "barrel.rear",
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top",
+        "from": "frame.barrel",
+        "to": "barrel.frame",
       },
       {
-        "from": "grip.magazine",
+        "from": "frame.magazine",
         "to": "magazine.top",
+      },
+      {
+        "from": "slide.rail",
+        "slot": 0,
+        "to": "sight.base",
       },
     ],
     "description": "Generated from the "pistol" template with seed 300.",
@@ -1105,21 +1088,15 @@ exports[`templates > pistol > known-good seeds 1`] = `
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "S",
+          "length": "M",
           "profile": "pistol",
         },
       },
-      "grip": {
-        "family": "grip",
+      "frame": {
+        "family": "frame",
         "params": {
-          "length": "S",
-          "well": "magazine",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "pistol",
+          "bore": "M",
+          "gripLength": "S",
         },
       },
       "magazine": {
@@ -1129,16 +1106,14 @@ exports[`templates > pistol > known-good seeds 1`] = `
           "profile": "pistol",
         },
       },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "slide",
-          "bore": "M",
-          "feed": "box",
-        },
+      "sight": {
+        "family": "sight",
+      },
+      "slide": {
+        "family": "slide",
       },
     },
-    "root": "receiver",
+    "root": "frame",
   },
 ]
 `;

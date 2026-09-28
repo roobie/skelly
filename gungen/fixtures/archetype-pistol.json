@@ -1,61 +1,20 @@
 {
   "name": "archetype-pistol",
-  "description": "Magazine-fed pistol: slide action, grip well and short barrel.",
+  "description": "Pistol: integral rear grip and frame, hollow slide, internal barrel with a 1u crown.",
   "expect": [],
-  "root": "receiver",
+  "root": "frame",
   "parts": {
-    "receiver": {
-      "family": "receiver",
-      "params": {
-        "action": "slide",
-        "feed": "box",
-        "bore": "S"
-      }
-    },
-    "lower": {
-      "family": "lower",
-      "params": {
-        "layout": "pistol"
-      }
-    },
-    "barrel": {
-      "family": "barrel",
-      "params": {
-        "length": "S",
-        "profile": "pistol"
-      }
-    },
-    "grip": {
-      "family": "grip",
-      "params": {
-        "length": "M",
-        "well": "magazine"
-      }
-    },
-    "magazine": {
-      "family": "magazine",
-      "params": {
-        "length": "S",
-        "profile": "pistol"
-      }
-    }
+    "frame": { "family": "frame", "params": { "bore": "M", "gripLength": "M" } },
+    "slide": { "family": "slide" },
+    "barrel": { "family": "barrel", "params": { "length": "S", "profile": "pistol" } },
+    "magazine": { "family": "magazine", "params": { "length": "S", "profile": "pistol" } },
+    "sight": { "family": "sight" }
   },
   "connections": [
-    {
-      "from": "receiver.lower",
-      "to": "lower.top"
-    },
-    {
-      "from": "receiver.barrel",
-      "to": "barrel.rear"
-    },
-    {
-      "from": "lower.grip",
-      "to": "grip.top"
-    },
-    {
-      "from": "grip.magazine",
-      "to": "magazine.top"
-    }
+    { "from": "frame.slide", "to": "slide.frame" },
+    { "from": "slide.barrel", "to": "barrel.rear" },
+    { "from": "frame.barrel", "to": "barrel.frame" },
+    { "from": "frame.magazine", "to": "magazine.top" },
+    { "from": "slide.rail", "slot": 0, "to": "sight.base" }
   ]
 }

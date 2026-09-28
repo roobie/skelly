@@ -14,25 +14,44 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 const onGrid = (n: number) => Math.abs(n / GRID - Math.round(n / GRID)) < 1e-9;
 
 describe('part library', () => {
-  it('builds a pistol lower with a trigger guard and no magazine well', () => {
-    const lower = FAMILIES.lower!.build({ layout: 'pistol' });
-    expect(lower.ports.map((port) => port.id)).toEqual(['top', 'grip']);
-    expect(lower.solids.map((solid) => solid.id)).toContain('trigger-guard-bottom');
-    expect(lower.ports.some((port) => port.mount === 'magazine')).toBe(false);
+  it('integrates the rear grip, magazine well, dust cover, and trigger guard into the pistol frame', () => {
+    const frame = FAMILIES.frame!.build({ bore: 'S', gripLength: 'M', slideLength: 'S' });
+    expect(frame.tags).toContain('firing-grip');
+    expect(frame.ports.map((port) => port.id)).toEqual(['slide', 'barrel', 'magazine']);
+    expect(frame.solids.map((part) => part.id)).toContain('dust-cover');
+    expect(frame.solids.map((part) => part.id)).toContain('trigger-guard-bottom');
+    expect(frame.keepOuts.map((keepOut) => keepOut.id)).toContain('trigger-finger');
+    expect(frame.ports.find((port) => port.id === 'magazine')!.pos[0]).toBeLessThan(-6);
   });
 
-  it('adds slide travel to the slide-action receiver', () => {
-    const receiver = FAMILIES.receiver!.build({ action: 'slide', feed: 'box', bore: 'S' });
-    expect(receiver.keepOuts.map((keepOut) => keepOut.id)).toEqual(['ejection', 'slide-travel']);
+  it('builds a hollow pistol slide with ejection port and sight rail', () => {
+    const slide = FAMILIES.slide!.build({ bore: 'S', length: 'S' });
+    expect(slide.ports.map((port) => port.id)).toEqual(['frame', 'barrel', 'rail']);
+    expect(slide.solids.map((part) => part.id)).toContain('ejection-port-upper');
+    const barrelChannelOccupied = slide.solids.some((part) => {
+      if (part.kind !== 'box') {
+        return false;
+      }
+      const { center, half } = part.box;
+      const xRange = [center[0] - half[0], center[0] + half[0]];
+      const yRange = [center[1] - half[1], center[1] + half[1]];
+      const zRange = [center[2] - half[2], center[2] + half[2]];
+      return (
+        xRange[1]! > 0 && xRange[0]! < 11 && yRange[1]! > -3.5 && yRange[0]! < -1.5 && zRange[1]! > -1 && zRange[0]! < 1
+      );
+    });
+    expect(barrelChannelOccupied).toBe(false);
   });
 
-  it('keeps the pistol barrel short within the existing size-S family', () => {
+  it('limits the pistol barrel crown and offers a muzzle attachment port', () => {
     const barrel = FAMILIES.barrel!.build({ bore: 'S', length: 'S', profile: 'pistol' });
     const tube = barrel.solids[0]!;
     expect(tube.kind).toBe('box');
     if (tube.kind === 'box') {
-      expect(tube.box.center[0] + tube.box.half[0]).toBeCloseTo(8);
+      expect(tube.box.center[0] + tube.box.half[0]).toBeCloseTo(12);
     }
+    expect(barrel.ports.find((port) => port.id === 'muzzle')?.pos[0]).toBe(12);
+    expect(barrel.ports.find((port) => port.id === 'frame')?.required).toBe(true);
   });
 
   it('builds a revolver frame with a cylinder window and the required clearance volumes', () => {

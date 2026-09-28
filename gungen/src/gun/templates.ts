@@ -38,20 +38,21 @@ export const battleRifle: Template = {
 
 export const pistol: Template = {
   name: 'pistol',
-  description: 'Semi-automatic pistol: slide action, magazine-fed through the grip, short barrel.',
-  root: 'receiver',
+  description: 'Semi-automatic pistol: integrated frame/grip, hollow slide, internal barrel, and a short crown.',
+  root: 'frame',
   slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'slide', feed: 'box', bore: ['S', 'M'] } },
-    { id: 'lower', family: 'lower', params: { layout: 'pistol' } },
-    { id: 'barrel', family: 'barrel', params: { length: 'S', profile: 'pistol' } },
-    { id: 'grip', family: 'grip', params: { length: SML, well: 'magazine' } },
+    { id: 'frame', family: 'frame', params: { bore: ['S', 'M'], gripLength: SML } },
+    { id: 'slide', family: 'slide' },
+    { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'], profile: 'pistol' } },
     { id: 'magazine', family: 'magazine', params: { length: 'S', profile: 'pistol' } },
+    { id: 'sight', family: 'sight', chance: 0.65 },
   ],
   connections: [
-    { from: 'receiver.lower', to: 'lower.top' },
-    { from: 'receiver.barrel', to: 'barrel.rear' },
-    { from: 'lower.grip', to: 'grip.top' },
-    { from: 'grip.magazine', to: 'magazine.top' },
+    { from: 'frame.slide', to: 'slide.frame' },
+    { from: 'slide.barrel', to: 'barrel.rear' },
+    { from: 'frame.barrel', to: 'barrel.frame' },
+    { from: 'frame.magazine', to: 'magazine.top' },
+    { from: 'slide.rail', slot: 0, to: 'sight.base' },
   ],
 };
 

@@ -110,18 +110,17 @@ describe('rules', () => {
     expect(issues.map((i) => i.message)).toEqual(['receiver is box-fed, but lower (trigger) has no magazine well.']);
   });
 
-  it('slide-travel keep-out rejects a sight mounted on the pistol receiver rail', () => {
-    const { issues } = validate(loadFixture('broken-pistol-slide-sight'), gunDomain);
-    expect(issues.map((issue) => issue.message)).toEqual([
-      'sight intrudes 1.5u into the slide-travel volume of receiver.',
-    ]);
+  it('pistol frame, hollow slide, and barrel close without solid overlap', () => {
+    const report = validate(loadFixture('archetype-pistol'), gunDomain);
+    expect(report.ok).toBe(true);
+    expect(report.issues.filter((issue) => issue.rule === 'solid-overlap')).toEqual([]);
+    expect(report.issues.filter((issue) => issue.rule === 'pistol-barrel-crown')).toEqual([]);
   });
 
-  it('feed-match: grip-mounted pistol well satisfies box feed', () => {
-    expect(rulesFailed(loadFixture('archetype-pistol'))).toEqual([]);
-    const { issues } = validate(loadFixture('broken-pistol-no-grip-well'), gunDomain);
-    expect(issues.map((issue) => issue.message)).toEqual([
-      'receiver is box-fed, but lower (pistol) has no magazine well.',
+  it('pistol crown rule rejects a barrel that extends more than 1.5u past the slide', () => {
+    const { issues } = validate(loadFixture('broken-pistol-barrel-crown'), gunDomain);
+    expect(issues.filter((issue) => issue.rule === 'pistol-barrel-crown').map((issue) => issue.message)).toEqual([
+      'The barrel protrudes 5.00u past the slide; the pistol crown must be 0.5–1.5u.',
     ]);
   });
 

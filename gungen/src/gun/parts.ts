@@ -20,7 +20,7 @@
 //   lug        barrel ↔ tube magazine front (closes a loop, like clamp)
 //   forend     tube magazine ↔ sliding forend
 
-import { SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
+import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
@@ -77,6 +77,10 @@ const PISTOL_GRIP_HALF_X = PISTOL_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_GRIP_HALF_Z = PISTOL_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_WELL_HEIGHT = 6;
 const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
+const PISTOL_BARREL_LENGTH: Record<SizeClass, number> = { S: 12, M: 16, L: 20 };
+const PISTOL_CROWN_LENGTH = 1;
+const PISTOL_SLIDE_REAR = -8;
+const PISTOL_GRIP_X = -6;
 const REVOLVER_CYLINDER_RADIUS = 3;
 const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
@@ -86,8 +90,8 @@ const REVOLVER_CYLINDER_CENTER_X = -4.25;
 export const receiver: PartFamily = {
   name: 'receiver',
   params: {
-    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. slide: pistol slide. revolver: cylinder frame. */
-    action: choice('auto', 'bolt', 'pump', 'slide', 'revolver'),
+    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. revolver: cylinder frame. */
+    action: choice('auto', 'bolt', 'pump', 'revolver'),
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. cylinder: revolver. */
     feed: choice('box', 'top', 'tube', 'cylinder'),
     bore: size,
@@ -114,9 +118,6 @@ export const receiver: PartFamily = {
     switch (params.action) {
       case 'auto':
         keepOuts.push(keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]));
-        break;
-      case 'slide':
-        keepOuts.push(keepOut('slide-travel', [-24, 2.5, -1.5], [-8, 4.5, 1.5]));
         break;
       case 'revolver':
         keepOuts.push(
@@ -207,7 +208,7 @@ export const receiver: PartFamily = {
  */
 export const lower: PartFamily = {
   name: 'lower',
-  params: { layout: choice('conventional', 'bullpup', 'trigger', 'pistol') },
+  params: { layout: choice('conventional', 'bullpup', 'trigger') },
   build(params): PartDef {
     const top: PortDef = {
       id: 'top',
@@ -285,20 +286,6 @@ export const lower: PartFamily = {
           keepOuts: [trigger(-12.5)],
           axes: [],
         };
-      case 'pistol':
-        return {
-          family: 'lower',
-          solids: [
-            solid('frame', [-16, -1.5, -1.5], [0, 0, 1.5]),
-            solid('trigger-guard-top', [-5, -1.75, -1.25], [-1, -1.5, 1.25]),
-            solid('trigger-guard-rear', [-5, -3.5, -1.25], [-4.75, -1.5, 1.25]),
-            solid('trigger-guard-front', [-1.25, -3.5, -1.25], [-1, -1.5, 1.25]),
-            solid('trigger-guard-bottom', [-5, -3.5, -1.25], [-1, -3.25, 1.25]),
-          ],
-          ports: [top, grip(-8)],
-          keepOuts: [],
-          axes: [],
-        };
       default:
         return {
           family: 'lower',
@@ -320,7 +307,7 @@ export const lower: PartFamily = {
 
 const barrelLength = (params: Readonly<Record<string, string>>): number => {
   if (params.profile === 'pistol') {
-    return 8;
+    return PISTOL_BARREL_LENGTH[cls(params, 'length')];
   }
   const sizeClass = cls(params, 'length');
   if (params.profile === 'revolver') {
@@ -356,6 +343,20 @@ export const barrel: PartFamily = {
           up: Y,
           required: true,
         },
+        ...(params.profile === 'pistol'
+          ? [
+              {
+                id: 'frame',
+                mount: 'barrel-seat',
+                gender: 'male' as const,
+                size: bore,
+                pos: [0, 0, 0] as Vec3,
+                normal: NEG_X,
+                up: Y,
+                required: true,
+              },
+            ]
+          : []),
         ...(params.profile === 'revolver'
           ? [
               {
@@ -371,6 +372,7 @@ export const barrel: PartFamily = {
           : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
+        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
@@ -603,6 +605,189 @@ export const grip: PartFamily = {
   },
 };
 
+const snapGrid = (value: number): number => Math.round(value / GRID) * GRID;
+const snapVec3 = ([x, y, z]: Vec3): Vec3 => [snapGrid(x), snapGrid(y), snapGrid(z)];
+
+const rotateGripPoint = (point: Vec3, angle: number, offset: Vec3): Vec3 => {
+  const [x, y, z] = point;
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [c * x - s * y + offset[0], s * x + c * y + offset[1], z + offset[2]];
+};
+
+const rotatedBoxBounds = (box: { center: Vec3; half: Vec3 }, angle: number, offset: Vec3) => {
+  const signs: readonly (readonly [number, number])[] = [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ];
+  const corners = signs.map(([x, y]) =>
+    rotateGripPoint([box.center[0] + x * box.half[0], box.center[1] + y * box.half[1], 0], angle, offset),
+  );
+  const xs = corners.map(([x]) => x);
+  const ys = corners.map(([, y]) => y);
+  return boxFromMinMax(
+    [
+      Math.floor(Math.min(...xs) / GRID) * GRID,
+      Math.floor(Math.min(...ys) / GRID) * GRID,
+      Math.floor((box.center[2] - box.half[2] + offset[2]) / GRID) * GRID,
+    ],
+    [
+      Math.ceil(Math.max(...xs) / GRID) * GRID,
+      Math.ceil(Math.max(...ys) / GRID) * GRID,
+      Math.ceil((box.center[2] + box.half[2] + offset[2]) / GRID) * GRID,
+    ],
+  );
+};
+
+const integratedPistolGrip = (gripLength: string): PartDef => {
+  const angle = -(GRIP_ANGLE * Math.PI) / 180;
+  const offset: Vec3 = [PISTOL_GRIP_X, 0, 0];
+  const local = grip.build({ length: gripLength, well: 'magazine' });
+  const solids = local.solids.map((part): Solid => {
+    const profile =
+      part.kind === 'box'
+        ? [
+            [part.box.center[0] - part.box.half[0], part.box.center[1] - part.box.half[1]],
+            [part.box.center[0] + part.box.half[0], part.box.center[1] - part.box.half[1]],
+            [part.box.center[0] + part.box.half[0], part.box.center[1] + part.box.half[1]],
+            [part.box.center[0] - part.box.half[0], part.box.center[1] + part.box.half[1]],
+          ]
+        : part.profile;
+    return extrudedPolygon(
+      part.id,
+      profile.map(([x, y]) => {
+        const [worldX, worldY] = rotateGripPoint([x, y, 0], angle, offset);
+        return [snapGrid(worldX), snapGrid(worldY)] as const;
+      }),
+      part.kind === 'box' ? [part.box.center[2] - part.box.half[2], part.box.center[2] + part.box.half[2]] : part.z,
+    );
+  });
+  return {
+    ...local,
+    solids,
+    ports: local.ports
+      .filter((port) => port.id === 'magazine')
+      .map((port) => ({
+        ...port,
+        pos: snapVec3(rotateGripPoint(port.pos, angle, offset)),
+        normal: rotateGripPoint([port.normal[0], port.normal[1], 0], angle, [0, 0, 0]),
+        up: rotateGripPoint([port.up[0], port.up[1], 0], angle, [0, 0, 0]),
+      })),
+    keepOuts: local.keepOuts.map((gripKeepOut) => ({
+      ...gripKeepOut,
+      box: rotatedBoxBounds(gripKeepOut.box, angle, offset),
+    })),
+    axes: local.axes.map((axis) => ({
+      ...axis,
+      origin: snapVec3(rotateGripPoint(axis.origin, angle, offset)),
+      dir: rotateGripPoint(axis.dir, angle, [0, 0, 0]),
+    })),
+  };
+};
+
+const pistolSlideEnd = (length: string): number => PISTOL_BARREL_LENGTH[length as SizeClass] - PISTOL_CROWN_LENGTH;
+
+export const pistolFrame: PartFamily = {
+  name: 'frame',
+  params: {
+    bore: size,
+    gripLength: size,
+    slideLength: { ...size, from: [{ port: 'slide', param: 'length' }] },
+  },
+  build(params): PartDef {
+    const gripDef = integratedPistolGrip(params.gripLength!);
+    const bore = cls(params, 'bore');
+    const slideEnd = pistolSlideEnd(params.slideLength!);
+    return {
+      family: 'frame',
+      solids: [
+        ...gripDef.solids,
+        solid('frame-floor', [-3, -1.5, -1.5], [0, 0, 1.5]),
+        solid('dust-cover', [0, -2.5, -2], [slideEnd, -1, 2]),
+        solid('slide-rail-left', [PISTOL_SLIDE_REAR, 2.5, -2.5], [slideEnd, 3, -2]),
+        solid('slide-rail-right', [PISTOL_SLIDE_REAR, 2.5, 2], [slideEnd, 3, 2.5]),
+        solid('trigger-guard-top', [-3, -1.75, -1.25], [-1, -1.5, 1.25]),
+        solid('trigger-guard-rear', [-3, -4, -1.25], [-2.75, -1.5, 1.25]),
+        solid('trigger-guard-front', [-1.25, -4, -1.25], [-1, -1.5, 1.25]),
+        solid('trigger-guard-bottom', [-3, -4, -1.25], [-1, -3.75, 1.25]),
+      ],
+      ports: [
+        { id: 'slide', mount: 'slide-rails', gender: 'female', pos: [0, 2.5, 0], normal: Y, up: X, required: true },
+        {
+          id: 'barrel',
+          mount: 'barrel-seat',
+          gender: 'female',
+          size: bore,
+          pos: [0, 0, 0],
+          normal: X,
+          up: Y,
+          required: true,
+        },
+        ...gripDef.ports,
+      ],
+      keepOuts: [
+        ...gripDef.keepOuts,
+        keepOut('trigger-finger', [-2.75, -3.75, -1], [-1.25, -1.75, 1]),
+        keepOut('slide-travel', [-16, 2.5, -2], [PISTOL_SLIDE_REAR, 5.5, 2], 'slide'),
+      ],
+      axes: [],
+      ...(gripDef.tags ? { tags: gripDef.tags } : {}),
+    };
+  },
+};
+
+export const pistolSlide: PartFamily = {
+  name: 'slide',
+  params: {
+    bore: { ...size, from: [{ port: 'frame', param: 'bore' }] },
+    length: { ...size, from: [{ port: 'barrel', param: 'length' }] },
+  },
+  build(params): PartDef {
+    const end = pistolSlideEnd(params.length!);
+    const ejection: Solid[] = [
+      solid('ejection-port-rear', [PISTOL_SLIDE_REAR, 0.5, 2], [-3, 2.5, 2.5]),
+      solid('ejection-port-upper', [-3, 2, 2], [-1, 2.5, 2.5]),
+      solid('ejection-port-lower', [-3, 0.5, 2], [-1, 1, 2.5]),
+      solid('ejection-port-front', [-1, 0.5, 2], [0, 2.5, 2.5]),
+    ];
+    return {
+      family: 'slide',
+      solids: [
+        solid('top', [PISTOL_SLIDE_REAR, 2.5, -2.5], [end, 3, 2.5]),
+        solid('side-left', [PISTOL_SLIDE_REAR, 0.5, -2.5], [end, 2.5, -2]),
+        ...ejection,
+        solid('forward-side-right', [0, 0.5, 2], [end, 2.5, 2.5]),
+      ],
+      ports: [
+        { id: 'frame', mount: 'slide-rails', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
+        {
+          id: 'barrel',
+          mount: 'barrel',
+          gender: 'female',
+          size: cls(params, 'bore'),
+          pos: [0, -2.5, 0],
+          normal: X,
+          up: Y,
+          required: true,
+        },
+        {
+          id: 'rail',
+          mount: 'rail',
+          gender: 'female',
+          pos: [-6, 3, 0],
+          normal: Y,
+          up: X,
+          slots: { count: 3, pitch: 2 },
+        },
+      ],
+      keepOuts: [],
+      axes: [],
+    };
+  },
+};
+
 export const magazine: PartFamily = {
   name: 'magazine',
   params: { length: size, profile: choice('standard', 'smg', 'pistol') },
@@ -685,6 +870,8 @@ export const sight: PartFamily = {
 export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   receiver,
   lower,
+  frame: pistolFrame,
+  slide: pistolSlide,
   barrel,
   cylinder,
   handguard,
