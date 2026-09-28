@@ -363,6 +363,69 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       resume();
     }
   });
+  // Inventory redraws after pointerdown, so captured move/up events go to document rather than a soon-detached item node.
+  const capturedPointers = new Set<number>();
+  let forwardingPointer = false;
+  const releasePointerTarget = (event: PointerEvent) => {
+    if (event.type === 'pointerup' || event.type === 'pointercancel') {
+      capturedPointers.delete(event.pointerId);
+    }
+  };
+  const dispatchMenuPointer = (target: EventTarget, event: PointerEvent) => {
+    forwardingPointer = true;
+    try {
+      target.dispatchEvent(
+        new PointerEvent(event.type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          pointerId: event.pointerId,
+          pointerType: event.pointerType,
+          isPrimary: event.isPrimary,
+          button: event.button,
+          buttons: event.buttons,
+          clientX: input.cursorX,
+          clientY: input.cursorY,
+          screenX: input.cursorX,
+          screenY: input.cursorY,
+          width: event.width,
+          height: event.height,
+          pressure: event.pressure,
+          tiltX: event.tiltX,
+          tiltY: event.tiltY,
+          twist: event.twist,
+        }),
+      );
+    } finally {
+      forwardingPointer = false;
+    }
+  };
+  const forwardMenuPointer = (event: PointerEvent) => {
+    if (forwardingPointer) {
+      return;
+    }
+    if (!(input.locked && input.menuPointer)) {
+      releasePointerTarget(event);
+      return;
+    }
+    event.stopPropagation();
+    const captured = capturedPointers.has(event.pointerId);
+    const target = captured ? document : document.elementFromPoint(input.cursorX, input.cursorY);
+    const forwardable =
+      target === document ||
+      (target instanceof Element && target !== renderer.domElement && target.id !== 'game-cursor');
+    if (target && forwardable) {
+      if (event.type === 'pointerdown') {
+        capturedPointers.add(event.pointerId);
+      }
+      dispatchMenuPointer(target, event);
+    }
+    releasePointerTarget(event);
+  };
+  for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'] as const) {
+    document.addEventListener(type, forwardMenuPointer, true);
+  }
+
   let forwardingClick = false;
   let hoveredElement: Element | null = null;
   document.addEventListener(
@@ -406,7 +469,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
     resume();
   });
-  document.addEventListener('pointerlockchange', syncOverlay);
+  document.addEventListener('pointerlockchange', () => {
+    if (!input.locked) {
+      capturedPointers.clear();
+    }
+    syncOverlay();
+  });
 
   const compress = () => {
     queue.cancel();
