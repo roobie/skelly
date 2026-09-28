@@ -24,4 +24,6 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix gungen
       - run: npm ci --prefix deadvox
-      - run: npx biome ci --reporter=github
+      # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
+      # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.
+      - run: npm run ci -- --reporter=github
