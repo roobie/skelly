@@ -19,7 +19,15 @@ import { generate, type Realized, realize } from '../core/generate.ts';
 import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
-import { footRestExtents, type LegGeometry, legGeometryFor, strideLength, walkPose } from '../mob/gait.ts';
+import {
+  advanceClock,
+  footRestExtents,
+  type GaitClock,
+  INITIAL_CLOCK,
+  type LegGeometry,
+  legGeometryFor,
+  walkPose,
+} from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
@@ -111,7 +119,7 @@ interface Loaded {
 }
 
 let current: Loaded | undefined;
-let phase = 0;
+let clock: GaitClock = INITIAL_CLOCK;
 let gridZ = 0;
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
@@ -230,7 +238,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
   current = { genome, realized, actor, params: genome.params as HumanoidParams, extents, legGeometry };
-  phase = 0;
+  clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -376,13 +384,17 @@ generateAndLoad();
 resize();
 renderer.render(scene, camera);
 
-/** Advances phase/gridZ if walking — keeps advancing through an attack too. */
+/** Advances the walk clock/gridZ if walking — keeps advancing through an attack too. */
 const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
   if (!(walking && speed > 0 && current)) {
     return;
   }
-  const stride = strideLength(current.params, current.legGeometry, speed);
-  phase = (phase + (speed * dt) / stride) % 1;
+  clock = advanceClock(clock, speed * dt, {
+    params: current.params,
+    geomL: current.legGeometry,
+    speed,
+    seed: current.genome.seed,
+  });
   gridZ = (gridZ + speed * dt) % 0.5;
   groundGroup.position.z = gridZ;
 };
@@ -418,8 +430,13 @@ renderer.setAnimationLoop(() => {
     const clip = ATTACK_CLIPS.LUNGE_GRAB!;
     advanceAttack(dt, clip.duration);
 
-    const actor = { bones: current.realized.body.bones, extents: current.extents, params: current.params };
-    const basePose: Pose = walking ? walkPose(actor, phase, speed) : IDENTITY_POSE;
+    const actor = {
+      bones: current.realized.body.bones,
+      extents: current.extents,
+      params: current.params,
+      seed: current.genome.seed,
+    };
+    const basePose: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
     const pose = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
     current.actor.applyPose(pose);
   }

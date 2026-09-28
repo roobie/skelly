@@ -1,7 +1,6 @@
-// The humanoid walk cycle: a pure function of phase and speed. Phase advances
-// with distance travelled, not time (CHALLENGES.md §4): callers do
-// `phase += distanceMoved / strideLength(params, geom, speed)`, so a speed
-// change never makes the feet jump or slide.
+// The humanoid walk cycle: a pure function of a distance-driven clock and speed. The clock advances with
+// distance travelled (CHALLENGES.md §4): callers do `clock = advanceClock(clock, distanceMoved, basis)`
+// (basis = { params, geomL, speed, seed }), so a speed change never makes the feet jump or slide.
 //
 // Sign convention (documented once, used throughout): a hanging limb
 // (pointing -Y) swinging forward rotates positively about +X (it moves
@@ -13,12 +12,17 @@
 // the stance foot lands exactly on its target every phase — no slop to tune
 // out. Pelvis roll and yaw are compensated (legs are solved in the pelvis's
 // own unrotated frame) so they never drag the planted foot.
+//
+// Drunk shamble: each step (a stance-to-stance interval, alternating feet) has its own style and jitter
+// (steps.ts), deterministic from (seed, step index). "Step k" means the interval culminating in footfall
+// k (executed by sideForStep(k)) — see legAndFootRotations for how neighbouring steps' plans combine.
 
 import type { Bone } from '../core/body.ts';
 import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transpose, type Vec3 } from '../core/math.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
+import { type StepPlan, stepPlanFor } from './steps.ts';
 
 const TAU = Math.PI * 2;
 const toDeg = (rad: number): number => (rad * 180) / Math.PI;
@@ -26,6 +30,11 @@ const toRad = (deg: number): number => (deg * Math.PI) / 180;
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 /** Smooth 0->1 ease with zero slope at both ends (3x²-2x³). */
 const smoothstep = (x: number): number => x * x * (3 - 2 * x);
+// Smooth minimum of two values: exact min at smoothing=0, otherwise undershoots by up to smoothing/2
+// right at a tie — used where a hard min between two otherwise-smooth curves would have a slope kink right
+// at their crossover (see groundOffset).
+const smoothMin = (a: number, b: number, smoothing: number): number =>
+  smoothing <= 0 ? Math.min(a, b) : (a + b - Math.sqrt((a - b) ** 2 + smoothing * smoothing)) / 2;
 /** 0 at or below wander speed (0.8 m/s), 1 at or above chase speed (2.8 m/s); blends in the
  * speed-dependent crouch/lean below. */
 const chaseBlend = (speed: number): number => clamp((speed - 0.8) / 2, 0, 1);
@@ -34,6 +43,8 @@ const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strik
 
 export type Side = 'L' | 'R';
 const SIDES: readonly Side[] = ['L', 'R'];
+/** Which side is in stance during the interval culminating in footfall k (k-1's side; alternates). */
+const sideForStep = (stepIndex: number): Side => (stepIndex % 2 === 0 ? 'L' : 'R');
 
 const boneMap = (bones: readonly Bone[]): ReadonlyMap<string, Bone> => new Map(bones.map((b) => [b.id, b]));
 
@@ -130,15 +141,18 @@ const rotateYZ = (y0: number, z0: number, phiRad: number): readonly [number, num
 
 const HEEL_FRAC = 0.15; // fraction of stance, at its start, spent rolling from heel-strike to flat
 const TOE_FRAC = 0.2; // fraction of stance, at its end, spent rolling from flat to toe-off
+const FOOTFALL_PEAK_SAMPLES = 12; // resolution for finding each footfall's true (inside-the-roll) peak drop
 const HEEL_ROLL_MAX_DEG = 25; // toe-up pitch at heel-strike (foot rotating about the heel)
 const TOE_ROLL_MAX_DEG = 35; // heel-up pitch at push-off (foot rotating about the toe)
 // Ankle-to-heel distance, as a fraction of ankle-to-toe (footLen), used only as a fallback when the
 // actual voxel extent isn't available (there's no explicit heel joint in this rig — the foot bone only
-// runs ankle-to-toe — so legAndFootRotations prefers measuring both distances directly off the foot's
-// rest-pose voxel extent, which is exact).
+// runs ankle-to-toe — so legBonesFor prefers measuring both distances directly off the foot's rest-pose
+// voxel extent, which is exact).
 const HEEL_LEN_FRAC = 0.35;
 
 interface FootTarget {
+  /** Hip-relative lateral offset (added to thigh.head[0] for the pre-root-shift world X). */
+  readonly x: number;
   /** Ankle height, in the pelvis's own (unrotated) rest frame, before any pelvis-drop or root shift. */
   readonly y: number;
   /** Ankle offset from the hip along Z (forward is -Z; conventions.ts), same frame as `y`. */
@@ -147,42 +161,43 @@ interface FootTarget {
   readonly footPitchDeg: number;
 }
 
+/** Everything about a leg's own foot needed to place it, besides phase and length: geometry plus this
+ * step's own heel/toe roll multiplier (drag: barely rolls at all). */
+interface FootGeometry {
+  readonly ankleRestY: number;
+  readonly heelLen: number;
+  readonly toeLen: number;
+  readonly rollMul: number;
+}
+
 /**
- * The stance foot's ankle target and sole pitch across stance (t: 0 at heel-strike, 1 at toe-off).
- * Mid-stance is flat, ankle sweeping linearly from ahead to behind. At each end the foot instead rolls
- * about the heel (touchdown) or toe (push-off) — a real bounded rotation about the fixed ground pivot,
- * which is what keeps that point from sliding while letting the ankle lag/lead it (see strideLength).
- * The roll fraction is smoothstep-eased so its rate is 0 at the flat handoff (t=HEEL_FRAC / 1-TOE_FRAC),
- * matching the flat segment's own zero slope with no kink.
+ * The stance foot's ankle target and sole pitch across stance (t: 0 at heel-strike, 1 at toe-off), for a
+ * stance of length `len` metres landing at hip-relative `lateralX`. Mid-stance is flat, ankle sweeping
+ * linearly from ahead to behind. At each end the foot instead rolls about the heel (touchdown) or toe
+ * (push-off) — a real bounded rotation about the fixed ground pivot, which is what keeps that point from
+ * sliding while letting the ankle lag/lead it. The roll fraction is smoothstep-eased so its rate is 0 at
+ * the flat handoff, matching the flat segment's own zero slope with no kink.
  *
  * The pivot (heel or toe) tracks flatZ(t) at the same slope, shifted by a constant (heelLen or -toeLen)
  * — not frozen — because a ground-fixed point's hip-relative Z must keep advancing at the hip's rate;
  * freezing it would read back as the foot skidding forward once the root's own translation is added.
  */
-/** Everything about a leg's own foot needed to place it, besides phase and stride. */
-interface FootGeometry {
-  readonly ankleRestY: number;
-  readonly heelLen: number;
-  readonly toeLen: number;
-  readonly footLift: number;
-}
-
-const stanceFootTarget = (t: number, stride: number, geom: FootGeometry): FootTarget => {
-  const { ankleRestY, heelLen, toeLen } = geom;
-  const flatZ = (u: number): number => stride * (u - 0.5);
+const stanceFootTarget = (t: number, len: number, lateralX: number, geom: FootGeometry): FootTarget => {
+  const { ankleRestY, heelLen, toeLen, rollMul } = geom;
+  const flatZ = (u: number): number => len * (u - 0.5);
   if (t < HEEL_FRAC) {
     const pivotZ = flatZ(t) + heelLen;
-    const theta = toRad(HEEL_ROLL_MAX_DEG * smoothstep(1 - t / HEEL_FRAC)); // max at t=0, 0 (and flat-rate) at t=HEEL_FRAC
+    const theta = toRad(HEEL_ROLL_MAX_DEG * rollMul * smoothstep(1 - t / HEEL_FRAC)); // max at t=0, 0 (and flat-rate) at t=HEEL_FRAC
     const [y, zRel] = rotateYZ(ankleRestY, -heelLen, theta);
-    return { y, z: pivotZ + zRel, footPitchDeg: toDeg(theta) };
+    return { x: lateralX, y, z: pivotZ + zRel, footPitchDeg: toDeg(theta) };
   }
   if (t > 1 - TOE_FRAC) {
     const pivotZ = flatZ(t) - toeLen;
-    const theta = toRad(TOE_ROLL_MAX_DEG * smoothstep((t - (1 - TOE_FRAC)) / TOE_FRAC)); // 0 (flat-rate) there, max at t=1
+    const theta = toRad(TOE_ROLL_MAX_DEG * rollMul * smoothstep((t - (1 - TOE_FRAC)) / TOE_FRAC)); // 0 (flat-rate) there, max at t=1
     const [y, zRel] = rotateYZ(ankleRestY, toeLen, -theta);
-    return { y, z: pivotZ + zRel, footPitchDeg: -toDeg(theta) };
+    return { x: lateralX, y, z: pivotZ + zRel, footPitchDeg: -toDeg(theta) };
   }
-  return { y: ankleRestY, z: flatZ(t), footPitchDeg: 0 };
+  return { x: lateralX, y: ankleRestY, z: flatZ(t), footPitchDeg: 0 };
 };
 
 const HERMITE_H = 1e-4; // step for the numeric d/dt of stanceFootTarget at its own endpoints
@@ -206,35 +221,63 @@ const hermite = (t: number, k0: Keyframe, k1: Keyframe): number => {
 
 /** Central-difference d/dt of stanceFootTarget at t, extending slightly past [0,1] — safe since each
  * branch's formula is just a smooth polynomial in t past its nominal domain. */
-const stanceTargetDeriv = (t: number, stride: number, geom: FootGeometry): FootTarget => {
-  const a = stanceFootTarget(t - HERMITE_H, stride, geom);
-  const b = stanceFootTarget(t + HERMITE_H, stride, geom);
+const stanceTargetDeriv = (t: number, len: number, lateralX: number, geom: FootGeometry): FootTarget => {
+  const a = stanceFootTarget(t - HERMITE_H, len, lateralX, geom);
+  const b = stanceFootTarget(t + HERMITE_H, len, lateralX, geom);
   const d = (x: number, y: number): number => (y - x) / (2 * HERMITE_H);
-  return { y: d(a.y, b.y), z: d(a.z, b.z), footPitchDeg: d(a.footPitchDeg, b.footPitchDeg) };
+  return { x: d(a.x, b.x), y: d(a.y, b.y), z: d(a.z, b.z), footPitchDeg: d(a.footPitchDeg, b.footPitchDeg) };
 };
 
-/** Swing: a Hermite curve from stance's toe-off (t=1) to its heel-strike (t=0), matching stance's own
- * position and velocity at both ends (C1 handoff), plus a lift bump whose value *and* slope are 0 at
- * both ends (sin²) so it can't disturb that continuity. */
-const swingFootTarget = (t: number, stride: number, geom: FootGeometry): FootTarget => {
-  const p0 = stanceFootTarget(1, stride, geom);
-  const p1 = stanceFootTarget(0, stride, geom);
-  const m0 = stanceTargetDeriv(1, stride, geom);
-  const m1 = stanceTargetDeriv(0, stride, geom);
-  const lift = geom.footLift * Math.sin(Math.PI * t) ** 2;
-  const field = (key: 'y' | 'z' | 'footPitchDeg'): number =>
-    hermite(t, { value: p0[key], slope: m0[key] }, { value: p1[key], slope: m1[key] });
-  return { y: field('y') + lift, z: field('z'), footPitchDeg: field('footPitchDeg') };
+/** One end of a swing: the neighbouring stance's own length/landing/geometry (steps are jittered, so
+ * neighbours generally differ from the current step and from each other). */
+interface StanceEnd {
+  readonly len: number;
+  readonly lateralX: number;
+  readonly geom: FootGeometry;
+}
+
+/** Rescales a d/dt from a stance of length `fromLen` into a d/du for a swing of length `toLen` — same
+ * physical rate (per metre travelled), just reparameterized since steps have different lengths. */
+const rescaleRate = (rate: number, fromLen: number, toLen: number): number => (rate / fromLen) * toLen;
+
+/** Swing: a Hermite curve from the previous stance's toe-off to the next stance's heel-strike, matching
+ * each stance's own position and (length-rescaled) velocity — a C1 handoff even though neighbouring
+ * stances have different lengths, landing spots and roll amounts — plus a lift bump whose value *and*
+ * slope are 0 at both ends (sin²) so it can't disturb that continuity. */
+const swingFootTarget = (opts: {
+  readonly t: number;
+  readonly len: number;
+  readonly footLift: number;
+  readonly prev: StanceEnd;
+  readonly next: StanceEnd;
+}): FootTarget => {
+  const { t, len, footLift, prev, next } = opts;
+  const p0 = stanceFootTarget(1, prev.len, prev.lateralX, prev.geom);
+  const p1 = stanceFootTarget(0, next.len, next.lateralX, next.geom);
+  const d0 = stanceTargetDeriv(1, prev.len, prev.lateralX, prev.geom);
+  const d1 = stanceTargetDeriv(0, next.len, next.lateralX, next.geom);
+  const lift = footLift * Math.sin(Math.PI * t) ** 2;
+  const field = (key: 'x' | 'y' | 'z' | 'footPitchDeg'): number =>
+    hermite(
+      t,
+      { value: p0[key], slope: rescaleRate(d0[key], prev.len, len) },
+      { value: p1[key], slope: rescaleRate(d1[key], next.len, len) },
+    );
+  return { x: field('x'), y: field('y') + lift, z: field('z'), footPitchDeg: field('footPitchDeg') };
 };
 
-const footTargetFor = (legPhase: number, stride: number, geom: FootGeometry): FootTarget => {
-  const stance = legPhase < 0.5;
-  const t = stance ? legPhase / 0.5 : (legPhase - 0.5) / 0.5;
-  return stance ? stanceFootTarget(t, stride, geom) : swingFootTarget(t, stride, geom);
-};
+/** Smoothly blends a per-footfall scalar across step k's own span: `at(k-1)` at progress 0 (footfall
+ * k-1) easing to `at(k)` at progress 1 (footfall k), zero slope at both ends. The two adjacent intervals
+ * always agree at their shared footfall (same `at(k)` call), so this is C1 across step boundaries. */
+const blendStepScalar = (stepIndex: number, progress: number, at: (k: number) => number): number =>
+  hermite(progress, { value: at(stepIndex - 1), slope: 0 }, { value: at(stepIndex), slope: 0 });
 
 // Max leg extension, as a fraction of l1+l2, before the knee would start reading as locked straight.
-const REACH_MARGIN = 0.99;
+// 2-bone IK's knee angle has an unbounded d(angle)/d(reach) as reach approaches l1+l2 (a genuine
+// singularity of the acos law-of-cosines solve, worst when l1≈l2) — 0.99 left legAndFootRotations right
+// at the edge of it, where per-step jitter's tiny sample-to-sample reach changes produced multi-degree
+// snaps (see mobgen's report); 0.92 keeps the same "never visibly locks straight" intent with real margin.
+const REACH_MARGIN = 0.92;
 
 /** How far the hip must drop (see legAndFootRotations) for `target` to be reachable at no more than
  * REACH_MARGIN of the leg's full length — explicit and bounded, rather than whatever solveTwoBone's own
@@ -256,36 +299,16 @@ const crouchDrop = (speed: number, params: HumanoidParams, legLen: number): numb
 const BOB_SAMPLES = 128; // resolution for sampling one leg's peak required drop over a full cycle
 const BOB_SAFETY = 1.05; // margin over the sampled peak, so BOB_SAMPLES quantization can't undershoot it
 
-/** Largest requiredDrop a leg needs anywhere in its cycle, sampled at BOB_SAMPLES phases (plus a safety
- * margin: the true continuous peak can fall slightly between samples). */
-const peakRequiredDrop = (hipY: number, stride: number, geom: FootGeometry, legLen: number): number => {
+/** Largest requiredDrop a leg needs anywhere in a cycle of this length, sampled at BOB_SAMPLES phases
+ * (plus a safety margin: the true continuous peak can fall slightly between samples). */
+const peakRequiredDrop = (hipY: number, len: number, geom: FootGeometry, legLen: number): number => {
   let peak = 0;
   for (let i = 0; i < BOB_SAMPLES; i++) {
-    peak = Math.max(peak, requiredDrop(hipY, footTargetFor(i / BOB_SAMPLES, stride, geom), legLen));
+    const t = i / BOB_SAMPLES;
+    const target = t < 0.5 ? stanceFootTarget(t * 2, len, 0, geom) : stanceFootTarget((t - 0.5) * 2, len, 0, geom);
+    peak = Math.max(peak, requiredDrop(hipY, target, legLen));
   }
   return peak * BOB_SAFETY;
-};
-
-// requiredDrop actually peaks a little *inside* each roll window, not at the handoff instant itself
-// (the roll's own ankle lift briefly reduces the reach needed right at heel-strike/toe-off) — checked by
-// sampling (see mobgen's report). BOB_PLATEAU covers the larger of the two roll windows so the bob stays
-// at its max D across that whole peak, easing smoothly to 0 exactly by the true mid-stance/mid-swing
-// point (a quarter-cycle later), where requiredDrop is genuinely ~0.
-const BOB_PLATEAU = 0.5 * Math.max(HEEL_FRAC, TOE_FRAC);
-const BOB_TRANSITION = 0.25 - BOB_PLATEAU;
-
-/** Smooth hip bob, 0..1: 1 through the double-support handoffs' roll windows (phase 0, 0.5 ± BOB_PLATEAU),
- * 0 by mid-stance/mid-swing (phase 0.25, 0.75) — replaces max(dropL, dropR), whose kinks were there. */
-const bobShape = (phase: number): number => {
-  const q = ((phase % 0.5) + 0.5) % 0.5;
-  const dist = Math.min(q, 0.5 - q);
-  if (dist <= BOB_PLATEAU) {
-    return 1;
-  }
-  if (dist >= BOB_PLATEAU + BOB_TRANSITION) {
-    return 0;
-  }
-  return smoothstep(1 - (dist - BOB_PLATEAU) / BOB_TRANSITION);
 };
 
 /** A leg's fixed shape (besides phase/stride): reach and where its foot's roll pivots are. */
@@ -311,8 +334,8 @@ const legBonesFor = (byId: ReadonlyMap<string, Bone>, extents: ReadonlyMap<strin
   const l1 = boneLen(thigh);
   const l2 = boneLen(shin);
   const footLen = boneLen(foot);
-  // See legAndFootRotations' old comment: heel/toe length come from the foot's rest voxel extent when
-  // available, exact to the actual geometry, falling back to a fixed fraction of footLen otherwise.
+  // Heel/toe length come from the foot's rest voxel extent when available, exact to the actual geometry,
+  // falling back to a fixed fraction of footLen otherwise (there's no heel joint in this rig).
   const footExtent = extents.get(`foot.${side}`);
   const [, , ankleZ] = shin.tail;
   const heelLen = footExtent ? footExtent.max[2] - ankleZ : footLen * HEEL_LEN_FRAC;
@@ -324,13 +347,13 @@ const legBonesFor = (byId: ReadonlyMap<string, Bone>, extents: ReadonlyMap<strin
 export const legGeometryFor = (bones: readonly Bone[], extents: ReadonlyMap<string, Extent>, side: Side): LegGeometry =>
   legBonesFor(boneMap(bones), extents, side);
 
-const MAX_BOB_FRAC = 0.12; // largest peak hip drop (fraction of leg length) strideLength's cap allows
+const MAX_BOB_FRAC = 0.15; // largest peak hip drop (fraction of leg length) strideLength's cap allows
 
 const strideCapCache = new Map<string, number>();
 
-/** Largest full-cycle stride whose peak required hip drop (peakRequiredDrop, no crouch) stays within
- * MAX_BOB_FRAC of leg length — found by bisection and memoized per geometry (not speed, so callers that
- * re-derive `geom` fresh every frame — legAndFootRotations does — still hit the cache every time). */
+/** Largest full-cycle stride whose peak required hip drop (peakRequiredDrop, no crouch, no style) stays
+ * within MAX_BOB_FRAC of leg length — found by bisection and memoized per geometry (not speed, so callers
+ * that re-derive `geom` fresh every frame still hit the cache every time). */
 const strideCap = (geom: LegGeometry, footLift: number): number => {
   const key = `${geom.legLen}|${geom.hipY}|${geom.heelLen}|${geom.toeLen}|${geom.ankleRestY}|${footLift}`;
   const cached = strideCapCache.get(key);
@@ -338,7 +361,12 @@ const strideCap = (geom: LegGeometry, footLift: number): number => {
     return cached;
   }
   const budget = MAX_BOB_FRAC * geom.legLen;
-  const footGeom: FootGeometry = { ankleRestY: geom.ankleRestY, heelLen: geom.heelLen, toeLen: geom.toeLen, footLift };
+  const footGeom: FootGeometry = {
+    ankleRestY: geom.ankleRestY,
+    heelLen: geom.heelLen,
+    toeLen: geom.toeLen,
+    rollMul: 1,
+  };
   let lo = 0;
   let hi = 4 * geom.legLen; // generous — the true cap is well under this
   for (let i = 0; i < 30; i++) {
@@ -357,13 +385,67 @@ const strideCap = (geom: LegGeometry, footLift: number): number => {
  * strideFactor. 0.6 + 0.95·speed targets human walking data. The cap is a *crouch* limit, not a reach
  * limit (legAndFootRotations' hip-drop solve has slack well past it): the longest stride whose peak
  * required hip drop stays within MAX_BOB_FRAC of leg length (see strideCap). Above the cap, cadence alone
- * carries speed — see gait.test.ts. */
+ * carries speed — see gait.test.ts. Per-step jitter/style (steps.ts) scales this further, per step. */
 export const strideLength = (params: HumanoidParams, geom: LegGeometry, speed: number): number => {
   if (speed <= 0) {
     return geom.legLen; // unused when standing (speed 0), kept positive so callers never divide by zero
   }
   const raw = geom.legLen * (0.6 + 0.95 * speed) * params.strideFactor;
   return Math.min(raw, strideCap(geom, params.footLift));
+};
+
+// A step's own length is half its horizontal reach (flatZ spans -len/2..len/2); beyond STEP_REACH_FRAC of
+// legLen the required hip drop pushes the ankle target most of the way to hip height, collapsing the
+// hip-abduction lever arm (legAndFootRotations' yPrime) toward 0 — a real leg-splayed-flat degeneracy, not
+// just a numerical one. strideLength's own cap (MAX_BOB_FRAC) already keeps the *base* stride well inside
+// this, so it only bites lurch's own lengthMul, which is exactly what needs bounding.
+const STEP_REACH_FRAC = 0.85;
+
+/** The 4 inputs that determine every step's own length (stepLengthMeters/advanceClock): the genome's
+ * params/seed and the current speed/left-leg geometry. Grouped since they always travel together and
+ * individually would put both functions over useMaxParams. */
+export interface GaitBasis {
+  readonly params: HumanoidParams;
+  readonly geomL: LegGeometry;
+  readonly speed: number;
+  readonly seed: number;
+}
+
+/** This step's own length in metres (half the base full-cycle stride, times this step's jittered/style
+ * multiplier, reach-capped — see STEP_REACH_FRAC) — shared by advanceClock and legAndFootRotations so both
+ * agree on how far the body travels during step k. Uses the left leg as a shared reference (matches
+ * walkPose's own yaw reference). */
+export const stepLengthMeters = (basis: GaitBasis, stepIndex: number): number => {
+  const { params, geomL, speed, seed } = basis;
+  const raw = (strideLength(params, geomL, speed) / 2) * stepPlanFor(seed, stepIndex, params).lengthMul;
+  return Math.min(raw, 2 * STEP_REACH_FRAC * geomL.legLen);
+};
+
+/** Walk clock: which step is current, and how far into it (0..1). Replaces the old single `phase`
+ * number now that steps have their own (jittered) lengths instead of a shared stride. */
+export interface GaitClock {
+  readonly stepIndex: number;
+  readonly progress: number;
+}
+
+export const INITIAL_CLOCK: GaitClock = { stepIndex: 0, progress: 0 };
+
+/** Advances the clock by `distance` metres, rolling into as many subsequent steps as needed — each
+ * step's own length (stepLengthMeters), not a shared stride, so steps aren't uniform. */
+export const advanceClock = (clock: GaitClock, distance: number, basis: GaitBasis): GaitClock => {
+  let { stepIndex, progress } = clock;
+  let remaining = distance;
+  for (let guard = 0; guard < 10_000; guard++) {
+    const len = stepLengthMeters(basis, stepIndex) || 1e-6;
+    const remainingInStep = (1 - progress) * len;
+    if (remaining < remainingInStep) {
+      return { stepIndex, progress: progress + remaining / len };
+    }
+    remaining -= remainingInStep;
+    stepIndex += 1;
+    progress = 0;
+  }
+  return { stepIndex, progress };
 };
 
 /** Solves for the local (pre-rotation) ankle Y, Z that land the ankle exactly at world (y, z) once
@@ -385,14 +467,13 @@ const sagittalTarget = (
   return [dy + pivot[1], dz + pivot[2]];
 };
 
-const legPhaseOf = (side: Side, phase: number): number => (side === 'L' ? phase : phase + 0.5) % 1;
-
 interface GaitContext {
   readonly bones: ReadonlyMap<string, Bone>;
   readonly extents: ReadonlyMap<string, Extent>;
   readonly params: HumanoidParams;
-  readonly phase: number;
+  readonly clock: GaitClock;
   readonly speed: number;
+  readonly seed: number;
   /** Full pelvis rotation (roll ∘ yaw) — for keeping the foot level in world space. */
   readonly pelvisR: Mat3;
   readonly pelvisRollDeg: number;
@@ -400,89 +481,253 @@ interface GaitContext {
   readonly pelvisPivot: Vec3;
 }
 
-const legAndFootRotations = (ctx: GaitContext): Record<string, Mat3> => {
-  const { params, speed } = ctx;
+/** Per-side leg-placement result: rotations plus the (pre-root) world X the ankle actually reaches. */
+interface LegResult {
+  readonly rotations: Record<string, Mat3>;
+  readonly worldX: Record<Side, number>;
+  readonly armStyle: Record<
+    Side,
+    { readonly wideExtraDeg: number; readonly forwardExtraDeg: number; readonly hang: number }
+  >;
+}
 
-  const perSide = SIDES.map((side) => {
-    const leg = legBonesFor(ctx.bones, ctx.extents, side);
-    const limpFactor = side === 'R' ? 1 - clamp(params.limp, 0, 1) : 1;
-    const stride = (strideLength(params, leg, speed) / 2) * limpFactor;
-    const legPhase = legPhaseOf(side, ctx.phase);
-    const geom: FootGeometry = {
-      ankleRestY: leg.ankleRestY,
-      heelLen: leg.heelLen,
-      toeLen: leg.toeLen,
-      footLift: params.footLift,
-    };
-    const target = footTargetFor(legPhase, stride, geom);
-    const bobPeak = peakRequiredDrop(leg.hipY, stride, geom, leg.legLen);
-    return { side, thigh: leg.thigh, shin: leg.shin, l1: leg.l1, l2: leg.l2, legLen: leg.legLen, target, bobPeak };
+const legAndFootRotations = (ctx: GaitContext): LegResult => {
+  const { params, speed, seed } = ctx;
+  const { stepIndex: k, progress } = ctx.clock;
+
+  const byId = ctx.bones;
+  const legL = legBonesFor(byId, ctx.extents, 'L');
+  const legR = legBonesFor(byId, ctx.extents, 'R');
+  const legFor = (side: Side): LegBones => (side === 'L' ? legL : legR);
+  const limpOf = (side: Side): number => (side === 'R' ? 1 - clamp(params.limp, 0, 1) : 1);
+  const plan = (i: number): StepPlan => stepPlanFor(seed, i, params);
+  const basis: GaitBasis = { params, geomL: legL, speed, seed };
+  const lenAt = (i: number): number => stepLengthMeters(basis, i);
+  const geomFor = (side: Side, rollMul: number): FootGeometry => {
+    const leg = legFor(side);
+    return { ankleRestY: leg.ankleRestY, heelLen: leg.heelLen, toeLen: leg.toeLen, rollMul };
+  };
+
+  const stanceSide = sideForStep(k - 1);
+  const swingSide = sideForStep(k);
+  const stanceLimp = limpOf(stanceSide);
+  const swingLimp = limpOf(swingSide);
+
+  const stancePlan = plan(k - 1);
+  const stanceLen = lenAt(k) * stanceLimp;
+  const stanceTarget = stanceFootTarget(
+    progress,
+    stanceLen,
+    stancePlan.lateralX,
+    geomFor(stanceSide, stancePlan.rollMul),
+  );
+
+  const prevPlan = plan(k - 2);
+  const nextPlan = plan(k);
+  const swingLen = lenAt(k) * swingLimp;
+  const prevEnd: StanceEnd = {
+    len: lenAt(k - 1) * swingLimp,
+    lateralX: prevPlan.lateralX,
+    geom: geomFor(swingSide, prevPlan.rollMul),
+  };
+  const nextEnd: StanceEnd = {
+    len: lenAt(k + 1) * swingLimp,
+    lateralX: nextPlan.lateralX,
+    geom: geomFor(swingSide, nextPlan.rollMul),
+  };
+  const swingTarget = swingFootTarget({
+    t: progress,
+    len: swingLen,
+    footLift: params.footLift * nextPlan.liftMul,
+    prev: prevEnd,
+    next: nextEnd,
   });
 
-  // One drop for both legs (it's a single root-level shift), smoothly bobbing between 0 and the
-  // cycle's peak required drop D, plus the speed-crouch — see bobShape's doc comment for why this has
-  // no kink where max(dropL, dropR) used to. Feeding it into both legs' targets keeps them consistent.
-  const avgLegLen = (perSide[0]!.legLen + perSide[1]!.legLen) / 2;
-  const D = Math.max(perSide[0]!.bobPeak, perSide[1]!.bobPeak);
-  const drop = D * bobShape(ctx.phase) + crouchDrop(speed, params, avgLegLen);
+  const targets: Record<Side, FootTarget> = { [stanceSide]: stanceTarget, [swingSide]: swingTarget } as Record<
+    Side,
+    FootTarget
+  >;
+
+  // One drop for both legs (a single root-level shift): one smooth curve through *footfall-indexed* peak
+  // values, each computed once (not per sample) from a short scan of the two legs' own exact targets near
+  // that instant — not a live, per-sample max(stance, swing) (tried first: exact and automatically C1 at
+  // every footfall, since stance/swing targets already match there, but requiredDrop's own reachCap sqrt
+  // has the same near-full-extension steepness as solveTwoBone's, and the roll's true peak reach falls a
+  // little *inside* the roll window, not at the boundary sample — sampling that live, continuously, hit
+  // it square on and no amount of smoothMax-ing the crossover tamed the resulting per-frame jumps; see
+  // mobgen's report). A short scan finds that true inside-the-roll peak once per footfall instead, then a
+  // Hermite from peak(footfall k-1) down to 0 over the step's first half and back up to peak(footfall k)
+  // over the second (requiredDrop is genuinely ~0 at flat mid-stance/mid-swing) keeps the *playback* curve
+  // smooth by construction regardless of how steep the sampled peak is.
+  const avgLegLen = (legL.legLen + legR.legLen) / 2;
+  // A rest-straight leg can already sit close to REACH_MARGIN of its own length (needed for the
+  // hip-abduction singularity margin — see REACH_MARGIN's own comment), so requiredDrop can be nonzero
+  // even at zero horizontal reach (flat mid-stance/mid-swing). That baseline is the same for every step
+  // (a function of leg geometry only), so it's split out and applied unconditionally, like crouchDrop —
+  // otherwise it inflates every footfall's peak by a constant amount the Hermite curve below would have
+  // to "spend" all over again on every transition, for no visual benefit.
+  const flatDrop = (side: Side): number =>
+    requiredDrop(legFor(side).hipY, { x: 0, y: legFor(side).ankleRestY, z: 0, footPitchDeg: 0 }, legFor(side).legLen);
+  const baselineDrop = Math.max(flatDrop('L'), flatDrop('R'));
+  // Scans stanceFootTarget across whichever roll window (heel- or toe-side of footfall j) `side` is
+  // rolling through, to find the true peak requiredDrop inside it (see this block's own doc comment).
+  const peakNear = (opts: {
+    readonly side: Side;
+    readonly len: number;
+    readonly lateralX: number;
+    readonly rollMul: number;
+    readonly atHeel: boolean;
+  }): number => {
+    const { side, len, lateralX, rollMul, atHeel } = opts;
+    const geom = geomFor(side, rollMul);
+    let peak = 0;
+    for (let i = 0; i <= FOOTFALL_PEAK_SAMPLES; i += 1) {
+      const frac = i / FOOTFALL_PEAK_SAMPLES;
+      const t = atHeel ? frac * HEEL_FRAC : 1 - frac * TOE_FRAC;
+      const target = stanceFootTarget(t, len, lateralX, geom);
+      peak = Math.max(peak, requiredDrop(legFor(side).hipY, target, legFor(side).legLen));
+    }
+    return peak;
+  };
+  const footfallPeak = (j: number): number => {
+    const landing = sideForStep(j);
+    const trailing = sideForStep(j - 1);
+    const landingPlan = plan(j);
+    const trailingPlan = plan(j - 1);
+    const raw = Math.max(
+      peakNear({
+        side: landing,
+        len: lenAt(j + 1) * limpOf(landing),
+        lateralX: landingPlan.lateralX,
+        rollMul: landingPlan.rollMul,
+        atHeel: true,
+      }) * landingPlan.hipDropMul,
+      peakNear({
+        side: trailing,
+        len: lenAt(j) * limpOf(trailing),
+        lateralX: trailingPlan.lateralX,
+        rollMul: trailingPlan.rollMul,
+        atHeel: false,
+      }) * trailingPlan.hipDropMul,
+    );
+    // hipDropMul (lurch) multiplies an already-large requirement, which can ask for more drop than the leg
+    // physically has room for (foot target Y approaching hip height, collapsing legAndFootRotations' own
+    // abduction lever arm) — STEP_REACH_FRAC bounds length's own contribution, but not this multiplier's.
+    return Math.max(0, Math.min(raw, 0.5 * avgLegLen) - baselineDrop);
+  };
+  const bobCurve =
+    progress <= 0.5
+      ? hermite(progress / 0.5, { value: footfallPeak(k - 1), slope: 0 }, { value: 0, slope: 0 })
+      : hermite((progress - 0.5) / 0.5, { value: 0, slope: 0 }, { value: footfallPeak(k), slope: 0 });
+  const drop = bobCurve + baselineDrop + crouchDrop(speed, params, avgLegLen);
 
   const out: Record<string, Mat3> = {};
-  for (const p of perSide) {
-    const worldY = p.target.y + drop;
-    const worldZ = p.thigh.head[2] + p.target.z;
+  const worldX: Record<Side, number> = { L: 0, R: 0 };
+  for (const side of SIDES) {
+    worldX[side] = legFor(side).thigh.head[0] + targets[side].x;
+  }
+  const rootX = (worldX.L + worldX.R) / 2;
+
+  for (const side of SIDES) {
+    const leg = legFor(side);
+    const { thigh, shin, l1, l2 } = leg;
+    const target = targets[side];
+    const worldY = target.y + drop;
+    const worldZ = thigh.head[2] + target.z;
     // The hip socket's own world shift from the *full* pelvis rotation (roll+yaw) — the leg hangs off
     // this actual, moved point, not the rest thigh.head, even though yaw gets cancelled below.
-    const hipShift = sub(add(ctx.pelvisPivot, mulMV(ctx.pelvisR, sub(p.thigh.head, ctx.pelvisPivot))), p.thigh.head);
+    const hipShift = sub(add(ctx.pelvisPivot, mulMV(ctx.pelvisR, sub(thigh.head, ctx.pelvisPivot))), thigh.head);
     // Roll only, not yaw: yaw is cancelled at the thigh instead (below), so the leg's own sagittal
     // solve never sees it and has no X to discard — see sagittalTarget's doc comment for why that's
     // exact for a roll-only rotation. The target is shifted by -hipShift first, so solving relative to
     // thigh.head (solveTwoBone's own origin) is solving relative to the hip's true, moved position.
     const rollR = rotX(ctx.pelvisRollDeg);
     const shiftedTarget = { y: worldY - hipShift[1], z: worldZ - hipShift[2] };
-    const [ly, lz] = sagittalTarget(shiftedTarget, p.thigh.head[0], p.thigh.head, rollR);
+    const [ly, lz] = sagittalTarget(shiftedTarget, thigh.head[0], thigh.head, rollR);
 
-    const { a1: thighAbs, a2: shinAbs } = solveTwoBone(p.thigh.head, [p.thigh.head[0], ly, lz], p.l1, p.l2);
-    const thighDelta = thighAbs - restAngleDeg(p.thigh);
-    const shinDelta = shinAbs - restAngleDeg(p.shin) - thighDelta;
-    // Cancel pelvis yaw at the hip (the femur rotating in its socket), so the leg's own bend stays in
-    // the world sagittal plane regardless of pelvis yaw — exact, since it sits right next to the
-    // pelvis's own yaw term with only pure-Y rotations in between (see walkPose's pelvisR ordering).
-    // The hip socket's own X shift (hipShift) is closed by a small hip-abduction (rotZ), using the
-    // achieved vertical drop (yPrime) as the lever arm — whatever makes the ankle's world X constant.
-    const yPrime = ly - p.thigh.head[1];
-    const abductionDeg = toDeg(Math.asin(clamp(hipShift[0] / yPrime, -1, 1)));
+    // Cancel pelvis yaw at the hip (the femur rotating in its socket) so the leg's own bend stays in the
+    // world sagittal plane regardless of pelvis yaw. The hip socket's own X shift (hipShift), this step's
+    // own lateral target (target.x), *and* root's own X (rootX, added back on after this loop — see
+    // walkPose) are all closed by a hip-abduction (rotZ) applied *outside* the sagittal bend (rotX) — so
+    // this leg reaches thigh.head[0]+target.x in *true* world space regardless of what rootX is doing,
+    // the same as every other leg; rootX is otherwise just a cosmetic pelvis shift, never something a
+    // planted foot (whose own target.x is constant across its stance) has to absorb by sliding.
+    // The rotZ tilt also foreshortens the leg's sagittal reach by cos(abduction) (it mixes X into Y, not
+    // just out of it): solving rotZ(θ)·(0, yb, lz-hipZ) = (vx, ly-hipY, lz-hipZ) for θ and yb gives an
+    // exact (non-iterative) fix — yb = -hypot(vx, ly-hipY), θ = atan2(vx, hipY-ly) — so the 2-bone solve
+    // below targets yb, not ly directly, and ends up exactly on target once abducted. (No division:
+    // hypot/atan2 stay well-behaved even as the lever arm shrinks, unlike the plain asin(vx/yPrime) this
+    // replaced.)
+    const vx = target.x - hipShift[0] - rootX;
+    const vy = ly - thigh.head[1];
+    const abductionDeg = toDeg(Math.atan2(vx, -vy));
+    const yb = thigh.head[1] - Math.hypot(vx, vy);
+
+    const { a1: thighAbs, a2: shinAbs } = solveTwoBone(thigh.head, [thigh.head[0], yb, lz], l1, l2);
+    const thighDelta = thighAbs - restAngleDeg(thigh);
+    const shinDelta = shinAbs - restAngleDeg(shin) - thighDelta;
     const thighR = mulMM(mulMM(rotY(-ctx.yawDeg), rotZ(abductionDeg)), rotX(thighDelta));
     const shinR = rotX(shinDelta);
     // Keep the foot level in *world* space: undo pelvis(roll+yaw) ∘ thigh ∘ shin exactly, by matrix
     // inverse (transpose), since pelvis yaw is a different axis (Y) than thigh/shin's rotX — a scalar
     // rotX can't cancel it. Then pitch the sole by footPitchDeg on top (0 during flat stance/swing).
     const footLevelR = transpose(mulMM(mulMM(ctx.pelvisR, thighR), shinR));
-    const footR = mulMM(footLevelR, rotX(p.target.footPitchDeg));
+    const footR = mulMM(footLevelR, rotX(target.footPitchDeg));
 
-    out[`thigh.${p.side}`] = thighR;
-    out[`shin.${p.side}`] = shinR;
-    out[`foot.${p.side}`] = footR;
+    out[`thigh.${side}`] = thighR;
+    out[`shin.${side}`] = shinR;
+    out[`foot.${side}`] = footR;
   }
-  return out;
+
+  const armStyle: LegResult['armStyle'] = {
+    L: { wideExtraDeg: 0, forwardExtraDeg: 0, hang: 0 },
+    R: { wideExtraDeg: 0, forwardExtraDeg: 0, hang: 0 },
+  };
+  for (const side of SIDES) {
+    armStyle[side] = {
+      wideExtraDeg: blendStepScalar(k, progress, (i) => plan(i).armWideExtraDeg),
+      forwardExtraDeg: blendStepScalar(k, progress, (i) => plan(i).armForwardExtraDeg),
+      hang: blendStepScalar(k, progress, (i) => (plan(i).armHangSide === side ? 1 : 0)),
+    };
+  }
+
+  return { rotations: out, worldX, armStyle };
 };
 
-const armRotations = (phase: number, params: HumanoidParams): Record<string, Mat3> => {
+/** Arms swing forward/back as before, plus this step's own style: wider (stagger, rotZ, mirrored per
+ * side), more forward swing (lurch flail), or slack (drag: that side's swing fades toward 0). */
+const armRotations = (
+  progress: number,
+  params: HumanoidParams,
+  armStyle: LegResult['armStyle'],
+): Record<string, Mat3> => {
   const out: Record<string, Mat3> = {};
   for (const side of SIDES) {
     const offset = side === 'L' ? 0 : Math.PI;
-    const swing = params.armSwing * Math.sin(TAU * phase + offset);
-    out[`upperArm.${side}`] = rotX(swing + params.armRaise);
-    out[`forearm.${side}`] = rotX(20 + 15 * Math.sin(TAU * phase + offset));
+    const sign = side === 'L' ? -1 : 1;
+    const style = armStyle[side];
+    const hangFactor = 1 - 0.85 * style.hang;
+    const swing = (params.armSwing * Math.sin(TAU * progress + offset) + style.forwardExtraDeg) * hangFactor;
+    out[`upperArm.${side}`] = mulMM(rotZ(sign * style.wideExtraDeg), rotX(swing + params.armRaise * hangFactor));
+    out[`forearm.${side}`] = rotX((20 + 15 * Math.sin(TAU * progress + offset)) * hangFactor);
   }
   return out;
 };
 
-/** Root Y that puts the lowest extent corner (over all bones in `extents`, e.g. just the feet) on the
- * ground, for the given rotations — reused by attack.ts to re-ground after layering a pose on top. */
+/**
+ * Root Y that puts the lowest extent corner (over all bones in `extents`, e.g. just the feet) on the
+ * ground, for the given rotations — reused by attack.ts to re-ground after layering a pose on top.
+ * `smoothing` (default 0, exact) folds a smooth-min across corners instead of a hard Math.min: mid-walk,
+ * which of two feet's corners is lowest can swap (a rolling stance foot vs. a landing swing foot, each on
+ * its own smooth trajectory) — exact-min tracks whichever is lower and so has a slope kink right at the
+ * swap, a visible per-frame pop in root Y (see mobgen's report); walkPose passes a few mm here so the
+ * swap blends instead of snapping, at the cost of also floating everything else by a similar few mm.
+ */
 export const groundOffset = (
   bones: readonly Bone[],
   extents: ReadonlyMap<string, Extent>,
   rotations: Record<string, Mat3>,
+  smoothing = 0,
 ): number => {
   const transforms = boneTransforms(bones, { root: [0, 0, 0], rotations });
   let minY = Number.POSITIVE_INFINITY;
@@ -492,46 +737,54 @@ export const groundOffset = (
       continue;
     }
     for (const c of corners(extent)) {
-      minY = Math.min(minY, applyPoint(t, c)[1]);
+      const [, y] = applyPoint(t, c);
+      minY = Number.isFinite(minY) ? smoothMin(minY, y, smoothing) : y;
     }
   }
   return Number.isFinite(minY) ? -minY : 0;
 };
 
+// Undershoots the true lowest corner by up to half this at a stance/swing tie (see groundOffset) — small
+// next to the half-voxel ground tolerance the "lowest foot point" tests check.
+export const GROUND_SMOOTHING = 0.01;
+
 export interface WalkActor {
   readonly bones: readonly Bone[];
   readonly extents: ReadonlyMap<string, Extent>;
   readonly params: HumanoidParams;
+  /** The genome's own seed — drives the deterministic per-step style/jitter stream (steps.ts). */
+  readonly seed: number;
 }
 
 /**
- * The walk cycle. `phase` is 0..1 per stride cycle and should advance with
- * distance travelled (phase += distanceMoved / strideLength(...)); `speed`
- * (m/s) drives stride length and the standing/walking blend. Speed 0 gives a
- * still standing pose, regardless of phase.
+ * The walk cycle. `clock` (see GaitClock) is a step index and progress within it, advanced by distance
+ * travelled (advanceClock); `speed` (m/s) drives step length and the standing/walking blend. Speed 0
+ * gives a still standing pose, regardless of clock. The root may drift sideways (X) as steps stagger —
+ * forward progress (Z) stays the caller's job, as before.
  */
-export const walkPose = (actor: WalkActor, phase: number, speed: number): Pose => {
-  const { bones, extents, params } = actor;
+export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pose => {
+  const { bones, extents, params, seed } = actor;
   const byId = boneMap(bones);
   const pelvis = byId.get('pelvis')!;
 
   if (speed <= 0) {
-    const root: Vec3 = [0, groundOffset(bones, extents, {}), 0];
+    const root: Vec3 = [0, groundOffset(bones, extents, {}, GROUND_SMOOTHING), 0];
     return { root, rotations: {} };
   }
 
-  const p = ((phase % 1) + 1) % 1;
+  const k = clock.stepIndex;
+  const progress = clamp(clock.progress, 0, 1);
+  const p = (k + progress) / 2; // legacy-style 0..1 cycle phase, for the cosmetic sways below
   // Pelvis sway: a fore-aft rock (rotX) plus a speed-dependent forward lean (sized by the genome's own
-  // hunch) — purely cosmetic, doesn't feed into leg reach (legAndFootRotations solves in the pelvis's
+  // hunch, plus this step's own lean style — doesn't depend on the leg IK, so it's safe to compute up
+  // front) — purely cosmetic, doesn't feed into leg reach (legAndFootRotations solves in the pelvis's
   // own unrotated frame).
-  const leanDeg = chaseBlend(speed) * clamp(params.hunch / 25, 0, 1) * 8;
-  const pelvisRollDeg = params.pelvisSway * Math.sin(TAU * p * 2) + leanDeg;
-  // Pelvis yaw: the hips turn about +Y so the forward-swinging leg's hip leads — one full oscillation
-  // per gait cycle (not per step, like roll), peaking at each heel-strike (p=0, 0.5). Amplitude scales
-  // with how close the current stride is to its cap, up to MAX_YAW_DEG at the longest strides.
   const legL = legBonesFor(byId, extents, 'L');
   const strideFrac = clamp(strideLength(params, legL, speed) / strideCap(legL, params.footLift), 0, 1);
   const yawDeg = MAX_YAW_DEG * strideFrac * Math.cos(TAU * p);
+  const leanStyle = blendStepScalar(k, progress, (i) => stepPlanFor(seed, i, params).leanExtraDeg);
+  const leanDeg = chaseBlend(speed) * clamp(params.hunch / 25, 0, 1) * 8 + leanStyle;
+  const pelvisRollDeg = params.pelvisSway * Math.sin(TAU * p * 2) + leanDeg;
   // Roll outermost, yaw innermost: this order is what lets the thigh (legAndFootRotations) and spine
   // cancel yaw exactly, with only pure-Y rotations adjacent to pelvis's own yaw term either way.
   const pelvisR = mulMM(rotX(pelvisRollDeg), rotY(yawDeg));
@@ -539,13 +792,15 @@ export const walkPose = (actor: WalkActor, phase: number, speed: number): Pose =
     bones: byId,
     extents,
     params,
-    phase: p,
+    clock: { stepIndex: k, progress },
     speed,
+    seed,
     pelvisR,
     pelvisRollDeg,
     yawDeg,
     pelvisPivot: pelvis.head,
   };
+  const legResult = legAndFootRotations(legCtx);
 
   const rotations: Record<string, Mat3> = {
     pelvis: pelvisR,
@@ -556,10 +811,11 @@ export const walkPose = (actor: WalkActor, phase: number, speed: number): Pose =
     // Slack jaw: a constant sag plus a soft bounce once per footfall (cos², so both ends are smooth),
     // lagging heel-strike by JAW_LAG as if from inertia.
     jaw: rotX(0.4 * params.jawChatter + 0.6 * params.jawChatter * Math.cos(TAU * (p - JAW_LAG)) ** 2),
-    ...armRotations(p, params),
-    ...legAndFootRotations(legCtx),
+    ...armRotations(progress, params, legResult.armStyle),
+    ...legResult.rotations,
   };
 
-  const root: Vec3 = [0, groundOffset(bones, extents, rotations), 0];
+  const rootX = (legResult.worldX.L + legResult.worldX.R) / 2;
+  const root: Vec3 = [rootX, groundOffset(bones, extents, rotations, GROUND_SMOOTHING), 0];
   return { root, rotations };
 };

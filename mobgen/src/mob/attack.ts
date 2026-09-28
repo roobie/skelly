@@ -8,9 +8,9 @@
 // assumed; see mobgen's report on this feature for the check.
 
 import type { Bone } from '../core/body.ts';
-import { type Mat3, mulMM, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
+import { type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
 import type { Pose } from '../core/pose.ts';
-import { groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
+import { GROUND_SMOOTHING, groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
 import type { HumanoidParams } from './humanoid.ts';
 
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
@@ -197,18 +197,28 @@ const armSwingWeight = (t: number, clip: AttackClip): number => {
   return 0;
 };
 
-const angleFromRotX = (m: Mat3): number => (Math.atan2(m[7]!, m[4]!) * 180) / Math.PI;
-
 /** The walk's own arm rotation, scaled toward identity by `weight` (1 = full walk swing, 0 = none) —
- * exact at weight 1 (bit-identical to baseR) so attackPose matches walkBase exactly at the clip's ends. */
+ * exact at weight 1 (bit-identical to baseR) so attackPose matches walkBase exactly at the clip's ends.
+ * Scales baseR's own axis-angle by `weight` (same axis, smaller angle) rather than assuming baseR is a
+ * pure rotX and rescaling atan2(m[7],m[4]) — the walk's upperArm rotation is rotZ(stagger-wide) ∘
+ * rotX(swing), not pure rotX, and that mismatched assumption produced a real, if small, snap right where
+ * this switches to the `weight >= 1` shortcut (see mobgen's report). */
 const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   if (weight >= 1) {
     return baseR;
   }
-  if (weight <= 0) {
+  const cosAngle = clamp((baseR[0]! + baseR[4]! + baseR[8]! - 1) / 2, -1, 1);
+  const angle = Math.acos(cosAngle);
+  if (weight <= 0 || angle < 1e-9) {
     return IDENTITY_M;
   }
-  return rotX(angleFromRotX(baseR) * weight);
+  const sinAngle = Math.sin(angle);
+  const axis: Vec3 = [
+    (baseR[7]! - baseR[5]!) / (2 * sinAngle),
+    (baseR[2]! - baseR[6]!) / (2 * sinAngle),
+    (baseR[3]! - baseR[1]!) / (2 * sinAngle),
+  ];
+  return rotAxis(axis, (angle * 180 * weight) / Math.PI);
 };
 
 const avgLegLen = (bones: readonly Bone[], extents: WalkActor['extents']): number =>
@@ -247,6 +257,14 @@ export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, wal
   }
 
   const drop = samplePelvisDrop(clip, t) * avgLegLen(actor.bones, actor.extents);
-  const root: Vec3 = [0, groundOffset(actor.bones, actor.extents, rotations) - drop, 0];
+  // X and Z come from the base pose unchanged (the walk's own weave/forward progress) — legs (and so
+  // groundOffset's own Y) don't move, but X isn't 0 in general now that steps can stagger sideways.
+  // Same smoothing as walkPose's own groundOffset call — otherwise this can disagree with walkBase.root[1]
+  // right at a near-tie between two feet's corners, breaking the exact match at the clip's own endpoints.
+  const root: Vec3 = [
+    walkBase.root[0],
+    groundOffset(actor.bones, actor.extents, rotations, GROUND_SMOOTHING) - drop,
+    walkBase.root[2],
+  ];
   return { root, rotations };
 };
