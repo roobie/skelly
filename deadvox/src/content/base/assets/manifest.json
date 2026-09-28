@@ -175,6 +175,15 @@
       "download": "jumpland48000.mp3",
       "files": ["assets/audio/player-landing-hard-01.ogg"],
       "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container"
+    },
+    {
+      "title": "Cursor pack",
+      "url": "https://opengameart.org/content/cursor-pack",
+      "author": "Ivan Voirol",
+      "licence": "CC0-1.0",
+      "download": "cursor.png",
+      "files": ["assets/cursors/cursor.png"],
+      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor"
     }
   ]
 }

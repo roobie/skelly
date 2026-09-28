@@ -6,6 +6,7 @@ on:
     paths: ['deadvox/**', '.github/workflows/deadvox.yml']
   pull_request:
     paths: ['deadvox/**', '.github/workflows/deadvox.yml']
+  workflow_dispatch: {}
 
 jobs:
   check:
@@ -27,6 +28,7 @@ jobs:
       - run: npm run lint:lit
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:ui-browser
       - name: Install headed Firefox and system dependencies
         run: npx playwright install --with-deps firefox
       - name: Firefox browser contract

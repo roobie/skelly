@@ -134,23 +134,23 @@ try {
   assert.ok(result.gesture.lockChanges.includes('canvas'));
   assert.ok(result.gesture.audioResumeCalls.some((call) => call.duringPointerDown));
   await page.keyboard.press('F10');
-  assert.equal(await page.locator('#audio-settings').evaluate((panel) => panel.hidden), true);
+  assert.equal(await page.locator('#overlay').evaluate((panel) => panel.hidden), true);
   assert.equal(await page.evaluate(() => globalThis.__startGesture.f10DefaultPrevented), false);
-  await page.keyboard.press('F9');
-  await page.waitForFunction(
-    () => !(document.querySelector('#audio-settings').hidden || document.pointerLockElement),
-    undefined,
-    { timeout: 5000 },
-  );
   await page.keyboard.press('F9');
   await page.waitForFunction(
     () => {
       const canvas = document.querySelector('#view canvas');
-      return (
-        document.querySelector('#audio-settings').hidden &&
-        document.pointerLockElement === canvas &&
-        document.querySelector('#overlay').hidden
-      );
+      return !document.querySelector('#overlay').hidden && document.pointerLockElement === canvas;
+    },
+    undefined,
+    { timeout: 5000 },
+  );
+  assert.ok(await page.locator('#audio-volume-master').count());
+  await page.keyboard.press('F9');
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector('#view canvas');
+      return document.querySelector('#overlay').hidden && document.pointerLockElement === canvas;
     },
     undefined,
     { timeout: 5000 },

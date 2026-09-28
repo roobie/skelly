@@ -4,15 +4,15 @@
 import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
 import { Compression } from './compression.ts';
 import { EventQueue, type EventReader } from './events.ts';
-import { causeOf, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
+import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler } from './scheduler.ts';
 
-/** Events systems emit. Noise and block changes join as their systems arrive. */
+/** Events systems emit. Noise, damage and block changes join as their systems arrive. */
 export type SimEvent =
   | { kind: 'interrupt'; reason: string }
-  | { kind: 'death'; cause: string }
-  | { kind: 'damage'; amount: number; cause: string };
+  | { kind: 'damage'; amount: number; cause: string }
+  | { kind: 'death'; cause: string };
 
 export type Timed<E> = E & { readonly time: number };
 
@@ -24,6 +24,11 @@ export interface SimOptions {
    * one is near), or undefined when it is. Asked before and after every step.
    */
   unsafe?: () => string | undefined;
+  /**
+   * The fatigue rate a resting or sleeping long action wants right now, in percent
+   * per game hour, or undefined for the normal rate. Asked once per needs tick.
+   */
+  restRate?: () => number | undefined;
 }
 
 /** Needs tick at 1 Hz; under compression their step grows to 30 s, 4 game minutes at 1:8. */
@@ -45,18 +50,22 @@ export class Simulation {
   godMode = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private readonly unsafe: () => string | undefined;
+  private readonly restRate: () => number | undefined;
 
   constructor(options: SimOptions) {
     this.seed = options.seed;
     this.clock = options.clock ?? defaultClock;
     this.unsafe = options.unsafe ?? (() => undefined);
+    this.restRate = options.restRate ?? (() => undefined);
     this.interrupts = this.events.reader();
     this.scheduler.register({
       id: 'needs',
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt), this.godMode)) {
+        const rate = this.restRate();
+        const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
+        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt), this.godMode, rates)) {
           this.emit({ kind: 'interrupt', reason });
         }
         if (this.needs.health <= 0) {
@@ -93,8 +102,11 @@ export class Simulation {
     if (this.godMode) {
       return;
     }
+    const applied = Math.min(amount, this.needs.health);
     this.needs.health = Math.max(0, this.needs.health - amount);
-    this.emit({ kind: 'damage', amount, cause });
+    if (applied > 0) {
+      this.emit({ kind: 'damage', amount: applied, cause });
+    }
     if (this.needs.health <= 0) {
       this.die(cause);
     } else {

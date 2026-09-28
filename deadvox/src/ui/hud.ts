@@ -57,7 +57,7 @@ export interface QuickbarViewModel {
 export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewModel => ({
   slots: bar.slots.map((item, i) => {
     if (!item) {
-      return { key: String(i + 1), filled: false, name: 'empty', where: 'set it in the inventory' };
+      return { key: String(i + 1), filled: false, name: 'empty', where: '' };
     }
     const at = inv.locate(item);
     return {
