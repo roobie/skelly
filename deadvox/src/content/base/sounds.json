@@ -43,6 +43,106 @@
       "noise": { "enabled": true, "radiusMetres": 5 }
     },
     {
+      "id": "player_landing_hard",
+      "variants": ["assets/audio/player-landing-hard-01.ogg"],
+      "gain": 0.72,
+      "pitchJitter": [0.94, 1.04],
+      "gainJitter": [0.88, 1.12],
+      "minIntervalSeconds": 0.6,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "footstep_grass",
+      "variants": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg"
+      ],
+      "gain": 0.2,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.86, 1.12],
+      "minIntervalSeconds": 0.2,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "footstep_sand",
+      "variants": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg"
+      ],
+      "gain": 0.22,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.86, 1.12],
+      "minIntervalSeconds": 0.2,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "footstep_mud",
+      "variants": [
+        "assets/audio/footstep-mud-01.ogg",
+        "assets/audio/footstep-mud-02.ogg",
+        "assets/audio/footstep-mud-03.ogg",
+        "assets/audio/footstep-mud-04.ogg"
+      ],
+      "gain": 0.24,
+      "pitchJitter": [0.94, 1.05],
+      "gainJitter": [0.86, 1.12],
+      "minIntervalSeconds": 0.2,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "footstep_stone",
+      "variants": [
+        "assets/audio/footstep-stone-01.ogg",
+        "assets/audio/footstep-stone-02.ogg",
+        "assets/audio/footstep-stone-03.ogg",
+        "assets/audio/footstep-stone-04.ogg",
+        "assets/audio/footstep-stone-05.ogg",
+        "assets/audio/footstep-stone-06.ogg"
+      ],
+      "gain": 0.24,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.86, 1.12],
+      "minIntervalSeconds": 0.2,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "footstep_wood",
+      "variants": [
+        "assets/audio/footstep-wood-01.ogg",
+        "assets/audio/footstep-wood-02.ogg",
+        "assets/audio/footstep-wood-03.ogg"
+      ],
+      "gain": 0.22,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.86, 1.12],
+      "minIntervalSeconds": 0.2,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "footstep_leaves",
+      "variants": ["assets/audio/footstep-leaves-01.ogg", "assets/audio/footstep-leaves-02.ogg"],
+      "gain": 0.18,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.86, 1.12],
+      "minIntervalSeconds": 0.2,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "melee_swing",
       "variants": [
         "assets/audio/melee-swing-01.ogg",

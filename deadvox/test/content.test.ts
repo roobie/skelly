@@ -19,6 +19,22 @@ describe('content', () => {
     }
   });
 
+  it('keeps footstep audio in the body mix without a second hearing-noise path', () => {
+    const { registry } = buildRegistry(base);
+    for (const id of [
+      'footstep_grass',
+      'footstep_mud',
+      'footstep_sand',
+      'footstep_stone',
+      'footstep_wood',
+      'footstep_leaves',
+    ]) {
+      const sound = registry.sounds.get(id)!;
+      expect(sound.category, id).toBe('body');
+      expect(sound.noise.enabled, id).toBe(false);
+    }
+  });
+
   it('validates the shambler search-duration range', () => {
     const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
     const data = structuredClone(zombiePack.data) as {

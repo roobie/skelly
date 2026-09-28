@@ -115,6 +115,66 @@
         "assets/audio/shambler-hit-07.ogg"
       ],
       "changes": "Selected seven impact variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+    },
+    {
+      "title": "Different steps on wood, stone, leaves, gravel and mud",
+      "url": "https://opengameart.org/content/different-steps-on-wood-stone-leaves-gravel-and-mud",
+      "author": "TinyWorlds",
+      "licence": "CC0-1.0",
+      "download": "[kdd]DifferentSteps_0.zip",
+      "files": [
+        "assets/audio/footstep-wood-01.ogg",
+        "assets/audio/footstep-wood-02.ogg",
+        "assets/audio/footstep-wood-03.ogg",
+        "assets/audio/footstep-stone-01.ogg",
+        "assets/audio/footstep-leaves-01.ogg",
+        "assets/audio/footstep-leaves-02.ogg",
+        "assets/audio/footstep-mud-01.ogg"
+      ],
+      "changes": "Selected wood, stone, leaves and mud steps; converted to mono Opus in Ogg containers; unused gravel sample excluded because the game has no gravel block"
+    },
+    {
+      "title": "Fantozzi's Footsteps (Grass/Sand & Stone)",
+      "url": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+      "author": "Fantozzi",
+      "licence": "CC0-1.0",
+      "download": "Fantozzi-footsteps.7z",
+      "files": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg",
+        "assets/audio/footstep-stone-02.ogg",
+        "assets/audio/footstep-stone-03.ogg",
+        "assets/audio/footstep-stone-04.ogg",
+        "assets/audio/footstep-stone-05.ogg",
+        "assets/audio/footstep-stone-06.ogg"
+      ],
+      "changes": "Selected six grass/sand and five stone steps (the source says its sand steps also sound like grass); converted from FLAC to mono Opus in Ogg containers; unused sixth stone sample excluded"
+    },
+    {
+      "title": "25 CC0 mud sfx",
+      "url": "https://opengameart.org/content/25-cc0-mud-sfx",
+      "author": "rubberduck",
+      "licence": "CC0-1.0",
+      "download": "25-CC0-mud-sfx.zip",
+      "files": [
+        "assets/audio/footstep-mud-02.ogg",
+        "assets/audio/footstep-mud-03.ogg",
+        "assets/audio/footstep-mud-04.ogg"
+      ],
+      "changes": "Selected three muddy footfall variations; converted to mono Opus in Ogg containers; unused source effects excluded"
+    },
+    {
+      "title": "Jump Landing Sound",
+      "url": "https://opengameart.org/content/jump-landing-sound",
+      "author": "MentalSanityOff",
+      "licence": "CC0-1.0",
+      "download": "jumpland48000.mp3",
+      "files": ["assets/audio/player-landing-hard-01.ogg"],
+      "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container"
     }
   ]
 }

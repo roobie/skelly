@@ -11,6 +11,7 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { MapEntityStore } from '../core/entities.ts';
+import { advanceFootsteps, footstepEventForBlock, initialFootstepClock, isHardLanding } from '../core/footsteps.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
@@ -161,6 +162,8 @@ export const startPlay = (engine: Engine): void => {
   const zombieStore = new MapEntityStore<Zombie>();
   let sprinting = false;
   let noclip = false;
+  let footstepClock = initialFootstepClock();
+  let airbornePeakY: number | undefined;
   const playerMovement = (): PlayerMovement => {
     const moving = input.locked && !compression.locksInput ? input.intent() : IDLE;
     if (moving.forward === 0 && moving.right === 0) {
@@ -170,6 +173,27 @@ export const startPlay = (engine: Engine): void => {
       return 'sprinting';
     }
     return moving.walk ? 'walking' : 'jogging';
+  };
+  const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
+    if (body.onGround) {
+      if (!wasGrounded && airbornePeakY !== undefined && isHardLanding((airbornePeakY - body.pos[1]) * s)) {
+        playPlayerSound('player_landing_hard', time);
+      }
+      airbornePeakY = undefined;
+    } else {
+      airbornePeakY = Math.max(airbornePeakY ?? previousPosition[1], body.pos[1]);
+    }
+    const travelled =
+      wasGrounded && body.onGround
+        ? Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) * s
+        : 0;
+    const footsteps = advanceFootsteps(footstepClock, travelled > 0 ? playerMovement() : 'still', travelled);
+    footstepClock = footsteps.clock;
+    for (let i = 0; i < footsteps.steps; i++) {
+      const [x, y, z] = feet();
+      const surface = registry.blocks[engine.world.getBlock(x, y - 1, z)]?.id ?? 'unknown';
+      playPlayerSound(footstepEventForBlock(surface), time);
+    }
   };
   const playerSense = () => ({
     pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
@@ -240,6 +264,8 @@ export const startPlay = (engine: Engine): void => {
         pace: paceFactor(inventory.carriedWeight(), handling),
       };
       if (noclip) {
+        footstepClock = initialFootstepClock();
+        airbornePeakY = undefined;
         stepNoclip({
           body,
           scale,
@@ -251,13 +277,16 @@ export const startPlay = (engine: Engine): void => {
         });
         return;
       }
-      const jumpStarted = pacedIntent.jump && body.onGround;
+      const wasGrounded = body.onGround;
+      const previousPosition: Vec3 = [...body.pos];
+      const jumpStarted = pacedIntent.jump && wasGrounded;
       steer(body, scale, input.yaw, pacedIntent);
       if (jumpStarted) {
         playPlayerSound('player_strain', time);
       }
       const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
       stepBody(body, dt, engine.isSolid, { ...physics, obstacles: zombieBodies });
+      updatePlayerSounds(wasGrounded, previousPosition, time);
     },
   });
 

@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:browser:firefox": "node test/browser/firefox-first-click.mjs",
     "validate": "node src/cli/validate.ts",
     "bench:shamblers": "node --experimental-strip-types src/bench/shamblers-cpu.mjs",
     "lint:lit": "tools/lit-check/node_modules/.bin/lit-analyzer 'src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0"
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
+    "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

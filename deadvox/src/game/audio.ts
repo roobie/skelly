@@ -134,15 +134,23 @@ export class GameAudio {
     if (!listener) {
       return;
     }
-    listener.positionX.value = positionMetres[0];
-    listener.positionY.value = positionMetres[1];
-    listener.positionZ.value = positionMetres[2];
-    listener.forwardX.value = forward[0];
-    listener.forwardY.value = forward[1];
-    listener.forwardZ.value = forward[2];
-    listener.upX.value = 0;
-    listener.upY.value = 1;
-    listener.upZ.value = 0;
+    if (listener.positionX) {
+      listener.positionX.value = positionMetres[0];
+      listener.positionY.value = positionMetres[1];
+      listener.positionZ.value = positionMetres[2];
+    } else {
+      listener.setPosition(positionMetres[0], positionMetres[1], positionMetres[2]);
+    }
+    if (listener.forwardX && listener.upX) {
+      listener.forwardX.value = forward[0];
+      listener.forwardY.value = forward[1];
+      listener.forwardZ.value = forward[2];
+      listener.upX.value = 0;
+      listener.upY.value = 1;
+      listener.upZ.value = 0;
+    } else {
+      listener.setOrientation(forward[0], forward[1], forward[2], 0, 1, 0);
+    }
   }
 
   play(event: SoundEventId, positionMetres: Vec3, simulationTime: number): boolean {
@@ -237,9 +245,13 @@ export class GameAudio {
       panner.refDistance = 1;
       panner.maxDistance = 64;
       panner.rolloffFactor = 1;
-      panner.positionX.value = positionMetres[0];
-      panner.positionY.value = positionMetres[1];
-      panner.positionZ.value = positionMetres[2];
+      if (panner.positionX) {
+        panner.positionX.value = positionMetres[0];
+        panner.positionY.value = positionMetres[1];
+        panner.positionZ.value = positionMetres[2];
+      } else {
+        panner.setPosition(positionMetres[0], positionMetres[1], positionMetres[2]);
+      }
       connectedNodes.push(filter, wallGain, panner);
       gain.connect(filter);
       filter.connect(wallGain);
