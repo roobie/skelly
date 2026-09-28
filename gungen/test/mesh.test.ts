@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { BEVEL, meshForSolid } from '../src/core/mesh.ts';
+import { BEVEL, meshForSolid, type TriangleMesh } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
-import type { BoxSolid, ExtrudedPolygonSolid } from '../src/core/schema.ts';
+import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
@@ -162,4 +162,87 @@ describe('per-assembly triangle budget', () => {
       }
     }
   }, 30_000);
+});
+
+// A regular N-gon profile, radius r, CCW (matches validateExtrudedPolygon's convention).
+const regularPolygon = (n: number, r: number): Vec2[] =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (2 * Math.PI * i) / n;
+    return [r * Math.cos(a), r * Math.sin(a)] as Vec2;
+  });
+
+/**
+ * Welds a mesh's vertices by exact position (fixed to 5 decimals) and reports
+ * any undirected edge not shared by exactly two triangles, plus the welded
+ * Euler characteristic V - E + F (2 for a closed, genus-0 mesh — a sphere-like
+ * solid with no holes). A gap or T-junction along an edge lets the background
+ * show through it in the viewer, which is exactly what this test catches.
+ */
+const weldedTopology = (mesh: TriangleMesh): { badEdges: string[]; vertices: number; edges: number; faces: number } => {
+  const idOf = new Map<string, number>();
+  const vertexId = (v: number): number => {
+    const k = [0, 1, 2].map((axis) => mesh.positions[v * 3 + axis]!.toFixed(5)).join(',');
+    const existing = idOf.get(k);
+    if (existing !== undefined) {
+      return existing;
+    }
+    const id = idOf.size;
+    idOf.set(k, id);
+    return id;
+  };
+  const edgeUse = new Map<string, number>();
+  for (let t = 0; t < mesh.triangleCount; t++) {
+    const verts = [0, 1, 2].map((k) => vertexId(mesh.indices[t * 3 + k]!));
+    for (let e = 0; e < 3; e++) {
+      const a = verts[e]!;
+      const b = verts[(e + 1) % 3]!;
+      const k = a < b ? `${a}|${b}` : `${b}|${a}`;
+      edgeUse.set(k, (edgeUse.get(k) ?? 0) + 1);
+    }
+  }
+  const badEdges = [...edgeUse.entries()].filter(([, count]) => count !== 2).map(([k, count]) => `${k}:${count}`);
+  return { badEdges, vertices: idOf.size, edges: edgeUse.size, faces: mesh.triangleCount };
+};
+
+describe('watertightness (welded by exact position)', () => {
+  const profiles: Record<string, Solid> = {
+    box,
+    triangle: {
+      id: 'tri',
+      kind: 'extruded-polygon',
+      profile: [
+        [0, 0],
+        [4, 0],
+        [2, 3],
+      ],
+      z: [-1, 1],
+    },
+    'five-point': prism,
+    octagon: { id: 'oct', kind: 'extruded-polygon', profile: regularPolygon(8, 3), z: [-1, 1] },
+  };
+
+  for (const [name, solid] of Object.entries(profiles)) {
+    it(`has no gaps or T-junctions for a ${name} profile`, () => {
+      const { badEdges, vertices, edges, faces } = weldedTopology(meshForSolid(solid));
+      expect(badEdges).toEqual([]);
+      expect(vertices - edges + faces).toBe(2);
+    });
+  }
+
+  it('is watertight for every solid (including displaySolids) of every template at a few seeds', () => {
+    for (const t of TEMPLATES) {
+      for (const seed of [0, 1, 2]) {
+        const resolved = resolve(generate(t, gunDomain, seed), gunDomain);
+        for (const part of resolved.placed.keys()) {
+          const def = resolved.defs.get(part)!;
+          for (const s of def.displaySolids ?? def.solids) {
+            const label = `${t.name} seed ${seed} part ${part} solid ${s.id}`;
+            const { badEdges, vertices, edges, faces } = weldedTopology(meshForSolid(s));
+            expect(badEdges, label).toEqual([]);
+            expect(vertices - edges + faces, label).toBe(2);
+          }
+        }
+      }
+    }
+  });
 });

@@ -20,8 +20,12 @@ export interface TriangleMesh {
   readonly triangleCount: number;
 }
 
-/** Chamfer size: a quarter grid step (PROJECT.md §4). Clamped per solid, see `clampBevel`. */
-export const BEVEL = GRID / 4;
+// Chamfer size: half a grid step (PROJECT.md §4). A quarter grid step (the
+// first value tried here) was too fine to read as a bevel at gungen's scale
+// (5.5u ≈ 63mm, so 1u ≈ 11.5mm: a quarter step is under 1mm); half a step
+// (≈1.4mm) reads clearly in the viewer while staying small next to most
+// parts' multi-u dimensions. Clamped per solid, see `clampBevel`.
+export const BEVEL = GRID / 2;
 
 /** Keep the chamfer well inside the geometric limit that would invert a face. */
 const CLAMP_FRACTION = 0.4;
@@ -122,6 +126,15 @@ const clampBevel = (profile: readonly Vec2[], z: readonly [number, number], beve
  * cap-perimeter edges beveled, and the 2N corners capped with a triangle.
  * For a box (N = 4) this is exactly 6 inset faces + 12 edge chamfers + 8
  * corner triangles (44 triangles).
+ *
+ * Every face is built from one of three shared point families per vertex i
+ * (`q[i]`, `pMinus[i]`, `pPlus[i]`, computed once below) plus the shared z
+ * levels (z0, zLo, zHi, z1), so two faces meeting along an edge always
+ * reference the exact same coordinates there — no gap or T-junction, even
+ * though each face still gets its own copy of those vertices for flat
+ * shading. In particular, a cap-perimeter chamfer's outer edge is the cap's
+ * own boundary (`q[i]`-`q[j]` at z0/z1), not a point on the original profile
+ * edge: that is what welds it to the cap face rather than leaving a slit.
  */
 const chamferedPrism = (profile: readonly Vec2[], z: readonly [number, number], rawBevel: number): TriangleMesh => {
   const builder = new MeshBuilder();
@@ -165,11 +178,10 @@ const chamferedPrism = (profile: readonly Vec2[], z: readonly [number, number], 
       [p3(pPlus[i]!, zLo), p3(pMinus[j]!, zLo), p3(pMinus[j]!, zHi), p3(pPlus[i]!, zHi)],
       [nx, ny, 0],
     );
-    builder.orientedFace([p3(pPlus[i]!, z1), p3(pMinus[j]!, z1), p3(pMinus[j]!, zHi), p3(pPlus[i]!, zHi)], [nx, ny, 1]);
-    builder.orientedFace(
-      [p3(pPlus[i]!, z0), p3(pMinus[j]!, z0), p3(pMinus[j]!, zLo), p3(pPlus[i]!, zLo)],
-      [nx, ny, -1],
-    );
+    // The outer (z0/z1) edge of these two lies on the CAP's own boundary (q[i]-q[j]),
+    // not on the original profile edge: that's what welds them to the cap face below.
+    builder.orientedFace([p3(q[i]!, z1), p3(q[j]!, z1), p3(pMinus[j]!, zHi), p3(pPlus[i]!, zHi)], [nx, ny, 1]);
+    builder.orientedFace([p3(q[i]!, z0), p3(q[j]!, z0), p3(pMinus[j]!, zLo), p3(pPlus[i]!, zLo)], [nx, ny, -1]);
   }
 
   for (let i = 0; i < n; i++) {
