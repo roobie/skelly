@@ -1,0 +1,18 @@
+{
+  "name": "broken-pistol-barrel-crown",
+  "description": "Full-length barrel in a compact slide: the crown extends past its 1.5u limit.",
+  "expect": ["pistol-barrel-crown"],
+  "root": "frame",
+  "parts": {
+    "frame": { "family": "frame", "params": { "bore": "S", "gripLength": "M" } },
+    "slide": { "family": "slide", "params": { "length": "S" } },
+    "barrel": { "family": "barrel", "params": { "length": "M", "profile": "pistol", "bore": "S" } },
+    "magazine": { "family": "magazine", "params": { "length": "S", "profile": "pistol" } }
+  },
+  "connections": [
+    { "from": "frame.slide", "to": "slide.frame" },
+    { "from": "slide.barrel", "to": "barrel.rear" },
+    { "from": "frame.barrel", "to": "barrel.frame" },
+    { "from": "frame.magazine", "to": "magazine.top" }
+  ]
+}

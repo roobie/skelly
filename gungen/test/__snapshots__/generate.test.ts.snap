@@ -1,5 +1,905 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`templates > ak > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.gas-cylinder",
+        "to": "gas-cylinder.rear",
+      },
+      {
+        "from": "barrel.gas-port",
+        "to": "gas-block.barrel",
+      },
+      {
+        "from": "gas-block.gas-cylinder",
+        "to": "gas-cylinder.front",
+      },
+      {
+        "from": "gas-cylinder.handguard",
+        "to": "handguard.gas-cylinder",
+      },
+      {
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ak" template with seed 100.",
+    "name": "ak-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "gas-block": {
+        "family": "gas-block",
+      },
+      "gas-cylinder": {
+        "family": "gas-cylinder",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "L",
+          "layout": "ak",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ak",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "profile": "ak-curved",
+          "variant": "akm",
+        },
+      },
+      "rear-sight": {
+        "family": "ak-rear-sight",
+      },
+      "receiver": {
+        "family": "ak-receiver",
+        "params": {
+          "bore": "S",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "dropped",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.gas-cylinder",
+        "to": "gas-cylinder.rear",
+      },
+      {
+        "from": "barrel.gas-port",
+        "to": "gas-block.barrel",
+      },
+      {
+        "from": "gas-block.gas-cylinder",
+        "to": "gas-cylinder.front",
+      },
+      {
+        "from": "gas-cylinder.handguard",
+        "to": "handguard.gas-cylinder",
+      },
+      {
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ak" template with seed 200.",
+    "name": "ak-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "gas-block": {
+        "family": "gas-block",
+      },
+      "gas-cylinder": {
+        "family": "gas-cylinder",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "M",
+          "layout": "ak",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ak",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "profile": "ak-curved",
+          "variant": "akm",
+        },
+      },
+      "rear-sight": {
+        "family": "ak-rear-sight",
+      },
+      "receiver": {
+        "family": "ak-receiver",
+        "params": {
+          "bore": "S",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "dropped",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.gas-cylinder",
+        "to": "gas-cylinder.rear",
+      },
+      {
+        "from": "barrel.gas-port",
+        "to": "gas-block.barrel",
+      },
+      {
+        "from": "gas-block.gas-cylinder",
+        "to": "gas-cylinder.front",
+      },
+      {
+        "from": "gas-cylinder.handguard",
+        "to": "handguard.gas-cylinder",
+      },
+      {
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ak" template with seed 300.",
+    "name": "ak-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "gas-block": {
+        "family": "gas-block",
+      },
+      "gas-cylinder": {
+        "family": "gas-cylinder",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "L",
+          "layout": "ak",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ak",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "profile": "ak-curved",
+          "variant": "ak74",
+        },
+      },
+      "rear-sight": {
+        "family": "ak-rear-sight",
+      },
+      "receiver": {
+        "family": "ak-receiver",
+        "params": {
+          "bore": "M",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "dropped",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
+exports[`templates > ar > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ar" template with seed 101.",
+    "name": "ar-101",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "length": "L",
+          "mount": "free-float",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ar",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "profile": "stanag-curved",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "S",
+          "chargingHandle": "rear-top",
+          "feed": "box",
+          "rail": "full",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ar" template with seed 200.",
+    "name": "ar-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "length": "M",
+          "mount": "free-float",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ar",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "profile": "stanag-curved",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "S",
+          "chargingHandle": "rear-top",
+          "feed": "box",
+          "rail": "full",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ar" template with seed 302.",
+    "name": "ar-302",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "S",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "length": "L",
+          "mount": "free-float",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ar",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "profile": "stanag-curved",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "M",
+          "chargingHandle": "rear-top",
+          "feed": "box",
+          "rail": "full",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
+exports[`templates > battle-rifle > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "handguard.rail",
+        "slot": 1,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "battle-rifle" template with seed 100.",
+    "name": "battle-rifle-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "L",
+          "length": "S",
+          "mount": "free-float",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "orientation": "slant-5",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "handguard.rail",
+        "slot": 7,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "battle-rifle" template with seed 200.",
+    "name": "battle-rifle-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "L",
+          "length": "M",
+          "mount": "free-float",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "orientation": "tilt",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 2,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "battle-rifle" template with seed 300.",
+    "name": "battle-rifle-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "M",
+          "length": "S",
+          "mount": "free-float",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "orientation": "slant-5",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "L",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
 exports[`templates > bolt-rifle > known-good seeds 1`] = `
 [
   {
@@ -46,7 +946,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -122,7 +1022,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -198,7 +1098,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -289,7 +1189,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
           "length": "L",
         },
       },
@@ -297,12 +1197,13 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "lower",
         "params": {
           "layout": "conventional",
+          "magazineWell": "recessed",
         },
       },
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "M",
+          "length": "10-round",
         },
       },
       "receiver": {
@@ -376,7 +1277,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
           "length": "L",
         },
       },
@@ -384,12 +1285,13 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "lower",
         "params": {
           "layout": "conventional",
+          "magazineWell": "recessed",
         },
       },
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "length": "5-round",
         },
       },
       "receiver": {
@@ -460,12 +1362,13 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "lower",
         "params": {
           "layout": "conventional",
+          "magazineWell": "recessed",
         },
       },
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "S",
+          "length": "5-round",
         },
       },
       "receiver": {
@@ -674,7 +1577,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -702,6 +1605,166 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       },
     },
     "root": "receiver",
+  },
+]
+`;
+
+exports[`templates > pistol > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "frame.slide",
+        "to": "slide.frame",
+      },
+      {
+        "from": "slide.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "frame.barrel",
+        "to": "barrel.frame",
+      },
+      {
+        "from": "frame.magazine",
+        "to": "magazine.top",
+      },
+    ],
+    "description": "Generated from the "pistol" template with seed 100.",
+    "name": "pistol-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+          "profile": "pistol",
+        },
+      },
+      "frame": {
+        "family": "frame",
+        "params": {
+          "bore": "S",
+          "gripLength": "S",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "slide": {
+        "family": "slide",
+      },
+    },
+    "root": "frame",
+  },
+  {
+    "connections": [
+      {
+        "from": "frame.slide",
+        "to": "slide.frame",
+      },
+      {
+        "from": "slide.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "frame.barrel",
+        "to": "barrel.frame",
+      },
+      {
+        "from": "frame.magazine",
+        "to": "magazine.top",
+      },
+    ],
+    "description": "Generated from the "pistol" template with seed 200.",
+    "name": "pistol-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "frame": {
+        "family": "frame",
+        "params": {
+          "bore": "S",
+          "gripLength": "M",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "slide": {
+        "family": "slide",
+      },
+    },
+    "root": "frame",
+  },
+  {
+    "connections": [
+      {
+        "from": "frame.slide",
+        "to": "slide.frame",
+      },
+      {
+        "from": "slide.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "frame.barrel",
+        "to": "barrel.frame",
+      },
+      {
+        "from": "frame.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "slide.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "pistol" template with seed 300.",
+    "name": "pistol-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+          "profile": "pistol",
+        },
+      },
+      "frame": {
+        "family": "frame",
+        "params": {
+          "bore": "M",
+          "gripLength": "S",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "slide": {
+        "family": "slide",
+      },
+    },
+    "root": "frame",
   },
 ]
 `;
@@ -909,7 +1972,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
 ]
 `;
 
-exports[`templates > rifle > known-good seeds 1`] = `
+exports[`templates > revolver > known-good seeds 1`] = `
 [
   {
     "connections": [
@@ -922,80 +1985,54 @@ exports[`templates > rifle > known-good seeds 1`] = `
         "to": "barrel.rear",
       },
       {
-        "from": "receiver.handguard",
-        "to": "handguard.rear",
+        "from": "receiver.cylinder",
+        "to": "cylinder.frame",
       },
       {
-        "from": "handguard.front",
-        "to": "barrel.clamp",
+        "from": "barrel.cylinder",
+        "to": "cylinder.barrel",
       },
       {
         "from": "lower.grip",
         "to": "grip.top",
       },
-      {
-        "from": "lower.magazine",
-        "to": "magazine.top",
-      },
-      {
-        "from": "receiver.stock",
-        "to": "stock.front",
-      },
-      {
-        "from": "handguard.rail",
-        "slot": 1,
-        "to": "sight.base",
-      },
     ],
-    "description": "Generated from the "rifle" template with seed 100.",
-    "name": "rifle-100",
+    "description": "Generated from the "revolver" template with seed 100.",
+    "name": "revolver-100",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
           "length": "S",
+          "profile": "revolver",
+        },
+      },
+      "cylinder": {
+        "family": "cylinder",
+        "params": {
+          "chamber": "aligned",
+          "chambers": "eight",
         },
       },
       "grip": {
         "family": "grip",
         "params": {
-          "length": "M",
-        },
-      },
-      "handguard": {
-        "family": "handguard",
-        "params": {
-          "inner": "L",
+          "length": "L",
+          "well": "none",
         },
       },
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
-        },
-      },
-      "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "L",
+          "layout": "trigger",
         },
       },
       "receiver": {
         "family": "receiver",
         "params": {
-          "action": "auto",
-          "bore": "M",
-          "feed": "box",
-        },
-      },
-      "sight": {
-        "family": "sight",
-      },
-      "stock": {
-        "family": "stock",
-        "params": {
-          "length": "M",
-          "style": "straight",
+          "action": "revolver",
+          "bore": "S",
+          "feed": "cylinder",
         },
       },
     },
@@ -1012,66 +2049,55 @@ exports[`templates > rifle > known-good seeds 1`] = `
         "to": "barrel.rear",
       },
       {
-        "from": "receiver.handguard",
-        "to": "handguard.rear",
+        "from": "receiver.cylinder",
+        "to": "cylinder.frame",
+      },
+      {
+        "from": "barrel.cylinder",
+        "to": "cylinder.barrel",
       },
       {
         "from": "lower.grip",
         "to": "grip.top",
       },
-      {
-        "from": "lower.magazine",
-        "to": "magazine.top",
-      },
-      {
-        "from": "handguard.rail",
-        "slot": 10,
-        "to": "sight.base",
-      },
     ],
-    "description": "Generated from the "rifle" template with seed 200.",
-    "name": "rifle-200",
+    "description": "Generated from the "revolver" template with seed 200.",
+    "name": "revolver-200",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
           "length": "M",
+          "profile": "revolver",
+        },
+      },
+      "cylinder": {
+        "family": "cylinder",
+        "params": {
+          "chamber": "aligned",
+          "chambers": "six",
         },
       },
       "grip": {
         "family": "grip",
         "params": {
-          "length": "L",
-        },
-      },
-      "handguard": {
-        "family": "handguard",
-        "params": {
-          "inner": "L",
+          "length": "M",
+          "well": "none",
         },
       },
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
-        },
-      },
-      "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "M",
+          "layout": "trigger",
         },
       },
       "receiver": {
         "family": "receiver",
         "params": {
-          "action": "auto",
-          "bore": "M",
-          "feed": "box",
+          "action": "revolver",
+          "bore": "S",
+          "feed": "cylinder",
         },
-      },
-      "sight": {
-        "family": "sight",
       },
     },
     "root": "receiver",
@@ -1087,72 +2113,54 @@ exports[`templates > rifle > known-good seeds 1`] = `
         "to": "barrel.rear",
       },
       {
-        "from": "receiver.handguard",
-        "to": "handguard.rear",
+        "from": "receiver.cylinder",
+        "to": "cylinder.frame",
       },
       {
-        "from": "handguard.front",
-        "to": "barrel.clamp",
+        "from": "barrel.cylinder",
+        "to": "cylinder.barrel",
       },
       {
         "from": "lower.grip",
         "to": "grip.top",
       },
-      {
-        "from": "lower.magazine",
-        "to": "magazine.top",
-      },
-      {
-        "from": "receiver.stock",
-        "to": "stock.front",
-      },
     ],
-    "description": "Generated from the "rifle" template with seed 300.",
-    "name": "rifle-300",
+    "description": "Generated from the "revolver" template with seed 300.",
+    "name": "revolver-300",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
           "length": "S",
+          "profile": "revolver",
+        },
+      },
+      "cylinder": {
+        "family": "cylinder",
+        "params": {
+          "chamber": "aligned",
+          "chambers": "eight",
         },
       },
       "grip": {
         "family": "grip",
         "params": {
-          "length": "S",
-        },
-      },
-      "handguard": {
-        "family": "handguard",
-        "params": {
-          "inner": "L",
+          "length": "M",
+          "well": "none",
         },
       },
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
-        },
-      },
-      "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "L",
+          "layout": "trigger",
         },
       },
       "receiver": {
         "family": "receiver",
         "params": {
-          "action": "auto",
-          "bore": "L",
-          "feed": "box",
-        },
-      },
-      "stock": {
-        "family": "stock",
-        "params": {
-          "length": "M",
-          "style": "straight",
+          "action": "revolver",
+          "bore": "M",
+          "feed": "cylinder",
         },
       },
     },
@@ -1217,7 +2225,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -1230,6 +2238,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "profile": "smg",
         },
       },
       "receiver": {
@@ -1303,7 +2312,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -1316,6 +2325,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "profile": "smg",
         },
       },
       "receiver": {
@@ -1386,7 +2396,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -1399,6 +2409,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "profile": "smg",
         },
       },
       "receiver": {

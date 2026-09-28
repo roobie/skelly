@@ -1,13 +1,13 @@
 {
-  "name": "archetype-rifle",
-  "description": "Rifle, conventional layout: magazine ahead of the pistol grip, straight stock, handguard clamped to the barrel.",
+  "name": "archetype-battle-rifle",
+  "description": "FAL/FNC-like battle rifle, conventional layout: magazine ahead of the pistol grip, straight stock, handguard clamped to the barrel.",
   "expect": [],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
-    "handguard": { "family": "handguard", "params": { "inner": "M" } },
+    "handguard": { "family": "handguard", "params": {} },
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "M" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },

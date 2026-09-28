@@ -5,14 +5,26 @@
 /** A value, or a list to pick one from uniformly. */
 export type Choice<T> = T | readonly T[];
 
+/** Reuse a parameter already chosen on an earlier template slot. */
+export interface ParamReference {
+  readonly fromSlot: string;
+  readonly param: string;
+}
+
 export interface SlotTemplate {
   /** Becomes the part id in the generated assembly. */
   readonly id: string;
   readonly family: string;
   /** Params to set. Unlisted params are left unset: default or inherited. */
-  readonly params?: Readonly<Record<string, Choice<string>>>;
+  readonly params?: Readonly<Record<string, Choice<string> | ParamReference>>;
   /** Probability the part is included (default 1). */
   readonly chance?: number;
+}
+
+export interface ParamCondition {
+  readonly part: string;
+  readonly param: string;
+  readonly equals: string;
 }
 
 export interface ConnectionTemplate {
@@ -24,6 +36,8 @@ export interface ConnectionTemplate {
   readonly slot?: Choice<number> | 'any';
   /** Probability the connection is made, when both parts are present (default 1). */
   readonly chance?: number;
+  /** Include this connection only when the referenced generated part parameter matches. */
+  readonly when?: ParamCondition;
 }
 
 export interface Template {
