@@ -661,7 +661,6 @@ export const startPlay = (engine: Engine): void => {
     playerMeshes.sync({
       body,
       yaw: input.yaw,
-      pitch: input.pitch,
       stepOffset: cameraOffset,
       gaitPhase: playerGaitPhase,
       moving: playerMoving,

@@ -18,12 +18,9 @@ import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import { FIGURE_BOXES, type FigureBox, PLAYER_ARM_BOXES } from './figure.ts';
 
-/** Metres behind the eye; leaves the whole figure outside a level forward view. */
-export const PLAYER_BODY_REAR_OFFSET = 0.18;
+/** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
+export const PLAYER_BODY_REAR_OFFSET = 0.19;
 const BODY_HIP_HEIGHT = 0.62;
-/** Slight downward-look lean, capped so the chest stays within 10 cm ahead of the eye. */
-const MAX_BODY_LEAN = 0.17;
-const BODY_LEAN_PER_PITCH = 0.2;
 export const PLAYER_ARM_PARTS = [
   'body',
   'leftUpperArm',
@@ -34,6 +31,8 @@ export const PLAYER_ARM_PARTS = [
   'rightHand',
   'leftLeg',
   'rightLeg',
+  'leftFoot',
+  'rightFoot',
 ] as const;
 export type PlayerArmPart = (typeof PLAYER_ARM_PARTS)[number];
 
@@ -47,6 +46,8 @@ const PLAYER_BOXES: Readonly<Record<PlayerArmPart, FigureBox>> = {
   rightHand: PLAYER_ARM_BOXES.rightHand,
   leftLeg: FIGURE_BOXES.leftLeg,
   rightLeg: FIGURE_BOXES.rightLeg,
+  leftFoot: { size: [0.18, 0.12, 0.28], at: [-0.12, 0.06, -0.16] },
+  rightFoot: { size: [0.18, 0.12, 0.28], at: [0.12, 0.06, -0.16] },
 };
 
 const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>> = {
@@ -59,6 +60,8 @@ const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>>
   rightHand: 'skin',
   leftLeg: 'trousers',
   rightLeg: 'trousers',
+  leftFoot: 'trousers',
+  rightFoot: 'trousers',
 };
 
 const SHIRT_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
@@ -142,7 +145,6 @@ export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSi
 export interface PlayerFigurePose {
   body: Body;
   yaw: number;
-  pitch: number;
   stepOffset: number;
   gaitPhase: number;
   moving: boolean;
@@ -172,13 +174,12 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { yaw, pitch, inventory } = pose;
+    const { yaw, inventory } = pose;
     const s = this.blockSize;
     const rearX = Math.sin(yaw) * PLAYER_BODY_REAR_OFFSET;
     const rearZ = Math.cos(yaw) * PLAYER_BODY_REAR_OFFSET;
     const hidden = hiddenWorldArms(inventory);
-    const leanAngle = Math.min(MAX_BODY_LEAN, Math.max(0, -pitch) * BODY_LEAN_PER_PITCH);
-    const offset = { blockSize: s, rearX, rearZ, leanAngle };
+    const offset = { blockSize: s, rearX, rearZ };
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = this.meshes.get(part)!;
       const side = armSideOf(part);
@@ -194,24 +195,28 @@ export class PlayerMeshes {
     part: PlayerArmPart,
     mesh: InstancedMesh,
     pose: PlayerFigurePose,
-    offset: { blockSize: number; rearX: number; rearZ: number; leanAngle: number },
+    offset: { blockSize: number; rearX: number; rearZ: number },
   ): void {
     const { body, yaw, stepOffset, gaitPhase, moving } = pose;
-    const { blockSize, rearX, rearZ, leanAngle } = offset;
+    const { blockSize, rearX, rearZ } = offset;
     const box = PLAYER_BOXES[part];
     const isLeg = part === 'leftLeg' || part === 'rightLeg';
-    const isUpperBody = part === 'body' || isArmPart(part);
-    const lean = isUpperBody ? -leanAngle : 0;
-    const localY = isUpperBody ? BODY_HIP_HEIGHT + (box.at[1] - BODY_HIP_HEIGHT) * Math.cos(lean) : box.at[1];
-    const localZ = box.at[2] + (isUpperBody ? (box.at[1] - BODY_HIP_HEIGHT) * Math.sin(lean) : 0);
-    const stride = (part === 'leftLeg' ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
+    const isFoot = part === 'leftFoot' || part === 'rightFoot';
+    const stride = (part.startsWith('left') ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
+    const footStride = isFoot && moving ? stride : 0;
+    const localY = isFoot
+      ? BODY_HIP_HEIGHT + (box.at[1] - BODY_HIP_HEIGHT) * Math.cos(footStride) - box.at[2] * Math.sin(footStride)
+      : box.at[1];
+    const localZ = isFoot
+      ? (box.at[1] - BODY_HIP_HEIGHT) * Math.sin(footStride) + box.at[2] * Math.cos(footStride)
+      : box.at[2];
     this.dummy.position.set(
       body.pos[0] * blockSize + rearX + box.at[0] * Math.cos(yaw) + localZ * Math.sin(yaw),
       body.pos[1] * blockSize + stepOffset + localY,
       body.pos[2] * blockSize + rearZ - box.at[0] * Math.sin(yaw) + localZ * Math.cos(yaw),
     );
     this.dummy.rotation.order = 'YXZ';
-    this.dummy.rotation.set(lean, yaw, 0);
+    this.dummy.rotation.set(footStride, yaw, 0);
     if (isLeg && moving) {
       this.dummy.rotateX(stride);
     }
