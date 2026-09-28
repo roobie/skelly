@@ -1,7 +1,9 @@
-# gungen — low-poly firearm generator
+# gungen — low-poly firearm designer
 
-The first skelly subproject. It generates super-low-poly 3D firearms by working
-out how components connect, so every result is a *feasible* assembly.
+The first skelly subproject. It builds super-low-poly 3D firearms by working
+out how components connect, so every result is a *feasible* assembly. It began
+as a procedural generator; from Milestone 3 it is a designer tool, with the
+generator kept as a variant suggester.
 
 ## Aim
 
@@ -41,7 +43,8 @@ size classes (see §4), not measurements.
 | Loops | Loops are only *checked* for closure; there is no solver yet |
 | Layouts | Data, not code: the receiver is only the action body, and a swappable lower sets where the grip and magazine go |
 | Domain rules | Domains add their own rules next to the core ones (`Domain.rules`) |
-| Generation | Templates (data) plus a seeded generator. The generator only makes choices; the validator decides what's feasible |
+| Generation | Templates (data) plus a seeded generator. The generator only makes choices; the validator decides what's feasible. From Milestone 3 it suggests variants of a design rather than producing the product |
+| Design (Milestone 3) | Guns are curated designs, edited through params only. A new archetypal shape is added as vocabulary (a part family or param value) or a prefab, never as free-form geometry editing |
 | CI | GitHub Actions (`.github/workflows/gungen.yml`): typecheck, tests, fixture validation, viewer build |
 | Hosting | GitHub Pages (`.github/workflows/pages.yml`): every push to `main` is checked, then the viewer is published at <https://roobie.github.io/skelly/gungen/> |
 | Params from neighbours | Declared per param (`ParamSpec.from`): an unset param copies a neighbour's param through a named port. Values set in the assembly always win |
@@ -115,6 +118,9 @@ checks them. This is the first link to skelly's skeleton and rigging work.
 - Decided (Milestone 2): archetypes are hand-written **templates** first.
   Emergent archetypes, found from the part rules alone, can come later on the
   same machinery.
+- Decided (Milestone 3, BR 2026-09-28): good-looking blocky guns need curation,
+  so gungen becomes a designer. Generation proved what the part vocabulary and
+  rules can express; it stays as a variant suggester inside the designer.
 
 ### 7. The data format comes first, the mesh second
 
@@ -596,6 +602,110 @@ rule with readable failure text, snapshots of three known-good seeds, and
 before/after generator stats. Review generated builds in the viewer before
 updating snapshots. Report milestone results with viewer links; visual
 proportions await BR's judgment.
+
+## Milestone 3: the designer
+
+**Goal:** curate good-looking blocky guns by hand, and hand them to deadvox as
+models. The generator becomes a variant suggester.
+
+**Status:** planned (BR, 2026-09-28).
+
+BR's rulings:
+
+- **Params only.** A design is edited by choosing part families, param values
+  and optional parts, never by moving vertices. When a new archetypal shape
+  comes up, it's added as vocabulary (a part family or param value) or as a
+  prefab.
+- **The generator stays, as a variant suggester.**
+- **Export to deadvox.** deadvox reads a firearm as a `.glb` plus a `grip`
+  (position and turn) and a `muzzle` anchor, in metres
+  (`deadvox/src/content/base/models-firearms.json`). Weapon mods need more:
+  each swappable part as its own node, the ports attachments fit, and each
+  attachment's game properties.
+
+Already in place: the parameter panel (param edits, optional parts, URL
+overrides, connections dropped when a port disappears), fixtures (a hand-made
+assembly is already a JSON file), the validator, and the bevelled mesh module
+(`src/core/mesh.ts`, no three.js).
+
+### Work packages
+
+**3.1 Designs and prefabs.**
+
+- A design is an ordinary assembly file in `gungen/designs/`, validated by
+  the test suite like the fixtures. An optional `origin` records the template,
+  seed and overrides it started from.
+- A prefab is a named, curated part: a family, fixed params, and (for
+  attachments) game properties, in `src/gun/prefabs.ts`, so the typecheck
+  covers it. Examples: the STANAG 20 and 30 and the two AK magazines.
+- The viewer gets a prefab picker per part, and can save and open designs.
+- Fixtures stay test cases; designs are the curated product.
+
+**3.2 The validator as a live linter.** Rule failures are shown on the part
+cards as you edit. An invalid design can still be saved, but it is marked
+invalid.
+
+**3.3 Variant suggester.** `suggest(design, template, domain, seed, n)`, a
+pure core function. It re-rolls only the params the designer hasn't set,
+within the template's choices, and returns only valid variants. The viewer
+strip that shows them comes after 3.1.
+
+**3.4 glTF export.** A pure `src/core` writer for `.glb`, with no three.js,
+built on `mesh.ts`:
+
+- one node per part, named by part id and family;
+- units in metres (1u ≈ 11.5 mm), with a material per family;
+- empty nodes at attachment ports;
+- the grip and muzzle points computed from the grip mount and the barrel's
+  muzzle port;
+- a CLI that writes the `.glb` and the matching deadvox model entry.
+
+The mapping between gungen's axes and deadvox's is derived and tested, not
+assumed. The output must load in three.js's `GLTFLoader`. Running Khronos's
+`gltf-validator` in CI is recommended.
+
+**3.5 End to end in deadvox.** Replace one existing firearm model (proposed:
+`rifle_assault`) with an export of a curated AR design, and check it in
+first-person hands and in piles. This needs only 3.4, since a fixture can
+stand in for the design.
+
+**3.6 Vocabulary and prefabs** (the re-scoped queue):
+
+- trigger guards on every archetype (gungen.3, in progress);
+- the octagonal barrel as a barrel profile param (gungen.7);
+- a thumbhole stock family plus an AWM-type design (gungen.6);
+- attachments as prefabs with properties and port compatibility (gungen.2),
+  which needs the prefab format from 3.1.
+
+### Parallel lanes
+
+Rule: one writer at a time per hot file. The hot files are
+`src/viewer/main.ts` and `src/viewer/paramPanel.ts`; `src/gun/parts.ts` and
+`src/gun/templates.ts`; and this file (each lane only adds its own
+subsection).
+
+| Lane | Who | Work | Touches | Starts |
+| --- | --- | --- | --- | --- |
+| A | coder@gungen | gungen.3 → 3.1 + 3.2 → gungen.2 → 3.3's viewer strip | viewer, `prefabs.ts`, `designs/` | now (gungen.3 is running) |
+| B | subagent | 3.4 glTF export | new `src/core` export files, a new CLI, tests | now |
+| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | now |
+| D | subagent | gungen.7, then gungen.6 | `parts.ts`, `templates.ts` | after gungen.3 merges |
+| E | coder@main | 3.5 deadvox import | `deadvox/` | after saves.2b and 3.4 |
+
+B and C only add new files, so they can't conflict with A. D waits because
+the trigger guards are editing `parts.ts` now.
+
+### Proof per package
+
+- Tests shown failing first, as usual.
+- Designs and prefabs: every file in `designs/` loads and validates; save
+  then reopen gives the same assembly.
+- Suggester: deterministic per seed, never changes a param the designer set,
+  and every suggestion validates.
+- Export: node, mesh and triangle counts match `mesh.ts`, the anchors match
+  the ports, and the output loads through `GLTFLoader`.
+- deadvox: the exported model shows in first-person hands with the grip in
+  the hand and the muzzle at the front. BR judges the look.
 
 ## Running it
 
