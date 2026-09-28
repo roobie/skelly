@@ -30,6 +30,7 @@ const smoothstep = (x: number): number => x * x * (3 - 2 * x);
  * speed-dependent crouch/lean below. */
 const chaseBlend = (speed: number): number => clamp((speed - 0.8) / 2, 0, 1);
 const MAX_YAW_DEG = 6; // pelvis yaw amplitude at the longest (cap-saturating) strides
+const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strike, as if from inertia
 
 export type Side = 'L' | 'R';
 const SIDES: readonly Side[] = ['L', 'R'];
@@ -550,7 +551,9 @@ export const walkPose = (actor: WalkActor, phase: number, speed: number): Pose =
     // reasoning as the thigh's own yaw cancellation above.
     spine: rotY(params.spineTwist * Math.sin(TAU * p * 2 + Math.PI) - yawDeg),
     head: rotX(params.headLoll * Math.sin(TAU * p * 2)),
-    jaw: rotX(params.jawChatter * Math.abs(Math.sin(TAU * p * 8))),
+    // Slack jaw: a constant sag plus a soft bounce once per footfall (cos², so both ends are smooth),
+    // lagging heel-strike by JAW_LAG as if from inertia.
+    jaw: rotX(0.4 * params.jawChatter + 0.6 * params.jawChatter * Math.cos(TAU * (p - JAW_LAG)) ** 2),
     ...armRotations(p, params),
     ...legAndFootRotations(legCtx),
   };

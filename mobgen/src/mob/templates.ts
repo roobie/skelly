@@ -44,7 +44,7 @@ const shamblerParams: Template['params'] = {
   pelvisSway: { min: 1, max: 6 },
   spineTwist: { min: 1, max: 5 },
   headLoll: { min: 2, max: 10 },
-  jawChatter: { min: 0, max: 8 },
+  jawChatter: { min: 0, max: 15 },
   footLift: { min: 0.02, max: 0.06 },
 };
 

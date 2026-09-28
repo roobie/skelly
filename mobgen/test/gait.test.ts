@@ -215,7 +215,7 @@ const rotAngleDeg = (a: Mat3, b: Mat3): number => {
   return (Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2))) * 180) / Math.PI;
 };
 
-const SNAP_BONES = ['thigh.L', 'thigh.R', 'shin.L', 'shin.R', 'foot.L', 'foot.R'] as const;
+const SNAP_BONES = ['thigh.L', 'thigh.R', 'shin.L', 'shin.R', 'foot.L', 'foot.R', 'jaw'] as const;
 
 /** Samples walkPose at `n` phases over a full cycle (wrapping n-1 -> 0) and reports, across all
  * SNAP_BONES: the worst per-sample rotation-angle delta, the worst |Δroot.y|, and the worst second
