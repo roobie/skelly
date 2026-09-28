@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mobgen stress test</title>
+    <link rel="stylesheet" href="./src/viewer/style.css" />
+    <link rel="stylesheet" href="./src/viewer/stress.css" />
+  </head>
+  <body>
+    <main id="view"></main>
+    <div id="overlay">
+      <div id="overlay-head">
+        <h1>mobgen stress test</h1>
+        <a href="./index.html">← viewer</a>
+      </div>
+      <pre id="hud"></pre>
+      <div id="pool-status"></div>
+      <div class="row">
+        <button id="actors-minus" type="button" title="-10 actors">−10</button>
+        <button id="actors-plus" type="button" title="+10 actors">+10</button>
+        <button id="actors-double" type="button" title="×2 actors">×2</button>
+      </div>
+      <div class="row">
+        <button id="mode-btn" type="button">mode</button>
+        <label><input id="pause-toggle" type="checkbox" /> Pause walk</label>
+      </div>
+      <div class="row">
+        <button id="sweep-btn" type="button">Run sweep</button>
+      </div>
+      <div id="sweep-status" class="hint"></div>
+      <pre id="sweep-output"></pre>
+    </div>
+    <script type="module" src="./src/viewer/stress.ts"></script>
+  </body>
+</html>
