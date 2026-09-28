@@ -608,7 +608,8 @@ proportions await BR's judgment.
 **Goal:** curate good-looking blocky guns by hand, and hand them to deadvox as
 models. The generator becomes a variant suggester.
 
-**Status:** planned (BR, 2026-09-28).
+**Status:** planned (BR, 2026-09-28). Revised after an independent review by
+another model (gpt-6-astra via Pi). BR accepted the revision.
 
 BR's rulings:
 
@@ -617,95 +618,176 @@ BR's rulings:
   comes up, it's added as vocabulary (a part family or param value) or as a
   prefab.
 - **The generator stays, as a variant suggester.**
-- **Export to deadvox.** deadvox reads a firearm as a `.glb` plus a `grip`
-  (position and turn) and a `muzzle` anchor, in metres
-  (`deadvox/src/content/base/models-firearms.json`). Weapon mods need more:
-  each swappable part as its own node, the ports attachments fit, and each
-  attachment's game properties.
+- **Export to deadvox.** deadvox reads a model as a `.glb` plus a `grip`
+  (position and turn) and named `anchors`, in metres
+  (`deadvox/src/core/schema.ts:197-212`). Its renderer uses only the grip and
+  the flashlight's `lens` anchor today (`deadvox/src/render/models.ts:50-52`).
+  The `muzzle` anchors in `models-firearms.json` are accepted but unused.
 
 Already in place: the parameter panel (param edits, optional parts, URL
 overrides, connections dropped when a port disappears), fixtures (a hand-made
 assembly is already a JSON file), the validator, and the bevelled mesh module
 (`src/core/mesh.ts`, no three.js).
 
+Current limits the plan works within:
+
+- An assembly records values only. It has no format version, no locks and no
+  prefab identity (`src/core/schema.ts:137-162`). The panel infers "set by
+  the user" by comparing against the seed (`src/viewer/paramPanel.ts:78-86`),
+  so keeping a seed value on purpose looks the same as leaving it alone.
+- Adding or removing optional parts needs a template
+  (`src/viewer/paramPanel.ts:233`), and opening a file drops the template
+  (`src/viewer/main.ts:423-424`).
+- A mounting port is not a hand position: the pistol's grip is built into its
+  frame (`src/gun/parts.ts:1268`), and sporting stocks have no grip part.
+- `npm run validate` exits 0 for an invalid file that has no `expect`
+  (`src/cli/validate.ts:33-45`), so it can't gate publishing a design.
+
+### Scope
+
+- **In:** template-backed designs. A design names the template it belongs to,
+  and optional parts come from that template's slots. Swapping to a different
+  family or rewiring connections outside a template is out of scope.
+- **In:** per-part nodes and port metadata in the export, so runtime mods stay
+  possible.
+- **Deferred:** runtime mods in deadvox, attachment game properties
+  (gungen.2), and any deadvox schema change for attachments. These come after
+  the static export round trip works (3.5).
+
 ### Work packages
+
+**3.0 Contracts** (one owner, first; everything else builds on these):
+
+- **Design file.** A versioned `format` field, plus:
+  - `template`: the template the design belongs to;
+  - `locks`: the params and optional parts the designer fixed, stored apart
+    from the values;
+  - prefab references;
+  - `status`: `draft` or `published`;
+  - optional `origin`: the template, seed and overrides it started from.
+  Loading is a runtime parse, not a type assertion. It refuses unknown format
+  versions, and states what happens when a family or default changes.
+- **Prefab reference.** A part can carry `prefab: { id, version }`. Choosing a
+  prefab copies its params and records the reference. Editing any param the
+  prefab fixes detaches it (the reference is removed). Templates don't
+  generate prefabs in this milestone.
+- **Hold anchors.** Part families declare named anchors in gun-domain data,
+  not in core: `hold` (the firing hand), `support` (the other hand) and
+  `muzzle`. An assembly with a missing or ambiguous `hold` can't be
+  published.
+- **Palette.** One table of family colours (plus special cases like the
+  magazine floorplate), shared by the viewer and the export.
+
+Proof: parse and round-trip tests, including a malformed file and every
+refused version; a test that each archetype resolves exactly one `hold`
+anchor, including the integrated pistol and a stock-wrist rifle; and the
+viewer rendering from the shared palette unchanged.
 
 **3.1 Designs and prefabs.**
 
-- A design is an ordinary assembly file in `gungen/designs/`, validated by
-  the test suite like the fixtures. An optional `origin` records the template,
-  seed and overrides it started from.
-- A prefab is a named, curated part: a family, fixed params, and (for
-  attachments) game properties, in `src/gun/prefabs.ts`, so the typecheck
-  covers it. Examples: the STANAG 20 and 30 and the two AK magazines.
-- The viewer gets a prefab picker per part, and can save and open designs.
-- Fixtures stay test cases; designs are the curated product.
+- Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
+  are the curated product.
+- Prefabs are named, curated parts in `src/gun/prefabs.ts`: a family plus
+  fixed params. Examples: the STANAG 20 and 30 and the two AK magazines.
+  A catalogue test checks every prefab against the domain (family exists,
+  every param value is legal, it builds).
+- The viewer gets save and open, a prefab picker per part, and lock toggles.
 
 **3.2 The validator as a live linter.** Rule failures are shown on the part
-cards as you edit. An invalid design can still be saved, but it is marked
-invalid.
+cards as you edit. Drafts can be invalid; publishing requires a valid design.
+A dedicated check (not `npm run validate`) fails on any invalid published
+design, and runs in CI.
 
-**3.3 Variant suggester.** `suggest(design, template, domain, seed, n)`, a
-pure core function. It re-rolls only the params the designer hasn't set,
-within the template's choices, and returns only valid variants. The viewer
-strip that shows them comes after 3.1.
+**3.3 Variant suggester.** `suggest(design, domain, seed, n, budget)`, a pure
+core function:
+
+- re-rolls only unlocked params and unlocked optional parts, within the
+  design's template;
+- returns up to `n` distinct valid variants that differ from the design;
+- stops after `budget` attempts and reports whether it ran out;
+- respects inherited params and conditional connections.
+
+The viewer strip that shows them comes after 3.1.
 
 **3.4 glTF export.** A pure `src/core` writer for `.glb`, with no three.js,
 built on `mesh.ts`:
 
-- one node per part, named by part id and family;
-- units in metres (1u ≈ 11.5 mm), with a material per family;
-- empty nodes at attachment ports;
-- the grip and muzzle points computed from the grip mount and the barrel's
-  muzzle port;
+- the same solids the viewer draws (`displaySolids`) and the shared palette,
+  with colours converted to linear space;
+- one node per part, named by part id and family, with port metadata (mount,
+  size, slot, orientation) as empty child nodes plus glTF `extras`;
+- units in metres (1u ≈ 11.5 mm);
+- the `grip` from the `hold` anchor, and `anchors` for `muzzle` and
+  `support`;
 - a CLI that writes the `.glb` and the matching deadvox model entry.
 
-The mapping between gungen's axes and deadvox's is derived and tested, not
-assumed. The output must load in three.js's `GLTFLoader`. Running Khronos's
-`gltf-validator` in CI is recommended.
+The mapping between gungen's axes and deadvox's is derived and tested:
+deadvox holds a model with +x forward and +y up
+(`deadvox/src/core/schema.ts:202-204`).
 
 **3.5 End to end in deadvox.** Replace one existing firearm model (proposed:
 `rifle_assault`) with an export of a curated AR design, and check it in
-first-person hands and in piles. This needs only 3.4, since a fixture can
-stand in for the design.
+first-person hands and in piles. This needs only 3.0 and 3.4, since a fixture
+can stand in for the design.
 
-**3.6 Vocabulary and prefabs** (the re-scoped queue):
+**3.6 Vocabulary** (the re-scoped queue):
 
 - trigger guards on every archetype (gungen.3, in progress);
 - the octagonal barrel as a barrel profile param (gungen.7);
 - a thumbhole stock family plus an AWM-type design (gungen.6);
-- attachments as prefabs with properties and port compatibility (gungen.2),
-  which needs the prefab format from 3.1.
+- after 3.5: attachments with game properties and port compatibility
+  (gungen.2), with the deadvox schema change they need.
 
 ### Parallel lanes
 
-Rule: one writer at a time per hot file. The hot files are
-`src/viewer/main.ts` and `src/viewer/paramPanel.ts`; `src/gun/parts.ts` and
-`src/gun/templates.ts`; and this file (each lane only adds its own
-subsection).
+3.0 goes first, and its types are frozen before B and C start. After that,
+the rule is one writer at a time per hot file:
 
-| Lane | Who | Work | Touches | Starts |
+- `src/viewer/main.ts`, `src/viewer/paramPanel.ts`, `src/viewer/scene.ts`;
+- `src/gun/parts.ts`, `src/gun/templates.ts`;
+- `src/core/schema.ts`;
+- `package.json`, `.github/workflows/gungen.yml`;
+- this file (each lane only adds its own subsection).
+
+| Lane | Who | Work | Owns | Starts |
 | --- | --- | --- | --- | --- |
-| A | coder@gungen | gungen.3 → 3.1 + 3.2 → gungen.2 → 3.3's viewer strip | viewer, `prefabs.ts`, `designs/` | now (gungen.3 is running) |
-| B | subagent | 3.4 glTF export | new `src/core` export files, a new CLI, tests | now |
-| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | now |
-| D | subagent | gungen.7, then gungen.6 | `parts.ts`, `templates.ts` | after gungen.3 merges |
+| A | coder@gungen | gungen.3, then 3.0, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette | now (gungen.3 is running) |
+| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | after 3.0 |
+| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | after 3.0 |
+| D | subagent | gungen.7, then gungen.6 | `parts.ts`, `templates.ts` | after gungen.3 merges, and after the anchor data in 3.0 lands in `parts.ts` |
 | E | coder@main | 3.5 deadvox import | `deadvox/` | after saves.2b and 3.4 |
 
-B and C only add new files, so they can't conflict with A. D waits because
-the trigger guards are editing `parts.ts` now.
+The hold anchors touch `parts.ts`, so 3.0 must merge before lane D starts.
+B and C add new files but depend on 3.0's types. Neither may change
+`schema.ts` or the design format; a needed change goes back to lane A.
 
 ### Proof per package
 
-- Tests shown failing first, as usual.
-- Designs and prefabs: every file in `designs/` loads and validates; save
-  then reopen gives the same assembly.
-- Suggester: deterministic per seed, never changes a param the designer set,
-  and every suggestion validates.
-- Export: node, mesh and triangle counts match `mesh.ts`, the anchors match
-  the ports, and the output loads through `GLTFLoader`.
-- deadvox: the exported model shows in first-person hands with the grip in
-  the hand and the muzzle at the front. BR judges the look.
+Tests shown failing first, as usual. BR judges every visual result.
+
+- **3.0:** as listed under 3.0.
+- **3.1:** every published file in `designs/` parses and validates; save then
+  reopen gives the same design, including locks and prefab references;
+  detaching a prefab on edit.
+- **3.2:** the publish check fails on an invalid published design and passes
+  on an invalid draft.
+- **3.3:**
+  - deterministic per seed;
+  - never changes a locked param or optional part;
+  - each suggestion validates and is distinct;
+  - a design with open choices returns a nonempty result;
+  - a fully locked design and one with only duplicates report "exhausted"
+    within the budget.
+- **3.4:**
+  - the output passes Khronos `gltf-validator`, which is required in CI;
+  - bounds, normals and scale after conversion match `mesh.ts` and the
+    viewer;
+  - colours match the palette;
+  - the anchors match the resolved anchors;
+  - the model goes through deadvox's own model preparation
+    (`deadvox/src/render/models.ts`), not only `GLTFLoader`.
+- **3.5:** the exported model shows in first-person hands with the hand at
+  `hold` and the muzzle forward, and it looks right in piles.
 
 ## Running it
 
