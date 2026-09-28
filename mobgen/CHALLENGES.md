@@ -1,0 +1,326 @@
+# mobgen — challenges
+
+The hard problems between mobgen and actors that work in deadvox, roughly in
+order of risk. For each: why it's hard, what we plan to do, when we'll deal
+with it, and how we'll know it's solved. Numbers marked *measure* are
+estimates to check before we rely on them.
+
+Design context is in [PROJECT.md](PROJECT.md); the reference measurements are
+in [reference/README.md](reference/README.md). deadvox's own targets are in
+[deadvox/CHALLENGES.md](../deadvox/CHALLENGES.md).
+
+## 1. Many detailed actors in a browser
+
+**Why it's hard.** deadvox targets 60 active and 300 background zombies at
+60 fps on an Iris Xe laptop, and today's shambler is 6 boxes drawn as 6
+instanced meshes shared by every zombie. A mobgen actor is different on every
+count:
+
+- **Draw calls.** One mesh per bone is 18 draws per actor: about 1,080 for 60
+  actors, before the 300 in the background. That's more than the whole
+  world's budget.
+- **No instancing.** Every actor has its own geometry, because variety is the
+  point, so the instancing trick doesn't apply.
+- **Triangles.** About 800 voxels at 1/12 of a block gives an estimated
+  2,000–4,000 triangles per actor after merging. That's roughly 120,000–240,000
+  for 60 actors, and far too many for 300. *Measure.*
+
+**Plan.**
+
+- **One draw per actor.** Merge an actor's bones into one geometry with a
+  bone index per vertex, and pose it in the vertex shader from a small array
+  of bone matrices. This is rigid skinning with one bone per vertex, so it
+  costs almost nothing.
+- **Batching.** Draw many actors from one three.js `BatchedMesh`, or one
+  geometry buffer with per-actor bone matrices in a texture.
+- **Level of detail.** Near actors use the template's voxel size; the
+  background tier re-voxelizes the same genome at a coarser size (1/6 or 1/4
+  of a block) or falls back to box figures. It comes from the same genome, so
+  an actor's colours and proportions match between levels.
+- **A variety pool.** Generate a few dozen variants per template and reuse
+  them, rather than one per zombie.
+
+**When.** Before actors go into deadvox (after milestone 1). Milestone 1 only
+measures triangles and voxels per actor (`npm run stats`).
+
+**How we'll know.** deadvox's benchmark with mobgen actors: 60 active and 300
+background at 60 fps on the reference laptop, with actor rendering inside
+the frame budget. *Measure.*
+
+## 2. Reading well at game distance
+
+**Why it's hard.** 1/12 of a block gives a head of about 50 voxels up close,
+but deadvox is about sightlines: at 20 m a 1.75 m figure is a few dozen
+pixels tall, and at night it's in fog. A one-voxel nose, eyes and mouth only
+read up close. The figures also stand among 0.5 m blocks, 12 times coarser
+than they are, so they may look out of place. The reference settled the
+voxel count, not the look.
+
+**Plan.**
+
+- **Silhouette and colour first.** Posture (hunch, reach, limp) and big colour
+  areas (skin against clothes, blood) carry the read at distance. Face detail
+  is a bonus for close range.
+- **Features made for the grid.** Features that are smaller than a voxel at
+  the template's size are painted, not carved: eye sockets are carved only at
+  3.5 cm voxels or smaller.
+- **Test in the game's scene.** Place actors in deadvox lighting (day, dusk,
+  night with fog, flashlight) at 5, 15 and 40 m, next to the old box shambler.
+- **Per-vertex ambient occlusion,** as deadvox's chunks have, if faces read
+  flat.
+
+**When.** A viewer layer with deadvox's sky presets in milestone 1 if cheap;
+in-game screenshots before integration.
+
+**How we'll know.** Side-by-side screenshots at 5, 15 and 40 m, judged by
+eye: the figure reads as a person at 40 m and as a particular zombie at 5 m.
+
+## 3. Joints with rigid bones
+
+**Why it's hard.** Each voxel belongs to exactly one bone, and bones rotate
+as rigid blocks, with no skinning. When an elbow, knee, shoulder or hip
+bends, the outside of the joint opens a crack and the inside pushes voxels
+into each other. Faces between bones are kept, so a crack shows the bone's
+closed cut face rather than a hole, but the seam still shows. The hip and
+shoulder have the widest range, and the zombie reach raises the arms high.
+
+**Plan.**
+
+- **Round joints.** Put flesh at the joint centre so the parent and child
+  surfaces are round about the pivot: rotating a sphere about its own centre
+  opens no crack.
+- **Joint limits** as data per bone (see §7), so no animation bends further
+  than the flesh can hide.
+- **Blend at the joint** only if the above isn't enough: vertices near a joint
+  get two bone weights on the merged mesh (§1).
+
+**When.** Round joints and limits in milestone 1 (they shape the body
+builder); blending later, if needed.
+
+**How we'll know.** In the viewer, at the walk cycle's extremes and the
+largest poses allowed, no crack wider than one voxel is visible from outside.
+Later, a measured "seam area" per pose. *Measure.*
+
+## 4. A walk that follows speed
+
+**Why it's hard.** If the stride doesn't match how fast the body moves, feet
+slide, and sliding feet are the first thing that looks wrong. deadvox moves
+shamblers at 0.8 m/s wandering and 2.8 m/s chasing, and its chase adds
+sway, lurches (speed × 0.6–1.2) and stumbles, so speed changes all the time.
+Proportions differ per actor (leg length, knee bend, limp), and the ground
+has half-metre steps and slopes.
+
+**Plan.**
+
+- **Stride and pace from speed,** the genome's gait params and leg length.
+  The phase advances with distance travelled, not with time, so a speed
+  change never makes the feet jump or slide.
+- **Planted feet:** during stance the foot stays fixed in world space while
+  the root advances at the given speed; the root height is solved per phase
+  so the lowest foot is on the ground.
+- **Standing still** at speed 0, and a smooth blend into and out of walking.
+- **Uneven ground later:** foot placement on steps and slopes (two-bone IK
+  for the leg) when actors go into deadvox.
+
+**When.** Speed-driven gait and planted feet in milestone 1; blending, steps
+and slopes with deadvox integration.
+
+**How we'll know.** A test: during stance, the planted foot moves less than
+one voxel horizontally, at 0.8 and 2.8 m/s, for every template.
+
+## 5. Thin features and sampling
+
+**Why it's hard.** At 4 cm voxels, a wrist, neck, ear or finger is about one
+voxel across. Sampling a shape at voxel centres can make a limb vanish, split
+into pieces, or come out lumpy, and a small change in a param can add or
+remove a whole row of voxels. Carves (wounds, eye sockets) make it worse:
+they can cut a limb in two or leave islands.
+
+**Plan.**
+
+- **Marrow:** every bone's segment is rasterized and always filled, so each
+  bone is connected to its parent however thin its flesh is.
+- **A slight dilation** (a voxel is filled within 0.15 voxels of the surface)
+  so shapes near a voxel thick don't disappear.
+- **Midline on a voxel centre,** so a symmetric body gives exactly symmetric
+  voxels.
+- **Rules:** `floaters` catches islands, and per-bone budgets in `budget`
+  catch a bone that's too thin or too fat.
+
+**When.** Milestone 1.
+
+**How we'll know.** `npm run stats`: floaters are rare, and no bone falls
+below its minimum voxel count over 300 seeds per template.
+
+## 6. Validity and variety
+
+**Why it's hard.** The generator only makes choices, and the validator
+decides. Params interact: a deep hunch, bent knees and arms reaching forward
+move the centre of mass off the feet. A template that is always valid may
+have too little variety, and one with lots of variety may fail too often.
+Counting variety by genome overstates it: two genomes can look the same
+(gungen's "distinct builds are counted by file, not shape" gap).
+
+**Plan.**
+
+- `npm run stats`: valid rate, failures by rule, and distinct *voxel grids*
+  (a hash of owner and colour arrays), not distinct genomes.
+- Tune template ranges from the stats, not by hand-picking seeds.
+- If valid rates get low, sample the params that interact in a set order and
+  narrow later ranges from earlier choices (still in the generator, as
+  choices).
+
+**When.** Milestone 1.
+
+**How we'll know.** Every template at least 80% valid, with at least 90% of
+valid builds distinct as voxel grids over 300 seeds. *Measure.*
+
+## 7. Poses beyond the rest pose
+
+**Why it's hard.** Milestone 1's rules only check the rest pose. During the
+walk an arm can swing through the torso, a knee can bend the wrong way, a
+hand can pass through a thigh, and the jaw can open through the chest when
+the head hangs down. Attacks, hit reactions and dismemberment come later and
+make it worse.
+
+**Plan.**
+
+- **Joint limits as data:** each bone gets allowed rotation ranges. This is
+  skelly's shared direction: a joint is a port with degrees of freedom.
+- **A `joint-limits` rule** checked across sampled phases of every animation.
+- **A `self-overlap` rule:** pose the voxels at sampled phases and count
+  overlaps between bones that aren't parent and child.
+
+**When.** Joint limits and `joint-limits` right after milestone 1;
+`self-overlap` when there's more than the walk.
+
+**How we'll know.** Both rules pass for every template's walk at 0.8 and
+2.8 m/s over 300 seeds.
+
+## 8. Colour variety against merging
+
+**Why it's hard.** Greedy meshing only merges faces of the same colour.
+Mottled skin, bruises, torn clothes and shading noise give the look, but
+every extra shade breaks merges and adds triangles. deadvox had the same
+problem with per-block colour jitter and moved it into the shader.
+
+**Plan.**
+
+- Materials with 4 shades each (palette index = material × 4 + shade),
+  picked by low-frequency noise so neighbouring voxels tend to agree.
+- Measure triangles per actor with 1 and 4 shades.
+- If shades cost too much, keep material colours in the mesh and add the
+  shading in the fragment shader from a hash of the voxel position, as
+  deadvox's chunks do.
+
+**When.** Measured in milestone 1; the shader route with deadvox
+integration if needed.
+
+**How we'll know.** Triangle counts in `npm run stats`, with and without
+shades. *Measure.*
+
+## 9. Generating at spawn time
+
+**Why it's hard.** Generating one actor (voxelize and mesh) is expected to
+take tens of milliseconds, so a frame's budget is gone at one or two. deadvox
+turns hordes into individual zombies when their area loads, which can mean
+dozens at once.
+
+**Plan.**
+
+- Generate in a Web Worker; the core is pure TypeScript with no DOM, so it
+  runs there unchanged.
+- Cache results by genome, and use the variety pool (§1).
+- A per-frame spawn budget: a zombie shows as a box figure until its mesh is
+  ready.
+
+**When.** With deadvox integration. Milestone 1 reports the time per figure.
+
+**How we'll know.** Under 50 ms per figure in `npm run stats` (*measure*),
+and no frame over 16 ms while a horde loads.
+
+## 10. Damage, wounds and dismemberment
+
+**Why it's hard.** deadvox plans a body model (wounds, bleeding, fractures)
+and dismemberment "when hit hard enough". That needs hit locations on the
+actor, wounds carved during play, and limbs that come off and fall. If each
+change regenerates the whole actor, that's too slow and changes the look.
+
+**Plan.**
+
+- **One mesh per bone at generation,** so a wound re-meshes only the bone it
+  hits, and a severed limb is the subtree of bones below the cut, already its
+  own geometry.
+- **Hits from voxel ownership:** a ray hitting a voxel names the bone it hit,
+  which maps to a body part.
+- **Runtime wounds** are carve features added to the genome's wounds list,
+  so they survive a save and reload.
+
+**When.** After deadvox's body model exists (EPIC slice 3). Milestone 1
+keeps the core browser-pure and per-bone so this stays possible.
+
+**How we'll know.** A demo: shooting an arm carves a wound in that arm, and
+a hard hit takes the forearm off, in under a frame.
+
+## 11. Determinism
+
+**Why it's hard.** The genome is the save format: deadvox would store a
+template and seed, not voxels. The generator uses a seeded RNG, never
+`Math.random`, but `Math.sin`, `Math.cos` and `Math.exp` aren't guaranteed to
+give the same last digit in every JavaScript engine. A voxel right at a
+shape's edge can flip between browsers. That's cosmetic, until hit locations
+or saved wounds depend on the exact voxels.
+
+**Plan.**
+
+- The genome is the source of truth. Same engine, same voxels, guaranteed
+  and tested.
+- A snapshot of voxel-grid hashes for known seeds in the tests, run in Node;
+  check the same hashes in a browser before relying on exactness.
+- If exactness across engines is needed, use our own polynomial sin/cos in
+  the generator, or save the voxels of damaged actors.
+
+**When.** Hash snapshots in milestone 1; the rest when saves exist.
+
+**How we'll know.** The same hashes in Node, Chrome and Firefox.
+
+## 12. Testing how it looks
+
+**Why it's hard.** The rules check structure, not whether a figure reads as
+a sickly human rather than a lump or a swamp monster. Looks can only be
+judged by eye, and a small change to the builder can change every seed.
+
+**Plan.**
+
+- A gallery of known-good seeds per template in the viewer, reviewed when
+  the builder changes.
+- Snapshot tests of genomes and voxel-grid hashes for those seeds: a change
+  means "look again", as with gungen's snapshots.
+- The colour direction from deadvox's notes: sickly, fleshy, not a swamp
+  monster. Pale grey-yellow-pink skin with low saturation, bruises in muted
+  purple, and dirty, muted clothes.
+
+**When.** Milestone 1.
+
+**How we'll know.** Every snapshot change comes with a look at the gallery.
+
+## 13. Scope
+
+**Why it's hard.** Procedural characters invite endless detail: fingers,
+toes, teeth, hair strands, clothing layers, more body plans. Most of it
+doesn't show at 4 cm voxels and 20 m.
+
+**Plan.**
+
+- Only model what shows at the template's voxel size and game distance
+  (§2).
+- One body plan (humanoid) until actors are in deadvox and the game says
+  what it needs next.
+- Keep the core domain-agnostic (bones, shapes, voxels, rules), so later
+  body plans such as a crawler, a skeleton or a four-legged animal are data
+  and builder code, not core changes.
+
+**When.** Always.
+
+**How we'll know.** Every feature added has a reason that can be seen at
+game distance.

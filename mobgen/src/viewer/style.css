@@ -6,8 +6,6 @@
   --line: #2e3238;
   --pass: #5fb97a;
   --fail: #e5534b;
-  --normal: #f0a24a;
-  --up: #4ac1f0;
   color-scheme: dark;
 }
 * {
@@ -42,6 +40,10 @@ body {
 #view canvas {
   display: block;
 }
+/* ?shot=1: fill the window with the view, for headless screenshots. */
+body.shot #panel {
+  display: none;
+}
 h1 {
   font-size: 16px;
   margin: 0 0 12px;
@@ -53,7 +55,8 @@ h1 {
   color: var(--muted);
   font-size: 12px;
 }
-.field select {
+.field select,
+.field input[type="range"] {
   display: block;
   width: 100%;
   margin-top: 4px;
@@ -65,11 +68,8 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 4px;
 }
-.field.file input {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  max-width: 100%;
+.field input[type="range"] {
+  padding: 0;
 }
 #description {
   color: var(--muted);
@@ -94,14 +94,7 @@ h1 {
   margin: 8px 0 16px;
 }
 #issues li {
-  margin-bottom: 8px;
-  cursor: pointer;
-}
-#issues li.active {
-  color: #fff;
-}
-#issues li.dim {
-  opacity: 0.45;
+  margin-bottom: 6px;
 }
 #issues .rule {
   display: inline-block;
@@ -109,6 +102,20 @@ h1 {
   font-family: ui-monospace, monospace;
   color: var(--fail);
   margin-right: 4px;
+}
+#stats {
+  margin: 8px 0 16px;
+  font-size: 12px;
+}
+#stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  border-bottom: 1px dotted var(--line);
+}
+#stats .k {
+  color: var(--muted);
 }
 fieldset {
   border: 1px solid var(--line);
@@ -118,6 +125,9 @@ fieldset {
 }
 fieldset label {
   display: block;
+}
+legend label {
+  display: inline;
 }
 .row {
   display: flex;
@@ -160,125 +170,14 @@ button:hover {
 #generate-btn {
   flex: 1;
 }
+#preset-wander,
+#preset-chase {
+  flex: 1;
+}
 .hint,
 #hover {
   color: var(--muted);
   font-size: 12px;
-}
-.k::before {
-  content: "";
-  display: inline-block;
-  width: 10px;
-  height: 3px;
-  margin: 0 4px 2px 0;
-  vertical-align: middle;
-}
-.k.normal::before {
-  background: var(--normal);
-}
-.k.up::before {
-  background: var(--up);
-}
-#param-panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  max-height: 32vh;
-  overflow-x: auto;
-  overflow-y: auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px;
-  background: rgba(31, 34, 39, 0.92);
-  border-top: 1px solid var(--line);
-}
-#param-panel:empty {
-  display: none;
-}
-.param-reset {
-  flex: none;
-  align-self: center;
-}
-.param-note {
-  flex: none;
-  align-self: center;
-  max-width: 260px;
-  margin: 0;
-  color: var(--fail);
-  font-size: 12px;
-}
-.param-part {
-  flex: none;
-  width: 230px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 8px 10px;
-  background: var(--panel);
-}
-.part-title {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-}
-.param-part.optional .part-title {
-  color: var(--normal);
-}
-.part-title .family {
-  color: var(--muted);
-  font-weight: 400;
-}
-.param-slot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.param-row {
-  margin-bottom: 8px;
-}
-.param-row .param-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.param-row .param-state {
-  font-size: 10px;
-}
-.param-row .param-state.user {
-  color: var(--normal);
-}
-.param-row .param-state.inherited {
-  color: var(--up);
-}
-.param-row .clear {
-  font-size: 10px;
-  padding: 0 4px;
-}
-.param-values {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 3px;
-}
-.param-values button {
-  padding: 2px 6px;
-  font-size: 11px;
-}
-.param-values button.active {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
-}
-.param-values button.not-permitted {
-  opacity: 0.4;
-  border-style: dashed;
 }
 @media (max-width: 720px) {
   body {

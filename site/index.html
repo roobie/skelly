@@ -244,6 +244,12 @@
             </label>
             <p class="muted">Fixtures show the assembly and its expected validation result.</p>
           </div>
+          <div class="form-grid">
+            <label>Overrides (optional)
+              <input name="set" data-url-param="set" id="gungen-set" type="text" placeholder="magazine.variant:akm,rear-sight:off" spellcheck="false" />
+            </label>
+            <p class="muted">Param overrides and optional parts, as the viewer's panel writes them.</p>
+          </div>
           <div class="action-row">
             <button class="primary" type="submit">Open viewer</button>
           </div>
@@ -254,6 +260,20 @@
           </div>
           <p id="gungen-status" class="status" role="status" aria-live="polite"></p>
         </form>
+      </section>
+
+      <section class="card">
+        <h2><a href="mobgen/">mobgen</a></h2>
+        <p>
+          A procedural generator of detailed voxel mobile actors (zombies and other NPCs) for deadvox, built up
+          from small voxels and a validated pipeline, with a procedural walk cycle. Milestone 1 is in progress.
+        </p>
+        <ul class="links">
+          <li><a href="mobgen/">Open the viewer</a></li>
+          <li><a href="mobgen/?template=shambler&amp;seed=7">Generated shambler</a></li>
+          <li><a href="mobgen/?template=runner&amp;seed=0">Generated runner</a></li>
+          <li><a href="mobgen/?template=brute&amp;seed=11">Generated brute</a></li>
+        </ul>
       </section>
 
       <footer>Source: <a href="https://github.com/roobie/skelly">github.com/roobie/skelly</a></footer>

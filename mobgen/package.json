@@ -1,5 +1,5 @@
 {
-  "name": "gungen",
+  "name": "mobgen",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,10 +8,9 @@
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "test": "vitest run",
-    "validate": "node src/cli/validate.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
-    "mesh-stats": "node src/cli/mesh-stats.ts"
+    "view": "node src/cli/view.ts"
   },
   "dependencies": {
     "three": "^0.186.0"
