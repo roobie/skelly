@@ -24,6 +24,7 @@ export interface SimulationState {
   scheduler: SchedulerState;
   needs: Needs;
   compression: { c: number; active: boolean; interruption?: string };
+  pendingInterrupt?: string;
   dead?: { cause: string; time: number };
 }
 
@@ -60,7 +61,7 @@ export class Simulation {
   /** Debug-only control is owned by the game; damage sources still run normally. */
   godMode = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
-  private hasUnreadInterrupt = false;
+  private pendingInterrupt: string | undefined;
   private readonly unsafe: () => string | undefined;
   private readonly restRate: () => number | undefined;
 
@@ -87,16 +88,8 @@ export class Simulation {
     });
   }
 
-  /** Refuse snapshots at a frame boundary if an interrupt has not yet been applied. */
-  assertSnapshotReady(): void {
-    if (this.hasUnreadInterrupt) {
-      throw new Error('Cannot snapshot with an unread interruption');
-    }
-  }
-
-  /** Isolated plain-data continuation state. Runtime callbacks and transient events are excluded. */
+  /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */
   snapshotState(): Readonly<SimulationState> {
-    this.assertSnapshotReady();
     return freezeSnapshot({
       seed: this.seed,
       clock: { ratio: this.clock.ratio, start: this.clock.start },
@@ -108,6 +101,9 @@ export class Simulation {
         active: this.compression.active,
         ...(this.compression.interruption === undefined ? {} : { interruption: this.compression.interruption }),
       },
+      ...(this.dead === undefined && this.pendingInterrupt !== undefined
+        ? { pendingInterrupt: this.pendingInterrupt }
+        : {}),
       ...(this.dead === undefined ? {} : { dead: { ...this.dead } }),
     });
   }
@@ -120,12 +116,19 @@ export class Simulation {
     if (!Number.isFinite(state.compression.c) || state.compression.c < 1) {
       throw new Error('Invalid compression state');
     }
+    if (state.pendingInterrupt !== undefined && (typeof state.pendingInterrupt !== 'string' || state.dead)) {
+      throw new Error('Invalid pending interruption state');
+    }
     Object.assign(this.needs, state.needs);
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
     this.dead = state.dead === undefined ? undefined : { ...state.dead };
+    this.pendingInterrupt = undefined;
     this.scheduler.restoreState(state.scheduler);
+    if (state.pendingInterrupt !== undefined) {
+      this.emit({ kind: 'interrupt', reason: state.pendingInterrupt });
+    }
     this.paused = true;
     this.godMode = false;
   }
@@ -146,8 +149,8 @@ export class Simulation {
   }
 
   emit(event: SimEvent): void {
-    if (event.kind === 'interrupt') {
-      this.hasUnreadInterrupt = true;
+    if (event.kind === 'interrupt' && this.pendingInterrupt === undefined) {
+      this.pendingInterrupt = event.reason;
     }
     this.events.emit({ ...event, time: this.time });
   }
@@ -177,6 +180,7 @@ export class Simulation {
       return;
     }
     this.dead = { cause, time: this.time };
+    this.pendingInterrupt = undefined;
     this.compression.stop();
     this.compression.snap();
     this.emit({ kind: 'death', cause });
@@ -210,7 +214,7 @@ export class Simulation {
    */
   private checkInterruptions(): boolean {
     const events = this.interrupts.read();
-    this.hasUnreadInterrupt = false;
+    this.pendingInterrupt = undefined;
     const emitted = events.find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
     const { compression } = this;
     if (!(compression.active || compression.c > 1)) {

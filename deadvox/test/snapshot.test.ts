@@ -375,15 +375,34 @@ describe('snapshot state components', () => {
     expect(job.elapsed).toBe(2);
   });
 
-  it('restores death as simulation state while reopening paused', () => {
+  it('snapshots an unread interrupt after death and restores the same cause and time', () => {
     const dead = new Simulation({ seed: 9 });
-    dead.hurt(10_000, 'test');
+    dead.hurt(5, 'a bite');
+    dead.hurt(1000, 'a bite');
+    dead.frame(1 / 60);
+    dead.frame(1 / 60);
     const state = dead.snapshotState();
     const loaded = new Simulation({ seed: 9, clock: structuredClone(state.clock) });
     loaded.restoreState(structuredClone(state));
+
+    expect(state.dead).toEqual({ cause: 'a bite', time: dead.time });
+    expect(state.pendingInterrupt).toBeUndefined();
     expect(loaded.dead).toEqual(dead.dead);
     expect(loaded.paused).toBe(true);
     expect(loaded.godMode).toBe(false);
+  });
+
+  it('snapshots an unread interrupt while paused without advancing the simulation', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.hurt(5, 'a bite');
+    sim.paused = true;
+    sim.frame(1 / 60);
+    sim.frame(1 / 60);
+
+    const state = sim.snapshotState();
+    expect(state.pendingInterrupt).toBe("You're hurt");
+    expect(sim.paused).toBe(true);
+    expect(sim.compression.interruption).toBeUndefined();
   });
 
   it('round-trips signed zero and subnormal numbers through the snapshot', () => {
@@ -432,7 +451,7 @@ describe('hamlet save/load continuation', () => {
     }, 15_000);
   }
 
-  it('refuses a snapshot until a pending sleep interruption reaches the next frame', () => {
+  it('preserves an active-sleep interruption emitted between frames across save/load', () => {
     const uninterrupted = createRuntime();
     const split = createRuntime();
     expect(uninterrupted.rest.start('sleep')).toBeUndefined();
@@ -442,14 +461,34 @@ describe('hamlet save/load continuation', () => {
 
     uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-    expect(() => capture(split)).toThrow('Cannot snapshot with an unread interruption');
+    const snapshot = capture(split);
+    expect(snapshot.character.simulation.pendingInterrupt).toBe('test interruption');
     expect(split.sim.compression.active).toBe(true);
     expect(split.sim.compression.interruption).toBeUndefined();
 
-    advance(uninterrupted, 1);
-    advance(split, 1);
-    const loaded = createRuntime(capture(split));
     advance(uninterrupted, 80);
+    const loaded = createRuntime(snapshot);
+    advance(loaded, 80);
+    expect(inspect(loaded)).toEqual(inspect(uninterrupted));
+  }, 15_000);
+
+  it('preserves a pending sleep interruption across a paused snapshot and load', () => {
+    const uninterrupted = createRuntime();
+    const split = createRuntime();
+    expect(uninterrupted.rest.start('sleep')).toBeUndefined();
+    expect(split.rest.start('sleep')).toBeUndefined();
+    advance(uninterrupted, 40);
+    advance(split, 40);
+
+    uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    uninterrupted.sim.paused = true;
+    split.sim.paused = true;
+    const snapshot = capture(split);
+    expect(snapshot.character.simulation.pendingInterrupt).toBe('test interruption');
+
+    advance(uninterrupted, 80);
+    const loaded = createRuntime(snapshot);
     advance(loaded, 80);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   }, 15_000);

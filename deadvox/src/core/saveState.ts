@@ -64,9 +64,8 @@ export const snapshotSession = ({
   zombies,
   spawner,
   handling,
-}: SnapshotSessionInput): Readonly<SaveSnapshot> => {
-  simulation.assertSnapshotReady();
-  return freezeSnapshot({
+}: SnapshotSessionInput): Readonly<SaveSnapshot> =>
+  freezeSnapshot({
     world: {
       id: worldId,
       diffs: world.snapshotDiffs(blockContentId) as WorldDiffs,
@@ -84,7 +83,6 @@ export const snapshotSession = ({
       handling: handling.snapshotCancelled() as HandlingQueueState,
     },
   });
-};
 
 /** Content-addressed base chunks are regenerated first; this overlays only changed cells. */
 export const restoreWorldDiffs = (world: World, snapshot: SaveSnapshot, blockId: (contentId: string) => number): void =>
