@@ -66,12 +66,23 @@ describe('trigger guards', () => {
       const def = FAMILIES.lower!.build({ layout });
       const keepOut = def.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
       const keepOutBounds = bounds(keepOut);
-      for (const solid of def.solids.filter(({ id }) => id.startsWith('trigger-guard-'))) {
-        expect(solid.kind).toBe('box');
-        if (solid.kind !== 'box') {
-          throw new Error('Expected a box trigger guard.');
-        }
-        const guard = bounds(solid.box);
+      const layoutGuards = def.solids
+        .filter(({ id }) => id.startsWith('trigger-guard-'))
+        .map((solid) => {
+          expect(solid.kind).toBe('box');
+          if (solid.kind !== 'box') {
+            throw new Error('Expected a box trigger guard.');
+          }
+          return bounds(solid.box);
+        });
+      const layoutOuterX =
+        Math.max(...layoutGuards.map(({ max }) => max[0]!)) - Math.min(...layoutGuards.map(({ min }) => min[0]!));
+      const layoutOuterY =
+        Math.max(...layoutGuards.map(({ max }) => max[1]!)) - Math.min(...layoutGuards.map(({ min }) => min[1]!));
+      const baselineX = layout === 'trigger' ? 5.323_415_225_557_27 : 5.573_415_225_557_27;
+      expect(layoutOuterX / baselineX, `${layout} X ratio`).toBeCloseTo(0.8, 1);
+      expect(layoutOuterY / 4.5, `${layout} Y ratio`).toBeCloseTo(0.7, 1);
+      for (const guard of layoutGuards) {
         expect(
           [0, 1, 2].every(
             (axis) => guard.max[axis]! > keepOutBounds.min[axis]! && keepOutBounds.max[axis]! > guard.min[axis]!,
