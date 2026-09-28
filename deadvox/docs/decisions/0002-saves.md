@@ -46,19 +46,29 @@ The existing code provides useful foundations but no save API yet:
   a generated column is visited again.
 - `src/game/player.ts`, `rest.ts`, and `survival.ts` hold the player's body,
   needs, active rest/sleep action, light state, and real-time queue behavior.
-  The game also has view-only state (meshes, workers, interpolation, cursor,
-  audio nodes) that must be reconstructed, not persisted.
+  On `origin/deadvox/audio`, `play.ts` also holds `vocalNoiseId` and the current
+  `vocalNoise`; these feed player sounds into zombie hearing. Its footstep clock
+  and airborne peak only schedule footsteps/landing cues. Their content has
+  `noise.enabled: false`, so they do not affect hearing. `GameAudio`'s
+  `SoundPicker` state also matters: a suppressed event makes `playPlayerSound`
+  return before it creates a vocal noise. Meshes, workers, interpolation,
+  cursor, and Web Audio nodes are reconstructed, not persisted.
 
-The current `main` baseline has no noise-ID allocator or per-shambler sound RNG;
-its simulation events are interrupts, damage and death. Add any future
-simulation-affecting noise sequence/RNG to the schema when that system lands.
+The save schema must include the live audio-branch state now, not defer it as a
+future possibility: `vocalNoiseId` and active `vocalNoise` (id, position,
+radius, expiry) affect zombie hearing; each zombie's `lastVocalNoiseId` prevents
+reprocessing a heard event. Preserve those exactly. Save each zombie's
+`soundRng` and `idleSoundTimer`, and the `SoundPicker` per-event RNG,
+`lastVariant`, and `lastPlayedAt`, to preserve event selection/cooldowns; the
+picker's cooldown also gates whether a vocal-noise stimulus is created. Player
+footstep cadence (`footstepClock`) and `airbornePeakY` are presentation-only and
+may be reset on load: footstep and hard-landing sounds have hearing disabled.
 Worldgen noise and position-keyed site/loot randomness are stateless functions
 of the recorded seed, worldgen version, content, and coordinates; one-shot loot
 RNG is consumed at generation/death and its result is the saved item tree. There
-is no global advancing simulation RNG in this baseline. Each shambler's mutable
-behavior RNG words are saved. The sound RNG, if separately introduced for each
-shambler, is also saved to preserve its sequence; purely acoustic playback
-queues and Web Audio nodes are never part of simulation state.
+is no global advancing simulation RNG. Each shambler's mutable behavior RNG
+words are saved. Purely acoustic playback queues and Web Audio nodes are never
+part of simulation state.
 
 ## Decision
 
@@ -77,15 +87,16 @@ references:
 | Items | Recursive items including UID, type ID, count, condition, charges/on/made, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and lights. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
 | Furniture/block entities | Anchor, type ID, size/facing, open/searched state and container pocket trees; `BlockEntities.nextUid` | Address entities by world anchor/type, not load-order-dependent object identity. Restore saved overrides when deterministic worldgen creates an anchor. |
 | World edits | Only changed chunks, each with chunk coordinates, a palette of stable block content IDs, and RLE runs for changed cell offsets/IDs versus the versioned generated base | At the first write to a cell, journal its generated base ID; later writes update or remove the delta if the cell returns to base. Runtime block numbers are registry-order dependent. Store string IDs. Regenerate the base chunk, apply the diff, then rebuild meshes. Preserve explicit air edits. |
-| Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each independent sound RNG state if present | Recreate current threats and prevent dead or previously considered site spawns from coming back. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
-| In-flight jobs | Do **not** serialize closures or partial queue jobs. At the snapshot barrier cancel `HandlingQueue` jobs and clear the transient `searching` set. | Jobs apply only on completion; a partial move/search/eat/door action has not mutated its target yet. Canceling cannot duplicate or lose an item. Elapsed time remains elapsed; the player may retry. |
-| Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio queues after readers drain, render interpolation/feedback and gait phase, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
+| Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each zombie's `soundRng`, `idleSoundTimer`, and `lastVocalNoiseId` | Recreate current threats and prevent dead or previously considered site spawns from coming back. Sound RNG/timer preserve the ambient audio sequence; `lastVocalNoiseId` is required for exact hearing behavior. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
+| Player audio state | `vocalNoiseId`, active `vocalNoise` (id, position, radius, expiry), and per-event `SoundPicker` RNG/`lastVariant`/`lastPlayedAt`; omit `footstepClock` and `airbornePeakY` | Noise and the picker cooldown gate zombie hearing and must continue exactly. Footstep cadence and landing peak only schedule sounds whose content disables hearing, so reset them on load. |
+| In-flight jobs | Do **not** serialize closures or partial queue jobs. The snapshot copy represents pending `HandlingQueue` jobs as canceled and clears its transient `searching` set; it must not cancel or mutate the live queue/set. | Jobs apply only on completion; a partial move/search/eat/door action has not mutated its target yet. On load, the player can retry; the live session continues its job with its original progress and timing. |
+| Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio playback queues after readers drain, render interpolation/feedback, footstep cadence and airborne peak, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
 
 A future system that adds a persistent counter, RNG stream, or state machine
 must declare its save representation in the same change; “not currently in the
-schema” is not permission to reset it on load. No noise ID exists in this
-baseline; if noise events acquire IDs, persist the allocator and any queued
-simulation events at the same barrier. Cosmetic audio events remain disposable.
+schema” is not permission to reset it on load. The current audio branch already
+has an ID allocator and active noise stimulus, so both are included above;
+queued acoustic playback remains disposable.
 
 The determinism contract is: for one game/content/worldgen build, from the same
 snapshot and same subsequent deterministic input trace, N fixed simulation
@@ -228,10 +239,13 @@ cannot destroy the previous run.
 1. **Snapshot/restore without storage.** Add explicit state export/restore APIs
    for scheduler, simulation, world diffs, player, inventory, furniture,
    piles, zombie system and spawn ledger. Replace closure-only queued actions
-   with a snapshot barrier that safely cancels them. Done when a deterministic
+   with a snapshot barrier that projects pending jobs as canceled in the saved
+   copy only; never cancel or mutate the live queue. Done when a deterministic
    scenario fails if any future-affecting field is omitted and the N vs K/save/
-   load/N−K deep-state equivalence test passes, including a mid-air player and
-   active/interrupted rest.
+   load/N−K deep-state equivalence test passes, including a mid-air player,
+   active/interrupted rest, and vocal noise. An autosave during a handling job
+   must not change that live job's outcome or timing; after restore, its target
+   is untouched and the player may retry.
 2. **Format and migrations.** Implement canonical JSON, validators, stable IDs,
    unknown-content preservation, `worldgen-v1`, and schema migration dispatch.
    Done when number round trips are `Object.is`-exact, malformed/unknown
@@ -257,10 +271,12 @@ cannot destroy the previous run.
 - Exact resume requires explicit state contracts in systems that currently hide
   state in private fields (scheduler cursors, entity allocators, zombie spawn
   ledger). Adding a stateful system also adds a save/migration obligation.
-- The snapshot boundary intentionally cancels partially completed handling
-  actions; they have not applied yet, so inventory/world outcomes remain safe,
-  but the elapsed handling progress is lost. Player mid-air state and active
-  rest/compression are preserved rather than teleported or reset.
+- A save omits partially completed handling actions; their targets have not
+  been applied, so the restored player may retry and loses the saved job's
+  elapsed progress. This is a projection in the immutable snapshot only: taking
+  an autosave never cancels or changes the live job's outcome or timing. Player
+  mid-air state and active rest/compression are preserved rather than teleported
+  or reset.
 - JSON is inspectable and migration-friendly; RLE chunk diffs keep ordinary
   saves small. Checksums detect damage, not malicious tampering. A/B slots and
   persistence requests reduce corruption/eviction risk but are not backups.
