@@ -58,7 +58,8 @@ export const shambler: Template = {
   budgets: {
     totalVoxels: { min: 500, max: 2000 },
     totalTriangles: { min: 800, max: 9500 },
-    groups: { head: { bones: ['head', 'jaw'], min: 35, max: 80 } },
+    // A head 5 voxels wide, room for eyes, brow, nose and mouth; measured p1..p99 is 72..122.
+    groups: { head: { bones: ['head', 'jaw'], min: 60, max: 130 } },
   },
 };
 
@@ -83,7 +84,7 @@ export const runner: Template = {
   budgets: {
     totalVoxels: { min: 500, max: 2100 },
     totalTriangles: { min: 800, max: 9500 },
-    groups: { head: { bones: ['head', 'jaw'], min: 30, max: 110 } },
+    groups: { head: { bones: ['head', 'jaw'], min: 60, max: 135 } },
   },
 };
 
@@ -107,7 +108,7 @@ export const brute: Template = {
   budgets: {
     totalVoxels: { min: 500, max: 2400 },
     totalTriangles: { min: 800, max: 10_000 },
-    groups: { head: { bones: ['head', 'jaw'], min: 25, max: 110 } },
+    groups: { head: { bones: ['head', 'jaw'], min: 60, max: 130 } },
   },
 };
 

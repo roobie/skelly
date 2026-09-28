@@ -45,7 +45,7 @@ choices, and a validator with named rules decides what's feasible.
 | Body | A skeleton of bones plus shape features, as signed distance shapes (tapered capsules, ellipsoids, rounded boxes). A feature adds flesh, carves it away, or paints colour without changing the shape |
 | Humanoid | 18 bones: pelvis (root), spine, chest, neck, head, jaw, and left and right upperArm, forearm, hand, thigh, shin, foot. Default joint positions come from the CC0 `fgc_skeleton` rig in `reference/`, converted from Blender's Z-up, −Y-forward axes |
 | Voxelization | Every voxel is owned by exactly one bone: the one whose flesh is nearest. "Marrow" is rasterized along every bone and always filled, so each bone is connected to its parent however thin its flesh. A carve that cuts marrow leaves it in place, coloured as exposed bone |
-| Paint and carve | Clothing, hair, bruises, eyes and mouth are paint. Wounds carve, with a gore rim. Eye sockets are carved only at voxels of 3.5 cm or smaller; above that, eyes are painted |
+| Paint and carve | Clothing, hair, bruises and the mouth are paint. Wounds carve, with a gore rim. Eyes carve a one-voxel-deep socket at every voxel size and paint its bottom. Face features are placed in voxel units on exact voxel columns and rows (the head is 5 voxels wide: eyes at ±1, nose at 0), so they always land on the grid |
 | Colour | 10 materials × 4 shades (palette index = material × 4 + shade), with base colours chosen per actor. Shade comes from low-frequency noise, so neighbouring voxels tend to agree and faces still merge. The look, from deadvox's notes: sickly and fleshy, not a swamp monster |
 | Meshing | Greedy, per bone, merging faces of the same colour. Faces between voxels of different bones are kept, so each bone's mesh is closed: a bent joint shows a cut face, not a hole into the body. Seams at bent joints are expected (CHALLENGES §3) |
 | Bones are rigid | No skinning: each voxel moves with its one bone. Joints are made round about their pivot to hide seams |
@@ -137,7 +137,7 @@ deadvox shambler.
 
 | Metric | Target |
 | --- | --- |
-| Head and jaw voxels (`shambler`) | 35–80 |
+| Head and jaw voxels (`shambler`) | 60–130 (raised from 35–80 so the face has room for eyes, brow, nose and mouth) |
 | Time to generate one figure | under 50 ms |
 | Valid builds per template | at least 80% |
 | Distinct voxel grids among valid builds | at least 90% |
