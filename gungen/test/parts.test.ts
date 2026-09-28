@@ -231,9 +231,14 @@ describe('part library', () => {
         it(`${tag}: positions and extents are on the ${gridStep}u grid`, () => {
           const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
             box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
+          // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
           const numbers = [
             ...def.solids.flatMap((s) =>
-              s.kind === 'box' && !(family.name === 'magazine' && params.profile === 'smg') ? bounds(s.box) : [],
+              s.kind === 'box' &&
+              !s.id.startsWith('trigger-guard-') &&
+              !(family.name === 'magazine' && params.profile === 'smg')
+                ? bounds(s.box)
+                : [],
             ),
             ...def.keepOuts.flatMap((k) => bounds(k.box)),
             ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),

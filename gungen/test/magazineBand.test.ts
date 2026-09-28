@@ -112,13 +112,15 @@ describe('magazine length bands', () => {
       }
       const magWorld = worldBox(magazineTransform, magazineBody.box);
       const lowerBottom = Math.min(
-        ...lower.solids.map((solid) => {
-          if (solid.kind !== 'box') {
-            throw new Error('Expected lower frame boxes.');
-          }
-          const world = worldBox(lowerTransform, solid.box);
-          return world.center[1] - world.half[1];
-        }),
+        ...lower.solids
+          .filter((solid) => !solid.id.startsWith('trigger-guard-'))
+          .map((solid) => {
+            if (solid.kind !== 'box') {
+              throw new Error('Expected lower frame boxes.');
+            }
+            const world = worldBox(lowerTransform, solid.box);
+            return world.center[1] - world.half[1];
+          }),
       );
       const protrusion = lowerBottom - (magWorld.center[1] - magWorld.half[1]);
       const insertionDepth = magWorld.center[1] + magWorld.half[1] - -2.5;
