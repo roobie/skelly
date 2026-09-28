@@ -585,7 +585,9 @@ decoration.
 - The world never pauses for UI (except the Esc menu). UI should make actions
   fast: search, filters, "take all food", and repeating the last move.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
-  somewhere in the UI. Depth is only fun when you can read it.
+  somewhere in the UI, **on request**: on surfaces the player opens (inspecting an
+  item, the inventory), never pushed at them during play. Depth is only fun when
+  you can read it; play stays as diegetic as possible (see INTERFACE.md).
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was.
