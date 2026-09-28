@@ -528,11 +528,12 @@ explicitly named `battle-rifle`.
   box keep-out for the magazine's rock-in sweep. The magazine remains vertical
   in its insertion well; the broad box is a conservative swept envelope, not an
   arc-aware motion simulation.
-- The `ak-curved` magazine is three convex prisms: a straight upper box, a
-  trapezoidal middle section and a forward-turned lower section. Their joint
-  faces match exactly; magazine lengths S/M/L use approximately 12°, 13° and
-  14° bends. The middle tapers at the turned joint so each prism stays within
-  one grid step of the top segment's X projection. Added an intermediate dropped-stock style.
+- The `ak-curved` magazine is three convex prisms: a slanted-bottom upper
+  section, a trapezoidal middle section and a forward-turned lower section.
+  Their joint faces match exactly. The middle prism has parallel grip-facing
+  and barrel-facing sides of different lengths; its top interface is slanted
+  5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
+  angled end face without arbitrary X-axis compensation. Added an intermediate dropped-stock style.
 - A passing fixture and a missing-gas-tube fixture exercise the layout. At
   1000 seeds, AK is 100% valid with 32 distinct builds. Individual rounds,
   magazine latching and the actual rock-in motion are not simulated.

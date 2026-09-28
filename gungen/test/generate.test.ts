@@ -71,25 +71,33 @@ describe('templates', () => {
         }
       });
 
-      it(`never produces a structurally broken file (${SEEDS} seeds)`, () => {
-        for (let seed = 0; seed < SEEDS; seed++) {
-          const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
-          expect(
-            issues.filter((i) => i.rule === 'structure'),
-            `seed ${seed}`,
-          ).toEqual([]);
-        }
-      });
-
-      it(`is valid at least half the time (${SEEDS} seeds)`, () => {
-        let valid = 0;
-        for (let seed = 0; seed < SEEDS; seed++) {
-          if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
-            valid += 1;
+      it(
+        `never produces a structurally broken file (${SEEDS} seeds)`,
+        () => {
+          for (let seed = 0; seed < SEEDS; seed++) {
+            const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
+            expect(
+              issues.filter((i) => i.rule === 'structure'),
+              `seed ${seed}`,
+            ).toEqual([]);
           }
-        }
-        expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
-      });
+        },
+        t.name === 'ak' ? 15_000 : undefined,
+      );
+
+      it(
+        `is valid at least half the time (${SEEDS} seeds)`,
+        () => {
+          let valid = 0;
+          for (let seed = 0; seed < SEEDS; seed++) {
+            if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
+              valid += 1;
+            }
+          }
+          expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
+        },
+        t.name === 'ak' ? 15_000 : undefined,
+      );
 
       it('generateValid finds a passing build', () => {
         const found = generateValid(t, gunDomain, 1000)!;

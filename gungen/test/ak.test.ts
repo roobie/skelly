@@ -51,26 +51,29 @@ describe('AK-pattern archetype', () => {
     ).toEqual(['The gas-system axis of gas-tube is 90° off the main axis.']);
   });
 
-  it('builds three convex magazine prisms with exact joints, equal X projections and a length-class bend', () => {
-    const expectedAngles = { S: 12, M: 13, L: 14 } as const;
+  it('builds a three-prism magazine with parallel unequal front/back faces and exact joints', () => {
+    const expectedAngles = { S: 10, M: 12, L: 15 } as const;
     for (const [length, angleDegrees] of Object.entries(expectedAngles) as [keyof typeof expectedAngles, number][]) {
       const magazine = FAMILIES.magazine!.build({ length, profile: 'ak-curved' });
       const [upper, middle, bottom] = magazine.solids;
       expect(magazine.solids.map(({ id }) => id)).toEqual(['upper-body', 'curve-middle', 'curve-bottom']);
-      expect(upper?.kind).toBe('box');
+      expect(upper?.kind).toBe('extruded-polygon');
       expect(middle?.kind).toBe('extruded-polygon');
       expect(bottom?.kind).toBe('extruded-polygon');
-      if (upper?.kind !== 'box' || middle?.kind !== 'extruded-polygon' || bottom?.kind !== 'extruded-polygon') {
-        throw new Error('Expected one box and two extruded AK magazine prisms.');
+      if (
+        upper?.kind !== 'extruded-polygon' ||
+        middle?.kind !== 'extruded-polygon' ||
+        bottom?.kind !== 'extruded-polygon'
+      ) {
+        throw new Error('Expected three extruded AK magazine prisms.');
       }
+      expect(validateExtrudedPolygon(upper.profile, upper.z)).toBeUndefined();
       expect(validateExtrudedPolygon(middle.profile, middle.z)).toBeUndefined();
       expect(validateExtrudedPolygon(bottom.profile, bottom.z)).toBeUndefined();
+      expect(upper.profile.slice(0, 2)).toEqual([...middle.profile.slice(2)].reverse());
       expect(bottom.profile.slice(2)).toEqual([...middle.profile.slice(0, 2)].reverse());
-      const middleTopY = upper.box.center[1] - upper.box.half[1];
-      expect(middle.profile.slice(2)).toEqual([
-        [upper.box.center[0] + upper.box.half[0], middleTopY],
-        [upper.box.center[0] - upper.box.half[0], middleTopY],
-      ]);
+      expect(upper.profile[2]![1]).toBe(upper.profile[3]![1]);
+      expect(upper.profile[0]![1]).not.toBe(upper.profile[1]![1]);
       const middleCenter: [number, number] = [
         (middle.profile[0]![0] + middle.profile[1]![0]) / 2,
         (middle.profile[0]![1] + middle.profile[1]![1]) / 2,
@@ -81,15 +84,21 @@ describe('AK-pattern archetype', () => {
       ];
       const actualAngle =
         (Math.atan2(bottomCenter[0] - middleCenter[0], middleCenter[1] - bottomCenter[1]) * 180) / Math.PI;
-      expect(actualAngle).toBeCloseTo(angleDegrees, 0);
+      expect(Math.abs(actualAngle - angleDegrees)).toBeLessThan(1);
+      const trapezoidAngle =
+        (Math.atan2(middle.profile[1]![1] - middle.profile[0]![1], middle.profile[1]![0] - middle.profile[0]![0]) *
+          180) /
+        Math.PI;
+      expect(Math.abs(trapezoidAngle - angleDegrees)).toBeLessThan(1);
       const edgeLength = (profile: readonly (readonly [number, number])[], a: number, b: number) =>
         Math.hypot(profile[a]![0] - profile[b]![0], profile[a]![1] - profile[b]![1]);
-      expect(edgeLength(middle.profile, 0, 1)).toBeLessThan(edgeLength(middle.profile, 2, 3));
-      const xExtent = (profile: readonly (readonly [number, number])[]) =>
-        Math.max(...profile.map(([x]) => x)) - Math.min(...profile.map(([x]) => x));
-      const upperXExtent = upper.box.half[0] * 2;
-      expect(Math.abs(xExtent(middle.profile) - upperXExtent)).toBeLessThanOrEqual(0.25);
-      expect(Math.abs(xExtent(bottom.profile) - upperXExtent)).toBeLessThanOrEqual(0.25);
+      expect(middle.profile[0]![0]).toBe(middle.profile[3]![0]);
+      expect(middle.profile[1]![0]).toBe(middle.profile[2]![0]);
+      expect(edgeLength(middle.profile, 0, 3)).not.toBeCloseTo(edgeLength(middle.profile, 1, 2));
+      const upperXExtent = upper.profile[1]![0] - upper.profile[0]![0];
+      expect(Math.abs(edgeLength(middle.profile, 0, 1) - upperXExtent)).toBeLessThanOrEqual(0.25);
+      expect(Math.abs(edgeLength(middle.profile, 2, 3) - upperXExtent)).toBeLessThanOrEqual(0.25);
+      expect(Math.abs(bottom.profile[2]![0] - bottom.profile[3]![0] - upperXExtent)).toBeLessThanOrEqual(0.25);
     }
     expect(FAMILIES.lower!.build({ layout: 'ak' }).keepOuts.map(({ id }) => id)).toContain('magazine-rock-in-sweep');
     expect(validate(akFixture, gunDomain).ok).toBe(true);

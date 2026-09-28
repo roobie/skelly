@@ -68,13 +68,13 @@ const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_HEIGHT = 1;
 const AK_MAGAZINE_SEGMENTS: Record<SizeClass, { top: number; middle: number; bottom: number; bendDegrees: number }> = {
-  S: { top: 1.5, middle: 1, bottom: 3.5, bendDegrees: 12 },
-  M: { top: 2.5, middle: 2, bottom: 5.5, bendDegrees: 13 },
-  L: { top: 4, middle: 3, bottom: 9, bendDegrees: 14 },
+  S: { top: 1.5, middle: 1.75, bottom: 2.75, bendDegrees: 10 },
+  M: { top: 2.5, middle: 1.75, bottom: 5.75, bendDegrees: 12 },
+  L: { top: 4, middle: 3, bottom: 9, bendDegrees: 15 },
 };
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
+const AK_MAGAZINE_TOP_SLOPE_DEGREES = 5;
 const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
-const snapAkPoint = ([x, y]: Vec2): Vec2 => [snapAkGrid(x), snapAkGrid(y)];
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_MAGAZINE_DEPTH = 3.5;
@@ -992,27 +992,24 @@ const akCurvedMagazineSolids = (length: SizeClass, depth: number, width: number,
   const { top, middle, bottom, bendDegrees } = AK_MAGAZINE_SEGMENTS[length];
   const angle = (bendDegrees * Math.PI) / 180;
   const jointY = insertion - top;
-  const bottomCenterX = middle * Math.sin(angle);
-  const bottomCenterY = jointY - middle * Math.cos(angle);
-  const bottomHalfDepth = snapAkGrid((depth - bottom * Math.sin(angle)) / Math.cos(angle)) / 2;
-  const bottomLeft = snapAkPoint([
-    bottomCenterX - bottomHalfDepth * Math.cos(angle),
-    bottomCenterY - bottomHalfDepth * Math.sin(angle),
-  ]);
-  const bottomRight = snapAkPoint([
-    bottomCenterX + bottomHalfDepth * Math.cos(angle),
-    bottomCenterY + bottomHalfDepth * Math.sin(angle),
-  ]);
-  const endLeft = snapAkPoint([bottomLeft[0] + bottom * Math.sin(angle), bottomLeft[1] - bottom * Math.cos(angle)]);
-  const endRight = snapAkPoint([bottomRight[0] + bottom * Math.sin(angle), bottomRight[1] - bottom * Math.cos(angle)]);
+  const topRise = snapAkGrid(depth * Math.tan((AK_MAGAZINE_TOP_SLOPE_DEGREES * Math.PI) / 180));
+  const bottomRise = snapAkGrid(depth * Math.tan(angle));
+  const topBack: Vec2 = [-depth / 2, jointY];
+  const topFront: Vec2 = [depth / 2, jointY + topRise];
+  const rearBottom: Vec2 = [-depth / 2, jointY - middle];
+  const frontBottom: Vec2 = [depth / 2, jointY - middle + bottomRise];
+  const bottomAngle = Math.atan2(bottomRise, depth);
+  const bottomStep: Vec2 = [snapAkGrid(bottom * Math.sin(bottomAngle)), -snapAkGrid(bottom * Math.cos(bottomAngle))];
+  const endLeft: Vec2 = [rearBottom[0] + bottomStep[0], rearBottom[1] + bottomStep[1]];
+  const endRight: Vec2 = [frontBottom[0] + bottomStep[0], frontBottom[1] + bottomStep[1]];
   return [
-    solid('upper-body', [-depth / 2, jointY, -width / 2], [depth / 2, insertion, width / 2]),
     extrudedPolygon(
-      'curve-middle',
-      [bottomLeft, bottomRight, [depth / 2, jointY], [-depth / 2, jointY]],
+      'upper-body',
+      [topBack, topFront, [depth / 2, insertion], [-depth / 2, insertion]],
       [-width / 2, width / 2],
     ),
-    extrudedPolygon('curve-bottom', [endLeft, endRight, bottomRight, bottomLeft], [-width / 2, width / 2]),
+    extrudedPolygon('curve-middle', [rearBottom, frontBottom, topFront, topBack], [-width / 2, width / 2]),
+    extrudedPolygon('curve-bottom', [endLeft, endRight, frontBottom, rearBottom], [-width / 2, width / 2]),
   ];
 };
 
@@ -1029,7 +1026,7 @@ export const magazine: PartFamily = {
     const akCurved = params.profile === 'ak-curved';
     return {
       family: 'magazine',
-      // The AK's top insert is straight; its trapezoid and tilted base share exact joint faces.
+      // The AK's slanted upper insert, trapezoid and tilted base share exact joint faces.
       solids: akCurved
         ? akCurvedMagazineSolids(cls(params, 'length'), depth, width, insertion)
         : [solid('body', [-depth / 2, -len + insertion, -width / 2], [depth / 2, insertion, width / 2])],
