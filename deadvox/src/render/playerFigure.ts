@@ -18,8 +18,12 @@ import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import { FIGURE_BOXES, type FigureBox, PLAYER_ARM_BOXES } from './figure.ts';
 
-/** Metres forward from the eye; moves the headless figure into the downward view. */
-export const PLAYER_BODY_FORWARD_OFFSET = 0.4;
+/** Metres behind the eye; leaves the whole figure outside a level forward view. */
+export const PLAYER_BODY_REAR_OFFSET = 0.18;
+const BODY_HIP_HEIGHT = 0.62;
+/** Slight downward-look lean, capped so the chest stays within 10 cm ahead of the eye. */
+const MAX_BODY_LEAN = 0.17;
+const BODY_LEAN_PER_PITCH = 0.2;
 export const PLAYER_ARM_PARTS = [
   'body',
   'leftUpperArm',
@@ -119,12 +123,12 @@ export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSi
   const wrist = new Vector3(...grip);
   const elbow = shoulder.clone().lerp(wrist, 0.56);
   const sleeve = new Mesh(geometry, shirt);
-  placeSegment(sleeve, shoulder, elbow, { width: 0.17, depth: 0.15 });
+  placeSegment(sleeve, shoulder, elbow, { width: 0.12, depth: 0.12 });
   arm.add(sleeve);
   const forearm = new Mesh(geometry, skin);
-  placeSegment(forearm, elbow, wrist, { width: 0.125, depth: 0.125 });
+  placeSegment(forearm, elbow, wrist, { width: 0.09, depth: 0.09 });
   arm.add(forearm);
-  const palm = new Mesh(new BoxGeometry(0.14, 0.12, 0.15), skin);
+  const palm = new Mesh(new BoxGeometry(0.09, 0.08, 0.09), skin);
   palm.position.copy(wrist);
   palm.quaternion.setFromUnitVectors(SEGMENT_UP, wrist.clone().sub(elbow).normalize());
   arm.add(palm);
@@ -138,6 +142,7 @@ export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSi
 export interface PlayerFigurePose {
   body: Body;
   yaw: number;
+  pitch: number;
   stepOffset: number;
   gaitPhase: number;
   moving: boolean;
@@ -167,12 +172,13 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { yaw, inventory } = pose;
+    const { yaw, pitch, inventory } = pose;
     const s = this.blockSize;
-    const forwardX = -Math.sin(yaw) * PLAYER_BODY_FORWARD_OFFSET;
-    const forwardZ = -Math.cos(yaw) * PLAYER_BODY_FORWARD_OFFSET;
+    const rearX = Math.sin(yaw) * PLAYER_BODY_REAR_OFFSET;
+    const rearZ = Math.cos(yaw) * PLAYER_BODY_REAR_OFFSET;
     const hidden = hiddenWorldArms(inventory);
-    const offset = { blockSize: s, forwardX, forwardZ };
+    const leanAngle = Math.min(MAX_BODY_LEAN, Math.max(0, -pitch) * BODY_LEAN_PER_PITCH);
+    const offset = { blockSize: s, rearX, rearZ, leanAngle };
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = this.meshes.get(part)!;
       const side = armSideOf(part);
@@ -188,19 +194,24 @@ export class PlayerMeshes {
     part: PlayerArmPart,
     mesh: InstancedMesh,
     pose: PlayerFigurePose,
-    offset: { blockSize: number; forwardX: number; forwardZ: number },
+    offset: { blockSize: number; rearX: number; rearZ: number; leanAngle: number },
   ): void {
     const { body, yaw, stepOffset, gaitPhase, moving } = pose;
-    const { blockSize, forwardX, forwardZ } = offset;
+    const { blockSize, rearX, rearZ, leanAngle } = offset;
     const box = PLAYER_BOXES[part];
     const isLeg = part === 'leftLeg' || part === 'rightLeg';
+    const isUpperBody = part === 'body' || isArmPart(part);
+    const lean = isUpperBody ? -leanAngle : 0;
+    const localY = isUpperBody ? BODY_HIP_HEIGHT + (box.at[1] - BODY_HIP_HEIGHT) * Math.cos(lean) : box.at[1];
+    const localZ = box.at[2] + (isUpperBody ? (box.at[1] - BODY_HIP_HEIGHT) * Math.sin(lean) : 0);
     const stride = (part === 'leftLeg' ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
     this.dummy.position.set(
-      body.pos[0] * blockSize + forwardX + box.at[0] * Math.cos(yaw) + box.at[2] * Math.sin(yaw),
-      body.pos[1] * blockSize + stepOffset + box.at[1],
-      body.pos[2] * blockSize + forwardZ - box.at[0] * Math.sin(yaw) + box.at[2] * Math.cos(yaw),
+      body.pos[0] * blockSize + rearX + box.at[0] * Math.cos(yaw) + localZ * Math.sin(yaw),
+      body.pos[1] * blockSize + stepOffset + localY,
+      body.pos[2] * blockSize + rearZ - box.at[0] * Math.sin(yaw) + localZ * Math.cos(yaw),
     );
-    this.dummy.rotation.set(0, yaw, 0);
+    this.dummy.rotation.order = 'YXZ';
+    this.dummy.rotation.set(lean, yaw, 0);
     if (isLeg && moving) {
       this.dummy.rotateX(stride);
     }
