@@ -13,6 +13,7 @@ assembling and constraining 3D structure.
 | --- | --- | --- |
 | [`gungen/`](gungen/PROJECT.md) | milestone 2 done: validator, viewer, six archetype templates, seeded generator | A super-low-poly 3D firearm generator that works out how components connect, so every generated assembly fits together. |
 | [`deadvox/`](deadvox/PROJECT.md) | scaffold: streamed voxel terrain, meshing worker, walking, block editing, content JSON, HTML inventory | A singleplayer, browser-based voxel survival game in the spirit of DayZ with Cataclysm: DDA-style depth. |
+| [`mobgen/`](mobgen/PROJECT.md) | milestone 1 in progress | A procedural generator of mobile actors (zombies, NPCs) for deadvox, built from voxels small enough for a head of about 50. |
 
 ## Pillars
 
