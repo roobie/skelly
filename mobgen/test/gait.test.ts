@@ -9,9 +9,9 @@ import { TEMPLATES } from '../src/mob/templates.ts';
 
 const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase (PROJECT.md)
 
-const setup = (name: string) => {
+const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;
-  const found = generateValid(t, 1)!;
+  const found = generateValid(t, seed)!;
   const body = build(found.genome);
   const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
   const extents = footRestExtents(body.bones, voxels);
@@ -84,35 +84,84 @@ describe('walkPose', () => {
     });
   }
 
+  // 5 genomes per template: a longer stride (this change) pushes the leg IK closer to full
+  // extension (see strideLength's doc comment), and that reach margin depends on each genome's
+  // sampled legLength/kneeBend/strideFactor, so one seed isn't enough to trust the cap.
+  const seeds = [1, 2, 3, 4, 5];
   for (const name of TEMPLATES.map((t) => t.name)) {
     for (const speed of SPEEDS) {
-      it(`${name}: the planted foot doesn't slide at ${speed} m/s`, () => {
-        const { body, voxels, extents, params } = setup(name);
-        const thigh = body.bones.find((b) => b.id === 'thigh.L')!;
-        const shin = body.bones.find((b) => b.id === 'shin.L')!;
-        const legLen =
-          Math.hypot(thigh.tail[0] - thigh.head[0], thigh.tail[1] - thigh.head[1], thigh.tail[2] - thigh.head[2]) +
-          Math.hypot(shin.tail[0] - shin.head[0], shin.tail[1] - shin.head[1], shin.tail[2] - shin.head[2]);
-        const stride = strideLength(params, legLen, speed);
+      for (const seed of seeds) {
+        it(`${name} seed ${seed}: the planted foot doesn't slide at ${speed} m/s`, () => {
+          const { body, voxels, extents, params } = setup(name, seed);
+          const thigh = body.bones.find((b) => b.id === 'thigh.L')!;
+          const shin = body.bones.find((b) => b.id === 'shin.L')!;
+          const legLen =
+            Math.hypot(thigh.tail[0] - thigh.head[0], thigh.tail[1] - thigh.head[1], thigh.tail[2] - thigh.head[2]) +
+            Math.hypot(shin.tail[0] - shin.head[0], shin.tail[1] - shin.head[1], shin.tail[2] - shin.head[2]);
+          const stride = strideLength(params, legLen, speed);
 
-        // The left leg's stance is phase in [0, 0.5) directly (see gait.ts's legPhaseOf). Phase
-        // advances with distance travelled, so the root's own forward position at a given phase
-        // is exactly phase * stride (walkPose's own root only carries the vertical bob).
-        const positions: { x: number; z: number }[] = [];
-        for (let i = 0; i <= 8; i++) {
-          const phase = 0.05 + (i / 8) * 0.4; // mid-stance, away from the swing handoff at each end
-          const pose = walkPose({ bones: body.bones, extents, params }, phase, speed);
-          const transforms = boneTransforms(body.bones, pose);
-          const [x, , z] = solePoint(extents, 'foot.L', transforms, [0, 0, -phase * stride]);
-          positions.push({ x, z });
-        }
+          // The left leg's stance is phase in [0, 0.5) directly (see gait.ts's legPhaseOf). Phase
+          // advances with distance travelled, so the root's own forward position at a given phase
+          // is exactly phase * stride (walkPose's own root only carries the vertical bob).
+          const positions: { x: number; z: number }[] = [];
+          for (let i = 0; i <= 8; i++) {
+            const phase = 0.05 + (i / 8) * 0.4; // mid-stance, away from the swing handoff at each end
+            const pose = walkPose({ bones: body.bones, extents, params }, phase, speed);
+            const transforms = boneTransforms(body.bones, pose);
+            const [x, , z] = solePoint(extents, 'foot.L', transforms, [0, 0, -phase * stride]);
+            positions.push({ x, z });
+          }
 
-        const first = positions[0]!;
-        for (const p of positions) {
-          const drift = Math.hypot(p.x - first.x, p.z - first.z);
-          expect(drift).toBeLessThan(voxels.size);
-        }
-      });
+          const first = positions[0]!;
+          for (const p of positions) {
+            const drift = Math.hypot(p.x - first.x, p.z - first.z);
+            expect(drift).toBeLessThan(voxels.size);
+          }
+        });
+      }
     }
   }
+});
+
+describe('strideLength', () => {
+  // Canonical figure from the doc comment: legLen ~0.75 m (1.75 m figure), strideFactor 1.
+  const legLen = 0.75;
+  const params = { strideFactor: 1 } as HumanoidParams;
+
+  it('0.8 m/s (deadvox wander): ~1.0 m cycle, close to the ~90 steps/min human-walking target', () => {
+    const cycle = strideLength(params, legLen, 0.8);
+    expect(cycle).toBeGreaterThan(0.85);
+    expect(cycle).toBeLessThan(1.15);
+    const stepsPerMin = ((2 * 0.8) / cycle) * 60;
+    expect(stepsPerMin).toBeGreaterThan(70);
+    expect(stepsPerMin).toBeLessThan(120);
+  });
+
+  it(
+    '1.4 m/s: stride keeps growing past the wander speed, but the no-slide reach cap (see doc comment) ' +
+      'keeps it short of the naive human-walking target of 1.4-1.5 m',
+    () => {
+      const cycle08 = strideLength(params, legLen, 0.8);
+      const cycle = strideLength(params, legLen, 1.4);
+      expect(cycle).toBeGreaterThan(cycle08);
+      expect(cycle).toBeLessThan(1.3);
+    },
+  );
+
+  it('2.8 m/s (deadvox chase): the cap is already saturated, so cadence alone carries the rest of the speed', () => {
+    const cycle14 = strideLength(params, legLen, 1.4);
+    const cycle = strideLength(params, legLen, 2.8);
+    expect(cycle).toBeCloseTo(cycle14, 6); // both past the cap: same cycle length
+    const stepsPerMin = ((2 * 2.8) / cycle) * 60;
+    expect(stepsPerMin).toBeGreaterThan(200);
+  });
+
+  it('never exceeds 1.6x leg length, for any strideFactor or speed (the reach cap)', () => {
+    for (const strideFactor of [0.7, 0.85, 1, 1.15, 1.4]) {
+      for (const speed of [0.8, 1.4, 2.8, 6]) {
+        const cycle = strideLength({ strideFactor } as HumanoidParams, legLen, speed);
+        expect(cycle).toBeLessThanOrEqual(1.6 * legLen + 1e-9);
+      }
+    }
+  });
 });

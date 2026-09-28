@@ -35,12 +35,18 @@ const restAngleDeg = (bone: Bone): number =>
 const boneLen = (bone: Bone): number =>
   Math.hypot(bone.tail[0] - bone.head[0], bone.tail[1] - bone.head[1], bone.tail[2] - bone.head[2]);
 
-/** Distance (metres) travelled per full stride cycle (both feet), from speed, leg length and the genome's strideFactor. */
+/** Distance (metres) travelled per full stride cycle (both feet), from speed, leg length and the genome's
+ * strideFactor. 0.6 + 0.95·speed follows human walking data: at legLen 0.75 m and strideFactor 1, about
+ * 1.0 m (~94 steps/min) at 0.8 m/s. The cap of 1.6·legLen keeps the planted foot reachable: the legs
+ * stand nearly straight, and a longer stride makes the stance leg's IK undershoot, so the foot slides.
+ * Above the cap, cadence alone carries speed (see gait.test.ts). */
 export const strideLength = (params: HumanoidParams, legLen: number, speed: number): number => {
   if (speed <= 0) {
     return legLen; // unused when standing (speed 0), kept positive so callers never divide by zero
   }
-  return legLen * (0.85 + 0.22 * speed) * params.strideFactor;
+  const raw = legLen * (0.6 + 0.95 * speed) * params.strideFactor;
+  const cap = 1.6 * legLen;
+  return Math.min(raw, cap);
 };
 
 export interface Extent {
