@@ -608,8 +608,11 @@ proportions await BR's judgment.
 **Goal:** curate good-looking blocky guns by hand, and hand them to deadvox as
 models. The generator becomes a variant suggester.
 
-**Status:** planned (BR, 2026-09-28). Revised after an independent review by
-another model (gpt-6-astra via Pi). BR accepted the revision.
+**Status:** planned (BR, 2026-09-28). Revised twice after independent reviews
+by another model (gpt-6-astra via Pi); BR accepted the first revision. The
+second pass split 3.0 into a type freeze and its implementation, fixed the
+change and prefab policies, made anchors frames with precedence rules, and
+scheduled vocabulary after 3.5.
 
 BR's rulings:
 
@@ -656,32 +659,73 @@ Current limits the plan works within:
 
 ### Work packages
 
-**3.0 Contracts** (one owner, first; everything else builds on these):
+**3.0 Contracts**, in two steps, both owned by lane A:
+
+- **3.0a Freeze:** types and this document only, no behaviour. It releases
+  lanes B and C.
+- **3.0b Implement:** parsing, anchors for every archetype, and the palette
+  migration. B and C don't wait for it.
+
+Core stays free of gun data: every core function takes what it needs as
+explicit inputs, and the gun domain supplies them. The core `Domain` has no
+template registry (`src/core/schema.ts:127-133`), so functions that need a
+template take the resolved `Template`, and the export takes the anchors and
+palette as arguments.
 
 - **Design file.** A versioned `format` field, plus:
   - `template`: the template the design belongs to;
   - `locks`: the params and optional parts the designer fixed, stored apart
-    from the values;
+    from the values. Keeping a seed value on purpose is a lock, even though
+    the value is unchanged;
   - prefab references;
   - `status`: `draft` or `published`;
   - optional `origin`: the template, seed and overrides it started from.
-  Loading is a runtime parse, not a type assertion. It refuses unknown format
-  versions, and states what happens when a family or default changes.
-- **Prefab reference.** A part can carry `prefab: { id, version }`. Choosing a
-  prefab copies its params and records the reference. Editing any param the
-  prefab fixes detaches it (the reference is removed). Templates don't
-  generate prefabs in this milestone.
+
+  Loading is a runtime parse, not a type assertion. A malformed file fails to
+  parse. Unknown format versions are refused. A file that is well formed but
+  infeasible loads as a draft.
+
+  Change policy (a snapshot): a design stores an explicit value for every
+  param, so a later change to a family's defaults doesn't change existing
+  designs. A family's geometry change still changes how a design looks, so
+  each published design has a snapshot test of its resolved solids. That
+  test fails on any such change, which forces a deliberate review. A design
+  whose template no longer offers one of its choices loads as a draft with
+  issues listed.
+- **Prefab reference.** A part can carry `prefab: { id, version }`.
+  - Choosing a prefab copies its params and records the reference.
+  - Editing any param the prefab fixes detaches it: the reference is removed.
+  - The suggester treats prefab-fixed params as locked.
+  - The picker offers only prefabs of the part's family.
+  - Loading refuses an unknown prefab id or version. If the stored values
+    don't match the prefab's, the design loads as a draft with the mismatch
+    listed.
+  - Templates don't generate prefabs in this milestone.
 - **Hold anchors.** Part families declare named anchors in gun-domain data,
-  not in core: `hold` (the firing hand), `support` (the other hand) and
-  `muzzle`. An assembly with a missing or ambiguous `hold` can't be
-  published.
+  not in core. Each anchor is a frame: a position, a forward direction and an
+  up direction, so the export can derive deadvox's `grip.turn`.
+  - `hold` (the firing hand) is required.
+  - `support` (the other hand) and `muzzle` are optional.
+  - Precedence: a separate grip part's `hold` wins over a stock that carries
+    `FIRING_GRIP` (`src/gun/parts.ts:1652`). The stock's own `hold` applies
+    only when there's no grip part.
+  - Two `hold` anchors of equal rank make the design ambiguous, and it can't
+    be published.
 - **Palette.** One table of family colours (plus special cases like the
   magazine floorplate), shared by the viewer and the export.
+- **Export metadata** (frozen here for lane B), per port:
+  - a stable id, `<part>.<port>`;
+  - mount, gender and size;
+  - the full mating frame (position, normal, up);
+  - for rails: the slot count and pitch, with one node per rail rather than
+    per slot.
 
 Proof: parse and round-trip tests, including a malformed file and every
-refused version; a test that each archetype resolves exactly one `hold`
-anchor, including the integrated pistol and a stock-wrist rifle; and the
-viewer rendering from the shared palette unchanged.
+refused version. Tests for the change policy: a default change, a template
+change, and a prefab mismatch. A test that every archetype resolves exactly
+one `hold`, including the integrated pistol, a stock-wrist rifle and a grip
+plus a `FIRING_GRIP` stock, plus a test that an ambiguous `hold` is refused.
+The viewer's rendering is unchanged after the palette moves.
 
 **3.1 Designs and prefabs.**
 
@@ -698,12 +742,14 @@ cards as you edit. Drafts can be invalid; publishing requires a valid design.
 A dedicated check (not `npm run validate`) fails on any invalid published
 design, and runs in CI.
 
-**3.3 Variant suggester.** `suggest(design, domain, seed, n, budget)`, a pure
-core function:
+**3.3 Variant suggester.** `suggest(design, template, domain, seed, n,
+budget)`, a pure core function:
 
 - re-rolls only unlocked params and unlocked optional parts, within the
-  design's template;
-- returns up to `n` distinct valid variants that differ from the design;
+  template's choices. Prefab-fixed params count as locked;
+- returns up to `n` distinct valid variants that differ from the design.
+  "Distinct" compares parts, params and connections, not names or origin.
+  An accepted suggestion keeps the design's locks and prefab references;
 - stops after `budget` attempts and reports whether it ran out;
 - respects inherited params and conditional connections.
 
@@ -712,13 +758,15 @@ The viewer strip that shows them comes after 3.1.
 **3.4 glTF export.** A pure `src/core` writer for `.glb`, with no three.js,
 built on `mesh.ts`:
 
-- the same solids the viewer draws (`displaySolids`) and the shared palette,
-  with colours converted to linear space;
-- one node per part, named by part id and family, with port metadata (mount,
-  size, slot, orientation) as empty child nodes plus glTF `extras`;
+- the same solids the viewer draws (`displaySolids ?? solids`,
+  `src/viewer/scene.ts:124`) and the shared palette, with colours converted
+  to linear space;
+- one node per part, named by part id and family, with the port metadata
+  frozen in 3.0a as empty child nodes plus glTF `extras`;
 - units in metres (1u ≈ 11.5 mm);
-- the `grip` from the `hold` anchor, and `anchors` for `muzzle` and
-  `support`;
+- deadvox's `grip.at` and `grip.turn` from the `hold` frame, and `anchors`
+  for `muzzle` and `support` when present;
+- all inputs explicit: the resolved assembly, the anchors and the palette;
 - a CLI that writes the `.glb` and the matching deadvox model entry.
 
 The mapping between gungen's axes and deadvox's is derived and tested:
@@ -730,14 +778,27 @@ deadvox holds a model with +x forward and +y up
 first-person hands and in piles. This needs only 3.0 and 3.4, since a fixture
 can stand in for the design.
 
-**3.6 Vocabulary** (the re-scoped queue):
+**3.6 Vocabulary** (the re-scoped queue). The trigger guards finish now.
+Everything else here is scheduled after 3.5, not as part of the export's
+acceptance:
 
 - trigger guards on every archetype (gungen.3, in progress);
-- the octagonal barrel as a barrel profile param (gungen.7);
-- a thumbhole stock family plus an AWM-type design (gungen.6);
+- the octagonal barrel as a barrel profile param (gungen.7). A profile
+  solid extrudes only along local Z (`src/core/schema.ts:46-52`), and a
+  barrel runs along X. There are two options:
+  - build the barrel along local Z and orient the part through its ports,
+    as the revolver cylinder does (`src/gun/parts.ts:927-963`); this
+    touches every barrel port;
+  - add an extrusion-axis option to the profile solid, which is a core
+    schema change that lane A owns.
+  Decide which before starting;
+- a thumbhole stock family plus an AWM-type design (gungen.6). The thumbhole
+  can be built from several convex solids;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
-  deferred). Every stock is boxes today (`src/gun/parts.ts:1641-1672`); the
-  grip is one five-point side profile extruded to a constant width. BR wants
+  deferred). Every stock is boxes today (`src/gun/parts.ts:1641-1672`). The
+  separate grip is one five-point side profile extruded to a constant width;
+  grips with a magazine well, and the pistol's built-in grip, are made of
+  several solids. A concave silhouette also needs several convex solids. BR wants
   the taper in side view, which the existing extruded-profile solid can
   express:
   - **stock** (reference `.agent-mail/scratch/br-ref-stock-taper.png`, an
@@ -747,8 +808,8 @@ can stand in for the design.
   - **pistol grip** (reference `.agent-mail/scratch/br-ref-grip-slant.png`,
     AR-style): raked, with slanted front and back faces rather than a
     constant-width slab.
-  Keep port positions, the stock's `FIRING_GRIP` role and every existing
-  rule passing. Tapering in width (narrower at the wrist from above) would
+  Keep port positions, `hold` anchors, magazine-well clearance, the stock's
+  `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower at the wrist from above) would
   need a new convex solid kind and is not asked for;
 - visible action details (BR, 2026-09-28; deferred): charging handles,
   ejection ports, bolt handles, "and stuff like that". Receivers already
@@ -757,8 +818,12 @@ can stand in for the design.
   them. The pistol slide is the only part with a visible ejection port, cut
   as an opening by building the slide from walls around it
   (`src/gun/parts.ts:1405-1409`). The same wall construction can cut a
-  receiver's port. A handle is a small solid at the rest end of its travel
-  keep-out, touching it but not inside it. Candidates beyond those three,
+  receiver's port, provided the mounting contact is kept
+  (`src/core/rules.ts:184-218`). A handle is a small solid at the rest end of
+  its travel keep-out, touching it but not inside it. The keep-out rule
+  exempts the keep-out's own part (`src/core/rules.ts:235`), so it won't catch
+  a built-in handle placed inside its own travel. Targeted rest-position
+  tests and a broken fixture have to catch that. Candidates beyond those three,
   for BR to choose from: the AR forward assist, magazine and bolt releases,
   and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
@@ -767,15 +832,21 @@ can stand in for the design.
   breaks the curve up; they look best plain and without outlines. Proposed:
   display hints on a solid (no bevel, no outline), set by the part family,
   which the viewer (`src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
-  3.4 export both honour. Collision and the rules ignore the hints. This
-  changes the `Solid` type in `src/core/schema.ts`, so lane A owns it;
+  3.4 export both honour. Collision and the rules ignore the hints. By
+  default a solid is bevelled and outlined. The mesh module already accepts a
+  zero bevel (`src/core/mesh.ts:214`). The export draws no outlines, so for
+  the export "no outline" needs nothing. Generic rendering hints can live in
+  the core schema, as `displaySolids` already does. This changes the `Solid`
+  type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
   (gungen.2), with the deadvox schema change they need.
 
 ### Parallel lanes
 
-3.0 goes first, and its types are frozen before B and C start. After that,
-the rule is one writer at a time per hot file:
+3.0a (the frozen types) releases B and C. The hand-off to D is A's last
+edit to `parts.ts` in 3.0b (the anchor data); A says when that has merged.
+Until then A owns `parts.ts`. After that, the rule is one writer at a time
+per hot file:
 
 - `src/viewer/main.ts`, `src/viewer/paramPanel.ts`, `src/viewer/scene.ts`;
 - `src/gun/parts.ts`, `src/gun/templates.ts`;
@@ -785,14 +856,13 @@ the rule is one writer at a time per hot file:
 
 | Lane | Who | Work | Owns | Starts |
 | --- | --- | --- | --- | --- |
-| A | coder@gungen | gungen.3, then 3.0, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette | now (gungen.3 is running) |
-| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | after 3.0 |
-| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | after 3.0 |
-| D | subagent | gungen.7, then gungen.6 | `parts.ts`, `templates.ts` | after gungen.3 merges, and after the anchor data in 3.0 lands in `parts.ts` |
+| A | coder@gungen | gungen.3, then 3.0a, 3.0b, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette; `parts.ts` until 3.0b's anchors merge | now (gungen.3 is running) |
+| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | after 3.0a |
+| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | after 3.0a |
+| D | subagent | 3.6 vocabulary after 3.5: gungen.7, gungen.6, then the later items | `parts.ts`, `templates.ts` | after 3.5, and after A hands over `parts.ts` |
 | E | coder@main | 3.5 deadvox import | `deadvox/` | after saves.2b and 3.4 |
 
-The hold anchors touch `parts.ts`, so 3.0 must merge before lane D starts.
-B and C add new files but depend on 3.0's types. Neither may change
+B and C add new files but depend on 3.0a's types. Neither may change
 `schema.ts` or the design format; a needed change goes back to lane A.
 
 ### Proof per package
@@ -801,15 +871,19 @@ Tests shown failing first, as usual. BR judges every visual result.
 
 - **3.0:** as listed under 3.0.
 - **3.1:** every published file in `designs/` parses and validates; save then
-  reopen gives the same design, including locks and prefab references;
-  detaching a prefab on edit.
+  reopen gives the same design, including locks (one of them on an unchanged
+  seed value) and prefab references; detaching a prefab on edit; adding and
+  removing optional parts still works after reopening; a family the
+  template doesn't allow is refused.
 - **3.2:** the publish check fails on an invalid published design and passes
   on an invalid draft.
 - **3.3:**
   - deterministic per seed;
   - never changes a locked param or optional part;
   - each suggestion validates and is distinct;
-  - a design with open choices returns a nonempty result;
+  - a known reachable case (a design with open choices that have valid
+    alternatives) returns a nonempty result;
+  - accepting a suggestion keeps the locks and prefab references;
   - a fully locked design and one with only duplicates report "exhausted"
     within the budget.
 - **3.4:**
