@@ -46,7 +46,7 @@ export const ar: Template = {
       family: 'receiver',
       params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full' },
     },
-    { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
+    { id: 'lower', family: 'lower', params: { layout: 'ar' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },

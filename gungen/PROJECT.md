@@ -507,8 +507,11 @@ explicitly named `battle-rifle`.
 
 ### AR
 
-- Added the AR template using the conventional lower, straight stock, and
-  seven-slot flat-top rail. Its receiver has an explicit rear-top charging
+- Added the AR template using the dedicated lower, straight stock, and
+  seven-slot flat-top rail. Its magazine-well housing extends 1.5u below the
+  receiver underside with four walls; it reuses the conventional magazine port
+  and insertion keep-out, leaving the magazine path unchanged. Its receiver
+  has an explicit rear-top charging
   handle keep-out; the barrel has a sight-block port four units from the
   muzzle, with a front-sight block/post mounted there. Optional sight uses
   rail slot 0, avoiding the earlier sightline collision at arbitrary slots.

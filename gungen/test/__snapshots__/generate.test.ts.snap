@@ -384,7 +384,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
+          "layout": "ar",
         },
       },
       "magazine": {
@@ -477,7 +477,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
+          "layout": "ar",
         },
       },
       "magazine": {
@@ -573,7 +573,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
+          "layout": "ar",
         },
       },
       "magazine": {

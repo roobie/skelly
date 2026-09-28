@@ -17,7 +17,7 @@
     "lower": {
       "family": "lower",
       "params": {
-        "layout": "conventional"
+        "layout": "ar"
       }
     },
     "barrel": {

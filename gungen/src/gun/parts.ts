@@ -74,6 +74,8 @@ const AK_MAGAZINE_SEGMENTS: Record<SizeClass, { top: number; middle: number; bot
 };
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
 const AK_MAGAZINE_TOP_SLOPE_DEGREES = 5;
+const AR_MAGAZINE_HOUSING_DROP = 1.5;
+const AR_MAGAZINE_HOUSING_WALL = 0.5;
 const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
@@ -270,7 +272,7 @@ export const akReceiver: PartFamily = {
  */
 export const lower: PartFamily = {
   name: 'lower',
-  params: { layout: choice('conventional', 'bullpup', 'trigger', 'ak') },
+  params: { layout: choice('conventional', 'bullpup', 'trigger', 'ak', 'ar') },
   build(params): PartDef {
     const top: PortDef = {
       id: 'top',
@@ -326,9 +328,37 @@ export const lower: PartFamily = {
     // behind the grip, which leans back from x = 3.
     const conventionalWell = well(-7 + MAGAZINE_DEPTH / 2);
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
+    const arMagazineHousing = (): Solid[] => {
+      const x0 = conventionalWell.port.pos[0] - MAGAZINE_WELL_DEPTH / 2;
+      const x1 = conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2;
+      const z0 = MAGAZINE_WELL_WIDTH / 2;
+      const outerZ = LOWER_HALF_WIDTH;
+      const bottomY = -1.5 - AR_MAGAZINE_HOUSING_DROP;
+      return [
+        solid('magazine-housing-rear', [x0 - AR_MAGAZINE_HOUSING_WALL, bottomY, -outerZ], [x0, -1.5, outerZ]),
+        solid('magazine-housing-front', [x1, bottomY, -outerZ], [x1 + AR_MAGAZINE_HOUSING_WALL, -1.5, outerZ]),
+        solid('magazine-housing-left', [x0, bottomY, -outerZ], [x1, -1.5, -z0]),
+        solid('magazine-housing-right', [x0, bottomY, z0], [x1, -1.5, outerZ]),
+      ];
+    };
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
 
     switch (params.layout) {
+      case 'ar':
+        return {
+          family: 'lower',
+          solids: [
+            ...magazineWellFrame(
+              -14,
+              conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
+              conventionalWell.port.pos[0],
+            ),
+            ...arMagazineHousing(),
+          ],
+          ports: [top, grip(-12), conventionalWell.port],
+          keepOuts: [trigger(-10), conventionalWell.path],
+          axes: [],
+        };
       case 'bullpup':
         return {
           family: 'lower',
