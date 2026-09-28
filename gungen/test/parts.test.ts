@@ -11,7 +11,7 @@ const variants = (family: PartFamily): Record<string, string>[] =>
     [{}],
   );
 
-const onGrid = (n: number) => Math.abs(n / GRID - Math.round(n / GRID)) < 1e-9;
+const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
 
 describe('part library', () => {
   it('integrates the rear grip, magazine well, dust cover, and trigger guard into the pistol frame', () => {
@@ -22,6 +22,65 @@ describe('part library', () => {
     expect(frame.solids.map((part) => part.id)).toContain('trigger-guard-bottom');
     expect(frame.keepOuts.map((keepOut) => keepOut.id)).toContain('trigger-finger');
     expect(frame.ports.find((port) => port.id === 'magazine')!.pos[0]).toBeLessThan(-6);
+    const guardTop = frame.solids.find(({ id }) => id === 'trigger-guard-top')!;
+    expect(guardTop.kind).toBe('box');
+    if (guardTop.kind === 'box') {
+      expect(guardTop.box.half[0] * 2).toBeCloseTo(4);
+      expect(guardTop.box.half[2] * 2).toBeCloseTo(1.25);
+    }
+  });
+
+  it('scales the pistol bore channel, slide walls, and dust cover with bore size', () => {
+    for (const [bore, radius] of [
+      ['S', 0.75],
+      ['M', 1],
+    ] as const) {
+      const slide = FAMILIES.slide!.build({ bore, length: 'S' });
+      const frame = FAMILIES.frame!.build({ bore, gripLength: 'M', slideLength: 'S' });
+      const left = slide.solids.find(({ id }) => id === 'side-left')!;
+      const right = slide.solids.find(({ id }) => id === 'forward-side-right')!;
+      const roof = slide.solids.find(({ id }) => id === 'top')!;
+      const dustCover = frame.solids.find(({ id }) => id === 'dust-cover')!;
+      const barrel = FAMILIES.barrel!.build({ bore, length: 'S', profile: 'pistol' }).solids[0]!;
+      expect(left.kind).toBe('box');
+      expect(right.kind).toBe('box');
+      expect(roof.kind).toBe('box');
+      expect(dustCover.kind).toBe('box');
+      expect(barrel.kind).toBe('box');
+      if (
+        left.kind !== 'box' ||
+        right.kind !== 'box' ||
+        roof.kind !== 'box' ||
+        dustCover.kind !== 'box' ||
+        barrel.kind !== 'box'
+      ) {
+        throw new Error('Expected pistol solids to use boxes.');
+      }
+      const barrelMinZ = barrel.box.center[2] - barrel.box.half[2];
+      const barrelMaxZ = barrel.box.center[2] + barrel.box.half[2];
+      const leftInnerZ = left.box.center[2] + left.box.half[2];
+      const leftClearance = barrelMinZ - leftInnerZ;
+      const rightClearance = right.box.center[2] - right.box.half[2] - barrelMaxZ;
+      expect(leftClearance).toBeCloseTo(0.125);
+      expect(rightClearance).toBeCloseTo(0.125);
+      expect(leftClearance).toBeLessThan(radius / 2);
+      expect(dustCover.box.half[2]).toBeLessThanOrEqual(roof.box.half[2]);
+    }
+  });
+
+  it('adds a beavertail grip-safety tang to both handgun frame styles', () => {
+    const pistol = FAMILIES.frame!.build({ bore: 'S', gripLength: 'M', slideLength: 'S' });
+    const revolver = FAMILIES.receiver!.build({ action: 'revolver', feed: 'cylinder', bore: 'S' });
+    const pistolSafety = pistol.solids.find(({ id }) => id === 'beavertail-grip-safety');
+    const revolverSafety = revolver.solids.find(({ id }) => id === 'beavertail-grip-safety');
+    expect(pistolSafety?.kind).toBe('extruded-polygon');
+    expect(revolverSafety?.kind).toBe('extruded-polygon');
+    if (pistolSafety?.kind === 'extruded-polygon' && revolverSafety?.kind === 'extruded-polygon') {
+      expect(pistolSafety.profile).toHaveLength(4);
+      expect(revolverSafety.profile).toHaveLength(5);
+      expect(pistolSafety.z).toEqual([-0.75, 0.75]);
+      expect(revolverSafety.z).toEqual([-1.25, 1.25]);
+    }
   });
 
   it('builds a hollow pistol slide with ejection port and sight rail', () => {
@@ -99,6 +158,14 @@ describe('part library', () => {
     }
   });
 
+  it('adds a bore-fitted clamp ring only when the handguard is joined to the barrel', () => {
+    const clamped = FAMILIES.handguard!.build({ length: 'M', inner: 'M', bore: 'M' });
+    const floating = FAMILIES.handguard!.build({ length: 'M', inner: 'M', bore: 'none' });
+    expect(clamped.solids.map(({ id }) => id)).toContain('clamp-top');
+    expect(clamped.solids.map(({ id }) => id)).toContain('clamp-right');
+    expect(floating.solids.map(({ id }) => id)).not.toContain('clamp-top');
+  });
+
   it('builds a magazine well into the pistol grip', () => {
     const grip = FAMILIES.grip!.build({ length: 'S', well: 'magazine' });
     expect(grip.ports.map((port) => port.id)).toEqual(['top', 'magazine']);
@@ -136,7 +203,9 @@ describe('part library', () => {
         const def = family.build(params);
         const tag = JSON.stringify(params);
 
-        it(`${tag}: positions and extents are on the ${GRID}u grid`, () => {
+        const gridStep = family.name === 'frame' || family.name === 'slide' ? GRID / 2 : GRID;
+
+        it(`${tag}: positions and extents are on the ${gridStep}u grid`, () => {
           const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
             box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
           const numbers = [
@@ -147,7 +216,7 @@ describe('part library', () => {
             ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
             ...def.axes.flatMap((a) => [...a.origin]),
           ];
-          expect(numbers.filter((n) => !onGrid(n))).toEqual([]);
+          expect(numbers.filter((n) => !onGrid(n, gridStep))).toEqual([]);
         });
 
         it(`${tag}: port frames are orthonormal and ids unique`, () => {

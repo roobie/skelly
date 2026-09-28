@@ -174,16 +174,22 @@ the generator later has something independent to be tested against (§9).
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
+  | `connection-contact` | Solids on connected parts touch or are within 0.25u (one grid step) |
   | `keep-out` | No solid is inside another part's keep-out volume, except the part attached at the port the volume allows |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
 
+  The contact rule checks minimum Euclidean separation between the connected
+  parts' convex solids; overlap remains solely governed by `solid-overlap`.
+  A separated pair is covered in `test/fixtures/broken-connection-contact.json`.
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
 - **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
   lower, barrel, cylinder, handguard, tube magazine, forend, grip, magazine,
-  stock and sight, built from boxes and convex extrusions. The handguard can
-  clamp to the barrel as well as the receiver, which creates a loop. There are
+  stock and sight, built from boxes and convex extrusions. A handguard joined
+  to the barrel carries a bore-fitted collar so its clamp connection has solid
+  contact. The handguard can clamp to the barrel as well as the receiver,
+  which creates a loop. There are
   12 mount types: each socket needs its own type so a stock can't go in a grip
   socket.
 - **Keep-out volumes:** ejection and slide paths, trigger finger, magazine
@@ -448,8 +454,20 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
   inherited size classes rather than a solver. Compact uses a 12u barrel and
   11u slide; full uses a 16u barrel and 15u slide. In both, the barrel's
   exposed crown is exactly 1u (bounded by `pistol-barrel-crown` to 0.5–1.5u).
-  The barrel has an optional unused muzzle port for a later suppressor or
-  compensator part.
+  Visual review found the slide/barrel ports aligned while their solids were
+  2.24u apart: the slide's barrel port sat away from its hollow channel. Its
+  port and the frame slide rails were repositioned so the barrel now sits in
+  the channel and the frame rails touch the slide. The barrel has an optional
+  unused muzzle port for a later suppressor or compensator part.
+- A named 0.125u half-grid side clearance (less than half the S-bore radius)
+  widens with the S/M bore radius. The slide wall is 0.5u thick, and the dust
+  cover is no wider than the slide. The magazine well and grip widths are
+  unchanged. The trigger guard doubles its X span (2u to 4u about the same
+  center) and halves its Z width (2.5u to 1.25u).
+- Both pistol and revolver frames now include a static, convex beavertail
+  grip-safety tang. This is visual geometry only; activation/movement is not
+  simulated. Core `connection-contact` prevents a valid port graph from hiding
+  separated solids; its allowed gap is one 0.25u grid step.
 - The grip is integral and behind the trigger, under the slide's rear third.
   The frame exposes a direct magazine port at the bottom of its grip well.
   Receiver `action: slide` and lower `layout: pistol` were removed. Sights
@@ -468,7 +486,8 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
   mismatched revolver-action/feed combinations.
 - Added a revolver receiver/frame with a cylinder window and top strap, built
   from several solids. Frame, cylinder and barrel form a checked loop. Keep-outs
-  cover the cylinder gap, swing-out clearance and hammer travel.
+  cover the cylinder gap, swing-out clearance and hammer travel. The frame's
+  beavertail grip-safety tang is a static visual part of the backstrap.
 - Added a no-well grip, revolver template, passing and broken fixtures, and
   three known-good snapshots. At 1000 seeds, revolver is 100% valid with 24
   distinct builds; pistol remains 100% valid with 24 distinct builds. Existing

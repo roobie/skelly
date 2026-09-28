@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import type { Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -22,12 +22,20 @@ describe('pistol model', () => {
     const barrel = resolved.defs.get('barrel')!;
     const slideTransform = resolved.placed.get('slide')!;
     const barrelTransform = resolved.placed.get('barrel')!;
+    const slideBarrelGaps = barrel.solids.flatMap((barrelSolid) =>
+      slide.solids.map((slideSolid) =>
+        distanceWorld(worldSolid(barrelTransform, barrelSolid), worldSolid(slideTransform, slideSolid)),
+      ),
+    );
     const overlaps = barrel.solids.flatMap((barrelSolid) =>
       slide.solids.map((slideSolid) =>
         penetrationWorld(worldSolid(barrelTransform, barrelSolid), worldSolid(slideTransform, slideSolid)),
       ),
     );
 
+    expect(slideTransform.t[1]).toBeCloseTo(-1.5);
+    expect(barrelTransform.t[1]).toBeCloseTo(0);
+    expect(Math.min(...slideBarrelGaps)).toBeCloseTo(0);
     expect(overlaps.every((depth) => depth <= 1e-8)).toBe(true);
     expect(resolved.connections.find(({ conn }) => conn.from === 'frame.barrel')?.role).toBe('loop');
     expect(maxLocalX(barrel.solids) - maxLocalX(slide.solids)).toBeCloseTo(1);

@@ -79,6 +79,19 @@ const PISTOL_WELL_HEIGHT = 6;
 const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const PISTOL_BARREL_LENGTH: Record<SizeClass, number> = { S: 12, M: 16, L: 20 };
 const PISTOL_CROWN_LENGTH = 1;
+const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
+const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
+const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
+const PISTOL_TRIGGER_GUARD_CENTER_X = -2;
+const PISTOL_TRIGGER_GUARD_X_SCALE = 2;
+const PISTOL_TRIGGER_GUARD_Z_SCALE = 0.5;
+const triggerGuardX = (x: number): number =>
+  PISTOL_TRIGGER_GUARD_CENTER_X + (x - PISTOL_TRIGGER_GUARD_CENTER_X) * PISTOL_TRIGGER_GUARD_X_SCALE;
+const triggerGuardZ = (z: number): number => z * PISTOL_TRIGGER_GUARD_Z_SCALE;
+const pistolSlideChannelHalfWidth = (bore: SizeClass): number =>
+  PISTOL_BARREL_RADIUS[bore] + PISTOL_SLIDE_CHANNEL_CLEARANCE;
+const pistolSlideHalfWidth = (bore: SizeClass): number =>
+  pistolSlideChannelHalfWidth(bore) + PISTOL_SLIDE_WALL_THICKNESS;
 const PISTOL_SLIDE_REAR = -8;
 const PISTOL_GRIP_X = -6;
 const REVOLVER_CYLINDER_RADIUS = 3;
@@ -187,6 +200,17 @@ export const receiver: PartFamily = {
       params.action === 'revolver'
         ? [
             solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
+            extrudedPolygon(
+              'beavertail-grip-safety',
+              [
+                [-17.5, 0.75],
+                [-15, 0.75],
+                [-15, 2.5],
+                [-16.5, 2.5],
+                [-17.25, 1.75],
+              ],
+              [-1.25, 1.25],
+            ),
             solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
             solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
             solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
@@ -335,7 +359,7 @@ export const barrel: PartFamily = {
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const len = barrelLength(params);
-    const r = { S: 0.75, M: 1, L: 1.25 }[bore];
+    const r = PISTOL_BARREL_RADIUS[bore];
     const fore = FORE_LENGTH[cls(params, 'length')];
     return {
       family: 'barrel',
@@ -460,11 +484,32 @@ export const cylinder: PartFamily = {
 export const handguard: PartFamily = {
   name: 'handguard',
   // When clamped, length follows the barrel so the clamp meets, unless set.
-  params: { length: { ...size, from: [{ port: 'front', param: 'length' }] }, inner: size },
+  params: {
+    length: { ...size, from: [{ port: 'front', param: 'length' }] },
+    inner: size,
+    bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
+  },
   build(params): PartDef {
     const len = FORE_LENGTH[cls(params, 'length')];
     const inner = { S: 0.75, M: 1.5, L: 2.5 }[cls(params, 'inner')];
     const outer = inner + 0.5;
+    const clampRadius = params.bore === 'none' ? undefined : { S: 0.75, M: 1, L: 1.25 }[cls(params, 'bore')];
+    const clamp = clampRadius
+      ? [
+          solid(
+            'clamp-top',
+            [len - GRID, clampRadius, -clampRadius - GRID],
+            [len, clampRadius + GRID, clampRadius + GRID],
+          ),
+          solid(
+            'clamp-bottom',
+            [len - GRID, -clampRadius - GRID, -clampRadius - GRID],
+            [len, -clampRadius, clampRadius + GRID],
+          ),
+          solid('clamp-left', [len - GRID, -clampRadius, -clampRadius - GRID], [len, clampRadius, -clampRadius]),
+          solid('clamp-right', [len - GRID, -clampRadius, clampRadius], [len, clampRadius, clampRadius + GRID]),
+        ]
+      : [];
     return {
       family: 'handguard',
       solids: [
@@ -472,6 +517,7 @@ export const handguard: PartFamily = {
         solid('bottom', [0, -outer, -outer], [len, -inner, outer]),
         solid('left', [0, -inner, -outer], [len, inner, -inner]),
         solid('right', [0, -inner, inner], [len, inner, outer]),
+        ...clamp,
       ],
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
@@ -733,21 +779,49 @@ export const pistolFrame: PartFamily = {
     const gripDef = integratedPistolGrip(params.gripLength!);
     const bore = cls(params, 'bore');
     const slideEnd = pistolSlideEnd(params.slideLength!);
+    const channelHalfWidth = pistolSlideChannelHalfWidth(bore);
+    const slideHalfWidth = pistolSlideHalfWidth(bore);
     return {
       family: 'frame',
       solids: [
         ...gripDef.solids,
+        extrudedPolygon(
+          'beavertail-grip-safety',
+          [
+            [-9, -0.5],
+            [-7, 0],
+            [-7, 1.5],
+            [-8.25, 1.5],
+          ],
+          [-0.75, 0.75],
+        ),
         solid('frame-floor', [-3, -1.5, -1.5], [0, 0, 1.5]),
-        solid('dust-cover', [0, -2.5, -2], [slideEnd, -1, 2]),
-        solid('slide-rail-left', [PISTOL_SLIDE_REAR, 2.5, -2.5], [slideEnd, 3, -2]),
-        solid('slide-rail-right', [PISTOL_SLIDE_REAR, 2.5, 2], [slideEnd, 3, 2.5]),
-        solid('trigger-guard-top', [-3, -1.75, -1.25], [-1, -1.5, 1.25]),
-        solid('trigger-guard-rear', [-3, -4, -1.25], [-2.75, -1.5, 1.25]),
-        solid('trigger-guard-front', [-1.25, -4, -1.25], [-1, -1.5, 1.25]),
-        solid('trigger-guard-bottom', [-3, -4, -1.25], [-1, -3.75, 1.25]),
+        solid('dust-cover', [0, -2.5, -slideHalfWidth], [slideEnd, -1, slideHalfWidth]),
+        solid('slide-rail-left', [PISTOL_SLIDE_REAR, -1.5, -slideHalfWidth], [slideEnd, -1, -channelHalfWidth]),
+        solid('slide-rail-right', [PISTOL_SLIDE_REAR, -1.5, channelHalfWidth], [slideEnd, -1, slideHalfWidth]),
+        solid(
+          'trigger-guard-top',
+          [triggerGuardX(-3), -1.75, triggerGuardZ(-1.25)],
+          [triggerGuardX(-1), -1.5, triggerGuardZ(1.25)],
+        ),
+        solid(
+          'trigger-guard-rear',
+          [triggerGuardX(-3), -4, triggerGuardZ(-1.25)],
+          [triggerGuardX(-2.75), -1.5, triggerGuardZ(1.25)],
+        ),
+        solid(
+          'trigger-guard-front',
+          [triggerGuardX(-1.25), -4, triggerGuardZ(-1.25)],
+          [triggerGuardX(-1), -1.5, triggerGuardZ(1.25)],
+        ),
+        solid(
+          'trigger-guard-bottom',
+          [triggerGuardX(-3), -4, triggerGuardZ(-1.25)],
+          [triggerGuardX(-1), -3.75, triggerGuardZ(1.25)],
+        ),
       ],
       ports: [
-        { id: 'slide', mount: 'slide-rails', gender: 'female', pos: [0, 2.5, 0], normal: Y, up: X, required: true },
+        { id: 'slide', mount: 'slide-rails', gender: 'female', pos: [0, -1.5, 0], normal: Y, up: X, required: true },
         {
           id: 'barrel',
           mount: 'barrel-seat',
@@ -763,7 +837,7 @@ export const pistolFrame: PartFamily = {
       keepOuts: [
         ...gripDef.keepOuts,
         keepOut('trigger-finger', [-2.75, -3.75, -1], [-1.25, -1.75, 1]),
-        keepOut('slide-travel', [-16, 2.5, -2], [PISTOL_SLIDE_REAR, 5.5, 2], 'slide'),
+        keepOut('slide-travel', [-16, -1, -slideHalfWidth], [PISTOL_SLIDE_REAR, 1.5, slideHalfWidth], 'slide'),
       ],
       axes: [],
       ...(gripDef.tags ? { tags: gripDef.tags } : {}),
@@ -779,19 +853,21 @@ export const pistolSlide: PartFamily = {
   },
   build(params): PartDef {
     const end = pistolSlideEnd(params.length!);
+    const channelHalfWidth = pistolSlideChannelHalfWidth(cls(params, 'bore'));
+    const slideHalfWidth = pistolSlideHalfWidth(cls(params, 'bore'));
     const ejection: Solid[] = [
-      solid('ejection-port-rear', [PISTOL_SLIDE_REAR, 0.5, 2], [-3, 2.5, 2.5]),
-      solid('ejection-port-upper', [-3, 2, 2], [-1, 2.5, 2.5]),
-      solid('ejection-port-lower', [-3, 0.5, 2], [-1, 1, 2.5]),
-      solid('ejection-port-front', [-1, 0.5, 2], [0, 2.5, 2.5]),
+      solid('ejection-port-rear', [PISTOL_SLIDE_REAR, 0.5, channelHalfWidth], [-3, 2.5, slideHalfWidth]),
+      solid('ejection-port-upper', [-3, 2, channelHalfWidth], [-1, 2.5, slideHalfWidth]),
+      solid('ejection-port-lower', [-3, 0.5, channelHalfWidth], [-1, 1, slideHalfWidth]),
+      solid('ejection-port-front', [-1, 0.5, channelHalfWidth], [0, 2.5, slideHalfWidth]),
     ];
     return {
       family: 'slide',
       solids: [
-        solid('top', [PISTOL_SLIDE_REAR, 2.5, -2.5], [end, 3, 2.5]),
-        solid('side-left', [PISTOL_SLIDE_REAR, 0.5, -2.5], [end, 2.5, -2]),
+        solid('top', [PISTOL_SLIDE_REAR, 2.5, -slideHalfWidth], [end, 3, slideHalfWidth]),
+        solid('side-left', [PISTOL_SLIDE_REAR, 0.5, -slideHalfWidth], [end, 2.5, -channelHalfWidth]),
         ...ejection,
-        solid('forward-side-right', [0, 0.5, 2], [end, 2.5, 2.5]),
+        solid('forward-side-right', [0, 0.5, channelHalfWidth], [end, 2.5, slideHalfWidth]),
       ],
       ports: [
         { id: 'frame', mount: 'slide-rails', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
@@ -800,7 +876,7 @@ export const pistolSlide: PartFamily = {
           mount: 'barrel',
           gender: 'female',
           size: cls(params, 'bore'),
-          pos: [0, -2.5, 0],
+          pos: [0, 1.5, 0],
           normal: X,
           up: Y,
           required: true,

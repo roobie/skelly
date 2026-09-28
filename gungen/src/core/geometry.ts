@@ -1,6 +1,6 @@
 // Convex geometry in the assembly frame, and signed penetration depth.
 
-import { applyPoint, column, cross, dot, length, scale, sub, type Transform, type Vec3 } from './math.ts';
+import { add, applyPoint, column, cross, dot, length, scale, sub, type Transform, type Vec3 } from './math.ts';
 import type { Box, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
 
 export interface Obb {
@@ -191,6 +191,203 @@ export const penetrationWorld = (a: WorldSolid, b: WorldSolid): number => {
     return penetration(a, b);
   }
   return penetrationConvex(isPolyhedron(a) ? a : obbPolyhedron(a), isPolyhedron(b) ? b : obbPolyhedron(b));
+};
+
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+
+const distancePointTriangle = (point: Vec3, a: Vec3, b: Vec3, c: Vec3): number => {
+  const ab = sub(b, a);
+  const ac = sub(c, a);
+  const ap = sub(point, a);
+  const d1 = dot(ab, ap);
+  const d2 = dot(ac, ap);
+  if (d1 <= 0 && d2 <= 0) {
+    return length(ap);
+  }
+
+  const bp = sub(point, b);
+  const d3 = dot(ab, bp);
+  const d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) {
+    return length(bp);
+  }
+
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+    const v = d1 / (d1 - d3);
+    return length(sub(point, add(a, scale(ab, v))));
+  }
+
+  const cp = sub(point, c);
+  const d5 = dot(ab, cp);
+  const d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) {
+    return length(cp);
+  }
+
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+    const w = d2 / (d2 - d6);
+    return length(sub(point, add(a, scale(ac, w))));
+  }
+
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+    const w = (d4 - d3) / (d4 - d3 + d5 - d6);
+    return length(sub(point, add(b, scale(sub(c, b), w))));
+  }
+
+  const normal = cross(ab, ac);
+  return Math.abs(dot(ap, normal)) / length(normal);
+};
+
+const closestSegmentParameters = ({
+  a,
+  b,
+  c,
+  e,
+  f,
+}: {
+  a: number;
+  b: number;
+  c: number;
+  e: number;
+  f: number;
+}): readonly [number, number] => {
+  const denominator = a * e - b * b;
+  const s = denominator > 1e-12 ? clamp01((b * f - c * e) / denominator) : 0;
+  let t = (b * s + f) / e;
+  if (t < 0) {
+    t = 0;
+    return [clamp01(-c / a), t];
+  }
+  if (t > 1) {
+    t = 1;
+    return [clamp01((b - c) / a), t];
+  }
+  return [s, t];
+};
+
+const distanceSegmentSegment = (p1: Vec3, q1: Vec3, p2: Vec3, q2: Vec3): number => {
+  const d1 = sub(q1, p1);
+  const d2 = sub(q2, p2);
+  const r = sub(p1, p2);
+  const a = dot(d1, d1);
+  const e = dot(d2, d2);
+  const f = dot(d2, r);
+  let s: number;
+  let t: number;
+  if (a <= 1e-12 && e <= 1e-12) {
+    return length(r);
+  }
+  if (a <= 1e-12) {
+    s = 0;
+    t = clamp01(f / e);
+  } else {
+    const c = dot(d1, r);
+    if (e <= 1e-12) {
+      t = 0;
+      s = clamp01(-c / a);
+    } else {
+      [s, t] = closestSegmentParameters({ a, b: dot(d1, d2), c, e, f });
+    }
+  }
+  return length(sub(add(r, scale(d1, s)), scale(d2, t)));
+};
+
+const faceTriangles = (poly: ConvexPolyhedron): [Vec3, Vec3, Vec3][] =>
+  poly.faces.flatMap((face) =>
+    Array.from(
+      { length: Math.max(0, face.length - 2) },
+      (_, i) =>
+        [poly.vertices[face[0]!]!, poly.vertices[face[i + 1]!]!, poly.vertices[face[i + 2]!]!] as [Vec3, Vec3, Vec3],
+    ),
+  );
+
+const edgePairs = (poly: ConvexPolyhedron): [Vec3, Vec3][] => {
+  const edges = new Map<string, [Vec3, Vec3]>();
+  for (const face of poly.faces) {
+    for (let i = 0; i < face.length; i++) {
+      const a = face[i]!;
+      const b = face[(i + 1) % face.length]!;
+      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+      if (!edges.has(key)) {
+        edges.set(key, [poly.vertices[a]!, poly.vertices[b]!]);
+      }
+    }
+  }
+  return [...edges.values()];
+};
+
+/** Exact minimum Euclidean distance between two convex solids; overlapping solids have distance 0. */
+export const distanceConvex = (a: ConvexPolyhedron, b: ConvexPolyhedron): number => {
+  if (penetrationConvex(a, b) >= 0) {
+    return 0;
+  }
+
+  const trianglesA = faceTriangles(a);
+  const trianglesB = faceTriangles(b);
+  let minimum = Number.POSITIVE_INFINITY;
+  for (const point of a.vertices) {
+    for (const [v0, v1, v2] of trianglesB) {
+      minimum = Math.min(minimum, distancePointTriangle(point, v0, v1, v2));
+    }
+  }
+  for (const point of b.vertices) {
+    for (const [v0, v1, v2] of trianglesA) {
+      minimum = Math.min(minimum, distancePointTriangle(point, v0, v1, v2));
+    }
+  }
+  for (const [a0, a1] of edgePairs(a)) {
+    for (const [b0, b1] of edgePairs(b)) {
+      minimum = Math.min(minimum, distanceSegmentSegment(a0, a1, b0, b1));
+    }
+  }
+  return minimum;
+};
+
+const axisAlignedBounds = (box: Obb): readonly [Vec3, Vec3] | undefined => {
+  const { r, center, half } = box;
+  for (let row = 0; row < 3; row++) {
+    const nonzero = [r[row * 3]!, r[row * 3 + 1]!, r[row * 3 + 2]!].filter((n) => Math.abs(n) > 1e-9);
+    if (nonzero.length !== 1 || Math.abs(Math.abs(nonzero[0]!) - 1) > 1e-9) {
+      return undefined;
+    }
+  }
+  const radius = [0, 1, 2].map(
+    (row) =>
+      Math.abs(r[row * 3]! * half[0]) + Math.abs(r[row * 3 + 1]! * half[1]) + Math.abs(r[row * 3 + 2]! * half[2]),
+  ) as unknown as Vec3;
+  return [
+    [center[0] - radius[0], center[1] - radius[1], center[2] - radius[2]],
+    [center[0] + radius[0], center[1] + radius[1], center[2] + radius[2]],
+  ];
+};
+
+const distanceAabb = (a: readonly [Vec3, Vec3], b: readonly [Vec3, Vec3]): number =>
+  Math.hypot(...([0, 1, 2] as const).map((axis) => Math.max(0, a[0][axis] - b[1][axis], b[0][axis] - a[1][axis])));
+
+const worldBounds = (shape: WorldSolid): readonly [Vec3, Vec3] => {
+  const vertices = isPolyhedron(shape) ? shape.vertices : obbPolyhedron(shape).vertices;
+  return [
+    ([0, 1, 2] as const).map((axis) => Math.min(...vertices.map((point) => point[axis]))) as unknown as Vec3,
+    ([0, 1, 2] as const).map((axis) => Math.max(...vertices.map((point) => point[axis]))) as unknown as Vec3,
+  ];
+};
+
+/** Cheap AABB lower bound used to cull exact convex-distance checks. */
+export const lowerBoundDistanceWorld = (a: WorldSolid, b: WorldSolid): number =>
+  distanceAabb(worldBounds(a), worldBounds(b));
+
+export const distanceWorld = (a: WorldSolid, b: WorldSolid): number => {
+  if (!(isPolyhedron(a) || isPolyhedron(b))) {
+    const boundsA = axisAlignedBounds(a);
+    const boundsB = axisAlignedBounds(b);
+    if (boundsA && boundsB) {
+      return distanceAabb(boundsA, boundsB);
+    }
+  }
+  return distanceConvex(isPolyhedron(a) ? a : obbPolyhedron(a), isPolyhedron(b) ? b : obbPolyhedron(b));
 };
 
 const orient = (a: Vec2, b: Vec2, c: Vec2): number => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);

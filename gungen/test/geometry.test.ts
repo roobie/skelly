@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   boxFromMinMax,
+  distanceWorld,
   type Obb,
   obbPolyhedron,
   penetration,
@@ -20,6 +21,31 @@ const EXTRUSION_ERROR = /extrusion/i;
 
 const aabb = (min: [number, number, number], max: [number, number, number]): Obb =>
   worldBox(IDENTITY, boxFromMinMax(min, max));
+
+describe('distance', () => {
+  const unit = aabb([0, 0, 0], [1, 1, 1]);
+
+  it('computes Euclidean gaps between separated boxes and returns zero at contact or overlap', () => {
+    expect(distanceWorld(unit, aabb([2, 2, 0], [3, 3, 1]))).toBeCloseTo(Math.SQRT2);
+    expect(distanceWorld(unit, aabb([1, 0, 0], [2, 1, 1]))).toBeCloseTo(0);
+    expect(distanceWorld(unit, aabb([0.5, 0, 0], [1.5, 1, 1]))).toBeCloseTo(0);
+  });
+
+  it('measures the gap between extruded convex solids and boxes', () => {
+    const prism = worldSolid(IDENTITY, {
+      id: 'distance-prism',
+      kind: 'extruded-polygon',
+      profile: [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+      z: [0, 1],
+    });
+    expect(distanceWorld(prism, aabb([2, 0, 0], [3, 1, 1]))).toBeCloseTo(1);
+  });
+});
 
 describe('penetration', () => {
   const unit = aabb([0, 0, 0], [1, 1, 1]);

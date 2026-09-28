@@ -2,7 +2,14 @@
 // returns readable issues; none of them simulates anything.
 
 import { INTERFACE_TOLERANCE_BY_MOUNT, MAIN_AXIS, TOLERANCE } from './conventions.ts';
-import { penetrationWorld, type WorldSolid, worldBox, worldSolid } from './geometry.ts';
+import {
+  distanceWorld,
+  lowerBoundDistanceWorld,
+  penetrationWorld,
+  type WorldSolid,
+  worldBox,
+  worldSolid,
+} from './geometry.ts';
 import type { Issue } from './issue.ts';
 import { angleBetween, applyDir, applyPoint, cross, length, sub } from './math.ts';
 import { connectionMismatch, type Resolved } from './resolve.ts';
@@ -159,13 +166,52 @@ export const solidOverlap: Rule = {
         const b = ids[j]!;
         const allowed = allowances.get([a, b].sort().join('|')) ?? TOLERANCE.contact;
         const depth = worstPenetration(solids.get(a)!, solids.get(b)!);
-        if (depth > allowed) {
+        if (depth > allowed + TOLERANCE.contact) {
           issues.push({
             rule: 'solid-overlap',
             message: `${label(r, a)} and ${label(r, b)} overlap by ${fmt(depth)}u (allowed: ${fmt(allowed)}u).`,
             parts: [a, b],
           });
         }
+      }
+    }
+    return issues;
+  },
+};
+
+/** Solids on the two parts of every connection touch or lie within tolerance. */
+export const connectionContact: Rule = {
+  id: 'connection-contact',
+  title: 'Connected parts touch',
+  check(r) {
+    const issues: Issue[] = [];
+    const solids = placedSolids(r);
+    for (const rc of r.connections) {
+      const a = solids.get(rc.from.part);
+      const b = solids.get(rc.to.part);
+      if (!(a && b)) {
+        continue;
+      }
+      const candidates = a
+        .flatMap((sa) => b.map((sb) => ({ a: sa, b: sb, lowerBound: lowerBoundDistanceWorld(sa, sb) })))
+        .sort((left, right) => left.lowerBound - right.lowerBound);
+      let gap = Number.POSITIVE_INFINITY;
+      for (const pair of candidates) {
+        if (pair.lowerBound > gap) {
+          break;
+        }
+        gap = Math.min(gap, distanceWorld(pair.a, pair.b));
+        if (gap <= TOLERANCE.connectionContact) {
+          break;
+        }
+      }
+      if (gap > TOLERANCE.connectionContact) {
+        issues.push({
+          rule: 'connection-contact',
+          message: `${rc.conn.from} and ${rc.conn.to} have a ${fmt(gap)}u gap between their solids (maximum: ${fmt(TOLERANCE.connectionContact)}u).`,
+          parts: [rc.from.part, rc.to.part],
+          ports: [rc.conn.from, rc.conn.to],
+        });
       }
     }
     return issues;
@@ -273,6 +319,7 @@ export const CORE_RULES: readonly Rule[] = [
   portCompat,
   axisAlignment,
   solidOverlap,
+  connectionContact,
   keepOut,
   requiredPorts,
   loopClosure,
