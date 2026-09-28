@@ -1,5 +1,328 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`templates > ak > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.gas-tube",
+        "to": "gas-tube.rear",
+      },
+      {
+        "from": "gas-tube.handguard",
+        "to": "handguard.gas-tube",
+      },
+      {
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ak" template with seed 100.",
+    "name": "ak-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "gas-tube": {
+        "family": "gas-tube",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "inner": "L",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ak",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "profile": "ak-curved",
+        },
+      },
+      "rear-sight": {
+        "family": "ak-rear-sight",
+      },
+      "receiver": {
+        "family": "ak-receiver",
+        "params": {
+          "bore": "S",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "dropped",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.gas-tube",
+        "to": "gas-tube.rear",
+      },
+      {
+        "from": "gas-tube.handguard",
+        "to": "handguard.gas-tube",
+      },
+      {
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ak" template with seed 200.",
+    "name": "ak-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "gas-tube": {
+        "family": "gas-tube",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "inner": "M",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ak",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "profile": "ak-curved",
+        },
+      },
+      "rear-sight": {
+        "family": "ak-rear-sight",
+      },
+      "receiver": {
+        "family": "ak-receiver",
+        "params": {
+          "bore": "S",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "dropped",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.gas-tube",
+        "to": "gas-tube.rear",
+      },
+      {
+        "from": "gas-tube.handguard",
+        "to": "handguard.gas-tube",
+      },
+      {
+        "from": "receiver.rear-sight",
+        "to": "rear-sight.base",
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+    ],
+    "description": "Generated from the "ak" template with seed 300.",
+    "name": "ak-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "front-sight": {
+        "family": "front-sight",
+      },
+      "gas-tube": {
+        "family": "gas-tube",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "inner": "L",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "ak",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "L",
+          "profile": "ak-curved",
+        },
+      },
+      "rear-sight": {
+        "family": "ak-rear-sight",
+      },
+      "receiver": {
+        "family": "ak-receiver",
+        "params": {
+          "bore": "M",
+        },
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "M",
+          "style": "dropped",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
 exports[`templates > ar > known-good seeds 1`] = `
 [
   {

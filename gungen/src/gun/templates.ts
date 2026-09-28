@@ -68,6 +68,38 @@ export const ar: Template = {
   ],
 };
 
+export const ak: Template = {
+  name: 'ak',
+  description:
+    'AK-pattern rifle: dust cover, parallel gas tube, curved rock-in magazine, dropped stock, and block sights.',
+  root: 'receiver',
+  slots: [
+    { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
+    { id: 'lower', family: 'lower', params: { layout: 'ak' } },
+    { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
+    { id: 'handguard', family: 'handguard', params: { inner: ['M', 'L'] } },
+    { id: 'gas-tube', family: 'gas-tube' },
+    { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
+    { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'dropped' } },
+    { id: 'rear-sight', family: 'ak-rear-sight' },
+    { id: 'front-sight', family: 'front-sight' },
+  ],
+  connections: [
+    { from: 'receiver.lower', to: 'lower.top' },
+    { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.handguard', to: 'handguard.rear' },
+    { from: 'handguard.front', to: 'barrel.clamp' },
+    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'lower.magazine', to: 'magazine.top' },
+    { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.gas-tube', to: 'gas-tube.rear' },
+    { from: 'gas-tube.handguard', to: 'handguard.gas-tube' },
+    { from: 'receiver.rear-sight', to: 'rear-sight.base' },
+    { from: 'barrel.front-sight', to: 'front-sight.base' },
+  ],
+};
+
 export const pistol: Template = {
   name: 'pistol',
   description: 'Semi-automatic pistol: integrated frame/grip, hollow slide, internal barrel, and a short crown.',
@@ -239,6 +271,7 @@ export const bullpup: Template = {
 export const TEMPLATES: readonly Template[] = [
   battleRifle,
   ar,
+  ak,
   pistol,
   revolver,
   smg,

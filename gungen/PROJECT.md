@@ -343,7 +343,7 @@ The validator then judges it like any hand-written fixture.
 ### What was built
 
 - **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
-  for the eight current archetypes). A template lists slots and connections:
+  for the ten current archetypes). A template lists slots and connections:
   - A **slot** names a part family and, per param, a value or a list to pick
     from. Params it leaves out are default or read from neighbours, so a
     template picks the barrel length and a clamped handguard or tube magazine
@@ -503,7 +503,7 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 lower and procedural geometry while keeping the current FAL/FNC-like design
 explicitly named `battle-rifle`.
 
-**Status:** AR implemented; AK planned.
+**Status:** AR and AK implemented.
 
 ### AR
 
@@ -518,15 +518,24 @@ explicitly named `battle-rifle`.
 
 ### AK
 
-- Existing pieces express a right-side bolt handle with `action: bolt`, a
-  conventional magazine well, pistol grip, barrel and handguard. Missing: a
-  dust-cover/no-receiver-rail variant with a rear sight on a handguard or sight
-  block; a gas tube on a second axis parallel to the bore; a curved magazine
-  and rock-in insertion path; an intermediate dropped-stock style; and a front
-  sight block near the muzzle. The current magazine well is vertical and its
-  keep-out is a straight box path; a forward well angle or a rock-in sweep is
-  not present in the pushed code. Curved convex segments are now representable,
-  but an arc-aware keep-out may require a domain-specific extension to core.
+- Added a dedicated AK receiver with a removable dust-cover solid and no
+  receiver rail. Its right-side bolt handle uses the existing `action: bolt`
+  travel keep-out. A leaf rear sight mounts on a receiver sight-block port.
+- The raised gas tube has its own axis, checked parallel to the bore, and
+  connects the receiver to the upper handguard. The front sight block uses the
+  barrel's existing port four units from the muzzle.
+- Added an `ak` lower layout with the conventional well and a forward-extended
+  box keep-out for the magazine's rock-in sweep. The magazine remains vertical
+  in its insertion well; the broad box is a conservative swept envelope, not an
+  arc-aware motion simulation.
+- The `ak-curved` magazine is three convex prisms: a straight upper box, a
+  trapezoidal middle section and a forward-turned lower section. Their joint
+  faces match exactly; magazine lengths S/M/L use approximately 12°, 13° and
+  14° bends. The middle tapers at the turned joint so each prism stays within
+  one grid step of the top segment's X projection. Added an intermediate dropped-stock style.
+- A passing fixture and a missing-gas-tube fixture exercise the layout. At
+  1000 seeds, AK is 100% valid with 32 distinct builds. Individual rounds,
+  magazine latching and the actual rock-in motion are not simulated.
 
 **Known risks and open questions:** the current `auto` charging-handle
 keep-out sits on the left; the `bolt` handle keep-out is on the right. The

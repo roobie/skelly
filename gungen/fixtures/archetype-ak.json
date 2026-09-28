@@ -1,0 +1,107 @@
+{
+  "name": "archetype-ak",
+  "description": "AK-pattern rifle with dust cover, raised gas tube, curved magazine and block sights.",
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "ak-receiver",
+      "params": {
+        "bore": "S"
+      }
+    },
+    "lower": {
+      "family": "lower",
+      "params": {
+        "layout": "ak"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "length": "M"
+      }
+    },
+    "handguard": {
+      "family": "handguard",
+      "params": {
+        "inner": "L"
+      }
+    },
+    "gas-tube": {
+      "family": "gas-tube"
+    },
+    "grip": {
+      "family": "grip",
+      "params": {
+        "length": "M"
+      }
+    },
+    "magazine": {
+      "family": "magazine",
+      "params": {
+        "length": "L",
+        "profile": "ak-curved"
+      }
+    },
+    "stock": {
+      "family": "stock",
+      "params": {
+        "length": "L",
+        "style": "dropped"
+      }
+    },
+    "rear-sight": {
+      "family": "ak-rear-sight"
+    },
+    "front-sight": {
+      "family": "front-sight"
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.lower",
+      "to": "lower.top"
+    },
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "receiver.handguard",
+      "to": "handguard.rear"
+    },
+    {
+      "from": "handguard.front",
+      "to": "barrel.clamp"
+    },
+    {
+      "from": "lower.grip",
+      "to": "grip.top"
+    },
+    {
+      "from": "lower.magazine",
+      "to": "magazine.top"
+    },
+    {
+      "from": "receiver.stock",
+      "to": "stock.front"
+    },
+    {
+      "from": "receiver.gas-tube",
+      "to": "gas-tube.rear"
+    },
+    {
+      "from": "gas-tube.handguard",
+      "to": "handguard.gas-tube"
+    },
+    {
+      "from": "receiver.rear-sight",
+      "to": "rear-sight.base"
+    },
+    {
+      "from": "barrel.front-sight",
+      "to": "front-sight.base"
+    }
+  ],
+  "expect": []
+}

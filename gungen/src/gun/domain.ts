@@ -9,6 +9,7 @@ export const gunDomain: Domain = {
   axisRules: [
     { kind: 'bore', mode: 'collinear' },
     { kind: 'sight', mode: 'parallel' },
+    { kind: 'gas-system', mode: 'parallel' },
   ],
   rules: [firingGrip, feedMatch, pistolBarrelCrown],
 };

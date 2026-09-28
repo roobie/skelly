@@ -67,6 +67,14 @@ const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_HEIGHT = 1;
+const AK_MAGAZINE_SEGMENTS: Record<SizeClass, { top: number; middle: number; bottom: number; bendDegrees: number }> = {
+  S: { top: 1.5, middle: 1, bottom: 3.5, bendDegrees: 12 },
+  M: { top: 2.5, middle: 2, bottom: 5.5, bendDegrees: 13 },
+  L: { top: 4, middle: 3, bottom: 9, bendDegrees: 14 },
+};
+const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
+const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
+const snapAkPoint = ([x, y]: Vec2): Vec2 => [snapAkGrid(x), snapAkGrid(y)];
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_MAGAZINE_DEPTH = 3.5;
@@ -228,6 +236,28 @@ export const receiver: PartFamily = {
   },
 };
 
+/** AK-style stamped receiver with a removable dust cover, gas-tube and rear-sight interfaces. */
+export const akReceiver: PartFamily = {
+  name: 'receiver',
+  params: { action: choice('bolt'), feed: choice('box'), bore: size },
+  build(params): PartDef {
+    const bore = cls(params, 'bore');
+    const base = receiver.build({ action: 'bolt', feed: 'box', bore, chargingHandle: 'side', rail: 'none' });
+    return {
+      ...base,
+      solids: [
+        solid('receiver-body', [-16, -2.5, -2], [0, 2.5, 2]),
+        solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
+      ],
+      ports: [
+        ...base.ports,
+        { id: 'gas-tube', mount: 'gas-tube', gender: 'female', pos: [0, 2.5, 0], normal: X, up: Y, required: true },
+        { id: 'rear-sight', mount: 'sight-block', gender: 'female', pos: [-2, 3, 0], normal: Y, up: X, required: true },
+      ],
+    };
+  },
+};
+
 // ---- lower ----
 
 /**
@@ -240,7 +270,7 @@ export const receiver: PartFamily = {
  */
 export const lower: PartFamily = {
   name: 'lower',
-  params: { layout: choice('conventional', 'bullpup', 'trigger') },
+  params: { layout: choice('conventional', 'bullpup', 'trigger', 'ak') },
   build(params): PartDef {
     const top: PortDef = {
       id: 'top',
@@ -308,6 +338,31 @@ export const lower: PartFamily = {
           ],
           ports: [top, grip(3), bullpupWell.port],
           keepOuts: [trigger(5), bullpupWell.path],
+          axes: [],
+        };
+      case 'ak':
+        return {
+          family: 'lower',
+          solids: magazineWellFrame(
+            -14,
+            conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
+            conventionalWell.port.pos[0],
+          ),
+          ports: [top, grip(-12), conventionalWell.port],
+          keepOuts: [
+            trigger(-10),
+            conventionalWell.path,
+            keepOut(
+              'magazine-rock-in-sweep',
+              [conventionalWell.port.pos[0] - MAGAZINE_WELL_DEPTH / 2, -40, -MAGAZINE_WELL_WIDTH / 2],
+              [
+                conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + AK_MAGAZINE_ROCK_IN_SWEEP,
+                -3,
+                MAGAZINE_WELL_WIDTH / 2,
+              ],
+              'magazine',
+            ),
+          ],
           axes: [],
         };
       case 'trigger':
@@ -437,6 +492,41 @@ export const frontSight: PartFamily = {
   },
 };
 
+/** The AK gas tube follows a raised axis parallel to the bore between receiver and handguard. */
+export const gasTube: PartFamily = {
+  name: 'gas-tube',
+  params: {},
+  build(): PartDef {
+    return {
+      family: 'gas-tube',
+      solids: [solid('tube', [0, -0.25, -0.5], [8, 0.25, 0.5])],
+      ports: [
+        { id: 'rear', mount: 'gas-tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
+        { id: 'handguard', mount: 'gas-tube', gender: 'female', pos: [8, 0, 0], normal: X, up: Y, required: true },
+      ],
+      keepOuts: [],
+      axes: [{ kind: 'gas-system', origin: [0, 0, 0], dir: X }],
+    };
+  },
+};
+
+/** A simple leaf rear sight mounted on the AK dust cover, without a receiver rail. */
+export const akRearSight: PartFamily = {
+  name: 'ak-rear-sight',
+  params: {},
+  build(): PartDef {
+    return {
+      family: 'sight',
+      solids: [solid('leaf', [-1, 0, -1.25], [1, 1, 1.25]), solid('notch', [-0.5, 1, -0.25], [0.5, 1.5, 0.25])],
+      ports: [
+        { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
+      ],
+      keepOuts: [],
+      axes: [{ kind: 'sight', origin: [0, 2.5, 0], dir: X }],
+    };
+  },
+};
+
 /** Revolver cylinder, represented by an extruded chamber-count prism about its X-axis. */
 export const cylinder: PartFamily = {
   name: 'cylinder',
@@ -522,6 +612,7 @@ export const handguard: PartFamily = {
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'front', mount: 'clamp', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
+        { id: 'gas-tube', mount: 'gas-tube', gender: 'male', pos: [8, 2.5, 0], normal: NEG_X, up: Y },
         {
           id: 'rail',
           mount: 'rail',
@@ -897,9 +988,37 @@ export const pistolSlide: PartFamily = {
   },
 };
 
+const akCurvedMagazineSolids = (length: SizeClass, depth: number, width: number, insertion: number): Solid[] => {
+  const { top, middle, bottom, bendDegrees } = AK_MAGAZINE_SEGMENTS[length];
+  const angle = (bendDegrees * Math.PI) / 180;
+  const jointY = insertion - top;
+  const bottomCenterX = middle * Math.sin(angle);
+  const bottomCenterY = jointY - middle * Math.cos(angle);
+  const bottomHalfDepth = snapAkGrid((depth - bottom * Math.sin(angle)) / Math.cos(angle)) / 2;
+  const bottomLeft = snapAkPoint([
+    bottomCenterX - bottomHalfDepth * Math.cos(angle),
+    bottomCenterY - bottomHalfDepth * Math.sin(angle),
+  ]);
+  const bottomRight = snapAkPoint([
+    bottomCenterX + bottomHalfDepth * Math.cos(angle),
+    bottomCenterY + bottomHalfDepth * Math.sin(angle),
+  ]);
+  const endLeft = snapAkPoint([bottomLeft[0] + bottom * Math.sin(angle), bottomLeft[1] - bottom * Math.cos(angle)]);
+  const endRight = snapAkPoint([bottomRight[0] + bottom * Math.sin(angle), bottomRight[1] - bottom * Math.cos(angle)]);
+  return [
+    solid('upper-body', [-depth / 2, jointY, -width / 2], [depth / 2, insertion, width / 2]),
+    extrudedPolygon(
+      'curve-middle',
+      [bottomLeft, bottomRight, [depth / 2, jointY], [-depth / 2, jointY]],
+      [-width / 2, width / 2],
+    ),
+    extrudedPolygon('curve-bottom', [endLeft, endRight, bottomRight, bottomLeft], [-width / 2, width / 2]),
+  ];
+};
+
 export const magazine: PartFamily = {
   name: 'magazine',
-  params: { length: size, profile: choice('standard', 'smg', 'pistol') },
+  params: { length: size, profile: choice('standard', 'smg', 'pistol', 'ak-curved') },
   build(params): PartDef {
     const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
     const depth =
@@ -907,10 +1026,13 @@ export const magazine: PartFamily = {
     const width =
       params.profile === 'pistol' ? PISTOL_MAGAZINE_WIDTH : MAGAZINE_WIDTH * (params.profile === 'smg' ? 0.8 : 1);
     const insertion = params.profile === 'pistol' ? PISTOL_MAGAZINE_INSERTION : MAGAZINE_INSERTION;
+    const akCurved = params.profile === 'ak-curved';
     return {
       family: 'magazine',
-      // The lower or pistol grip owns the corresponding magazine well and insertion path.
-      solids: [solid('body', [-depth / 2, -len + insertion, -width / 2], [depth / 2, insertion, width / 2])],
+      // The AK's top insert is straight; its trapezoid and tilted base share exact joint faces.
+      solids: akCurved
+        ? akCurvedMagazineSolids(cls(params, 'length'), depth, width, insertion)
+        : [solid('body', [-depth / 2, -len + insertion, -width / 2], [depth / 2, insertion, width / 2])],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
       keepOuts: [],
       axes: [],
@@ -925,7 +1047,7 @@ export const magazine: PartFamily = {
  */
 export const stock: PartFamily = {
   name: 'stock',
-  params: { length: size, style: choice('straight', 'sporting') },
+  params: { length: size, style: choice('straight', 'sporting', 'dropped') },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
     const port: PortDef = {
@@ -949,6 +1071,19 @@ export const stock: PartFamily = {
         keepOuts: [],
         axes: [],
         tags: [FIRING_GRIP],
+      };
+    }
+    if (params.style === 'dropped') {
+      return {
+        family: 'stock',
+        solids: [
+          solid('comb', [-len, -3, -1.5], [-6, -1.5, 1.5]),
+          solid('wrist', [-6, -4, -1.5], [0, -1.5, 1.5]),
+          solid('butt', [-len - 1, -8, -1.75], [-len, 0, 1.75]),
+        ],
+        ports: [port],
+        keepOuts: [],
+        axes: [],
       };
     }
     return {
@@ -978,12 +1113,15 @@ export const sight: PartFamily = {
 
 export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   receiver,
+  'ak-receiver': akReceiver,
   lower,
   frame: pistolFrame,
   slide: pistolSlide,
   barrel,
   cylinder,
   'front-sight': frontSight,
+  'gas-tube': gasTube,
+  'ak-rear-sight': akRearSight,
   handguard,
   'tube-magazine': tubeMagazine,
   forend,
