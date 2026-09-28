@@ -1,6 +1,6 @@
 {
-  "name": "broken-ak-gas-tube",
-  "description": "The AK receiver and handguard gas-tube interfaces are unconnected.",
+  "name": "broken-ak-gas-cylinder",
+  "description": "The AK receiver and handguard gas-cylinder interfaces are unconnected.",
   "root": "receiver",
   "parts": {
     "receiver": {

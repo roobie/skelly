@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { hourOfDay } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -10,7 +11,8 @@ import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
-import { restorePlayerAudioState, snapshotSession } from '../src/core/saveState.ts';
+import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
+import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
@@ -692,4 +694,336 @@ describe('hamlet save/load continuation', () => {
       new SoundPicker(seed, registry.sounds).restoreState(noPickerTime.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
   }, 15_000);
+});
+
+const formatVersion: SaveVersionComponents = {
+  buildRevision: 'test-build-2026-09-30',
+  schemaVersion: 1,
+  generators: { worldgen: 'worldgen-v1' },
+  contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
+};
+const formatWorldOptions = { blockSize: 0.5, site: 'hamlet' as const, storeys: 1 };
+const hashPattern = /^[0-9a-f]{64}$/;
+const contentLookup = (kind: SaveContentKind, id: string): boolean => {
+  if (kind === 'block') {
+    return registry.blockIds.has(id);
+  }
+  if (kind === 'item') {
+    return registry.items.has(id);
+  }
+  if (kind === 'furniture') {
+    return registry.furniture.has(id);
+  }
+  if (kind === 'zombie') {
+    return registry.zombies.has(id);
+  }
+  if (kind === 'sound') {
+    return registry.sounds.has(id);
+  }
+  return ['needs', 'player-physics', 'zombies', 'lights'].includes(id);
+};
+const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
+  encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
+
+const jsonCanonical = (value: unknown): string => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(jsonCanonical).join(',')}]`;
+  }
+  const object = value as Record<string, unknown>;
+  const keys = Object.keys(object).sort();
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${jsonCanonical(object[key])}`).join(',')}}`;
+};
+const sealEnvelope = async (envelope: Record<string, unknown>, preserveLength = false): Promise<Uint8Array> => {
+  const { payload } = envelope;
+  const payloadBytes = new TextEncoder().encode(jsonCanonical(payload));
+  if (!preserveLength) {
+    envelope.payloadByteLength = payloadBytes.byteLength;
+  }
+  const digest = await crypto.subtle.digest('SHA-256', payloadBytes.slice().buffer as ArrayBuffer);
+  envelope.checksum = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return new TextEncoder().encode(jsonCanonical(envelope));
+};
+const parseEnvelope = (bytes: Uint8Array): Record<string, unknown> =>
+  JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>;
+const getObject = (value: unknown): Record<string, unknown> => value as Record<string, unknown>;
+const reverseObjectKeys = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(reverseObjectKeys);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .reverse()
+      .map(([key, child]) => [key, reverseObjectKeys(child)]),
+  );
+};
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive matcher explicitly checks every primitive with Object.is.
+const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): void => {
+  if (typeof expected === 'number') {
+    if (typeof actual !== 'number' || !Object.is(actual, expected)) {
+      throw new Error(`Number differs at ${path}`);
+    }
+    return;
+  }
+  if (Array.isArray(expected)) {
+    if (!Array.isArray(actual) || actual.length !== expected.length) {
+      throw new Error(`Array differs at ${path}`);
+    }
+    for (const [index, value] of expected.entries()) {
+      assertNumbersObjectIs(value, actual[index], `${path}[${index}]`);
+    }
+    return;
+  }
+  if (typeof expected === 'object' && expected !== null) {
+    if (typeof actual !== 'object' || actual === null || Array.isArray(actual)) {
+      throw new Error(`Object differs at ${path}`);
+    }
+    const left = Object.keys(expected).sort();
+    const right = Object.keys(actual).sort();
+    if (left.join('\\u0000') !== right.join('\\u0000')) {
+      throw new Error(`Object keys differ at ${path}`);
+    }
+    for (const key of left) {
+      assertNumbersObjectIs(
+        (expected as Record<string, unknown>)[key],
+        (actual as Record<string, unknown>)[key],
+        `${path}.${key}`,
+      );
+    }
+    return;
+  }
+  if (!Object.is(actual, expected)) {
+    throw new Error(`Value differs at ${path}`);
+  }
+};
+
+describe('canonical save format', () => {
+  it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
+    const source = createRuntime();
+    source.rest.start('rest');
+    advance(source, 17);
+    prepareAudioContinuation(source);
+    const snapshot = capture(source);
+    const started = performance.now();
+    const bytes = await encodeFixture(snapshot);
+    const encodedAt = performance.now();
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const decodedAt = performance.now();
+    const wirePayload = getObject(parseEnvelope(bytes).payload);
+    const wireWorld = getObject(wirePayload.world);
+    expect(Object.keys(getObject(wireWorld.regions)).length).toBeGreaterThan(0);
+
+    expect(decoded.generation).toBe(7);
+    expect(decoded.worldOptions).toEqual({
+      ...formatWorldOptions,
+      seed: snapshot.character.simulation.seed,
+      clock: snapshot.character.simulation.clock,
+    });
+    expect(decoded.snapshot).toEqual(snapshot);
+    const loaded = createRuntime(decoded.snapshot);
+    advance(source, 90);
+    advance(loaded, 90);
+    expect(inspect(loaded)).toEqual(inspect(source));
+
+    const interrupted = createRuntime();
+    expect(interrupted.rest.start('sleep')).toBeUndefined();
+    advance(interrupted, 40);
+    interrupted.sim.emit({ kind: 'interrupt', reason: 'format round-trip' });
+    const interruptedSnapshot = capture(interrupted);
+    expect(interruptedSnapshot.character.simulation.pendingInterrupt).toBe('format round-trip');
+    const interruptedBytes = await encodeFixture(interruptedSnapshot);
+    const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });
+    const interruptedLoaded = createRuntime(interruptedDecoded.snapshot);
+    advance(interrupted, 80);
+    advance(interruptedLoaded, 80);
+    expect(inspect(interruptedLoaded)).toEqual(inspect(interrupted));
+
+    const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;
+    expect(await encodeFixture(reversed)).toEqual(bytes);
+    expect(await encodeFixture(snapshot)).toEqual(bytes);
+    const buildBytes = await encodeSave(snapshot, { generation: 8, worldOptions: formatWorldOptions });
+    const buildDecoded = await decodeSave(buildBytes, { contentLookup });
+    expect(buildDecoded.versionIdentity.components.buildRevision.length).toBeGreaterThan(0);
+    expect(buildDecoded.versionIdentity.components.contentPacks[0]!.canonicalHash).toMatch(hashPattern);
+    expect(buildDecoded.generation).toBe(8);
+    expect(encodedAt - started).toBeGreaterThanOrEqual(0);
+    expect(decodedAt - encodedAt).toBeGreaterThanOrEqual(0);
+  }, 20_000);
+
+  it('preserves signed zero, subnormals, the largest safe integer, and ordinary decimal values exactly', async () => {
+    const snapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
+    snapshot.character.player.yaw = -0;
+    snapshot.character.simulation.needs.stamina = Number.MIN_VALUE;
+    snapshot.character.simulation.needs.calories = 2.225_073_858_507_201e-308;
+    snapshot.character.player.body.pos[0] = 0.1 + 0.2;
+    snapshot.character.inventory.nextItemUid = Number.MAX_SAFE_INTEGER;
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    assertNumbersObjectIs(snapshot, decoded.snapshot);
+
+    await Promise.all(
+      [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY].map(async (value) => {
+        const invalid = structuredClone(snapshot);
+        invalid.character.player.yaw = value;
+        await expect(encodeFixture(invalid)).rejects.toThrow('snapshot.character.player.yaw');
+      }),
+    );
+  });
+
+  it('rejects user objects that collide with the reserved negative-zero tag', async () => {
+    const snapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
+    (snapshot.character.player as unknown as Record<string, unknown>).surprise = { [NEGATIVE_ZERO_TAG]: '-0' };
+    await expect(encodeFixture(snapshot)).rejects.toThrow('Reserved number tag');
+  });
+
+  it('refuses an exact version mismatch before content lookup and never mutates the input bytes', async () => {
+    const bytes = await encodeFixture(capture(createRuntime()));
+    const original = bytes.slice();
+    let lookups = 0;
+    const otherVersion = { ...formatVersion, buildRevision: 'different-build' };
+    let mismatch: unknown;
+    try {
+      await decodeSave(bytes, {
+        version: otherVersion,
+        contentLookup: () => {
+          lookups += 1;
+          return true;
+        },
+      });
+    } catch (error) {
+      mismatch = error;
+    }
+    expect(lookups).toBe(0);
+    expect(mismatch).toBeInstanceOf(Error);
+    expect((mismatch as Error).message).toContain('Save version mismatch');
+    expect(bytes).toEqual(original);
+  });
+
+  it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {
+    const valid = await encodeFixture(capture(createRuntime()));
+    const malformed: {
+      name: string;
+      bytes: Promise<Uint8Array> | Uint8Array;
+      options?: { maxPayloadBytes?: number };
+      message: string;
+    }[] = [];
+    malformed.push({ name: 'truncated', bytes: valid.slice(0, -1), message: 'truncated' });
+    malformed.push({ name: 'over limit', bytes: valid, options: { maxPayloadBytes: 16 }, message: 'configured limit' });
+    malformed.push({
+      name: 'noncanonical',
+      bytes: new TextEncoder().encode(` ${new TextDecoder().decode(valid)}`),
+      message: 'Non-canonical',
+    });
+
+    const badChecksum = parseEnvelope(valid);
+    badChecksum.checksum = `${String(badChecksum.checksum)[0] === '0' ? '1' : '0'}${String(badChecksum.checksum).slice(1)}`;
+    malformed.push({
+      name: 'checksum',
+      bytes: new TextEncoder().encode(jsonCanonical(badChecksum)),
+      message: 'checksum mismatch',
+    });
+    const badLength = parseEnvelope(valid);
+    badLength.payloadByteLength = Number(badLength.payloadByteLength) + 1;
+    malformed.push({ name: 'length', bytes: sealEnvelope(badLength, true), message: 'Payload length mismatch' });
+    const badMagic = parseEnvelope(valid);
+    badMagic.magic = 'NOT_A_SAVE';
+    malformed.push({ name: 'magic', bytes: sealEnvelope(badMagic), message: 'Invalid value' });
+    const badSchema = parseEnvelope(valid);
+    badSchema.schemaVersion = 2;
+    malformed.push({ name: 'schema version', bytes: sealEnvelope(badSchema), message: 'schema mismatch' });
+
+    const badRle = parseEnvelope(valid);
+    const rlePayload = getObject(badRle.payload);
+    const rleWorld = getObject(rlePayload.world);
+    const rleRegions = Object.values(getObject(rleWorld.regions)) as Record<string, unknown>[];
+    const rleChunks = rleRegions.find((region) => (region.chunks as unknown[]).length > 0)!.chunks as Record<
+      string,
+      unknown
+    >[];
+    const firstChunk = rleChunks[0]!;
+    const firstRun = (firstChunk.runs as Record<string, unknown>[])[0]!;
+    firstRun.id = (firstChunk.palette as unknown[]).length;
+    malformed.push({ name: 'RLE', bytes: sealEnvelope(badRle), message: 'Malformed RLE run' });
+    const adjacentSnapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
+    const changedChunk = adjacentSnapshot.world.diffs.chunks[0]!;
+    changedChunk.cells.push({ ...changedChunk.cells[0]!, index: changedChunk.cells[0]!.index + 1 });
+    const nonMaximalRle = parseEnvelope(await encodeFixture(adjacentSnapshot));
+    const nonMaximalPayload = getObject(nonMaximalRle.payload);
+    const nonMaximalWorld = getObject(nonMaximalPayload.world);
+    const nonMaximalRegion = Object.values(getObject(nonMaximalWorld.regions))[0] as Record<string, unknown>;
+    const nonMaximalChunk = (nonMaximalRegion.chunks as Record<string, unknown>[])[0]!;
+    const nonMaximalRuns = nonMaximalChunk.runs as Record<string, unknown>[];
+    const maximalRun = nonMaximalRuns[0]!;
+    const runStart = Number(maximalRun.start);
+    const runLength = Number(maximalRun.length);
+    expect(runLength).toBeGreaterThan(1);
+    nonMaximalRuns.splice(
+      0,
+      1,
+      { ...maximalRun, length: 1 },
+      { ...maximalRun, start: runStart + 1, length: runLength - 1 },
+    );
+    malformed.push({ name: 'non-maximal RLE', bytes: sealEnvelope(nonMaximalRle), message: 'Non-maximal RLE runs' });
+
+    const duplicate = parseEnvelope(valid);
+    const duplicatePayload = getObject(duplicate.payload);
+    const duplicateCharacter = getObject(duplicatePayload.character);
+    const duplicateInventory = getObject(duplicateCharacter.inventory);
+    const hands = getObject(duplicateInventory.hands);
+    getObject(hands.left).uid = getObject(hands.right).uid;
+    malformed.push({ name: 'duplicate item ID', bytes: sealEnvelope(duplicate), message: 'Duplicate item id' });
+
+    const unknownField = parseEnvelope(valid);
+    const unknownPayload = getObject(unknownField.payload);
+    const unknownCharacter = getObject(unknownPayload.character);
+    getObject(unknownCharacter.player).surprise = true;
+    malformed.push({ name: 'unknown field', bytes: sealEnvelope(unknownField), message: 'Unknown field' });
+    const missingField = parseEnvelope(valid);
+    const missingPayload = getObject(missingField.payload);
+    const missingCharacter = getObject(missingPayload.character);
+    Reflect.deleteProperty(getObject(missingCharacter.player), 'pitch');
+    malformed.push({ name: 'missing field', bytes: sealEnvelope(missingField), message: 'Missing field' });
+    const invalidRange = parseEnvelope(valid);
+    const invalidPayload = getObject(invalidRange.payload);
+    const invalidCharacter = getObject(invalidPayload.character);
+    const invalidInventory = getObject(invalidCharacter.inventory);
+    getObject(getObject(invalidInventory.hands).right).uid = 0;
+    malformed.push({ name: 'invalid item ID range', bytes: sealEnvelope(invalidRange), message: 'Invalid number' });
+
+    const unknownId = parseEnvelope(valid);
+    const unknownIdPayload = getObject(unknownId.payload);
+    const unknownIdCharacter = getObject(unknownIdPayload.character);
+    const unknownInventory = getObject(unknownIdCharacter.inventory);
+    getObject(getObject(unknownInventory.hands).right).type = 'not_a_real_item';
+    malformed.push({ name: 'unknown content ID', bytes: sealEnvelope(unknownId), message: 'Unknown item content id' });
+    const unknownSystem = parseEnvelope(valid);
+    const unknownSystemPayload = getObject(unknownSystem.payload);
+    const unknownSystemCharacter = getObject(unknownSystemPayload.character);
+    const unknownSimulation = getObject(unknownSystemCharacter.simulation);
+    const unknownScheduler = getObject(unknownSimulation.scheduler);
+    (unknownScheduler.systems as Record<string, unknown>[])[0]!.id = 'missing_system';
+    malformed.push({
+      name: 'unknown scheduler system',
+      bytes: sealEnvelope(unknownSystem),
+      message: 'Unknown scheduler content id',
+    });
+
+    await Promise.all(
+      malformed.map(async (test) => {
+        const bytes = await test.bytes;
+        let rejection: unknown;
+        try {
+          await decodeSave(bytes, { version: formatVersion, contentLookup, ...test.options });
+        } catch (error) {
+          rejection = error;
+        }
+        expect(rejection, test.name).toBeInstanceOf(Error);
+        expect((rejection as Error).message, test.name).toContain(test.message);
+      }),
+    );
+  }, 20_000);
 });

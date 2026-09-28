@@ -1,18 +1,23 @@
 {
-  "name": "broken-ak-gas-block",
-  "description": "AK gas cylinder has no barrel-mounted gas block.",
+  "name": "broken-free-float-handguard",
+  "description": "A free-float handguard fitted too tightly touches the barrel.",
+  "expect": ["free-float-clearance", "solid-overlap"],
   "root": "receiver",
   "parts": {
     "receiver": {
-      "family": "ak-receiver",
+      "family": "receiver",
       "params": {
-        "bore": "S"
+        "action": "auto",
+        "feed": "box",
+        "bore": "M",
+        "chargingHandle": "rear-top",
+        "rail": "full"
       }
     },
     "lower": {
       "family": "lower",
       "params": {
-        "layout": "ak"
+        "layout": "ar"
       }
     },
     "barrel": {
@@ -24,11 +29,10 @@
     "handguard": {
       "family": "handguard",
       "params": {
-        "layout": "ak"
+        "mount": "free-float",
+        "length": "M",
+        "fit": "too-tight"
       }
-    },
-    "gas-cylinder": {
-      "family": "gas-cylinder"
     },
     "grip": {
       "family": "grip",
@@ -39,22 +43,22 @@
     "magazine": {
       "family": "magazine",
       "params": {
-        "length": "L",
-        "profile": "ak-curved"
+        "length": "M",
+        "profile": "stanag-curved"
       }
     },
     "stock": {
       "family": "stock",
       "params": {
-        "length": "L",
-        "style": "dropped"
+        "length": "M",
+        "style": "straight"
       }
-    },
-    "rear-sight": {
-      "family": "ak-rear-sight"
     },
     "front-sight": {
       "family": "front-sight"
+    },
+    "sight": {
+      "family": "sight"
     }
   },
   "connections": [
@@ -71,10 +75,6 @@
       "to": "handguard.rear"
     },
     {
-      "from": "handguard.front",
-      "to": "barrel.clamp"
-    },
-    {
       "from": "lower.grip",
       "to": "grip.top"
     },
@@ -87,21 +87,13 @@
       "to": "stock.front"
     },
     {
-      "from": "receiver.gas-cylinder",
-      "to": "gas-cylinder.rear"
-    },
-    {
-      "from": "gas-cylinder.handguard",
-      "to": "handguard.gas-cylinder"
-    },
-    {
-      "from": "receiver.rear-sight",
-      "to": "rear-sight.base"
+      "from": "receiver.rail",
+      "to": "sight.base",
+      "slot": 0
     },
     {
       "from": "barrel.front-sight",
       "to": "front-sight.base"
     }
-  ],
-  "expect": ["required-ports"]
+  ]
 }

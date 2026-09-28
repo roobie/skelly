@@ -271,6 +271,26 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
 | `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
+Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
+The lengths below remain abstract units on the existing grid.
+
+- Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
+  integrated pistol-frame grip.
+- Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
+  `6/10/16u`; AK-74 curved `6/10/16.5u`; AKM curved `6/10/19.25u`; STANAG
+  curved `6/10/15.75u`. The curved L values follow the traced reference
+  lengths: AK-74/AKM ratios and STANAG 30-round, with STANAG 20-round anchoring
+  M near `10u`. Ordinary S begins at the plausible 10-round length (`6u`).
+- The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
+  `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
+  and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
+  is not a box-magazine user; other archetypes do not offer this exception.
+- Standard handguards occupy 65% of exposed barrel length; AK handguards occupy
+  80% of the barrel-to-gas-port station. Tilted magazine seating is declared
+  per lower layout: conventional and AR layouts support the standard magazine
+  profile; bullpup, AK, and trigger layouts do not. Unsupported combinations
+  are rejected by `magazine-well-axis`, not surfaced as contact gaps.
+
 On top of one broken fixture per rule, these check constraints specific to an
 archetype:
 
@@ -530,20 +550,21 @@ explicitly named `battle-rifle`.
   while retaining the stock port on the rear face and the flat dust-cover seat.
   Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
   A leaf rear sight mounts on a receiver sight-block port.
-- The raised gas tube has its own axis, checked parallel to the bore, and
-  connects the receiver to the upper handguard. The front sight block uses the
-  barrel's existing port four units from the muzzle.
-- Added an `ak` lower layout with the conventional well and a forward-extended
-  box keep-out for the magazine's rock-in sweep. The magazine remains vertical
-  in its insertion well; the broad box is a conservative swept envelope, not an
-  arc-aware motion simulation.
+- The gas cylinder runs from the receiver's gas-cylinder port under the rear
+  handguard to the gas block. The block seats on the barrel at the declared
+  gas-port station; the cylinder axis is checked parallel to the bore. The
+  front sight block uses the barrel's separate port four units from the muzzle.
+- Added an `ak` lower layout with a flat face seat and no magazine-well walls.
+  The curved AK magazine has seat kind `face` and zero insertion depth; its
+  conservative rock-in keep-out starts at the front hook point. This swept box
+  is not an arc-aware motion simulation.
 - The `ak-curved` magazine is three convex prisms: a slanted-bottom upper
   section, a trapezoidal middle section and a forward-turned lower section.
   Their joint faces match exactly. The middle prism has parallel grip-facing
   and barrel-facing sides of different lengths; its top interface is slanted
   5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
   angled end face without arbitrary X-axis compensation. Added an intermediate dropped-stock style.
-- A passing fixture and a missing-gas-tube fixture exercise the layout. At
+- A passing fixture and a missing-gas-cylinder fixture exercise the layout. At
   1000 seeds, AK is 100% valid with 32 distinct builds. Individual rounds,
   magazine latching and the actual rock-in motion are not simulated.
 

@@ -5,10 +5,39 @@
 import { chance, pick, type Rng, seededRng } from './random.ts';
 import { resolve } from './resolve.ts';
 import type { Assembly, Connection, Domain, PartInstance } from './schema.ts';
-import type { Choice, ConnectionTemplate, Template } from './template.ts';
+import type { Choice, ConnectionTemplate, ParamReference, Template } from './template.ts';
 import { type Report, validate } from './validate.ts';
 
 const choose = <T>(rng: Rng, c: Choice<T>): T => (Array.isArray(c) ? pick(rng, c as readonly T[]) : (c as T));
+const isParamReference = (choice: Choice<string> | ParamReference): choice is ParamReference =>
+  typeof choice === 'object' && !Array.isArray(choice);
+const chooseParam = (
+  rng: Rng,
+  choice: Choice<string> | ParamReference,
+  parts: Readonly<Record<string, PartInstance>>,
+  domain: Domain,
+): string => {
+  if (!isParamReference(choice)) {
+    return choose(rng, choice);
+  }
+  const reference = parts[choice.fromSlot];
+  const family = reference && domain.families[reference.family];
+  const value = reference?.params?.[choice.param] ?? family?.params[choice.param]?.default;
+  if (value === undefined) {
+    throw new Error(`Template parameter reference ${choice.fromSlot}.${choice.param} has no value.`);
+  }
+  return value;
+};
+const conditionMatches = (
+  condition: NonNullable<ConnectionTemplate['when']>,
+  parts: Readonly<Record<string, PartInstance>>,
+  domain: Domain,
+): boolean => {
+  const instance = parts[condition.part];
+  const family = instance && domain.families[instance.family];
+  const value = instance?.params?.[condition.param] ?? family?.params[condition.param]?.default;
+  return value === condition.equals;
+};
 
 const partOf = (ref: string): string => ref.slice(0, ref.indexOf('.'));
 
@@ -29,7 +58,7 @@ export const generate = (template: Template, domain: Domain, seed: number): Asse
     }
     const params: Record<string, string> = {};
     for (const [name, c] of Object.entries(slot.params ?? {})) {
-      params[name] = choose(rng, c);
+      params[name] = chooseParam(rng, c, parts, domain);
     }
     parts[slot.id] = Object.keys(params).length > 0 ? { family: slot.family, params } : { family: slot.family };
   }
@@ -38,6 +67,9 @@ export const generate = (template: Template, domain: Domain, seed: number): Asse
   //    sit on are known (a port's slot count can depend on inherited params).
   const drafts: { conn: Connection; slot: ConnectionTemplate['slot'] }[] = [];
   for (const t of template.connections) {
+    if (t.when && !conditionMatches(t.when, parts, domain)) {
+      continue;
+    }
     if (!(partOf(t.to) in parts)) {
       continue;
     }
