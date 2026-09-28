@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { build, generateValid } from '../src/core/generate.ts';
-import { applyPoint } from '../src/core/math.ts';
+import { applyPoint, type Mat3 } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
 import { corners, footRestExtents, strideLength, walkPose } from '../src/mob/gait.ts';
@@ -204,6 +204,74 @@ describe('walkPose', () => {
         }
       }
     });
+  }
+});
+
+/** Rotation angle (degrees) between two rotation matrices: acos((trace(AᵀB)-1)/2), i.e. trace(AᵀB) as
+ * the elementwise dot product of the two (both being orthonormal). */
+const rotAngleDeg = (a: Mat3, b: Mat3): number => {
+  let tr = 0;
+  for (let k = 0; k < 9; k++) {
+    tr += a[k]! * b[k]!;
+  }
+  return (Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2))) * 180) / Math.PI;
+};
+
+const SNAP_BONES = ['thigh.L', 'thigh.R', 'shin.L', 'shin.R', 'foot.L', 'foot.R'] as const;
+
+/** Samples walkPose at `n` phases over a full cycle (wrapping n-1 -> 0) and reports, across all
+ * SNAP_BONES: the worst per-sample rotation-angle delta, the worst |Δroot.y|, and the worst second
+ * difference of a bone's own angle-delta sequence (a velocity kink). Factored out of the "no snaps" test
+ * below, whose own it() does the asserting, to keep that under Biome's cognitive-complexity limit.
+ */
+const sampleGaitDeltas = (
+  setupResult: ReturnType<typeof setup>,
+  speed: number,
+  n: number,
+): { maxAngleDelta: number; maxRootYDelta: number; maxSecondDiff: number } => {
+  const { body, extents, params } = setupResult;
+  const mats: Record<string, Mat3>[] = [];
+  const rootYs: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const pose = walkPose({ bones: body.bones, extents, params }, i / n, speed);
+    const transforms = boneTransforms(body.bones, pose);
+    const m: Record<string, Mat3> = {};
+    for (const b of SNAP_BONES) {
+      m[b] = transforms.get(b)!.r;
+    }
+    mats.push(m);
+    rootYs.push(pose.root[1]);
+  }
+
+  let maxAngleDelta = 0;
+  let maxSecondDiff = 0;
+  for (const b of SNAP_BONES) {
+    const deltas = mats.map((_, i) => rotAngleDeg(mats[i]![b]!, mats[(i + 1) % n]![b]!));
+    for (let i = 0; i < n; i++) {
+      maxAngleDelta = Math.max(maxAngleDelta, deltas[i]!);
+      maxSecondDiff = Math.max(maxSecondDiff, Math.abs(deltas[(i + 1) % n]! - deltas[i]!));
+    }
+  }
+  let maxRootYDelta = 0;
+  for (let i = 0; i < n; i++) {
+    maxRootYDelta = Math.max(maxRootYDelta, Math.abs(rootYs[(i + 1) % n]! - rootYs[i]!));
+  }
+  return { maxAngleDelta, maxRootYDelta, maxSecondDiff };
+};
+
+describe('the walk has no snaps', () => {
+  const N = 400;
+  for (const name of TEMPLATES.map((t) => t.name)) {
+    for (const seed of [1, 2, 3]) {
+      for (const speed of [0.8, 1.4, 2.8]) {
+        it(`${name} seed ${seed} at ${speed} m/s: no per-sample joint or root-Y snap over a full cycle`, () => {
+          const { maxAngleDelta, maxRootYDelta, maxSecondDiff } = sampleGaitDeltas(setup(name, seed), speed, N);
+          expect(maxAngleDelta).toBeLessThan(2.5);
+          expect(maxRootYDelta).toBeLessThan(0.003);
+          expect(maxSecondDiff).toBeLessThan(0.5); // no velocity kink either
+        });
+      }
+    }
   }
 });
 
