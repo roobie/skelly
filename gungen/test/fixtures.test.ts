@@ -24,6 +24,7 @@ describe('fixtures', () => {
       'archetype-bullpup',
       'archetype-pistol',
       'archetype-pump-shotgun',
+      'archetype-revolver',
       'archetype-smg',
     ]);
     for (const f of archetypes) {

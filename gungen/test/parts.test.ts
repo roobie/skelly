@@ -35,6 +35,43 @@ describe('part library', () => {
     }
   });
 
+  it('builds a revolver frame with a cylinder window and the required clearance volumes', () => {
+    const frame = FAMILIES.receiver!.build({ action: 'revolver', feed: 'cylinder', bore: 'S' });
+    expect(frame.solids.map((part) => part.id)).toContain('top-strap');
+    expect(frame.solids.map((part) => part.id)).toContain('cylinder-side-near');
+    expect(frame.ports.map((port) => port.id)).toContain('cylinder');
+    expect(frame.keepOuts.map((keepOut) => keepOut.id)).toEqual([
+      'cylinder-gap',
+      'cylinder-swing',
+      'hammer-travel',
+    ]);
+  });
+
+  it('adds the barrel-to-cylinder loop port to the revolver barrel profile', () => {
+    const barrel = FAMILIES.barrel!.build({ bore: 'S', length: 'S', profile: 'revolver' });
+    expect(barrel.ports.map((port) => port.id)).toContain('cylinder');
+    const tube = barrel.solids[0]!;
+    expect(tube.kind).toBe('box');
+    if (tube.kind === 'box') {
+      expect(tube.box.center[0] + tube.box.half[0]).toBeCloseTo(12);
+    }
+  });
+
+  it('builds six- or eight-sided revolver cylinders with an aligned chamber axis', () => {
+    const six = FAMILIES.cylinder!.build({ chambers: 'six', chamber: 'aligned' });
+    const eight = FAMILIES.cylinder!.build({ chambers: 'eight', chamber: 'aligned' });
+    expect(six.solids[0]!.kind).toBe('extruded-polygon');
+    expect(eight.solids[0]!.kind).toBe('extruded-polygon');
+    if (six.solids[0]!.kind === 'extruded-polygon' && eight.solids[0]!.kind === 'extruded-polygon') {
+      expect(six.solids[0]!.profile).toHaveLength(6);
+      expect(eight.solids[0]!.profile).toHaveLength(8);
+    }
+    expect(six.axes[0]!.origin[0]).toBeCloseTo(0);
+    expect(six.axes[0]!.origin[1]).toBeCloseTo(3);
+    expect(eight.axes[0]!.origin[0]).toBeCloseTo(0);
+    expect(eight.axes[0]!.origin[1]).toBeCloseTo(3);
+  });
+
   it('models the grip as one beveled prism matching its mount face', () => {
     const solids = FAMILIES.grip!.build({ length: 'M' }).solids;
     expect(solids).toHaveLength(1);

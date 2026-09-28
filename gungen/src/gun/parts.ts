@@ -1,13 +1,14 @@
-// Part library: parametric families built from boxes. All numbers are in u
+// Part library: parametric families built from boxes and convex extrusions. All numbers are in u
 // (see conventions.ts) and set proportions, not real-world dimensions
 // (PROJECT.md, non-goals).
 //
-// The receiver is only the action body: it carries the bore line and its
-// action's keep-out volumes. Layout (where the grip and magazine go) lives in
-// the lower that hangs under it, so layouts are data: pick a lower.
+// The receiver normally carries the action body and bore line; the revolver
+// receiver also forms the frame around its cylinder. Layout still lives in the
+// lower that hangs under it, so layouts are data: pick a lower.
 //
 // Mount types (receivers and lowers carry the female side):
 //   barrel     receiver front ↔ barrel rear (sized by bore)
+//   cylinder   revolver frame ↔ cylinder axis; cylinder ↔ barrel closes a loop
 //   handguard  receiver front ↔ handguard rear
 //   clamp      barrel ↔ handguard front (optional: handguards may float free)
 //   rail       receiver or handguard top rail (slotted) ↔ sight
@@ -76,16 +77,19 @@ const PISTOL_GRIP_HALF_X = PISTOL_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_GRIP_HALF_Z = PISTOL_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_WELL_HEIGHT = 6;
 const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
+const REVOLVER_CYLINDER_RADIUS = 3;
+const REVOLVER_CYLINDER_LENGTH = 8;
+const REVOLVER_CYLINDER_CENTER_X = -4.25;
 
 // ---- receiver ----
 
 export const receiver: PartFamily = {
   name: 'receiver',
   params: {
-    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. slide: pistol slide. */
-    action: choice('auto', 'bolt', 'pump', 'slide'),
-    /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
-    feed: choice('box', 'top', 'tube'),
+    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. slide: pistol slide. revolver: cylinder frame. */
+    action: choice('auto', 'bolt', 'pump', 'slide', 'revolver'),
+    /** box: magazine through the lower. top: loaded from above. tube: tube magazine. cylinder: revolver. */
+    feed: choice('box', 'top', 'tube', 'cylinder'),
     bore: size,
   },
   build(params): PartDef {
@@ -105,7 +109,7 @@ export const receiver: PartFamily = {
       { id: 'lower', mount: 'lower', gender: 'female', pos: [0, -2.5, 0], normal: NEG_Y, up: X, required: true },
       { id: 'stock', mount: 'stock', gender: 'female', pos: [-16, 0, 0], normal: NEG_X, up: Y },
     ];
-    const keepOuts: KeepOut[] = [keepOut('ejection', [-9, -1, 2], [-5, 2, 10])];
+    const keepOuts: KeepOut[] = params.action === 'revolver' ? [] : [keepOut('ejection', [-9, -1, 2], [-5, 2, 10])];
 
     switch (params.action) {
       case 'auto':
@@ -113,6 +117,13 @@ export const receiver: PartFamily = {
         break;
       case 'slide':
         keepOuts.push(keepOut('slide-travel', [-24, 2.5, -1.5], [-8, 4.5, 1.5]));
+        break;
+      case 'revolver':
+        keepOuts.push(
+          keepOut('cylinder-gap', [-0.25, -3, -3], [0, 0, 3], 'cylinder'),
+          keepOut('cylinder-swing', [-8.25, -6, 3], [-0.25, 0, 8]),
+          keepOut('hammer-travel', [-16, 2.5, -2], [-12, 6, 2]),
+        );
         break;
       case 'bolt':
         // The bolt slides out of the back of the receiver; its handle lifts
@@ -131,6 +142,8 @@ export const receiver: PartFamily = {
       case 'top':
         keepOuts.push(keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]));
         break;
+      case 'cylinder':
+        break;
       case 'tube':
         ports.push({
           id: 'tube',
@@ -148,9 +161,33 @@ export const receiver: PartFamily = {
         break;
     }
 
+    if (params.action === 'revolver' || params.feed === 'cylinder') {
+      ports.push({
+        id: 'cylinder',
+        mount: 'cylinder',
+        gender: 'female',
+        size: bore,
+        pos: [REVOLVER_CYLINDER_CENTER_X, -REVOLVER_CYLINDER_RADIUS, 0],
+        normal: NEG_X,
+        up: Y,
+        required: true,
+      });
+    }
+
+    const solids =
+      params.action === 'revolver'
+        ? [
+            solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
+            solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
+            solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
+            solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
+            solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
+            solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
+          ]
+        : [solid('body', [-16, -2.5, -2], [0, 2.5, 2])];
     return {
       family: 'receiver',
-      solids: [solid('body', [-16, -2.5, -2], [0, 2.5, 2])],
+      solids,
       ports,
       keepOuts,
       axes: [{ kind: 'bore', origin: [-16, 0, 0], dir: X }],
@@ -166,7 +203,7 @@ export const receiver: PartFamily = {
  * underside.
  *   conventional  magazine ahead of the grip
  *   bullpup       grip ahead of the magazine, with the butt built in
- *   trigger       trigger only, for tube-fed or top-loaded designs
+ *   trigger       trigger and grip anchor for tube-fed, top-fed, and revolver designs
  */
 export const lower: PartFamily = {
   name: 'lower',
@@ -287,11 +324,16 @@ export const barrel: PartFamily = {
   params: {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
-    profile: choice('standard', 'pistol'),
+    profile: choice('standard', 'pistol', 'revolver'),
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const len = params.profile === 'pistol' ? 8 : { S: 26, M: 36, L: 46 }[cls(params, 'length')];
+    const len =
+      params.profile === 'pistol'
+        ? 8
+        : params.profile === 'revolver'
+          ? { S: 12, M: 16, L: 20 }[cls(params, 'length')]
+          : { S: 26, M: 36, L: 46 }[cls(params, 'length')];
     const r = { S: 0.75, M: 1, L: 1.25 }[bore];
     const fore = FORE_LENGTH[cls(params, 'length')];
     return {
@@ -308,11 +350,45 @@ export const barrel: PartFamily = {
           up: Y,
           required: true,
         },
+        ...(params.profile === 'revolver'
+          ? [{ id: 'cylinder', mount: 'cylinder', gender: 'female' as const, size: bore, pos: [REVOLVER_CYLINDER_CENTER_X, 0, 0] as Vec3, normal: NEG_X, up: Y }]
+          : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
+    };
+  },
+};
+
+/** Revolver cylinder, represented by an extruded chamber-count prism about its X-axis. */
+export const cylinder: PartFamily = {
+  name: 'cylinder',
+  params: { chambers: choice('six', 'eight'), chamber: choice('aligned', 'misaligned') },
+  build(params): PartDef {
+    const count = params.chambers === 'eight' ? 8 : 6;
+    const phase = params.chamber === 'misaligned' ? Math.PI / 2 : 0;
+    const profile = Array.from({ length: count }, (_, i) => {
+      const angle = (2 * Math.PI * i) / count + Math.PI / 2 + phase;
+      return [REVOLVER_CYLINDER_RADIUS * Math.cos(angle), REVOLVER_CYLINDER_RADIUS * Math.sin(angle)] as const;
+    });
+    const chamberAngle = Math.PI / 2 + phase;
+    return {
+      family: 'cylinder',
+      solids: [extrudedPolygon('body', profile, [-REVOLVER_CYLINDER_LENGTH / 2, REVOLVER_CYLINDER_LENGTH / 2])],
+      ports: [
+        { id: 'frame', mount: 'cylinder', gender: 'male', pos: [0, 0, 0], normal: [0, 0, 1], up: Y, required: true },
+        { id: 'barrel', mount: 'cylinder', gender: 'male', pos: [0, REVOLVER_CYLINDER_RADIUS, 0], normal: [0, 0, 1], up: Y, required: true },
+      ],
+      keepOuts: [],
+      axes: [
+        {
+          kind: 'bore',
+          origin: [REVOLVER_CYLINDER_RADIUS * Math.cos(chamberAngle), REVOLVER_CYLINDER_RADIUS * Math.sin(chamberAngle), 0],
+          dir: [0, 0, 1],
+        },
+      ],
     };
   },
 };
@@ -564,6 +640,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   receiver,
   lower,
   barrel,
+  cylinder,
   handguard,
   'tube-magazine': tubeMagazine,
   forend,

@@ -24,8 +24,9 @@ export const firingGrip: Rule = {
 };
 
 /**
- * A box-fed receiver needs a well on its lower or the lower's grip; tube-fed
- * receivers can't use either kind of box-magazine well.
+ * Box-fed receivers need a lower/grip well; tube-fed and cylinder-fed
+ * receivers cannot use a box-magazine well. Revolver action and cylinder feed
+ * must be selected together.
  */
 export const feedMatch: Rule = {
   id: 'feed-match',
@@ -39,7 +40,9 @@ export const feedMatch: Rule = {
       if (!(receiver && lower)) {
         continue;
       }
-      const feed = r.params.get(receiver.part)!.feed!.value;
+      const receiverParams = r.params.get(receiver.part)!;
+      const feed = receiverParams.feed!.value;
+      const action = receiverParams.action!.value;
       const lowerDef = r.defs.get(lower.part)!;
       const gripWell = r.connections.some((connection) => {
         const gripPart =
@@ -53,16 +56,24 @@ export const feedMatch: Rule = {
       const hasWell = lowerDef.ports.some((p) => p.mount === 'magazine') || gripWell;
       const layout = r.params.get(lower.part)?.layout?.value;
       const what = layout ? `${lower.part} (${layout})` : lower.part;
-      if (feed !== 'tube' && !hasWell) {
+      if ((action === 'revolver') !== (feed === 'cylinder')) {
+        issues.push({
+          rule: 'feed-match',
+          message: `${receiver.part} uses ${action} action with ${feed} feed; revolvers require cylinder feed and other actions do not use it.`,
+          parts: [receiver.part, lower.part],
+        });
+        continue;
+      }
+      if ((feed === 'box' || feed === 'top') && !hasWell) {
         issues.push({
           rule: 'feed-match',
           message: `${receiver.part} is ${feed}-fed, but ${what} has no magazine well.`,
           parts: [receiver.part, lower.part],
         });
-      } else if (feed === 'tube' && hasWell) {
+      } else if ((feed === 'tube' || feed === 'cylinder') && hasWell) {
         issues.push({
           rule: 'feed-match',
-          message: `${receiver.part} is tube-fed, but ${what} has a magazine well it can't feed from.`,
+          message: `${receiver.part} is ${feed}-fed, but ${what} has a magazine well it can't feed from.`,
           parts: [receiver.part, lower.part],
         });
       }

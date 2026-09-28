@@ -181,13 +181,14 @@ the generator later has something independent to be tested against (§9).
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
 - **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
-  barrel, handguard, grip, magazine, stock and sight, built from boxes plus
-  the grip's convex extruded profile. The handguard can clamp to the barrel as
-  well as the receiver, which creates the loop. There are 11 mount types: each
-  socket needs its own type so a stock can't go in a grip socket.
-- **Keep-out volumes:** ejection path, trigger finger, magazine insertion
-  path, charging handle travel (receiver); sight line (sight); muzzle
-  (barrel).
+  lower, barrel, cylinder, handguard, tube magazine, forend, grip, magazine,
+  stock and sight, built from boxes and convex extrusions. The handguard can
+  clamp to the barrel as well as the receiver, which creates a loop. There are
+  12 mount types: each socket needs its own type so a stock can't go in a grip
+  socket.
+- **Keep-out volumes:** ejection and slide paths, trigger finger, magazine
+  insertion, charging-handle/bolt/hammer travel, cylinder gap/swing clearance,
+  loading ports, sight line and muzzle.
 - **Fixtures** (`fixtures/`): one valid assembly and one broken assembly per
   rule. Each file lists the rules it is expected to fail in `expect`, and the
   tests check each one fails exactly those.
@@ -224,16 +225,18 @@ archetype in the viewer.
 - **Receiver split.** The receiver is now only the action body, with two
   params:
   - `action`: `auto` (charging handle), `bolt` (bolt travel out of the back,
-    bolt handle sweep on the right) or `pump` (driven by the forend). Each adds
-    its own keep-out volumes.
+    bolt handle sweep on the right), `pump` (forend-driven), `slide` (pistol)
+    or `revolver` (cylinder frame). Each adds its own keep-out volumes.
   - `feed`: `box` (magazine through the lower), `top` (loading port above the
-    action) or `tube` (tube magazine port, loading port underneath).
+    action), `tube` (tube magazine port underneath), or `cylinder` (revolver;
+    added in Milestone 2.2).
 
   The grip and magazine hang from a **lower** under it, whose `layout` param
   sets where they go:
   - `conventional`: magazine ahead of the grip.
   - `bullpup`: grip ahead of the magazine, with the butt built in.
-  - `trigger`: trigger only, for tube-fed or top-loaded designs.
+  - `trigger`: trigger with an optional grip anchor; used by tube-fed, top-fed
+    and revolver designs.
 - **New and extended parts:**
   - `tube-magazine`: runs under the barrel, with its cap fixed to the barrel's
     lug. That closes a loop, the same way the handguard clamp does.
@@ -241,7 +244,7 @@ archetype in the viewer.
   - `stock` now has a `style`. `straight` puts the comb in line with the bore.
     `sporting` drops the comb below the bolt's travel and adds a wrist to hold.
   - The handguard has a top rail, so a sight can sit ahead of the action.
-- **Mount types:** 11 now. `lower`, `tube`, `lug` and `forend` are new.
+- **Mount types:** 12 now. `lower`, `tube`, `lug`, `forend` and `cylinder` are new.
 
 ### Archetype fixtures
 
@@ -328,7 +331,7 @@ The validator then judges it like any hand-written fixture.
 ### What was built
 
 - **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
-  for the seven current archetypes). A template lists slots and connections:
+  for the eight current archetypes). A template lists slots and connections:
   - A **slot** names a part family and, per param, a value or a list to pick
     from. Params it leaves out are default or read from neighbours, so a
     template picks the barrel length and a clamped handguard or tube magazine
@@ -425,7 +428,7 @@ clear the barrel, and the new grip bevel fits without increasing overlaps.
 **Goal:** add distinct handgun archetypes without conflating a pistol's grip-fed
 magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 
-**Status:** in progress (pistol implemented; revolver next).
+**Status:** done.
 
 ### Pistols (first)
 
@@ -445,20 +448,23 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 
 ### Revolvers (second)
 
-- Add `cylinder` feed, a cylinder family built as a hexagonal or octagonal
-  prism below and parallel to the bore, and a rule requiring its top chamber
-  to be collinear with the bore. `feed-match` must accept cylinder feed without
-  a magazine well.
-- Add a revolver receiver/frame with a cylinder window and top strap, built
-  from several solids. Frame, cylinder and barrel form a loop; loop closure
-  checks only closure, so proportions stay fixed rather than depending on a
-  solver. Keep-outs cover cylinder gap, swing-out (or loading-gate) clearance
-  and hammer travel.
-- Add a grip without a well, a revolver template, passing and broken fixtures,
-  snapshots and stats. Grip-reach ergonomics (§5) remains unbuilt, so handgun
-  proportions are not checked against a hand. Open question: does the current
-  seven-slot receiver sight rail fit a pistol-length receiver, or does the
-  slide need its own short rail?
+- Added cylinder feed and a six- or eight-sided extruded cylinder prism below
+  and parallel to the bore. Its selected chamber axis must be collinear with
+  the bore; a misindexed-cylinder fixture exercises `axis-alignment`.
+  `feed-match` accepts cylinder feed without a magazine well and rejects
+  mismatched revolver-action/feed combinations.
+- Added a revolver receiver/frame with a cylinder window and top strap, built
+  from several solids. Frame, cylinder and barrel form a checked loop. Keep-outs
+  cover the cylinder gap, swing-out clearance and hammer travel.
+- Added a no-well grip, revolver template, passing and broken fixtures, and
+  three known-good snapshots. At 1000 seeds, revolver is 100% valid with 24
+  distinct builds; pistol remains 100% valid with 6 distinct builds. Existing
+  template rates are unchanged. Individual chamber holes and cylinder rotation
+  are not modeled; chamber alignment is represented by the bore axis.
+- Grip-reach ergonomics (§5) remains unbuilt, so handgun proportions are not
+  checked against a hand. Open question: does the current seven-slot receiver
+  sight rail fit a pistol-length receiver, or does the slide need its own short
+  rail?
 
 ## Milestone 2.3: AR and AK archetypes
 

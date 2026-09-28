@@ -1346,6 +1346,203 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
 ]
 `;
 
+exports[`templates > revolver > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.cylinder",
+        "to": "cylinder.frame",
+      },
+      {
+        "from": "barrel.cylinder",
+        "to": "cylinder.barrel",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+    ],
+    "description": "Generated from the "revolver" template with seed 100.",
+    "name": "revolver-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+          "profile": "revolver",
+        },
+      },
+      "cylinder": {
+        "family": "cylinder",
+        "params": {
+          "chamber": "aligned",
+          "chambers": "eight",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+          "well": "none",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "trigger",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "revolver",
+          "bore": "S",
+          "feed": "cylinder",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.cylinder",
+        "to": "cylinder.frame",
+      },
+      {
+        "from": "barrel.cylinder",
+        "to": "cylinder.barrel",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+    ],
+    "description": "Generated from the "revolver" template with seed 200.",
+    "name": "revolver-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+          "profile": "revolver",
+        },
+      },
+      "cylinder": {
+        "family": "cylinder",
+        "params": {
+          "chamber": "aligned",
+          "chambers": "six",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+          "well": "none",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "trigger",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "revolver",
+          "bore": "S",
+          "feed": "cylinder",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.cylinder",
+        "to": "cylinder.frame",
+      },
+      {
+        "from": "barrel.cylinder",
+        "to": "cylinder.barrel",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+    ],
+    "description": "Generated from the "revolver" template with seed 300.",
+    "name": "revolver-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+          "profile": "revolver",
+        },
+      },
+      "cylinder": {
+        "family": "cylinder",
+        "params": {
+          "chamber": "aligned",
+          "chambers": "eight",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+          "well": "none",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "trigger",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "revolver",
+          "bore": "M",
+          "feed": "cylinder",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
 exports[`templates > smg > known-good seeds 1`] = `
 [
   {

@@ -55,6 +55,26 @@ export const pistol: Template = {
   ],
 };
 
+export const revolver: Template = {
+  name: 'revolver',
+  description: 'Revolver: aligned cylinder chambers, frame window, and exposed barrel.',
+  root: 'receiver',
+  slots: [
+    { id: 'receiver', family: 'receiver', params: { action: 'revolver', feed: 'cylinder', bore: ['S', 'M'] } },
+    { id: 'lower', family: 'lower', params: { layout: 'trigger' } },
+    { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'], profile: 'revolver' } },
+    { id: 'cylinder', family: 'cylinder', params: { chambers: ['six', 'eight'], chamber: 'aligned' } },
+    { id: 'grip', family: 'grip', params: { length: SML, well: 'none' } },
+  ],
+  connections: [
+    { from: 'receiver.lower', to: 'lower.top' },
+    { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.cylinder', to: 'cylinder.frame' },
+    { from: 'barrel.cylinder', to: 'cylinder.barrel' },
+    { from: 'lower.grip', to: 'grip.top' },
+  ],
+};
+
 export const smg: Template = {
   name: 'smg',
   description: 'Submachine gun: the battle-rifle layout at small bore, short barrel, stock optional.',
@@ -183,4 +203,4 @@ export const bullpup: Template = {
   ],
 };
 
-export const TEMPLATES: readonly Template[] = [battleRifle, pistol, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];
+export const TEMPLATES: readonly Template[] = [battleRifle, pistol, revolver, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];

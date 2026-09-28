@@ -142,4 +142,17 @@ describe('rules', () => {
   it('feed-match: top-fed receivers take a magazine well too', () => {
     expect(rulesFailed(loadFixture('archetype-bolt-rifle'))).toEqual([]);
   });
+
+  it('feed-match: cylinder-fed revolver needs no magazine well', () => {
+    expect(rulesFailed(loadFixture('archetype-revolver'))).toEqual([]);
+    const { issues } = validate(loadFixture('broken-revolver-misaligned-cylinder'), gunDomain);
+    expect(issues.map((issue) => issue.rule)).toContain('axis-alignment');
+  });
+
+  it('feed-match: revolver action and cylinder feed are inseparable', () => {
+    const { issues } = validate(loadFixture('broken-revolver-feed-mismatch'), gunDomain);
+    expect(issues.filter((issue) => issue.rule === 'feed-match').map((issue) => issue.message)).toEqual([
+      'receiver uses revolver action with box feed; revolvers require cylinder feed and other actions do not use it.',
+    ]);
+  });
 });
