@@ -246,8 +246,11 @@ const rebuildPoolRenders = (): void => {
 
 interface FrameSample {
   readonly t: number;
-  readonly dt: number;
+  /** Wall-clock time since the previous frame, ms (unclamped, unlike the simulation step). */
+  readonly frameMs: number;
   readonly cpuMs: number;
+  /** CPU time inside renderer.render (scene traversal, skinning matrices, draw submission), ms. */
+  readonly renderMs: number;
   readonly calls: number;
   readonly triangles: number;
 }
@@ -267,8 +270,8 @@ const fpsStats = (window: readonly FrameSample[]): { readonly mean: number; read
   if (window.length === 0) {
     return { mean: 0, low1: 0 };
   }
-  const meanDt = window.reduce((sum, s) => sum + s.dt, 0) / window.length;
-  const sortedDt = window.map((s) => s.dt).sort((a, b) => b - a);
+  const meanDt = window.reduce((sum, s) => sum + s.frameMs, 0) / window.length;
+  const sortedDt = window.map((s) => s.frameMs).sort((a, b) => b - a);
   const worstCount = Math.max(1, Math.ceil(window.length * 0.01));
   const worstMeanDt = sortedDt.slice(0, worstCount).reduce((sum, dt) => sum + dt, 0) / worstCount;
   return { mean: 1000 / meanDt, low1: 1000 / worstMeanDt };
@@ -298,8 +301,9 @@ const updateHud = (): void => {
   const now = performance.now();
   const window = samples.filter((s) => s.t >= now - HUD_WINDOW_MS);
   const { mean, low1 } = fpsStats(window);
-  const meanDt = window.length > 0 ? window.reduce((sum, s) => sum + s.dt, 0) / window.length : 0;
+  const meanDt = window.length > 0 ? window.reduce((sum, s) => sum + s.frameMs, 0) / window.length : 0;
   const meanCpu = window.length > 0 ? window.reduce((sum, s) => sum + s.cpuMs, 0) / window.length : 0;
+  const meanRender = window.length > 0 ? window.reduce((sum, s) => sum + s.renderMs, 0) / window.length : 0;
   const last = samples.at(-1);
   hud.textContent = [
     `mode        ${mode}`,
@@ -307,6 +311,7 @@ const updateHud = (): void => {
     `fps         ${fmt1(mean)}  (1% low ${fmt1(low1)})`,
     `frame time  ${fmt2(meanDt)} ms`,
     `cpu/update  ${fmt2(meanCpu)} ms`,
+    `cpu/render  ${fmt2(meanRender)} ms`,
     `draw calls  ${last?.calls ?? 0}`,
     `triangles   ${last?.triangles ?? 0}`,
     paused ? 'walk        PAUSED' : '',
@@ -354,7 +359,8 @@ const advanceMember = (member: CrowdMember, dt: number): void => {
 let lastFrameTime = performance.now();
 renderer.setAnimationLoop(() => {
   const now = performance.now();
-  const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+  const frameMs = now - lastFrameTime;
+  const dt = Math.min(0.05, frameMs / 1000);
   lastFrameTime = now;
   controls.update();
 
@@ -386,11 +392,14 @@ renderer.setAnimationLoop(() => {
   }
   const cpuMs = performance.now() - cpuStart;
 
+  const renderStart = performance.now();
   renderer.render(scene, camera);
+  const renderMs = performance.now() - renderStart;
   pushSample({
     t: now,
-    dt,
+    frameMs,
     cpuMs,
+    renderMs,
     calls: renderer.info.render.calls,
     triangles: renderer.info.render.triangles,
   });
@@ -439,6 +448,7 @@ interface SweepRow {
   readonly meanFps: number;
   readonly low1: number;
   readonly cpuMs: number;
+  readonly renderMs: number;
   readonly draws: number;
   readonly triangles: number;
 }
@@ -449,13 +459,21 @@ const measureWindow = (
 ): {
   readonly fps: ReturnType<typeof fpsStats>;
   readonly cpuMs: number;
+  readonly renderMs: number;
   readonly draws: number;
   readonly triangles: number;
 } => {
   const inWindow = samples.filter((s) => s.t >= fromMs && s.t <= toMs);
-  const cpuMs = inWindow.length > 0 ? inWindow.reduce((sum, s) => sum + s.cpuMs, 0) / inWindow.length : 0;
+  const mean = (f: (s: FrameSample) => number): number =>
+    inWindow.length > 0 ? inWindow.reduce((sum, s) => sum + f(s), 0) / inWindow.length : 0;
   const last = inWindow.at(-1);
-  return { fps: fpsStats(inWindow), cpuMs, draws: last?.calls ?? 0, triangles: last?.triangles ?? 0 };
+  return {
+    fps: fpsStats(inWindow),
+    cpuMs: mean((s) => s.cpuMs),
+    renderMs: mean((s) => s.renderMs),
+    draws: last?.calls ?? 0,
+    triangles: last?.triangles ?? 0,
+  };
 };
 
 const setControlsDisabled = (disabled: boolean): void => {
@@ -465,11 +483,11 @@ const setControlsDisabled = (disabled: boolean): void => {
 };
 
 const sweepTable = (rows: readonly SweepRow[]): string => {
-  const header = '| mode | n | mean fps | 1% low | cpu ms | draws | triangles |';
-  const rule = '|---|---|---|---|---|---|---|';
+  const header = '| mode | n | mean fps | 1% low | pose cpu ms | render cpu ms | draws | triangles |';
+  const rule = '|---|---|---|---|---|---|---|---|';
   const body = rows.map(
     (r) =>
-      `| ${r.mode} | ${r.n} | ${fmt1(r.meanFps)} | ${fmt1(r.low1)} | ${fmt2(r.cpuMs)} | ${r.draws} | ${r.triangles} |`,
+      `| ${r.mode} | ${r.n} | ${fmt1(r.meanFps)} | ${fmt1(r.low1)} | ${fmt2(r.cpuMs)} | ${fmt2(r.renderMs)} | ${r.draws} | ${r.triangles} |`,
   );
   return [header, rule, ...body].join('\n');
 };
@@ -498,8 +516,8 @@ const runSweep = async (): Promise<void> => {
         const from = performance.now();
         await sleep(SWEEP_MEASURE_MS);
         const to = performance.now();
-        const { fps, cpuMs, draws, triangles } = measureWindow(from, to);
-        rows.push({ mode: m, n, meanFps: fps.mean, low1: fps.low1, cpuMs, draws, triangles });
+        const { fps, cpuMs, renderMs, draws, triangles } = measureWindow(from, to);
+        rows.push({ mode: m, n, meanFps: fps.mean, low1: fps.low1, cpuMs, renderMs, draws, triangles });
       }
     }
     const table = sweepTable(rows);
