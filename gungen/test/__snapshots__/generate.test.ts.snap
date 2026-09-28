@@ -958,6 +958,191 @@ exports[`templates > bullpup > known-good seeds 1`] = `
 ]
 `;
 
+exports[`templates > pistol > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "grip.magazine",
+        "to": "magazine.top",
+      },
+    ],
+    "description": "Generated from the "pistol" template with seed 100.",
+    "name": "pistol-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "S",
+          "well": "magazine",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "pistol",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "slide",
+          "bore": "S",
+          "feed": "box",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "grip.magazine",
+        "to": "magazine.top",
+      },
+    ],
+    "description": "Generated from the "pistol" template with seed 200.",
+    "name": "pistol-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+          "well": "magazine",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "pistol",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "slide",
+          "bore": "S",
+          "feed": "box",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "grip.magazine",
+        "to": "magazine.top",
+      },
+    ],
+    "description": "Generated from the "pistol" template with seed 300.",
+    "name": "pistol-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "S",
+          "well": "magazine",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "pistol",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "slide",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
 exports[`templates > pump-shotgun > known-good seeds 1`] = `
 [
   {

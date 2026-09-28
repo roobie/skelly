@@ -68,14 +68,22 @@ const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_HEIGHT = 1;
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
+const PISTOL_MAGAZINE_DEPTH = 3.5;
+const PISTOL_MAGAZINE_WIDTH = 2;
+const PISTOL_WELL_DEPTH = PISTOL_MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
+const PISTOL_WELL_WIDTH = PISTOL_MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
+const PISTOL_GRIP_HALF_X = PISTOL_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE;
+const PISTOL_GRIP_HALF_Z = PISTOL_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
+const PISTOL_WELL_HEIGHT = 6;
+const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 
 // ---- receiver ----
 
 export const receiver: PartFamily = {
   name: 'receiver',
   params: {
-    /** auto: charging handle. bolt: bolt handle and bolt travel. pump: forend-driven. */
-    action: choice('auto', 'bolt', 'pump'),
+    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. slide: pistol slide. */
+    action: choice('auto', 'bolt', 'pump', 'slide'),
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
     feed: choice('box', 'top', 'tube'),
     bore: size,
@@ -102,6 +110,9 @@ export const receiver: PartFamily = {
     switch (params.action) {
       case 'auto':
         keepOuts.push(keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]));
+        break;
+      case 'slide':
+        keepOuts.push(keepOut('slide-travel', [-24, 2.5, -1.5], [-8, 4.5, 1.5]));
         break;
       case 'bolt':
         // The bolt slides out of the back of the receiver; its handle lifts
@@ -159,7 +170,7 @@ export const receiver: PartFamily = {
  */
 export const lower: PartFamily = {
   name: 'lower',
-  params: { layout: choice('conventional', 'bullpup', 'trigger') },
+  params: { layout: choice('conventional', 'bullpup', 'trigger', 'pistol') },
   build(params): PartDef {
     const top: PortDef = {
       id: 'top',
@@ -237,6 +248,20 @@ export const lower: PartFamily = {
           keepOuts: [trigger(-12.5)],
           axes: [],
         };
+      case 'pistol':
+        return {
+          family: 'lower',
+          solids: [
+            solid('frame', [-16, -1.5, -1.5], [0, 0, 1.5]),
+            solid('trigger-guard-top', [-5, -1.75, -1.25], [-1, -1.5, 1.25]),
+            solid('trigger-guard-rear', [-5, -3.5, -1.25], [-4.75, -1.5, 1.25]),
+            solid('trigger-guard-front', [-1.25, -3.5, -1.25], [-1, -1.5, 1.25]),
+            solid('trigger-guard-bottom', [-5, -3.5, -1.25], [-1, -3.25, 1.25]),
+          ],
+          ports: [top, grip(-8)],
+          keepOuts: [],
+          axes: [],
+        };
       default:
         return {
           family: 'lower',
@@ -258,11 +283,15 @@ export const lower: PartFamily = {
 
 export const barrel: PartFamily = {
   name: 'barrel',
-  // Bore follows the receiver it's mounted in, unless set.
-  params: { bore: { ...size, from: [{ port: 'rear', param: 'bore' }] }, length: size },
+  // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
+  params: {
+    bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
+    length: size,
+    profile: choice('standard', 'pistol'),
+  },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const len = { S: 26, M: 36, L: 46 }[cls(params, 'length')];
+    const len = params.profile === 'pistol' ? 8 : { S: 26, M: 36, L: 46 }[cls(params, 'length')];
     const r = { S: 0.75, M: 1, L: 1.25 }[bore];
     const fore = FORE_LENGTH[cls(params, 'length')];
     return {
@@ -371,38 +400,75 @@ const GRIP_ANGLE = 18; // degrees the grip leans back
 
 export const grip: PartFamily = {
   name: 'grip',
-  params: { length: size },
+  params: { length: size, well: choice('none', 'magazine') },
   build(params): PartDef {
     const len = { S: 8, M: 10, L: 12 }[cls(params, 'length')];
     const a = (GRIP_ANGLE * Math.PI) / 180;
+    const magazineWell = params.well === 'magazine';
+    const profile = magazineWell
+      ? [
+          [-PISTOL_GRIP_HALF_X, -len],
+          [PISTOL_GRIP_HALF_X, -len],
+          [PISTOL_GRIP_HALF_X, 0],
+          [1.25, Math.tan(a) * 1.25],
+          [-1.5, -Math.tan(a) * 1.5],
+        ] as const
+      : [
+          [-1.5, -len],
+          [1.5, -len],
+          [1.5, 0],
+          [1.25, Math.tan(a) * 1.25],
+          [-1.5, -Math.tan(a) * 1.5],
+        ] as const;
+    const roofY = -len + PISTOL_WELL_HEIGHT;
+    const solids: Solid[] = magazineWell
+      ? [
+          extrudedPolygon(
+            'body-upper',
+            [
+              [-PISTOL_GRIP_HALF_X, roofY],
+              [PISTOL_GRIP_HALF_X, roofY],
+              [PISTOL_GRIP_HALF_X, 0],
+              [1.25, Math.tan(a) * 1.25],
+              [-1.5, -Math.tan(a) * 1.5],
+            ],
+            [-PISTOL_GRIP_HALF_Z, PISTOL_GRIP_HALF_Z],
+          ),
+          solid('well-wall-left', [-PISTOL_GRIP_HALF_X, -len, -PISTOL_GRIP_HALF_Z], [-PISTOL_WELL_DEPTH / 2, roofY, PISTOL_GRIP_HALF_Z]),
+          solid('well-wall-right', [PISTOL_WELL_DEPTH / 2, -len, -PISTOL_GRIP_HALF_Z], [PISTOL_GRIP_HALF_X, roofY, PISTOL_GRIP_HALF_Z]),
+          solid('well-wall-near', [-PISTOL_WELL_DEPTH / 2, -len, -PISTOL_GRIP_HALF_Z], [PISTOL_WELL_DEPTH / 2, roofY, -PISTOL_WELL_WIDTH / 2]),
+          solid('well-wall-far', [-PISTOL_WELL_DEPTH / 2, -len, PISTOL_WELL_WIDTH / 2], [PISTOL_WELL_DEPTH / 2, roofY, PISTOL_GRIP_HALF_Z]),
+        ]
+      : [extrudedPolygon('body', profile, [-1.25, 1.25])];
+    const ports: PortDef[] = [
+      {
+        id: 'top',
+        mount: 'grip',
+        gender: 'male',
+        pos: [0, 0, 0],
+        normal: [-Math.sin(a), Math.cos(a), 0],
+        up: [Math.cos(a), Math.sin(a), 0],
+        required: true,
+      },
+    ];
+    if (magazineWell) {
+      ports.push({ id: 'magazine', mount: 'magazine', gender: 'female', pos: [0, -len, 0], normal: NEG_Y, up: X, required: true });
+    }
     return {
       family: 'grip',
       // The single beveled face is coplanar with the tilted grip mount; the body remains leaned once mounted.
-      solids: [
-        extrudedPolygon(
-          'body',
-          [
-            [-1.5, -len],
-            [1.5, -len],
-            [1.5, 0],
-            [1.25, Math.tan(a) * 1.25],
-            [-1.5, -Math.tan(a) * 1.5],
-          ],
-          [-1.25, 1.25],
-        ),
-      ],
-      ports: [
-        {
-          id: 'top',
-          mount: 'grip',
-          gender: 'male',
-          pos: [0, 0, 0],
-          normal: [-Math.sin(a), Math.cos(a), 0],
-          up: [Math.cos(a), Math.sin(a), 0],
-          required: true,
-        },
-      ],
-      keepOuts: [],
+      solids,
+      ports,
+      keepOuts: magazineWell
+        ? [
+            keepOut(
+              'magazine-path',
+              [-PISTOL_WELL_DEPTH / 2, -40, -PISTOL_WELL_WIDTH / 2],
+              [PISTOL_WELL_DEPTH / 2, roofY, PISTOL_WELL_WIDTH / 2],
+              'magazine',
+            ),
+          ]
+        : [],
       axes: [],
       tags: [FIRING_GRIP],
     };
@@ -411,19 +477,22 @@ export const grip: PartFamily = {
 
 export const magazine: PartFamily = {
   name: 'magazine',
-  params: { length: size, profile: choice('standard', 'smg') },
+  params: { length: size, profile: choice('standard', 'smg', 'pistol') },
   build(params): PartDef {
     const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
-    const depth = MAGAZINE_DEPTH * (params.profile === 'smg' ? 0.6 : 1);
-    const width = MAGAZINE_WIDTH * (params.profile === 'smg' ? 0.8 : 1);
+    const depth =
+      params.profile === 'pistol' ? PISTOL_MAGAZINE_DEPTH : MAGAZINE_DEPTH * (params.profile === 'smg' ? 0.6 : 1);
+    const width =
+      params.profile === 'pistol' ? PISTOL_MAGAZINE_WIDTH : MAGAZINE_WIDTH * (params.profile === 'smg' ? 0.8 : 1);
+    const insertion = params.profile === 'pistol' ? PISTOL_MAGAZINE_INSERTION : MAGAZINE_INSERTION;
     return {
       family: 'magazine',
-      // The lower's well and magazine path retain the standard envelope; SMG magazines are scaled within it.
+      // The lower or pistol grip owns the corresponding magazine well and insertion path.
       solids: [
         solid(
           'body',
-          [-depth / 2, -len + MAGAZINE_INSERTION, -width / 2],
-          [depth / 2, MAGAZINE_INSERTION, width / 2],
+          [-depth / 2, -len + insertion, -width / 2],
+          [depth / 2, insertion, width / 2],
         ),
       ],
       ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],

@@ -36,6 +36,25 @@ export const battleRifle: Template = {
   ],
 };
 
+export const pistol: Template = {
+  name: 'pistol',
+  description: 'Semi-automatic pistol: slide action, magazine-fed through the grip, short barrel.',
+  root: 'receiver',
+  slots: [
+    { id: 'receiver', family: 'receiver', params: { action: 'slide', feed: 'box', bore: ['S', 'M'] } },
+    { id: 'lower', family: 'lower', params: { layout: 'pistol' } },
+    { id: 'barrel', family: 'barrel', params: { length: 'S', profile: 'pistol' } },
+    { id: 'grip', family: 'grip', params: { length: SML, well: 'magazine' } },
+    { id: 'magazine', family: 'magazine', params: { length: 'S', profile: 'pistol' } },
+  ],
+  connections: [
+    { from: 'receiver.lower', to: 'lower.top' },
+    { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'grip.magazine', to: 'magazine.top' },
+  ],
+};
+
 export const smg: Template = {
   name: 'smg',
   description: 'Submachine gun: the battle-rifle layout at small bore, short barrel, stock optional.',
@@ -164,4 +183,4 @@ export const bullpup: Template = {
   ],
 };
 
-export const TEMPLATES: readonly Template[] = [battleRifle, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];
+export const TEMPLATES: readonly Template[] = [battleRifle, pistol, smg, boltRifle, boltRifleBox, pumpShotgun, bullpup];

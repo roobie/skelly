@@ -14,6 +14,27 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 const onGrid = (n: number) => Math.abs(n / GRID - Math.round(n / GRID)) < 1e-9;
 
 describe('part library', () => {
+  it('builds a pistol lower with a trigger guard and no magazine well', () => {
+    const lower = FAMILIES.lower!.build({ layout: 'pistol' });
+    expect(lower.ports.map((port) => port.id)).toEqual(['top', 'grip']);
+    expect(lower.solids.map((solid) => solid.id)).toContain('trigger-guard-bottom');
+    expect(lower.ports.some((port) => port.mount === 'magazine')).toBe(false);
+  });
+
+  it('adds slide travel to the slide-action receiver', () => {
+    const receiver = FAMILIES.receiver!.build({ action: 'slide', feed: 'box', bore: 'S' });
+    expect(receiver.keepOuts.map((keepOut) => keepOut.id)).toEqual(['ejection', 'slide-travel']);
+  });
+
+  it('keeps the pistol barrel short within the existing size-S family', () => {
+    const barrel = FAMILIES.barrel!.build({ bore: 'S', length: 'S', profile: 'pistol' });
+    const tube = barrel.solids[0]!;
+    expect(tube.kind).toBe('box');
+    if (tube.kind === 'box') {
+      expect(tube.box.center[0] + tube.box.half[0]).toBeCloseTo(8);
+    }
+  });
+
   it('models the grip as one beveled prism matching its mount face', () => {
     const solids = FAMILIES.grip!.build({ length: 'M' }).solids;
     expect(solids).toHaveLength(1);
@@ -23,6 +44,28 @@ describe('part library', () => {
       expect(body.profile).toHaveLength(5);
       expect(body.profile[3]![1]).toBeCloseTo(Math.tan((18 * Math.PI) / 180) * body.profile[3]![0]);
       expect(body.profile[4]![1]).toBeCloseTo(Math.tan((18 * Math.PI) / 180) * body.profile[4]![0]);
+    }
+  });
+
+  it('builds a magazine well into the pistol grip', () => {
+    const grip = FAMILIES.grip!.build({ length: 'S', well: 'magazine' });
+    expect(grip.ports.map((port) => port.id)).toEqual(['top', 'magazine']);
+    expect(grip.keepOuts).toHaveLength(1);
+    expect(grip.keepOuts[0]!.allowPort).toBe('magazine');
+    expect(grip.solids.map((solid) => solid.id)).toEqual([
+      'body-upper',
+      'well-wall-left',
+      'well-wall-right',
+      'well-wall-near',
+      'well-wall-far',
+    ]);
+    const magazine = FAMILIES.magazine!.build({ length: 'S', profile: 'pistol' }).solids[0]!;
+    expect(magazine.kind).toBe('box');
+    if (magazine.kind === 'box') {
+      expect(magazine.box.half[0] * 2).toBeCloseTo(3.5);
+      expect(magazine.box.half[1] * 2).toBeCloseTo(6);
+      expect(magazine.box.center[1] + magazine.box.half[1]).toBeCloseTo(5.75);
+      expect(magazine.box.half[2] * 2).toBeCloseTo(2);
     }
   });
 

@@ -1,0 +1,61 @@
+{
+  "name": "archetype-pistol",
+  "description": "Magazine-fed pistol: slide action, grip well and short barrel.",
+  "expect": [],
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "receiver",
+      "params": {
+        "action": "slide",
+        "feed": "box",
+        "bore": "S"
+      }
+    },
+    "lower": {
+      "family": "lower",
+      "params": {
+        "layout": "pistol"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "length": "S",
+        "profile": "pistol"
+      }
+    },
+    "grip": {
+      "family": "grip",
+      "params": {
+        "length": "M",
+        "well": "magazine"
+      }
+    },
+    "magazine": {
+      "family": "magazine",
+      "params": {
+        "length": "S",
+        "profile": "pistol"
+      }
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.lower",
+      "to": "lower.top"
+    },
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "lower.grip",
+      "to": "grip.top"
+    },
+    {
+      "from": "grip.magazine",
+      "to": "magazine.top"
+    }
+  ]
+}

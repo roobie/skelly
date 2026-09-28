@@ -110,6 +110,21 @@ describe('rules', () => {
     expect(issues.map((i) => i.message)).toEqual(['receiver is box-fed, but lower (trigger) has no magazine well.']);
   });
 
+  it('slide-travel keep-out rejects a sight mounted on the pistol receiver rail', () => {
+    const { issues } = validate(loadFixture('broken-pistol-slide-sight'), gunDomain);
+    expect(issues.map((issue) => issue.message)).toEqual([
+      'sight intrudes 1.5u into the slide-travel volume of receiver.',
+    ]);
+  });
+
+  it('feed-match: grip-mounted pistol well satisfies box feed', () => {
+    expect(rulesFailed(loadFixture('archetype-pistol'))).toEqual([]);
+    const { issues } = validate(loadFixture('broken-pistol-no-grip-well'), gunDomain);
+    expect(issues.map((issue) => issue.message)).toEqual([
+      'receiver is box-fed, but lower (pistol) has no magazine well.',
+    ]);
+  });
+
   it('feed-match: tube-fed receiver on a lower with a magazine well', () => {
     const a = variant('archetype-pump-shotgun', (x) => {
       x.parts.lower = { family: 'lower', params: { layout: 'conventional' } };

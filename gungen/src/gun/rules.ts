@@ -24,8 +24,8 @@ export const firingGrip: Rule = {
 };
 
 /**
- * The lower under a receiver suits how the receiver feeds: box- and top-fed
- * receivers need a magazine well below them; tube-fed receivers can't use one.
+ * A box-fed receiver needs a well on its lower or the lower's grip; tube-fed
+ * receivers can't use either kind of box-magazine well.
  */
 export const feedMatch: Rule = {
   id: 'feed-match',
@@ -41,7 +41,16 @@ export const feedMatch: Rule = {
       }
       const feed = r.params.get(receiver.part)!.feed!.value;
       const lowerDef = r.defs.get(lower.part)!;
-      const hasWell = lowerDef.ports.some((p) => p.mount === 'magazine');
+      const gripWell = r.connections.some((connection) => {
+        const gripPart =
+          connection.from.part === lower.part && connection.from.port.id === 'grip'
+            ? connection.to.part
+            : connection.to.part === lower.part && connection.to.port.id === 'grip'
+              ? connection.from.part
+              : undefined;
+        return gripPart !== undefined && r.defs.get(gripPart)!.ports.some((p) => p.mount === 'magazine');
+      });
+      const hasWell = lowerDef.ports.some((p) => p.mount === 'magazine') || gripWell;
       const layout = r.params.get(lower.part)?.layout?.value;
       const what = layout ? `${lower.part} (${layout})` : lower.part;
       if (feed !== 'tube' && !hasWell) {

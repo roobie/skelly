@@ -285,9 +285,9 @@ archetype:
 
 **Status:** done.
 
-- **`feed-match` rule** (gun domain): the lower under a receiver must suit its
-  feed. Box- and top-fed receivers need a lower with a magazine well; a
-  tube-fed receiver can't use one. Fixture: `broken-feed-match`.
+- **`feed-match` rule** (gun domain): the receiver feed must have a compatible
+  well. Box- and top-fed receivers need a lower well (or, for pistols, a grip
+  well); a tube-fed receiver can't use either. Fixture: `broken-feed-match`.
 - **Params from neighbours.** A family can declare that a param reads its
   value from the part on one of its ports, when the assembly doesn't set it.
   Resolution needs only the connection list, so it runs before parts are
@@ -328,7 +328,7 @@ The validator then judges it like any hand-written fixture.
 ### What was built
 
 - **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
-  for the six archetypes). A template lists slots and connections:
+  for the seven current archetypes). A template lists slots and connections:
   - A **slot** names a part family and, per param, a value or a list to pick
     from. Params it leaves out are default or read from neighbours, so a
     template picks the barrel length and a clamped handguard or tube magazine
@@ -425,22 +425,23 @@ clear the barrel, and the new grip bevel fits without increasing overlaps.
 **Goal:** add distinct handgun archetypes without conflating a pistol's grip-fed
 magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 
-**Status:** planned.
+**Status:** in progress (pistol implemented; revolver next).
 
 ### Pistols (first)
 
-- Add a pistol lower layout: trigger guard and grip directly under the
-  receiver, with no magazine well. Add a short, narrow magazine profile and a
-  grip variant whose frame surrounds a magazine cavity, reusing the lower
-  well's box-built material-around-a-cavity construction. The grip owns the
-  magazine port and insertion keep-out.
-- Extend `feed-match` so box feed may be supplied by a magazine well on either
-  the lower or the grip. Add a `slide` receiver action with slide-travel and
-  ejection-port keep-outs. The existing optional rail, stock and handguard
-  ports remain unused by the pistol template.
-- Use the existing size-S barrel family for the short, exposed pistol barrel;
-  a barrel enclosed inside the slide is out of scope. Add a pistol template,
-  passing fixture, broken fixture for the new feed rule, snapshots and stats.
+- Implemented a pistol lower layout with trigger guard and a grip directly
+  under the receiver, without a lower magazine well. The grip variant builds
+  material around a magazine cavity, using the lower well's box-frame model;
+  the grip owns the magazine port and insertion keep-out. The pistol magazine
+  is short and narrow and is seated into the grip.
+- `feed-match` now accepts a grip-owned well for box feed. The `slide` receiver
+  action adds slide-travel and ejection-port keep-outs. Optional rail, stock
+  and handguard ports remain unused by the pistol template.
+- The existing barrel family uses size S with a pistol profile for a short
+  exposed tube; a barrel enclosed inside the slide remains out of scope.
+- `pistol` has a passing fixture, a broken no-grip-well fixture, a broken
+  slide-travel fixture and three known-good snapshots. Its 1000-seed valid
+  rate is 100% (6 distinct valid builds).
 
 ### Revolvers (second)
 
