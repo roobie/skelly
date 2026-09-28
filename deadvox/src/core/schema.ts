@@ -298,9 +298,69 @@ export const ZombieSchema = strictObject({
   nightSight: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
+  /** Idle/stroll timing, home leash and eased look controls. */
+  wander: strictObject({
+    idleSeconds: strictObject({ min: Positive, max: Positive }),
+    strollSeconds: strictObject({ min: Positive, max: Positive }),
+    leashMetres: Positive,
+    lookIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+    bodyLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
+    headLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
+    bodyTurnDegreesPerSecond: Positive,
+    headTurnDegreesPerSecond: Positive,
+    movementAcceleration: Positive,
+  }),
   /** 1 is normal hearing. */
   hearing: NonNegative,
   hearingRange: strictObject({ walk: Positive, jog: Positive, sprint: Positive }),
+  hearingModel: pipe(
+    strictObject({
+      farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
+      bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
+      investigationDistanceMetres: Positive,
+      wallRunCostMetres: NonNegative,
+      searchSeconds: strictObject({ min: Positive, max: Positive }),
+      searchRadiusMetres: Positive,
+      searchStrollSeconds: strictObject({ min: Positive, max: Positive }),
+    }),
+    check(
+      (model) => model.searchSeconds.min <= model.searchSeconds.max,
+      'minimum search duration must not exceed maximum',
+    ),
+    check(
+      (model) => model.searchStrollSeconds.min <= model.searchStrollSeconds.max,
+      'minimum search stroll must not exceed maximum',
+    ),
+  ),
+  chaseMotion: pipe(
+    strictObject({
+      swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
+      swayIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+      speedMultiplier: strictObject({ min: Positive, max: Positive }),
+      lurchSeconds: Positive,
+      stumbleChancePerSecond: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      stumbleDurationSeconds: strictObject({ min: Positive, max: Positive }),
+      stumbleEaseSeconds: Positive,
+      stumbleSpeedFraction: Fraction,
+      stumbleDeceleration: Positive,
+    }),
+    check(
+      (motion) => motion.swayIntervalSeconds.min <= motion.swayIntervalSeconds.max,
+      'minimum sway interval must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.speedMultiplier.min <= motion.speedMultiplier.max,
+      'minimum speed multiplier must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.stumbleDurationSeconds.min <= motion.stumbleDurationSeconds.max,
+      'minimum stumble duration must not exceed maximum',
+    ),
+    check(
+      (motion) => motion.stumbleDurationSeconds.min >= 2 * motion.stumbleEaseSeconds,
+      'stumble duration must allow easing in and out',
+    ),
+  ),
   attack: strictObject({ damage: Positive, reach: Positive, cooldown: Positive }),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */

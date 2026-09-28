@@ -63,14 +63,18 @@ export const placeShamblerRing = ({
   seed,
   player,
   engine,
+  occupied: existing = [],
+  allowPartial = false,
 }: {
   count: number;
   seed: number;
   player: Body;
   engine: ShamblerPlacementWorld;
+  occupied?: readonly Body[];
+  allowPartial?: boolean;
 }): Vec3[] => {
   const s = engine.config.scale.blockSize;
-  const occupied: Body[] = [player];
+  const occupied: Body[] = [player, ...existing];
   const positions: Vec3[] = [];
   const fract = (x: number): number => x - Math.floor(x);
   for (let index = 0; index < count; index++) {
@@ -97,6 +101,9 @@ export const placeShamblerRing = ({
       break;
     }
     if (!body) {
+      if (allowPartial) {
+        break;
+      }
       throw new Error(`Could not place shambler ${index + 1} in the clear-sight 8–20 m ring.`);
     }
     positions.push([...body.pos]);

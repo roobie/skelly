@@ -67,6 +67,15 @@
       "download": "pipe.obj",
       "files": ["assets/models/steel_pipe.glb"],
       "changes": "Converted pipe.obj in Blender to a self-contained GLB; the download references a missing pipe.mtl, so applied a neutral metallic steel material. Used a non-uniform source-unit scale of 0.18 m/unit along the 5.15-unit shaft and 0.05 m/unit across both transverse axes (0.278 relative scale), yielding a 0.927 m shaft, 3.3 cm tube diameter and 11.7 cm elbow extent. The grip is at the lower end and the strike anchor at the upper open end; oriented the long shaft along +x."
+    },
+    {
+      "title": "Cursor pack",
+      "url": "https://opengameart.org/content/cursor-pack",
+      "author": "Ivan Voirol",
+      "licence": "CC0-1.0",
+      "download": "cursor.png",
+      "files": ["assets/cursors/cursor.png"],
+      "changes": "Kept the standard top-left pointer arrow and pointing-hand sprites from cursor.png; trimmed to their silhouettes for a white difference-blended game cursor"
     }
   ]
 }

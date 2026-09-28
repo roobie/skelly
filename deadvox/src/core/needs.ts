@@ -20,8 +20,15 @@ export interface Needs {
 
 export type Need = 'calories' | 'hydration' | 'fatigue';
 
-/** Change per game hour while awake. */
+/** Change per game hour while awake; resting or sleeping overrides fatigue's rate (see REST). */
 export const NEED_RATES: Readonly<Record<Need, number>> = { calories: -3, hydration: -5, fatigue: 4 };
+
+/** Fatigue recovered per game hour, resting or sleeping (SLICE-1.md, 1.8). A bed adds `bedBonus` per point of quality. */
+export const REST = {
+  rest: -15,
+  sleep: -30,
+  bedBonus: -20,
+} as const;
 
 /** Health per game hour (SLICE-1.md, "Tunables"). */
 export const HEALTH = {
@@ -104,8 +111,8 @@ const LEVELS: readonly [Need, number][] = [
 ];
 
 /** Hours until the next level. */
-const nextBreak = (needs: Needs, health: number): number => {
-  const times = LEVELS.map(([need, level]) => hoursTo(needs[need], NEED_RATES[need], level));
+const nextBreak = (needs: Needs, health: number, rates: Readonly<Record<Need, number>>): number => {
+  const times = LEVELS.map(([need, level]) => hoursTo(needs[need], rates[need], level));
   return Math.min(...times, hoursTo(needs.health, health, 0), hoursTo(needs.health, health, 100));
 };
 
@@ -127,10 +134,10 @@ const snap = (needs: Needs): void => {
  * Health's rate over the stretch that starts now: judged a moment ahead, so a need
  * sitting exactly on a threshold counts as the side it's heading to.
  */
-const segmentRate = (needs: Needs): number => {
+const segmentRate = (needs: Needs, rates: Readonly<Record<Need, number>>): number => {
   const ahead = { ...needs };
   for (const need of Object.keys(NEED_RATES) as Need[]) {
-    ahead[need] = clamp(needs[need] + NEED_RATES[need] * 1e-6);
+    ahead[need] = clamp(needs[need] + rates[need] * 1e-6);
   }
   return healthRate(ahead);
 };
@@ -139,17 +146,23 @@ const segmentRate = (needs: Needs): number => {
  * Advances needs and health by `hours` game hours, in place, exactly: the step is
  * split wherever a rate changes. Returns the messages for needs that became critical
  * during the step. `damageImmune` suppresses health loss while preserving need decay
- * and recovery. Stamina isn't touched; it moves by the second (`stepStamina`).
+ * and recovery. `rates` overrides the per-hour rates (resting and sleeping use it for
+ * fatigue; see REST). Stamina isn't touched; it moves by the second (`stepStamina`).
  */
-export const stepNeeds = (needs: Needs, hours: number, damageImmune = false): string[] => {
+export const stepNeeds = (
+  needs: Needs,
+  hours: number,
+  damageImmune = false,
+  rates: Readonly<Record<Need, number>> = NEED_RATES,
+): string[] => {
   const before = { ...needs };
   let left = hours;
   while (left > 0 && needs.health > 0) {
-    const rate = segmentRate(needs);
+    const rate = segmentRate(needs, rates);
     const health = damageImmune ? Math.max(0, rate) : rate;
-    const h = Math.min(left, nextBreak(needs, health));
+    const h = Math.min(left, nextBreak(needs, health, rates));
     for (const need of Object.keys(NEED_RATES) as Need[]) {
-      needs[need] = clamp(needs[need] + NEED_RATES[need] * h);
+      needs[need] = clamp(needs[need] + rates[need] * h);
     }
     needs.health = clamp(needs.health + health * h);
     snap(needs);
