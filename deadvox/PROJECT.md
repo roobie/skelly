@@ -119,9 +119,8 @@ npm run validate   # base content; add paths to validate a mod on top
 - A light that's switched on shines only from your hands; put away, it goes off.
 - The death screen's "time survived" is game time; its looting summary counts
   items taken out of furniture, not ones picked up from the ground.
-- The only item found in the world with a model is the flashlight ("Torch" from
-  OpenGameArt, see SLICE-1.md, 1.5.5); every other one is a bundle in a pile and
-  a box in your hands. Furniture is plain boxes.
+- The flashlight and five Slice 1 melee items have models; other items remain a
+  bundle in piles and a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
 - `models-firearms.json` has ten gun models ("CC0 Flat Guns West" from
@@ -130,6 +129,15 @@ npm run validate   # base content; add paths to validate a mod on top
   has them built from gungen assemblies, so these may end up as placeholders or
   go. Their grip is the trigger, not the palm, and their `muzzle` anchor isn't
   read by anything yet.
+- `models-melee.json` has all 20 weapons from Pichuliru's "CC0 Flat Shaded Melee
+  Weapons" pack, plus the steel pipe from neincenets' CC0 "Pipe" model. Converted
+  in Blender to static, self-contained GLBs in metres, with a palm `grip`, a
+  `strike` anchor, and a data-selected `hold` pose (`forward` for the four
+  stabbing blades; `upright` for the swung weapons). `crowbar`, `hammer`,
+  `kitchen_knife`, `baseball_bat`, and `steel_pipe` point to models and render in
+  piles and hands. The other 16 pack models have no Slice 1 item mapped to them
+  yet: baton, cleaver, fire axe, frying pan, golf club, hand axe, katana, machete,
+  pickaxe, pocket knife, shovel, sickle, sledgehammer, tanto, KABAR and wrench.
 - Zombie types name a `model`, but it isn't checked against the `models` section
   yet; shamblers are box figures in 1.7.
 - The hamlet's templates are drawn in half-metre blocks, so only the game's
