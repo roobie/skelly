@@ -207,12 +207,12 @@ describe('attackPose', () => {
           tipXs.push(tip[0]);
           expect(tip[2]).toBeLessThan(chestHeadZ); // more -Z than the chest = in front of it
           expect(hand.tail[2] - tip[2]).toBeGreaterThan(0.3); // >= ~0.3 m more forward than rest
-          // Within ~0.15 m of shoulder height / 0.65x shoulder X for convergence — loosened slightly from
-          // 0.12/0.6 because step 0's own lean/arm-wide blends partway back from step -1 (see
-          // blendStepScalar in gait.ts), and step -1's own style is whatever stepPlanFor(seed,-1,...)
-          // happens to land on for this genome's seed — occasionally a lurch/stagger, not just "normal".
+          // Within ~0.15 m of shoulder height / 0.8x shoulder X for convergence — loosened from 0.12/0.6
+          // because step 0's own lean/arm-wide blends partway back from step -1 (see blendStepScalar in
+          // gait.ts, whose own style is whatever stepPlanFor(seed,-1,...) lands on for this seed), and the
+          // walk's own arms now also swing a bit wider for balance against the width-wise waddle.
           expect(Math.abs(tip[1] - shoulder[1])).toBeLessThan(0.15);
-          expect(Math.abs(tip[0])).toBeLessThanOrEqual(0.7 * Math.abs(shoulder[0]));
+          expect(Math.abs(tip[0])).toBeLessThanOrEqual(0.8 * Math.abs(shoulder[0]));
         }
         expect(tipXs[1]! - tipXs[0]!).toBeGreaterThan(0.03); // R stays clear of L — hands don't overlap
       });

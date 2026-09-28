@@ -222,6 +222,33 @@ describe('walkPose', () => {
       }
     });
   }
+
+  // Wider base + per-step stagger jitter means a crossover stagger's swing could in principle pass close
+  // to the planted stance ankle — check it stays at least ~a voxel clear, over enough steps/seeds to catch
+  // a bad crossover.
+  for (const name of TEMPLATES.map((t) => t.name)) {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      it(`${name} seed ${seed}: the swing ankle stays clear of the stance ankle's X`, () => {
+        const found = setup(name, seed);
+        const { body, voxels, extents, params } = found;
+        const actor = { bones: body.bones, extents, params, seed: found.seed };
+        const ankleOf = (side: 'L' | 'R') => body.bones.find((b) => b.id === `foot.${side}`)!.head;
+        let worstGap = Number.POSITIVE_INFINITY;
+        for (const speed of [0.8, 1.4, 2.8]) {
+          for (let k = 0; k < 40; k++) {
+            for (let i = 1; i < 20; i++) {
+              const pose = walkPose(actor, { stepIndex: k, progress: i / 20 }, speed);
+              const transforms = boneTransforms(body.bones, pose);
+              const [xL] = applyPoint(transforms.get('foot.L')!, ankleOf('L'));
+              const [xR] = applyPoint(transforms.get('foot.R')!, ankleOf('R'));
+              worstGap = Math.min(worstGap, Math.abs(xL - xR));
+            }
+          }
+        }
+        expect(worstGap).toBeGreaterThan(voxels.size);
+      });
+    }
+  }
 });
 
 describe('drunk shamble steps', () => {
@@ -346,10 +373,11 @@ describe('the walk has no snaps', () => {
           );
           expect(maxAngleDelta).toBeLessThan(2.5);
           // Hip drop is now one smooth Hermite curve through each footfall's own peak (scanned once, not
-          // per sample — see legAndFootRotations), close to the pre-shamble margin (worst observed ~4.8mm
-          // at this 400-samples-per-step density; a 60 fps real-time walk is the tighter, realistic check
-          // — see "the walk at 60 fps" below).
-          expect(maxRootYDelta).toBeLessThan(0.005);
+          // per sample — see legAndFootRotations), close to the pre-shamble margin (worst observed ~5mm at
+          // this 400-samples-per-step density, a touch higher now the width-wise sway/roll add their own
+          // smooth curvature; a 60 fps real-time walk is the tighter, realistic check — see "the walk at
+          // 60 fps" below).
+          expect(maxRootYDelta).toBeLessThan(0.0052);
           expect(maxRootXDelta).toBeLessThan(0.01); // the weave moves more per sample than the old Y bob
           expect(maxSecondDiff).toBeLessThan(0.5); // no velocity kink either
         });
@@ -440,7 +468,7 @@ describe('strideLength', () => {
 const walk60fps = (
   setupResult: ReturnType<typeof setup>,
   speed: number,
-): { maxDy: number; maxD2y: number; maxJointDeg: number } => {
+): { maxDy: number; maxD2y: number; maxDx: number; maxD2x: number; maxJointDeg: number } => {
   const { body, extents, params, seed } = setupResult;
   const actor = { bones: body.bones, extents, params, seed };
   const basis: GaitBasis = { params, geomL: legGeometryFor(body.bones, extents, 'L'), speed, seed };
@@ -448,16 +476,22 @@ const walk60fps = (
   let clock: GaitClock = INITIAL_CLOCK;
   let prev = walkPose(actor, clock, speed);
   let prevDy = 0;
+  let prevDx = 0;
   let maxDy = 0;
   let maxD2y = 0;
+  let maxDx = 0;
+  let maxD2x = 0;
   let maxJointDeg = 0;
   for (let frame = 0; frame < 60 * 20; frame++) {
     clock = advanceClock(clock, speed * dt, basis);
     const cur = walkPose(actor, clock, speed);
     const dy = cur.root[1] - prev.root[1];
+    const dx = cur.root[0] - prev.root[0];
     maxDy = Math.max(maxDy, Math.abs(dy));
+    maxDx = Math.max(maxDx, Math.abs(dx));
     if (frame > 0) {
       maxD2y = Math.max(maxD2y, Math.abs(dy - prevDy));
+      maxD2x = Math.max(maxD2x, Math.abs(dx - prevDx));
     }
     const curT = boneTransforms(body.bones, cur);
     const prevT = boneTransforms(body.bones, prev);
@@ -465,9 +499,10 @@ const walk60fps = (
       maxJointDeg = Math.max(maxJointDeg, rotAngleDeg(prevT.get(b)!.r, curT.get(b)!.r));
     }
     prevDy = dy;
+    prevDx = dx;
     prev = cur;
   }
-  return { maxDy, maxD2y, maxJointDeg };
+  return { maxDy, maxD2y, maxDx, maxD2x, maxJointDeg };
 };
 
 describe('the walk at 60 fps', () => {
@@ -481,17 +516,33 @@ describe('the walk at 60 fps', () => {
   // actually-achieved worst case plus headroom, not the original target.
   const maxDyForSpeed = (speed: number): number => {
     if (speed < 1) {
-      return 0.01;
+      return 0.0105; // width-wise sway/roll (see legAndFootRotations) added a touch of smooth curvature here
     }
-    return speed < 2 ? 0.019 : 0.042;
+    return speed < 2 ? 0.0195 : 0.0425;
   };
   const maxD2yAt14 = 0.0065;
+  // Sway (root X, see legAndFootRotations) is measured relative to the local centreline and scaled down to
+  // ~a-few-cm peaks, so its own per-frame rate stays modest — worst observed ~12mm at 2.8 m/s.
+  const maxDxForSpeed = (speed: number): number => {
+    if (speed < 1) {
+      return 0.009;
+    }
+    return speed < 2 ? 0.0105 : 0.0135;
+  };
+  const maxD2xForSpeed = (speed: number): number => {
+    if (speed < 1) {
+      return 0.002;
+    }
+    return speed < 2 ? 0.0025 : 0.0045;
+  };
   for (const name of TEMPLATES.map((t) => t.name)) {
     for (const seed of [1, 2, 3]) {
       for (const speed of [0.8, 1.4, 2.8]) {
-        it(`${name} seed ${seed} at ${speed} m/s: no per-frame root-Y pop over 20 s`, () => {
-          const { maxDy, maxD2y } = walk60fps(setup(name, seed), speed);
+        it(`${name} seed ${seed} at ${speed} m/s: no per-frame root pop over 20 s`, () => {
+          const { maxDy, maxD2y, maxDx, maxD2x } = walk60fps(setup(name, seed), speed);
           expect(maxDy).toBeLessThan(maxDyForSpeed(speed));
+          expect(maxDx).toBeLessThan(maxDxForSpeed(speed));
+          expect(maxD2x).toBeLessThan(maxD2xForSpeed(speed));
           if (speed === 1.4) {
             expect(maxD2y).toBeLessThan(maxD2yAt14);
           }

@@ -30,16 +30,55 @@ const toRad = (deg: number): number => (deg * Math.PI) / 180;
 const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 /** Smooth 0->1 ease with zero slope at both ends (3x²-2x³). */
 const smoothstep = (x: number): number => x * x * (3 - 2 * x);
-// Smooth minimum of two values: exact min at smoothing=0, otherwise undershoots by up to smoothing/2
-// right at a tie — used where a hard min between two otherwise-smooth curves would have a slope kink right
-// at their crossover (see groundOffset).
-const smoothMin = (a: number, b: number, smoothing: number): number =>
-  smoothing <= 0 ? Math.min(a, b) : (a + b - Math.sqrt((a - b) ** 2 + smoothing * smoothing)) / 2;
+// Smooth minimum of a whole list at once (log-sum-exp): exact min at smoothing=0, otherwise undershoots by
+// smoothing*ln(#values within ~smoothing of the true min) — bounded and *not* per-pair-cumulative, unlike
+// folding a pairwise smooth-min across many corners one at a time (tried first: a foot's own rest-box
+// corners routinely tie exactly, e.g. all 4 bottom corners of a flat sole, and folding through N of them
+// each shaved off more, undershooting far past a single pair's own smoothing/2 — see mobgen's report). Used
+// where a hard min between two otherwise-smooth curves would have a slope kink right at their crossover
+// (see groundOffset).
+const smoothMinAll = (values: readonly number[], smoothing: number): number => {
+  const trueMin = Math.min(...values);
+  if (smoothing <= 0) {
+    return trueMin;
+  }
+  let sum = 0;
+  for (const v of values) {
+    sum += Math.exp(-(v - trueMin) / smoothing);
+  }
+  return trueMin - smoothing * Math.log(sum);
+};
 /** 0 at or below wander speed (0.8 m/s), 1 at or above chase speed (2.8 m/s); blends in the
  * speed-dependent crouch/lean below. */
 const chaseBlend = (speed: number): number => clamp((speed - 0.8) / 2, 0, 1);
 const MAX_YAW_DEG = 6; // pelvis yaw amplitude at the longest (cap-saturating) strides
 const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strike, as if from inertia
+
+// Sideways sway (width-wise waddle): no new sampled params — girth/pelvisSway/limp (already sampled) drive
+// how wide and how much a given actor sways, so a brute (heavy girth) lands widest and a jittery/limping
+// actor sways more. Width is a *target total* (girth-driven), not a fixed add-on — the rig's own sampled
+// hipWidth already varies a lot on its own, and an add-on stacked on top of that overshot badly (see
+// mobgen's report).
+/** Extra outward step width beyond the hip (each side), so ankle-to-ankle lands near a girth-driven target
+ * (~0.3-0.45 m total across the three templates) regardless of this actor's own sampled hip width. Can be
+ * negative (feet land inside the hips) for a narrow-hipped, high-girth-range-relative actor. */
+const stepWidthExtra = (params: HumanoidParams, hipWidthTotal: number): number => {
+  const swayNorm = clamp(params.pelvisSway / 6, 0, 1);
+  const limpNorm = clamp(params.limp, 0, 1);
+  const desiredTotal = 0.03 + 0.3 * params.girth + 0.02 * swayNorm + 0.01 * limpNorm;
+  return (desiredTotal - hipWidthTotal) / 2;
+};
+// Floor on a foot's own world-X distance off-centre (see landingX) — keeps a crossover stagger's swing
+// path a safe margin clear of the opposite, planted foot.
+const MIN_WORLD_OUTWARD = 0.03;
+/** Fraction of the stance foot's own (stagger-free) base offset from centre the root sways toward,
+ * mid-stance — more at slow speed (drunks sway most when idling along), less at chase. */
+const swayFraction = (speed: number): number => 0.27 - 0.09 * chaseBlend(speed);
+/** Pelvis roll-about-Z (swing hip drop) and trunk counter-lean amplitudes, degrees — both scale with the
+ * genome's own pelvisSway (drunkenness), same driver as the width above, and kept modest to stay
+ * proportionate with the (now smaller) sway they ride alongside. */
+const zRollAmplitudeDeg = (params: HumanoidParams): number => 2 + 2.5 * clamp(params.pelvisSway / 6, 0, 1);
+const trunkLeanAmplitudeDeg = (params: HumanoidParams): number => 2.5 + 3.5 * clamp(params.pelvisSway / 6, 0, 1);
 
 export type Side = 'L' | 'R';
 const SIDES: readonly Side[] = ['L', 'R'];
@@ -284,8 +323,15 @@ const REACH_MARGIN = 0.92;
  * clamp happens to produce (which is what used to cause foot-slide: see strideLength's doc comment). */
 const requiredDrop = (hipY: number, target: FootTarget, legLen: number): number => {
   const reachCap = REACH_MARGIN * legLen;
-  const dz = clamp(target.z, -reachCap, reachCap); // strideLength's cap keeps |z| well inside reachCap
-  const neededH = Math.sqrt(Math.max(reachCap * reachCap - dz * dz, 0));
+  // A nonzero lateral target (the wider base, or a stagger) also eats into this leg's reach budget (the
+  // 2-bone solve targets hypot(lateral, vertical), not vertical alone — see legAndFootRotations' abduction
+  // comment) — reserving that lateral share of reachCap here first keeps drop's own margin honest instead
+  // of a same-instant lateral demand quietly exceeding l1+l2 (solveTwoBone's own clamp would fall short of
+  // the intended lateral placement instead of erroring — see mobgen's report).
+  const lateralCap = Math.min(Math.abs(target.x), reachCap * 0.999);
+  const zCap = Math.sqrt(Math.max(reachCap * reachCap - lateralCap * lateralCap, 0));
+  const dz = clamp(target.z, -zCap, zCap); // strideLength's cap keeps |z| well inside reachCap
+  const neededH = Math.sqrt(Math.max(zCap * zCap - dz * dz, 0));
   return Math.max(0, hipY - target.y - neededH);
 };
 
@@ -474,17 +520,21 @@ interface GaitContext {
   readonly clock: GaitClock;
   readonly speed: number;
   readonly seed: number;
-  /** Full pelvis rotation (roll ∘ yaw) — for keeping the foot level in world space. */
+  /** Full pelvis rotation (roll ∘ zRoll ∘ yaw) — for keeping the foot level in world space. */
   readonly pelvisR: Mat3;
   readonly pelvisRollDeg: number;
   readonly yawDeg: number;
+  /** Swing-hip-drop about Z (see walkPose) — cancelled at the thigh exactly like yaw. */
+  readonly pelvisZRollDeg: number;
   readonly pelvisPivot: Vec3;
 }
 
 /** Per-side leg-placement result: rotations plus the (pre-root) world X the ankle actually reaches. */
 interface LegResult {
   readonly rotations: Record<string, Mat3>;
-  readonly worldX: Record<Side, number>;
+  /** Root X including the weight-transfer sway (see legAndFootRotations) — the one value walkPose's root
+   * and this function's own per-leg abduction (vx) must agree on. */
+  readonly rootX: number;
   readonly armStyle: Record<
     Side,
     { readonly wideExtraDeg: number; readonly forwardExtraDeg: number; readonly hang: number }
@@ -507,6 +557,25 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     const leg = legFor(side);
     return { ankleRestY: leg.ankleRestY, heelLen: leg.heelLen, toeLen: leg.toeLen, rollMul };
   };
+  // Wider base: a step's landing X is the plan's own jitter plus a fixed offset for its side that brings
+  // ankle-to-ankle width to a girth-driven target regardless of this actor's own sampled hip width (see
+  // stepWidthExtra). widthSign reads the actual rig's sign convention off the bone rather than assuming one.
+  const widthSign = (side: Side): number => Math.sign(legFor(side).thigh.head[0]) || (side === 'L' ? -1 : 1);
+  const hipWidthTotal = legR.thigh.head[0] - legL.thigh.head[0];
+  const widthExtra = stepWidthExtra(params, hipWidthTotal);
+  // The step's *base* (stagger-free) landing X — used for the sway amplitude below, so a stagger's own
+  // drift never inflates it (see mobgen's report: it used to read the full, stagger-included landing X).
+  const baseFootX = (side: Side): number => legFor(side).thigh.head[0] + widthSign(side) * widthExtra;
+  // Limit crossover: even a stagger's own inward jitter can't pull this foot's *world* X past
+  // MIN_WORLD_OUTWARD off-centre — swingFootTarget's Hermite has zero slope at both ends (see its own
+  // comment), so it never overshoots past its two landing endpoints, meaning clamping each landing spot
+  // this way also bounds the whole swing path in between, keeping it clear of the opposite, planted foot.
+  const landingX = (side: Side, i: number): number => {
+    const sign = widthSign(side);
+    const raw = sign * widthExtra + plan(i).lateralX;
+    const minOutwardRaw = MIN_WORLD_OUTWARD - Math.abs(legFor(side).thigh.head[0]);
+    return sign * Math.max(sign * raw, minOutwardRaw);
+  };
 
   const stanceSide = sideForStep(k - 1);
   const swingSide = sideForStep(k);
@@ -518,7 +587,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   const stanceTarget = stanceFootTarget(
     progress,
     stanceLen,
-    stancePlan.lateralX,
+    landingX(stanceSide, k - 1),
     geomFor(stanceSide, stancePlan.rollMul),
   );
 
@@ -527,12 +596,12 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   const swingLen = lenAt(k) * swingLimp;
   const prevEnd: StanceEnd = {
     len: lenAt(k - 1) * swingLimp,
-    lateralX: prevPlan.lateralX,
+    lateralX: landingX(swingSide, k - 2),
     geom: geomFor(swingSide, prevPlan.rollMul),
   };
   const nextEnd: StanceEnd = {
     len: lenAt(k + 1) * swingLimp,
-    lateralX: nextPlan.lateralX,
+    lateralX: landingX(swingSide, k),
     geom: geomFor(swingSide, nextPlan.rollMul),
   };
   const swingTarget = swingFootTarget({
@@ -567,7 +636,11 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   // otherwise it inflates every footfall's peak by a constant amount the Hermite curve below would have
   // to "spend" all over again on every transition, for no visual benefit.
   const flatDrop = (side: Side): number =>
-    requiredDrop(legFor(side).hipY, { x: 0, y: legFor(side).ankleRestY, z: 0, footPitchDeg: 0 }, legFor(side).legLen);
+    requiredDrop(
+      legFor(side).hipY,
+      { x: widthSign(side) * widthExtra, y: legFor(side).ankleRestY, z: 0, footPitchDeg: 0 },
+      legFor(side).legLen,
+    );
   const baselineDrop = Math.max(flatDrop('L'), flatDrop('R'));
   // Scans stanceFootTarget across whichever roll window (heel- or toe-side of footfall j) `side` is
   // rolling through, to find the true peak requiredDrop inside it (see this block's own doc comment).
@@ -598,14 +671,14 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
       peakNear({
         side: landing,
         len: lenAt(j + 1) * limpOf(landing),
-        lateralX: landingPlan.lateralX,
+        lateralX: landingX(landing, j),
         rollMul: landingPlan.rollMul,
         atHeel: true,
       }) * landingPlan.hipDropMul,
       peakNear({
         side: trailing,
         len: lenAt(j) * limpOf(trailing),
-        lateralX: trailingPlan.lateralX,
+        lateralX: landingX(trailing, j - 1),
         rollMul: trailingPlan.rollMul,
         atHeel: false,
       }) * trailingPlan.hipDropMul,
@@ -626,7 +699,19 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   for (const side of SIDES) {
     worldX[side] = legFor(side).thigh.head[0] + targets[side].x;
   }
-  const rootX = (worldX.L + worldX.R) / 2;
+  const naturalRootX = (worldX.L + worldX.R) / 2;
+  // Weight-transfer sway: the root shifts toward the stance foot's own *base* (stagger-free) X, easing up
+  // from 0 at each footfall to a fraction of it at mid-stance and back to 0 — same two-segment Hermite
+  // shape as the hip drop above, so it's C1 across footfalls automatically. Deliberately reads baseFootX,
+  // not the actual (possibly stagger-shifted) landing X: a stagger's own drift is a separate, slower
+  // component (the landing itself still reflects it) and must not also blow up this faster oscillation —
+  // see mobgen's report.
+  const swayPeak = swayFraction(speed) * baseFootX(stanceSide);
+  const sway =
+    progress <= 0.5
+      ? hermite(progress / 0.5, { value: 0, slope: 0 }, { value: swayPeak, slope: 0 })
+      : hermite((progress - 0.5) / 0.5, { value: swayPeak, slope: 0 }, { value: 0, slope: 0 });
+  const rootX = naturalRootX + sway;
 
   for (const side of SIDES) {
     const leg = legFor(side);
@@ -660,13 +745,24 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     // replaced.)
     const vx = target.x - hipShift[0] - rootX;
     const vy = ly - thigh.head[1];
-    const abductionDeg = toDeg(Math.atan2(vx, -vy));
-    const yb = thigh.head[1] - Math.hypot(vx, vy);
+    // This rig's own thigh/shin rest vectors already lean inward (hip wider than ankle) — nativeX is that
+    // fixed lateral offset (rotX, used for the sagittal bend, never touches X, so it survives any bend
+    // angle unchanged). The old formula implicitly assumed nativeX = 0 — fine while abduction only had to
+    // cancel yaw (tiny), but the wider base's routine, larger lateral targets exposed a real gap between
+    // the intended and actual placement (see mobgen's report). Solving rotZ(θ)·(nativeX, yPrime) = (vx, vy)
+    // for θ and yPrime generalizes the old (nativeX=0) closed form exactly.
+    const nativeX = shin.tail[0] - thigh.head[0];
+    const yPrime = -Math.sqrt(Math.max(vx * vx + vy * vy - nativeX * nativeX, 0));
+    const abductionDeg = toDeg(Math.atan2(vy, vx) - Math.atan2(yPrime, nativeX));
+    const yb = thigh.head[1] + yPrime;
 
     const { a1: thighAbs, a2: shinAbs } = solveTwoBone(thigh.head, [thigh.head[0], yb, lz], l1, l2);
     const thighDelta = thighAbs - restAngleDeg(thigh);
     const shinDelta = shinAbs - restAngleDeg(shin) - thighDelta;
-    const thighR = mulMM(mulMM(rotY(-ctx.yawDeg), rotZ(abductionDeg)), rotX(thighDelta));
+    // Cancel pelvis Z-roll (swing-hip drop, see walkPose) here too: it's a rotZ term, same axis as
+    // abduction, so cancelling it is just subtracting it from that same angle — pelvisR ∘ thighR then
+    // reduces to the same rotX(roll) ∘ rotZ(abduction) ∘ rotX(bend) as before, algebraically unchanged.
+    const thighR = mulMM(mulMM(rotY(-ctx.yawDeg), rotZ(abductionDeg - ctx.pelvisZRollDeg)), rotX(thighDelta));
     const shinR = rotX(shinDelta);
     // Keep the foot level in *world* space: undo pelvis(roll+yaw) ∘ thigh ∘ shin exactly, by matrix
     // inverse (transpose), since pelvis yaw is a different axis (Y) than thigh/shin's rotX — a scalar
@@ -691,7 +787,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     };
   }
 
-  return { rotations: out, worldX, armStyle };
+  return { rotations: out, rootX, armStyle };
 };
 
 /** Arms swing forward/back as before, plus this step's own style: wider (stagger, rotZ, mirrored per
@@ -730,7 +826,7 @@ export const groundOffset = (
   smoothing = 0,
 ): number => {
   const transforms = boneTransforms(bones, { root: [0, 0, 0], rotations });
-  let minY = Number.POSITIVE_INFINITY;
+  const ys: number[] = [];
   for (const [boneId, extent] of extents) {
     const t = transforms.get(boneId);
     if (!t) {
@@ -738,15 +834,16 @@ export const groundOffset = (
     }
     for (const c of corners(extent)) {
       const [, y] = applyPoint(t, c);
-      minY = Number.isFinite(minY) ? smoothMin(minY, y, smoothing) : y;
+      ys.push(y);
     }
   }
-  return Number.isFinite(minY) ? -minY : 0;
+  return ys.length > 0 ? -smoothMinAll(ys, smoothing) : 0;
 };
 
-// Undershoots the true lowest corner by up to half this at a stance/swing tie (see groundOffset) — small
-// next to the half-voxel ground tolerance the "lowest foot point" tests check.
-export const GROUND_SMOOTHING = 0.01;
+// See smoothMinAll: undershoot is this times ln(#near-tied corners), not a flat half-this — small next to
+// the half-voxel ground tolerance the "lowest foot point" tests check even for a whole foot's worth (~8-16
+// corners) of ties.
+export const GROUND_SMOOTHING = 0.006;
 
 export interface WalkActor {
   readonly bones: readonly Bone[];
@@ -780,14 +877,30 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pos
   // front) — purely cosmetic, doesn't feed into leg reach (legAndFootRotations solves in the pelvis's
   // own unrotated frame).
   const legL = legBonesFor(byId, extents, 'L');
+  const legR = legBonesFor(byId, extents, 'R');
+  const legForSide = (side: Side): typeof legL => (side === 'L' ? legL : legR);
   const strideFrac = clamp(strideLength(params, legL, speed) / strideCap(legL, params.footLift), 0, 1);
   const yawDeg = MAX_YAW_DEG * strideFrac * Math.cos(TAU * p);
   const leanStyle = blendStepScalar(k, progress, (i) => stepPlanFor(seed, i, params).leanExtraDeg);
   const leanDeg = chaseBlend(speed) * clamp(params.hunch / 25, 0, 1) * 8 + leanStyle;
   const pelvisRollDeg = params.pelvisSway * Math.sin(TAU * p * 2) + leanDeg;
-  // Roll outermost, yaw innermost: this order is what lets the thigh (legAndFootRotations) and spine
-  // cancel yaw exactly, with only pure-Y rotations adjacent to pelvis's own yaw term either way.
-  const pelvisR = mulMM(rotX(pelvisRollDeg), rotY(yawDeg));
+  // Pelvis roll-about-Z: the swing hip drops a few degrees, 0 at each footfall (double support, pelvis
+  // level) and peaking mid-swing — sign read off the swing leg's own hip X so it drops *that* side
+  // regardless of the rig's L/R convention. Cancelled exactly at the thigh (see legAndFootRotations).
+  const swingNow = sideForStep(k);
+  const stanceNow = sideForStep(k - 1);
+  const signOf = (x: number, side: Side): number => Math.sign(x) || (side === 'L' ? -1 : 1);
+  const zRollSign = -signOf(legForSide(swingNow).thigh.head[0], swingNow);
+  const pelvisZRollDeg = zRollSign * zRollAmplitudeDeg(params) * Math.sin(Math.PI * progress);
+  // Trunk counter-lean: spine+chest tip toward the stance side (opposite sign to the swing-hip drop, since
+  // stance and swing are opposite sides), same 0-at-footfall/peak-mid-stance timing. Head partly cancels it
+  // to stay nearer level.
+  const trunkLeanSign = -signOf(legForSide(stanceNow).thigh.head[0], stanceNow);
+  const trunkLeanDeg = trunkLeanSign * trunkLeanAmplitudeDeg(params) * Math.sin(Math.PI * progress);
+  // Roll outermost, yaw innermost, zRoll between: this order (and cancelling zRoll at the same rotZ step
+  // as abduction) is what lets the thigh and spine cancel yaw exactly, same reasoning as before zRoll
+  // existed — see legAndFootRotations' own comment on why that composition is unaffected by it.
+  const pelvisR = mulMM(mulMM(rotX(pelvisRollDeg), rotZ(pelvisZRollDeg)), rotY(yawDeg));
   const legCtx: GaitContext = {
     bones: byId,
     extents,
@@ -798,24 +911,32 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pos
     pelvisR,
     pelvisRollDeg,
     yawDeg,
+    pelvisZRollDeg,
     pelvisPivot: pelvis.head,
   };
   const legResult = legAndFootRotations(legCtx);
+  // Arms swing slightly wider, away from the lean, for balance.
+  const balanceWideDeg = 0.5 * Math.abs(trunkLeanDeg);
+  const armStyle: LegResult['armStyle'] = {
+    L: { ...legResult.armStyle.L, wideExtraDeg: legResult.armStyle.L.wideExtraDeg + balanceWideDeg },
+    R: { ...legResult.armStyle.R, wideExtraDeg: legResult.armStyle.R.wideExtraDeg + balanceWideDeg },
+  };
 
   const rotations: Record<string, Mat3> = {
     pelvis: pelvisR,
     // Counter-rotate the spine by -yawDeg so the shoulders don't swing with the hips — exact, same
-    // reasoning as the thigh's own yaw cancellation above.
-    spine: rotY(params.spineTwist * Math.sin(TAU * p * 2 + Math.PI) - yawDeg),
-    head: rotX(params.headLoll * Math.sin(TAU * p * 2)),
+    // reasoning as the thigh's own yaw cancellation above. rotZ adds the waddle (split spine/chest so
+    // it reads through the whole torso, not a kink at one joint).
+    spine: mulMM(rotZ(trunkLeanDeg * 0.6), rotY(params.spineTwist * Math.sin(TAU * p * 2 + Math.PI) - yawDeg)),
+    chest: rotZ(trunkLeanDeg * 0.4),
+    head: mulMM(rotZ(-0.4 * trunkLeanDeg), rotX(params.headLoll * Math.sin(TAU * p * 2))),
     // Slack jaw: a constant sag plus a soft bounce once per footfall (cos², so both ends are smooth),
     // lagging heel-strike by JAW_LAG as if from inertia.
     jaw: rotX(0.4 * params.jawChatter + 0.6 * params.jawChatter * Math.cos(TAU * (p - JAW_LAG)) ** 2),
-    ...armRotations(progress, params, legResult.armStyle),
+    ...armRotations(progress, params, armStyle),
     ...legResult.rotations,
   };
 
-  const rootX = (legResult.worldX.L + legResult.worldX.R) / 2;
-  const root: Vec3 = [rootX, groundOffset(bones, extents, rotations, GROUND_SMOOTHING), 0];
+  const root: Vec3 = [legResult.rootX, groundOffset(bones, extents, rotations, GROUND_SMOOTHING), 0];
   return { root, rotations };
 };
