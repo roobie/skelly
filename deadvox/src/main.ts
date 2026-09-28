@@ -13,6 +13,9 @@ import { startPlay } from './game/play.ts';
 import type { StreamerStats } from './game/streamer.ts';
 
 const params = new URLSearchParams(location.search);
+if (params.get('x') === 'guard-probe') {
+  document.documentElement.dataset.guardProbe = '1';
+}
 const view = document.getElementById('view')!;
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
 if (menuKeyLabel) {
