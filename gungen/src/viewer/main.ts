@@ -17,7 +17,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
-import type { Assembly } from '../core/schema.ts';
+import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
@@ -142,6 +142,8 @@ let framed = false;
 let baseline: Assembly | undefined;
 /** The template `current`/`baseline` were generated from, when they were. Undefined for fixtures and uploads. */
 let activeTemplate: Template | undefined;
+/** Connections the last panel edit pruned (a port the edited part no longer has), for the panel's note. */
+let lastDropped: readonly Connection[] = [];
 
 const redraw = () => {
   if (!report) {
@@ -284,7 +286,10 @@ const renderParamRow = (partId: string, param: PanelParam): HTMLElement => {
     clear.className = 'clear';
     clear.textContent = '×';
     clear.title = 'Clear override, restoring the seed value';
-    clear.addEventListener('click', () => applyPanelChange(clearParam(current!, baseline!, partId, param.name)));
+    clear.addEventListener('click', () => {
+      const { assembly, dropped } = clearParam(current!, gunDomain, baseline!, { part: partId, name: param.name });
+      applyPanelChange(assembly, dropped);
+    });
     head.append(clear);
   }
   row.append(head);
@@ -300,7 +305,10 @@ const renderParamRow = (partId: string, param: PanelParam): HTMLElement => {
     if (v.permitted === false) {
       btn.title = "The current template's choices for this param don't offer this value.";
     }
-    btn.addEventListener('click', () => applyPanelChange(setParam(current!, partId, param.name, v.value)));
+    btn.addEventListener('click', () => {
+      const { assembly, dropped } = setParam(current!, gunDomain, { part: partId, name: param.name }, v.value);
+      applyPanelChange(assembly, dropped);
+    });
     values.append(btn);
   }
   row.append(values);
@@ -335,6 +343,14 @@ const renderParamPanel = () => {
   const model = buildPanelModel(current, baseline, gunDomain, activeTemplate);
   const nodes: HTMLElement[] = [];
 
+  if (lastDropped.length > 0) {
+    const note = document.createElement('p');
+    note.className = 'param-note';
+    note.textContent = lastDropped
+      .map((c) => `removed connection ${c.from} → ${c.to}: port no longer exists`)
+      .join('; ');
+    nodes.push(note);
+  }
   if (hasOverrides(diffOverrides(baseline, current))) {
     const reset = document.createElement('button');
     reset.type = 'button';
@@ -349,11 +365,12 @@ const renderParamPanel = () => {
   paramPanel.replaceChildren(...nodes);
 };
 
-const applyPanelChange = (next: Assembly) => {
+const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = []) => {
   if (!baseline) {
     return;
   }
   framed = false;
+  lastDropped = dropped;
   uiState.overrides = diffOverrides(baseline, next);
   saveUiState();
   syncUrl();
@@ -384,6 +401,7 @@ select.addEventListener('change', () => {
   uiState.overrides = EMPTY_OVERRIDES;
   baseline = f;
   activeTemplate = undefined;
+  lastDropped = [];
   saveUiState();
   syncUrl();
   load(f);
@@ -404,6 +422,7 @@ fileInput.addEventListener('change', async () => {
     uiState.overrides = EMPTY_OVERRIDES;
     baseline = assembly;
     activeTemplate = undefined;
+    lastDropped = [];
     saveUiState();
     syncUrl();
     load(assembly);
@@ -507,7 +526,10 @@ const runGenerator = (step = 0, preserveOverrides = false) => {
   }
   baseline = generated;
   activeTemplate = template;
-  const assembly = hasOverrides(uiState.overrides) ? applyOverrides(generated, template, uiState.overrides) : generated;
+  lastDropped = [];
+  const assembly = hasOverrides(uiState.overrides)
+    ? applyOverrides(generated, gunDomain, template, uiState.overrides)
+    : generated;
   const option = new Option(`${assembly.name} (generated)`, '');
   select.querySelector('option[value=""]')?.remove();
   select.add(option, 0);
@@ -570,9 +592,14 @@ if (initialTemplate) {
   uiState.assembly = { kind: 'fixture', name: queryFixture.name };
   baseline = queryFixture;
   activeTemplate = undefined;
+  lastDropped = [];
   saveUiState();
   syncUrl();
-  load(hasOverrides(uiState.overrides) ? applyOverrides(queryFixture, undefined, uiState.overrides) : queryFixture);
+  load(
+    hasOverrides(uiState.overrides)
+      ? applyOverrides(queryFixture, gunDomain, undefined, uiState.overrides)
+      : queryFixture,
+  );
 } else if (uiState.assembly.kind === 'generated') {
   runGenerator(0, true);
 } else {
@@ -584,9 +611,10 @@ if (initialTemplate) {
     uiState.assembly = { kind: 'fixture', name: start.name };
     baseline = start;
     activeTemplate = undefined;
+    lastDropped = [];
     saveUiState();
     syncUrl();
-    load(hasOverrides(uiState.overrides) ? applyOverrides(start, undefined, uiState.overrides) : start);
+    load(hasOverrides(uiState.overrides) ? applyOverrides(start, gunDomain, undefined, uiState.overrides) : start);
   } else {
     saveUiState();
   }

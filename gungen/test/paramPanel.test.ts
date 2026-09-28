@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
 import { resolve } from '../src/core/resolve.ts';
+import type { Assembly, Domain, PartDef } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { ak, ar, battleRifle } from '../src/gun/templates.ts';
@@ -73,7 +74,7 @@ describe('param panel: editing', () => {
     const currentLength = seedResolved.params.get('barrel')!.length!.value;
     const other = barrelSpec.values.find((v) => v !== currentLength)!;
 
-    const edited = setParam(seedAssembly, 'barrel', 'length', other);
+    const { assembly: edited } = setParam(seedAssembly, gunDomain, { part: 'barrel', name: 'length' }, other);
     const editedResolved = resolve(edited, gunDomain);
 
     expect(editedResolved.params.get('barrel')!.length!.value).toBe(other);
@@ -104,12 +105,12 @@ describe('param panel: editing', () => {
     const seedValue = resolve(seedAssembly, gunDomain).params.get('grip')!.length!.value;
     const other = gripSpec.values.find((v) => v !== seedValue)!;
 
-    const edited = setParam(seedAssembly, 'grip', 'length', other);
+    const { assembly: edited } = setParam(seedAssembly, gunDomain, { part: 'grip', name: 'length' }, other);
     const model = buildPanelModel(edited, seedAssembly, gunDomain, ar);
     const grip = model.find((e) => e.id === 'grip') as PanelPart;
     expect(grip.params.find((p) => p.name === 'length')!.state).toEqual({ kind: 'user' });
 
-    const cleared = clearParam(edited, seedAssembly, 'grip', 'length');
+    const { assembly: cleared } = clearParam(edited, gunDomain, seedAssembly, { part: 'grip', name: 'length' });
     expect(resolve(cleared, gunDomain).params.get('grip')!.length!.value).toBe(seedValue);
     const clearedModel = buildPanelModel(cleared, seedAssembly, gunDomain, ar);
     const clearedGrip = clearedModel.find((e) => e.id === 'grip') as PanelPart;
@@ -122,7 +123,7 @@ describe('param panel: editing', () => {
     const seedVariant = resolve(seedAssembly, gunDomain).params.get('magazine')!.variant!.value;
     const otherVariant = magazineSpec.values.find((v) => v !== seedVariant)!;
 
-    let edited = setParam(seedAssembly, 'magazine', 'variant', otherVariant);
+    let edited = setParam(seedAssembly, gunDomain, { part: 'magazine', name: 'variant' }, otherVariant).assembly;
     edited = setSlotPresent(edited, ak, 'rear-sight', false);
 
     const overrides = diffOverrides(seedAssembly, edited);
@@ -130,7 +131,7 @@ describe('param panel: editing', () => {
     expect(serialized).toContain('magazine.variant:');
     expect(serialized).toContain('rear-sight:off');
 
-    const roundTripped = applyOverrides(seedAssembly, ak, parseOverrides(serialized));
+    const roundTripped = applyOverrides(seedAssembly, gunDomain, ak, parseOverrides(serialized));
     expect(roundTripped).toEqual(edited);
   });
 });
@@ -160,5 +161,83 @@ describe('param panel: optional slots', () => {
     expect(slot.present).toBe(false);
     expect(slot.optional).toBe(true);
     expect(slot.family).toBe('handguard');
+  });
+});
+
+// A minimal, gun-agnostic test domain: `post`'s `cap` port exists only when
+// its `capped` param is 'yes'. Deliberately not src/gun/parts.ts (owned by
+// another agent right now) — proves the pruning is generic, not AK/AR-specific.
+const testDomain: Domain = {
+  name: 'test',
+  families: {
+    post: {
+      name: 'post',
+      params: {
+        capped: { values: ['yes', 'no'], default: 'yes' },
+        label: { values: ['a', 'b'], default: 'a' }, // unrelated to port existence
+      },
+      build: (params): PartDef => ({
+        family: 'post',
+        ports:
+          params.capped === 'yes'
+            ? [{ id: 'cap', mount: 'cap', gender: 'male', pos: [0, 0, 0], normal: [1, 0, 0], up: [0, 1, 0] }]
+            : [],
+        solids: [],
+        keepOuts: [],
+        axes: [],
+      }),
+    },
+    cap: {
+      name: 'cap',
+      params: {},
+      build: (): PartDef => ({
+        family: 'cap',
+        ports: [{ id: 'attach', mount: 'cap', gender: 'female', pos: [0, 0, 0], normal: [-1, 0, 0], up: [0, 1, 0] }],
+        solids: [],
+        keepOuts: [],
+        axes: [],
+      }),
+    },
+  },
+  axisRules: [],
+};
+const testSeed: Assembly = {
+  name: 'post-cap',
+  root: 'post',
+  parts: { post: { family: 'post', params: { capped: 'yes' } }, cap: { family: 'cap' } },
+  connections: [{ from: 'post.cap', to: 'cap.attach' }],
+};
+
+describe('param panel: connection pruning', () => {
+  it('setting a value that drops a port prunes the connection and reports it', () => {
+    const { assembly, dropped } = setParam(testSeed, testDomain, { part: 'post', name: 'capped' }, 'no');
+    expect(dropped).toEqual([{ from: 'post.cap', to: 'cap.attach' }]);
+    expect(assembly.connections).toEqual([]);
+    // The dangling reference is gone, not merely tolerated: resolve() has nothing left to complain about.
+    expect(resolve(assembly, testDomain).issues).toEqual([]);
+  });
+
+  it('clearing the override restores the pruned connection', () => {
+    const { assembly: pruned } = setParam(testSeed, testDomain, { part: 'post', name: 'capped' }, 'no');
+    const { assembly: restored, dropped } = clearParam(pruned, testDomain, testSeed, { part: 'post', name: 'capped' });
+    expect(dropped).toEqual([]);
+    expect(restored.connections).toEqual(testSeed.connections);
+    expect(restored.parts.post!.params).toEqual(testSeed.parts.post!.params);
+  });
+
+  it('an unrelated param change prunes nothing', () => {
+    const { assembly, dropped } = setParam(testSeed, testDomain, { part: 'post', name: 'label' }, 'b');
+    expect(dropped).toEqual([]);
+    expect(assembly.connections).toEqual(testSeed.connections);
+  });
+
+  it('round-trips the pruning through the URL `set=` grammar', () => {
+    const { assembly: pruned } = setParam(testSeed, testDomain, { part: 'post', name: 'capped' }, 'no');
+    const overrides = diffOverrides(testSeed, pruned);
+    const serialized = serializeOverrides(overrides);
+    expect(serialized).toBe('post.capped:no');
+
+    const roundTripped = applyOverrides(testSeed, testDomain, undefined, parseOverrides(serialized));
+    expect(roundTripped).toEqual(pruned);
   });
 });

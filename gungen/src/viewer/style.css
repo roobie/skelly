@@ -201,6 +201,14 @@ button:hover {
   flex: none;
   align-self: center;
 }
+.param-note {
+  flex: none;
+  align-self: center;
+  max-width: 260px;
+  margin: 0;
+  color: var(--fail);
+  font-size: 12px;
+}
 .param-part {
   flex: none;
   width: 230px;

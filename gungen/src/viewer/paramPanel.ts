@@ -119,20 +119,77 @@ export const buildPanelModel = (
 
 // ---- Editing ----
 
-/** Sets one part's param to an explicit value. */
-export const setParam = (assembly: Assembly, part: string, name: string, value: string): Assembly => {
-  const inst = assembly.parts[part];
-  if (!inst) {
-    return assembly;
+const portIdOf = (ref: string): string => ref.slice(ref.indexOf('.') + 1);
+
+/** The result of an edit that may leave some connections referencing a port `part` no longer has. */
+export interface EditResult {
+  readonly assembly: Assembly;
+  /** Connections removed because they named a port `part` doesn't declare, or a slot beyond its count. */
+  readonly dropped: readonly Connection[];
+}
+
+/** Which part's param a panel edit targets. */
+export interface ParamRef {
+  readonly part: string;
+  readonly name: string;
+}
+
+/**
+ * Drops every connection touching `part` that names a port it doesn't
+ * declare (or a `from` slot beyond that port's slot count), after rebuilding
+ * `part` from its current params. Generic over the domain: a family's ports
+ * can depend on its own params (e.g. a handguard's `front` port only exists
+ * when `mount: 'clamped'`), and this never looks at family or port names.
+ */
+const pruneDangling = (candidate: Assembly, domain: Domain, part: string): EditResult => {
+  const def = resolve(candidate, domain).defs.get(part);
+  if (!def) {
+    return { assembly: candidate, dropped: [] }; // Unresolved for another reason; already reported under `structure`.
   }
-  return { ...assembly, parts: { ...assembly.parts, [part]: { ...inst, params: { ...inst.params, [name]: value } } } };
+  const dangling = (c: Connection): boolean => {
+    if (partOf(c.from) === part) {
+      const port = def.ports.find((p) => p.id === portIdOf(c.from));
+      if (!port || (c.slot !== undefined && (!port.slots || c.slot >= port.slots.count))) {
+        return true;
+      }
+    }
+    if (partOf(c.to) === part && !def.ports.some((p) => p.id === portIdOf(c.to))) {
+      return true;
+    }
+    return false;
+  };
+  const dropped = candidate.connections.filter(dangling);
+  if (dropped.length === 0) {
+    return { assembly: candidate, dropped: [] };
+  }
+  return { assembly: { ...candidate, connections: candidate.connections.filter((c) => !dangling(c)) }, dropped };
 };
 
-/** Clears a user override, restoring the seed's (baseline's) value for that param. */
-export const clearParam = (assembly: Assembly, baseline: Assembly, part: string, name: string): Assembly => {
+/** Sets one part's param to an explicit value, pruning any connection the rebuilt part can no longer carry. */
+export const setParam = (assembly: Assembly, domain: Domain, ref: ParamRef, value: string): EditResult => {
+  const { part, name } = ref;
   const inst = assembly.parts[part];
   if (!inst) {
-    return assembly;
+    return { assembly, dropped: [] };
+  }
+  const candidate: Assembly = {
+    ...assembly,
+    parts: { ...assembly.parts, [part]: { ...inst, params: { ...inst.params, [name]: value } } },
+  };
+  return pruneDangling(candidate, domain, part);
+};
+
+/**
+ * Clears a user override, restoring the seed's (baseline's) value for that
+ * param. Also restores whatever connections the baseline had for `part`
+ * (undoing pruning from the override), then re-prunes against the reverted
+ * part — other still-overridden params on it may keep some of them invalid.
+ */
+export const clearParam = (assembly: Assembly, domain: Domain, baseline: Assembly, ref: ParamRef): EditResult => {
+  const { part, name } = ref;
+  const inst = assembly.parts[part];
+  if (!inst) {
+    return { assembly, dropped: [] };
   }
   const seedValue = baseline.parts[part]?.params?.[name];
   const params: Record<string, string> = { ...inst.params };
@@ -141,7 +198,14 @@ export const clearParam = (assembly: Assembly, baseline: Assembly, part: string,
   } else {
     params[name] = seedValue;
   }
-  return { ...assembly, parts: { ...assembly.parts, [part]: { ...inst, params } } };
+  const others = assembly.connections.filter((c) => partOf(c.from) !== part && partOf(c.to) !== part);
+  const restorable = baseline.connections.filter((c) => partOf(c.from) === part || partOf(c.to) === part);
+  const candidate: Assembly = {
+    ...assembly,
+    parts: { ...assembly.parts, [part]: { ...inst, params } },
+    connections: [...others, ...restorable],
+  };
+  return pruneDangling(candidate, domain, part);
 };
 
 /**
@@ -262,8 +326,13 @@ export const parseOverrides = (text: string): Overrides => {
   return { params, presence };
 };
 
-/** Rebuilds an edited assembly from a baseline plus a set of overrides. */
-export const applyOverrides = (baseline: Assembly, template: Template | undefined, overrides: Overrides): Assembly => {
+/** Rebuilds an edited assembly from a baseline plus a set of overrides — the same pruning included. */
+export const applyOverrides = (
+  baseline: Assembly,
+  domain: Domain,
+  template: Template | undefined,
+  overrides: Overrides,
+): Assembly => {
   let assembly = baseline;
   if (template) {
     for (const [part, present] of Object.entries(overrides.presence)) {
@@ -272,7 +341,7 @@ export const applyOverrides = (baseline: Assembly, template: Template | undefine
   }
   for (const [part, params] of Object.entries(overrides.params)) {
     for (const [name, value] of Object.entries(params)) {
-      assembly = setParam(assembly, part, name, value);
+      ({ assembly } = setParam(assembly, domain, { part, name }, value));
     }
   }
   return assembly;
