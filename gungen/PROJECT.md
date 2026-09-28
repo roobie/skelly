@@ -45,6 +45,7 @@ size classes (see §4), not measurements.
 | CI | GitHub Actions (`.github/workflows/gungen.yml`): typecheck, tests, fixture validation, viewer build |
 | Hosting | GitHub Pages (`.github/workflows/pages.yml`): every push to `main` is checked, then the viewer is published at <https://roobie.github.io/skelly/gungen/> |
 | Params from neighbours | Declared per param (`ParamSpec.from`): an unset param copies a neighbour's param through a named port. Values set in the assembly always win |
+| Keep-out shapes | Keep-outs carry a conservative box, with an optional exact convex XY profile extruded through Z |
 
 ## Design areas
 
@@ -161,8 +162,9 @@ the generator later has something independent to be tested against (§9).
   origin, and the root part sits at the origin. Lengths are in u, an abstract
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
-- **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes only),
-  parts, part families, domains, and the JSON assembly format.
+- **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
+  refined by convex extruded-polygon profiles), box and convex extruded-polygon
+  solids, parts, part families, domains, and the JSON assembly format.
 - **Placement** (`src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.
@@ -172,26 +174,34 @@ the generator later has something independent to be tested against (§9).
   | --- | --- |
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
-  | `solid-overlap` | Solids don't overlap. Directly connected parts may nest by up to 0.75u |
+  | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
+  | `connection-contact` | Solids on connected parts touch or are within 0.25u (one grid step) |
   | `keep-out` | No solid is inside another part's keep-out volume, except the part attached at the port the volume allows |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
 
+  The contact rule checks minimum Euclidean separation between the connected
+  parts' convex solids; overlap remains solely governed by `solid-overlap`.
+  A separated pair is covered in `test/fixtures/broken-connection-contact.json`.
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
 - **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
-  barrel, handguard, grip, magazine, stock and sight, built from boxes. The handguard can clamp to the barrel as
-  well as the receiver, which creates the loop. There are 7 mount types, not
-  the 3–4 first planned: each socket needs its own type so a stock can't go
-  in a grip socket.
-- **Keep-out volumes:** ejection path, trigger finger, magazine insertion
-  path, charging handle travel (receiver); sight line (sight); muzzle
-  (barrel).
+  lower, barrel, cylinder, handguard, tube magazine, forend, grip, magazine,
+  stock and sight, built from boxes and convex extrusions. A handguard joined
+  to the barrel carries a bore-fitted collar so its clamp connection has solid
+  contact. The handguard can clamp to the barrel as well as the receiver,
+  which creates a loop. There are
+  12 mount types: each socket needs its own type so a stock can't go in a grip
+  socket.
+- **Keep-out volumes:** ejection and slide paths, trigger finger, magazine
+  insertion, charging-handle/bolt/hammer travel, cylinder gap/swing clearance,
+  loading ports, sight line and muzzle.
 - **Fixtures** (`fixtures/`): one valid assembly and one broken assembly per
   rule. Each file lists the rules it is expected to fail in `expect`, and the
   tests check each one fails exactly those.
-- **Viewer** (`src/viewer/`): solids, port frames (normal and up arrows),
-  keep-out volumes and the bore line, with failing parts and volumes in red.
+- **Viewer** (`src/viewer/`): box and extruded-profile solids, port frames
+  (normal and up arrows), keep-out volumes and the bore line, with failing
+  parts and volumes in red.
   Click an issue to isolate it; hover to name what's under the pointer; open
   your own assembly JSON.
 
@@ -218,20 +228,24 @@ archetype in the viewer.
   | Rule id | Checks |
   | --- | --- |
   | `firing-grip` | Something for the firing hand: a part tagged `firing-grip` (a pistol grip, or a stock with a wrist) |
+  | `pistol-barrel-crown` | A pistol barrel protrudes 0.5–1.5u beyond its slide |
 
 - **Receiver split.** The receiver is now only the action body, with two
   params:
   - `action`: `auto` (charging handle), `bolt` (bolt travel out of the back,
-    bolt handle sweep on the right) or `pump` (driven by the forend). Each adds
-    its own keep-out volumes.
+    bolt handle sweep on the right), `pump` (forend-driven) or `revolver`
+    (cylinder frame). Each adds its own keep-out volumes. Pistols use their own
+    frame and slide families, not receiver actions.
   - `feed`: `box` (magazine through the lower), `top` (loading port above the
-    action) or `tube` (tube magazine port, loading port underneath).
+    action), `tube` (tube magazine port underneath), or `cylinder` (revolver;
+    added in Milestone 2.2).
 
   The grip and magazine hang from a **lower** under it, whose `layout` param
   sets where they go:
   - `conventional`: magazine ahead of the grip.
   - `bullpup`: grip ahead of the magazine, with the butt built in.
-  - `trigger`: trigger only, for tube-fed or top-loaded designs.
+  - `trigger`: trigger with an optional grip anchor; used by tube-fed, top-fed
+    and revolver designs.
 - **New and extended parts:**
   - `tube-magazine`: runs under the barrel, with its cap fixed to the barrel's
     lug. That closes a loop, the same way the handguard clamp does.
@@ -239,7 +253,7 @@ archetype in the viewer.
   - `stock` now has a `style`. `straight` puts the comb in line with the bore.
     `sporting` drops the comb below the bolt's travel and adds a wrist to hold.
   - The handguard has a top rail, so a sight can sit ahead of the action.
-- **Mount types:** 11 now. `lower`, `tube`, `lug` and `forend` are new.
+- **Mount types:** 12 now. `lower`, `tube`, `lug`, `forend` and `cylinder` are new.
 
 ### Archetype fixtures
 
@@ -247,11 +261,14 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 
 | Fixture | Archetype | Built from |
 | --- | --- | --- |
-| `archetype-rifle` | Rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
-| `archetype-smg` | Submachine gun | Same layout as the rifle at small bore, with a short barrel and stock and a long magazine |
+| `archetype-ar` | AR-pattern service rifle | conventional lower, straight stock, seven-slot flat-top rail, rear-top charging handle, front-sight block |
+| `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
+| `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
 | `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
+| `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
+| `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
 | `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
 On top of one broken fixture per rule, these check constraints specific to an
@@ -270,7 +287,7 @@ archetype:
   trigger-only lower has no magazine, and nothing flags it. A tube-fed
   receiver on a conventional lower is only caught because the lower happens
   to hit the loading port. *(Fixed in 1.2.)*
-- **The SMG differs from the rifle only in proportions and bore.** Nothing
+- **The SMG differs from the battle rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
 - **Parts still don't read their neighbours' params.** Barrel length, and the
   handguard or tube length that has to match it, are still matched by hand.
@@ -283,9 +300,10 @@ archetype:
 
 **Status:** done.
 
-- **`feed-match` rule** (gun domain): the lower under a receiver must suit its
-  feed. Box- and top-fed receivers need a lower with a magazine well; a
-  tube-fed receiver can't use one. Fixture: `broken-feed-match`.
+- **`feed-match` rule** (gun domain): the receiver feed must have a compatible
+  well. Box- and top-fed receivers need a lower well; a tube-fed receiver
+  can't use one. Pistols now have an integral frame magazine well and do not
+  use the rifle receiver/lower feed path. Fixture: `broken-feed-match`.
 - **Params from neighbours.** A family can declare that a param reads its
   value from the part on one of its ports, when the assembly doesn't set it.
   Resolution needs only the connection list, so it runs before parts are
@@ -309,7 +327,7 @@ archetype:
 
 ### Still open
 
-- The SMG is still the rifle at a different size and bore.
+- The SMG is still the battle rifle at a different size and bore.
 - Ergonomics is still only "is there a firing grip".
 - Neighbour-reading copies values as they are. There's no mapping between
   them (e.g. "one size smaller than the barrel"), and a part can't compute
@@ -326,7 +344,7 @@ The validator then judges it like any hand-written fixture.
 ### What was built
 
 - **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
-  for the six archetypes). A template lists slots and connections:
+  for the ten current archetypes). A template lists slots and connections:
   - A **slot** names a part family and, per param, a value or a list to pick
     from. Params it leaves out are default or read from neighbours, so a
     template picks the barrel length and a clamped handguard or tube magazine
@@ -358,7 +376,7 @@ The validator then judges it like any hand-written fixture.
 
 | Template | Valid | Distinct builds | Distinct valid | Failures |
 | --- | --- | --- | --- | --- |
-| rifle | 80.6% | 959 | 776 | keep-out (sightline) 19.4% |
+| battle-rifle | 80.6% | 959 | 776 | keep-out (sightline) 19.4% |
 | smg | 100% | 430 | 430 | – |
 | bolt-rifle | 76.3% | 308 | 234 | keep-out (loading-port) 23.7% |
 | bolt-rifle-box | 100% | 560 | 560 | – |
@@ -372,16 +390,173 @@ it also means their variety comes from proportions, not layout.
 
 ### Known gaps
 
-- **A clamped handguard that's too tight passes.** Directly connected parts
-  may nest by up to 0.75u (needed for the grip's tilted corner), and a
-  handguard clamped to the barrel counts as directly connected. Found while
-  writing templates, which avoid the `S` inner size for now. The fix is an
-  allowance per mount type instead of one global value.
+- **A clamped handguard that's too tight passes.** *(Fixed in Milestone 2.1.)*
+  Interface allowances are now mount-specific: grip is 0.01u for numeric
+  tolerance, clamp is 0u, and other mounts retain the 0.75u fallback. The `S`
+  inner handguard on a larger barrel is now rejected at the clamp.
 - **Distinct builds are counted by file, not shape.** Two builds whose files
   differ but look the same count as two, e.g. a clamped and a floating
   handguard of the same length.
 - **Retrying is linear** (seed, seed + 1, …). Fine at these valid rates; a
   template with a low valid rate would need smarter search.
+
+## Milestone 2.1: convex solids and fitted grip interface
+
+**Status:** done.
+
+- `Solid` is a discriminated union of boxes and convex polygons extruded along
+  Z. Polygon profiles are checked for finite coordinates, non-zero area,
+  counter-clockwise winding, convexity, self-intersection, and non-empty
+  extrusion depth. Invalid shapes produce a `structure` issue and are omitted
+  from rendering/collision checks. Keep-out volumes remain boxes.
+- SAT collision checks handle convex polyhedra while preserving the box fast
+  path's signed-overlap result. A 300-pair deterministic randomized test
+  compares both paths within `1e-9`.
+- The grip is one five-vertex extruded profile; its beveled mating edge follows
+  the angled grip mount. The viewer renders it as one Three.js extruded mesh.
+- Conventional and bullpup lowers have a one-unit-deep box magazine well with
+  0.25u clearance per side and surrounding material. The magazine inserts 0.75u
+  into the well, leaving a 0.25u roof; the conventional lower also has a 0.25u
+  front wall beyond the well. This is a simple solid model, not a detailed feed
+  interface.
+- Mount-specific interface tolerance removes the grip's former 0.75u
+  dependency and makes an over-tight handguard clamp fail.
+
+Generator valid-rate comparison (`npm run stats`, 1000 seeds/template):
+
+| Template | Before | After | Change |
+| --- | ---: | ---: | --- |
+| battle-rifle | 80.6% | 80.6% | none |
+| smg | 100% | 100% | none |
+| bolt-rifle | 76.3% | 76.3% | none |
+| bolt-rifle-box | 100% | 100% | none |
+| pump-shotgun | 100% | 100% | none |
+| bullpup | 100% | 100% | none |
+
+Rates are unchanged: the existing templates use only handguard sizes that
+clear the barrel, and the new grip bevel fits without increasing overlaps.
+
+## Milestone 2.2: handguns — pistols, then revolvers
+
+**Goal:** add distinct handgun archetypes without conflating a pistol's grip-fed
+magazine with a rifle-style lower or a revolver's cylinder with a magazine.
+
+**Status:** done.
+
+### Pistols (first)
+
+- Reworked the pistol as three mechanically distinct parts: an integral
+  frame/grip with the existing material-thickness magazine-well construction,
+  a hollow slide with an ejection-port opening and short sight rail, and a
+  barrel inside the slide. The frame also carries the trigger-finger keep-out,
+  trigger guard, dust cover, and slide rails. The magazine and optional sight
+  complete the template.
+- Frame, slide, and barrel close a fixed loop; proportions are coupled by
+  inherited size classes rather than a solver. Compact uses a 12u barrel and
+  11u slide; full uses a 16u barrel and 15u slide. In both, the barrel's
+  exposed crown is exactly 1u (bounded by `pistol-barrel-crown` to 0.5–1.5u).
+  Visual review found the slide/barrel ports aligned while their solids were
+  2.24u apart: the slide's barrel port sat away from its hollow channel. Its
+  port and the frame slide rails were repositioned so the barrel now sits in
+  the channel and the frame rails touch the slide. The barrel has an optional
+  unused muzzle port for a later suppressor or compensator part.
+- A named 0.125u half-grid side clearance (less than half the S-bore radius)
+  widens with the S/M bore radius. The slide wall is 0.5u thick, and the dust
+  cover is no wider than the slide. The magazine well and grip widths are
+  unchanged. The trigger guard doubles its X span (2u to 4u about the same
+  center) and halves its Z width (2.5u to 1.25u).
+- Both pistol and revolver frames now include a static, convex beavertail
+  grip-safety tang. This is visual geometry only; activation/movement is not
+  simulated. Core `connection-contact` prevents a valid port graph from hiding
+  separated solids; its allowed gap is one 0.25u grid step.
+- The grip is integral and behind the trigger, under the slide's rear third.
+  The frame exposes a direct magazine port at the bottom of its grip well.
+  Receiver `action: slide` and lower `layout: pistol` were removed. Sights
+  attach to the slide's short rail, not a receiver rail.
+- A passing fixture, a broken overlong-crown fixture, geometry/rule tests,
+  fail-before evidence on the previous model, and three known-good snapshots
+  cover the design. At 1000 seeds, pistol is 100% valid with 24 distinct
+  builds: bore S/M × compact/full × grip S/M/L × sight absent/present.
+
+### Revolvers (second)
+
+- Added cylinder feed and a six- or eight-sided extruded cylinder prism below
+  and parallel to the bore. Its selected chamber axis must be collinear with
+  the bore; a misindexed-cylinder fixture exercises `axis-alignment`.
+  `feed-match` accepts cylinder feed without a magazine well and rejects
+  mismatched revolver-action/feed combinations.
+- Added a revolver receiver/frame with a cylinder window and top strap, built
+  from several solids. Frame, cylinder and barrel form a checked loop. Keep-outs
+  cover the cylinder gap, swing-out clearance and hammer travel. The frame's
+  beavertail grip-safety tang is a static visual part of the backstrap.
+- Added a no-well grip, revolver template, passing and broken fixtures, and
+  three known-good snapshots. At 1000 seeds, revolver is 100% valid with 24
+  distinct builds; pistol remains 100% valid with 24 distinct builds. Existing
+  template rates are unchanged. Individual chamber holes and cylinder rotation
+  are not modeled; chamber alignment is represented by the bore axis.
+- Grip-reach ergonomics (§5) remains unbuilt, so handgun proportions are not
+  checked against a hand. The 1u crown and coupled compact/full dimensions are
+  fixed model choices, not firearm manufacturing tolerances.
+
+## Milestone 2.3: AR and AK archetypes
+
+**Goal:** distinguish common service-rifle layouts using the shared receiver,
+lower and procedural geometry while keeping the current FAL/FNC-like design
+explicitly named `battle-rifle`.
+
+**Status:** AR and AK implemented.
+
+### AR
+
+- Added the AR template using the dedicated lower, straight stock, and
+  seven-slot flat-top rail. Its magazine-well housing extends 1.5u below the
+  receiver underside with four walls; its front wall derives its thickness
+  from the well frame's front panel, so the lower extension does not step out
+  beyond that panel. It reuses the conventional magazine port and insertion
+  keep-out, leaving the magazine path unchanged. Its receiver
+  has an explicit rear-top charging
+  handle keep-out; the barrel has a sight-block port four units from the
+  muzzle, with a front-sight block/post mounted there. Optional sight uses
+  rail slot 0, avoiding the earlier sightline collision at arbitrary slots.
+- The passing fixture and focused part tests cover the geometry and placement.
+  At 1000 seeds, AR is 100% valid with 16 distinct builds. The
+  remaining optional carry-handle style is not modeled.
+
+### AK
+
+- Added a dedicated AK receiver with a removable dust-cover solid and no
+  receiver rail. Its rear-top corner is cut 2u forward and 1.5u down (a 36.9°
+  slope toward the stock), removing 30% of the receiver's 5u height at the rear
+  while retaining the stock port on the rear face and the flat dust-cover seat.
+  Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
+  A leaf rear sight mounts on a receiver sight-block port.
+- The raised gas tube has its own axis, checked parallel to the bore, and
+  connects the receiver to the upper handguard. The front sight block uses the
+  barrel's existing port four units from the muzzle.
+- Added an `ak` lower layout with the conventional well and a forward-extended
+  box keep-out for the magazine's rock-in sweep. The magazine remains vertical
+  in its insertion well; the broad box is a conservative swept envelope, not an
+  arc-aware motion simulation.
+- The `ak-curved` magazine is three convex prisms: a slanted-bottom upper
+  section, a trapezoidal middle section and a forward-turned lower section.
+  Their joint faces match exactly. The middle prism has parallel grip-facing
+  and barrel-facing sides of different lengths; its top interface is slanted
+  5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
+  angled end face without arbitrary X-axis compensation. Added an intermediate dropped-stock style.
+- A passing fixture and a missing-gas-tube fixture exercise the layout. At
+  1000 seeds, AK is 100% valid with 32 distinct builds. Individual rounds,
+  magazine latching and the actual rock-in motion are not simulated.
+
+**Known risks and open questions:** the current `auto` charging-handle
+keep-out sits on the left; the `bolt` handle keep-out is on the right. The
+existing `rifle` name has been renamed to `battle-rifle`; there is no
+compatibility alias.
+
+Each new archetype requires a passing fixture, a broken fixture for every new
+rule with readable failure text, snapshots of three known-good seeds, and
+before/after generator stats. Review generated builds in the viewer before
+updating snapshots. Report milestone results with viewer links; visual
+proportions await BR's judgment.
 
 ## Running it
 
@@ -392,15 +567,15 @@ npm test               # unit tests plus every fixture
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json
-npm run generate -- --template rifle --seed 42          # print a generated assembly
-npm run generate -- --template rifle --seed 42 --valid  # skip to the next valid seed
+npm run generate -- --template battle-rifle --seed 42  # print a generated assembly
+npm run generate -- --template battle-rifle --seed 42 --valid # skip to the next valid seed
 npm run stats          # generator metrics over 1000 seeds per template
 npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>
 ```
 
 The same viewer is live at <https://roobie.github.io/skelly/gungen/>, and the
 query parameters work there too, e.g.
-<https://roobie.github.io/skelly/gungen/?template=rifle&seed=7>.
+<https://roobie.github.io/skelly/gungen/?template=battle-rifle&seed=7>.
 
 ## Open questions
 

@@ -1,0 +1,51 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { boxFromMinMax } from '../src/core/geometry.ts';
+import type { Domain, PartFamily } from '../src/core/schema.ts';
+import { validate } from '../src/core/validate.ts';
+
+const sourceFamily: PartFamily = {
+  name: 'test-source',
+  params: {},
+  build: () => ({
+    family: 'test-source',
+    solids: [{ id: 'body', kind: 'box', box: boxFromMinMax([-1, -0.5, -0.5], [0, 0.5, 0.5]) }],
+    ports: [{ id: 'mate', mount: 'test', gender: 'female', pos: [0, 0, 0], normal: [1, 0, 0], up: [0, 1, 0] }],
+    keepOuts: [],
+    axes: [],
+  }),
+};
+
+const targetFamily: PartFamily = {
+  name: 'test-target',
+  params: {},
+  build: () => ({
+    family: 'test-target',
+    solids: [{ id: 'body', kind: 'box', box: boxFromMinMax([4, -0.5, -0.5], [5, 0.5, 0.5]) }],
+    ports: [{ id: 'mate', mount: 'test', gender: 'male', pos: [0, 0, 0], normal: [-1, 0, 0], up: [0, 1, 0] }],
+    keepOuts: [],
+    axes: [],
+  }),
+};
+
+const brokenContactFixture = JSON.parse(
+  readFileSync(new URL('./fixtures/broken-connection-contact.json', import.meta.url), 'utf8'),
+);
+
+const testDomain: Domain = {
+  name: 'connection-contact-test',
+  families: { 'test-source': sourceFamily, 'test-target': targetFamily },
+  axisRules: [],
+};
+
+describe('connection-contact', () => {
+  it('reports the gap from a broken core fixture', () => {
+    const { issues } = validate(brokenContactFixture, testDomain);
+    expect(issues.map(({ rule, message }) => ({ rule, message }))).toEqual([
+      {
+        rule: 'connection-contact',
+        message: 'source.mate and target.mate have a 4u gap between their solids (maximum: 0.25u).',
+      },
+    ]);
+  });
+});

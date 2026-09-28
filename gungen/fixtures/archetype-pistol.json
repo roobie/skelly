@@ -1,0 +1,20 @@
+{
+  "name": "archetype-pistol",
+  "description": "Pistol: integral rear grip and frame, hollow slide, internal barrel with a 1u crown.",
+  "expect": [],
+  "root": "frame",
+  "parts": {
+    "frame": { "family": "frame", "params": { "bore": "M", "gripLength": "M" } },
+    "slide": { "family": "slide" },
+    "barrel": { "family": "barrel", "params": { "length": "S", "profile": "pistol" } },
+    "magazine": { "family": "magazine", "params": { "length": "S", "profile": "pistol" } },
+    "sight": { "family": "sight" }
+  },
+  "connections": [
+    { "from": "frame.slide", "to": "slide.frame" },
+    { "from": "slide.barrel", "to": "barrel.rear" },
+    { "from": "frame.barrel", "to": "barrel.frame" },
+    { "from": "frame.magazine", "to": "magazine.top" },
+    { "from": "slide.rail", "slot": 0, "to": "sight.base" }
+  ]
+}

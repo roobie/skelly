@@ -1,0 +1,10 @@
+{
+  "name": "broken-connection-contact",
+  "description": "Two compatible ports whose attached solids are separated by four units.",
+  "root": "source",
+  "parts": {
+    "source": { "family": "test-source" },
+    "target": { "family": "test-target" }
+  },
+  "connections": [{ "from": "source.mate", "to": "target.mate" }]
+}
