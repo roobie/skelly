@@ -522,8 +522,11 @@ explicitly named `battle-rifle`.
 ### AK
 
 - Added a dedicated AK receiver with a removable dust-cover solid and no
-  receiver rail. Its right-side bolt handle uses the existing `action: bolt`
-  travel keep-out. A leaf rear sight mounts on a receiver sight-block port.
+  receiver rail. Its rear-top corner is cut 2u forward and 1.5u down (a 36.9°
+  slope toward the stock), removing 30% of the receiver's 5u height at the rear
+  while retaining the stock port on the rear face and the flat dust-cover seat.
+  Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
+  A leaf rear sight mounts on a receiver sight-block port.
 - The raised gas tube has its own axis, checked parallel to the bore, and
   connects the receiver to the upper handguard. The front sight block uses the
   barrel's existing port four units from the muzzle.

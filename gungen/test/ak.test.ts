@@ -17,6 +17,46 @@ describe('AK-pattern archetype', () => {
     expect(receiver.ports.map(({ id }) => id)).toContain('rear-sight');
   });
 
+  it('cuts the receiver rear-top corner while preserving stock and sight interfaces', () => {
+    const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
+    const body = receiver.solids.find(({ id }) => id === 'receiver-body');
+    expect(body?.kind).toBe('extruded-polygon');
+    if (body?.kind !== 'extruded-polygon') {
+      throw new Error('Expected a profiled AK receiver body.');
+    }
+    expect(validateExtrudedPolygon(body.profile, body.z)).toBeUndefined();
+    expect(body.profile).toContainEqual([-16, 1]);
+    expect(body.profile).toContainEqual([-14, 2.5]);
+    expect(body.profile).not.toContainEqual([-16, 2.5]);
+    const [forwardTop, rearTip] = body.profile.slice(-2);
+    expect(Math.atan2(forwardTop![1] - rearTip![1], forwardTop![0] - rearTip![0]) * (180 / Math.PI)).toBeCloseTo(
+      36.9,
+      0,
+    );
+
+    const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
+    const rearFaceY = body.profile.filter(([x]) => x === stockPort.pos[0]).map(([, y]) => y);
+    expect(stockPort.pos).toEqual([-16, 0, 0]);
+    expect(stockPort.pos[1]).toBeGreaterThan(Math.min(...rearFaceY));
+    expect(stockPort.pos[1]).toBeLessThan(Math.max(...rearFaceY));
+    expect(stockPort.pos[2]).toBeGreaterThanOrEqual(body.z[0]);
+    expect(stockPort.pos[2]).toBeLessThanOrEqual(body.z[1]);
+
+    const cover = receiver.solids.find(({ id }) => id === 'dust-cover');
+    const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
+    expect(cover?.kind).toBe('box');
+    if (cover?.kind !== 'box') {
+      throw new Error('Expected an AK dust-cover solid.');
+    }
+    expect(cover.box.center[0] - cover.box.half[0]).toBeGreaterThan(forwardTop![0]);
+    expect(cover.box.center[1] - cover.box.half[1]).toBe(2.5);
+    expect(rearSightPort.pos).toEqual([-2, 3, 0]);
+    expect(rearSightPort.pos[0]).toBeGreaterThan(cover.box.center[0] - cover.box.half[0]);
+    expect(rearSightPort.pos[0]).toBeLessThan(cover.box.center[0] + cover.box.half[0]);
+    expect(rearSightPort.pos[1]).toBe(cover.box.center[1] + cover.box.half[1]);
+    expect(validate(akFixture, gunDomain).ok).toBe(true);
+  });
+
   it('keeps the gas tube parallel to and above the bore axis', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.ok).toBe(true);

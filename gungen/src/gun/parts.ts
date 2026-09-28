@@ -73,6 +73,8 @@ const AK_MAGAZINE_SEGMENTS: Record<SizeClass, { top: number; middle: number; bot
   L: { top: 4, middle: 3, bottom: 9, bendDegrees: 15 },
 };
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
+const AK_RECEIVER_REAR_CUT_DEPTH = 2;
+const AK_RECEIVER_REAR_CUT_DROP = 1.5;
 const AK_MAGAZINE_TOP_SLOPE_DEGREES = 5;
 const AR_MAGAZINE_HOUSING_DROP = 1.5;
 const AR_MAGAZINE_HOUSING_WALL = 0.5;
@@ -248,7 +250,17 @@ export const akReceiver: PartFamily = {
     return {
       ...base,
       solids: [
-        solid('receiver-body', [-16, -2.5, -2], [0, 2.5, 2]),
+        extrudedPolygon(
+          'receiver-body',
+          [
+            [-16, -2.5],
+            [0, -2.5],
+            [0, 2.5],
+            [-16 + AK_RECEIVER_REAR_CUT_DEPTH, 2.5],
+            [-16, 2.5 - AK_RECEIVER_REAR_CUT_DROP],
+          ],
+          [-2, 2],
+        ),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],
       ports: [
