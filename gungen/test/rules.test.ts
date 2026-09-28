@@ -93,7 +93,7 @@ describe('rules', () => {
 
   it('solid-overlap: mount-specific zero allowance rejects a too-tight clamp', () => {
     const a = variant('archetype-battle-rifle', (x) => {
-      x.parts.handguard = { family: 'handguard', params: { inner: 'S' } };
+      x.parts.handguard = { family: 'handguard', params: { barrelBore: 'S', fit: 'too-tight' } };
     });
     const issues = validate(a, gunDomain).issues.filter((issue) => issue.rule === 'solid-overlap');
     expect(issues.some((issue) => issue.parts.includes('handguard') && issue.parts.includes('barrel'))).toBe(true);

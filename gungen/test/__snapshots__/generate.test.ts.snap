@@ -37,6 +37,14 @@ exports[`templates > ak > known-good seeds 1`] = `
         "to": "gas-tube.rear",
       },
       {
+        "from": "barrel.gas-block",
+        "to": "gas-block.barrel",
+      },
+      {
+        "from": "gas-block.gas-tube",
+        "to": "gas-tube.front",
+      },
+      {
         "from": "gas-tube.handguard",
         "to": "handguard.gas-tube",
       },
@@ -61,6 +69,9 @@ exports[`templates > ak > known-good seeds 1`] = `
       "front-sight": {
         "family": "front-sight",
       },
+      "gas-block": {
+        "family": "gas-block",
+      },
       "gas-tube": {
         "family": "gas-tube",
       },
@@ -73,7 +84,8 @@ exports[`templates > ak > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "L",
+          "clearance": "L",
+          "layout": "ak",
         },
       },
       "lower": {
@@ -87,6 +99,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "ak-curved",
+          "variant": "akm",
         },
       },
       "rear-sight": {
@@ -141,6 +154,14 @@ exports[`templates > ak > known-good seeds 1`] = `
       {
         "from": "receiver.gas-tube",
         "to": "gas-tube.rear",
+      },
+      {
+        "from": "barrel.gas-block",
+        "to": "gas-block.barrel",
+      },
+      {
+        "from": "gas-block.gas-tube",
+        "to": "gas-tube.front",
       },
       {
         "from": "gas-tube.handguard",
@@ -167,6 +188,9 @@ exports[`templates > ak > known-good seeds 1`] = `
       "front-sight": {
         "family": "front-sight",
       },
+      "gas-block": {
+        "family": "gas-block",
+      },
       "gas-tube": {
         "family": "gas-tube",
       },
@@ -179,7 +203,8 @@ exports[`templates > ak > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
+          "layout": "ak",
         },
       },
       "lower": {
@@ -193,6 +218,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "ak-curved",
+          "variant": "akm",
         },
       },
       "rear-sight": {
@@ -207,7 +233,7 @@ exports[`templates > ak > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "L",
+          "length": "M",
           "style": "dropped",
         },
       },
@@ -249,6 +275,14 @@ exports[`templates > ak > known-good seeds 1`] = `
         "to": "gas-tube.rear",
       },
       {
+        "from": "barrel.gas-block",
+        "to": "gas-block.barrel",
+      },
+      {
+        "from": "gas-block.gas-tube",
+        "to": "gas-tube.front",
+      },
+      {
         "from": "gas-tube.handguard",
         "to": "handguard.gas-tube",
       },
@@ -273,6 +307,9 @@ exports[`templates > ak > known-good seeds 1`] = `
       "front-sight": {
         "family": "front-sight",
       },
+      "gas-block": {
+        "family": "gas-block",
+      },
       "gas-tube": {
         "family": "gas-tube",
       },
@@ -285,7 +322,8 @@ exports[`templates > ak > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "L",
+          "clearance": "L",
+          "layout": "ak",
         },
       },
       "lower": {
@@ -299,6 +337,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "ak-curved",
+          "variant": "ak74",
         },
       },
       "rear-sight": {
@@ -313,7 +352,7 @@ exports[`templates > ak > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "L",
           "style": "dropped",
         },
       },
@@ -391,6 +430,7 @@ exports[`templates > ar > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "M",
+          "profile": "stanag-curved",
         },
       },
       "receiver": {
@@ -484,6 +524,7 @@ exports[`templates > ar > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "M",
+          "profile": "stanag-curved",
         },
       },
       "receiver": {
@@ -580,6 +621,7 @@ exports[`templates > ar > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "M",
+          "profile": "stanag-curved",
         },
       },
       "receiver": {
@@ -641,7 +683,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "handguard.rail",
+        "from": "receiver.rail",
         "slot": 1,
         "to": "sight.base",
       },
@@ -664,7 +706,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "L",
+          "clearance": "L",
         },
       },
       "lower": {
@@ -677,6 +719,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "orientation": "straight",
         },
       },
       "receiver": {
@@ -693,84 +736,9 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "S",
           "style": "straight",
         },
-      },
-    },
-    "root": "receiver",
-  },
-  {
-    "connections": [
-      {
-        "from": "receiver.lower",
-        "to": "lower.top",
-      },
-      {
-        "from": "receiver.barrel",
-        "to": "barrel.rear",
-      },
-      {
-        "from": "receiver.handguard",
-        "to": "handguard.rear",
-      },
-      {
-        "from": "lower.grip",
-        "to": "grip.top",
-      },
-      {
-        "from": "lower.magazine",
-        "to": "magazine.top",
-      },
-      {
-        "from": "handguard.rail",
-        "slot": 10,
-        "to": "sight.base",
-      },
-    ],
-    "description": "Generated from the "battle-rifle" template with seed 200.",
-    "name": "battle-rifle-200",
-    "parts": {
-      "barrel": {
-        "family": "barrel",
-        "params": {
-          "length": "M",
-        },
-      },
-      "grip": {
-        "family": "grip",
-        "params": {
-          "length": "L",
-        },
-      },
-      "handguard": {
-        "family": "handguard",
-        "params": {
-          "inner": "L",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "conventional",
-        },
-      },
-      "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "M",
-        },
-      },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "auto",
-          "bore": "M",
-          "feed": "box",
-        },
-      },
-      "sight": {
-        "family": "sight",
       },
     },
     "root": "receiver",
@@ -805,6 +773,102 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "from": "receiver.stock",
         "to": "stock.front",
       },
+      {
+        "from": "handguard.rail",
+        "slot": 2,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "battle-rifle" template with seed 200.",
+    "name": "battle-rifle-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "clearance": "L",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "conventional",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "M",
+          "orientation": "slant-10",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "auto",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "straight",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "handguard.rail",
+        "slot": 1,
+        "to": "sight.base",
+      },
     ],
     "description": "Generated from the "battle-rifle" template with seed 300.",
     "name": "battle-rifle-300",
@@ -824,7 +888,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "L",
+          "clearance": "L",
         },
       },
       "lower": {
@@ -837,6 +901,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "family": "magazine",
         "params": {
           "length": "L",
+          "orientation": "tilt",
         },
       },
       "receiver": {
@@ -847,10 +912,13 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
           "feed": "box",
         },
       },
+      "sight": {
+        "family": "sight",
+      },
       "stock": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "L",
           "style": "straight",
         },
       },
@@ -906,7 +974,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -982,7 +1050,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -1058,7 +1126,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -1149,7 +1217,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
           "length": "L",
         },
       },
@@ -1236,7 +1304,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
           "length": "L",
         },
       },
@@ -1534,7 +1602,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -2182,7 +2250,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -2269,7 +2337,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {
@@ -2353,7 +2421,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "inner": "M",
+          "clearance": "M",
         },
       },
       "lower": {

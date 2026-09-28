@@ -35,7 +35,11 @@ const Y: Vec3 = [0, 1, 0];
 const NEG_Y: Vec3 = [0, -1, 0];
 
 const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
-const extrudedPolygon = (id: string, profile: readonly Vec2[], z: readonly [number, number]): Solid => ({
+const extrudedPolygon = (
+  id: string,
+  profile: readonly Vec2[],
+  z: readonly [number, number],
+): Extract<Solid, { kind: 'extruded-polygon' }> => ({
   id,
   kind: 'extruded-polygon',
   profile,
@@ -55,6 +59,17 @@ export const FIRING_GRIP = 'firing-grip';
 // magazines) come in lengths paired with barrel length classes: a barrel's
 // clamp and lug sit where a part of the same length class ends.
 const FORE_LENGTH: Record<SizeClass, number> = { S: 16, M: 24, L: 32 };
+const AK_GAS_BLOCK_OFFSET = 8;
+const AK_HANDGUARD_RATIO = 0.8;
+
+/** AK gas block locations from the receiver face; handguards end at 80% of this span. */
+const AK_GAS_BLOCK_X: Record<SizeClass, number> = {
+  S: 26 - AK_GAS_BLOCK_OFFSET,
+  M: 36 - AK_GAS_BLOCK_OFFSET,
+  L: 46 - AK_GAS_BLOCK_OFFSET,
+};
+const akHandguardLength = (length: SizeClass): number =>
+  Math.round((AK_GAS_BLOCK_X[length] * AK_HANDGUARD_RATIO) / 2) * 2;
 
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
@@ -67,19 +82,76 @@ const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_HEIGHT = 1;
-const AK_MAGAZINE_SEGMENTS: Record<SizeClass, { top: number; middle: number; bottom: number; bendDegrees: number }> = {
-  S: { top: 1.5, middle: 1.75, bottom: 2.75, bendDegrees: 10 },
-  M: { top: 2.5, middle: 1.75, bottom: 5.75, bendDegrees: 12 },
-  L: { top: 4, middle: 3, bottom: 9, bendDegrees: 15 },
+interface MagazineShape {
+  readonly length: SizeClass;
+  readonly depth: number;
+  readonly width: number;
+  readonly insertion: number;
+  readonly bodyLength: number;
+}
+interface CurvedMagazineProfile {
+  readonly seat: 'well' | 'face';
+  readonly straightTop: number;
+  readonly arc: {
+    readonly radius: number;
+    readonly sweepDegrees: number;
+    readonly collisionFacets: number;
+    readonly displayFacets: number;
+  };
+  readonly straightBottom: number;
+  readonly topSlopeDegrees: number;
+}
+const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', CurvedMagazineProfile>> = {
+  ak74: {
+    seat: 'face',
+    straightTop: 4,
+    arc: { radius: 25.24, sweepDegrees: 28.5, collisionFacets: 6, displayFacets: 24 },
+    straightBottom: 0,
+    topSlopeDegrees: 5,
+  },
+  akm: {
+    seat: 'face',
+    straightTop: 3.5,
+    arc: { radius: 20.12, sweepDegrees: 45, collisionFacets: 8, displayFacets: 24 },
+    straightBottom: 0,
+    topSlopeDegrees: 5,
+  },
+  stanag30: {
+    seat: 'well',
+    straightTop: 7.1,
+    arc: { radius: 32, sweepDegrees: 10, collisionFacets: 4, displayFacets: 16 },
+    straightBottom: 3.11,
+    topSlopeDegrees: 0,
+  },
 };
+const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
+const CURVED_MAGAZINE_CLASS_SCALE: Record<SizeClass, number> = { S: 0.375, M: 0.625, L: 1 };
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
 const AK_RECEIVER_REAR_CUT_DEPTH = 2;
 const AK_RECEIVER_REAR_CUT_DROP = 1.5;
-const AK_MAGAZINE_TOP_SLOPE_DEGREES = 5;
-const AR_MAGAZINE_HOUSING_DROP = 1.5;
-const AR_MAGAZINE_HOUSING_REAR_WALL = 0.5;
+const MAGAZINE_HOUSING_FRONT_LENGTH = 1.5;
+const MAGAZINE_HOUSING_REAR_LENGTH = 2;
+const MAGAZINE_HOUSING_REAR_WALL = 0.5;
+export const G3_MAGAZINE_WELL_TILT = Math.atan(
+  (MAGAZINE_HOUSING_REAR_LENGTH - MAGAZINE_HOUSING_FRONT_LENGTH) / MAGAZINE_WELL_DEPTH,
+);
 const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
+const MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
+const MAGAZINE_ORIENTATION_PATTERN = /^(slant)-(5|8|10)$/;
+const AK_GAS_TUBE_Y = 2;
+const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
+const HANDGUARD_WALL_THICKNESS = 0.5;
+const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
+const RECEIVER_FRONT_HALF_WIDTH = 2;
+const BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
+const orientationParts = (value: string): { kind: 'straight' | 'tilt' | 'slant'; degrees: number } => {
+  const match = MAGAZINE_ORIENTATION_PATTERN.exec(value);
+  if (value === 'tilt') {
+    return { kind: 'tilt', degrees: 0 };
+  }
+  return match ? { kind: match[1] as 'slant', degrees: Number(match[2]) } : { kind: 'straight', degrees: 0 };
+};
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_MAGAZINE_DEPTH = 3.5;
 const PISTOL_MAGAZINE_WIDTH = 2;
@@ -229,7 +301,13 @@ export const receiver: PartFamily = {
             solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
             solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
           ]
-        : [solid('body', [-16, -2.5, -2], [0, 2.5, 2])];
+        : [
+            solid(
+              'body',
+              [-16, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+              [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+            ),
+          ];
     return {
       family: 'receiver',
       solids,
@@ -253,19 +331,27 @@ export const akReceiver: PartFamily = {
         extrudedPolygon(
           'receiver-body',
           [
-            [-16, -2.5],
-            [0, -2.5],
-            [0, 2.5],
-            [-16 + AK_RECEIVER_REAR_CUT_DEPTH, 2.5],
-            [-16, 2.5 - AK_RECEIVER_REAR_CUT_DROP],
+            [-16, -RECEIVER_FRONT_HALF_HEIGHT],
+            [0, -RECEIVER_FRONT_HALF_HEIGHT],
+            [0, RECEIVER_FRONT_HALF_HEIGHT],
+            [-16 + AK_RECEIVER_REAR_CUT_DEPTH, RECEIVER_FRONT_HALF_HEIGHT],
+            [-16, RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP],
           ],
-          [-2, 2],
+          [-RECEIVER_FRONT_HALF_WIDTH, RECEIVER_FRONT_HALF_WIDTH],
         ),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],
       ports: [
         ...base.ports,
-        { id: 'gas-tube', mount: 'gas-tube', gender: 'female', pos: [0, 2.5, 0], normal: X, up: Y, required: true },
+        {
+          id: 'gas-tube',
+          mount: 'gas-tube',
+          gender: 'female',
+          pos: [0, AK_GAS_TUBE_Y, 0],
+          normal: X,
+          up: Y,
+          required: true,
+        },
         { id: 'rear-sight', mount: 'sight-block', gender: 'female', pos: [-2, 3, 0], normal: Y, up: X, required: true },
       ],
     };
@@ -284,8 +370,17 @@ export const akReceiver: PartFamily = {
  */
 export const lower: PartFamily = {
   name: 'lower',
-  params: { layout: choice('conventional', 'bullpup', 'trigger', 'ak', 'ar') },
+  params: {
+    layout: choice('conventional', 'bullpup', 'trigger', 'ak', 'ar'),
+    magazineOrientation: {
+      values: MAGAZINE_ORIENTATIONS,
+      default: 'straight',
+      from: [{ port: 'magazine', param: 'orientation' }],
+    },
+  },
   build(params): PartDef {
+    const orientation = orientationParts(params.magazineOrientation ?? 'straight');
+    const tilt = orientation.kind === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
     const top: PortDef = {
       id: 'top',
       mount: 'lower',
@@ -303,32 +398,80 @@ export const lower: PartFamily = {
       normal: NEG_Y,
       up: X,
     });
-    // The magazine well at x, with the path a magazine takes into it.
-    const well = (x: number) => ({
-      port: {
+    // The magazine well at x, with a sloped opening only for the G3-style fit.
+    const well = (x: number) => {
+      const portY =
+        orientation.kind === 'tilt' ? -1.5 - (MAGAZINE_HOUSING_FRONT_LENGTH + MAGAZINE_HOUSING_REAR_LENGTH) / 2 : -1.5;
+      const port: PortDef = {
         id: 'magazine',
         mount: 'magazine',
         gender: 'female',
-        pos: [x, -1.5, 0],
-        normal: NEG_Y,
-        up: X,
+        pos: [x, portY, 0],
+        normal: [Math.sin(tilt), -Math.cos(tilt), 0],
+        up: [Math.cos(tilt), Math.sin(tilt), 0],
         required: true,
-      } satisfies PortDef,
-      path: keepOut(
+      };
+      const path = keepOut(
         'magazine-path',
         [x - MAGAZINE_WELL_DEPTH / 2, -40, -MAGAZINE_WELL_WIDTH / 2],
         [x + MAGAZINE_WELL_DEPTH / 2, -1.5 + MAGAZINE_WELL_HEIGHT, MAGAZINE_WELL_WIDTH / 2],
         'magazine',
-      ),
-    });
+      );
+      if (tilt === 0) {
+        return { port, path };
+      }
+      const halfDepth = MAGAZINE_WELL_DEPTH / 2;
+      const rotate = ([dx, dy]: Vec2): Vec2 => [
+        x + dx * Math.cos(tilt) - dy * Math.sin(tilt),
+        portY + dx * Math.sin(tilt) + dy * Math.cos(tilt),
+      ];
+      const profile = [
+        rotate([-halfDepth, -40]),
+        rotate([halfDepth, -40]),
+        rotate([halfDepth, -0.5]),
+        rotate([-halfDepth, -0.5]),
+      ];
+      const xs = profile.map(([px]) => px);
+      const ys = profile.map(([, py]) => py);
+      const min = [
+        Math.floor(Math.min(...xs) / GRID) * GRID,
+        Math.floor(Math.min(...ys) / GRID) * GRID,
+        -MAGAZINE_WELL_WIDTH / 2,
+      ] as Vec3;
+      const max = [
+        Math.ceil(Math.max(...xs) / GRID) * GRID,
+        Math.ceil(Math.max(...ys) / GRID) * GRID,
+        MAGAZINE_WELL_WIDTH / 2,
+      ] as Vec3;
+      return {
+        port,
+        path: {
+          ...path,
+          box: boxFromMinMax(min, max),
+          profile,
+          z: [-MAGAZINE_WELL_WIDTH / 2, MAGAZINE_WELL_WIDTH / 2] as const,
+        },
+        wellPath: keepOut(
+          'magazine-well-path',
+          [
+            x - halfDepth,
+            portY - (MAGAZINE_HOUSING_REAR_LENGTH - MAGAZINE_HOUSING_FRONT_LENGTH) / 2,
+            -MAGAZINE_WELL_WIDTH / 2,
+          ],
+          [x + halfDepth, 0, MAGAZINE_WELL_WIDTH / 2],
+          'magazine',
+        ),
+      };
+    };
     const magazineWellFrame = (minX: number, maxX: number, centerX: number): Solid[] => {
       const x0 = centerX - MAGAZINE_WELL_DEPTH / 2;
       const x1 = centerX + MAGAZINE_WELL_DEPTH / 2;
       const z0 = MAGAZINE_WELL_WIDTH / 2;
       const outerZ = LOWER_HALF_WIDTH;
       const roofY = -1.5 + MAGAZINE_WELL_HEIGHT;
+      const rearWall = solid('frame-rear', [minX, -1.5, -outerZ], [x0, 0, outerZ]);
       return [
-        solid('frame-rear', [minX, -1.5, -outerZ], [x0, 0, outerZ]),
+        rearWall,
         solid('frame-front', [x1, -1.5, -outerZ], [maxX, 0, outerZ]),
         solid('well-wall-left', [x0, -1.5, -outerZ], [x1, 0, -z0]),
         solid('well-wall-right', [x0, -1.5, z0], [x1, 0, outerZ]),
@@ -338,19 +481,60 @@ export const lower: PartFamily = {
     // Conventional: the rear face meets the trigger-finger volume (it ends at
     // x = −7) without entering it. Bullpup: the front face stays at x = −3.5,
     // behind the grip, which leans back from x = 3.
-    const conventionalWell = well(-7 + MAGAZINE_DEPTH / 2);
+    const conventionalWell = well(-7 + MAGAZINE_DEPTH / 2 + (orientation.kind === 'tilt' ? 0.25 : 0));
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
-    const arMagazineHousing = (frontPanelThickness: number): Solid[] => {
-      const x0 = conventionalWell.port.pos[0] - MAGAZINE_WELL_DEPTH / 2;
-      const x1 = conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2;
+    const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
+      const halfDepth = MAGAZINE_WELL_DEPTH / 2;
       const z0 = MAGAZINE_WELL_WIDTH / 2;
       const outerZ = LOWER_HALF_WIDTH;
-      const bottomY = -1.5 - AR_MAGAZINE_HOUSING_DROP;
+      const rotateProfile = (profile: readonly Vec2[]): Vec2[] =>
+        profile.map(([x, y]) => [
+          centerX + x * Math.cos(angle) - y * Math.sin(angle),
+          -1.5 + x * Math.sin(angle) + y * Math.cos(angle),
+        ]);
+      const wall = (id: string, profile: readonly Vec2[], z: readonly [number, number]): Solid =>
+        extrudedPolygon(`${prefix}-${id}`, rotateProfile(profile), z);
       return [
-        solid('magazine-housing-rear', [x0 - AR_MAGAZINE_HOUSING_REAR_WALL, bottomY, -outerZ], [x0, -1.5, outerZ]),
-        solid('magazine-housing-front', [x1, bottomY, -outerZ], [x1 + frontPanelThickness, -1.5, outerZ]),
-        solid('magazine-housing-left', [x0, bottomY, -outerZ], [x1, -1.5, -z0]),
-        solid('magazine-housing-right', [x0, bottomY, z0], [x1, -1.5, outerZ]),
+        wall(
+          'rear',
+          [
+            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, -MAGAZINE_HOUSING_REAR_LENGTH],
+            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
+            [-halfDepth, 0],
+            [-halfDepth - MAGAZINE_HOUSING_REAR_WALL, 0],
+          ],
+          [-outerZ, outerZ],
+        ),
+        wall(
+          'front',
+          [
+            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [halfDepth + frontPanelThickness, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [halfDepth + frontPanelThickness, 0],
+            [halfDepth, 0],
+          ],
+          [-outerZ, outerZ],
+        ),
+        wall(
+          'left',
+          [
+            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
+            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [halfDepth, 0],
+            [-halfDepth, 0],
+          ],
+          [-outerZ, -z0],
+        ),
+        wall(
+          'right',
+          [
+            [-halfDepth, -MAGAZINE_HOUSING_REAR_LENGTH],
+            [halfDepth, -MAGAZINE_HOUSING_FRONT_LENGTH],
+            [halfDepth, 0],
+            [-halfDepth, 0],
+          ],
+          [z0, outerZ],
+        ),
       ];
     };
     const trigger = (x: number) => keepOut('trigger-finger', [x, -5.5, -1], [x + 3, -1.5, 1]);
@@ -369,7 +553,10 @@ export const lower: PartFamily = {
         const frontPanelThickness = frontPanel.box.half[0] * 2;
         return {
           family: 'lower',
-          solids: [...frame, ...arMagazineHousing(frontPanelThickness)],
+          solids: [
+            ...frame,
+            ...magazineHousing('magazine-housing', conventionalWell.port.pos[0], 0, frontPanelThickness),
+          ],
           ports: [top, grip(-12), conventionalWell.port],
           keepOuts: [trigger(-10), conventionalWell.path],
           axes: [],
@@ -419,19 +606,29 @@ export const lower: PartFamily = {
           keepOuts: [trigger(-12.5)],
           axes: [],
         };
-      default:
+      default: {
+        const frame = magazineWellFrame(
+          -14,
+          conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
+          conventionalWell.port.pos[0],
+        );
+        const tiltedHousing =
+          orientation.kind === 'tilt'
+            ? magazineHousing('tilt-housing', conventionalWell.port.pos[0], 0, MAGAZINE_WELL_CLEARANCE)
+            : [];
         return {
           family: 'lower',
-          // Extend past the magazine's forward face to leave material around the well.
-          solids: magazineWellFrame(
-            -14,
-            conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
-            conventionalWell.port.pos[0],
-          ),
+          // The well stays upright; only the rear housing plate is longer, so the opening plane tips the seated magazine.
+          solids: [...frame, ...tiltedHousing],
           ports: [top, grip(-12), conventionalWell.port],
-          keepOuts: [trigger(-10), conventionalWell.path],
+          keepOuts: [
+            trigger(-10),
+            conventionalWell.path,
+            ...(conventionalWell.wellPath ? [conventionalWell.wellPath] : []),
+          ],
           axes: [],
         };
+      }
     }
   },
 };
@@ -456,12 +653,14 @@ export const barrel: PartFamily = {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
     profile: choice('standard', 'pistol', 'revolver'),
+    handguardLayout: { values: ['standard', 'ak'], default: 'standard', from: [{ port: 'clamp', param: 'layout' }] },
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
+    const lengthClass = cls(params, 'length');
     const len = barrelLength(params);
     const r = PISTOL_BARREL_RADIUS[bore];
-    const fore = FORE_LENGTH[cls(params, 'length')];
+    const fore = params.handguardLayout === 'ak' ? akHandguardLength(lengthClass) : FORE_LENGTH[lengthClass];
     return {
       family: 'barrel',
       solids: [solid('tube', [0, -r, -r], [len, r, r])],
@@ -512,6 +711,19 @@ export const barrel: PartFamily = {
               },
             ]
           : []),
+        ...(params.profile === 'standard'
+          ? [
+              {
+                id: 'gas-block',
+                mount: 'gas-block',
+                gender: 'male' as const,
+                size: bore,
+                pos: [AK_GAS_BLOCK_X[lengthClass], 0, 0] as Vec3,
+                normal: X,
+                up: Y,
+              },
+            ]
+          : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
@@ -538,17 +750,63 @@ export const frontSight: PartFamily = {
   },
 };
 
-/** The AK gas tube follows a raised axis parallel to the bore between receiver and handguard. */
+/** A raised AK gas block joins the barrel to the gas tube behind the front sight. */
+export const gasBlock: PartFamily = {
+  name: 'gas-block',
+  params: {
+    bore: { ...size, from: [{ port: 'barrel', param: 'bore' }] },
+    barrelLength: { ...size, from: [{ port: 'barrel', param: 'length' }] },
+  },
+  build(params): PartDef {
+    const radius = BARREL_RADIUS[cls(params, 'bore')];
+    return {
+      family: 'gas-block',
+      solids: [
+        solid('saddle', [-1, radius, -1.5], [1, radius + 0.5, 1.5]),
+        solid('tube-support', [-0.5, radius + 0.5, -0.5], [0.5, AK_GAS_TUBE_Y, 0.5]),
+      ],
+      ports: [
+        {
+          id: 'barrel',
+          mount: 'gas-block',
+          gender: 'female',
+          size: cls(params, 'bore'),
+          pos: [0, 0, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
+        {
+          id: 'gas-tube',
+          mount: 'gas-block',
+          gender: 'female',
+          pos: [0, AK_GAS_TUBE_Y, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
+      ],
+      keepOuts: [],
+      axes: [],
+    };
+  },
+};
+
+/** The AK gas tube runs under the rear handguard cover and is exposed ahead of it. */
 export const gasTube: PartFamily = {
   name: 'gas-tube',
-  params: {},
-  build(): PartDef {
+  params: {
+    barrelLength: { ...size, from: [{ port: 'front', param: 'barrelLength' }] },
+  },
+  build(params): PartDef {
+    const len = AK_GAS_BLOCK_X[cls(params, 'barrelLength')];
     return {
       family: 'gas-tube',
-      solids: [solid('tube', [0, -0.25, -0.5], [8, 0.25, 0.5])],
+      solids: [solid('tube', [0, -0.25, -0.5], [len, 0.25, 0.5])],
       ports: [
         { id: 'rear', mount: 'gas-tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'handguard', mount: 'gas-tube', gender: 'female', pos: [8, 0, 0], normal: X, up: Y, required: true },
+        { id: 'front', mount: 'gas-block', gender: 'male', pos: [len, 0, 0], normal: X, up: Y, required: true },
       ],
       keepOuts: [],
       axes: [{ kind: 'gas-system', origin: [0, 0, 0], dir: X }],
@@ -616,20 +874,50 @@ export const cylinder: PartFamily = {
   },
 };
 
-/** A tube of four slabs around the barrel, with a rail on top. */
+/** A barrel-fitted handguard, capped by the receiver's front-face envelope. */
 export const handguard: PartFamily = {
   name: 'handguard',
-  // When clamped, length follows the barrel so the clamp meets, unless set.
   params: {
     length: { ...size, from: [{ port: 'front', param: 'length' }] },
-    inner: size,
+    barrelBore: {
+      ...size,
+      from: [
+        { port: 'front', param: 'bore' },
+        { port: 'rear', param: 'bore' },
+      ],
+    },
+    clearance: size,
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
+    layout: choice('standard', 'ak'),
+    fit: choice('receiver', 'oversized', 'too-tight'),
   },
   build(params): PartDef {
-    const len = FORE_LENGTH[cls(params, 'length')];
-    const inner = { S: 0.75, M: 1.5, L: 2.5 }[cls(params, 'inner')];
-    const outer = inner + 0.5;
-    const clampRadius = params.bore === 'none' ? undefined : { S: 0.75, M: 1, L: 1.25 }[cls(params, 'bore')];
+    const lengthClass = cls(params, 'length');
+    const len = params.layout === 'ak' ? akHandguardLength(lengthClass) : FORE_LENGTH[lengthClass];
+    const bore = (params.barrelBore ?? (params.bore === 'none' ? 'M' : (params.bore ?? 'M'))) as SizeClass;
+    const inner =
+      params.fit === 'too-tight'
+        ? BARREL_RADIUS[bore] - 0.5
+        : BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[(params.clearance ?? 'M') as SizeClass];
+    const akLayout = params.layout === 'ak';
+    let outerY: number;
+    if (params.fit === 'oversized') {
+      outerY = RECEIVER_FRONT_HALF_HEIGHT + 1;
+    } else if (akLayout) {
+      outerY = RECEIVER_FRONT_HALF_HEIGHT;
+    } else {
+      outerY = Math.min(RECEIVER_FRONT_HALF_HEIGHT, inner + HANDGUARD_WALL_THICKNESS);
+    }
+    const outerZ =
+      params.fit === 'oversized'
+        ? RECEIVER_FRONT_HALF_WIDTH + 1
+        : Math.min(RECEIVER_FRONT_HALF_WIDTH, inner + HANDGUARD_WALL_THICKNESS);
+    const tubeRadius = 0.25;
+    const tubeBottom = AK_GAS_TUBE_Y - tubeRadius;
+    const tubeTop = AK_GAS_TUBE_Y + tubeRadius;
+    const topInner = akLayout ? tubeTop : inner;
+    const sideTop = akLayout ? tubeBottom : inner;
+    const clampRadius = params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
     const clamp = clampRadius
       ? [
           solid(
@@ -649,21 +937,28 @@ export const handguard: PartFamily = {
     return {
       family: 'handguard',
       solids: [
-        solid('top', [0, inner, -outer], [len, outer, outer]),
-        solid('bottom', [0, -outer, -outer], [len, -inner, outer]),
-        solid('left', [0, -inner, -outer], [len, inner, -inner]),
-        solid('right', [0, -inner, inner], [len, inner, outer]),
+        solid('top', [0, topInner, -outerZ], [len, outerY, outerZ]),
+        solid('bottom', [0, -outerY, -outerZ], [len, -inner, outerZ]),
+        solid('left', [0, -inner, -outerZ], [len, sideTop, -inner]),
+        solid('right', [0, -inner, inner], [len, sideTop, outerZ]),
         ...clamp,
       ],
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'front', mount: 'clamp', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
-        { id: 'gas-tube', mount: 'gas-tube', gender: 'male', pos: [8, 2.5, 0], normal: NEG_X, up: Y },
+        {
+          id: 'gas-tube',
+          mount: 'gas-tube',
+          gender: 'male',
+          pos: [8, akLayout ? AK_GAS_TUBE_Y : 2.5, 0],
+          normal: NEG_X,
+          up: Y,
+        },
         {
           id: 'rail',
           mount: 'rail',
           gender: 'female',
-          pos: [2, outer, 0],
+          pos: [2, outerY, 0],
           normal: Y,
           up: X,
           slots: { count: (len - 4) / 2 + 1, pitch: 2 },
@@ -1034,49 +1329,161 @@ export const pistolSlide: PartFamily = {
   },
 };
 
-const akCurvedMagazineSolids = (length: SizeClass, depth: number, width: number, insertion: number): Solid[] => {
-  const { top, middle, bottom, bendDegrees } = AK_MAGAZINE_SEGMENTS[length];
-  const angle = (bendDegrees * Math.PI) / 180;
-  const jointY = insertion - top;
-  const topRise = snapAkGrid(depth * Math.tan((AK_MAGAZINE_TOP_SLOPE_DEGREES * Math.PI) / 180));
-  const bottomRise = snapAkGrid(depth * Math.tan(angle));
-  const topBack: Vec2 = [-depth / 2, jointY];
-  const topFront: Vec2 = [depth / 2, jointY + topRise];
-  const rearBottom: Vec2 = [-depth / 2, jointY - middle];
-  const frontBottom: Vec2 = [depth / 2, jointY - middle + bottomRise];
-  const bottomAngle = Math.atan2(bottomRise, depth);
-  const bottomStep: Vec2 = [snapAkGrid(bottom * Math.sin(bottomAngle)), -snapAkGrid(bottom * Math.cos(bottomAngle))];
-  const endLeft: Vec2 = [rearBottom[0] + bottomStep[0], rearBottom[1] + bottomStep[1]];
-  const endRight: Vec2 = [frontBottom[0] + bottomStep[0], frontBottom[1] + bottomStep[1]];
-  return [
-    extrudedPolygon(
-      'upper-body',
-      [topBack, topFront, [depth / 2, insertion], [-depth / 2, insertion]],
-      [-width / 2, width / 2],
-    ),
-    extrudedPolygon('curve-middle', [rearBottom, frontBottom, topFront, topBack], [-width / 2, width / 2]),
-    extrudedPolygon('curve-bottom', [endLeft, endRight, frontBottom, rearBottom], [-width / 2, width / 2]),
+interface DerivedMagazineGeometry {
+  readonly collision: readonly Solid[];
+  readonly display: readonly Solid[];
+}
+
+const curvedMagazineGeometry = (shape: MagazineShape, description: CurvedMagazineProfile): DerivedMagazineGeometry => {
+  const scale = CURVED_MAGAZINE_CLASS_SCALE[shape.length];
+  const topLength = description.straightTop * scale;
+  const bottomLength = description.straightBottom * scale;
+  const radius = description.arc.radius * scale;
+  const sweep = (description.arc.sweepDegrees * Math.PI) / 180;
+  const topSlope = (description.topSlopeDegrees * Math.PI) / 180;
+  const rise = shape.depth * Math.tan(topSlope);
+  const topBack: Vec2 = [-shape.depth / 2, shape.insertion - topLength];
+  const topFront: Vec2 = [shape.depth / 2, shape.insertion - topLength + rise];
+  const topEdgeAngle = Math.atan2(topFront[1] - topBack[1], topFront[0] - topBack[0]);
+  const topCenter: Vec2 = [(topBack[0] + topFront[0]) / 2, (topBack[1] + topFront[1]) / 2];
+  const arcCenter: Vec2 = [
+    topCenter[0] + radius * Math.cos(topEdgeAngle),
+    topCenter[1] + radius * Math.sin(topEdgeAngle),
   ];
+  const upper = extrudedPolygon(
+    'upper-body',
+    [topBack, topFront, [shape.depth / 2, shape.insertion], [-shape.depth / 2, shape.insertion]],
+    [-shape.width / 2, shape.width / 2],
+  );
+  const buildArc = (facets: number, prefix: string): Solid[] => {
+    const step = sweep / facets;
+    const rotate = ([x, y]: Vec2): Vec2 => {
+      const dx = x - arcCenter[0];
+      const dy = y - arcCenter[1];
+      const angle = step;
+      return [
+        arcCenter[0] + dx * Math.cos(angle) - dy * Math.sin(angle),
+        arcCenter[1] + dx * Math.sin(angle) + dy * Math.cos(angle),
+      ];
+    };
+    const solids: Solid[] = [];
+    let rear = topBack;
+    let front = topFront;
+    for (let i = 0; i < facets; i++) {
+      const nextRear = rotate(rear);
+      const nextFront = rotate(front);
+      solids.push(
+        extrudedPolygon(`${prefix}-${i + 1}`, [nextRear, nextFront, front, rear], [-shape.width / 2, shape.width / 2]),
+      );
+      rear = nextRear;
+      front = nextFront;
+    }
+    if (bottomLength > 0) {
+      const tangent = topEdgeAngle + sweep;
+      const stepVector: Vec2 = [bottomLength * Math.sin(tangent), -bottomLength * Math.cos(tangent)];
+      const endRear: Vec2 = [rear[0] + stepVector[0], rear[1] + stepVector[1]];
+      const endFront: Vec2 = [front[0] + stepVector[0], front[1] + stepVector[1]];
+      solids.push(
+        extrudedPolygon(
+          `${prefix}-straight-bottom`,
+          [endRear, endFront, front, rear],
+          [-shape.width / 2, shape.width / 2],
+        ),
+      );
+    }
+    return solids;
+  };
+  const collision = [upper, ...buildArc(description.arc.collisionFacets, 'curve-sector')];
+  const display = [upper, ...buildArc(description.arc.displayFacets, 'curve-display')];
+  return { collision, display };
+};
+
+const magazineGeometryFor = (
+  params: Readonly<Record<string, string>>,
+  shape: MagazineShape,
+): DerivedMagazineGeometry => {
+  if (params.profile === 'ak-curved') {
+    return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74']);
+  }
+  if (params.profile === 'stanag-curved') {
+    return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30);
+  }
+  const style = orientationParts(params.orientation ?? 'straight');
+  const solids =
+    style.kind === 'slant'
+      ? [
+          extrudedPolygon(
+            'slanted-body',
+            [
+              [-shape.depth / 2, shape.insertion - shape.bodyLength],
+              [
+                shape.depth / 2,
+                shape.insertion -
+                  shape.bodyLength +
+                  snapAkGrid(shape.depth * Math.tan((style.degrees * Math.PI) / 180)),
+              ],
+              [shape.depth / 2, shape.insertion],
+              [-shape.depth / 2, shape.insertion],
+            ],
+            [-shape.width / 2, shape.width / 2],
+          ),
+        ]
+      : [
+          solid(
+            'body',
+            [-shape.depth / 2, -shape.bodyLength + shape.insertion, -shape.width / 2],
+            [shape.depth / 2, shape.insertion, shape.width / 2],
+          ),
+        ];
+  return { collision: solids, display: solids };
 };
 
 export const magazine: PartFamily = {
   name: 'magazine',
-  params: { length: size, profile: choice('standard', 'smg', 'pistol', 'ak-curved') },
+  params: {
+    length: size,
+    profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'),
+    orientation: choice(...MAGAZINE_ORIENTATIONS),
+    variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
+  },
   build(params): PartDef {
     const len = { S: 6, M: 10, L: 16 }[cls(params, 'length')];
     const depth =
       params.profile === 'pistol' ? PISTOL_MAGAZINE_DEPTH : MAGAZINE_DEPTH * (params.profile === 'smg' ? 0.6 : 1);
     const width =
       params.profile === 'pistol' ? PISTOL_MAGAZINE_WIDTH : MAGAZINE_WIDTH * (params.profile === 'smg' ? 0.8 : 1);
+    let curveProfile: CurvedMagazineProfile | undefined;
+    if (params.profile === 'ak-curved') {
+      curveProfile = CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74'];
+    } else if (params.profile === 'stanag-curved') {
+      curveProfile = CURVED_MAGAZINE_PROFILES.stanag30;
+    }
     const insertion = params.profile === 'pistol' ? PISTOL_MAGAZINE_INSERTION : MAGAZINE_INSERTION;
-    const akCurved = params.profile === 'ak-curved';
+    const resolvedInsertion = curveProfile?.seat === 'face' ? 0 : insertion;
+    const shape: MagazineShape = {
+      length: cls(params, 'length'),
+      depth,
+      width,
+      insertion: resolvedInsertion,
+      bodyLength: len,
+    };
+    const geometry = magazineGeometryFor(params, shape);
     return {
       family: 'magazine',
-      // The AK's slanted upper insert, trapezoid and tilted base share exact joint faces.
-      solids: akCurved
-        ? akCurvedMagazineSolids(cls(params, 'length'), depth, width, insertion)
-        : [solid('body', [-depth / 2, -len + insertion, -width / 2], [depth / 2, insertion, width / 2])],
-      ports: [{ id: 'top', mount: 'magazine', gender: 'male', pos: [0, 0, 0], normal: Y, up: X, required: true }],
+      solids: geometry.collision,
+      displaySolids: geometry.display,
+      ports: [
+        {
+          id: 'top',
+          mount: 'magazine',
+          gender: 'male',
+          pos: [0, 0, 0],
+          normal: Y,
+          up: X,
+          required: true,
+          seat: curveProfile?.seat ?? 'well',
+        },
+      ],
       keepOuts: [],
       axes: [],
     };
@@ -1164,6 +1571,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   cylinder,
   'front-sight': frontSight,
   'gas-tube': gasTube,
+  'gas-block': gasBlock,
   'ak-rear-sight': akRearSight,
   handguard,
   'tube-magazine': tubeMagazine,

@@ -1,6 +1,6 @@
 {
   "name": "broken-ak-gas-tube",
-  "description": "AK receiver and handguard gas-tube ports are unconnected.",
+  "description": "The AK receiver and handguard gas-tube interfaces are unconnected.",
   "root": "receiver",
   "parts": {
     "receiver": {
@@ -24,7 +24,7 @@
     "handguard": {
       "family": "handguard",
       "params": {
-        "inner": "L"
+        "layout": "ak"
       }
     },
     "grip": {

@@ -45,6 +45,7 @@ size classes (see §4), not measurements.
 | CI | GitHub Actions (`.github/workflows/gungen.yml`): typecheck, tests, fixture validation, viewer build |
 | Hosting | GitHub Pages (`.github/workflows/pages.yml`): every push to `main` is checked, then the viewer is published at <https://roobie.github.io/skelly/gungen/> |
 | Params from neighbours | Declared per param (`ParamSpec.from`): an unset param copies a neighbour's param through a named port. Values set in the assembly always win |
+| Keep-out shapes | Keep-outs carry a conservative box, with an optional exact convex XY profile extruded through Z |
 
 ## Design areas
 
@@ -161,9 +162,9 @@ the generator later has something independent to be tested against (§9).
   origin, and the root part sits at the origin. Lengths are in u, an abstract
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
-- **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes only),
-  box and convex extruded-polygon solids, parts, part families, domains, and
-  the JSON assembly format.
+- **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
+  refined by convex extruded-polygon profiles), box and convex extruded-polygon
+  solids, parts, part families, domains, and the JSON assembly format.
 - **Placement** (`src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.

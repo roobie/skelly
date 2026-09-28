@@ -1,7 +1,7 @@
 {
-  "name": "archetype-ar",
-  "description": "AR-pattern rifle with a flat-top rail, rear charging handle, and front-sight block.",
-  "expect": [],
+  "name": "broken-handguard-fit",
+  "description": "An intentionally oversized handguard exceeds its receiver's front face.",
+  "expect": ["handguard-fit"],
   "root": "receiver",
   "parts": {
     "receiver": {
@@ -27,7 +27,10 @@
       }
     },
     "handguard": {
-      "family": "handguard"
+      "family": "handguard",
+      "params": {
+        "fit": "oversized"
+      }
     },
     "grip": {
       "family": "grip",
@@ -51,9 +54,6 @@
     },
     "front-sight": {
       "family": "front-sight"
-    },
-    "sight": {
-      "family": "sight"
     }
   },
   "connections": [
@@ -84,11 +84,6 @@
     {
       "from": "receiver.stock",
       "to": "stock.front"
-    },
-    {
-      "from": "receiver.rail",
-      "to": "sight.base",
-      "slot": 0
     },
     {
       "from": "barrel.front-sight",

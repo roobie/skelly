@@ -228,7 +228,10 @@ export const keepOut: Rule = {
     const solids = placedSolids(r);
     for (const [owner, ownerT] of r.placed) {
       for (const ko of r.defs.get(owner)!.keepOuts) {
-        const koBox = worldBox(ownerT, ko.box);
+        const koShape =
+          ko.profile && ko.z
+            ? worldSolid(ownerT, { id: ko.id, kind: 'extruded-polygon', profile: ko.profile, z: ko.z })
+            : worldBox(ownerT, ko.box);
         const allowed = new Set([owner]);
         if (ko.allowPort) {
           for (const rc of r.connections) {
@@ -246,7 +249,7 @@ export const keepOut: Rule = {
           }
           let worst = Number.NEGATIVE_INFINITY;
           for (const s of solids.get(other)!) {
-            worst = Math.max(worst, penetrationWorld(koBox, s));
+            worst = Math.max(worst, penetrationWorld(koShape, s));
           }
           if (worst > TOLERANCE.contact) {
             issues.push({

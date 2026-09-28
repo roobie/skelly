@@ -7,7 +7,7 @@
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "S" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "S" } },
-    "handguard": { "family": "handguard", "params": { "inner": "M" } },
+    "handguard": { "family": "handguard", "params": {} },
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "L", "profile": "smg" } },
     "stock": { "family": "stock", "params": { "length": "S", "style": "straight" } },

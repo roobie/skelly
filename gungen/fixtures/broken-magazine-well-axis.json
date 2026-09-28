@@ -1,15 +1,15 @@
 {
-  "name": "archetype-battle-rifle",
-  "description": "FAL/FNC-like battle rifle, conventional layout: magazine ahead of the pistol grip, straight stock, handguard clamped to the barrel.",
-  "expect": [],
+  "name": "broken-magazine-well-axis",
+  "description": "A G3-tilted magazine paired with a straight well opening.",
+  "expect": ["magazine-well-axis"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
-    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "lower": { "family": "lower", "params": { "layout": "conventional", "magazineOrientation": "straight" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard", "params": {} },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "M" } },
+    "magazine": { "family": "magazine", "params": { "length": "M", "orientation": "tilt" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },
     "sight": { "family": "sight" }
   },

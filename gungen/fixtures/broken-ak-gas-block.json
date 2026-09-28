@@ -1,23 +1,18 @@
 {
-  "name": "archetype-ar",
-  "description": "AR-pattern rifle with a flat-top rail, rear charging handle, and front-sight block.",
-  "expect": [],
+  "name": "broken-ak-gas-block",
+  "description": "AK gas tube has no barrel-mounted gas block.",
   "root": "receiver",
   "parts": {
     "receiver": {
-      "family": "receiver",
+      "family": "ak-receiver",
       "params": {
-        "action": "auto",
-        "feed": "box",
-        "bore": "M",
-        "chargingHandle": "rear-top",
-        "rail": "full"
+        "bore": "S"
       }
     },
     "lower": {
       "family": "lower",
       "params": {
-        "layout": "ar"
+        "layout": "ak"
       }
     },
     "barrel": {
@@ -27,7 +22,13 @@
       }
     },
     "handguard": {
-      "family": "handguard"
+      "family": "handguard",
+      "params": {
+        "layout": "ak"
+      }
+    },
+    "gas-tube": {
+      "family": "gas-tube"
     },
     "grip": {
       "family": "grip",
@@ -38,22 +39,22 @@
     "magazine": {
       "family": "magazine",
       "params": {
-        "length": "M",
-        "profile": "stanag-curved"
+        "length": "L",
+        "profile": "ak-curved"
       }
     },
     "stock": {
       "family": "stock",
       "params": {
-        "length": "M",
-        "style": "straight"
+        "length": "L",
+        "style": "dropped"
       }
+    },
+    "rear-sight": {
+      "family": "ak-rear-sight"
     },
     "front-sight": {
       "family": "front-sight"
-    },
-    "sight": {
-      "family": "sight"
     }
   },
   "connections": [
@@ -86,13 +87,21 @@
       "to": "stock.front"
     },
     {
-      "from": "receiver.rail",
-      "to": "sight.base",
-      "slot": 0
+      "from": "receiver.gas-tube",
+      "to": "gas-tube.rear"
+    },
+    {
+      "from": "gas-tube.handguard",
+      "to": "handguard.gas-tube"
+    },
+    {
+      "from": "receiver.rear-sight",
+      "to": "rear-sight.base"
     },
     {
       "from": "barrel.front-sight",
       "to": "front-sight.base"
     }
-  ]
+  ],
+  "expect": ["required-ports"]
 }

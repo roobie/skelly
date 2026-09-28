@@ -9,18 +9,19 @@
 import type { Template } from '../core/template.ts';
 
 const SML = ['S', 'M', 'L'] as const;
+const BATTLE_MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
 
 export const battleRifle: Template = {
   name: 'battle-rifle',
-  description: 'Battle rifle, conventional FAL/FNC-like layout: magazine ahead of the pistol grip and straight stock.',
+  description: 'Battle rifle with straight, tilted, or bottom-slanted magazines ahead of the pistol grip.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: ['M', 'L'] } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'handguard', family: 'handguard', params: { inner: ['M', 'L'] }, chance: 0.8 },
+    { id: 'handguard', family: 'handguard', params: { clearance: ['M', 'L'] }, chance: 0.8 },
     { id: 'grip', family: 'grip', params: { length: SML } },
-    { id: 'magazine', family: 'magazine', params: { length: SML } },
+    { id: 'magazine', family: 'magazine', params: { length: SML, orientation: BATTLE_MAGAZINE_ORIENTATIONS } },
     { id: 'stock', family: 'stock', params: { length: SML, style: 'straight' }, chance: 0.9 },
     { id: 'sight', family: 'sight', chance: 0.9 },
   ],
@@ -50,7 +51,7 @@ export const ar: Template = {
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: 'M' } },
+    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-curved' } },
     { id: 'stock', family: 'stock', params: { length: 'M', style: 'straight' } },
     { id: 'front-sight', family: 'front-sight' },
     { id: 'sight', family: 'sight', chance: 0.7 },
@@ -71,16 +72,17 @@ export const ar: Template = {
 export const ak: Template = {
   name: 'ak',
   description:
-    'AK-pattern rifle: dust cover, parallel gas tube, curved rock-in magazine, dropped stock, and block sights.',
+    'AK-pattern rifle: dust cover, exposed gas block/tube, forward-leaning curved magazine, dropped stock, and block sights.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
     { id: 'lower', family: 'lower', params: { layout: 'ak' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
-    { id: 'handguard', family: 'handguard', params: { inner: ['M', 'L'] } },
+    { id: 'handguard', family: 'handguard', params: { layout: 'ak', clearance: ['M', 'L'] } },
     { id: 'gas-tube', family: 'gas-tube' },
+    { id: 'gas-block', family: 'gas-block' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved' } },
+    { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'dropped' } },
     { id: 'rear-sight', family: 'ak-rear-sight' },
     { id: 'front-sight', family: 'front-sight' },
@@ -94,6 +96,8 @@ export const ak: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.gas-tube', to: 'gas-tube.rear' },
+    { from: 'barrel.gas-block', to: 'gas-block.barrel' },
+    { from: 'gas-block.gas-tube', to: 'gas-tube.front' },
     { from: 'gas-tube.handguard', to: 'handguard.gas-tube' },
     { from: 'receiver.rear-sight', to: 'rear-sight.base' },
     { from: 'barrel.front-sight', to: 'front-sight.base' },
@@ -148,7 +152,7 @@ export const smg: Template = {
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'S' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'] } },
-    { id: 'handguard', family: 'handguard', params: { inner: 'M' }, chance: 0.7 },
+    { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.7 },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'], profile: 'smg' } },
     { id: 'stock', family: 'stock', params: { length: ['S', 'M'], style: 'straight' }, chance: 0.6 },
@@ -174,7 +178,7 @@ export const boltRifle: Template = {
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
-    { id: 'handguard', family: 'handguard', params: { inner: 'M' }, chance: 0.9 },
+    { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.9 },
     { id: 'magazine', family: 'magazine', params: { length: 'S' } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'sporting' } },
     { id: 'sight', family: 'sight', chance: 0.8 },
@@ -200,7 +204,7 @@ export const boltRifleBox: Template = {
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     // Free-floating, so its length is set rather than read from the barrel.
-    { id: 'handguard', family: 'handguard', params: { length: ['M', 'L'], inner: 'M' }, chance: 0.7 },
+    { id: 'handguard', family: 'handguard', params: { length: ['M', 'L'], clearance: 'M' }, chance: 0.7 },
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
     { id: 'magazine', family: 'magazine', params: { length: ['S', 'M'] } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'sporting' } },
@@ -252,7 +256,7 @@ export const bullpup: Template = {
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'M' } },
     { id: 'lower', family: 'lower', params: { layout: 'bullpup' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'handguard', family: 'handguard', params: { inner: 'M' }, chance: 0.3 },
+    { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.3 },
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
     { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'] } },
     { id: 'sight', family: 'sight', chance: 0.9 },

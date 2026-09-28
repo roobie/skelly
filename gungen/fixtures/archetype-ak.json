@@ -1,6 +1,6 @@
 {
   "name": "archetype-ak",
-  "description": "AK-pattern rifle with dust cover, raised gas tube, curved magazine and block sights.",
+  "description": "AK-pattern rifle with dust cover, exposed gas block and tube, banana magazine, and block sights.",
   "root": "receiver",
   "parts": {
     "receiver": {
@@ -24,11 +24,14 @@
     "handguard": {
       "family": "handguard",
       "params": {
-        "inner": "L"
+        "layout": "ak"
       }
     },
     "gas-tube": {
       "family": "gas-tube"
+    },
+    "gas-block": {
+      "family": "gas-block"
     },
     "grip": {
       "family": "grip",
@@ -89,6 +92,14 @@
     {
       "from": "receiver.gas-tube",
       "to": "gas-tube.rear"
+    },
+    {
+      "from": "barrel.gas-block",
+      "to": "gas-block.barrel"
+    },
+    {
+      "from": "gas-block.gas-tube",
+      "to": "gas-tube.front"
     },
     {
       "from": "gas-tube.handguard",

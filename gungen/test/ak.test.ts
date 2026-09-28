@@ -1,13 +1,79 @@
 import { describe, expect, it } from 'vitest';
+import { generate } from '../src/core/generate.ts';
 import { validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { applyDir, applyPoint } from '../src/core/math.ts';
-import type { Domain } from '../src/core/schema.ts';
+import type { Domain, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import { ak } from '../src/gun/templates.ts';
 import { loadFixture } from './helpers.ts';
 
 const akFixture = loadFixture('archetype-ak');
+const extrudedOf = (solid: Solid): Extract<Solid, { kind: 'extruded-polygon' }> => {
+  if (solid.kind !== 'extruded-polygon') {
+    throw new Error('Expected a convex extruded AK prism.');
+  }
+  return solid;
+};
+const polygonOf = (solid: Solid) => extrudedOf(solid).profile;
+const axisAngle = (profile: readonly (readonly [number, number])[]) => {
+  const dx = profile[0]![0] - profile[3]![0];
+  const dy = profile[3]![1] - profile[0]![1];
+  return (Math.atan2(dx, dy) * 180) / Math.PI;
+};
+const inspectAkPrisms = (solids: readonly Solid[]) => {
+  const prisms = solids.map(extrudedOf);
+  const profiles = prisms.map(({ profile }) => profile);
+  return {
+    ids: solids.map(({ id }) => id),
+    valid: prisms.map(({ profile, z }) => validateExtrudedPolygon(profile, z) === undefined),
+    zBounds: prisms.map(({ z }) => z),
+    sideLengths: profiles.map((profile) => {
+      const edgeLength = (a: readonly [number, number], b: readonly [number, number]) =>
+        Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return {
+        rear: edgeLength(profile[0]!, profile[3]!),
+        front: edgeLength(profile[1]!, profile[2]!),
+        top: edgeLength(profile[2]!, profile[3]!),
+        bottom: edgeLength(profile[0]!, profile[1]!),
+      };
+    }),
+    straightInsertionEdge: profiles[0]![2]![1] === profiles[0]![3]![1],
+    slantedInsertBottom: profiles[0]![0]![1] !== profiles[0]![1]![1],
+    sharedJoints: profiles
+      .slice(1)
+      .map((profile, i) =>
+        profiles[i]!.slice(0, 2).every(
+          (point, j) =>
+            point[0] === [...profile.slice(2)].reverse()[j]![0] && point[1] === [...profile.slice(2)].reverse()[j]![1],
+        ),
+      ),
+    axes: profiles.slice(1).map(axisAngle),
+  };
+};
+const forwardTravel = (solids: readonly Solid[]) => {
+  const upper = polygonOf(solids[0]!);
+  const bottom = polygonOf(solids.at(-1)!);
+  return (bottom[0]![0] + bottom[1]![0] - upper[0]![0] - upper[1]![0]) / 2;
+};
+const magazineStackLength = (solids: readonly Solid[]) =>
+  solids.reduce((sum, solid) => {
+    const profile = polygonOf(solid);
+    const rear = Math.hypot(profile[0]![0] - profile[3]![0], profile[0]![1] - profile[3]![1]);
+    const front = Math.hypot(profile[1]![0] - profile[2]![0], profile[1]![1] - profile[2]![1]);
+    return sum + (rear + front) / 2;
+  }, 0);
+const akWithVariant = (variant: string) => ({
+  ...akFixture,
+  parts: {
+    ...akFixture.parts,
+    magazine: {
+      ...akFixture.parts.magazine!,
+      params: { ...akFixture.parts.magazine!.params, variant },
+    },
+  },
+});
 
 describe('AK-pattern archetype', () => {
   it('has a dust-cover receiver without a receiver rail and a rear sight on its sight-block port', () => {
@@ -62,11 +128,35 @@ describe('AK-pattern archetype', () => {
     expect(report.ok).toBe(true);
     const placed = report.resolved.placed.get('gas-tube')!;
     const axis = report.resolved.defs.get('gas-tube')!.axes[0]!;
-    expect(applyPoint(placed, axis.origin)).toEqual([0, 2.5, 0]);
+    expect(applyPoint(placed, axis.origin)).toEqual([0, 2, 0]);
     const direction = applyDir(placed, axis.dir);
     expect(direction[0]).toBeCloseTo(1);
     expect(direction[1]).toBeCloseTo(0);
     expect(direction[2]).toBeCloseTo(0);
+  });
+
+  it('mounts a gas block on the barrel and leaves a visible gas-tube span ahead of the AK handguard', () => {
+    const report = validate(akFixture, gunDomain);
+    expect(report.ok).toBe(true);
+    const handguard = report.resolved.defs.get('handguard')!;
+    const barrel = report.resolved.defs.get('barrel')!;
+    const handguardEnd = applyPoint(
+      report.resolved.placed.get('handguard')!,
+      handguard.ports.find(({ id }) => id === 'front')!.pos,
+    );
+    const gasBlockOnBarrel = applyPoint(
+      report.resolved.placed.get('barrel')!,
+      barrel.ports.find(({ id }) => id === 'gas-block')!.pos,
+    );
+    expect(gasBlockOnBarrel[0] - handguardEnd[0]).toBe(6);
+    expect(gasBlockOnBarrel[0]).toBe(28);
+    expect(report.resolved.connections.some(({ conn }) => conn.from === 'barrel.gas-block')).toBe(true);
+    expect(report.resolved.connections.some(({ conn }) => conn.to === 'gas-tube.front')).toBe(true);
+    const tube = report.resolved.defs.get('gas-tube')!.solids[0]!;
+    expect(tube.kind).toBe('box');
+    if (tube.kind === 'box') {
+      expect(tube.box.center[0] + tube.box.half[0]).toBe(28);
+    }
   });
 
   it('rejects a misaligned gas-system axis', () => {
@@ -91,54 +181,79 @@ describe('AK-pattern archetype', () => {
     ).toEqual(['The gas-system axis of gas-tube is 90° off the main axis.']);
   });
 
-  it('builds a three-prism magazine with parallel unequal front/back faces and exact joints', () => {
-    const expectedAngles = { S: 10, M: 12, L: 15 } as const;
-    for (const [length, angleDegrees] of Object.entries(expectedAngles) as [keyof typeof expectedAngles, number][]) {
-      const magazine = FAMILIES.magazine!.build({ length, profile: 'ak-curved' });
-      const [upper, middle, bottom] = magazine.solids;
-      expect(magazine.solids.map(({ id }) => id)).toEqual(['upper-body', 'curve-middle', 'curve-bottom']);
-      expect(upper?.kind).toBe('extruded-polygon');
-      expect(middle?.kind).toBe('extruded-polygon');
-      expect(bottom?.kind).toBe('extruded-polygon');
-      if (
-        upper?.kind !== 'extruded-polygon' ||
-        middle?.kind !== 'extruded-polygon' ||
-        bottom?.kind !== 'extruded-polygon'
-      ) {
-        throw new Error('Expected three extruded AK magazine prisms.');
+  it('fits AK-74 and AKM magazine silhouette ratios to their measured reference images', () => {
+    const references = {
+      '3': { bend: 33.5, straight: 0.23, lengthDepth: 3.01, offsetDepth: 0.84 },
+      '4': { bend: 50, straight: 0.26, lengthDepth: 3.51, offsetDepth: 1.58 },
+    } as const;
+    for (const count of ['3', '4'] as const) {
+      const { solids } = FAMILIES.magazine!.build({
+        length: 'L',
+        profile: 'ak-curved',
+        variant: count === '3' ? 'ak74' : 'akm',
+      });
+      const reference = references[count];
+      const upper = polygonOf(solids[0]!);
+      const base = polygonOf(solids.at(-1)!);
+      const depth = 5.5;
+      const baseAngle = (Math.atan2(base[1]![1] - base[0]![1], base[1]![0] - base[0]![0]) * 180) / Math.PI;
+      const measurements = {
+        bend: baseAngle,
+        straight: Math.hypot(upper[3]![0] - upper[0]![0], upper[3]![1] - upper[0]![1]) / magazineStackLength(solids),
+        lengthDepth: magazineStackLength(solids) / depth,
+        offsetDepth: forwardTravel(solids) / depth,
+      };
+      expect(Math.abs(measurements.bend - reference.bend)).toBeLessThanOrEqual(1);
+      expect(Math.abs(measurements.straight - reference.straight)).toBeLessThanOrEqual(0.1);
+      expect(Math.abs(measurements.lengthDepth - reference.lengthDepth)).toBeLessThanOrEqual(0.25);
+      expect(Math.abs(measurements.offsetDepth - reference.offsetDepth)).toBeLessThanOrEqual(0.3);
+    }
+  });
+
+  it('selects AK-74 or AKM curve data per seed', () => {
+    const variants = new Set<string>();
+    for (let seed = 0; seed < 100; seed++) {
+      const assembly = generate(ak, gunDomain, seed);
+      const variant = assembly.parts.magazine!.params!.variant!;
+      variants.add(variant);
+      expect(['ak74', 'akm']).toContain(variant);
+      expect(validate(assembly, gunDomain).ok).toBe(true);
+    }
+    expect(variants).toEqual(new Set(['ak74', 'akm']));
+  }, 30_000);
+
+  it('builds exact-jointed convex ring sectors and a finer display tessellation from each curve profile', () => {
+    const edgeLengths = (profile: readonly (readonly [number, number])[]) =>
+      profile.map((point, i) => {
+        const next = profile[(i + 1) % profile.length]!;
+        return Math.hypot(next[0] - point[0], next[1] - point[1]);
+      });
+    for (const [variant, facets, label] of [
+      ['ak74', 6, 'AK-74'],
+      ['akm', 8, 'AKM'],
+    ] as const) {
+      const { solids, displaySolids } = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant });
+      const facts = inspectAkPrisms(solids);
+      expect(facts.ids).toEqual(['upper-body', ...Array.from({ length: facets }, (_, i) => `curve-sector-${i + 1}`)]);
+      expect(displaySolids?.length).toBe(25);
+      expect(facts.valid.every(Boolean)).toBe(true);
+      expect(facts.zBounds.every((bounds) => bounds[0] === -1.25 && bounds[1] === 1.25)).toBe(true);
+      expect(facts.straightInsertionEdge && facts.slantedInsertBottom).toBe(true);
+      expect(facts.sharedJoints.every(Boolean)).toBe(true);
+      for (let i = 1; i <= facets; i++) {
+        const profile = polygonOf(solids[i]!);
+        expect(facts.sideLengths[i]!.rear).toBeGreaterThan(facts.sideLengths[i]!.front);
+        expect(facts.sideLengths[i]!.top).toBeCloseTo(facts.sideLengths[i]!.bottom, 8);
+        if (i > 1) {
+          const previous = polygonOf(solids[i - 1]!);
+          expect(
+            edgeLengths(profile)
+              .map((value, j) => Math.abs(value - edgeLengths(previous)[j]!))
+              .every((d) => d < 1e-8),
+          ).toBe(true);
+        }
       }
-      expect(validateExtrudedPolygon(upper.profile, upper.z)).toBeUndefined();
-      expect(validateExtrudedPolygon(middle.profile, middle.z)).toBeUndefined();
-      expect(validateExtrudedPolygon(bottom.profile, bottom.z)).toBeUndefined();
-      expect(upper.profile.slice(0, 2)).toEqual([...middle.profile.slice(2)].reverse());
-      expect(bottom.profile.slice(2)).toEqual([...middle.profile.slice(0, 2)].reverse());
-      expect(upper.profile[2]![1]).toBe(upper.profile[3]![1]);
-      expect(upper.profile[0]![1]).not.toBe(upper.profile[1]![1]);
-      const middleCenter: [number, number] = [
-        (middle.profile[0]![0] + middle.profile[1]![0]) / 2,
-        (middle.profile[0]![1] + middle.profile[1]![1]) / 2,
-      ];
-      const bottomCenter: [number, number] = [
-        (bottom.profile[0]![0] + bottom.profile[1]![0]) / 2,
-        (bottom.profile[0]![1] + bottom.profile[1]![1]) / 2,
-      ];
-      const actualAngle =
-        (Math.atan2(bottomCenter[0] - middleCenter[0], middleCenter[1] - bottomCenter[1]) * 180) / Math.PI;
-      expect(Math.abs(actualAngle - angleDegrees)).toBeLessThan(1);
-      const trapezoidAngle =
-        (Math.atan2(middle.profile[1]![1] - middle.profile[0]![1], middle.profile[1]![0] - middle.profile[0]![0]) *
-          180) /
-        Math.PI;
-      expect(Math.abs(trapezoidAngle - angleDegrees)).toBeLessThan(1);
-      const edgeLength = (profile: readonly (readonly [number, number])[], a: number, b: number) =>
-        Math.hypot(profile[a]![0] - profile[b]![0], profile[a]![1] - profile[b]![1]);
-      expect(middle.profile[0]![0]).toBe(middle.profile[3]![0]);
-      expect(middle.profile[1]![0]).toBe(middle.profile[2]![0]);
-      expect(edgeLength(middle.profile, 0, 3)).not.toBeCloseTo(edgeLength(middle.profile, 1, 2));
-      const upperXExtent = upper.profile[1]![0] - upper.profile[0]![0];
-      expect(Math.abs(edgeLength(middle.profile, 0, 1) - upperXExtent)).toBeLessThanOrEqual(0.25);
-      expect(Math.abs(edgeLength(middle.profile, 2, 3) - upperXExtent)).toBeLessThanOrEqual(0.25);
-      expect(Math.abs(bottom.profile[2]![0] - bottom.profile[3]![0] - upperXExtent)).toBeLessThanOrEqual(0.25);
+      expect(validate(akWithVariant(variant), gunDomain).ok, label).toBe(true);
     }
     expect(FAMILIES.lower!.build({ layout: 'ak' }).keepOuts.map(({ id }) => id)).toContain('magazine-rock-in-sweep');
     expect(validate(akFixture, gunDomain).ok).toBe(true);
@@ -160,6 +275,10 @@ describe('AK-pattern archetype', () => {
     const { issues } = validate(loadFixture('broken-ak-gas-tube'), gunDomain);
     expect(issues.filter(({ rule }) => rule === 'required-ports').map(({ message }) => message)).toContain(
       'receiver.gas-tube (gas-tube mount on receiver) is required but empty.',
+    );
+    const missingBlock = validate(loadFixture('broken-ak-gas-block'), gunDomain).issues;
+    expect(missingBlock.filter(({ rule }) => rule === 'required-ports').map(({ message }) => message)).toContain(
+      'gas-tube.front (gas-block mount on gas-tube) is required but empty.',
     );
   });
 });

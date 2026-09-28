@@ -63,8 +63,6 @@ const placeBox = (obj: Object3D, obb: Obb) => {
   obj.matrix.copy(matrixOf(obb.r, obb.center));
 };
 
-const boxGeometry = (obb: Obb) => new BoxGeometry(obb.half[0] * 2, obb.half[1] * 2, obb.half[2] * 2);
-
 const solidGeometry = (solid: Solid) => {
   if (solid.kind === 'box') {
     return new BoxGeometry(solid.box.half[0] * 2, solid.box.half[1] * 2, solid.box.half[2] * 2);
@@ -109,7 +107,7 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       .join(', ');
     const failing = hl.parts.has(part);
 
-    for (const s of def.solids) {
+    for (const s of def.displaySolids ?? def.solids) {
       const obb = s.kind === 'box' ? worldBox(t, s.box) : undefined;
       const mesh = new Mesh(
         solidGeometry(s),
@@ -136,14 +134,23 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     }
 
     for (const ko of def.keepOuts) {
-      const obb = worldBox(t, ko.box);
+      const polygon = ko.profile && ko.z;
+      const obb = polygon ? undefined : worldBox(t, ko.box);
+      const shape: Solid = polygon
+        ? { id: ko.id, kind: 'extruded-polygon', profile: ko.profile!, z: ko.z! }
+        : { id: ko.id, kind: 'box', box: ko.box };
       const hit = hl.keepOuts.has(`${part}.${ko.id}`);
       const color = hit ? FAIL : KEEP_OUT;
       const mesh = new Mesh(
-        boxGeometry(obb),
+        solidGeometry(shape),
         new MeshBasicMaterial({ color, transparent: true, opacity: hit ? 0.25 : 0.07, depthWrite: false }),
       );
-      placeBox(mesh, obb);
+      if (obb) {
+        placeBox(mesh, obb);
+      } else {
+        mesh.matrixAutoUpdate = false;
+        mesh.matrix.copy(matrixOf(t.r, t.t));
+      }
       mesh.userData = { label: `${part} · keep-out ${ko.id} (${ko.kind})` };
       mesh.add(
         new LineSegments(
