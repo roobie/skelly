@@ -35,6 +35,53 @@ describe('trigger guards', () => {
     ]);
   });
 
+  it('shrinks lower guard outer extents to about 0.8 X and 0.7 Y while keeping trigger volumes clear', () => {
+    const lower = FAMILIES.lower!.build({ layout: 'conventional' });
+    const finger = lower.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
+    const guards = lower.solids.filter(({ id }) => id.startsWith('trigger-guard-'));
+    const bounds = (box: typeof finger) => ({
+      min: box.center.map((center, axis) => center - box.half[axis]!),
+      max: box.center.map((center, axis) => center + box.half[axis]!),
+    });
+    const allBounds = guards.map((solid) => {
+      expect(solid.kind).toBe('box');
+      if (solid.kind !== 'box') {
+        throw new Error('Expected a box trigger guard.');
+      }
+      return bounds(solid.box);
+    });
+    const fingerBounds = bounds(finger);
+    const outerX = Math.max(...allBounds.map(({ max }) => max[0]!)) - Math.min(...allBounds.map(({ min }) => min[0]!));
+    const outerY = Math.max(...allBounds.map(({ max }) => max[1]!)) - Math.min(...allBounds.map(({ min }) => min[1]!));
+    expect(outerX / 5.573_415_225_557_27).toBeCloseTo(0.8, 1);
+    expect(outerY / 4.5).toBeCloseTo(0.7, 1);
+    for (const guard of allBounds) {
+      expect(
+        [0, 1, 2].every(
+          (axis) => guard.max[axis]! > fingerBounds.min[axis]! && fingerBounds.max[axis]! > guard.min[axis]!,
+        ),
+      ).toBe(false);
+    }
+    for (const layout of Object.keys(LOWER_LAYOUTS)) {
+      const def = FAMILIES.lower!.build({ layout });
+      const keepOut = def.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
+      const keepOutBounds = bounds(keepOut);
+      for (const solid of def.solids.filter(({ id }) => id.startsWith('trigger-guard-'))) {
+        expect(solid.kind).toBe('box');
+        if (solid.kind !== 'box') {
+          throw new Error('Expected a box trigger guard.');
+        }
+        const guard = bounds(solid.box);
+        expect(
+          [0, 1, 2].every(
+            (axis) => guard.max[axis]! > keepOutBounds.min[axis]! && keepOutBounds.max[axis]! > guard.min[axis]!,
+          ),
+          layout,
+        ).toBe(false);
+      }
+    }
+  });
+
   it('builds one four-box guard around every lower layout trigger volume', () => {
     for (const layout of Object.keys(LOWER_LAYOUTS)) {
       const lower = FAMILIES.lower!.build({ layout });

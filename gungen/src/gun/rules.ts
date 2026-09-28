@@ -266,10 +266,12 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
   const bottomBounds = boxBounds((bottom as Extract<Solid, { kind: 'box' }>).box);
   const fingerBounds = boxBounds(fingerBox);
   const close = (a: number, b: number) => Math.abs(a - b) <= 1e-8;
+  const rearClearance = fingerBounds.min[0] - rearBounds.max[0];
+  const frontClearance = frontBounds.min[0] - fingerBounds.max[0];
   const zBounds = [topBounds, rearBounds, frontBounds, bottomBounds];
   return (
-    close(rearBounds.max[0], fingerBounds.min[0] - TRIGGER_GUARD.innerXClearance) &&
-    close(frontBounds.min[0], fingerBounds.max[0] + TRIGGER_GUARD.innerXClearance) &&
+    rearClearance > 1e-8 &&
+    close(rearClearance, frontClearance) &&
     close(topBounds.min[1], fingerBounds.max[1]) &&
     close(topBounds.max[1], fingerBounds.max[1] + TRIGGER_GUARD.verticalWall) &&
     close(bottomBounds.max[1], fingerBounds.min[1]) &&

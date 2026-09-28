@@ -183,8 +183,8 @@ export const LOWER_LAYOUTS = {
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
-const LOWER_TRIGGER_X = { conventional: -12, bullpup: 4.75, trigger: -13.25, ak: -12, ar: -12 } as const;
-const LOWER_GRIP_X = { conventional: -14.75, bullpup: 2, trigger: -16, ak: -14.75, ar: -14.75 } as const;
+const LOWER_TRIGGER_X = { conventional: -12, bullpup: 4.75, trigger: -11.5, ak: -12, ar: -12 } as const;
+const LOWER_GRIP_X = { conventional: -14.75, bullpup: 2, trigger: -14, ak: -14.75, ar: -14.75 } as const;
 const AK_GAS_CYLINDER_Y = 2;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -214,19 +214,24 @@ const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
 const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
 const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
 export const TRIGGER_GUARD = { innerXClearance: 0.75, sideWall: 0.5, verticalWall: 0.25, zRatio: 0.625 } as const;
-const triggerGuardSolids = (triggerFinger: KeepOut, gripContactX?: number): Solid[] => {
+const LOWER_TRIGGER_GUARD = { ...TRIGGER_GUARD, innerXClearance: 0.5 };
+const triggerGuardSolids = (
+  triggerFinger: KeepOut,
+  gripContactX?: number,
+  dimensions: { innerXClearance: number; sideWall: number; verticalWall: number; zRatio: number } = TRIGGER_GUARD,
+): Solid[] => {
   const { center, half } = triggerFinger.box;
   const minX = center[0] - half[0];
   const maxX = center[0] + half[0];
   const minY = center[1] - half[1];
   const maxY = center[1] + half[1];
-  const innerRearX = minX - TRIGGER_GUARD.innerXClearance;
-  const outerRearX = gripContactX ?? innerRearX - TRIGGER_GUARD.sideWall;
-  const innerFrontX = maxX + TRIGGER_GUARD.innerXClearance;
-  const outerFrontX = innerFrontX + TRIGGER_GUARD.sideWall;
-  const lowerY = minY - TRIGGER_GUARD.verticalWall;
-  const upperY = maxY + TRIGGER_GUARD.verticalWall;
-  const zHalf = half[2] * TRIGGER_GUARD.zRatio;
+  const innerRearX = minX - dimensions.innerXClearance;
+  const outerRearX = gripContactX ?? innerRearX - dimensions.sideWall;
+  const innerFrontX = maxX + dimensions.innerXClearance;
+  const outerFrontX = innerFrontX + dimensions.sideWall;
+  const lowerY = minY - dimensions.verticalWall;
+  const upperY = maxY + dimensions.verticalWall;
+  const zHalf = half[2] * dimensions.zRatio;
   const minZ = center[2] - zHalf;
   const maxZ = center[2] + zHalf;
   return [
@@ -664,7 +669,7 @@ export const lower: PartFamily = {
         ),
       ];
     };
-    const trigger = (x: number) => keepOut('trigger-finger', [x, -5.75, -1], [x + 3, -1.75, 1]);
+    const trigger = (x: number) => keepOut('trigger-finger', [x, -4.5, -1], [x + 2, -1.75, 1]);
     const triggerX =
       params.layout === 'conventional'
         ? conventionalTriggerX
@@ -676,6 +681,7 @@ export const lower: PartFamily = {
         : triggerGuardSolids(
             triggerFinger,
             lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
+            LOWER_TRIGGER_GUARD,
           );
 
     switch (params.layout) {
