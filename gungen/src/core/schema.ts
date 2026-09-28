@@ -29,20 +29,40 @@ export interface PortDef {
   readonly normal: Vec3;
   readonly up: Vec3;
   readonly required?: boolean;
+  /** Magazine seating contract: inserted into a well or face-mated to a flat underside. */
+  readonly seat?: 'well' | 'face';
   /** One-to-many ports (e.g. a rail). Slot k sits at pos + up * k * pitch. */
   readonly slots?: { readonly count: number; readonly pitch: number };
 }
 
-export interface Solid {
+export interface BoxSolid {
   readonly id: string;
+  readonly kind: 'box';
   readonly box: Box;
 }
 
-/** Space that must stay empty (PROJECT.md §3). */
+export type Vec2 = readonly [number, number];
+
+export interface ExtrudedPolygonSolid {
+  readonly id: string;
+  readonly kind: 'extruded-polygon';
+  /** Convex profile in local X–Y coordinates, listed counter-clockwise. */
+  readonly profile: readonly Vec2[];
+  /** Local Z bounds of the extrusion. */
+  readonly z: readonly [number, number];
+}
+
+export type Solid = BoxSolid | ExtrudedPolygonSolid;
+
+/** Space that must stay empty (PROJECT.md §3). A convex extrusion may refine its broad-phase box. */
 export interface KeepOut {
   readonly id: string;
   readonly kind: string;
+  /** Conservative local bounds; also retained for callers that inspect simple keep-outs. */
   readonly box: Box;
+  /** Optional exact convex XY keep-out shape, extruded through local Z. */
+  readonly profile?: readonly Vec2[];
+  readonly z?: readonly [number, number];
   /** The part attached at this port of the owner may occupy the volume. */
   readonly allowPort?: string;
 }
@@ -58,6 +78,8 @@ export interface PartDef {
   readonly family: string;
   readonly ports: readonly PortDef[];
   readonly solids: readonly Solid[];
+  /** Optional higher-resolution scene tessellation; never used for collision checks. */
+  readonly displaySolids?: readonly Solid[];
   readonly keepOuts: readonly KeepOut[];
   readonly axes: readonly Axis[];
   /** Free-form labels that domain rules can look for. */
