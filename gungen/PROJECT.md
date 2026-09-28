@@ -750,6 +750,17 @@ can stand in for the design.
   Keep port positions, the stock's `FIRING_GRIP` role and every existing
   rule passing. Tapering in width (narrower at the wrist from above) would
   need a new convex solid kind and is not asked for;
+- visible action details (BR, 2026-09-28; deferred): charging handles,
+  ejection ports, bolt handles, "and stuff like that". Receivers already
+  declare keep-outs for ejection, the charging handle (side or rear-top) and
+  bolt travel (`src/gun/parts.ts:266-288`), but draw no solid for any of
+  them. The pistol slide is the only part with a visible ejection port, cut
+  as an opening by building the slide from walls around it
+  (`src/gun/parts.ts:1405-1409`). The same wall construction can cut a
+  receiver's port. A handle is a small solid at the rest end of its travel
+  keep-out, touching it but not inside it. Candidates beyond those three,
+  for BR to choose from: the AR forward assist, magazine and bolt releases,
+  and the safety selector;
 - after 3.5: attachments with game properties and port compatibility
   (gungen.2), with the deadvox schema change they need.
 
