@@ -44,9 +44,9 @@ import { quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { renderRest } from '../ui/rest.ts';
-import { aimDirection, cameraRotation } from './aim.ts';
+import { aimDirection } from './aim.ts';
 import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
-import { DamageFeedback } from './damageFeedback.ts';
+import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION, registerDoorAction } from './doorAction.ts';
 import type { Engine } from './engine.ts';
@@ -57,6 +57,7 @@ import { Quickbar } from './quickbar.ts';
 import { RestController, type RestKind } from './rest.ts';
 import { Survival } from './survival.ts';
 import { toHands } from './targets.ts';
+import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const PHYSICS_RATE = 60;
@@ -77,12 +78,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const physics = physicsFor(scale);
   const eyeHeight = PLAYER.eye / s;
 
-  const [sx, sy, sz] = engine.spawn.pos;
-  const body = createPlayerBody(scale, sx / s, sy / s + 0.01, sz / s);
+  const playerStart = playerStartFromWorld(engine, scale);
+  const body = createPlayerBody(scale, ...playerStart.position);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   let playerGaitPhase = 0;
   const input = new Input(renderer.domElement);
-  input.yaw = engine.spawn.yaw;
+  input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
 
   /** The air block at the player's feet, where drops land. */

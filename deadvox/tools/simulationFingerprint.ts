@@ -44,21 +44,26 @@ export const SIMULATION_ENTRIES = [
   'src/core/worldgen.ts',
   'src/core/saveState.ts',
   'src/core/saveFormat.ts',
+  'src/core/storage.ts',
   'src/core/soundPicker.ts',
   'src/game/player.ts',
   'src/game/rest.ts',
   'src/game/survival.ts',
   'src/game/streamer.ts',
   'src/game/config.ts',
-  'src/game/engine.ts',
   'src/game/play.ts',
+  'src/game/quickbar.ts',
+  'src/game/worldSetup.ts',
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
   'src/render',
   'src/debug',
   'src/core/sky.ts',
+  'src/core/mesher.ts',
+  'src/core/pileLayout.ts',
   'src/game/damageFeedback.ts',
+  'src/game/engine.ts',
   'src/ui/audioOptions.ts',
   'src/ui/credits.ts',
   'src/ui/death.ts',
@@ -66,7 +71,6 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
   'src/ui/rest.ts',
-  'src/game/debugInterface.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);

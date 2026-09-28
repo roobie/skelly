@@ -174,44 +174,50 @@ the diagnostic Git revision alongside the digest. The fingerprint is computed
 from a canonical, path-sorted list of relative source paths and per-file SHA-256
 hashes, with line endings normalized. It walks Vite-resolved runtime imports
 from these entry points: `src/core/sim.ts` (clock, scheduler and needs),
-`src/core/worldgen.ts` (deterministic generation), `src/core/saveState.ts` and
-`src/core/saveFormat.ts` (snapshot and disk contracts),
-`src/core/soundPicker.ts` (persisted sound selection state),
-`src/game/player.ts` (movement/body rules), `src/game/rest.ts` and
+`src/core/worldgen.ts` (deterministic generation), `src/core/saveState.ts`,
+`src/core/saveFormat.ts`, and `src/core/storage.ts` (snapshot, disk contract,
+and storage behavior), `src/core/soundPicker.ts` (persisted sound selection
+state), `src/game/player.ts` (movement/body rules), `src/game/rest.ts` and
 `src/game/survival.ts` (stateful controllers), `src/game/streamer.ts` (world
 regeneration and overlays), `src/game/config.ts` (world creation options and
-site/seed parameters), `src/game/engine.ts` (world setup, collision,
-deterministic site construction and spawn state), and `src/game/play.ts`
-(gameplay system wiring and state-changing actions). `play.ts` reaches the
-fingerprinted `src/game/aim.ts`, whose pitch/yaw calculation drives furniture
-and melee targeting independently of camera feedback roll. Vite recomputes the
-fingerprint for source create, update, and delete events and reloads when it
-changes. Base content remains separately identified by its canonical
-content-pack hash.
+site/seed parameters), `src/game/worldSetup.ts` (content registry, collision,
+site construction, generated world, streaming and spawn), `src/game/quickbar.ts`
+(stateful selection), and `src/game/play.ts` (gameplay wiring/actions).
+`play.ts` reaches `worldSetup.ts` at runtime for the spawn-to-body conversion,
+and reaches `src/game/aim.ts` for furniture and melee targeting independently
+of camera feedback roll. Vite recomputes the fingerprint for source create,
+update, and delete events and reloads when it changes. Base content remains
+separately identified by its canonical content-pack hash.
 
-`engine.ts`'s runtime world imports remain included: block-entity state,
-content registry, collision, hamlet/city and test-house construction,
-structures, world, world generation, and the streamer affect generated or
-mutable world state. Its Three.js imports construct the renderer/camera/lights;
-because those concerns are co-located in this entry, the resolved Three.js
-runtime sources are conservatively fingerprinted too. `GameConfig`, `Site`,
-`Vec3`, `BlockBox`, and streamer-stat imports that are type-only are erased;
-`config.ts` is a separate entry for the runtime configuration logic. The
-excluded render imports are called only to construct/draw meshes or sky and do
-not feed values back into simulation state.
+World construction now lives in `worldSetup.ts`; it has no static runtime
+imports of Three.js or renderer modules. `engine.ts` injects a `ChunkMeshes`
+instance through a type-only contract and retains WebGL, camera, light, mesh and
+resize setup. The sole rendering runtime edge is the explicitly allowlisted
+mesher worker URL. Because the gameplay graph does not enter `engine.ts`,
+Three.js version changes and renderer-only edits there do not invalidate saves.
+`src/game/engine.ts` is an explicit renderer-only exclusion. It constructs the
+world setup for the app, while `play.ts` imports `playerStartFromWorld` from
+`worldSetup.ts` at runtime; the setup module and its world-generation graph are
+therefore fingerprinted without traversing Three.js. Type-only imports are
+erased; `src/core/site.ts`'s runtime helpers are reached through the city/hamlet
+builders, and config logic has its own entry.
 
 The excluded runtime import edges reached from non-excluded simulation modules
 are pinned by `test/simulationFingerprint.test.ts`:
 
-- `src/core/sky.ts`, imported by both `src/game/engine.ts` and
-  `src/game/play.ts`: values only feed rendered sky state; no simulation system
-  reads them. Include this source if daylight becomes a simulation input.
+- `src/core/sky.ts`, imported by `src/game/play.ts`: values only feed rendered
+  sky state; no simulation system reads them. Include this source if daylight
+  becomes a simulation input.
 - `src/game/damageFeedback.ts`, imported by `src/game/play.ts`: vignette and
-  camera-roll animation only. Camera rotation now lives in fingerprinted
-  `src/game/aim.ts`, and targeting uses only its input pitch/yaw function, not
-  the feedback-rolled camera.
-- `src/render/chunks.ts` and `src/render/sky.ts`, imported by
-  `src/game/engine.ts`: mesh and light/fog presentation only.
+  camera-roll animation only. Camera rotation remains visual in this excluded
+  module; gameplay targeting uses fingerprinted `src/game/aim.ts` with input
+  pitch/yaw only, not the feedback-rolled camera.
+- `src/game/engine.ts`: WebGL renderer, camera, lights, `ChunkMeshes`, and resize
+  setup only. Its `Engine` interface extends `WorldSetup`, but gameplay imports
+  that contract type-only; `engine.ts` is not a simulation entry, so Three.js and
+  render-only edits do not invalidate saves.
+- `src/core/mesher.ts` and `src/core/pileLayout.ts`: render-worker mesh generation
+  and pile mesh placement only; neither changes world, inventory, or save state.
 - `src/render/{flashlight,furniture,hands,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
   imported by `src/game/play.ts`: mesh construction, draw transforms, and render
   interpolation only. The simulation never reads these objects back.
@@ -228,12 +234,18 @@ are pinned by `test/simulationFingerprint.test.ts`:
   rest/stop input handling and state transitions live in fingerprinted game
   modules.
 
-The `src/game/engine.ts` entry makes runtime imports of
-`src/core/collision.ts`, `src/core/hamlet.ts`, `src/core/city.ts`, and
-`src/game/testHouse.ts` part of the fingerprint; each controls world collision,
-site generation, or spawn/structure state. The integration test asserts all
-four remain members. `src/ui/inventoryScreen.ts` is deliberately not excluded:
-it routes pointer and key actions into inventory and handling mutations.
+The integration test recursively enumerates all source modules under
+`src/core/` and `src/game/`; every module must be in the fingerprint graph, match
+an explicit `SIMULATION_EXCLUSIONS` rule with the justification above, or have
+an individual non-runtime rule in the test. The only current non-runtime rules
+are `src/core/buildRevision.ts` (test/build diagnostic helper) and
+`src/game/debugInterface.ts` (erased type-only contracts). This prevents a new
+runtime file reachable only through a type-only edge from silently escaping the
+fingerprint; the test fails with each unclassified module's path. The test
+first failed with `city.ts`, `collision.ts`, `hamlet.ts`, `site.ts`, `engine.ts`,
+`testHouse.ts`, and `worldSetup.ts` unclassified when the world-setup edge and
+its renderer exclusion were removed. `src/ui/inventoryScreen.ts` is deliberately
+not excluded: it routes pointer and key actions into inventory and handling mutations.
 `src/game/audio.ts` is included because its playback-success result gates
 hearing-relevant vocal noise. The debug subtree has no reached runtime import
 edges (the play module's debug interfaces are type-only). The graph walker
@@ -421,7 +433,7 @@ generation until the new world's first snapshot commits.
   prevents loading that save. Only edits confined to explicitly excluded
   presentation modules (plus tests, docs, and unrelated commits) leave the
   fingerprint unchanged. UI or presentation code co-located in fingerprinted
-  modules—such as `play.ts`, `engine.ts`, `inventoryScreen.ts`, or `game/audio.ts`—
+  modules—such as `play.ts`, `inventoryScreen.ts`, or `game/audio.ts`—
   conservatively invalidates saves too; compatibility follows the module graph,
   not semantic line-level classification. Version-keyed storage preserves
   incompatible records rather than silently applying new rules. Revisit when

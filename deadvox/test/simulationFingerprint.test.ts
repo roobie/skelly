@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
@@ -46,38 +46,50 @@ const UNRESOLVED_DEPENDENCY_ERROR = /Cannot resolve runtime dependency/;
 const UNSUPPORTED_ID_ERROR = /Unsupported virtual runtime dependency|resolves outside src\//;
 const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
 const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
+const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
+
+// These files are not runtime roots: buildRevision is a test/build diagnostic helper,
+// while debugInterface contains only erased TypeScript contracts.
+const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
+  'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
+  'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
+};
+
+async function sourceFilesUnder(directory: string): Promise<string[]> {
+  const files = await readdir(resolve(projectRoot, directory), { withFileTypes: true });
+  const directories = files.filter((file) => file.isDirectory());
+  const nested = await Promise.all(directories.map((file) => sourceFilesUnder(join(directory, file.name))));
+  const direct = files
+    .filter((file) => file.isFile() && SOURCE_FILE_PATTERN.test(file.name) && !file.name.endsWith('.d.ts'))
+    .map((file) => join(directory, file.name));
+  return [...direct, ...nested.flat()].sort();
+}
+
+async function actualSimulationGraph() {
+  const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
+  const viteResolve = config.createResolver();
+  return collectSimulationSourceGraph(
+    SIMULATION_ENTRIES,
+    projectRoot,
+    {
+      resolve(specifier, importer) {
+        return Promise.resolve(viteResolve(specifier, importer));
+      },
+      readFile(path) {
+        return readFile(path, 'utf8');
+      },
+    },
+    { exclude: SIMULATION_EXCLUSIONS },
+  );
+}
 
 describe('simulation source fingerprint', () => {
   it('pins every excluded module reached from the actual Vite-resolved simulation graph', async () => {
-    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
-    const viteResolve = config.createResolver();
-    const graph = await collectSimulationSourceGraph(
-      SIMULATION_ENTRIES,
-      projectRoot,
-      {
-        resolve(specifier, importer) {
-          return Promise.resolve(viteResolve(specifier, importer));
-        },
-        readFile(path) {
-          return readFile(path, 'utf8');
-        },
-      },
-      { exclude: SIMULATION_EXCLUSIONS },
-    );
+    const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
-    expect([...graph.sources.keys()]).toEqual(
-      expect.arrayContaining([
-        ...SIMULATION_ENTRIES,
-        'src/core/collision.ts',
-        'src/core/hamlet.ts',
-        'src/core/city.ts',
-        'src/game/testHouse.ts',
-      ]),
-    );
+    expect(graph.sources.has('src/game/engine.ts')).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(graph.excludedImports).toEqual([
-      { importer: 'src/game/engine.ts', excluded: 'src/core/sky.ts' },
-      { importer: 'src/game/engine.ts', excluded: 'src/render/chunks.ts' },
-      { importer: 'src/game/engine.ts', excluded: 'src/render/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
@@ -97,6 +109,24 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
     ]);
+  });
+
+  it('classifies every core and game source module', async () => {
+    const graph = await actualSimulationGraph();
+    const modules = [...(await sourceFilesUnder('src/core')), ...(await sourceFilesUnder('src/game'))];
+    const scopedExclusions = SIMULATION_EXCLUSIONS.filter(
+      (rule) => rule.startsWith('src/core/') || rule.startsWith('src/game/'),
+    );
+    // Core/game rules must name individual files; a directory-wide exception would mask newly added modules.
+    expect(scopedExclusions.every((rule) => rule.endsWith('.ts'))).toBe(true);
+    expect(
+      Object.entries(NON_RUNTIME_SOURCE_RULES).every(([path, reason]) => path.endsWith('.ts') && reason.trim()),
+    ).toBe(true);
+    const excluded = (path: string) => SIMULATION_EXCLUSIONS.some((rule) => path === rule);
+    const unclassified = modules.filter(
+      (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
+    );
+    expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
   });
 
   it('includes runtime-resolved source files, not unrelated UI files or type-only imports', async () => {
