@@ -181,9 +181,42 @@ from these entry points: `src/core/sim.ts` (clock, scheduler and needs),
 `src/game/survival.ts` (stateful controllers), `src/game/streamer.ts` (world
 regeneration and overlays), and `src/game/play.ts` (gameplay system wiring and
 state-changing actions). Vite recomputes the fingerprint for source HMR and
-reloads when it changes. UI, renderer, debug, audio-playback, tests, and docs
-modules are excluded; base content remains separately identified by its
+reloads when it changes. Base content remains separately identified by its
 canonical content-pack hash.
+
+The excluded runtime import edges reached from non-excluded simulation modules
+are pinned by `test/simulationFingerprint.test.ts`; presently all are direct
+imports from `src/game/play.ts`:
+
+- `src/core/sky.ts`: `skyAt` only supplies values to `applySky` for the rendered
+  sky. No simulation system reads those values; gameplay light perception is
+  separate. Include this source if daylight becomes a simulation input.
+- `src/game/damageFeedback.ts`: camera roll/hit presentation only; it consumes
+  damage events but does not change their source simulation state or future
+  steps.
+- `src/render/{flashlight,furniture,hands,models,piles,playerFigure,sky,stepOffset,zombies}.ts`:
+  mesh construction, draw transforms, and render interpolation only. The
+  simulation never reads these objects back.
+- `src/ui/audioOptions.ts`: output volume controls only. The `GameAudio` event
+  gate is intentionally included in the fingerprint because whether playback
+  succeeds can create persisted vocal-noise state.
+- `src/ui/credits.ts`, `src/ui/gameCursor.ts`: static credits and cursor DOM.
+- `src/ui/death.ts`: death summary and a new-world navigation callback; it does
+  not mutate or restore the current world's saved simulation.
+- `src/ui/hud.ts`, `src/ui/hudOptions.ts`: drawing and visibility settings only.
+  The stateful `Quickbar` was moved to `src/game/quickbar.ts` and is fingerprinted
+  directly by `play.ts`.
+- `src/ui/rest.ts`: read-only rendering of `RestAction` and simulation clock;
+  rest/stop input handling and state transitions live in fingerprinted game
+  modules.
+
+`src/ui/inventoryScreen.ts` is deliberately not excluded: it routes pointer and
+key actions into inventory and handling mutations. `src/game/audio.ts` is also
+included because its playback-success result gates hearing-relevant vocal noise.
+The debug subtree has no reached runtime import edges (the play module's debug
+interfaces are type-only). Any newly reached excluded edge fails the pinned
+integration test and requires an explicit compatibility decision. Tests and
+docs are never part of the runtime graph.
 
 Require an exact identity match before looking up any content IDs. On mismatch,
 explain both the save's diagnostic build revision and its simulation fingerprint

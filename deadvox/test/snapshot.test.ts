@@ -21,9 +21,9 @@ import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { createPlayerBody, physicsFor, restorePlayer, snapshotPlayer } from '../src/game/player.ts';
+import { Quickbar } from '../src/game/quickbar.ts';
 import { RestController } from '../src/game/rest.ts';
 import { Survival } from '../src/game/survival.ts';
-import { Quickbar } from '../src/ui/hud.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -902,7 +902,7 @@ describe('canonical save format', () => {
     const bytes = await encodeSave(capture(createRuntime()), {
       generation: 1,
       version: formatVersion,
-      buildRevision: 'saved-build',
+      buildRevision: 'saved-git-revision-aaaaaaaa',
       worldOptions: formatWorldOptions,
     });
     const original = bytes.slice();
@@ -912,7 +912,7 @@ describe('canonical save format', () => {
     try {
       await decodeSave(bytes, {
         version: otherVersion,
-        buildRevision: 'running-build',
+        buildRevision: 'running-git-revision-bbbbbbbb',
         contentLookup: () => {
           lookups += 1;
           return true;
@@ -924,8 +924,10 @@ describe('canonical save format', () => {
     expect(lookups).toBe(0);
     expect(mismatch).toBeInstanceOf(Error);
     expect((mismatch as Error).message).toContain('Save version mismatch');
-    expect((mismatch as Error).message).toContain('saved-build');
-    expect((mismatch as Error).message).toContain('running-build');
+    expect((mismatch as Error).message).toContain('saved-git-revision-aaaaaaaa');
+    expect((mismatch as Error).message).toContain('running-git-revision-bbbbbbbb');
+    expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
+    expect((mismatch as Error).message).toContain(otherVersion.simulationHash);
     expect(bytes).toEqual(original);
   });
 

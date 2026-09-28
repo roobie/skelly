@@ -1,8 +1,18 @@
+import { readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resolveConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
-import { fingerprintSimulationSources, type SimulationModuleGraphHost } from '../tools/simulationFingerprint.ts';
+import {
+  collectSimulationSourceGraph,
+  fingerprintSimulationSources,
+  SIMULATION_ENTRIES,
+  SIMULATION_EXCLUSIONS,
+  type SimulationModuleGraphHost,
+} from '../tools/simulationFingerprint.ts';
 
 const root = '/fixture/deadvox';
+const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 
 type Sources = Map<string, string>;
 
@@ -33,6 +43,44 @@ const hash = (sources: Sources, ...entryPaths: string[]) =>
 const entries = ['src/core/sim.ts'];
 
 describe('simulation source fingerprint', () => {
+  it('pins every excluded module reached from the actual Vite-resolved simulation graph', async () => {
+    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
+    const viteResolve = config.createResolver();
+    const graph = await collectSimulationSourceGraph(
+      SIMULATION_ENTRIES,
+      projectRoot,
+      {
+        resolve(specifier, importer) {
+          return Promise.resolve(viteResolve(specifier, importer));
+        },
+        readFile(path) {
+          return readFile(path, 'utf8');
+        },
+      },
+      { exclude: SIMULATION_EXCLUSIONS },
+    );
+    expect(graph.excludedImports).toEqual([
+      { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/models.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/piles.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/playerFigure.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/sky.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/stepOffset.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/zombies.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
+    ]);
+  });
+
   it('includes runtime-resolved source files, not unrelated UI files or type-only imports', async () => {
     const base: Sources = new Map([
       [

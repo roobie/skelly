@@ -6,7 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
-import { fingerprintSimulationSources } from './tools/simulationFingerprint.ts';
+import {
+  fingerprintSimulationSources,
+  SIMULATION_ENTRIES,
+  SIMULATION_EXCLUSIONS,
+} from './tools/simulationFingerprint.ts';
 
 const contentDirectory = fileURLToPath(new URL('./src/content/base/', import.meta.url));
 const filesUnder = (directory: string, prefix: string): { name: string; path: string }[] =>
@@ -58,27 +62,6 @@ try {
 // Base-pack identity is snapshotted at config load. Simulation source identity is refreshed on source HMR.
 const packageRoot = fileURLToPath(new URL('.', import.meta.url));
 const saveFormatPath = resolve(packageRoot, 'src/core/saveFormat.ts');
-const simulationEntries = [
-  'src/core/sim.ts',
-  'src/core/worldgen.ts',
-  'src/core/saveState.ts',
-  'src/core/saveFormat.ts',
-  'src/core/soundPicker.ts',
-  'src/game/player.ts',
-  'src/game/rest.ts',
-  'src/game/survival.ts',
-  'src/game/streamer.ts',
-  'src/game/play.ts',
-];
-const simulationExclusions = [
-  'src/ui',
-  'src/render',
-  'src/debug',
-  'src/core/sky.ts',
-  'src/game/audio.ts',
-  'src/game/damageFeedback.ts',
-  'src/game/debugInterface.ts',
-];
 const buildRevisionDefine = '__DEADVOX_BUILD_REVISION__';
 const baseContentHashDefine = '__DEADVOX_BASE_CONTENT_HASH__';
 const moduleQueryPattern = /[?#].*$/;
@@ -93,7 +76,7 @@ function simulationFingerprintPlugin() {
       throw new Error('Vite module resolver has not been initialized');
     }
     return fingerprintSimulationSources(
-      simulationEntries,
+      SIMULATION_ENTRIES,
       packageRoot,
       {
         resolve: resolveModule,
@@ -101,7 +84,7 @@ function simulationFingerprintPlugin() {
           return Promise.resolve(readFileSync(path, 'utf8'));
         },
       },
-      { exclude: simulationExclusions },
+      { exclude: SIMULATION_EXCLUSIONS },
     );
   };
 
