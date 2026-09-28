@@ -28,6 +28,14 @@ describe('npm run validate', () => {
     expect(run.status).toBe(0);
   });
 
+  it("fails on a sound whose variant file isn't in the pack", () => {
+    const run = validate('test/fixtures/content/missing-sound-file.json');
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain(
+      'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
+    );
+  });
+
   it('fails on an item whose model is missing', () => {
     const run = validate('test/fixtures/content/missing-model.json');
     expect(run.status).toBe(1);

@@ -3,6 +3,7 @@ import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { ZombieSystem } from '../core/zombies.ts';
+import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
 
@@ -38,6 +39,7 @@ export interface DebugReadout {
   readonly pending: number;
   readonly holes: number;
   readonly zombies: number;
+  readonly sounds: readonly HeardSound[];
 }
 
 export interface DebugRuntime {

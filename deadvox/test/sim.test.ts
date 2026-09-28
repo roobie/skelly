@@ -35,6 +35,14 @@ describe('clock', () => {
 });
 
 describe('Simulation', () => {
+  it('emits damage events with cause and amount for audio and noise consumers', () => {
+    const sim = new Simulation({ seed: 1 });
+    const events = sim.events.reader();
+    sim.hurt(10, 'a shambler');
+
+    expect(events.read()).toContainEqual({ kind: 'damage', amount: 10, cause: 'a shambler', time: 0 });
+  });
+
   it('gives the same clock and needs for a compressed and an uncompressed hour', () => {
     const plain = new Simulation({ seed: 1 });
     const realPlain = runUntil(plain, HOUR);

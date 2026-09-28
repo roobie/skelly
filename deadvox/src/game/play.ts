@@ -9,6 +9,13 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, formatClock, hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { MapEntityStore } from '../core/entities.ts';
+import {
+  advanceFootsteps,
+  footstepEventForBlock,
+  initialFootstepClock,
+  isHardLanding,
+  shamblerFootstepEventAt,
+} from '../core/footsteps.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory, type Pile } from '../core/inventory.ts';
@@ -18,8 +25,9 @@ import { canSprint, stepStamina } from '../core/needs.ts';
 import { stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
+import type { SoundEventId } from '../core/soundEvents.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
-import { FISTS_MELEE, type PlayerMovement, type Zombie, ZombieSystem } from '../core/zombies.ts';
+import { FISTS_MELEE, type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
@@ -29,6 +37,7 @@ import { PlayerMeshes } from '../render/playerFigure.ts';
 import { applySky } from '../render/sky.ts';
 import { StepOffset } from '../render/stepOffset.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
+import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
@@ -36,6 +45,7 @@ import { Quickbar, quickbarKey, renderHandling, renderQuickbar } from '../ui/hud
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { renderRest } from '../ui/rest.ts';
+import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import type { Engine } from './engine.ts';
@@ -125,14 +135,50 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     restRate: () => rest?.action?.rate,
   });
   const { compression } = sim;
+  const audioEvents = sim.events.reader();
   const damageEvents = sim.events.reader();
   const damageFeedback = new DamageFeedback();
+  const audio = new GameAudio({
+    registry,
+    seed: sim.seed,
+    blockSize: s,
+    isSolid: engine.isSolid,
+    report: (message) => {
+      const errors = $('errors');
+      errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
+    },
+  });
+  document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+  let vocalNoiseId = 0;
+  let vocalNoise: VocalNoise | undefined;
+  const playerSoundPosition = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
+  const playWorldSound = (event: SoundEventId, position: Vec3, time = sim.time, metadata: SoundPlaybackMeta = {}) =>
+    audio.play(event, position.map((value) => value * s) as Vec3, time, metadata);
+  const playPlayerSound = (event: SoundEventId, time = sim.time) => {
+    const position = playerSoundPosition();
+    const definition = registry.sounds.get(event);
+    const emittedAsNoise = definition?.noise.enabled ?? false;
+    if (!playWorldSound(event, position, time, { emittedAsNoise })) {
+      return;
+    }
+    if (definition?.noise.enabled) {
+      vocalNoiseId += 1;
+      vocalNoise = {
+        id: vocalNoiseId,
+        pos: position,
+        radiusMetres: definition.noise.radiusMetres,
+        expiresAt: time + 0.5,
+      };
+    }
+  };
   const survival = new Survival(sim, inventory, queue, {
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: (text) => showNotice(text),
   });
   const zombieStore = new MapEntityStore<Zombie>();
   let sprinting = false;
+  let footstepClock = initialFootstepClock();
+  let airbornePeakY: number | undefined;
   const playerMovement = (): PlayerMovement => {
     const moving = input.locked && !input.menuPointer && !compression.locksInput ? input.intent() : IDLE;
     if (moving.forward === 0 && moving.right === 0) {
@@ -143,11 +189,33 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
     return moving.walk ? 'walking' : 'jogging';
   };
+  const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
+    if (body.onGround) {
+      if (!wasGrounded && airbornePeakY !== undefined && isHardLanding((airbornePeakY - body.pos[1]) * s)) {
+        playPlayerSound('player_landing_hard', time);
+      }
+      airbornePeakY = undefined;
+    } else {
+      airbornePeakY = Math.max(airbornePeakY ?? previousPosition[1], body.pos[1]);
+    }
+    const travelled =
+      wasGrounded && body.onGround
+        ? Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) * s
+        : 0;
+    const footsteps = advanceFootsteps(footstepClock, travelled > 0 ? playerMovement() : 'still', travelled);
+    footstepClock = footsteps.clock;
+    for (let i = 0; i < footsteps.steps; i++) {
+      const [x, y, z] = feet();
+      const surface = registry.blocks[engine.world.getBlock(x, y - 1, z)]?.id ?? 'unknown';
+      playPlayerSound(footstepEventForBlock(surface), time);
+    }
+  };
   const playerSense = () => ({
     pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
     body: debugTools?.noclip ? undefined : body,
     facing: [-Math.sin(input.yaw), 0, -Math.cos(input.yaw)] as Vec3,
     movement: playerMovement(),
+    vocalNoise: vocalNoise && sim.time <= vocalNoise.expiresAt ? vocalNoise : undefined,
     lit: survival.lit?.on === true,
     lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
   });
@@ -161,6 +229,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
+    onSound: (event, position) => playWorldSound(event, position),
+    onFootstep: (position, id, mode) => {
+      const event = shamblerFootstepEventAt(position, (x, y, z) => {
+        const block = engine.world.getBlock(x, y, z);
+        return registry.blocks[block]?.id ?? 'unknown';
+      });
+      playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
+    },
     onDeath: (zombie) => {
       const table = zombie.type.loot;
       if (!table) {
@@ -181,7 +257,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     id: 'zombies',
     rate: 20,
     tick: (dt, time) => {
-      zombieSystem?.tick(dt);
+      zombieSystem?.tick(dt, time);
       lastZombieStep = time;
     },
   });
@@ -194,7 +270,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
-    tick: (dt) => {
+    tick: (dt, time) => {
       if (!streamer.isReady(body.pos[0], body.pos[2])) {
         return;
       }
@@ -210,6 +286,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         pace: paceFactor(inventory.carriedWeight(), handling),
       };
       if (debugTools?.noclip) {
+        footstepClock = initialFootstepClock();
+        airbornePeakY = undefined;
         debugTools.stepNoclip({
           body,
           scale,
@@ -221,9 +299,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         });
         return;
       }
+      const wasGrounded = body.onGround;
+      const previousPosition: Vec3 = [...body.pos];
+      const jumpStarted = pacedIntent.jump && wasGrounded;
       steer(body, scale, input.yaw, pacedIntent);
+      if (jumpStarted) {
+        playPlayerSound('player_strain', time);
+      }
       const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
       stepBody(body, dt, engine.isSolid, { ...physics, obstacles: zombieBodies });
+      updatePlayerSounds(wasGrounded, previousPosition, time);
     },
   });
 
@@ -251,6 +336,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     .filter(Boolean)
     .join('\n');
   mountCredits({ about: $('about'), box: $('credits'), show: $('show-credits') }, credits.manifest);
+  renderAudioOptions($('audio-options'), audio.settings, (category, value) => audio.setVolume(category, value));
 
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
@@ -330,9 +416,15 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const toggleDoor = (entity: BlockEntity) => {
     const closing = entity.open;
     const time = entities.defOf(entity).door?.handling ?? 0;
+    const center: Vec3 = [
+      entity.pos[0] + entity.size[0] / 2,
+      entity.pos[1] + entity.size[1] / 2,
+      entity.pos[2] + entity.size[2] / 2,
+    ];
     queue.enqueueAction(`${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, (): string | undefined => {
       if (!closing) {
         entities.setOpen(entity, true);
+        playWorldSound('door_open', center);
         return;
       }
       const blocker = entities.closeDoor(
@@ -340,7 +432,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         body,
         [...zombieStore.entries()].map(([, zombie]) => zombie.body),
       );
-      return blocker ? DOOR_CLOSE_MESSAGES[blocker] : undefined;
+      if (blocker) {
+        playWorldSound('door_blocked_close', center);
+        return DOOR_CLOSE_MESSAGES[blocker];
+      }
+      playWorldSound('door_close', center);
+      return undefined;
     });
   };
 
@@ -686,11 +783,18 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
     playKeys(e.code);
   });
-  globalThis.addEventListener('wheel', (e) => {
-    if (input.locked && !input.menuPointer) {
-      debugTools?.wheel(e.deltaY);
-    }
-  });
+  globalThis.addEventListener(
+    'wheel',
+    (e) => {
+      if (input.locked && mainMenuOpen) {
+        $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
+        e.preventDefault();
+      } else if (input.locked && !input.menuPointer) {
+        debugTools?.wheel(e.deltaY);
+      }
+    },
+    { passive: false },
+  );
 
   const lookDir = (): Vec3 => {
     const d = new Vector3(0, 0, -1).applyEuler(camera.rotation);
@@ -863,7 +967,29 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       pending: streamer.pending,
       holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
       zombies: zombieStore.size,
+      sounds: audio.heardSounds,
     });
+  };
+
+  const stepSimulationFrame = (dt: number): void => {
+    if (rest) {
+      rest.frame(dt);
+    } else {
+      sim.frame(dt);
+    }
+    for (const event of audioEvents.read()) {
+      if (event.kind === 'damage') {
+        playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+      }
+    }
+  };
+
+  const renderHandlingFrame = (): void => {
+    if (screen.isOpen || !hudVisibility(hudOptions).handling) {
+      handlingBox.hidden = true;
+      return;
+    }
+    renderHandling(handlingBox, queue);
   };
 
   const frame = (now: number) => {
@@ -874,11 +1000,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = !overlay.hidden; // the pause card is up
-    if (rest) {
-      rest.frame(dt);
-    } else {
-      sim.frame(dt);
-    }
+    stepSimulationFrame(dt);
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
@@ -908,6 +1030,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const [ex, ey, ez] = eye();
     camera.position.set(ex * s, ey * s + cameraOffset, ez * s);
     updateVisualFeedback(dt);
+    audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     updateGameCursor();
 
     hud.textContent = hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '');
@@ -922,21 +1045,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     inventoryStats.textContent = needsText();
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
-    if (screen.isOpen || !hudVisibility(hudOptions).handling) {
-      handlingBox.hidden = true;
-    } else {
-      renderHandling(handlingBox, queue);
-    }
+    renderHandlingFrame();
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     held.update(camera);
     flashlight.update(registry, survival.lit, held, camera);
     renderer.render(scene, camera);
     held.render(renderer, camera, engine.sky);
-    if (sim.dead) {
-      die(sim.dead);
-      return;
-    }
-    requestAnimationFrame(frame);
+    finishFrame();
   };
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
@@ -953,6 +1068,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       searched: [...entities.all].filter((e) => e.searched).length,
     };
     showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
+  };
+  const finishFrame = (): void => {
+    if (sim.dead) {
+      die(sim.dead);
+    } else {
+      requestAnimationFrame(frame);
+    }
   };
   requestAnimationFrame(frame);
 };

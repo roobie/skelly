@@ -30,6 +30,30 @@ const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
   <span>shamblers ${readout.zombies}</span>
 `;
 
+const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
+  <section class="debug-sound-log" aria-label="Recent sounds actually played">
+    <strong>Recent sounds · newest first</strong>
+    <ol>
+      ${
+        readout.sounds.length > 0
+          ? [...readout.sounds].reverse().map(
+              (sound) => html`
+              <li data-sound-event=${sound.event}>
+                <code>${sound.event}</code> · <code>${sound.file}</code>
+                ${sound.sourceLabel ? html` · ${sound.sourceLabel}` : ''}<br />
+                ${sound.distanceMetres.toFixed(1)} m · ${sound.wallRuns} walls ·
+                LP ${sound.lowpassHz === null ? '—' : `${Math.round(sound.lowpassHz)} Hz`} ·
+                gain ${sound.gain.toFixed(3)} ·
+                ${sound.emittedAsNoise ? `noise ${sound.noiseRadiusMetres} m` : 'not noise'}
+              </li>
+            `,
+            )
+          : html`<li class="debug-sound-empty">No sounds played yet.</li>`
+      }
+    </ol>
+  </section>
+`;
+
 const panelTemplate = ({
   open,
   actions,
@@ -68,6 +92,7 @@ const panelTemplate = ({
       `,
       )}
     </div>
+      <div id="debug-sound-log-root"></div>
       <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote.</p>
     </section>
     <div id="hotbar" hidden></div>
@@ -85,6 +110,7 @@ const emptyReadout: DebugReadout = {
   pending: 0,
   holes: 0,
   zombies: 0,
+  sounds: [],
 };
 
 interface ActionContext {
@@ -240,6 +266,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
       render(readoutTemplate(readout), root);
+    }
+    const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');
+    if (soundRoot) {
+      render(soundLogTemplate(readout), soundRoot);
     }
   }
   function changeShamblerCount(count: number): void {

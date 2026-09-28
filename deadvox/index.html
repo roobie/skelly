@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>deadvox</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="stylesheet" href="./src/ui/style.css" />
   </head>
   <body>
@@ -37,18 +38,19 @@
             <dt>Tab</dt><dd>Inventory: drag items between grids, R rotates</dd>
             <dt>1–5</dt><dd>Quickbar: take into your hands; again to use it (eat, drink, switch a light)</dd>
             <dt>X</dt><dd>Cancel what you're handling</dd>
-            <dt data-key-binding="mainMenu"></dt><dd>Main menu and HUD settings</dd>
+            <dt data-key-binding="mainMenu"></dt><dd>Main menu, HUD and audio settings</dd>
             <dt>Escape</dt><dd>Release the mouse (browser control)</dd>
           </dl>
           <p class="go" id="go">Click to play</p>
           <div id="hud-options"></div>
+          <div id="audio-options"></div>
           <p class="scale">
             View distance: <a href="?radius=64">64 m</a> ·
             <a href="?radius=96">96 m (default)</a> ·
             <a href="?radius=128">128 m</a>.
             Slower hardware: try 64 m. <a href="?bench=1">Run the benchmark</a> (about 3 minutes)
           </p>
-          <p class="scale"><a href="#credits" id="show-credits">Credits</a></p>
+          <p class="scale"><a href="#credits" id="show-credits">Credits</a> · <a href="./sounds.html" target="_blank" rel="noreferrer">Audio listening sheet</a></p>
         </div>
         <div id="credits" hidden></div>
       </div>
