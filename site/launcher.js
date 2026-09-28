@@ -194,6 +194,7 @@ const gungenStatus = byId('gungen-status');
 const gungenTemplate = byId('gungen-template');
 const gungenFixture = byId('gungen-fixture');
 const gungenSeed = gungenForm.elements.namedItem('seed');
+const gungenSet = byId('gungen-set');
 const gungenTemplateFields = byId('gungen-template-fields');
 const gungenFixtureFields = byId('gungen-fixture-fields');
 
@@ -208,6 +209,8 @@ const makeGungenUrl = () => {
     params.set('template', gungenTemplate.value);
     setUnlessDefault(params, 'seed', gungenSeed.value, '0');
   }
+  // The viewer applies overrides in either mode (paramPanel.ts).
+  setUnlessDefault(params, 'set', gungenSet.value.trim(), '');
   return url;
 };
 
