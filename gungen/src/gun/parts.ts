@@ -192,7 +192,7 @@ export const LOWER_LAYOUTS = {
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
 const LOWER_TRIGGER_X = { conventional: -10.75, bullpup: 5, trigger: -11.5, ak: -10.75, ar: -10.75 } as const;
-const LOWER_GRIP_X = { conventional: -12.75, bullpup: 3, trigger: -14, ak: -12.75, ar: -12.75 } as const;
+const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
 const AK_GAS_CYLINDER_Y = 2;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -637,8 +637,8 @@ export const lower: PartFamily = {
     const conventionalWellX = MAGAZINE_WELL_CENTER_X + (orientation.kind === 'tilt' ? 0.25 : 0);
     const conventionalWell = well(conventionalWellX);
     const recessedConventional = params.layout === 'conventional' && params.magazineWell === 'recessed';
-    const conventionalGripX = LOWER_GRIP_X.conventional;
-    const conventionalTriggerX = LOWER_TRIGGER_X.conventional;
+    const conventionalGripX = recessedConventional ? -12.75 : LOWER_GRIP_X.conventional;
+    const conventionalTriggerX = recessedConventional ? -10.5 : LOWER_TRIGGER_X.conventional;
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
     const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
       const halfDepth = MAGAZINE_WELL_DEPTH / 2;
