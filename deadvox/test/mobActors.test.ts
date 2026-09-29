@@ -5,9 +5,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { IDENTITY_M } from '@mobgen/core/math.ts';
+import { IDENTITY_M, mulMV, quatToMat3 } from '@mobgen/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
 import { ATTACK_CLIPS } from '@mobgen/mob/attack.ts';
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
@@ -31,6 +32,19 @@ import {
 } from '../src/render/mobActors.ts';
 
 const LUNGE_GRAB_HIT_TIME = ATTACK_CLIPS.LUNGE_GRAB!.hitTime;
+interface TestDebris {
+  elapsed: number;
+  groundedAt: number | undefined;
+  originOffsetY: number;
+  body: {
+    asleep: boolean;
+    center: Vec3;
+    corners: readonly Vec3[];
+    orientation: readonly [number, number, number, number];
+  };
+}
+const debrisEntries = (renderer: MobActorMeshes): Map<string, TestDebris> =>
+  (renderer as unknown as { debris: Map<string, TestDebris> }).debris;
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -390,6 +404,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('allocates a debris slot on zombieSevered and frees it after its lifetime', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
     try {
+      renderer.setWorld((_x, y, _z) => y === -1, 0.5);
       const store = new MapEntityStore<Zombie>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
@@ -398,17 +413,87 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.zombieSevered(id, 'hand.L');
       expect(renderer.debrisCountFor(id)).toBe(1);
 
-      // A single giant step only gets it to "grounded this frame" (elapsed already exceeds the flight
-      // safety net, so it settles immediately rather than bouncing) — freeing is checked against elapsed
-      // *at the top* of the next call, so a second big step is what actually clears the lie + sink budget.
-      renderer.sync(store, 20, 1);
-      renderer.sync(store, 20, 1);
+      // Advance ordinary-sized frames until the body lands, lies for CORPSE_LIE_S, sinks and frees its slot.
+      let observedSleep = false;
+      for (let frame = 0; frame < 180; frame++) {
+        renderer.sync(store, 0.1, 1);
+        const entries = debrisEntries(renderer);
+        for (const debris of entries.values()) {
+          if (!debris.body.asleep || debris.groundedAt === undefined) {
+            continue;
+          }
+          observedSleep = true;
+          if (debris.elapsed < debris.groundedAt + 8) {
+            const bodyRotation = quatToMat3(debris.body.orientation);
+            const lowest =
+              debris.body.center[1] + Math.min(...debris.body.corners.map((corner) => mulMV(bodyRotation, corner)[1]));
+            expect(lowest).toBeGreaterThanOrEqual(-0.01);
+          }
+        }
+      }
+      expect(observedSleep).toBe(true);
       expect(renderer.debrisCountFor(id)).toBe(0);
     } finally {
       renderer.dispose();
     }
   });
 
+  it('rests debris on the feet-height fallback plane when no world is supplied', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      renderer.zombieSevered(id, 'hand.L', undefined, zombie);
+      for (let frame = 0; frame < 90; frame++) {
+        renderer.sync(store, 0.1, 1);
+      }
+      const entries = debrisEntries(renderer);
+      expect(entries.size).toBe(1);
+      const debris = [...entries.values()][0]!;
+      expect(debris.body.asleep).toBe(true);
+      const bodyRotation = quatToMat3(debris.body.orientation);
+      const lowest =
+        debris.body.center[1] +
+        debris.originOffsetY +
+        Math.min(...debris.body.corners.map((corner) => mulMV(bodyRotation, corner)[1]));
+      expect(lowest).toBeGreaterThanOrEqual(-0.01);
+    } finally {
+      renderer.dispose();
+    }
+  });
+  it('preserves every carried bone world transform at the instant debris is created', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([2, 0, -3], [1, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+      const realized = realize(generateValid(template, 1)!.genome);
+      const boneIds = [...severedBoneSet(realized.body.bones, ['forearm.L'])];
+      const before = new Map(boneIds.map((bone) => [bone, renderer.boneMatrix(id, bone)!]));
+      renderer.zombieSevered(id, 'forearm.L', undefined, zombie);
+      renderer.sync(store, 0, 1); // packs without advancing the rigid body
+      for (const [bone, matrix] of before) {
+        const debrisMatrix = renderer.debrisBoneMatrix(id, 'forearm.L', bone);
+        expect(debrisMatrix).toBeDefined();
+        if (!debrisMatrix) {
+          continue;
+        }
+        for (const index of [3, 7, 11]) {
+          expect(Math.abs(debrisMatrix[index]! - matrix[index]!)).toBeLessThan(0.001);
+        }
+        const rotationIndices = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+        const rotationDot = rotationIndices.reduce((sum, index) => sum + matrix[index]! * debrisMatrix[index]!, 0);
+        const angle = Math.acos(Math.max(-1, Math.min(1, (rotationDot - 1) / 2))) * (180 / Math.PI);
+        expect(angle).toBeLessThanOrEqual(0.5);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
   it('does nothing for zombieSevered on an untracked id (over capacity)', () => {
     const renderer = new MobActorMeshes(0.5, 1, { poolSize: 1 }); // capacity 1: a 2nd zombie always overflows
     try {

@@ -104,7 +104,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
     zombieEffects: {
-      onSever: (id, _zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit),
+      onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
     },
   });
@@ -157,6 +157,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   // frame, sync()'s own prune pass never mistakes a just-died zombie for a plain vanish (see
   // mobActors.ts's own doc comment).
   const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
+  zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
 
   // ---- UI ----
