@@ -1817,7 +1817,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "trigger",
+          "layout": "pump",
         },
       },
       "receiver": {
@@ -1883,7 +1883,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "trigger",
+          "layout": "pump",
         },
       },
       "receiver": {
@@ -1949,7 +1949,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "trigger",
+          "layout": "pump",
         },
       },
       "receiver": {

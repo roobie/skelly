@@ -259,13 +259,11 @@ export const pumpShotgun: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'pump', feed: 'tube', bore: 'L' } },
-    { id: 'lower', family: 'lower', params: { layout: 'trigger' } },
+    { id: 'lower', family: 'lower', params: { layout: 'pump' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     { id: 'tube', family: 'tube-magazine' },
     { id: 'forend', family: 'forend' },
     { id: 'stock', family: 'stock', params: { length: SML, style: 'sporting' } },
-    // Some pump guns add a pistol grip to the trigger lower.
-    { id: 'grip', family: 'grip', params: { length: ['S', 'M'] }, chance: 0.3 },
     { id: 'sight', family: 'sight', chance: 0.3 },
   ],
   connections: [
@@ -275,7 +273,6 @@ export const pumpShotgun: Template = {
     { from: 'tube.cap', to: 'barrel.lug' },
     { from: 'tube.forend', to: 'forend.rear' },
     { from: 'receiver.stock', to: 'stock.front' },
-    { from: 'lower.grip', to: 'grip.top' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };

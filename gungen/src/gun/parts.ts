@@ -189,10 +189,18 @@ export const LOWER_LAYOUTS = {
   conventional: { tiltedMagazineProfiles: ['standard'] },
   bullpup: { tiltedMagazineProfiles: [] },
   trigger: { tiltedMagazineProfiles: [] },
+  pump: { tiltedMagazineProfiles: [] },
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
-const LOWER_TRIGGER_X = { conventional: -10.75, bullpup: 5, trigger: -11.5, ak: -10.75, ar: -10.75 } as const;
+const LOWER_TRIGGER_X = {
+  conventional: -10.75,
+  bullpup: 5,
+  trigger: -11.5,
+  pump: -13,
+  ak: -10.75,
+  ar: -10.75,
+} as const;
 const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
 const AK_GAS_CYLINDER_Y = 2;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
@@ -711,7 +719,9 @@ export const lower: PartFamily = {
         ? []
         : triggerGuardSolids(
             triggerFinger,
-            lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
+            layout === 'pump'
+              ? undefined
+              : lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
             LOWER_TRIGGER_GUARD,
           );
 
@@ -781,6 +791,14 @@ export const lower: PartFamily = {
           family: 'lower',
           solids: [solid('frame', [-16, -1.5, -1.5], [-9, 0, 1.5]), ...triggerGuards],
           ports: [top, grip(LOWER_GRIP_X.trigger)],
+          keepOuts: [triggerFinger],
+          axes: [],
+        };
+      case 'pump':
+        return {
+          family: 'lower',
+          solids: [solid('frame', [-16, -1.5, -1.5], [-9, 0, 1.5]), ...triggerGuards],
+          ports: [top],
           keepOuts: [triggerFinger],
           axes: [],
         };
