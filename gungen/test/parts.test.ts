@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRID } from '../src/core/conventions.ts';
+import { validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -263,6 +264,45 @@ describe('part library', () => {
       }
     });
   }
+});
+
+describe('tapered stock profile', () => {
+  it('widens from wrist to butt with a level comb and a downward-sloping belly', () => {
+    const tapered = FAMILIES.stock!.build({ length: 'L', style: 'tapered' });
+    const profiles = tapered.solids.filter((solid) => solid.kind === 'extruded-polygon');
+    expect(profiles.length).toBeGreaterThan(0);
+    for (const solid of profiles) {
+      if (solid.kind === 'extruded-polygon') {
+        expect(validateExtrudedPolygon(solid.profile, solid.z)).toBeUndefined();
+      }
+    }
+
+    const vertices = profiles.flatMap((solid) => (solid.kind === 'extruded-polygon' ? solid.profile : []));
+    const buttToeX = Math.min(...vertices.map(([x]) => x));
+    const buttTopX = buttToeX + 0.25;
+    const wristX = Math.max(...vertices.map(([x]) => x));
+    const heightAt = (x: number) => {
+      const ys = vertices.filter(([vx]) => Math.abs(vx - x) < 1e-6).map(([, y]) => y);
+      return Math.max(...ys) - Math.min(...ys);
+    };
+    const extremeAt = (x: number, direction: 'min' | 'max') => {
+      const ys = vertices.filter(([vx]) => Math.abs(vx - x) < 1e-6).map(([, y]) => y);
+      return direction === 'min' ? Math.min(...ys) : Math.max(...ys);
+    };
+    const buttHeight = extremeAt(buttTopX, 'max') - extremeAt(buttToeX, 'min');
+    const combAngle =
+      (Math.atan2(Math.abs(extremeAt(buttTopX, 'max') - extremeAt(wristX, 'max')), Math.abs(buttTopX - wristX)) * 180) /
+      Math.PI;
+    const bellyAngle =
+      (Math.atan2(Math.abs(extremeAt(buttToeX, 'min') - extremeAt(wristX, 'min')), Math.abs(buttToeX - wristX)) * 180) /
+      Math.PI;
+
+    expect(buttHeight).toBeGreaterThanOrEqual(heightAt(wristX) * 1.3);
+    expect(extremeAt(buttTopX, 'max')).toBeLessThan(extremeAt(wristX, 'max'));
+    expect(combAngle).toBeLessThanOrEqual(5);
+    expect(extremeAt(buttToeX, 'min')).toBeLessThan(extremeAt(wristX, 'min'));
+    expect(bellyAngle).toBeGreaterThanOrEqual(10);
+  });
 });
 
 describe('pump shotgun tube and barrel contact', () => {

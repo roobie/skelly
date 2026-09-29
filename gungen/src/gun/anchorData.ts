@@ -67,7 +67,7 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
         : { forward: X, up: Y };
     }),
   },
-  // Only a stock the rules count as a firing grip ("sporting") has a hold: its wrist.
+  // Only a stock style tagged as a firing grip has a hold: its wrist.
   stock: {
     holdRank: 'firing-grip-stock',
     anchors: (_params, part) => {

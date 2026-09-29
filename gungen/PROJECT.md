@@ -1012,22 +1012,20 @@ acceptance:
 - a thumbhole stock family plus an AWM-type design (gungen.6). The thumbhole
   can be built from several convex solids;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
-  deferred). Every stock is boxes today (`src/gun/parts.ts#stock`). The
-  separate grip is one five-point side profile extruded to a constant width;
-  grips with a magazine well, and the pistol's built-in grip, are made of
-  several solids. A concave silhouette also needs several convex solids. BR wants
-  the taper in side view, which the existing extruded-profile solid can
-  express:
-  - **stock** (reference `.agent-mail/scratch/br-ref-stock-taper.png`, an
-    870-style wood stock): a narrow wrist at the receiver that widens to a
+  split into gungen.7 stock and deferred grip). The stock family now offers a
+  `tapered` style, and the pump-shotgun opts in; the other existing stock
+  styles stay unchanged. It is a constant-width side profile using the current
+  extruded-polygon solid:
+  - **stock — done** (reference `.agent-mail/scratch/br-ref-stock-taper.png`,
+    an 870-style wood stock): a narrow wrist at the receiver that widens to a
     tall butt; the comb line drops toward the butt while the belly line runs
     down to the toe;
-  - **pistol grip** (reference `.agent-mail/scratch/br-ref-grip-slant.png`,
+  - **pistol grip — deferred** (reference `.agent-mail/scratch/br-ref-grip-slant.png`,
     AR-style): raked, with slanted front and back faces rather than a
     constant-width slab.
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
-  `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower at the wrist from above) would
-  need a new convex solid kind and is not asked for;
+  `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower
+  at the wrist from above) would need a new convex solid kind and is not asked for;
 - visible action details (BR, 2026-09-28; deferred): charging handles,
   ejection ports, bolt handles, "and stuff like that". Receivers already
   declare keep-outs for ejection, the charging handle (side or rear-top) and

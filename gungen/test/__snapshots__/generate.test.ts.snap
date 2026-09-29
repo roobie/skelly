@@ -1832,7 +1832,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "S",
-          "style": "sporting",
+          "style": "tapered",
         },
       },
       "tube": {
@@ -1898,7 +1898,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "sporting",
+          "style": "tapered",
         },
       },
       "tube": {
@@ -1964,7 +1964,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "S",
-          "style": "sporting",
+          "style": "tapered",
         },
       },
       "tube": {

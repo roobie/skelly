@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveAnchors } from '../src/core/anchors.ts';
 import type { AnchorFrame } from '../src/core/design.ts';
@@ -8,6 +10,7 @@ import type { Assembly, PartDef, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, type GunAnchorDeclarations, selectGunAnchors } from '../src/gun/anchors.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { loadFixture, loadFixtures } from './helpers.ts';
@@ -138,6 +141,34 @@ describe('hold selection', () => {
     const local = GUN_ANCHORS.frame!.anchors(paramsOf(resolved, frameId), def).hold!;
     expect(r.hold.position).toEqual(applyPoint(resolved.placed.get(frameId)!, local.position));
     expect(GUN_ANCHORS.frame!.holdRank).toBe('grip');
+  });
+
+  it('pump-shotgun design resolves exactly one hold inside the tapered stock wrist', () => {
+    const text = readFileSync(join(import.meta.dirname, '..', 'designs', 'archetype-pump-shotgun.json'), 'utf8');
+    const loaded = loadGunDesign(text);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) {
+      throw new Error(loaded.error.message);
+    }
+
+    const {
+      design: { assembly },
+    } = loaded;
+    const [stockId, stock] = partsOf(assembly, 'stock')[0]!;
+    expect(stock.params?.style).toBe('tapered');
+    const resolved = resolve(assembly, gunDomain);
+    const holds = [...resolved.defs.entries()].flatMap(([id, partDef]) => {
+      const anchors = GUN_ANCHORS[assembly.parts[id]!.family];
+      return anchors?.anchors(paramsOf(resolved, id), partDef).hold ? [id] : [];
+    });
+    expect(holds).toEqual([stockId]);
+
+    const stockDef = resolved.defs.get(stockId)!;
+    const wrist = stockDef.solids.find((solid) => solid.id === 'wrist')!;
+    const localHold = GUN_ANCHORS.stock!.anchors(paramsOf(resolved, stockId), stockDef).hold!;
+    expect(wrist).toBeDefined();
+    expect(insideSolid(wrist, localHold.position)).toBe(true);
+    expect(selected(assembly).hold.position).toEqual(applyPoint(resolved.placed.get(stockId)!, localHold.position));
   });
 
   it('holds a stock wrist when there is no grip', () => {

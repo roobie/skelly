@@ -1673,10 +1673,11 @@ export const magazine: PartFamily = {
  * straight: comb in line with the bore; needs a separate pistol grip.
  * sporting: comb dropped below the bore, with a wrist to hold. It clears a
  * bolt's travel and counts as a firing grip.
+ * tapered: constant-width side profile, with a narrow wrist and taller butt.
  */
 export const stock: PartFamily = {
   name: 'stock',
-  params: { length: size, style: choice('straight', 'sporting', 'dropped') },
+  params: { length: size, style: choice('straight', 'sporting', 'dropped', 'tapered') },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
     const port: PortDef = {
@@ -1695,6 +1696,39 @@ export const stock: PartFamily = {
           solid('wrist', [-6, -5, -1.5], [0, -1.5, 1.5]),
           solid('body', [-len, -6, -1.5], [-6, -1.5, 1.5]),
           solid('butt', [-len - 1, -8, -1.75], [-len, 0, 1.75]),
+        ],
+        ports: [port],
+        keepOuts: [],
+        axes: [],
+        tags: [FIRING_GRIP],
+      };
+    }
+    if (params.style === 'tapered') {
+      const combAtSeam = -1.5 - 0.5 * (6 / len);
+      const bellyAtSeam = -4 - 4 * (6 / len);
+      return {
+        family: 'stock',
+        solids: [
+          extrudedPolygon(
+            'wrist',
+            [
+              [-6, bellyAtSeam],
+              [0, -4],
+              [0, -1.5],
+              [-6, combAtSeam],
+            ],
+            [-1.5, 1.5],
+          ),
+          extrudedPolygon(
+            'body',
+            [
+              [-len, -8],
+              [-6, bellyAtSeam],
+              [-6, combAtSeam],
+              [-len + 0.25, -2],
+            ],
+            [-1.5, 1.5],
+          ),
         ],
         ports: [port],
         keepOuts: [],
