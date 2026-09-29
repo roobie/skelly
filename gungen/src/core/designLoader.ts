@@ -323,11 +323,14 @@ const feasibilityIssues = (assembly: Assembly, domain: Domain): DesignIssue[] =>
     return toDesignIssues(validate(assembly, domain).issues);
   }
   const issues = toDesignIssues(resolved.issues);
-  if (unplaced.length > 0) {
+  const unreported = unplaced.filter((id) => !resolved.issues.some((issue) => issue.parts.includes(id)));
+  if (unreported.length > 0) {
+    // Retain the loader's disconnected-part message where a required-port or
+    // other structure issue already takes precedence inside resolve().
     issues.push({
       code: 'infeasible',
-      message: `[structure] ${unplaced.join(', ')} ${unplaced.length === 1 ? 'is' : 'are'} not connected to the root`,
-      parts: unplaced,
+      message: `[structure] ${unreported.join(', ')} ${unreported.length === 1 ? 'is' : 'are'} not connected to the root`,
+      parts: unreported,
     });
   }
   return issues;

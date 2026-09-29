@@ -97,6 +97,8 @@ export interface ParamSource {
 export interface ParamSpec {
   readonly values: readonly string[];
   readonly default: string;
+  /** Values that exist only for broken fixtures, which a design must not choose. */
+  readonly fault?: readonly string[];
   /**
    * When the assembly doesn't set this param, take it from a neighbour: the
    * first source whose port is connected wins. Otherwise use the default.
