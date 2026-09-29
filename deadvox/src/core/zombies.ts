@@ -112,6 +112,7 @@ export interface ZombieSystemOptions {
   isSolid: SolidAt;
   blockSize: number;
   physics: PhysicsParams;
+  /** Take-off speed in metres per second, like `PLAYER.jump`; the system divides by `blockSize` itself. */
   jumpSpeed: number;
   player: () => PlayerSense;
   hour: () => number;

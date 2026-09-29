@@ -3,27 +3,21 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
-import { hourOfDay } from '../src/core/clock.ts';
+import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
-import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
+import { restorePlayerAudioState, type SaveSnapshot, type snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { createPlayerBody, physicsFor, restorePlayer, snapshotPlayer } from '../src/game/player.ts';
-import { Quickbar } from '../src/game/quickbar.ts';
-import { RestController } from '../src/game/rest.ts';
-import { Survival } from '../src/game/survival.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -51,7 +45,9 @@ const blockName = (id: number): string => {
 
 type Runtime = ReturnType<typeof createRuntime>;
 
-// The scenario factory wires the same deterministic hamlet actors for fresh and restored runs.
+// The scenario factory builds the same session the game does (src/game/session.ts) and only
+// supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
+// restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
 const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const hamlet = new Hamlet(seed, registry, scale);
@@ -81,104 +77,65 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const editChunk = [...world.chunks.values()].find((chunk) => chunk.cx === editCx && chunk.cz === editCz)!;
 
   const [sx, sy, sz] = hamlet.spawn.pos.map((metres) => metres / scale.blockSize);
-  const player = restorePlayer(
-    snapshot?.character.player ??
-      snapshotPlayer(
-        { ...createPlayerBody(scale, sx!, sy! + 400, sz!), vel: [0, -1, 0] },
-        hamlet.spawn.yaw,
-        0.03,
-        false,
-      ),
-  );
-  let rest: RestController | undefined;
-  const sim = new Simulation({ seed, unsafe: () => undefined, restRate: () => rest?.action?.rate });
-  const inventory = snapshot ? Inventory.restoreState(registry, snapshot.character.inventory) : new Inventory(registry);
-  const handling = new HandlingQueue(inventory);
-  const { entities } = inventory;
-  const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
-  const physics = physicsFor(scale);
-  const restoredPlayerAudio = snapshot ? restorePlayerAudioState(snapshot.character.playerAudio) : undefined;
-  const playerAudio = {
-    vocalNoiseId: restoredPlayerAudio?.vocalNoiseId ?? 0,
-    vocalNoise: restoredPlayerAudio?.vocalNoise ?? null,
-  };
+  // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
+  const awayFromShamblers = x1 - sx! + 200;
+  // Where the player is looking: the game reads this from its input, here it is plain state.
+  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false };
   const audioPicker = new SoundPicker(seed, registry.sounds);
-  if (restoredPlayerAudio) {
-    audioPicker.restoreState(restoredPlayerAudio.soundPicker);
-  }
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
-  const emitWorldSound = (
-    event: import('../src/core/soundEvents.ts').SoundEventId,
-    position: [number, number, number],
-  ) => {
-    const pick = audioPicker.pick(event, sim.time);
-    if (pick) {
-      heardSounds.push({ event, file: pick.file, time: sim.time, position: [...position] });
-    }
-  };
-  const emitPlayerSound = (event: import('../src/core/soundEvents.ts').SoundEventId, time = sim.time): boolean => {
-    const pick = audioPicker.pick(event, time);
-    if (!pick) {
-      return false;
-    }
-    const position = [...player.body.pos] as [number, number, number];
-    heardSounds.push({ event, file: pick.file, time, position });
-    const sound = registry.sounds.get(event);
-    if (sound?.noise.enabled) {
-      playerAudio.vocalNoiseId += 1;
-      playerAudio.vocalNoise = {
-        id: playerAudio.vocalNoiseId,
-        pos: position,
-        radiusMetres: sound.noise.radiusMetres,
-        expiresAt: time + 0.5,
-      };
-    }
-    return true;
-  };
-  const zombies = new ZombieSystem({
+  const session = createSession({
+    registry,
+    world,
+    isSolid: (x, y, z) => world.getBlock(x, y, z) !== 0,
+    scale,
     seed,
-    isSolid,
-    blockSize: scale.blockSize,
-    physics,
-    jumpSpeed: 7.9 / scale.blockSize,
-    player: () => ({
-      pos: player.body.pos,
-      body: player.body,
-      facing: [Math.sin(player.yaw), 0, -Math.cos(player.yaw)],
-      movement: 'still',
-      vocalNoise:
-        playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
-      lit: false,
-      lightSeenFrom: 40,
-    }),
-    hour: () => hourOfDay(sim.calendar),
-    hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
-    onSound: emitWorldSound,
-  });
-  sim.scheduler.register({ id: 'player-physics', rate: 60, tick: (dt) => stepBody(player.body, dt, isSolid, physics) });
-  sim.scheduler.register({ id: 'zombies', rate: 20, tick: (dt, time) => zombies.tick(dt, time) });
-  const survival = new Survival(sim, inventory, handling, {
-    feet: () => ({ kind: 'pile', pos: player.body.pos.map(Math.floor) as [number, number, number] }),
+    start: defaultClock.start,
+    spawn: [sx! + awayFromShamblers, sy! + 400, sz!],
+    ready: () => true,
+    controls: {
+      active: () => false,
+      intent: () => IDLE,
+      yaw: () => view.yaw,
+      pitch: () => view.pitch,
+      walking: () => view.walk,
+      descending: () => false,
+    },
+    audio: {
+      play: (event, position, time) => {
+        const pick = audioPicker.pick(event, time);
+        if (!pick) {
+          return false;
+        }
+        heardSounds.push({ event, file: pick.file, time, position: [...position] });
+        return true;
+      },
+      snapshotState: () => audioPicker.snapshotState(),
+      restoreState: (state) => audioPicker.restoreState(state),
+    },
     notice: () => undefined,
+    ...(snapshot ? { restore: snapshot } : {}),
   });
-  rest = new RestController(sim, { bedQuality: () => 0.5, notice: () => undefined });
-  const quickbar = new Quickbar();
-  const spawner = new ZombieSpawner();
+  const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
+  if (session.restoredLook) {
+    Object.assign(view, session.restoredLook);
+  }
+  const player = {
+    body: session.body,
+    get yaw() {
+      return view.yaw;
+    },
+    get pitch() {
+      return view.pitch;
+    },
+    get walk() {
+      return view.walk;
+    },
+  };
 
-  if (snapshot) {
-    world.restoreDiffs(snapshot.world.diffs, (id) => blockId(id));
-    zombies.restoreState(snapshot.world.zombies, (id) => registry.zombies.get(id));
-    spawner.restoreState(snapshot.world.spawned);
-    sim.restoreState(snapshot.character.simulation);
-    rest.restoreState(snapshot.character.rest);
-    survival.restoreState(snapshot.character.lightUid === null ? {} : { litUid: snapshot.character.lightUid });
-    quickbar.restoreState(snapshot.character.quickbar, inventory);
-  } else {
+  if (!snapshot) {
+    session.body.vel[1] = -1;
     for (const [cx, cz] of columns) {
-      for (const { spec, loot } of hamlet.furnitureIn(cx, cz)) {
-        inventory.furnish(spec, loot);
-      }
-      spawner.onColumn({ cx, cz, site: hamlet, registry, zombies });
+      session.onColumn(cx, cz, hamlet);
     }
     const backpack = inventory.create('school_backpack');
     const beans = inventory.create('canned_beans');
@@ -202,6 +159,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     world.setBlock(editCx * CHUNK + 1, editChunk.cy * CHUNK + 1, editCz * CHUNK + 1, blockId('planks'));
   }
   return {
+    session,
     hamlet,
     columns,
     world,
@@ -209,7 +167,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     player,
     inventory,
     entities,
-    handling,
+    handling: session.queue,
     zombies,
     spawner,
     rest,
@@ -218,29 +176,12 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     playerAudio,
     audioPicker,
     heardSounds,
-    emitPlayerSound,
+    emitPlayerSound: session.playPlayerSound,
   };
 };
 
 const capture = (runtime: Runtime) =>
-  snapshotSession({
-    worldId: `world-${seed}`,
-    characterId: 'character-1',
-    world: runtime.world,
-    blockContentId: blockName,
-    inventory: runtime.inventory,
-    simulation: runtime.sim,
-    player: runtime.player,
-    rest: runtime.rest,
-    survival: runtime.survival,
-    quickbar: runtime.quickbar.snapshotState(),
-    zombies: runtime.zombies,
-    spawner: runtime.spawner,
-    handling: runtime.handling,
-    vocalNoiseId: runtime.playerAudio.vocalNoiseId,
-    vocalNoise: runtime.playerAudio.vocalNoise ?? undefined,
-    audio: runtime.audioPicker,
-  });
+  runtime.session.snapshot({ worldId: `world-${seed}`, characterId: 'character-1' });
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
 const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
@@ -374,7 +315,7 @@ const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
     if (frame === interruptAt) {
       runtime.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     }
-    runtime.rest.frame(1 / 60);
+    runtime.session.frame(1 / 60);
   }
 };
 
@@ -483,6 +424,12 @@ describe('snapshot state components', () => {
   });
 });
 
+/**
+ * Blocks. Far enough that the groaner neither sees the lit flashlight (40 m) nor hears the
+ * player, so it stays idle: the real wiring reports the light and the noise to shamblers.
+ */
+const IDLE_GROANER_DISTANCE = 120;
+
 const prepareAudioContinuation = (runtime: Runtime): void => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstZombie = runtime.zombies.store.entries().next().value as
@@ -508,7 +455,7 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   runtime.playerAudio.vocalNoise.expiresAt -= 0.25;
 
   const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
-    playerPos[0] + 30,
+    playerPos[0] + IDLE_GROANER_DISTANCE,
     playerPos[1],
     playerPos[2],
   ]);
@@ -630,7 +577,7 @@ describe('hamlet save/load continuation', () => {
 
     const noCursor = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     noCursor.character.simulation.scheduler.systems = noCursor.character.simulation.scheduler.systems.filter(
-      (cursor) => cursor.id !== 'player-physics',
+      (cursor) => cursor.id !== 'player',
     );
     expect(() => createRuntime(noCursor)).toThrow('Scheduler system set does not match snapshot');
 
@@ -720,7 +667,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'sound') {
     return registry.sounds.has(id);
   }
-  return ['needs', 'player-physics', 'zombies', 'lights'].includes(id);
+  return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

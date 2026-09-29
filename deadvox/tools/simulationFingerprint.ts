@@ -53,6 +53,7 @@ export const SIMULATION_ENTRIES = [
   'src/game/config.ts',
   'src/game/play.ts',
   'src/game/quickbar.ts',
+  'src/game/session.ts',
   'src/game/worldSetup.ts',
 ] as const;
 

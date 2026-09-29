@@ -182,7 +182,10 @@ state), `src/game/player.ts` (movement/body rules), `src/game/rest.ts` and
 regeneration and overlays), `src/game/config.ts` (world creation options and
 site/seed parameters), `src/game/worldSetup.ts` (content registry, collision,
 site construction, generated world, streaming and spawn), `src/game/quickbar.ts`
-(stateful selection), and `src/game/play.ts` (gameplay wiring/actions).
+(stateful selection), `src/game/session.ts` (the DOM-free simulation wiring that the
+game and the snapshot tests share: simulation, shamblers, player, inventory, rest,
+survival, handling queue and `snapshot()`), and `src/game/play.ts` (gameplay
+wiring/actions).
 `play.ts` reaches `worldSetup.ts` at runtime for the spawn-to-body conversion,
 and reaches `src/game/aim.ts` for furniture and melee targeting independently
 of camera feedback roll. Vite recomputes the fingerprint for source create,
