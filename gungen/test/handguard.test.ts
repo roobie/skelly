@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { localSolidBounds } from '../src/core/geometry.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
@@ -38,11 +39,7 @@ describe('barrel-fitted handguards', () => {
     for (const size of ['S', 'M', 'L'] as const) {
       const reach = (layout: 'standard' | 'ak') => {
         const handguard = FAMILIES.handguard!.build({ length: size, layout, mount: 'free-float' });
-        return Math.max(
-          ...handguard.solids.map((solid) =>
-            solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
-          ),
-        );
+        return Math.max(...handguard.solids.map((solid) => localSolidBounds(solid)[1][0]));
       };
       expect(reach('standard')).toBe(expectedStandard[size]);
       expect(reach('ak')).toBe(expectedAk[size]);

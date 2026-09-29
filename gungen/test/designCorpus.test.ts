@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkDesignFiles } from '../src/cli/designCheck.ts';
-import { applyPoint, type Vec3 } from '../src/core/math.ts';
+import { applyPoint, extrusionPoint, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Solid } from '../src/core/schema.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
@@ -33,7 +33,7 @@ const localVertices = (solid: Solid): Vec3[] => {
     const [xmax, ymax, zmax] = center.map((value, axis) => value + half[axis]!);
     return [xmin!, xmax!].flatMap((x) => [ymin!, ymax!].flatMap((y) => [zmin!, zmax!].map((z) => [x, y, z] as const)));
   }
-  return solid.profile.flatMap(([x, y]) => solid.z.map((z) => [x, y, z] as const));
+  return solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
 };
 
 const roundedGeometry = (assembly: Assembly) => {

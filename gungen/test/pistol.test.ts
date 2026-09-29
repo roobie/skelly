@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import type { Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -8,11 +8,7 @@ import { loadFixture, variant } from './helpers.ts';
 const assembly = loadFixture('archetype-pistol');
 const report = validate(assembly, gunDomain);
 const maxLocalX = (solids: readonly Solid[]): number =>
-  Math.max(
-    ...solids.map((solid) =>
-      solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
-    ),
-  );
+  Math.max(...solids.map((solid) => localSolidBounds(solid)[1][0]));
 
 describe('pistol model', () => {
   it('seats the barrel inside the hollow slide without overlap and limits the crown to 1u', () => {
