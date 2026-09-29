@@ -933,18 +933,18 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.rail",
-        "slot": 1,
+        "from": "handguard.rail",
+        "slot": 6,
         "to": "sight.base",
       },
     ],
-    "description": "Generated from the "bolt-rifle" template with seed 100.",
-    "name": "bolt-rifle-100",
+    "description": "Generated from the "bolt-rifle" template with seed 101.",
+    "name": "bolt-rifle-101",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "M",
+          "length": "L",
         },
       },
       "handguard": {
@@ -956,7 +956,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
+          "layout": "thumbhole",
         },
       },
       "magazine": {
@@ -980,7 +980,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "L",
-          "style": "sporting",
+          "style": "thumbhole",
         },
       },
     },
@@ -1001,6 +1001,10 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
         "from": "lower.magazine",
         "to": "magazine.top",
       },
@@ -1009,8 +1013,8 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "handguard.rail",
-        "slot": 9,
+        "from": "receiver.rail",
+        "slot": 6,
         "to": "sight.base",
       },
     ],
@@ -1077,17 +1081,16 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
+        "from": "handguard.front",
+        "to": "barrel.clamp",
+      },
+      {
         "from": "lower.magazine",
         "to": "magazine.top",
       },
       {
         "from": "receiver.stock",
         "to": "stock.front",
-      },
-      {
-        "from": "handguard.rail",
-        "slot": 0,
-        "to": "sight.base",
       },
     ],
     "description": "Generated from the "bolt-rifle" template with seed 300.",
@@ -1096,7 +1099,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "M",
+          "length": "L",
         },
       },
       "handguard": {
@@ -1108,7 +1111,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "conventional",
+          "layout": "thumbhole",
         },
       },
       "magazine": {
@@ -1125,14 +1128,11 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
           "feed": "top",
         },
       },
-      "sight": {
-        "family": "sight",
-      },
       "stock": {
         "family": "stock",
         "params": {
-          "length": "L",
-          "style": "sporting",
+          "length": "M",
+          "style": "thumbhole",
         },
       },
     },
@@ -1391,6 +1391,239 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "style": "sporting",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
+exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 1,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "bolt-rifle-thumbhole" template with seed 100.",
+    "name": "bolt-rifle-thumbhole-100",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+          "profile": "heavy",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "barrelBore": "L",
+          "clearance": "L",
+          "length": "M",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "thumbhole",
+          "magazineWell": "recessed",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "10-round",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "bolt",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "thumbhole",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "handguard.rear",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 5,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "bolt-rifle-thumbhole" template with seed 200.",
+    "name": "bolt-rifle-thumbhole-200",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+          "profile": "heavy",
+        },
+      },
+      "handguard": {
+        "family": "handguard",
+        "params": {
+          "barrelBore": "L",
+          "clearance": "L",
+          "length": "L",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "thumbhole",
+          "magazineWell": "recessed",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "5-round",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "bolt",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "thumbhole",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+    ],
+    "description": "Generated from the "bolt-rifle-thumbhole" template with seed 300.",
+    "name": "bolt-rifle-thumbhole-300",
+    "parts": {
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+          "profile": "heavy",
+        },
+      },
+      "lower": {
+        "family": "lower",
+        "params": {
+          "layout": "thumbhole",
+          "magazineWell": "recessed",
+        },
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "5-round",
+        },
+      },
+      "receiver": {
+        "family": "receiver",
+        "params": {
+          "action": "bolt",
+          "bore": "M",
+          "feed": "box",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "stock",
+        "params": {
+          "length": "L",
+          "style": "thumbhole",
         },
       },
     },
