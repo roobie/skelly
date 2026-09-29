@@ -170,6 +170,8 @@ const nearestExit = (
   return nearest;
 };
 const cornerRadius = (body: RigidBody): number => Math.max(0, ...body.corners.map((corner) => Math.hypot(...corner)));
+const cornerSpeed = (body: RigidBody): number =>
+  Math.hypot(...body.velocity) + cornerRadius(body) * Math.hypot(...angularVelocity(body));
 const collide = (body: RigidBody, world: RigidWorld): void => {
   const b = world.blockSize;
   for (const local of body.corners) {
@@ -188,11 +190,11 @@ const collide = (body: RigidBody, world: RigidWorld): void => {
     }
   }
 };
-const limitCornerSpeed = (body: RigidBody, blockSize: number, gravity: number): void => {
-  const maxCornerSpeed = Math.max(0, blockSize * 60 - Math.abs(gravity) / 120);
-  const total = Math.hypot(...body.velocity) + cornerRadius(body) * Math.hypot(...angularVelocity(body));
-  if (total > maxCornerSpeed) {
-    const factor = maxCornerSpeed / total;
+/** Scale velocity and angular momentum only when eight inner steps cannot keep corner travel under half a block. */
+const clampCornerSpeed = (body: RigidBody, maxCornerSpeed: number): void => {
+  const speed = cornerSpeed(body);
+  if (speed > maxCornerSpeed) {
+    const factor = maxCornerSpeed / speed;
     body.velocity = scale(body.velocity, factor);
     body.angularMomentum = scale(body.angularMomentum, factor);
   }
@@ -226,10 +228,24 @@ export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, g
     throw new RangeError('blockSize must be positive');
   }
   const count = Math.min(16, Math.floor(dt * 120 + 1e-10));
+  const fixedStep = 1 / 120;
   for (let step = 0; step < count && !body.asleep; step++) {
-    if (blockSize) {
-      limitCornerSpeed(body, blockSize, gravity);
+    if (!world) {
+      substep(body, fixedStep, undefined, gravity);
+      continue;
     }
-    substep(body, 1 / 120, world, gravity);
+    const speed = cornerSpeed(body);
+    const worstCaseSpeed = speed + Math.abs(gravity) * fixedStep;
+    const needed = Math.max(1, Math.ceil((worstCaseSpeed * fixedStep) / (0.5 * blockSize!)));
+    const innerSteps = Math.min(8, needed);
+    if (needed > 8) {
+      const innerDt = fixedStep / 8;
+      const maxCornerSpeed = (0.5 * blockSize!) / innerDt - Math.abs(gravity) * innerDt;
+      clampCornerSpeed(body, maxCornerSpeed);
+    }
+    const innerDt = fixedStep / innerSteps;
+    for (let inner = 0; inner < innerSteps && !body.asleep; inner++) {
+      substep(body, innerDt, world, gravity);
+    }
   }
 };

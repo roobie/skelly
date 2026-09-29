@@ -62,27 +62,80 @@ describe('rigid body', () => {
   });
   it('keeps OBB corner displacement within half a block and sleeps after a quiet interval', () => {
     const b = body();
+    b.mass = 2;
+    b.inertiaBody = [
+      [0.1, 0, 0],
+      [0, 0.1, 0],
+      [0, 0, 0.1],
+    ];
     b.center = [0.25, 1.1, 0.25];
-    b.velocity = [80, -80, 0];
-    b.angularMomentum = [0, 10_000, 0];
-    const world = { blockSize: 0.5, isSolid: (_x: number, y: number, _z: number) => y === -1 };
+    applyImpulse(b, [0.25, 1.3, 0.35], [40, 0, 0]);
+    expect(Math.hypot(...b.angularMomentum)).toBeGreaterThan(0);
     const worldCorners = (): Vec3[] =>
       b.corners.map((corner) => {
         const rotated = rotate(b.orientation, corner);
         return [b.center[0] + rotated[0], b.center[1] + rotated[1], b.center[2] + rotated[2]];
       });
-    const before = worldCorners();
+    let previousCorners = worldCorners();
+    let maxInnerCornerTravel = 0;
+    const recordInnerPose = () => {
+      const currentCorners = worldCorners();
+      for (let i = 0; i < previousCorners.length; i++) {
+        maxInnerCornerTravel = Math.max(
+          maxInnerCornerTravel,
+          Math.hypot(...currentCorners[i]!.map((value, axis) => value - previousCorners[i]![axis]!)),
+        );
+      }
+      previousCorners = currentCorners;
+    };
+    const world = {
+      blockSize: 0.5,
+      isSolid: (_x: number, y: number, _z: number) => {
+        recordInnerPose();
+        return y === -1;
+      },
+    };
     stepRigidBody(b, 1 / 120, world);
-    const after = worldCorners();
-    for (let i = 0; i < before.length; i++) {
-      expect(Math.hypot(...after[i]!.map((v, axis) => v - before[i]![axis]!))).toBeLessThanOrEqual(0.250_001);
-    }
+    recordInnerPose();
+    expect(maxInnerCornerTravel).toBeLessThanOrEqual(0.250_001);
+    expect(b.velocity[0]).toBeCloseTo(20, 6);
     b.velocity = [0, 0, 0];
     b.angularMomentum = [0, 0, 0];
     for (let i = 0; i < 16; i++) {
       stepRigidBody(b, 1 / 60, world, 0);
     }
     expect(b.asleep).toBe(true);
+  });
+  it('caps adaptive collision splitting at eight and only clamps the remaining excess speed', () => {
+    const b = body();
+    b.corners = boxCorners(0.1);
+    b.center = [0, 10, 0];
+    b.velocity = [500, 0, 0];
+    const worldCorners = () =>
+      b.corners.map((corner) => {
+        const rotated = rotate(b.orientation, corner);
+        return [b.center[0] + rotated[0], b.center[1] + rotated[1], b.center[2] + rotated[2]] as Vec3;
+      });
+    let previousCorners = worldCorners();
+    let maxInnerCornerTravel = 0;
+    const world = {
+      blockSize: 0.5,
+      isSolid: () => {
+        const currentCorners = worldCorners();
+        for (let i = 0; i < currentCorners.length; i++) {
+          maxInnerCornerTravel = Math.max(
+            maxInnerCornerTravel,
+            Math.hypot(...currentCorners[i]!.map((value, axis) => value - previousCorners[i]![axis]!)),
+          );
+        }
+        previousCorners = currentCorners;
+        return false;
+      },
+    };
+    stepRigidBody(b, 1 / 120, world, 0);
+    expect(maxInnerCornerTravel).toBeLessThanOrEqual(0.250_001);
+    expect(b.center[0]).toBeGreaterThan(1);
+    expect(b.velocity[0]).toBeCloseTo(240, 6);
   });
   it('sleeps on a flat block floor within three seconds', () => {
     const b = body();
@@ -150,16 +203,17 @@ describe('rigid body', () => {
       expect([a.center, a.orientation, a.velocity, a.asleep]).toEqual([b.center, b.orientation, b.velocity, b.asleep]);
     }
   });
-  it('does not tunnel through a one-block floor at 15 m/s', () => {
+  it('does not tunnel through a one-block floor under a 40 N·s downward hit', () => {
     const b = body();
+    b.mass = 0.25;
     b.corners = boxCorners(0.1);
     b.center = [0.25, 2, 0.25];
-    b.velocity = [0, -15, 0];
-    const world = { blockSize: 0.5, isSolid: (_x: number, y: number, _z: number) => y === -1 };
+    applyImpulse(b, b.center, [0, -40, 0]);
+    const world = { blockSize: 0.5, isSolid: (_x: number, y: number, _z: number) => y === 0 };
     for (let i = 0; i < 120; i++) {
       stepRigidBody(b, 1 / 120, world);
       for (const local of b.corners) {
-        expect(b.center[1] + local[1]).toBeGreaterThanOrEqual(-0.51);
+        expect(b.center[1] + local[1]).toBeGreaterThanOrEqual(-1e-5);
       }
     }
   });
