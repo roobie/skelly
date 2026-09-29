@@ -635,16 +635,16 @@ assembly is already a JSON file), the validator, and the bevelled mesh module
 Current limits the plan works within:
 
 - An assembly records values only. It has no format version, no locks and no
-  prefab identity (`src/core/schema.ts:137-162`). The panel infers "set by
-  the user" by comparing against the seed (`src/viewer/paramPanel.ts:78-86`),
+  prefab identity (`src/core/schema.ts#Assembly`). The panel infers "set by
+  the user" by comparing against the seed (`src/viewer/paramPanel.ts#paramState`),
   so keeping a seed value on purpose looks the same as leaving it alone.
 - Adding or removing optional parts needs a template
-  (`src/viewer/paramPanel.ts:233`), and opening a file drops the template
-  (`src/viewer/main.ts:423-424`).
+  (`src/viewer/paramPanel.ts#setSlotPresent`), and opening a file drops the template
+  (`src/viewer/main.ts#fileInput`).
 - A mounting port is not a hand position: the pistol's grip is built into its
-  frame (`src/gun/parts.ts:1268`), and sporting stocks have no grip part.
+  frame (`src/gun/parts.ts#pistolFrame`), and sporting stocks have no grip part.
 - `npm run validate` exits 0 for an invalid file that has no `expect`
-  (`src/cli/validate.ts:33-45`), so it can't gate publishing a design.
+  (`src/cli/validate.ts#unexpected`), so it can't gate publishing a design.
 
 ### Scope
 
@@ -664,11 +664,12 @@ Current limits the plan works within:
 - **3.0a Freeze:** types and this document only, no behaviour. It releases
   lanes B and C.
 - **3.0b Implement:** parsing, anchors for every archetype, and the palette
-  migration. B and C don't wait for it.
+  migration. Done (2026-09-29, see "3.0b (implemented)"). B and C didn't
+  wait for it.
 
 Core stays free of gun data: every core function takes what it needs as
 explicit inputs, and the gun domain supplies them. The core `Domain` has no
-template registry (`src/core/schema.ts:127-133`), so functions that need a
+template registry (`src/core/schema.ts#Domain`), so functions that need a
 template take the resolved `Template`, and the export takes the anchors and
 palette as arguments.
 
@@ -710,7 +711,7 @@ palette as arguments.
   derive deadvox's `grip.turn`.
   - `hold` (the firing hand) is required; `support` and `muzzle` are optional.
   - Precedence: a separate or integrated grip's `hold` wins over a stock that
-    carries `FIRING_GRIP` (`src/gun/parts.ts:1652`). The stock's own `hold`
+    carries `FIRING_GRIP` (`src/gun/parts.ts#FIRING_GRIP`). The stock's own `hold`
     applies only when there is no grip. Equal-rank `hold` anchors are
     ambiguous, and the design cannot be published. `SelectGunAnchors` applies
     this policy before the core exporter receives `SelectedAnchors`.
@@ -805,6 +806,121 @@ Decisions where the plan left representation open:
   package adds no parser, anchor values, palette migration, suggester, or
   exporter implementation.
 
+#### 3.0b (implemented)
+
+Merged into `gungen/m3-contracts` (2026-09-29). Every 3.0a signature now has
+an implementation except the ones that belong to later packages (`Suggest`,
+`ExportGlb`).
+
+**Parsing and loading.**
+
+- `src/core/parseAssembly.ts`: `parseAssembly(value)`, `parseAssemblyJson(text)`
+  and `parseAssemblyOrThrow(text, source)` (for fixtures and tests) return
+  `{ ok: true, assembly }` or `{ ok: false, error: { path, message } }`;
+  `formatParseError` renders `path: message`. Every field is checked and the
+  result is rebuilt from the checked fields, so unknown keys are dropped and a
+  `__proto__` part id stays an own property. It has no error codes, only a
+  path and a message. The helpers `parseRecord`, `parseStringArray` and
+  `parsePrefabReference` are exported for the loader. The CLI, the viewer and
+  the fixture tests read files through it.
+- `src/core/designLoader.ts`: `loadDesign(text, inputs)` and
+  `loadDesignValue(value, inputs)` return the frozen `DesignLoadResult`.
+  `inputs` is `{ domain, template, prefabs }`, all explicit, so core imports no
+  gun data; `DesignPrefabEntry` is the shape a `PrefabCatalogueEntry` fits.
+  Neither function throws on bad input.
+- Fatal errors (`ok: false`, with `declaredStatus` when the file had a readable
+  one): `invalid-json`, `invalid-shape` (with a `path`; a missing `format` is
+  this code), `unsupported-format` (anything but `1`) and `unknown-prefab`
+  (a prefab id or version the catalogue lacks; the first such part is
+  reported).
+- Draft policy: any issue makes the loaded `design.status` `draft`, whatever
+  the file said, and `declaredStatus` keeps the declared one so the publish
+  gate can still reject an invalid published design. Issue codes are
+  `template-choice` (a different template or root, a part or family the
+  template lacks, a chosen value it no longer offers, a param that no longer
+  matches its `fromSlot` reference), `prefab-values-mismatch` (wrong family, or
+  a fixed param that differs or is unset) and `infeasible` (structure or rule
+  failures, with the rule id in the message). A param the template doesn't
+  list is a designer choice, not a stale one. A clean load has no issues and
+  keeps its declared status. Nothing is materialised on load.
+- Unplaced parts: the loader runs the domain rules only when the assembly
+  resolves without structure issues and every part is placed. Otherwise it
+  reports the structure issues plus one `[structure]` issue naming the parts
+  not connected to the root, and skips the rules, which read placements
+  without checking that they exist.
+- Prefab lookup uses the registry key (`PartInstance.family`), not
+  `PartDef.family`.
+
+**Anchors.**
+
+- `src/core/anchors.ts`: `resolveAnchors(resolved, declarations)` runs each
+  placed part's declaration with its resolved param values and transforms the
+  frames to assembly space. Declarations are keyed by `PartInstance.family`.
+  Unplaced parts, parts with no built definition and parts with no declaration
+  are omitted. Core knows no anchor names.
+- `src/gun/anchors.ts`: `selectGunAnchors(resolved, declarations, policy)` with
+  `GUN_ANCHOR_POLICY`. For `hold` it takes the candidates of the best rank
+  (`grip`, then `firing-grip-stock`); two candidates of one rank return
+  `ambiguous-anchor` with the candidate part ids, and no candidate returns
+  `missing-required-anchor`. For `support` and `muzzle` there may be several
+  candidates; the one on the lowest part id (plain string sort) wins, so the
+  choice is deterministic, and the name is left out when there is none.
+- Anchor data is in `src/gun/anchorData.ts` (`GUN_ANCHORS`), not in `parts.ts`.
+  `hold` is declared by `grip`, `frame` (the integrated pistol grip) and
+  `stock` (only when the stock carries `FIRING_GRIP`); `support` by
+  `handguard` and `forend` (underside of the `bottom` solid); `muzzle` by
+  `barrel` (its `muzzle` port). Frames are computed from the built part, so
+  they follow params.
+
+**Palette.** `src/gun/palette.ts`: `GUN_PALETTE`, `createPalette` (throws on a
+channel that isn't finite or lies outside [0,1]), `solidColor(palette, role,
+solidId)` (special colour by solid id, then role colour, then the fallback),
+and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
+bit-identically for every role that had one. Six roles that used to render as
+the `#888888` fallback now have colours (below).
+
+**Naming decision (BR, 2026-09-29).** A part has two names:
+
+- the registry key, the key in `FAMILIES` (e.g. `ak-receiver`, `frame`). It
+  names the builder recipe and is what `PartInstance.family` holds;
+- the role, `PartDef.family` (e.g. `receiver`), which says what the part does.
+
+Rules and port compatibility use the role. Anchors, prefabs and params use the
+registry key, because they depend on the recipe. The palette uses the role, so
+an AK receiver is coloured like any receiver. `PartFamily.name` is only used
+for labels. The doc comments on `PrefabCatalogueEntry.family`,
+`GunAnchorDeclarations` and `Palette.familyColors` say the same.
+
+**Palette colours (BR accepted, 2026-09-29):** `frame` #4b4a45, `slide`
+#868d97, `cylinder` #4a5566, `front-sight` #363d47, `gas-block` #2f3238,
+`gas-cylinder` #545a63. A test requires a colour for every role any family
+build can report and fails if any solid of any archetype or template sweep
+would use the fallback grey.
+
+**Note for lane B (3.4 export).** Hold frames follow the grip's own lean: the
+`grip` and `frame` frames use the grip's local axes, so once the part is
+placed the frame is tilted with the grip, and a `grip.turn` derived from it
+reflects that tilt. Lane B must decide whether deadvox wants the tilted frame
+or an upright one. The anchor data doesn't decide it.
+
+**Proof tests.**
+
+- parse and round trip: `test/parseAssembly.test.ts` (every fixture round
+  trips, malformed JSON, `__proto__`) and `test/designLoader.test.ts` (round
+  trip, malformed file, unsupported format, unknown prefab);
+- change policy: `test/designLoader.test.ts` (default change, template change,
+  prefab mismatch, `declaredStatus` on a published-but-invalid file);
+- anchors: `test/anchors.test.ts` (core resolution with no domain names; every
+  archetype fixture and every template resolves exactly one `hold`; integrated
+  pistol grip; stock wrist without a grip; grip beats a `FIRING_GRIP` stock;
+  ambiguous and missing `hold` refused; `support` and `muzzle` selection);
+- palette: `test/palette.test.ts` (unchanged colours, role coverage, no
+  fallback in any sweep, construction checks, special colour precedence).
+
+The type test and import-boundary guard remain in `test/m3Contracts.test.ts`.
+`test/projectDoc.test.ts` fails if a `src/...ts#symbol` citation in this file
+names a symbol that isn't in that file.
+
 **3.1 Designs and prefabs.**
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
@@ -843,7 +959,7 @@ The viewer strip that shows them comes after 3.1.
 built on `mesh.ts`:
 
 - the same solids the viewer draws (`displaySolids ?? solids`,
-  `src/viewer/scene.ts:124`) and the shared palette, with colours converted
+  `src/viewer/scene.ts#displaySolids`) and the shared palette, with colours converted
   to linear space;
 - one node per part, named by part id and family, with the port metadata
   frozen in 3.0a as empty child nodes plus glTF `extras`;
@@ -868,10 +984,10 @@ acceptance:
 
 - trigger guards on every archetype (gungen.3, in progress);
 - the octagonal barrel as a barrel profile param (gungen.7). A profile
-  solid extrudes only along local Z (`src/core/schema.ts:46-52`), and a
+  solid extrudes only along local Z (`src/core/schema.ts#ExtrudedPolygonSolid`), and a
   barrel runs along X. There are two options:
   - build the barrel along local Z and orient the part through its ports,
-    as the revolver cylinder does (`src/gun/parts.ts:927-963`); this
+    as the revolver cylinder does (`src/gun/parts.ts#cylinder`); this
     touches every barrel port;
   - add an extrusion-axis option to the profile solid, which is a core
     schema change that lane A owns.
@@ -879,7 +995,7 @@ acceptance:
 - a thumbhole stock family plus an AWM-type design (gungen.6). The thumbhole
   can be built from several convex solids;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
-  deferred). Every stock is boxes today (`src/gun/parts.ts:1641-1672`). The
+  deferred). Every stock is boxes today (`src/gun/parts.ts#stock`). The
   separate grip is one five-point side profile extruded to a constant width;
   grips with a magazine well, and the pistol's built-in grip, are made of
   several solids. A concave silhouette also needs several convex solids. BR wants
@@ -898,14 +1014,14 @@ acceptance:
 - visible action details (BR, 2026-09-28; deferred): charging handles,
   ejection ports, bolt handles, "and stuff like that". Receivers already
   declare keep-outs for ejection, the charging handle (side or rear-top) and
-  bolt travel (`src/gun/parts.ts:266-288`), but draw no solid for any of
+  bolt travel (`src/gun/parts.ts#receiver`), but draw no solid for any of
   them. The pistol slide is the only part with a visible ejection port, cut
   as an opening by building the slide from walls around it
-  (`src/gun/parts.ts:1405-1409`). The same wall construction can cut a
+  (`src/gun/parts.ts#pistolSlide`). The same wall construction can cut a
   receiver's port, provided the mounting contact is kept
-  (`src/core/rules.ts:184-218`). A handle is a small solid at the rest end of
+  (`src/core/rules.ts#connectionContact`). A handle is a small solid at the rest end of
   its travel keep-out, touching it but not inside it. The keep-out rule
-  exempts the keep-out's own part (`src/core/rules.ts:235`), so it won't catch
+  exempts the keep-out's own part (`src/core/rules.ts#keepOut`), so it won't catch
   a built-in handle placed inside its own travel. Targeted rest-position
   tests and a broken fixture have to catch that. Candidates beyond those three,
   for BR to choose from: the AR forward assist, magazine and bolt releases,
@@ -918,7 +1034,7 @@ acceptance:
   which the viewer (`src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
   3.4 export both honour. Collision and the rules ignore the hints. By
   default a solid is bevelled and outlined. The mesh module already accepts a
-  zero bevel (`src/core/mesh.ts:214`). The export draws no outlines, so for
+  zero bevel (`src/core/mesh.ts#meshForSolid`). The export draws no outlines, so for
   the export "no outline" needs nothing. Generic rendering hints can live in
   the core schema, as `displaySolids` already does. This changes the `Solid`
   type in `src/core/schema.ts`, so lane A owns it;
@@ -927,10 +1043,12 @@ acceptance:
 
 ### Parallel lanes
 
-3.0a (the frozen types) releases B and C. The hand-off to D is A's last
-edit to `parts.ts` in 3.0b (the anchor data); A says when that has merged.
-Until then A owns `parts.ts`. After that, the rule is one writer at a time
-per hot file:
+3.0a (the frozen types) released B and C, and 3.0b is merged, so both lanes
+are free to work. 3.0b's anchor data is in `src/gun/anchorData.ts`, not
+`parts.ts`, so there is no last `parts.ts` edit to hand over. `parts.ts` stays
+A's until A says otherwise, because a parts and rules fix batch is in progress
+on A's lane; D starts only after 3.5 and after A says so. After that, the rule
+is one writer at a time per hot file:
 
 - `src/viewer/main.ts`, `src/viewer/paramPanel.ts`, `src/viewer/scene.ts`;
 - `src/gun/parts.ts`, `src/gun/templates.ts`;
@@ -940,9 +1058,9 @@ per hot file:
 
 | Lane | Who | Work | Owns | Starts |
 | --- | --- | --- | --- | --- |
-| A | coder@gungen | gungen.3, then 3.0a, 3.0b, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette; `parts.ts` until 3.0b's anchors merge | now (gungen.3 is running) |
-| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | after 3.0a |
-| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | after 3.0a |
+| A | coder@gungen | gungen.3, then 3.0a, 3.0b, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette; `parts.ts` until A says otherwise (a parts/rules fix batch is in progress) | now; 3.0a and 3.0b are merged |
+| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | released by 3.0a; 3.0b is merged |
+| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | released by 3.0a; 3.0b is merged |
 | D | subagent | 3.6 vocabulary after 3.5: gungen.7, gungen.6, then the later items | `parts.ts`, `templates.ts` | after 3.5, and after A hands over `parts.ts` |
 | E | coder@main | 3.5 deadvox import | `deadvox/` | after saves.2b and 3.4 |
 
