@@ -5,13 +5,15 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { IDENTITY_M, mulMV, quatToMat3 } from '@mobgen/core/math.ts';
+import { IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
+import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { ATTACK_CLIPS } from '@mobgen/mob/attack.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
+import { PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -36,6 +38,7 @@ interface TestDebris {
   elapsed: number;
   groundedAt: number | undefined;
   originOffsetY: number;
+  initialCenter: Vec3;
   body: {
     asleep: boolean;
     center: Vec3;
@@ -45,6 +48,78 @@ interface TestDebris {
 }
 const debrisEntries = (renderer: MobActorMeshes): Map<string, TestDebris> =>
   (renderer as unknown as { debris: Map<string, TestDebris> }).debris;
+const setAttackTime = (renderer: MobActorMeshes, id: number, time: number): void => {
+  const { states } = renderer as unknown as { states: Map<number, { attackTime: number | undefined }> };
+  states.get(id)!.attackTime = time;
+};
+const rotationAngleDeg = (a: readonly number[], b: readonly number[]): number => {
+  const indices = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+  const dot = indices.reduce((sum, index) => sum + a[index]! * b[index]!, 0);
+  return (Math.acos(Math.max(-1, Math.min(1, (dot - 1) / 2))) * 180) / Math.PI;
+};
+interface ContainmentCheck {
+  readonly renderer: MobActorMeshes;
+  readonly id: number;
+  readonly part: string;
+  readonly realized: ReturnType<typeof realize>;
+  readonly voxelSize: number;
+}
+const partContainment = ({
+  renderer,
+  id,
+  part,
+  realized,
+  voxelSize,
+}: ContainmentCheck): { count: number; maxOverflow: number } => {
+  const debris = [...debrisEntries(renderer).values()].find((entry) => entry.initialCenter !== undefined)!;
+  const variantBones = realized.body.bones;
+  const boneIndexById = new Map(variantBones.map((bone, index) => [bone.id, index]));
+  const selected = new Set(
+    [...severedBoneSet(variantBones, [part])]
+      .map((bone) => boneIndexById.get(bone)!)
+      .filter((index) => index !== undefined),
+  );
+  const matrices = new Map(
+    [...selected].map((index) => [index, renderer.boneMatrix(id, variantBones[index]!.id)!] as const),
+  );
+  const rotation = quatToMat3(debris.body.orientation);
+  const inverse = transpose(rotation);
+  const halfExtents: Vec3 = [0, 1, 2].map((axis) =>
+    Math.max(...debris.body.corners.map((corner) => Math.abs(corner[axis]!))),
+  ) as Vec3;
+  const { voxels } = realized;
+  let checked = 0;
+  let maxOverflow = Number.NEGATIVE_INFINITY;
+  for (let k = 0; k < voxels.dims[2]; k++) {
+    for (let j = 0; j < voxels.dims[1]; j++) {
+      for (let i = 0; i < voxels.dims[0]; i++) {
+        const owner = voxels.owner[cellIndex(voxels.dims, i, j, k)]! - 1;
+        if (!selected.has(owner)) {
+          continue;
+        }
+        const matrix = matrices.get(owner)!;
+        const local = worldPosition(voxels, i, j, k);
+        const point: Vec3 = [
+          matrix[0]! * local[0] + matrix[1]! * local[1] + matrix[2]! * local[2] + matrix[3]!,
+          matrix[4]! * local[0] + matrix[5]! * local[1] + matrix[6]! * local[2] + matrix[7]!,
+          matrix[8]! * local[0] + matrix[9]! * local[1] + matrix[10]! * local[2] + matrix[11]!,
+        ];
+        const relative: Vec3 = [
+          point[0] - debris.initialCenter[0],
+          point[1] - debris.initialCenter[1],
+          point[2] - debris.initialCenter[2],
+        ];
+        const localPoint = mulMV(inverse, relative);
+        const allowance = voxelSize / 2 + 0.001;
+        for (const axis of [0, 1, 2]) {
+          maxOverflow = Math.max(maxOverflow, Math.abs(localPoint[axis]!) - halfExtents[axis]! - allowance);
+        }
+        checked += 1;
+      }
+    }
+  }
+  return { count: checked, maxOverflow };
+};
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -492,6 +567,101 @@ describe('MobActorMeshes dismemberment', () => {
       }
     } finally {
       renderer.dispose();
+    }
+  });
+  it('debris OBB contains the posed limb at spawn', () => {
+    const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+    const { realized } = generateValid(template, 1)!;
+    const handRenderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const handStore = new MapEntityStore<Zombie>();
+      const handZombie = makeZombie([0, 0, 0]);
+      const handId = handStore.add(handZombie);
+      handRenderer.sync(handStore, 0, 1);
+      const handRest = handRenderer.boneMatrix(handId, 'hand.L')!;
+      setAttackTime(handRenderer, handId, 0.35);
+      handRenderer.sync(handStore, 0, 1);
+      const handAttack = handRenderer.boneMatrix(handId, 'hand.L')!;
+      expect(rotationAngleDeg(handRest, handAttack)).toBeGreaterThanOrEqual(30);
+      handRenderer.zombieSevered(handId, 'hand.L', undefined, handZombie);
+      handRenderer.sync(handStore, 0, 1);
+      const handContainment = partContainment({
+        renderer: handRenderer,
+        id: handId,
+        part: 'hand.L',
+        realized,
+        voxelSize: template.voxelSize,
+      });
+      expect(handContainment.count).toBeGreaterThan(0);
+      expect(handContainment.maxOverflow).toBeLessThanOrEqual(0);
+    } finally {
+      handRenderer.dispose();
+    }
+
+    const headRenderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const headStore = new MapEntityStore<Zombie>();
+      const headZombie = makeZombie([0, 0, 0]);
+      const headId = headStore.add(headZombie);
+      headRenderer.sync(headStore, 0, 1);
+      const headRest = headRenderer.boneMatrix(headId, 'head')!;
+      headZombie.headYaw = 0.6;
+      headZombie.renderPrevious.headYaw = 0.6;
+      headRenderer.sync(headStore, 0, 1);
+      const headPose = headRenderer.boneMatrix(headId, 'head')!;
+      expect(rotationAngleDeg(headRest, headPose)).toBeGreaterThanOrEqual(30);
+      headRenderer.zombieSevered(headId, 'head', undefined, headZombie);
+      headRenderer.sync(headStore, 0, 1);
+      const headContainment = partContainment({
+        renderer: headRenderer,
+        id: headId,
+        part: 'head',
+        realized,
+        voxelSize: template.voxelSize,
+      });
+      expect(headContainment.count).toBeGreaterThan(0);
+      expect(headContainment.maxOverflow).toBeLessThanOrEqual(0);
+    } finally {
+      headRenderer.dispose();
+    }
+  });
+
+  it('severing a LOD-skipped zombie spawns at its current position', () => {
+    const skipped = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    const reference = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(60, 1, 0.1, 1000);
+      camera.position.set(0, 0, 100);
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld();
+      skipped.setCamera(camera);
+      const skippedStore = new MapEntityStore<Zombie>();
+      const referenceStore = new MapEntityStore<Zombie>();
+      const skippedZombie = makeZombie([0, 0, 0]);
+      const referenceZombie = makeZombie([0, 0, 0]);
+      const skippedId = skippedStore.add(skippedZombie);
+      const referenceId = referenceStore.add(referenceZombie);
+      skipped.sync(skippedStore, 0, 1); // frame 1 is stagger-skipped for this id
+      skipped.sync(skippedStore, 0, 1); // frame 2 packs its initial pose
+      reference.sync(referenceStore, 0, 1);
+      reference.sync(referenceStore, 0, 1);
+      skippedZombie.body.pos = [4, 0, 0];
+      skippedZombie.renderPrevious.pos = [4, 0, 0];
+      referenceZombie.body.pos = [4, 0, 0];
+      referenceZombie.renderPrevious.pos = [4, 0, 0];
+      skipped.sync(skippedStore, 0, 1); // frame 3 skips again after the two-block move
+      reference.sync(referenceStore, 0, 1);
+      skipped.zombieSevered(skippedId, 'hand.L', undefined, skippedZombie);
+      reference.zombieSevered(referenceId, 'hand.L', undefined, referenceZombie);
+      const skippedCenter = [...debrisEntries(skipped).values()][0]!.initialCenter;
+      const freshCenter = [...debrisEntries(reference).values()][0]!.initialCenter;
+      for (const axis of [0, 1, 2]) {
+        expect(Math.abs(skippedCenter[axis]! - freshCenter[axis]!)).toBeLessThan(0.01);
+      }
+    } finally {
+      skipped.dispose();
+      reference.dispose();
     }
   });
   it('does nothing for zombieSevered on an untracked id (over capacity)', () => {

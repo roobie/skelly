@@ -55,6 +55,7 @@ import {
   IDENTITY_M,
   type Mat3,
   type Vec3 as MobVec3,
+  mat3ToQuat,
   mulMM,
   mulMV,
   quatToMat3,
@@ -479,9 +480,7 @@ interface Corpse extends SlotHolder {
   readonly insertOrder: number;
 }
 
-/** A flying piece of debris — a severed limb, physically simulated (see zombieSevered/advanceDebris) —
- * drawn as the *inverse* of a corpse: only `severedIndices` are visible (real, physics-placed matrices),
- * every other bone is zeroed. Reuses a corpse-shaped slot/lifecycle (see this module's header comment). */
+/** Arguments kept together for inserting one physics-backed debris slot. */
 interface DebrisSpawn {
   id: EntityId;
   part: string;
@@ -495,6 +494,9 @@ interface DebrisSpawn {
   body: RigidBody;
 }
 
+/** A flying piece of debris — a severed limb, physically simulated (see zombieSevered/advanceDebris) —
+ * drawn as the *inverse* of a corpse: only `severedIndices` are visible (real, physics-placed matrices),
+ * every other bone is zeroed. Reuses a corpse-shaped slot/lifecycle (see this module's header comment). */
 interface Debris extends SlotHolder {
   readonly walkActor: WalkActor;
   /** The bone indices this debris carries (the cut bone and everything below it) — visible; every other
@@ -532,6 +534,7 @@ export class MobActorMeshes implements ZombieRenderer {
    * instead of needing to interleave two Maps' own iteration orders. */
   private nextDeadOrder = 0;
   private frameCounter = 0;
+  private renderBlend = 1;
   private camera: Camera | undefined;
   private readonly frustum = new Frustum();
   private readonly frustumMatrix = new Matrix4();
@@ -747,7 +750,7 @@ export class MobActorMeshes implements ZombieRenderer {
     return [d[i]!, d[i + 1]!, d[i + 2]!, d[i + 4]!, d[i + 5]!, d[i + 6]!, d[i + 8]!, d[i + 9]!, d[i + 10]!];
   }
 
-  /** Full bone matrix currently packed for tests of live-to-debris transform continuity. */
+  /** Test-only: full bone matrix currently packed for live-to-debris transform continuity. */
   boneMatrix(id: EntityId, boneId: string): readonly number[] | undefined {
     const holder: SlotHolder | undefined = this.states.get(id) ?? this.corpses.get(id);
     if (!holder) {
@@ -762,6 +765,7 @@ export class MobActorMeshes implements ZombieRenderer {
     return Array.from(this.textureData.slice(start, start + 12));
   }
 
+  /** Test-only: full matrix for one carried bone in a debris slot. */
   debrisBoneMatrix(id: EntityId, part: string, boneId: string): readonly number[] | undefined {
     const debris = [...this.debris.entries()].find(([key]) => key.startsWith(`debris:${id}:${part}:`))?.[1];
     if (!debris) {
@@ -1027,10 +1031,18 @@ export class MobActorMeshes implements ZombieRenderer {
    */
   zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): void {
     const state = this.states.get(id);
-    if (!(state?.lastPose && state.lastPlacement)) {
+    if (!state) {
       return;
     }
     const variant = this.variants[state.variantIndex]!;
+    if (zombie) {
+      const posed = this.posedFrame(state, variant, this.currentRenderPlacement(state, zombie));
+      state.lastPose = posed.pose;
+      state.lastPlacement = posed.placement;
+    }
+    if (!(state.lastPose && state.lastPlacement)) {
+      return;
+    }
     const partData = variant.rigidParts.get(part);
     if (!partData) {
       return;
@@ -1042,12 +1054,14 @@ export class MobActorMeshes implements ZombieRenderer {
     if (!initialCenter) {
       return;
     }
-    const initialOrientation: Quaternion = [
-      0,
-      Math.sin(state.lastPlacement.yawRad / 2),
-      0,
-      Math.cos(state.lastPlacement.yawRad / 2),
-    ];
+    const topIndex = variant.boneIndexById.get(part);
+    if (topIndex === undefined) {
+      return;
+    }
+    // The cached OBB and inertia are in the rest-pose model frame. Orient them with the posed cut bone;
+    // relative bends in carried descendants (e.g. an elbow in a whole arm) remain an approximation.
+    const yawRotation = rotY((state.lastPlacement.yawRad * 180) / Math.PI);
+    const initialOrientation = mat3ToQuat(mulMM(yawRotation, variant.scratch[topIndex]!.r)) as Quaternion;
     const originOffsetY = this.world ? 0 : state.lastPlacement.y;
     const simulationCenter: Vec3 = [initialCenter[0], initialCenter[1] - originOffsetY, initialCenter[2]];
     const velocity = zombie?.body.vel ?? [0, 0, 0];
@@ -1233,6 +1247,19 @@ export class MobActorMeshes implements ZombieRenderer {
     return { pos, yaw, headYaw };
   }
 
+  private currentRenderPlacement(
+    state: ZombieRenderState,
+    zombie: Zombie,
+  ): { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number } {
+    const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, this.renderBlend);
+    return {
+      worldPos: [pos[0] * this.blockSize, pos[1] * this.blockSize, pos[2] * this.blockSize],
+      yaw,
+      headYaw,
+      verticalOffset: state.stepOffset.currentOffset,
+    };
+  }
+
   /** Advances this zombie's gait clock/speed from how far it moved since last frame (see
    * advanceGaitFromMovement), and its attack timer from attackWait — both regardless of LOD/frustum, so
    * neither falls behind while this zombie's own expensive pose step is being skipped. */
@@ -1366,17 +1393,11 @@ export class MobActorMeshes implements ZombieRenderer {
     packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
   }
 
-  /** The expensive step LOD/frustum culling skips for a distant or off-screen zombie: pose (walk, or walk
-   * + attackPose while lunging, plus the extra head yaw, plus a flinch layered on top of *that* while one
-   * is playing — "layer flinch on top of the attack pose"), FK, and packing every bone into the shared
-   * texture at this zombie's own stable row — hiding whatever zombie.severed currently covers (see this
-   * module's header comment: zombie.severed is the only source of truth, re-expanded every call). */
-  private packPose(
+  private posedFrame(
     state: ZombieRenderState,
     variant: Variant,
-    zombie: Zombie,
     placement: { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number },
-  ): void {
+  ): { pose: Pose; placement: CrowdPlacement } {
     const { worldPos, yaw, headYaw, verticalOffset } = placement;
     const basePose = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
       idle: this.idlePoseFor(state, variant),
@@ -1388,20 +1409,33 @@ export class MobActorMeshes implements ZombieRenderer {
       state.hitTime === undefined
         ? headPose
         : flinchPose(state.walkActor, state.hitTime, headPose, { side: state.hitSide });
-
-    // Feet land at the pose's own local y = 0 (walkPose's groundOffset puts the lowest foot there — see
-    // mobgen/src/mob/gait.ts) — so placing the whole rig at body.pos's own Y (plus the render-only
-    // StepOffset) puts the feet exactly at body.pos.y, matching ZombieMeshes' box figure.
     const crowdPlacement: CrowdPlacement = {
       x: worldPos[0],
       y: worldPos[1] + verticalOffset,
       z: worldPos[2],
       yawRad: yaw,
     };
+    return { pose, placement: crowdPlacement };
+  }
+
+  /** The expensive step LOD/frustum culling skips for a distant or off-screen zombie: pose (walk, or walk
+   * + attackPose while lunging, plus the extra head yaw, plus a flinch layered on top of *that* while one
+   * is playing — "layer flinch on top of the attack pose"), FK, and packing every bone into the shared
+   * texture at this zombie's own stable row — hiding whatever zombie.severed currently covers (see this
+   * module's header comment: zombie.severed is the only source of truth, re-expanded every call). */
+  private packPose(
+    state: ZombieRenderState,
+    variant: Variant,
+    zombie: Zombie,
+    placement: { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number },
+  ): void {
+    // Feet land at the pose's own local y = 0 (walkPose's groundOffset puts the lowest foot there — see
+    // mobgen/src/mob/gait.ts); StepOffset then keeps rendered feet at the physical body's height.
+    const posed = this.posedFrame(state, variant, placement);
     const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, { pose, placement: crowdPlacement, severedIndices });
-    state.lastPose = pose;
-    state.lastPlacement = crowdPlacement;
+    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices });
+    state.lastPose = posed.pose;
+    state.lastPlacement = posed.placement;
   }
 
   /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
@@ -1477,6 +1511,7 @@ export class MobActorMeshes implements ZombieRenderer {
       this.frustum.setFromProjectionMatrix(this.frustumMatrix);
     }
     const blend = Math.max(0, Math.min(1, alpha));
+    this.renderBlend = blend;
     let anyDirty = false;
 
     for (const [id, zombie] of store.entries()) {

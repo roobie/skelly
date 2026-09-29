@@ -20,6 +20,10 @@ export class StepOffset {
     this.stepHeightMetres = stepHeightMetres;
   }
 
+  get currentOffset(): number {
+    return this.offset;
+  }
+
   clear(): void {
     this.previous = undefined;
     this.offset = 0;
