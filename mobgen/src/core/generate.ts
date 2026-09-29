@@ -10,7 +10,7 @@ import type { Body } from './body.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
-import type { Budgets } from './rules.ts';
+import { type Budgets, silhouetteSize, type ValidationProfile } from './rules.ts';
 import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByName, type Wound } from './template.ts';
 import { type Report, validate } from './validate.ts';
 import { type Voxels, voxelize } from './voxelize.ts';
@@ -157,26 +157,73 @@ const budgetsForGenome = (template: Template, genome: Genome): Budgets => {
 };
 
 export interface Realized {
+  readonly profile: ValidationProfile;
   readonly body: Body;
   readonly voxels: Voxels;
   readonly meshes: ReadonlyMap<number, BoneMesh>;
   readonly report: Report;
 }
 
-/** The full deterministic chain: genome -> body -> voxels -> meshes -> validation report. */
-export const realize = (genome: Genome): Realized => {
+export interface RealizeOptions {
+  /** Omission preserves today's complete per-bone validator. */
+  readonly profile?: ValidationProfile;
+  /** Reuse a previously realized full-detail actor when deriving an LOD. */
+  readonly reference?: Realized;
+}
+
+/** The deterministic chain: genome -> body -> voxels -> meshes -> report, using the caller's explicit profile. */
+export const realize = (genome: Genome, options: RealizeOptions = {}): Realized => {
   const template = templateByName(genome.template);
-  const body = build(genome);
+  const profile = options.profile ?? 'full';
+  // Silhouette LODs re-voxelize the full-detail body: coarse-only build branches (e.g. omitted hand flesh)
+  // would change the outline before sampling and can exceed the one-cell silhouette allowance.
+  const body = build(profile === 'silhouette' ? { ...genome, voxelSize: template.voxelSize } : genome);
+  const fullVoxels =
+    profile === 'silhouette'
+      ? (options.reference?.voxels ?? voxelize(body, template.voxelSize, genome.seed))
+      : undefined;
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
+  // Below 1/4-block resolution, mandatory connected/marrow cells dominate the inverse-volume estimate.
+  // Keep the m1-scaled budget floor at 1/4 rather than shrinking the allowance below that occupancy floor.
+  const budgetGenome =
+    profile === 'silhouette' && genome.voxelSize > 0.5 / 4 ? { ...genome, voxelSize: 0.5 / 4 } : genome;
+  const scaledBudgets = budgetsForGenome(template, budgetGenome);
+  // At far LOD, total upper bounds still cap cost, but lower bounds and group counts depend on
+  // resolution-specific occupancy and bone ownership rather than silhouette quality. Retaining the
+  // full-detail body's fine flesh adds quantization overhead, so silhouette upper bounds keep a 10% margin.
+  const budgets =
+    profile === 'silhouette'
+      ? {
+          ...scaledBudgets,
+          totalVoxels: {
+            ...scaledBudgets.totalVoxels,
+            min: 1,
+            max: Math.ceil(scaledBudgets.totalVoxels.max * 1.1),
+          },
+          totalTriangles: {
+            ...scaledBudgets.totalTriangles,
+            min: 1,
+            max: Math.ceil(scaledBudgets.totalTriangles.max * 1.1),
+          },
+          groups: {},
+        }
+      : scaledBudgets;
   const report = validate({
+    ...(profile === 'silhouette' && fullVoxels
+      ? {
+          profile,
+          referenceSilhouette: silhouetteSize(fullVoxels),
+          referenceVoxelSize: fullVoxels.size,
+        }
+      : {}),
     body,
     voxels,
     meshes,
     feet: new Set(template.feet),
-    budgets: budgetsForGenome(template, genome),
+    budgets,
   });
-  return { body, voxels, meshes, report };
+  return { profile, body, voxels, meshes, report };
 };
 
 export interface ValidGeneration {
@@ -189,10 +236,62 @@ export interface ValidGeneration {
   readonly attempts: number;
 }
 
+/** Recommend skeleton-aware rules only while a limb is at least 1.5 cells thick. */
+export const FULL_PROFILE_MIN_LIMB_CELLS = 1.5;
+const LIMB_SEGMENT = /^(upperArm|forearm|thigh|shin)\./;
+
+/** Actor-specific recommendation; callers still pass the chosen profile explicitly to realize(). */
+export const recommendedProfileFor = (genome: Genome, voxelSize = genome.voxelSize): ValidationProfile => {
+  if (!Number.isFinite(voxelSize) || voxelSize <= 0) {
+    throw new Error(`voxelSize must be positive and finite, got ${voxelSize}`);
+  }
+  const template = templateByName(genome.template);
+  const body = build({ ...genome, voxelSize: template.voxelSize });
+  const diameters = body.features
+    .filter((feature) => feature.op === 'add' && LIMB_SEGMENT.test(feature.bone))
+    .map(({ shape }) => {
+      switch (shape.kind) {
+        case 'capsule':
+          return 2 * Math.min(shape.ra, shape.rb);
+        case 'ellipsoid':
+          return 2 * Math.min(...shape.radii);
+        case 'box':
+          return 2 * Math.min(...shape.half);
+        default:
+          throw new Error('unknown shape kind');
+      }
+    });
+  const thinnestLimb = Math.min(...diameters);
+  if (!Number.isFinite(thinnestLimb)) {
+    throw new Error(`genome "${genome.template}" has no measurable limb flesh`);
+  }
+  return thinnestLimb / voxelSize < FULL_PROFILE_MIN_LIMB_CELLS ? 'silhouette' : 'full';
+};
+
+export interface LodRealization {
+  readonly genome: Genome;
+  readonly realized: Realized;
+}
+
+/** Re-voxelize a full-detail validated genome at a coarser size; never searches for a coarse-valid genome. */
+export const realizeLod = (validated: ValidGeneration, voxelSize: number): LodRealization => {
+  const template = templateByName(validated.genome.template);
+  if (!validated.realized.report.ok || validated.realized.profile !== 'full') {
+    throw new Error('LOD source must have passed full-detail validation');
+  }
+  if (validated.genome.voxelSize !== template.voxelSize) {
+    throw new Error('LOD source must use the template full-detail voxel size');
+  }
+  if (!Number.isFinite(voxelSize) || voxelSize <= template.voxelSize) {
+    throw new Error(`LOD voxelSize must be coarser than ${template.voxelSize}`);
+  }
+  const genome = { ...validated.genome, voxelSize };
+  const realized = realize(genome, { profile: 'silhouette', reference: validated.realized });
+  return { genome, realized };
+};
+
 export interface ValidSearchOptions {
   readonly maxAttempts?: number;
-  /** Passed to generate(). */
-  readonly overrides?: { readonly voxelSize?: number } | undefined;
   /** 1 (default) tries seed, seed + 1, ...; -1 tries seed, seed - 1, ... */
   readonly direction?: 1 | -1;
 }
@@ -201,11 +300,11 @@ export interface ValidSearchOptions {
 export const generateValid = (
   template: Template,
   seed: number,
-  { maxAttempts = 100, overrides, direction = 1 }: ValidSearchOptions = {},
+  { maxAttempts = 100, direction = 1 }: ValidSearchOptions = {},
 ): ValidGeneration | undefined => {
   for (let i = 0; i < maxAttempts; i++) {
     const trySeed = seed + direction * i;
-    const genome = generate(template, trySeed, overrides);
+    const genome = generate(template, trySeed);
     const realized = realize(genome);
     if (realized.report.ok) {
       return { genome, realized, seed: trySeed, attempts: i + 1 };

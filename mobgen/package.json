@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "typecheck": "tsc && tsc -p tsconfig.core.json",
     "test": "vitest run",
+    "test:sweeps": "MOBGEN_SWEEPS=1 vitest run",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
     "view": "node src/cli/view.ts",

@@ -47,6 +47,9 @@ count:
   the scaled intervals and allows one extra voxel at coarse resolutions for
   boundary quantization. This follows the root
   [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
+
+  **BR ruling (2026-09-29, m3):** Keep `full` as the default for gameplay detail (including 1/12 and 1/16 tests); expose `full` and `silhouette` as explicit caller-selected validation profiles. `generateValid` searches only at the template's full-detail size. A far LOD is derived from an already full-valid genome, re-voxelizing the full-detail body rather than searching/generating a new coarse actor. The silhouette profile checks one connected body, whole-body ground contact and balance, scaled global voxel/triangle upper budgets, and X width/Y height within one coarse cell plus one full-detail reference-cell quantization allowance. Bone/foot ownership and per-bone budget groups are not contracts at that distance. Build the full-detail body before coarse sampling; hold the m1-scaled budget floor at 1/4 block and add a 10% coarse-occupancy margin rather than shrinking below the connected/marrow occupancy floor. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at all three far sizes; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
+
 - **A variety pool.** Generate a few dozen variants per template and reuse
   them, rather than one per zombie.
 

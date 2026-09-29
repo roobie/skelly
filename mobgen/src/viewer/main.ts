@@ -15,8 +15,9 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
+import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
+import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
@@ -44,6 +45,7 @@ const templateSelect = $<HTMLSelectElement>('template');
 const seedInput = $<HTMLInputElement>('seed');
 const onlyValid = $<HTMLInputElement>('only-valid');
 const voxelSelect = $<HTMLSelectElement>('voxel-size');
+const profileSelect = $<HTMLSelectElement>('validation-profile');
 const walkOn = $<HTMLInputElement>('walk-on');
 const speedInput = $<HTMLInputElement>('speed');
 const speedValue = $<HTMLSpanElement>('speed-value');
@@ -280,6 +282,7 @@ const renderPanel = (realizeMs: number): void => {
   const rows: readonly (readonly [string, string])[] = [
     ['Voxels', String(report.stats.voxels)],
     ['Head+jaw voxels', String(headJaw)],
+    ['Validation profile', realized.profile],
     ['Triangles', String(report.stats.triangles)],
     ['Draw objects', String(realized.meshes.size)],
     ['Realize time', `${realizeMs.toFixed(1)} ms`],
@@ -305,6 +308,7 @@ const updateUrl = (): void => {
   if (voxelSelect.value !== 'template') {
     params.set('voxel', voxelSelect.value);
   }
+  params.set('profile', profileSelect.value);
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
   params.set('stance', idleStanceSelect.value);
@@ -357,32 +361,54 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
 const voxelOverride = (): number | undefined =>
   voxelSelect.value === 'template' ? undefined : Number(voxelSelect.value);
 
+type ValidCandidate = NonNullable<ReturnType<typeof generateValid>>;
+
+const loadValidated = (
+  template: (typeof TEMPLATES)[number],
+  found: ValidCandidate,
+  voxelSize: number,
+  profile: ValidationProfile,
+): void => {
+  if (profile === 'silhouette' && voxelSize > template.voxelSize) {
+    const lod = realizeLod(found, voxelSize);
+    load(lod.genome, lod.realized, 0);
+    return;
+  }
+  const genome = { ...found.genome, voxelSize };
+  const realized =
+    profile === 'full' && voxelSize === template.voxelSize
+      ? found.realized
+      : realize(genome, { profile, reference: found.realized });
+  load(genome, realized, 0);
+};
+
 const generateAndLoad = (step = 0): void => {
   const template = TEMPLATES.find((t) => t.name === templateSelect.value);
   if (!template) {
     return;
   }
   let seed = (Number.parseInt(seedInput.value, 10) || 0) + step;
-  const voxelSize = voxelOverride();
-  const overrides = voxelSize === undefined ? undefined : { voxelSize };
+  const voxelSize = voxelOverride() ?? template.voxelSize;
+  const profile = profileSelect.value as ValidationProfile;
 
   if (onlyValid.checked) {
     const dir = step < 0 ? -1 : 1;
-    const found = generateValid(template, seed, { overrides, direction: dir });
+    const found = generateValid(template, seed, { direction: dir });
     if (!found) {
       status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
       return;
     }
     ({ seed } = found);
     seedInput.value = String(seed);
-    load(found.genome, found.realized, 0);
+    loadValidated(template, found, voxelSize, profile);
     return;
   }
 
+  const overrides = voxelSize === template.voxelSize ? undefined : { voxelSize };
   const genome = generate(template, seed, overrides);
   seedInput.value = String(seed);
   const t0 = performance.now();
-  const realized = realize(genome);
+  const realized = realize(genome, { profile });
   load(genome, realized, performance.now() - t0);
 };
 
@@ -394,6 +420,7 @@ $<HTMLButtonElement>('prev-seed').addEventListener('click', () => generateAndLoa
 $<HTMLButtonElement>('next-seed').addEventListener('click', () => generateAndLoad(1));
 $<HTMLButtonElement>('generate-btn').addEventListener('click', () => generateAndLoad());
 voxelSelect.addEventListener('change', () => generateAndLoad());
+profileSelect.addEventListener('change', () => generateAndLoad());
 
 $<HTMLButtonElement>('save').addEventListener('click', () => {
   if (!current) {
@@ -488,6 +515,10 @@ seedInput.value = query.get('seed') ?? '7';
 const voxelParam = query.get('voxel');
 if (voxelParam && [...voxelSelect.options].some((o) => o.value === voxelParam)) {
   voxelSelect.value = voxelParam;
+}
+const profileParam = query.get('profile');
+if (profileParam === 'full' || profileParam === 'silhouette') {
+  profileSelect.value = profileParam;
 }
 setSpeed(Number(query.get('speed') ?? '0.8'));
 walkOn.checked = query.get('walk') === '1';

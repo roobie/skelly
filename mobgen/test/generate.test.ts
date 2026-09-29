@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { generate, generateValid, realize } from '../src/core/generate.ts';
+import { generate, generateValid, realize, realizeLod, recommendedProfileFor } from '../src/core/generate.ts';
 import type { Genome } from '../src/core/template.ts';
 import { worldPosition } from '../src/core/voxelize.ts';
 import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 100;
 
@@ -173,6 +174,88 @@ describe('coarser voxel sizes', () => {
   });
 });
 
+const LOD_SIZES = [0.5 / 6, 0.5 / 4, 0.5 / 2] as const;
+
+const validateFarLodSeeds = (template: (typeof TEMPLATES)[number]) => {
+  let validSources = 0;
+  const failures: string[] = [];
+  for (let seed = 0; seed < 100; seed++) {
+    const genome = generate(template, seed);
+    const realized = realize(genome);
+    if (!realized.report.ok) {
+      continue;
+    }
+    validSources += 1;
+    const source = { genome, realized, seed, attempts: 1 };
+    for (const voxelSize of LOD_SIZES) {
+      const lod = realizeLod(source, voxelSize);
+      if (!lod.realized.report.ok) {
+        failures.push(`${template.name} seed ${seed} at ${voxelSize}: ${JSON.stringify(lod.realized.report.issues)}`);
+      }
+    }
+  }
+  return { validSources, failures };
+};
+
+describe('validation profiles', () => {
+  it('keeps full rules as the default at 1/12 and 1/16 for every template', () => {
+    for (const template of TEMPLATES) {
+      const base = generate(template, 7);
+      for (const voxelSize of [0.5 / 12, 0.5 / 16]) {
+        const genome = { ...base, voxelSize };
+        const implicit = realize(genome);
+        const explicit = realize(genome, { profile: 'full' });
+        expect(implicit.profile).toBe('full');
+        expect(implicit.report).toEqual(explicit.report);
+      }
+    }
+  });
+
+  it('recommends from full-detail limb thickness in cells without changing the explicit full default', () => {
+    const genome = generate(TEMPLATES.find((template) => template.name === 'shambler')!, 7);
+    expect(recommendedProfileFor(genome, genome.voxelSize)).toBe('silhouette');
+    expect(recommendedProfileFor(genome, 0.5 / 2)).toBe('silhouette');
+    // Even when thin anatomy suggests silhouette rules, the caller's omission still means full.
+    expect(realize(genome).profile).toBe('full');
+  });
+
+  it('derives all three far sizes from an already full-valid genome', () => {
+    for (const template of TEMPLATES) {
+      const source = generateValid(template, 7)!;
+      for (const voxelSize of LOD_SIZES) {
+        const lod = realizeLod(source, voxelSize);
+        expect(lod.genome.voxelSize).toBe(voxelSize);
+        expect(lod.realized.profile).toBe('silhouette');
+        expect(
+          lod.realized.report.ok,
+          `${template.name} ${voxelSize}: ${JSON.stringify(lod.realized.report.issues)}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('refuses an invalid or non-full-detail LOD source and a non-coarser size', () => {
+    const source = generateValid(TEMPLATES[0]!, 7)!;
+    expect(() =>
+      realizeLod(
+        { ...source, realized: { ...source.realized, report: { ...source.realized.report, ok: false } } },
+        0.5 / 4,
+      ),
+    ).toThrow('full-detail validation');
+    expect(() => realizeLod(source, source.genome.voxelSize)).toThrow('coarser');
+  });
+
+  sweepGroup('far LOD silhouette validation', () => {
+    it('passes for every full-valid genome in 100 seeds per template at 1/6, 1/4 and 1/2 block', () => {
+      for (const template of TEMPLATES) {
+        const result = validateFarLodSeeds(template);
+        expect(result.validSources, `${template.name} full-valid sources`).toBeGreaterThanOrEqual(80);
+        expect(result.failures, `${template.name} far LOD failures`).toEqual([]);
+      }
+    }, 120_000);
+  });
+});
+
 describe('templates', () => {
   for (const t of TEMPLATES) {
     describe(t.name, () => {
@@ -190,6 +273,7 @@ describe('templates', () => {
         const found = generateValid(t, 1000)!;
         expect(found).toBeDefined();
         expect(found.realized.report.ok).toBe(true);
+        expect(found.genome.voxelSize).toBe(t.voxelSize);
         expect(found.seed).toBe(1000 + found.attempts - 1);
         expect(found.genome).toEqual(generate(t, found.seed));
       });

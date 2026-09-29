@@ -41,6 +41,26 @@ const voxels = (
 const run = (b: Body, v: Voxels, feet: readonly string[], budgets: Budgets) =>
   validate({ body: b, voxels: v, meshes: meshBones(v, b.bones.length), feet: new Set(feet), budgets });
 
+const runSilhouette = (
+  b: Body,
+  v: Voxels,
+  budgets: Budgets,
+  options: {
+    readonly reference?: { readonly width: number; readonly height: number };
+    readonly referenceVoxelSize?: number;
+  } = {},
+) =>
+  validate({
+    profile: 'silhouette',
+    referenceSilhouette: options.reference ?? { width: 0.1, height: 0.2 },
+    referenceVoxelSize: options.referenceVoxelSize ?? 0.1,
+    body: b,
+    voxels: v,
+    meshes: meshBones(v, b.bones.length),
+    feet: new Set<string>(),
+    budgets,
+  });
+
 // Two bones stacked one voxel high: root (foot) at the bottom, child on top.
 const healthyBones: Body['bones'] = [
   { id: 'root', parent: null, head: [0, 0, 0], tail: [0, 0.1, 0] },
@@ -111,6 +131,33 @@ describe('balance', () => {
     const v = voxels([6, 2, 1], owner);
     const report = run(body(bones), v, ['root'], { ...GENEROUS, totalVoxels: { min: 1, max: 20 } });
     expect(report.issues.map((i) => i.rule)).toEqual(['balance']);
+  });
+});
+
+describe('silhouette profile', () => {
+  it('rejects disconnected voxels without requiring bone ownership', () => {
+    const disconnected = voxels([3, 2, 1], [1, 0, 1, 2, 0, 0]);
+    const report = runSilhouette(body(healthyBones), disconnected, GENEROUS);
+    expect(report.issues.map((issue) => issue.rule)).toContain('floaters');
+  });
+
+  it('rejects a connected silhouette floating above the ground', () => {
+    const raised = voxels([1, 2, 1], [1, 2], [0, 1, 0]);
+    const report = runSilhouette(body(healthyBones), raised, GENEROUS);
+    expect(report.issues.map((issue) => issue.rule)).toContain('grounded');
+  });
+
+  it('does not require per-bone ownership or foot ownership', () => {
+    const allChild = voxels([1, 2, 1], [2, 2]);
+    const report = runSilhouette(body(healthyBones), allChild, GENEROUS);
+    expect(report.ok).toBe(true);
+    expect(report.issues).toEqual([]);
+  });
+
+  it('rejects a width or height change beyond the coarse and reference-cell quantization allowance', () => {
+    const small = voxels([1, 2, 1], [1, 2]);
+    const report = runSilhouette(body(healthyBones), small, GENEROUS, { reference: { width: 1, height: 0.2 } });
+    expect(report.issues.map((issue) => issue.rule)).toContain('silhouette');
   });
 });
 
