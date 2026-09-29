@@ -7,8 +7,8 @@ import {
   handguardFit,
   magazineWellAxis,
   pistolBarrelCrown,
-  triggerGuard,
   thumbholeGripMatch,
+  triggerGuard,
 } from './rules.ts';
 
 /** The gun domain. The core's main axis is the bore line. */
@@ -20,5 +20,14 @@ export const gunDomain: Domain = {
     { kind: 'sight', mode: 'parallel' },
     { kind: 'gas-cylinder', mode: 'parallel' },
   ],
-  rules: [firingGrip, thumbholeGripMatch, feedMatch, pistolBarrelCrown, triggerGuard, handguardFit, freeFloatClearance, magazineWellAxis],
+  rules: [
+    firingGrip,
+    thumbholeGripMatch,
+    feedMatch,
+    pistolBarrelCrown,
+    triggerGuard,
+    handguardFit,
+    freeFloatClearance,
+    magazineWellAxis,
+  ],
 };

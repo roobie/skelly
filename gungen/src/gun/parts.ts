@@ -806,7 +806,11 @@ export const lower: PartFamily = {
           family: 'lower',
           solids: [...frame, ...triggerGuards],
           ports: [top, conventionalWell.port],
-          keepOuts: [triggerFinger, conventionalWell.path, ...(conventionalWell.wellPath ? [conventionalWell.wellPath] : [])],
+          keepOuts: [
+            triggerFinger,
+            conventionalWell.path,
+            ...(conventionalWell.wellPath ? [conventionalWell.wellPath] : []),
+          ],
           axes: [],
         };
       }
@@ -1755,16 +1759,33 @@ export const stock: PartFamily = {
       const buttFront = -0.72 * len;
       const openingBottom = -0.34 * len;
       const stockBottom = -0.42 * len;
-      const rect = (id: string, x0: number, y0: number, x1: number, y1: number) =>
-        extrudedPolygon(id, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], sideZ);
+      const rect = ({
+        id,
+        x: [x0, x1],
+        y: [y0, y1],
+      }: {
+        id: string;
+        x: readonly [number, number];
+        y: readonly [number, number];
+      }) =>
+        extrudedPolygon(
+          id,
+          [
+            [x0, y0],
+            [x1, y0],
+            [x1, y1],
+            [x0, y1],
+          ],
+          sideZ,
+        );
       return {
         family: 'stock',
         solids: [
-          rect('fore-stock', openingFront, -2 - stockDrop, 0, combTop),
-          rect('thumbhole-top', buttFront, -2 - stockDrop, openingFront, combTop),
-          rect('grip', gripRear, stockBottom, openingFront, -2 - stockDrop),
-          rect('thumbhole-bottom', buttFront, stockBottom, gripRear, openingBottom),
-          rect('butt', -len, stockBottom, buttFront, combTop),
+          rect({ id: 'fore-stock', x: [openingFront, 0], y: [-2 - stockDrop, combTop] }),
+          rect({ id: 'thumbhole-top', x: [buttFront, openingFront], y: [-2 - stockDrop, combTop] }),
+          rect({ id: 'grip', x: [gripRear, openingFront], y: [stockBottom, -2 - stockDrop] }),
+          rect({ id: 'thumbhole-bottom', x: [buttFront, gripRear], y: [stockBottom, openingBottom] }),
+          rect({ id: 'butt', x: [-len, buttFront], y: [stockBottom, combTop] }),
         ],
         ports: [port],
         keepOuts: [],

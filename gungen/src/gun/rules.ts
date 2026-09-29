@@ -29,8 +29,10 @@ export const thumbholeGripMatch: Rule = {
       }
       const stockMount = r.connections.find((connection) => {
         const ends = [connection.from, connection.to];
-        return ends.some((end) => end.part === stock && end.port.id === 'front') &&
-          ends.some((end) => r.defs.get(end.part)?.family === 'receiver');
+        return (
+          ends.some((end) => end.part === stock && end.port.id === 'front') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'receiver')
+        );
       });
       if (!stockMount) {
         continue;
@@ -38,10 +40,13 @@ export const thumbholeGripMatch: Rule = {
       const receiver = [stockMount.from.part, stockMount.to.part].find((part) => part !== stock);
       const lowerMount = r.connections.find((connection) => {
         const ends = [connection.from, connection.to];
-        return ends.some((end) => end.part === receiver && r.defs.get(end.part)?.family === 'receiver') &&
-          ends.some((end) => r.defs.get(end.part)?.family === 'lower');
+        return (
+          ends.some((end) => end.part === receiver && r.defs.get(end.part)?.family === 'receiver') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'lower')
+        );
       });
-      const lower = lowerMount && [lowerMount.from.part, lowerMount.to.part].find((part) => r.defs.get(part)?.family === 'lower');
+      const lower =
+        lowerMount && [lowerMount.from.part, lowerMount.to.part].find((part) => r.defs.get(part)?.family === 'lower');
       if (!lower) {
         continue;
       }
