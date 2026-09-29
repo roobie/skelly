@@ -7,13 +7,8 @@ import { resolve } from '../src/core/resolve.ts';
 import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
-import { sweepGroup } from './sweeps.ts';
+import { loadCorpus } from './helpers.ts';
 
-// Smaller than generate.test.ts's SEEDS: this file re-runs generate+resolve and
-// meshForSolid over every solid of every seed (budget), on top of the
-// existing suite's own sweeps; 60 seeds/template keeps that added cost from starving
-// other tests' timeouts when the whole suite runs in parallel.
-const SEEDS = 60;
 // A stated per-assembly triangle budget (PROJECT.md §7). `npm run mesh-stats`
 // over 1000 seeds/template puts the largest single build (ak) at 2312
 // triangles; this budget leaves more than 2x headroom without letting the
@@ -159,15 +154,15 @@ const triangleCount = (resolved: ReturnType<typeof resolve>): number => {
 };
 
 describe('per-assembly triangle budget', () => {
-  sweepGroup(`stays under ${TRIANGLE_BUDGET} triangles across a seed sweep`, () => {
-    it('passes', () => {
-      for (const t of TEMPLATES) {
-        for (let seed = 0; seed < SEEDS; seed++) {
-          const triangles = triangleCount(resolve(generate(t, gunDomain, seed), gunDomain));
-          expect(triangles, `${t.name} seed ${seed}`).toBeLessThan(TRIANGLE_BUDGET);
-        }
-      }
-    });
+  // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)): the
+  // budget is checked on every fixture (broken-* ones included; none exists to break it) and every
+  // published design.
+  it(`stays under ${TRIANGLE_BUDGET} triangles in every fixture and design`, () => {
+    const corpus = loadCorpus(() => true);
+    expect(corpus.length).toBeGreaterThanOrEqual(45);
+    for (const { label, assembly } of corpus) {
+      expect(triangleCount(resolve(assembly, gunDomain)), label).toBeLessThan(TRIANGLE_BUDGET);
+    }
   });
 });
 
