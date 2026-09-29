@@ -112,6 +112,14 @@
       // Vite requires a default export.
       "includes": ["**/vite.config.ts"],
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
+      // mobgen's posing hot path (CHALLENGES.md §1: once per bone per actor per frame). Profiling found
+      // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
+      // indexing it directly — a measured, deliberate choice at each of these call sites, not an
+      // oversight useDestructuring should keep flagging.
+      "includes": ["**/mobgen/src/core/pose.ts", "**/mobgen/src/viewer/stressActors.ts", "**/mobgen/src/cli/bench.ts"],
+      "linter": { "rules": { "style": { "useDestructuring": "off" } } }
     }
   ]
 }

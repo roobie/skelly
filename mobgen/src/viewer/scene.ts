@@ -24,7 +24,9 @@ import type { BoneMesh } from '../core/mesh.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { materialOf, shadeOf } from '../core/voxelize.ts';
 
-const matrixOf = (t: Transform): Matrix4 => {
+/** Exported for stress.ts: same rest-world -> posed-world matrix every applyPose call here uses,
+ * needed there too (per-actor bone/mesh matrices, built without going through buildActor's groups). */
+export const matrixOf = (t: Transform): Matrix4 => {
   const { r, t: p } = t;
   // three.js Matrix4.set takes elements row-major.
   return new Matrix4().set(r[0], r[1], r[2], p[0], r[3], r[4], r[5], p[1], r[6], r[7], r[8], p[2], 0, 0, 0, 1);
@@ -35,7 +37,9 @@ const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 /** Shade 0..3 (see voxelize.ts) as a brightness multiplier on the material's base colour. */
 const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 
-const vertexColors = (colorBytes: Uint8Array, palette: Readonly<Record<Material, Vec3>>): Float32Array => {
+/** Exported for stress.ts: turns a BoneMesh's palette-index colour bytes into per-vertex RGB, same as
+ * every flesh mesh here — reused there so a merged (skinned) geometry gets identical vertex colours. */
+export const vertexColors = (colorBytes: Uint8Array, palette: Readonly<Record<Material, Vec3>>): Float32Array => {
   const out = new Float32Array(colorBytes.length * 3);
   for (let v = 0; v < colorBytes.length; v++) {
     const byte = colorBytes[v]!;
@@ -48,7 +52,9 @@ const vertexColors = (colorBytes: Uint8Array, palette: Readonly<Record<Material,
   return out;
 };
 
-const geometryOf = (mesh: BoneMesh, palette: Readonly<Record<Material, Vec3>>): BufferGeometry => {
+/** Exported for stress.ts: one bone's BoneMesh as a BufferGeometry, in the same rest-world coordinates
+ * boneTransforms/matrixOf pose from. */
+export const geometryOf = (mesh: BoneMesh, palette: Readonly<Record<Material, Vec3>>): BufferGeometry => {
   const geo = new BufferGeometry();
   geo.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geo.setAttribute('normal', new BufferAttribute(mesh.normals, 3));

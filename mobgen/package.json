@@ -10,7 +10,8 @@
     "test": "vitest run",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
-    "view": "node src/cli/view.ts"
+    "view": "node src/cli/view.ts",
+    "bench": "node src/cli/bench.ts"
   },
   "dependencies": {
     "three": "^0.186.0"

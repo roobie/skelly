@@ -12,6 +12,7 @@ import {
   INITIAL_CLOCK,
   legGeometryFor,
   stepLengthMeters,
+  strideCap,
   strideLength,
   walkPose,
 } from '../src/mob/gait.ts';
@@ -456,6 +457,34 @@ describe('strideLength', () => {
         expect(cycle).toBeLessThanOrEqual(cap + 1e-9);
       }
     }
+  });
+});
+
+describe('strideCap caching (mobgen/CHALLENGES.md §1: keyed on params, must not go stale on a different body)', () => {
+  // Same params object throughout — the exact scenario a stale cache would miss: a voxel-size override,
+  // a re-realize, or (here) simply two unrelated bodies that happen to share a params object.
+  const params = { strideFactor: 1, footLift: 0.04 } as HumanoidParams;
+  const geomA = { legLen: 0.75, hipY: 0.89, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
+  const geomB = { legLen: 1.05, hipY: 1.19, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 }; // longer leg only
+
+  it('gives different (and larger, for the longer leg) caps for two geometries sharing one params object', () => {
+    const capA = strideCap(params, geomA);
+    const capB = strideCap(params, geomB);
+    expect(capB).toBeGreaterThan(capA);
+  });
+
+  it("a later call for the first geometry recomputes instead of returning the second geometry's cached value", () => {
+    const capA = strideCap(params, geomA);
+    strideCap(params, geomB); // overwrites params' single cache slot with geomB's entry
+    const capAAgain = strideCap(params, geomA); // must notice geomA no longer matches what's cached
+    expect(capAAgain).toBe(capA);
+    expect(capAAgain).not.toBe(strideCap(params, geomB));
+  });
+
+  it('a cache hit equals a fully uncached computation (a fresh params object, asked once)', () => {
+    const cached = strideCap(params, geomA); // params already warm from the tests above
+    const fresh = strideCap({ ...params }, geomA); // a distinct object: guaranteed first-ever lookup
+    expect(cached).toBe(fresh);
   });
 });
 

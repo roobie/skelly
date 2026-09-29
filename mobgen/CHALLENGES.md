@@ -47,6 +47,37 @@ measures triangles and voxels per actor (`npm run stats`).
 background at 60 fps on the reference laptop, with actor rendering inside
 the frame budget. *Measure.*
 
+**Measured** (2026-09-28, `stress.html` sweep on the reference laptop, 11th
+gen Intel with Iris Xe; actors walking on flat ground, no game running):
+
+| Actors | One mesh per bone: CPU ms (pose + render), fps | One skinned mesh per actor: CPU ms, fps |
+| --- | --- | --- |
+| 60 | 4.3 + 3.5, 60 | 4.6 + 1.5, 60 |
+| 120 | 8.4 + 7.7, 56.5 | 8.1 + 3.0, 59.8 |
+| 240 | 18.0 + 16.9, 28.5 | 18.2 + 6.3, 30.1 |
+
+The GPU is not the limit: 365k triangles in 121 draws held 60 fps. One draw
+per actor cuts render CPU by about 2.5×. The limit is posing in JavaScript,
+about 75 µs per actor per frame, so 60 actors take about 6 ms of the frame
+before the game does anything. Next: make posing allocation-free, pose far
+actors less often, and cache per-step work, aiming for about 20 µs per actor.
+
+After that work (2026-09-29, same laptop, distance LOD on: re-pose every 2nd
+frame beyond 15 m, every 3rd beyond 30 m):
+
+| Actors | One mesh per bone: CPU ms (pose + render), fps | One skinned mesh per actor: CPU ms, fps |
+| --- | --- | --- |
+| 60 | 1.2 + 6.0, 60 | 1.1 + 1.9, 60 |
+| 120 | 1.7 + 9.2, 60 | 2.6 + 5.2, 60 |
+| 240 | 3.5 + 21.4, 39.6 | 3.9 + 9.1, 43.1 |
+
+Posing 60 skinned actors fell from 4.6 ms to 1.1 ms, so 60 actors now cost
+about 3 ms of CPU in all. Render CPU is now the larger share, and at 240
+actors the frame no longer fits even though the CPU work does (13 ms): the
+GPU (731k triangles) or unmeasured browser work is the limit there. The
+skinned 240 run also had a 1% low of 2.2 fps, one long stall that is not yet
+explained.
+
 ## 2. Reading well at game distance
 
 **Why it's hard.** 1/12 of a block gives a head of about 50 voxels up close,
