@@ -123,7 +123,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -140,7 +140,7 @@ function defaultVersion(): SaveVersionComponents {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SCHEMA_VERSION,
-      generators: { worldgen: 'worldgen-v1' },
+      generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
   } catch (error) {
@@ -294,6 +294,8 @@ const player = obj({ body, yaw: finite, pitch: finite, walk: bool });
 const handling = obj({ jobs: arr(anyJson) });
 const zombie = obj({
   type: str({ id: true }),
+  figureSeed: safeInt,
+  incapacitated: bool,
   body,
   facing: vec3,
   home: vec3,

@@ -94,8 +94,8 @@
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
     {
-      // The CPU-only benchmark entrypoint imports the same game system under Node and prints measurements.
-      "includes": ["**/src/bench/shamblers-cpu.mjs"],
+      // Standalone Node benchmarks import game systems and print measured timings.
+      "includes": ["**/src/bench/shamblers-cpu.mjs", "**/deadvox/tools/bench-zombie-swings.mjs"],
       "linter": {
         "rules": {
           "correctness": { "noNodejsModules": "off" },
@@ -131,8 +131,14 @@
       // resolve.alias, tsconfig.json's paths) rather than an npm dependency — mobgen has no package.json
       // entry and isn't published, so there's nothing to "add to the manifest". Biome's dependency check
       // doesn't follow bundler/tsconfig path aliases, so it reads every `@mobgen/...` specifier as an
-      // undeclared npm package; this is the one, deliberate place that pattern is expected.
-      "includes": ["**/deadvox/src/render/mobActors.ts", "**/deadvox/test/mobActors.test.ts"],
+      // undeclared npm package; these simulation/rendering and test files deliberately use that alias.
+      "includes": [
+        "**/deadvox/src/render/mobActors.ts",
+        "**/deadvox/src/core/zombies.ts",
+        "**/deadvox/src/core/zombieRegions.ts",
+        "**/deadvox/test/mobActors.test.ts",
+        "**/deadvox/test/zombieRegions.test.ts"
+      ],
       "linter": { "rules": { "correctness": { "noUndeclaredDependencies": "off" } } }
     }
   ]

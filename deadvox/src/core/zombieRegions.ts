@@ -1,7 +1,31 @@
+// Detailed melee hit geometry shares the seeded, posed mobgen figures with MobActorMeshes. FIGURE_BOXES below
+// remains only for the optional blocky renderer; it is deliberately not used by the hit test.
+
+import type { Bone } from '@mobgen/core/body.ts';
+import { type Mat3, mulMM, rotY, transpose } from '@mobgen/core/math.ts';
+import { boneTransforms, type Pose as MobPose } from '@mobgen/core/pose.ts';
+import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
+import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { idlePose } from '@mobgen/mob/idle.ts';
+import { type BoneVoxelBox, type ShamblerHitRegion, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
 
 export type FigurePart = 'body' | 'head' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
-export type ZombieRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+export interface FigureBox {
+  size: [number, number, number];
+  at: [number, number, number];
+}
+export const FIGURE_BOXES: Readonly<Record<FigurePart, FigureBox>> = {
+  body: { size: [0.42, 0.78, 0.28], at: [0, 1.02, 0] },
+  head: { size: [0.3, 0.32, 0.3], at: [0, 1.58, 0] },
+  leftArm: { size: [0.15, 0.68, 0.16], at: [-0.225, 1.02, 0] },
+  rightArm: { size: [0.15, 0.68, 0.16], at: [0.225, 1.02, 0] },
+  leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
+  rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
+};
+export type ZombieRegion = ShamblerHitRegion;
 export type ZombieRegions = Record<ZombieRegion, number>;
 
 export const ZOMBIE_REGION_NAMES: readonly ZombieRegion[] = [
@@ -12,7 +36,6 @@ export const ZOMBIE_REGION_NAMES: readonly ZombieRegion[] = [
   'leftLeg',
   'rightLeg',
 ];
-
 export const ZOMBIE_REGION_PART: Readonly<Record<ZombieRegion, FigurePart>> = {
   head: 'head',
   torso: 'body',
@@ -21,40 +44,9 @@ export const ZOMBIE_REGION_PART: Readonly<Record<ZombieRegion, FigurePart>> = {
   leftLeg: 'leftLeg',
   rightLeg: 'rightLeg',
 };
-
-export interface FigureBox {
-  /** Metres, in local figure space. */
-  size: [number, number, number];
-  /** Centre in metres, except leg positions which mark the hip pivot. */
-  at: [number, number, number];
-}
-
 export const FIGURE_PARTS: readonly FigurePart[] = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
-/** Shared rigid-figure geometry: render meshes and melee hit boxes use these same dimensions. */
-export const FIGURE_BOXES: Readonly<Record<FigurePart, FigureBox>> = {
-  body: { size: [0.42, 0.78, 0.28], at: [0, 1.02, 0] },
-  head: { size: [0.3, 0.32, 0.3], at: [0, 1.58, 0] },
-  leftArm: { size: [0.15, 0.68, 0.16], at: [-0.225, 1.02, 0] },
-  rightArm: { size: [0.15, 0.68, 0.16], at: [0.225, 1.02, 0] },
-  leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
-  rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
-};
-
-interface HitPose {
-  position: Vec3;
-  facing: Vec3;
-  headYaw: number;
-  gaitPhase: number;
-  moving: boolean;
-}
-
-const rotateFigurePoint = (x: number, z: number, yaw: number): [number, number] => [
-  x * Math.cos(yaw) + z * Math.sin(yaw),
-  -x * Math.sin(yaw) + z * Math.cos(yaw),
-];
-
-const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: Vec3): number | undefined => {
+const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: readonly number[]): number | undefined => {
   let near = Number.NEGATIVE_INFINITY;
   let far = Number.POSITIVE_INFINITY;
   for (let axis = 0; axis < 3; axis++) {
@@ -78,60 +70,199 @@ const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: Vec3): number | un
   return far < 0 ? undefined : Math.max(near, 0);
 };
 
-/** Distance in block units to the rendered rigid region's first surface, if the ray intersects it. */
-export const zombieRegionHitDistance = ({
-  origin,
-  direction,
-  pose,
-  region,
-  blockSize,
-}: {
-  origin: Vec3;
-  direction: Vec3;
-  pose: HitPose;
-  region: ZombieRegion;
-  blockSize: number;
-}): number | undefined => {
-  const part = ZOMBIE_REGION_PART[region];
-  const box = FIGURE_BOXES[part];
-  const bodyYaw = Math.atan2(-pose.facing[0], -pose.facing[2]);
-  const leg = region === 'leftLeg' || region === 'rightLeg';
-  const stride = leg && pose.moving ? (region === 'leftLeg' ? 1 : -1) * Math.sin(pose.gaitPhase) * 0.22 : 0;
-  const localY = box.at[1] - (leg ? (Math.cos(stride) * box.size[1]) / 2 : 0);
-  const localZ = box.at[2] - (leg ? (Math.sin(stride) * box.size[1]) / 2 : 0);
-  const [offsetX, offsetZ] = rotateFigurePoint(box.at[0], localZ, bodyYaw);
-  const center: Vec3 = [
-    pose.position[0] + offsetX / blockSize,
-    pose.position[1] + localY / blockSize,
-    pose.position[2] + offsetZ / blockSize,
-  ];
-  const yaw = bodyYaw + (region === 'head' ? pose.headYaw : 0);
-  const cosYaw = Math.cos(yaw);
-  const sinYaw = Math.sin(yaw);
-  const relative: Vec3 = [origin[0] - center[0], origin[1] - center[1], origin[2] - center[2]];
-  const localOrigin: Vec3 = [
-    relative[0] * cosYaw - relative[2] * sinYaw,
-    relative[1],
-    relative[0] * sinYaw + relative[2] * cosYaw,
-  ];
-  const localDirection: Vec3 = [
-    direction[0] * cosYaw - direction[2] * sinYaw,
-    direction[1],
-    direction[0] * sinYaw + direction[2] * cosYaw,
-  ];
-  if (leg) {
-    const cosStride = Math.cos(stride);
-    const sinStride = Math.sin(stride);
-    const [, y, z] = localOrigin;
-    localOrigin[1] = cosStride * y + sinStride * z;
-    localOrigin[2] = -sinStride * y + cosStride * z;
-    const [, dy, dz] = localDirection;
-    localDirection[1] = cosStride * dy + sinStride * dz;
-    localDirection[2] = -sinStride * dy + cosStride * dz;
-  }
-  return rayBoxEntry(localOrigin, localDirection, [
-    box.size[0] / (2 * blockSize),
-    box.size[1] / (2 * blockSize),
-    box.size[2] / (2 * blockSize),
-  ]);
+const applyR = (r: readonly number[], p: readonly number[]): Vec3 => [
+  r[0]! * p[0]! + r[1]! * p[1]! + r[2]! * p[2]!,
+  r[3]! * p[0]! + r[4]! * p[1]! + r[5]! * p[2]!,
+  r[6]! * p[0]! + r[7]! * p[1]! + r[8]! * p[2]!,
+];
+
+export interface ZombieHitPoseInput {
+  readonly seed: number;
+  readonly position: Vec3;
+  readonly facing: Vec3;
+  readonly headYaw: number;
+  readonly gaitPhase: number;
+  readonly speed: number;
+  readonly chasing: boolean;
+  readonly attackWindup: number;
+  readonly attackWindupSeconds: number;
+  readonly severed: readonly string[];
+  readonly region: ZombieRegion;
+  readonly blockSize: number;
+}
+
+const actorFor = (seed: number): { actor: WalkActor; bones: readonly Bone[] } => {
+  const { realized, genome } = shamblerFigure(seed);
+  const extents = footRestExtents(realized.body.bones, realized.voxels);
+  const actor: WalkActor = {
+    bones: realized.body.bones,
+    extents,
+    params: genome.params as HumanoidParams,
+    seed,
+  };
+  return { actor, bones: realized.body.bones };
 };
+const actors = new Map<number, ReturnType<typeof actorFor>>();
+const actorForSeed = (seed: number): ReturnType<typeof actorFor> => {
+  let actor = actors.get(seed);
+  if (!actor) {
+    actor = actorFor(seed);
+    actors.set(seed, actor);
+  }
+  return actor;
+};
+
+export interface PosedBoneBox {
+  readonly bone: string;
+  /** Actual posed head-voxel vertical bounds; trims empty corners of rotated head boxes on horizontal rays. */
+  readonly bottomY?: number;
+  readonly topY?: number;
+  /** World centre/orientation in block coordinates; half-size remains metres. */
+  readonly center: Vec3;
+  readonly rotation: Mat3;
+  readonly halfSize: Vec3;
+}
+
+interface PoseBoxContext {
+  readonly transforms: ReturnType<typeof boneTransforms>;
+  readonly figure: ReturnType<typeof shamblerFigure>;
+  readonly hidden: ReadonlySet<string>;
+  readonly yaw: Mat3;
+  readonly position: Vec3;
+  readonly blockSize: number;
+}
+
+const makePosedBoneBox = (
+  region: ZombieRegion,
+  box: BoneVoxelBox,
+  context: PoseBoxContext,
+): PosedBoneBox | undefined => {
+  if (context.hidden.has(box.bone)) {
+    return undefined;
+  }
+  const transform = context.transforms.get(box.bone);
+  if (!transform) {
+    return undefined;
+  }
+  const localCenter = applyR(transform.r, box.center);
+  const centered = [
+    transform.t[0] + localCenter[0],
+    transform.t[1] + localCenter[1],
+    transform.t[2] + localCenter[2],
+  ] as const;
+  const worldOffset = applyR(context.yaw, centered);
+  let bottomY: number | undefined;
+  let topY: number | undefined;
+  if (region === 'head') {
+    bottomY = Number.POSITIVE_INFINITY;
+    topY = Number.NEGATIVE_INFINITY;
+    for (const point of context.figure.voxelCentersByBone.get(box.bone) ?? []) {
+      const y = context.position[1] + (transform.t[1] + applyR(transform.r, point)[1]) / context.blockSize;
+      bottomY = Math.min(bottomY, y);
+      topY = Math.max(topY, y);
+    }
+    const margin = (context.figure.realized.voxels.size / 2 + 0.001) / context.blockSize;
+    bottomY -= margin;
+    topY += margin;
+  }
+  return {
+    bone: box.bone,
+    ...(bottomY === undefined || topY === undefined ? {} : { bottomY, topY }),
+    center: [
+      context.position[0] + worldOffset[0] / context.blockSize,
+      context.position[1] + worldOffset[1] / context.blockSize,
+      context.position[2] + worldOffset[2] / context.blockSize,
+    ],
+    rotation: mulMM(context.yaw, transform.r),
+    halfSize: [...box.halfSize] as Vec3,
+  };
+};
+
+/** Bone boxes for one swing pose. The caller builds them once per nearby zombie, then tests every region. */
+export const posedShamblerRegionBoxes = (
+  input: Omit<ZombieHitPoseInput, 'region'>,
+): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
+  const {
+    seed,
+    position,
+    facing,
+    headYaw,
+    gaitPhase,
+    speed,
+    chasing,
+    attackWindup,
+    attackWindupSeconds,
+    severed,
+    blockSize,
+  } = input;
+  const { actor, bones } = actorForSeed(seed);
+  const phase = ((gaitPhase % Math.PI) + Math.PI) % Math.PI;
+  const clock: GaitClock = { stepIndex: Math.floor(gaitPhase / Math.PI), progress: phase / Math.PI };
+  const stance = chasing || attackWindup > 0 ? 'aggravated' : 'slack';
+  const walk = walkPose(actor, clock, speed, { idle: idlePose(actor, stance, 0) });
+  const attackStart = Math.max(0, LUNGE_GRAB.hitTime - attackWindupSeconds);
+  const attackTime = attackWindup > 0 ? attackStart + attackWindupSeconds - attackWindup : undefined;
+  const basePose: MobPose = attackTime === undefined ? walk : attackPose(actor, LUNGE_GRAB, attackTime, walk);
+  const pose: MobPose =
+    headYaw === 0
+      ? basePose
+      : {
+          ...basePose,
+          rotations: {
+            ...basePose.rotations,
+            head: mulMM(basePose.rotations.head ?? [1, 0, 0, 0, 1, 0, 0, 0, 1], rotY(headYaw)),
+          },
+        };
+  const transforms = boneTransforms(bones, pose);
+  const figure = shamblerFigure(seed);
+  const hidden = severedBoneSet(bones, severed);
+  const yaw: Mat3 = rotY(Math.atan2(-facing[0], -facing[2]));
+  const poseContext = { transforms, figure, hidden, yaw, position, blockSize };
+  const worldBoxes = (region: ZombieRegion, boxes: readonly BoneVoxelBox[]): PosedBoneBox[] =>
+    boxes.flatMap((box) => {
+      const posedBox = makePosedBoneBox(region, box, poseContext);
+      return posedBox ? [posedBox] : [];
+    });
+  return Object.fromEntries(
+    ZOMBIE_REGION_NAMES.map((region) => [region, worldBoxes(region, figure.boxes[region])]),
+  ) as unknown as Record<ZombieRegion, readonly PosedBoneBox[]>;
+};
+
+/** First surface of an actual, posed, unsevered voxel bone box, in block units. */
+export const posedRegionHitDistance = (
+  boxes: readonly PosedBoneBox[],
+  origin: Vec3,
+  direction: Vec3,
+  blockSize: number,
+): number | undefined => {
+  let nearest = Number.POSITIVE_INFINITY;
+  for (const box of boxes) {
+    if (
+      Math.abs(direction[1]) < 1e-12 &&
+      box.bottomY !== undefined &&
+      (origin[1] < box.bottomY || origin[1] > box.topY!)
+    ) {
+      continue;
+    }
+    const inverse = transpose(box.rotation);
+    const localOrigin = applyR(inverse, [
+      origin[0] - box.center[0],
+      origin[1] - box.center[1],
+      origin[2] - box.center[2],
+    ]);
+    const localDirection = applyR(inverse, direction);
+    const hit = rayBoxEntry(
+      localOrigin,
+      localDirection,
+      box.halfSize.map((size) => size / blockSize),
+    );
+    if (hit !== undefined) {
+      nearest = Math.min(nearest, hit);
+    }
+  }
+  return Number.isFinite(nearest) ? nearest : undefined;
+};
+
+/** Return each unposed box in the chosen figure (exposed for proof and renderer parity tests). */
+export const shamblerRegionBoxes = (seed: number): Readonly<Record<ZombieRegion, readonly BoneVoxelBox[]>> =>
+  shamblerFigure(seed).boxes;
