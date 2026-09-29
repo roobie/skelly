@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate, generateValid, realize } from '../src/core/generate.ts';
+import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const SEEDS = 100;
@@ -41,6 +42,32 @@ describe('generate', () => {
       const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, seed).params)));
       expect(keys.size).toBeGreaterThan(40);
     }
+  });
+});
+
+describe('genome checks', () => {
+  const shambler = TEMPLATES.find((x) => x.name === 'shambler')!;
+
+  it('every template samples exactly the humanoid params (a misspelled override would otherwise be silently ignored)', () => {
+    for (const t of TEMPLATES) {
+      expect(Object.keys(t.params).sort()).toEqual([...HUMANOID_PARAM_ORDER].sort());
+    }
+  });
+
+  it('realize rejects a genome missing a param, naming it', () => {
+    for (const name of ['height', 'strideFactor']) {
+      const genome = generate(shambler, 42);
+      const { [name]: _dropped, ...params } = genome.params;
+      expect(() => realize({ ...genome, params })).toThrow(`param "${name}"`);
+    }
+  });
+
+  it('rejects non-finite params and bad wounds', () => {
+    const genome = generate(shambler, 42);
+    expect(() => realize({ ...genome, params: { ...genome.params, girth: Number.NaN } })).toThrow('girth');
+    const wound = { bone: 'spine', t: 0.5, angle: 0, radius: 0.03 };
+    expect(() => realize({ ...genome, wounds: [{ ...wound, bone: 'head' }] })).toThrow('wound 0 has bone "head"');
+    expect(() => realize({ ...genome, wounds: [{ ...wound, t: Number.NaN }] })).toThrow('wound 0 t ');
   });
 });
 
