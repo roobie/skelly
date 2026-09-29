@@ -19,7 +19,7 @@
 
 import type { Bone } from '../core/body.ts';
 import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transpose, type Vec3 } from '../core/math.ts';
-import { boneTransforms, type Pose } from '../core/pose.ts';
+import { boneTransforms, type EulerDeg, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
 import { createStepPlanMemo, type StepPlan, type StepPlanMemo, stepPlanFor } from './steps.ts';
@@ -575,6 +575,8 @@ interface GaitContext {
   /** Swing-hip-drop about Z (see walkPose) — cancelled at the thigh exactly like yaw. */
   readonly pelvisZRollDeg: number;
   readonly pelvisPivot: Vec3;
+  /** Sink for Pose.angles (see core/pose.ts for each bone's composition order), when requested. */
+  readonly angles: Record<string, EulerDeg> | undefined;
 }
 
 /** Per-side leg-placement result: rotations plus the (pre-root) world X the ankle actually reaches. */
@@ -911,6 +913,11 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     out[`thigh.${side}`] = thighR;
     out[`shin.${side}`] = shinR;
     out[`foot.${side}`] = footR;
+    if (ctx.angles) {
+      // thigh = rotY(y) ∘ rotZ(z) ∘ rotX(x); shin = rotX(x); foot is derived (see Pose.angles).
+      ctx.angles[`thigh.${side}`] = [thighDelta, -ctx.yawDeg, abductionDeg - ctx.pelvisZRollDeg];
+      ctx.angles[`shin.${side}`] = [shinDelta, 0, 0];
+    }
   }
 
   const armStyle: LegResult['armStyle'] = {
@@ -934,6 +941,7 @@ const armRotations = (
   progress: number,
   params: HumanoidParams,
   armStyle: LegResult['armStyle'],
+  angles: Record<string, EulerDeg> | undefined,
 ): Record<string, Mat3> => {
   const out: Record<string, Mat3> = {};
   for (const side of SIDES) {
@@ -942,8 +950,15 @@ const armRotations = (
     const style = armStyle[side];
     const hangFactor = 1 - 0.85 * style.hang;
     const swing = (params.armSwing * Math.sin(TAU * progress + offset) + style.forwardExtraDeg) * hangFactor;
-    out[`upperArm.${side}`] = mulMM(rotZ(sign * style.wideExtraDeg), rotX(swing + params.armRaise * hangFactor));
-    out[`forearm.${side}`] = rotX((20 + 15 * Math.sin(TAU * progress + offset)) * hangFactor);
+    const upperX = swing + params.armRaise * hangFactor;
+    const upperZ = sign * style.wideExtraDeg;
+    const foreX = (20 + 15 * Math.sin(TAU * progress + offset)) * hangFactor;
+    out[`upperArm.${side}`] = mulMM(rotZ(upperZ), rotX(upperX));
+    out[`forearm.${side}`] = rotX(foreX);
+    if (angles) {
+      angles[`upperArm.${side}`] = [upperX, 0, upperZ]; // rotZ ∘ rotX
+      angles[`forearm.${side}`] = [foreX, 0, 0];
+    }
   }
   return out;
 };
@@ -1004,17 +1019,21 @@ export interface WalkActor {
  * The walk cycle. `clock` (see GaitClock) is a step index and progress within it, advanced by distance
  * travelled (advanceClock); `speed` (m/s) drives step length and the standing/walking blend. Speed 0
  * gives a still standing pose, regardless of clock. The root may drift sideways (X) as steps stagger —
- * forward progress (Z) stays the caller's job, as before.
+ * forward progress (Z) stays the caller's job, as before. With `recordAngles`, the returned pose also
+ * carries `angles`: the joint angles the rotations are composed from (see Pose.angles for each bone's
+ * composition order). Off by default; the matrices are identical either way.
  */
-export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pose => {
+export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number, recordAngles = false): Pose => {
   const { bones, extents, params, seed } = actor;
   const cache = cacheFor(actor);
   const byId = boneMap(bones);
   const pelvis = byId.get('pelvis')!;
+  // Opt-in: the angle record costs an allocation per bone per call, on a path that is measured in µs.
+  const angles: Record<string, EulerDeg> | undefined = recordAngles ? {} : undefined;
 
   if (speed <= 0) {
     const root: Vec3 = [0, groundOffset(bones, extents, {}, GROUND_SMOOTHING), 0];
-    return { root, rotations: {} };
+    return angles ? { root, rotations: {}, angles } : { root, rotations: {} };
   }
 
   const k = clock.stepIndex;
@@ -1068,6 +1087,7 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pos
     yawDeg,
     pelvisZRollDeg,
     pelvisPivot: pelvis.head,
+    angles,
   };
   const legResult = legAndFootRotations(legCtx);
   // Arms swing slightly wider, away from the lean, for balance.
@@ -1077,21 +1097,32 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pos
     R: { ...legResult.armStyle.R, wideExtraDeg: legResult.armStyle.R.wideExtraDeg + balanceWideDeg },
   };
 
+  const spineY = params.spineTwist * Math.sin(TAU * p * 2 + Math.PI) - yawDeg;
+  const headX = params.headLoll * Math.sin(TAU * p * 2);
+  const jawX = 0.4 * params.jawChatter + 0.6 * params.jawChatter * Math.cos(TAU * (p - JAW_LAG)) ** 2;
   const rotations: Record<string, Mat3> = {
     pelvis: pelvisR,
     // Counter-rotate the spine by -yawDeg so the shoulders don't swing with the hips — exact, same
     // reasoning as the thigh's own yaw cancellation above. rotZ adds the waddle (split spine/chest so
     // it reads through the whole torso, not a kink at one joint).
-    spine: mulMM(rotZ(trunkLeanDeg * 0.6), rotY(params.spineTwist * Math.sin(TAU * p * 2 + Math.PI) - yawDeg)),
+    spine: mulMM(rotZ(trunkLeanDeg * 0.6), rotY(spineY)),
     chest: rotZ(trunkLeanDeg * 0.4),
-    head: mulMM(rotZ(-0.4 * trunkLeanDeg), rotX(params.headLoll * Math.sin(TAU * p * 2))),
+    head: mulMM(rotZ(-0.4 * trunkLeanDeg), rotX(headX)),
     // Slack jaw: a constant sag plus a soft bounce once per footfall (cos², so both ends are smooth),
     // lagging heel-strike by JAW_LAG as if from inertia.
-    jaw: rotX(0.4 * params.jawChatter + 0.6 * params.jawChatter * Math.cos(TAU * (p - JAW_LAG)) ** 2),
-    ...armRotations(progress, params, armStyle),
+    jaw: rotX(jawX),
+    ...armRotations(progress, params, armStyle, angles),
     ...legResult.rotations,
   };
+  if (angles) {
+    // Composition orders are documented on Pose.angles (core/pose.ts).
+    angles.pelvis = [pelvisRollDeg, yawDeg, pelvisZRollDeg];
+    angles.spine = [0, spineY, trunkLeanDeg * 0.6];
+    angles.chest = [0, 0, trunkLeanDeg * 0.4];
+    angles.head = [headX, 0, -0.4 * trunkLeanDeg];
+    angles.jaw = [jawX, 0, 0];
+  }
 
   const root: Vec3 = [legResult.rootX, groundOffset(bones, extents, rotations, GROUND_SMOOTHING), 0];
-  return { root, rotations };
+  return angles ? { root, rotations, angles } : { root, rotations };
 };
