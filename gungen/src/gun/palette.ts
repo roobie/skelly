@@ -58,6 +58,7 @@ const FAMILY_HEX: Record<string, number> = {
 /** Colours keyed by solid id; these win over the family colour. */
 const SPECIAL_HEX: Record<string, number> = {
   floorplate: 0x35_42_58,
+  'butt-pad': 0x2f_32_38,
 };
 
 export const GUN_PALETTE: Palette = createPalette({

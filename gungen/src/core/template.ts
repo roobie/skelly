@@ -11,20 +11,31 @@ export interface ParamReference {
   readonly param: string;
 }
 
+export interface ParamCondition {
+  readonly part: string;
+  readonly param: string;
+  readonly equals: string;
+}
+
+/** Choose a parameter value based on a parameter already selected on another slot. */
+export interface ConditionalChoice {
+  readonly when: ParamCondition;
+  readonly onMatch: Choice<string>;
+  readonly onMismatch: Choice<string>;
+}
+
+export type ParamChoice = Choice<string> | ParamReference | ConditionalChoice;
+
 export interface SlotTemplate {
   /** Becomes the part id in the generated assembly. */
   readonly id: string;
   readonly family: string;
   /** Params to set. Unlisted params are left unset: default or inherited. */
-  readonly params?: Readonly<Record<string, Choice<string> | ParamReference>>;
+  readonly params?: Readonly<Record<string, ParamChoice>>;
   /** Probability the part is included (default 1). */
   readonly chance?: number;
-}
-
-export interface ParamCondition {
-  readonly part: string;
-  readonly param: string;
-  readonly equals: string;
+  /** Include this slot only when the referenced generated part parameter matches. */
+  readonly when?: ParamCondition;
 }
 
 export interface ConnectionTemplate {

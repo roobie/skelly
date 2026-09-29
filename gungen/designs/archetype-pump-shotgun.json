@@ -17,7 +17,7 @@
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "trigger"
+          "layout": "pump"
         }
       },
       "barrel": {
@@ -36,7 +36,7 @@
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "sporting"
+          "style": "tapered"
         }
       }
     },

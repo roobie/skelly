@@ -5,18 +5,31 @@
 import { chance, pick, type Rng, seededRng } from './random.ts';
 import { resolve } from './resolve.ts';
 import type { Assembly, Connection, Domain, PartInstance } from './schema.ts';
-import type { Choice, ConnectionTemplate, ParamReference, Template } from './template.ts';
+import type {
+  Choice,
+  ConditionalChoice,
+  ConnectionTemplate,
+  ParamChoice,
+  ParamCondition,
+  ParamReference,
+  Template,
+} from './template.ts';
 import { type Report, validate } from './validate.ts';
 
 const choose = <T>(rng: Rng, c: Choice<T>): T => (Array.isArray(c) ? pick(rng, c as readonly T[]) : (c as T));
 const isParamReference = (choice: Choice<string> | ParamReference): choice is ParamReference =>
   typeof choice === 'object' && !Array.isArray(choice);
+const isConditionalChoice = (choice: ParamChoice): choice is ConditionalChoice =>
+  typeof choice === 'object' && !Array.isArray(choice) && 'when' in choice;
 const chooseParam = (
   rng: Rng,
-  choice: Choice<string> | ParamReference,
+  choice: ParamChoice,
   parts: Readonly<Record<string, PartInstance>>,
   domain: Domain,
 ): string => {
+  if (isConditionalChoice(choice)) {
+    return choose(rng, conditionMatches(choice.when, parts, domain) ? choice.onMatch : choice.onMismatch);
+  }
   if (!isParamReference(choice)) {
     return choose(rng, choice);
   }
@@ -29,7 +42,7 @@ const chooseParam = (
   return value;
 };
 const conditionMatches = (
-  condition: NonNullable<ConnectionTemplate['when']>,
+  condition: ParamCondition,
   parts: Readonly<Record<string, PartInstance>>,
   domain: Domain,
 ): boolean => {
@@ -52,6 +65,9 @@ export const generate = (template: Template, domain: Domain, seed: number): Asse
   // 1. Which parts, with which params.
   const parts: Record<string, PartInstance> = {};
   for (const slot of template.slots) {
+    if (slot.when && !conditionMatches(slot.when, parts, domain)) {
+      continue;
+    }
     const present = slot.chance === undefined || slot.chance >= 1 || chance(rng, slot.chance);
     if (!present) {
       continue;

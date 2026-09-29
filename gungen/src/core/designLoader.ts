@@ -32,7 +32,7 @@ import {
 } from './parseAssembly.ts';
 import { resolve } from './resolve.ts';
 import type { Assembly, Domain, PartInstance } from './schema.ts';
-import type { ParamReference, SlotTemplate, Template } from './template.ts';
+import type { ConditionalChoice, ParamReference, SlotTemplate, Template } from './template.ts';
 import { validate } from './validate.ts';
 
 /**
@@ -153,6 +153,7 @@ const partPath = (id: string, ...rest: string[]): string => ['assembly', 'parts'
 
 const isParamReference = (choice: unknown): choice is ParamReference =>
   isRecord(choice) && typeof choice.fromSlot === 'string';
+const isConditionalChoice = (choice: unknown): choice is ConditionalChoice => isRecord(choice) && 'when' in choice;
 
 const offeredValues = (choice: string | readonly string[]): readonly string[] =>
   typeof choice === 'string' ? [choice] : choice;
@@ -169,6 +170,18 @@ const staleParam = (
     return undefined;
   }
   const path = partPath(slot.id, 'params', name);
+  if (isConditionalChoice(choice)) {
+    const condition = parts[choice.when.part]?.params?.[choice.when.param];
+    const offered = condition === choice.when.equals ? choice.onMatch : choice.onMismatch;
+    return offeredValues(offered).includes(value)
+      ? undefined
+      : {
+          code: 'template-choice',
+          message: `${slot.id}.${name} is "${value}", which the template no longer offers in this branch (${offeredValues(offered).join(', ')})`,
+          path,
+          parts: [slot.id],
+        };
+  }
   if (isParamReference(choice)) {
     const referenced = parts[choice.fromSlot]?.params?.[choice.param];
     return referenced !== undefined && referenced !== value
@@ -190,8 +203,30 @@ const staleParam = (
       };
 };
 
-const slotIssues = (slot: SlotTemplate, assembly: Assembly): DesignIssue[] => {
+const slotConditionMatches = (slot: SlotTemplate, assembly: Assembly, domain: Domain): boolean => {
+  if (!slot.when) {
+    return true;
+  }
+  const source = assembly.parts[slot.when.part];
+  const family = source && domain.families[source.family];
+  const value = source?.params?.[slot.when.param] ?? family?.params[slot.when.param]?.default;
+  return value === slot.when.equals;
+};
+
+const slotIssues = (slot: SlotTemplate, assembly: Assembly, domain: Domain): DesignIssue[] => {
   const part = assembly.parts[slot.id];
+  if (!slotConditionMatches(slot, assembly, domain)) {
+    return part === undefined
+      ? []
+      : [
+          {
+            code: 'template-choice',
+            message: `${slot.id} is included, but its template condition is not met`,
+            path: partPath(slot.id),
+            parts: [slot.id],
+          },
+        ];
+  }
   if (part === undefined) {
     return (slot.chance ?? 1) >= 1
       ? [
@@ -222,7 +257,7 @@ const slotIssues = (slot: SlotTemplate, assembly: Assembly): DesignIssue[] => {
   return issues;
 };
 
-const templateIssues = (design: Design, template: Template): DesignIssue[] => {
+const templateIssues = (design: Design, template: Template, domain: Domain): DesignIssue[] => {
   const issues: DesignIssue[] = [];
   if (design.template !== template.name) {
     issues.push({
@@ -240,7 +275,7 @@ const templateIssues = (design: Design, template: Template): DesignIssue[] => {
   }
   const slotIds = new Set(template.slots.map((s) => s.id));
   for (const slot of template.slots) {
-    issues.push(...slotIssues(slot, design.assembly));
+    issues.push(...slotIssues(slot, design.assembly, domain));
   }
   for (const id of Object.keys(design.assembly.parts)) {
     if (!slotIds.has(id)) {
@@ -367,7 +402,7 @@ export const loadDesignValue = (raw: unknown, inputs: DesignLoadInputs): DesignL
     return fatal(raw, unknown);
   }
   const issues = [
-    ...templateIssues(design, inputs.template),
+    ...templateIssues(design, inputs.template, inputs.domain),
     ...prefabIssues(design.assembly, inputs.prefabs),
     ...feasibilityIssues(design.assembly, inputs.domain),
   ];

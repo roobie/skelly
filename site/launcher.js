@@ -195,10 +195,12 @@ const gungenUrl = byId('gungen-url');
 const gungenStatus = byId('gungen-status');
 const gungenTemplate = byId('gungen-template');
 const gungenFixture = byId('gungen-fixture');
+const gungenDesign = byId('gungen-design');
 const gungenSeed = gungenForm.elements.namedItem('seed');
 const gungenSet = byId('gungen-set');
 const gungenTemplateFields = byId('gungen-template-fields');
 const gungenFixtureFields = byId('gungen-fixture-fields');
+const gungenDesignFields = byId('gungen-design-fields');
 
 const gungenMode = () => gungenForm.elements.namedItem('gungen-mode').value;
 
@@ -207,6 +209,8 @@ const makeGungenUrl = () => {
   const params = url.searchParams;
   if (gungenMode() === 'fixture') {
     params.set('fixture', gungenFixture.value);
+  } else if (gungenMode() === 'design') {
+    params.set('design', gungenDesign.value);
   } else {
     params.set('template', gungenTemplate.value);
     setUnlessDefault(params, 'seed', gungenSeed.value, '0');
@@ -217,10 +221,12 @@ const makeGungenUrl = () => {
 };
 
 const refreshGungen = () => {
-  const isTemplate = gungenMode() === 'template';
+  const mode = gungenMode();
+  const isTemplate = mode === 'template';
   showWhen(gungenTemplateFields, isTemplate);
-  showWhen(gungenFixtureFields, !isTemplate);
-  if (!gungenForm.checkValidity()) {
+  showWhen(gungenFixtureFields, mode === 'fixture');
+  showWhen(gungenDesignFields, mode === 'design');
+  if (isTemplate && !gungenForm.checkValidity()) {
     gungenUrl.value = '';
     gungenStatus.textContent = 'Enter a whole-number seed in range to make a launch link.';
     return;
@@ -234,7 +240,7 @@ gungenForm.addEventListener('change', refreshGungen);
 gungenForm.addEventListener('submit', (event) => {
   event.preventDefault();
   refreshGungen();
-  if (gungenForm.reportValidity()) {
+  if (gungenMode() !== 'template' || gungenForm.reportValidity()) {
     location.assign(gungenUrl.value);
   }
 });

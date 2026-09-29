@@ -1817,7 +1817,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "trigger",
+          "layout": "pump",
         },
       },
       "receiver": {
@@ -1831,8 +1831,8 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "S",
-          "style": "sporting",
+          "length": "L",
+          "style": "tapered-sawed",
         },
       },
       "tube": {
@@ -1874,7 +1874,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "S",
+          "length": "M",
         },
       },
       "forend": {
@@ -1883,7 +1883,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "lower": {
         "family": "lower",
         "params": {
-          "layout": "trigger",
+          "layout": "pump",
         },
       },
       "receiver": {
@@ -1898,7 +1898,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "sporting",
+          "style": "tapered",
         },
       },
       "tube": {
@@ -1931,7 +1931,16 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       },
       {
         "from": "receiver.stock",
-        "to": "stock.front",
+        "to": "stock-pistol.front",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 3,
+        "to": "sight.base",
       },
     ],
     "description": "Generated from the "pump-shotgun" template with seed 300.",
@@ -1940,11 +1949,17 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "barrel": {
         "family": "barrel",
         "params": {
-          "length": "L",
+          "length": "S",
         },
       },
       "forend": {
         "family": "forend",
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "M",
+        },
       },
       "lower": {
         "family": "lower",
@@ -1960,11 +1975,14 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
           "feed": "tube",
         },
       },
-      "stock": {
+      "sight": {
+        "family": "sight",
+      },
+      "stock-pistol": {
         "family": "stock",
         "params": {
-          "length": "S",
-          "style": "sporting",
+          "length": "M",
+          "style": "straight",
         },
       },
       "tube": {
