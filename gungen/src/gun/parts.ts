@@ -290,6 +290,100 @@ const PISTOL_GRIP_X = -6;
 const REVOLVER_CYLINDER_RADIUS = 3;
 const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
+const EJECTION_PORT_WINDOW = { x: [-9, -5], y: [-1, 2] } as const;
+
+const clipProfile = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boolean): Vec2[] => {
+  const output: Vec2[] = [];
+  const inside = (point: Vec2) => (keepLess ? point[axis] <= edge : point[axis] >= edge);
+  for (let i = 0; i < profile.length; i += 1) {
+    const current = profile[i]!;
+    const previous = profile[(i + profile.length - 1) % profile.length]!;
+    const currentInside = inside(current);
+    const previousInside = inside(previous);
+    if (currentInside !== previousInside) {
+      const ratio = (edge - previous[axis]) / (current[axis] - previous[axis]);
+      const point: Vec2 =
+        axis === 0
+          ? [edge, previous[1] + (current[1] - previous[1]) * ratio]
+          : [previous[0] + (current[0] - previous[0]) * ratio, edge];
+      output.push(point);
+    }
+    if (currentInside) {
+      output.push(current);
+    }
+  }
+  return output;
+};
+
+const validProfile = (profile: readonly Vec2[]): boolean => {
+  if (profile.length < 3) {
+    return false;
+  }
+  const area = profile.reduce((total, point, index) => {
+    const next = profile[(index + 1) % profile.length]!;
+    return total + point[0] * next[1] - next[0] * point[1];
+  }, 0);
+  return Math.abs(area) > 1e-8;
+};
+
+const cutEjectionPort = (partSolid: Solid): Solid[] => {
+  const {
+    x: [x0, x1],
+    y: [y0, y1],
+  } = EJECTION_PORT_WINDOW;
+  if (partSolid.kind === 'extruded-polygon') {
+    const left = clipProfile(partSolid.profile, 0, x0, true);
+    const right = clipProfile(partSolid.profile, 0, x1, false);
+    const middle = clipProfile(clipProfile(partSolid.profile, 0, x0, false), 0, x1, true);
+    const profiles = [left, right, clipProfile(middle, 1, y0, true), clipProfile(middle, 1, y1, false)].filter(
+      validProfile,
+    );
+    return profiles.map((profile, index) =>
+      extrudedPolygon(`${partSolid.id}-port-wall-${index}`, profile, partSolid.z),
+    );
+  }
+  const { center, half } = partSolid.box;
+  const min = center.map((value, axis) => value - half[axis]!) as [number, number, number];
+  const max = center.map((value, axis) => value + half[axis]!) as [number, number, number];
+  const ix0 = Math.max(min[0], x0);
+  const ix1 = Math.min(max[0], x1);
+  const iy0 = Math.max(min[1], y0);
+  const iy1 = Math.min(max[1], y1);
+  if (ix0 >= ix1 || iy0 >= iy1 || min[2] >= max[2]) {
+    return [partSolid];
+  }
+  const pieces: Solid[] = [];
+  const add = (suffix: string, lo: Vec3, hi: Vec3) => {
+    if (lo.every((value, axis) => value < hi[axis]!)) {
+      pieces.push(solid(`${partSolid.id}-${suffix}`, lo, hi));
+    }
+  };
+  add('port-left', min, [ix0, max[1], max[2]]);
+  add('port-right', [ix1, min[1], min[2]], max);
+  add('port-bottom', [ix0, min[1], min[2]], [ix1, iy0, max[2]]);
+  add('port-top', [ix0, iy1, min[2]], [ix1, max[1], max[2]]);
+  return pieces;
+};
+
+const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[] => {
+  if (params.action === 'auto') {
+    if (params.chargingHandle === 'rear-top') {
+      return [solid('charging-handle', [-18, 2, 1.5], [-16, 4, 3])];
+    }
+    if (params.chargingHandle === 'inside') {
+      return [solid('charging-handle', [-10, 0, -3.5], [-8.5, 1, -2.5])];
+    }
+    return [solid('charging-handle', [-4, 0.5, -3.5], [-2.5, 1.5, -2])];
+  }
+  if (params.action === 'bolt') {
+    return [
+      params.boltHandle === 'inside'
+        ? solid('bolt-handle', [-18, 0, 2.5], [-16.5, 1, 4])
+        : solid('bolt-handle', [-12, -0.5, 2], [-10.5, 1, 3.5]),
+    ];
+  }
+  return [];
+};
 
 // ---- receiver ----
 
@@ -301,7 +395,8 @@ export const receiver: PartFamily = {
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. cylinder: revolver. */
     feed: choice('box', 'top', 'tube', 'cylinder'),
     bore: size,
-    chargingHandle: choice('side', 'rear-top'),
+    chargingHandle: { values: ['side', 'rear-top', 'inside'], default: 'side', fault: ['inside'] },
+    boltHandle: { values: ['rest', 'inside'], default: 'rest', fault: ['inside'] },
     rail: choice('full', 'none'),
     magazineWell: {
       values: ['standard', 'recessed'],
@@ -449,9 +544,10 @@ export const receiver: PartFamily = {
         ),
       ];
     }
+    const receiverSolids = keepOuts.some(({ id }) => id === 'ejection') ? solids.flatMap(cutEjectionPort) : solids;
     return {
       family: 'receiver',
-      solids,
+      solids: [...receiverSolids, ...receiverActionDetails(params)],
       ports,
       keepOuts,
       axes: [{ kind: 'bore', origin: [-16, 0, 0], dir: X }],
@@ -469,17 +565,20 @@ export const akReceiver: PartFamily = {
     return {
       ...base,
       solids: [
-        extrudedPolygon(
-          'receiver-body',
-          [
-            [-16, -RECEIVER_FRONT_HALF_HEIGHT],
-            [0, -RECEIVER_FRONT_HALF_HEIGHT],
-            [0, RECEIVER_FRONT_HALF_HEIGHT],
-            [-16 + AK_RECEIVER_REAR_CUT_DEPTH, RECEIVER_FRONT_HALF_HEIGHT],
-            [-16, RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP],
-          ],
-          [-RECEIVER_FRONT_HALF_WIDTH, RECEIVER_FRONT_HALF_WIDTH],
+        ...cutEjectionPort(
+          extrudedPolygon(
+            'receiver-body',
+            [
+              [-16, -RECEIVER_FRONT_HALF_HEIGHT],
+              [0, -RECEIVER_FRONT_HALF_HEIGHT],
+              [0, RECEIVER_FRONT_HALF_HEIGHT],
+              [-16 + AK_RECEIVER_REAR_CUT_DEPTH, RECEIVER_FRONT_HALF_HEIGHT],
+              [-16, RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP],
+            ],
+            [-RECEIVER_FRONT_HALF_WIDTH, RECEIVER_FRONT_HALF_WIDTH],
+          ),
         ),
+        ...receiverActionDetails({ action: 'bolt' }),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],
       // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.

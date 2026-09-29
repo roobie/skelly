@@ -86,10 +86,15 @@ describe('AK-pattern archetype', () => {
 
   it('cuts the receiver rear-top corner while preserving stock and sight interfaces', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
-    const body = receiver.solids.find(({ id }) => id === 'receiver-body');
+    const body = receiver.solids.find(
+      (solid) =>
+        solid.kind === 'extruded-polygon' &&
+        solid.id.startsWith('receiver-body-port-wall') &&
+        solid.profile.some(([x, y]) => x === -16 && y === 1),
+    );
     expect(body?.kind).toBe('extruded-polygon');
     if (body?.kind !== 'extruded-polygon') {
-      throw new Error('Expected a profiled AK receiver body.');
+      throw new Error('Expected the uncut AK receiver rear profile.');
     }
     expect(validateExtrudedPolygon(body.profile, body.z)).toBeUndefined();
     expect(body.profile).toContainEqual([-16, 1]);

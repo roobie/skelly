@@ -1378,6 +1378,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -12,
+        -0.5,
+        2,
+      ],
+      [
+        -12,
+        -0.5,
+        3.5,
+      ],
+      [
+        -12,
+        1,
+        2,
+      ],
+      [
+        -12,
+        1,
+        3.5,
+      ],
+      [
+        -10.5,
+        -0.5,
+        2,
+      ],
+      [
+        -10.5,
+        -0.5,
+        3.5,
+      ],
+      [
+        -10.5,
+        1,
+        2,
+      ],
+      [
+        -10.5,
+        1,
+        3.5,
+      ],
+    ],
+    "id": "bolt-handle",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -13,
         2.5,
         -1.75,
@@ -1455,6 +1502,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-body-port-wall-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+      [
         0,
         -2.5,
         -2,
@@ -1475,7 +1569,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-body",
+    "id": "receiver-body-port-wall-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "receiver-body-port-wall-2",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-body-port-wall-3",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -3095,6 +3283,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -3111,6 +3346,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -3135,7 +3417,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -18,
+        2,
+        1.5,
+      ],
+      [
+        -18,
+        2,
+        3,
+      ],
+      [
+        -18,
+        4,
+        1.5,
+      ],
+      [
+        -18,
+        4,
+        3,
+      ],
+      [
+        -16,
+        2,
+        1.5,
+      ],
+      [
+        -16,
+        2,
+        3,
+      ],
+      [
+        -16,
+        4,
+        1.5,
+      ],
+      [
+        -16,
+        4,
+        3,
+      ],
+    ],
+    "id": "charging-handle",
     "kind": "box",
     "partId": "receiver",
   },
@@ -4567,6 +4943,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -4583,6 +5006,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -4607,7 +5077,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -18,
+        2,
+        1.5,
+      ],
+      [
+        -18,
+        2,
+        3,
+      ],
+      [
+        -18,
+        4,
+        1.5,
+      ],
+      [
+        -18,
+        4,
+        3,
+      ],
+      [
+        -16,
+        2,
+        1.5,
+      ],
+      [
+        -16,
+        2,
+        3,
+      ],
+      [
+        -16,
+        4,
+        1.5,
+      ],
+      [
+        -16,
+        4,
+        3,
+      ],
+    ],
+    "id": "charging-handle",
     "kind": "box",
     "partId": "receiver",
   },
@@ -5324,6 +5888,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -7.25,
+        -2.5,
+        -2,
+      ],
+      [
+        -7.25,
+        -2.5,
+        2,
+      ],
+      [
+        -7.25,
+        -1,
+        -2,
+      ],
+      [
+        -7.25,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-rear-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -5344,13 +5955,60 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -7.25,
+        -9,
         -2.5,
         -2,
       ],
       [
-        -7.25,
+        -9,
         -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-rear-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -7.25,
+        2,
+        -2,
+      ],
+      [
+        -7.25,
+        2,
         2,
       ],
       [
@@ -5364,7 +6022,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body-rear",
+    "id": "body-rear-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -12,
+        -0.5,
+        2,
+      ],
+      [
+        -12,
+        -0.5,
+        3.5,
+      ],
+      [
+        -12,
+        1,
+        2,
+      ],
+      [
+        -12,
+        1,
+        3.5,
+      ],
+      [
+        -10.5,
+        -0.5,
+        2,
+      ],
+      [
+        -10.5,
+        -0.5,
+        3.5,
+      ],
+      [
+        -10.5,
+        1,
+        2,
+      ],
+      [
+        -10.5,
+        1,
+        3.5,
+      ],
+    ],
+    "id": "bolt-handle",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        0.5,
+        -2,
+      ],
+      [
+        -5,
+        0.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+      [
+        -1.25,
+        0.5,
+        -2,
+      ],
+      [
+        -1.25,
+        0.5,
+        2,
+      ],
+      [
+        -1.25,
+        2.5,
+        -2,
+      ],
+      [
+        -1.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "magwell-roof-port-right",
     "kind": "box",
     "partId": "receiver",
   },
@@ -5372,12 +6124,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -7.25,
-        0.5,
+        2,
         -2,
       ],
       [
         -7.25,
-        0.5,
+        2,
         2,
       ],
       [
@@ -5391,27 +6143,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -1.25,
-        0.5,
+        -5,
+        2,
         -2,
       ],
       [
-        -1.25,
-        0.5,
+        -5,
+        2,
         2,
       ],
       [
-        -1.25,
+        -5,
         2.5,
         -2,
       ],
       [
-        -1.25,
+        -5,
         2.5,
         2,
       ],
     ],
-    "id": "magwell-roof",
+    "id": "magwell-roof-port-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -5429,11 +6181,58 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -7.25,
-        0.5,
+        -1,
         -2,
       ],
       [
         -7.25,
+        -1,
+        -1.5,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        -1.5,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        -1.5,
+      ],
+    ],
+    "id": "magwell-wall-left-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        -1.5,
+      ],
+      [
+        -5,
+        0.5,
+        -2,
+      ],
+      [
+        -5,
         0.5,
         -1.5,
       ],
@@ -5458,7 +6257,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.5,
       ],
     ],
-    "id": "magwell-wall-left",
+    "id": "magwell-wall-left-port-right",
     "kind": "box",
     "partId": "receiver",
   },
@@ -5476,11 +6275,58 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -7.25,
-        0.5,
+        -1,
         1.5,
       ],
       [
         -7.25,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        1.5,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        1.5,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "magwell-wall-right-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        1.5,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        0.5,
+        1.5,
+      ],
+      [
+        -5,
         0.5,
         2,
       ],
@@ -5505,7 +6351,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "magwell-wall-right",
+    "id": "magwell-wall-right-port-right",
     "kind": "box",
     "partId": "receiver",
   },
@@ -6749,6 +7595,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -6765,6 +7658,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -6789,7 +7729,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4,
+        0.5,
+        -3.5,
+      ],
+      [
+        -4,
+        0.5,
+        -2,
+      ],
+      [
+        -4,
+        1.5,
+        -3.5,
+      ],
+      [
+        -4,
+        1.5,
+        -2,
+      ],
+      [
+        -2.5,
+        0.5,
+        -3.5,
+      ],
+      [
+        -2.5,
+        0.5,
+        -2,
+      ],
+      [
+        -2.5,
+        1.5,
+        -3.5,
+      ],
+      [
+        -2.5,
+        1.5,
+        -2,
+      ],
+    ],
+    "id": "charging-handle",
     "kind": "box",
     "partId": "receiver",
   },
@@ -7835,6 +8869,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -7851,6 +8932,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -7875,7 +9003,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -12,
+        -0.5,
+        2,
+      ],
+      [
+        -12,
+        -0.5,
+        3.5,
+      ],
+      [
+        -12,
+        1,
+        2,
+      ],
+      [
+        -12,
+        1,
+        3.5,
+      ],
+      [
+        -10.5,
+        -0.5,
+        2,
+      ],
+      [
+        -10.5,
+        -0.5,
+        3.5,
+      ],
+      [
+        -10.5,
+        1,
+        2,
+      ],
+      [
+        -10.5,
+        1,
+        3.5,
+      ],
+    ],
+    "id": "bolt-handle",
     "kind": "box",
     "partId": "receiver",
   },
@@ -8884,6 +10106,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -7.25,
+        -2.5,
+        -2,
+      ],
+      [
+        -7.25,
+        -2.5,
+        2,
+      ],
+      [
+        -7.25,
+        -1,
+        -2,
+      ],
+      [
+        -7.25,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-rear-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -8904,13 +10173,60 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -7.25,
+        -9,
         -2.5,
         -2,
       ],
       [
-        -7.25,
+        -9,
         -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-rear-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -7.25,
+        2,
+        -2,
+      ],
+      [
+        -7.25,
+        2,
         2,
       ],
       [
@@ -8924,7 +10240,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body-rear",
+    "id": "body-rear-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -12,
+        -0.5,
+        2,
+      ],
+      [
+        -12,
+        -0.5,
+        3.5,
+      ],
+      [
+        -12,
+        1,
+        2,
+      ],
+      [
+        -12,
+        1,
+        3.5,
+      ],
+      [
+        -10.5,
+        -0.5,
+        2,
+      ],
+      [
+        -10.5,
+        -0.5,
+        3.5,
+      ],
+      [
+        -10.5,
+        1,
+        2,
+      ],
+      [
+        -10.5,
+        1,
+        3.5,
+      ],
+    ],
+    "id": "bolt-handle",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        0.5,
+        -2,
+      ],
+      [
+        -5,
+        0.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+      [
+        -1.25,
+        0.5,
+        -2,
+      ],
+      [
+        -1.25,
+        0.5,
+        2,
+      ],
+      [
+        -1.25,
+        2.5,
+        -2,
+      ],
+      [
+        -1.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "magwell-roof-port-right",
     "kind": "box",
     "partId": "receiver",
   },
@@ -8932,12 +10342,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -7.25,
-        0.5,
+        2,
         -2,
       ],
       [
         -7.25,
-        0.5,
+        2,
         2,
       ],
       [
@@ -8951,27 +10361,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -1.25,
-        0.5,
+        -5,
+        2,
         -2,
       ],
       [
-        -1.25,
-        0.5,
+        -5,
+        2,
         2,
       ],
       [
-        -1.25,
+        -5,
         2.5,
         -2,
       ],
       [
-        -1.25,
+        -5,
         2.5,
         2,
       ],
     ],
-    "id": "magwell-roof",
+    "id": "magwell-roof-port-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -8989,11 +10399,58 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -7.25,
-        0.5,
+        -1,
         -2,
       ],
       [
         -7.25,
+        -1,
+        -1.5,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        -1.5,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        -1.5,
+      ],
+    ],
+    "id": "magwell-wall-left-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        -1.5,
+      ],
+      [
+        -5,
+        0.5,
+        -2,
+      ],
+      [
+        -5,
         0.5,
         -1.5,
       ],
@@ -9018,7 +10475,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.5,
       ],
     ],
-    "id": "magwell-wall-left",
+    "id": "magwell-wall-left-port-right",
     "kind": "box",
     "partId": "receiver",
   },
@@ -9036,11 +10493,58 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -7.25,
-        0.5,
+        -1,
         1.5,
       ],
       [
         -7.25,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        1.5,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        1.5,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "magwell-wall-right-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        1.5,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        0.5,
+        1.5,
+      ],
+      [
+        -5,
         0.5,
         2,
       ],
@@ -9065,7 +10569,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "magwell-wall-right",
+    "id": "magwell-wall-right-port-right",
     "kind": "box",
     "partId": "receiver",
   },
@@ -9886,6 +11390,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -9902,6 +11453,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -9926,7 +11524,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4,
+        0.5,
+        -3.5,
+      ],
+      [
+        -4,
+        0.5,
+        -2,
+      ],
+      [
+        -4,
+        1.5,
+        -3.5,
+      ],
+      [
+        -4,
+        1.5,
+        -2,
+      ],
+      [
+        -2.5,
+        0.5,
+        -3.5,
+      ],
+      [
+        -2.5,
+        0.5,
+        -2,
+      ],
+      [
+        -2.5,
+        1.5,
+        -3.5,
+      ],
+      [
+        -2.5,
+        1.5,
+        -2,
+      ],
+    ],
+    "id": "charging-handle",
     "kind": "box",
     "partId": "receiver",
   },
@@ -11541,6 +13233,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -11557,6 +13296,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -11581,7 +13367,54 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -13595,6 +15428,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        -1,
+        -2,
+      ],
+      [
+        -9,
+        -1,
+        2,
+      ],
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        -1,
+        -2,
+      ],
+      [
+        -5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "body-port-bottom",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -16,
         -2.5,
         -2,
@@ -13611,6 +15491,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
+        2.5,
+        2,
+      ],
+      [
+        -9,
+        -2.5,
+        -2,
+      ],
+      [
+        -9,
+        -2.5,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-left",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        -2.5,
+        -2,
+      ],
+      [
+        -5,
+        -2.5,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
         2.5,
         2,
       ],
@@ -13635,7 +15562,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "body",
+    "id": "body-port-right",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9,
+        2,
+        -2,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+      [
+        -9,
+        2.5,
+        -2,
+      ],
+      [
+        -9,
+        2.5,
+        2,
+      ],
+      [
+        -5,
+        2,
+        -2,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -5,
+        2.5,
+        -2,
+      ],
+      [
+        -5,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "body-port-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4,
+        0.5,
+        -3.5,
+      ],
+      [
+        -4,
+        0.5,
+        -2,
+      ],
+      [
+        -4,
+        1.5,
+        -3.5,
+      ],
+      [
+        -4,
+        1.5,
+        -2,
+      ],
+      [
+        -2.5,
+        0.5,
+        -3.5,
+      ],
+      [
+        -2.5,
+        0.5,
+        -2,
+      ],
+      [
+        -2.5,
+        1.5,
+        -3.5,
+      ],
+      [
+        -2.5,
+        1.5,
+        -2,
+      ],
+    ],
+    "id": "charging-handle",
     "kind": "box",
     "partId": "receiver",
   },

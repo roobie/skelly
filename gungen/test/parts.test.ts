@@ -316,12 +316,16 @@ describe('tapered stock profile', () => {
     it(`${size}: comb starts at the built receiver rear-face centre`, () => {
       const { def, solids, jointX } = profile(size);
       const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
-      const body = receiver.solids.find((solid) => solid.id === 'body')!;
-      if (body.kind !== 'box') {
-        throw new Error('pump receiver body is not a box');
-      }
-      const [, centerY] = body.box.center;
-      const [, halfY] = body.box.half;
+      const bodyY = receiver.solids.flatMap((solid) => {
+        if (solid.kind !== 'box' || !solid.id.startsWith('body-port-')) {
+          return [];
+        }
+        return [solid.box.center[1] - solid.box.half[1], solid.box.center[1] + solid.box.half[1]];
+      });
+      const minY = Math.min(...bodyY);
+      const maxY = Math.max(...bodyY);
+      const centerY = (minY + maxY) / 2;
+      const halfY = (maxY - minY) / 2;
       const rearFaceTopY = centerY + halfY;
       const combAtJoint = section(solids, jointX).max;
       expect(Math.abs(combAtJoint - centerY)).toBeLessThanOrEqual(0.25);

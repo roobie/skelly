@@ -1116,8 +1116,9 @@ not part of the export's acceptance:
   face at x=-16u touches the stock's upper bar across the full rear-face height
   and width; the test measures the surfaces in world coordinates. A rule
   rejects a thumbhole stock with a non-thumbhole lower or separate grip.
-  `designs/archetype-awm.json` uses the long heavy-barrel profile, detachable
-  box magazine, and optic rail;
+  The grip-post-to-trigger-guard gap stays within 0.25u on AWM and the
+  bolt-rifle override. `designs/archetype-awm.json` uses the long heavy-barrel
+  profile, detachable box magazine, and optic rail;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
   `tapered` style, and the pump-shotgun opts in with M/L lengths; the other
@@ -1133,21 +1134,15 @@ not part of the export's acceptance:
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
   `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower
   at the wrist from above) would need a new convex solid kind and is not asked for;
-- visible action details (BR, 2026-09-28; deferred): charging handles,
-  ejection ports, bolt handles, "and stuff like that". Receivers already
-  declare keep-outs for ejection, the charging handle (side or rear-top) and
-  bolt travel (`src/gun/parts.ts#receiver`), but draw no solid for any of
-  them. The pistol slide is the only part with a visible ejection port, cut
-  as an opening by building the slide from walls around it
-  (`src/gun/parts.ts#pistolSlide`). The same wall construction can cut a
-  receiver's port, provided the mounting contact is kept
-  (`src/core/rules.ts#connectionContact`). A handle is a small solid at the rest end of
-  its travel keep-out, touching it but not inside it. The keep-out rule
-  exempts the keep-out's own part (`src/core/rules.ts#keepOut`), so it won't catch
-  a built-in handle placed inside its own travel. Targeted rest-position
-  tests and a broken fixture have to catch that. Candidates beyond those three,
-  for BR to choose from: the AR forward assist, magazine and bolt releases,
-  and the safety selector;
+- visible action details (BR, 2026-09-28; three basics done): receivers with
+  ejection keep-outs have a real opening; side/rear-top charging handles and
+  bolt handles touch the rest face of their travel volumes. The domain's
+  `action-handle-rest` rule checks each built-in handle against its own travel
+  because the core keep-out rule excludes its owner; `broken-action-handle`
+  proves the bad placement is rejected without changing that core exemption.
+  `test/actionDetails.test.ts` pins the rest faces and the ejection aperture.
+  Candidates beyond these three, for BR to choose from: the AR forward assist,
+  magazine and bolt releases, and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
   shapes are one surface built from many solids, like the curved STANAG
   magazine's run of ring sectors. Bevelling and outlining each segment

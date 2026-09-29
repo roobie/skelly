@@ -72,6 +72,52 @@ export const thumbholeGripMatch: Rule = {
   },
 };
 
+export const actionHandleRest: Rule = {
+  id: 'action-handle-rest',
+  title: 'Action handles sit outside their travel volumes at rest',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [part, def] of placedParts(r)) {
+      for (const handle of def.solids.filter((solid) => solid.id === 'charging-handle' || solid.id === 'bolt-handle')) {
+        const travel = def.keepOuts.find(({ id }) => id === handle.id);
+        if (!travel) {
+          issues.push({
+            rule: 'action-handle-rest',
+            message: `${part}.${handle.id} has no matching travel volume.`,
+            parts: [part],
+          });
+          continue;
+        }
+        if (handle.kind !== 'box') {
+          continue;
+        }
+        const handleBounds = handle.box.center.map((center, axis) => [
+          center - handle.box.half[axis]!,
+          center + handle.box.half[axis]!,
+        ]);
+        const travelBounds = travel.box.center.map((center, axis) => [
+          center - travel.box.half[axis]!,
+          center + travel.box.half[axis]!,
+        ]);
+        const overlaps = handleBounds.map(([min, max], axis) => {
+          const [travelMin, travelMax] = travelBounds[axis]!;
+          return Math.min(max!, travelMax!) - Math.max(min!, travelMin!);
+        });
+        const overlap = Math.min(...overlaps);
+        if (overlap > 1e-6) {
+          issues.push({
+            rule: 'action-handle-rest',
+            message: `${part}.${handle.id} overlaps its rest travel volume by ${overlap.toFixed(2)}u.`,
+            parts: [part],
+            keepOut: { part, id: travel.id },
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
 export const firingGrip: Rule = {
   id: 'firing-grip',
   title: 'There is a firing grip',
