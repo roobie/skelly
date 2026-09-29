@@ -58,6 +58,8 @@ import type { Genome } from '../core/template.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
+  CROWD_COLOR_FRAGMENT,
+  CROWD_FRAGMENT_DECLARATIONS,
   CROWD_VERTEX_DECLARATIONS,
   type CrowdPlacement,
   crowdTexelIndex,
@@ -232,6 +234,9 @@ const buildCrowdGeometry = (realized: Realized): BufferGeometry => {
   const normals = new Float32Array(vertexCount * 3);
   const colors = new Float32Array(vertexCount * 3);
   const boneIndexAttr = new Float32Array(vertexCount);
+  // -1 for a face exposed to empty space, else the neighbouring bone's own index — dismemberment's gore
+  // effect (crowd.ts) tints a face whose neighbour is severed but this bone isn't.
+  const neighbourBoneAttr = new Float32Array(vertexCount);
   const indices = new Uint32Array(indexCount);
 
   let vertexOffset = 0;
@@ -242,6 +247,9 @@ const buildCrowdGeometry = (realized: Realized): BufferGeometry => {
     normals.set(mesh.normals, vertexOffset * 3);
     colors.set(vertexColors(mesh.colors, body.palette), vertexOffset * 3);
     boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
+    for (let v = 0; v < vertices; v++) {
+      neighbourBoneAttr[vertexOffset + v] = mesh.neighbourBone[v]!;
+    }
     for (let i = 0; i < mesh.indices.length; i++) {
       indices[indexOffset + i] = mesh.indices[i]! + vertexOffset;
     }
@@ -254,6 +262,7 @@ const buildCrowdGeometry = (realized: Realized): BufferGeometry => {
   geometry.setAttribute('normal', new BufferAttribute(normals, 3));
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
   geometry.setAttribute('boneIndex', new BufferAttribute(boneIndexAttr, 1));
+  geometry.setAttribute('neighbourBone', new BufferAttribute(neighbourBoneAttr, 1));
   geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeBoundingSphere();
   return geometry;
@@ -516,9 +525,14 @@ export const buildCrowdRender = (
   material.customProgramCacheKey = () => 'mobgen-crowd-bone-texture';
   material.onBeforeCompile = (shader) => {
     shader.uniforms.crowdBoneTexture = { value: texture };
+    shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
     shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`
       .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
       .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
+    shader.fragmentShader = `${CROWD_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`.replace(
+      '#include <color_fragment>',
+      `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}`,
+    );
   };
 
   const byVariant = new Map<number, number[]>();

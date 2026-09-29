@@ -5,10 +5,12 @@
 // *mobgen's* node_modules, not deadvox's — see mobgen/src/viewer/stressActors.ts, the original home of
 // this code, for the three.js-side builder that still lives there: buildCrowdGeometry, buildCrowdRender).
 //
-// Texture layout: one row per actor ("slot"), `bonesPerSlot * 3` texels wide, so one actor's whole bone
-// set fits on one row — no wraparound to reason about in the packing code below or in the shader's texel
-// math. Each bone occupies 3 consecutive RGBA texels within its actor's row: a row-major 3x4 affine
-// matrix, r0 r1 r2 tx | r3 r4 r5 ty | r6 r7 r8 tz (no perspective row — every transform here is rigid).
+// Texture layout: one row per actor ("slot"), `bonesPerSlot * 3` texels wide for the bone matrices plus
+// one more for the severed-bone mask (see crowdMaskTexelIndex/packSeveredMask below — dismemberment), so
+// one actor's whole bone set plus its mask fits on one row — no wraparound to reason about in the packing
+// code below or in the shader's texel math. Each bone occupies 3 consecutive RGBA texels within its
+// actor's row: a row-major 3x4 affine matrix, r0 r1 r2 tx | r3 r4 r5 ty | r6 r7 r8 tz (no perspective row —
+// every transform here is rigid).
 
 import type { MutableTransform } from '../core/pose.ts';
 
@@ -20,14 +22,48 @@ export interface CrowdTextureLayout {
 
 export const crowdTextureLayout = (bonesPerSlot: number, slotCount: number): CrowdTextureLayout => ({
   bonesPerSlot,
-  width: bonesPerSlot * 3,
+  width: bonesPerSlot * 3 + 1,
   height: Math.max(1, slotCount),
 });
 
 /** Flat Float32Array index (RGBA-interleaved) of bone `bone`'s first texel (row 0 of its 3x4 matrix) in
- * actor `slot`'s row. Add 4/8 for rows 1/2, as packCrowdBoneMatrix does. */
+ * actor `slot`'s row. Add 4/8 for rows 1/2, as packCrowdBoneMatrix does. Goes through `layout.width` (not
+ * `bonesPerSlot * 3`) so it stays correct now that a row is one texel wider than the bones alone. */
 export const crowdTexelIndex = (layout: CrowdTextureLayout, slot: number, bone: number): number =>
-  (slot * layout.bonesPerSlot + bone) * 3 * 4;
+  (slot * layout.width + bone * 3) * 4;
+
+/** Flat Float32Array index of the one extra texel per row holding the severed-bone bitmask (see
+ * packSeveredMask) — right after this slot's last bone matrix. Only the texel's first (red) channel is
+ * used; green/blue/alpha are left at whatever the texture was cleared to. */
+export const crowdMaskTexelIndex = (layout: CrowdTextureLayout, slot: number): number =>
+  (slot * layout.width + layout.bonesPerSlot * 3) * 4;
+
+/** A float exactly represents every non-negative integer up to 2^24 — comfortably above any humanoid's
+ * bone count today (18) — so a severed-bone bitmask (bit i set = bone i severed) round-trips through one
+ * float texel with no precision loss, as long as no caller ever sets a bit at or above this. */
+export const CROWD_MASK_MAX_BONES = 24;
+
+/** Packs `severedBoneIndices` (this actor's own bone array indices — callers translate ids via their own
+ * id→index map, e.g. `bones.findIndex`) into `slot`'s mask texel. Bones at or beyond CROWD_MASK_MAX_BONES
+ * are silently dropped (would lose precision as a float) rather than corrupting the whole mask. */
+export const packSeveredMask = (
+  data: Float32Array,
+  layout: CrowdTextureLayout,
+  slot: number,
+  severedBoneIndices: Iterable<number>,
+): void => {
+  let mask = 0;
+  for (const i of severedBoneIndices) {
+    if (i >= 0 && i < CROWD_MASK_MAX_BONES) {
+      mask |= 1 << i;
+    }
+  }
+  data[crowdMaskTexelIndex(layout, slot)] = mask >>> 0;
+};
+
+/** Whether `boneIndex`'s bit is set in a mask value read back from the texture (e.g. in a test — the
+ * shader does the equivalent bit test itself, see CROWD_BEGIN_VERTEX). */
+export const isSeveredInMask = (mask: number, boneIndex: number): boolean => ((mask >>> boneIndex) & 1) === 1;
 
 /** A crowd placement: yaw about Y (radians, three.js/conventions.ts convention: yaw 0 faces -Z) plus a
  * translation — the same thing mobgen's 'bones' stress mode hands its wrapping Group and its 'skinned'
@@ -107,8 +143,11 @@ export const packCrowdBoneMatrix = (
 
 export const CROWD_VERTEX_DECLARATIONS = /* glsl */ `
 uniform highp sampler2D crowdBoneTexture;
+uniform float crowdBonesPerSlot;
 attribute float crowdSlot;
 attribute float boneIndex;
+attribute float neighbourBone;
+varying float vCrowdGore;
 
 mat4 crowdBoneMatrix( float slot, float bone ) {
 
@@ -126,6 +165,24 @@ mat4 crowdBoneMatrix( float slot, float bone ) {
 	);
 
 }
+
+// Dismemberment: one extra texel per row (right after the bones, at column bonesPerSlot*3 — see
+// crowdMaskTexelIndex) holds this actor's severed-bone bitmask, bit i set = bone i severed (see
+// packSeveredMask). A severed bone's own matrix is written as all zeros on the CPU side (mobActors.ts),
+// which alone collapses every one of its vertices to the origin — degenerate, so hiding it needs no shader
+// logic at all. This mask is only for the *gore* tint below: a survivor bone whose neighbourBone has just
+// been severed needs to know that, and the neighbour's own (now-zeroed) matrix doesn't carry that
+// information any more once it's collapsed.
+bool crowdBoneSevered( float slot, float bone ) {
+
+	if ( bone < 0.0 ) return false; // -1: this face's neighbour is empty space, never "severed"
+	int x = int( crowdBonesPerSlot ) * 3;
+	int y = int( slot );
+	int mask = int( texelFetch( crowdBoneTexture, ivec2( x, y ), 0 ).x );
+	int bit = 1 << int( bone );
+	return ( mask & bit ) != 0;
+
+}
 `;
 
 // Computed independently in each replacement (rather than sharing one `crowdM` local) since
@@ -136,9 +193,25 @@ mat4 crowdBoneMatrix( float slot, float bone ) {
 export const CROWD_BEGIN_VERTEX = /* glsl */ `
 mat4 crowdM = crowdBoneMatrix( crowdSlot, boneIndex );
 vec3 transformed = ( crowdM * vec4( position, 1.0 ) ).xyz;
+vCrowdGore = crowdBoneSevered( crowdSlot, neighbourBone ) ? 1.0 : 0.0;
 `;
 
 export const CROWD_BEGINNORMAL_VERTEX = /* glsl */ `
 mat4 crowdNormalM = crowdBoneMatrix( crowdSlot, boneIndex );
 vec3 objectNormal = mat3( crowdNormalM ) * normal;
+`;
+
+export const CROWD_FRAGMENT_DECLARATIONS = /* glsl */ `
+varying float vCrowdGore;
+`;
+
+// Patched in after <color_fragment> (where three applies the per-vertex colour, vColor, to diffuseColor —
+// checked against the installed three.js version's meshlambert_frag/color_fragment.glsl.js), so the gore
+// tint rides on top of whatever the voxel's own palette colour already contributed. Dark red, matching
+// humanoid.ts's own wound "gore" material colour exactly (buildPalette's fixed [0.32, 0.09, 0.06], not
+// genome-sampled) — a fresh cut reads as the same gore as an authored wound. Mostly (0.85) replaces the
+// surviving bone's own colour right at the cut edge rather than just tinting it, so the seam reads clearly
+// even against a light palette.
+export const CROWD_COLOR_FRAGMENT = /* glsl */ `
+diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.32, 0.09, 0.06 ), vCrowdGore * 0.85 );
 `;

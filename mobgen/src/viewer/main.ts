@@ -19,6 +19,7 @@ import { generate, type Realized, realize } from '../core/generate.ts';
 import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
   bodyRestExtents,
@@ -49,6 +50,9 @@ const hitBtn = $<HTMLButtonElement>('hit-btn');
 const dieBtn = $<HTMLButtonElement>('die-btn');
 const resetBtn = $<HTMLButtonElement>('reset-btn');
 const dieBackward = $<HTMLInputElement>('die-backward');
+const severPart = $<HTMLSelectElement>('sever-part');
+const severBtn = $<HTMLButtonElement>('sever-btn');
+const healBtn = $<HTMLButtonElement>('heal-btn');
 const description = $<HTMLParagraphElement>('description');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
@@ -62,6 +66,10 @@ if (new URLSearchParams(location.search).get('shot') === '1') {
 
 for (const t of TEMPLATES) {
   templateSelect.add(new Option(t.name, t.name));
+}
+
+for (const part of SEVERABLE_PARTS) {
+  severPart.add(new Option(part, part));
 }
 
 // ---- three.js setup ----
@@ -139,6 +147,11 @@ let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible a
 let deathTime: number | undefined;
 let deathBasePose: Pose | undefined;
 let deathDirection: 1 | -1 = 1;
+/** Every part cut so far — cumulative, so "Sever" a second part while the first is still missing just adds
+ * to it (severedBoneSet handles any redundancy, e.g. severing a hand after its own upperArm already took
+ * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
+ * concern) — the main viewer just hides bone meshes directly (see scene.ts's setSeveredBones). */
+let severedCuts: string[] = [];
 
 const playAttack = (): void => {
   attackTime = 0; // (re)starts even if one is already playing
@@ -147,6 +160,26 @@ const playAttack = (): void => {
 const playHit = (): void => {
   hitTime = 0; // (re)starts even if one is already playing — layers over whatever's current every frame
   hitSide = hitSide <= 0 ? 1 : -1; // alternate side each press so the mirror is visible across repeats
+};
+
+const applySeveredBones = (): void => {
+  if (!current) {
+    return;
+  }
+  current.actor.setSeveredBones(severedBoneSet(current.realized.body.bones, severedCuts));
+};
+
+const sever = (): void => {
+  const part = severPart.value;
+  if (part && !severedCuts.includes(part)) {
+    severedCuts = [...severedCuts, part];
+  }
+  applySeveredBones();
+};
+
+const heal = (): void => {
+  severedCuts = [];
+  applySeveredBones();
 };
 
 /** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
@@ -299,6 +332,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   attackCooldown = 0;
   hitTime = undefined;
   resetDeath();
+  severedCuts = [];
+  applySeveredBones();
   groundGroup.position.z = 0;
   updateFineGrid(genome.voxelSize);
   applyLayerVisibility();
@@ -391,6 +426,8 @@ attackBtn.addEventListener('click', playAttack);
 hitBtn.addEventListener('click', playHit);
 dieBtn.addEventListener('click', playDeath);
 resetBtn.addEventListener('click', resetDeath);
+severBtn.addEventListener('click', sever);
+healBtn.addEventListener('click', heal);
 globalThis.addEventListener('keydown', (e) => {
   // Ignore while typing into a field (e.g. the seed number input).
   if (document.activeElement?.tagName === 'INPUT') {

@@ -48,4 +48,33 @@ describe('meshBones', () => {
     expect(mesh.indices.length).toBe(mesh.triangles * 3);
     expect(mesh.positions.length).toBe((mesh.indices.length / 6) * 4 * 3); // 4 verts per quad, unmerged single voxel
   });
+
+  it('reports the neighbour bone on a joint face, and none (-1) on outer faces (2-bone toy body)', () => {
+    const voxels = grid([2, 1, 1], [1, 2], [5, 5]);
+    const meshes = meshBones(voxels, 2);
+    const bone0 = meshes.get(0)!; // cell (0,0,0)
+    const bone1 = meshes.get(1)!; // cell (1,0,0)
+    expect(bone0.neighbourBone.length).toBe(bone0.positions.length / 3); // one entry per vertex
+    // bone0's +X face touches bone1 (a single quad, 4 vertices); its other 5 faces are exposed to empty
+    // space (-1). bone1 is the mirror image, reporting bone0 on its own joint face.
+    expect([...bone0.neighbourBone].filter((n) => n === 1)).toHaveLength(4);
+    expect([...bone0.neighbourBone].filter((n) => n === -1)).toHaveLength(20);
+    expect([...bone1.neighbourBone].filter((n) => n === 0)).toHaveLength(4);
+    expect([...bone1.neighbourBone].filter((n) => n === -1)).toHaveLength(20);
+  });
+
+  it('does not merge same-colour faces whose neighbour bone differs (would otherwise be one quad)', () => {
+    // bone0 (index 0) occupies (1,0,0) and (1,0,1), same colour; bone1 (index 1) occupies (0,0,1);
+    // (0,0,0) stays empty. bone0's -X face is exposed on both its cells, but one neighbours empty and the
+    // other neighbours bone1 — without the neighbour bone in the merge key these would wrongly merge into
+    // a single quad (2 triangles) instead of two (4 triangles).
+    const voxels = grid([2, 1, 2], [0, 1, 2, 1], [0, 5, 0, 5]);
+    const meshes = meshBones(voxels, 2);
+    const bone0 = meshes.get(0)!;
+    // The -X face touching bone1 stays its own quad (exactly 4 vertices at neighbourBone 1) — if colour
+    // alone drove merging, it would instead fold into a bigger quad together with the empty-neighboured
+    // -X face right next to it (same colour, adjacent cells).
+    expect([...bone0.neighbourBone].filter((n) => n === 1)).toHaveLength(4);
+    expect([...bone0.neighbourBone].filter((n) => n === -1).length).toBeGreaterThan(0);
+  });
 });

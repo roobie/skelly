@@ -7,7 +7,15 @@ import { describe, expect, it } from 'vitest';
 import { generateValid, realize } from '../src/core/generate.ts';
 import { applyPoint, compose, rotation, rotY, type Transform, translation, type Vec3 } from '../src/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent, type Pose } from '../src/core/pose.ts';
-import { crowdTexelIndex, crowdTextureLayout, packCrowdBoneMatrix } from '../src/mob/crowd.ts';
+import {
+  CROWD_MASK_MAX_BONES,
+  crowdMaskTexelIndex,
+  crowdTexelIndex,
+  crowdTextureLayout,
+  isSeveredInMask,
+  packCrowdBoneMatrix,
+  packSeveredMask,
+} from '../src/mob/crowd.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const shambler = TEMPLATES.find((t) => t.name === 'shambler')!;
@@ -78,9 +86,9 @@ describe('packCrowdBoneMatrix (mobgen/CHALLENGES.md §1: the pure part of crowd 
     }
   });
 
-  it("crowdTextureLayout keeps one actor's whole bone set on one texture row", () => {
+  it("crowdTextureLayout keeps one actor's whole bone set (plus its severed-mask texel) on one texture row", () => {
     const layout = crowdTextureLayout(18, 5);
-    expect(layout.width).toBe(54);
+    expect(layout.width).toBe(55); // 18 bones * 3 texels + 1 mask texel — see crowdMaskTexelIndex
     expect(layout.height).toBe(5);
     // Every texel for slot s, any bone, falls within row s: index (in texels, not floats) is s*width + x
     // for some 0 <= x < width — i.e. flooring texelIndex/width recovers the slot exactly.
@@ -89,6 +97,52 @@ describe('packCrowdBoneMatrix (mobgen/CHALLENGES.md §1: the pure part of crowd 
         const texelIndex = crowdTexelIndex(layout, slot, bone) / 4; // crowdTexelIndex is in floats (RGBA)
         expect(Math.floor(texelIndex / layout.width)).toBe(slot);
       }
+    }
+  });
+
+  it("the mask texel sits right after a slot's last bone, still within that slot's own row", () => {
+    const layout = crowdTextureLayout(18, 5);
+    for (let slot = 0; slot < 5; slot++) {
+      const maskTexel = crowdMaskTexelIndex(layout, slot) / 4;
+      expect(Math.floor(maskTexel / layout.width)).toBe(slot);
+      expect(maskTexel % layout.width).toBe(layout.bonesPerSlot * 3); // the one texel past the last bone
+    }
+  });
+
+  it('packSeveredMask/isSeveredInMask round-trip an arbitrary bone set through one float texel', () => {
+    const layout = crowdTextureLayout(18, 2);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    packSeveredMask(data, layout, 0, [0, 5, 17]);
+    packSeveredMask(data, layout, 1, []); // a different slot's mask is independent
+    const mask0 = data[crowdMaskTexelIndex(layout, 0)]!;
+    const mask1 = data[crowdMaskTexelIndex(layout, 1)]!;
+    for (let bone = 0; bone < 18; bone++) {
+      expect(isSeveredInMask(mask0, bone)).toBe(bone === 0 || bone === 5 || bone === 17);
+      expect(isSeveredInMask(mask1, bone)).toBe(false);
+    }
+  });
+
+  it('round-trips every bone up to CROWD_MASK_MAX_BONES - 1 individually (no cross-bit corruption)', () => {
+    const layout = crowdTextureLayout(CROWD_MASK_MAX_BONES, 1);
+    for (let bone = 0; bone < CROWD_MASK_MAX_BONES; bone++) {
+      const data = new Float32Array(layout.width * layout.height * 4);
+      packSeveredMask(data, layout, 0, [bone]);
+      const mask = data[crowdMaskTexelIndex(layout, 0)]!;
+      for (let check = 0; check < CROWD_MASK_MAX_BONES; check++) {
+        expect(isSeveredInMask(mask, check)).toBe(check === bone);
+      }
+    }
+  });
+
+  it('drops a bone index at or beyond CROWD_MASK_MAX_BONES rather than corrupting the mask', () => {
+    const layout = crowdTextureLayout(CROWD_MASK_MAX_BONES + 4, 1);
+    const data = new Float32Array(layout.width * layout.height * 4);
+    packSeveredMask(data, layout, 0, [2, CROWD_MASK_MAX_BONES, CROWD_MASK_MAX_BONES + 1]);
+    const mask = data[crowdMaskTexelIndex(layout, 0)]!;
+    expect(isSeveredInMask(mask, 2)).toBe(true);
+    // The out-of-range indices must not have wrapped or corrupted the low bits.
+    for (let bone = 0; bone < CROWD_MASK_MAX_BONES; bone++) {
+      expect(isSeveredInMask(mask, bone)).toBe(bone === 2);
     }
   });
 });
