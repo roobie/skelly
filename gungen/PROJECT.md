@@ -934,6 +934,12 @@ names a symbol that isn't in that file.
 
 **3.1 Designs and prefabs.**
 
+**3.1 (in progress):** the archetype designs are in `designs/`, load through
+`loadGunDesign`, pass `npm run check:designs`, and have per-design resolved-solid
+snapshots. The catalogue contains `stanag-20`, `stanag-30`, `ak74-30`, and
+`akm-30`; the AR and AK designs reference `stanag-20` and `ak74-30` respectively.
+Next is viewer save/open, prefab pickers and lock controls.
+
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
 - Prefabs are named, curated parts in `src/gun/prefabs.ts`: a family plus
