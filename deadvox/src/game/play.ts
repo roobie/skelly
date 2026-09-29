@@ -278,7 +278,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       resumeRequested,
     });
     ({ started, mainMenuOpen } = state);
-    if (pointerLockChanged) {
+    if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
     }
     if (state.closeOtherMenus) {
@@ -291,8 +291,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     return state;
   };
   const resume = () => {
-    if (!input.locked) {
-      resumeRequested = true;
+    resumeRequested = true;
+    if (input.locked) {
+      syncMenuState();
+    } else {
       input.lock();
     }
   };

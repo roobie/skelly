@@ -164,14 +164,14 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
     },
   },
   {
-    name: 'a late resume action after lock leaves the already-hidden pause state alone',
-    input: { ...base, started: true, mainMenuOpen: false, pointerLocked: true, resumeRequested: true },
+    name: 'a resume request closes the open menu when the pointer is already locked',
+    input: { ...base, started: true, pointerLocked: true, resumeRequested: true },
     expected: {
       started: true,
       mainMenuOpen: false,
       inventoryOpen: false,
       debugMenuOpen: false,
-      closeOtherMenus: false,
+      closeOtherMenus: true,
       menuPointer: false,
       overlayHidden: true,
       paused: false,
