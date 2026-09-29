@@ -270,9 +270,15 @@ export const boltRifleThumbhole: Template = {
     'AWM-type bolt-action rifle with a heavy barrel, detachable box magazine, thumbhole stock, and optic rail.',
   slots: boltRifleBox.slots
     .filter((slot) => slot.id !== 'grip')
+    .map((slot) => (slot.id === 'receiver' ? { ...slot, params: { ...slot.params, bore: 'M' } } : slot))
     .map((slot) => (slot.id === 'lower' ? { ...slot, params: { ...slot.params, layout: 'thumbhole' } } : slot))
     .map((slot) => (slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'thumbhole' } } : slot))
-    .map((slot) => (slot.id === 'handguard' ? { ...slot, params: { ...slot.params, clearance: ['M', 'L'] } } : slot))
+    .map((slot) => {
+      if (slot.id !== 'handguard') {
+        return slot;
+      }
+      return { ...slot, params: { ...slot.params, barrelBore: 'L', clearance: 'L' } };
+    })
     .map((slot) =>
       slot.id === 'barrel' ? { ...slot, params: { ...slot.params, profile: 'heavy', length: 'L' } } : slot,
     ),
