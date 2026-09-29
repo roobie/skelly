@@ -55,11 +55,9 @@
       "licence": "CC0-1.0",
       "download": "80-CC0-creature-SFX.zip",
       "files": [
-        "assets/audio/shambler-hurt-01.ogg",
-        "assets/audio/shambler-hurt-02.ogg",
-        "assets/audio/shambler-hurt-03.ogg"
+        "assets/audio/shambler-hurt-01.ogg"
       ],
-      "changes": "Selected three hurt variants; converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
+      "changes": "Selected one hurt variant (two more were removed as too high-pitched); converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
     },
     {
       "title": "80 CC0 RPG SFX",
