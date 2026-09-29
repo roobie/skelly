@@ -5,6 +5,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
+import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
 import { ATTACK_CLIPS } from '@mobgen/mob/attack.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
@@ -19,11 +20,13 @@ import { Rng } from '../src/core/random.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import {
   advanceGaitFromMovement,
+  advanceStanceWeight,
   attackJustStarted,
   attackStartTime,
   fallDirectionAwayFromPlayer,
   flinchSideForId,
   MobActorMeshes,
+  targetStanceFor,
   variantIndexForId,
 } from '../src/render/mobActors.ts';
 
@@ -156,7 +159,7 @@ describe('attackStartTime', () => {
 describe('advanceGaitFromMovement', () => {
   const basis = {
     params: { footLift: 0.04 } as HumanoidParams,
-    geomL: { legLen: 0.9, hipY: 0.9, heelLen: 0.1, toeLen: 0.15, ankleRestY: 0.1 },
+    geomL: { legLen: 0.9, l1: 0.45, l2: 0.45, hipY: 0.9, heelLen: 0.1, toeLen: 0.15, ankleRestY: 0.1 },
     seed: 1,
   };
 
@@ -440,6 +443,139 @@ describe('MobActorMeshes dismemberment', () => {
       expect(renderer.debrisCountFor(ids[0]!)).toBe(0);
       for (let i = 1; i < 17; i++) {
         expect(renderer.debrisCountFor(ids[i]!)).toBe(1);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+});
+
+describe('targetStanceFor', () => {
+  it('is aggravated while chasing, even with no attack in progress', () => {
+    const zombie = makeZombie([0, 0, 0]);
+    zombie.mode = 'chase';
+    expect(targetStanceFor(zombie, false)).toBe('aggravated');
+  });
+
+  it('is aggravated during an attack windup, even in a non-chase mode', () => {
+    const zombie = makeZombie([0, 0, 0]);
+    zombie.mode = 'investigate';
+    zombie.attackWindup = 0.2;
+    expect(targetStanceFor(zombie, false)).toBe('aggravated');
+  });
+
+  it('is aggravated while the attack clip itself is playing, even past the windup', () => {
+    const zombie = makeZombie([0, 0, 0]);
+    zombie.mode = 'chase';
+    zombie.attackWindup = 0; // windup elapsed; the clip is now mid-swing
+    expect(targetStanceFor(zombie, true)).toBe('aggravated');
+  });
+
+  it('is slack for idle/stroll/search/return with no windup and no attack playing', () => {
+    const zombie = makeZombie([0, 0, 0]);
+    for (const mode of ['idle', 'stroll', 'search', 'return'] as const) {
+      zombie.mode = mode;
+      expect(targetStanceFor(zombie, false)).toBe('slack');
+    }
+  });
+});
+
+describe('advanceStanceWeight', () => {
+  it('reaches the target in exactly 0.5 s when starting from the opposite extreme', () => {
+    let w = 0;
+    for (let i = 0; i < 30; i++) {
+      w = advanceStanceWeight(w, 'aggravated', 1 / 60); // 30 frames at 60fps = 0.5s
+    }
+    expect(w).toBeCloseTo(1, 6);
+  });
+
+  it('never overshoots past the target', () => {
+    const w = advanceStanceWeight(0.98, 'aggravated', 1); // a huge dt
+    expect(w).toBe(1);
+  });
+
+  it('is a no-op once already at the target', () => {
+    expect(advanceStanceWeight(1, 'aggravated', 1 / 60)).toBe(1);
+    expect(advanceStanceWeight(0, 'slack', 1 / 60)).toBe(0);
+  });
+
+  it('reaches a partial target in less than the full 0.5 s, proportional to the remaining distance', () => {
+    const w = advanceStanceWeight(0.9, 'aggravated', 1 / 60);
+    expect(w).toBeGreaterThan(0.9);
+    expect(w).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('MobActorMeshes stance', () => {
+  it("cross-fades a chasing zombie's stance toward aggravated over time, not instantly", () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1); // starts slack (mode is 'idle')
+      expect(renderer.stanceWeightFor(id)).toBe(0);
+
+      zombie.mode = 'chase';
+      renderer.sync(store, 1 / 60, 1); // one frame in: partway, not yet fully aggravated
+      const partway = renderer.stanceWeightFor(id)!;
+      expect(partway).toBeGreaterThan(0);
+      expect(partway).toBeLessThan(1);
+
+      for (let i = 0; i < 60; i++) {
+        renderer.sync(store, 1 / 60, 1); // a full second more — plenty past the 0.5s cross-fade
+      }
+      expect(renderer.stanceWeightFor(id)).toBeCloseTo(1, 6);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('a freshly-tracked chasing zombie starts already aggravated, not fading in from slack', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      zombie.mode = 'chase';
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.stanceWeightFor(id)).toBe(1);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('never produces the bind pose (identity rotations) for a standing (speed 0) zombie — the whole point of this task', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]); // idle, never moves — speed stays exactly 0
+      const id = store.add(zombie);
+      for (let i = 0; i < 5; i++) {
+        renderer.sync(store, 1 / 60, 1);
+      }
+      for (const boneId of ['spine', 'chest', 'head', 'jaw', 'upperArm.L', 'upperArm.R']) {
+        const r = renderer.boneRotation(id, boneId)!;
+        const isIdentity = r.every((v, i) => Math.abs(v - IDENTITY_M[i]!) < 1e-9);
+        expect(isIdentity, `${boneId} should not be at its raw rest orientation`).toBe(false);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('never produces the bind pose for a chasing (aggravated) zombie either, before or after its stance fully settles', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      zombie.mode = 'chase';
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1); // partway through the cross-fade
+      for (const boneId of ['spine', 'chest', 'head']) {
+        const r = renderer.boneRotation(id, boneId)!;
+        const isIdentity = r.every((v, i) => Math.abs(v - IDENTITY_M[i]!) < 1e-9);
+        expect(isIdentity, `${boneId} should not be at its raw rest orientation`).toBe(false);
       }
     } finally {
       renderer.dispose();

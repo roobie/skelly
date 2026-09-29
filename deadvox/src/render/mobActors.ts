@@ -53,6 +53,7 @@ import { generateValid, type Realized, realize } from '@mobgen/core/generate.ts'
 import { IDENTITY_M, type Mat3, type Vec3 as MobVec3, mulMM, rotAxis, rotY } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
+  blendPose,
   boneTransformsInto,
   indexBonesByParent,
   type MutableTransform,
@@ -89,6 +90,7 @@ import {
   walkPose,
 } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { DEATH_FALL_DURATION, type DeathActor, deathPose, flinchPose, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
@@ -259,6 +261,30 @@ export const fallDirectionAwayFromPlayer = (facing: Vec3, zombiePos: Vec3, playe
 export const attackJustStarted = (attackWait: number, previousAttackWait: number): boolean =>
   attackWait > previousAttackWait;
 
+/** Seconds a stance cross-fade (see advanceStanceWeight) takes to go all the way from slack to aggravated
+ * or back — mirrors mobgen's own IDLE_BLEND_SPEED_MPS walk<->idle blend in spirit (smooth, not a pop), just
+ * time-driven here instead of speed-driven since a zombie's *stance* changes on mode, not speed. */
+const STANCE_CROSSFADE_S = 0.5;
+
+/** Never the bind pose (this whole module exists so it never appears — see mobActors.ts's header and
+ * mobgen's mob/idle.ts): 'aggravated' the instant a zombie is chasing, winding up an attack, or actually
+ * mid-attack-clip; 'slack' otherwise. `attacking` is the renderer's own state (state.attackTime !==
+ * undefined), not on Zombie itself, since it tracks *this renderer's* clip playback, not the sim's attack
+ * cooldown. Exported for test/mobActors.test.ts. */
+export const targetStanceFor = (zombie: Zombie, attacking: boolean): IdleStance =>
+  zombie.mode === 'chase' || zombie.attackWindup > 0 || attacking ? 'aggravated' : 'slack';
+
+/** Moves `current` (0 = slack .. 1 = aggravated) linearly toward `target`'s own weight, covering the full
+ * 0..1 range in STANCE_CROSSFADE_S seconds (so a partial cross-fade in progress, e.g. from a rapid
+ * chase/lose-interest flicker, still reaches the new target in *less* than that — proportional to how far
+ * it already had to go, not always the full 0.5 s). Exported for test/mobActors.test.ts. */
+export const advanceStanceWeight = (current: number, target: IdleStance, dt: number): number => {
+  const targetWeight = target === 'aggravated' ? 1 : 0;
+  const maxDelta = dt / STANCE_CROSSFADE_S;
+  const delta = targetWeight - current;
+  return Math.abs(delta) <= maxDelta ? targetWeight : current + Math.sign(delta) * maxDelta;
+};
+
 /** Where in mobgen's LUNGE_GRAB clip to start playing an attack so its own hitTime lands exactly when the
  * sim's windup elapses and the hit resolves (src/core/zombies.ts telegraphs an attack with a windup before
  * the hit, rather than landing it instantly) — clamped to 0 for a windup at or beyond the clip's hitTime,
@@ -393,6 +419,10 @@ interface Variant {
    * fallen body, since the lowest point once lying down is rarely a foot (see mobgen/src/mob/gait.ts's
    * bodyRestExtents doc comment). */
   readonly bodyExtents: ReadonlyMap<string, Extent>;
+  /** Both idle stances' static base pose (mobgen's idleBasePose — the leg IK/re-grounding, see mob/idle.ts),
+   * computed once here rather than per zombie per frame: every zombie sharing this variant cross-fades
+   * between these same two poses (idlePoseFor), only the per-zombie stanceWeight/idleTime differ. */
+  readonly idleBase: Readonly<Record<IdleStance, Pose>>;
   readonly parentIndex: ParentIndex;
   /** Bone id -> this variant's own bone array index — translates mobgen's severedBoneSet (string ids, body-
    * plan-generic) into the indices the shared texture and its severed mask are keyed by. */
@@ -423,8 +453,16 @@ interface SlotHolder {
 }
 
 interface ZombieRenderState extends SlotHolder {
+  readonly id: EntityId;
   readonly walkActor: WalkActor;
   clock: GaitClock;
+  /** Cross-fade weight toward the aggravated stance (0 = fully slack, 1 = fully aggravated) — see
+   * advanceStanceWeight. Blended with idleBase (idlePoseFor) rather than switched, so a mode change never
+   * pops. */
+  stanceWeight: number;
+  /** This zombie's own idle clock (render time, never reset) — phase-offset by its id (idlePoseFor) so a
+   * crowd sharing one variant doesn't breathe/sway in lockstep; see mobgen's mob/idle.ts. */
+  idleTime: number;
   /** World-space (metres) interpolated position last frame, or undefined the first frame we've seen it —
    * distance moved since then (not since the last *sim tick*) is what advances the gait clock. */
   lastPos: Vec3 | undefined;
@@ -658,6 +696,10 @@ export class MobActorMeshes implements ZombieRenderer {
         walkActorTemplate: v.walkActorTemplate,
         legGeometryL: v.legGeometryL,
         bodyExtents: v.bodyExtents,
+        idleBase: {
+          slack: idleBasePose(v.walkActorTemplate, 'slack'),
+          aggravated: idleBasePose(v.walkActorTemplate, 'aggravated'),
+        },
         parentIndex: indexBonesByParent(v.realized.body.bones),
         boneIndexById,
         geometry,
@@ -695,6 +737,35 @@ export class MobActorMeshes implements ZombieRenderer {
    * for test/mobActors.test.ts; play.ts has no use for it. */
   isFlinching(id: EntityId): boolean {
     return this.states.get(id)?.hitTime !== undefined;
+  }
+
+  /** Test-only: a live zombie's current stance cross-fade weight (0 = slack, 1 = aggravated) — see
+   * advanceStanceWeight. Undefined for a corpse or an untracked id. */
+  stanceWeightFor(id: EntityId): number | undefined {
+    return this.states.get(id)?.stanceWeight;
+  }
+
+  /** Test-only: `boneId`'s *rotation* submatrix (row-major, mobgen's own Mat3 convention — see
+   * mobgen/core/math.ts) as currently packed in the shared texture for `id` (a live zombie or a corpse) —
+   * the world rotation, not just this bone's own local pose delta, but since a zombie facing along -Z has
+   * yaw 0 (packCrowdBoneMatrix contributes no extra rotation at yaw 0 — see its own comment), comparing this
+   * against mobgen's IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
+   * used to assert the old bind/A-pose (every bone left at its raw rest orientation) never reappears.
+   * Undefined for an unknown id/boneId, or for a bone this zombie/corpse has severed (reads as the zero
+   * matrix, not a rotation). */
+  boneRotation(id: EntityId, boneId: string): Mat3 | undefined {
+    const holder: SlotHolder | undefined = this.states.get(id) ?? this.corpses.get(id);
+    if (!holder) {
+      return undefined;
+    }
+    const variant = this.variants[holder.variantIndex]!;
+    const boneIndex = variant.boneIndexById.get(boneId);
+    if (boneIndex === undefined) {
+      return undefined;
+    }
+    const i = crowdTexelIndex(this.layout, holder.globalRow, boneIndex);
+    const d = this.textureData;
+    return [d[i]!, d[i + 1]!, d[i + 2]!, d[i + 4]!, d[i + 5]!, d[i + 6]!, d[i + 8]!, d[i + 9]!, d[i + 10]!];
   }
 
   /** Test-only: true if `boneId`'s matrix in the shared texture, for the row currently assigned to `id` (a
@@ -808,12 +879,18 @@ export class MobActorMeshes implements ZombieRenderer {
     variant.crowdSlotAttr.needsUpdate = true;
     variant.mesh.count = variant.liveIds.length;
     const state: ZombieRenderState = {
+      id,
       variantIndex,
       localSlot,
       globalRow,
       instanceIndex,
       walkActor: { ...variant.walkActorTemplate, cache: createGaitCache() },
       clock: INITIAL_CLOCK,
+      // Starts already at its target weight (not always 0/slack) — a zombie first drawn mid-chase (e.g. it
+      // just entered a variant's capacity, or the renderer was just constructed) shouldn't fade in from
+      // slack; see targetStanceFor/advanceStanceWeight.
+      stanceWeight: targetStanceFor(zombie, false) === 'aggravated' ? 1 : 0,
+      idleTime: 0,
       lastPos: undefined,
       smoothedSpeed: 0,
       quantizedSpeed: 0,
@@ -907,7 +984,12 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
-    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed);
+    const walkBase = walkPose(
+      state.walkActor,
+      state.clock,
+      state.quantizedSpeed,
+      this.idlePoseFor(state, this.variants[state.variantIndex]!),
+    );
     const basePose =
       state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
     this.corpses.set(id, {
@@ -976,7 +1058,7 @@ export class MobActorMeshes implements ZombieRenderer {
 
     const zombieWorldPos = state.lastPos;
     const away = awayFromPlayerXZ(zombieWorldPos, playerPos, this.blockSize);
-    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed);
+    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, this.idlePoseFor(state, variant));
     const frozenPose =
       state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
     const spin = debrisSpinFor(id, part);
@@ -1096,6 +1178,29 @@ export class MobActorMeshes implements ZombieRenderer {
     }
   }
 
+  /** Advances this zombie's own idle clock and cross-fades its stance weight toward whatever
+   * targetStanceFor says right now — regardless of LOD/frustum, same reasoning as
+   * updateMovementAndAttack's own comment (the fade must keep progressing even while this zombie's pose
+   * step itself is skipped, or it visibly jumps once LOD/frustum lets it resume). Must run after
+   * updateMovementAndAttack, which is what sets state.attackTime for this frame. */
+  private updateStance(state: ZombieRenderState, zombie: Zombie, realDt: number): void {
+    state.idleTime += realDt;
+    const target = targetStanceFor(zombie, state.attackTime !== undefined);
+    state.stanceWeight = advanceStanceWeight(state.stanceWeight, target, realDt);
+  }
+
+  /** This zombie's current idle pose: variant.idleBase's two static stances cross-faded by
+   * state.stanceWeight (mobgen's own blendPose), then the cheap time-varying motion (mob/idle.ts's
+   * applyIdleMotion — breathing/sway/head, plus a restless claw once aggravated is the dominant side of the
+   * fade) layered on top, phase-offset by this zombie's own id so a crowd sharing one variant doesn't move
+   * in lockstep. Passed as walkPose's own `idle` argument (mob/gait.ts) so the walk<->idle blend at low
+   * speed — and the plain standing pose at speed 0 — never falls back to the bind pose. */
+  private idlePoseFor(state: ZombieRenderState, variant: Variant): Pose {
+    const base = blendPose(variant.idleBase.slack, variant.idleBase.aggravated, state.stanceWeight);
+    const dominant: IdleStance = state.stanceWeight >= 0.5 ? 'aggravated' : 'slack';
+    return applyIdleMotion(base, dominant, state.idleTime, state.id);
+  }
+
   /** Translates mobgen's severedBoneSet (bone id strings — body-plan-generic) into this variant's own bone
    * array indices, dropping any id this variant's rig doesn't have (defensive; shouldn't happen since every
    * variant is the same shambler body plan). */
@@ -1159,7 +1264,7 @@ export class MobActorMeshes implements ZombieRenderer {
     placement: { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number },
   ): void {
     const { worldPos, yaw, headYaw, verticalOffset } = placement;
-    const basePose = walkPose(state.walkActor, state.clock, state.quantizedSpeed);
+    const basePose = walkPose(state.walkActor, state.clock, state.quantizedSpeed, this.idlePoseFor(state, variant));
     const attacked =
       state.attackTime === undefined ? basePose : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, basePose);
     const headPose = this.withHeadYaw(attacked, headYaw);
@@ -1263,6 +1368,7 @@ export class MobActorMeshes implements ZombieRenderer {
       const verticalOffset = state.stepOffset.update(worldPos, zombie.body.onGround, realDt);
       this.updateMovementAndAttack(state, zombie, { variant, worldPos, realDt });
       this.updateFlinch(state, zombie, realDt);
+      this.updateStance(state, zombie, realDt);
 
       const worldPelvis = new Vector3(worldPos[0], worldPos[1] + PELVIS_HEIGHT_M, worldPos[2]);
       if (this.shouldSkipPose(id, worldPelvis)) {
