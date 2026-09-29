@@ -8,6 +8,15 @@ import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
 
+/**
+ * Rules judge only what they can place. A part with no path to the root (or a
+ * broken connection) is missing from `r.placed`; the structure and
+ * required-ports checks already report it, so a rule skips it rather than
+ * reading a transform that is not there.
+ */
+const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
+  [...r.defs].filter(([part, def]) => r.placed.has(part) && (family === undefined || def.family === family));
+
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const firingGrip: Rule = {
   id: 'firing-grip',
@@ -101,12 +110,12 @@ export const pistolBarrelCrown: Rule = {
   id: 'pistol-barrel-crown',
   title: 'The pistol barrel fits its slide',
   check(r) {
-    const slide = [...r.defs].find(([, def]) => def.family === 'slide')?.[0];
-    const barrel = [...r.defs].find(([, def]) => def.family === 'barrel')?.[0];
+    const [[slide] = []] = placedParts(r, 'slide');
+    const [[barrel] = []] = placedParts(r, 'barrel');
     if (!(slide && barrel) || r.params.get(barrel)?.profile?.value !== 'pistol') {
       return [];
     }
-    const barrelTransform = r.placed.get(barrel)!;
+    const barrelTransform = r.placed.get(barrel)!; // placedParts only returns placed parts
     const slideTransform = r.placed.get(slide)!;
     const barrelEnd = applyPoint(barrelTransform, [maximumLocalX(r, barrel), 0, 0]);
     const slideEnd = applyPoint(slideTransform, [maximumLocalX(r, slide), 0, 0]);
@@ -225,13 +234,13 @@ export const freeFloatClearance: Rule = {
   id: 'free-float-clearance',
   title: 'The free-float handguard clears the barrel',
   check(r) {
-    const barrel = [...r.defs].find(([, def]) => def.family === 'barrel');
+    const [barrel] = placedParts(r, 'barrel');
     if (!barrel) {
       return [];
     }
     const [barrelPart, barrelDef] = barrel;
-    return [...r.defs].flatMap(([handguardPart, handguardDef]) => {
-      if (handguardDef.family !== 'handguard' || r.params.get(handguardPart)?.mount?.value !== 'free-float') {
+    return placedParts(r, 'handguard').flatMap(([handguardPart, handguardDef]) => {
+      if (r.params.get(handguardPart)?.mount?.value !== 'free-float') {
         return [];
       }
       const issue = freeFloatFitIssue(r, { handguardPart, handguardDef, barrelPart, barrelDef });
@@ -319,7 +328,10 @@ const triggerGuardContactIssue = (
     if (!gripPart) {
       continue;
     }
-    const gripTransform = r.placed.get(gripPart)!;
+    const gripTransform = r.placed.get(gripPart);
+    if (!gripTransform) {
+      continue; // unplaced grip: nothing to measure the wall against
+    }
     const gripSolids = r.defs.get(gripPart)!.solids.map((gripSolid) => worldSolid(gripTransform, gripSolid));
     const rearWorld = worldGuards[triggerGuardIds.indexOf('trigger-guard-rear')]!;
     const gap = Math.min(...gripSolids.map((gripSolid) => distanceWorld(rearWorld, gripSolid)));
@@ -343,7 +355,7 @@ export const triggerGuard: Rule = {
   title: 'Every trigger-finger volume has an enclosing guard',
   check(r) {
     const issues: Issue[] = [];
-    for (const [part, def] of r.defs) {
+    for (const [part, def] of placedParts(r)) {
       const finger = def.keepOuts.find(({ id }) => id === 'trigger-finger');
       if (!finger) {
         continue;
