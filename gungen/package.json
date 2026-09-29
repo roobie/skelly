@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:sweeps": "GUNGEN_SWEEPS=1 vitest run",
     "validate": "node src/cli/validate.ts",
+    "check:designs": "node src/cli/checkDesigns.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
     "mesh-stats": "node src/cli/mesh-stats.ts"
