@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { CORE_RULE_IDS } from '../src/core/issue.ts';
+import { CORE_RULES } from '../src/core/rules.ts';
 import type { Assembly, Domain } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -165,5 +167,11 @@ describe('rules', () => {
     expect(issues.filter((issue) => issue.rule === 'feed-match').map((issue) => issue.message)).toEqual([
       'receiver uses revolver action with box feed; revolvers require cylinder feed and other actions do not use it.',
     ]);
+  });
+});
+
+describe('rule id registry', () => {
+  it('CORE_RULE_IDS is the core rule ids plus structure', () => {
+    expect([...CORE_RULE_IDS].sort()).toEqual([...CORE_RULES.map((r) => r.id), 'structure'].sort());
   });
 });

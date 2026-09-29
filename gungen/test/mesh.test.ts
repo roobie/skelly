@@ -1,14 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
 import { BEVEL, meshForSolid, type TriangleMesh } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 
-// Smaller than generate.test.ts's SEEDS: this file already re-runs generate+validate
-// (baseline) and meshForSolid over every solid of every seed (budget), on top of the
+// Smaller than generate.test.ts's SEEDS: this file re-runs generate+resolve and
+// meshForSolid over every solid of every seed (budget), on top of the
 // existing suite's own sweeps; 60 seeds/template keeps that added cost from starving
 // other tests' timeouts when the whole suite runs in parallel.
 const SEEDS = 60;
@@ -128,22 +129,21 @@ describe('meshForSolid', () => {
   });
 });
 
-describe('validator results are unchanged by the mesh module (display-only)', () => {
-  it('per-template valid/distinct counts over a seed sweep match the recorded baseline', () => {
-    const summary = TEMPLATES.map((t) => {
-      let valid = 0;
-      const distinct = new Set<string>();
-      for (let seed = 0; seed < SEEDS; seed++) {
-        const a = generate(t, gunDomain, seed);
-        distinct.add(JSON.stringify({ parts: a.parts, connections: a.connections }));
-        if (validate(a, gunDomain).ok) {
-          valid += 1;
-        }
-      }
-      return { template: t.name, valid, distinct: distinct.size };
-    });
-    expect(summary).toMatchSnapshot();
-  }, 30_000);
+const importRe = /^\s*(?:import|export)[^'"]*from\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
+const meshSpecifierRe = /(^|\/)mesh(\.ts)?$/;
+
+describe('mesh module is display-only', () => {
+  it('the validator path in src/core does not import mesh.ts', () => {
+    for (const name of ['validate.ts', 'rules.ts', 'resolve.ts', 'geometry.ts']) {
+      const source = readFileSync(join(import.meta.dirname, '..', 'src', 'core', name), 'utf8');
+      const specs = [...source.matchAll(importRe)].map((m) => m[1] ?? m[2] ?? '');
+      expect(specs.length, `${name}: no imports parsed`).toBeGreaterThan(0);
+      expect(
+        specs.filter((s) => meshSpecifierRe.test(s)),
+        `${name} imports mesh`,
+      ).toEqual([]);
+    }
+  });
 });
 
 describe('per-assembly triangle budget', () => {
