@@ -69,8 +69,10 @@ const AK_GAS_PORT_X: Record<SizeClass, number> = {
 const akHandguardLength = (length: SizeClass): number =>
   Math.round((AK_GAS_PORT_X[length] * HANDGUARD_REACH.akGasPortFraction) / 2) * 2;
 
-/** Tube magazines sit this far below the bore line. */
-const TUBE_DROP = 2.25;
+/** Tube magazines keep a visible clearance below the barrel for the end lug. */
+const TUBE_HALF_HEIGHT = 1;
+const TUBE_BARREL_CLEARANCE = 0.5;
+const TUBE_RECEIVER_CLEARANCE = 0.25;
 const PUMP_RECEIVER_DROP = 1;
 const PUMP_FOREND_MOUNT_X = 8;
 const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
@@ -221,6 +223,15 @@ const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
 const RECEIVER_FRONT_HALF_WIDTH = 2;
 const AK_STOCK_PORT_Y = RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP - DROPPED_STOCK_WRIST_TOP_Y;
 const BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
+const tubeDropForBore = (bore: SizeClass): number => TUBE_HALF_HEIGHT + BARREL_RADIUS[bore] + TUBE_BARREL_CLEARANCE;
+const receiverTubeSeat = (bore: SizeClass, receiverBottom: number, tubeFed: boolean): Solid[] => {
+  if (!tubeFed) {
+    return [];
+  }
+  const seatBottom =
+    Math.floor((-tubeDropForBore(bore) - TUBE_HALF_HEIGHT - TUBE_RECEIVER_CLEARANCE) / (2 * GRID)) * (2 * GRID);
+  return seatBottom < receiverBottom ? [solid('tube-seat', [-2, seatBottom, -1], [0, receiverBottom, 1])] : [];
+};
 const orientationParts = (value: string): { kind: 'straight' | 'tilt' | 'slant'; degrees: number } => {
   const match = MAGAZINE_ORIENTATION_PATTERN.exec(value);
   if (value === 'tilt') {
@@ -320,7 +331,8 @@ export const receiver: PartFamily = {
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const receiverDrop = params.action === 'pump' && params.feed === 'tube' ? PUMP_RECEIVER_DROP : 0;
+    const tubeFed = params.feed === 'tube';
+    const receiverDrop = params.action === 'pump' && tubeFed ? PUMP_RECEIVER_DROP : 0;
     const receiverBottom = -RECEIVER_FRONT_HALF_HEIGHT - receiverDrop;
     const receiverTop = RECEIVER_FRONT_HALF_HEIGHT - receiverDrop;
     const ports: PortDef[] = [
@@ -390,7 +402,7 @@ export const receiver: PartFamily = {
           id: 'tube',
           mount: 'tube',
           gender: 'female',
-          pos: [0, -TUBE_DROP, 0],
+          pos: [0, -tubeDropForBore(bore), 0],
           normal: X,
           up: Y,
           required: true,
@@ -454,6 +466,7 @@ export const receiver: PartFamily = {
         solid('body', [-16, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH], [0, receiverTop, RECEIVER_FRONT_HALF_WIDTH]),
       ];
     }
+    solids.push(...receiverTubeSeat(bore, receiverBottom, tubeFed));
     return {
       family: 'receiver',
       solids,
@@ -874,10 +887,11 @@ export const barrel: PartFamily = {
         ? akHandguardLength(lengthClass)
         : snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
     const tubeLengthPercent = params.tubeLengthPercent ?? '75';
+    const tubeDrop = tubeDropForBore(bore);
     const tubeEnd = pumpTubeLength(len, tubeLengthPercent);
     const supportLug: PortDef[] =
       tubeEnd > fore
-        ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y }]
+        ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
     return {
       family: 'barrel',
@@ -943,7 +957,7 @@ export const barrel: PartFamily = {
             ]
           : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
-        { id: 'lug', mount: 'lug', gender: 'female', pos: [tubeEnd, -TUBE_DROP, 0], normal: NEG_X, up: Y },
+        { id: 'lug', mount: 'lug', gender: 'female', pos: [tubeEnd, -tubeDrop, 0], normal: NEG_X, up: Y },
         ...supportLug,
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
@@ -1214,12 +1228,18 @@ export const tubeMagazine: PartFamily = {
     const barrelLengthClass = (params.barrelLength ?? size.default) as SizeClass;
     const barrelEnd = barrelLength({ length: barrelLengthClass });
     const lengthPercent = params.lengthPercent ?? '75';
+    const bore = cls(params, 'bore');
+    const tubeDrop = tubeDropForBore(bore);
     const supportX = snapAkGrid(barrelEnd * HANDGUARD_REACH.barrelFraction);
     const length = pumpTubeLength(barrelEnd, lengthPercent);
-    // A slim barrel leaves a gap above the tube; bands bridge it at each attached lug.
-    const bandTop = TUBE_DROP - BARREL_RADIUS[cls(params, 'bore')];
+    // Lug blocks span the designed barrel clearance and sit on the tube's top face.
+    const bandTop = tubeDrop - BARREL_RADIUS[bore];
     const band = (id: string, x: number): Solid[] =>
-      bandTop > 1 ? [solid(id, [x - 1, 1, -0.5], [x, bandTop, 0.5])] : [];
+      bandTop > TUBE_HALF_HEIGHT ? [solid(id, [x - 1, TUBE_HALF_HEIGHT, -0.5], [x, bandTop, 0.5])] : [];
+    const capLug: Solid[] =
+      bandTop > TUBE_HALF_HEIGHT
+        ? [solid('cap-lug', [length - 1.5, TUBE_HALF_HEIGHT, -0.75], [length, bandTop, 0.75])]
+        : [];
     const supportPort: PortDef[] =
       length > supportX
         ? [{ id: 'support', mount: 'lug', gender: 'male', pos: [supportX, 0, 0], normal: X, up: Y }]
@@ -1227,9 +1247,9 @@ export const tubeMagazine: PartFamily = {
     return {
       family: 'tube-magazine',
       solids: [
-        solid('tube', [0, -1, -1], [length, 1, 1]),
+        solid('tube', [0, -TUBE_HALF_HEIGHT, -1], [length, TUBE_HALF_HEIGHT, 1]),
         ...(length > supportX ? band('support-band', supportX) : []),
-        ...band('cap-band', length),
+        ...capLug,
       ],
       ports: [
         { id: 'rear', mount: 'tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },

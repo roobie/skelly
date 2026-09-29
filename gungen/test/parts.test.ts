@@ -18,36 +18,49 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
 
 const pumpTubeDimensions = (input: {
+  bore: 'S' | 'M' | 'L';
   barrelClass: string;
   lengthPercent: '50' | '75' | '100';
 }): {
   tubeEnd: number;
   barrelLug: number | undefined;
+  barrelLugY: number | undefined;
   barrelSupportLug: number | undefined;
   tubeCap: number | undefined;
   tubeSupport: number | undefined;
+  capLugBounds: readonly [number, number, number, number, number, number];
 } => {
   const barrel = FAMILIES.barrel!.build({
-    bore: 'L',
+    bore: input.bore,
     length: input.barrelClass,
     profile: 'standard',
     tubeLengthPercent: input.lengthPercent,
   });
   const tube = FAMILIES['tube-magazine']!.build({
-    bore: 'L',
+    bore: input.bore,
     barrelLength: input.barrelClass,
     lengthPercent: input.lengthPercent,
   });
   const tubeSolid = tube.solids.find((solid) => solid.id === 'tube');
-  if (tubeSolid?.kind !== 'box') {
-    throw new Error('pump magazine tube must be a box');
+  const capLug = tube.solids.find((solid) => solid.id === 'cap-lug');
+  if (tubeSolid?.kind !== 'box' || capLug?.kind !== 'box') {
+    throw new Error('pump magazine tube and cap lug must be boxes');
   }
   return {
     tubeEnd: tubeSolid.box.center[0] + tubeSolid.box.half[0],
     barrelLug: barrel.ports.find((port) => port.id === 'lug')?.pos[0],
+    barrelLugY: barrel.ports.find((port) => port.id === 'lug')?.pos[1],
     barrelSupportLug: barrel.ports.find((port) => port.id === 'support-lug')?.pos[0],
     tubeCap: tube.ports.find((port) => port.id === 'cap')?.pos[0],
     tubeSupport: tube.ports.find((port) => port.id === 'support')?.pos[0],
+    capLugBounds: [
+      capLug.box.center[0] - capLug.box.half[0],
+      capLug.box.center[0] + capLug.box.half[0],
+      capLug.box.center[1] - capLug.box.half[1],
+      capLug.box.center[1] + capLug.box.half[1],
+      capLug.box.center[2] - capLug.box.half[2],
+      capLug.box.center[2] + capLug.box.half[2],
+    ] as const,
   };
 };
 
@@ -488,14 +501,30 @@ describe('pump shotgun tube and barrel contact', () => {
         ['75', (barrelEnd * 3) / 4],
         ['100', barrelEnd],
       ] as const) {
-        const dimensions = pumpTubeDimensions({ barrelClass, lengthPercent });
+        const dimensions = pumpTubeDimensions({ bore: 'L', barrelClass, lengthPercent });
         expect(dimensions.tubeEnd).toBe(tubeEnd);
         expect(dimensions.tubeEnd).toBeLessThanOrEqual(barrelEnd);
         expect(dimensions.barrelLug).toBe(tubeEnd);
         expect(dimensions.barrelSupportLug).toBe(tubeEnd > supportX ? supportX : undefined);
         expect(dimensions.tubeSupport).toBe(tubeEnd > supportX ? supportX : undefined);
         expect(dimensions.tubeCap).toBe(tubeEnd);
+        expect(dimensions.capLugBounds).toEqual([tubeEnd - 1.5, tubeEnd, 1, 1.5, -0.75, 0.75]);
       }
+    }
+  });
+
+  it('keeps a 0.5u barrel-to-tube gap for every bore size', () => {
+    for (const [bore, tubeDrop] of [
+      ['S', 2.25],
+      ['M', 2.5],
+      ['L', 2.75],
+    ] as const) {
+      const dimensions = pumpTubeDimensions({ bore, barrelClass: 'M', lengthPercent: '75' });
+      expect(dimensions.barrelLugY).toBe(-tubeDrop);
+      expect(dimensions.capLugBounds.slice(2, 4)).toEqual([1, 1.5]);
+
+      const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore, rail: 'full' });
+      expect(receiver.ports.find((port) => port.id === 'tube')?.pos[1]).toBe(-tubeDrop);
     }
   });
 
@@ -508,11 +537,16 @@ describe('pump shotgun tube and barrel contact', () => {
     const [bodyBottom, bodyTop] = [body.box.center[1] - body.box.half[1], body.box.center[1] + body.box.half[1]];
     const barrelPort = receiver.ports.find((port) => port.id === 'barrel')!;
     const tubePort = receiver.ports.find((port) => port.id === 'tube')!;
+    const tubeSeat = receiver.solids.find((solid) => solid.id === 'tube-seat');
+    if (tubeSeat?.kind !== 'box') {
+      throw new Error('pump receiver must provide a tube seat');
+    }
+    const tubeSeatBottom = tubeSeat.box.center[1] - tubeSeat.box.half[1];
     const lowerPort = receiver.ports.find((port) => port.id === 'lower')!;
     expect(barrelPort.pos[1]).toBe(0);
     expect(receiver.axes[0]?.origin[1]).toBe(0);
     expect(bodyTop - (barrelPort.pos[1] + 1.25)).toBeCloseTo(0.25);
-    expect(tubePort.pos[1] - 1 - bodyBottom).toBeCloseTo(0.25);
+    expect(tubePort.pos[1] - 1 - tubeSeatBottom).toBeCloseTo(0.25);
     expect(lowerPort.pos[1]).toBe(bodyBottom);
   });
 
