@@ -174,6 +174,7 @@ const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
 const AK_RECEIVER_REAR_CUT_DEPTH = 2;
 const AK_RECEIVER_REAR_CUT_DROP = 1.5;
+const DROPPED_STOCK_WRIST_TOP_Y = -1.5;
 const MAGAZINE_HOUSING_FRONT_LENGTH = 1.5;
 const MAGAZINE_HOUSING_REAR_LENGTH = 2;
 const MAGAZINE_HOUSING_REAR_WALL = 0.5;
@@ -198,6 +199,7 @@ export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
 const RECEIVER_FRONT_HALF_WIDTH = 2;
+const AK_STOCK_PORT_Y = RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP - DROPPED_STOCK_WRIST_TOP_Y;
 const BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const orientationParts = (value: string): { kind: 'straight' | 'tilt' | 'slant'; degrees: number } => {
   const match = MAGAZINE_ORIENTATION_PATTERN.exec(value);
@@ -469,8 +471,12 @@ export const akReceiver: PartFamily = {
         ),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],
+      // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.
+      keepOuts: base.keepOuts.map((path) => (path.id === 'bolt-travel' ? { ...path, allowPort: 'stock' } : path)),
       ports: [
-        ...base.ports,
+        ...base.ports.map((port) =>
+          port.id === 'stock' ? { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const } : port,
+        ),
         {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',
@@ -1723,7 +1729,7 @@ export const stock: PartFamily = {
         family: 'stock',
         solids: [
           solid('comb', [-len, -3, -1.5], [-6, -1.5, 1.5]),
-          solid('wrist', [-6, -4, -1.5], [0, -1.5, 1.5]),
+          solid('wrist', [-6, -4, -1.5], [0, DROPPED_STOCK_WRIST_TOP_Y, 1.5]),
           solid('butt', [-len - 1, -8, -1.75], [-len, 0, 1.75]),
         ],
         ports: [port],

@@ -103,9 +103,8 @@ describe('AK-pattern archetype', () => {
 
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
     const rearFaceY = body.profile.filter(([x]) => x === stockPort.pos[0]).map(([, y]) => y);
-    expect(stockPort.pos).toEqual([-16, 0, 0]);
-    expect(stockPort.pos[1]).toBeGreaterThan(Math.min(...rearFaceY));
-    expect(stockPort.pos[1]).toBeLessThan(Math.max(...rearFaceY));
+    expect(stockPort.pos).toEqual([-16, 2.5, 0]);
+    expect(stockPort.pos[1] - Math.max(...rearFaceY)).toBeCloseTo(1.5, 8);
     expect(stockPort.pos[2]).toBeGreaterThanOrEqual(body.z[0]);
     expect(stockPort.pos[2]).toBeLessThanOrEqual(body.z[1]);
 
