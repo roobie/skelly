@@ -186,15 +186,13 @@ describe('rigid body', () => {
         false,
       );
     }
-    const lowest = Math.min(...points.map((point) => point[1]));
-    const supported = points.some((point) => {
-      const x = Math.floor(point[0] / 0.5);
-      const belowY = Math.floor((point[1] - 0.001) / 0.5);
-      const z = Math.floor(point[2] / 0.5);
-      return world.isSolid(x, belowY, z) && Math.abs(point[1] - (belowY + 1) * 0.5) <= 0.01;
-    });
-    expect(supported).toBe(true);
-    expect(lowest).toBeGreaterThanOrEqual(0);
+    const lowestPoint = points.reduce((lowest, point) => (point[1] < lowest[1] ? point : lowest));
+    const lowestXBlock = Math.floor(lowestPoint[0] / 0.5);
+    const belowY = Math.floor((lowestPoint[1] - 0.001) / 0.5);
+    const lowestZBlock = Math.floor(lowestPoint[2] / 0.5);
+    expect(world.isSolid(lowestXBlock, belowY, lowestZBlock)).toBe(true);
+    expect(Math.abs(lowestPoint[1] - (belowY + 1) * 0.5)).toBeLessThanOrEqual(0.01);
+    expect(lowestPoint[1]).toBeGreaterThanOrEqual(0);
   });
   it('keeps every corner before a wall face while moving at 6 m/s', () => {
     const b = body();
