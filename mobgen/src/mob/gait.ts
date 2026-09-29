@@ -22,7 +22,7 @@ import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transp
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
-import { type StepPlan, stepPlanFor } from './steps.ts';
+import { createStepPlanMemo, type StepPlan, type StepPlanMemo, stepPlanFor } from './steps.ts';
 
 const TAU = Math.PI * 2;
 const toDeg = (rad: number): number => (rad * 180) / Math.PI;
@@ -424,20 +424,17 @@ interface StrideCapEntry {
   readonly geom: GeomSignature;
   readonly value: number;
 }
-// Memoized per actor (params object identity): geom (always the left leg — see strideLength's own
-// comment) comes from this same actor's fixed bones/extents, so for a given actor this is one constant,
-// computed once and reused forever — a WeakMap hit with nothing to build, instead of the string key this
-// used before (see mobgen/CHALLENGES.md §1; caught by profiling: StringAdd/NumberToString were real time
-// here for a value that never changes). The stored geom signature guards the case above (same params,
-// different body): a mismatch just recomputes, it never returns a stale value.
-const strideCapCache = new WeakMap<HumanoidParams, StrideCapEntry>();
 
 /** Largest full-cycle stride whose peak required hip drop (peakRequiredDrop, no crouch, no style) stays
- * within MAX_BOB_FRAC of leg length — found by bisection and memoized per actor. Exported only for
- * test/gait.test.ts's cache-correctness check (same params, two different geometries); every real caller
- * reaches this through strideLength. */
-export const strideCap = (params: HumanoidParams, geom: LegGeometry): number => {
-  const cached = strideCapCache.get(params);
+ * within MAX_BOB_FRAC of leg length — found by bisection. It depends only on `geom` (always the left leg —
+ * see strideLength's own comment), which is constant for an actor, so with a `cache` it is computed once
+ * and reused (GaitCache.strideCap; caught by profiling: the string key this used before was real time
+ * here for a value that never changes). The stored geom signature guards a cache handed a different
+ * body: a mismatch just recomputes, it never returns a stale value. Without a cache it is recomputed on
+ * every call. Exported for test/gait.test.ts's cache-correctness check; every real caller reaches this
+ * through strideLength. */
+export const strideCap = (geom: LegGeometry, cache?: GaitCache): number => {
+  const cached = cache?.strideCap;
   if (cached !== undefined && geomMatches(cached.geom, geom)) {
     return cached.value;
   }
@@ -458,7 +455,9 @@ export const strideCap = (params: HumanoidParams, geom: LegGeometry): number => 
       hi = mid;
     }
   }
-  strideCapCache.set(params, { geom: geomSignature(geom), value: lo });
+  if (cache) {
+    cache.strideCap = { geom: geomSignature(geom), value: lo };
+  }
   return lo;
 };
 
@@ -467,12 +466,12 @@ export const strideCap = (params: HumanoidParams, geom: LegGeometry): number => 
  * limit (legAndFootRotations' hip-drop solve has slack well past it): the longest stride whose peak
  * required hip drop stays within MAX_BOB_FRAC of leg length (see strideCap). Above the cap, cadence alone
  * carries speed — see gait.test.ts. Per-step jitter/style (steps.ts) scales this further, per step. */
-export const strideLength = (params: HumanoidParams, geom: LegGeometry, speed: number): number => {
+export const strideLength = (params: HumanoidParams, geom: LegGeometry, speed: number, cache?: GaitCache): number => {
   if (speed <= 0) {
     return geom.legLen; // unused when standing (speed 0), kept positive so callers never divide by zero
   }
   const raw = geom.legLen * (0.6 + 0.95 * speed) * params.strideFactor;
-  return Math.min(raw, strideCap(params, geom));
+  return Math.min(raw, strideCap(geom, cache));
 };
 
 // A step's own length is half its horizontal reach (flatZ spans -len/2..len/2); beyond STEP_REACH_FRAC of
@@ -490,6 +489,10 @@ export interface GaitBasis {
   readonly geomL: LegGeometry;
   readonly speed: number;
   readonly seed: number;
+  /** The actor's GaitCache (WalkActor.cache), so strideCap and the step plans are memoized per actor.
+   * Optional: without it every call recomputes (correct, just slower); advanceClock then shares one
+   * throwaway cache across its own loop only. */
+  readonly cache?: GaitCache | undefined;
 }
 
 /** This step's own length in metres (half the base full-cycle stride, times this step's jittered/style
@@ -497,8 +500,10 @@ export interface GaitBasis {
  * agree on how far the body travels during step k. Uses the left leg as a shared reference (matches
  * walkPose's own yaw reference). */
 export const stepLengthMeters = (basis: GaitBasis, stepIndex: number): number => {
-  const { params, geomL, speed, seed } = basis;
-  const raw = (strideLength(params, geomL, speed) / 2) * stepPlanFor(seed, stepIndex, params).lengthMul;
+  const { params, geomL, speed, seed, cache } = basis;
+  const raw =
+    (strideLength(params, geomL, speed, cache) / 2) *
+    stepPlanFor(seed, stepIndex, params, cache && stepPlansOf(cache, seed)).lengthMul;
   return Math.min(raw, 2 * STEP_REACH_FRAC * geomL.legLen);
 };
 
@@ -513,7 +518,8 @@ export const INITIAL_CLOCK: GaitClock = { stepIndex: 0, progress: 0 };
 
 /** Advances the clock by `distance` metres, rolling into as many subsequent steps as needed — each
  * step's own length (stepLengthMeters), not a shared stride, so steps aren't uniform. */
-export const advanceClock = (clock: GaitClock, distance: number, basis: GaitBasis): GaitClock => {
+export const advanceClock = (clock: GaitClock, distance: number, given: GaitBasis): GaitClock => {
+  const basis = given.cache ? given : { ...given, cache: createGaitCache() };
   let { stepIndex, progress } = clock;
   let remaining = distance;
   for (let guard = 0; guard < 10_000; guard++) {
@@ -596,8 +602,15 @@ interface LegResult {
 // the walkActorCacheFallback WeakMap for a caller that doesn't set one), so each member gets its own
 // entries and never evicts another member's. It's still a pure memoization — a hit is bit-identical to
 // recomputing (test/poseEquivalence.test.ts covers this through walkPose) — and the stored geom
-// signatures guard the same "same params/actor, different body" case strideCap's cache does.
+// signatures guard the "same cache, different body" case.
+//
+// strideCap and the step plans (steps.ts) used to be module-level WeakMaps keyed on the identity of the
+// params object; they live here too now, so nothing about posing depends on params identity any more
+// (a genome that was re-parsed, cloned or sent through a worker misses nothing). The one remaining
+// identity is the cache's own: see WalkActor.cache.
 export interface GaitCache {
+  strideCap?: StrideCapEntry;
+  stepPlans?: StepPlanMemo;
   footfallPeak?: {
     speed: number;
     readonly geomL: GeomSignature;
@@ -607,6 +620,14 @@ export interface GaitCache {
 }
 
 export const createGaitCache = (): GaitCache => ({});
+
+/** The cache's step-plan memo for this seed, created on first use (a different seed starts a fresh one). */
+const stepPlansOf = (cache: GaitCache, seed: number): StepPlanMemo => {
+  if (cache.stepPlans === undefined || cache.stepPlans.seed !== seed) {
+    cache.stepPlans = createStepPlanMemo(seed);
+  }
+  return cache.stepPlans;
+};
 
 /** For a WalkActor built without its own `cache` (older call sites, ad-hoc test fixtures): still correct
  * (each distinct WalkActor object gets its own entries here), just only as warm as that object's own
@@ -665,8 +686,8 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
 
   const legFor = (side: Side): LegBones => (side === 'L' ? legL : legR);
   const limpOf = (side: Side): number => (side === 'R' ? 1 - clamp(params.limp, 0, 1) : 1);
-  const plan = (i: number): StepPlan => stepPlanFor(seed, i, params);
-  const basis: GaitBasis = { params, geomL: legL, speed, seed };
+  const plan = (i: number): StepPlan => stepPlanFor(seed, i, params, stepPlansOf(cache, seed));
+  const basis: GaitBasis = { params, geomL: legL, speed, seed, cache };
   const lenAt = (i: number): number => stepLengthMeters(basis, i);
   const geomFor = (side: Side, rollMul: number): FootGeometry => {
     const leg = legFor(side);
@@ -968,9 +989,14 @@ export interface WalkActor {
   readonly params: HumanoidParams;
   /** The genome's own seed — drives the deterministic per-step style/jitter stream (steps.ts). */
   readonly seed: number;
-  /** This actor's own footfallPeak memo (see GaitCache) — give each crowd member its own (e.g.
-   * `{ ...poolEntry.walkActor, cache: createGaitCache() }`) when several actors share one pool entry's
-   * WalkActor/params; omit it only for a single, one-off actor (a fallback WeakMap covers that case). */
+  /** This actor's own memo of everything posing caches (footfallPeak, strideCap, step plans — see
+   * GaitCache). Identity invariant: one cache object per actor (same params, seed and body) for that
+   * actor's lifetime; never share one between actors that differ in params (step plans are checked
+   * against the seed only, footfallPeak against speed and leg geometry). Give each crowd member its own
+   * (e.g. `{ ...poolEntry.walkActor, cache: createGaitCache() }`) when several actors share one pool
+   * entry's WalkActor/params. Omitted, walkPose falls back to a WeakMap keyed on this WalkActor object,
+   * so a one-off actor stays warm only while the caller passes the same object every frame (a fresh
+   * object literal per frame recomputes everything). The identity of `params` itself does not matter. */
   readonly cache?: GaitCache;
 }
 
@@ -1001,9 +1027,13 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number): Pos
   const legL = legBonesFor(byId, extents, 'L');
   const legR = legBonesFor(byId, extents, 'R');
   const legForSide = (side: Side): typeof legL => (side === 'L' ? legL : legR);
-  const strideFrac = clamp(strideLength(params, legL, speed) / strideCap(params, legL), 0, 1);
+  const strideFrac = clamp(strideLength(params, legL, speed, cache) / strideCap(legL, cache), 0, 1);
   const yawDeg = MAX_YAW_DEG * strideFrac * Math.cos(TAU * p);
-  const leanStyle = blendStepScalar(k, progress, (i) => stepPlanFor(seed, i, params).leanExtraDeg);
+  const leanStyle = blendStepScalar(
+    k,
+    progress,
+    (i) => stepPlanFor(seed, i, params, stepPlansOf(cache, seed)).leanExtraDeg,
+  );
   const leanDeg = chaseBlend(speed) * clamp(params.hunch / 25, 0, 1) * 8 + leanStyle;
   const pelvisRollDeg = params.pelvisSway * Math.sin(TAU * p * 2) + leanDeg;
   // Pelvis roll-about-Z: the swing hip drops a few degrees, 0 at each footfall (double support, pelvis

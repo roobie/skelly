@@ -6,6 +6,7 @@ import { voxelize } from '../src/core/voxelize.ts';
 import {
   advanceClock,
   corners,
+  createGaitCache,
   footRestExtents,
   type GaitBasis,
   type GaitClock,
@@ -460,31 +461,59 @@ describe('strideLength', () => {
   });
 });
 
-describe('strideCap caching (mobgen/CHALLENGES.md §1: keyed on params, must not go stale on a different body)', () => {
-  // Same params object throughout — the exact scenario a stale cache would miss: a voxel-size override,
-  // a re-realize, or (here) simply two unrelated bodies that happen to share a params object.
-  const params = { strideFactor: 1, footLift: 0.04 } as HumanoidParams;
+describe('strideCap/step-plan caching (mobgen/CHALLENGES.md §1: per-actor GaitCache, must not go stale on a different body)', () => {
+  // One cache throughout — the exact scenario a stale cache would miss: a voxel-size override, a
+  // re-realize, or (here) simply two unrelated bodies handed the same cache.
   const geomA = { legLen: 0.75, hipY: 0.89, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
   const geomB = { legLen: 1.05, hipY: 1.19, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 }; // longer leg only
 
-  it('gives different (and larger, for the longer leg) caps for two geometries sharing one params object', () => {
-    const capA = strideCap(params, geomA);
-    const capB = strideCap(params, geomB);
+  it('gives different (and larger, for the longer leg) caps for two geometries sharing one cache', () => {
+    const cache = createGaitCache();
+    const capA = strideCap(geomA, cache);
+    const capB = strideCap(geomB, cache);
     expect(capB).toBeGreaterThan(capA);
   });
 
   it("a later call for the first geometry recomputes instead of returning the second geometry's cached value", () => {
-    const capA = strideCap(params, geomA);
-    strideCap(params, geomB); // overwrites params' single cache slot with geomB's entry
-    const capAAgain = strideCap(params, geomA); // must notice geomA no longer matches what's cached
+    const cache = createGaitCache();
+    const capA = strideCap(geomA, cache);
+    strideCap(geomB, cache); // overwrites the cache's single slot with geomB's entry
+    const capAAgain = strideCap(geomA, cache); // must notice geomA no longer matches what's cached
     expect(capAAgain).toBe(capA);
-    expect(capAAgain).not.toBe(strideCap(params, geomB));
+    expect(capAAgain).not.toBe(strideCap(geomB, cache));
   });
 
-  it('a cache hit equals a fully uncached computation (a fresh params object, asked once)', () => {
-    const cached = strideCap(params, geomA); // params already warm from the tests above
-    const fresh = strideCap({ ...params }, geomA); // a distinct object: guaranteed first-ever lookup
-    expect(cached).toBe(fresh);
+  it('a cache hit equals a fully uncached computation', () => {
+    const cache = createGaitCache();
+    strideCap(geomA, cache);
+    expect(strideCap(geomA, cache)).toBe(strideCap(geomA));
+  });
+
+  it('a cloned params object still hits the same per-actor cache (params identity plays no part)', () => {
+    const { body, extents, params, seed } = setup('shambler');
+    const cache = createGaitCache();
+    const geomL = legGeometryFor(body.bones, extents, 'L');
+    const len = stepLengthMeters({ params, geomL, speed: 1.4, seed, cache }, 3);
+    const plans = cache.stepPlans;
+    const cap = cache.strideCap;
+    expect(plans?.entries.size).toBeGreaterThan(0);
+    expect(cap).toBeDefined();
+    const again = stepLengthMeters({ params: structuredClone(params), geomL, speed: 1.4, seed, cache }, 3);
+    expect(again).toBe(len);
+    expect(cache.stepPlans).toBe(plans);
+    expect(cache.strideCap).toBe(cap);
+  });
+
+  it('two actors sharing one params object but not a cache never see each other’s step plans', () => {
+    const { body, extents, params } = setup('shambler');
+    const geomL = legGeometryFor(body.bones, extents, 'L');
+    const a = createGaitCache();
+    const b = createGaitCache();
+    stepLengthMeters({ params, geomL, speed: 1.4, seed: 1, cache: a }, 2);
+    stepLengthMeters({ params, geomL, speed: 1.4, seed: 2, cache: b }, 2);
+    expect(a.stepPlans?.seed).toBe(1);
+    expect(b.stepPlans?.seed).toBe(2);
+    expect(a.stepPlans).not.toBe(b.stepPlans);
   });
 });
 

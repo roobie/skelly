@@ -365,15 +365,15 @@ const poseFor = (member: CrowdMember): Pose => {
 const advanceMember = (member: CrowdMember, dt: number): void => {
   const entry = pool[member.poolIndex]!;
   const distance = member.speed * dt;
-  // geomL (leg geometry) and the basis's params/seed are shared across every member of this pool entry —
-  // fine: they're constant for a given body, so strideCap's own cache (keyed on params, validated against
-  // the geometry — see gait.ts) is correctly shared too. Only footfallPeak (inside walkPose/attackPose
-  // above) needs a *per-member* cache, since it also depends on this member's own speed.
+  // geomL (leg geometry) and the basis's params/seed are shared across every member of this pool entry;
+  // the member's own GaitCache (strideCap, step plans, footfallPeak) is passed so advanceClock and
+  // walkPose/attackPose (above) warm the same per-member entries.
   member.clock = advanceClock(member.clock, distance, {
     params: member.walkActor.params,
     geomL: entry.legGeometryL,
     speed: member.speed,
     seed: member.walkActor.seed,
+    cache: member.walkActor.cache,
   });
   member.path.angle += (distance / member.path.radius) * member.path.dir;
   if (member.attacker) {

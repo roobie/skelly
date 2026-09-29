@@ -71,54 +71,45 @@ const pickStyle = (rand: () => number, weights: Record<StepStyle, number>): Step
 // Perf (mobgen/CHALLENGES.md §1): this was the single hottest function on the posing path — every
 // walkPose/advanceClock call queries a handful of step indices (this step, its neighbours, and each
 // footfall's own peak search), each of which used to re-run the mulberry32 draws, styleWeights object
-// and style pick from scratch, every frame, for every actor. Since a step's plan only depends on (seed,
-// stepIndex, params) and neither the genome's seed nor its params ever change for a given actor, it's
-// cached per params object (stable per actor — one HumanoidParams per genome). This cache is deliberately
-// shared across every crowd member referencing the same pool entry (same params object): they'd compute
-// the identical plan for a shared stepIndex anyway, so sharing only means more hits, never a wrong
-// answer. That did mean a *window* around "the most recently asked-for stepIndex" was the wrong pruning
-// policy — different members sit at very different stepIndex values at the same time, so the window kept
-// evicting entries other members still needed (see mobgen's report). Pruned by size instead (oldest
-// inserted first, once the cache is generously large), which doesn't play favourites among members. Purely
-// a memoization of a pure function: every cached value is bit-identical to what computeStepPlan would
-// return fresh (see test/poseEquivalence.test.ts, which exercises this indirectly through walkPose), so
-// there's nothing to keep in sync — same inputs always give the same plan, whether this is the first or
-// the millionth call.
-interface StepPlanCache {
-  readonly seed: number;
+// and style pick from scratch, every frame, for every actor. A step's plan only depends on (seed,
+// stepIndex, params) and neither the genome's seed nor its params ever change for a given actor, so it is
+// memoized in a StepPlanMemo that the caller owns: walkPose/advanceClock keep one per actor on its
+// GaitCache (gait.ts), so the memo needs no identity of `params` at all — a genome that was re-parsed or
+// crossed a worker boundary still hits, as long as the same actor keeps its cache. Purely a memoization
+// of a pure function: every cached value is bit-identical to what computeStepPlan would return fresh (see
+// test/poseEquivalence.test.ts, which exercises this indirectly through walkPose), so there's nothing to
+// keep in sync. Pruned by size (oldest inserted first, once the cache is generously large) rather than by
+// a window around the latest stepIndex, so only a long-idle tail is ever dropped.
+//
+// A memo belongs to one (params, seed) pair: `seed` is checked (a mismatch starts over), `params` cannot
+// be, so never hand one memo to actors whose params differ.
+export interface StepPlanMemo {
+  seed: number;
   readonly entries: Map<number, StepPlan>;
 }
-const stepPlanCaches = new WeakMap<HumanoidParams, StepPlanCache>();
-// Generous on purpose: a crowd of many members sharing one pool entry can span a wide range of live
-// stepIndex values at once (see the comment above) — this should only ever trim a long-idle tail, not an
-// active member's own range.
+export const createStepPlanMemo = (seed: number): StepPlanMemo => ({ seed, entries: new Map() });
 const STEP_PLAN_CACHE_MAX = 500;
 const STEP_PLAN_CACHE_TRIM_TO = 250;
 
-const stepPlanCacheFor = (params: HumanoidParams, seed: number): Map<number, StepPlan> => {
-  const existing = stepPlanCaches.get(params);
-  if (existing && existing.seed === seed) {
-    return existing.entries;
-  }
-  const entries = new Map<number, StepPlan>();
-  stepPlanCaches.set(params, { seed, entries });
-  return entries;
-};
-
 /** This step's plan — deterministic from (seed, stepIndex, params): same inputs always give the same
  * plan. Looks back exactly one step (not chained further) to avoid repeating an odd style twice running.
- * Memoized (see the comment above) — computeStepPlan below is the actual, uncached computation. */
-export const stepPlanFor = (seed: number, stepIndex: number, params: HumanoidParams): StepPlan => {
-  const cache = stepPlanCacheFor(params, seed);
+ * Memoized in `memo` when given (see the comment above; a memo for a different seed is reset in place),
+ * otherwise a throwaway memo is used — computeStepPlan below is the actual, uncached computation. */
+export const stepPlanFor = (seed: number, stepIndex: number, params: HumanoidParams, memo?: StepPlanMemo): StepPlan => {
+  const m = memo ?? createStepPlanMemo(seed);
+  if (m.seed !== seed) {
+    m.seed = seed;
+    m.entries.clear();
+  }
+  const cache = m.entries;
   const cached = cache.get(stepIndex);
   if (cached) {
     return cached;
   }
-  const plan = computeStepPlan(seed, stepIndex, params);
+  const plan = computeStepPlan(seed, stepIndex, params, m);
   cache.set(stepIndex, plan);
   if (cache.size > STEP_PLAN_CACHE_MAX) {
-    // Map iterates in insertion order: this deletes the oldest-inserted entries first, a fair trim across
-    // every member sharing this cache rather than one keyed to whichever stepIndex was just asked about.
+    // Map iterates in insertion order: this deletes the oldest-inserted entries first.
     let excess = cache.size - STEP_PLAN_CACHE_TRIM_TO;
     for (const key of cache.keys()) {
       if (excess <= 0) {
@@ -131,10 +122,10 @@ export const stepPlanFor = (seed: number, stepIndex: number, params: HumanoidPar
   return plan;
 };
 
-const computeStepPlan = (seed: number, stepIndex: number, params: HumanoidParams): StepPlan => {
+const computeStepPlan = (seed: number, stepIndex: number, params: HumanoidParams, memo: StepPlanMemo): StepPlan => {
   const rand = mulberry32(stepSeed(seed, stepIndex));
   let style = pickStyle(rand, styleWeights(params));
-  if (style !== 'normal' && stepIndex > 0 && stepPlanFor(seed, stepIndex - 1, params).style === style) {
+  if (style !== 'normal' && stepIndex > 0 && stepPlanFor(seed, stepIndex - 1, params, memo).style === style) {
     style = 'normal';
   }
   const side = sideForStep(stepIndex);
