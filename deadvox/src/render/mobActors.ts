@@ -32,7 +32,9 @@
 // corpse on a new death), plays deathPose from the pose/position/facing frozen at the instant of death,
 // holds once it's lying, then sinks (an extra downward Y offset, no re-posing needed) before finally
 // freeing the slot the same way a plain vanish (despawn/unload, never a death) always has. Corpses are
-// render-only: never saved, and forgotten immediately if this whole renderer is disposed/recreated.
+// render-only: never saved, and forgotten immediately if this whole renderer is disposed/recreated. A torso-
+// incapacitated zombie instead remains a simulation entity: it falls once, lies forever in its existing row,
+// never sinks, and is excluded from both per-variant/global MAX_CORPSES eviction. The box renderer keeps it standing.
 //
 // Dismemberment (mobgen/src/mob/dismember.ts): src/core/zombies.ts's Zombie.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
@@ -49,7 +51,7 @@
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
 import type { Material } from '@mobgen/core/body.ts';
-import { generateValid, type Realized, realize } from '@mobgen/core/generate.ts';
+import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import {
   IDENTITY_M,
@@ -104,6 +106,7 @@ import {
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { DEATH_FALL_DURATION, type DeathActor, deathPose, flinchPose, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   BufferAttribute,
@@ -141,6 +144,7 @@ export interface ZombieRenderer {
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
+  zombieIncapacitated?: (id: EntityId, zombie: Zombie) => void;
   /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
@@ -152,9 +156,8 @@ const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
 /** Every region's health together: it only ever drops on a hit, which is what starts a flinch. */
 const totalHealth = (zombie: Zombie): number => ZOMBIE_REGION_NAMES.reduce((sum, r) => sum + zombie.regions[r], 0);
 
-const DEFAULT_POOL_SIZE = 12;
+const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
-const BASE_SEED = 1; // fixed and deterministic — not Math.random() (the task's own requirement)
 
 const TELEPORT_METRES = 1; // matches StepOffset's own threshold
 const SPEED_TIME_CONSTANT_S = 0.25; // low-pass time constant for the walk speed fed to mobgen
@@ -190,19 +193,8 @@ const CORPSE_LIFETIME_S = DEATH_FALL_DURATION + CORPSE_LIE_S + CORPSE_SINK_S;
 const MAX_CORPSES = 16; // global cap across every variant, corpses AND debris together — see zombieDied's
 // and zombieSevered's own eviction.
 
-/** Deterministic variant pick from a zombie's EntityId — NOT the sim's own behaviour RNG (that must stay
- * reserved for movement/AI decisions; drawing from it here would perturb them by how many zombies exist).
- * Exported for test/mobActors.test.ts. */
-export const variantIndexForId = (id: EntityId, poolSize: number): number => {
-  let h = (id ^ 0x9e_37_79_b9) >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x04_5d_9f_3b) >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x04_5d_9f_3b) >>> 0;
-  h = (h ^ (h >>> 16)) >>> 0;
-  return h % poolSize;
-};
-
 /** Deterministic flinch side from a zombie's own EntityId, in [-1, 1) — same "hash the id, not the sim's
- * behaviour RNG" reasoning as variantIndexForId. A judgment call, not the spec's preferred option: the hit
+ * behaviour RNG" reasoning as the figure seed persisted on Zombie. A judgment call, not the spec's preferred option: the hit
  * direction relative to facing would need the player's position threaded into sync()'s otherwise
  * store/dt/alpha-only signature (shared with ZombieMeshes and the bench harness) for every frame, just for
  * an occasional cosmetic mirror; fixed-per-zombie-life from its id was the documented fallback for exactly
@@ -383,6 +375,7 @@ const buildVariantGeometry = (realized: Realized): BufferGeometry => {
 type SlotKey = EntityId | string;
 
 interface Variant {
+  readonly figureSeed: number;
   readonly realized: Realized;
   /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
    * (mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
@@ -464,6 +457,8 @@ interface ZombieRenderState extends SlotHolder {
  * pose/position/facing/fall-direction it died with, and driven purely by `elapsed` from there — the sim
  * has already forgotten this id entirely. */
 interface Corpse extends SlotHolder {
+  /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
+  readonly incapacitated: boolean;
   readonly walkActor: WalkActor;
   /** The walk (or walk+attack) pose frozen at the instant of death — deathPose's own basePose. */
   readonly basePose: Pose;
@@ -524,6 +519,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly blockSize: number;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
+  private readonly variantIndexBySeed: ReadonlyMap<number, number>;
   private readonly layout: CrowdTextureLayout;
   private readonly textureData: Float32Array;
   private readonly texture: DataTexture;
@@ -545,7 +541,7 @@ export class MobActorMeshes implements ZombieRenderer {
   constructor(blockSize: number, capacity = DEFAULT_CAPACITY, options: MobActorMeshesOptions = {}) {
     this.blockSize = blockSize;
     this.capacity = capacity;
-    const poolSize = Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE);
+    const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
     const shamblerTemplate = TEMPLATES.find((t) => t.name === 'shambler');
     if (!shamblerTemplate) {
       throw new Error("MobActorMeshes: mobgen has no 'shambler' template");
@@ -553,29 +549,25 @@ export class MobActorMeshes implements ZombieRenderer {
 
     const t0 = performance.now();
     const built: {
+      figureSeed: number;
       realized: Realized;
       walkActorTemplate: WalkActor;
       legGeometryL: LegGeometry;
       bodyExtents: ReadonlyMap<string, Extent>;
     }[] = [];
-    let seed = BASE_SEED;
-    for (let i = 0; i < poolSize; i++) {
-      const found = generateValid(shamblerTemplate, seed);
-      if (!found) {
-        throw new Error(`MobActorMeshes: no valid shambler within 100 seeds of ${seed}`);
-      }
-      seed = found.seed + 1;
-      const realized = realize(found.genome);
+    const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, poolSize);
+    for (const seed of figureSeeds) {
+      const { genome, realized } = shamblerFigure(seed);
       const extents = footRestExtents(realized.body.bones, realized.voxels);
       const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
       const legGeometryL = legGeometryFor(realized.body.bones, extents, 'L');
       const walkActorTemplate: WalkActor = {
         bones: realized.body.bones,
         extents,
-        params: found.genome.params as HumanoidParams,
-        seed: found.genome.seed,
+        params: genome.params as HumanoidParams,
+        seed: genome.seed,
       };
-      built.push({ realized, walkActorTemplate, legGeometryL, bodyExtents });
+      built.push({ figureSeed: seed, realized, walkActorTemplate, legGeometryL, bodyExtents });
     }
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
@@ -674,6 +666,7 @@ export class MobActorMeshes implements ZombieRenderer {
         });
       }
       return {
+        figureSeed: v.figureSeed,
         realized: v.realized,
         walkActorTemplate: v.walkActorTemplate,
         legGeometryL: v.legGeometryL,
@@ -695,6 +688,7 @@ export class MobActorMeshes implements ZombieRenderer {
         variantIndex,
       } satisfies Variant & { variantIndex: number };
     });
+    this.variantIndexBySeed = new Map(this.variants.map((variant, index) => [variant.figureSeed, index]));
   }
 
   setCamera(camera: Camera): void {
@@ -832,7 +826,7 @@ export class MobActorMeshes implements ZombieRenderer {
     let oldestCorpseId: EntityId | undefined;
     let oldestDebrisKey: string | undefined;
     for (const [id, corpse] of this.corpses) {
-      if (corpse.variantIndex === variantIndex && corpse.insertOrder < oldestOrder) {
+      if (!corpse.incapacitated && corpse.variantIndex === variantIndex && corpse.insertOrder < oldestOrder) {
         oldestOrder = corpse.insertOrder;
         oldestCorpseId = id;
         oldestDebrisKey = undefined;
@@ -859,7 +853,7 @@ export class MobActorMeshes implements ZombieRenderer {
     let oldestCorpseId: EntityId | undefined;
     let oldestDebrisKey: string | undefined;
     for (const [id, corpse] of this.corpses) {
-      if (corpse.insertOrder < oldestOrder) {
+      if (!corpse.incapacitated && corpse.insertOrder < oldestOrder) {
         oldestOrder = corpse.insertOrder;
         oldestCorpseId = id;
         oldestDebrisKey = undefined;
@@ -880,7 +874,10 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   private addZombie(id: EntityId, zombie: Zombie): ZombieRenderState | undefined {
-    const variantIndex = variantIndexForId(id, this.variants.length);
+    const variantIndex = this.variantIndexBySeed.get(zombie.figureSeed);
+    if (variantIndex === undefined) {
+      return undefined;
+    }
     const variant = this.variants[variantIndex]!;
     if (variant.freeLocalSlots.length === 0) {
       // Corpses and debris count toward capacity (see this module's header comment): make room by dropping
@@ -961,6 +958,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.states.delete(id);
   }
 
+  private evictableDeadThingCount(): number {
+    return [...this.corpses.values()].filter((corpse) => !corpse.incapacitated).length + this.debris.size;
+  }
+
   private freeCorpse(id: EntityId): void {
     const corpse = this.corpses.get(id);
     if (!corpse) {
@@ -977,6 +978,42 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     this.freeSlot(key, d);
     this.debris.delete(key);
+  }
+
+  /** A torso-destroyed zombie remains in the store, so its fallen row is permanent: no sink/despawn and
+   * no MAX_CORPSES eviction. A death corpse is different and remains render-only with the finite lifecycle below. */
+  zombieIncapacitated(id: EntityId, zombie: Zombie): void {
+    const state = this.states.get(id);
+    if (!state || this.corpses.has(id)) {
+      return;
+    }
+    const variant = this.variants[state.variantIndex]!;
+    const worldPos: Vec3 = [
+      zombie.body.pos[0] * this.blockSize,
+      zombie.body.pos[1] * this.blockSize,
+      zombie.body.pos[2] * this.blockSize,
+    ];
+    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
+      idle: this.idlePoseFor(state, variant),
+    });
+    const basePose =
+      state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
+    this.corpses.set(id, {
+      incapacitated: true,
+      variantIndex: state.variantIndex,
+      localSlot: state.localSlot,
+      globalRow: state.globalRow,
+      instanceIndex: state.instanceIndex,
+      walkActor: state.walkActor,
+      basePose,
+      worldPos,
+      yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
+      direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, undefined),
+      severed: [...zombie.severed],
+      elapsed: 0,
+      insertOrder: this.takeDeadOrder(),
+    });
+    this.states.delete(id);
   }
 
   /**
@@ -998,7 +1035,7 @@ export class MobActorMeshes implements ZombieRenderer {
     // compact the *dying* zombie's own instance into the vacated slot (if it happens to be the one
     // currently last in its variant's liveIds) — freeSlot's lookup must still find it as a SlotHolder,
     // which this.states (not yet deleted) still provides, exactly as it did before this death.
-    if (this.corpses.size + this.debris.size >= MAX_CORPSES) {
+    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
       this.evictOldestDeadThingGlobally();
     }
     const worldPos: Vec3 = [
@@ -1012,6 +1049,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const basePose =
       state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
     this.corpses.set(id, {
+      incapacitated: false,
       variantIndex: state.variantIndex,
       localSlot: state.localSlot,
       globalRow: state.globalRow,
@@ -1183,7 +1221,7 @@ export class MobActorMeshes implements ZombieRenderer {
       originOffsetY,
       body,
     } = spawn;
-    if (this.corpses.size + this.debris.size >= MAX_CORPSES) {
+    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
       this.evictOldestDeadThingGlobally();
     }
     if (variant.freeLocalSlots.length === 0) {
@@ -1455,7 +1493,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
 
     const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + CORPSE_LIE_S);
-    const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
+    const sinkT = corpse.incapacitated ? 0 : Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
     const crowdPlacement: CrowdPlacement = {
       x: corpse.worldPos[0],
       y: corpse.worldPos[1] - sinkT * CORPSE_SINK_DEPTH_M,
@@ -1512,6 +1550,47 @@ export class MobActorMeshes implements ZombieRenderer {
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
   }
 
+  private syncZombie(id: EntityId, zombie: Zombie, realDt: number, blend: number): boolean {
+    let anyDirty = false;
+    if (!zombie.incapacitated && this.corpses.get(id)?.incapacitated) {
+      this.freeCorpse(id);
+      anyDirty = true;
+    }
+    if (zombie.incapacitated) {
+      if (!this.corpses.has(id)) {
+        let state = this.states.get(id);
+        if (!state) {
+          state = this.addZombie(id, zombie);
+        }
+        if (state) {
+          this.zombieIncapacitated(id, zombie);
+        }
+      }
+      return anyDirty;
+    }
+    let state = this.states.get(id);
+    if (!state) {
+      state = this.addZombie(id, zombie);
+      if (!state) {
+        return anyDirty; // this variant is full — not drawn (see this module's header comment)
+      }
+    }
+    state.lastSeenFrame = this.frameCounter;
+    const variant = this.variants[state.variantIndex]!;
+    const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, blend);
+    const worldPos: Vec3 = [pos[0] * this.blockSize, pos[1] * this.blockSize, pos[2] * this.blockSize];
+    const verticalOffset = state.stepOffset.update(worldPos, zombie.body.onGround, realDt);
+    this.updateMovementAndAttack(state, zombie, { variant, worldPos, realDt });
+    this.updateFlinch(state, zombie, realDt);
+    this.updateStance(state, zombie, realDt);
+    const worldPelvis = new Vector3(worldPos[0], worldPos[1] + PELVIS_HEIGHT_M, worldPos[2]);
+    if (this.shouldSkipPose(id, worldPelvis)) {
+      return anyDirty; // clock/attack/flinch above already advanced; only the expensive pose+pack step skips
+    }
+    this.packPose(state, variant, zombie, { worldPos, yaw, headYaw, verticalOffset });
+    return true;
+  }
+
   sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
     this.frameCounter += 1;
     if (this.camera) {
@@ -1521,39 +1600,21 @@ export class MobActorMeshes implements ZombieRenderer {
     const blend = Math.max(0, Math.min(1, alpha));
     this.renderBlend = blend;
     let anyDirty = false;
-
+    const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
-      let state = this.states.get(id);
-      if (!state) {
-        state = this.addZombie(id, zombie);
-        if (!state) {
-          continue; // this variant is full — not drawn (see this module's header comment)
-        }
-      }
-      state.lastSeenFrame = this.frameCounter;
-      const variant = this.variants[state.variantIndex]!;
-
-      const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, blend);
-      const worldPos: Vec3 = [pos[0] * this.blockSize, pos[1] * this.blockSize, pos[2] * this.blockSize];
-      const verticalOffset = state.stepOffset.update(worldPos, zombie.body.onGround, realDt);
-      this.updateMovementAndAttack(state, zombie, { variant, worldPos, realDt });
-      this.updateFlinch(state, zombie, realDt);
-      this.updateStance(state, zombie, realDt);
-
-      const worldPelvis = new Vector3(worldPos[0], worldPos[1] + PELVIS_HEIGHT_M, worldPos[2]);
-      if (this.shouldSkipPose(id, worldPelvis)) {
-        continue; // clock/attack/flinch above already advanced; only the expensive pose+pack step skips
-      }
-      this.packPose(state, variant, zombie, { worldPos, yaw, headYaw, verticalOffset });
-      anyDirty = true;
+      present.add(id);
+      anyDirty = this.syncZombie(id, zombie, realDt, blend) || anyDirty;
     }
-
     for (const [id, state] of this.states) {
       if (state.lastSeenFrame !== this.frameCounter) {
         this.removeZombie(id, state); // a plain vanish (despawn/unload) — a death goes through zombieDied
       }
     }
-
+    for (const [id, corpse] of this.corpses) {
+      if (corpse.incapacitated && !present.has(id)) {
+        this.freeCorpse(id);
+      }
+    }
     const corpsesDirty = this.advanceCorpses(realDt);
     const debrisDirty = this.advanceDebris(realDt);
     if (corpsesDirty || debrisDirty || anyDirty) {
@@ -1567,7 +1628,16 @@ export class MobActorMeshes implements ZombieRenderer {
   private advanceCorpses(realDt: number): boolean {
     let anyDirty = false;
     for (const [id, corpse] of this.corpses) {
+      const wasFalling = corpse.incapacitated && corpse.elapsed < DEATH_FALL_DURATION;
       corpse.elapsed += realDt;
+      if (corpse.incapacitated) {
+        corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
+        if (wasFalling || corpse.elapsed < DEATH_FALL_DURATION) {
+          this.packCorpse(corpse);
+          anyDirty = true;
+        }
+        continue;
+      }
       if (corpse.elapsed >= CORPSE_LIFETIME_S) {
         this.freeCorpse(id);
         continue;

@@ -12,6 +12,7 @@ import { ATTACK_CLIPS } from '@mobgen/mob/attack.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -20,6 +21,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
+import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import {
   advanceGaitFromMovement,
@@ -30,7 +32,6 @@ import {
   flinchSideForId,
   MobActorMeshes,
   targetStanceFor,
-  variantIndexForId,
 } from '../src/render/mobActors.ts';
 
 const LUNGE_GRAB_HIT_TIME = ATTACK_CLIPS.LUNGE_GRAB!.hitTime;
@@ -51,6 +52,108 @@ const debrisEntries = (renderer: MobActorMeshes): Map<string, TestDebris> =>
 const setAttackTime = (renderer: MobActorMeshes, id: number, time: number): void => {
   const { states } = renderer as unknown as { states: Map<number, { attackTime: number | undefined }> };
   states.get(id)!.attackTime = time;
+};
+
+interface HitParityPose {
+  readonly speed: number;
+  readonly phase: number;
+  readonly chase: boolean;
+  readonly windup: number;
+}
+interface HitParityEntry {
+  readonly seed: number;
+  readonly id: number;
+  readonly zombie: Zombie;
+}
+interface HitParityState {
+  id: number;
+  clock: { stepIndex: number; progress: number };
+  smoothedSpeed: number;
+  quantizedSpeed: number;
+  stanceWeight: number;
+  idleTime: number;
+  lastPos: Vec3 | undefined;
+  attackTime: number | undefined;
+  prevAttackWait: number;
+  prevHealth: number;
+  hitTime: number | undefined;
+}
+interface HitParityRenderer {
+  states: Map<number, HitParityState>;
+}
+const hitParityInternals = (renderer: MobActorMeshes): HitParityRenderer => renderer as unknown as HitParityRenderer;
+
+const setHitParityPose = (renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): void => {
+  const { states } = hitParityInternals(renderer);
+  for (const { seed, id, zombie } of entries) {
+    zombie.mode = pose.chase ? 'chase' : 'idle';
+    zombie.horizontalSpeed = pose.speed;
+    zombie.gaitPhase = pose.phase;
+    zombie.attackWindup = pose.windup;
+    zombie.headYaw = 0;
+    zombie.renderPrevious = {
+      pos: [...zombie.body.pos],
+      facing: [...zombie.facing],
+      headYaw: 0,
+      gaitPhase: pose.phase,
+    };
+    const state = states.get(id)!;
+    state.id = seed;
+    state.clock = { stepIndex: Math.floor(pose.phase / Math.PI), progress: (pose.phase % Math.PI) / Math.PI };
+    state.smoothedSpeed = pose.speed;
+    state.quantizedSpeed = pose.speed;
+    state.stanceWeight = pose.chase || pose.windup > 0 ? 1 : 0;
+    state.idleTime = 0;
+    state.lastPos = [zombie.body.pos[0] * 0.5, zombie.body.pos[1] * 0.5, zombie.body.pos[2] * 0.5];
+    state.attackTime =
+      pose.windup > 0
+        ? Math.max(0, LUNGE_GRAB_HIT_TIME - zombie.type.attack.windup) + zombie.type.attack.windup - pose.windup
+        : undefined;
+    state.prevAttackWait = zombie.attackWait;
+    state.hitTime = undefined;
+  }
+};
+
+const hitParityErrors = (
+  renderer: MobActorMeshes,
+  entries: readonly HitParityEntry[],
+  pose: HitParityPose,
+): string[] => {
+  const errors: string[] = [];
+  for (const { seed, id, zombie } of entries) {
+    const boxes = posedShamblerRegionBoxes({
+      seed,
+      position: zombie.body.pos,
+      facing: zombie.facing,
+      headYaw: 0,
+      gaitPhase: pose.phase,
+      speed: pose.speed,
+      chasing: pose.chase,
+      attackWindup: pose.windup,
+      attackWindupSeconds: zombie.type.attack.windup,
+      severed: [],
+      blockSize: 0.5,
+    });
+    for (const [regionName, region] of Object.entries(boxes)) {
+      for (const box of region) {
+        const matrix = renderer.boneMatrix(id, box.bone)!;
+        const local = shamblerRegionBoxes(seed)[regionName as keyof typeof boxes].find(
+          (rest) => rest.bone === box.bone,
+        )!.center;
+        const rendered: Vec3 = [
+          matrix[0]! * local[0]! + matrix[1]! * local[1]! + matrix[2]! * local[2]! + matrix[3]!,
+          matrix[4]! * local[0]! + matrix[5]! * local[1]! + matrix[6]! * local[2]! + matrix[7]!,
+          matrix[8]! * local[0]! + matrix[9]! * local[1]! + matrix[10]! * local[2]! + matrix[11]!,
+        ];
+        for (let axis = 0; axis < 3; axis++) {
+          if (Math.abs(rendered[axis]! - box.center[axis]! * 0.5) > 0.001) {
+            errors.push(`${seed}/${pose.phase}/${pose.windup}/${box.bone}/axis-${axis}`);
+          }
+        }
+      }
+    }
+  }
+  return errors;
 };
 const rotationAngleDeg = (a: readonly number[], b: readonly number[]): number => {
   const indices = [0, 1, 2, 4, 5, 6, 8, 9, 10];
@@ -132,8 +235,10 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 
 /** A minimal, valid Zombie — same shape ZombieSystem.add() builds (src/core/zombies.ts), constructed
  * directly so these tests don't need a full ZombieSystem (physics/senses/etc, irrelevant here). */
-const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[] = []): Zombie => ({
+const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[] = [], figureSeed = 1): Zombie => ({
   type: SHAMBLER,
+  figureSeed,
+  incapacitated: false,
   body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
   facing: [...facing],
   home: [...position],
@@ -266,19 +371,53 @@ describe('advanceGaitFromMovement', () => {
   });
 });
 
-describe('variantIndexForId', () => {
-  it('is deterministic and always in [0, poolSize)', () => {
-    for (const id of [1, 2, 3, 17, 1000, 999_999]) {
-      const a = variantIndexForId(id, 12);
-      const b = variantIndexForId(id, 12);
-      expect(a).toBe(b);
-      expect(a).toBeGreaterThanOrEqual(0);
-      expect(a).toBeLessThan(12);
+describe('MobActorMeshes', () => {
+  it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across poses', () => {
+    const renderer = new MobActorMeshes(0.5, 8);
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const entries = SHAMBLER_FIGURE_SEEDS.map((seed, index) => {
+        const zombie = makeZombie([index * 4, 0, 0], [0, 0, -1], [], seed);
+        return { seed, zombie, id: store.add(zombie) };
+      });
+      renderer.sync(store, 0, 1);
+      const poses: readonly HitParityPose[] = [
+        { speed: 0, phase: 0, chase: false, windup: 0 },
+        { speed: 1, phase: 0, chase: true, windup: 0 },
+        { speed: 1, phase: Math.PI / 2, chase: true, windup: 0 },
+        { speed: 1, phase: Math.PI / 2, chase: true, windup: 0.2 },
+      ];
+      for (const pose of poses) {
+        setHitParityPose(renderer, entries, pose);
+        renderer.sync(store, 0, 1);
+        expect(hitParityErrors(renderer, entries, pose)).toEqual([]);
+      }
+    } finally {
+      renderer.dispose();
     }
   });
-});
 
-describe('MobActorMeshes', () => {
+  it('draws the exact persisted figure seed, not an EntityId-derived variant', () => {
+    const renderer = new MobActorMeshes(0.5, 8);
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const ids = SHAMBLER_FIGURE_SEEDS.map((seed, index) =>
+        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], seed)),
+      );
+      renderer.sync(store, 0, 1);
+      const internals = renderer as unknown as {
+        states: Map<number, { variantIndex: number }>;
+        variants: readonly { walkActorTemplate: { seed: number } }[];
+      };
+      for (let i = 0; i < ids.length; i++) {
+        const state = internals.states.get(ids[i]!)!;
+        expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(SHAMBLER_FIGURE_SEEDS[i]);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('generates its variant pool and syncs without throwing', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
     try {
@@ -410,6 +549,36 @@ describe('MobActorMeshes reactions', () => {
       store.remove(id); // no zombieDied call — a plain vanish, not a death
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(id)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', () => {
+    const renderer = new MobActorMeshes(0.5, 24, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombies = Array.from({ length: 18 }, (_, i) => makeZombie([i * 2, 0, 0]));
+      const ids = zombies.map((zombie) => store.add(zombie));
+      renderer.sync(store, 0, 1);
+      const incapacitated = zombies[0]!;
+      incapacitated.incapacitated = true;
+      renderer.sync(store, 0, 1);
+      for (let i = 1; i < zombies.length; i++) {
+        renderer.zombieDied(ids[i]!, zombies[i]!);
+        store.remove(ids[i]!);
+      }
+      expect(renderer.isTracked(ids[0]!)).toBe(true);
+      expect(renderer.isTracked(ids[1]!)).toBe(false); // oldest ordinary corpse evicted; incapacitated row is protected
+      renderer.sync(store, 3 * 20, 1); // >3x the normal corpse lifetime
+      const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
+      expect(lying).toBeDefined();
+      expect(renderer.isTracked(ids[0]!)).toBe(true);
+      renderer.sync(store, 20, 1);
+      expect(renderer.boneMatrix(ids[0]!, 'pelvis')).toEqual(lying); // lies still; never sinks
+      incapacitated.incapacitated = false;
+      renderer.sync(store, 1 / 60, 1); // a future revive reclaims a live row
+      expect(renderer.boneMatrix(ids[0]!, 'pelvis')).not.toEqual(lying);
     } finally {
       renderer.dispose();
     }

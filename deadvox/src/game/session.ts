@@ -125,6 +125,8 @@ export interface SessionOptions {
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+    /** A zombie became incapacitated but remains in the store and may be revived later. */
+    onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
     onDeath?: (id: EntityId, zombie: Zombie) => void;
   };
@@ -319,6 +321,7 @@ export const createSession = (options: SessionOptions) => {
       inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
     },
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
+    onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
     onDeath: (id, zombie) => {
       const table = zombie.type.loot;
       if (table) {
