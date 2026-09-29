@@ -143,7 +143,7 @@ describe('hold selection', () => {
     expect(GUN_ANCHORS.frame!.holdRank).toBe('grip');
   });
 
-  it('pump-shotgun design resolves exactly one hold inside the tapered stock wrist', () => {
+  it('pump-shotgun design resolves exactly one hold inside the tapered stock grip', () => {
     const text = readFileSync(join(import.meta.dirname, '..', 'designs', 'archetype-pump-shotgun.json'), 'utf8');
     const loaded = loadGunDesign(text);
     expect(loaded.ok).toBe(true);
@@ -164,10 +164,10 @@ describe('hold selection', () => {
     expect(holds).toEqual([stockId]);
 
     const stockDef = resolved.defs.get(stockId)!;
-    const wrist = stockDef.solids.find((solid) => solid.id === 'wrist')!;
+    const grip = stockDef.solids.find((solid) => solid.id === 'grip')!;
     const localHold = GUN_ANCHORS.stock!.anchors(paramsOf(resolved, stockId), stockDef).hold!;
-    expect(wrist).toBeDefined();
-    expect(insideSolid(wrist, localHold.position)).toBe(true);
+    expect(grip).toBeDefined();
+    expect(insideSolid(grip, localHold.position)).toBe(true);
     expect(selected(assembly).hold.position).toEqual(applyPoint(resolved.placed.get(stockId)!, localHold.position));
   });
 

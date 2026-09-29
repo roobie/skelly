@@ -43,7 +43,7 @@ exports[`validator results are unchanged by the mesh module (display-only) > per
     "valid": 60,
   },
   {
-    "distinct": 40,
+    "distinct": 36,
     "template": "pump-shotgun",
     "valid": 60,
   },

@@ -1704,30 +1704,81 @@ export const stock: PartFamily = {
       };
     }
     if (params.style === 'tapered') {
-      const combAtSeam = -1.5 - 0.5 * (6 / len);
-      const bellyAtSeam = -4 - 4 * (6 / len);
+      const stockDrop = 1.5;
+      const sideZ: readonly [number, number] = [-1.5, 1.5];
+      const combStartY = 1.5 - stockDrop;
+      const combTangent = Math.tan((8 * Math.PI) / 180);
+      const bellyTangent = Math.tan((13 * Math.PI) / 180);
+      const padThickness = 0.06 * len;
+      const buttHeight = 0.34 * len;
+      const buttRake = 0.25;
+      const padRearBottomX = -len;
+      const padFrontBottomX = padRearBottomX + padThickness;
+      const padRearTopX = padRearBottomX + buttRake;
+      const padFrontTopX = padRearTopX + padThickness;
+      const combY = (x: number) => combStartY + combTangent * x;
+      const heelY = combY(padFrontTopX);
+      const toeY = heelY - buttHeight;
+      const wristX = -2.5;
+      const wristTopY = combY(wristX);
+      const wristBottomY = wristTopY - 0.18 * len;
+      const gripX = -0.28 * len;
+      const gripY = combY(gripX) - 0.32 * len;
+      const bellyRearX = -0.45 * len;
+      const bellyRearY = toeY + bellyTangent * (bellyRearX - padFrontBottomX);
+
       return {
         family: 'stock',
         solids: [
           extrudedPolygon(
-            'wrist',
+            'fore-stock',
             [
-              [-6, bellyAtSeam],
-              [0, -4],
-              [0, -1.5],
-              [-6, combAtSeam],
+              [wristX, wristBottomY],
+              [0, -2 - stockDrop],
+              [0, combStartY],
+              [wristX, wristTopY],
             ],
-            [-1.5, 1.5],
+            sideZ,
           ),
           extrudedPolygon(
-            'body',
+            'grip',
             [
-              [-len, -8],
-              [-6, bellyAtSeam],
-              [-6, combAtSeam],
-              [-len + 0.25, -2],
+              [gripX, gripY],
+              [wristX, wristBottomY],
+              [wristX, wristTopY],
+              [gripX, combY(gripX)],
             ],
-            [-1.5, 1.5],
+            sideZ,
+          ),
+          extrudedPolygon(
+            'grip-back',
+            [
+              [bellyRearX, bellyRearY],
+              [gripX, gripY],
+              [gripX, combY(gripX)],
+              [bellyRearX, combY(bellyRearX)],
+            ],
+            sideZ,
+          ),
+          extrudedPolygon(
+            'belly',
+            [
+              [padFrontBottomX, toeY],
+              [bellyRearX, bellyRearY],
+              [bellyRearX, combY(bellyRearX)],
+              [padFrontTopX, heelY],
+            ],
+            sideZ,
+          ),
+          extrudedPolygon(
+            'butt-pad',
+            [
+              [padRearBottomX, toeY],
+              [padFrontBottomX, toeY],
+              [padFrontTopX, heelY],
+              [padRearTopX, heelY],
+            ],
+            sideZ,
           ),
         ],
         ports: [port],

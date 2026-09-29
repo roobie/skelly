@@ -1013,9 +1013,9 @@ acceptance:
   can be built from several convex solids;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
-  `tapered` style, and the pump-shotgun opts in; the other existing stock
-  styles stay unchanged. It is a constant-width side profile using the current
-  extruded-polygon solid:
+  `tapered` style, and the pump-shotgun opts in with M/L lengths; the other
+  existing stock styles stay unchanged. It is a constant-width side profile
+  using the current extruded-polygon solid:
   - **stock — done** (reference `.agent-mail/scratch/br-ref-stock-taper.png`,
     an 870-style wood stock): a narrow wrist at the receiver that widens to a
     tall butt; the comb line drops toward the butt while the belly line runs

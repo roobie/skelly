@@ -30,6 +30,16 @@ const interiorPoint = (s: Solid): Vec3 => {
   ];
 };
 
+/** A tapered-stock hold sits low inside the grip, below the trigger centre. */
+const gripHoldPoint = (s: Solid): Vec3 => {
+  if (s.kind === 'box') {
+    return s.box.center;
+  }
+  const lowest = s.profile.reduce((best, point) => (point[1] < best[1] ? point : best));
+  const center = interiorPoint(s);
+  return [lowest[0] * 0.99 + center[0] * 0.01, lowest[1] * 0.99 + center[1] * 0.01, center[2]];
+};
+
 const frameAt = (position: Vec3, forward: Vec3 = X, up: Vec3 = Y): AnchorFrame => ({ position, forward, up });
 
 /** The firing hand on a grip's body; `axes` are the grip's own forward and up. */
@@ -67,12 +77,14 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
         : { forward: X, up: Y };
     }),
   },
-  // Only a stock style tagged as a firing grip has a hold: its wrist.
+  // Only a firing-grip stock has a hold: the tapered style uses its grip; others use the wrist.
   stock: {
     holdRank: 'firing-grip-stock',
     anchors: (_params, part) => {
-      const wrist = findSolid(part, 'wrist');
-      return wrist && part.tags?.includes(FIRING_GRIP) ? { hold: frameAt(interiorPoint(wrist)) } : {};
+      const taperedGrip = part.solids.find((solid) => solid.id === 'grip');
+      const grip = taperedGrip ?? findSolid(part, 'wrist');
+      const position = grip && (taperedGrip ? gripHoldPoint(grip) : interiorPoint(grip));
+      return position && part.tags?.includes(FIRING_GRIP) ? { hold: frameAt(position) } : {};
     },
   },
   handguard: { anchors: (_params, part) => undersideSupport(part, 0.6) },

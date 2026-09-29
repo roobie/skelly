@@ -23,12 +23,16 @@ const OLD_FAMILY_COLORS: Record<string, number> = {
   sight: 0x3f_46_50,
 };
 const OLD_MAGAZINE_FLOORPLATE = 0x35_42_58;
+const BUTT_PAD_COLOR = 0x2f_32_38;
 const OLD_FALLBACK = 0x88_88_88;
 
 const oldColor = (family: string, solidId: string): number => {
   let color = OLD_FAMILY_COLORS[family] ?? OLD_FALLBACK;
   if (solidId === 'floorplate') {
     color = OLD_MAGAZINE_FLOORPLATE;
+  }
+  if (solidId === 'butt-pad') {
+    color = BUTT_PAD_COLOR;
   }
   return color;
 };
@@ -71,6 +75,10 @@ describe('palette migration', () => {
 });
 
 describe('palette coverage', () => {
+  it('colours the tapered-stock recoil pad near-black by solid id', () => {
+    expect(srgbToHex(solidColor(GUN_PALETTE, 'stock', 'butt-pad'))).toBe(BUTT_PAD_COLOR);
+  });
+
   /** Every role any family can report: defaults, plus each param varied on its own across all its values. */
   const reportedRoles = (): Set<string> => {
     const roles = new Set<string>();
