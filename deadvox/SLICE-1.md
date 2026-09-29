@@ -471,8 +471,11 @@ decay (compared against live ticking), and death.
   separate gently without moving through terrain.
 - Debug mob testing (`?debug=1`): H toggles god mode; F toggles noclip; Space
   rises and R descends while noclipping. Both toggles start off and are not saved.
-- Melee in both directions: the zombie attack has reach and a cooldown; the
-  player swings the wielded item (or fists) with a hit check.
+- Melee in both directions: the zombie attack has reach and a cooldown, and
+  telegraphs with a windup (a sound plus a visible wind-up interval) before the
+  hit resolves, checking reach/line-of-sight again at that moment so a player
+  who backs away or a door that shuts in time avoids the hit; the player swings
+  the wielded item (or fists) with a hit check.
 - Rendering: instanced box figures with a continuous leg swing. Required content
   `stepLength` (metres; 0.6 for shamblers) sets each half-cycle. Gait phase
   advances only by horizontal distance actually travelled; an independent
@@ -742,7 +745,7 @@ A zombie type:
 { "id": "shambler", "name": "Shambler", "health": 60, "speed": { "wander": 0.8, "chase": 2.8 },
   "sight": 25, "nightSight": 10, "sightCone": 60, "hearing": 1.0,
   "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
-  "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
+  "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5, "windup": 0.3 },
   "abilities": [], "loot": "shambler_pockets" }
 ```
 

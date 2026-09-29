@@ -3,4 +3,5 @@ node_modules/
 .agent-mail/
 
 # Claude Code agent worktrees (each a full checkout with its own biome.jsonc).
+# Git worktrees for agents (see AGENTS.md).
 .claude/worktrees/

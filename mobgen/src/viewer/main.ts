@@ -16,11 +16,13 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
-import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
+import type { Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
+  bodyRestExtents,
   createGaitCache,
   footRestExtents,
   type GaitClock,
@@ -31,6 +33,8 @@ import {
   walkPose,
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
+import { type IdleStance, idlePose } from '../mob/idle.ts';
+import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
@@ -43,8 +47,16 @@ const voxelSelect = $<HTMLSelectElement>('voxel-size');
 const walkOn = $<HTMLInputElement>('walk-on');
 const speedInput = $<HTMLInputElement>('speed');
 const speedValue = $<HTMLSpanElement>('speed-value');
+const idleStanceSelect = $<HTMLSelectElement>('idle-stance');
 const attackBtn = $<HTMLButtonElement>('attack-btn');
 const attackLoop = $<HTMLInputElement>('attack-loop');
+const hitBtn = $<HTMLButtonElement>('hit-btn');
+const dieBtn = $<HTMLButtonElement>('die-btn');
+const resetBtn = $<HTMLButtonElement>('reset-btn');
+const dieBackward = $<HTMLInputElement>('die-backward');
+const severPart = $<HTMLSelectElement>('sever-part');
+const severBtn = $<HTMLButtonElement>('sever-btn');
+const healBtn = $<HTMLButtonElement>('heal-btn');
 const description = $<HTMLParagraphElement>('description');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
@@ -58,6 +70,10 @@ if (new URLSearchParams(location.search).get('shot') === '1') {
 
 for (const t of TEMPLATES) {
   templateSelect.add(new Option(t.name, t.name));
+}
+
+for (const part of SEVERABLE_PARTS) {
+  severPart.add(new Option(part, part));
 }
 
 // ---- three.js setup ----
@@ -117,6 +133,7 @@ interface Loaded {
   readonly actor: Actor;
   readonly params: HumanoidParams;
   readonly extents: ReturnType<typeof footRestExtents>;
+  readonly bodyExtents: ReturnType<typeof bodyRestExtents>;
   readonly legGeometry: LegGeometry;
   /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
   readonly walkActor: WalkActor;
@@ -125,12 +142,77 @@ interface Loaded {
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let gridZ = 0;
+// Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
+// matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
+// same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
+let idleTime = 0;
+const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
+let hitTime: number | undefined; // seconds into HIT_FLINCH, or undefined when idle
+let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible across repeated hits
+// Death freezes whatever pose was current (walk, standing, or mid-attack) the instant it starts, and
+// plays deathPose forward from that frozen snapshot — same "layer over the current base pose" spirit as
+// a flinch, but frozen rather than live, since a falling body doesn't keep striding underneath itself.
+let deathTime: number | undefined;
+let deathBasePose: Pose | undefined;
+let deathDirection: 1 | -1 = 1;
+/** Every part cut so far — cumulative, so "Sever" a second part while the first is still missing just adds
+ * to it (severedBoneSet handles any redundancy, e.g. severing a hand after its own upperArm already took
+ * it, for free). Reset on Heal or a fresh load. Not yet the crowd texture's mask (that's a deadvox/renderer
+ * concern) — the main viewer just hides bone meshes directly (see scene.ts's setSeveredBones). */
+let severedCuts: string[] = [];
 
 const playAttack = (): void => {
   attackTime = 0; // (re)starts even if one is already playing
+};
+
+const playHit = (): void => {
+  hitTime = 0; // (re)starts even if one is already playing — layers over whatever's current every frame
+  hitSide = hitSide <= 0 ? 1 : -1; // alternate side each press so the mirror is visible across repeats
+};
+
+const applySeveredBones = (): void => {
+  if (!current) {
+    return;
+  }
+  current.actor.setSeveredBones(severedBoneSet(current.realized.body.bones, severedCuts));
+};
+
+const sever = (): void => {
+  const part = severPart.value;
+  if (part && !severedCuts.includes(part)) {
+    severedCuts = [...severedCuts, part];
+  }
+  applySeveredBones();
+};
+
+const heal = (): void => {
+  severedCuts = [];
+  applySeveredBones();
+};
+
+/** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
+ * snapshot — a falling body doesn't keep striding underneath itself, unlike a flinch. */
+const playDeath = (): void => {
+  if (!current) {
+    return;
+  }
+  const actor = current.walkActor;
+  const walking = walkOn.checked;
+  const speed = walking ? Number(speedInput.value) : 0;
+  const idle = idlePose(actor, currentStance(), idleTime);
+  const walkBase: Pose = walkPose(actor, clock, speed, { idle });
+  deathBasePose =
+    attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
+  deathDirection = dieBackward.checked ? -1 : 1;
+  deathTime = 0;
+};
+
+const resetDeath = (): void => {
+  deathTime = undefined;
+  deathBasePose = undefined;
 };
 
 const frame = (): void => {
@@ -225,6 +307,7 @@ const updateUrl = (): void => {
   }
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
+  params.set('stance', idleStanceSelect.value);
   if (new URLSearchParams(location.search).get('shot') === '1') {
     params.set('shot', '1');
   }
@@ -238,8 +321,8 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  actor.applyPose(IDENTITY_POSE);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
+  const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
   const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
   const params = genome.params as HumanoidParams;
   const walkActor: WalkActor = {
@@ -249,11 +332,18 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     seed: genome.seed,
     cache: createGaitCache(),
   };
-  current = { genome, realized, actor, params, extents, legGeometry, walkActor };
+  // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
+  // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
+  actor.applyPose(idlePose(walkActor, currentStance(), idleTime));
+  current = { genome, realized, actor, params, extents, bodyExtents, legGeometry, walkActor };
   clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
+  hitTime = undefined;
+  resetDeath();
+  severedCuts = [];
+  applySeveredBones();
   groundGroup.position.z = 0;
   updateFineGrid(genome.voxelSize);
   applyLayerVisibility();
@@ -326,6 +416,7 @@ const setSpeed = (v: number): void => {
 };
 speedInput.addEventListener('input', () => setSpeed(Number(speedInput.value)));
 walkOn.addEventListener('change', updateUrl);
+idleStanceSelect.addEventListener('change', updateUrl);
 $<HTMLButtonElement>('preset-wander').addEventListener('click', () => {
   walkOn.checked = true;
   setSpeed(0.8);
@@ -336,10 +427,25 @@ $<HTMLButtonElement>('preset-chase').addEventListener('click', () => {
 });
 
 attackBtn.addEventListener('click', playAttack);
+hitBtn.addEventListener('click', playHit);
+dieBtn.addEventListener('click', playDeath);
+resetBtn.addEventListener('click', resetDeath);
+severBtn.addEventListener('click', sever);
+healBtn.addEventListener('click', heal);
 globalThis.addEventListener('keydown', (e) => {
   // Ignore while typing into a field (e.g. the seed number input).
-  if (e.key.toLowerCase() === 'a' && document.activeElement?.tagName !== 'INPUT') {
+  if (document.activeElement?.tagName === 'INPUT') {
+    return;
+  }
+  const key = e.key.toLowerCase();
+  if (key === 'a') {
     playAttack();
+  } else if (key === 'h') {
+    playHit();
+  } else if (key === 'k') {
+    playDeath();
+  } else if (key === 'r') {
+    resetDeath();
   }
 });
 
@@ -385,6 +491,10 @@ if (voxelParam && [...voxelSelect.options].some((o) => o.value === voxelParam)) 
 }
 setSpeed(Number(query.get('speed') ?? '0.8'));
 walkOn.checked = query.get('walk') === '1';
+const stanceParam = query.get('stance');
+if (stanceParam && [...idleStanceSelect.options].some((o) => o.value === stanceParam)) {
+  idleStanceSelect.value = stanceParam;
+}
 generateAndLoad();
 resize();
 renderer.render(scene, camera);
@@ -422,24 +532,58 @@ const advanceAttack = (dt: number, clipDuration: number): void => {
   }
 };
 
+/** Ends a flinch once its clip finishes; does nothing else — flinchPose reads hitTime itself. */
+const advanceHit = (dt: number): void => {
+  if (hitTime === undefined) {
+    return;
+  }
+  hitTime += dt;
+  if (hitTime > HIT_FLINCH.duration) {
+    hitTime = undefined;
+  }
+}; // deliberately not gated on death: a fresh hit that lands mid-flinch is fine to just restart.
+
+/** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
+ * standing), optionally attacked, optionally flinched on top. */
+const applyLiveFrame = (loaded: Loaded, dt: number): void => {
+  const walking = walkOn.checked;
+  const speed = walking ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walking, speed);
+  const clip = ATTACK_CLIPS.LUNGE_GRAB!;
+  advanceAttack(dt, clip.duration);
+  advanceHit(dt);
+
+  const actor = loaded.walkActor;
+  const idle = idlePose(actor, currentStance(), idleTime);
+  const basePose: Pose = walkPose(actor, clock, speed, { idle });
+  const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
+  const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
+  loaded.actor.applyPose(pose);
+};
+
+/** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the
+ * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
+const applyDeathFrame = (loaded: Loaded, dt: number): void => {
+  deathTime = (deathTime ?? 0) + dt;
+  // A fresh wrapper per frame, but it carries the persistent actor's cache.
+  const actor = { ...loaded.walkActor, bodyExtents: loaded.bodyExtents };
+  loaded.actor.applyPose(deathPose(actor, deathBasePose!, deathTime, { direction: deathDirection }));
+};
+
 let lastFrameTime = performance.now();
 renderer.setAnimationLoop(() => {
   const now = performance.now();
   const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
   lastFrameTime = now;
+  idleTime += dt;
   controls.update();
 
   if (current) {
-    const walking = walkOn.checked;
-    const speed = walking ? Number(speedInput.value) : 0;
-    advanceWalk(dt, walking, speed);
-    const clip = ATTACK_CLIPS.LUNGE_GRAB!;
-    advanceAttack(dt, clip.duration);
-
-    const actor = current.walkActor;
-    const basePose: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
-    const pose = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
-    current.actor.applyPose(pose);
+    if (deathTime === undefined) {
+      applyLiveFrame(current, dt);
+    } else {
+      applyDeathFrame(current, dt);
+    }
   }
 
   renderer.render(scene, camera);

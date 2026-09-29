@@ -15,6 +15,7 @@ import { FISTS_MELEE } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
+import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
@@ -100,6 +101,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     },
     notice: (text) => showNotice(text),
     debug: () => debugTools,
+    // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
+    // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
+    zombieEffects: {
+      onSever: (id, _zombie, part) => zombieMeshes.zombieSevered?.(id, part, [...body.pos]),
+      onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
+    },
   });
   const {
     sim,
@@ -137,7 +144,19 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   scene.add(piles.group, furniture.group, playerMeshes.group);
   const damageEvents = sim.events.reader();
   const damageFeedback = new DamageFeedback();
-  const zombieMeshes = new ZombieMeshes(s);
+  // Mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` swaps in ZombieMeshes' six
+  // boxes — same ZombieRenderer shape (group/sync/…), so the rest of this function
+  // doesn't care which one it has. Declared after createSession, whose zombie hooks (above) reach it
+  // through a closure that only ever runs later, during play.
+  //
+  // zombieDied ordering: a melee kill's `swing()` runs from a `mousedown` listener (below), not from the
+  // fixed-rate scheduler tick, so it can land before or after this frame's `zombieMeshes.sync()` call in
+  // either order. The session's onDeath hook calls zombieDied synchronously, in the very same call that
+  // removes the zombie from zombieStore — MobActorMeshes' own zombieDied moves that id out of its
+  // live-tracking map *before* returning, so whichever order sync() and a death happen to fall in this
+  // frame, sync()'s own prune pass never mistakes a just-died zombie for a plain vanish (see
+  // mobActors.ts's own doc comment).
+  const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
   scene.add(zombieMeshes.group);
 
   // ---- UI ----
@@ -650,6 +669,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
+    zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
     zombieMeshes.sync(zombieStore, dt, zombieAlpha);
     updateDebugReadout(now);
 

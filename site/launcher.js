@@ -59,6 +59,7 @@ const updateDeadvoxVisibility = () => {
   showWhen(byId('deadvox-site-field'), mode !== 'report' && mode !== 'shamblers');
   byId('deadvox-default-site').textContent = mode === '1' ? 'Test house (benchmark default)' : 'Hamlet (default)';
   showWhen(byId('deadvox-debug-field'), mode === '');
+  showWhen(byId('deadvox-actors-field'), mode === '');
   showWhen(byId('deadvox-world-bench'), mode === '1');
   showWhen(byId('deadvox-shambler-bench'), mode === 'shamblers');
   showWhen(byId('deadvox-storeys-field'), deadvoxSite.value === 'city' && mode !== 'report' && mode !== 'shamblers');
@@ -117,6 +118,7 @@ const makeDeadvoxUrl = () => {
 
   if (mode === '') {
     setUnlessDefault(params, 'radius', deadvoxForm.elements.namedItem('radius').value, '96');
+    setUnlessDefault(params, 'actors', deadvoxForm.elements.namedItem('actors').value, '');
     if (deadvoxForm.elements.namedItem('debug').checked) {
       params.set('debug', '1');
     }

@@ -21,6 +21,7 @@ import type { Pose } from '../core/pose.ts';
 import { chance, range, seededRng } from '../core/random.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { advanceClock, createGaitCache, type GaitClock, type WalkActor, walkPose } from '../mob/gait.ts';
+import { idleBasePose } from '../mob/idle.ts';
 import {
   buildCrowdRender,
   buildPoolRender,
@@ -234,6 +235,11 @@ interface CrowdMember {
    * must be per member or it thrashes on almost every call (a params-keyed cache with one speed/window
    * slot did; the slowdown was not recorded). */
   readonly walkActor: WalkActor;
+  /** This member's idle base pose (the never-A-pose stance it eases toward/from at low speed — see
+   * gait.ts's walkPose idle argument): static per (pool entry, attacker-ness), so computed once here
+   * rather than every frame in poseFor. Attackers get the 'aggravated' stance (already reaching, matching
+   * their own chase speed), everyone else 'slack'. */
+  readonly idleBase: Pose;
   readonly path: PathState;
   readonly speed: number;
   readonly attacker: boolean;
@@ -271,6 +277,7 @@ const disposeCrowd = (): void => {
 interface MemberState {
   readonly poolIndex: number;
   readonly walkActor: WalkActor;
+  readonly idleBase: Pose;
   readonly path: PathState;
   readonly speed: number;
   readonly attacker: boolean;
@@ -294,9 +301,11 @@ const memberStateFor = (i: number, cols: number, rows: number): MemberState => {
   const speed = range(rng, 0.8, 2.8);
   const attacker = chance(rng, ATTACKER_FRACTION);
   const attackIntervalS = range(rng, 2, 5);
+  const walkActor: WalkActor = { ...pool[poolIndex]!.walkActor, cache: createGaitCache() };
   return {
     poolIndex,
-    walkActor: { ...pool[poolIndex]!.walkActor, cache: createGaitCache() },
+    walkActor,
+    idleBase: idleBasePose(walkActor, attacker ? 'aggravated' : 'slack'),
     path,
     speed,
     attacker,
@@ -516,7 +525,7 @@ setInterval(updateHud, 500);
 // ---- simulation + render loop ----
 
 const poseFor = (member: CrowdMember): Pose => {
-  const basePose = walkPose(member.walkActor, member.clock, member.speed);
+  const basePose = walkPose(member.walkActor, member.clock, member.speed, { idle: member.idleBase });
   return member.attackTime === undefined
     ? basePose
     : attackPose(member.walkActor, LUNGE_GRAB, member.attackTime, basePose);

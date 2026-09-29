@@ -43,7 +43,10 @@ export interface AttackClip {
   readonly keys: readonly AttackKey[];
 }
 
-const zeroKey = (t: number, bones: readonly string[]): AttackKey => ({
+/** A key with every listed bone at [0,0,0] — the clean, zero-slope shape a clip's first/last key needs
+ * (see AttackClip's own doc comment). Exported for reactions.ts's HIT_FLINCH, which authors clips the
+ * same way. */
+export const zeroKey = (t: number, bones: readonly string[]): AttackKey => ({
   t,
   rotations: Object.fromEntries(bones.map((b) => [b, [0, 0, 0]])),
 });
@@ -164,11 +167,14 @@ const samplePelvisDrop = (clip: AttackClip, t: number): number =>
 
 // ---- applying a clip on top of a base pose ----
 
-const eulerToMat3 = ([x, y, z]: readonly [number, number, number]): Mat3 => mulMM(mulMM(rotZ(z), rotY(y)), rotX(x));
+/** Exported for mob/idle.ts, which authors its stances the same way attack clips do. */
+export const eulerToMat3 = ([x, y, z]: readonly [number, number, number]): Mat3 =>
+  mulMM(mulMM(rotZ(z), rotY(y)), rotX(x));
 
 /** A little genome flavour on top of the authored clip — no new sampled params. Only scales the
- * dominant (x) axis, so a clip key of [0,0,0] is untouched (keeps the clip's own zero endpoints exact). */
-const scaleForGenome = (boneId: string, xDeg: number, params: HumanoidParams): number =>
+ * dominant (x) axis, so a clip key of [0,0,0] is untouched (keeps the clip's own zero endpoints exact).
+ * Exported for mob/idle.ts, which scales its own stances by the same genome params. */
+export const scaleForGenome = (boneId: string, xDeg: number, params: HumanoidParams): number =>
   boneId === 'spine' || boneId === 'chest' ? xDeg * (1 + params.hunch / 100) : xDeg; // hunch: leans further in
 
 const UPPER_ARM_BONES = new Set(['upperArm.L', 'upperArm.R']);
@@ -177,8 +183,9 @@ const UPPER_ARM_BONES = new Set(['upperArm.L', 'upperArm.R']);
  * whatever the torso (spine+chest, already hunch-scaled) is doing, so a raw local delta would put the
  * hand at a genome-dependent height (a hunchier character's own lean would "steal" from the reach). This
  * subtracts the torso's current cumulative pitch so the arm's world angle — and so hand height — stays
- * put regardless of how much the torso leans. armRaise still gets a small (habitual-reach) bump. */
-const upperArmLocalFromNet = (netXDeg: number, torsoPitchXDeg: number, params: HumanoidParams): number =>
+ * put regardless of how much the torso leans. armRaise still gets a small (habitual-reach) bump. Exported
+ * for mob/idle.ts's aggravated stance, whose raised arms are authored the same "net angle" way. */
+export const upperArmLocalFromNet = (netXDeg: number, torsoPitchXDeg: number, params: HumanoidParams): number =>
   netXDeg * (1 + params.armRaise / 1000) - torsoPitchXDeg;
 
 const ARM_BONES = new Set(['upperArm.L', 'upperArm.R', 'forearm.L', 'forearm.R']);

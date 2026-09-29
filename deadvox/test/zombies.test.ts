@@ -369,7 +369,9 @@ describe('shambler scenarios', () => {
     expect(damage).toBe(0);
     expect(positions.every((position) => position[2] > 1)).toBe(true);
     entities.setOpen(door, true);
-    system.tick(1 / 60);
+    // A hit now telegraphs: attack start plays the sound and begins the windup; damage lands only once
+    // the windup elapses, still in reach/LOS (see withinAttackReach in src/core/zombies.ts).
+    run(system, SHAMBLER.attack.windup + 0.1);
     expect(damage).toBe(8);
     const end = positions.at(-1)!;
     expect((end[2] - 1) * BLOCK_SIZE).toBeLessThanOrEqual(1.5);
@@ -390,7 +392,7 @@ describe('shambler scenarios', () => {
       ),
     );
     system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
-    system.tick(1 / 60);
+    run(system, SHAMBLER.attack.windup + 0.1);
     expect(damage).toBe(8);
   });
 
@@ -1641,5 +1643,311 @@ describe('idle and stroll shambling', () => {
       expect((turn * 180) / Math.PI).toBeLessThanOrEqual(4);
       previousYaw = currentYaw;
     }
+  });
+});
+
+describe('attack windup', () => {
+  it('does not damage the player the instant an attack starts — only after the windup elapses', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    expect(damage).toBe(0);
+    const zombie = system.store.get(id)!;
+    expect(zombie.mode).toBe('chase');
+    expect(zombie.attackWindup).toBeCloseTo(SHAMBLER.attack.windup, 5);
+    expect(zombie.attackWait).toBeCloseTo(SHAMBLER.attack.cooldown, 5);
+  });
+
+  it('damages the player exactly once the windup elapses, if still in reach', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    expect(damage).toBe(0);
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(8);
+  });
+
+  it('a miss: no damage if the player steps out of reach during the windup', () => {
+    let target: Vec3 = [0, 2, 0];
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player(target),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.attackWindup).toBeGreaterThan(0);
+    target = [50, 2, 0]; // teleports well outside the shambler's reach mid-windup
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(0);
+    expect(system.store.get(id)!.attackWindup).toBe(0); // the windup still resolves — as a miss, not a stall
+  });
+
+  it('a miss: no damage if line of sight is blocked (a door closes) during the windup', () => {
+    const { entities, door, solid } = makeDoorWorld();
+    entities.setOpen(door, true);
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([5, 1, -0.56]),
+        solid,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.attackWindup).toBeGreaterThan(0);
+    entities.setOpen(door, false); // slams shut mid-windup, blocking the chest-to-chest raycast
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(0);
+  });
+
+  it('the cooldown (running since windup start) still gates the next attack after a hit lands', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    run(system, SHAMBLER.attack.windup + 0.05); // resolves the first attack
+    expect(damage).toBe(8);
+    const afterFirstHit = system.store.get(id)!.attackWait;
+    expect(afterFirstHit).toBeGreaterThan(0);
+    // Well within the remaining cooldown: no second windup should start yet.
+    run(system, afterFirstHit - 0.1);
+    expect(system.store.get(id)!.attackWindup).toBe(0);
+    expect(damage).toBe(8);
+  });
+
+  it('keeps attackWindup exactly across a snapshot/restore round trip mid-attack', () => {
+    const system = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60); // starts the windup
+    for (let i = 0; i < 5; i++) {
+      system.tick(1 / 60); // partway through — a non-trivial value to round-trip, not just the raw constant
+    }
+    const before = system.store.get(id)!.attackWindup;
+    expect(before).toBeGreaterThan(0);
+    expect(before).toBeLessThan(SHAMBLER.attack.windup);
+
+    const state = system.snapshotState();
+    const restored = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
+    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
+
+    expect(restored.store.get(id)!.attackWindup).toBe(before);
+  });
+});
+
+describe('dismemberment', () => {
+  const stationary = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+  const armParts = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'];
+
+  /** Regions too healthy for a few fist hits to destroy, so only the dismember roll can sever anything. */
+  const survives = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
+
+  const swingAt = (system: ZombieSystem, id: number) => {
+    const target = system.store.get(id)!;
+    const origin: Vec3 = [0, target.body.pos[1] + target.body.height * 0.55, 0];
+    return system.swing(origin, [1, 0, 0], FISTS_MELEE);
+  };
+
+  it('chance 1 always severs a random arm part on a hit that does not kill', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
+    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const id = system.add(type, [0.5, 1, 0]);
+    expect(swingAt(system, id)).toBe(id);
+    const { severed } = system.store.get(id)!;
+    expect(severed).toHaveLength(1);
+    expect(armParts).toContain(severed[0]);
+  });
+
+  it('chance 0 never severs, even across many hits', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 0, headOnKillChance: 0 } };
+    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const id = system.add(type, [0.5, 1, 0]);
+    for (let i = 0; i < 10; i++) {
+      swingAt(system, id);
+      run(system, FISTS_MELEE.cooldown);
+    }
+    expect(system.store.get(id)!.severed).toEqual([]);
+  });
+
+  it('the onSever callback fires with the id, the zombie, and the severed part', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
+    const calls: [number, string][] = [];
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSever: (severedId, zombie, part) => {
+        calls.push([severedId, part]);
+        expect(zombie.severed).toContain(part);
+      },
+    });
+    const id = system.add(type, [0.5, 1, 0]);
+    swingAt(system, id);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]![0]).toBe(id);
+  });
+
+  it('containment: a part already covered by a severed upperArm is never independently added', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
+    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const id = system.add(type, [0.5, 1, 0]);
+    system.store.get(id)!.severed.push('upperArm.L'); // pre-severed, bypassing the RNG for this check
+    for (let i = 0; i < 8; i++) {
+      swingAt(system, id);
+      run(system, FISTS_MELEE.cooldown);
+    }
+    const { severed } = system.store.get(id)!;
+    expect(severed).not.toContain('forearm.L');
+    expect(severed).not.toContain('hand.L');
+  });
+
+  it('cannot start a new attack once both arms are gone at the forearm or above', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.store.get(id)!.severed.push('forearm.L', 'forearm.R');
+    run(system, 5); // comfortably longer than windup + cooldown, if an attack were ever allowed to start
+    expect(system.store.get(id)!.attackWindup).toBe(0);
+    expect(damage).toBe(0);
+  });
+
+  it('a hand-only loss on both sides still allows an attack (only forearm-or-above disables it)', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.store.get(id)!.severed.push('hand.L', 'hand.R');
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(8);
+  });
+
+  it('only severs the head on a killing blow, never on a hit the zombie survives', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 0, headOnKillChance: 1 } };
+    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const id = system.add(type, [0.5, 1, 0]);
+    swingAt(system, id); // fists deal 8, far from lethal at 1000 health
+    expect(system.store.get(id)!.severed).toEqual([]);
+  });
+
+  it('severs the head on a killing blow when headOnKillChance rolls true', () => {
+    const type = {
+      ...stationary,
+      regions: { ...survives, head: FISTS_MELEE.damage },
+      dismember: { chance: 0, headOnKillChance: 1 },
+    };
+    const severedParts: string[] = [];
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSever: (_id, _zombie, part) => {
+        severedParts.push(part);
+      },
+    });
+    const id = system.add(type, [1, 1, 0], [0, 0, -1]);
+    const ray = regionRay(system.store.get(id)!, 'head');
+    expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id); // exactly lethal
+    expect(system.store.get(id)).toBeUndefined(); // dead, removed from the store
+    expect(severedParts).toEqual(['head']);
+  });
+
+  it('destroying an arm region cuts the whole arm at the shoulder', () => {
+    const type = { ...stationary, regions: { ...survives, leftArm: FISTS_MELEE.damage, rightArm: FISTS_MELEE.damage } };
+    const calls: string[] = [];
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSever: (_id, _zombie, part) => {
+        calls.push(part);
+      },
+    });
+    const id = system.add(type, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    const weapon = { ...FISTS_MELEE, cooldown: 0 };
+    const left = regionRay(zombie, 'leftArm');
+    expect(system.swing(left.origin, left.direction, weapon)).toBe(id);
+    expect(zombie.severed).toContain('upperArm.L');
+    expect(calls).toContain('upperArm.L');
+    const right = regionRay(zombie, 'rightArm');
+    expect(system.swing(right.origin, right.direction, weapon)).toBe(id);
+    expect(zombie.severed).toContain('upperArm.R');
+  });
+
+  it('keeps severed exactly across a snapshot/restore round trip', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
+    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const id = system.add(type, [0.5, 1, 0]);
+    swingAt(system, id);
+    const before = system.store.get(id)!.severed;
+    expect(before.length).toBeGreaterThan(0);
+
+    const state = system.snapshotState();
+    const restored = new ZombieSystem(senses(() => player([100, 2, 0])));
+    restored.restoreState(state, (typeId) => (typeId === type.id ? type : undefined));
+    expect(restored.store.get(id)!.severed).toEqual(before);
+  });
+
+  it('is deterministic: two identical systems given the same swings sever the same parts', () => {
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
+    const runFour = (): string[] => {
+      const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+      const id = system.add(type, [0.5, 1, 0]);
+      for (let i = 0; i < 4; i++) {
+        swingAt(system, id);
+        run(system, FISTS_MELEE.cooldown);
+      }
+      return system.store.get(id)!.severed;
+    };
+    expect(runFour()).toEqual(runFour());
   });
 });

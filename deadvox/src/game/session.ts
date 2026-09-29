@@ -8,7 +8,7 @@ import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { MapEntityStore } from '../core/entities.ts';
+import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import {
   advanceFootsteps,
   footstepEventForBlock,
@@ -121,6 +121,13 @@ export interface SessionOptions {
   audio: SessionAudio;
   /** A message that isn't an interruption, such as why a move was refused. */
   notice: (text: string) => void;
+  /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
+  zombieEffects?: {
+    /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
+    onSever?: (id: EntityId, zombie: Zombie, part: string) => void;
+    /** A zombie died: it is already out of the store, and its loot is already dropped. */
+    onDeath?: (id: EntityId, zombie: Zombie) => void;
+  };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
   /**
@@ -311,19 +318,20 @@ export const createSession = (options: SessionOptions) => {
       ];
       inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
     },
-    onDeath: (zombie) => {
+    onSever: (id, zombie, part) => options.zombieEffects?.onSever?.(id, zombie, part),
+    onDeath: (id, zombie) => {
       const table = zombie.type.loot;
-      if (!table) {
-        return;
+      if (table) {
+        const pos: Vec3 = [
+          Math.floor(zombie.body.pos[0]),
+          Math.floor(zombie.body.pos[1]),
+          Math.floor(zombie.body.pos[2]),
+        ];
+        for (const drop of rollLoot(registry, table, sim.rng(`zombie-loot:${zombie.body.pos.join(',')}`))) {
+          inventory.add(inventory.create(drop.type, drop.count, drop.condition), { kind: 'pile', pos });
+        }
       }
-      const pos: Vec3 = [
-        Math.floor(zombie.body.pos[0]),
-        Math.floor(zombie.body.pos[1]),
-        Math.floor(zombie.body.pos[2]),
-      ];
-      for (const drop of rollLoot(registry, table, sim.rng(`zombie-loot:${zombie.body.pos.join(',')}`))) {
-        inventory.add(inventory.create(drop.type, drop.count, drop.condition), { kind: 'pile', pos });
-      }
+      options.zombieEffects?.onDeath?.(id, zombie);
     },
   });
   let lastZombieStep = 0;

@@ -118,8 +118,22 @@
       // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
       // indexing it directly — a measured, deliberate choice at each of these call sites, not an
       // oversight useDestructuring should keep flagging.
-      "includes": ["**/mobgen/src/core/pose.ts", "**/mobgen/src/viewer/stressActors.ts", "**/mobgen/src/cli/bench.ts"],
+      "includes": [
+        "**/mobgen/src/core/pose.ts",
+        "**/mobgen/src/viewer/stressActors.ts",
+        "**/mobgen/src/cli/bench.ts",
+        "**/mobgen/src/mob/crowd.ts"
+      ],
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
+    },
+    {
+      // deadvox reuses mobgen's pure src/core and src/mob via a `@mobgen/*` path alias (vite.config.ts's
+      // resolve.alias, tsconfig.json's paths) rather than an npm dependency — mobgen has no package.json
+      // entry and isn't published, so there's nothing to "add to the manifest". Biome's dependency check
+      // doesn't follow bundler/tsconfig path aliases, so it reads every `@mobgen/...` specifier as an
+      // undeclared npm package; this is the one, deliberate place that pattern is expected.
+      "includes": ["**/deadvox/src/render/mobActors.ts", "**/deadvox/test/mobActors.test.ts"],
+      "linter": { "rules": { "correctness": { "noUndeclaredDependencies": "off" } } }
     }
   ]
 }
