@@ -1111,11 +1111,13 @@ not part of the export's acceptance:
 - a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
   side-profile opening is built from connected convex extrusions; its grip post
   moves forward under the receiver while the buttplate remains 22u from the
-  mount on L (16u M, 10u S). Every size is 7.74u high, the former L height.
-  The 4u-long hole and grip post meet the matching lower directly. Its rear
-  face at x=-16u touches the stock's upper bar across the full rear-face height
-  and width; the test measures the surfaces in world coordinates. A rule
-  rejects a thumbhole stock with a non-thumbhole lower or separate grip.
+  mount on L (16u M, 10u S). The grip post reaches the AR grip's measured
+  world bottom y=-12.5475u (8.5475u below the lower), and the butt drops by the
+  same 3.3075u; every size is now 11.0475u high. The 4u-long hole and bottom
+  bar stay at their previous heights. The grip post meets the matching lower
+  directly; its rear face at x=-16u touches the stock's upper bar across the
+  full rear-face height and width. Tests measure both contacts in world space.
+  A rule rejects a thumbhole stock with a non-thumbhole lower or separate grip.
   `designs/archetype-awm.json` uses the long heavy-barrel profile, detachable
   box magazine, and optic rail;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
