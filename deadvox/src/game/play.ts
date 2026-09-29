@@ -294,6 +294,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     resumeRequested = true;
     if (input.locked) {
       syncMenuState();
+      resumeRequested = false;
     } else {
       input.lock();
     }
@@ -323,6 +324,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       menuPointer.releaseCaptures();
     }
     syncMenuState(true);
+  });
+  document.addEventListener('pointerlockerror', () => {
+    resumeRequested = false;
   });
 
   const compress = () => {
