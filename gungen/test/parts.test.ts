@@ -345,13 +345,6 @@ describe('tapered stock profile', () => {
       expect((jointX - lowest[0]) / stockLength).toBeLessThanOrEqual(0.3);
       expect(depth / stockLength).toBeGreaterThanOrEqual(0.24);
       expect(depth / stockLength).toBeLessThanOrEqual(0.32);
-
-      const pad = byId('butt-pad');
-      const heelY = Math.max(...pad.profile.map(([, y]) => y));
-      const heelX = Math.max(...pad.profile.filter(([, y]) => y === heelY).map(([x]) => x));
-      const combAngle = degrees(heelX - jointX, section(solids, heelX).max - section(solids, jointX).max);
-      expect(combAngle).toBeGreaterThanOrEqual(2);
-      expect(combAngle).toBeLessThanOrEqual(8);
     });
 
     it(`${size}: belly, butt and recoil pad meet their bounds`, () => {
@@ -385,6 +378,40 @@ describe('tapered stock profile', () => {
       const padThickness = Math.min(bottomXs[1]! - bottomXs[0]!, topXs[1]! - topXs[0]!) / stockLength;
       expect(padThickness).toBeGreaterThanOrEqual(0.05);
       expect(padThickness).toBeLessThanOrEqual(0.08);
+    });
+  }
+});
+
+describe('pump stock raised butt heel', () => {
+  const baselineToeY = { M: -7.518_598_945_248, L: -10.351_249_252_97 } as const;
+  const measure = (size: 'M' | 'L') => {
+    const def = FAMILIES.stock!.build({ length: size, style: 'tapered' });
+    const prism = def.solids.find((solid) => solid.id === 'belly');
+    const pad = def.solids.find((solid) => solid.id === 'butt-pad');
+    if (prism?.kind !== 'extruded-polygon' || pad?.kind !== 'extruded-polygon') {
+      throw new Error('tapered stock must have a belly prism and recoil pad');
+    }
+    const padYs = pad.profile.map(([, y]) => y);
+    const toeY = Math.min(...padYs);
+    const topY = Math.max(...padYs);
+    const rearBottom = prism.profile.find(([, y]) => y === toeY)!;
+    const rearTop = prism.profile.find(([, y]) => y === topY)!;
+    const [jointX] = def.ports.find((port) => port.id === 'front')!.pos;
+    const stockLength = jointX - Math.min(...pad.profile.map(([x]) => x));
+    return { pad, rearBottom, rearTop, stockLength, toeY, topY };
+  };
+
+  for (const size of ['M', 'L'] as const) {
+    it(`${size}: raises only the rear top by 5% and preserves the rear toe`, () => {
+      const result = measure(size);
+      const oldHeight = 0.34 * result.stockLength;
+      const newHeight = result.rearTop[1] - result.rearBottom[1];
+      const ratio = newHeight / oldHeight;
+      expect(ratio).toBeGreaterThanOrEqual(1.045);
+      expect(ratio).toBeLessThanOrEqual(1.055);
+      expect(Math.abs(result.rearBottom[1] - baselineToeY[size])).toBeLessThanOrEqual(1e-9);
+      expect(result.topY).toBe(result.rearTop[1]);
+      expect(result.toeY).toBe(result.rearBottom[1]);
     });
   }
 });

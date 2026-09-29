@@ -1777,6 +1777,8 @@ export const stock: PartFamily = {
         };
       }
 
+      const heelRise = 0.05 * buttHeight;
+      const raisedHeelY = heelY + heelRise;
       return {
         family: 'stock',
         solids: [
@@ -1798,7 +1800,7 @@ export const stock: PartFamily = {
               [padFrontBottomX, toeY],
               [bellyRearX, bellyRearY],
               [bellyRearX, combY(bellyRearX)],
-              [padFrontTopX, heelY],
+              [padFrontTopX, raisedHeelY],
             ],
             sideZ,
           ),
@@ -1807,8 +1809,8 @@ export const stock: PartFamily = {
             [
               [padRearBottomX, toeY],
               [padFrontBottomX, toeY],
-              [padFrontTopX, heelY],
-              [padRearTopX, heelY],
+              [padFrontTopX, raisedHeelY],
+              [padRearTopX, raisedHeelY],
             ],
             sideZ,
           ),

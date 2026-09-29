@@ -33,8 +33,30 @@ describe('sawed-off tapered stock', () => {
     expect(polygon(sawed, 'fore-stock')).toEqual(polygon(full, 'fore-stock'));
     expect(polygon(sawed, 'grip')).toEqual(polygon(full, 'grip'));
 
+    const cutStub = polygon(sawed, 'cut-stub');
+    const baselineCutProfile = {
+      M: [
+        [-4.98, -5.742_080_547_436_795],
+        [-4.48, -5.749_622_939_466_714],
+        [-4.48, -0.629_622_939_466_713_8],
+        [-4.98, -0.699_893_356_817_909_5],
+      ],
+      L: [
+        [-6.66, -7.899_950_607_391_004],
+        [-6.16, -7.905_731_541_766_731],
+        [-6.16, -0.865_731_541_766_731_4],
+        [-6.66, -0.936_001_959_117_927],
+      ],
+    } as const;
+    expect(cutStub.profile).toHaveLength(baselineCutProfile[length].length);
+    for (const [index, point] of cutStub.profile.entries()) {
+      const baseline = baselineCutProfile[length][index]!;
+      expect(Math.abs(point[0] - baseline[0])).toBeLessThanOrEqual(1e-9);
+      expect(Math.abs(point[1] - baseline[1])).toBeLessThanOrEqual(1e-9);
+    }
+
     const gripRear = Math.min(...polygon(sawed, 'grip').profile.map(([x]) => x));
-    const cutFaceX = Math.min(...polygon(sawed, 'cut-stub').profile.map(([x]) => x));
+    const cutFaceX = Math.min(...cutStub.profile.map(([x]) => x));
     const distanceBehindGrip = gripRear - cutFaceX;
     expect(distanceBehindGrip).toBeGreaterThan(0);
     expect(distanceBehindGrip).toBeLessThanOrEqual(1);
