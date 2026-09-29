@@ -198,7 +198,7 @@ export const smg: Template = {
 
 export const boltRifle: Template = {
   name: 'bolt-rifle',
-  description: 'Bolt-action rifle loaded from the top: sporting stock, long handguard.',
+  description: 'Bolt-action rifle loaded from the top: sporting or thumbhole stock, long handguard.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
@@ -206,7 +206,7 @@ export const boltRifle: Template = {
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.9 },
     { id: 'magazine', family: 'magazine', params: { length: 'S' } },
-    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'sporting' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
     { id: 'sight', family: 'sight', chance: 0.8 },
   ],
   connections: [

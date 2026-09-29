@@ -6,6 +6,8 @@ import type { Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { FAMILIES, FIRING_GRIP } from '../src/gun/parts.ts';
+import { boltRifle } from '../src/gun/templates.ts';
+import { loadFixture } from './helpers.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 
 const design = JSON.parse(
@@ -36,6 +38,18 @@ describe('thumbhole stock and AWM design', () => {
     const hold = GUN_ANCHORS.stock!.anchors({ length: 'L', style: 'thumbhole' }, stock).hold!;
     expect(inside(grip, ...hold.position)).toBe(true);
     expect(stock.ports.find((port) => port.id === 'front')?.pos).toEqual([0, 0, 0]);
+  });
+
+  it('allows a thumbhole on the existing bolt-rifle template without a separate grip', () => {
+    const stockChoice = boltRifle.slots.find((slot) => slot.id === 'stock')?.params?.style;
+    expect(stockChoice).toContain('thumbhole');
+    const existing = loadFixture('archetype-bolt-rifle');
+    const stock = existing.parts.stock!;
+    const variant = {
+      ...existing,
+      parts: { ...existing.parts, stock: { ...stock, params: { ...stock.params, style: 'thumbhole' } } },
+    };
+    expect(validate(variant, gunDomain).issues).toEqual([]);
   });
 
   it('validates the AWM design with its thumbhole stock as the only grip', () => {
