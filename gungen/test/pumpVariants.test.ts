@@ -4,7 +4,7 @@ import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { FAMILIES } from '../src/gun/parts.ts';
+import { FAMILIES, FIRING_GRIP } from '../src/gun/parts.ts';
 import { pumpShotgun } from '../src/gun/templates.ts';
 
 const SEEDS = Array.from({ length: 100 }, (_, seed) => seed);
@@ -23,11 +23,14 @@ describe('pump shotgun grip variants', () => {
       const hold = selectGunAnchors(report.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
       expect('code' in hold, `seed ${seed}: one unambiguous hold`).toBe(false);
 
-      const stock = Object.values(assembly.parts).find(({ family }) => family === 'stock');
+      const stockId = Object.keys(assembly.parts).find((id) => assembly.parts[id]?.family === 'stock')!;
+      const stock = assembly.parts[stockId]!;
       if (layout === 'pump') {
         expect(assembly.parts.grip, `seed ${seed}: stock-grip variant`).toBeUndefined();
         expect(report.resolved.defs.get('lower')?.ports.some(({ id }) => id === 'grip')).toBe(false);
-        expect(stock?.params?.style, `seed ${seed}: stock provides the firing grip`).toBe('sporting');
+        expect(['tapered', 'tapered-sawed'], `seed ${seed}: tapered firing stock`).toContain(stock.params?.style);
+        expect(['M', 'L'], `seed ${seed}: stock length`).toContain(stock.params?.length);
+        expect(report.resolved.defs.get(stockId)?.tags).toContain(FIRING_GRIP);
       } else {
         expect(assembly.parts.grip, `seed ${seed}: separate pistol grip`).toBeDefined();
         expect(assembly.connections).toContainEqual({ from: 'lower.grip', to: 'grip.top' });

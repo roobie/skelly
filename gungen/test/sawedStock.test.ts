@@ -78,21 +78,28 @@ describe('sawed-off tapered stock', () => {
     const sawedSeeds: number[] = [];
     for (let seed = 0; seed < 300; seed++) {
       const assembly = generate(pumpShotgun, gunDomain, seed);
-      const stockInstance = assembly.parts.stock!;
+      const stockEntry = Object.entries(assembly.parts).find(([, part]) => part.family === 'stock');
+      expect(stockEntry, `seed ${seed}: one stock part`).toBeDefined();
+      if (!stockEntry) {
+        throw new Error(`seed ${seed}: missing stock part`);
+      }
+      const [stockId, stockInstance] = stockEntry;
       if (stockInstance.params?.style !== 'tapered-sawed') {
         continue;
       }
       sawedSeeds.push(seed);
+      expect(assembly.parts.lower?.params?.layout, `seed ${seed}`).toBe('pump');
+      expect(assembly.parts.grip, `seed ${seed}: sawed stock is gripless`).toBeUndefined();
       expect(assembly.parts.barrel?.params?.length, `seed ${seed}`).toBe('S');
       const report = validate(assembly, gunDomain);
       expect(report.ok, `seed ${seed}: ${report.issues.map((issue) => issue.message).join('; ')}`).toBe(true);
       const resolved = resolve(assembly, gunDomain);
       const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
       expect('code' in anchors, `seed ${seed}`).toBe(false);
-      const stock = resolved.defs.get('stock')!;
+      const stock = resolved.defs.get(stockId)!;
       expect(stock.tags).toContain(FIRING_GRIP);
       const params = Object.fromEntries(
-        Object.entries(resolved.params.get('stock')!).map(([key, value]) => [key, value.value]),
+        Object.entries(resolved.params.get(stockId)!).map(([key, value]) => [key, value.value]),
       );
       const stockHold = GUN_ANCHORS.stock!.anchors(params, stock).hold!;
       const grip = polygon(
