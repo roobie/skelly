@@ -37,6 +37,16 @@ count:
   background tier re-voxelizes the same genome at a coarser size (1/6 or 1/4
   of a block) or falls back to box figures. It comes from the same genome, so
   an actor's colours and proportions match between levels.
+
+  **BR ruling (2026-09-29):** Face dimensions are metric, proportional to
+  `height × headScale`, and independent of voxel size; calibration uses the
+  median template height. Placement remains grid-snapped, so sub-voxel details
+  may disappear in the background tier. Voxel budgets scale with inverse cell
+  volume and actor height (head groups also use `headScale`); triangle budgets
+  scale with inverse cell surface area and height. `src/core/generate.ts` rounds
+  the scaled intervals and allows one extra voxel at coarse resolutions for
+  boundary quantization. This follows the root
+  [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
 - **A variety pool.** Generate a few dozen variants per template and reuse
   them, rather than one per zombie.
 

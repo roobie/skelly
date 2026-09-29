@@ -10,6 +10,7 @@ import type { Body } from './body.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
+import type { Budgets } from './rules.ts';
 import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByName, type Wound } from './template.ts';
 import { type Report, validate } from './validate.ts';
 import { type Voxels, voxelize } from './voxelize.ts';
@@ -108,6 +109,53 @@ export const build = (genome: Genome): Body => {
   return planOf(template.bodyPlan).build(genome, template);
 };
 
+const scaledRange = (bounds: { readonly min: number; readonly max: number }, factor: number, upperCellMargin = 0) => ({
+  min: Math.max(1, Math.floor(bounds.min * factor)),
+  max: Math.max(1, Math.ceil(bounds.max * factor) + upperCellMargin),
+});
+
+const parameterCenter = (spec: ParamSpec | undefined, name: string): number => {
+  if (spec === undefined) {
+    throw new Error(`template is missing param "${name}"`);
+  }
+  if (typeof spec === 'number') {
+    return spec;
+  }
+  if ('choices' in spec) {
+    return spec.choices.reduce((sum, value) => sum + value, 0) / spec.choices.length;
+  }
+  return (spec.min + spec.max) / 2;
+};
+
+/** Voxel budgets scale with inverse cell volume (and actor height); the head group also follows its
+ * height × headScale dimensions. Triangle budgets scale with inverse cell surface area and height.
+ * Floors/ceilings preserve the scaled intervals; coarse voxel-count maxima get one cell for boundary
+ * quantization. */
+const budgetsForGenome = (template: Template, genome: Genome): Budgets => {
+  const ratio = template.voxelSize / genome.voxelSize;
+  const { height, headScale } = genome.params;
+  if (height === undefined || headScale === undefined) {
+    throw new Error(`genome "${genome.template}" is missing height or headScale`);
+  }
+  const heightRatio = height / parameterCenter(template.params.height, 'height');
+  const headScaleRatio = headScale / parameterCenter(template.params.headScale, 'headScale');
+  const volumeScale = ratio ** 3 * heightRatio ** 3;
+  const headVolumeScale = volumeScale * headScaleRatio ** 3;
+  const surfaceScale = ratio ** 2 * heightRatio ** 2;
+  const cellMargin = ratio < 1 ? 1 : 0;
+  const groups = Object.fromEntries(
+    Object.entries(template.budgets.groups).map(([name, group]) => [
+      name,
+      { ...group, ...scaledRange(group, headVolumeScale, cellMargin) },
+    ]),
+  );
+  return {
+    totalVoxels: scaledRange(template.budgets.totalVoxels, volumeScale, cellMargin),
+    totalTriangles: scaledRange(template.budgets.totalTriangles, surfaceScale),
+    groups,
+  };
+};
+
 export interface Realized {
   readonly body: Body;
   readonly voxels: Voxels;
@@ -121,7 +169,13 @@ export const realize = (genome: Genome): Realized => {
   const body = build(genome);
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
-  const report = validate({ body, voxels, meshes, feet: new Set(template.feet), budgets: template.budgets });
+  const report = validate({
+    body,
+    voxels,
+    meshes,
+    feet: new Set(template.feet),
+    budgets: budgetsForGenome(template, genome),
+  });
   return { body, voxels, meshes, report };
 };
 

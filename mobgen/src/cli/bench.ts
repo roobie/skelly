@@ -104,6 +104,23 @@ console.log(
   `generation: total ${genTotalMs.toFixed(2)} ms, mean ${(genTotalMs / poolSize).toFixed(3)} ms/actor, max ${genMaxMs.toFixed(2)} ms\n`,
 );
 
+const attackProbe = pool[0]!.walkActor;
+const attackBase = walkPose(attackProbe, { stepIndex: 0, progress: 0.2 }, 0.8);
+const attackSamples = 20_000;
+let attackChecksum = 0;
+for (let i = 0; i < 1000; i++) {
+  attackPose(attackProbe, LUNGE_GRAB, 0.45, attackBase);
+}
+const attackStart = performance.now();
+for (let i = 0; i < attackSamples; i++) {
+  const pose = attackPose(attackProbe, LUNGE_GRAB, 0.45, attackBase);
+  attackChecksum += pose.root[1] + pose.rotations.spine![0];
+}
+const attackMs = performance.now() - attackStart;
+console.log(
+  `attackPose only (seed ${pool[0]!.genome.seed}, t=0.45): ${((attackMs * 1000) / attackSamples).toFixed(2)} µs/call; checksum ${attackChecksum.toFixed(3)}\n`,
+);
+
 interface SimActor {
   readonly poolIndex: number;
   /** This actor's own WalkActor: shares the pool entry's bones/extents/params/seed, but with its own

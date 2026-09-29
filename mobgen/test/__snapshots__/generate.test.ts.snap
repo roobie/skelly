@@ -59,7 +59,7 @@ exports[`templates > brute: known-good seeds (genome + voxel-grid hash) 1`] = `
         },
       ],
     },
-    "gridHash": "449dac06",
+    "gridHash": "a0e9afd4",
   },
   {
     "genome": {
@@ -112,7 +112,7 @@ exports[`templates > brute: known-good seeds (genome + voxel-grid hash) 1`] = `
         },
       ],
     },
-    "gridHash": "58f22aa6",
+    "gridHash": "148ecbc",
   },
   {
     "genome": {
@@ -158,7 +158,7 @@ exports[`templates > brute: known-good seeds (genome + voxel-grid hash) 1`] = `
       "voxelSize": 0.05,
       "wounds": [],
     },
-    "gridHash": "cdaa2e58",
+    "gridHash": "6ad13d24",
   },
 ]
 `;
@@ -216,7 +216,7 @@ exports[`templates > runner: known-good seeds (genome + voxel-grid hash) 1`] = `
         },
       ],
     },
-    "gridHash": "66c087a5",
+    "gridHash": "31be6f02",
   },
   {
     "genome": {
@@ -262,7 +262,7 @@ exports[`templates > runner: known-good seeds (genome + voxel-grid hash) 1`] = `
       "voxelSize": 0.041666666666666664,
       "wounds": [],
     },
-    "gridHash": "8b22852e",
+    "gridHash": "f0cc0ec0",
   },
   {
     "genome": {
@@ -308,7 +308,7 @@ exports[`templates > runner: known-good seeds (genome + voxel-grid hash) 1`] = `
       "voxelSize": 0.041666666666666664,
       "wounds": [],
     },
-    "gridHash": "cc16c3e7",
+    "gridHash": "1c40ec08",
   },
 ]
 `;
@@ -372,7 +372,7 @@ exports[`templates > shambler: known-good seeds (genome + voxel-grid hash) 1`] =
         },
       ],
     },
-    "gridHash": "333ca59b",
+    "gridHash": "a87f4d64",
   },
   {
     "genome": {
@@ -425,7 +425,7 @@ exports[`templates > shambler: known-good seeds (genome + voxel-grid hash) 1`] =
         },
       ],
     },
-    "gridHash": "1bbca5a2",
+    "gridHash": "c4a85550",
   },
   {
     "genome": {
@@ -471,7 +471,7 @@ exports[`templates > shambler: known-good seeds (genome + voxel-grid hash) 1`] =
       "voxelSize": 0.041666666666666664,
       "wounds": [],
     },
-    "gridHash": "75ebe864",
+    "gridHash": "2cf85f54",
   },
 ]
 `;

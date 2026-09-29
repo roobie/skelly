@@ -7,7 +7,6 @@
 // same rotation, but the bone points the other way at rest) — verified against boneTransforms when the
 // clip was added (af2df6a), not assumed; the check itself was not kept.
 
-import type { Bone } from '../core/body.ts';
 import { type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
 import type { EulerDeg, Pose } from '../core/pose.ts';
 import { GROUND_SMOOTHING, groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
@@ -147,23 +146,65 @@ const evalCurve = (times: readonly number[], values: readonly number[], t: numbe
   return hermite(u, { value: v0, slope: m0 * dt }, { value: v1, slope: m1 * dt });
 };
 
-const sampleVec3 = (clip: AttackClip, boneId: string, t: number): readonly [number, number, number] => {
-  const times = clip.keys.map((k) => k.t);
-  const axis = (i: 0 | 1 | 2): number =>
-    evalCurve(
-      times,
-      clip.keys.map((k) => k.rotations[boneId]?.[i] ?? 0),
-      t,
-    );
-  return [axis(0), axis(1), axis(2)];
+type AxisCurves = readonly [readonly number[], readonly number[], readonly number[]];
+
+interface CompiledClip {
+  readonly times: readonly number[];
+  readonly boneIds: readonly string[];
+  readonly curves: ReadonlyMap<string, AxisCurves>;
+  readonly pelvisDrop: readonly number[];
+}
+
+const compiledClips = new WeakMap<AttackClip, CompiledClip>();
+
+/** Build the clip's immutable sampling tables once per clip object. The times and per-axis values are
+ * the same arrays the old sampler rebuilt for each bone on every call. */
+const compileClip = (clip: AttackClip): CompiledClip => {
+  const cached = compiledClips.get(clip);
+  if (cached) {
+    return cached;
+  }
+  const times = clip.keys.map((key) => key.t);
+  const touched = new Set<string>();
+  for (const key of clip.keys) {
+    for (const id of Object.keys(key.rotations)) {
+      touched.add(id);
+    }
+  }
+  const boneIds = [...touched];
+  const curveIds = new Set([...boneIds, 'spine', 'chest']);
+  const curves = new Map<string, AxisCurves>();
+  for (const boneId of curveIds) {
+    curves.set(boneId, [
+      clip.keys.map((key) => key.rotations[boneId]?.[0] ?? 0),
+      clip.keys.map((key) => key.rotations[boneId]?.[1] ?? 0),
+      clip.keys.map((key) => key.rotations[boneId]?.[2] ?? 0),
+    ]);
+  }
+  const compiled: CompiledClip = {
+    times,
+    boneIds,
+    curves,
+    pelvisDrop: clip.keys.map((key) => key.pelvisDrop ?? 0),
+  };
+  compiledClips.set(clip, compiled);
+  return compiled;
 };
 
-const samplePelvisDrop = (clip: AttackClip, t: number): number =>
-  evalCurve(
-    clip.keys.map((k) => k.t),
-    clip.keys.map((k) => k.pelvisDrop ?? 0),
-    t,
-  );
+const sampleVec3 = (compiled: CompiledClip, boneId: string, t: number): readonly [number, number, number] => {
+  const curves = compiled.curves.get(boneId);
+  if (!curves) {
+    return [0, 0, 0];
+  }
+  return [
+    evalCurve(compiled.times, curves[0], t),
+    evalCurve(compiled.times, curves[1], t),
+    evalCurve(compiled.times, curves[2], t),
+  ];
+};
+
+const samplePelvisDrop = (compiled: CompiledClip, t: number): number =>
+  evalCurve(compiled.times, compiled.pelvisDrop, t);
 
 // ---- applying a clip on top of a base pose ----
 
@@ -228,8 +269,19 @@ export const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   return rotAxis(axis, (angle * 180 * weight) / Math.PI);
 };
 
-const avgLegLen = (bones: readonly Bone[], extents: WalkActor['extents']): number =>
-  (legGeometryFor(bones, extents, 'L').legLen + legGeometryFor(bones, extents, 'R').legLen) / 2;
+const avgLegLengths = new WeakMap<WalkActor, number>();
+
+const avgLegLen = (actor: WalkActor): number => {
+  const cached = avgLegLengths.get(actor);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const average =
+    (legGeometryFor(actor.bones, actor.extents, 'L').legLen + legGeometryFor(actor.bones, actor.extents, 'R').legLen) /
+    2;
+  avgLegLengths.set(actor, average);
+  return average;
+};
 
 /**
  * Layers `clip` at `time` on top of `walkBase` (the current walk or standing pose): composes each
@@ -245,22 +297,18 @@ const avgLegLen = (bones: readonly Bone[], extents: WalkActor['extents']): numbe
  */
 export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, walkBase: Pose): Pose => {
   const t = clamp(time, 0, clip.duration);
-  const boneIds = new Set<string>();
-  for (const key of clip.keys) {
-    for (const id of Object.keys(key.rotations)) {
-      boneIds.add(id);
-    }
-  }
+  const compiled = compileClip(clip);
+  const { boneIds } = compiled;
 
   const torsoPitchX =
-    scaleForGenome('spine', sampleVec3(clip, 'spine', t)[0], actor.params) +
-    scaleForGenome('chest', sampleVec3(clip, 'chest', t)[0], actor.params);
+    scaleForGenome('spine', sampleVec3(compiled, 'spine', t)[0], actor.params) +
+    scaleForGenome('chest', sampleVec3(compiled, 'chest', t)[0], actor.params);
 
   const weight = armSwingWeight(t, clip);
   const rotations: Record<string, Mat3> = { ...walkBase.rotations };
   const clipAngles: Record<string, EulerDeg> | undefined = walkBase.angles ? {} : undefined;
   for (const boneId of boneIds) {
-    const [x, y, z] = sampleVec3(clip, boneId, t);
+    const [x, y, z] = sampleVec3(compiled, boneId, t);
     const scaledX = UPPER_ARM_BONES.has(boneId)
       ? upperArmLocalFromNet(x, torsoPitchX, actor.params)
       : scaleForGenome(boneId, x, actor.params);
@@ -273,11 +321,12 @@ export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, wal
     rotations[boneId] = mulMM(blendedBase, clipR);
   }
 
-  const drop = samplePelvisDrop(clip, t) * avgLegLen(actor.bones, actor.extents);
-  // X and Z come from the base pose unchanged (the walk's own weave/forward progress) — legs (and so
-  // groundOffset's own Y) don't move, but X isn't 0 in general now that steps can stagger sideways.
-  // Same smoothing as walkPose's own groundOffset call — otherwise this can disagree with walkBase.root[1]
-  // right at a near-tie between two feet's corners, breaking the exact match at the clip's own endpoints.
+  const drop = samplePelvisDrop(compiled, t) * avgLegLen(actor);
+  // Keep this second ground pass even for clips that only touch the upper body: walkBase may itself be
+  // an idle/walk blend, whose root Y is blended alongside its foot rotations. Recomputing from those
+  // blended rotations is not guaranteed to equal the blended root, so skipping on touched-bone IDs alone
+  // could change results. Same smoothing as walkPose's own pass — otherwise this can disagree with
+  // walkBase.root[1] at a near-tie between feet, breaking exact endpoint equivalence.
   const root: Vec3 = [
     walkBase.root[0],
     groundOffset(actor.bones, actor.extents, rotations, GROUND_SMOOTHING) - drop,
