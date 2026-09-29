@@ -517,31 +517,40 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       capturedPointers.delete(event.pointerId);
     }
   };
+  const isForwardableMenuTarget = (target: EventTarget | null): boolean =>
+    target === document || (target instanceof Element && target !== renderer.domElement && target.id !== 'game-cursor');
   const dispatchMenuPointer = (target: EventTarget, event: PointerEvent) => {
     forwardingPointer = true;
     try {
-      target.dispatchEvent(
-        new PointerEvent(event.type, {
-          bubbles: true,
-          cancelable: true,
-          composed: true,
-          pointerId: event.pointerId,
-          pointerType: event.pointerType,
-          isPrimary: event.isPrimary,
-          button: event.button,
-          buttons: event.buttons,
-          clientX: input.cursorX,
-          clientY: input.cursorY,
-          screenX: input.cursorX,
-          screenY: input.cursorY,
-          width: event.width,
-          height: event.height,
-          pressure: event.pressure,
-          tiltX: event.tiltX,
-          tiltY: event.tiltY,
-          twist: event.twist,
-        }),
-      );
+      const forwarded = new PointerEvent(event.type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        isPrimary: event.isPrimary,
+        button: event.button,
+        buttons: event.buttons,
+        clientX: input.cursorX,
+        clientY: input.cursorY,
+        screenX: input.cursorX,
+        screenY: input.cursorY,
+        width: event.width,
+        height: event.height,
+        pressure: event.pressure,
+        tiltX: event.tiltX,
+        tiltY: event.tiltY,
+        twist: event.twist,
+      });
+      // Firefox pins even synthetic PointerEvent.clientX/Y to the pointer-lock center.
+      // Override those read-only properties so the inventory receives the game cursor position.
+      Object.defineProperties(forwarded, {
+        clientX: { value: input.cursorX },
+        clientY: { value: input.cursorY },
+        screenX: { value: input.cursorX },
+        screenY: { value: input.cursorY },
+      });
+      target.dispatchEvent(forwarded);
     } finally {
       forwardingPointer = false;
     }
@@ -555,12 +564,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       return;
     }
     event.stopPropagation();
+    if (event.type === 'pointermove') {
+      input.moveMenuCursor(event.movementX, event.movementY);
+    }
     const captured = capturedPointers.has(event.pointerId);
     const target = captured ? document : document.elementFromPoint(input.cursorX, input.cursorY);
-    const forwardable =
-      target === document ||
-      (target instanceof Element && target !== renderer.domElement && target.id !== 'game-cursor');
-    if (target && forwardable) {
+    if (target && isForwardableMenuTarget(target)) {
       if (event.type === 'pointerdown') {
         capturedPointers.add(event.pointerId);
       }
