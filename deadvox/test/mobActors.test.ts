@@ -561,6 +561,7 @@ describe('MobActorMeshes reactions', () => {
       const zombies = Array.from({ length: 18 }, (_, i) => makeZombie([i * 2, 0, 0]));
       const ids = zombies.map((zombie) => store.add(zombie));
       renderer.sync(store, 0, 1);
+      const uprightHead = renderer.boneMatrix(ids[0]!, 'head');
       const incapacitated = zombies[0]!;
       incapacitated.incapacitated = true;
       renderer.sync(store, 0, 1);
@@ -573,6 +574,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 3 * 20, 1); // >3x the normal corpse lifetime
       const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
       expect(lying).toBeDefined();
+      expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       renderer.sync(store, 20, 1);
       expect(renderer.boneMatrix(ids[0]!, 'pelvis')).toEqual(lying); // lies still; never sinks
