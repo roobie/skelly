@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { boxFromMinMax } from '../src/core/geometry.ts';
+import { parseAssemblyOrThrow } from '../src/core/parseAssembly.ts';
 import type { Domain, PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 
@@ -28,8 +29,9 @@ const targetFamily: PartFamily = {
   }),
 };
 
-const brokenContactFixture = JSON.parse(
+const brokenContactFixture = parseAssemblyOrThrow(
   readFileSync(new URL('./fixtures/broken-connection-contact.json', import.meta.url), 'utf8'),
+  'broken-connection-contact.json',
 );
 
 const testDomain: Domain = {
