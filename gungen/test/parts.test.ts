@@ -322,8 +322,9 @@ describe('tapered stock profile', () => {
       }
       const [, centerY] = body.box.center;
       const [, halfY] = body.box.half;
+      const [, stockPortY] = receiver.ports.find((port) => port.id === 'stock')!.pos;
       const rearFaceTopY = centerY + halfY;
-      const combAtJoint = section(solids, jointX).max;
+      const combAtJoint = section(solids, jointX).max + stockPortY;
       expect(Math.abs(combAtJoint - centerY)).toBeLessThanOrEqual(0.25);
       expect(def.ports.find((port) => port.id === 'front')?.pos).toEqual([0, 0, 0]);
       expect(rearFaceTopY - combAtJoint).toBeCloseTo(halfY, 5);
@@ -417,6 +418,23 @@ describe('pump stock raised butt heel', () => {
 });
 
 describe('pump shotgun tube and barrel contact', () => {
+  it('keeps the bore centered while the receiver edges closely contain the barrel and tube', () => {
+    const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
+    const body = receiver.solids.find((solid) => solid.id === 'body');
+    if (body?.kind !== 'box') {
+      throw new Error('pump receiver body is not a box');
+    }
+    const [bodyBottom, bodyTop] = [body.box.center[1] - body.box.half[1], body.box.center[1] + body.box.half[1]];
+    const barrelPort = receiver.ports.find((port) => port.id === 'barrel')!;
+    const tubePort = receiver.ports.find((port) => port.id === 'tube')!;
+    const lowerPort = receiver.ports.find((port) => port.id === 'lower')!;
+    expect(barrelPort.pos[1]).toBe(0);
+    expect(receiver.axes[0]?.origin[1]).toBe(0);
+    expect(bodyTop - (barrelPort.pos[1] + 1.25)).toBeCloseTo(0.25);
+    expect(tubePort.pos[1] - 1 - bodyBottom).toBeCloseTo(0.25);
+    expect(lowerPort.pos[1]).toBe(bodyBottom);
+  });
+
   for (const bore of ['S', 'M', 'L']) {
     it(`bore ${bore}: the tube reaches the barrel lug without a contact gap`, () => {
       const assembly = variant('archetype-pump-shotgun', (draft) => {

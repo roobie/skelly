@@ -71,6 +71,7 @@ const akHandguardLength = (length: SizeClass): number =>
 
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
+const PUMP_RECEIVER_DROP = 1;
 
 // A box magazine's section: front to back, and side to side. 1.8× the first
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
@@ -308,24 +309,36 @@ export const receiver: PartFamily = {
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
+    const receiverDrop = params.action === 'pump' && params.feed === 'tube' ? PUMP_RECEIVER_DROP : 0;
+    const receiverBottom = -RECEIVER_FRONT_HALF_HEIGHT - receiverDrop;
+    const receiverTop = RECEIVER_FRONT_HALF_HEIGHT - receiverDrop;
     const ports: PortDef[] = [
       { id: 'barrel', mount: 'barrel', gender: 'female', size: bore, pos: [0, 0, 0], normal: X, up: Y, required: true },
       { id: 'handguard', mount: 'handguard', gender: 'female', pos: [0, 0, 0], normal: X, up: Y },
-      { id: 'lower', mount: 'lower', gender: 'female', pos: [0, -2.5, 0], normal: NEG_Y, up: X, required: true },
-      { id: 'stock', mount: 'stock', gender: 'female', pos: [-16, 0, 0], normal: NEG_X, up: Y },
+      {
+        id: 'lower',
+        mount: 'lower',
+        gender: 'female',
+        pos: [0, receiverBottom, 0],
+        normal: NEG_Y,
+        up: X,
+        required: true,
+      },
+      { id: 'stock', mount: 'stock', gender: 'female', pos: [-16, -receiverDrop, 0], normal: NEG_X, up: Y },
     ];
     if (params.rail !== 'none') {
       ports.push({
         id: 'rail',
         mount: 'rail',
         gender: 'female',
-        pos: [-14, 2.5, 0],
+        pos: [-14, RECEIVER_FRONT_HALF_HEIGHT - receiverDrop, 0],
         normal: Y,
         up: X,
         slots: { count: 7, pitch: 2 },
       });
     }
-    const keepOuts: KeepOut[] = params.action === 'revolver' ? [] : [keepOut('ejection', [-9, -1, 2], [-5, 2, 10])];
+    const keepOuts: KeepOut[] =
+      params.action === 'revolver' ? [] : [keepOut('ejection', [-9, -1 - receiverDrop, 2], [-5, 2 - receiverDrop, 10])];
 
     switch (params.action) {
       case 'auto':
@@ -371,7 +384,7 @@ export const receiver: PartFamily = {
           up: Y,
           required: true,
         });
-        keepOuts.push(keepOut('loading-port', [-7, -6, -1.5], [-2, -2.5, 1.5]));
+        keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
         break;
       default:
         // box: the magazine well and its keep-out belong to the lower.
@@ -416,34 +429,18 @@ export const receiver: PartFamily = {
       const x0 = MAGAZINE_WELL_CENTER_X - MAGAZINE_WELL_DEPTH / 2;
       const x1 = MAGAZINE_WELL_CENTER_X + MAGAZINE_WELL_DEPTH / 2;
       const z0 = MAGAZINE_WELL_WIDTH / 2;
-      const y0 = -RECEIVER_FRONT_HALF_HEIGHT;
-      const top = RECESSED_MAGAZINE_WELL_TOP_Y;
+      const y0 = receiverBottom;
+      const top = RECESSED_MAGAZINE_WELL_TOP_Y - receiverDrop;
       solids = [
-        solid(
-          'body-rear',
-          [-16, y0, -RECEIVER_FRONT_HALF_WIDTH],
-          [x0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
-        solid(
-          'body-front',
-          [x1, y0, -RECEIVER_FRONT_HALF_WIDTH],
-          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
+        solid('body-rear', [-16, y0, -RECEIVER_FRONT_HALF_WIDTH], [x0, receiverTop, RECEIVER_FRONT_HALF_WIDTH]),
+        solid('body-front', [x1, y0, -RECEIVER_FRONT_HALF_WIDTH], [0, receiverTop, RECEIVER_FRONT_HALF_WIDTH]),
         solid('magwell-wall-left', [x0, y0, -RECEIVER_FRONT_HALF_WIDTH], [x1, top, -z0]),
         solid('magwell-wall-right', [x0, y0, z0], [x1, top, RECEIVER_FRONT_HALF_WIDTH]),
-        solid(
-          'magwell-roof',
-          [x0, top, -RECEIVER_FRONT_HALF_WIDTH],
-          [x1, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
+        solid('magwell-roof', [x0, top, -RECEIVER_FRONT_HALF_WIDTH], [x1, receiverTop, RECEIVER_FRONT_HALF_WIDTH]),
       ];
     } else {
       solids = [
-        solid(
-          'body',
-          [-16, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
-          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
+        solid('body', [-16, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH], [0, receiverTop, RECEIVER_FRONT_HALF_WIDTH]),
       ];
     }
     return {
