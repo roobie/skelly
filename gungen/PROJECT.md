@@ -1109,13 +1109,15 @@ not part of the export's acceptance:
     schema change that lane A owns.
   Decide which before starting;
 - a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
-  side-profile opening is built from connected convex extrusions; its front
-  grip post moves forward under the receiver while the buttplate remains 22u
-  from the mount. The hole stays 4u long as the bottom bar extends forward.
-  It retains the stock mount and `FIRING_GRIP` hold anchor, and is paired with a thumbhole lower
-  that omits the separate grip port. A rule and `broken-thumbhole-grip` fixture
-  reject a separate grip alongside the thumbhole stock. `designs/archetype-awm.json`
-  uses the long heavy-barrel profile, detachable box magazine, and optic rail;
+  side-profile opening is built from connected convex extrusions; its grip post
+  moves forward under the receiver while the buttplate remains 22u from the
+  mount on L (16u M, 10u S). Every size is 7.74u high, the former L height.
+  The 4u-long hole and grip post meet the matching lower directly. Its rear
+  face at x=-16u touches the stock's upper bar across the full rear-face height
+  and width; the test measures the surfaces in world coordinates. A rule
+  rejects a thumbhole stock with a non-thumbhole lower or separate grip.
+  `designs/archetype-awm.json` uses the long heavy-barrel profile, detachable
+  box magazine, and optic rail;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
   `tapered` style, and the pump-shotgun opts in with M/L lengths; the other

@@ -20,7 +20,7 @@ const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const thumbholeGripMatch: Rule = {
   id: 'thumbhole-grip-match',
-  title: 'A thumbhole stock is the firing grip',
+  title: 'Thumbhole stock and lower match',
   check(r) {
     const issues: Issue[] = [];
     for (const [stock] of placedParts(r, 'stock')) {
@@ -49,6 +49,13 @@ export const thumbholeGripMatch: Rule = {
         lowerMount && [lowerMount.from.part, lowerMount.to.part].find((part) => r.defs.get(part)?.family === 'lower');
       if (!lower) {
         continue;
+      }
+      if (r.params.get(lower)?.layout?.value !== 'thumbhole') {
+        issues.push({
+          rule: 'thumbhole-grip-match',
+          message: `${stock} uses a thumbhole stock, but ${lower} is not in thumbhole layout.`,
+          parts: [stock, lower],
+        });
       }
       for (const connection of r.connections) {
         const grip = gripPartOnLower(connection, lower);

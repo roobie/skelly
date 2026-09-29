@@ -36,7 +36,7 @@ const bounds = (solid: Solid): readonly (readonly [number, number])[] =>
 
 const boundsX = (solid: Solid): readonly [number, number] => bounds(solid)[0]!;
 
-const worldBounds = (solids: readonly Solid[], transform: Transform, axis: 0 | 1): readonly [number, number] => {
+const worldBounds = (solids: readonly Solid[], transform: Transform, axis: 0 | 1 | 2): readonly [number, number] => {
   const values = solids.flatMap((solid) => vertices(solid).map((point) => applyPoint(transform, point)[axis]));
   return [Math.min(...values), Math.max(...values)];
 };
@@ -152,6 +152,10 @@ describe('thumbhole stock and AWM design', () => {
       draft.parts.lower!.params!.layout = 'thumbhole';
     });
     expect(validate(existing, gunDomain).issues).toEqual([]);
+    const mismatched = variant('archetype-bolt-rifle', (draft) => {
+      draft.parts.stock!.params!.style = 'thumbhole';
+    });
+    expect(validate(mismatched, gunDomain).issues.map(({ rule }) => rule)).toContain('thumbhole-grip-match');
   });
 
   it('keeps every size at least the former L height while varying buttstock length', () => {
@@ -167,7 +171,7 @@ describe('thumbhole stock and AWM design', () => {
     }
   });
 
-  it('extends the thumbhole lower to meet the grip post without intervening stock', () => {
+  it('mates the full thumbhole lower rear face to stock material in world space', () => {
     for (const assembly of [
       design.assembly,
       variant('archetype-bolt-rifle', (draft) => {
@@ -180,14 +184,24 @@ describe('thumbhole stock and AWM design', () => {
       const lowerId = Object.keys(assembly.parts).find((id) => assembly.parts[id]!.family === 'lower')!;
       const stockDef = report.resolved.defs.get(stockId)!;
       const lowerDef = report.resolved.defs.get(lowerId)!;
-      const grip = stockDef.solids.find((solid) => solid.id === 'grip')!;
-      const lowerFrame = lowerDef.solids.filter((solid) => solid.id.startsWith('frame-'));
-      expect(worldBoundsX([grip], report.resolved.placed.get(stockId)!)[0]).toBe(
-        worldBoundsX(lowerFrame, report.resolved.placed.get(lowerId)!)[0],
-      );
-      expect(worldBounds([grip], report.resolved.placed.get(stockId)!, 1)[1]).toBe(
-        worldBounds(lowerFrame, report.resolved.placed.get(lowerId)!, 1)[0],
-      );
+      const upperBar = stockDef.solids.find((solid) => solid.id === 'thumbhole-top')!;
+      const lowerRear = lowerDef.solids.find((solid) => solid.id === 'frame-rear')!;
+      const stockTransform = report.resolved.placed.get(stockId)!;
+      const lowerTransform = report.resolved.placed.get(lowerId)!;
+      const lowerX = worldBounds([lowerRear], lowerTransform, 0);
+      const stockX = worldBounds([upperBar], stockTransform, 0);
+      const lowerY = worldBounds([lowerRear], lowerTransform, 1);
+      const stockY = worldBounds([upperBar], stockTransform, 1);
+      const lowerZ = worldBounds([lowerRear], lowerTransform, 2);
+      const stockZ = worldBounds([upperBar], stockTransform, 2);
+      expect(lowerX[0]).toBe(-16);
+      expect(stockX[1]).toBe(-16);
+      expect(lowerX[0]).toBe(stockX[1]);
+      expect(lowerY).toEqual([-4, -2.5]);
+      expect(stockY[0]).toBeLessThanOrEqual(lowerY[0]);
+      expect(stockY[1]).toBeGreaterThanOrEqual(lowerY[1]);
+      expect(stockZ[0]).toBeCloseTo(lowerZ[0], 6);
+      expect(stockZ[1]).toBeCloseTo(lowerZ[1], 6);
       expect(stockDef.solids.some((solid) => inside(solid, 2, -3.75, 0))).toBe(false);
     }
   });

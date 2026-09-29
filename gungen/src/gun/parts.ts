@@ -219,6 +219,7 @@ const orientationParts = (value: string): { kind: 'straight' | 'tilt' | 'slant';
   return match ? { kind: match[1] as 'slant', degrees: Number(match[2]) } : { kind: 'straight', degrees: 0 };
 };
 const LOWER_HALF_WIDTH = MAGAZINE_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
+const THUMBHOLE_HALF_WIDTH = 1.5;
 const PISTOL_MAGAZINE_DEPTH = 3.5;
 const PISTOL_MAGAZINE_WIDTH = 2;
 const PISTOL_WELL_DEPTH = PISTOL_MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
@@ -632,13 +633,18 @@ export const lower: PartFamily = {
         ),
       };
     };
-    const magazineWellFrame = (minX: number, maxX: number, centerX: number): Solid[] => {
+    const magazineWellFrame = (
+      minX: number,
+      maxX: number,
+      centerX: number,
+      rearHalfWidth = LOWER_HALF_WIDTH,
+    ): Solid[] => {
       const x0 = centerX - wellDepth / 2;
       const x1 = centerX + wellDepth / 2;
       const z0 = wellWidth / 2;
       const outerZ = LOWER_HALF_WIDTH;
       const roofY = -1.5 + MAGAZINE_WELL_HEIGHT;
-      const rearWall = solid('frame-rear', [minX, -1.5, -outerZ], [x0, 0, outerZ]);
+      const rearWall = solid('frame-rear', [minX, -1.5, -rearHalfWidth], [x0, 0, rearHalfWidth]);
       return [
         rearWall,
         solid('frame-front', [x1, -1.5, -outerZ], [maxX, 0, outerZ]),
@@ -798,9 +804,10 @@ export const lower: PartFamily = {
         };
       case 'thumbhole': {
         const frame = magazineWellFrame(
-          -15.25,
+          -16,
           conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
           conventionalWell.port.pos[0],
+          THUMBHOLE_HALF_WIDTH,
         );
         return {
           family: 'lower',
@@ -1752,7 +1759,7 @@ export const stock: PartFamily = {
     };
     if (params.style === 'thumbhole') {
       const combTop = -1.5;
-      const sideZ: readonly [number, number] = [-1.5, 1.5];
+      const sideZ: readonly [number, number] = [-THUMBHOLE_HALF_WIDTH, THUMBHOLE_HALF_WIDTH];
       const gripFront = 4.25;
       const gripRear = 0.75;
       const buttFront = -0.72 * len;
