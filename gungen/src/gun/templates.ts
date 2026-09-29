@@ -301,7 +301,8 @@ export const pumpShotgun: Template = {
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
     { from: 'receiver.tube', to: 'tube.rear' },
-    { from: 'tube.cap', to: 'barrel.lug' },
+    { from: 'tube.support', to: 'barrel.lug' },
+    { from: 'tube.cap', to: 'barrel.end-lug' },
     { from: 'tube.forend', to: 'forend.rear' },
     { from: 'receiver.stock', to: 'stock.front', when: { part: 'lower', param: 'layout', equals: 'pump' } },
     {

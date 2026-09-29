@@ -230,7 +230,12 @@ describe('part library', () => {
         const def = family.build(params);
         const tag = JSON.stringify(params);
 
-        const gridStep = family.name === 'frame' || family.name === 'slide' ? GRID / 2 : GRID;
+        let gridStep = GRID;
+        if (family.name === 'forend') {
+          gridStep = GRID / 5;
+        } else if (family.name === 'frame' || family.name === 'slide') {
+          gridStep = GRID / 2;
+        }
 
         it(`${tag}: positions and extents are on the ${gridStep}u grid`, () => {
           const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
@@ -418,6 +423,46 @@ describe('pump stock raised butt heel', () => {
 });
 
 describe('pump shotgun tube and barrel contact', () => {
+  it('lengthens the forend forward and thickens its walls without moving its mounting station', () => {
+    const forend = FAMILIES.forend!.build({});
+    const bottom = forend.solids.find((solid) => solid.id === 'bottom');
+    const left = forend.solids.find((solid) => solid.id === 'left');
+    const right = forend.solids.find((solid) => solid.id === 'right');
+    if (bottom?.kind !== 'box' || left?.kind !== 'box' || right?.kind !== 'box') {
+      throw new Error('pump forend solids must be boxes');
+    }
+    expect(bottom.box.center[0] - bottom.box.half[0]).toBe(0);
+    expect(bottom.box.center[0] + bottom.box.half[0]).toBeCloseTo(9.6);
+    expect(bottom.box.center[1] - bottom.box.half[1]).toBeCloseTo(-1.55);
+    expect(bottom.box.center[1] + bottom.box.half[1]).toBeCloseTo(-1);
+    expect(left.box.center[2] - left.box.half[2]).toBeCloseTo(-1.55);
+    expect(left.box.center[2] + left.box.half[2]).toBeCloseTo(-1);
+    expect(right.box.center[2] - right.box.half[2]).toBeCloseTo(1);
+    expect(right.box.center[2] + right.box.half[2]).toBeCloseTo(1.55);
+    const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', length: 'M' });
+    expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
+  });
+
+  it('extends the tube only to the barrel end, retaining its original support and adding an end lug', () => {
+    for (const [lengthClass, barrelEnd, supportX] of [
+      ['S', 26, 17],
+      ['M', 36, 23.5],
+      ['L', 46, 30],
+    ] as const) {
+      const barrel = FAMILIES.barrel!.build({ bore: 'L', length: lengthClass, profile: 'standard' });
+      const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', length: lengthClass });
+      const tubeSolid = tube.solids.find((solid) => solid.id === 'tube');
+      if (tubeSolid?.kind !== 'box') {
+        throw new Error('pump magazine tube must be a box');
+      }
+      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(barrelEnd);
+      expect(barrel.ports.find((port) => port.id === 'lug')?.pos[0]).toBe(supportX);
+      expect(barrel.ports.find((port) => port.id === 'end-lug')?.pos[0]).toBe(barrelEnd);
+      expect(tube.ports.find((port) => port.id === 'support')?.pos[0]).toBe(supportX);
+      expect(tube.ports.find((port) => port.id === 'cap')?.pos[0]).toBe(barrelEnd);
+    }
+  });
+
   it('keeps the bore centered while the receiver edges closely contain the barrel and tube', () => {
     const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
     const body = receiver.solids.find((solid) => solid.id === 'body');

@@ -72,6 +72,9 @@ const akHandguardLength = (length: SizeClass): number =>
 /** Tube magazines sit this far below the bore line. */
 const TUBE_DROP = 2.25;
 const PUMP_RECEIVER_DROP = 1;
+const PUMP_FOREND_MOUNT_X = 8;
+const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
+const PUMP_FOREND_WALL = 0.5 * 1.1;
 
 // A box magazine's section: front to back, and side to side. 1.8× the first
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
@@ -922,6 +925,7 @@ export const barrel: PartFamily = {
           : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
+        { id: 'end-lug', mount: 'lug', gender: 'female', pos: [len, -TUBE_DROP, 0], normal: NEG_X, up: Y },
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
@@ -1187,19 +1191,24 @@ export const tubeMagazine: PartFamily = {
     bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
   },
   build(params): PartDef {
-    const len = snapAkGrid(barrelLength({ length: cls(params, 'length') }) * HANDGUARD_REACH.barrelFraction);
-    // A slim barrel leaves a gap above the tube; a band on the cap bridges it to the barrel's underside.
+    const length = barrelLength({ length: cls(params, 'length') });
+    const supportX = snapAkGrid(length * HANDGUARD_REACH.barrelFraction);
+    // A slim barrel leaves a gap above the tube; bands bridge it at both barrel lugs.
     const bandTop = TUBE_DROP - BARREL_RADIUS[cls(params, 'bore')];
+    const band = (id: string, x: number): Solid[] =>
+      bandTop > 1 ? [solid(id, [x - 1, 1, -0.5], [x, bandTop, 0.5])] : [];
     return {
       family: 'tube-magazine',
       solids: [
-        solid('tube', [0, -1, -1], [len, 1, 1]),
-        ...(bandTop > 1 ? [solid('cap-band', [len - 1, 1, -0.5], [len, bandTop, 0.5])] : []),
+        solid('tube', [0, -1, -1], [length, 1, 1]),
+        ...band('support-band', supportX),
+        ...band('cap-band', length),
       ],
       ports: [
         { id: 'rear', mount: 'tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'cap', mount: 'lug', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
-        { id: 'forend', mount: 'forend', gender: 'female', pos: [8, 0, 0], normal: X, up: Y },
+        { id: 'support', mount: 'lug', gender: 'male', pos: [supportX, 0, 0], normal: X, up: Y },
+        { id: 'cap', mount: 'lug', gender: 'male', pos: [length, 0, 0], normal: X, up: Y },
+        { id: 'forend', mount: 'forend', gender: 'female', pos: [PUMP_FOREND_MOUNT_X, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [],
       axes: [],
@@ -1212,16 +1221,18 @@ export const forend: PartFamily = {
   name: 'forend',
   params: {},
   build(): PartDef {
+    const outerY = 1 + PUMP_FOREND_WALL;
+    const outerZ = 1 + PUMP_FOREND_WALL;
     return {
       family: 'forend',
       solids: [
-        solid('bottom', [0, -1.5, -1.5], [8, -1, 1.5]),
-        solid('left', [0, -1, -1.5], [8, 1, -1]),
-        solid('right', [0, -1, 1], [8, 1, 1.5]),
+        solid('bottom', [0, -outerY, -outerZ], [PUMP_FOREND_LENGTH, -1, outerZ]),
+        solid('left', [0, -outerY, -outerZ], [PUMP_FOREND_LENGTH, 1, -1]),
+        solid('right', [0, -outerY, 1], [PUMP_FOREND_LENGTH, 1, outerZ]),
       ],
       ports: [{ id: 'rear', mount: 'forend', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true }],
       // The forend is pulled back along the tube to cycle the action.
-      keepOuts: [keepOut('slide-travel', [-8, -1.5, -1.5], [0, 1, 1.5], 'rear')],
+      keepOuts: [keepOut('slide-travel', [-8, -outerY, -outerZ], [0, 1, outerZ], 'rear')],
       axes: [],
     };
   },

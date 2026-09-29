@@ -10127,43 +10127,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         8,
-        -3.75,
-        -1.5,
+        -3.8,
+        -1.55,
       ],
       [
         8,
-        -3.75,
-        1.5,
-      ],
-      [
-        8,
-        -3.25,
-        -1.5,
+        -3.8,
+        1.55,
       ],
       [
         8,
         -3.25,
-        1.5,
+        -1.55,
       ],
       [
-        16,
-        -3.75,
-        -1.5,
-      ],
-      [
-        16,
-        -3.75,
-        1.5,
-      ],
-      [
-        16,
+        8,
         -3.25,
-        -1.5,
+        1.55,
       ],
       [
-        16,
+        17.6,
+        -3.8,
+        -1.55,
+      ],
+      [
+        17.6,
+        -3.8,
+        1.55,
+      ],
+      [
+        17.6,
         -3.25,
-        1.5,
+        -1.55,
+      ],
+      [
+        17.6,
+        -3.25,
+        1.55,
       ],
     ],
     "id": "bottom",
@@ -10174,18 +10174,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         8,
-        -3.25,
-        -1.5,
+        -3.8,
+        -1.55,
       ],
       [
         8,
-        -3.25,
+        -3.8,
         -1,
       ],
       [
         8,
         -1.25,
-        -1.5,
+        -1.55,
       ],
       [
         8,
@@ -10193,22 +10193,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1,
       ],
       [
-        16,
-        -3.25,
-        -1.5,
+        17.6,
+        -3.8,
+        -1.55,
       ],
       [
-        16,
-        -3.25,
+        17.6,
+        -3.8,
         -1,
       ],
       [
-        16,
+        17.6,
         -1.25,
-        -1.5,
+        -1.55,
       ],
       [
-        16,
+        17.6,
         -1.25,
         -1,
       ],
@@ -10221,13 +10221,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         8,
-        -3.25,
+        -3.8,
         1,
       ],
       [
         8,
-        -3.25,
-        1.5,
+        -3.8,
+        1.55,
       ],
       [
         8,
@@ -10237,27 +10237,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         8,
         -1.25,
-        1.5,
+        1.55,
       ],
       [
-        16,
-        -3.25,
+        17.6,
+        -3.8,
         1,
       ],
       [
-        16,
-        -3.25,
-        1.5,
+        17.6,
+        -3.8,
+        1.55,
       ],
       [
-        16,
+        17.6,
         -1.25,
         1,
       ],
       [
-        16,
+        17.6,
         -1.25,
-        1.5,
+        1.55,
       ],
     ],
     "id": "right",
@@ -10804,22 +10804,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1,
       ],
       [
-        23.5,
+        36,
         -3.25,
         -1,
       ],
       [
-        23.5,
+        36,
         -3.25,
         1,
       ],
       [
-        23.5,
+        36,
         -1.25,
         -1,
       ],
       [
-        23.5,
+        36,
         -1.25,
         1,
       ],
