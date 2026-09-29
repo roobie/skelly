@@ -5,6 +5,7 @@ import type { ParamReference, Template } from '../src/core/template.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 300;
 
@@ -23,11 +24,15 @@ describe('generate', () => {
     }
   });
 
-  it('varies with the seed', () => {
-    for (const t of TEMPLATES) {
-      const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)));
-      expect(keys.size).toBeGreaterThan(5);
-    }
+  sweepGroup('varies with the seed', () => {
+    it('passes', () => {
+      for (const t of TEMPLATES) {
+        const keys = new Set(
+          Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)),
+        );
+        expect(keys.size).toBeGreaterThan(5);
+      }
+    });
   });
 
   it('honours chance 0 and chance 1', () => {
@@ -78,40 +83,38 @@ describe('templates', () => {
         }
       });
 
-      it(
-        `never produces a structurally broken file (${SEEDS} seeds)`,
-        () => {
-          for (let seed = 0; seed < SEEDS; seed++) {
-            const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
-            expect(
-              issues.filter((i) => i.rule === 'structure'),
-              `seed ${seed}`,
-            ).toEqual([]);
-          }
-        },
-        // AR's 300-seed sweep now exercises the geometry-heavy trigger-guard rule on every build.
-        t.name === 'ak' || t.name === 'ar' ? 15_000 : undefined,
-      );
-
-      it(
-        `is valid at least half the time (${SEEDS} seeds)`,
-        () => {
-          let valid = 0;
-          for (let seed = 0; seed < SEEDS; seed++) {
-            if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
-              valid += 1;
-            }
-          }
-          expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
-        },
-        t.name === 'ak' ? 15_000 : undefined,
-      );
-
       it('generateValid finds a passing build', () => {
         const found = generateValid(t, gunDomain, 1000)!;
         expect(found.report.ok).toBe(true);
         expect(found.seed).toBe(1000 + found.attempts - 1);
         expect(found.assembly).toEqual(generate(t, gunDomain, found.seed));
+      });
+    });
+  }
+});
+
+// Same describe names as above so the snapshot keys stay `templates > <name> > known-good seeds`.
+sweepGroup('templates', () => {
+  for (const t of TEMPLATES) {
+    describe(t.name, () => {
+      it(`never produces a structurally broken file (${SEEDS} seeds)`, () => {
+        for (let seed = 0; seed < SEEDS; seed++) {
+          const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
+          expect(
+            issues.filter((i) => i.rule === 'structure'),
+            `seed ${seed}`,
+          ).toEqual([]);
+        }
+      });
+
+      it(`is valid at least half the time (${SEEDS} seeds)`, () => {
+        let valid = 0;
+        for (let seed = 0; seed < SEEDS; seed++) {
+          if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
+            valid += 1;
+          }
+        }
+        expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
       });
 
       // Known-good seeds. A snapshot change means generation changed: check

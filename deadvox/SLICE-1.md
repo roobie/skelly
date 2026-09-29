@@ -349,7 +349,7 @@ Numbered to fit between 1.5 and 1.6 without renumbering the milestones after
 it.
 
 - Models are content: a `models` section lists each model's id and file, and
-  an item names its model by id, as zombie types already do. The files are
+  an item names its model by id. The files are
   glTF binaries (`.glb`) in `content/base/assets/models/`, loaded with three.js's
   `GLTFLoader`; a model in another format is converted to `.glb` once and the
   converted file is committed.
@@ -541,9 +541,12 @@ Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
   aim ray against one point per shambler, at 0.55 of its height
   (`src/core/zombies.ts:1025`), so it has to learn which region the ray
   reaches first.
-- A region at zero is severed: its rigid limb is hidden and a limb prop drops.
-  Otherwise behaviour is unchanged, as simple as possible. The one forced
-  question, how a shambler with no legs moves, is settled here.
+- A non-head region at zero is severed: its rigid part is hidden and a matching
+  inventory pile item drops. The existing `shambler_hurt` sound plays on hit;
+  there is no separate severing asset yet. Severing the torso does not cascade
+  to other regions or kill the shambler; its other regions remain active in
+  place. Behaviour otherwise stays unchanged. With both legs gone, it stays
+  where it is (no walking or crawling), but remains alive and can still attack.
 - A shambler dies only when its head is destroyed.
 - Region state is simulation state: it's in the save snapshot and the source
   fingerprint.
@@ -740,7 +743,7 @@ A zombie type:
   "sight": 25, "nightSight": 10, "sightCone": 60, "hearing": 1.0,
   "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
   "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
-  "abilities": [], "loot": "shambler_pockets", "model": "figure_basic" }
+  "abilities": [], "loot": "shambler_pockets" }
 ```
 
 ## Content for Slice 1

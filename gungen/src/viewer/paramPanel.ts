@@ -110,10 +110,12 @@ export const buildPanelModel = (
     }
     const params: PanelParam[] = Object.entries(family.params).map(([name, spec]) => {
       const r = resolvedParams[name]!;
-      const values = spec.values.map((value) => ({
-        value,
-        permitted: template ? (permittedValues(template, id, name, resolved.params)?.has(value) ?? true) : undefined,
-      }));
+      const values = spec.values
+        .filter((value) => !spec.fault?.includes(value))
+        .map((value) => ({
+          value,
+          permitted: template ? (permittedValues(template, id, name, resolved.params)?.has(value) ?? true) : undefined,
+        }));
       const state = paramState(r, current.parts[id]?.params?.[name], baseline.parts[id]?.params?.[name]);
       return { name, current: r.value, values, state };
     });

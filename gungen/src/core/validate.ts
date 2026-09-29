@@ -12,6 +12,16 @@ export interface Report {
 export const validate = (assembly: Assembly, domain: Domain): Report => {
   const resolved = resolve(assembly, domain);
   const rules = [...CORE_RULES, ...(domain.rules ?? [])];
-  const issues = [...resolved.issues, ...rules.flatMap((rule) => rule.check(resolved))];
+  const issues = [
+    ...resolved.issues,
+    ...rules.flatMap((rule) => {
+      try {
+        return rule.check(resolved);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return [{ rule: rule.id, message: `Rule crashed: ${message}`, parts: [] }];
+      }
+    }),
+  ];
   return { resolved, issues, ok: issues.length === 0 };
 };

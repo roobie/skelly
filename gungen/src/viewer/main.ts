@@ -17,6 +17,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
+import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
@@ -41,9 +42,17 @@ import {
 import { buildLayers, disposeGroup, type Layers } from './scene.ts';
 import { DEFAULT_UI_STATE, parseUiState, UI_STATE_KEY, type UiState } from './uiState.ts';
 
-const fixtures = Object.values(
-  import.meta.glob<Assembly>('../../fixtures/*.json', { eager: true, import: 'default' }),
-).sort((a, b) => a.name.localeCompare(b.name));
+const fixtures = Object.entries(
+  import.meta.glob<string>('../../fixtures/*.json', { eager: true, import: 'default', query: '?raw' }),
+)
+  .map(([path, text]) => {
+    const parsed = parseAssemblyJson(text);
+    if (!parsed.ok) {
+      throw new Error(`${path}: ${formatParseError(parsed.error)}`);
+    }
+    return parsed.assembly;
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -413,7 +422,13 @@ fileInput.addEventListener('change', async () => {
     return;
   }
   try {
-    const assembly = JSON.parse(await file.text()) as Assembly;
+    const parsed = parseAssemblyJson(await file.text());
+    if (!parsed.ok) {
+      status.innerHTML = '';
+      status.textContent = `Could not read ${file.name}: ${formatParseError(parsed.error)}`;
+      return;
+    }
+    const { assembly } = parsed;
     select.querySelector('option[value=""]')?.remove();
     select.add(new Option(`${assembly.name} (file)`, ''), 0);
     select.selectedIndex = 0;

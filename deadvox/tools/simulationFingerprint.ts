@@ -53,6 +53,7 @@ export const SIMULATION_ENTRIES = [
   'src/game/config.ts',
   'src/game/play.ts',
   'src/game/quickbar.ts',
+  'src/game/session.ts',
   'src/game/worldSetup.ts',
 ] as const;
 
@@ -70,6 +71,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/gameCursor.ts',
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
+  'src/ui/menuPointer.ts',
   'src/ui/rest.ts',
 ] as const;
 

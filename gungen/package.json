@@ -8,7 +8,9 @@
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:sweeps": "GUNGEN_SWEEPS=1 vitest run",
     "validate": "node src/cli/validate.ts",
+    "check:designs": "node src/cli/checkDesigns.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
     "mesh-stats": "node src/cli/mesh-stats.ts"
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
+    "es-module-lexer": "^3.0.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

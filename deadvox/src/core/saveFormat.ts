@@ -123,7 +123,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -327,7 +327,14 @@ const zombie = obj({
   stumbleFactor: finite,
   stumbleElapsed: finite,
   stumbleDuration: finite,
-  health: finite,
+  regions: obj({
+    head: positive,
+    torso: nonNegative,
+    leftArm: nonNegative,
+    rightArm: nonNegative,
+    leftLeg: nonNegative,
+    rightLeg: nonNegative,
+  }),
   lastPerceived: opt(vec3),
   attackWait: finite,
   gaitPhase: finite,

@@ -83,6 +83,14 @@ const MAGAZINE_WELL_HEIGHT = 1;
 const MAGAZINE_WELL_CENTER_X = -7 + MAGAZINE_DEPTH / 2;
 const RECESSED_MAGAZINE_PORT_Y = 2;
 const RECESSED_MAGAZINE_WELL_TOP_Y = 0.5;
+/** A magazine's section (front to back, side to side) by profile. */
+const magazineSection = (profile: string | undefined): { readonly depth: number; readonly width: number } => {
+  if (profile === 'pistol') {
+    return { depth: PISTOL_MAGAZINE_DEPTH, width: PISTOL_MAGAZINE_WIDTH };
+  }
+  const smg = profile === 'smg';
+  return { depth: MAGAZINE_DEPTH * (smg ? 0.6 : 1), width: MAGAZINE_WIDTH * (smg ? 0.8 : 1) };
+};
 type MagazineLength = '5-round' | '10-round' | SizeClass;
 type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved';
 type MagazineBands = Readonly<Record<SizeClass, number>>;
@@ -477,7 +485,7 @@ export const lower: PartFamily = {
   name: 'lower',
   params: {
     layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
-    triggerGuard: { values: ['present', 'missing'], default: 'present' },
+    triggerGuard: { values: ['present', 'missing'], default: 'present', fault: ['missing'] },
     magazineWell: choice('standard', 'recessed'),
     magazineOrientation: {
       values: MAGAZINE_ORIENTATIONS,
@@ -499,6 +507,12 @@ export const lower: PartFamily = {
     const tiltedMagazineProfiles: readonly string[] | undefined = layoutData?.tiltedMagazineProfiles;
     const supportsTiltedMagazineWell = tiltedMagazineProfiles?.includes(magazineProfile) ?? false;
     const tilt = orientation.kind === 'tilt' ? G3_MAGAZINE_WELL_TILT : 0;
+    // A recessed well has no roof for the magazine to meet, so its walls close on the magazine's own section.
+    const section = params.magazineWell === 'recessed' ? magazineSection(magazineProfile) : undefined;
+    // Half-extents round up to the grid (the SMG magazine is 3.3u deep).
+    const wellSpan = (extent: number) => 2 * Math.ceil((extent / 2 + MAGAZINE_WELL_CLEARANCE) / GRID) * GRID;
+    const wellDepth = section ? wellSpan(section.depth) : MAGAZINE_WELL_DEPTH;
+    const wellWidth = section ? wellSpan(section.width) : MAGAZINE_WELL_WIDTH;
     const top: PortDef = {
       id: 'top',
       mount: 'lower',
@@ -535,20 +549,20 @@ export const lower: PartFamily = {
       };
       const path = keepOut(
         'magazine-path',
-        [x - MAGAZINE_WELL_DEPTH / 2, -40, -MAGAZINE_WELL_WIDTH / 2],
+        [x - wellDepth / 2, -40, -wellWidth / 2],
         [
-          x + MAGAZINE_WELL_DEPTH / 2,
+          x + wellDepth / 2,
           params.magazineWell === 'recessed'
             ? RECESSED_MAGAZINE_PORT_Y + MAGAZINE_WELL_HEIGHT
             : -1.5 + MAGAZINE_WELL_HEIGHT,
-          MAGAZINE_WELL_WIDTH / 2,
+          wellWidth / 2,
         ],
         'magazine',
       );
       if (tilt === 0) {
         return { port, path };
       }
-      const halfDepth = MAGAZINE_WELL_DEPTH / 2;
+      const halfDepth = wellDepth / 2;
       const rotate = ([dx, dy]: Vec2): Vec2 => [
         x + dx * Math.cos(tilt) - dy * Math.sin(tilt),
         portY + dx * Math.sin(tilt) + dy * Math.cos(tilt),
@@ -564,12 +578,12 @@ export const lower: PartFamily = {
       const min = [
         Math.floor(Math.min(...xs) / GRID) * GRID,
         Math.floor(Math.min(...ys) / GRID) * GRID,
-        -MAGAZINE_WELL_WIDTH / 2,
+        -wellWidth / 2,
       ] as Vec3;
       const max = [
         Math.ceil(Math.max(...xs) / GRID) * GRID,
         Math.ceil(Math.max(...ys) / GRID) * GRID,
-        MAGAZINE_WELL_WIDTH / 2,
+        wellWidth / 2,
       ] as Vec3;
       return {
         port,
@@ -577,24 +591,20 @@ export const lower: PartFamily = {
           ...path,
           box: boxFromMinMax(min, max),
           profile,
-          z: [-MAGAZINE_WELL_WIDTH / 2, MAGAZINE_WELL_WIDTH / 2] as const,
+          z: [-wellWidth / 2, wellWidth / 2] as const,
         },
         wellPath: keepOut(
           'magazine-well-path',
-          [
-            x - halfDepth,
-            portY - (MAGAZINE_HOUSING_REAR_LENGTH - MAGAZINE_HOUSING_FRONT_LENGTH) / 2,
-            -MAGAZINE_WELL_WIDTH / 2,
-          ],
-          [x + halfDepth, 0, MAGAZINE_WELL_WIDTH / 2],
+          [x - halfDepth, portY - (MAGAZINE_HOUSING_REAR_LENGTH - MAGAZINE_HOUSING_FRONT_LENGTH) / 2, -wellWidth / 2],
+          [x + halfDepth, 0, wellWidth / 2],
           'magazine',
         ),
       };
     };
     const magazineWellFrame = (minX: number, maxX: number, centerX: number): Solid[] => {
-      const x0 = centerX - MAGAZINE_WELL_DEPTH / 2;
-      const x1 = centerX + MAGAZINE_WELL_DEPTH / 2;
-      const z0 = MAGAZINE_WELL_WIDTH / 2;
+      const x0 = centerX - wellDepth / 2;
+      const x1 = centerX + wellDepth / 2;
+      const z0 = wellWidth / 2;
       const outerZ = LOWER_HALF_WIDTH;
       const roofY = -1.5 + MAGAZINE_WELL_HEIGHT;
       const rearWall = solid('frame-rear', [minX, -1.5, -outerZ], [x0, 0, outerZ]);
@@ -977,7 +987,10 @@ export const akRearSight: PartFamily = {
 /** Revolver cylinder, represented by an extruded chamber-count prism about its X-axis. */
 export const cylinder: PartFamily = {
   name: 'cylinder',
-  params: { chambers: choice('six', 'eight'), chamber: choice('aligned', 'misaligned') },
+  params: {
+    chambers: choice('six', 'eight'),
+    chamber: { values: ['aligned', 'misaligned'], default: 'aligned', fault: ['misaligned'] },
+  },
   build(params): PartDef {
     const count = params.chambers === 'eight' ? 8 : 6;
     const phase = params.chamber === 'misaligned' ? Math.PI / 2 : 0;
@@ -1032,7 +1045,7 @@ export const handguard: PartFamily = {
     clearance: size,
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
     layout: choice('standard', 'ak'),
-    fit: choice('receiver', 'oversized', 'too-tight'),
+    fit: { values: ['receiver', 'oversized', 'too-tight'], default: 'receiver', fault: ['oversized', 'too-tight'] },
     mount: choice('clamped', 'free-float'),
   },
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mounting controls both clamp geometry and the exposed front port.
@@ -1101,7 +1114,7 @@ export const handguard: PartFamily = {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',
           gender: 'male',
-          pos: [8, akLayout ? AK_GAS_CYLINDER_Y : 2.5, 0],
+          pos: [8, AK_GAS_CYLINDER_Y, 0],
           normal: NEG_X,
           up: Y,
         },
@@ -1125,12 +1138,21 @@ export const handguard: PartFamily = {
 export const tubeMagazine: PartFamily = {
   name: 'tube-magazine',
   // Length follows the barrel whose lug the cap fixes to, unless set.
-  params: { length: { ...size, from: [{ port: 'cap', param: 'length' }] } },
+  params: {
+    length: { ...size, from: [{ port: 'cap', param: 'length' }] },
+    // The barrel's bore sets how far its underside sits above the tube.
+    bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
+  },
   build(params): PartDef {
     const len = snapAkGrid(barrelLength({ length: cls(params, 'length') }) * HANDGUARD_REACH.barrelFraction);
+    // A slim barrel leaves a gap above the tube; a band on the cap bridges it to the barrel's underside.
+    const bandTop = TUBE_DROP - BARREL_RADIUS[cls(params, 'bore')];
     return {
       family: 'tube-magazine',
-      solids: [solid('tube', [0, -1, -1], [len, 1, 1])],
+      solids: [
+        solid('tube', [0, -1, -1], [len, 1, 1]),
+        ...(bandTop > 1 ? [solid('cap-band', [len - 1, 1, -0.5], [len, bandTop, 0.5])] : []),
+      ],
       ports: [
         { id: 'rear', mount: 'tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'cap', mount: 'lug', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },
@@ -1369,7 +1391,7 @@ export const pistolFrame: PartFamily = {
     bore: size,
     gripLength: size,
     slideLength: { ...size, from: [{ port: 'slide', param: 'length' }] },
-    triggerGuard: { values: ['present', 'missing'], default: 'present' },
+    triggerGuard: { values: ['present', 'missing'], default: 'present', fault: ['missing'] },
   },
   build(params): PartDef {
     const gripDef = integratedPistolGrip(params.gripLength!);
@@ -1594,16 +1616,12 @@ export const magazine: PartFamily = {
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: profile-specific dimensions feed one shared magazine solid and seat implementation.
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
     const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const len = magazineLength.length;
-    const depth =
-      params.profile === 'pistol' ? PISTOL_MAGAZINE_DEPTH : MAGAZINE_DEPTH * (params.profile === 'smg' ? 0.6 : 1);
-    const width =
-      params.profile === 'pistol' ? PISTOL_MAGAZINE_WIDTH : MAGAZINE_WIDTH * (params.profile === 'smg' ? 0.8 : 1);
+    const { depth, width } = magazineSection(params.profile);
     let curveProfile: CurvedMagazineProfile | undefined;
     if (params.profile === 'ak-curved') {
       curveProfile = CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74'];

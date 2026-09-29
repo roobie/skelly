@@ -3,7 +3,14 @@
     {
       "id": "shambler",
       "name": "Shambler",
-      "health": 60,
+      "regions": {
+        "head": 60,
+        "torso": 60,
+        "leftArm": 24,
+        "rightArm": 24,
+        "leftLeg": 24,
+        "rightLeg": 24
+      },
       "speed": {
         "wander": 0.8,
         "chase": 2.8
@@ -51,8 +58,7 @@
         "cooldown": 1.5
       },
       "abilities": [],
-      "loot": "shambler_pockets",
-      "model": "figure_basic"
+      "loot": "shambler_pockets"
     }
   ]
 }

@@ -4,6 +4,7 @@ import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { loadFixture, variant } from './helpers.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const freeFloat = (barrelLength: string, handguardLength: string, fit = 'receiver') =>
   variant('archetype-ar', (draft) => {
@@ -48,37 +49,39 @@ describe('free-floating handguards', () => {
     expect(assembly.connections.some(({ from, to }) => from === 'handguard.front' && to === 'barrel.clamp')).toBe(true);
   });
 
-  it('chooses mounts by template data and keeps other families clamped', () => {
-    const byName = (name: string) => TEMPLATES.find((template) => template.name === name)!;
-    const freeFloatFraction = (name: string, count = 500) => {
-      let freeFloatCount = 0;
-      let presentCount = 0;
-      for (let seed = 0; seed < count; seed++) {
-        const {
-          parts: { handguard, barrel },
-          connections,
-        } = generate(byName(name), gunDomain, seed);
-        if (handguard) {
-          presentCount += 1;
+  sweepGroup('chooses mounts by template data and keeps other families clamped', () => {
+    it('passes', () => {
+      const byName = (name: string) => TEMPLATES.find((template) => template.name === name)!;
+      const freeFloatFraction = (name: string, count = 500) => {
+        let freeFloatCount = 0;
+        let presentCount = 0;
+        for (let seed = 0; seed < count; seed++) {
+          const {
+            parts: { handguard, barrel },
+            connections,
+          } = generate(byName(name), gunDomain, seed);
+          if (handguard) {
+            presentCount += 1;
+          }
+          if (handguard?.params?.mount === 'free-float') {
+            freeFloatCount += 1;
+            expect(handguard.params.length).toBe(barrel?.params?.length);
+            expect(connections.some(({ from, to }) => from === 'handguard.front' && to === 'barrel.clamp')).toBe(false);
+          }
         }
-        if (handguard?.params?.mount === 'free-float') {
-          freeFloatCount += 1;
-          expect(handguard.params.length).toBe(barrel?.params?.length);
-          expect(connections.some(({ from, to }) => from === 'handguard.front' && to === 'barrel.clamp')).toBe(false);
+        return freeFloatCount / presentCount;
+      };
+      expect(freeFloatFraction('ar')).toBeGreaterThanOrEqual(0.7);
+      expect(freeFloatFraction('ar')).toBeLessThanOrEqual(0.8);
+      expect(freeFloatFraction('battle-rifle')).toBeGreaterThanOrEqual(0.45);
+      expect(freeFloatFraction('battle-rifle')).toBeLessThanOrEqual(0.55);
+      for (const name of ['ak', 'smg', 'bolt-rifle-box']) {
+        for (let seed = 0; seed < 20; seed++) {
+          const { handguard } = generate(byName(name), gunDomain, seed).parts;
+          expect(handguard?.params?.mount ?? 'clamped').toBe('clamped');
         }
       }
-      return freeFloatCount / presentCount;
-    };
-    expect(freeFloatFraction('ar')).toBeGreaterThanOrEqual(0.7);
-    expect(freeFloatFraction('ar')).toBeLessThanOrEqual(0.8);
-    expect(freeFloatFraction('battle-rifle')).toBeGreaterThanOrEqual(0.45);
-    expect(freeFloatFraction('battle-rifle')).toBeLessThanOrEqual(0.55);
-    for (const name of ['ak', 'smg', 'bolt-rifle-box']) {
-      for (let seed = 0; seed < 20; seed++) {
-        const { handguard } = generate(byName(name), gunDomain, seed).parts;
-        expect(handguard?.params?.mount ?? 'clamped').toBe('clamped');
-      }
-    }
+    });
   });
 
   it('reports a free-float barrel-contact violation when clearance is removed', () => {

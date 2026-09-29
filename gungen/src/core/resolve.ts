@@ -347,5 +347,25 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
   }
 
   const connections = pending.map((c) => ({ ...c, role: roles.get(c.index) ?? 'unplaced' }));
+  const filledPorts = new Set(
+    pending.flatMap(({ from, to }) => [`${from.part}.${from.port.id}`, `${to.part}.${to.port.id}`]),
+  );
+  const disconnected = [...defs].flatMap(([id, def]) => {
+    if (placed.has(id) || issues.some((issue) => issue.parts.includes(id))) {
+      return [];
+    }
+    // Required-port issues take precedence over the broader disconnected-part report.
+    if (def.ports.some((port) => port.required && !filledPorts.has(`${id}.${port.id}`))) {
+      return [];
+    }
+    return [id];
+  });
+  if (disconnected.length > 0) {
+    issues.push({
+      rule: 'structure',
+      message: `${disconnected.join(', ')} ${disconnected.length === 1 ? 'is' : 'are'} not connected to the root`,
+      parts: disconnected,
+    });
+  }
   return { assembly, domain, defs, params, placed, connections, issues };
 };

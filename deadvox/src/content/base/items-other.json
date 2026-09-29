@@ -65,6 +65,41 @@
       "weight": 300,
       "size": [2, 2],
       "description": "Water-stained. Someone underlined things."
+    },
+    {
+      "id": "shambler_torso",
+      "name": "Severed shambler torso",
+      "category": "misc",
+      "weight": 12000,
+      "size": [3, 3]
+    },
+    {
+      "id": "shambler_left_arm",
+      "name": "Severed shambler left arm",
+      "category": "misc",
+      "weight": 2500,
+      "size": [2, 2]
+    },
+    {
+      "id": "shambler_right_arm",
+      "name": "Severed shambler right arm",
+      "category": "misc",
+      "weight": 2500,
+      "size": [2, 2]
+    },
+    {
+      "id": "shambler_left_leg",
+      "name": "Severed shambler left leg",
+      "category": "misc",
+      "weight": 4000,
+      "size": [2, 3]
+    },
+    {
+      "id": "shambler_right_leg",
+      "name": "Severed shambler right leg",
+      "category": "misc",
+      "weight": 4000,
+      "size": [2, 3]
     }
   ]
 }
