@@ -391,7 +391,6 @@ export const ZombieSchema = strictObject({
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */
   loot: optional(Id),
-  model: Id,
 });
 
 /** Actor palettes are content so appearance doesn't live in renderer code. */
