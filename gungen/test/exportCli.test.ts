@@ -1,5 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
 
@@ -15,6 +18,36 @@ describe('export CLI core', () => {
     if (fromDesign.ok && fromFixture.ok) {
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
       expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
+    }
+  });
+
+  it('writes the glb and model entry to separate output directories when requested', () => {
+    const temp = mkdtempSync(join(tmpdir(), 'gungen-export-'));
+    const glbDir = join(temp, 'models');
+    const entryDir = join(temp, 'entries');
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          join(import.meta.dirname, '../src/cli/export.ts'),
+          'designs/archetype-ar.json',
+          '--out',
+          glbDir,
+          '--entry-out',
+          entryDir,
+          '--id',
+          'rifle_assault',
+        ],
+        { cwd: join(import.meta.dirname, '..') },
+      );
+      expect(existsSync(join(glbDir, 'rifle_assault.glb'))).toBe(true);
+      expect(existsSync(join(glbDir, 'rifle_assault.model.json'))).toBe(false);
+      expect(JSON.parse(readFileSync(join(entryDir, 'rifle_assault.model.json'), 'utf8'))).toMatchObject({
+        id: 'rifle_assault',
+        file: 'assets/models/rifle_assault.glb',
+      });
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
     }
   });
 

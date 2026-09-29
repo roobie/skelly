@@ -15,8 +15,14 @@
     {
       "id": "rifle_assault",
       "file": "assets/models/rifle_assault.glb",
-      "grip": { "at": [0.2947, 0.0024, 0.0231], "turn": [-90, 0, 0] },
-      "anchors": { "muzzle": [0.6624, 0.0024, 0.0669] }
+      "grip": {
+        "at": [-0.158906, -0.084252, 0],
+        "turn": [0, 0, 0]
+      },
+      "anchors": {
+        "support": [0.16215, -0.01725, 0],
+        "muzzle": [0.414, 0, 0]
+      }
     },
     {
       "id": "rifle_battle",
@@ -71,6 +77,16 @@
       "twoHanded": true,
       "description": "A stand-in for trying the model in piles and hands. No loot table has it; spawn it with G (?debug=1). It doesn't fire.",
       "model": "shotgun_pump"
+    },
+    {
+      "id": "debug_rifle_assault",
+      "name": "Assault rifle (debug)",
+      "category": "weapon",
+      "weight": 3500,
+      "size": [1, 5],
+      "twoHanded": true,
+      "description": "A stand-in for checking the gungen AR export in piles and hands. No loot table has it; spawn it with G (?debug=1). It doesn't fire.",
+      "model": "rifle_assault"
     }
   ]
 }
