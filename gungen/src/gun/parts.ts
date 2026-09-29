@@ -191,8 +191,8 @@ export const LOWER_LAYOUTS = {
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
 } as const;
-const LOWER_TRIGGER_X = { conventional: -12, bullpup: 4.75, trigger: -11.5, ak: -12, ar: -12 } as const;
-const LOWER_GRIP_X = { conventional: -14.75, bullpup: 2, trigger: -14, ak: -14.75, ar: -14.75 } as const;
+const LOWER_TRIGGER_X = { conventional: -10.75, bullpup: 5, trigger: -11.5, ak: -10.75, ar: -10.75 } as const;
+const LOWER_GRIP_X = { conventional: -12.75, bullpup: 3, trigger: -14, ak: -12.75, ar: -12.75 } as const;
 const AK_GAS_CYLINDER_Y = 2;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -221,6 +221,12 @@ const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25
 const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
 const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
 const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
+/** Profile points at the grip's upper mount; the first is the front vertex touching a lower's guard. */
+export const GRIP_MOUNT_PROFILE = [
+  [1.5, 0],
+  [1.25, Math.tan((GRIP_BANDS.leanDegrees * Math.PI) / 180) * 1.25],
+  [-1.5, -Math.tan((GRIP_BANDS.leanDegrees * Math.PI) / 180) * 1.5],
+] as const satisfies readonly Vec2[];
 export const TRIGGER_GUARD = { innerXClearance: 0.75, sideWall: 0.5, verticalWall: 0.25, zRatio: 0.625 } as const;
 const LOWER_TRIGGER_GUARD = { ...TRIGGER_GUARD, innerXClearance: 0.5 };
 const triggerGuardSolids = (
@@ -251,7 +257,16 @@ const triggerGuardSolids = (
 };
 const lowerGripContactX = (layout: string, gripXOverride?: number): number => {
   const gripX = gripXOverride ?? LOWER_GRIP_X[layout as keyof typeof LOWER_GRIP_X] ?? LOWER_GRIP_X.conventional;
-  return gripX + 1.5 * Math.cos((GRIP_BANDS.leanDegrees * Math.PI) / 180);
+  const [x, y] = GRIP_MOUNT_PROFILE[0];
+  const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
+  return gripX + x * Math.cos(angle) - y * Math.sin(angle);
+};
+const lowerGripRearX = (gripX: number): number => {
+  const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
+  const faceRearX = Math.min(
+    ...GRIP_MOUNT_PROFILE.slice(1).map(([x, y]) => gripX + x * Math.cos(angle) + y * Math.sin(angle)),
+  );
+  return Math.floor(faceRearX / GRID) * GRID;
 };
 const pistolSlideChannelHalfWidth = (bore: SizeClass): number =>
   PISTOL_BARREL_RADIUS[bore] + PISTOL_SLIDE_CHANNEL_CLEARANCE;
@@ -622,8 +637,8 @@ export const lower: PartFamily = {
     const conventionalWellX = MAGAZINE_WELL_CENTER_X + (orientation.kind === 'tilt' ? 0.25 : 0);
     const conventionalWell = well(conventionalWellX);
     const recessedConventional = params.layout === 'conventional' && params.magazineWell === 'recessed';
-    const conventionalGripX = recessedConventional ? -14 : LOWER_GRIP_X.conventional;
-    const conventionalTriggerX = recessedConventional ? -11.5 : LOWER_TRIGGER_X.conventional;
+    const conventionalGripX = LOWER_GRIP_X.conventional;
+    const conventionalTriggerX = LOWER_TRIGGER_X.conventional;
     const bullpupWell = well(-3.5 - MAGAZINE_DEPTH / 2);
     const magazineHousing = (prefix: string, centerX: number, angle: number, frontPanelThickness: number): Solid[] => {
       const halfDepth = MAGAZINE_WELL_DEPTH / 2;
@@ -697,7 +712,7 @@ export const lower: PartFamily = {
     switch (params.layout) {
       case 'ar': {
         const frame = magazineWellFrame(
-          -14.75,
+          Math.min(-14.75, lowerGripRearX(LOWER_GRIP_X.ar)),
           conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
           conventionalWell.port.pos[0],
         );
@@ -734,7 +749,14 @@ export const lower: PartFamily = {
         const frontHookX = conventionalWell.port.pos[0] + MAGAZINE_DEPTH / 2;
         return {
           family: 'lower',
-          solids: [solid('frame', [-14.75, -1.5, -LOWER_HALF_WIDTH], [0, 0, LOWER_HALF_WIDTH]), ...triggerGuards],
+          solids: [
+            solid(
+              'frame',
+              [Math.min(-14.75, lowerGripRearX(LOWER_GRIP_X.ak)), -1.5, -LOWER_HALF_WIDTH],
+              [0, 0, LOWER_HALF_WIDTH],
+            ),
+            ...triggerGuards,
+          ],
           ports: [top, grip(LOWER_GRIP_X.ak), conventionalWell.port],
           keepOuts: [
             triggerFinger,
@@ -758,7 +780,7 @@ export const lower: PartFamily = {
         };
       default: {
         const frame = magazineWellFrame(
-          recessedConventional ? -14 : -14.75,
+          Math.min(recessedConventional ? -14 : -14.75, lowerGripRearX(conventionalGripX)),
           conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
           conventionalWell.port.pos[0],
         );
@@ -1199,16 +1221,10 @@ export const grip: PartFamily = {
           [-PISTOL_GRIP_HALF_X, -len],
           [PISTOL_GRIP_HALF_X, -len],
           [PISTOL_GRIP_HALF_X, 0],
-          [1.25, Math.tan(a) * 1.25],
-          [-1.5, -Math.tan(a) * 1.5],
+          GRIP_MOUNT_PROFILE[1],
+          GRIP_MOUNT_PROFILE[2],
         ] as const)
-      : ([
-          [-1.5, -len],
-          [1.5, -len],
-          [1.5, 0],
-          [1.25, Math.tan(a) * 1.25],
-          [-1.5, -Math.tan(a) * 1.5],
-        ] as const);
+      : ([[-1.5, -len], [1.5, -len], ...GRIP_MOUNT_PROFILE] as const);
     const roofY = -len + PISTOL_WELL_HEIGHT;
     const solids: Solid[] = magazineWell
       ? [
@@ -1218,8 +1234,8 @@ export const grip: PartFamily = {
               [-PISTOL_GRIP_HALF_X, roofY],
               [PISTOL_GRIP_HALF_X, roofY],
               [PISTOL_GRIP_HALF_X, 0],
-              [1.25, Math.tan(a) * 1.25],
-              [-1.5, -Math.tan(a) * 1.5],
+              GRIP_MOUNT_PROFILE[1],
+              GRIP_MOUNT_PROFILE[2],
             ],
             [-PISTOL_GRIP_HALF_Z, PISTOL_GRIP_HALF_Z],
           ),

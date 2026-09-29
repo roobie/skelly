@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
+import type { Box } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, LOWER_LAYOUTS } from '../src/gun/parts.ts';
@@ -36,54 +37,39 @@ describe('trigger guards', () => {
     ]);
   });
 
-  it('shrinks lower guard outer extents to about 0.8 X and 0.7 Y while keeping trigger volumes clear', () => {
-    const lower = FAMILIES.lower!.build({ layout: 'conventional' });
-    const finger = lower.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
-    const guards = lower.solids.filter(({ id }) => id.startsWith('trigger-guard-'));
-    const bounds = (box: typeof finger) => ({
+  it('keeps lower finger clearances while the rear wall follows the grip mount', () => {
+    const bounds = (box: Box) => ({
       min: box.center.map((center, axis) => center - box.half[axis]!),
       max: box.center.map((center, axis) => center + box.half[axis]!),
     });
-    const allBounds = guards.map((solid) => {
-      expect(solid.kind).toBe('box');
-      if (solid.kind !== 'box') {
-        throw new Error('Expected a box trigger guard.');
-      }
-      return bounds(solid.box);
-    });
-    const fingerBounds = bounds(finger);
-    const outerX = Math.max(...allBounds.map(({ max }) => max[0]!)) - Math.min(...allBounds.map(({ min }) => min[0]!));
-    const outerY = Math.max(...allBounds.map(({ max }) => max[1]!)) - Math.min(...allBounds.map(({ min }) => min[1]!));
-    expect(outerX / 5.573_415_225_557_27).toBeCloseTo(0.8, 1);
-    expect(outerY / 4.5).toBeCloseTo(0.7, 1);
-    for (const guard of allBounds) {
-      expect(
-        [0, 1, 2].every(
-          (axis) => guard.max[axis]! > fingerBounds.min[axis]! && fingerBounds.max[axis]! > guard.min[axis]!,
-        ),
-      ).toBe(false);
-    }
     for (const layout of Object.keys(LOWER_LAYOUTS)) {
       const def = FAMILIES.lower!.build({ layout });
-      const keepOut = def.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
-      const keepOutBounds = bounds(keepOut);
-      const layoutGuards = def.solids
-        .filter(({ id }) => id.startsWith('trigger-guard-'))
-        .map((solid) => {
-          expect(solid.kind).toBe('box');
-          if (solid.kind !== 'box') {
-            throw new Error('Expected a box trigger guard.');
-          }
-          return bounds(solid.box);
-        });
-      const layoutOuterX =
-        Math.max(...layoutGuards.map(({ max }) => max[0]!)) - Math.min(...layoutGuards.map(({ min }) => min[0]!));
-      const layoutOuterY =
-        Math.max(...layoutGuards.map(({ max }) => max[1]!)) - Math.min(...layoutGuards.map(({ min }) => min[1]!));
-      const baselineX = layout === 'trigger' ? 5.323_415_225_557_27 : 5.573_415_225_557_27;
-      expect(layoutOuterX / baselineX, `${layout} X ratio`).toBeCloseTo(0.8, 1);
-      expect(layoutOuterY / 4.5, `${layout} Y ratio`).toBeCloseTo(0.7, 1);
-      for (const guard of layoutGuards) {
+      const finger = def.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
+      const fingerBounds = bounds(finger);
+      const guards = new Map(
+        def.solids
+          .filter(({ id }) => id.startsWith('trigger-guard-'))
+          .map((solid) => {
+            expect(solid.kind, `${layout}.${solid.id}`).toBe('box');
+            if (solid.kind !== 'box') {
+              throw new Error('Expected a box trigger guard.');
+            }
+            return [solid.id, bounds(solid.box)] as const;
+          }),
+      );
+      const rear = guards.get('trigger-guard-rear')!;
+      const front = guards.get('trigger-guard-front')!;
+      const top = guards.get('trigger-guard-top')!;
+      const bottom = guards.get('trigger-guard-bottom')!;
+      expect(fingerBounds.min[0]! - rear.max[0]!, `${layout} rear finger clearance`).toBeCloseTo(0.5, 8);
+      expect(front.min[0]! - fingerBounds.max[0]!, `${layout} front finger clearance`).toBeCloseTo(0.5, 8);
+      expect(front.max[0]! - front.min[0]!, `${layout} front wall thickness`).toBeCloseTo(0.5, 8);
+      expect(fingerBounds.max[1]! - top.min[1]!, `${layout} top contact`).toBeCloseTo(0, 8);
+      expect(top.max[1]! - fingerBounds.max[1]!, `${layout} upper wall`).toBeCloseTo(0.25, 8);
+      expect(fingerBounds.min[1]! - bottom.max[1]!, `${layout} bottom contact`).toBeCloseTo(0, 8);
+      expect(fingerBounds.min[1]! - bottom.min[1]!, `${layout} lower wall`).toBeCloseTo(0.25, 8);
+      const keepOutBounds = bounds(finger);
+      for (const guard of guards.values()) {
         expect(
           [0, 1, 2].every(
             (axis) => guard.max[axis]! > keepOutBounds.min[axis]! && keepOutBounds.max[axis]! > guard.min[axis]!,
