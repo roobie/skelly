@@ -78,6 +78,27 @@ GPU (731k triangles) or unmeasured browser work is the limit there. The
 skinned 240 run also had a 1% low of 2.2 fps, one long stall that is not yet
 explained.
 
+A later run (same day) had skinned losing to one mesh per bone at 240 (40
+against 53 fps) with the same kind of stall at 120 and 240, so a third
+path was added. **Crowd**: one `InstancedMesh` per variant, every actor's
+bone matrices in one shared float texture uploaded once per frame, and one
+matrix fetch per vertex (three.js skinning does four). With it
+(2026-09-29, same laptop, LOD on, 12 variants):
+
+| Actors | One mesh per bone | One skinned mesh per actor | Crowd |
+| --- | --- | --- | --- |
+| 60 | 1.2 + 5.3, 60 | 1.4 + 2.3, 60 | 1.4 + 0.6, 60 |
+| 120 | 1.5 + 6.5, 60 | 2.2 + 3.6, 60 | 2.2 + 0.7, 60 |
+| 240 | 2.2 + 12.1, 60 | 2.7 + 5.7, 60 | 3.8 + 0.8, 60 |
+
+Crowd draws 13 calls at any count, and its render CPU stays under 1 ms, so
+240 actors cost under 5 ms of CPU and posing is again the larger share. In
+this run all three paths held 60 fps and no frame took over 100 ms, so the
+laptop was faster than in the run before, and the stalls can't be credited
+to the crowd path; the long-frame log will say where they come from if they
+return. Crowd is the path for deadvox: it's the only one whose render cost
+doesn't grow with the number of actors.
+
 ## 2. Reading well at game distance
 
 **Why it's hard.** 1/12 of a block gives a head of about 50 voxels up close,
