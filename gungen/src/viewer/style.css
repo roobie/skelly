@@ -75,6 +75,40 @@ h1 {
   color: var(--muted);
   margin: 8px 0;
 }
+#design-info {
+  margin: 10px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+}
+#design-info:empty {
+  display: none;
+}
+#design-info h2 {
+  margin: 0 0 5px;
+  font-size: 13px;
+}
+#design-info p {
+  margin: 3px 0;
+}
+.design-issues {
+  padding-left: 18px;
+  margin: 6px 0 0;
+}
+.design-issues li,
+.design-error {
+  color: var(--fail);
+  margin: 4px 0;
+}
+.part-prefab {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.part-prefab.stale {
+  color: var(--normal);
+}
 #status {
   font-weight: 600;
   margin: 8px 0;

@@ -2,13 +2,17 @@
 // gungen5-param-panel). No DOM or three.js: everything here works on plain
 // Assembly objects, the same as resolve()/validate() do.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Domain, PartDef } from '../src/core/schema.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { ak, ar, battleRifle } from '../src/gun/templates.ts';
+import { buildDesignViewModel } from '../src/viewer/designViewModel.ts';
 import {
   applyOverrides,
   buildPanelModel,
@@ -45,6 +49,33 @@ describe('param panel: listing', () => {
       const family = FAMILIES[assembly.parts[part.id]!.family]!;
       expect(part.params.map((p) => p.name).sort()).toEqual(Object.keys(family.params).sort());
     }
+  });
+
+  it('uses the loaded design template and prefab metadata in design part cards', () => {
+    const text = readFileSync(join(import.meta.dirname, '..', 'designs', 'archetype-ar.json'), 'utf8');
+    const loaded = loadGunDesign(text);
+    if (!loaded.ok) {
+      throw new Error('expected archetype-ar to load');
+    }
+    const { design } = loaded;
+    const view = buildDesignViewModel(loaded, design.assembly.name);
+    if (view.kind !== 'loaded') {
+      throw new Error('expected a loaded design view');
+    }
+    const model = buildPanelModel(design.assembly, design.assembly, gunDomain, {
+      template: ar,
+      prefabsByPart: view.prefabsByPart,
+    });
+    const magazine = model.find((entry) => entry.id === 'magazine') as PanelPart;
+    const length = magazine.params.find((param) => param.name === 'length')!;
+    const sight = model.find((entry) => entry.id === 'sight') as PanelPart;
+    expect(length.values.find((value) => value.value === 'M')?.permitted).toBe(true);
+    expect(magazine.prefab).toEqual({
+      label: 'stanag-20 v1',
+      fixedParams: { length: 'M', profile: 'stanag-curved' },
+      stale: false,
+    });
+    expect(sight.optional).toBe(true);
   });
 
   it("permits only the referenced part's value for a param the template copies from another slot", () => {
