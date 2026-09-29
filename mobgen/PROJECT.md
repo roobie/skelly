@@ -15,6 +15,15 @@ with a walk cycle that follows its speed. It works the same way gungen takes a
 template and a seed to a firearm that fits together: the generator only makes
 choices, and a validator with named rules decides what's feasible.
 
+### Creature range (BR, 2026-09-29)
+
+mobgen's actors are monsters, not people. Their proportions are stylized
+(the heads are oversized so the face fits), and planned enemies range from
+rabbit-sized to huge, including ones that are neither humanoid nor
+proportional. Shared systems (physics, animation, rules) must not assume
+human anatomy or a density-true mass. The specifics belong in per-template
+data, and the defaults must work for any body plan.
+
 ### Non-goals
 
 - Smooth or skinned meshes, textures, or realistic rendering. Voxel colour
@@ -52,6 +61,7 @@ choices, and a validator with named rules decides what's feasible.
 | Animation | Forward kinematics: each bone has a rotation about its head, applied down the chain from the pelvis. The walk is driven by speed: stride and pace come from the speed, the genome's gait params and leg length, and the phase advances with distance travelled. During stance the planted foot stays fixed while the root advances; the root's height is solved per phase so the lowest foot is on the ground. Speed 0 is a standing pose |
 | Validation | Named rules, each with a readable message. The generator never checks feasibility itself |
 | Determinism | Seeded RNG (mulberry32), never `Math.random`. The same genome gives the same voxels on the same JavaScript engine; engines may differ in the last digit of `Math.sin` and similar, which can flip a voxel on a shape's edge (CHALLENGES §11) |
+| Mass | Each template declares a total body mass (`bodyMassKg`). A part's mass is that total times its fraction: by default its share of the body's voxel volume; a template may override the fraction per part (the humanoids use anatomical values for the severable parts). The centre of mass and the shape of the inertia come from the part's voxels, scaled to the assigned mass. Being worked on in sk1 (severed-limb physics) |
 | Templates (milestone 1) | `shambler` (1/12), `runner` (1/12), `brute` (1/10) |
 | Tests | Vitest |
 | CI | `.github/workflows/mobgen.yml`: typecheck, tests, viewer build |
