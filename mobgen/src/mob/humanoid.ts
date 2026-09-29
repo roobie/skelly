@@ -304,10 +304,17 @@ const boxFeature = (bone: string, center: Vec3, half: Vec3, round: number): Feat
 const snapRow = (y: number, voxel: number): number => (Math.round(y / voxel - 0.5) + 0.5) * voxel;
 const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
 
+// Median default-voxel-size / median-template-height ratio: shambler 1/41.4,
+// runner 1/45 and brute 1/43. This calibrates the new metric face constants to
+// a typical actor's previous default-voxel head size without using LOD voxel size.
+const FACE_HEIGHT_RATIO = 1 / 43;
+
 /** Face landmarks in voxel units, shared between buildFlesh (which shapes the head/jaw around them)
  * and buildClothes (which paints/carves eyes and mouth onto them) so the two can never drift apart. */
 interface FaceLayout {
   readonly voxel: number;
+  /** Metric face scale: height × headScale × calibrated dimensionless ratio. */
+  readonly scale: number;
   readonly headCenter: Vec3;
   readonly skull: Vec3;
   readonly faceCenter: Vec3;
@@ -328,27 +335,28 @@ interface FaceLayout {
 
 const buildFaceLayout = (layout: JointLayout, p: HumanoidParams, voxelSize: number): FaceLayout => {
   const v = voxelSize;
-  const hs = p.headScale;
+  const faceScale = layout.height * FACE_HEIGHT_RATIO * p.headScale;
   const headCenter = mid(layout.head.head, layout.head.tail);
-  const skull: Vec3 = [2.3 * v * hs, 2.5 * v * hs, 1.9 * v * hs];
-  const faceHalf: Vec3 = [2.1 * v * hs, 1.6 * v * hs, 0.85 * v * hs];
-  const eyeY = snapRow(layout.head.head[1] + 1.1 * v * hs, v);
+  const skull: Vec3 = [2.3 * faceScale, 2.5 * faceScale, 1.9 * faceScale];
+  const faceHalf: Vec3 = [2.1 * faceScale, 1.6 * faceScale, 0.85 * faceScale];
+  const eyeY = snapRow(layout.head.head[1] + 1.1 * faceScale, v);
   const faceCenter: Vec3 = [0, eyeY, headCenter[2] - skull[2]];
   // Snapped: this is the base Z the eye sockets carve at, and a carve that lands ~half a voxel off a
   // column can eat two voxels deep instead of one, pushing the exposed back wall past the eye paint's
   // reach (see mobgen bugfix — sockets carved fine but never got their 'eye' paint).
   const frontZ = snapCol(faceCenter[2] - faceHalf[2], v);
-  const browY = eyeY + v;
-  const browHalf: Vec3 = [1.7 * v * hs, 0.35 * v * hs, 0.55 * v * hs];
-  const browCenter: Vec3 = [0, browY, frontZ - 0.5 * v * hs];
-  const noseBase: Vec3 = [0, snapRow(eyeY - 1.1 * v * hs, v), frontZ];
-  const noseTip: Vec3 = add(noseBase, [0, 0.3 * v * hs, -(0.55 * v * hs + p.noseLength)]);
+  const browY = snapRow(eyeY + faceScale, v);
+  const browHalf: Vec3 = [1.7 * faceScale, 0.35 * faceScale, 0.55 * faceScale];
+  const browCenter: Vec3 = [0, browY, frontZ - 0.5 * faceScale];
+  const noseBase: Vec3 = [0, snapRow(eyeY - 1.1 * faceScale, v), frontZ];
+  const noseTip: Vec3 = add(noseBase, [0, 0.3 * faceScale, -(0.55 * faceScale + p.noseLength)]);
   const jawCenter = lerp3(layout.jaw.head, layout.jaw.tail, 0.65);
-  const jawRadii: Vec3 = [1.7 * v * hs, 1.3 * v * hs, 1.6 * v * hs];
-  const mouthY = snapRow(noseBase[1] - 1.1 * v * hs, v);
-  const mouthZ = snapCol(jawCenter[2] - jawRadii[2] + 0.3 * v * hs, v);
+  const jawRadii: Vec3 = [1.7 * faceScale, 1.3 * faceScale, 1.6 * faceScale];
+  const mouthY = snapRow(noseBase[1] - 1.1 * faceScale, v);
+  const mouthZ = snapCol(jawCenter[2] - jawRadii[2] + 0.3 * faceScale, v);
   return {
     voxel: v,
+    scale: faceScale,
     headCenter,
     skull,
     faceCenter,
@@ -404,12 +412,9 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
     capsuleFeature('neck', layout.neck.head, layout.neck.tail, [0.045 * h * g, 0.045 * h * g]),
   ];
 
-  // ---- Head: sized in voxel units, not just `h` (mobgen user feedback: at 1/12-block voxels the old
-  // h-scaled head was only 3 voxels wide, too coarse for eyes/nose/mouth to ever read). A rounded skull
-  // (this ellipsoid) plus a flatter face plate at the front the eyes/brow/nose read against, instead of
-  // one egg-shaped blob. 5 voxel-columns wide (x = -2v..+2v) is the minimum for a brow + two eyes
-  // (x = ±v) + a nose (x = 0) to read distinctly. World X sits at plain multiples of v (voxelize.ts's
-  // worldPosition), so x = 0 and x = ±n*v are always exact columns and symmetric features land exactly.
+  // ---- Head: every feature dimension is metric (height × headScale), so re-voxelizing a genome
+  // changes sampling resolution, not proportions. Eye columns remain snapped at x = ±v; fine details
+  // may disappear at coarse LOD.
   features.push(ellipsoidFeature('head', face.headCenter, face.skull));
   features.push(boxFeature('head', face.faceCenter, face.faceHalf, 0.45 * face.faceHalf[2]));
 
@@ -420,8 +425,6 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
   // silhouette in a side view — reads as a chin, not a uniform hinge-to-chin sausage. Jaw and head are
   // separate bones with no cross-bone smin (voxelize.ts), so the narrower neck below always leaves a
   // visible step, no special-casing needed.
-  const v = face.voxel;
-  const hs = p.headScale;
   features.push(ellipsoidFeature('jaw', face.jawCenter, face.jawRadii));
 
   // Nose: one voxel forward on the midline, between the eyes and the mouth. noseLength adds to a base
@@ -432,9 +435,9 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
   features.push({
     bone: 'head',
     op: 'add',
-    shape: { kind: 'capsule', a: face.noseBase, b: face.noseTip, ra: 0.6 * v * hs, rb: 0.45 * v * hs },
+    shape: { kind: 'capsule', a: face.noseBase, b: face.noseTip, ra: 0.6 * face.scale, rb: 0.45 * face.scale },
     material: 'skin',
-    blend: 0.5 * v,
+    blend: 0.5 * face.scale,
   });
 
   // Ears: earSize 0 means none (see sampleHumanoid: it's zero-biased).
@@ -607,7 +610,7 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
   const v = face.voxel;
   for (const side of SIDES) {
     const eyeCenter: Vec3 = [sideSign(side) * v, face.eyeY, face.frontZ];
-    const carveR = 0.55 * v;
+    const carveR = 0.55 * face.scale;
     features.push({
       bone: 'head',
       op: 'carve',
@@ -615,7 +618,7 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
       material: 'skin', // carve ignores material; Feature just always requires one
     });
     const socketBottom: Vec3 = [eyeCenter[0], eyeCenter[1], eyeCenter[2] + v];
-    const paintR = 0.65 * v;
+    const paintR = 0.65 * face.scale;
     features.push({
       bone: 'head',
       op: 'paint',
@@ -626,11 +629,11 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
 
   // Mouth: a dark line painted at the jaw/head boundary, always present so a closed mouth still reads;
   // jawOpen carves it into an open one and paints 'mouth' over what that exposes.
-  const mouthHalf: Vec3 = [1.3 * v * p.headScale, 0.32 * v * p.headScale, 0.45 * v * p.headScale];
+  const mouthHalf: Vec3 = [1.3 * face.scale, 0.32 * face.scale, 0.45 * face.scale];
   features.push({
     bone: 'jaw',
     op: 'paint',
-    shape: { kind: 'box', center: [0, face.mouthY, face.mouthZ], half: mouthHalf, round: 0.15 * v * p.headScale },
+    shape: { kind: 'box', center: [0, face.mouthY, face.mouthZ], half: mouthHalf, round: 0.15 * face.scale },
     material: 'mouth',
   });
   if (p.jawOpen > 0.02) {
@@ -640,28 +643,26 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
     // own territory and cut off a piece of it (see mobgen bugfix — a `floaters` failure at max jawOpen
     // combined with extreme hunch/headTilt traced to exactly this).
     const top = face.mouthY + mouthHalf[1];
-    const bottom = face.mouthY - mouthHalf[1] - 1.8 * v * p.headScale * p.jawOpen;
-    const openHalf: Vec3 = [mouthHalf[0] * 0.85, (top - bottom) / 2, mouthHalf[2] + 0.4 * v * p.headScale * p.jawOpen];
+    const bottom = face.mouthY - mouthHalf[1] - 1.8 * face.scale * p.jawOpen;
+    const openHalf: Vec3 = [mouthHalf[0] * 0.85, (top - bottom) / 2, mouthHalf[2] + 0.4 * face.scale * p.jawOpen];
     const openCenter: Vec3 = [0, (top + bottom) / 2, face.mouthZ];
     features.push({
       bone: 'jaw',
       op: 'carve',
-      shape: { kind: 'box', center: openCenter, half: openHalf, round: 0.1 * v * p.headScale },
+      shape: { kind: 'box', center: openCenter, half: openHalf, round: 0.1 * face.scale },
       material: 'skin', // carve ignores material; Feature just always requires one
     });
-    // Padded by a full voxel, not just scaled up (the same trap as the eye sockets above — a paint
-    // shape only a little larger than the carve it follows can still fail to reach any voxel the carve
-    // left standing, since box half-extents here start under half a voxel), but only downward and
-    // outward in X/Z — padding upward too would tint a face-plate voxel it never carved.
-    const paintHalf: Vec3 = [openHalf[0] + v, openHalf[1] + v / 2, openHalf[2] + v];
+    // Metric padding follows the face scale too; padding upward is smaller so paint does not tint
+    // face-plate voxels the jaw carve never reached.
+    const paintHalf: Vec3 = [openHalf[0] + 0.5 * face.scale, openHalf[1] + 0.25 * face.scale, openHalf[2] + 0.5 * face.scale];
     features.push({
       bone: 'jaw',
       op: 'paint',
       shape: {
         kind: 'box',
-        center: [openCenter[0], openCenter[1] - v / 2, openCenter[2]],
+        center: [openCenter[0], openCenter[1] - 0.25 * face.scale, openCenter[2]],
         half: paintHalf,
-        round: 0.1 * v * p.headScale,
+        round: 0.1 * face.scale,
       },
       material: 'mouth',
     });

@@ -11,6 +11,7 @@ import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
 import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByName, type Wound } from './template.ts';
+import type { Budgets } from './rules.ts';
 import { type Report, validate } from './validate.ts';
 import { type Voxels, voxelize } from './voxelize.ts';
 
@@ -108,6 +109,28 @@ export const build = (genome: Genome): Body => {
   return planOf(template.bodyPlan).build(genome, template);
 };
 
+const scaledRange = (range: { readonly min: number; readonly max: number }, factor: number) => ({
+  min: Math.max(1, Math.floor(range.min * factor)),
+  max: Math.max(1, Math.ceil(range.max * factor)),
+});
+
+/** Coarser grids contain fewer cells: voxel budgets scale by inverse cell volume and triangle budgets
+ * by inverse cell surface area, relative to each template's default voxel size. Rounding outward keeps
+ * the same proportional tolerance without widening thresholds. */
+const budgetsAtVoxelSize = (template: Template, voxelSize: number): Budgets => {
+  const ratio = template.voxelSize / voxelSize;
+  const volumeScale = ratio ** 3;
+  const surfaceScale = ratio ** 2;
+  const groups = Object.fromEntries(
+    Object.entries(template.budgets.groups).map(([name, group]) => [name, { ...group, ...scaledRange(group, volumeScale) }]),
+  );
+  return {
+    totalVoxels: scaledRange(template.budgets.totalVoxels, volumeScale),
+    totalTriangles: scaledRange(template.budgets.totalTriangles, surfaceScale),
+    groups,
+  };
+};
+
 export interface Realized {
   readonly body: Body;
   readonly voxels: Voxels;
@@ -121,7 +144,13 @@ export const realize = (genome: Genome): Realized => {
   const body = build(genome);
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
-  const report = validate({ body, voxels, meshes, feet: new Set(template.feet), budgets: template.budgets });
+  const report = validate({
+    body,
+    voxels,
+    meshes,
+    feet: new Set(template.feet),
+    budgets: budgetsAtVoxelSize(template, genome.voxelSize),
+  });
   return { body, voxels, meshes, report };
 };
 

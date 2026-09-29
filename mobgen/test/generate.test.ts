@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate, generateValid, realize } from '../src/core/generate.ts';
+import { worldPosition } from '../src/core/voxelize.ts';
 import type { Genome } from '../src/core/template.ts';
 import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
@@ -82,6 +83,83 @@ describe('genome checks', () => {
     const wound = { bone: 'spine', t: 0.5, angle: 0, radius: 0.03 };
     expect(() => realize({ ...genome, wounds: [{ ...wound, bone: 'head' }] })).toThrow('wound 0 has bone "head"');
     expect(() => realize({ ...genome, wounds: [{ ...wound, t: Number.NaN }] })).toThrow('wound 0 t ');
+  });
+});
+
+const skullRadii = (genome: Genome): readonly number[] => {
+  const skull = realize(genome).body.features.find(
+    (feature) => feature.bone === 'head' && feature.op === 'add' && feature.shape.kind === 'ellipsoid',
+  );
+  if (!skull || skull.shape.kind !== 'ellipsoid') {
+    throw new Error('the humanoid skull ellipsoid is missing');
+  }
+  return skull.shape.radii;
+};
+
+const headBounds = (genome: Genome) => {
+  const { body, voxels } = realize(genome);
+  const headOwners = new Set(['head', 'jaw'].map((id) => body.bones.findIndex((bone) => bone.id === id) + 1));
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  const [nx, ny] = voxels.dims;
+  for (let index = 0; index < voxels.owner.length; index++) {
+    if (!headOwners.has(voxels.owner[index]!)) {
+      continue;
+    }
+    const i = index % nx;
+    const j = Math.floor(index / nx) % ny;
+    const k = Math.floor(index / (nx * ny));
+    const point = worldPosition(voxels, i, j, k);
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis]!, point[axis]!);
+      max[axis] = Math.max(max[axis]!, point[axis]!);
+    }
+  }
+  return { min, max };
+};
+
+describe('coarser voxel sizes', () => {
+  const shambler = TEMPLATES.find((template) => template.name === 'shambler')!;
+  const base = generate(shambler, 17);
+  const sizes = [0.5 / 6, 0.5 / 4];
+
+  it.each(sizes)('keeps skull metric radii and head bounds within one voxel at size %s', (voxelSize) => {
+    const defaultRadii = skullRadii(base);
+    const coarseGenome = { ...base, voxelSize };
+    const coarseRadii = skullRadii(coarseGenome);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(coarseRadii[axis]! - defaultRadii[axis]!)).toBeLessThanOrEqual(1e-6);
+    }
+    const defaultBounds = headBounds(base);
+    const coarseBounds = headBounds(coarseGenome);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(coarseBounds.min[axis]! - defaultBounds.min[axis]!)).toBeLessThanOrEqual(voxelSize);
+      expect(Math.abs(coarseBounds.max[axis]! - defaultBounds.max[axis]!)).toBeLessThanOrEqual(voxelSize);
+    }
+  });
+
+  it('scales skull radii proportionally when only height changes', () => {
+    const tall = { ...base, params: { ...base.params, height: base.params.height! * 1.1 } };
+    const baseRadii = skullRadii(base);
+    const tallRadii = skullRadii(tall);
+    for (let axis = 0; axis < 3; axis++) {
+      expect(tallRadii[axis]! / baseRadii[axis]!).toBeCloseTo(1.1, 10);
+    }
+  });
+
+  it('every template passes all rules at 1/6- and 1/4-block voxels for fixed seeds', () => {
+    for (const template of TEMPLATES) {
+      for (const voxelSize of sizes) {
+        for (const seed of [7, 42]) {
+          const genome = { ...generate(template, seed), voxelSize };
+          const { report } = realize(genome);
+          expect(
+            report.ok,
+            `${template.name} seed ${seed} at voxel size ${voxelSize}: ${JSON.stringify(report.issues)}`,
+          ).toBe(true);
+        }
+      }
+    }
   });
 });
 
