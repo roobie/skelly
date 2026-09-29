@@ -1016,10 +1016,10 @@ deadvox holds a model with +x forward and +y up
   returns the writer's result, or the `AnchorSelectionError` for a missing or
   ambiguous `hold`. Units and axes are in `src/core/exportFrame.ts`. The frozen
   types didn't change.
-- CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--id
-  <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox entry). It
-  takes a design (has `format`) or a fixture, and defaults the id to the file
-  name with dashes as underscores.
+- CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--entry-out
+  <dir>] [--id <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox
+  entry); `--entry-out` defaults to `--out`. It takes a design (has `format`) or
+  a fixture, and defaults the id to the file name with dashes as underscores.
 - Scene layout: a root node named by the asset id, one node per part named
   `<part id>:<registry key>` (placed by its resolved transform, with `extras`
   `part`, `family`, `role`, `solids`), one mesh per part with one primitive per
@@ -1070,10 +1070,25 @@ deadvox holds a model with +x forward and +y up
   `grip.at`, `grip.turn` and its independence from rake, error variants),
   `test/glbValidate.test.ts`, `test/exportCli.test.ts`.
 
-**3.5 End to end in deadvox.** Replace one existing firearm model (proposed:
-`rifle_assault`) with an export of a curated AR design, and check it in
-first-person hands and in piles. This needs only 3.0 and 3.4, since a fixture
-can stand in for the design.
+**3.5 End to end in deadvox (implemented; awaiting BR visual review, 2026-09-29).**
+`rifle_assault` now uses the curated `archetype-ar` export; `debug_rifle_assault`
+spawns it with G under `?debug=1` for inspection in hands and piles. The model
+entry keeps the original id and asset path, with export-derived grip and anchors;
+`grip.turn` is `[0, 0, 0]` per BR's +x-forward/+y-up ruling. Reproduce the checked-in
+GLB and sidecar from the `gungen/` directory with:
+
+```sh
+npm run export:glb -- designs/archetype-ar.json --out ../deadvox/src/content/base/assets/models --entry-out /tmp/gungen-rifle-assault-entry --id rifle_assault
+```
+
+The generated sidecar's `grip` and `anchors` are recorded in
+`deadvox/src/content/base/models-firearms.json`. Measured against the replaced
+asset: bounds are 79.35 cm long × 21.46 cm high (new) vs 69.74 cm × 25.30 cm
+(old); grip-to-muzzle distance is 57.91 cm vs 37.03 cm; mesh is 2,080 vs 4,353
+triangles and 174,436 vs 234,384 bytes. The new length is 4.65 cm below the
+provided real AR-15 range of 84–99 cm. The muzzle anchor equals the model's
+forward x bound. `deadvox/test/models.test.ts` verifies zero turn, muzzle at the
+forward end, and forward/upright orientation after the held transform.
 
 **3.6 Vocabulary** (the re-scoped queue). The trigger guards finish now.
 Everything else here is scheduled after 3.5, not as part of the export's

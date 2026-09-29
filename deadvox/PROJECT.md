@@ -131,12 +131,12 @@ npm run validate   # base content; add paths to validate a mod on top
   bundle in piles and a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
-- `models-firearms.json` has ten gun models ("CC0 Flat Guns West" from
-  OpenGameArt). Only a debug item uses one (`debug_shotgun_pump`: in no loot
-  table, spawned with G, doesn't fire): firearms come in Slice 3, and DESIGN.md
-  has them built from gungen assemblies, so these may end up as placeholders or
-  go. Their grip is the trigger, not the palm, and their `muzzle` anchor isn't
-  read by anything yet.
+- `models-firearms.json` has ten firearm models: nine from "CC0 Flat Guns West"
+  on OpenGameArt and `rifle_assault`, exported from gungen's curated AR design.
+  Debug-only `debug_shotgun_pump` and `debug_rifle_assault` items (no loot table;
+  spawn with G under `?debug=1`; neither fires) exercise the models in hands and
+  piles. See `gungen/PROJECT.md` §3.5 for the exact command that regenerates the
+  rifle export.
 - `models-melee.json` has all 20 weapons from Pichuliru's "CC0 Flat Shaded Melee
   Weapons" pack, plus the steel pipe from neincenets' CC0 "Pipe" model. Converted
   in Blender to static, self-contained GLBs in metres, with a palm `grip`, a

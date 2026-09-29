@@ -18,7 +18,6 @@
       "files": [
         "assets/models/pistol_compact.glb",
         "assets/models/pistol_full.glb",
-        "assets/models/rifle_assault.glb",
         "assets/models/rifle_battle.glb",
         "assets/models/shotgun_auto.glb",
         "assets/models/shotgun_pump.glb",
@@ -28,6 +27,15 @@
         "assets/models/sniper_rifle.glb"
       ],
       "changes": "From the GLB files: rig baked into static meshes at rest and removed, stray icosphere removed, turned to lie on the side along +x with the muzzle at +x, renamed"
+    },
+    {
+      "title": "Gungen AR design export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ar.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/rifle_assault.glb"],
+      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; original project-built geometry, +x forward and +y up"
     },
     {
       "title": "15 vocal male strain/hurt/pain/jump sounds",
