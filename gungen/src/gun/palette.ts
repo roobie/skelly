@@ -43,6 +43,16 @@ const FAMILY_HEX: Record<string, number> = {
   magazine: 0x56_62_76,
   stock: 0x8a_6a_52,
   sight: 0x3f_46_50,
+  // Roles that used to fall back to grey.
+  // Pistol: warm parkerized frame under a lighter steel slide.
+  frame: 0x4b_4a_45,
+  slide: 0x86_8d_97,
+  // Revolver: blued cylinder against the light receiver.
+  cylinder: 0x4a_55_66,
+  // Dark small metal parts, near the sight tone; the gas system steps from black block to mid-grey cylinder.
+  'front-sight': 0x36_3d_47,
+  'gas-block': 0x2f_32_38,
+  'gas-cylinder': 0x54_5a_63,
 };
 
 /** Colours keyed by solid id; these win over the family colour. */

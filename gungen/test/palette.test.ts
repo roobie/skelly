@@ -4,6 +4,7 @@ import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { createPalette, GUN_PALETTE, hexToSrgb, solidColor, srgbToHex } from '../src/gun/palette.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { loadFixtures } from './helpers.ts';
 
@@ -38,20 +39,51 @@ const assemblies = (): Assembly[] => [
   ...TEMPLATES.flatMap((t) => Array.from({ length: SEEDS }, (_, seed) => generate(t, gunDomain, seed))),
 ];
 
+/** Every (role, solid id) pair rendered by the archetype fixtures and the template sweep. */
+const renderedSolids = (): { family: string; id: string }[] =>
+  assemblies().flatMap((a) =>
+    [...resolve(a, gunDomain).defs.values()].flatMap((def) =>
+      (def.displaySolids ?? def.solids).map((s) => ({ family: def.family, id: s.id })),
+    ),
+  );
+
 describe('palette migration', () => {
-  it('reproduces the old FAMILY_COLORS lookup bit-identically for every solid', () => {
-    let checked = 0;
-    for (const assembly of assemblies()) {
-      for (const def of resolve(assembly, gunDomain).defs.values()) {
-        for (const s of def.displaySolids ?? def.solids) {
-          expect(srgbToHex(solidColor(GUN_PALETTE, def.family, s.id)), `${def.family}/${s.id}`).toBe(
-            oldColor(def.family, s.id),
-          );
-          checked += 1;
+  it('reproduces the old FAMILY_COLORS lookup bit-identically for every solid of a role that had a colour', () => {
+    const old = renderedSolids().filter((x) => x.family in OLD_FAMILY_COLORS || x.id === 'floorplate');
+    expect(old.length).toBeGreaterThan(1000);
+    for (const { family, id } of old) {
+      expect(srgbToHex(solidColor(GUN_PALETTE, family, id)), `${family}/${id}`).toBe(oldColor(family, id));
+    }
+  });
+});
+
+describe('palette coverage', () => {
+  /** Every role any family can report: defaults, plus each param varied on its own across all its values. */
+  const reportedRoles = (): Set<string> => {
+    const roles = new Set<string>();
+    for (const family of Object.values(FAMILIES)) {
+      const defaults = Object.fromEntries(Object.entries(family.params).map(([k, spec]) => [k, spec.default]));
+      roles.add(family.build(defaults).family);
+      for (const [name, spec] of Object.entries(family.params)) {
+        for (const value of spec.values) {
+          roles.add(family.build({ ...defaults, [name]: value }).family);
         }
       }
     }
-    expect(checked).toBeGreaterThan(1000);
+    return roles;
+  };
+
+  it('has a family colour for every role a family build can report', () => {
+    for (const role of reportedRoles()) {
+      expect(GUN_PALETTE.familyColors, role).toHaveProperty(role);
+    }
+  });
+
+  it('never needs the fallback for any solid of any archetype or template sweep', () => {
+    const fallback = srgbToHex(GUN_PALETTE.fallbackColor);
+    for (const { family, id } of renderedSolids()) {
+      expect(srgbToHex(solidColor(GUN_PALETTE, family, id)), `${family}/${id}`).not.toBe(fallback);
+    }
   });
 });
 
