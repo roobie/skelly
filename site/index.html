@@ -178,13 +178,14 @@
       <section class="card" aria-labelledby="gungen-title">
         <div class="card-heading">
           <h2 id="gungen-title"><a href="gungen/">gungen</a></h2>
-          <p>A super-low-poly firearm generator. Generate from a template, or open a validation fixture.</p>
+          <p>A super-low-poly firearm generator. Generate from a template, open a validation fixture, or view a curated design.</p>
         </div>
         <form id="gungen-form">
           <fieldset class="choice-row">
             <legend class="sr-only">Gungen starting point</legend>
             <label><input type="radio" name="gungen-mode" value="template" checked /> Generate template</label>
             <label><input type="radio" name="gungen-mode" value="fixture" /> Open fixture</label>
+            <label><input type="radio" name="gungen-mode" value="design" /> Open design</label>
           </fieldset>
           <div id="gungen-template-fields" class="form-grid">
             <label>Template
@@ -245,6 +246,24 @@
               </select>
             </label>
             <p class="muted">Fixtures show the assembly and its expected validation result.</p>
+          </div>
+          <div id="gungen-design-fields" class="form-grid" hidden>
+            <label>Design
+              <select name="design" data-url-param="design" id="gungen-design">
+                <option value="archetype-ak">archetype-ak</option>
+                <option value="archetype-ar-free-float">archetype-ar-free-float</option>
+                <option value="archetype-ar">archetype-ar</option>
+                <option value="archetype-battle-rifle">archetype-battle-rifle</option>
+                <option value="archetype-bolt-rifle-box">archetype-bolt-rifle-box</option>
+                <option value="archetype-bolt-rifle">archetype-bolt-rifle</option>
+                <option value="archetype-bullpup">archetype-bullpup</option>
+                <option value="archetype-pistol">archetype-pistol</option>
+                <option value="archetype-pump-shotgun">archetype-pump-shotgun</option>
+                <option value="archetype-revolver">archetype-revolver</option>
+                <option value="archetype-smg">archetype-smg</option>
+              </select>
+            </label>
+            <p class="muted">Designs open read-only metadata with in-memory parameter editing in the viewer.</p>
           </div>
           <div class="form-grid">
             <label>Overrides (optional)

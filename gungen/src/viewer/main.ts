@@ -15,14 +15,17 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
+import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import { buildDesignViewModel } from './designViewModel.ts';
 import {
   applyOverrides,
   buildPanelModel,
@@ -54,11 +57,19 @@ const fixtures = Object.entries(
   })
   .sort((a, b) => a.name.localeCompare(b.name));
 
+const DESIGN_EXTENSION = /\.json$/;
+const designs = Object.entries(
+  import.meta.glob<string>('../../designs/*.json', { eager: true, import: 'default', query: '?raw' }),
+)
+  .map(([path, text]) => ({ name: path.split('/').at(-1)!.replace(DESIGN_EXTENSION, ''), text }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
 const select = $<HTMLSelectElement>('fixture');
 const fileInput = $<HTMLInputElement>('file');
 const description = $<HTMLParagraphElement>('description');
+const designInfo = $<HTMLElement>('design-info');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
 const hover = $<HTMLParagraphElement>('hover');
@@ -87,7 +98,9 @@ const saveUiState = () => {
 /** Keeps the address bar a shareable link for the current model, including panel overrides. */
 const syncUrl = () => {
   const params = new URLSearchParams();
-  if (uiState.assembly.kind === 'generated') {
+  if (activeDesign) {
+    params.set('design', activeDesign.name);
+  } else if (uiState.assembly.kind === 'generated') {
     params.set('template', uiState.template);
     params.set('seed', uiState.seed);
   } else if (uiState.assembly.kind === 'fixture') {
@@ -153,6 +166,7 @@ let baseline: Assembly | undefined;
 let activeTemplate: Template | undefined;
 /** Connections the last panel edit pruned (a port the edited part no longer has), for the panel's note. */
 let lastDropped: readonly Connection[] = [];
+let activeDesign: { readonly name: string; readonly source: DesignLoadResult; loaded: DesignLoadResult } | undefined;
 
 const redraw = () => {
   if (!report) {
@@ -223,11 +237,90 @@ const renderPanel = (assembly: Assembly) => {
   );
 };
 
+const renderDesignInfo = () => {
+  designInfo.replaceChildren();
+  $<HTMLButtonElement>('save').hidden = Boolean(activeDesign);
+  if (!activeDesign) {
+    return;
+  }
+  const model = buildDesignViewModel(activeDesign.loaded, activeDesign.name);
+  const line = (label: string, value: string): HTMLParagraphElement => {
+    const p = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = `${label}:`;
+    p.append(strong, ` ${value}`);
+    return p;
+  };
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'Design';
+  designInfo.append(heading, line('Name', model.name));
+  if (model.kind === 'fatal') {
+    const error = document.createElement('p');
+    error.className = 'design-error';
+    error.textContent = `${model.errorCode}: ${model.errorMessage}`;
+    designInfo.append(error);
+    if (model.declaredStatus) {
+      designInfo.append(line('Declared status', model.declaredStatus));
+    }
+    return;
+  }
+
+  designInfo.append(
+    line('Template', model.template),
+    line('Declared status', model.declaredStatus),
+    line('Loaded status', model.loadedStatus),
+  );
+  const locks = document.createElement('p');
+  const params = Object.entries(model.locks.params).flatMap(([part, names]) => names.map((name) => `${part}.${name}`));
+  const optional = model.locks.optionalParts.map((part) => `${part} presence`);
+  locks.textContent = `Locks: ${[...params, ...optional].join(', ') || 'none'}`;
+  designInfo.append(locks);
+
+  if (model.issues.length === 0) {
+    designInfo.append(line('Issues', 'none'));
+  } else {
+    const designIssues = document.createElement('ul');
+    designIssues.className = 'design-issues';
+    for (const issue of model.issues) {
+      const item = document.createElement('li');
+      const code = document.createElement('code');
+      code.textContent = issue.code;
+      item.append(code, ` ${issue.message}`);
+      designIssues.append(item);
+    }
+    designInfo.append(designIssues);
+  }
+};
+
+const clearRenderedModel = () => {
+  if (layers) {
+    for (const group of Object.values(layers)) {
+      scene.remove(group);
+      disposeGroup(group);
+    }
+  }
+  layers = undefined;
+  current = undefined;
+  report = undefined;
+  focused = undefined;
+  framed = false;
+  paramPanel.replaceChildren();
+  description.textContent = '';
+  status.textContent = '';
+  issueList.replaceChildren();
+};
+
 const load = (assembly: Assembly) => {
   current = assembly;
+  if (activeDesign?.source.ok) {
+    const { source } = activeDesign;
+    activeDesign.loaded = loadGunDesign(JSON.stringify({ ...source.design, status: source.declaredStatus, assembly }));
+  }
   report = validate(assembly, gunDomain);
   focused = undefined;
   renderPanel(assembly);
+  renderDesignInfo();
   redraw();
   renderParamPanel();
 };
@@ -329,6 +422,18 @@ const renderPartCard = (entry: PanelPart): HTMLElement => {
   const card = document.createElement('fieldset');
   card.className = entry.optional ? 'param-part optional' : 'param-part';
   card.append(cardTitle(entry));
+  if (entry.prefab) {
+    const prefab = document.createElement('div');
+    prefab.className = entry.prefab.stale ? 'part-prefab stale' : 'part-prefab';
+    const label = document.createElement('div');
+    label.textContent = `prefab: ${entry.prefab.label}${entry.prefab.stale ? ' · stale' : ''}`;
+    const fixed = document.createElement('div');
+    fixed.textContent = `fixes ${Object.entries(entry.prefab.fixedParams)
+      .map(([name, value]) => `${name}=${value}`)
+      .join(', ')}`;
+    prefab.append(label, fixed);
+    card.append(prefab);
+  }
   if (entry.optional) {
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -349,7 +454,11 @@ const renderParamPanel = () => {
     paramPanel.replaceChildren();
     return;
   }
-  const model = buildPanelModel(current, baseline, gunDomain, activeTemplate);
+  const designModel = activeDesign ? buildDesignViewModel(activeDesign.loaded, activeDesign.name) : undefined;
+  const model = buildPanelModel(current, baseline, gunDomain, {
+    template: activeTemplate,
+    prefabsByPart: designModel?.kind === 'loaded' ? designModel.prefabsByPart : {},
+  });
   const nodes: HTMLElement[] = [];
 
   if (lastDropped.length > 0) {
@@ -388,6 +497,40 @@ const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = []) =
 
 // ---- UI wiring ----
 
+const openDesign = (name: string, overrides = EMPTY_OVERRIDES) => {
+  const file = designs.find((candidate) => candidate.name === name);
+  const source: DesignLoadResult = file
+    ? loadGunDesign(file.text)
+    : {
+        ok: false,
+        declaredStatus: undefined,
+        error: { code: 'invalid-shape', message: `design file "${name}.json" was not found` },
+      };
+  activeDesign = { name, source, loaded: source };
+  uiState.overrides = overrides;
+  select.value = `design:${name}`;
+  lastDropped = [];
+  if (!source.ok) {
+    baseline = undefined;
+    activeTemplate = undefined;
+    clearRenderedModel();
+    renderDesignInfo();
+    syncUrl();
+    saveUiState();
+    return;
+  }
+
+  baseline = source.design.assembly;
+  activeTemplate = TEMPLATES.find((template) => template.name === source.design.template);
+  if (activeTemplate) {
+    templateSelect.value = activeTemplate.name;
+  }
+  const assembly = hasOverrides(overrides) ? applyOverrides(baseline, gunDomain, activeTemplate, overrides) : baseline;
+  load(assembly);
+  syncUrl();
+  saveUiState();
+};
+
 const groups = new Map<string, HTMLOptGroupElement>();
 for (const f of fixtures) {
   const kind = f.name.split('-')[0]!;
@@ -400,12 +543,24 @@ for (const f of fixtures) {
   }
   group.append(new Option(f.name, f.name));
 }
+const designGroup = document.createElement('optgroup');
+designGroup.label = 'Designs';
+for (const design of designs) {
+  designGroup.append(new Option(design.name, `design:${design.name}`));
+}
+select.append(designGroup);
 select.addEventListener('change', () => {
+  if (select.value.startsWith('design:')) {
+    openDesign(select.value.slice('design:'.length));
+    return;
+  }
   const f = fixtures.find((x) => x.name === select.value);
   if (!f) {
     return;
   }
   framed = false;
+  activeDesign = undefined;
+  renderDesignInfo();
   uiState.assembly = { kind: 'fixture', name: f.name };
   uiState.overrides = EMPTY_OVERRIDES;
   baseline = f;
@@ -429,6 +584,8 @@ fileInput.addEventListener('change', async () => {
       return;
     }
     const { assembly } = parsed;
+    activeDesign = undefined;
+    renderDesignInfo();
     select.querySelector('option[value=""]')?.remove();
     select.add(new Option(`${assembly.name} (file)`, ''), 0);
     select.selectedIndex = 0;
@@ -532,6 +689,8 @@ const runGenerator = (step = 0, preserveOverrides = false) => {
     generated = generate(template, gunDomain, seed);
   }
   seedInput.value = String(seed);
+  activeDesign = undefined;
+  renderDesignInfo();
   uiState.assembly = { kind: 'generated' };
   uiState.template = template.name;
   uiState.seed = String(seed);
@@ -585,8 +744,8 @@ $<HTMLButtonElement>('save').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// ?fixture=<name> opens a fixture; ?template=<name>&seed=<n> generates one;
-// either can add &set=<part.param:value,...> to override params, or
+// ?fixture=<name> opens a fixture; ?design=<name> loads a curated design;
+// ?template=<name>&seed=<n> generates one. Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
 const querySet = query.get('set');
@@ -595,7 +754,10 @@ if (querySet !== null) {
 }
 const initialTemplate = TEMPLATES.find((t) => t.name === query.get('template'));
 const queryFixture = fixtures.find((f) => f.name === query.get('fixture'));
-if (initialTemplate) {
+const queryDesign = query.get('design');
+if (queryDesign !== null) {
+  openDesign(queryDesign, uiState.overrides);
+} else if (initialTemplate) {
   templateSelect.value = initialTemplate.name;
   seedInput.value = query.get('seed') ?? '0';
   uiState.template = initialTemplate.name;

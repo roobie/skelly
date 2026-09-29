@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/index.html');
+const JSON_FILE = /\.json$/;
 
 const paramsReadBy = (sources) => {
   const found = new Set();
@@ -62,5 +63,11 @@ describe('site launchers track the games’ URL parameters', () => {
       .map((name) => JSON.parse(read(`gungen/fixtures/${name}`)).name)
       .sort();
     assert.deepEqual(optionValues('gungen-fixture').sort(), fixtureNames);
+
+    const designNames = readdirSync(join(ROOT, 'gungen/designs'))
+      .filter((name) => name.endsWith('.json'))
+      .map((name) => name.replace(JSON_FILE, ''))
+      .sort();
+    assert.deepEqual(optionValues('gungen-design').sort(), designNames);
   });
 });

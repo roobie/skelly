@@ -34,6 +34,12 @@ export interface PanelParam {
   readonly state: ParamState;
 }
 
+export interface PanelPrefab {
+  readonly label: string;
+  readonly fixedParams: Readonly<Record<string, string>>;
+  readonly stale: boolean;
+}
+
 export interface PanelPart {
   readonly id: string;
   readonly family: string;
@@ -41,6 +47,7 @@ export interface PanelPart {
   /** True when the template can omit this part (slot chance < 1). Always false without a template. */
   readonly optional: boolean;
   readonly params: readonly PanelParam[];
+  readonly prefab?: PanelPrefab;
 }
 
 /** An optional slot the template declares that the current model doesn't use. */
@@ -52,6 +59,23 @@ export interface PanelSlot {
 }
 
 export type PanelEntry = PanelPart | PanelSlot;
+
+export interface PanelModelOptions {
+  readonly template: Template | undefined;
+  readonly prefabsByPart?: Readonly<Record<string, PanelPrefab>>;
+}
+
+const panelContext = (
+  context: Template | PanelModelOptions | undefined,
+): readonly [Template | undefined, Readonly<Record<string, PanelPrefab>>] => {
+  if (!context) {
+    return [undefined, {}];
+  }
+  if ('slots' in context) {
+    return [context, {}];
+  }
+  return [context.template, context.prefabsByPart ?? {}];
+};
 
 const slotOf = (template: Template | undefined, id: string) => template?.slots.find((s) => s.id === id);
 
@@ -97,8 +121,9 @@ export const buildPanelModel = (
   current: Assembly,
   baseline: Assembly,
   domain: Domain,
-  template: Template | undefined,
+  context: Template | PanelModelOptions | undefined,
 ): readonly PanelEntry[] => {
+  const [template, prefabsByPart] = panelContext(context);
   const resolved = resolve(current, domain);
   const entries: PanelEntry[] = [];
 
@@ -119,7 +144,15 @@ export const buildPanelModel = (
       const state = paramState(r, current.parts[id]?.params?.[name], baseline.parts[id]?.params?.[name]);
       return { name, current: r.value, values, state };
     });
-    entries.push({ id, family: inst.family, present: true, optional: (slotOf(template, id)?.chance ?? 1) < 1, params });
+    const prefab = prefabsByPart[id];
+    entries.push({
+      id,
+      family: inst.family,
+      present: true,
+      optional: (slotOf(template, id)?.chance ?? 1) < 1,
+      params,
+      ...(prefab ? { prefab } : {}),
+    });
   }
 
   if (template) {
