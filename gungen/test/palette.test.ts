@@ -7,6 +7,7 @@ import { createPalette, GUN_PALETTE, hexToSrgb, solidColor, srgbToHex } from '..
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { loadFixtures } from './helpers.ts';
+import { sweepGroup } from './sweeps.ts';
 
 /** Frozen copy of the pre-palette scene.ts table; the migration must not change any colour it produced. */
 const OLD_FAMILY_COLORS: Record<string, number> = {
@@ -34,26 +35,38 @@ const oldColor = (family: string, solidId: string): number => {
 
 const SEEDS = 40;
 
-const assemblies = (): Assembly[] => [
-  ...loadFixtures().filter((f) => f.name.startsWith('archetype-')),
-  ...TEMPLATES.flatMap((t) => Array.from({ length: SEEDS }, (_, seed) => generate(t, gunDomain, seed))),
-];
+const fixtureAssemblies = (): Assembly[] => loadFixtures().filter((f) => f.name.startsWith('archetype-'));
+const sweptAssemblies = (): Assembly[] =>
+  TEMPLATES.flatMap((t) => Array.from({ length: SEEDS }, (_, seed) => generate(t, gunDomain, seed)));
 
-/** Every (role, solid id) pair rendered by the archetype fixtures and the template sweep. */
-const renderedSolids = (): { family: string; id: string }[] =>
-  assemblies().flatMap((a) =>
+/** Every (role, solid id) pair rendered by the given assemblies. */
+const renderedSolids = (assemblies: Assembly[]): { family: string; id: string }[] =>
+  assemblies.flatMap((a) =>
     [...resolve(a, gunDomain).defs.values()].flatMap((def) =>
       (def.displaySolids ?? def.solids).map((s) => ({ family: def.family, id: s.id })),
     ),
   );
 
 describe('palette migration', () => {
-  it('reproduces the old FAMILY_COLORS lookup bit-identically for every solid of a role that had a colour', () => {
-    const old = renderedSolids().filter((x) => x.family in OLD_FAMILY_COLORS || x.id === 'floorplate');
-    expect(old.length).toBeGreaterThan(1000);
-    for (const { family, id } of old) {
-      expect(srgbToHex(solidColor(GUN_PALETTE, family, id)), `${family}/${id}`).toBe(oldColor(family, id));
-    }
+  const oldColored = (assemblies: Assembly[]) =>
+    renderedSolids(assemblies).filter((x) => x.family in OLD_FAMILY_COLORS || x.id === 'floorplate');
+  const mismatches = (solids: { family: string; id: string }[]) =>
+    solids
+      .filter(({ family, id }) => srgbToHex(solidColor(GUN_PALETTE, family, id)) !== oldColor(family, id))
+      .map(({ family, id }) => `${family}/${id}`);
+
+  it('reproduces the old FAMILY_COLORS lookup bit-identically for every archetype solid of a role that had a colour', () => {
+    const old = oldColored(fixtureAssemblies());
+    expect(old.length).toBeGreaterThan(50);
+    expect(mismatches(old)).toEqual([]);
+  });
+
+  sweepGroup('reproduces the old FAMILY_COLORS lookup bit-identically across the template sweep', () => {
+    it('passes', () => {
+      const old = oldColored(sweptAssemblies());
+      expect(old.length).toBeGreaterThan(1000);
+      expect(mismatches(old)).toEqual([]);
+    });
   });
 });
 
@@ -79,11 +92,21 @@ describe('palette coverage', () => {
     }
   });
 
-  it('never needs the fallback for any solid of any archetype or template sweep', () => {
+  const usingFallback = (assemblies: Assembly[]) => {
     const fallback = srgbToHex(GUN_PALETTE.fallbackColor);
-    for (const { family, id } of renderedSolids()) {
-      expect(srgbToHex(solidColor(GUN_PALETTE, family, id)), `${family}/${id}`).not.toBe(fallback);
-    }
+    return renderedSolids(assemblies)
+      .filter(({ family, id }) => srgbToHex(solidColor(GUN_PALETTE, family, id)) === fallback)
+      .map(({ family, id }) => `${family}/${id}`);
+  };
+
+  it('never needs the fallback for any solid of any archetype', () => {
+    expect(usingFallback(fixtureAssemblies())).toEqual([]);
+  });
+
+  sweepGroup('never needs the fallback for any solid of the template sweep', () => {
+    it('passes', () => {
+      expect(usingFallback(sweptAssemblies())).toEqual([]);
+    });
   });
 });
 
