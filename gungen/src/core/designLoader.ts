@@ -346,18 +346,11 @@ const prefabIssues = (assembly: Assembly, prefabs: readonly DesignPrefabEntry[])
 const toDesignIssues = (issues: readonly Issue[]): DesignIssue[] =>
   issues.map((issue) => ({ code: 'infeasible', message: `[${issue.rule}] ${issue.message}`, parts: issue.parts }));
 
-/**
- * Domain rules assume every part is placed, and some read placements without a
- * guard. When the structure is broken or a part is unplaced, report those
- * problems and stop, rather than running rules on a partial layout.
- */
+/** Domain rules lint the placed portions of a build even when its structure is broken. */
 const feasibilityIssues = (assembly: Assembly, domain: Domain): DesignIssue[] => {
   const resolved = resolve(assembly, domain);
   const unplaced = [...resolved.defs.keys()].filter((id) => !resolved.placed.has(id));
-  if (resolved.issues.length === 0 && unplaced.length === 0) {
-    return toDesignIssues(validate(assembly, domain).issues);
-  }
-  const issues = toDesignIssues(resolved.issues);
+  const issues = toDesignIssues(validate(assembly, domain).issues);
   const unreported = unplaced.filter((id) => !resolved.issues.some((issue) => issue.parts.includes(id)));
   if (unreported.length > 0) {
     // Retain the loader's disconnected-part message where a required-port or

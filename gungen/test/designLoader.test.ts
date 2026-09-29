@@ -181,6 +181,28 @@ describe('loadDesign: change policy', () => {
     }
   });
 
+  it('runs domain rules on placed parts when one part is disconnected', () => {
+    const parts = {
+      ...baseAssembly.parts,
+      receiver: { ...baseAssembly.parts.receiver!, params: { ...baseAssembly.parts.receiver?.params, feed: 'tube' } },
+    };
+    const assembly: Assembly = {
+      ...baseAssembly,
+      parts,
+      connections: baseAssembly.connections.filter((connection) => connection.from !== 'receiver.barrel'),
+    };
+    const result = load(makeDesign({ status: 'draft', assembly }));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.declaredStatus).toBe('draft');
+      expect(result.design.status).toBe('draft');
+      expect(
+        result.issues.some((issue) => issue.message.startsWith('[feed-match]') && issue.parts?.includes('lower')),
+      ).toBe(true);
+      expect(result.issues.some((issue) => issue.message.includes('not connected to the root'))).toBe(true);
+    }
+  });
+
   it('a fully placed but rule-breaking design is infeasible with the rule named', () => {
     const result = load(makeDesign({ assembly: loadFixture('broken-keep-out') }));
     expect(result.ok && result.issues.some((i) => i.code === 'infeasible' && i.message.startsWith('[keep-out]'))).toBe(

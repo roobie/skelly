@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import type { DesignLoadResult } from '../src/core/design.ts';
 import { loadDesign } from '../src/core/designLoader.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -58,6 +59,39 @@ describe('buildDesignViewModel', () => {
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0]?.code).toBe('prefab-values-mismatch');
     expect(result.prefabsByPart.barrel).toMatchObject({ label: 'test-barrel v1', stale: true });
+  });
+
+  it('maps live rule issues to the part cards they name', () => {
+    const values = JSON.parse(arText);
+    values.status = 'draft';
+    values.assembly.parts.receiver.params.feed = 'tube';
+    values.assembly.connections = values.assembly.connections.filter(
+      (connection: { from: string }) => connection.from !== 'receiver.barrel',
+    );
+    values.assembly.parts.barrel = undefined;
+    const loaded = loadGunDesign(JSON.stringify(values));
+    const result = buildDesignViewModel(loaded, 'archetype-ar-broken');
+    expect(result.kind).toBe('loaded');
+    if (result.kind !== 'loaded') {
+      throw new Error('expected a loaded draft');
+    }
+    expect(result.issuesByPart.lower?.some((issue) => issue.message.startsWith('[feed-match]'))).toBe(true);
+    expect(result.issuesByPart.receiver?.some((issue) => issue.message.startsWith('[feed-match]'))).toBe(true);
+    expect(
+      result.infoIssues.some((issue) => issue.code === 'template-choice' && issue.message.includes('barrel')),
+    ).toBe(true);
+    if (!loaded.ok) {
+      throw new Error('expected a loaded draft');
+    }
+    const withPartlessWarning: DesignLoadResult = {
+      ...loaded,
+      design: { ...loaded.design, status: 'draft' },
+      issues: [...loaded.issues, { code: 'infeasible', message: '[firing-grip] missing', parts: [] }],
+    };
+    const infoModel = buildDesignViewModel(withPartlessWarning, 'archetype-ar-broken');
+    expect(
+      infoModel.kind === 'loaded' && infoModel.infoIssues.some((issue) => issue.message.includes('firing-grip')),
+    ).toBe(true);
   });
 
   it('turns a malformed design into a fatal error view', () => {
