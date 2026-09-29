@@ -5,7 +5,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import type { Assembly } from '../core/schema.ts';
+import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import { validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 
@@ -27,7 +27,13 @@ const expectationNote = (expected: string[] | undefined, matches: boolean): stri
 
 let unexpected = 0;
 for (const file of files) {
-  const assembly = JSON.parse(readFileSync(file, 'utf8')) as Assembly;
+  const parsed = parseAssemblyJson(readFileSync(file, 'utf8'));
+  if (!parsed.ok) {
+    unexpected += 1;
+    console.log(`INVALID  ${file}: ${formatParseError(parsed.error)}`);
+    continue;
+  }
+  const { assembly } = parsed;
   const report = validate(assembly, gunDomain);
   const failed = [...new Set(report.issues.map((i) => i.rule))].sort();
   const expected = assembly.expect ? [...assembly.expect].sort() : undefined;
