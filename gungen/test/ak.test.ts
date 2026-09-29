@@ -7,7 +7,7 @@ import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { ak } from '../src/gun/templates.ts';
-import { loadFixture } from './helpers.ts';
+import { loadFixture, variant as variantOf } from './helpers.ts';
 
 const akFixture = loadFixture('archetype-ak');
 const extrudedOf = (solid: Solid): Extract<Solid, { kind: 'extruded-polygon' }> => {
@@ -310,5 +310,26 @@ describe('AK-pattern archetype', () => {
     expect(missingBlock.filter(({ rule }) => rule === 'required-ports').map(({ message }) => message)).toContain(
       'gas-cylinder.front (gas-block mount on gas-cylinder) is required but empty.',
     );
+  });
+  it('takes a standard handguard on the AK receiver: the gas-cylinder port sits on the cylinder axis in both layouts', () => {
+    const standard = variantOf('archetype-ak', (a) => {
+      a.parts.handguard!.params = { layout: 'standard' };
+    });
+    expect(validate(standard, gunDomain).issues).toEqual([]);
+    expect(validate(loadFixture('ak-standard-handguard'), gunDomain).issues).toEqual([]);
+    for (const layout of ['ak', 'standard']) {
+      const port = FAMILIES.handguard!.build({ layout }).ports.find(({ id }) => id === 'gas-cylinder')!;
+      expect(port.pos[1]).toBe(2);
+    }
+  });
+
+  it('offers the standard handguard in the AK template, always clamped so barrel S never meets a free-float one', () => {
+    const layouts = new Set<string>();
+    for (let seed = 0; seed < 300; seed++) {
+      const params = generate(ak, gunDomain, seed).parts.handguard!.params ?? {};
+      layouts.add(String(params.layout));
+      expect(params.mount ?? 'clamped', `seed ${seed}`).toBe('clamped');
+    }
+    expect([...layouts].sort()).toEqual(['ak', 'standard']);
   });
 });
