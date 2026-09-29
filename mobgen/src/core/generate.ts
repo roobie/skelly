@@ -48,6 +48,10 @@ export interface BodyPlanDef {
     template: Template,
   ) => { readonly params: Record<string, number>; readonly wounds: Wound[] };
   readonly build: (genome: Genome, template: Template) => Body;
+  /** Every param a genome for this plan must carry, in sampling order. */
+  readonly paramOrder: readonly string[];
+  /** Bone ids a wound may sit on. */
+  readonly woundBones: readonly string[];
 }
 
 const BODY_PLANS = new Map<BodyPlan, BodyPlanDef>();
@@ -71,8 +75,36 @@ export const generate = (template: Template, seed: number, overrides?: { readonl
   return { template: template.name, seed, voxelSize: overrides?.voxelSize ?? template.voxelSize, params, wounds };
 };
 
+/** Throws unless the genome is complete for its template's body plan: every param present and finite,
+ * wound numbers finite, wound bones allowed. A genome parsed from JSON can be anything, and a missing
+ * param would otherwise surface as NaN geometry far from the cause. */
+export const checkGenome = (template: Template, genome: Genome): void => {
+  const plan = planOf(template.bodyPlan);
+  const where = `genome "${genome.template}" seed ${genome.seed}`;
+  if (!Number.isFinite(genome.voxelSize) || genome.voxelSize <= 0) {
+    throw new Error(`${where}: voxelSize must be a positive finite number, got ${String(genome.voxelSize)}`);
+  }
+  for (const name of plan.paramOrder) {
+    const value = genome.params[name];
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      throw new Error(`${where}: param "${name}" must be a finite number, got ${String(value)}`);
+    }
+  }
+  genome.wounds.forEach((w, i) => {
+    if (!plan.woundBones.includes(w.bone)) {
+      throw new Error(`${where}: wound ${i} has bone "${w.bone}", allowed: ${plan.woundBones.join(', ')}`);
+    }
+    for (const field of ['t', 'angle', 'radius'] as const) {
+      if (typeof w[field] !== 'number' || !Number.isFinite(w[field])) {
+        throw new Error(`${where}: wound ${i} ${field} must be a finite number, got ${String(w[field])}`);
+      }
+    }
+  });
+};
+
 export const build = (genome: Genome): Body => {
   const template = templateByName(genome.template);
+  checkGenome(template, genome);
   return planOf(template.bodyPlan).build(genome, template);
 };
 
@@ -95,20 +127,34 @@ export const realize = (genome: Genome): Realized => {
 
 export interface ValidGeneration {
   readonly genome: Genome;
-  readonly report: Report;
+  /** What realizing the winning genome produced, so callers need not realize it again. */
+  readonly realized: Realized;
   /** The seed that produced it. */
   readonly seed: number;
   /** How many seeds were tried, including the one that worked. */
   readonly attempts: number;
 }
 
-/** Tries seed, seed + 1, ... until one gives a genome that passes every rule, or maxAttempts run out. */
-export const generateValid = (template: Template, seed: number, maxAttempts = 100): ValidGeneration | undefined => {
+export interface ValidSearchOptions {
+  readonly maxAttempts?: number;
+  /** Passed to generate(). */
+  readonly overrides?: { readonly voxelSize?: number } | undefined;
+  /** 1 (default) tries seed, seed + 1, ...; -1 tries seed, seed - 1, ... */
+  readonly direction?: 1 | -1;
+}
+
+/** Tries seed, seed + direction, ... until one gives a genome that passes every rule, or maxAttempts run out. */
+export const generateValid = (
+  template: Template,
+  seed: number,
+  { maxAttempts = 100, overrides, direction = 1 }: ValidSearchOptions = {},
+): ValidGeneration | undefined => {
   for (let i = 0; i < maxAttempts; i++) {
-    const genome = generate(template, seed + i);
-    const { report } = realize(genome);
-    if (report.ok) {
-      return { genome, report, seed: seed + i, attempts: i + 1 };
+    const trySeed = seed + direction * i;
+    const genome = generate(template, trySeed, overrides);
+    const realized = realize(genome);
+    if (realized.report.ok) {
+      return { genome, realized, seed: trySeed, attempts: i + 1 };
     }
   }
   return undefined;

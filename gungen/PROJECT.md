@@ -1153,18 +1153,27 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
 
 Removal plan, one line per gated sweep:
 
-- (a) Replace by the same property over `fixtures/` plus 3.1's published
-  `designs/`, and delete the seed loop:
-  - handguard within receiver (`handguard.test.ts`): a property of a
-    finished design, and the 1000-seed loop is the most expensive test;
-  - trigger guards (`triggerGuard.test.ts`): same property over a design;
-  - anchors, one hold per design and no selection errors (`anchors.test.ts`,
-    `sweep`): holds are chosen per design, so curated designs cover them;
-  - palette no-fallback and old-colour identity (`palette.test.ts`): needs
-    only the set of solids that get rendered;
-  - triangle budget (`mesh.test.ts`): the budget is per shipped design;
-  - frame checks on generated assemblies (`anchors.test.ts`): the archetype
-    half already runs locally.
+- (a) **Replaced** by the same property over `fixtures/` plus the published
+  `designs/`; the seed loops and their CI gate are deleted. Each new test is
+  local (not gated) and iterates `loadCorpus()` in `test/helpers.ts`: every
+  fixture except the `broken-*` ones (they exist to break a rule; the
+  palette and triangle-budget tests use every fixture, since none of them
+  breaks a colour or a budget) plus every design:
+  - handguard within receiver (`handguard.test.ts`, "keeps the handguard
+    within its receiver in every fixture and design");
+  - trigger guards (`triggerGuard.test.ts`, "guards the trigger volume in
+    every fixture and design");
+  - anchors (`anchors.test.ts`, "every fixture and design resolves exactly
+    one hold without a selection error", which also replaces the `sweep`
+    "never errors on a valid generated design" tests);
+  - palette no-fallback and old-colour identity (`palette.test.ts`, "never
+    needs the fallback for any solid of any fixture or design" and
+    "reproduces the old FAMILY_COLORS lookup bit-identically across every
+    fixture and design");
+  - triangle budget (`mesh.test.ts`, "stays under 5000 triangles in every
+    fixture and design");
+  - frame checks (`anchors.test.ts`, "fixture and design frames are
+    unit-length and right-handed; hold frames sit within their part").
 - (b) Merge: the two 300-seed loops per template in `generate.test.ts`
   ("never produces a structurally broken file" and "is valid at least half
   the time") go over the same seeds and become one loop.

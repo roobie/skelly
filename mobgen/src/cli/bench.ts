@@ -16,7 +16,7 @@
 import { performance } from 'node:perf_hooks';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
-import { generate, realize } from '../core/generate.ts';
+import { generateValid } from '../core/generate.ts';
 import {
   allocateBoneTransforms,
   boneTransformsInto,
@@ -25,7 +25,7 @@ import {
   type ParentIndex,
 } from '../core/pose.ts';
 import { chance, range, seededRng } from '../core/random.ts';
-import type { Genome, Template } from '../core/template.ts';
+import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import {
   advanceClock,
@@ -67,22 +67,6 @@ interface PoolEntry {
   readonly parentIndex: ParentIndex;
 }
 
-/** Same search as core/generate.ts's generateValid, duplicated (not imported) so this also times the
- * failed attempts along the way, same as stress.ts's pool build does. */
-const findValid = (
-  template: Template,
-  fromSeed: number,
-  maxAttempts = 100,
-): { readonly genome: Genome } | undefined => {
-  for (let i = 0; i < maxAttempts; i++) {
-    const genome = generate(template, fromSeed + i);
-    if (realize(genome).report.ok) {
-      return { genome };
-    }
-  }
-  return undefined;
-};
-
 console.log(
   `generating ${poolSize} pool actor${poolSize === 1 ? '' : 's'} (templates cycling shambler/runner/brute)\n`,
 );
@@ -94,7 +78,7 @@ let genMaxMs = 0;
 for (let i = 0; i < poolSize; i++) {
   const template = TEMPLATES[i % TEMPLATES.length]!;
   const t0 = performance.now();
-  const found = findValid(template, nextSeed);
+  const found = generateValid(template, nextSeed);
   const ms = performance.now() - t0;
   if (!found) {
     console.error(`no valid ${template.name} within 100 seeds of ${nextSeed}`);
@@ -102,9 +86,8 @@ for (let i = 0; i < poolSize; i++) {
   }
   genTotalMs += ms;
   genMaxMs = Math.max(genMaxMs, ms);
-  const { genome } = found;
+  const { genome, realized } = found;
   nextSeed = genome.seed + 1;
-  const realized = realize(genome);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const legGeometryL = legGeometryFor(realized.body.bones, extents, 'L');
   const walkActor: WalkActor = {
@@ -124,7 +107,7 @@ interface SimActor {
   /** This actor's own WalkActor: shares the pool entry's bones/extents/params/seed, but with its own
    * GaitCache. Several sim actors reference the same pool entry (and so the same params object) at
    * different speeds and different current stepIndex — footfallPeak's cache must be per actor or it
-   * thrashes on almost every call (see mob/gait.ts's GaitCache and mobgen's report). */
+   * thrashes on almost every call (see mob/gait.ts's GaitCache; how much slower that was was not recorded). */
   readonly walkActor: WalkActor;
   readonly speed: number;
   readonly attacker: boolean;
@@ -218,6 +201,7 @@ const updateActor = (actor: SimActor): void => {
     geomL: entry.legGeometryL,
     speed: actor.speed,
     seed: actor.walkActor.seed,
+    cache: actor.walkActor.cache,
   });
   advanceAttack(actor);
   const basePose = walkPose(actor.walkActor, actor.clock, actor.speed);

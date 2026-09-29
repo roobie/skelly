@@ -210,15 +210,40 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  sweepGroup('selects AK-74 or AKM curve data per seed', () => {
+  // Chunked by seed range so each test stays well inside the default timeout (sweeps run only in
+  // CI, see sweeps.ts). Seeing both variants is an aggregate over all 100 seeds, so chunks record
+  // into a memoized set and one final test asserts it (computing any chunk that has not run).
+  const variantSeeds = 100;
+  const variantChunk = 25;
+  const variantsIn = new Map<number, { variant: string; ok: boolean }[]>();
+  const chunkVariants = (from: number) => {
+    let found = variantsIn.get(from);
+    if (!found) {
+      found = Array.from({ length: variantChunk }, (_, i) => {
+        const assembly = generate(ak, gunDomain, from + i);
+        return { variant: assembly.parts.magazine!.params!.variant!, ok: validate(assembly, gunDomain).ok };
+      });
+      variantsIn.set(from, found);
+    }
+    return found;
+  };
+  for (let from = 0; from < variantSeeds; from += variantChunk) {
+    sweepGroup(`selects AK-74 or AKM curve data over seeds ${from}-${from + variantChunk - 1}`, () => {
+      it('passes', () => {
+        for (const [i, { variant, ok }] of chunkVariants(from).entries()) {
+          expect(['ak74', 'akm']).toContain(variant);
+          expect(ok, `seed ${from + i}`).toBe(true);
+        }
+      });
+    });
+  }
+  sweepGroup(`selects both AK-74 and AKM curve data across ${variantSeeds} seeds`, () => {
     it('passes', () => {
       const variants = new Set<string>();
-      for (let seed = 0; seed < 100; seed++) {
-        const assembly = generate(ak, gunDomain, seed);
-        const variant = assembly.parts.magazine!.params!.variant!;
-        variants.add(variant);
-        expect(['ak74', 'akm']).toContain(variant);
-        expect(validate(assembly, gunDomain).ok).toBe(true);
+      for (let from = 0; from < variantSeeds; from += variantChunk) {
+        for (const { variant } of chunkVariants(from)) {
+          variants.add(variant);
+        }
       }
       expect(variants).toEqual(new Set(['ak74', 'akm']));
     });

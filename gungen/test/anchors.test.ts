@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { resolveAnchors } from '../src/core/anchors.ts';
 import type { AnchorFrame } from '../src/core/design.ts';
-import { generate } from '../src/core/generate.ts';
 import { applyDir, applyPoint, cross, dot, length, type Vec3 } from '../src/core/math.ts';
 import { type Resolved, resolve } from '../src/core/resolve.ts';
 import type { Assembly, PartDef, Solid } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, type GunAnchorDeclarations, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { TEMPLATES } from '../src/gun/templates.ts';
-import { loadFixture, loadFixtures } from './helpers.ts';
-import { sweepGroup } from './sweeps.ts';
+import { loadCorpus, loadFixture, loadFixtures } from './helpers.ts';
 
 const EPS = 1e-6;
 const ARCHETYPES = loadFixtures().filter((a) => a.name.startsWith('archetype'));
@@ -112,20 +108,17 @@ describe('hold selection', () => {
     }
   });
 
-  sweepGroup('every template resolves exactly one hold', () => {
-    it('passes', () => {
-      for (const t of TEMPLATES) {
-        let checked = 0;
-        for (let seed = 0; seed < 25; seed++) {
-          const a = generate(t, gunDomain, seed);
-          if (validate(a, gunDomain).ok) {
-            selected(a);
-            checked += 1;
-          }
-        }
-        expect(checked, t.name).toBeGreaterThan(0);
-      }
-    });
+  // Replaces the former CI-only seed sweep and its "never errors on a valid generated design"
+  // sweep (PROJECT.md, "Generator tests", removal plan (a)): exactly one hold, and no selection
+  // error, on every non-broken fixture and every published design.
+  it('every fixture and design resolves exactly one hold without a selection error', () => {
+    const corpus = loadCorpus();
+    expect(corpus.length).toBeGreaterThanOrEqual(22);
+    for (const { label, assembly } of corpus) {
+      const result = select(assembly);
+      expect('code' in result ? result : undefined, label).toBeUndefined();
+      expect(frameDefects(selected(assembly).hold), label).toEqual([]);
+    }
   });
 
   it('holds the integrated pistol grip', () => {
@@ -231,14 +224,14 @@ describe('anchor data', () => {
     expect(facts.declared).toBeGreaterThan(facts.holds);
   });
 
-  sweepGroup('generated frames are unit-length and right-handed; hold frames sit within their part', () => {
-    it('passes', () => {
-      const facts = frameFacts(TEMPLATES.flatMap((t) => [1, 2, 3, 4, 5].map((s) => generate(t, gunDomain, s))));
-      expect(facts.defective).toEqual([]);
-      expect(facts.outside).toEqual([]);
-      expect(facts.holds).toBeGreaterThan(20);
-      expect(facts.declared).toBeGreaterThan(facts.holds);
-    });
+  // Replaces the former CI-only sweep over generated assemblies (removal plan (a)): the same
+  // checks on every non-broken fixture and every published design.
+  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', () => {
+    const facts = frameFacts(loadCorpus().map(({ assembly }) => assembly));
+    expect(facts.defective).toEqual([]);
+    expect(facts.outside).toEqual([]);
+    expect(facts.holds).toBeGreaterThan(20);
+    expect(facts.declared).toBeGreaterThan(facts.holds);
   });
 
   it('resolved frames stay unit-length and orthogonal in assembly space', () => {
@@ -258,27 +251,4 @@ describe('anchor data', () => {
       expect(selected(a).others.muzzle, a.name).toBeDefined();
     }
   });
-});
-
-describe('sweep', () => {
-  for (const t of TEMPLATES) {
-    sweepGroup(`never errors on a valid generated ${t.name} design`, () => {
-      it('passes', () => {
-        let valid = 0;
-        let errors = 0;
-        for (let seed = 0; seed < 300; seed++) {
-          const a = generate(t, gunDomain, seed);
-          if (!validate(a, gunDomain).ok) {
-            continue;
-          }
-          valid += 1;
-          if ('code' in select(a)) {
-            errors += 1;
-          }
-        }
-        expect(errors, t.name).toBe(0);
-        expect(valid, t.name).toBeGreaterThan(100);
-      });
-    });
-  }
 });
