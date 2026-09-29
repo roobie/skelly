@@ -43,7 +43,10 @@ export interface AttackClip {
   readonly keys: readonly AttackKey[];
 }
 
-const zeroKey = (t: number, bones: readonly string[]): AttackKey => ({
+/** A key with every listed bone at [0,0,0] — the clean, zero-slope shape a clip's first/last key needs
+ * (see AttackClip's own doc comment). Exported for reactions.ts's HIT_FLINCH, which authors clips the
+ * same way. */
+export const zeroKey = (t: number, bones: readonly string[]): AttackKey => ({
   t,
   rotations: Object.fromEntries(bones.map((b) => [b, [0, 0, 0]])),
 });

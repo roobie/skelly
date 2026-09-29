@@ -21,6 +21,7 @@ import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import {
   advanceClock,
+  bodyRestExtents,
   footRestExtents,
   type GaitClock,
   INITIAL_CLOCK,
@@ -29,6 +30,7 @@ import {
   walkPose,
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
+import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
@@ -43,6 +45,10 @@ const speedInput = $<HTMLInputElement>('speed');
 const speedValue = $<HTMLSpanElement>('speed-value');
 const attackBtn = $<HTMLButtonElement>('attack-btn');
 const attackLoop = $<HTMLInputElement>('attack-loop');
+const hitBtn = $<HTMLButtonElement>('hit-btn');
+const dieBtn = $<HTMLButtonElement>('die-btn');
+const resetBtn = $<HTMLButtonElement>('reset-btn');
+const dieBackward = $<HTMLInputElement>('die-backward');
 const description = $<HTMLParagraphElement>('description');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
@@ -115,6 +121,7 @@ interface Loaded {
   readonly actor: Actor;
   readonly params: HumanoidParams;
   readonly extents: ReturnType<typeof footRestExtents>;
+  readonly bodyExtents: ReturnType<typeof bodyRestExtents>;
   readonly legGeometry: LegGeometry;
 }
 
@@ -124,9 +131,48 @@ let gridZ = 0;
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
+let hitTime: number | undefined; // seconds into HIT_FLINCH, or undefined when idle
+let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible across repeated hits
+// Death freezes whatever pose was current (walk, standing, or mid-attack) the instant it starts, and
+// plays deathPose forward from that frozen snapshot — same "layer over the current base pose" spirit as
+// a flinch, but frozen rather than live, since a falling body doesn't keep striding underneath itself.
+let deathTime: number | undefined;
+let deathBasePose: Pose | undefined;
+let deathDirection: 1 | -1 = 1;
 
 const playAttack = (): void => {
   attackTime = 0; // (re)starts even if one is already playing
+};
+
+const playHit = (): void => {
+  hitTime = 0; // (re)starts even if one is already playing — layers over whatever's current every frame
+  hitSide = hitSide <= 0 ? 1 : -1; // alternate side each press so the mirror is visible across repeats
+};
+
+/** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
+ * snapshot — a falling body doesn't keep striding underneath itself, unlike a flinch. */
+const playDeath = (): void => {
+  if (!current) {
+    return;
+  }
+  const actor = {
+    bones: current.realized.body.bones,
+    extents: current.extents,
+    params: current.params,
+    seed: current.genome.seed,
+  };
+  const walking = walkOn.checked;
+  const speed = walking ? Number(speedInput.value) : 0;
+  const walkBase: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
+  deathBasePose =
+    attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
+  deathDirection = dieBackward.checked ? -1 : 1;
+  deathTime = 0;
+};
+
+const resetDeath = (): void => {
+  deathTime = undefined;
+  deathBasePose = undefined;
 };
 
 const frame = (): void => {
@@ -236,12 +282,23 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   scene.add(actor.root);
   actor.applyPose(IDENTITY_POSE);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
+  const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
   const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
-  current = { genome, realized, actor, params: genome.params as HumanoidParams, extents, legGeometry };
+  current = {
+    genome,
+    realized,
+    actor,
+    params: genome.params as HumanoidParams,
+    extents,
+    bodyExtents,
+    legGeometry,
+  };
   clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
+  hitTime = undefined;
+  resetDeath();
   groundGroup.position.z = 0;
   updateFineGrid(genome.voxelSize);
   applyLayerVisibility();
@@ -331,10 +388,23 @@ $<HTMLButtonElement>('preset-chase').addEventListener('click', () => {
 });
 
 attackBtn.addEventListener('click', playAttack);
+hitBtn.addEventListener('click', playHit);
+dieBtn.addEventListener('click', playDeath);
+resetBtn.addEventListener('click', resetDeath);
 globalThis.addEventListener('keydown', (e) => {
   // Ignore while typing into a field (e.g. the seed number input).
-  if (e.key.toLowerCase() === 'a' && document.activeElement?.tagName !== 'INPUT') {
+  if (document.activeElement?.tagName === 'INPUT') {
+    return;
+  }
+  const key = e.key.toLowerCase();
+  if (key === 'a') {
     playAttack();
+  } else if (key === 'h') {
+    playHit();
+  } else if (key === 'k') {
+    playDeath();
+  } else if (key === 'r') {
+    resetDeath();
   }
 });
 
@@ -416,6 +486,53 @@ const advanceAttack = (dt: number, clipDuration: number): void => {
   }
 };
 
+/** Ends a flinch once its clip finishes; does nothing else — flinchPose reads hitTime itself. */
+const advanceHit = (dt: number): void => {
+  if (hitTime === undefined) {
+    return;
+  }
+  hitTime += dt;
+  if (hitTime > HIT_FLINCH.duration) {
+    hitTime = undefined;
+  }
+}; // deliberately not gated on death: a fresh hit that lands mid-flinch is fine to just restart.
+
+/** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
+ * standing), optionally attacked, optionally flinched on top. */
+const applyLiveFrame = (loaded: Loaded, dt: number): void => {
+  const walking = walkOn.checked;
+  const speed = walking ? Number(speedInput.value) : 0;
+  advanceWalk(dt, walking, speed);
+  const clip = ATTACK_CLIPS.LUNGE_GRAB!;
+  advanceAttack(dt, clip.duration);
+  advanceHit(dt);
+
+  const actor = {
+    bones: loaded.realized.body.bones,
+    extents: loaded.extents,
+    params: loaded.params,
+    seed: loaded.genome.seed,
+  };
+  const basePose: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
+  const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
+  const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
+  loaded.actor.applyPose(pose);
+};
+
+/** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the
+ * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
+const applyDeathFrame = (loaded: Loaded, dt: number): void => {
+  deathTime = (deathTime ?? 0) + dt;
+  const actor = {
+    bones: loaded.realized.body.bones,
+    extents: loaded.extents,
+    bodyExtents: loaded.bodyExtents,
+    params: loaded.params,
+    seed: loaded.genome.seed,
+  };
+  loaded.actor.applyPose(deathPose(actor, deathBasePose!, deathTime, { direction: deathDirection }));
+};
+
 let lastFrameTime = performance.now();
 renderer.setAnimationLoop(() => {
   const now = performance.now();
@@ -424,21 +541,11 @@ renderer.setAnimationLoop(() => {
   controls.update();
 
   if (current) {
-    const walking = walkOn.checked;
-    const speed = walking ? Number(speedInput.value) : 0;
-    advanceWalk(dt, walking, speed);
-    const clip = ATTACK_CLIPS.LUNGE_GRAB!;
-    advanceAttack(dt, clip.duration);
-
-    const actor = {
-      bones: current.realized.body.bones,
-      extents: current.extents,
-      params: current.params,
-      seed: current.genome.seed,
-    };
-    const basePose: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
-    const pose = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
-    current.actor.applyPose(pose);
+    if (deathTime === undefined) {
+      applyLiveFrame(current, dt);
+    } else {
+      applyDeathFrame(current, dt);
+    }
   }
 
   renderer.render(scene, camera);

@@ -111,8 +111,13 @@ const mergeExtent = (existing: Extent | undefined, p: Vec3, half: number): Exten
   };
 };
 
-/** The 8 world-space corners of each foot bone's rest-pose voxel bounding box; precompute once per actor. */
-export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): ReadonlyMap<string, Extent> => {
+/** Shared by footRestExtents (below) and reactions.ts's bodyRestExtents: every voxel's owning bone's
+ * rest-pose world bounding box, restricted to bones `include` accepts. */
+const restExtentsFor = (
+  bones: readonly Bone[],
+  voxels: Voxels,
+  include: (boneId: string) => boolean,
+): Map<string, Extent> => {
   const extents = new Map<string, Extent>();
   const [nx, ny, nz] = voxels.dims;
   const half = voxels.size / 2;
@@ -124,7 +129,7 @@ export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): Readonl
           continue;
         }
         const bone = bones[owner - 1]!;
-        if (!FEET_BONES.includes(bone.id)) {
+        if (!include(bone.id)) {
           continue;
         }
         const p = worldPosition(voxels, i, j, k);
@@ -134,6 +139,17 @@ export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): Readonl
   }
   return extents;
 };
+
+/** The 8 world-space corners of each foot bone's rest-pose voxel bounding box; precompute once per actor. */
+export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): ReadonlyMap<string, Extent> =>
+  restExtentsFor(bones, voxels, (id) => FEET_BONES.includes(id));
+
+/** Every bone's own rest-pose voxel bounding box (not just the feet) — used by reactions.ts's deathPose to
+ * re-ground the *whole* fallen body (groundOffset, fed this instead of the feet-only extents walkPose/
+ * attackPose use), so a topple's lowest point — whichever bone that ends up being — lands at y=0, not just
+ * the feet. Precompute once per actor, same lifecycle as footRestExtents. */
+export const bodyRestExtents = (bones: readonly Bone[], voxels: Voxels): ReadonlyMap<string, Extent> =>
+  restExtentsFor(bones, voxels, () => true);
 
 /** Exported for tests: the 8 corners of a rest-pose extent, e.g. from footRestExtents. */
 export const corners = (e: Extent): Vec3[] => {
