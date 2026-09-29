@@ -337,6 +337,9 @@ archetype:
   to hit the loading port. *(Fixed in 1.2.)*
 - **The SMG differs from the battle rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
+- **The forend can overrun the shortest tube.** With an S barrel and 50% tube,
+  the tube ends at x=13 while the fixed forend reaches x=17.6. This is currently
+  allowed; decide later whether forend length should scale with tube coverage.
 - **Neighbour params are discrete values, not computed geometry.** A tube's
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
