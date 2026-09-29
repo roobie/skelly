@@ -13,7 +13,7 @@
 // frame and can reuse one scratch buffer forever.
 
 import type { Bone } from './body.ts';
-import { IDENTITY_M, type Mat3, type Transform, type Vec3 } from './math.ts';
+import { IDENTITY_M, lerp3, type Mat3, mat3ToQuat, quatToMat3, slerpQuat, type Transform, type Vec3 } from './math.ts';
 
 export interface Pose {
   /** Translation applied to the root bone, on top of its rotation. */
@@ -24,6 +24,30 @@ export interface Pose {
 }
 
 export const IDENTITY_POSE: Pose = { root: [0, 0, 0], rotations: {} };
+
+/**
+ * Blends two poses, `a` at t=0 and `b` at t=1: root by plain lerp, each bone's rotation by quaternion
+ * slerp (mob/gait.ts's walkPose uses this to cross-fade into an idle stance at low speed; mob/idle.ts's
+ * own cross-fade between stances is a caller's job the same way). A bone missing from one side is treated
+ * as identity there (boneTransforms' own convention for "no entry"), not skipped — so blending from a pose
+ * that never mentions a bone still eases it from its rest orientation, not a discontinuous jump partway
+ * through the blend.
+ */
+export const blendPose = (a: Pose, b: Pose, t: number): Pose => {
+  if (t <= 0) {
+    return a;
+  }
+  if (t >= 1) {
+    return b;
+  }
+  const rotations: Record<string, Mat3> = {};
+  for (const boneId of new Set([...Object.keys(a.rotations), ...Object.keys(b.rotations)])) {
+    const ra = a.rotations[boneId] ?? IDENTITY_M;
+    const rb = b.rotations[boneId] ?? IDENTITY_M;
+    rotations[boneId] = quatToMat3(slerpQuat(mat3ToQuat(ra), mat3ToQuat(rb), t));
+  }
+  return { root: lerp3(a.root, b.root, t), rotations };
+};
 
 /**
  * One bone's own (parent-relative) transform: translate(head_b) ∘ R_b ∘ translate(-head_b), plus —

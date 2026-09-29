@@ -16,7 +16,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, type Realized, realize } from '../core/generate.ts';
-import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
+import type { Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
@@ -31,6 +31,7 @@ import {
   walkPose,
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
+import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
@@ -44,6 +45,7 @@ const voxelSelect = $<HTMLSelectElement>('voxel-size');
 const walkOn = $<HTMLInputElement>('walk-on');
 const speedInput = $<HTMLInputElement>('speed');
 const speedValue = $<HTMLSpanElement>('speed-value');
+const idleStanceSelect = $<HTMLSelectElement>('idle-stance');
 const attackBtn = $<HTMLButtonElement>('attack-btn');
 const attackLoop = $<HTMLInputElement>('attack-loop');
 const hitBtn = $<HTMLButtonElement>('hit-btn');
@@ -136,6 +138,11 @@ interface Loaded {
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
 let gridZ = 0;
+// Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
+// matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
+// same spirit as idle.ts's own seed-based phase offset for a crowd of actors sharing one body.
+let idleTime = 0;
+const currentStance = (): IdleStance => idleStanceSelect.value as IdleStance;
 const ATTACK_COOLDOWN_S = 1.5; // matches deadvox's shambler attack cooldown
 let attackTime: number | undefined; // seconds into ATTACK_CLIPS.LUNGE_GRAB, or undefined when idle
 let attackCooldown = 0; // seconds until the loop (if checked) fires the next attack
@@ -196,7 +203,8 @@ const playDeath = (): void => {
   };
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
-  const walkBase: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
+  const idle = idlePose(actor, currentStance(), idleTime);
+  const walkBase: Pose = walkPose(actor, clock, speed, idle);
   deathBasePose =
     attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
   deathDirection = dieBackward.checked ? -1 : 1;
@@ -300,6 +308,7 @@ const updateUrl = (): void => {
   }
   params.set('speed', speedInput.value);
   params.set('walk', walkOn.checked ? '1' : '0');
+  params.set('stance', idleStanceSelect.value);
   if (new URLSearchParams(location.search).get('shot') === '1') {
     params.set('shot', '1');
   }
@@ -313,10 +322,18 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  actor.applyPose(IDENTITY_POSE);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
   const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
+  // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
+  // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
+  actor.applyPose(
+    idlePose(
+      { bones: realized.body.bones, extents, params: genome.params as HumanoidParams, seed: genome.seed },
+      currentStance(),
+      idleTime,
+    ),
+  );
   current = {
     genome,
     realized,
@@ -413,6 +430,7 @@ const setSpeed = (v: number): void => {
 };
 speedInput.addEventListener('input', () => setSpeed(Number(speedInput.value)));
 walkOn.addEventListener('change', updateUrl);
+idleStanceSelect.addEventListener('change', updateUrl);
 $<HTMLButtonElement>('preset-wander').addEventListener('click', () => {
   walkOn.checked = true;
   setSpeed(0.8);
@@ -487,6 +505,10 @@ if (voxelParam && [...voxelSelect.options].some((o) => o.value === voxelParam)) 
 }
 setSpeed(Number(query.get('speed') ?? '0.8'));
 walkOn.checked = query.get('walk') === '1';
+const stanceParam = query.get('stance');
+if (stanceParam && [...idleStanceSelect.options].some((o) => o.value === stanceParam)) {
+  idleStanceSelect.value = stanceParam;
+}
 generateAndLoad();
 resize();
 renderer.render(scene, camera);
@@ -550,7 +572,8 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
     params: loaded.params,
     seed: loaded.genome.seed,
   };
-  const basePose: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
+  const idle = idlePose(actor, currentStance(), idleTime);
+  const basePose: Pose = walkPose(actor, clock, speed, idle);
   const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
   const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
   loaded.actor.applyPose(pose);
@@ -575,6 +598,7 @@ renderer.setAnimationLoop(() => {
   const now = performance.now();
   const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
   lastFrameTime = now;
+  idleTime += dt;
   controls.update();
 
   if (current) {

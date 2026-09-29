@@ -9,6 +9,7 @@ import {
   footRestExtents,
   type GaitBasis,
   type GaitClock,
+  IDLE_BLEND_SPEED_MPS,
   INITIAL_CLOCK,
   legGeometryFor,
   stepLengthMeters,
@@ -17,6 +18,7 @@ import {
   walkPose,
 } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
+import { idleBasePose } from '../src/mob/idle.ts';
 import { type StepStyle, stepPlanFor } from '../src/mob/steps.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
@@ -412,7 +414,15 @@ describe('strideLength', () => {
   // Canonical figure: legLen 0.75 m, ankleRestY near "ground" (0) as real body geometry has it — see
   // legGeometryFor — not near -legLen, or the roll math (rotateYZ) reads it as a near-fully-extended leg.
   const legLen = 0.75;
-  const geom = { legLen, hipY: 0.14 + legLen, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
+  const geom = {
+    legLen,
+    l1: legLen / 2,
+    l2: legLen / 2,
+    hipY: 0.14 + legLen,
+    ankleRestY: 0.14,
+    heelLen: 0.104,
+    toeLen: 0.271,
+  };
   const params = { strideFactor: 1, footLift: 0.04 } as HumanoidParams;
 
   it('0.8 m/s (deadvox wander): ~1.0 m cycle, close to the ~90 steps/min human-walking target', () => {
@@ -464,8 +474,8 @@ describe('strideCap caching (mobgen/CHALLENGES.md §1: keyed on params, must not
   // Same params object throughout — the exact scenario a stale cache would miss: a voxel-size override,
   // a re-realize, or (here) simply two unrelated bodies that happen to share a params object.
   const params = { strideFactor: 1, footLift: 0.04 } as HumanoidParams;
-  const geomA = { legLen: 0.75, hipY: 0.89, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
-  const geomB = { legLen: 1.05, hipY: 1.19, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 }; // longer leg only
+  const geomA = { legLen: 0.75, l1: 0.375, l2: 0.375, hipY: 0.89, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
+  const geomB = { legLen: 1.05, l1: 0.525, l2: 0.525, hipY: 1.19, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 }; // longer leg only
 
   it('gives different (and larger, for the longer leg) caps for two geometries sharing one params object', () => {
     const capA = strideCap(params, geomA);
@@ -579,4 +589,48 @@ describe('the walk at 60 fps', () => {
       }
     }
   }
+});
+
+describe("walkPose's optional idle blend", () => {
+  const found = (() => {
+    const t = TEMPLATES.find((x) => x.name === 'shambler')!;
+    return generateValid(t, 1)!;
+  })();
+  const body = build(found.genome);
+  const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
+  const extents = footRestExtents(body.bones, voxels);
+  const params = found.genome.params as HumanoidParams;
+  const walkActor = { bones: body.bones, extents, params, seed: found.genome.seed };
+  const idle = idleBasePose(walkActor, 'slack');
+
+  it('omitting idle keeps the old bind-pose behaviour at speed 0 (back-compat)', () => {
+    const pose = walkPose(walkActor, INITIAL_CLOCK, 0);
+    expect(pose.rotations).toEqual({});
+  });
+
+  it('at speed 0, passing idle returns exactly the idle pose (never the bind pose)', () => {
+    const pose = walkPose(walkActor, INITIAL_CLOCK, 0, idle);
+    expect(pose).toBe(idle);
+  });
+
+  it('at or above IDLE_BLEND_SPEED_MPS, passing idle changes nothing (matches the no-idle walk exactly)', () => {
+    const clock: GaitClock = { stepIndex: 2, progress: 0.4 };
+    const withIdle = walkPose(walkActor, clock, IDLE_BLEND_SPEED_MPS, idle);
+    const without = walkPose(walkActor, clock, IDLE_BLEND_SPEED_MPS);
+    expect(withIdle).toEqual(without);
+  });
+
+  it('between 0 and IDLE_BLEND_SPEED_MPS, blends: strictly between the pure walk and pure idle pose', () => {
+    const clock: GaitClock = { stepIndex: 1, progress: 0.5 };
+    const speed = IDLE_BLEND_SPEED_MPS / 2;
+    const walked = walkPose(walkActor, clock, speed);
+    const blended = walkPose(walkActor, clock, speed, idle);
+    expect(blended).not.toEqual(walked);
+    expect(blended).not.toEqual(idle);
+    // root.y should land strictly between the two endpoints' own root.y (weight 0.5 at the ramp's midpoint).
+    const lo = Math.min(walked.root[1], idle.root[1]);
+    const hi = Math.max(walked.root[1], idle.root[1]);
+    expect(blended.root[1]).toBeGreaterThan(lo);
+    expect(blended.root[1]).toBeLessThan(hi);
+  });
 });

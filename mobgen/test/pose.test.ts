@@ -4,6 +4,7 @@ import { generate, realize } from '../src/core/generate.ts';
 import { applyPoint, rotX, rotY, rotZ } from '../src/core/math.ts';
 import {
   allocateBoneTransforms,
+  blendPose,
   boneTransforms,
   boneTransformsInto,
   indexBonesByParent,
@@ -109,6 +110,36 @@ describe('boneTransformsInto (mobgen/CHALLENGES.md §1: the allocation-free posi
           });
         }
       }
+    }
+  });
+});
+
+describe('blendPose', () => {
+  const a: Pose = { root: [0, 0, 0], rotations: { spine: rotX(0), chest: rotY(10) } };
+  const b: Pose = { root: [1, 2, 3], rotations: { spine: rotX(30), forearm: rotZ(15) } };
+
+  it('is exactly a at t=0 and exactly b at t=1 (no numeric drift from the quaternion round trip)', () => {
+    expect(blendPose(a, b, 0)).toBe(a); // short-circuited, not just numerically close
+    expect(blendPose(a, b, 1)).toBe(b);
+  });
+
+  it('lerps the root and slerps each shared bone', () => {
+    const mid = blendPose(a, b, 0.5);
+    expect(mid.root).toEqual([0.5, 1, 1.5]);
+    for (const [i, x] of rotX(15).entries()) {
+      expect(mid.rotations.spine![i]).toBeCloseTo(x, 6);
+    }
+  });
+
+  it('treats a bone missing from one side as identity there, not a jump partway through the blend', () => {
+    const mid = blendPose(a, b, 0.5);
+    // chest is only in `a` (blends toward identity, not b's — b never mentions it); forearm is only in
+    // `b` (blends from identity, not a's).
+    for (const [i, x] of rotY(5).entries()) {
+      expect(mid.rotations.chest![i]).toBeCloseTo(x, 6);
+    }
+    for (const [i, x] of rotZ(7.5).entries()) {
+      expect(mid.rotations.forearm![i]).toBeCloseTo(x, 6);
     }
   });
 });
