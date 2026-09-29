@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "typecheck": "tsc",
     "test": "vitest run",
+    "test:sweeps": "GUNGEN_SWEEPS=1 vitest run",
     "validate": "node src/cli/validate.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",

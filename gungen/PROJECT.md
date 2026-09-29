@@ -1099,12 +1099,67 @@ Tests shown failing first, as usual. BR judges every visual result.
 - **3.5:** the exported model shows in first-person hands with the hand at
   `hold` and the muzzle forward, and it looks right in piles.
 
+### Generator tests
+
+BR decided on 2026-09-29 that gungen goes the designer route: the
+generator and suggester are a nice-to-have, so the generator "solver" tests
+(random seed sweeps across templates) run only in CI and never in a local
+`npm test`. Measured before the gate, they were about 34 s of a 34 s run.
+
+- **The gate.** `test/sweeps.ts` exports `sweepGroup` (`describe.runIf`),
+  which runs only when `CI` is set (GitHub Actions sets it) or
+  `GUNGEN_SWEEPS=1`. A sweep is `sweepGroup(name, () => { it(...) })`; an
+  aliased `it.runIf` would trip Biome's `noMisplacedAssertion`. `npm run test:sweeps` runs the whole suite that
+  way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
+  runs them.
+- **No raising timeouts.** A sweep that is too slow is split into smaller
+  tests (per template, per seed range), never given a longer timeout. Some
+  sweeps will be removed, so their cost is not worth accommodating.
+- **What is gated.** Any test that calls `generate` or `generateValid` over a
+  seed range, and the `known-good seeds` snapshots, which are generator
+  output. Tests over `fixtures/`, hand-built assemblies and single fixed
+  seeds used as a fixture stay local. A test that mixed both is split: the
+  fixture half is local, the sweep half is gated (palette, frame checks in
+  `anchors.test.ts`). A skipped snapshot test keeps its snapshot and is not
+  reported obsolete.
+- **Not gated yet.** The "validator results are unchanged by the mesh
+  module" block in `mesh.test.ts` stays as it is; it is deleted with PR #72.
+
+Removal plan, one line per gated sweep:
+
+- (a) Replace by the same property over `fixtures/` plus 3.1's published
+  `designs/`, and delete the seed loop:
+  - handguard within receiver (`handguard.test.ts`): a property of a
+    finished design, and the 1000-seed loop is the most expensive test;
+  - trigger guards (`triggerGuard.test.ts`): same property over a design;
+  - anchors, one hold per design and no selection errors (`anchors.test.ts`,
+    `sweep`): holds are chosen per design, so curated designs cover them;
+  - palette no-fallback and old-colour identity (`palette.test.ts`): needs
+    only the set of solids that get rendered;
+  - triangle budget (`mesh.test.ts`): the budget is per shipped design;
+  - frame checks on generated assemblies (`anchors.test.ts`): the archetype
+    half already runs locally.
+- (b) Merge: the two 300-seed loops per template in `generate.test.ts`
+  ("never produces a structurally broken file" and "is valid at least half
+  the time") go over the same seeds and become one loop.
+- (c) Keep as a small CI smoke test for the 3.3 suggester, a few seeds per
+  template: "varies with the seed" and the `known-good seeds` snapshot
+  (`generate.test.ts`), the AK curve-variant, AK handguard layout, battle
+  rifle magazine orientation and free-float mount choices (`ak.test.ts`,
+  `battleRifle.test.ts`, `freeFloatHandguard.test.ts`). They check that the
+  generator still spans its choices, which is what the suggester reuses.
+
+Golden designs (3.1) become the regression corpus. Each published design
+gets a snapshot of its resolved solids (already planned), and property tests
+iterate `fixtures/` plus `designs/` instead of seeds.
+
 ## Running it
 
 ```sh
 cd gungen
 npm install
-npm test               # unit tests plus every fixture
+npm test               # unit tests plus every fixture (no generator sweeps)
+npm run test:sweeps    # the generator seed sweeps too; CI runs them
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json

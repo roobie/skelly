@@ -11,6 +11,7 @@ import { GUN_ANCHOR_POLICY, type GunAnchorDeclarations, selectGunAnchors } from 
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { loadFixture, loadFixtures } from './helpers.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const EPS = 1e-6;
 const ARCHETYPES = loadFixtures().filter((a) => a.name.startsWith('archetype'));
@@ -111,18 +112,20 @@ describe('hold selection', () => {
     }
   });
 
-  it('every template resolves exactly one hold', () => {
-    for (const t of TEMPLATES) {
-      let checked = 0;
-      for (let seed = 0; seed < 25; seed++) {
-        const a = generate(t, gunDomain, seed);
-        if (validate(a, gunDomain).ok) {
-          selected(a);
-          checked += 1;
+  sweepGroup('every template resolves exactly one hold', () => {
+    it('passes', () => {
+      for (const t of TEMPLATES) {
+        let checked = 0;
+        for (let seed = 0; seed < 25; seed++) {
+          const a = generate(t, gunDomain, seed);
+          if (validate(a, gunDomain).ok) {
+            selected(a);
+            checked += 1;
+          }
         }
+        expect(checked, t.name).toBeGreaterThan(0);
       }
-      expect(checked, t.name).toBeGreaterThan(0);
-    }
+    });
   });
 
   it('holds the integrated pistol grip', () => {
@@ -209,24 +212,33 @@ describe('anchor data', () => {
     expect(Object.keys(GUN_ANCHORS).sort()).toEqual(['barrel', 'forend', 'frame', 'grip', 'handguard', 'stock']);
   });
 
-  it('frames are unit-length and right-handed; hold frames sit within their part', () => {
-    const assemblies = [
-      ...ARCHETYPES,
-      ...TEMPLATES.flatMap((t) => [1, 2, 3, 4, 5].map((s) => generate(t, gunDomain, s))),
-    ];
+  const frameFacts = (assemblies: Assembly[]) => {
     const declared = assemblies.flatMap(localFrames);
     const holds = declared.filter((d) => d.name === 'hold');
-    for (const d of declared) {
-      expect(frameDefects(d.frame)).toEqual([]);
-    }
-    for (const d of holds) {
-      expect(
-        d.def.solids.some((s) => insideSolid(s, d.frame.position)),
-        d.label,
-      ).toBe(true);
-    }
-    expect(holds.length).toBeGreaterThan(20);
-    expect(declared.length).toBeGreaterThan(holds.length);
+    return {
+      declared: declared.length,
+      holds: holds.length,
+      defective: declared.filter((d) => frameDefects(d.frame).length > 0).map((d) => d.label),
+      outside: holds.filter((d) => !d.def.solids.some((s) => insideSolid(s, d.frame.position))).map((d) => d.label),
+    };
+  };
+
+  it('archetype frames are unit-length and right-handed; hold frames sit within their part', () => {
+    const facts = frameFacts(ARCHETYPES);
+    expect(facts.defective).toEqual([]);
+    expect(facts.outside).toEqual([]);
+    expect(facts.holds).toBeGreaterThan(5);
+    expect(facts.declared).toBeGreaterThan(facts.holds);
+  });
+
+  sweepGroup('generated frames are unit-length and right-handed; hold frames sit within their part', () => {
+    it('passes', () => {
+      const facts = frameFacts(TEMPLATES.flatMap((t) => [1, 2, 3, 4, 5].map((s) => generate(t, gunDomain, s))));
+      expect(facts.defective).toEqual([]);
+      expect(facts.outside).toEqual([]);
+      expect(facts.holds).toBeGreaterThan(20);
+      expect(facts.declared).toBeGreaterThan(facts.holds);
+    });
   });
 
   it('resolved frames stay unit-length and orthogonal in assembly space', () => {
@@ -249,22 +261,24 @@ describe('anchor data', () => {
 });
 
 describe('sweep', () => {
-  it('never errors on a valid generated design', () => {
-    for (const t of TEMPLATES) {
-      let valid = 0;
-      let errors = 0;
-      for (let seed = 0; seed < 300; seed++) {
-        const a = generate(t, gunDomain, seed);
-        if (!validate(a, gunDomain).ok) {
-          continue;
+  for (const t of TEMPLATES) {
+    sweepGroup(`never errors on a valid generated ${t.name} design`, () => {
+      it('passes', () => {
+        let valid = 0;
+        let errors = 0;
+        for (let seed = 0; seed < 300; seed++) {
+          const a = generate(t, gunDomain, seed);
+          if (!validate(a, gunDomain).ok) {
+            continue;
+          }
+          valid += 1;
+          if ('code' in select(a)) {
+            errors += 1;
+          }
         }
-        valid += 1;
-        if ('code' in select(a)) {
-          errors += 1;
-        }
-      }
-      expect(errors, t.name).toBe(0);
-      expect(valid, t.name).toBeGreaterThan(100);
-    }
-  }, 120_000);
+        expect(errors, t.name).toBe(0);
+        expect(valid, t.name).toBeGreaterThan(100);
+      });
+    });
+  }
 });
