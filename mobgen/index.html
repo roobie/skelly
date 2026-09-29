@@ -49,6 +49,13 @@
           <button id="preset-wander" type="button">Wander (0.8)</button>
           <button id="preset-chase" type="button">Chase (2.8)</button>
         </div>
+        <label class="field">
+          Idle stance
+          <select id="idle-stance">
+            <option value="slack">Slack (wander)</option>
+            <option value="aggravated">Aggravated (chase/attack)</option>
+          </select>
+        </label>
       </fieldset>
       <fieldset id="attack">
         <legend>Attack</legend>
@@ -56,6 +63,23 @@
           <button id="attack-btn" type="button" title="Press A">Attack (A)</button>
         </div>
         <label><input id="attack-loop" type="checkbox" /> Loop every 1.5 s (cooldown)</label>
+      </fieldset>
+      <fieldset id="reactions">
+        <legend>Reactions</legend>
+        <div class="row">
+          <button id="hit-btn" type="button" title="Press H">Hit (H)</button>
+          <button id="die-btn" type="button" title="Press K">Die (K)</button>
+          <button id="reset-btn" type="button" title="Press R">Reset</button>
+        </div>
+        <label><input id="die-backward" type="checkbox" /> Fall backward</label>
+      </fieldset>
+      <fieldset id="dismember">
+        <legend>Dismemberment</legend>
+        <div class="row">
+          <select id="sever-part"></select>
+          <button id="sever-btn" type="button">Sever</button>
+          <button id="heal-btn" type="button">Heal</button>
+        </div>
       </fieldset>
       <p id="description"></p>
       <div id="status"></div>

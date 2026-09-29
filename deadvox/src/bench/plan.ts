@@ -2,6 +2,7 @@
 // page reloads that separate runs (each run starts from a fresh page and GPU state).
 
 import type { StorageStats } from '../core/storage.ts';
+import type { ActorRenderer } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 
 export interface BenchConfig {
@@ -99,9 +100,20 @@ export interface Environment {
 export interface ShamblerRunResult {
   n: number;
   seed: number;
+  /** Which renderer drew the zombies. Absent on records from before this existed — treat as 'boxes'
+   * (report.ts does). */
+  actors?: ActorRenderer;
   frame: FrameStats;
   zombieTick: SampleStats;
   renderSubmit: SampleStats;
+  /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ZombieMeshes'
+   * instance-matrix writes for 'boxes'). Absent on records from before this existed. */
+  actorSync?: SampleStats;
+  /** renderer.info.render.calls/.triangles from one measured frame — the population is fixed for the
+   * whole run, so any one measured frame is representative (see src/bench/shamblers.ts's own draw()).
+   * Absent on records from before this existed. */
+  draws?: number;
+  triangles?: number;
   holesMax: number;
   holeFraction: number;
   interrupted: boolean;

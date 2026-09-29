@@ -116,6 +116,12 @@
             <label id="deadvox-storeys-field" hidden>Tallest city building (storeys)
               <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required />
             </label>
+            <label id="deadvox-actors-field">Zombie models
+              <select name="actors" data-url-param="actors">
+                <option value="">Detailed (default)</option>
+                <option value="boxes">Boxes</option>
+              </select>
+            </label>
             <label class="check" id="deadvox-debug-field">
               <input name="debug" data-url-param="debug" type="checkbox" /> Enable development tools (?debug=1)
             </label>

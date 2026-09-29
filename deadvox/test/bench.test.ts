@@ -45,12 +45,16 @@ describe('bench plan', () => {
       index: 0,
       seed: 1,
       time: '23:30',
+      actors: 'detailed',
     });
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1'))).toEqual({
+    expect(
+      shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1&actors=detailed')),
+    ).toEqual({
       counts: [10, 25],
       index: 1,
       seed: 77,
       time: '21:15',
+      actors: 'detailed',
     });
     expect(parseShamblerCounts('1,500')).toEqual([1, 500]);
     expect(parseShamblerSeed('-2147483648')).toBe(-2_147_483_648);
@@ -125,7 +129,8 @@ describe('bench report', () => {
     expect(row[12]).toBe('3.0 / 4.5');
   });
 
-  it('formats one report cell per shambler header and a pasteable summary', () => {
+  it('formats one report cell per shambler header and a pasteable summary, defaulting missing actors info to boxes', () => {
+    // No `actors`/`actorSync`/`draws`/`triangles` — a record from before those existed.
     const shambler: ShamblerRunResult = {
       n: 25,
       seed: 12,
@@ -140,16 +145,41 @@ describe('bench report', () => {
     expect(shamblerResultRow(shambler)).toEqual([
       '25',
       '12',
+      'boxes',
       '16.5 / 19.0 / 20%',
       '0.4 / 0.8',
+      '–',
       '1.1 / 2.2',
+      '–',
       '3 / 10%',
       'no',
     ]);
-    expect(shamblerSummary([shambler])).toContain('N=25 seed=12');
+    expect(shamblerSummary([shambler])).toContain('N=25 seed=12 actors=boxes');
     const report = markdownReport({ startedAt: 'now', quick: false, runs: [], shamblers: [shambler] });
-    expect(report).toContain('Shambler summary: N=25 seed=12');
+    expect(report).toContain('Shambler summary: N=25 seed=12 actors=boxes');
     expect(report.split('\n')[2]).toMatch(SHAMBLER_ROW_START);
+  });
+
+  it('shows actors, actor sync ms, and draws/triangles when a run recorded them', () => {
+    const shambler: ShamblerRunResult = {
+      n: 25,
+      seed: 12,
+      actors: 'detailed',
+      frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
+      zombieTick: { count: 300, median: 0.4, p95: 0.8 },
+      actorSync: { count: 900, median: 2.3, p95: 4.1 },
+      renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
+      draws: 12,
+      triangles: 365_000,
+      holesMax: 3,
+      holeFraction: 0.1,
+      interrupted: false,
+    };
+    const row = shamblerResultRow(shambler);
+    expect(row[2]).toBe('detailed');
+    expect(row[5]).toBe('2.3 / 4.1');
+    expect(row[7]).toBe('12 / 365');
+    expect(shamblerSummary([shambler])).toContain('actors=detailed');
   });
 
   it('shows a dash for render time in runs from before it existed', () => {

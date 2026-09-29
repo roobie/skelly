@@ -19,7 +19,7 @@
 
 import type { Bone } from '../core/body.ts';
 import { add, applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, transpose, type Vec3 } from '../core/math.ts';
-import { boneTransforms, type EulerDeg, type Pose } from '../core/pose.ts';
+import { blendPose, boneTransforms, type EulerDeg, type Pose } from '../core/pose.ts';
 import { cellIndex, type Voxels, worldPosition } from '../core/voxelize.ts';
 import { FEET_BONES, type HumanoidParams } from './humanoid.ts';
 import { createStepPlanMemo, type StepPlan, type StepPlanMemo, stepPlanFor } from './steps.ts';
@@ -87,8 +87,10 @@ const sideForStep = (stepIndex: number): Side => (stepIndex % 2 === 0 ? 'L' : 'R
 
 const boneMap = (bones: readonly Bone[]): ReadonlyMap<string, Bone> => new Map(bones.map((b) => [b.id, b]));
 
-/** Angle from straight down, in degrees, of a bone's rest direction; forward (-Z) is positive. */
-const restAngleDeg = (bone: Bone): number =>
+/** Angle from straight down, in degrees, of a bone's rest direction; forward (-Z) is positive. Exported
+ * for mob/idle.ts's own two-bone IK, which needs the same rest-angle-to-local-delta conversion
+ * legAndFootRotations uses (solveTwoBone's own output is an absolute angle, not a local delta). */
+export const restAngleDeg = (bone: Bone): number =>
   toDeg(Math.atan2(-(bone.tail[2] - bone.head[2]), -(bone.tail[1] - bone.head[1])));
 const boneLen = (bone: Bone): number =>
   Math.hypot(bone.tail[0] - bone.head[0], bone.tail[1] - bone.head[1], bone.tail[2] - bone.head[2]);
@@ -111,8 +113,13 @@ const mergeExtent = (existing: Extent | undefined, p: Vec3, half: number): Exten
   };
 };
 
-/** The 8 world-space corners of each foot bone's rest-pose voxel bounding box; precompute once per actor. */
-export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): ReadonlyMap<string, Extent> => {
+/** Shared by footRestExtents (below) and reactions.ts's bodyRestExtents: every voxel's owning bone's
+ * rest-pose world bounding box, restricted to bones `include` accepts. */
+const restExtentsFor = (
+  bones: readonly Bone[],
+  voxels: Voxels,
+  include: (boneId: string) => boolean,
+): Map<string, Extent> => {
   const extents = new Map<string, Extent>();
   const [nx, ny, nz] = voxels.dims;
   const half = voxels.size / 2;
@@ -124,7 +131,7 @@ export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): Readonl
           continue;
         }
         const bone = bones[owner - 1]!;
-        if (!FEET_BONES.includes(bone.id)) {
+        if (!include(bone.id)) {
           continue;
         }
         const p = worldPosition(voxels, i, j, k);
@@ -134,6 +141,17 @@ export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): Readonl
   }
   return extents;
 };
+
+/** The 8 world-space corners of each foot bone's rest-pose voxel bounding box; precompute once per actor. */
+export const footRestExtents = (bones: readonly Bone[], voxels: Voxels): ReadonlyMap<string, Extent> =>
+  restExtentsFor(bones, voxels, (id) => FEET_BONES.includes(id));
+
+/** Every bone's own rest-pose voxel bounding box (not just the feet) — used by reactions.ts's deathPose to
+ * re-ground the *whole* fallen body (groundOffset, fed this instead of the feet-only extents walkPose/
+ * attackPose use), so a topple's lowest point — whichever bone that ends up being — lands at y=0, not just
+ * the feet. Precompute once per actor, same lifecycle as footRestExtents. */
+export const bodyRestExtents = (bones: readonly Bone[], voxels: Voxels): ReadonlyMap<string, Extent> =>
+  restExtentsFor(bones, voxels, () => true);
 
 /** Exported for tests: the 8 corners of a rest-pose extent, e.g. from footRestExtents. */
 export const corners = (e: Extent): Vec3[] => {
@@ -149,8 +167,9 @@ export const corners = (e: Extent): Vec3[] => {
 };
 
 /** 2-bone planar IK in the Y-Z (sagittal) plane: absolute angle-from-vertical (degrees, forward positive)
- * for each segment so the end effector reaches `target` from `origin`. */
-const solveTwoBone = (origin: Vec3, target: Vec3, l1: number, l2: number): { a1: number; a2: number } => {
+ * for each segment so the end effector reaches `target` from `origin`. Exported for mob/idle.ts, which
+ * reuses this exact solve to bend an idle stance's knees while keeping the feet planted. */
+export const solveTwoBone = (origin: Vec3, target: Vec3, l1: number, l2: number): { a1: number; a2: number } => {
   const dy = target[1] - origin[1];
   const dz = target[2] - origin[2];
   const rawD = Math.hypot(dy, dz) || 1e-6;
@@ -360,6 +379,10 @@ const peakRequiredDrop = (hipY: number, len: number, geom: FootGeometry, legLen:
 /** A leg's fixed shape (besides phase/stride): reach and where its foot's roll pivots are. */
 export interface LegGeometry {
   readonly legLen: number;
+  /** Thigh and shin lengths individually — legLen is their sum. Exported (LegBones already carried them)
+   * for mob/idle.ts's own two-bone IK (solveTwoBone), which needs each segment's length, not just the total. */
+  readonly l1: number;
+  readonly l2: number;
   readonly hipY: number;
   readonly heelLen: number;
   readonly toeLen: number;
@@ -1017,15 +1040,37 @@ export interface WalkActor {
   readonly cache?: GaitCache;
 }
 
+/** Below this speed (m/s), walkPose's own idle-blend weight ramps from 1 (speed 0: exactly `idle`) to 0. */
+export const IDLE_BLEND_SPEED_MPS = 0.3;
+
+/** walkPose's optional extras; a bare boolean means `{ recordAngles }`. */
+export interface WalkPoseOptions {
+  readonly recordAngles?: boolean;
+  /** A stance to cross-fade into as speed drops to 0 (see walkPose). */
+  readonly idle?: Pose | undefined;
+}
+
 /**
  * The walk cycle. `clock` (see GaitClock) is a step index and progress within it, advanced by distance
  * travelled (advanceClock); `speed` (m/s) drives step length and the standing/walking blend. Speed 0
  * gives a still standing pose, regardless of clock. The root may drift sideways (X) as steps stagger —
- * forward progress (Z) stays the caller's job, as before. With `recordAngles`, the returned pose also
+ * forward progress (Z) stays the caller's job, as before. With `recordAngles` (the boolean form of `options`), the returned pose also
  * carries `angles`: the joint angles the rotations are composed from (see Pose.angles for each bone's
  * composition order). Off by default; the matrices are identical either way.
+ *
+ * `options.idle`, if given, is mob/idle.ts's own idlePose (or idleBasePose + applyIdleMotion) output — a caller
+ * passing it gets a smooth cross-fade into it as speed drops toward 0 (IDLE_BLEND_SPEED_MPS's own weight
+ * ramp), exactly `idle` at speed 0, so the walk bind pose (rotations: {}) never appears. Omitting `idle`
+ * keeps this function's old behaviour exactly (the bind pose at speed 0). A pose that involves `idle`
+ * (speed 0, or a partial blend) carries no `angles`: they describe the walk alone.
  */
-export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number, recordAngles = false): Pose => {
+export const walkPose = (
+  actor: WalkActor,
+  clock: GaitClock,
+  speed: number,
+  options: WalkPoseOptions | boolean = false,
+): Pose => {
+  const { recordAngles = false, idle } = typeof options === 'boolean' ? { recordAngles: options } : options;
   const { bones, extents, params, seed } = actor;
   const cache = cacheFor(actor);
   const byId = boneMap(bones);
@@ -1034,6 +1079,9 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number, reco
   const angles: Record<string, EulerDeg> | undefined = recordAngles ? {} : undefined;
 
   if (speed <= 0) {
+    if (idle) {
+      return idle; // already grounded by whoever built it (mob/idle.ts's own groundOffset call)
+    }
     const root: Vec3 = [0, groundOffset(bones, extents, {}, GROUND_SMOOTHING), 0];
     return angles ? { root, rotations: {}, angles } : { root, rotations: {} };
   }
@@ -1126,5 +1174,10 @@ export const walkPose = (actor: WalkActor, clock: GaitClock, speed: number, reco
   }
 
   const root: Vec3 = [legResult.rootX, groundOffset(bones, extents, rotations, GROUND_SMOOTHING), 0];
-  return angles ? { root, rotations, angles } : { root, rotations };
+  const walked: Pose = angles ? { root, rotations, angles } : { root, rotations };
+  if (!idle) {
+    return walked;
+  }
+  const idleWeight = clamp(1 - speed / IDLE_BLEND_SPEED_MPS, 0, 1);
+  return idleWeight > 0 ? blendPose(walked, idle, idleWeight) : walked;
 };

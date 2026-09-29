@@ -23,6 +23,7 @@ import {
   indexBonesByParent,
   type MutableTransform,
   type ParentIndex,
+  type Pose,
 } from '../core/pose.ts';
 import { chance, range, seededRng } from '../core/random.ts';
 import type { Genome } from '../core/template.ts';
@@ -38,6 +39,7 @@ import {
   walkPose,
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
+import { idleBasePose } from '../mob/idle.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 
 const { values } = parseArgs({
@@ -109,6 +111,9 @@ interface SimActor {
    * different speeds and different current stepIndex — footfallPeak's cache must be per actor or it
    * thrashes on almost every call (see mob/gait.ts's GaitCache; how much slower that was was not recorded). */
   readonly walkActor: WalkActor;
+  /** Static idle stance (see mob/idle.ts) this actor eases toward/from at low speed — computed once, not
+   * per frame, same reasoning as stress.ts's CrowdMember.idleBase. */
+  readonly idleBase: Pose;
   readonly speed: number;
   readonly attacker: boolean;
   readonly attackIntervalS: number;
@@ -130,9 +135,11 @@ const makeSimActors = (n: number): SimActor[] =>
     const boneCount = pool[poolIndex]!.walkActor.bones.length;
     const attacker = chance(rng, ATTACKER_FRACTION);
     const attackIntervalS = range(rng, 2, 5);
+    const walkActor: WalkActor = { ...pool[poolIndex]!.walkActor, cache: createGaitCache() };
     return {
       poolIndex,
-      walkActor: { ...pool[poolIndex]!.walkActor, cache: createGaitCache() },
+      walkActor,
+      idleBase: idleBasePose(walkActor, attacker ? 'aggravated' : 'slack'),
       speed: range(rng, 0.8, 2.8),
       attacker,
       attackIntervalS,
@@ -204,7 +211,7 @@ const updateActor = (actor: SimActor): void => {
     cache: actor.walkActor.cache,
   });
   advanceAttack(actor);
-  const basePose = walkPose(actor.walkActor, actor.clock, actor.speed);
+  const basePose = walkPose(actor.walkActor, actor.clock, actor.speed, { idle: actor.idleBase });
   const pose =
     actor.attackTime === undefined ? basePose : attackPose(actor.walkActor, LUNGE_GRAB, actor.attackTime, basePose);
   boneTransformsInto(actor.walkActor.bones, pose, entry.parentIndex, actor.scratch);

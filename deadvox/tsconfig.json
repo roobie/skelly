@@ -5,6 +5,10 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node", "vite/client"],
+    // Mirrors vite.config.ts's resolve.alias: mobgen's pure src/ (no three, no DOM) as `@mobgen/*`. tsc
+    // doesn't read Vite's alias config, so this has to be declared here too, and mobgen uses the same
+    // compiler options (see mobgen/tsconfig.json) so its files typecheck cleanly when pulled in this way.
+    "paths": { "@mobgen/*": ["../mobgen/src/*"] },
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,

@@ -307,8 +307,6 @@
       "id": "shambler_hurt",
       "variants": [
         "assets/audio/shambler-hurt-01.ogg",
-        "assets/audio/shambler-hurt-02.ogg",
-        "assets/audio/shambler-hurt-03.ogg",
         "assets/audio/shambler-hit-05.ogg",
         "assets/audio/shambler-hit-06.ogg",
         "assets/audio/shambler-hit-07.ogg"

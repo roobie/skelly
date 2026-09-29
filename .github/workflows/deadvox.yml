@@ -3,9 +3,9 @@ name: deadvox
 on:
   push:
     branches: [main]
-    paths: ['deadvox/**', '.github/workflows/deadvox.yml']
+    paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
   pull_request:
-    paths: ['deadvox/**', '.github/workflows/deadvox.yml']
+    paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
   workflow_dispatch: {}
 
 jobs:

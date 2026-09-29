@@ -1,6 +1,7 @@
 // The results page shown after the last run: a table, the environment, and buttons
 // to copy the results as Markdown (for SLICE-1.md) or JSON.
 
+import type { ActorRenderer } from '../game/config.ts';
 import type { BenchRecord, RunResult, ShamblerRunResult } from './plan.ts';
 
 const MIB = 1024 * 1024;
@@ -11,9 +12,12 @@ const mib = (bytes: number): string => f(bytes / MIB);
 export const SHAMBLER_HEADERS = [
   'N',
   'Seed',
+  'Actors',
   'Frame ms p50 / p95 / slow fraction',
   'Zombie tick CPU ms p50 / p95',
+  'Actor sync CPU ms p50 / p95',
   'Render-submit ms p50 / p95',
+  'Draws / k tris',
   'Holes max / fraction',
   'Interrupted',
 ] as const;
@@ -34,12 +38,18 @@ export const HEADERS = [
   'Render ms p50 / p95',
 ] as const;
 
+/** Records from before `actors` existed only ever drew ZombieMeshes' boxes. */
+const actorsOf = (r: ShamblerRunResult): ActorRenderer => r.actors ?? 'boxes';
+
 export const shamblerResultRow = (r: ShamblerRunResult): string[] => [
   String(r.n),
   String(r.seed),
+  actorsOf(r),
   `${f(r.frame.msMedian)} / ${f(r.frame.msP95)} / ${pct(r.frame.slowFraction)}`,
   `${f(r.zombieTick.median)} / ${f(r.zombieTick.p95)}`,
+  r.actorSync ? `${f(r.actorSync.median)} / ${f(r.actorSync.p95)}` : '–',
   `${f(r.renderSubmit.median)} / ${f(r.renderSubmit.p95)}`,
+  r.draws === undefined || r.triangles === undefined ? '–' : `${f(r.draws, 0)} / ${f(r.triangles / 1000, 0)}`,
   `${r.holesMax} / ${pct(r.holeFraction)}`,
   r.interrupted ? 'yes' : 'no',
 ];
@@ -48,7 +58,7 @@ export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
   runs
     .map(
       (r) =>
-        `N=${r.n} seed=${r.seed}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; ZombieSystem ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
+        `N=${r.n} seed=${r.seed} actors=${actorsOf(r)}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; ZombieSystem ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; actor sync ${r.actorSync ? `${f(r.actorSync.median)}/${f(r.actorSync.p95)}` : '–'} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
     )
     .join(' | ');
 

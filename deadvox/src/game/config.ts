@@ -25,7 +25,12 @@ export interface GameConfig {
   site: SiteName;
   /** The city's tallest buildings, in storeys (`?storeys=N`). */
   storeys: number;
+  /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
+   * ZombieMeshes' six boxes instead. */
+  actors: ActorRenderer;
 }
+
+export type ActorRenderer = 'boxes' | 'detailed';
 
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE): GameConfig => {
@@ -39,8 +44,13 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     debug: false,
     site: 'hamlet',
     storeys: 1,
+    actors: 'detailed',
   };
 };
+
+/** `?actors=boxes`; anything else (including absent) is 'detailed'. */
+export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
+  params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
 export type SiteName = 'hamlet' | 'testHouse' | 'city';
 
@@ -64,6 +74,7 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   );
   config.start = parseTimeOfDay(params.get('time') ?? '') ?? SPAWN_TIME;
   config.debug = params.get('debug') === '1';
+  config.actors = actorRendererFromUrl(params);
   Object.assign(config, siteFromUrl(params, 'hamlet'));
   return config;
 };

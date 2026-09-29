@@ -55,7 +55,12 @@
       "attack": {
         "damage": 8,
         "reach": 1.2,
-        "cooldown": 1.5
+        "cooldown": 1.5,
+        "windup": 0.3
+      },
+      "dismember": {
+        "chance": 0.15,
+        "headOnKillChance": 0.25
       },
       "abilities": [],
       "loot": "shambler_pockets"

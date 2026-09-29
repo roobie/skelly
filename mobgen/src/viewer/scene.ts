@@ -75,6 +75,11 @@ export interface Actor {
   readonly skeleton: Group;
   /** Applies a pose (from gait.ts, or the identity rest pose) to every part above. */
   readonly applyPose: (pose: Pose) => void;
+  /** Dismemberment preview: hides every flesh/colour-by-bone mesh whose bone id is in `hidden` (see
+   * mob/dismember.ts's severedBoneSet), shows every other one. Each bone here is its own Mesh (unlike
+   * deadvox's crowd-shader renderer, which shares one InstancedMesh per variant), so hiding one is a plain
+   * visibility toggle — no matrix/shader trick needed. */
+  readonly setSeveredBones: (hidden: ReadonlySet<string>) => void;
 }
 
 const DOT_RADIUS_FACTOR = 0.35; // relative to voxel size, just big enough to read as a joint
@@ -169,7 +174,21 @@ export const buildActor = (realized: Realized, voxelSize: number): Actor => {
     dots.instanceMatrix.needsUpdate = true;
   };
 
-  return { root, flesh, colorByBone, skeleton, applyPose };
+  const setSeveredBones = (hidden: ReadonlySet<string>): void => {
+    for (const [boneIndex, bone] of body.bones.entries()) {
+      const visible = !hidden.has(bone.id);
+      const fm = fleshMeshes.get(boneIndex);
+      if (fm) {
+        fm.visible = visible;
+      }
+      const tm = tintMeshes.get(boneIndex);
+      if (tm) {
+        tm.visible = visible;
+      }
+    }
+  };
+
+  return { root, flesh, colorByBone, skeleton, applyPose, setSeveredBones };
 };
 
 export const disposeActor = (actor: Actor): void => {
