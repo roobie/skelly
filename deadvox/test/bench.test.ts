@@ -45,7 +45,7 @@ describe('bench plan', () => {
       index: 0,
       seed: 1,
       time: '23:30',
-      actors: 'boxes',
+      actors: 'detailed',
     });
     expect(
       shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1&actors=detailed')),

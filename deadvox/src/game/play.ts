@@ -262,8 +262,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       lastZombieStep = time;
     },
   });
-  // `?actors=detailed` (default 'boxes') swaps in mobgen actors (src/render/mobActors.ts) for
-  // ZombieMeshes' six boxes — same ZombieRenderer shape (group/sync/…), so the rest of this function
+  // Mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` swaps in ZombieMeshes' six
+  // boxes — same ZombieRenderer shape (group/sync/…), so the rest of this function
   // doesn't care which one it has.
   const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
   scene.add(zombieMeshes.group);

@@ -25,8 +25,8 @@ export interface GameConfig {
   site: SiteName;
   /** The city's tallest buildings, in storeys (`?storeys=N`). */
   storeys: number;
-  /** `?actors=detailed` draws zombies as full mobgen actors (src/render/mobActors.ts) instead of
-   * ZombieMeshes' six boxes. Default 'boxes' — mobgen actors are a first slice, behind this toggle. */
+  /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
+   * ZombieMeshes' six boxes instead. */
   actors: ActorRenderer;
 }
 
@@ -44,13 +44,13 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     debug: false,
     site: 'hamlet',
     storeys: 1,
-    actors: 'boxes',
+    actors: 'detailed',
   };
 };
 
-/** `?actors=detailed`; anything else (including absent) is 'boxes'. */
+/** `?actors=boxes`; anything else (including absent) is 'detailed'. */
 export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
-  params.get('actors') === 'detailed' ? 'detailed' : 'boxes';
+  params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
 export type SiteName = 'hamlet' | 'testHouse' | 'city';
 
