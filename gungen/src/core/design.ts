@@ -133,6 +133,10 @@ export type SrgbColor = readonly [red: number, green: number, blue: number];
  * Special colours are keyed by solid id and win over family colours. Unknown families use `fallbackColor`.
  */
 export interface Palette {
+  /**
+   * Keyed by the `PartDef.family` role, not the FAMILIES registry key: colour follows what the part does, so an AK
+   * receiver looks like any receiver.
+   */
   readonly familyColors: Readonly<Record<string, SrgbColor>>;
   readonly specialColors: Readonly<Record<string, SrgbColor>>;
   readonly fallbackColor: SrgbColor;

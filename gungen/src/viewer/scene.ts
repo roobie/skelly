@@ -30,20 +30,8 @@ import { meshForSolid } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
+import { GUN_PALETTE, solidColor, srgbToHex } from '../gun/palette.ts';
 
-const FAMILY_COLORS: Record<string, number> = {
-  receiver: 0x8d_93_9c,
-  lower: 0x6f_75_7e,
-  barrel: 0x5d_63_6b,
-  'tube-magazine': 0x4d_53_5b,
-  forend: 0x8a_6a_52,
-  handguard: 0x74_80_5f,
-  grip: 0x7d_60_4c,
-  magazine: 0x56_62_76,
-  stock: 0x8a_6a_52,
-  sight: 0x3f_46_50,
-};
-const MAGAZINE_FLOORPLATE = 0x35_42_58;
 const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
 const NORMAL = 0xf0_a2_4a;
@@ -122,13 +110,7 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     const failing = hl.parts.has(part);
 
     for (const s of def.displaySolids ?? def.solids) {
-      let color = FAMILY_COLORS[def.family] ?? 0x88_88_88;
-      if (s.id === 'floorplate') {
-        color = MAGAZINE_FLOORPLATE;
-      }
-      if (failing) {
-        color = FAIL;
-      }
+      const color = failing ? FAIL : srgbToHex(solidColor(GUN_PALETTE, def.family, s.id));
       const mesh = new Mesh(
         meshGeometry(s),
         new MeshStandardMaterial({
