@@ -938,7 +938,16 @@ names a symbol that isn't in that file.
 `loadGunDesign`, pass `npm run check:designs`, and have per-design resolved-solid
 snapshots. The catalogue contains `stanag-20`, `stanag-30`, `ak74-30`, and
 `akm-30`; the AR and AK designs reference `stanag-20` and `ak74-30` respectively.
-Next is viewer save/open, prefab pickers and lock controls.
+The viewer opens a design with `?design=<name>` and shows its template, declared
+and loaded status, issues, locks and prefab labels (stale once an edit breaks a
+prefab's fixed params). Next is viewer save, prefab pickers and lock controls.
+
+Known issue (BR, 2026-09-29; noted, not yet addressed): `stanag-20` is built as
+`profile: stanag-curved` at length M, a shortened curved magazine. A real
+20-round STANAG is straight; only the 30-round one is curved. Fixing it means a
+straight STANAG profile (or `standard`, if its section matches) and a decision
+on the AR design's magazine, which references `stanag-20` today: a straight
+20, a curved `stanag-30`, or its current curved M without a prefab.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
