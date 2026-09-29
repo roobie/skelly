@@ -1,7 +1,8 @@
-// Crowd stress test: how many mobgen actors can walk at once, and what it costs, in either of two
-// render paths (?mode=bones|skinned). See stressActors.ts for how one actor's three.js objects are
-// built and posed in each path; this file owns the DOM/HUD, the crowd simulation (paths, speeds,
-// attacks) and the sweep that compares both paths across actor counts.
+// Crowd stress test: how many mobgen actors can walk at once, and what it costs, in any of three render
+// paths (?mode=bones|skinned|crowd). See stressActors.ts for how one actor's (or, in crowd mode, the
+// whole crowd's) three.js objects are built and posed in each path; this file owns the DOM/HUD, the
+// crowd simulation (paths, speeds, attacks), the long-frame log and the sweep that compares all three
+// paths across actor counts.
 
 import {
   Color,
@@ -10,6 +11,7 @@ import {
   Group,
   HemisphereLight,
   MathUtils,
+  type Object3D,
   PerspectiveCamera,
   Scene,
   WebGLRenderer,
@@ -20,14 +22,17 @@ import { chance, range, seededRng } from '../core/random.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { advanceClock, createGaitCache, type GaitClock, type WalkActor, walkPose } from '../mob/gait.ts';
 import {
+  buildCrowdRender,
   buildPoolRender,
+  type CrowdPoolRender,
+  type CrowdRender,
+  type CrowdVariantAssignment,
   createActor,
   disposePoolRender,
   generatePoolEntry,
   type Mode,
   type PoolEntry,
   type PoolRender,
-  type StressActor,
 } from './stressActors.ts';
 
 const TAU = Math.PI * 2;
@@ -39,6 +44,10 @@ const SWEEP_SKIP_MS = 1000;
 const SWEEP_MEASURE_MS = 4000;
 const HUD_WINDOW_MS = 2000;
 const SAMPLE_RETENTION_MS = 20_000; // comfortably covers the sweep's own SWEEP_MEASURE_MS window
+const LONG_FRAME_MS = 100; // any frame slower than this gets logged (see "long frame" section below)
+const LONG_FRAME_LOG_MAX = 500; // capped so a long session's log can't grow without bound
+const LONG_FRAME_HUD_COUNT = 5; // how many recent ones the HUD lists
+const PAGE_START_MS = performance.now();
 
 // Distance-based LOD (mobgen/CHALLENGES.md §1's "pose far actors less often"): an actor further than
 // LOD_NEAR_M from the camera is re-posed every 2nd frame, further than LOD_FAR_M every 3rd — its
@@ -137,8 +146,29 @@ const frameCrowd = (halfExtent: number): void => {
 
 // ---- query params / URL ----
 
+/** Cycle order the mode button and the sweep both use: bones -> skinned -> crowd -> bones -> ... */
+const nextMode = (m: Mode): Mode => {
+  if (m === 'bones') {
+    return 'skinned';
+  }
+  if (m === 'skinned') {
+    return 'crowd';
+  }
+  return 'bones';
+};
+
+const parseMode = (raw: string | null): Mode => {
+  if (raw === 'bones') {
+    return 'bones';
+  }
+  if (raw === 'crowd') {
+    return 'crowd';
+  }
+  return 'skinned'; // default, and the fallback for anything unrecognized
+};
+
 const query = new URLSearchParams(location.search);
-let mode: Mode = query.get('mode') === 'bones' ? 'bones' : 'skinned';
+let mode: Mode = parseMode(query.get('mode'));
 let actorCount = Math.max(1, Number.parseInt(query.get('n') ?? '60', 10) || 60);
 const poolSize = Math.max(1, Number.parseInt(query.get('pool') ?? '12', 10) || 12);
 let lodEnabled = query.get('lod') !== '0'; // on by default
@@ -193,7 +223,10 @@ interface PathState {
 }
 
 interface CrowdMember {
-  readonly actor: StressActor;
+  /** Places this actor — a StressActor's own place() in 'bones'/'skinned', or a CrowdRender actor
+   * handle's place() (writing into the shared texture row) in 'crowd'. Unifying this into one field lets
+   * the render loop below call `member.place(...)` the same way regardless of mode. */
+  readonly place: (x: number, z: number, yawRad: number, pose: Pose) => void;
   readonly poolIndex: number;
   /** This member's own WalkActor: shares the pool entry's bones/extents/params/seed, but with its own
    * GaitCache (see mob/gait.ts's GaitCache) — several members reference the same pool entry (and so the
@@ -210,6 +243,12 @@ interface CrowdMember {
 }
 
 let crowd: CrowdMember[] = [];
+// Scene objects currently in `world` for the crowd: one actor's worth each in 'bones'/'skinned' (added
+// per member below), or the handful of shared InstancedMeshes in 'crowd' (added once). Tracked separately
+// from `crowd` itself so disposeCrowd doesn't care which mode built them.
+let crowdSceneObjects: Object3D[] = [];
+// Only set in 'crowd' mode: owns the shared bone-matrix texture/material, needs its own commit()/dispose().
+let crowdRenderHandle: CrowdRender | undefined;
 
 const gridLayout = (n: number): { readonly cols: number; readonly rows: number } => {
   const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
@@ -217,50 +256,88 @@ const gridLayout = (n: number): { readonly cols: number; readonly rows: number }
 };
 
 const disposeCrowd = (): void => {
-  for (const member of crowd) {
-    for (const obj of member.actor.sceneObjects) {
-      world.remove(obj);
-    }
+  for (const obj of crowdSceneObjects) {
+    world.remove(obj);
   }
+  crowdSceneObjects = [];
+  crowdRenderHandle?.dispose();
+  crowdRenderHandle = undefined;
   crowd = [];
+};
+
+/** Everything about actor `i` that's the same regardless of render mode: its grid-cell path, speed,
+ * attack cadence and initial clock phase. */
+interface MemberState {
+  readonly poolIndex: number;
+  readonly walkActor: WalkActor;
+  readonly path: PathState;
+  readonly speed: number;
+  readonly attacker: boolean;
+  readonly attackIntervalS: number;
+  readonly clock: GaitClock;
+  readonly attackCooldown: number;
+}
+
+const memberStateFor = (i: number, cols: number, rows: number): MemberState => {
+  const poolIndex = i % pool.length;
+  const rng = seededRng(i + 1);
+  const col = i % cols;
+  const row = Math.floor(i / cols);
+  const path: PathState = {
+    cx: (col - (cols - 1) / 2) * GRID_SPACING,
+    cz: (row - (rows - 1) / 2) * GRID_SPACING,
+    radius: range(rng, 0.6, 1.1),
+    dir: chance(rng, 0.5) ? 1 : -1,
+    angle: range(rng, 0, TAU),
+  };
+  const speed = range(rng, 0.8, 2.8);
+  const attacker = chance(rng, ATTACKER_FRACTION);
+  const attackIntervalS = range(rng, 2, 5);
+  return {
+    poolIndex,
+    walkActor: { ...pool[poolIndex]!.walkActor, cache: createGaitCache() },
+    path,
+    speed,
+    attacker,
+    attackIntervalS,
+    clock: { stepIndex: Math.floor(range(rng, 0, 8)), progress: rng() },
+    attackCooldown: attacker ? range(rng, 0, attackIntervalS) : Number.POSITIVE_INFINITY,
+  };
+};
+
+const pushMember = (state: MemberState, place: CrowdMember['place']): void => {
+  crowd.push({ place, ...state, attackTime: undefined });
 };
 
 const buildCrowd = (n: number): void => {
   disposeCrowd();
   const { cols, rows } = gridLayout(n);
-  for (let i = 0; i < n; i++) {
-    const poolIndex = i % pool.length;
-    const render = poolRenders[poolIndex]!;
-    const actor = createActor(pool[poolIndex]!, render);
-    for (const obj of actor.sceneObjects) {
+
+  if (mode === 'crowd') {
+    const assignments: CrowdVariantAssignment[] = Array.from({ length: n }, (_, i) => ({
+      poolIndex: i % pool.length,
+    }));
+    const render = buildCrowdRender(pool, poolRenders as readonly CrowdPoolRender[], assignments);
+    crowdRenderHandle = render;
+    crowdSceneObjects = [...render.sceneObjects];
+    for (const obj of render.sceneObjects) {
       world.add(obj);
     }
-    const rng = seededRng(i + 1);
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const path: PathState = {
-      cx: (col - (cols - 1) / 2) * GRID_SPACING,
-      cz: (row - (rows - 1) / 2) * GRID_SPACING,
-      radius: range(rng, 0.6, 1.1),
-      dir: chance(rng, 0.5) ? 1 : -1,
-      angle: range(rng, 0, TAU),
-    };
-    const speed = range(rng, 0.8, 2.8);
-    const attacker = chance(rng, ATTACKER_FRACTION);
-    const attackIntervalS = range(rng, 2, 5);
-    crowd.push({
-      actor,
-      poolIndex,
-      walkActor: { ...pool[poolIndex]!.walkActor, cache: createGaitCache() },
-      path,
-      speed,
-      attacker,
-      attackIntervalS,
-      clock: { stepIndex: Math.floor(range(rng, 0, 8)), progress: rng() },
-      attackTime: undefined,
-      attackCooldown: attacker ? range(rng, 0, attackIntervalS) : Number.POSITIVE_INFINITY,
-    });
+    for (let i = 0; i < n; i++) {
+      pushMember(memberStateFor(i, cols, rows), render.actors[i]!.place);
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const state = memberStateFor(i, cols, rows);
+      const actor = createActor(pool[state.poolIndex]!, poolRenders[state.poolIndex]!);
+      crowdSceneObjects.push(...actor.sceneObjects);
+      for (const obj of actor.sceneObjects) {
+        world.add(obj);
+      }
+      pushMember(state, actor.place);
+    }
   }
+
   const halfExtent = Math.max(cols, rows) * (GRID_SPACING / 2) + 1.5;
   updateGround(halfExtent);
   frameCrowd(halfExtent);
@@ -294,6 +371,75 @@ const pushSample = (s: FrameSample): void => {
   while (samples.length > 0 && samples[0]!.t < cutoff) {
     samples.shift();
   }
+};
+
+// ---- long-frame log ----
+//
+// frameMs is measured between the *starts* of consecutive rAF callbacks (see the render loop below), so
+// it spans roughly "the browser's own scheduling/vsync gap" plus "the ENTIRE previous frame's own
+// work" (pose + render + whatever overhead) — not this frame's own pose/render, which hasn't happened
+// yet when frameMs is captured. A long frameMs is therefore explained by the *previous* frame's pose/
+// render numbers, not this one's; both are recorded below, clearly labelled, so the log doesn't quietly
+// mis-attribute a stall to the frame that merely reports it.
+
+interface LongFrame {
+  readonly t: number; // performance.now() when recorded — matches FrameSample.t, for the sweep's windowing
+  readonly mode: Mode;
+  readonly n: number;
+  readonly frameMs: number;
+  /** The previous frame's own cpu/render — what frameMs above actually spans, and so the likely cause. */
+  readonly prevCpuMs: number;
+  readonly prevRenderMs: number;
+  /** This frame's own cpu/render — for context, but too late to have caused the gap frameMs measures. */
+  readonly curCpuMs: number;
+  readonly curRenderMs: number;
+  /** frameMs minus the previous frame's pose+render: whatever's left over (browser/GC/vsync/scheduling). */
+  readonly outsideMs: number;
+}
+
+const longFrames: LongFrame[] = [];
+
+const formatLongFrame = (f: LongFrame): string =>
+  `long frame at t=${((f.t - PAGE_START_MS) / 1000).toFixed(1)}s mode=${f.mode} n=${f.n}: ` +
+  `frameMs=${f.frameMs.toFixed(0)} — previous frame's pose ${f.prevCpuMs.toFixed(1)}ms + render ${f.prevRenderMs.toFixed(1)}ms ` +
+  `(this frame's own: pose ${f.curCpuMs.toFixed(1)}ms render ${f.curRenderMs.toFixed(1)}ms), unaccounted ${f.outsideMs.toFixed(0)}ms`;
+
+/** Grouped (see GaitBasis's pattern in mob/gait.ts for the same reasoning) since they always travel
+ * together and individually would put recordLongFrame over useMaxParams. */
+interface FrameTimings {
+  readonly now: number;
+  readonly frameMs: number;
+  readonly prevSample: FrameSample | undefined;
+  readonly curCpuMs: number;
+  readonly curRenderMs: number;
+}
+
+/** Records a long frame (if `frameMs` warrants it) and logs it — call once per rendered frame, with the
+ * *previous* frame's sample (before pushSample adds the current one) and this frame's own cpu/render. */
+const recordLongFrame = (timings: FrameTimings): void => {
+  const { now, frameMs, prevSample, curCpuMs, curRenderMs } = timings;
+  if (frameMs <= LONG_FRAME_MS) {
+    return;
+  }
+  const prevCpuMs = prevSample?.cpuMs ?? 0;
+  const prevRenderMs = prevSample?.renderMs ?? 0;
+  const longFrame: LongFrame = {
+    t: now,
+    mode,
+    n: actorCount,
+    frameMs,
+    prevCpuMs,
+    prevRenderMs,
+    curCpuMs,
+    curRenderMs,
+    outsideMs: frameMs - prevCpuMs - prevRenderMs,
+  };
+  longFrames.push(longFrame);
+  if (longFrames.length > LONG_FRAME_LOG_MAX) {
+    longFrames.shift();
+  }
+  // biome-ignore lint/suspicious/noConsole: a stall is exactly what a console watcher wants immediately.
+  console.warn(formatLongFrame(longFrame));
 };
 
 /** Mean fps and the "1% low" (mean fps of the slowest 1% of frames, at least one) over `window`. */
@@ -346,9 +492,22 @@ const updateHud = (): void => {
     `cpu/render  ${fmt2(meanRender)} ms`,
     `draw calls  ${last?.calls ?? 0}`,
     `triangles   ${last?.triangles ?? 0}`,
-    paused ? 'walk        PAUSED' : '',
+    paused ? 'walk        PAUSED' : undefined,
+    ...(longFrames.length > 0
+      ? [
+          '',
+          `long frames (${longFrames.length} total, last ${Math.min(LONG_FRAME_HUD_COUNT, longFrames.length)}):`,
+          ...longFrames
+            .slice(-LONG_FRAME_HUD_COUNT)
+            .map(
+              (f) =>
+                `  ${((f.t - PAGE_START_MS) / 1000).toFixed(1)}s ${f.mode} n=${f.n} ${f.frameMs.toFixed(0)}ms ` +
+                `(prev pose ${f.prevCpuMs.toFixed(1)} render ${f.prevRenderMs.toFixed(1)})`,
+            ),
+        ]
+      : []),
   ]
-    .filter(Boolean)
+    .filter((line): line is string => line !== undefined)
     .join('\n');
 };
 setInterval(updateHud, 500);
@@ -434,13 +593,15 @@ renderer.setAnimationLoop(() => {
         continue; // sits this frame out: clock/path already advanced above, only pose + matrix write skip
       }
     }
-    member.actor.place(x, z, yaw, poseFor(member));
+    member.place(x, z, yaw, poseFor(member));
   }
+  crowdRenderHandle?.commit(); // no-op unless something above actually wrote into the shared texture
   const cpuMs = performance.now() - cpuStart;
 
   const renderStart = performance.now();
   renderer.render(scene, camera);
   const renderMs = performance.now() - renderStart;
+  const prevSample = samples.at(-1);
   pushSample({
     t: now,
     frameMs,
@@ -449,6 +610,7 @@ renderer.setAnimationLoop(() => {
     calls: renderer.info.render.calls,
     triangles: renderer.info.render.triangles,
   });
+  recordLongFrame({ now, frameMs, prevSample, curCpuMs: cpuMs, curRenderMs: renderMs });
 });
 
 // ---- controls ----
@@ -458,9 +620,9 @@ const setMode = (m: Mode): void => {
     return;
   }
   mode = m;
-  modeBtn.textContent = `mode: ${mode} (toggle)`;
+  modeBtn.textContent = `mode: ${mode} (click to cycle)`;
   if (pool.length === poolSize) {
-    disposeCrowd(); // remove every actor referencing the old mode's geometry before disposing it
+    disposeCrowd(); // remove every actor (or, in 'crowd', the shared InstancedMeshes) for the old mode
     rebuildPoolRenders();
     buildCrowd(actorCount);
   }
@@ -470,13 +632,21 @@ const setMode = (m: Mode): void => {
 const setActorCount = (n: number): void => {
   actorCount = Math.max(1, Math.min(2000, n));
   if (pool.length === poolSize) {
+    // 'crowd' mode's InstancedMesh geometries carry a crowdSlot attribute sized (and valued) for the
+    // *current* actor count (see buildCrowdRender) — setAttribute would otherwise leave the old one's GPU
+    // buffer orphaned on the pool-owned geometry instead of properly freed, since only geometry.dispose()
+    // (via rebuildPoolRenders) actually releases it. 'bones'/'skinned' geometries don't depend on actor
+    // count at all, so they skip this — no reason to re-mesh on every +10/-10/x2 click.
+    if (mode === 'crowd') {
+      rebuildPoolRenders();
+    }
     buildCrowd(actorCount);
   }
   updateUrl();
 };
 
-modeBtn.textContent = `mode: ${mode} (toggle)`;
-modeBtn.addEventListener('click', () => setMode(mode === 'bones' ? 'skinned' : 'bones'));
+modeBtn.textContent = `mode: ${mode} (click to cycle)`;
+modeBtn.addEventListener('click', () => setMode(nextMode(mode)));
 actorsMinus.addEventListener('click', () => setActorCount(actorCount - 10));
 actorsPlus.addEventListener('click', () => setActorCount(actorCount + 10));
 actorsDouble.addEventListener('click', () => setActorCount(actorCount * 2));
@@ -502,6 +672,7 @@ interface SweepRow {
   readonly renderMs: number;
   readonly draws: number;
   readonly triangles: number;
+  readonly longFrameCount: number;
 }
 
 const measureWindow = (
@@ -513,6 +684,7 @@ const measureWindow = (
   readonly renderMs: number;
   readonly draws: number;
   readonly triangles: number;
+  readonly longFramesInWindow: readonly LongFrame[];
 } => {
   const inWindow = samples.filter((s) => s.t >= fromMs && s.t <= toMs);
   const mean = (f: (s: FrameSample) => number): number =>
@@ -524,6 +696,7 @@ const measureWindow = (
     renderMs: mean((s) => s.renderMs),
     draws: last?.calls ?? 0,
     triangles: last?.triangles ?? 0,
+    longFramesInWindow: longFrames.filter((f) => f.t >= fromMs && f.t <= toMs),
   };
 };
 
@@ -534,11 +707,12 @@ const setControlsDisabled = (disabled: boolean): void => {
 };
 
 const sweepTable = (rows: readonly SweepRow[]): string => {
-  const header = '| mode | n | lod | mean fps | 1% low | pose cpu ms | render cpu ms | draws | triangles |';
-  const rule = '|---|---|---|---|---|---|---|---|---|';
+  const header =
+    '| mode | n | lod | mean fps | 1% low | pose cpu ms | render cpu ms | draws | triangles | long frames |';
+  const rule = '|---|---|---|---|---|---|---|---|---|---|';
   const body = rows.map(
     (r) =>
-      `| ${r.mode} | ${r.n} | ${r.lod ? 'on' : 'off'} | ${fmt1(r.meanFps)} | ${fmt1(r.low1)} | ${fmt2(r.cpuMs)} | ${fmt2(r.renderMs)} | ${r.draws} | ${r.triangles} |`,
+      `| ${r.mode} | ${r.n} | ${r.lod ? 'on' : 'off'} | ${fmt1(r.meanFps)} | ${fmt1(r.low1)} | ${fmt2(r.cpuMs)} | ${fmt2(r.renderMs)} | ${r.draws} | ${r.triangles} | ${r.longFrameCount} |`,
   );
   return [header, rule, ...body].join('\n');
 };
@@ -553,8 +727,9 @@ const runSweep = async (): Promise<void> => {
   setControlsDisabled(true);
   sweepOutput.textContent = '';
   const startMode = mode;
-  const modes: readonly Mode[] = [startMode, startMode === 'bones' ? 'skinned' : 'bones'];
+  const modes: readonly Mode[] = [startMode, nextMode(startMode), nextMode(nextMode(startMode))];
   const rows: SweepRow[] = [];
+  const sweepLongFrames: LongFrame[] = [];
   try {
     for (const m of modes) {
       setMode(m);
@@ -567,7 +742,8 @@ const runSweep = async (): Promise<void> => {
         const from = performance.now();
         await sleep(SWEEP_MEASURE_MS);
         const to = performance.now();
-        const { fps, cpuMs, renderMs, draws, triangles } = measureWindow(from, to);
+        const { fps, cpuMs, renderMs, draws, triangles, longFramesInWindow } = measureWindow(from, to);
+        sweepLongFrames.push(...longFramesInWindow);
         rows.push({
           mode: m,
           n,
@@ -578,10 +754,17 @@ const runSweep = async (): Promise<void> => {
           renderMs,
           draws,
           triangles,
+          longFrameCount: longFramesInWindow.length,
         });
       }
     }
-    const table = sweepTable(rows);
+    const table = [
+      sweepTable(rows),
+      '',
+      sweepLongFrames.length > 0
+        ? `Long frames recorded during measurement (${sweepLongFrames.length}):\n${sweepLongFrames.map((f) => `- ${formatLongFrame(f)}`).join('\n')}`
+        : 'No long frames recorded during measurement.',
+    ].join('\n');
     sweepOutput.textContent = table;
     // biome-ignore lint/suspicious/noConsole: the sweep's whole point is a copy-pasteable result.
     console.log(table);
