@@ -999,6 +999,68 @@ The mapping between gungen's axes and deadvox's is derived and tested:
 deadvox holds a model with +x forward and +y up
 (`deadvox/src/core/schema.ts:202-204`).
 
+**3.4 (implemented, lane B).**
+
+- API. `src/core/glb.ts#exportGlb` is the frozen `ExportGlb`; it also exports
+  `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
+  asset)` resolves, selects the gun anchors and applies `GUN_PALETTE`; it
+  returns the writer's result, or the `AnchorSelectionError` for a missing or
+  ambiguous `hold`. Units and axes are in `src/core/exportFrame.ts`. The frozen
+  types didn't change.
+- CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--id
+  <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox entry). It
+  takes a design (has `format`) or a fixture, and defaults the id to the file
+  name with dashes as underscores.
+- Scene layout: a root node named by the asset id, one node per part named
+  `<part id>:<registry key>` (placed by its resolved transform, with `extras`
+  `part`, `family`, `role`, `solids`), one mesh per part with one primitive per
+  drawn solid (`displaySolids ?? solids`; primitive `extras.solid` is the solid
+  id), and one empty child node per port named `<part>.<port>` whose `extras.port`
+  is the frozen `ExportPortMetadata`. A rail is one port node with a `rail`
+  count/pitch record. Port frames in `extras` are assembly space in u, as
+  frozen; the node's own transform is part-local, in metres. The root's
+  `extras.gungen` records the unit and `metresPerUnit`.
+- Materials: one per distinct colour, `baseColorFactor` in linear space
+  (standard sRGB transfer function), metallic 0, roughness 0.85. The writer has
+  its own copy of the special, role, fallback lookup, since core can't import
+  `src/gun/palette.ts#solidColor`; a test checks the two agree.
+- Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm, from the STANAG top depth
+  of 5.5u = 63 mm). Vertices are `mesh.ts` positions times that; normals are
+  unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
+  export uses 11.5 mm.
+- Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is
+  right-handed Y-up; deadvox's held model is +x forward, +y up. So the file
+  keeps gungen's axes (`FILE_FROM_GUNGEN`, identity) and `grip.at` and the
+  anchors are the assembly positions times `METRES_PER_UNIT`, with no swap.
+- **Grip orientation (BR ruling, 2026-09-29).** `grip.turn` does not include
+  the grip's rake. The hold frame's orientation (which leans with the grip) is
+  not used for `turn`. `turn` is only the fixed rotation from the file's axes to
+  deadvox's held axes, from `src/core/exportFrame.ts#gripTurn`: the Euler XYZ
+  angles (degrees, deadvox's order) of the transpose of `FILE_FROM_GUNGEN`.
+  Because the file already has +x forward and +y up, every export gets
+  `[0, 0, 0]`. deadvox's existing firearms use `[-90, 0, 0]` only because
+  their files are authored Z-up; `gripTurn` gives exactly that for a Z-up
+  mapping (tested). `grip.at` is the selected `hold` position. The tilted hold
+  frame stays in gungen's anchor data for future hand posing. To reverse the
+  ruling, derive the turn from `SelectedAnchors.hold` inside `gripTurn` and
+  nowhere else. `SelectedAnchors.hold`'s forward and up are not read by the
+  export.
+- `anchors` in the model entry are every name in `SelectedAnchors.others`
+  (`muzzle`, `support`), positions rounded to a micrometre. `hold` and `roll`
+  are omitted, as frozen.
+- Errors are checked in this order: structure issues, unplaced parts, part or
+  port ids that are empty or contain a dot (reported as `<part>.<port>`), palette
+  colours (key `family <role>`, `special <solid>` or `fallback`), then the asset
+  file (`assets/models/[a-z0-9_-]+.glb`).
+- Validation: Khronos `gltf-validator` is a dev dependency.
+  `test/glbValidate.test.ts` validates the export of every design in
+  `designs/` with zero errors and zero warnings; it is part of `npm test`, and
+  the CI workflow also runs it as its own step.
+- Tests: `test/exportGlb.test.ts` (units and axes, node names and counts,
+  transforms, port extras, rails, mesh bounds and scale, normals, colours,
+  `grip.at`, `grip.turn` and its independence from rake, error variants),
+  `test/glbValidate.test.ts`, `test/exportCli.test.ts`.
+
 **3.5 End to end in deadvox.** Replace one existing firearm model (proposed:
 `rifle_assault`) with an export of a curated AR design, and check it in
 first-person hands and in piles. This needs only 3.0 and 3.4, since a fixture
