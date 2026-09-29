@@ -1,0 +1,69 @@
+{
+  "name": "archetype-awm",
+  "description": "AWM-type bolt-action rifle with a heavy barrel, detachable box magazine, thumbhole stock, and optic.",
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "receiver",
+      "params": {
+        "action": "bolt",
+        "feed": "box",
+        "bore": "M"
+      }
+    },
+    "lower": {
+      "family": "lower",
+      "params": {
+        "layout": "thumbhole",
+        "magazineWell": "recessed"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "length": "L",
+        "profile": "heavy"
+      }
+    },
+    "magazine": {
+      "family": "magazine",
+      "params": {
+        "length": "5-round"
+      }
+    },
+    "stock": {
+      "family": "stock",
+      "params": {
+        "length": "L",
+        "style": "thumbhole"
+      }
+    },
+    "sight": {
+      "family": "sight"
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.lower",
+      "to": "lower.top"
+    },
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "lower.magazine",
+      "to": "magazine.top"
+    },
+    {
+      "from": "receiver.stock",
+      "to": "stock.front"
+    },
+    {
+      "from": "receiver.rail",
+      "to": "sight.base",
+      "slot": 3
+    }
+  ],
+  "expect": []
+}

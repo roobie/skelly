@@ -23,7 +23,7 @@ const isBoxFedBoltRifle = (template: (typeof TEMPLATES)[number]): boolean => {
 describe('magazine length bands', () => {
   it('limits the short bolt-magazine band to the detachable-box bolt rifle', () => {
     const boxFedBoltRifles = TEMPLATES.filter(isBoxFedBoltRifle).map(({ name }) => name);
-    expect(boxFedBoltRifles).toEqual(['bolt-rifle-box']);
+    expect(boxFedBoltRifles).toEqual(['bolt-rifle-box', 'bolt-rifle-thumbhole']);
 
     for (const template of TEMPLATES) {
       const magazine = template.slots.find(({ family }) => family === 'magazine');
@@ -31,7 +31,7 @@ describe('magazine length bands', () => {
         continue;
       }
       const choices = parameterChoices(magazine.params?.length);
-      if (template.name === 'bolt-rifle-box') {
+      if (isBoxFedBoltRifle(template)) {
         expect(choices).toEqual(['5-round', '10-round']);
       } else {
         expect(choices).not.toContain('5-round');

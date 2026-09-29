@@ -192,6 +192,7 @@ export const LOWER_LAYOUTS = {
   pump: { tiltedMagazineProfiles: [] },
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
+  thumbhole: { tiltedMagazineProfiles: ['standard'] },
 } as const;
 const LOWER_TRIGGER_X = {
   conventional: -10.75,
@@ -200,6 +201,7 @@ const LOWER_TRIGGER_X = {
   pump: -13,
   ak: -10.75,
   ar: -10.75,
+  thumbhole: -10.75,
 } as const;
 const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
 const AK_GAS_CYLINDER_Y = 2;
@@ -794,6 +796,20 @@ export const lower: PartFamily = {
           keepOuts: [triggerFinger],
           axes: [],
         };
+      case 'thumbhole': {
+        const frame = magazineWellFrame(
+          -14.75,
+          conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
+          conventionalWell.port.pos[0],
+        );
+        return {
+          family: 'lower',
+          solids: [...frame, ...triggerGuards],
+          ports: [top, conventionalWell.port],
+          keepOuts: [triggerFinger, conventionalWell.path, ...(conventionalWell.wellPath ? [conventionalWell.wellPath] : [])],
+          axes: [],
+        };
+      }
       case 'pump':
         return {
           family: 'lower',
@@ -848,14 +864,14 @@ export const barrel: PartFamily = {
   params: {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
-    profile: choice('standard', 'pistol', 'revolver'),
+    profile: choice('standard', 'heavy', 'pistol', 'revolver'),
     handguardLayout: { values: ['standard', 'ak'], default: 'standard', from: [{ port: 'clamp', param: 'layout' }] },
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const lengthClass = cls(params, 'length');
     const len = barrelLength(params);
-    const r = PISTOL_BARREL_RADIUS[bore];
+    const r = Math.ceil((PISTOL_BARREL_RADIUS[bore] * (params.profile === 'heavy' ? 1.5 : 1)) / GRID) * GRID;
     const fore =
       params.handguardLayout === 'ak'
         ? akHandguardLength(lengthClass)
@@ -1718,7 +1734,7 @@ export const magazine: PartFamily = {
  */
 export const stock: PartFamily = {
   name: 'stock',
-  params: { length: size, style: choice('straight', 'sporting', 'dropped', 'tapered', 'tapered-sawed') },
+  params: { length: size, style: choice('straight', 'sporting', 'dropped', 'tapered', 'tapered-sawed', 'thumbhole') },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
     const port: PortDef = {
@@ -1730,6 +1746,32 @@ export const stock: PartFamily = {
       up: Y,
       required: true,
     };
+    if (params.style === 'thumbhole') {
+      const stockDrop = 1.5;
+      const combTop = -1.5;
+      const sideZ: readonly [number, number] = [-1.5, 1.5];
+      const openingFront = -0.25 * len;
+      const gripRear = -0.4 * len;
+      const buttFront = -0.72 * len;
+      const openingBottom = -0.34 * len;
+      const stockBottom = -0.42 * len;
+      const rect = (id: string, x0: number, y0: number, x1: number, y1: number) =>
+        extrudedPolygon(id, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], sideZ);
+      return {
+        family: 'stock',
+        solids: [
+          rect('fore-stock', openingFront, -2 - stockDrop, 0, combTop),
+          rect('thumbhole-top', buttFront, -2 - stockDrop, openingFront, combTop),
+          rect('grip', gripRear, stockBottom, openingFront, -2 - stockDrop),
+          rect('thumbhole-bottom', buttFront, stockBottom, gripRear, openingBottom),
+          rect('butt', -len, stockBottom, buttFront, combTop),
+        ],
+        ports: [port],
+        keepOuts: [],
+        axes: [],
+        tags: [FIRING_GRIP],
+      };
+    }
     if (params.style === 'sporting') {
       return {
         family: 'stock',

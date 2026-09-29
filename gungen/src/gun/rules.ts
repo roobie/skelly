@@ -18,6 +18,48 @@ const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
   [...r.defs].filter(([part, def]) => r.placed.has(part) && (family === undefined || def.family === family));
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
+export const thumbholeGripMatch: Rule = {
+  id: 'thumbhole-grip-match',
+  title: 'A thumbhole stock is the firing grip',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [stock] of placedParts(r, 'stock')) {
+      if (r.params.get(stock)?.style?.value !== 'thumbhole') {
+        continue;
+      }
+      const stockMount = r.connections.find((connection) => {
+        const ends = [connection.from, connection.to];
+        return ends.some((end) => end.part === stock && end.port.id === 'front') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'receiver');
+      });
+      if (!stockMount) {
+        continue;
+      }
+      const receiver = [stockMount.from.part, stockMount.to.part].find((part) => part !== stock);
+      const lowerMount = r.connections.find((connection) => {
+        const ends = [connection.from, connection.to];
+        return ends.some((end) => end.part === receiver && r.defs.get(end.part)?.family === 'receiver') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'lower');
+      });
+      const lower = lowerMount && [lowerMount.from.part, lowerMount.to.part].find((part) => r.defs.get(part)?.family === 'lower');
+      if (!lower) {
+        continue;
+      }
+      for (const connection of r.connections) {
+        const grip = gripPartOnLower(connection, lower);
+        if (grip) {
+          issues.push({
+            rule: 'thumbhole-grip-match',
+            message: `${grip} is a separate pistol grip, but the thumbhole stock provides the firing grip; remove the separate grip.`,
+            parts: [stock, grip],
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
 export const firingGrip: Rule = {
   id: 'firing-grip',
   title: 'There is a firing grip',
