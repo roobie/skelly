@@ -75,6 +75,7 @@ const PUMP_RECEIVER_DROP = 1;
 const PUMP_FOREND_MOUNT_X = 8;
 const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
 const PUMP_FOREND_WALL = 0.5 * 1.1;
+const PUMP_TUBE_LENGTH_PERCENTAGES = ['50', '75', '100'] as const;
 
 // A box magazine's section: front to back, and side to side. 1.8× the first
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
@@ -186,6 +187,13 @@ export const G3_MAGAZINE_WELL_TILT = Math.atan(
   (MAGAZINE_HOUSING_REAR_LENGTH - MAGAZINE_HOUSING_FRONT_LENGTH) / MAGAZINE_WELL_DEPTH,
 );
 const snapAkGrid = (value: number): number => Math.round(value / GRID) * GRID;
+const pumpTubeLength = (barrelSpan: number, percentValue: string): number => {
+  if (!PUMP_TUBE_LENGTH_PERCENTAGES.includes(percentValue as (typeof PUMP_TUBE_LENGTH_PERCENTAGES)[number])) {
+    throw new Error(`Unsupported pump tube length percentage: ${percentValue}`);
+  }
+  const fraction = Math.min(1, Math.max(0.5, Number(percentValue) / 100));
+  return snapAkGrid(barrelSpan * fraction);
+};
 const MAGAZINE_INSERTION = MAGAZINE_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
 const MAGAZINE_ORIENTATION_PATTERN = /^(slant)-(5|8|10)$/;
@@ -850,6 +858,11 @@ export const barrel: PartFamily = {
     length: size,
     profile: choice('standard', 'pistol', 'revolver'),
     handguardLayout: { values: ['standard', 'ak'], default: 'standard', from: [{ port: 'clamp', param: 'layout' }] },
+    tubeLengthPercent: {
+      values: PUMP_TUBE_LENGTH_PERCENTAGES,
+      default: '75',
+      from: [{ port: 'lug', param: 'lengthPercent' }],
+    },
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
@@ -860,9 +873,10 @@ export const barrel: PartFamily = {
       params.handguardLayout === 'ak'
         ? akHandguardLength(lengthClass)
         : snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
-    const tubeEnd = lengthClass === 'L' ? len : fore;
+    const tubeLengthPercent = params.tubeLengthPercent ?? '75';
+    const tubeEnd = pumpTubeLength(len, tubeLengthPercent);
     const supportLug: PortDef[] =
-      lengthClass === 'L'
+      tubeEnd > fore
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y }]
         : [];
     return {
@@ -1189,30 +1203,32 @@ export const handguard: PartFamily = {
 /** A magazine tube under the barrel; its front fixes to the barrel's lug. */
 export const tubeMagazine: PartFamily = {
   name: 'tube-magazine',
-  // Length follows the barrel whose lug the cap fixes to, unless set.
+  // Tube reach is a percentage of the actual barrel length, not a tube size class.
   params: {
-    length: { ...size, from: [{ port: 'cap', param: 'length' }] },
+    lengthPercent: { values: PUMP_TUBE_LENGTH_PERCENTAGES, default: '75' },
+    barrelLength: { ...size, from: [{ port: 'cap', param: 'length' }] },
     // The barrel's bore sets how far its underside sits above the tube.
     bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
   },
   build(params): PartDef {
-    const lengthClass = cls(params, 'length');
-    const barrelEnd = barrelLength({ length: lengthClass });
+    const barrelLengthClass = (params.barrelLength ?? size.default) as SizeClass;
+    const barrelEnd = barrelLength({ length: barrelLengthClass });
+    const lengthPercent = params.lengthPercent ?? '75';
     const supportX = snapAkGrid(barrelEnd * HANDGUARD_REACH.barrelFraction);
-    const length = lengthClass === 'L' ? barrelEnd : supportX;
+    const length = pumpTubeLength(barrelEnd, lengthPercent);
     // A slim barrel leaves a gap above the tube; bands bridge it at each attached lug.
     const bandTop = TUBE_DROP - BARREL_RADIUS[cls(params, 'bore')];
     const band = (id: string, x: number): Solid[] =>
       bandTop > 1 ? [solid(id, [x - 1, 1, -0.5], [x, bandTop, 0.5])] : [];
     const supportPort: PortDef[] =
-      lengthClass === 'L'
+      length > supportX
         ? [{ id: 'support', mount: 'lug', gender: 'male', pos: [supportX, 0, 0], normal: X, up: Y }]
         : [];
     return {
       family: 'tube-magazine',
       solids: [
         solid('tube', [0, -1, -1], [length, 1, 1]),
-        ...(lengthClass === 'L' ? band('support-band', supportX) : []),
+        ...(length > supportX ? band('support-band', supportX) : []),
         ...band('cap-band', length),
       ],
       ports: [

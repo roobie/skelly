@@ -17,6 +17,40 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 
 const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
 
+const pumpTubeDimensions = (input: {
+  barrelClass: string;
+  lengthPercent: '50' | '75' | '100';
+}): {
+  tubeEnd: number;
+  barrelLug: number | undefined;
+  barrelSupportLug: number | undefined;
+  tubeCap: number | undefined;
+  tubeSupport: number | undefined;
+} => {
+  const barrel = FAMILIES.barrel!.build({
+    bore: 'L',
+    length: input.barrelClass,
+    profile: 'standard',
+    tubeLengthPercent: input.lengthPercent,
+  });
+  const tube = FAMILIES['tube-magazine']!.build({
+    bore: 'L',
+    barrelLength: input.barrelClass,
+    lengthPercent: input.lengthPercent,
+  });
+  const tubeSolid = tube.solids.find((solid) => solid.id === 'tube');
+  if (tubeSolid?.kind !== 'box') {
+    throw new Error('pump magazine tube must be a box');
+  }
+  return {
+    tubeEnd: tubeSolid.box.center[0] + tubeSolid.box.half[0],
+    barrelLug: barrel.ports.find((port) => port.id === 'lug')?.pos[0],
+    barrelSupportLug: barrel.ports.find((port) => port.id === 'support-lug')?.pos[0],
+    tubeCap: tube.ports.find((port) => port.id === 'cap')?.pos[0],
+    tubeSupport: tube.ports.find((port) => port.id === 'support')?.pos[0],
+  };
+};
+
 describe('part library', () => {
   it('integrates the rear grip, magazine well, dust cover, and trigger guard into the pistol frame', () => {
     const frame = FAMILIES.frame!.build({ bore: 'S', gripLength: 'M', slideLength: 'S' });
@@ -439,28 +473,29 @@ describe('pump shotgun tube and barrel contact', () => {
     expect(left.box.center[2] + left.box.half[2]).toBeCloseTo(-1);
     expect(right.box.center[2] - right.box.half[2]).toBeCloseTo(1);
     expect(right.box.center[2] + right.box.half[2]).toBeCloseTo(1.55);
-    const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', length: 'M' });
+    const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
   });
 
-  it('keeps S/M tubes short and extends only the L tube to the barrel end', () => {
-    for (const [lengthClass, barrelEnd, tubeEnd, supportX] of [
-      ['S', 26, 17, undefined],
-      ['M', 36, 23.5, undefined],
-      ['L', 46, 46, 30],
+  it('sizes tube reach as a percentage of the actual barrel and aligns its lug/support ports', () => {
+    for (const [barrelClass, barrelEnd, supportX] of [
+      ['S', 26, 17],
+      ['M', 36, 23.5],
+      ['L', 46, 30],
     ] as const) {
-      const barrel = FAMILIES.barrel!.build({ bore: 'L', length: lengthClass, profile: 'standard' });
-      const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', length: lengthClass });
-      const tubeSolid = tube.solids.find((solid) => solid.id === 'tube');
-      if (tubeSolid?.kind !== 'box') {
-        throw new Error('pump magazine tube must be a box');
+      for (const [lengthPercent, tubeEnd] of [
+        ['50', barrelEnd / 2],
+        ['75', (barrelEnd * 3) / 4],
+        ['100', barrelEnd],
+      ] as const) {
+        const dimensions = pumpTubeDimensions({ barrelClass, lengthPercent });
+        expect(dimensions.tubeEnd).toBe(tubeEnd);
+        expect(dimensions.tubeEnd).toBeLessThanOrEqual(barrelEnd);
+        expect(dimensions.barrelLug).toBe(tubeEnd);
+        expect(dimensions.barrelSupportLug).toBe(tubeEnd > supportX ? supportX : undefined);
+        expect(dimensions.tubeSupport).toBe(tubeEnd > supportX ? supportX : undefined);
+        expect(dimensions.tubeCap).toBe(tubeEnd);
       }
-      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(tubeEnd);
-      expect(tubeEnd).toBeLessThanOrEqual(barrelEnd);
-      expect(barrel.ports.find((port) => port.id === 'lug')?.pos[0]).toBe(tubeEnd);
-      expect(barrel.ports.find((port) => port.id === 'support-lug')?.pos[0]).toBe(supportX);
-      expect(tube.ports.find((port) => port.id === 'support')?.pos[0]).toBe(supportX);
-      expect(tube.ports.find((port) => port.id === 'cap')?.pos[0]).toBe(tubeEnd);
     }
   });
 

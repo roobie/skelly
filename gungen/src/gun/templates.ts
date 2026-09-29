@@ -266,7 +266,7 @@ export const pumpShotgun: Template = {
       params: { layout: ['pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'trigger', 'trigger', 'trigger'] },
     },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'tube', family: 'tube-magazine' },
+    { id: 'tube', family: 'tube-magazine', params: { lengthPercent: ['50', '75', '100'] } },
     { id: 'forend', family: 'forend' },
     {
       id: 'grip',
@@ -305,7 +305,12 @@ export const pumpShotgun: Template = {
     {
       from: 'tube.support',
       to: 'barrel.support-lug',
-      when: { part: 'barrel', param: 'length', equals: 'L' },
+      when: { part: 'tube', param: 'lengthPercent', equals: '75' },
+    },
+    {
+      from: 'tube.support',
+      to: 'barrel.support-lug',
+      when: { part: 'tube', param: 'lengthPercent', equals: '100' },
     },
     { from: 'tube.forend', to: 'forend.rear' },
     { from: 'receiver.stock', to: 'stock.front', when: { part: 'lower', param: 'layout', equals: 'pump' } },
