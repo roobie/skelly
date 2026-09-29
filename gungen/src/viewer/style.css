@@ -75,6 +75,26 @@ h1 {
   color: var(--muted);
   margin: 8px 0;
 }
+#design-tools {
+  margin-top: 10px;
+}
+#design-tools .field select,
+#param-panel .prefab-picker select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 5px;
+  font: inherit;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+#save-message {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 5px 0 0;
+}
 #design-info {
   margin: 10px 0;
   padding: 8px 10px;
@@ -283,6 +303,25 @@ button:hover {
   color: var(--muted);
 }
 .param-row .param-state {
+  font-size: 10px;
+}
+.lock-toggle {
+  padding: 1px 5px;
+  font-size: 10px;
+}
+.lock-toggle[aria-pressed="true"] {
+  color: var(--normal);
+  border-color: var(--normal);
+}
+.param-part-actions {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.prefab-picker {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--muted);
   font-size: 10px;
 }
 .param-row .param-state.user {

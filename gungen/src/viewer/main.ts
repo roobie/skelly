@@ -25,9 +25,24 @@ import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import {
+  availablePrefabs,
+  choosePrefab,
+  clearEditorParam,
+  clearPrefab,
+  createEditorState,
+  type DesignEditorState,
+  editorStateFromDesign,
+  editParam,
+  saveDesign,
+  setOptionalPart,
+  toggleOptionalPartLock,
+  toggleParamLock,
+  withEditorAssembly,
+  withEditorStatus,
+} from './designEditor.ts';
 import { buildDesignViewModel } from './designViewModel.ts';
 import {
-  applyOverrides,
   buildPanelModel,
   clearParam,
   diffOverrides,
@@ -40,7 +55,6 @@ import {
   parseOverrides,
   serializeOverrides,
   setParam,
-  setSlotPresent,
 } from './paramPanel.ts';
 import { buildLayers, disposeGroup, type Layers } from './scene.ts';
 import { DEFAULT_UI_STATE, parseUiState, UI_STATE_KEY, type UiState } from './uiState.ts';
@@ -78,6 +92,9 @@ const seedInput = $<HTMLInputElement>('seed');
 const onlyValid = $<HTMLInputElement>('only-valid');
 const layerToggles = [...document.querySelectorAll<HTMLInputElement>('#layers input')];
 const paramPanel = $<HTMLElement>('param-panel');
+const designStatus = $<HTMLSelectElement>('design-status');
+const saveMessage = $<HTMLParagraphElement>('save-message');
+const saveButton = $<HTMLButtonElement>('save');
 
 const readUiState = (): UiState => {
   try {
@@ -98,8 +115,9 @@ const saveUiState = () => {
 /** Keeps the address bar a shareable link for the current model, including panel overrides. */
 const syncUrl = () => {
   const params = new URLSearchParams();
-  if (activeDesign) {
-    params.set('design', activeDesign.name);
+  const activeDesignName = activeDesign?.name;
+  if (activeDesignName && designs.some((design) => design.name === activeDesignName)) {
+    params.set('design', activeDesignName);
   } else if (uiState.assembly.kind === 'generated') {
     params.set('template', uiState.template);
     params.set('seed', uiState.seed);
@@ -144,6 +162,9 @@ new ResizeObserver(resize).observe(view);
 
 const GROUP_LABELS: Readonly<Record<string, string>> = { archetype: 'Archetypes', broken: 'Broken (one rule each)' };
 
+const templateForAssembly = (assembly: Assembly): Template | undefined =>
+  TEMPLATES.find((template) => assembly.name === `archetype-${template.name}`);
+
 const expectationNote = (expected: string[] | undefined, failed: string[]): string => {
   if (expected === undefined) {
     return '';
@@ -166,7 +187,8 @@ let baseline: Assembly | undefined;
 let activeTemplate: Template | undefined;
 /** Connections the last panel edit pruned (a port the edited part no longer has), for the panel's note. */
 let lastDropped: readonly Connection[] = [];
-let activeDesign: { readonly name: string; readonly source: DesignLoadResult; loaded: DesignLoadResult } | undefined;
+let editorState: DesignEditorState | undefined;
+let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
 
 const redraw = () => {
   if (!report) {
@@ -239,7 +261,11 @@ const renderPanel = (assembly: Assembly) => {
 
 const renderDesignInfo = () => {
   designInfo.replaceChildren();
-  $<HTMLButtonElement>('save').hidden = Boolean(activeDesign);
+  designStatus.value = editorState?.status ?? 'draft';
+  saveButton.disabled = !editorState?.template;
+  saveMessage.textContent = editorState?.template
+    ? ''
+    : 'This assembly has no matching template and cannot be saved as a design.';
   if (!activeDesign) {
     return;
   }
@@ -313,9 +339,14 @@ const clearRenderedModel = () => {
 
 const load = (assembly: Assembly) => {
   current = assembly;
-  if (activeDesign?.source.ok) {
-    const { source } = activeDesign;
-    activeDesign.loaded = loadGunDesign(JSON.stringify({ ...source.design, status: source.declaredStatus, assembly }));
+  if (editorState) {
+    editorState = withEditorAssembly(editorState, assembly);
+  }
+  if (activeDesign && editorState) {
+    const saved = saveDesign(editorState, gunDomain);
+    if (saved.ok) {
+      activeDesign.loaded = loadGunDesign(saved.text);
+    }
   }
   report = validate(assembly, gunDomain);
   focused = undefined;
@@ -363,8 +394,24 @@ const renderSlotCard = (entry: PanelSlot): HTMLElement => {
   const add = document.createElement('button');
   add.type = 'button';
   add.textContent = 'Add';
-  add.addEventListener('click', () => applyPanelChange(setSlotPresent(current!, activeTemplate!, entry.id, true)));
-  row.append(note, add);
+  add.addEventListener('click', () => {
+    if (editorState) {
+      const next = setOptionalPart(editorState, entry.id, true);
+      applyPanelChange(next.assembly, [], next);
+    }
+  });
+  const lock = document.createElement('button');
+  lock.type = 'button';
+  lock.className = 'lock-toggle';
+  lock.textContent = editorState?.locks.optionalParts.includes(entry.id) ? '🔒' : 'Lock';
+  lock.setAttribute('aria-pressed', String(editorState?.locks.optionalParts.includes(entry.id) ?? false));
+  lock.title = 'Lock this optional part’s presence';
+  lock.addEventListener('click', () => {
+    if (editorState) {
+      applyPanelChange(editorState.assembly, [], toggleOptionalPartLock(editorState, entry.id));
+    }
+  });
+  row.append(note, add, lock);
   card.append(row);
   return card;
 };
@@ -382,6 +429,20 @@ const renderParamRow = (partId: string, param: PanelParam): HTMLElement => {
   state.className = `param-state ${param.state.kind}`;
   state.textContent = paramStateText(param.state);
   head.append(label, state);
+  const lock = document.createElement('button');
+  lock.type = 'button';
+  lock.className = 'lock-toggle';
+  const locked = editorState?.locks.params[partId]?.includes(param.name) ?? false;
+  lock.textContent = locked ? '🔒' : 'Lock';
+  lock.setAttribute('aria-pressed', String(locked));
+  lock.title = `${locked ? 'Unlock' : 'Lock'} ${partId}.${param.name}`;
+  lock.addEventListener('click', () => {
+    if (editorState) {
+      const next = toggleParamLock(editorState, gunDomain, partId, param.name);
+      applyPanelChange(next.assembly, [], next);
+    }
+  });
+  head.append(lock);
   if (param.state.kind === 'user') {
     const clear = document.createElement('button');
     clear.type = 'button';
@@ -389,8 +450,13 @@ const renderParamRow = (partId: string, param: PanelParam): HTMLElement => {
     clear.textContent = '×';
     clear.title = 'Clear override, restoring the seed value';
     clear.addEventListener('click', () => {
-      const { assembly, dropped } = clearParam(current!, gunDomain, baseline!, { part: partId, name: param.name });
-      applyPanelChange(assembly, dropped);
+      if (editorState) {
+        const cleared = clearEditorParam(editorState, gunDomain, { baseline: baseline!, partId, name: param.name });
+        applyPanelChange(cleared.assembly, cleared.dropped, cleared.state);
+      } else {
+        const { assembly, dropped } = clearParam(current!, gunDomain, baseline!, { part: partId, name: param.name });
+        applyPanelChange(assembly, dropped);
+      }
     });
     head.append(clear);
   }
@@ -408,13 +474,87 @@ const renderParamRow = (partId: string, param: PanelParam): HTMLElement => {
       btn.title = "The current template's choices for this param don't offer this value.";
     }
     btn.addEventListener('click', () => {
-      const { assembly, dropped } = setParam(current!, gunDomain, { part: partId, name: param.name }, v.value);
-      applyPanelChange(assembly, dropped);
+      if (editorState) {
+        const edited = editParam(editorState, gunDomain, { partId, name: param.name, value: v.value });
+        applyPanelChange(edited.assembly, edited.dropped, edited.state);
+      } else {
+        const { assembly, dropped } = setParam(current!, gunDomain, { part: partId, name: param.name }, v.value);
+        applyPanelChange(assembly, dropped);
+      }
     });
     values.append(btn);
   }
   row.append(values);
   return row;
+};
+
+const renderOptionalPartActions = (entry: PanelPart): HTMLElement => {
+  const presence = document.createElement('div');
+  presence.className = 'param-part-actions';
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.textContent = 'Remove';
+  remove.addEventListener('click', () => {
+    if (editorState) {
+      const next = setOptionalPart(editorState, entry.id, false);
+      applyPanelChange(next.assembly, [], next);
+    }
+  });
+  const lock = document.createElement('button');
+  lock.type = 'button';
+  lock.className = 'lock-toggle';
+  const locked = editorState?.locks.optionalParts.includes(entry.id) ?? false;
+  lock.textContent = locked ? '🔒 presence' : 'Lock presence';
+  lock.setAttribute('aria-pressed', String(locked));
+  lock.addEventListener('click', () => {
+    if (editorState) {
+      applyPanelChange(editorState.assembly, [], toggleOptionalPartLock(editorState, entry.id));
+    }
+  });
+  presence.append(remove, lock);
+  return presence;
+};
+
+const renderPrefabPicker = (entry: PanelPart): HTMLElement | undefined => {
+  if (!editorState) {
+    return undefined;
+  }
+  const prefabs = availablePrefabs(editorState, entry.id);
+  if (prefabs.length === 0) {
+    return undefined;
+  }
+  const picker = document.createElement('label');
+  picker.className = 'prefab-picker';
+  picker.append('Prefab ');
+  const selectPrefab = document.createElement('select');
+  selectPrefab.setAttribute('aria-label', `${entry.id} prefab`);
+  selectPrefab.append(new Option('None', ''));
+  for (const prefab of prefabs) {
+    selectPrefab.append(new Option(`${prefab.id} v${prefab.version}`, `${prefab.id}@${prefab.version}`));
+  }
+  const currentRef = current?.parts[entry.id]?.prefab;
+  selectPrefab.value = currentRef ? `${currentRef.id}@${currentRef.version}` : '';
+  selectPrefab.addEventListener('change', () => {
+    if (!editorState) {
+      return;
+    }
+    if (!selectPrefab.value) {
+      const next = clearPrefab(editorState, entry.id);
+      applyPanelChange(next.assembly, [], next);
+      return;
+    }
+    const [id, version] = selectPrefab.value.split('@');
+    const prefab = prefabs.find((candidate) => candidate.id === id && candidate.version === Number(version));
+    if (!prefab) {
+      return;
+    }
+    const result = choosePrefab(editorState, entry.id, prefab);
+    if (result.ok) {
+      applyPanelChange(result.state.assembly, [], result.state);
+    }
+  });
+  picker.append(selectPrefab);
+  return picker;
 };
 
 /** A present part: an optional Remove button, then every param row. */
@@ -435,13 +575,11 @@ const renderPartCard = (entry: PanelPart): HTMLElement => {
     card.append(prefab);
   }
   if (entry.optional) {
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.textContent = 'Remove';
-    remove.addEventListener('click', () =>
-      applyPanelChange(setSlotPresent(current!, activeTemplate!, entry.id, false)),
-    );
-    card.append(remove);
+    card.append(renderOptionalPartActions(entry));
+  }
+  const picker = renderPrefabPicker(entry);
+  if (picker) {
+    card.append(picker);
   }
   for (const param of entry.params) {
     card.append(renderParamRow(entry.id, param));
@@ -454,7 +592,11 @@ const renderParamPanel = () => {
     paramPanel.replaceChildren();
     return;
   }
-  const designModel = activeDesign ? buildDesignViewModel(activeDesign.loaded, activeDesign.name) : undefined;
+  const currentDesign = editorState ? saveDesign(editorState, gunDomain) : undefined;
+  const designResult = activeDesign?.loaded ?? (currentDesign?.ok ? loadGunDesign(currentDesign.text) : undefined);
+  const designModel = designResult
+    ? buildDesignViewModel(designResult, activeDesign?.name ?? current?.name ?? 'design')
+    : undefined;
   const model = buildPanelModel(current, baseline, gunDomain, {
     template: activeTemplate,
     prefabsByPart: designModel?.kind === 'loaded' ? designModel.prefabsByPart : {},
@@ -483,12 +625,13 @@ const renderParamPanel = () => {
   paramPanel.replaceChildren(...nodes);
 };
 
-const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = []) => {
+const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = [], nextEditorState?: DesignEditorState) => {
   if (!baseline) {
     return;
   }
   framed = false;
   lastDropped = dropped;
+  editorState = nextEditorState ?? (editorState ? withEditorAssembly(editorState, next) : undefined);
   uiState.overrides = diffOverrides(baseline, next);
   saveUiState();
   syncUrl();
@@ -496,6 +639,19 @@ const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = []) =
 };
 
 // ---- UI wiring ----
+
+const applyEditorOverrides = (state: DesignEditorState, overrides: typeof EMPTY_OVERRIDES): DesignEditorState => {
+  let next = state;
+  for (const [slot, present] of Object.entries(overrides.presence)) {
+    next = setOptionalPart(next, slot, present);
+  }
+  for (const [part, params] of Object.entries(overrides.params)) {
+    for (const [name, value] of Object.entries(params)) {
+      next = editParam(next, gunDomain, { partId: part, name, value }).state;
+    }
+  }
+  return next;
+};
 
 const openDesign = (name: string, overrides = EMPTY_OVERRIDES) => {
   const file = designs.find((candidate) => candidate.name === name);
@@ -506,13 +662,14 @@ const openDesign = (name: string, overrides = EMPTY_OVERRIDES) => {
         declaredStatus: undefined,
         error: { code: 'invalid-shape', message: `design file "${name}.json" was not found` },
       };
-  activeDesign = { name, source, loaded: source };
+  activeDesign = { name, loaded: source };
   uiState.overrides = overrides;
   select.value = `design:${name}`;
   lastDropped = [];
   if (!source.ok) {
     baseline = undefined;
     activeTemplate = undefined;
+    editorState = undefined;
     clearRenderedModel();
     renderDesignInfo();
     syncUrl();
@@ -525,8 +682,9 @@ const openDesign = (name: string, overrides = EMPTY_OVERRIDES) => {
   if (activeTemplate) {
     templateSelect.value = activeTemplate.name;
   }
-  const assembly = hasOverrides(overrides) ? applyOverrides(baseline, gunDomain, activeTemplate, overrides) : baseline;
-  load(assembly);
+  const declaredDesign = { ...source.design, status: source.declaredStatus };
+  editorState = applyEditorOverrides(editorStateFromDesign(declaredDesign, activeTemplate), overrides);
+  load(editorState.assembly);
   syncUrl();
   saveUiState();
 };
@@ -560,11 +718,12 @@ select.addEventListener('change', () => {
   }
   framed = false;
   activeDesign = undefined;
+  activeTemplate = templateForAssembly(f);
+  editorState = createEditorState(activeTemplate, f);
   renderDesignInfo();
   uiState.assembly = { kind: 'fixture', name: f.name };
   uiState.overrides = EMPTY_OVERRIDES;
   baseline = f;
-  activeTemplate = undefined;
   lastDropped = [];
   saveUiState();
   syncUrl();
@@ -577,7 +736,31 @@ fileInput.addEventListener('change', async () => {
     return;
   }
   try {
-    const parsed = parseAssemblyJson(await file.text());
+    const text = await file.text();
+    const loadedDesign = loadGunDesign(text);
+    framed = false;
+    uiState.assembly = { kind: 'upload' };
+    uiState.overrides = EMPTY_OVERRIDES;
+    lastDropped = [];
+    if (loadedDesign.ok) {
+      const name = file.name.replace(DESIGN_EXTENSION, '');
+      activeDesign = { name, loaded: loadedDesign };
+      activeTemplate = TEMPLATES.find((template) => template.name === loadedDesign.design.template);
+      if (activeTemplate) {
+        templateSelect.value = activeTemplate.name;
+      }
+      const design = { ...loadedDesign.design, status: loadedDesign.declaredStatus };
+      editorState = editorStateFromDesign(design, activeTemplate);
+      baseline = design.assembly;
+      select.querySelector('option[value=""]')?.remove();
+      select.add(new Option(`${name} (design file)`, ''), 0);
+      select.selectedIndex = 0;
+      saveUiState();
+      syncUrl();
+      load(editorState.assembly);
+      return;
+    }
+    const parsed = parseAssemblyJson(text);
     if (!parsed.ok) {
       status.innerHTML = '';
       status.textContent = `Could not read ${file.name}: ${formatParseError(parsed.error)}`;
@@ -585,16 +768,13 @@ fileInput.addEventListener('change', async () => {
     }
     const { assembly } = parsed;
     activeDesign = undefined;
+    activeTemplate = templateForAssembly(assembly);
+    editorState = createEditorState(activeTemplate, assembly);
     renderDesignInfo();
     select.querySelector('option[value=""]')?.remove();
     select.add(new Option(`${assembly.name} (file)`, ''), 0);
     select.selectedIndex = 0;
-    framed = false;
-    uiState.assembly = { kind: 'upload' };
-    uiState.overrides = EMPTY_OVERRIDES;
     baseline = assembly;
-    activeTemplate = undefined;
-    lastDropped = [];
     saveUiState();
     syncUrl();
     load(assembly);
@@ -690,7 +870,6 @@ const runGenerator = (step = 0, preserveOverrides = false) => {
   }
   seedInput.value = String(seed);
   activeDesign = undefined;
-  renderDesignInfo();
   uiState.assembly = { kind: 'generated' };
   uiState.template = template.name;
   uiState.seed = String(seed);
@@ -700,10 +879,15 @@ const runGenerator = (step = 0, preserveOverrides = false) => {
   }
   baseline = generated;
   activeTemplate = template;
+  editorState = createEditorState(template, generated, {
+    origin: { template: template.name, seed, overrides: uiState.overrides },
+  });
+  if (hasOverrides(uiState.overrides)) {
+    editorState = applyEditorOverrides(editorState, uiState.overrides);
+  }
   lastDropped = [];
-  const assembly = hasOverrides(uiState.overrides)
-    ? applyOverrides(generated, gunDomain, template, uiState.overrides)
-    : generated;
+  renderDesignInfo();
+  const { assembly } = editorState;
   const option = new Option(`${assembly.name} (generated)`, '');
   select.querySelector('option[value=""]')?.remove();
   select.add(option, 0);
@@ -732,16 +916,32 @@ onlyValid.addEventListener('change', () => {
   saveUiState();
 });
 
-$<HTMLButtonElement>('save').addEventListener('click', () => {
-  if (!current) {
+designStatus.addEventListener('change', () => {
+  if (!editorState) {
     return;
   }
-  const url = URL.createObjectURL(new Blob([`${JSON.stringify(current, null, 2)}\n`], { type: 'application/json' }));
+  editorState = withEditorStatus(editorState, designStatus.value as 'draft' | 'published');
+  if (current) {
+    load(current);
+  }
+});
+
+saveButton.addEventListener('click', () => {
+  if (!editorState) {
+    return;
+  }
+  const saved = saveDesign(withEditorStatus(editorState, designStatus.value as 'draft' | 'published'), gunDomain);
+  if (!saved.ok) {
+    saveMessage.textContent = 'This assembly has no template and cannot be saved as a design.';
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([saved.text], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${current.name}.json`;
+  a.download = `${saved.design.assembly.name.replace(/[^a-z0-9_-]+/gi, '-') || saved.design.template}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  saveMessage.textContent = `Downloaded ${a.download}.`;
 });
 
 // ?fixture=<name> opens a fixture; ?design=<name> loads a curated design;
@@ -768,15 +968,15 @@ if (queryDesign !== null) {
   select.value = queryFixture.name;
   uiState.assembly = { kind: 'fixture', name: queryFixture.name };
   baseline = queryFixture;
-  activeTemplate = undefined;
+  activeTemplate = templateForAssembly(queryFixture);
+  editorState = createEditorState(activeTemplate, queryFixture);
+  if (hasOverrides(uiState.overrides)) {
+    editorState = applyEditorOverrides(editorState, uiState.overrides);
+  }
   lastDropped = [];
   saveUiState();
   syncUrl();
-  load(
-    hasOverrides(uiState.overrides)
-      ? applyOverrides(queryFixture, gunDomain, undefined, uiState.overrides)
-      : queryFixture,
-  );
+  load(editorState.assembly);
 } else if (uiState.assembly.kind === 'generated') {
   runGenerator(0, true);
 } else {
@@ -787,11 +987,15 @@ if (queryDesign !== null) {
     select.value = start.name;
     uiState.assembly = { kind: 'fixture', name: start.name };
     baseline = start;
-    activeTemplate = undefined;
+    activeTemplate = templateForAssembly(start);
+    editorState = createEditorState(activeTemplate, start);
+    if (hasOverrides(uiState.overrides)) {
+      editorState = applyEditorOverrides(editorState, uiState.overrides);
+    }
     lastDropped = [];
     saveUiState();
     syncUrl();
-    load(hasOverrides(uiState.overrides) ? applyOverrides(start, gunDomain, undefined, uiState.overrides) : start);
+    load(editorState.assembly);
   } else {
     saveUiState();
   }

@@ -31,8 +31,19 @@
         <label><input id="only-valid" type="checkbox" /> Skip to the next valid seed</label>
         <div class="row">
           <button id="generate-btn" type="button">Generate</button>
-          <button id="save" type="button" title="Download the current assembly as JSON">Save JSON</button>
         </div>
+      </fieldset>
+      <fieldset id="design-tools">
+        <legend>Design</legend>
+        <label class="field">
+          Status
+          <select id="design-status">
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+          </select>
+        </label>
+        <button id="save" type="button">Save design JSON</button>
+        <p id="save-message" aria-live="polite"></p>
       </fieldset>
       <section id="design-info" aria-live="polite"></section>
       <p id="description"></p>

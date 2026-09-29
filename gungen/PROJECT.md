@@ -934,13 +934,14 @@ names a symbol that isn't in that file.
 
 **3.1 Designs and prefabs.**
 
-**3.1 (in progress):** the archetype designs are in `designs/`, load through
+**3.1 (done, 2026-09-29):** the archetype designs are in `designs/`, load through
 `loadGunDesign`, pass `npm run check:designs`, and have per-design resolved-solid
 snapshots. The catalogue contains `stanag-20`, `stanag-30`, `ak74-30`, and
 `akm-30`; the AR and AK designs reference `stanag-20` and `ak74-30` respectively.
-The viewer opens a design with `?design=<name>` and shows its template, declared
-and loaded status, issues, locks and prefab labels (stale once an edit breaks a
-prefab's fixed params). Next is viewer save, prefab pickers and lock controls.
+The viewer opens a design with `?design=<name>`, saves template-backed builds as
+versioned design JSON downloads, opens those files again, and provides param and
+optional-part locks plus family-filtered prefab pickers. Editing a prefab-fixed
+param detaches its reference; loaded mismatches remain marked stale.
 
 Known issue (BR, 2026-09-29; noted, not yet addressed): `stanag-20` is built as
 `profile: stanag-curved` at length M, a shortened curved magazine. A real
@@ -955,7 +956,10 @@ on the AR design's magazine, which references `stanag-20` today: a straight
   fixed params. Examples: the STANAG 20 and 30 and the two AK magazines.
   A catalogue test checks every prefab against the domain (family exists,
   every param value is legal, it builds).
-- The viewer gets save and open, a prefab picker per part, and lock toggles.
+- The viewer's design controls save/open design JSON downloads with a user-chosen
+  draft/published status. A build without a matching template explains why it
+  cannot be saved as a design. Each param and optional-part choice has a lock
+  toggle, and each part's prefab picker is restricted to its registry family.
 
 **3.2 The validator as a live linter.** Rule failures are shown on the part
 cards as you edit. Drafts can be invalid; publishing requires a valid design.
