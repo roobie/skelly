@@ -485,7 +485,7 @@ export const lower: PartFamily = {
   name: 'lower',
   params: {
     layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
-    triggerGuard: { values: ['present', 'missing'], default: 'present' },
+    triggerGuard: { values: ['present', 'missing'], default: 'present', fault: ['missing'] },
     magazineWell: choice('standard', 'recessed'),
     magazineOrientation: {
       values: MAGAZINE_ORIENTATIONS,
@@ -987,7 +987,10 @@ export const akRearSight: PartFamily = {
 /** Revolver cylinder, represented by an extruded chamber-count prism about its X-axis. */
 export const cylinder: PartFamily = {
   name: 'cylinder',
-  params: { chambers: choice('six', 'eight'), chamber: choice('aligned', 'misaligned') },
+  params: {
+    chambers: choice('six', 'eight'),
+    chamber: { values: ['aligned', 'misaligned'], default: 'aligned', fault: ['misaligned'] },
+  },
   build(params): PartDef {
     const count = params.chambers === 'eight' ? 8 : 6;
     const phase = params.chamber === 'misaligned' ? Math.PI / 2 : 0;
@@ -1042,7 +1045,7 @@ export const handguard: PartFamily = {
     clearance: size,
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
     layout: choice('standard', 'ak'),
-    fit: choice('receiver', 'oversized', 'too-tight'),
+    fit: { values: ['receiver', 'oversized', 'too-tight'], default: 'receiver', fault: ['oversized', 'too-tight'] },
     mount: choice('clamped', 'free-float'),
   },
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mounting controls both clamp geometry and the exposed front port.
@@ -1388,7 +1391,7 @@ export const pistolFrame: PartFamily = {
     bore: size,
     gripLength: size,
     slideLength: { ...size, from: [{ port: 'slide', param: 'length' }] },
-    triggerGuard: { values: ['present', 'missing'], default: 'present' },
+    triggerGuard: { values: ['present', 'missing'], default: 'present', fault: ['missing'] },
   },
   build(params): PartDef {
     const gripDef = integratedPistolGrip(params.gripLength!);
