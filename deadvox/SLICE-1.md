@@ -541,9 +541,12 @@ Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
   aim ray against one point per shambler, at 0.55 of its height
   (`src/core/zombies.ts:1025`), so it has to learn which region the ray
   reaches first.
-- A region at zero is severed: its rigid limb is hidden and a limb prop drops.
-  Otherwise behaviour is unchanged, as simple as possible. The one forced
-  question, how a shambler with no legs moves, is settled here.
+- A non-head region at zero is severed: its rigid part is hidden and a matching
+  inventory pile item drops. The existing `shambler_hurt` sound plays on hit;
+  there is no separate severing asset yet. Severing the torso does not cascade
+  to other regions or kill the shambler; its other regions remain active in
+  place. Behaviour otherwise stays unchanged. With both legs gone, it stays
+  where it is (no walking or crawling), but remains alive and can still attack.
 - A shambler dies only when its head is destroyed.
 - Region state is simulation state: it's in the save snapshot and the source
   fingerprint.

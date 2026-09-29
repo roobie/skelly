@@ -16,7 +16,8 @@ import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
-import { FIGURE_BOXES, type FigureBox, PLAYER_ARM_BOXES } from './figure.ts';
+import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
+import { PLAYER_ARM_BOXES } from './figure.ts';
 
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
 export const PLAYER_BODY_REAR_OFFSET = 0.19;
