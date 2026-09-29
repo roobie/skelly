@@ -50,6 +50,19 @@ npm run check      # lint + format check
 npm run fix        # apply safe fixes and format
 ```
 
+### The maintainable choice wins; churn is expected
+
+Every subproject is still pre-integration, so reworking what exists is cheap
+and debt compounds. When a decision trades short-term churn (regenerated
+snapshots, re-reviewed visuals, rewritten tests) against long-term
+maintainability (one unit system, one source of truth, no hidden coupling),
+take the maintainable option unless the churn is very costly. Record the
+choice and why.
+
+Example (BR, 2026-09-29): mobgen face features are sized from the actor's
+`height` like the rest of the body, instead of in fixed metres that would have
+kept every snapshot unchanged but left two unit systems in one body plan.
+
 ## Shared direction
 
 Subprojects should share the domain-agnostic parts: connection points (ports),
