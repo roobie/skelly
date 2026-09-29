@@ -845,11 +845,22 @@ an implementation except the ones that belong to later packages (`Suggest`,
   keeps its declared status. Nothing is materialised on load.
 - Unplaced parts: the loader runs the domain rules only when the assembly
   resolves without structure issues and every part is placed. Otherwise it
-  reports the structure issues plus one `[structure]` issue naming the parts
-  not connected to the root, and skips the rules, which read placements
-  without checking that they exist.
+  reports the structure issues and skips the domain rules. `resolve` itself
+  reports a part not connected to the root as a `structure` issue, unless an
+  unfilled required port of that part already explains it. The loader adds
+  its own `[structure] … not connected to the root` issue only for parts
+  `resolve` didn't name. Whether domain rules should also run on the placed
+  parts of a broken draft is still open (BR).
+- `validate` turns a rule that throws into one `Rule crashed: …` issue for
+  that rule, so one bad rule can't take down the viewer or the live linter.
+  Tests that call `rule.check` directly still see the throw.
 - Prefab lookup uses the registry key (`PartInstance.family`), not
   `PartDef.family`.
+- Fault values: `ParamSpec.fault` lists values that exist only for the
+  `broken-*` fixtures (handguard `fit`, cylinder `chamber`, lower and frame
+  `triggerGuard`). The param panel never offers them as choices. **BR ruling
+  (2026-09-29):** a design or prefab may carry a fault value for now; the
+  loader and the prefab checks accept them.
 
 **Anchors.**
 
