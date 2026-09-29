@@ -281,6 +281,7 @@ const zombie = obj({
   investigationTier: opt(enumeration(['near', 'far'])),
   behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
   soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
+  dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
   lastVocalNoiseId: nullable(nonNegativeInt),
   idleSoundTimer: nonNegative,
   modeTimer: finite,
@@ -313,6 +314,9 @@ const zombie = obj({
   attackWindup: finite,
   gaitPhase: finite,
   wanderClock: finite,
+  /** Part names severed so far (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS) — cumulative, never
+   * shrinks; see Zombie.severed's own doc comment. */
+  severed: arr(str()),
 });
 const playerState = obj({
   body,

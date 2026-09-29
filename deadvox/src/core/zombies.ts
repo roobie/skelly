@@ -26,6 +26,10 @@ export interface Zombie {
   behaviorRng: Rng;
   /** Separate seeded stream keeps ambient sound timing from changing movement decisions. */
   soundRng: Rng;
+  /** Separate seeded stream (same reasoning as soundRng) keeps dismemberment rolls, which only ever
+   * happen on a player's melee hit — an external event, not part of the per-tick AI loop — from shifting
+   * the sequence of subsequent behaviorRng-driven decisions. */
+  dismemberRng: Rng;
   idleSoundTimer: number;
   lastVocalNoiseId?: number | undefined;
   modeTimer: number;
@@ -67,15 +71,20 @@ export interface Zombie {
   footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
+  /** Part names (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
+   * far — cumulative, never un-severed. A renderer derives what to hide via mobgen's severedBoneSet, not
+   * stored pre-expanded here (severing upperArm.L already implies forearm.L/hand.L without listing them). */
+  severed: string[];
 }
 
 export type ZombieState = Omit<
   Zombie,
-  'type' | 'behaviorRng' | 'soundRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
+  'type' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
 > & {
   type: string;
   behaviorRng: RngState;
   soundRng: RngState;
+  dismemberRng: RngState;
   lastVocalNoiseId: number | null;
 };
 
@@ -119,6 +128,10 @@ export interface ZombieSystemOptions {
   onSound?: (event: SoundEventId, position: Vec3) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
   onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode) => void;
+  /** Called once for every part severed (src/core/zombies.ts's swing — the melee hit path), *after*
+   * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
+   * new cut too. Fires before onDeath on a killing blow that also severs the head. */
+  onSever?: (id: EntityId, zombie: Zombie, part: string) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -166,6 +179,38 @@ const withinAttackReach = ({ zombiePos, playerPos, type, blockSize, isSolid }: A
   const chestDistance = Math.hypot(...toPlayer);
   return chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined;
 };
+
+// ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
+// Mirrors mobgen/src/mob/dismember.ts's SEVERABLE_PARTS (arms only here — the head has its own
+// headOnKillChance roll in swing(), not picked randomly among these).
+
+const ARM_PARTS = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'] as const;
+/** A part already severed further up the same arm makes a part below it moot to sever again (upperArm.L
+ * severed already implies forearm.L/hand.L are gone too — see mobgen's severedBoneSet). */
+const CONTAINING_PARTS: Readonly<Record<(typeof ARM_PARTS)[number], readonly string[]>> = {
+  'hand.L': ['forearm.L', 'upperArm.L'],
+  'hand.R': ['forearm.R', 'upperArm.R'],
+  'forearm.L': ['upperArm.L'],
+  'forearm.R': ['upperArm.R'],
+  'upperArm.L': [],
+  'upperArm.R': [],
+};
+
+/** Arm parts still worth severing: not already severed, and not already implied by a containing part
+ * severed further up the same arm (see CONTAINING_PARTS). Empty once both arms are fully gone. */
+const availableArmParts = (severed: readonly string[]): (typeof ARM_PARTS)[number][] =>
+  ARM_PARTS.filter((part) => !(severed.includes(part) || CONTAINING_PARTS[part].some((c) => severed.includes(c))));
+
+/** True once a side's arm is gone at the forearm or above (a hand-only loss still lets it attack — it's
+ * grabbing with the other hand or the stump itself). */
+const armGoneAtForearmOrAbove = (severed: readonly string[], side: 'L' | 'R'): boolean =>
+  severed.includes(`forearm.${side}`) || severed.includes(`upperArm.${side}`);
+
+/** Gameplay effect, first slice: with both arms gone at the forearm or above, there's nothing left to grab
+ * or claw with — the zombie can still chase, but never starts a new attack (see the windup start check in
+ * tick()). Already-started windups aren't cancelled retroactively; this only gates a *new* one. */
+const canStillAttack = (severed: readonly string[]): boolean =>
+  !(armGoneAtForearmOrAbove(severed, 'L') && armGoneAtForearmOrAbove(severed, 'R'));
 
 interface JumpObstacleProbe {
   body: Body;
@@ -391,6 +436,7 @@ export class ZombieSystem {
           type,
           behaviorRng,
           soundRng,
+          dismemberRng,
           renderPrevious: _renderPrevious,
           footstepClock: _footstepClock,
           searchAnchor,
@@ -405,6 +451,7 @@ export class ZombieSystem {
             type: type.id,
             behaviorRng: [...behaviorRng.state()] as RngState,
             soundRng: [...soundRng.state()] as RngState,
+            dismemberRng: [...dismemberRng.state()] as RngState,
             lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
             ...(investigationTier === undefined ? {} : { investigationTier }),
             body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
@@ -414,6 +461,7 @@ export class ZombieSystem {
             searchHeading: [...zombie.searchHeading],
             strollHeading: [...zombie.strollHeading],
             ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
+            severed: [...zombie.severed],
           },
         };
       }),
@@ -434,10 +482,15 @@ export class ZombieSystem {
         !Array.isArray(zombie.soundRng) ||
         zombie.soundRng.length !== 4 ||
         zombie.soundRng.some((word) => !Number.isSafeInteger(word)) ||
+        !Array.isArray(zombie.dismemberRng) ||
+        zombie.dismemberRng.length !== 4 ||
+        zombie.dismemberRng.some((word) => !Number.isSafeInteger(word)) ||
         !Number.isFinite(zombie.idleSoundTimer) ||
         zombie.idleSoundTimer < 0 ||
         (zombie.lastVocalNoiseId !== null &&
-          (!Number.isSafeInteger(zombie.lastVocalNoiseId) || zombie.lastVocalNoiseId < 0))
+          (!Number.isSafeInteger(zombie.lastVocalNoiseId) || zombie.lastVocalNoiseId < 0)) ||
+        !Array.isArray(zombie.severed) ||
+        zombie.severed.some((part) => typeof part !== 'string')
       ) {
         throw new Error(`Invalid zombie state for entity ${id}`);
       }
@@ -445,12 +498,13 @@ export class ZombieSystem {
       if (!type) {
         throw new Error(`Missing zombie type ${zombie.type}`);
       }
-      const { type: _type, behaviorRng, soundRng, lastVocalNoiseId, ...fields } = zombie;
+      const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
       const restored: Zombie = {
         ...fields,
         type,
         behaviorRng: new Rng(behaviorRng),
         soundRng: new Rng(soundRng),
+        dismemberRng: new Rng(dismemberRng),
         lastVocalNoiseId: lastVocalNoiseId ?? undefined,
         footstepClock: initialShamblerFootstepClock(type.stepLength),
         body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
@@ -466,6 +520,7 @@ export class ZombieSystem {
           headYaw: zombie.headYaw,
           gaitPhase: zombie.gaitPhase,
         },
+        severed: [...zombie.severed],
       };
       return [id, restored] as const;
     });
@@ -650,6 +705,7 @@ export class ZombieSystem {
       investigationTier: undefined,
       behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
       soundRng: Rng.stream(this.options.seed ?? 0, `zombie-sound:${this.store.size + 1}`),
+      dismemberRng: Rng.stream(this.options.seed ?? 0, `zombie-dismember:${this.store.size + 1}`),
       idleSoundTimer: 8,
       modeTimer: 0,
       searchAnchor: undefined,
@@ -682,11 +738,13 @@ export class ZombieSystem {
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
+      severed: [],
     };
     const id = this.store.add(zombie);
     // EntityStore ids are stable within the world's entity lifetime.
     zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `zombie:${id}`);
     zombie.soundRng = Rng.stream(this.options.seed ?? 0, `zombie-sound:${id}`);
+    zombie.dismemberRng = Rng.stream(this.options.seed ?? 0, `zombie-dismember:${id}`);
     zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
     this.beginIdle(zombie);
     return id;
@@ -974,6 +1032,7 @@ export class ZombieSystem {
       } else if (
         zombie.mode === 'chase' &&
         zombie.attackWait <= 0 &&
+        canStillAttack(zombie.severed) &&
         withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
       ) {
         // Telegraph: sound and the visible windup start together; the cooldown starts now too (from
@@ -1082,10 +1141,33 @@ export class ZombieSystem {
     this.options.onSound?.('melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     zombie.health -= weapon.damage;
+    // No dedicated dismemberment/gore sound exists in content/base/sounds.json yet (melee_hit/shambler_hurt
+    // above already cover every hit) — "play one if a suitable one exists, else skip" per the design.
+    this.rollDismember(id, zombie, zombie.health <= 0);
     if (zombie.health <= 0) {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
     }
     return id;
+  }
+
+  /** Independent rolls for this hit: type.dismember.chance for a random not-yet-severed arm part (skipping
+   * one already implied by a containing part — see availableArmParts), and, only on a killing blow,
+   * type.dismember.headOnKillChance for the head too. Uses zombie.dismemberRng, not behaviorRng — see
+   * Zombie.dismemberRng's own doc comment. */
+  private rollDismember(id: EntityId, zombie: Zombie, killed: boolean): void {
+    const { dismember } = zombie.type;
+    if (zombie.dismemberRng.chance(dismember.chance)) {
+      const available = availableArmParts(zombie.severed);
+      if (available.length > 0) {
+        const part = available[zombie.dismemberRng.int(0, available.length - 1)]!;
+        zombie.severed.push(part);
+        this.options.onSever?.(id, zombie, part);
+      }
+    }
+    if (killed && !zombie.severed.includes('head') && zombie.dismemberRng.chance(dismember.headOnKillChance)) {
+      zombie.severed.push('head');
+      this.options.onSever?.(id, zombie, 'head');
+    }
   }
 }

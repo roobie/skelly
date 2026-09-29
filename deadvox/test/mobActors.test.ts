@@ -40,7 +40,7 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 
 /** A minimal, valid Zombie — same shape ZombieSystem.add() builds (src/core/zombies.ts), constructed
  * directly so these tests don't need a full ZombieSystem (physics/senses/etc, irrelevant here). */
-const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1]): Zombie => ({
+const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[] = []): Zombie => ({
   type: SHAMBLER,
   body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
   facing: [...facing],
@@ -49,6 +49,7 @@ const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1]): Zombie => ({
   investigationTier: undefined,
   behaviorRng: Rng.stream(0, 'test-zombie'),
   soundRng: Rng.stream(0, 'test-zombie-sound'),
+  dismemberRng: Rng.stream(0, 'test-zombie-dismember'),
   idleSoundTimer: 8,
   modeTimer: 0,
   searchAnchor: undefined,
@@ -81,6 +82,7 @@ const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1]): Zombie => ({
   gaitPhase: 0,
   footstepClock: initialShamblerFootstepClock(SHAMBLER.stepLength),
   wanderClock: 0,
+  severed,
 });
 
 describe('facing convention', () => {
@@ -337,6 +339,107 @@ describe('MobActorMeshes reactions', () => {
       expect(renderer.isTracked(ids[0]!)).toBe(false); // the oldest corpse, evicted by the 17th death
       for (let i = 1; i < 17; i++) {
         expect(renderer.isTracked(ids[i]!)).toBe(true);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+});
+
+describe('MobActorMeshes dismemberment', () => {
+  it("hides a severed bone's whole subtree (zero matrices), leaving the other arm alone", () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      zombie.severed.push('upperArm.L');
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+
+      expect(renderer.isBoneHidden(id, 'upperArm.L')).toBe(true);
+      expect(renderer.isBoneHidden(id, 'forearm.L')).toBe(true);
+      expect(renderer.isBoneHidden(id, 'hand.L')).toBe(true);
+      expect(renderer.isBoneHidden(id, 'upperArm.R')).toBe(false);
+      expect(renderer.isBoneHidden(id, 'forearm.R')).toBe(false);
+      expect(renderer.isBoneHidden(id, 'pelvis')).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('re-derives hidden bones from zombie.severed every sync (source of truth, e.g. after a save/load)', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isBoneHidden(id, 'hand.L')).toBe(false);
+
+      zombie.severed.push('hand.L'); // simulates a fresh severing (or a restored save) between syncs
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isBoneHidden(id, 'hand.L')).toBe(true);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('allocates a debris slot on zombieSevered and frees it after its lifetime', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1); // establishes render state (lastPos) to spawn debris from
+
+      renderer.zombieSevered(id, 'hand.L');
+      expect(renderer.debrisCountFor(id)).toBe(1);
+
+      // A single giant step only gets it to "grounded this frame" (elapsed already exceeds the flight
+      // safety net, so it settles immediately rather than bouncing) — freeing is checked against elapsed
+      // *at the top* of the next call, so a second big step is what actually clears the lie + sink budget.
+      renderer.sync(store, 20, 1);
+      renderer.sync(store, 20, 1);
+      expect(renderer.debrisCountFor(id)).toBe(0);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('does nothing for zombieSevered on an untracked id (over capacity)', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { poolSize: 1 }); // capacity 1: a 2nd zombie always overflows
+    try {
+      const store = new MapEntityStore<Zombie>();
+      store.add(makeZombie([0, 0, 0]));
+      const second = store.add(makeZombie([1, 0, 1]));
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isTracked(second)).toBe(false);
+
+      expect(() => renderer.zombieSevered(second, 'hand.L')).not.toThrow();
+      expect(renderer.debrisCountFor(second)).toBe(0);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('debris counts toward the corpse cap, evicting the oldest dead thing first', () => {
+    const renderer = new MobActorMeshes(0.5, 20, { poolSize: 1 }); // one shared variant, room for 17 dead things
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const ids: number[] = [];
+      for (let i = 0; i < 17; i++) {
+        const zombie = makeZombie([i, 0, 0]);
+        const id = store.add(zombie);
+        renderer.sync(store, 1 / 60, 1);
+        renderer.zombieSevered(id, 'hand.L'); // debris, not a corpse — still counts toward MAX_CORPSES
+        store.remove(id);
+        renderer.sync(store, 1 / 60, 1); // prunes the (now-vanished) live entry; the debris itself survives
+        ids.push(id);
+      }
+      // The very first debris was evicted once the 17th arrived (MAX_CORPSES is 16).
+      expect(renderer.debrisCountFor(ids[0]!)).toBe(0);
+      for (let i = 1; i < 17; i++) {
+        expect(renderer.debrisCountFor(ids[i]!)).toBe(1);
       }
     } finally {
       renderer.dispose();

@@ -238,6 +238,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       });
       playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
     },
+    onSever: (id, _zombie, part) => {
+      // Same forward-reference note as onDeath below — zombieMeshes is declared further down, but this
+      // only ever runs later, during play. Only MobActorMeshes implements zombieSevered (flying debris) —
+      // ZombieMeshes leaves it undefined, so severing is a no-op for the box renderer (see its own note).
+      zombieMeshes.zombieSevered?.(id, part, playerSense().pos);
+    },
     onDeath: (id, zombie) => {
       // zombieMeshes is declared further below, but this only ever runs later, during play (see its own
       // declaration comment); only MobActorMeshes implements zombieDied (a corpse) — ZombieMeshes leaves it

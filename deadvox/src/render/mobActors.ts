@@ -33,10 +33,24 @@
 // holds once it's lying, then sinks (an extra downward Y offset, no re-posing needed) before finally
 // freeing the slot the same way a plain vanish (despawn/unload, never a death) always has. Corpses are
 // render-only: never saved, and forgotten immediately if this whole renderer is disposed/recreated.
+//
+// Dismemberment (mobgen/src/mob/dismember.ts): src/core/zombies.ts's Zombie.severed (part names, e.g.
+// "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
+// just re-expands zombie.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
+// "just work": a restored zombie's severed list is already exactly right). A severed bone is hidden by
+// writing an all-zero 3x4 matrix for it in the shared texture (packZeroBone) — a zero matrix collapses
+// every one of that bone's vertices to the origin, degenerate, so hiding it needs no shader logic at all.
+// The severed-bone bitmask (crowd.ts's packSeveredMask) exists only for the *gore* effect: a survivor
+// bone's face whose neighbourBone has just been severed (see mobgen's mesh.ts) gets tinted in the fragment
+// shader. A corpse's severed set is frozen at the instant of death, same as its pose. Severing also spawns
+// one piece of flying debris (see the Debris type below) — its own InstancedMesh row shows only the
+// severed subtree (the inverse of a live zombie/corpse: the carried bones are real, everything else is
+// zeroed) and is driven by simple ballistic physics, reusing the corpse cap/eviction/lifecycle machinery
+// (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
 import type { Material } from '@mobgen/core/body.ts';
 import { generateValid, type Realized, realize } from '@mobgen/core/generate.ts';
-import { IDENTITY_M, type Vec3 as MobVec3, mulMM, rotY } from '@mobgen/core/math.ts';
+import { IDENTITY_M, type Mat3, type Vec3 as MobVec3, mulMM, rotAxis, rotY } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
   boneTransformsInto,
@@ -50,12 +64,17 @@ import { ATTACK_CLIPS, attackPose } from '@mobgen/mob/attack.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
+  CROWD_COLOR_FRAGMENT,
+  CROWD_FRAGMENT_DECLARATIONS,
   CROWD_VERTEX_DECLARATIONS,
   type CrowdPlacement,
   type CrowdTextureLayout,
+  crowdTexelIndex,
   crowdTextureLayout,
   packCrowdBoneMatrix,
+  packSeveredMask,
 } from '@mobgen/mob/crowd.ts';
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import {
   advanceClock,
   bodyRestExtents,
@@ -106,6 +125,9 @@ export interface ZombieRenderer {
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
+  /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
+   * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
+  zombieSevered?: (id: EntityId, part: string, playerPos?: Vec3) => void;
 }
 
 const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
@@ -145,7 +167,52 @@ const CORPSE_LIE_S = 8;
 const CORPSE_SINK_S = 1.5;
 const CORPSE_SINK_DEPTH_M = 1.5; // comfortably below any visible geometry by the end of the sink
 const CORPSE_LIFETIME_S = DEATH_FALL_DURATION + CORPSE_LIE_S + CORPSE_SINK_S;
-const MAX_CORPSES = 16; // global cap across every variant — see zombieDied's own eviction
+const MAX_CORPSES = 16; // global cap across every variant, corpses AND debris together — see zombieDied's
+// and zombieSevered's own eviction.
+
+// Flying-limb debris: simple ballistic physics (no terrain query available here, so ground is approximated
+// as the zombie's own feet Y at the instant of severing — see this module's header comment), one bounce,
+// then the same lie/sink timing a corpse uses.
+const DEBRIS_LAUNCH_HORIZONTAL_MPS = 2.5; // "away from player", within the task's ~2-3 m/s
+const DEBRIS_LAUNCH_UP_MPS = 2.5;
+const DEBRIS_GRAVITY_MPS2 = 9.8;
+const DEBRIS_MAX_FLIGHT_S = 3; // safety cap in case it somehow never reaches groundY
+const DEBRIS_BOUNCE_DAMPING = 0.35; // one bounce, most of the energy lost, then it settles
+const DEBRIS_SPAWN_HEIGHT_M = 1.2; // rough arm height above the feet — see zombieSevered's own note
+const DEBRIS_MIN_SPIN_RADPS = 2;
+const DEBRIS_SPIN_RANGE_RADPS = 4; // spin rate is DEBRIS_MIN_SPIN_RADPS..+RANGE, from debrisSpinFor's hash
+
+/** Deterministic spin (axis, rate) from a zombie's id and the severed part's own name — same "hash it,
+ * don't draw from a live RNG stream" reasoning as variantIndexForId/flinchSideForId. Exported for
+ * test/mobActors.test.ts. */
+export const debrisSpinFor = (id: EntityId, part: string): { axis: Vec3; rate: number } => {
+  let h = (id ^ 0x2f_1b_ad_e5) >>> 0;
+  for (let i = 0; i < part.length; i++) {
+    h = Math.imul(h ^ part.charCodeAt(i), 0x01_00_01_93) >>> 0;
+  }
+  h = Math.imul(h ^ (h >>> 15), 0x2c_1b_3c_6d) >>> 0;
+  h = (h ^ (h >>> 12)) >>> 0;
+  const ax = ((h & 0xff) / 255) * 2 - 1;
+  const ay = (((h >>> 8) & 0xff) / 255) * 2 - 1;
+  const az = (((h >>> 16) & 0xff) / 255) * 2 - 1;
+  const len = Math.hypot(ax, ay, az) || 1;
+  const rate = DEBRIS_MIN_SPIN_RADPS + ((h >>> 24) / 255) * DEBRIS_SPIN_RANGE_RADPS;
+  return { axis: [ax / len, ay / len, az / len], rate };
+};
+
+/** A unit XZ direction from `playerBlockPos` (block units, PlayerSense.pos's own convention — see
+ * zombieDied's identical assumption) toward `zombieWorldPos` (metres) — "away from the player." Falls back
+ * to a fixed direction with no player position available, same documented default as
+ * fallDirectionAwayFromPlayer. */
+const awayFromPlayerXZ = (zombieWorldPos: Vec3, playerBlockPos: Vec3 | undefined, blockSize: number): Vec3 => {
+  if (!playerBlockPos) {
+    return [0, 0, 1];
+  }
+  const dx = zombieWorldPos[0] - playerBlockPos[0] * blockSize;
+  const dz = zombieWorldPos[2] - playerBlockPos[2] * blockSize;
+  const len = Math.hypot(dx, dz);
+  return len > 1e-6 ? [dx / len, 0, dz / len] : [0, 0, 1];
+};
 
 /** Deterministic variant pick from a zombie's EntityId — NOT the sim's own behaviour RNG (that must stay
  * reserved for movement/AI decisions; drawing from it here would perturb them by how many zombies exist).
@@ -276,6 +343,9 @@ const buildVariantGeometry = (realized: Realized): BufferGeometry => {
   const normals = new Float32Array(vertexCount * 3);
   const colors = new Float32Array(vertexCount * 3);
   const boneIndexAttr = new Float32Array(vertexCount);
+  // -1 for a face exposed to empty space, else the neighbouring bone's own index — dismemberment's gore
+  // effect (crowd.ts) tints a face whose neighbour has just been severed but this bone hasn't.
+  const neighbourBoneAttr = new Float32Array(vertexCount);
   const indices = new Uint32Array(indexCount);
 
   let vertexOffset = 0;
@@ -286,6 +356,9 @@ const buildVariantGeometry = (realized: Realized): BufferGeometry => {
     normals.set(mesh.normals, vertexOffset * 3);
     colors.set(vertexColorsFrom(mesh.colors, body.palette), vertexOffset * 3);
     boneIndexAttr.fill(boneIndex, vertexOffset, vertexOffset + vertices);
+    for (let v = 0; v < vertices; v++) {
+      neighbourBoneAttr[vertexOffset + v] = mesh.neighbourBone[v]!;
+    }
     for (let i = 0; i < mesh.indices.length; i++) {
       indices[indexOffset + i] = mesh.indices[i]! + vertexOffset;
     }
@@ -298,10 +371,16 @@ const buildVariantGeometry = (realized: Realized): BufferGeometry => {
   geometry.setAttribute('normal', new BufferAttribute(normals, 3));
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
   geometry.setAttribute('boneIndex', new BufferAttribute(boneIndexAttr, 1));
+  geometry.setAttribute('neighbourBone', new BufferAttribute(neighbourBoneAttr, 1));
   geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeBoundingSphere();
   return geometry;
 };
+
+/** A live zombie is keyed by its EntityId; a piece of debris (there can be more than one per zombie, over
+ * its lifetime) gets its own synthetic string key — see zombieSevered. Corpses stay EntityId-keyed (one
+ * per zombie). */
+type SlotKey = EntityId | string;
 
 interface Variant {
   readonly realized: Realized;
@@ -315,24 +394,27 @@ interface Variant {
    * bodyRestExtents doc comment). */
   readonly bodyExtents: ReadonlyMap<string, Extent>;
   readonly parentIndex: ParentIndex;
+  /** Bone id -> this variant's own bone array index — translates mobgen's severedBoneSet (string ids, body-
+   * plan-generic) into the indices the shared texture and its severed mask are keyed by. */
+  readonly boneIndexById: ReadonlyMap<string, number>;
   readonly geometry: BufferGeometry;
   readonly mesh: InstancedMesh;
   readonly crowdSlotAttr: InstancedBufferAttribute;
   /** Reused every frame for every zombie of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps (see mobgen's stressActors.ts for the identical reasoning). */
   readonly scratch: MutableTransform[];
-  /** Local slot numbers (0..capacity-1) not currently assigned to a live zombie *or corpse* of this
-   * variant. */
+  /** Local slot numbers (0..capacity-1) not currently assigned to a live zombie, corpse, *or debris* of
+   * this variant. */
   readonly freeLocalSlots: number[];
-  /** Dense, compacted (swap-removed) list of the zombie/corpse ids currently drawn by this variant's
-   * InstancedMesh — liveIds[k] is instance k. A corpse stays in this list exactly like a live zombie (see
-   * MobActorMeshes' own doc comment); only freeSlot ever removes an entry. */
-  readonly liveIds: EntityId[];
-  readonly idToInstanceIndex: Map<EntityId, number>;
+  /** Dense, compacted (swap-removed) list of the zombie/corpse/debris keys currently drawn by this
+   * variant's InstancedMesh — liveIds[k] is instance k. A corpse or a piece of debris stays in this list
+   * exactly like a live zombie (see MobActorMeshes' own doc comment); only freeSlot ever removes an entry. */
+  readonly liveIds: SlotKey[];
+  readonly idToInstanceIndex: Map<SlotKey, number>;
 }
 
-/** The three fields freeSlot needs to release a live zombie's or a corpse's row/instance — both
- * ZombieRenderState and Corpse satisfy this structurally. */
+/** The three fields freeSlot needs to release a live zombie's, a corpse's, or a piece of debris's
+ * row/instance — ZombieRenderState, Corpse and Debris all satisfy this structurally. */
 interface SlotHolder {
   readonly variantIndex: number;
   readonly localSlot: number;
@@ -371,8 +453,80 @@ interface Corpse extends SlotHolder {
   readonly worldPos: Vec3;
   readonly yaw: number;
   readonly direction: 1 | -1;
+  /** Frozen at the instant of death — a corpse keeps whatever was severed while it was still alive (see
+   * this module's header comment); parts severed by the killing blow itself are already included, since
+   * onSever fires before onDeath (src/core/zombies.ts's swing). */
+  readonly severed: readonly string[];
   elapsed: number;
+  /** Insertion order across corpses AND debris together — see evictOldestDeadThing*'s own doc comment on
+   * why a single Map's own iteration order isn't enough once there are two Maps to compare. */
+  readonly insertOrder: number;
 }
+
+/** A flying piece of debris — a severed limb, physically simulated (see zombieSevered/advanceDebris) —
+ * drawn as the *inverse* of a corpse: only `severedIndices` are visible (real, physics-placed matrices),
+ * every other bone is zeroed. Reuses a corpse-shaped slot/lifecycle (see this module's header comment). */
+interface Debris extends SlotHolder {
+  readonly walkActor: WalkActor;
+  /** The bone indices this debris carries (the cut bone and everything below it) — visible; every other
+   * bone in the variant is hidden. */
+  readonly severedIndices: readonly number[];
+  /** The walk (or walk+attack) pose frozen at the instant of severing — gives the carried subtree its own
+   * internal shape (e.g. an elbow bend), same role as a corpse's basePose. */
+  readonly frozenPose: Pose;
+  /** The severed bone itself (not a descendant) — spin is applied here so it carries the whole subtree
+   * with it through ordinary FK composition, same trick deathPose uses for the whole body's topple. */
+  readonly topBoneId: string;
+  readonly spinAxis: Vec3;
+  readonly spinRate: number;
+  /** World Y the debris settles at — the zombie's own feet Y at the instant of severing (see this module's
+   * header comment on why: no terrain height query is available here). */
+  readonly groundY: number;
+  readonly insertOrder: number;
+  pos: Vec3;
+  vel: Vec3;
+  spinAngle: number;
+  bounced: boolean;
+  grounded: boolean;
+  /** Seconds since severing — while airborne, capped by DEBRIS_MAX_FLIGHT_S as a safety net; once
+   * `grounded`, this module's own advanceDebris compares it against `groundedAt + CORPSE_LIE_S +
+   * CORPSE_SINK_S` instead, so a quick landing still gets the full lie/sink time (not shortchanged by
+   * however long the flight itself took). */
+  elapsed: number;
+  /** `elapsed` at the moment this debris settled, or undefined while still airborne. */
+  groundedAt: number | undefined;
+}
+
+/** One physics step for an airborne piece of debris: gravity, integrate position, spin, then either bounce
+ * once off groundY (halves horizontal speed, reflects and damps vertical speed) or — on the second contact,
+ * or past the DEBRIS_MAX_FLIGHT_S safety net — settle (grounded, groundedAt stamped, velocity zeroed).
+ * Mutates `d` in place; pulled out of advanceDebris purely to keep that method's own branching simple. */
+const stepAirborneDebris = (d: Debris, realDt: number): void => {
+  d.vel[1] -= DEBRIS_GRAVITY_MPS2 * realDt;
+  d.pos = [d.pos[0] + d.vel[0] * realDt, d.pos[1] + d.vel[1] * realDt, d.pos[2] + d.vel[2] * realDt];
+  d.spinAngle += d.spinRate * realDt;
+  const hitGround = d.pos[1] <= d.groundY || d.elapsed > DEBRIS_MAX_FLIGHT_S;
+  if (!hitGround) {
+    return;
+  }
+  d.pos = [d.pos[0], d.groundY, d.pos[2]];
+  if (!d.bounced && d.elapsed <= DEBRIS_MAX_FLIGHT_S) {
+    d.bounced = true;
+    d.vel = [d.vel[0] * 0.5, Math.abs(d.vel[1]) * DEBRIS_BOUNCE_DAMPING, d.vel[2] * 0.5];
+  } else {
+    d.grounded = true;
+    d.groundedAt = d.elapsed;
+    d.vel = [0, 0, 0];
+  }
+};
+
+/** Lowers a grounded, not-yet-freed debris toward CORPSE_SINK_DEPTH_M below groundY, same envelope a
+ * corpse's own sink uses. Mutates `d` in place. */
+const sinkGroundedDebris = (d: Debris): void => {
+  const sinkElapsed = d.elapsed - (d.groundedAt ?? d.elapsed) - CORPSE_LIE_S;
+  const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
+  d.pos = [d.pos[0], d.groundY - sinkT * CORPSE_SINK_DEPTH_M, d.pos[2]];
+};
 
 export interface MobActorMeshesOptions {
   readonly poolSize?: number;
@@ -391,6 +545,10 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly material: MeshLambertMaterial;
   private readonly states = new Map<EntityId, ZombieRenderState>();
   private readonly corpses = new Map<EntityId, Corpse>();
+  private readonly debris = new Map<string, Debris>();
+  /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
+   * instead of needing to interleave two Maps' own iteration orders. */
+  private nextDeadOrder = 0;
   private frameCounter = 0;
   private camera: Camera | undefined;
   private readonly frustum = new Frustum();
@@ -457,12 +615,17 @@ export class MobActorMeshes implements ZombieRenderer {
 
     this.material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
     this.material.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-texture';
-    const { texture } = this;
+    const { texture, layout } = this;
     this.material.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
+      shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
       shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`
         .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
         .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);
+      shader.fragmentShader = `${CROWD_FRAGMENT_DECLARATIONS}\n${shader.fragmentShader}`.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>\n${CROWD_COLOR_FRAGMENT}`,
+      );
     };
 
     this.variants = built.map((v, variantIndex) => {
@@ -486,12 +649,17 @@ export class MobActorMeshes implements ZombieRenderer {
       for (let k = capacity - 1; k >= 0; k--) {
         freeLocalSlots.push(k);
       }
+      const boneIndexById = new Map<string, number>();
+      v.realized.body.bones.forEach((bone, index) => {
+        boneIndexById.set(bone.id, index);
+      });
       return {
         realized: v.realized,
         walkActorTemplate: v.walkActorTemplate,
         legGeometryL: v.legGeometryL,
         bodyExtents: v.bodyExtents,
         parentIndex: indexBonesByParent(v.realized.body.bones),
+        boneIndexById,
         geometry,
         mesh,
         crowdSlotAttr,
@@ -508,6 +676,13 @@ export class MobActorMeshes implements ZombieRenderer {
     this.camera = camera;
   }
 
+  /** The next insertOrder value for a new corpse or debris (see nextDeadOrder's own doc comment). */
+  private takeDeadOrder(): number {
+    const order = this.nextDeadOrder;
+    this.nextDeadOrder += 1;
+    return order;
+  }
+
   /** Whether `id` currently has a drawn instance (a slot) — true for a live zombie *or* a corpse still
    * lying/sinking. False for an id the sim knows about but this renderer hasn't (yet, or ever, if its
    * variant is at capacity) assigned one — see this module's header comment on the overflow behaviour.
@@ -522,27 +697,104 @@ export class MobActorMeshes implements ZombieRenderer {
     return this.states.get(id)?.hitTime !== undefined;
   }
 
-  /** The oldest (first-inserted) corpse belonging to `variantIndex`, or undefined if it has none —
-   * insertion order on a Map is iteration order, so this is just "the first match." */
-  private oldestCorpseInVariant(variantIndex: number): EntityId | undefined {
-    for (const [id, corpse] of this.corpses) {
-      if (corpse.variantIndex === variantIndex) {
-        return id;
+  /** Test-only: true if `boneId`'s matrix in the shared texture, for the row currently assigned to `id` (a
+   * live zombie or a corpse), is the all-zero matrix a severed bone is packed as (see packZeroBone). False
+   * if `id`/`boneId` aren't found — a caller checking "is this hidden" for a bone that doesn't exist would
+   * otherwise read as trivially true from an all-zero read past the texture's own bounds. */
+  isBoneHidden(id: EntityId, boneId: string): boolean {
+    const holder: SlotHolder | undefined = this.states.get(id) ?? this.corpses.get(id);
+    if (!holder) {
+      return false;
+    }
+    const variant = this.variants[holder.variantIndex]!;
+    const boneIndex = variant.boneIndexById.get(boneId);
+    if (boneIndex === undefined) {
+      return false;
+    }
+    const i = crowdTexelIndex(this.layout, holder.globalRow, boneIndex);
+    for (let k = 0; k < 12; k++) {
+      if (this.textureData[i + k] !== 0) {
+        return false;
       }
     }
-    return undefined;
+    return true;
+  }
+
+  /** Test-only: how many pieces of debris currently tracked came from `id` (there can be more than one,
+   * severed over separate hits). */
+  debrisCountFor(id: EntityId): number {
+    let count = 0;
+    for (const key of this.debris.keys()) {
+      if (key.startsWith(`debris:${id}:`)) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  /** The oldest (lowest insertOrder) corpse or debris belonging to `variantIndex` — evicted to make room
+   * for a live zombie needing a slot there, or a new corpse/debris exceeding MAX_CORPSES. Scans both Maps
+   * since neither's own iteration order alone says which of a corpse and a debris is older (see Corpse/
+   * Debris's own insertOrder doc comments). */
+  private evictOldestDeadThingInVariant(variantIndex: number): void {
+    let oldestOrder = Number.POSITIVE_INFINITY;
+    let oldestCorpseId: EntityId | undefined;
+    let oldestDebrisKey: string | undefined;
+    for (const [id, corpse] of this.corpses) {
+      if (corpse.variantIndex === variantIndex && corpse.insertOrder < oldestOrder) {
+        oldestOrder = corpse.insertOrder;
+        oldestCorpseId = id;
+        oldestDebrisKey = undefined;
+      }
+    }
+    for (const [key, d] of this.debris) {
+      if (d.variantIndex === variantIndex && d.insertOrder < oldestOrder) {
+        oldestOrder = d.insertOrder;
+        oldestDebrisKey = key;
+        oldestCorpseId = undefined;
+      }
+    }
+    if (oldestCorpseId !== undefined) {
+      this.freeCorpse(oldestCorpseId);
+    } else if (oldestDebrisKey !== undefined) {
+      this.freeDebris(oldestDebrisKey);
+    }
+  }
+
+  /** Same as evictOldestDeadThingInVariant but across every variant — used when a new corpse or debris
+   * itself would exceed the global MAX_CORPSES cap. */
+  private evictOldestDeadThingGlobally(): void {
+    let oldestOrder = Number.POSITIVE_INFINITY;
+    let oldestCorpseId: EntityId | undefined;
+    let oldestDebrisKey: string | undefined;
+    for (const [id, corpse] of this.corpses) {
+      if (corpse.insertOrder < oldestOrder) {
+        oldestOrder = corpse.insertOrder;
+        oldestCorpseId = id;
+        oldestDebrisKey = undefined;
+      }
+    }
+    for (const [key, d] of this.debris) {
+      if (d.insertOrder < oldestOrder) {
+        oldestOrder = d.insertOrder;
+        oldestDebrisKey = key;
+        oldestCorpseId = undefined;
+      }
+    }
+    if (oldestCorpseId !== undefined) {
+      this.freeCorpse(oldestCorpseId);
+    } else if (oldestDebrisKey !== undefined) {
+      this.freeDebris(oldestDebrisKey);
+    }
   }
 
   private addZombie(id: EntityId, zombie: Zombie): ZombieRenderState | undefined {
     const variantIndex = variantIndexForId(id, this.variants.length);
     const variant = this.variants[variantIndex]!;
     if (variant.freeLocalSlots.length === 0) {
-      // Corpses count toward capacity (see this module's header comment): make room by dropping this
-      // variant's own oldest corpse before giving up on a live zombie.
-      const oldestCorpseId = this.oldestCorpseInVariant(variantIndex);
-      if (oldestCorpseId !== undefined) {
-        this.freeCorpse(oldestCorpseId);
-      }
+      // Corpses and debris count toward capacity (see this module's header comment): make room by dropping
+      // this variant's own oldest dead thing before giving up on a live zombie.
+      this.evictOldestDeadThingInVariant(variantIndex);
     }
     const localSlot = variant.freeLocalSlots.pop();
     if (localSlot === undefined) {
@@ -577,23 +829,28 @@ export class MobActorMeshes implements ZombieRenderer {
     return state;
   }
 
-  /** Releases `entry`'s row/instance back to its variant, swap-compacting whichever id (a live zombie or a
-   * corpse — both share the same dense liveIds/instanceIndex bookkeeping) was drawn last into the
-   * now-vacated slot. Shared by removeZombie (a plain vanish) and freeCorpse (a corpse's own expiry or
-   * eviction); neither touches `this.states`/`this.corpses` themselves — callers do that. */
-  private freeSlot(id: EntityId, entry: SlotHolder): void {
+  /** Releases `entry`'s row/instance back to its variant, swap-compacting whichever key (a live zombie, a
+   * corpse, or a piece of debris — all three share the same dense liveIds/instanceIndex bookkeeping) was
+   * drawn last into the now-vacated slot. Shared by removeZombie (a plain vanish), freeCorpse and
+   * freeDebris (expiry or eviction); none of them touch `this.states`/`this.corpses`/`this.debris`
+   * themselves — callers do that. */
+  private freeSlot(key: SlotKey, entry: SlotHolder): void {
     const variant = this.variants[entry.variantIndex]!;
     const lastIndex = variant.liveIds.length - 1;
     if (entry.instanceIndex !== lastIndex) {
-      const movedId = variant.liveIds[lastIndex]!;
-      const moved = (this.states.get(movedId) ?? this.corpses.get(movedId))!;
-      variant.liveIds[entry.instanceIndex] = movedId;
-      variant.idToInstanceIndex.set(movedId, entry.instanceIndex);
+      const movedKey = variant.liveIds[lastIndex]!;
+      const moved = (
+        typeof movedKey === 'number'
+          ? (this.states.get(movedKey) ?? this.corpses.get(movedKey))
+          : this.debris.get(movedKey)
+      )!;
+      variant.liveIds[entry.instanceIndex] = movedKey;
+      variant.idToInstanceIndex.set(movedKey, entry.instanceIndex);
       moved.instanceIndex = entry.instanceIndex;
       variant.crowdSlotAttr.setX(entry.instanceIndex, moved.globalRow);
     }
     variant.liveIds.pop();
-    variant.idToInstanceIndex.delete(id);
+    variant.idToInstanceIndex.delete(key);
     variant.freeLocalSlots.push(entry.localSlot);
     variant.mesh.count = variant.liveIds.length;
     variant.crowdSlotAttr.needsUpdate = true;
@@ -612,6 +869,15 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     this.freeSlot(id, corpse);
     this.corpses.delete(id);
+  }
+
+  private freeDebris(key: string): void {
+    const d = this.debris.get(key);
+    if (!d) {
+      return;
+    }
+    this.freeSlot(key, d);
+    this.debris.delete(key);
   }
 
   /**
@@ -633,11 +899,8 @@ export class MobActorMeshes implements ZombieRenderer {
     // compact the *dying* zombie's own instance into the vacated slot (if it happens to be the one
     // currently last in its variant's liveIds) — freeSlot's lookup must still find it as a SlotHolder,
     // which this.states (not yet deleted) still provides, exactly as it did before this death.
-    if (this.corpses.size >= MAX_CORPSES) {
-      const oldestId = this.corpses.keys().next().value;
-      if (oldestId !== undefined) {
-        this.freeCorpse(oldestId);
-      }
+    if (this.corpses.size + this.debris.size >= MAX_CORPSES) {
+      this.evictOldestDeadThingGlobally();
     }
     const worldPos: Vec3 = [
       zombie.body.pos[0] * this.blockSize,
@@ -657,9 +920,87 @@ export class MobActorMeshes implements ZombieRenderer {
       worldPos,
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, playerPos),
+      severed: [...zombie.severed],
       elapsed: 0,
+      insertOrder: this.takeDeadOrder(),
     });
     this.states.delete(id);
+  }
+
+  /**
+   * Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — spawns one
+   * piece of flying debris in the *same* zombie's variant (see this module's header comment). No-ops for an
+   * id this renderer isn't tracking as a live zombie (over capacity, or — per src/core/zombies.ts's swing,
+   * which calls onSever before onDeath on the same hit — already dead this exact hit is impossible, since
+   * zombieDied hasn't run yet; but a stale/unknown part name, or no position yet on the zombie's very first
+   * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
+   * MAX_CORPSES exactly like a corpse (see zombieDied's own eviction).
+   */
+  zombieSevered(id: EntityId, part: string, playerPos?: Vec3): void {
+    const state = this.states.get(id);
+    if (!state?.lastPos) {
+      return;
+    }
+    const variant = this.variants[state.variantIndex]!;
+    const topBoneIndex = variant.boneIndexById.get(part);
+    if (topBoneIndex === undefined) {
+      return;
+    }
+    const severedIndices: number[] = [];
+    for (const boneId of severedBoneSet(variant.realized.body.bones, [part])) {
+      const index = variant.boneIndexById.get(boneId);
+      if (index !== undefined) {
+        severedIndices.push(index);
+      }
+    }
+
+    if (this.corpses.size + this.debris.size >= MAX_CORPSES) {
+      this.evictOldestDeadThingGlobally();
+    }
+    if (variant.freeLocalSlots.length === 0) {
+      this.evictOldestDeadThingInVariant(state.variantIndex);
+    }
+    const localSlot = variant.freeLocalSlots.pop();
+    if (localSlot === undefined) {
+      return; // still full even after eviction — shouldn't happen at MAX_CORPSES <= total texture rows
+    }
+    const globalRow = state.variantIndex * this.capacity + localSlot;
+    const instanceIndex = variant.liveIds.length;
+    const order = this.takeDeadOrder();
+    const key = `debris:${id}:${part}:${order}`;
+    variant.liveIds.push(key);
+    variant.idToInstanceIndex.set(key, instanceIndex);
+    variant.crowdSlotAttr.setX(instanceIndex, globalRow);
+    variant.crowdSlotAttr.needsUpdate = true;
+    variant.mesh.count = variant.liveIds.length;
+
+    const zombieWorldPos = state.lastPos;
+    const away = awayFromPlayerXZ(zombieWorldPos, playerPos, this.blockSize);
+    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed);
+    const frozenPose =
+      state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
+    const spin = debrisSpinFor(id, part);
+    this.debris.set(key, {
+      variantIndex: state.variantIndex,
+      localSlot,
+      globalRow,
+      instanceIndex,
+      walkActor: state.walkActor,
+      severedIndices,
+      frozenPose,
+      topBoneId: part,
+      spinAxis: spin.axis,
+      spinRate: spin.rate,
+      groundY: zombieWorldPos[1],
+      insertOrder: order,
+      pos: [zombieWorldPos[0], zombieWorldPos[1] + DEBRIS_SPAWN_HEIGHT_M, zombieWorldPos[2]],
+      vel: [away[0] * DEBRIS_LAUNCH_HORIZONTAL_MPS, DEBRIS_LAUNCH_UP_MPS, away[2] * DEBRIS_LAUNCH_HORIZONTAL_MPS],
+      spinAngle: 0,
+      bounced: false,
+      grounded: false,
+      elapsed: 0,
+      groundedAt: undefined,
+    });
   }
 
   /** True if `worldPelvis` is farther from the camera than LOD_NEAR/FAR_M warrants skipping this frame
@@ -755,13 +1096,66 @@ export class MobActorMeshes implements ZombieRenderer {
     }
   }
 
+  /** Translates mobgen's severedBoneSet (bone id strings — body-plan-generic) into this variant's own bone
+   * array indices, dropping any id this variant's rig doesn't have (defensive; shouldn't happen since every
+   * variant is the same shambler body plan). */
+  private indicesFor(variant: Variant, boneIds: ReadonlySet<string>): Set<number> {
+    const indices = new Set<number>();
+    for (const boneId of boneIds) {
+      const index = variant.boneIndexById.get(boneId);
+      if (index !== undefined) {
+        indices.add(index);
+      }
+    }
+    return indices;
+  }
+
+  /** Zeroes one bone's matrix in the shared texture — the whole 3x4, not just translation, so every vertex
+   * of a severed bone collapses to the origin regardless of its own rest-pose offset from that bone's head
+   * (see this module's header comment on why hiding needs no shader logic at all). */
+  private packZeroBone(globalRow: number, bone: number): void {
+    const i = crowdTexelIndex(this.layout, globalRow, bone);
+    for (let k = 0; k < 12; k++) {
+      this.textureData[i + k] = 0;
+    }
+  }
+
+  /** FK from `pose`, then packs every bone at `globalRow`: severed bones get a zero matrix (hidden — see
+   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask too, even
+   * when `severedIndices` is empty, so a healed/never-severed actor's mask never goes stale. Shared by
+   * packPose (a live zombie) and packCorpse; packDebris packs its own inverse (only the carried subtree is
+   * real) directly, since the two cases share little beyond "call packCrowdBoneMatrix or packZeroBone". */
+  private packSkeleton(
+    globalRow: number,
+    variant: Variant,
+    frame: { pose: Pose; placement: CrowdPlacement; severedIndices: ReadonlySet<number> },
+  ): void {
+    const { pose, placement, severedIndices } = frame;
+    boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
+    for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
+      if (severedIndices.has(bone)) {
+        this.packZeroBone(globalRow, bone);
+      } else {
+        packCrowdBoneMatrix(
+          this.textureData,
+          { layout: this.layout, slot: globalRow, bone },
+          variant.scratch[bone]!,
+          placement,
+        );
+      }
+    }
+    packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
+  }
+
   /** The expensive step LOD/frustum culling skips for a distant or off-screen zombie: pose (walk, or walk
    * + attackPose while lunging, plus the extra head yaw, plus a flinch layered on top of *that* while one
    * is playing — "layer flinch on top of the attack pose"), FK, and packing every bone into the shared
-   * texture at this zombie's own stable row. */
+   * texture at this zombie's own stable row — hiding whatever zombie.severed currently covers (see this
+   * module's header comment: zombie.severed is the only source of truth, re-expanded every call). */
   private packPose(
     state: ZombieRenderState,
     variant: Variant,
+    zombie: Zombie,
     placement: { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number },
   ): void {
     const { worldPos, yaw, headYaw, verticalOffset } = placement;
@@ -774,7 +1168,6 @@ export class MobActorMeshes implements ZombieRenderer {
         ? headPose
         : flinchPose(state.walkActor, state.hitTime, headPose, { side: state.hitSide });
 
-    boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
     // Feet land at the pose's own local y = 0 (walkPose's groundOffset puts the lowest foot there — see
     // mobgen/src/mob/gait.ts) — so placing the whole rig at body.pos's own Y (plus the render-only
     // StepOffset) puts the feet exactly at body.pos.y, matching ZombieMeshes' box figure.
@@ -784,14 +1177,8 @@ export class MobActorMeshes implements ZombieRenderer {
       z: worldPos[2],
       yawRad: yaw,
     };
-    for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
-      packCrowdBoneMatrix(
-        this.textureData,
-        { layout: this.layout, slot: state.globalRow, bone },
-        variant.scratch[bone]!,
-        crowdPlacement,
-      );
-    }
+    const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, zombie.severed));
+    this.packSkeleton(state.globalRow, variant, { pose, placement: crowdPlacement, severedIndices });
   }
 
   /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
@@ -801,7 +1188,6 @@ export class MobActorMeshes implements ZombieRenderer {
     const variant = this.variants[corpse.variantIndex]!;
     const deathActor: DeathActor = { ...corpse.walkActor, bodyExtents: variant.bodyExtents };
     const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
-    boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
 
     const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + CORPSE_LIE_S);
     const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
@@ -811,14 +1197,45 @@ export class MobActorMeshes implements ZombieRenderer {
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
+    const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, corpse.severed));
+    this.packSkeleton(corpse.globalRow, variant, { pose, placement: crowdPlacement, severedIndices });
+  }
+
+  /** A piece of debris's own per-frame pose+pack — the inverse of packSkeleton: only `severedIndices` (the
+   * carried subtree) gets a real, physics-placed matrix; every other bone is zeroed (hidden). Spin is
+   * composed onto the severed bone's own pose rotation, so it carries the whole subtree with it through
+   * ordinary FK composition — the same trick deathPose uses to topple the whole body from the pelvis. The
+   * mask is inverted too (everything the debris does *not* carry reads as "severed" from its own
+   * perspective), so its own stump face still gets the gore tint. */
+  private packDebris(d: Debris): void {
+    const variant = this.variants[d.variantIndex]!;
+    const spin = rotAxis(d.spinAxis, (d.spinAngle * 180) / Math.PI);
+    const baseR = d.frozenPose.rotations[d.topBoneId] ?? IDENTITY_M;
+    const rotations: Record<string, Mat3> = { ...d.frozenPose.rotations, [d.topBoneId]: mulMM(baseR, spin) };
+    boneTransformsInto(
+      variant.realized.body.bones,
+      { root: [0, 0, 0], rotations },
+      variant.parentIndex,
+      variant.scratch,
+    );
+
+    const placement: CrowdPlacement = { x: d.pos[0], y: d.pos[1], z: d.pos[2], yawRad: 0 };
+    const carried = new Set(d.severedIndices);
+    const hidden = new Set<number>();
     for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
-      packCrowdBoneMatrix(
-        this.textureData,
-        { layout: this.layout, slot: corpse.globalRow, bone },
-        variant.scratch[bone]!,
-        crowdPlacement,
-      );
+      if (carried.has(bone)) {
+        packCrowdBoneMatrix(
+          this.textureData,
+          { layout: this.layout, slot: d.globalRow, bone },
+          variant.scratch[bone]!,
+          placement,
+        );
+      } else {
+        this.packZeroBone(d.globalRow, bone);
+        hidden.add(bone);
+      }
     }
+    packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
   }
 
   sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
@@ -851,7 +1268,7 @@ export class MobActorMeshes implements ZombieRenderer {
       if (this.shouldSkipPose(id, worldPelvis)) {
         continue; // clock/attack/flinch above already advanced; only the expensive pose+pack step skips
       }
-      this.packPose(state, variant, { worldPos, yaw, headYaw, verticalOffset });
+      this.packPose(state, variant, zombie, { worldPos, yaw, headYaw, verticalOffset });
       anyDirty = true;
     }
 
@@ -861,7 +1278,9 @@ export class MobActorMeshes implements ZombieRenderer {
       }
     }
 
-    if (this.advanceCorpses(realDt) || anyDirty) {
+    const corpsesDirty = this.advanceCorpses(realDt);
+    const debrisDirty = this.advanceDebris(realDt);
+    if (corpsesDirty || debrisDirty || anyDirty) {
       this.texture.needsUpdate = true;
     }
   }
@@ -878,6 +1297,27 @@ export class MobActorMeshes implements ZombieRenderer {
         continue;
       }
       this.packCorpse(corpse);
+      anyDirty = true;
+    }
+    return anyDirty;
+  }
+
+  /** Simple ballistic physics for every piece of debris: gravity, one damped bounce off groundY, then it
+   * settles; once grounded it lies (CORPSE_LIE_S) and sinks (CORPSE_SINK_S) exactly like a corpse before
+   * freeing its slot. DEBRIS_MAX_FLIGHT_S is a safety net in case it somehow never reaches the ground. */
+  private advanceDebris(realDt: number): boolean {
+    let anyDirty = false;
+    for (const [key, d] of this.debris) {
+      d.elapsed += realDt;
+      if (!d.grounded) {
+        stepAirborneDebris(d, realDt);
+      } else if (d.elapsed >= (d.groundedAt ?? d.elapsed) + CORPSE_LIE_S + CORPSE_SINK_S) {
+        this.freeDebris(key);
+        continue;
+      } else {
+        sinkGroundedDebris(d);
+      }
+      this.packDebris(d);
       anyDirty = true;
     }
     return anyDirty;
