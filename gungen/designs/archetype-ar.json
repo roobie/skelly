@@ -42,6 +42,10 @@
         "params": {
           "length": "M",
           "profile": "stanag-curved"
+        },
+        "prefab": {
+          "id": "stanag-20",
+          "version": 1
         }
       },
       "stock": {

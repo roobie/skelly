@@ -46,7 +46,12 @@
         "family": "magazine",
         "params": {
           "length": "L",
-          "profile": "ak-curved"
+          "profile": "ak-curved",
+          "variant": "ak74"
+        },
+        "prefab": {
+          "id": "ak74-30",
+          "version": 1
         }
       },
       "stock": {

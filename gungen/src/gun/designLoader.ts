@@ -1,10 +1,8 @@
 import type { DesignLoadResult } from '../core/design.ts';
 import { loadDesign } from '../core/designLoader.ts';
 import { gunDomain } from './domain.ts';
-import type { PrefabCatalogue } from './prefabs.ts';
+import { GUN_PREFABS } from './prefabs.ts';
 import { TEMPLATES } from './templates.ts';
-
-const GUN_PREFABS: PrefabCatalogue = [];
 
 /** Loads a curated gun design with its template and current prefab catalogue. */
 export const loadGunDesign = (text: string): DesignLoadResult => {
