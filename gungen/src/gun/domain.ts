@@ -7,6 +7,7 @@ import {
   handguardFit,
   magazineWellAxis,
   pistolBarrelCrown,
+  thumbholeGripMatch,
   triggerGuard,
 } from './rules.ts';
 
@@ -19,5 +20,14 @@ export const gunDomain: Domain = {
     { kind: 'sight', mode: 'parallel' },
     { kind: 'gas-cylinder', mode: 'parallel' },
   ],
-  rules: [firingGrip, feedMatch, pistolBarrelCrown, triggerGuard, handguardFit, freeFloatClearance, magazineWellAxis],
+  rules: [
+    firingGrip,
+    thumbholeGripMatch,
+    feedMatch,
+    pistolBarrelCrown,
+    triggerGuard,
+    handguardFit,
+    freeFloatClearance,
+    magazineWellAxis,
+  ],
 };
