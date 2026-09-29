@@ -2,12 +2,13 @@ import validator from 'gltf-validator';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { SelectedAnchors } from '../src/core/design.ts';
-import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { boxFromMinMax, distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import { exportGlb, partNodeName } from '../src/core/glb.ts';
 import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '../src/core/math.ts';
 import { meshForSolid, type TriangleMesh } from '../src/core/mesh.ts';
-import { resolve } from '../src/core/resolve.ts';
-import type { Domain, ExtrudedPolygonSolid } from '../src/core/schema.ts';
+import { type Resolved, resolve } from '../src/core/resolve.ts';
+import { connectionContact, keepOut as keepOutRule } from '../src/core/rules.ts';
+import type { Domain, ExtrudedPolygonSolid, KeepOut, PartDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
@@ -114,6 +115,85 @@ describe('extruded polygon axes', () => {
         expect(result[index]).toBeCloseTo(expected[index]!);
       }
     }
+
+    const contactIssues = (axis: ExtrusionAxis, distance: number) => {
+      const direction = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[axis];
+      const placed = new Map([
+        ['a', { r: rotation, t: [0, 0, 0] as const }],
+        [
+          'b',
+          {
+            r: rotation,
+            t: applyDir(
+              { r: rotation, t: [0, 0, 0] },
+              direction.map((component) => component * distance) as [number, number, number],
+            ),
+          },
+        ],
+      ]);
+      const part = (id: string): PartDef => ({
+        family: id,
+        solids: [prism(axis)],
+        ports: [],
+        keepOuts: [],
+        axes: [],
+      });
+      const resolved = {
+        placed,
+        defs: new Map([
+          ['a', part('a')],
+          ['b', part('b')],
+        ]),
+        connections: [{ from: { part: 'a' }, to: { part: 'b' }, conn: { from: 'a.mate', to: 'b.mate' } }],
+      } as unknown as Resolved;
+      return connectionContact.check(resolved).map(({ rule, message }) => ({ rule, message }));
+    };
+    for (const distance of [6, 6.5]) {
+      expect(contactIssues('x', distance)).toEqual(contactIssues('z', distance));
+      expect(contactIssues('y', distance)).toEqual(contactIssues('z', distance));
+    }
+    expect(contactIssues('z', 6)).toEqual([]);
+    expect(contactIssues('z', 6.5)).toHaveLength(1);
+
+    const keepOutIssues = (axis: ExtrusionAxis, distance: number) => {
+      const direction = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[axis];
+      const bounds = localSolidBounds(prism(axis));
+      const exactKeepOut: KeepOut = {
+        id: 'profile-volume',
+        kind: 'test',
+        box: boxFromMinMax(bounds[0], bounds[1]),
+        profile,
+        z: range,
+        axis,
+      };
+      const intruderTransform = {
+        r: rotation,
+        t: applyDir(
+          { r: rotation, t: [0, 0, 0] },
+          direction.map((component) => component * distance) as [number, number, number],
+        ),
+      };
+      const owner: PartDef = { family: 'owner', solids: [], ports: [], keepOuts: [exactKeepOut], axes: [] };
+      const intruder: PartDef = { family: 'intruder', solids: [prism(axis)], ports: [], keepOuts: [], axes: [] };
+      const resolved = {
+        placed: new Map([
+          ['owner', { r: rotation, t: [0, 0, 0] as const }],
+          ['intruder', intruderTransform],
+        ]),
+        defs: new Map([
+          ['owner', owner],
+          ['intruder', intruder],
+        ]),
+        connections: [],
+      } as unknown as Resolved;
+      return keepOutRule.check(resolved).map(({ rule, message }) => ({ rule, message }));
+    };
+    for (const distance of [0, 7]) {
+      expect(keepOutIssues('x', distance)).toEqual(keepOutIssues('z', distance));
+      expect(keepOutIssues('y', distance)).toEqual(keepOutIssues('z', distance));
+    }
+    expect(keepOutIssues('z', 0)).toHaveLength(1);
+    expect(keepOutIssues('z', 7)).toEqual([]);
   });
 
   it('exports an X-axis prism with valid glTF and outward normals', async () => {
@@ -128,7 +208,22 @@ describe('extruded polygon axes', () => {
           ...grip,
           build: (params) => {
             const def = grip.build(params);
-            return { ...def, solids: def.solids.map((solid) => (solid.id === 'body' ? axisPrism : solid)) };
+            const bounds = localSolidBounds(axisPrism);
+            return {
+              ...def,
+              solids: def.solids.map((solid) => (solid.id === 'body' ? axisPrism : solid)),
+              keepOuts: [
+                ...def.keepOuts,
+                {
+                  id: 'axis-profile',
+                  kind: 'test',
+                  box: boxFromMinMax(bounds[0], bounds[1]),
+                  profile,
+                  z: range,
+                  axis: 'x',
+                },
+              ],
+            };
           },
         },
       },
@@ -141,6 +236,14 @@ describe('extruded polygon axes', () => {
       );
       expect(body).toBeInstanceOf(Mesh);
       expect(meshBounds((body as Mesh).geometry.getAttribute('position').array as Float32Array)).toEqual([
+        [-3, -1, -2],
+        [3, 1, 2],
+      ]);
+      const keepOut = layers.keepOuts.children.find((child) =>
+        String(child.userData.label).includes('grip · keep-out axis-profile'),
+      );
+      expect(keepOut).toBeInstanceOf(Mesh);
+      expect(meshBounds((keepOut as Mesh).geometry.getAttribute('position').array as Float32Array)).toEqual([
         [-3, -1, -2],
         [3, 1, 2],
       ]);

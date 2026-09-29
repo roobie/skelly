@@ -70,8 +70,11 @@ export interface KeepOut {
   readonly kind: string;
   /** Conservative local bounds; also retained for callers that inspect simple keep-outs. */
   readonly box: Box;
-  /** Optional exact convex XY keep-out shape, extruded through local Z. */
+  /** Optional exact convex keep-out profile, using the same axis plane ordering as ExtrudedPolygonSolid. */
   readonly profile?: readonly Vec2[];
+  /** Extrusion direction; omission keeps existing keep-outs on local Z. */
+  readonly axis?: ExtrusionAxis;
+  /** Bounds along `axis` (legacy name `z` retained for existing keep-outs). */
   readonly z?: readonly [number, number];
   /** The part attached at this port of the owner may occupy the volume. */
   readonly allowPort?: string;
