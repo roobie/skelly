@@ -508,7 +508,7 @@ describe('pump shotgun tube and barrel contact', () => {
         expect(dimensions.barrelSupportLug).toBe(tubeEnd > supportX ? supportX : undefined);
         expect(dimensions.tubeSupport).toBe(tubeEnd > supportX ? supportX : undefined);
         expect(dimensions.tubeCap).toBe(tubeEnd);
-        expect(dimensions.capLugBounds).toEqual([tubeEnd - 1.5, tubeEnd, 1, 1.5, -0.75, 0.75]);
+        expect(dimensions.capLugBounds).toEqual([tubeEnd - 2.5, tubeEnd, 1, 1.5, -1.25, 1.25]);
       }
     }
   });

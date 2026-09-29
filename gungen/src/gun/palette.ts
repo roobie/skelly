@@ -59,6 +59,7 @@ const FAMILY_HEX: Record<string, number> = {
 const SPECIAL_HEX: Record<string, number> = {
   floorplate: 0x35_42_58,
   'butt-pad': 0x2f_32_38,
+  'cap-lug': 0x9a_a4_ae,
 };
 
 export const GUN_PALETTE: Palette = createPalette({

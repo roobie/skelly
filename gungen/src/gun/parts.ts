@@ -1238,7 +1238,7 @@ export const tubeMagazine: PartFamily = {
       bandTop > TUBE_HALF_HEIGHT ? [solid(id, [x - 1, TUBE_HALF_HEIGHT, -0.5], [x, bandTop, 0.5])] : [];
     const capLug: Solid[] =
       bandTop > TUBE_HALF_HEIGHT
-        ? [solid('cap-lug', [length - 1.5, TUBE_HALF_HEIGHT, -0.75], [length, bandTop, 0.75])]
+        ? [solid('cap-lug', [length - 2.5, TUBE_HALF_HEIGHT, -1.25], [length, bandTop, 1.25])]
         : [];
     const supportPort: PortDef[] =
       length > supportX
