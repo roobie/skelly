@@ -89,6 +89,8 @@ export const buildDesignViewModel = (
     }
   }
 
+  const presentParts = new Set(Object.keys(result.design.assembly.parts));
+
   return {
     kind: 'loaded',
     name: result.design.assembly.name,
@@ -97,7 +99,9 @@ export const buildDesignViewModel = (
     loadedStatus: result.design.status,
     issues,
     issuesByPart,
-    infoIssues: issues.filter((issue) => issue.parts.length === 0),
+    infoIssues: issues.filter(
+      (issue) => issue.parts.length === 0 || issue.parts.every((part) => !presentParts.has(part)),
+    ),
     locks: result.design.locks,
     prefabsByPart,
   };

@@ -68,6 +68,7 @@ describe('buildDesignViewModel', () => {
     values.assembly.connections = values.assembly.connections.filter(
       (connection: { from: string }) => connection.from !== 'receiver.barrel',
     );
+    values.assembly.parts.barrel = undefined;
     const loaded = loadGunDesign(JSON.stringify(values));
     const result = buildDesignViewModel(loaded, 'archetype-ar-broken');
     expect(result.kind).toBe('loaded');
@@ -76,6 +77,9 @@ describe('buildDesignViewModel', () => {
     }
     expect(result.issuesByPart.lower?.some((issue) => issue.message.startsWith('[feed-match]'))).toBe(true);
     expect(result.issuesByPart.receiver?.some((issue) => issue.message.startsWith('[feed-match]'))).toBe(true);
+    expect(
+      result.infoIssues.some((issue) => issue.code === 'template-choice' && issue.message.includes('barrel')),
+    ).toBe(true);
     if (!loaded.ok) {
       throw new Error('expected a loaded draft');
     }
