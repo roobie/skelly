@@ -30,8 +30,8 @@ const targetFamily: PartFamily = {
 };
 
 const brokenContactFixture = parseAssemblyOrThrow(
-  readFileSync(new URL('./fixtures/broken-connection-contact.json', import.meta.url), 'utf8'),
-  'broken-connection-contact.json',
+  readFileSync(new URL('./fixtures/synthetic-connection-contact-gap.json', import.meta.url), 'utf8'),
+  'synthetic-connection-contact-gap.json',
 );
 
 const testDomain: Domain = {
@@ -41,7 +41,7 @@ const testDomain: Domain = {
 };
 
 describe('connection-contact', () => {
-  it('reports the gap from a broken core fixture', () => {
+  it('reports the gap between two synthetic parts', () => {
     const { issues } = validate(brokenContactFixture, testDomain);
     expect(issues.map(({ rule, message }) => ({ rule, message }))).toEqual([
       {

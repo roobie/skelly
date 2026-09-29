@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { createPalette, GUN_PALETTE, hexToSrgb, solidColor, srgbToHex } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { TEMPLATES } from '../src/gun/templates.ts';
-import { loadFixtures } from './helpers.ts';
-import { sweepGroup } from './sweeps.ts';
+import { loadCorpus, loadFixtures } from './helpers.ts';
 
 /** Frozen copy of the pre-palette scene.ts table; the migration must not change any colour it produced. */
 const OLD_FAMILY_COLORS: Record<string, number> = {
@@ -33,11 +30,10 @@ const oldColor = (family: string, solidId: string): number => {
   return color;
 };
 
-const SEEDS = 40;
-
 const fixtureAssemblies = (): Assembly[] => loadFixtures().filter((f) => f.name.startsWith('archetype-'));
-const sweptAssemblies = (): Assembly[] =>
-  TEMPLATES.flatMap((t) => Array.from({ length: SEEDS }, (_, seed) => generate(t, gunDomain, seed)));
+// Replaces the former CI-only template sweeps (PROJECT.md, "Generator tests", removal plan (a)):
+// every fixture, broken-* ones included (none exists to break a colour), plus every published design.
+const corpusAssemblies = (): Assembly[] => loadCorpus(() => true).map(({ assembly }) => assembly);
 
 /** Every (role, solid id) pair rendered by the given assemblies. */
 const renderedSolids = (assemblies: Assembly[]): { family: string; id: string }[] =>
@@ -61,12 +57,10 @@ describe('palette migration', () => {
     expect(mismatches(old)).toEqual([]);
   });
 
-  sweepGroup('reproduces the old FAMILY_COLORS lookup bit-identically across the template sweep', () => {
-    it('passes', () => {
-      const old = oldColored(sweptAssemblies());
-      expect(old.length).toBeGreaterThan(1000);
-      expect(mismatches(old)).toEqual([]);
-    });
+  it('reproduces the old FAMILY_COLORS lookup bit-identically across every fixture and design', () => {
+    const old = oldColored(corpusAssemblies());
+    expect(old.length).toBeGreaterThan(100);
+    expect(mismatches(old)).toEqual([]);
   });
 });
 
@@ -103,10 +97,8 @@ describe('palette coverage', () => {
     expect(usingFallback(fixtureAssemblies())).toEqual([]);
   });
 
-  sweepGroup('never needs the fallback for any solid of the template sweep', () => {
-    it('passes', () => {
-      expect(usingFallback(sweptAssemblies())).toEqual([]);
-    });
+  it('never needs the fallback for any solid of any fixture or design', () => {
+    expect(usingFallback(corpusAssemblies())).toEqual([]);
   });
 });
 
