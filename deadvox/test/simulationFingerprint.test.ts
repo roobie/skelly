@@ -107,6 +107,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
     ]);
   });
