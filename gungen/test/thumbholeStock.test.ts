@@ -158,15 +158,31 @@ describe('thumbhole stock and AWM design', () => {
     expect(validate(mismatched, gunDomain).issues.map(({ rule }) => rule)).toContain('thumbhole-grip-match');
   });
 
-  it('keeps every size at least the former L height while varying buttstock length', () => {
+  it('matches the AR grip bottom while extending both posts in every size', () => {
+    const ar = validate(loadFixture('archetype-ar'), gunDomain);
+    expect(ar.issues).toEqual([]);
+    const arGrip = ar.resolved.defs.get('grip')!;
+    const [arGripBottom] = worldBounds(arGrip.solids, ar.resolved.placed.get('grip')!, 1);
+    expect(arGripBottom).toBeCloseTo(-12.5475, 4);
+
     const lengths = { S: 10, M: 16, L: 22 } as const;
     for (const [size, length] of Object.entries(lengths) as [keyof typeof lengths, number][]) {
       const stock = FAMILIES.stock!.build({ length: size, style: 'thumbhole' });
       const all = stock.solids.flatMap(vertices);
       const ys = all.map(([, y]) => y);
-      expect(Math.max(...ys) - Math.min(...ys), size).toBe(7.74);
+      expect(Math.max(...ys) - Math.min(...ys), size).toBeCloseTo(11.0475, 4);
+      const grip = stock.solids.find((solid) => solid.id === 'grip')!;
+      const gripY = bounds(grip)[1]!;
+      expect(gripY[0], size).toBeCloseTo(-12.5475, 4);
+      expect(gripY[1], size).toBe(-4);
+      expect(gripY[0]).toBeCloseTo(arGripBottom, 4);
       const butt = stock.solids.find((solid) => solid.id === 'butt')!;
+      const buttY = bounds(butt)[1]!;
+      expect(buttY[0], size).toBeCloseTo(-12.5475, 4);
+      expect(buttY[1], size).toBe(-1.5);
       expect(Math.min(...vertices(butt).map(([x]) => x)), size).toBe(-length);
+      const bottomBar = stock.solids.find((solid) => solid.id === 'thumbhole-bottom')!;
+      expect(bounds(bottomBar)[1], size).toEqual([-9.24, -7.48]);
       expect(stock.ports.find((port) => port.id === 'front')?.pos, size).toEqual([0, 0, 0]);
     }
   });

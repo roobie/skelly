@@ -1864,7 +1864,8 @@ export const stock: PartFamily = {
       const buttFront = -0.72 * len;
       const openingRear = gripRear - 4;
       const openingBottom = -7.48;
-      const stockBottom = -9.24;
+      const bottomBarBottom = -9.24;
+      const postAndButtBottom = -12.5475;
       const gripTop = -4;
       const rect = ({
         id,
@@ -1890,9 +1891,9 @@ export const stock: PartFamily = {
         solids: [
           rect({ id: 'thumbhole-top', x: [buttFront, 0], y: [gripTop, combTop] }),
           rect({ id: 'thumbhole-rear-post', x: [buttFront, openingRear], y: [openingBottom, gripTop] }),
-          rect({ id: 'grip', x: [gripRear, gripFront], y: [stockBottom, gripTop] }),
-          rect({ id: 'thumbhole-bottom', x: [buttFront, gripRear], y: [stockBottom, openingBottom] }),
-          rect({ id: 'butt', x: [-len, buttFront], y: [stockBottom, combTop] }),
+          rect({ id: 'grip', x: [gripRear, gripFront], y: [postAndButtBottom, gripTop] }),
+          rect({ id: 'thumbhole-bottom', x: [buttFront, gripRear], y: [bottomBarBottom, openingBottom] }),
+          rect({ id: 'butt', x: [-len, buttFront], y: [postAndButtBottom, combTop] }),
         ],
         ports: [port],
         keepOuts: [],
