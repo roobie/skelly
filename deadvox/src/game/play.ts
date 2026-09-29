@@ -31,6 +31,7 @@ import { FISTS_MELEE, type PlayerMovement, type VocalNoise, type Zombie, ZombieS
 import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
+import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
@@ -261,7 +262,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       lastZombieStep = time;
     },
   });
-  const zombieMeshes = new ZombieMeshes(s);
+  // `?actors=detailed` (default 'boxes') swaps in mobgen actors (src/render/mobActors.ts) for
+  // ZombieMeshes' six boxes — same ZombieRenderer shape (group/sync/…), so the rest of this function
+  // doesn't care which one it has.
+  const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
   scene.add(zombieMeshes.group);
 
   // The player is held still until there is ground under them. Inputs are locked
@@ -1004,6 +1008,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - lastZombieStep) * 20));
+    zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
     zombieMeshes.sync(zombieStore, dt, zombieAlpha);
     updateDebugReadout(now);
 

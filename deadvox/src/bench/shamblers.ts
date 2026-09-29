@@ -6,8 +6,10 @@ import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { ZombieSystem } from '../core/zombies.ts';
+import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
+import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
 import {
@@ -28,6 +30,7 @@ export interface ShamblerBenchRun {
   index: number;
   seed: number;
   time: string;
+  actors: ActorRenderer;
 }
 
 export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | undefined => {
@@ -44,14 +47,14 @@ export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | 
   ) {
     return undefined;
   }
-  return { counts, index, seed, time };
+  return { counts, index, seed, time, actors: actorRendererFromUrl(params) };
 };
 
 const nextUrl = (run: ShamblerBenchRun): string => {
   if (run.index + 1 >= run.counts.length) {
     return '?bench=report';
   }
-  return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}`;
+  return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}&actors=${run.actors}`;
 };
 
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
@@ -91,7 +94,8 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
   const count = run.counts[run.index]!;
   let playerBody!: Body;
   let zombies!: ZombieSystem;
-  let zombieMeshes!: ZombieMeshes;
+  let zombieMeshes!: ZombieRenderer;
+  let lastZombieTickAt = performance.now();
   const prepare = (): void => {
     playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({ seed: run.seed, clock: { ratio: CLOCK_RATIO, start: startTime } });
@@ -127,7 +131,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     if ([...zombies.store.entries()].some(([, zombie]) => zombie.mode !== 'chase')) {
       throw new Error('Cannot start shambler benchmark: not every shambler can see the player from its ring position.');
     }
-    zombieMeshes = new ZombieMeshes(s, count);
+    zombieMeshes = run.actors === 'detailed' ? new MobActorMeshes(s, count) : new ZombieMeshes(s, count);
     scene.add(zombieMeshes.group);
   };
 
@@ -144,7 +148,10 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
   const frames: number[] = [];
   const zombieTick: number[] = [];
   const renderSubmit: number[] = [];
+  const actorSync: number[] = [];
   const holes: number[] = [];
+  let draws = 0;
+  let triangles = 0;
   document.addEventListener('visibilitychange', () => {
     interrupted ||= document.hidden;
   });
@@ -159,9 +166,13 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     const result: ShamblerRunResult = {
       n: count,
       seed: run.seed,
+      actors: run.actors,
       frame: frameStats(frames),
       zombieTick: sampleStats(zombieTick),
       renderSubmit: sampleStats(renderSubmit),
+      actorSync: sampleStats(actorSync),
+      draws,
+      triangles,
       holesMax: holes.length === 0 ? 0 : Math.max(...holes),
       holeFraction: holes.length === 0 ? 0 : holes.filter((value) => value > 0).length / holes.length,
       interrupted,
@@ -206,6 +217,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
       if (physicsFrame % 3 === 0) {
         const tickStart = performance.now();
         zombies.tick(1 / 20);
+        lastZombieTickAt = tickStart;
         if (measuring) {
           zombieTick.push(performance.now() - tickStart);
         }
@@ -257,7 +269,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
 
   const showHud = (elapsed: number): void => {
     hud.textContent = [
-      `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count}, seed=${run.seed}, ${run.time}`,
+      `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count}, seed=${run.seed}, ${run.time}, actors=${run.actors}`,
       phase === 'load'
         ? `loading hamlet (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
         : `${phase} ${Math.min(elapsed, phase === 'warmup' ? duration.warmup : duration.measure).toFixed(1)} s`,
@@ -266,12 +278,16 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     ].join('\n');
   };
 
-  const draw = (elapsed: number): void => {
+  const draw = (elapsed: number, dt: number, now: number): void => {
     const measuring = phase === 'measure';
     updateCamera(elapsed, measuring);
     if (playerBody) {
-      zombieMeshes.sync(zombies.store);
+      const alpha = Math.max(0, Math.min(1, ((now - lastZombieTickAt) / 1000) * 20));
+      zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
+      const syncStart = performance.now();
+      zombieMeshes.sync(zombies.store, dt, alpha);
       if (measuring) {
+        actorSync.push(performance.now() - syncStart);
         holes.push(streamer.unmeshedColumns(playerBody.pos[0], playerBody.pos[2], within));
       }
     }
@@ -279,6 +295,10 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     renderer.render(scene, camera);
     if (measuring) {
       renderSubmit.push(performance.now() - submitStart);
+      // The population is fixed for the whole run, so one snapshot per measured frame is representative
+      // (unlike run.ts's `look`/`jog`/`sprint`, which fly through a changing, streaming world) — see
+      // report.ts's own draws/triangles column.
+      ({ calls: draws, triangles } = renderer.info.render);
     }
     showHud(elapsed);
   };
@@ -297,7 +317,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     if (elapsed === undefined) {
       return;
     }
-    draw(elapsed);
+    draw(elapsed, dt, now);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

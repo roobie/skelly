@@ -57,12 +57,30 @@ try {
 const buildRevisionDefine = '__DEADVOX_BUILD_REVISION__';
 const baseContentHashDefine = '__DEADVOX_BASE_CONTENT_HASH__';
 
+// mobgen's pure core/mob modules (no three, no DOM — see src/render/mobActors.ts's own header comment)
+// live in the sibling project, reused here rather than duplicated. three.js itself always comes from
+// *this* project's own node_modules — mobgen/src/viewer (which imports three from mobgen's node_modules)
+// must never be reachable through this alias; see test/mobgenBoundary.test.ts.
+const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
+
 export default defineConfig({
   define: {
     [buildRevisionDefine]: JSON.stringify(buildRevision),
     [baseContentHashDefine]: JSON.stringify(baseContentHash),
   },
   base: './', // served from /skelly/deadvox/ on GitHub Pages
+  resolve: {
+    alias: {
+      '@mobgen/': mobgenSrc,
+    },
+  },
+  server: {
+    fs: {
+      // The alias resolves outside this project's own root; Vite's dev server otherwise refuses to serve
+      // files from outside it.
+      allow: [fileURLToPath(new URL('.', import.meta.url)), mobgenSrc],
+    },
+  },
   build: {
     chunkSizeWarningLimit: 1000, // three.js
     rollupOptions: { input: ['index.html', 'sounds.html'] },

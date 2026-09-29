@@ -1,0 +1,217 @@
+// Tests for src/render/mobActors.ts. Pure/three-without-a-GPU pieces only — no rendered pixels (no GPU
+// here), so these check the maths and the state machine, not what anything looks like. See the module's
+// own report for what to look at in a real browser.
+
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { generateValid, realize } from '@mobgen/core/generate.ts';
+import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
+import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
+import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { TEMPLATES } from '@mobgen/mob/templates.ts';
+import { describe, expect, it } from 'vitest';
+import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import { MapEntityStore } from '../src/core/entities.ts';
+import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
+import { Rng } from '../src/core/random.ts';
+import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
+import {
+  advanceGaitFromMovement,
+  attackJustStarted,
+  MobActorMeshes,
+  variantIndexForId,
+} from '../src/render/mobActors.ts';
+
+const BASE = 'src/content/base';
+const { registry } = buildRegistry(
+  readdirSync(BASE)
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
+);
+const SHAMBLER = registry.zombies.get('shambler')!;
+
+/** A minimal, valid Zombie — same shape ZombieSystem.add() builds (src/core/zombies.ts), constructed
+ * directly so these tests don't need a full ZombieSystem (physics/senses/etc, irrelevant here). */
+const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1]): Zombie => ({
+  type: SHAMBLER,
+  body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
+  facing: [...facing],
+  home: [...position],
+  mode: 'idle' as ZombieMode,
+  investigationTier: undefined,
+  behaviorRng: Rng.stream(0, 'test-zombie'),
+  soundRng: Rng.stream(0, 'test-zombie-sound'),
+  idleSoundTimer: 8,
+  modeTimer: 0,
+  searchAnchor: undefined,
+  searchTimer: 0,
+  searchStrolling: false,
+  searchHeading: [...facing],
+  strollHeading: [...facing],
+  horizontalSpeed: 0,
+  bodyLookTarget: 0,
+  headYaw: 0,
+  headYawTarget: 0,
+  lookTimer: 0,
+  swayValue: 0,
+  swayStart: 0,
+  swayTarget: 0,
+  swayElapsed: 0,
+  swayDuration: 0,
+  lurchValue: 1,
+  lurchStart: 1,
+  lurchTarget: 1,
+  lurchElapsed: 0,
+  lurchDuration: 0,
+  stumbleFactor: 1,
+  stumbleElapsed: 0,
+  stumbleDuration: 0,
+  renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
+  health: SHAMBLER.health,
+  attackWait: 0,
+  gaitPhase: 0,
+  footstepClock: initialShamblerFootstepClock(SHAMBLER.stepLength),
+  wanderClock: 0,
+});
+
+describe('facing convention', () => {
+  it('a zombie facing +X has its figure forward (local -Z) along +X in world, matching ZombieMeshes', () => {
+    // Same formula both this renderer and ZombieMeshes use (src/render/zombies.ts's renderPose).
+    const facing: Vec3 = [1, 0, 0];
+    const yaw = Math.atan2(-facing[0], -facing[2]);
+    // Three.js/mobgen convention: rotating the local forward (0,0,-1) about Y by `yaw` gives
+    // (-sin(yaw), 0, -cos(yaw)) — see mobgen's stress.ts for the same derivation.
+    const worldForward: Vec3 = [-Math.sin(yaw), 0, -Math.cos(yaw)];
+    expect(worldForward[0]).toBeCloseTo(1, 9);
+    expect(worldForward[1]).toBeCloseTo(0, 9);
+    expect(worldForward[2]).toBeCloseTo(0, 9);
+  });
+});
+
+describe('feet at body.pos.y (mobgen pose convention)', () => {
+  it('a standing pose puts the lowest foot corner at local y = 0, so placing the rig at body.pos.y needs no extra offset', () => {
+    const shamblerTemplate = TEMPLATES.find((t) => t.name === 'shambler')!;
+    const found = generateValid(shamblerTemplate, 1)!;
+    const { body, voxels } = realize(found.genome);
+    const extents = footRestExtents(body.bones, voxels);
+    const walkActor = {
+      bones: body.bones,
+      extents,
+      params: found.genome.params as HumanoidParams,
+      seed: found.genome.seed,
+    };
+    const pose = walkPose(walkActor, INITIAL_CLOCK, 0); // speed 0: the standing pose
+
+    const parentIndex = indexBonesByParent(body.bones);
+    const scratch = allocateBoneTransforms(body.bones.length);
+    boneTransformsInto(body.bones, pose, parentIndex, scratch);
+
+    let minY = Number.POSITIVE_INFINITY;
+    for (const [boneId, extent] of extents) {
+      const boneIndex = body.bones.findIndex((b) => b.id === boneId);
+      const t = scratch[boneIndex]!;
+      for (const c of corners(extent)) {
+        const y = t.r[3] * c[0] + t.r[4] * c[1] + t.r[5] * c[2] + t.t[1];
+        minY = Math.min(minY, y);
+      }
+    }
+    // Not toBeCloseTo(0, ...): groundOffset deliberately smooth-mins across tied corners (mobgen's
+    // GROUND_SMOOTHING = 0.006 m) rather than a hard min, so a flat sole's several tied-lowest corners
+    // undershoot true-zero by up to ~0.006 * ln(#tied corners) — a few mm to ~1.25 cm here, by design
+    // (see mob/gait.ts's own smoothMinAll comment), not a bug to chase to the millimetre.
+    expect(Math.abs(minY)).toBeLessThan(0.02);
+  });
+});
+
+describe('attackJustStarted', () => {
+  it('is true only when attackWait rises versus last frame (a fresh attack landing), never on a fall', () => {
+    expect(attackJustStarted(1.5, 0)).toBe(true); // just landed a hit (cooldown jumps up from 0)
+    expect(attackJustStarted(1.2, 1.5)).toBe(false); // cooling down
+    expect(attackJustStarted(0, 0)).toBe(false); // idle, unchanged
+  });
+});
+
+describe('advanceGaitFromMovement', () => {
+  const basis = {
+    params: { footLift: 0.04 } as HumanoidParams,
+    geomL: { legLen: 0.9, hipY: 0.9, heelLen: 0.1, toeLen: 0.15, ankleRestY: 0.1 },
+    seed: 1,
+  };
+
+  it('advances the clock by the distance travelled and updates the smoothed/quantized speed', () => {
+    const start = { clock: { stepIndex: 0, progress: 0 }, smoothedSpeed: 0, quantizedSpeed: 0 };
+    const next = advanceGaitFromMovement(start, 0.1, 1 / 60, basis);
+    expect(next.clock.progress > 0 || next.clock.stepIndex > 0).toBe(true);
+    expect(next.smoothedSpeed).toBeGreaterThan(0);
+  });
+
+  it('does not advance the clock (or the speed filter) on a teleport-sized jump', () => {
+    const start = { clock: { stepIndex: 2, progress: 0.4 }, smoothedSpeed: 1.2, quantizedSpeed: 1.2 };
+    const next = advanceGaitFromMovement(start, 5, 1 / 60, basis);
+    expect(next).toEqual(start);
+  });
+});
+
+describe('variantIndexForId', () => {
+  it('is deterministic and always in [0, poolSize)', () => {
+    for (const id of [1, 2, 3, 17, 1000, 999_999]) {
+      const a = variantIndexForId(id, 12);
+      const b = variantIndexForId(id, 12);
+      expect(a).toBe(b);
+      expect(a).toBeGreaterThanOrEqual(0);
+      expect(a).toBeLessThan(12);
+    }
+  });
+});
+
+describe('MobActorMeshes', () => {
+  it('generates its variant pool and syncs without throwing', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      store.add(makeZombie([0, 0, 0]));
+      store.add(makeZombie([2, 0, 2]));
+      expect(() => renderer.sync(store, 1 / 60, 1)).not.toThrow();
+      expect(() => renderer.sync(store, 1 / 60, 1)).not.toThrow();
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('recycles a slot once its zombie is removed from the store', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { poolSize: 1 }); // exactly one slot, total
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const firstId = store.add(makeZombie([0, 0, 0]));
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isTracked(firstId)).toBe(true);
+
+      store.remove(firstId);
+      renderer.sync(store, 1 / 60, 1); // this frame's own prune pass frees the slot
+      expect(renderer.isTracked(firstId)).toBe(false);
+
+      const secondId = store.add(makeZombie([1, 0, 1]));
+      renderer.sync(store, 1 / 60, 1); // the freed slot is available immediately
+      expect(renderer.isTracked(secondId)).toBe(true);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it("doesn't render a zombie beyond its variant's capacity (documented overflow behaviour)", () => {
+    const renderer = new MobActorMeshes(0.5, 1, { poolSize: 1 }); // capacity 1, so a 2nd zombie always overflows
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const first = store.add(makeZombie([0, 0, 0]));
+      const second = store.add(makeZombie([1, 0, 1]));
+      renderer.sync(store, 1 / 60, 1);
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isTracked(first)).toBe(true);
+      expect(renderer.isTracked(second)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+});
