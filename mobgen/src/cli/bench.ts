@@ -107,7 +107,7 @@ interface SimActor {
   /** This actor's own WalkActor: shares the pool entry's bones/extents/params/seed, but with its own
    * GaitCache. Several sim actors reference the same pool entry (and so the same params object) at
    * different speeds and different current stepIndex — footfallPeak's cache must be per actor or it
-   * thrashes on almost every call (see mob/gait.ts's GaitCache and mobgen's report). */
+   * thrashes on almost every call (see mob/gait.ts's GaitCache; how much slower that was was not recorded). */
   readonly walkActor: WalkActor;
   readonly speed: number;
   readonly attacker: boolean;
@@ -201,6 +201,7 @@ const updateActor = (actor: SimActor): void => {
     geomL: entry.legGeometryL,
     speed: actor.speed,
     seed: actor.walkActor.seed,
+    cache: actor.walkActor.cache,
   });
   advanceAttack(actor);
   const basePose = walkPose(actor.walkActor, actor.clock, actor.speed);
