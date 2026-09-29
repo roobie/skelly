@@ -30,6 +30,7 @@ import { quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
+import { computeMenuState } from '../ui/menuState.ts';
 import { renderRest } from '../ui/rest.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
@@ -264,16 +265,24 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
 
   let started = false;
   let mainMenuOpen = true;
-  const syncOverlay = () => {
-    started ||= input.locked;
-    if (started && !input.locked && !sim.dead) {
-      mainMenuOpen = true;
+  const syncMenuState = () => {
+    const state = computeMenuState({
+      started,
+      mainMenuOpen,
+      inventoryOpen: screen.isOpen,
+      debugMenuOpen: debugTools?.menuOpen ?? false,
+      pointerLocked: input.locked,
+      dead: sim.dead !== undefined,
+    });
+    ({ started, mainMenuOpen } = state);
+    if (state.closeOtherMenus) {
       screen.close();
       debugTools?.closeMenus();
     }
-    overlay.hidden = (input.locked && !mainMenuOpen) || screen.isOpen || sim.dead !== undefined;
-    input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
-    $('go').textContent = started ? 'Paused. Click to continue' : 'Click to play';
+    input.menuPointer = state.menuPointer;
+    overlay.hidden = state.overlayHidden;
+    $('go').textContent = state.goLabel;
+    return state;
   };
   const resume = () => {
     screen.close();
@@ -283,7 +292,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       input.lock();
     }
     if (input.locked) {
-      syncOverlay();
+      syncMenuState();
     }
   };
   overlay.addEventListener('click', (e) => {
@@ -310,7 +319,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     if (!input.locked) {
       menuPointer.releaseCaptures();
     }
-    syncOverlay();
+    syncMenuState();
   });
 
   const compress = () => {
@@ -365,7 +374,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       screen.open();
       mainMenuOpen = false;
     }
-    syncOverlay();
+    syncMenuState();
   };
 
   /** A quickbar key puts its item in your hands; pressing it again uses it. */
@@ -429,14 +438,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         screen.close();
         debugTools?.closeMenus();
       }
-      syncOverlay();
+      syncMenuState();
     }
     return true;
   };
 
   const handleMenuKey = (e: KeyboardEvent): boolean => {
     if (debugTools?.handleKey(e)) {
-      input.menuPointer = mainMenuOpen || screen.isOpen || debugTools.menuOpen;
+      syncMenuState();
       return true;
     }
     if (e.code === 'Tab' && !compression.locksInput) {
@@ -661,9 +670,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
-    input.menuPointer = mainMenuOpen || screen.isOpen || (debugTools?.menuOpen ?? false);
+    const menuState = syncMenuState();
     streamer.update(body.pos[0], body.pos[2]);
-    sim.paused = !overlay.hidden; // the pause card is up
+    sim.paused = menuState.paused;
     session.frame(dt);
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
@@ -724,7 +733,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     input.unlock();
     screen.close();
     inventoryPanel.hidden = true;
-    overlay.hidden = true;
+    syncMenuState();
     prompt.hidden = true;
     const summary = {
       cause,
