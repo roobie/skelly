@@ -15,7 +15,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { generate, type Realized, realize } from '../core/generate.ts';
+import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
 import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
@@ -266,19 +266,12 @@ const generateAndLoad = (step = 0): void => {
 
   if (onlyValid.checked) {
     const dir = step < 0 ? -1 : 1;
-    let found: { genome: Genome; realized: Realized } | undefined;
-    for (let i = 0; i < 100 && !found; i++) {
-      const genome = generate(template, seed + dir * i, overrides);
-      const realized = realize(genome);
-      if (realized.report.ok) {
-        found = { genome, realized };
-      }
-    }
+    const found = generateValid(template, seed, { overrides, direction: dir });
     if (!found) {
       status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
       return;
     }
-    ({ seed } = found.genome);
+    ({ seed } = found);
     seedInput.value = String(seed);
     load(found.genome, found.realized, 0);
     return;

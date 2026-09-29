@@ -127,20 +127,34 @@ export const realize = (genome: Genome): Realized => {
 
 export interface ValidGeneration {
   readonly genome: Genome;
-  readonly report: Report;
+  /** What realizing the winning genome produced, so callers need not realize it again. */
+  readonly realized: Realized;
   /** The seed that produced it. */
   readonly seed: number;
   /** How many seeds were tried, including the one that worked. */
   readonly attempts: number;
 }
 
-/** Tries seed, seed + 1, ... until one gives a genome that passes every rule, or maxAttempts run out. */
-export const generateValid = (template: Template, seed: number, maxAttempts = 100): ValidGeneration | undefined => {
+export interface ValidSearchOptions {
+  readonly maxAttempts?: number;
+  /** Passed to generate(). */
+  readonly overrides?: { readonly voxelSize?: number } | undefined;
+  /** 1 (default) tries seed, seed + 1, ...; -1 tries seed, seed - 1, ... */
+  readonly direction?: 1 | -1;
+}
+
+/** Tries seed, seed + direction, ... until one gives a genome that passes every rule, or maxAttempts run out. */
+export const generateValid = (
+  template: Template,
+  seed: number,
+  { maxAttempts = 100, overrides, direction = 1 }: ValidSearchOptions = {},
+): ValidGeneration | undefined => {
   for (let i = 0; i < maxAttempts; i++) {
-    const genome = generate(template, seed + i);
-    const { report } = realize(genome);
-    if (report.ok) {
-      return { genome, report, seed: seed + i, attempts: i + 1 };
+    const trySeed = seed + direction * i;
+    const genome = generate(template, trySeed, overrides);
+    const realized = realize(genome);
+    if (realized.report.ok) {
+      return { genome, realized, seed: trySeed, attempts: i + 1 };
     }
   }
   return undefined;

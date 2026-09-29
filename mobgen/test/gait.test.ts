@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { build, generateValid } from '../src/core/generate.ts';
+import { generateValid } from '../src/core/generate.ts';
 import { applyPoint, type Mat3 } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
-import { voxelize } from '../src/core/voxelize.ts';
 import {
   advanceClock,
   corners,
@@ -25,8 +24,7 @@ const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase (PROJECT.md)
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;
   const found = generateValid(t, seed)!;
-  const body = build(found.genome);
-  const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
+  const { body, voxels } = found.realized;
   const extents = footRestExtents(body.bones, voxels);
   return { body, voxels, extents, params: found.genome.params as HumanoidParams, seed: found.genome.seed };
 };

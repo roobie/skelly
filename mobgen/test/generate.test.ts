@@ -101,7 +101,7 @@ describe('templates', () => {
       it('generateValid finds a passing build', () => {
         const found = generateValid(t, 1000)!;
         expect(found).toBeDefined();
-        expect(found.report.ok).toBe(true);
+        expect(found.realized.report.ok).toBe(true);
         expect(found.seed).toBe(1000 + found.attempts - 1);
         expect(found.genome).toEqual(generate(t, found.seed));
       });
@@ -129,7 +129,7 @@ describe('templates', () => {
     it(`${t.name}: known-good seeds (genome + voxel-grid hash)`, () => {
       const gallery = [1, 2, 3].map((seed) => {
         const found = generateValid(t, seed * 100)!;
-        const { voxels } = realize(found.genome);
+        const { voxels } = found.realized;
         return { genome: found.genome, gridHash: hashVoxels(voxels.owner, voxels.color) };
       });
       expect(gallery).toMatchSnapshot();

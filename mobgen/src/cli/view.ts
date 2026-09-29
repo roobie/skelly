@@ -10,7 +10,7 @@ import process from 'node:process';
 import { parseArgs } from 'node:util';
 import type { Body, Material } from '../core/body.ts';
 import { MATERIALS } from '../core/body.ts';
-import { generate, generateValid, realize } from '../core/generate.ts';
+import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
 import type { Genome } from '../core/template.ts';
 import { cellIndex, materialOf, type Voxels } from '../core/voxelize.ts';
 import { TEMPLATES } from '../mob/templates.ts';
@@ -61,19 +61,21 @@ if (!VIEW_CHOICES.includes(values.view as (typeof VIEW_CHOICES)[number])) {
 const views: readonly ViewName[] = values.view === 'all' ? VIEW_NAMES : [values.view as ViewName];
 
 let genome: Genome;
+let realized: Realized;
 if (values.valid) {
   const found = generateValid(template, seed);
   if (!found) {
     console.error(`No valid ${template.name} in 100 seeds from ${seed}.`);
     process.exit(1);
   }
-  ({ genome } = found);
+  ({ genome, realized } = found);
   console.error(`seed ${found.seed} (after ${found.attempts} attempt${found.attempts === 1 ? '' : 's'}): PASS`);
 } else {
   genome = generate(template, seed, voxelSize === undefined ? undefined : { voxelSize });
+  realized = realize(genome);
 }
 
-const { body, voxels, report } = realize(genome);
+const { body, voxels, report } = realized;
 console.error(`seed ${genome.seed}: ${report.ok ? 'PASS' : 'FAIL'}`);
 for (const issue of report.issues) {
   console.error(`  [${issue.rule}] ${issue.message}`);
