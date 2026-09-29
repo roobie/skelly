@@ -7,7 +7,6 @@ import {
   BufferAttribute,
   BufferGeometry,
   EdgesGeometry,
-  ExtrudeGeometry,
   Group,
   Line,
   LineBasicMaterial,
@@ -18,7 +17,6 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   type Object3D,
-  Shape,
   Vector3,
 } from 'three';
 import { MAIN_AXIS } from '../core/conventions.ts';
@@ -55,8 +53,8 @@ const placeBox = (obj: Object3D, obb: Obb) => {
 };
 
 /** Converts a core TriangleMesh (positions/normals/indices only) to a three.js BufferGeometry. */
-const meshGeometry = (solid: Solid) => {
-  const mesh = meshForSolid(solid);
+const meshGeometry = (solid: Solid, bevel?: number) => {
+  const mesh = meshForSolid(solid, bevel);
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
@@ -69,18 +67,7 @@ const solidGeometry = (solid: Solid) => {
   if (solid.kind === 'box') {
     return new BoxGeometry(solid.box.half[0] * 2, solid.box.half[1] * 2, solid.box.half[2] * 2);
   }
-  const profile = new Shape();
-  solid.profile.forEach(([x, y], i) => {
-    if (i === 0) {
-      profile.moveTo(x, y);
-    } else {
-      profile.lineTo(x, y);
-    }
-  });
-  profile.closePath();
-  const geometry = new ExtrudeGeometry(profile, { depth: solid.z[1] - solid.z[0], bevelEnabled: false });
-  geometry.translate(0, 0, solid.z[0]);
-  return geometry;
+  return meshGeometry(solid, 0);
 };
 
 /** Which parts, ports and keep-outs the given issues point at. */
@@ -124,11 +111,13 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       mesh.matrixAutoUpdate = false;
       mesh.matrix.copy(matrixOf(t.r, t.t));
       mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
-      const edges = new LineSegments(
-        new EdgesGeometry(mesh.geometry),
-        new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),
-      );
-      mesh.add(edges);
+      if (s.display?.outline !== false) {
+        const edges = new LineSegments(
+          new EdgesGeometry(mesh.geometry),
+          new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),
+        );
+        mesh.add(edges);
+      }
       layers.solids.add(mesh);
     }
 
@@ -136,7 +125,13 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       const polygon = ko.profile && ko.z;
       const obb = polygon ? undefined : worldBox(t, ko.box);
       const shape: Solid = polygon
-        ? { id: ko.id, kind: 'extruded-polygon', profile: ko.profile!, z: ko.z! }
+        ? {
+            id: ko.id,
+            kind: 'extruded-polygon',
+            profile: ko.profile!,
+            z: ko.z!,
+            ...(ko.axis ? { axis: ko.axis } : {}),
+          }
         : { id: ko.id, kind: 'box', box: ko.box };
       const hit = hl.keepOuts.has(`${part}.${ko.id}`);
       const color = hit ? FAIL : KEEP_OUT;

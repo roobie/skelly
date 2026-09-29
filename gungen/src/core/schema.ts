@@ -3,7 +3,7 @@
 // supplied through a Domain.
 
 import type { Issue } from './issue.ts';
-import type { Vec3 } from './math.ts';
+import type { ExtrusionAxis, Vec3 } from './math.ts';
 import type { Resolved } from './resolve.ts';
 
 /** Axis-aligned box in its part's local frame. */
@@ -35,10 +35,17 @@ export interface PortDef {
   readonly slots?: { readonly count: number; readonly pitch: number };
 }
 
+/** Rendering-only hints ignored by collision and rule logic; omitted options retain the viewer's bevel and outline defaults. */
+export interface SolidDisplayHints {
+  readonly bevel?: boolean;
+  readonly outline?: boolean;
+}
+
 export interface BoxSolid {
   readonly id: string;
   readonly kind: 'box';
   readonly box: Box;
+  readonly display?: SolidDisplayHints;
 }
 
 export type Vec2 = readonly [number, number];
@@ -46,10 +53,13 @@ export type Vec2 = readonly [number, number];
 export interface ExtrudedPolygonSolid {
   readonly id: string;
   readonly kind: 'extruded-polygon';
-  /** Convex profile in local X–Y coordinates, listed counter-clockwise. */
+  /** Convex CCW profile: X uses (Y,Z), Y uses (Z,X), and Z uses (X,Y), keeping profile × axis right-handed. */
   readonly profile: readonly Vec2[];
-  /** Local Z bounds of the extrusion. */
+  /** Extrusion direction; omission keeps existing solids on local Z. */
+  readonly axis?: ExtrusionAxis;
+  /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
+  readonly display?: SolidDisplayHints;
 }
 
 export type Solid = BoxSolid | ExtrudedPolygonSolid;
@@ -60,8 +70,11 @@ export interface KeepOut {
   readonly kind: string;
   /** Conservative local bounds; also retained for callers that inspect simple keep-outs. */
   readonly box: Box;
-  /** Optional exact convex XY keep-out shape, extruded through local Z. */
+  /** Optional exact convex keep-out profile, using the same axis plane ordering as ExtrudedPolygonSolid. */
   readonly profile?: readonly Vec2[];
+  /** Extrusion direction; omission keeps existing keep-outs on local Z. */
+  readonly axis?: ExtrusionAxis;
+  /** Bounds along `axis` (legacy name `z` retained for existing keep-outs). */
   readonly z?: readonly [number, number];
   /** The part attached at this port of the owner may occupy the volume. */
   readonly allowPort?: string;

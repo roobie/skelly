@@ -6,11 +6,11 @@
 //
 // Every edge gets a small inward chamfer, so the mesh's bounding box always
 // equals the solid's own extent exactly: nothing a bevel touches can grow a
-// part. A box is treated as a 4-sided prism (its own X/Y as the profile,
-// Z as the prism axis), so one chamfer algorithm covers both solid kinds.
+// part. Boxes and extrusions use the same canonical Z-prism chamfer; explicit
+// X/Y extrusion axes are then mapped through right-handed coordinate cycles.
 
 import { GRID } from './conventions.ts';
-import { cross, normalize, sub, type Vec3 } from './math.ts';
+import { cross, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
 import type { Box, Solid, Vec2 } from './schema.ts';
 
 export interface TriangleMesh {
@@ -210,11 +210,29 @@ const boxProfile = (box: Box): { profile: Vec2[]; z: [number, number] } => {
   };
 };
 
-/** A flat-shaded, edge-chamfered mesh for one solid, in its own local frame. */
-export const meshForSolid = (solid: Solid, bevel: number = BEVEL): TriangleMesh => {
+const orientExtrusion = (mesh: TriangleMesh, axis: ExtrusionAxis | undefined): TriangleMesh => {
+  if (!axis || axis === 'z') {
+    return mesh;
+  }
+  const mapTriples = (source: Float32Array): Float32Array => {
+    const result = new Float32Array(source.length);
+    for (let i = 0; i < source.length; i += 3) {
+      const mapped = extrusionPoint(axis, [source[i]!, source[i + 1]!], source[i + 2]!);
+      result.set(mapped, i);
+    }
+    return result;
+  };
+  return { ...mesh, positions: mapTriples(mesh.positions), normals: mapTriples(mesh.normals) };
+};
+
+/** A flat-shaded display mesh for one solid, in its own local frame. */
+export const meshForSolid = (
+  solid: Solid,
+  bevel: number = solid.display?.bevel === false ? 0 : BEVEL,
+): TriangleMesh => {
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);
   }
-  return chamferedPrism(solid.profile, solid.z, bevel);
+  return orientExtrusion(chamferedPrism(solid.profile, solid.z, bevel), solid.axis);
 };

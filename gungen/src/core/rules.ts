@@ -230,7 +230,13 @@ export const keepOut: Rule = {
       for (const ko of r.defs.get(owner)!.keepOuts) {
         const koShape =
           ko.profile && ko.z
-            ? worldSolid(ownerT, { id: ko.id, kind: 'extruded-polygon', profile: ko.profile, z: ko.z })
+            ? worldSolid(ownerT, {
+                id: ko.id,
+                kind: 'extruded-polygon',
+                profile: ko.profile,
+                z: ko.z,
+                ...(ko.axis ? { axis: ko.axis } : {}),
+              })
             : worldBox(ownerT, ko.box);
         const allowed = new Set([owner]);
         if (ko.allowPort) {

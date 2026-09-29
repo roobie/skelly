@@ -1,6 +1,6 @@
 // Gun-specific rules, added to the core rules through the domain.
 
-import { distanceWorld, penetrationWorld, worldSolid } from '../core/geometry.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Vec3 } from '../core/math.ts';
 import { applyDir, applyPoint, dot as dotProduct, sub } from '../core/math.ts';
@@ -151,13 +151,7 @@ const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Iss
 };
 
 const maximumLocalX = (r: Resolved, part: string): number =>
-  Math.max(
-    ...r.defs
-      .get(part)!
-      .solids.map((solid) =>
-        solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
-      ),
-  );
+  Math.max(...r.defs.get(part)!.solids.map((solid) => localSolidBounds(solid)[1][0]));
 
 /** A pistol barrel may show only a short 0.5–1.5u crown beyond the slide. */
 export const pistolBarrelCrown: Rule = {
@@ -188,17 +182,11 @@ export const pistolBarrelCrown: Rule = {
   },
 };
 
-const solidMaxX = (solid: Solid): number =>
-  solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x));
+const solidMaxX = (solid: Solid): number => localSolidBounds(solid)[1][0];
 
 const solidHalfExtent = (solid: Solid, axis: 1 | 2): number => {
-  if (solid.kind === 'box') {
-    return Math.abs(solid.box.center[axis]) + solid.box.half[axis];
-  }
-  if (axis === 1) {
-    return Math.max(...solid.profile.map(([, y]) => Math.abs(y)));
-  }
-  return Math.max(Math.abs(solid.z[0]), Math.abs(solid.z[1]));
+  const bounds = localSolidBounds(solid);
+  return Math.max(Math.abs(bounds[0][axis]), Math.abs(bounds[1][axis]));
 };
 
 /** Handguards must fit within the receiver's actual front-face cross-section. */
@@ -242,11 +230,7 @@ const freeFloatFitIssue = (
   const { handguardPart, handguardDef, barrelPart, barrelDef } = parts;
   const handguardTransform = r.placed.get(handguardPart)!;
   const barrelTransform = r.placed.get(barrelPart)!;
-  const handguardLength = Math.max(
-    ...handguardDef.solids.map((solid) =>
-      solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
-    ),
-  );
+  const handguardLength = Math.max(...handguardDef.solids.map((solid) => localSolidBounds(solid)[1][0]));
   const axis = applyDir(handguardTransform, [1, 0, 0]);
   const handguardStart = applyPoint(handguardTransform, [0, 0, 0]);
   const distanceToPort = (id: string): number => {
