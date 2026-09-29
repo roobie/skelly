@@ -25,6 +25,14 @@
         "profile": "heavy"
       }
     },
+    "handguard": {
+      "family": "handguard",
+      "params": {
+        "barrelBore": "L",
+        "clearance": "L",
+        "bore": "none"
+      }
+    },
     "magazine": {
       "family": "magazine",
       "params": {
@@ -50,6 +58,10 @@
     {
       "from": "receiver.barrel",
       "to": "barrel.rear"
+    },
+    {
+      "from": "receiver.handguard",
+      "to": "handguard.rear"
     },
     {
       "from": "lower.magazine",

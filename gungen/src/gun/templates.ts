@@ -272,6 +272,7 @@ export const boltRifleThumbhole: Template = {
     .filter((slot) => slot.id !== 'grip')
     .map((slot) => (slot.id === 'lower' ? { ...slot, params: { ...slot.params, layout: 'thumbhole' } } : slot))
     .map((slot) => (slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'thumbhole' } } : slot))
+    .map((slot) => (slot.id === 'handguard' ? { ...slot, params: { ...slot.params, clearance: ['M', 'L'] } } : slot))
     .map((slot) =>
       slot.id === 'barrel' ? { ...slot, params: { ...slot.params, profile: 'heavy', length: 'L' } } : slot,
     ),
