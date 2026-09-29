@@ -7,7 +7,7 @@ export interface MenuStateInput {
   dead: boolean;
   /** True only while handling the browser's pointerlockchange event, not on animation frames. */
   pointerLockChanged?: boolean;
-  /** Resume intent is applied only if that request actually acquires the pointer lock. */
+  /** Resume intent is applied only while the pointer is locked, whether newly acquired or already held. */
   resumeRequested?: boolean;
 }
 
@@ -27,7 +27,7 @@ export interface MenuState {
 export const computeMenuState = (input: MenuStateInput): MenuState => {
   const started = input.started || input.pointerLocked;
   const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
-  const resumed = Boolean(input.pointerLockChanged && input.pointerLocked && input.resumeRequested && !input.dead);
+  const resumed = Boolean(input.pointerLocked && input.resumeRequested && !input.dead);
   const closeOtherMenus = pointerUnlocked || resumed;
   const { mainMenuOpen: requestedMainMenuOpen } = input;
   let mainMenuOpen = requestedMainMenuOpen;
