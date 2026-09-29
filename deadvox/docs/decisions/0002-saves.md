@@ -233,6 +233,12 @@ are pinned by `test/simulationFingerprint.test.ts`:
 - `src/ui/hud.ts`, `src/ui/hudOptions.ts`: drawing and visibility settings only.
   The stateful `Quickbar` was moved to `src/game/quickbar.ts` and is fingerprinted
   directly by `play.ts`.
+- `src/ui/menuPointer.ts`: the pointer-lock menu cursor and the forwarding of locked
+  pointer and click events to the element under it. It reads only the input's
+  lock and cursor state and the DOM, never simulation state; what the inventory
+  does with a forwarded event stays in the fingerprinted `inventoryScreen.ts`.
+  Browser pointer fixes (such as Firefox's pinned `clientX/Y`) live here so they
+  don't invalidate saves.
 - `src/ui/rest.ts`: read-only rendering of `RestAction` and simulation clock;
   rest/stop input handling and state transitions live in fingerprinted game
   modules.

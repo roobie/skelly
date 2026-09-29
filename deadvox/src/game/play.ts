@@ -28,6 +28,7 @@ import { mountGameCursor } from '../ui/gameCursor.ts';
 import { quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
+import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { renderRest } from '../ui/rest.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
@@ -275,111 +276,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       resume();
     }
   });
-  // Inventory redraws after pointerdown, so captured move/up events go to document rather than a soon-detached item node.
-  const capturedPointers = new Set<number>();
-  let forwardingPointer = false;
-  const releasePointerTarget = (event: PointerEvent) => {
-    if (event.type === 'pointerup' || event.type === 'pointercancel') {
-      capturedPointers.delete(event.pointerId);
-    }
-  };
-  const isForwardableMenuTarget = (target: EventTarget | null): boolean =>
-    target === document || (target instanceof Element && target !== renderer.domElement && target.id !== 'game-cursor');
-  const dispatchMenuPointer = (target: EventTarget, event: PointerEvent) => {
-    forwardingPointer = true;
-    try {
-      const forwarded = new PointerEvent(event.type, {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        pointerId: event.pointerId,
-        pointerType: event.pointerType,
-        isPrimary: event.isPrimary,
-        button: event.button,
-        buttons: event.buttons,
-        clientX: input.cursorX,
-        clientY: input.cursorY,
-        screenX: input.cursorX,
-        screenY: input.cursorY,
-        width: event.width,
-        height: event.height,
-        pressure: event.pressure,
-        tiltX: event.tiltX,
-        tiltY: event.tiltY,
-        twist: event.twist,
-      });
-      // Firefox pins even synthetic PointerEvent.clientX/Y to the pointer-lock center.
-      // Override those read-only properties so the inventory receives the game cursor position.
-      Object.defineProperties(forwarded, {
-        clientX: { value: input.cursorX },
-        clientY: { value: input.cursorY },
-        screenX: { value: input.cursorX },
-        screenY: { value: input.cursorY },
-      });
-      target.dispatchEvent(forwarded);
-    } finally {
-      forwardingPointer = false;
-    }
-  };
-  const forwardMenuPointer = (event: PointerEvent) => {
-    if (forwardingPointer) {
-      return;
-    }
-    if (!(input.locked && input.menuPointer)) {
-      releasePointerTarget(event);
-      return;
-    }
-    event.stopPropagation();
-    if (event.type === 'pointermove') {
-      input.moveMenuCursor(event.movementX, event.movementY);
-    }
-    const captured = capturedPointers.has(event.pointerId);
-    const target = captured ? document : document.elementFromPoint(input.cursorX, input.cursorY);
-    if (target && isForwardableMenuTarget(target)) {
-      if (event.type === 'pointerdown') {
-        capturedPointers.add(event.pointerId);
-      }
-      dispatchMenuPointer(target, event);
-    }
-    releasePointerTarget(event);
-  };
-  for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'] as const) {
-    document.addEventListener(type, forwardMenuPointer, true);
-  }
-
-  let forwardingClick = false;
-  let hoveredElement: Element | null = null;
-  document.addEventListener(
-    'click',
-    (e) => {
-      if (forwardingClick || !input.locked || !input.menuPointer) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      const target = document.elementFromPoint(input.cursorX, input.cursorY);
-      if (target && target !== renderer.domElement && target.id !== 'game-cursor') {
-        forwardingClick = true;
-        try {
-          if (target instanceof HTMLInputElement) {
-            target.focus();
-          }
-          target.dispatchEvent(
-            new MouseEvent('click', {
-              bubbles: true,
-              cancelable: true,
-              clientX: input.cursorX,
-              clientY: input.cursorY,
-              button: (e as MouseEvent).button,
-            }),
-          );
-        } finally {
-          forwardingClick = false;
-        }
-      }
-    },
-    true,
-  );
+  const menuPointer = mountMenuPointer({ input, canvas: renderer.domElement, cursor: gameCursor });
   renderer.domElement.addEventListener('click', () => {
     if (mainMenuOpen) {
       resume();
@@ -392,7 +289,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   });
   document.addEventListener('pointerlockchange', () => {
     if (!input.locked) {
-      capturedPointers.clear();
+      menuPointer.releaseCaptures();
     }
     syncOverlay();
   });
@@ -713,17 +610,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     $('damage').style.opacity = String(feedback.vignetteOpacity);
   };
 
-  const updateGameCursor = (): void => {
-    gameCursor.hidden = !(input.locked && input.menuPointer);
-    gameCursor.style.transform = `translate(${input.cursorX}px, ${input.cursorY}px)`;
-    const underCursor = document.elementFromPoint(input.cursorX, input.cursorY);
-    const clickable = underCursor?.closest('button, a, input, select, textarea, [role="button"]') ?? null;
-    gameCursor.classList.toggle('hand', clickable !== null);
-    hoveredElement?.classList.remove('game-cursor-hover');
-    hoveredElement = clickable;
-    hoveredElement?.classList.add('game-cursor-hover');
-  };
-
   const updateDebugReadout = (now: number): void => {
     if (!debugTools || now - lastDebugUpdate < 250) {
       return;
@@ -790,7 +676,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     camera.position.set(ex * s, ey * s + cameraOffset, ez * s);
     updateVisualFeedback(dt);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
-    updateGameCursor();
+    menuPointer.update();
 
     hud.textContent = hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '');
     hud.hidden = hud.textContent === '';
