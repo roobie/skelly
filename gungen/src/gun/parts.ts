@@ -1135,12 +1135,21 @@ export const handguard: PartFamily = {
 export const tubeMagazine: PartFamily = {
   name: 'tube-magazine',
   // Length follows the barrel whose lug the cap fixes to, unless set.
-  params: { length: { ...size, from: [{ port: 'cap', param: 'length' }] } },
+  params: {
+    length: { ...size, from: [{ port: 'cap', param: 'length' }] },
+    // The barrel's bore sets how far its underside sits above the tube.
+    bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
+  },
   build(params): PartDef {
     const len = snapAkGrid(barrelLength({ length: cls(params, 'length') }) * HANDGUARD_REACH.barrelFraction);
+    // A slim barrel leaves a gap above the tube; a band on the cap bridges it to the barrel's underside.
+    const bandTop = TUBE_DROP - BARREL_RADIUS[cls(params, 'bore')];
     return {
       family: 'tube-magazine',
-      solids: [solid('tube', [0, -1, -1], [len, 1, 1])],
+      solids: [
+        solid('tube', [0, -1, -1], [len, 1, 1]),
+        ...(bandTop > 1 ? [solid('cap-band', [len - 1, 1, -0.5], [len, bandTop, 0.5])] : []),
+      ],
       ports: [
         { id: 'rear', mount: 'tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'cap', mount: 'lug', gender: 'male', pos: [len, 0, 0], normal: X, up: Y },

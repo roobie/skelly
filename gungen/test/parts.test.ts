@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { GRID } from '../src/core/conventions.ts';
 import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
+import { validate } from '../src/core/validate.ts';
+import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import { variant } from './helpers.ts';
 
 /** Every combination of a family's parameter values. */
 const variants = (family: PartFamily): Record<string, string>[] =>
@@ -258,6 +261,19 @@ describe('part library', () => {
           expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
         });
       }
+    });
+  }
+});
+
+describe('pump shotgun tube and barrel contact', () => {
+  for (const bore of ['S', 'M', 'L']) {
+    it(`bore ${bore}: the tube reaches the barrel lug without a contact gap`, () => {
+      const assembly = variant('archetype-pump-shotgun', (draft) => {
+        draft.parts.receiver!.params!.bore = bore;
+      });
+      const report = validate(assembly, gunDomain);
+      expect(report.issues).toEqual([]);
+      expect(report.ok).toBe(true);
     });
   }
 });
