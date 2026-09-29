@@ -113,7 +113,7 @@ export interface SessionOptions {
   start: number;
   /** Player feet, in blocks, when starting fresh. Ignored when restoring. */
   spawn: Vec3;
-  /** The game's shared block entities; when omitted the inventory makes its own. */
+  /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
@@ -124,9 +124,9 @@ export interface SessionOptions {
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
   /**
-   * Continue from a save. The inventory and block entities are rebuilt from it, so
-   * `entities` is not used. Fresh sessions still need `startingLoadout` and the
-   * furniture and spawns of each column (`Session.onColumn`); a restored one already has them.
+   * Continue from a save. Inventory and block-entity state are restored into the
+   * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
+   * the zombie-spawn ledger prevent resetting existing furniture or respawning actors.
    */
   restore?: Readonly<SaveSnapshot>;
 }
@@ -159,7 +159,7 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const inventory = restored
-    ? Inventory.restoreState(registry, restored.character.inventory)
+    ? Inventory.restoreState(registry, restored.character.inventory, options.entities)
     : new Inventory(registry, undefined, options.entities);
   const { entities } = inventory;
   const queue = new HandlingQueue(inventory);
@@ -471,7 +471,7 @@ export const createSession = (options: SessionOptions) => {
     get sprinting() {
       return sprinting;
     },
-    /** Furniture (with its loot) and spawns arrive with their column. Not for restored sessions. */
+    /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, site: Site | undefined) => {
       for (const { spec, loot } of site?.furnitureIn(cx, cz) ?? []) {
         inventory.furnish(spec, loot);

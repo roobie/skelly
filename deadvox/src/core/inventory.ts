@@ -127,12 +127,15 @@ export class Inventory {
     });
   }
 
-  static restoreState(registry: Registry, state: InventoryState): Inventory {
+  static restoreState(registry: Registry, state: InventoryState, entities?: BlockEntities): Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
       throw new Error('Invalid next item id');
     }
-    const entities = BlockEntities.restoreState(registry, state.entities);
-    const inventory = new Inventory(registry, new ItemFactory(state.nextItemUid), entities);
+    const restoredEntities = entities ?? BlockEntities.restoreState(registry, state.entities);
+    if (entities) {
+      entities.restoreState(state.entities);
+    }
+    const inventory = new Inventory(registry, new ItemFactory(state.nextItemUid), restoredEntities);
     for (const [side, item] of Object.entries(state.hands)) {
       if (item) {
         inventory.hands[side as HandSide] = restoreItem(registry, item);

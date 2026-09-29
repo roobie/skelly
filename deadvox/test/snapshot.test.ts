@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
@@ -14,6 +15,7 @@ import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponent
 import { restorePlayerAudioState, type SaveSnapshot, type snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
+import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
@@ -68,6 +70,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     stamp: (chunk) => hamlet.stamp(chunk),
   };
   const world = new World();
+  const sharedEntities = new BlockEntities(registry);
   for (const [cx, cz] of columns) {
     for (const chunk of generateColumn(terrain, cx, cz)) {
       world.addChunk(chunk);
@@ -86,7 +89,8 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const session = createSession({
     registry,
     world,
-    isSolid: (x, y, z) => world.getBlock(x, y, z) !== 0,
+    isSolid: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
+    entities: sharedEntities,
     scale,
     seed,
     start: defaultClock.start,
@@ -167,6 +171,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     player,
     inventory,
     entities,
+    sharedEntities,
     handling: session.queue,
     zombies,
     spawner,
@@ -467,6 +472,59 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
   runtime.heardSounds.length = 0;
 };
+
+describe('restored session world state', () => {
+  it('shares restored block entities and does not re-furnish visited columns', () => {
+    const source = createRuntime();
+    const container = [...source.entities.all].find((entity) => entity.pockets && !entity.searched);
+    const door = [...source.entities.all].find((entity) => registry.furniture.get(entity.type)?.door);
+    expect(container).toBeDefined();
+    expect(door).toBeDefined();
+    source.inventory.canReachEntity = () => true;
+    expect(source.session.search(container!)).toBeUndefined();
+    source.handling.tick(3);
+    source.handling.enqueueAction('furniture.door', 'Open door', 0, { entityUid: door!.uid });
+    source.handling.tick(0);
+    const savedContents = container!.pockets!.map((pocket) => pocket.map((placed) => placed.item.type));
+    const snapshot = capture(source);
+
+    const loaded = createRuntime(snapshot);
+    expect(loaded.entities).toBe(loaded.sharedEntities);
+    const restoredContainer = loaded.entities.byUid(container!.uid)!;
+    const restoredDoor = loaded.entities.byUid(door!.uid)!;
+    expect(restoredContainer.pockets!.map((pocket) => pocket.map((placed) => placed.item.type))).toEqual(savedContents);
+    expect(restoredContainer.searched).toBe(true);
+    expect(restoredDoor.open).toBe(true);
+    loaded.handling.enqueueAction('furniture.door', 'Close door', 0, { entityUid: restoredDoor.uid, closing: true });
+    loaded.handling.tick(0);
+    expect(loaded.sharedEntities.at(...restoredContainer.pos)).toBe(restoredContainer);
+    expect(loaded.sharedEntities.isSolid(...restoredDoor.pos)).toBe(true);
+    expect(loaded.inventory.entities).toBe(loaded.sharedEntities);
+
+    const countsBefore = [...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)]);
+    for (const [cx, cz] of loaded.columns) {
+      loaded.session.onColumn(cx, cz, loaded.hamlet);
+    }
+    expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
+      countsBefore,
+    );
+    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
+
+    const fresh = loaded.hamlet.furnitureIn(...loaded.columns[0]!)[0]!;
+    const freshSpec = {
+      ...fresh.spec,
+      pos: [fresh.spec.pos[0] + CHUNK * 100, ...fresh.spec.pos.slice(1)] as [number, number, number],
+    };
+    const freshSpawnPos: [number, number, number] = [freshSpec.pos[0] + 10, freshSpec.pos[1], freshSpec.pos[2]];
+    const unseenSite = {
+      furnitureIn: () => [{ spec: freshSpec, loot: fresh.loot }],
+      zombiesIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
+    } as unknown as Site;
+    loaded.session.onColumn(loaded.columns[0]![0] + 100, loaded.columns[0]![1], unseenSite);
+    expect(loaded.entities.at(...freshSpec.pos)?.type).toBe(freshSpec.type);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length + 1);
+  });
+});
 
 describe('hamlet save/load continuation', () => {
   for (const interruption of [false, true]) {

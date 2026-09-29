@@ -133,6 +133,20 @@ export class BlockEntities {
     });
   }
 
+  restoreState(state: BlockEntitiesState): void {
+    const restored = BlockEntities.restoreState(this.registry, state);
+    this.byAnchor.clear();
+    this.cells.clear();
+    for (const [anchor, entity] of restored.byAnchor) {
+      this.byAnchor.set(anchor, entity);
+    }
+    for (const [cell, entity] of restored.cells) {
+      this.cells.set(cell, entity);
+    }
+    this.nextUid = restored.nextUid;
+    this.version = restored.version;
+  }
+
   static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
     const entities = new BlockEntities(registry);
     const ids = new Set<number>();
