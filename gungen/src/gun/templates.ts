@@ -255,15 +255,37 @@ export const boltRifleBox: Template = {
 
 export const pumpShotgun: Template = {
   name: 'pump-shotgun',
-  description: 'Pump-action shotgun: tube magazine and forend under the barrel, trigger-only lower.',
+  description: 'Pump shotgun with either a stock-grip or separate-pistol-grip lower.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'pump', feed: 'tube', bore: 'L' } },
-    { id: 'lower', family: 'lower', params: { layout: 'pump' } },
+    {
+      id: 'lower',
+      family: 'lower',
+      // Keep the former ~30% pistol-grip rate: seven stock-grip choices for three trigger/grip choices.
+      params: { layout: ['pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'trigger', 'trigger', 'trigger'] },
+    },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     { id: 'tube', family: 'tube-magazine' },
     { id: 'forend', family: 'forend' },
-    { id: 'stock', family: 'stock', params: { length: SML, style: 'sporting' } },
+    {
+      id: 'grip',
+      family: 'grip',
+      params: { length: ['S', 'M'] },
+      when: { part: 'lower', param: 'layout', equals: 'trigger' },
+    },
+    {
+      id: 'stock',
+      family: 'stock',
+      params: { length: SML, style: 'sporting' },
+      when: { part: 'lower', param: 'layout', equals: 'pump' },
+    },
+    {
+      id: 'stock-pistol',
+      family: 'stock',
+      params: { length: SML, style: 'straight' },
+      when: { part: 'lower', param: 'layout', equals: 'trigger' },
+    },
     { id: 'sight', family: 'sight', chance: 0.3 },
   ],
   connections: [
@@ -272,7 +294,13 @@ export const pumpShotgun: Template = {
     { from: 'receiver.tube', to: 'tube.rear' },
     { from: 'tube.cap', to: 'barrel.lug' },
     { from: 'tube.forend', to: 'forend.rear' },
-    { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.stock', to: 'stock.front', when: { part: 'lower', param: 'layout', equals: 'pump' } },
+    {
+      from: 'receiver.stock',
+      to: 'stock-pistol.front',
+      when: { part: 'lower', param: 'layout', equals: 'trigger' },
+    },
+    { from: 'lower.grip', to: 'grip.top', when: { part: 'lower', param: 'layout', equals: 'trigger' } },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };

@@ -18,7 +18,7 @@ const pumpDesign = (
 const samples = [
   { assembly: pumpDesign, label: 'archetype-pump-shotgun design' },
   { assembly: generate(pumpShotgun, gunDomain, 0), label: 'pump-shotgun seed 0' },
-  { assembly: generate(pumpShotgun, gunDomain, 2), label: 'pump-shotgun seed 2' },
+  { assembly: generate(pumpShotgun, gunDomain, 1), label: 'pump-shotgun seed 1' },
 ];
 const BEFORE_TRIGGER_CENTER_X = -10.5;
 

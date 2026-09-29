@@ -75,11 +75,13 @@ const generated = TEMPLATES.filter(
     template.slots.some((slot) => slot.id === 'lower' && slot.family === 'lower') &&
     template.slots.some((slot) => slot.id === 'grip' && slot.family === 'grip'),
 ).map((template) => {
-  const assembly = generate(template, gunDomain, 0);
-  if (!separateGrip(assembly)) {
-    throw new Error(`${template.name} seed 0 must include its separate lower grip for this placement check`);
+  for (let seed = 0; seed < 100; seed++) {
+    const assembly = generate(template, gunDomain, seed);
+    if (separateGrip(assembly)) {
+      return { assembly, label: `${template.name} template seed ${seed}` };
+    }
   }
-  return { assembly, label: `${template.name} template seed 0` };
+  throw new Error(`${template.name} did not generate a separate lower grip in 100 seeds`);
 });
 
 const samples = [

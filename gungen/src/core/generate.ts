@@ -52,6 +52,9 @@ export const generate = (template: Template, domain: Domain, seed: number): Asse
   // 1. Which parts, with which params.
   const parts: Record<string, PartInstance> = {};
   for (const slot of template.slots) {
+    if (slot.when && !conditionMatches(slot.when, parts, domain)) {
+      continue;
+    }
     const present = slot.chance === undefined || slot.chance >= 1 || chance(rng, slot.chance);
     if (!present) {
       continue;
