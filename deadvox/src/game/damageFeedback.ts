@@ -3,6 +3,7 @@
 
 import { Euler } from 'three';
 
+/** The visual camera follows the same input angles and adds only presentation roll. */
 export const cameraRotation = (pitch: number, yaw: number, roll: number): Euler => new Euler(pitch, yaw, roll, 'YXZ');
 
 export interface DamageFeedbackState {
