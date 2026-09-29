@@ -112,6 +112,7 @@ import {
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
+import { ZOMBIE_REGION_NAMES } from '../core/zombieRegions.ts';
 import type { Zombie } from '../core/zombies.ts';
 import { StepOffset } from './stepOffset.ts';
 
@@ -133,6 +134,9 @@ export interface ZombieRenderer {
 }
 
 const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
+
+/** Every region's health together: it only ever drops on a hit, which is what starts a flinch. */
+const totalHealth = (zombie: Zombie): number => ZOMBIE_REGION_NAMES.reduce((sum, r) => sum + zombie.regions[r], 0);
 
 const DEFAULT_POOL_SIZE = 12;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
@@ -896,7 +900,7 @@ export class MobActorMeshes implements ZombieRenderer {
       quantizedSpeed: 0,
       attackTime: undefined,
       prevAttackWait: zombie.attackWait,
-      prevHealth: zombie.health,
+      prevHealth: totalHealth(zombie),
       hitTime: undefined,
       hitSide: flinchSideForId(id),
       stepOffset: new StepOffset(STEP_HEIGHT_METRES),
@@ -984,12 +988,9 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
-    const walkBase = walkPose(
-      state.walkActor,
-      state.clock,
-      state.quantizedSpeed,
-      this.idlePoseFor(state, this.variants[state.variantIndex]!),
-    );
+    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
+      idle: this.idlePoseFor(state, this.variants[state.variantIndex]!),
+    });
     const basePose =
       state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
     this.corpses.set(id, {
@@ -1058,7 +1059,9 @@ export class MobActorMeshes implements ZombieRenderer {
 
     const zombieWorldPos = state.lastPos;
     const away = awayFromPlayerXZ(zombieWorldPos, playerPos, this.blockSize);
-    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, this.idlePoseFor(state, variant));
+    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
+      idle: this.idlePoseFor(state, variant),
+    });
     const frozenPose =
       state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
     const spin = debrisSpinFor(id, part);
@@ -1162,14 +1165,15 @@ export class MobActorMeshes implements ZombieRenderer {
     }
   }
 
-  /** Starts a flinch the instant health drops versus last frame (any amount — the sim only ever decreases
+  /** Starts a flinch the instant total region health drops versus last frame (any amount — the sim only ever decreases
    * it on a hit; death is handled separately by zombieDied, not here), and advances/ends one already
    * playing — regardless of LOD/frustum, same reasoning as updateMovementAndAttack's own comment. */
   private updateFlinch(state: ZombieRenderState, zombie: Zombie, realDt: number): void {
-    if (zombie.health < state.prevHealth) {
+    const health = totalHealth(zombie);
+    if (health < state.prevHealth) {
       state.hitTime = 0; // (re)starts even if one is already playing, same restart rule as an attack
     }
-    state.prevHealth = zombie.health;
+    state.prevHealth = health;
     if (state.hitTime !== undefined) {
       state.hitTime += realDt;
       if (state.hitTime > HIT_FLINCH.duration) {
@@ -1264,7 +1268,9 @@ export class MobActorMeshes implements ZombieRenderer {
     placement: { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number },
   ): void {
     const { worldPos, yaw, headYaw, verticalOffset } = placement;
-    const basePose = walkPose(state.walkActor, state.clock, state.quantizedSpeed, this.idlePoseFor(state, variant));
+    const basePose = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
+      idle: this.idlePoseFor(state, variant),
+    });
     const attacked =
       state.attackTime === undefined ? basePose : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, basePose);
     const headPose = this.withHeadYaw(attacked, headYaw);

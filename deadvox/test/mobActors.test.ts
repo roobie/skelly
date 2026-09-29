@@ -79,7 +79,7 @@ const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[]
   stumbleElapsed: 0,
   stumbleDuration: 0,
   renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
-  health: SHAMBLER.health,
+  regions: { ...SHAMBLER.regions },
   attackWait: 0,
   attackWindup: 0,
   gaitPhase: 0,
@@ -278,7 +278,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 1 / 60, 1); // no health change this frame
       expect(renderer.isFlinching(id)).toBe(false);
 
-      zombie.health -= 8;
+      zombie.regions.torso -= 8;
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isFlinching(id)).toBe(true);
 

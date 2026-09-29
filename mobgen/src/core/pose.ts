@@ -15,12 +15,50 @@
 import type { Bone } from './body.ts';
 import { IDENTITY_M, lerp3, type Mat3, mat3ToQuat, quatToMat3, slerpQuat, type Transform, type Vec3 } from './math.ts';
 
+/** Euler angles in degrees, [x, y, z] — the angle about each axis, NOT the order they are composed in.
+ * The composition order differs per bone and is documented on Pose.angles / Pose.clipAngles. */
+export type EulerDeg = readonly [number, number, number];
+
 export interface Pose {
   /** Translation applied to the root bone, on top of its rotation. */
   readonly root: Vec3;
   /** Per-bone rotation, about the bone's head, expressed in rest-pose world axes.
    *  A bone with no entry keeps its rest orientation (identity). */
   readonly rotations: Readonly<Record<string, Mat3>>;
+  /**
+   * Optional, only present when the poser was asked for it (walkPose's `recordAngles`): the joint angles
+   * (degrees, [x, y, z]) the *walk* composed `rotations` from, so a joint-limits check or a test reads
+   * the numbers the walk used instead of decomposing matrices with a guessed Euler order. Written as
+   * matrix products, leftmost outermost (`rotZ∘rotX` = mulMM(rotZ(z), rotX(x))); an axis a bone does
+   * not use is 0 and left out of the product:
+   *
+   *   pelvis      rotX(x) ∘ rotZ(z) ∘ rotY(y)   x = fore-aft roll/lean, y = yaw, z = swing-hip drop
+   *   spine       rotZ(z) ∘ rotY(y)             y = twist less pelvis yaw, z = trunk counter-lean
+   *   chest       rotZ(z)
+   *   head        rotZ(z) ∘ rotX(x)
+   *   jaw         rotX(x)
+   *   upperArm.*  rotZ(z) ∘ rotX(x)             z = stagger-wide, mirrored per side
+   *   forearm.*   rotX(x)
+   *   thigh.*     rotY(y) ∘ rotZ(z) ∘ rotX(x)   y = -pelvis yaw, z = hip abduction less pelvis z-roll
+   *   shin.*      rotX(x)
+   *
+   * `foot.*` has no entry: its matrix is the inverse of pelvis ∘ thigh ∘ shin (keeping the sole level in
+   * world space) times a pitch, so it is derived, not composed from angles of its own. Every entry
+   * recomposes to `rotations[bone]` within float rounding (test/angles.test.ts). Bones missing from
+   * `rotations` (identity) are missing here too.
+   */
+  readonly angles?: Readonly<Record<string, EulerDeg>>;
+  /**
+   * Optional, set by attackPose when its `walkBase` carried `angles`: for each bone the clip touched, the
+   * clip's own angles as actually composed (after hunch scaling / the upper arm's torso-pitch
+   * compensation), as `rotZ(z) ∘ rotY(y) ∘ rotX(x)`. The bone's matrix is then
+   * `rotations[bone] = W ∘ clipRotation`, where W is the walk's matrix from `angles` (for the four arm
+   * bones, first faded toward identity by `armWalkWeight`, see attack.ts's blendArmBase). `angles` keeps
+   * describing the walk layer only.
+   */
+  readonly clipAngles?: Readonly<Record<string, EulerDeg>>;
+  /** With `clipAngles`: 1 = the walk's arm swing fully present, 0 = fully replaced by the clip. */
+  readonly armWalkWeight?: number;
 }
 
 export const IDENTITY_POSE: Pose = { root: [0, 0, 0], rotations: {} };
@@ -82,8 +120,8 @@ export const boneLocalTransform = (bone: Bone, pose: Pose): Transform => {
 /** world = compose(parent, local): parent.r · local.r, parent.r · local.t + parent.t — inlined (see this
  * module's header) rather than calling math.ts's generic compose/mulMM/mulMV/add, each of which would
  * allocate its own array. Indexes into r/t directly rather than array-destructuring them: V8 doesn't
- * always optimize destructuring a plain array to simple indexed loads (see the profile in mobgen's
- * report — it showed up as real ArrayIteratorPrototypeNext time on this exact function). */
+ * always optimize destructuring a plain array to simple indexed loads (a profile showed real
+ * ArrayIteratorPrototypeNext time on this exact function; the share of the frame was not recorded). */
 const composeWorld = (parent: Transform, local: Transform): Transform => {
   const pr = parent.r;
   const pr0 = pr[0];

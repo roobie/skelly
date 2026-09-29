@@ -13,10 +13,17 @@ import type { ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
-  buildRevision: string;
+  simulationHash: string;
   schemaVersion: number;
   generators: Record<string, string>;
   contentPacks: { id: string; version: string; canonicalHash: string }[];
+}
+
+export interface SaveVersionIdentity {
+  digest: string;
+  components: SaveVersionComponents;
+  /** Informational only; unlike the simulation fingerprint, this never gates compatibility. */
+  buildRevision: string;
 }
 
 export interface SaveWorldOptions {
@@ -36,22 +43,26 @@ export type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
   generation: number;
-  /** Omit in the built game to use its injected revision and base-pack hash; pass explicitly in tests. */
+  /** Omit in the built game to use its injected simulation fingerprint and base-pack hash. */
   version?: SaveVersionComponents;
+  /** Git revision is diagnostic metadata only and is not part of the compatibility digest. */
+  buildRevision?: string;
   worldOptions: SaveWorldOptions;
   maxPayloadBytes?: number;
 }
 
 export interface DecodeSaveOptions {
-  /** Omit in the built game to compare against its injected revision and base-pack hash. */
+  /** Omit in the built game to compare against its injected simulation fingerprint and base-pack hash. */
   version?: SaveVersionComponents;
+  /** Running revision is shown in refusal messages but never gates compatibility. */
+  buildRevision?: string;
   contentLookup: SaveContentLookup;
   maxPayloadBytes?: number;
 }
 
 export interface DecodedSave {
   snapshot: Readonly<SaveSnapshot>;
-  versionIdentity: { digest: string; components: SaveVersionComponents };
+  versionIdentity: SaveVersionIdentity;
   generation: number;
   worldOptions: SaveWorldIdentity;
 }
@@ -104,7 +115,7 @@ interface WirePayload {
 interface Envelope {
   magic: 'DEADVOX_SAVE';
   schemaVersion: number;
-  versionIdentity: { digest: string; components: SaveVersionComponents };
+  versionIdentity: SaveVersionIdentity;
   generation: number;
   payloadByteLength: number;
   checksum: string;
@@ -112,27 +123,36 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
 
-// `vite.config.ts` supplies the git revision and canonical base-content hash at build time.
+// `vite.config.ts` supplies source, Git diagnostic, and canonical base-content identities.
+declare const __DEADVOX_SIMULATION_HASH__: string;
 declare const __DEADVOX_BUILD_REVISION__: string;
 declare const __DEADVOX_BASE_CONTENT_HASH__: string;
 
 function defaultVersion(): SaveVersionComponents {
   try {
     return {
-      buildRevision: __DEADVOX_BUILD_REVISION__,
+      simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SCHEMA_VERSION,
       generators: { worldgen: 'worldgen-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
   } catch (error) {
     throw new Error('Explicit save version components are required outside a Vite build', { cause: error });
+  }
+}
+
+function defaultBuildRevision(): string {
+  try {
+    return __DEADVOX_BUILD_REVISION__;
+  } catch {
+    return 'unavailable';
   }
 }
 
@@ -308,7 +328,14 @@ const zombie = obj({
   stumbleFactor: finite,
   stumbleElapsed: finite,
   stumbleDuration: finite,
-  health: finite,
+  regions: obj({
+    head: positive,
+    torso: nonNegative,
+    leftArm: nonNegative,
+    rightArm: nonNegative,
+    leftLeg: nonNegative,
+    rightLeg: nonNegative,
+  }),
   lastPerceived: opt(vec3),
   attackWait: finite,
   attackWindup: finite,
@@ -334,7 +361,7 @@ const worldOptionsSchema = obj({
 });
 const worldIdentitySchema = obj({ ...worldOptionsSchema.fields, seed: safeInt, clock });
 const versionComponentsSchema = obj({
-  buildRevision: str({ nonEmpty: true }),
+  simulationHash: str(),
   schemaVersion: positiveInt,
   generators: record(str({ nonEmpty: true })),
   contentPacks: arr(obj({ id: str({ nonEmpty: true }), version: str({ nonEmpty: true }), canonicalHash: str() })),
@@ -499,6 +526,9 @@ async function sha256(bytes: Uint8Array): Promise<string> {
 
 function validateVersion(version: SaveVersionComponents): void {
   validateSchema(versionComponentsSchema, version, 'version');
+  if (!HASH.test(version.simulationHash)) {
+    throw new Error('Invalid simulation source hash');
+  }
   if (version.schemaVersion !== SCHEMA_VERSION) {
     throw new Error(`Unsupported save schema version ${version.schemaVersion}`);
   }
@@ -514,9 +544,35 @@ function validateVersion(version: SaveVersionComponents): void {
   }
 }
 
+function versionDifferences(saved: SaveVersionComponents, running: SaveVersionComponents): string[] {
+  const differences: string[] = [];
+  if (saved.simulationHash !== running.simulationHash) {
+    differences.push('simulation source hashes differ');
+  }
+  if (saved.schemaVersion !== running.schemaVersion) {
+    differences.push(`schema versions differ (${saved.schemaVersion} vs ${running.schemaVersion})`);
+  }
+  const generatorNames = [...new Set([...Object.keys(saved.generators), ...Object.keys(running.generators)])].sort();
+  const changedGenerators = generatorNames.filter((name) => saved.generators[name] !== running.generators[name]);
+  if (changedGenerators.length > 0) {
+    differences.push(`generator versions differ for ${changedGenerators.join(', ')}`);
+  }
+  if (canonicalStringify(saved.contentPacks) !== canonicalStringify(running.contentPacks)) {
+    const describePacks = (packs: SaveVersionComponents['contentPacks']) =>
+      packs.map((pack) => `${pack.id}@${pack.version}#${pack.canonicalHash}`).join(', ');
+    differences.push(
+      `content packs differ (saved [${describePacks(saved.contentPacks)}], running [${describePacks(running.contentPacks)}])`,
+    );
+  }
+  if (differences.length === 0) {
+    differences.push('identity digests differ');
+  }
+  return differences;
+}
+
 function identityTuple(version: SaveVersionComponents): unknown[] {
   return [
-    version.buildRevision,
+    version.simulationHash,
     version.schemaVersion,
     Object.fromEntries(
       Object.entries(version.generators).sort(([a], [b]) => {
@@ -1045,6 +1101,7 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
     worldOptions: requestedWorldOptions,
     generation,
     maxPayloadBytes: configuredLimit,
+    buildRevision: requestedBuildRevision,
   } = options;
   const snapshotCopy = structuredClone(snapshot);
   const version = structuredClone(requestedVersion ?? defaultVersion());
@@ -1064,7 +1121,11 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
   if (payloadBytes.byteLength > maxPayloadBytes) {
     throw new Error(`Payload exceeds configured limit (${payloadBytes.byteLength} > ${maxPayloadBytes} bytes)`);
   }
-  const identity = { digest: await versionDigest(version), components: structuredClone(version) };
+  const identity: SaveVersionIdentity = {
+    digest: await versionDigest(version),
+    components: structuredClone(version),
+    buildRevision: requestedBuildRevision ?? defaultBuildRevision(),
+  };
   const envelope: Envelope = {
     magic: MAGIC,
     schemaVersion: SCHEMA_VERSION,
@@ -1080,7 +1141,12 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ordered refusal gates must remain visible in the public decoder path.
 export async function decodeSave(input: Uint8Array | ArrayBuffer, options: DecodeSaveOptions): Promise<DecodedSave> {
   const bytes = input instanceof Uint8Array ? input.slice() : new Uint8Array(input.slice(0));
-  const { version: expectedVersion, contentLookup, maxPayloadBytes: configuredLimit } = options;
+  const {
+    version: expectedVersion,
+    buildRevision: runningBuildRevision,
+    contentLookup,
+    maxPayloadBytes: configuredLimit,
+  } = options;
   const running = structuredClone(expectedVersion ?? defaultVersion());
   const maxPayloadBytes = configuredLimit ?? DEFAULT_MAX_PAYLOAD_BYTES;
   if (!Number.isSafeInteger(maxPayloadBytes) || maxPayloadBytes < 1) {
@@ -1103,7 +1169,11 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   const headerSchema = obj({
     magic: enumeration([MAGIC]),
     schemaVersion: positiveInt,
-    versionIdentity: obj({ digest: str(), components: versionComponentsSchema }),
+    versionIdentity: obj({
+      digest: str(),
+      components: versionComponentsSchema,
+      buildRevision: str({ nonEmpty: true }),
+    }),
     generation: positiveInt,
     payloadByteLength: nonNegativeInt,
     checksum: str(),
@@ -1125,10 +1195,11 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   const runningDigest = await versionDigest(running);
   if (
     parsed.versionIdentity.digest !== runningDigest ||
-    canonicalStringify(parsed.versionIdentity.components) !== canonicalStringify(running)
+    canonicalStringify(identityTuple(parsed.versionIdentity.components)) !== canonicalStringify(identityTuple(running))
   ) {
+    const differences = versionDifferences(parsed.versionIdentity.components, running);
     throw new Error(
-      `Save version mismatch: saved ${canonicalStringify(parsed.versionIdentity.components)}, running ${canonicalStringify(running)}`,
+      `Save version mismatch (${differences.join('; ')}): saved simulation ${parsed.versionIdentity.components.simulationHash} (build ${parsed.versionIdentity.buildRevision}), running simulation ${running.simulationHash} (build ${runningBuildRevision ?? defaultBuildRevision()})`,
     );
   }
   const payloadBytes = canonicalBytes(parsed.payload, { acceptTaggedNegativeZero: true });
@@ -1153,6 +1224,7 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
     versionIdentity: {
       digest: parsed.versionIdentity.digest,
       components: freezeSnapshot(structuredClone(parsed.versionIdentity.components)) as SaveVersionComponents,
+      buildRevision: parsed.versionIdentity.buildRevision,
     },
     generation: parsed.generation,
     worldOptions: freezeSnapshot(structuredClone(worldOptions)) as SaveWorldIdentity,

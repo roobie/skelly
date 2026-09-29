@@ -5,8 +5,10 @@ import type { ParamReference, Template } from '../src/core/template.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 300;
+const CHUNK = 100;
 
 describe('seededRng', () => {
   // mulberry32's published sequence for seed 1.
@@ -23,11 +25,15 @@ describe('generate', () => {
     }
   });
 
-  it('varies with the seed', () => {
-    for (const t of TEMPLATES) {
-      const keys = new Set(Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)));
-      expect(keys.size).toBeGreaterThan(5);
-    }
+  sweepGroup('varies with the seed', () => {
+    it('passes', () => {
+      for (const t of TEMPLATES) {
+        const keys = new Set(
+          Array.from({ length: 50 }, (_, seed) => JSON.stringify(generate(t, gunDomain, seed).parts)),
+        );
+        expect(keys.size).toBeGreaterThan(5);
+      }
+    });
   });
 
   it('honours chance 0 and chance 1', () => {
@@ -78,39 +84,62 @@ describe('templates', () => {
         }
       });
 
-      it(
-        `never produces a structurally broken file (${SEEDS} seeds)`,
-        () => {
-          for (let seed = 0; seed < SEEDS; seed++) {
-            const { issues } = validate(generate(t, gunDomain, seed), gunDomain);
-            expect(
-              issues.filter((i) => i.rule === 'structure'),
-              `seed ${seed}`,
-            ).toEqual([]);
-          }
-        },
-        t.name === 'ak' ? 15_000 : undefined,
-      );
-
-      it(
-        `is valid at least half the time (${SEEDS} seeds)`,
-        () => {
-          let valid = 0;
-          for (let seed = 0; seed < SEEDS; seed++) {
-            if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
-              valid += 1;
-            }
-          }
-          expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
-        },
-        t.name === 'ak' ? 15_000 : undefined,
-      );
-
       it('generateValid finds a passing build', () => {
         const found = generateValid(t, gunDomain, 1000)!;
         expect(found.report.ok).toBe(true);
         expect(found.seed).toBe(1000 + found.attempts - 1);
         expect(found.assembly).toEqual(generate(t, gunDomain, found.seed));
+      });
+    });
+  }
+});
+
+// Same describe names as above so the snapshot keys stay `templates > <name> > known-good seeds`.
+sweepGroup('templates', () => {
+  for (const t of TEMPLATES) {
+    describe(t.name, () => {
+      // Chunked by seed range so each test stays well inside the default timeout; the sweep
+      // runs only in CI (see sweeps.ts) and its timeouts are never raised. The half-valid floor
+      // is an aggregate over all SEEDS seeds, so chunks tally into a memoized count and one final
+      // test asserts it (computing any chunk that has not run, e.g. under `-t`).
+      // Each chunk test also records its valid count, so the final test is normally free.
+      const validIn = new Map<number, number>();
+      const countValid = (from: number) => {
+        let count = validIn.get(from);
+        if (count === undefined) {
+          count = 0;
+          for (let seed = from; seed < from + CHUNK; seed++) {
+            if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
+              count += 1;
+            }
+          }
+          validIn.set(from, count);
+        }
+        return count;
+      };
+      for (let from = 0; from < SEEDS; from += CHUNK) {
+        it(`never produces a structurally broken file (seeds ${from}-${from + CHUNK - 1})`, () => {
+          let count = 0;
+          for (let seed = from; seed < from + CHUNK; seed++) {
+            const { issues, ok } = validate(generate(t, gunDomain, seed), gunDomain);
+            if (ok) {
+              count += 1;
+            }
+            expect(
+              issues.filter((i) => i.rule === 'structure'),
+              `seed ${seed}`,
+            ).toEqual([]);
+          }
+          validIn.set(from, count);
+        });
+      }
+
+      it(`is valid at least half the time (${SEEDS} seeds)`, () => {
+        let valid = 0;
+        for (let from = 0; from < SEEDS; from += CHUNK) {
+          valid += countValid(from);
+        }
+        expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
       });
 
       // Known-good seeds. A snapshot change means generation changed: check

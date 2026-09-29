@@ -117,7 +117,9 @@ compression on and shows a progress bar and the game time passing.
 
 ### Pause
 
-Esc pauses everything. The inventory screen does **not** pause the game. That
+The pause card pauses everything. F9 opens it (the main menu), and so does
+releasing the mouse: Esc is the browser's key, and it only unlocks the pointer,
+which brings the card up. The inventory screen does **not** pause the game. That
 tension is intentional. A "relaxed" setting that pauses inside menus can come
 later as an accessibility option.
 
@@ -148,7 +150,7 @@ catches up in closed form where it can, and in coarse steps otherwise:
   | System | Rate |
   | --- | --- |
   | Player physics | 60 Hz |
-  | Active AI | 10 Hz |
+  | Active AI | 20 Hz |
   | Background AI | 2 Hz |
   | Needs, fire, power | 1 Hz |
   | Region map (hordes, evolution) | once per game minute |
@@ -395,6 +397,46 @@ plain box in your hands. Files are small, and follow
   (see the screamer below). Stealth is a matter of managing noise and staying
   out of sight.
 
+## Damage, destruction and dismemberment
+
+Direction set by BR on 2026-09-28. The aim is an **interesting** damage
+system, not just bigger numbers.
+
+- **Damage comes in types.** Every hit deals a mix of types, and every target
+  resists each type differently. The melee types above (blunt, cut, pierce) are
+  joined by, for example, fragment, blast and breach. The kind of damage decides
+  the outcome, not just the amount:
+  - a hand grenade (fragment plus a modest blast) barely marks a brick wall but
+    tears limbs off a shambler;
+  - a breaching charge (directional, at contact) destroys a steel door and
+    little around it.
+- **Blocks and block entities get materials.** Soil, wood, brick, concrete and
+  steel, each with durability and a resistance per damage type, as content-pack
+  data (today a block has only an id and `solid`). A destroyed block is removed
+  with `World.setBlock`. Saves already store changed cells as an overlay on the
+  regenerated base chunks (`src/core/saveState.ts:153`), so destruction
+  persists without new save machinery; saves grow with the damage done.
+- **No structural collapse in the first version.** Blocks left unsupported
+  stay where they are. Collapse is a later, separate system.
+- **Shamblers are body regions, and die only when the head is destroyed.** The
+  single health pool (`src/core/zombies.ts:57`) becomes regions: head, torso,
+  arms and legs. A hit damages the region it lands on. A blast damages each
+  region by distance. A limb at zero comes off: its rigid part is hidden and a
+  limb prop drops. Otherwise it's kept as simple as possible to start with.
+  Losing limbs doesn't yet change behaviour, beyond what having no legs forces
+  (how a legless shambler moves is decided in the first slice). Head at zero
+  kills it.
+- **Determinism.** Hit regions, blast falloff and any spread are seeded, so
+  saves and replays stay exact. Region and material state is simulation state:
+  it goes into the save snapshot and the source fingerprint.
+- **Order.** First slice: shambler regions and melee-driven limb loss, with
+  head-only death. Then materials and block destruction. Explosives and breach
+  charges come once throwing and firing exist.
+
+Still open: the full list of damage types and each material's resistances,
+whether wounds bleed or slow a shambler, partial block damage (cracked looks),
+and the sounds for severing and destruction (the audio manifest).
+
 ## Light
 
 Nights are dark and interiors are pitch black, so you have to bring light. Light
@@ -472,7 +514,7 @@ worse the world gets.
 
   | Level | Where | Simulation |
   | --- | --- | --- |
-  | Active | Within about 48 m | Full AI at 10 Hz, per-frame physics |
+  | Active | Within about 48 m | Full AI at 20 Hz, per-frame physics |
   | Background | Loaded chunks further away | 2 Hz, steering along a shared flow field |
   | Abstract | Unloaded chunks | Hordes moving as groups on the region map |
 
@@ -592,7 +634,7 @@ decoration.
 
 - **HTML and CSS** over the canvas. Dense, legible, and keyboard-first, with
   the mouse also fully supported.
-- The world never pauses for UI (except the Esc menu). UI should make actions
+- The world never pauses for UI (except the F9 menu). UI should make actions
   fast: search, filters, "take all food", and repeating the last move.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
   somewhere in the UI, **on request**: on surfaces the player opens (inspecting an

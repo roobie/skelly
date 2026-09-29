@@ -44,7 +44,7 @@ import {
   SkinnedMesh,
   Bone as ThreeBone,
 } from 'three';
-import { generate, type Realized, realize } from '../core/generate.ts';
+import { generateValid, type Realized } from '../core/generate.ts';
 import { compose, IDENTITY_M, rotation, rotY, type Transform, translation } from '../core/math.ts';
 import {
   allocateBoneTransforms,
@@ -92,31 +92,13 @@ export interface PoolGenResult {
   readonly nextSeed: number;
 }
 
-/** Same valid-seed search main.ts's "only valid" checkbox runs (generate, realize, keep the first PASS) —
- * duplicated rather than imported because main.ts inlines it too (core/generate.ts's generateValid does
- * the same search but doesn't hand back the Realized it built along the way). */
-const findValid = (
-  template: (typeof TEMPLATES)[number],
-  fromSeed: number,
-  maxAttempts = 100,
-): { readonly genome: Genome; readonly realized: Realized } | undefined => {
-  for (let i = 0; i < maxAttempts; i++) {
-    const genome = generate(template, fromSeed + i);
-    const realized = realize(genome);
-    if (realized.report.ok) {
-      return { genome, realized };
-    }
-  }
-  return undefined;
-};
-
 /** Generates one pool entry: template cycles shambler/runner/brute (poolIndex % TEMPLATES.length),
  * seed search starts at `fromSeed` (pass 1 for the first entry of a template, then each result's own
  * `nextSeed` for the next one of that same template). */
 export const generatePoolEntry = (poolIndex: number, fromSeed: number): PoolGenResult => {
   const template = TEMPLATES[poolIndex % TEMPLATES.length]!;
   const t0 = performance.now();
-  const found = findValid(template, fromSeed);
+  const found = generateValid(template, fromSeed);
   if (!found) {
     throw new Error(`no valid ${template.name} within 100 seeds of ${fromSeed}`);
   }

@@ -57,17 +57,7 @@ export class Input {
     globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
     globalThis.addEventListener('blur', () => this.held.clear());
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked) {
-        return;
-      }
-      if (this.menuPointer) {
-        const cursor = nextMenuCursor(
-          { x: this.cursorX, y: this.cursorY },
-          { x: e.movementX, y: e.movementY },
-          { width: globalThis.innerWidth, height: globalThis.innerHeight },
-        );
-        this.cursorX = cursor.x;
-        this.cursorY = cursor.y;
+      if (!(this.locked && !this.menuPointer)) {
         return;
       }
       this.yaw -= e.movementX * SENSITIVITY;
@@ -77,6 +67,19 @@ export class Input {
 
   get locked(): boolean {
     return document.pointerLockElement === this.target;
+  }
+
+  moveMenuCursor(movementX: number, movementY: number): void {
+    if (!(this.locked && this.menuPointer)) {
+      return;
+    }
+    const cursor = nextMenuCursor(
+      { x: this.cursorX, y: this.cursorY },
+      { x: movementX, y: movementY },
+      { width: globalThis.innerWidth, height: globalThis.innerHeight },
+    );
+    this.cursorX = cursor.x;
+    this.cursorY = cursor.y;
   }
 
   lock(): void {

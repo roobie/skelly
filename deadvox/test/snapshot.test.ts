@@ -1,29 +1,25 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
-import { hourOfDay } from '../src/core/clock.ts';
+import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
-import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
+import { restorePlayerAudioState, type SaveSnapshot, type snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
+import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { createPlayerBody, physicsFor, restorePlayer, snapshotPlayer } from '../src/game/player.ts';
-import { RestController } from '../src/game/rest.ts';
-import { Survival } from '../src/game/survival.ts';
-import { Quickbar } from '../src/ui/hud.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -51,7 +47,9 @@ const blockName = (id: number): string => {
 
 type Runtime = ReturnType<typeof createRuntime>;
 
-// The scenario factory wires the same deterministic hamlet actors for fresh and restored runs.
+// The scenario factory builds the same session the game does (src/game/session.ts) and only
+// supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
+// restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
 const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const hamlet = new Hamlet(seed, registry, scale);
@@ -72,6 +70,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     stamp: (chunk) => hamlet.stamp(chunk),
   };
   const world = new World();
+  const sharedEntities = new BlockEntities(registry);
   for (const [cx, cz] of columns) {
     for (const chunk of generateColumn(terrain, cx, cz)) {
       world.addChunk(chunk);
@@ -81,104 +80,66 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const editChunk = [...world.chunks.values()].find((chunk) => chunk.cx === editCx && chunk.cz === editCz)!;
 
   const [sx, sy, sz] = hamlet.spawn.pos.map((metres) => metres / scale.blockSize);
-  const player = restorePlayer(
-    snapshot?.character.player ??
-      snapshotPlayer(
-        { ...createPlayerBody(scale, sx!, sy! + 400, sz!), vel: [0, -1, 0] },
-        hamlet.spawn.yaw,
-        0.03,
-        false,
-      ),
-  );
-  let rest: RestController | undefined;
-  const sim = new Simulation({ seed, unsafe: () => undefined, restRate: () => rest?.action?.rate });
-  const inventory = snapshot ? Inventory.restoreState(registry, snapshot.character.inventory) : new Inventory(registry);
-  const handling = new HandlingQueue(inventory);
-  const { entities } = inventory;
-  const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
-  const physics = physicsFor(scale);
-  const restoredPlayerAudio = snapshot ? restorePlayerAudioState(snapshot.character.playerAudio) : undefined;
-  const playerAudio = {
-    vocalNoiseId: restoredPlayerAudio?.vocalNoiseId ?? 0,
-    vocalNoise: restoredPlayerAudio?.vocalNoise ?? null,
-  };
+  // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
+  const awayFromShamblers = x1 - sx! + 200;
+  // Where the player is looking: the game reads this from its input, here it is plain state.
+  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false };
   const audioPicker = new SoundPicker(seed, registry.sounds);
-  if (restoredPlayerAudio) {
-    audioPicker.restoreState(restoredPlayerAudio.soundPicker);
-  }
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
-  const emitWorldSound = (
-    event: import('../src/core/soundEvents.ts').SoundEventId,
-    position: [number, number, number],
-  ) => {
-    const pick = audioPicker.pick(event, sim.time);
-    if (pick) {
-      heardSounds.push({ event, file: pick.file, time: sim.time, position: [...position] });
-    }
-  };
-  const emitPlayerSound = (event: import('../src/core/soundEvents.ts').SoundEventId, time = sim.time): boolean => {
-    const pick = audioPicker.pick(event, time);
-    if (!pick) {
-      return false;
-    }
-    const position = [...player.body.pos] as [number, number, number];
-    heardSounds.push({ event, file: pick.file, time, position });
-    const sound = registry.sounds.get(event);
-    if (sound?.noise.enabled) {
-      playerAudio.vocalNoiseId += 1;
-      playerAudio.vocalNoise = {
-        id: playerAudio.vocalNoiseId,
-        pos: position,
-        radiusMetres: sound.noise.radiusMetres,
-        expiresAt: time + 0.5,
-      };
-    }
-    return true;
-  };
-  const zombies = new ZombieSystem({
+  const session = createSession({
+    registry,
+    world,
+    isSolid: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
+    entities: sharedEntities,
+    scale,
     seed,
-    isSolid,
-    blockSize: scale.blockSize,
-    physics,
-    jumpSpeed: 7.9 / scale.blockSize,
-    player: () => ({
-      pos: player.body.pos,
-      body: player.body,
-      facing: [Math.sin(player.yaw), 0, -Math.cos(player.yaw)],
-      movement: 'still',
-      vocalNoise:
-        playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
-      lit: false,
-      lightSeenFrom: 40,
-    }),
-    hour: () => hourOfDay(sim.calendar),
-    hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
-    onSound: emitWorldSound,
-  });
-  sim.scheduler.register({ id: 'player-physics', rate: 60, tick: (dt) => stepBody(player.body, dt, isSolid, physics) });
-  sim.scheduler.register({ id: 'zombies', rate: 20, tick: (dt, time) => zombies.tick(dt, time) });
-  const survival = new Survival(sim, inventory, handling, {
-    feet: () => ({ kind: 'pile', pos: player.body.pos.map(Math.floor) as [number, number, number] }),
+    start: defaultClock.start,
+    spawn: [sx! + awayFromShamblers, sy! + 400, sz!],
+    ready: () => true,
+    controls: {
+      active: () => false,
+      intent: () => IDLE,
+      yaw: () => view.yaw,
+      pitch: () => view.pitch,
+      walking: () => view.walk,
+      descending: () => false,
+    },
+    audio: {
+      play: (event, position, time) => {
+        const pick = audioPicker.pick(event, time);
+        if (!pick) {
+          return false;
+        }
+        heardSounds.push({ event, file: pick.file, time, position: [...position] });
+        return true;
+      },
+      snapshotState: () => audioPicker.snapshotState(),
+      restoreState: (state) => audioPicker.restoreState(state),
+    },
     notice: () => undefined,
+    ...(snapshot ? { restore: snapshot } : {}),
   });
-  rest = new RestController(sim, { bedQuality: () => 0.5, notice: () => undefined });
-  const quickbar = new Quickbar();
-  const spawner = new ZombieSpawner();
+  const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
+  if (session.restoredLook) {
+    Object.assign(view, session.restoredLook);
+  }
+  const player = {
+    body: session.body,
+    get yaw() {
+      return view.yaw;
+    },
+    get pitch() {
+      return view.pitch;
+    },
+    get walk() {
+      return view.walk;
+    },
+  };
 
-  if (snapshot) {
-    world.restoreDiffs(snapshot.world.diffs, (id) => blockId(id));
-    zombies.restoreState(snapshot.world.zombies, (id) => registry.zombies.get(id));
-    spawner.restoreState(snapshot.world.spawned);
-    sim.restoreState(snapshot.character.simulation);
-    rest.restoreState(snapshot.character.rest);
-    survival.restoreState(snapshot.character.lightUid === null ? {} : { litUid: snapshot.character.lightUid });
-    quickbar.restoreState(snapshot.character.quickbar, inventory);
-  } else {
+  if (!snapshot) {
+    session.body.vel[1] = -1;
     for (const [cx, cz] of columns) {
-      for (const { spec, loot } of hamlet.furnitureIn(cx, cz)) {
-        inventory.furnish(spec, loot);
-      }
-      spawner.onColumn({ cx, cz, site: hamlet, registry, zombies });
+      session.onColumn(cx, cz, hamlet);
     }
     const backpack = inventory.create('school_backpack');
     const beans = inventory.create('canned_beans');
@@ -202,6 +163,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     world.setBlock(editCx * CHUNK + 1, editChunk.cy * CHUNK + 1, editCz * CHUNK + 1, blockId('planks'));
   }
   return {
+    session,
     hamlet,
     columns,
     world,
@@ -209,7 +171,8 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     player,
     inventory,
     entities,
-    handling,
+    sharedEntities,
+    handling: session.queue,
     zombies,
     spawner,
     rest,
@@ -218,29 +181,12 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     playerAudio,
     audioPicker,
     heardSounds,
-    emitPlayerSound,
+    emitPlayerSound: session.playPlayerSound,
   };
 };
 
 const capture = (runtime: Runtime) =>
-  snapshotSession({
-    worldId: `world-${seed}`,
-    characterId: 'character-1',
-    world: runtime.world,
-    blockContentId: blockName,
-    inventory: runtime.inventory,
-    simulation: runtime.sim,
-    player: runtime.player,
-    rest: runtime.rest,
-    survival: runtime.survival,
-    quickbar: runtime.quickbar.snapshotState(),
-    zombies: runtime.zombies,
-    spawner: runtime.spawner,
-    handling: runtime.handling,
-    vocalNoiseId: runtime.playerAudio.vocalNoiseId,
-    vocalNoise: runtime.playerAudio.vocalNoise ?? undefined,
-    audio: runtime.audioPicker,
-  });
+  runtime.session.snapshot({ worldId: `world-${seed}`, characterId: 'character-1' });
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
 const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
@@ -374,7 +320,7 @@ const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
     if (frame === interruptAt) {
       runtime.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     }
-    runtime.rest.frame(1 / 60);
+    runtime.session.frame(1 / 60);
   }
 };
 
@@ -483,6 +429,12 @@ describe('snapshot state components', () => {
   });
 });
 
+/**
+ * Blocks. Far enough that the groaner neither sees the lit flashlight (40 m) nor hears the
+ * player, so it stays idle: the real wiring reports the light and the noise to shamblers.
+ */
+const IDLE_GROANER_DISTANCE = 120;
+
 const prepareAudioContinuation = (runtime: Runtime): void => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstZombie = runtime.zombies.store.entries().next().value as
@@ -508,7 +460,7 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   runtime.playerAudio.vocalNoise.expiresAt -= 0.25;
 
   const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
-    playerPos[0] + 30,
+    playerPos[0] + IDLE_GROANER_DISTANCE,
     playerPos[1],
     playerPos[2],
   ]);
@@ -520,6 +472,59 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
   runtime.heardSounds.length = 0;
 };
+
+describe('restored session world state', () => {
+  it('shares restored block entities and does not re-furnish visited columns', () => {
+    const source = createRuntime();
+    const container = [...source.entities.all].find((entity) => entity.pockets && !entity.searched);
+    const door = [...source.entities.all].find((entity) => registry.furniture.get(entity.type)?.door);
+    expect(container).toBeDefined();
+    expect(door).toBeDefined();
+    source.inventory.canReachEntity = () => true;
+    expect(source.session.search(container!)).toBeUndefined();
+    source.handling.tick(3);
+    source.handling.enqueueAction('furniture.door', 'Open door', 0, { entityUid: door!.uid });
+    source.handling.tick(0);
+    const savedContents = container!.pockets!.map((pocket) => pocket.map((placed) => placed.item.type));
+    const snapshot = capture(source);
+
+    const loaded = createRuntime(snapshot);
+    expect(loaded.entities).toBe(loaded.sharedEntities);
+    const restoredContainer = loaded.entities.byUid(container!.uid)!;
+    const restoredDoor = loaded.entities.byUid(door!.uid)!;
+    expect(restoredContainer.pockets!.map((pocket) => pocket.map((placed) => placed.item.type))).toEqual(savedContents);
+    expect(restoredContainer.searched).toBe(true);
+    expect(restoredDoor.open).toBe(true);
+    loaded.handling.enqueueAction('furniture.door', 'Close door', 0, { entityUid: restoredDoor.uid, closing: true });
+    loaded.handling.tick(0);
+    expect(loaded.sharedEntities.at(...restoredContainer.pos)).toBe(restoredContainer);
+    expect(loaded.sharedEntities.isSolid(...restoredDoor.pos)).toBe(true);
+    expect(loaded.inventory.entities).toBe(loaded.sharedEntities);
+
+    const countsBefore = [...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)]);
+    for (const [cx, cz] of loaded.columns) {
+      loaded.session.onColumn(cx, cz, loaded.hamlet);
+    }
+    expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
+      countsBefore,
+    );
+    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
+
+    const fresh = loaded.hamlet.furnitureIn(...loaded.columns[0]!)[0]!;
+    const freshSpec = {
+      ...fresh.spec,
+      pos: [fresh.spec.pos[0] + CHUNK * 100, ...fresh.spec.pos.slice(1)] as [number, number, number],
+    };
+    const freshSpawnPos: [number, number, number] = [freshSpec.pos[0] + 10, freshSpec.pos[1], freshSpec.pos[2]];
+    const unseenSite = {
+      furnitureIn: () => [{ spec: freshSpec, loot: fresh.loot }],
+      zombiesIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
+    } as unknown as Site;
+    loaded.session.onColumn(loaded.columns[0]![0] + 100, loaded.columns[0]![1], unseenSite);
+    expect(loaded.entities.at(...freshSpec.pos)?.type).toBe(freshSpec.type);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length + 1);
+  });
+});
 
 describe('hamlet save/load continuation', () => {
   for (const interruption of [false, true]) {
@@ -630,7 +635,7 @@ describe('hamlet save/load continuation', () => {
 
     const noCursor = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     noCursor.character.simulation.scheduler.systems = noCursor.character.simulation.scheduler.systems.filter(
-      (cursor) => cursor.id !== 'player-physics',
+      (cursor) => cursor.id !== 'player',
     );
     expect(() => createRuntime(noCursor)).toThrow('Scheduler system set does not match snapshot');
 
@@ -697,8 +702,8 @@ describe('hamlet save/load continuation', () => {
 });
 
 const formatVersion: SaveVersionComponents = {
-  buildRevision: 'test-build-2026-09-30',
-  schemaVersion: 1,
+  simulationHash: 'a'.repeat(64),
+  schemaVersion: 2,
   generators: { worldgen: 'worldgen-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -720,7 +725,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'sound') {
     return registry.sounds.has(id);
   }
-  return ['needs', 'player-physics', 'zombies', 'lights'].includes(id);
+  return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
@@ -803,6 +808,24 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
+    const source = createRuntime();
+    const id = source.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
+    const zombie = source.zombies.store.get(id)!;
+    zombie.regions.leftArm = 0;
+    zombie.regions.head = 37;
+    zombie.regions.torso = 44;
+
+    const snapshot = capture(source);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    const restored = loaded.zombies.store.get(id)!;
+
+    expect(restored.regions).toEqual(zombie.regions);
+    expect(capture(loaded)).toEqual(decoded.snapshot);
+  });
+
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
     const source = createRuntime();
     source.rest.start('rest');
@@ -848,7 +871,8 @@ describe('canonical save format', () => {
     expect(await encodeFixture(snapshot)).toEqual(bytes);
     const buildBytes = await encodeSave(snapshot, { generation: 8, worldOptions: formatWorldOptions });
     const buildDecoded = await decodeSave(buildBytes, { contentLookup });
-    expect(buildDecoded.versionIdentity.components.buildRevision.length).toBeGreaterThan(0);
+    expect(buildDecoded.versionIdentity.components.simulationHash).toMatch(hashPattern);
+    expect(buildDecoded.versionIdentity.buildRevision.length).toBeGreaterThan(0);
     expect(buildDecoded.versionIdentity.components.contentPacks[0]!.canonicalHash).toMatch(hashPattern);
     expect(buildDecoded.generation).toBe(8);
     expect(encodedAt - started).toBeGreaterThanOrEqual(0);
@@ -880,15 +904,38 @@ describe('canonical save format', () => {
     await expect(encodeFixture(snapshot)).rejects.toThrow('Reserved number tag');
   });
 
+  it('keeps the Git revision as diagnostic metadata, outside save compatibility', async () => {
+    const snapshot = capture(createRuntime());
+    const bytes = await encodeSave(snapshot, {
+      generation: 1,
+      version: formatVersion,
+      buildRevision: 'saved-git-revision',
+      worldOptions: formatWorldOptions,
+    });
+    const decoded = await decodeSave(bytes, {
+      version: formatVersion,
+      buildRevision: 'running-git-revision',
+      contentLookup,
+    });
+    expect(decoded.versionIdentity.buildRevision).toBe('saved-git-revision');
+    expect(decoded.versionIdentity.components.simulationHash).toBe(formatVersion.simulationHash);
+  });
+
   it('refuses an exact version mismatch before content lookup and never mutates the input bytes', async () => {
-    const bytes = await encodeFixture(capture(createRuntime()));
+    const bytes = await encodeSave(capture(createRuntime()), {
+      generation: 1,
+      version: formatVersion,
+      buildRevision: 'saved-git-revision-aaaaaaaa',
+      worldOptions: formatWorldOptions,
+    });
     const original = bytes.slice();
     let lookups = 0;
-    const otherVersion = { ...formatVersion, buildRevision: 'different-build' };
+    const otherVersion = { ...formatVersion, simulationHash: 'f'.repeat(64) };
     let mismatch: unknown;
     try {
       await decodeSave(bytes, {
         version: otherVersion,
+        buildRevision: 'running-git-revision-bbbbbbbb',
         contentLookup: () => {
           lookups += 1;
           return true;
@@ -900,7 +947,38 @@ describe('canonical save format', () => {
     expect(lookups).toBe(0);
     expect(mismatch).toBeInstanceOf(Error);
     expect((mismatch as Error).message).toContain('Save version mismatch');
+    expect((mismatch as Error).message).toContain('saved-git-revision-aaaaaaaa');
+    expect((mismatch as Error).message).toContain('running-git-revision-bbbbbbbb');
+    expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
+    expect((mismatch as Error).message).toContain(otherVersion.simulationHash);
     expect(bytes).toEqual(original);
+  });
+
+  it('identifies content-pack-only differences in the refusal message', async () => {
+    const savedVersion = {
+      ...formatVersion,
+      contentPacks: formatVersion.contentPacks.map((pack) => ({ ...pack, canonicalHash: 'f'.repeat(64) })),
+    };
+    const bytes = await encodeSave(capture(createRuntime()), {
+      generation: 1,
+      version: savedVersion,
+      buildRevision: 'saved-content-revision',
+      worldOptions: formatWorldOptions,
+    });
+    let mismatch: unknown;
+    try {
+      await decodeSave(bytes, {
+        version: formatVersion,
+        buildRevision: 'running-content-revision',
+        contentLookup: () => true,
+      });
+    } catch (error) {
+      mismatch = error;
+    }
+    expect(mismatch).toBeInstanceOf(Error);
+    expect((mismatch as Error).message).toContain('content packs');
+    expect((mismatch as Error).message).toContain('deadvox.base');
+    expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
   });
 
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {
@@ -933,7 +1011,7 @@ describe('canonical save format', () => {
     badMagic.magic = 'NOT_A_SAVE';
     malformed.push({ name: 'magic', bytes: sealEnvelope(badMagic), message: 'Invalid value' });
     const badSchema = parseEnvelope(valid);
-    badSchema.schemaVersion = 2;
+    badSchema.schemaVersion = 1;
     malformed.push({ name: 'schema version', bytes: sealEnvelope(badSchema), message: 'schema mismatch' });
 
     const badRle = parseEnvelope(valid);

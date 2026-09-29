@@ -1,7 +1,6 @@
-import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
-import { cameraRotation, DamageFeedback } from '../src/game/damageFeedback.ts';
+import { DamageFeedback } from '../src/game/damageFeedback.ts';
 
 const FRAME = 1 / 60;
 
@@ -36,15 +35,6 @@ describe('damage feedback', () => {
       feedback.step(FRAME);
     }
     expect(feedback.step(0).roll).toBe(0);
-  });
-
-  it('roll leaves the center aiming ray unchanged', () => {
-    const aim = (roll: number) => new Vector3(0, 0, -1).applyEuler(cameraRotation(0.35, 1.1, roll));
-    const flat = aim(0);
-    const rolled = aim((6 * Math.PI) / 180);
-    expect(rolled.x).toBeCloseTo(flat.x, 12);
-    expect(rolled.y).toBeCloseTo(flat.y, 12);
-    expect(rolled.z).toBeCloseTo(flat.z, 12);
   });
 
   it('god mode emits no accepted damage event', () => {

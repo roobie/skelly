@@ -31,3 +31,14 @@ describe('tilted magazine well layout support', () => {
     expect(magazineGapIssues(assembly)).toEqual([]);
   });
 });
+
+describe('recessed magazine well sized to the magazine profile', () => {
+  it('seats the narrower SMG magazine in a recessed well without a contact gap', () => {
+    const assembly = variant('archetype-smg', (draft) => {
+      draft.parts.lower!.params!.magazineWell = 'recessed';
+    });
+    const report = validate(assembly, gunDomain);
+    expect(report.issues).toEqual([]);
+    expect(report.ok).toBe(true);
+  });
+});

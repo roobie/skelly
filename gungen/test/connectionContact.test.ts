@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { boxFromMinMax } from '../src/core/geometry.ts';
+import { parseAssemblyOrThrow } from '../src/core/parseAssembly.ts';
 import type { Domain, PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 
@@ -28,8 +29,9 @@ const targetFamily: PartFamily = {
   }),
 };
 
-const brokenContactFixture = JSON.parse(
-  readFileSync(new URL('./fixtures/broken-connection-contact.json', import.meta.url), 'utf8'),
+const brokenContactFixture = parseAssemblyOrThrow(
+  readFileSync(new URL('./fixtures/synthetic-connection-contact-gap.json', import.meta.url), 'utf8'),
+  'synthetic-connection-contact-gap.json',
 );
 
 const testDomain: Domain = {
@@ -39,7 +41,7 @@ const testDomain: Domain = {
 };
 
 describe('connection-contact', () => {
-  it('reports the gap from a broken core fixture', () => {
+  it('reports the gap between two synthetic parts', () => {
     const { issues } = validate(brokenContactFixture, testDomain);
     expect(issues.map(({ rule, message }) => ({ rule, message }))).toEqual([
       {

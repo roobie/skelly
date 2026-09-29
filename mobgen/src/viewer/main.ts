@@ -15,7 +15,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { generate, type Realized, realize } from '../core/generate.ts';
+import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
@@ -23,11 +23,13 @@ import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
   bodyRestExtents,
+  createGaitCache,
   footRestExtents,
   type GaitClock,
   INITIAL_CLOCK,
   type LegGeometry,
   legGeometryFor,
+  type WalkActor,
   walkPose,
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
@@ -133,6 +135,8 @@ interface Loaded {
   readonly extents: ReturnType<typeof footRestExtents>;
   readonly bodyExtents: ReturnType<typeof bodyRestExtents>;
   readonly legGeometry: LegGeometry;
+  /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
+  readonly walkActor: WalkActor;
 }
 
 let current: Loaded | undefined;
@@ -195,16 +199,11 @@ const playDeath = (): void => {
   if (!current) {
     return;
   }
-  const actor = {
-    bones: current.realized.body.bones,
-    extents: current.extents,
-    params: current.params,
-    seed: current.genome.seed,
-  };
+  const actor = current.walkActor;
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   const idle = idlePose(actor, currentStance(), idleTime);
-  const walkBase: Pose = walkPose(actor, clock, speed, idle);
+  const walkBase: Pose = walkPose(actor, clock, speed, { idle });
   deathBasePose =
     attackTime === undefined ? walkBase : attackPose(actor, ATTACK_CLIPS.LUNGE_GRAB!, attackTime, walkBase);
   deathDirection = dieBackward.checked ? -1 : 1;
@@ -325,24 +324,18 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
   const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
+  const params = genome.params as HumanoidParams;
+  const walkActor: WalkActor = {
+    bones: realized.body.bones,
+    extents,
+    params,
+    seed: genome.seed,
+    cache: createGaitCache(),
+  };
   // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
   // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-  actor.applyPose(
-    idlePose(
-      { bones: realized.body.bones, extents, params: genome.params as HumanoidParams, seed: genome.seed },
-      currentStance(),
-      idleTime,
-    ),
-  );
-  current = {
-    genome,
-    realized,
-    actor,
-    params: genome.params as HumanoidParams,
-    extents,
-    bodyExtents,
-    legGeometry,
-  };
+  actor.applyPose(idlePose(walkActor, currentStance(), idleTime));
+  current = { genome, realized, actor, params, extents, bodyExtents, legGeometry, walkActor };
   clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
@@ -375,19 +368,12 @@ const generateAndLoad = (step = 0): void => {
 
   if (onlyValid.checked) {
     const dir = step < 0 ? -1 : 1;
-    let found: { genome: Genome; realized: Realized } | undefined;
-    for (let i = 0; i < 100 && !found; i++) {
-      const genome = generate(template, seed + dir * i, overrides);
-      const realized = realize(genome);
-      if (realized.report.ok) {
-        found = { genome, realized };
-      }
-    }
+    const found = generateValid(template, seed, { overrides, direction: dir });
     if (!found) {
       status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
       return;
     }
-    ({ seed } = found.genome);
+    ({ seed } = found);
     seedInput.value = String(seed);
     load(found.genome, found.realized, 0);
     return;
@@ -523,6 +509,7 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     geomL: current.legGeometry,
     speed,
     seed: current.genome.seed,
+    cache: current.walkActor.cache,
   });
   gridZ = (gridZ + speed * dt) % 0.5;
   groundGroup.position.z = gridZ;
@@ -566,14 +553,9 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   advanceAttack(dt, clip.duration);
   advanceHit(dt);
 
-  const actor = {
-    bones: loaded.realized.body.bones,
-    extents: loaded.extents,
-    params: loaded.params,
-    seed: loaded.genome.seed,
-  };
+  const actor = loaded.walkActor;
   const idle = idlePose(actor, currentStance(), idleTime);
-  const basePose: Pose = walkPose(actor, clock, speed, idle);
+  const basePose: Pose = walkPose(actor, clock, speed, { idle });
   const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
   const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
   loaded.actor.applyPose(pose);
@@ -583,13 +565,8 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
  * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
 const applyDeathFrame = (loaded: Loaded, dt: number): void => {
   deathTime = (deathTime ?? 0) + dt;
-  const actor = {
-    bones: loaded.realized.body.bones,
-    extents: loaded.extents,
-    bodyExtents: loaded.bodyExtents,
-    params: loaded.params,
-    seed: loaded.genome.seed,
-  };
+  // A fresh wrapper per frame, but it carries the persistent actor's cache.
+  const actor = { ...loaded.walkActor, bodyExtents: loaded.bodyExtents };
   loaded.actor.applyPose(deathPose(actor, deathBasePose!, deathTime, { direction: deathDirection }));
 };
 

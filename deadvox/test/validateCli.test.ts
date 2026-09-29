@@ -36,6 +36,14 @@ describe('npm run validate', () => {
     );
   });
 
+  it('rejects a zombie type that still declares a model', () => {
+    const run = validate('test/fixtures/content/zombie-with-model.json');
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain(
+      'FAIL  test/fixtures/content/zombie-with-model.json zombies[0].model: unknown field "model"',
+    );
+  });
+
   it('fails on an item whose model is missing', () => {
     const run = validate('test/fixtures/content/missing-model.json');
     expect(run.status).toBe(1);

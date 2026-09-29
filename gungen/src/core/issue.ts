@@ -5,6 +5,7 @@ export const CORE_RULE_IDS = [
   'port-compat',
   'axis-alignment',
   'solid-overlap',
+  'connection-contact',
   'keep-out',
   'required-ports',
   'loop-closure',

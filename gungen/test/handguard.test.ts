@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { TEMPLATES } from '../src/gun/templates.ts';
+import { loadCorpus } from './helpers.ts';
 
 describe('barrel-fitted handguards', () => {
   it('derives its opening from the barrel and caps outer dimensions at the receiver face', () => {
@@ -50,15 +49,18 @@ describe('barrel-fitted handguards', () => {
     }
   });
 
-  it('keeps every generated template handguard within its receiver over 1,000 seeds', () => {
-    for (const template of TEMPLATES) {
-      for (let seed = 0; seed < 1000; seed++) {
-        const report = validate(generate(template, gunDomain, seed), gunDomain);
-        expect(
-          report.issues.filter(({ rule }) => rule === 'handguard-fit'),
-          `${template.name} seed ${seed}`,
-        ).toEqual([]);
-      }
+  // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)):
+  // the property is checked on every non-broken fixture and every published design.
+  // broken-handguard-fit and the other broken-* fixtures are skipped: they exist to break a rule.
+  it('keeps the handguard within its receiver in every fixture and design', () => {
+    const corpus = loadCorpus();
+    expect(corpus.length).toBeGreaterThanOrEqual(22);
+    for (const { label, assembly } of corpus) {
+      const report = validate(assembly, gunDomain);
+      expect(
+        report.issues.filter(({ rule }) => rule === 'handguard-fit'),
+        label,
+      ).toEqual([]);
     }
-  }, 60_000);
+  });
 });

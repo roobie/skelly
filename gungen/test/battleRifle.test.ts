@@ -7,6 +7,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, G3_MAGAZINE_WELL_TILT } from '../src/gun/parts.ts';
 import { battleRifle } from '../src/gun/templates.ts';
 import { loadFixture } from './helpers.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const rifle = loadFixture('archetype-battle-rifle');
 const oriented = (orientation: string) => ({
@@ -95,19 +96,21 @@ describe('battle-rifle magazine orientations', () => {
     },
   );
 
-  it('chooses only straight, tilted, or slanted magazine data per seed and inherits it into the lower', () => {
-    const styles = new Set<string>();
-    for (let seed = 0; seed < 200; seed++) {
-      const assembly = generate(battleRifle, gunDomain, seed);
-      const style = assembly.parts.magazine!.params!.orientation!;
-      styles.add(style);
-      const report = validate(assembly, gunDomain);
-      expect(report.resolved.params.get('lower')?.magazineOrientation?.value).toBe(style);
-    }
-    expect([...styles].every((style) => VALID_MAGAZINE_ORIENTATION.test(style))).toBe(true);
-    expect(styles.has('tilt')).toBe(true);
-    expect([...styles].some((style) => style.startsWith('slant-'))).toBe(true);
-    expect(styles.has('straight')).toBe(true);
+  sweepGroup('chooses only straight, tilted, or slanted magazine data per seed and inherits it into the lower', () => {
+    it('passes', () => {
+      const styles = new Set<string>();
+      for (let seed = 0; seed < 200; seed++) {
+        const assembly = generate(battleRifle, gunDomain, seed);
+        const style = assembly.parts.magazine!.params!.orientation!;
+        styles.add(style);
+        const report = validate(assembly, gunDomain);
+        expect(report.resolved.params.get('lower')?.magazineOrientation?.value).toBe(style);
+      }
+      expect([...styles].every((style) => VALID_MAGAZINE_ORIENTATION.test(style))).toBe(true);
+      expect(styles.has('tilt')).toBe(true);
+      expect([...styles].some((style) => style.startsWith('slant-'))).toBe(true);
+      expect(styles.has('straight')).toBe(true);
+    });
   });
 
   it('keeps straight magazine geometry and the well as the zero-angle reference', () => {

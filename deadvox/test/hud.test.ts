@@ -5,7 +5,8 @@ import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { cellCount, defOf } from '../src/core/items.ts';
-import { handlingViewModel, Quickbar, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
+import { Quickbar } from '../src/game/quickbar.ts';
+import { handlingViewModel, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(

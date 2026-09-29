@@ -116,6 +116,12 @@
             <label id="deadvox-storeys-field" hidden>Tallest city building (storeys)
               <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required />
             </label>
+            <label id="deadvox-actors-field">Zombie models
+              <select name="actors" data-url-param="actors">
+                <option value="">Detailed (default)</option>
+                <option value="boxes">Boxes</option>
+              </select>
+            </label>
             <label class="check" id="deadvox-debug-field">
               <input name="debug" data-url-param="debug" type="checkbox" /> Enable development tools (?debug=1)
             </label>
@@ -209,6 +215,7 @@
           <div id="gungen-fixture-fields" class="form-grid" hidden>
             <label>Fixture
               <select name="fixture" data-url-param="fixture" id="gungen-fixture">
+                <option value="ak-standard-handguard">ak-standard-handguard</option>
                 <option value="archetype-ak">archetype-ak</option>
                 <option value="archetype-ar">archetype-ar</option>
                 <option value="archetype-ar-free-float">archetype-ar-free-float</option>
@@ -226,6 +233,7 @@
                 <option value="broken-bolt-sight-over-loading-port">broken-bolt-sight-over-loading-port</option>
                 <option value="broken-bolt-straight-stock">broken-bolt-straight-stock</option>
                 <option value="broken-bullpup-with-stock">broken-bullpup-with-stock</option>
+                <option value="broken-connection-contact">broken-connection-contact</option>
                 <option value="broken-feed-match">broken-feed-match</option>
                 <option value="broken-firing-grip">broken-firing-grip</option>
                 <option value="broken-free-float-handguard">broken-free-float-handguard</option>
@@ -240,6 +248,7 @@
                 <option value="broken-revolver-feed-mismatch">broken-revolver-feed-mismatch</option>
                 <option value="broken-revolver-misaligned-cylinder">broken-revolver-misaligned-cylinder</option>
                 <option value="broken-solid-overlap">broken-solid-overlap</option>
+                <option value="broken-trigger-guard">broken-trigger-guard</option>
               </select>
             </label>
             <p class="muted">Fixtures show the assembly and its expected validation result.</p>

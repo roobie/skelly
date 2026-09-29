@@ -1,5 +1,5 @@
 {
-  "name": "broken-connection-contact",
+  "name": "synthetic-connection-contact-gap",
   "description": "Two compatible ports whose attached solids are separated by four units.",
   "root": "source",
   "parts": {

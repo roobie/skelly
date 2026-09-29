@@ -1,17 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
 import { BEVEL, meshForSolid, type TriangleMesh } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
-import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
+import { loadCorpus } from './helpers.ts';
 
-// Smaller than generate.test.ts's SEEDS: this file already re-runs generate+validate
-// (baseline) and meshForSolid over every solid of every seed (budget), on top of the
-// existing suite's own sweeps; 60 seeds/template keeps that added cost from starving
-// other tests' timeouts when the whole suite runs in parallel.
-const SEEDS = 60;
 // A stated per-assembly triangle budget (PROJECT.md §7). `npm run mesh-stats`
 // over 1000 seeds/template puts the largest single build (ak) at 2312
 // triangles; this budget leaves more than 2x headroom without letting the
@@ -128,40 +125,45 @@ describe('meshForSolid', () => {
   });
 });
 
-describe('validator results are unchanged by the mesh module (display-only)', () => {
-  it('per-template valid/distinct counts over a seed sweep match the recorded baseline', () => {
-    const summary = TEMPLATES.map((t) => {
-      let valid = 0;
-      const distinct = new Set<string>();
-      for (let seed = 0; seed < SEEDS; seed++) {
-        const a = generate(t, gunDomain, seed);
-        distinct.add(JSON.stringify({ parts: a.parts, connections: a.connections }));
-        if (validate(a, gunDomain).ok) {
-          valid += 1;
-        }
-      }
-      return { template: t.name, valid, distinct: distinct.size };
-    });
-    expect(summary).toMatchSnapshot();
-  }, 30_000);
+const importRe = /^\s*(?:import|export)[^'"]*from\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
+const meshSpecifierRe = /(^|\/)mesh(\.ts)?$/;
+
+describe('mesh module is display-only', () => {
+  it('the validator path in src/core does not import mesh.ts', () => {
+    for (const name of ['validate.ts', 'rules.ts', 'resolve.ts', 'geometry.ts']) {
+      const source = readFileSync(join(import.meta.dirname, '..', 'src', 'core', name), 'utf8');
+      const specs = [...source.matchAll(importRe)].map((m) => m[1] ?? m[2] ?? '');
+      expect(specs.length, `${name}: no imports parsed`).toBeGreaterThan(0);
+      expect(
+        specs.filter((s) => meshSpecifierRe.test(s)),
+        `${name} imports mesh`,
+      ).toEqual([]);
+    }
+  });
 });
 
-describe('per-assembly triangle budget', () => {
-  it(`stays under ${TRIANGLE_BUDGET} triangles across a seed sweep`, () => {
-    for (const t of TEMPLATES) {
-      for (let seed = 0; seed < SEEDS; seed++) {
-        const resolved = resolve(generate(t, gunDomain, seed), gunDomain);
-        let triangles = 0;
-        for (const part of resolved.placed.keys()) {
-          const def = resolved.defs.get(part)!;
-          for (const s of def.displaySolids ?? def.solids) {
-            triangles += meshForSolid(s).triangleCount;
-          }
-        }
-        expect(triangles, `${t.name} seed ${seed}`).toBeLessThan(TRIANGLE_BUDGET);
-      }
+const triangleCount = (resolved: ReturnType<typeof resolve>): number => {
+  let triangles = 0;
+  for (const part of resolved.placed.keys()) {
+    const def = resolved.defs.get(part)!;
+    for (const s of def.displaySolids ?? def.solids) {
+      triangles += meshForSolid(s).triangleCount;
     }
-  }, 30_000);
+  }
+  return triangles;
+};
+
+describe('per-assembly triangle budget', () => {
+  // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)): the
+  // budget is checked on every fixture (broken-* ones included; none exists to break it) and every
+  // published design.
+  it(`stays under ${TRIANGLE_BUDGET} triangles in every fixture and design`, () => {
+    const corpus = loadCorpus(() => true);
+    expect(corpus.length).toBeGreaterThanOrEqual(45);
+    for (const { label, assembly } of corpus) {
+      expect(triangleCount(resolve(assembly, gunDomain)), label).toBeLessThan(TRIANGLE_BUDGET);
+    }
+  });
 });
 
 // A regular N-gon profile, radius r, CCW (matches validateExtrudedPolygon's convention).

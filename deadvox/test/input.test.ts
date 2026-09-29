@@ -24,8 +24,10 @@ describe('menu input', () => {
     let mousemove: ((event: MouseEvent) => void) | undefined;
     const documentStub = {
       pointerLockElement: target,
-      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
-        mousemove = listener as (event: MouseEvent) => void;
+      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (type === 'mousemove') {
+          mousemove = listener as (event: MouseEvent) => void;
+        }
       },
     } as unknown as Document;
     Object.defineProperty(globalThis, 'document', { configurable: true, value: documentStub });
@@ -37,9 +39,10 @@ describe('menu input', () => {
       input.menuPointer = true;
       input.yaw = 0.7;
       input.pitch = -0.3;
-      const event = new Event('mousemove') as MouseEvent;
-      Object.defineProperties(event, { movementX: { value: 24 }, movementY: { value: -12 } });
-      mousemove?.(event);
+      input.moveMenuCursor(24, -12);
+      const mouseEvent = new Event('mousemove') as MouseEvent;
+      Object.defineProperties(mouseEvent, { movementX: { value: 24 }, movementY: { value: -12 } });
+      mousemove?.(mouseEvent);
       expect({ x: input.cursorX, y: input.cursorY }).toEqual({ x: 344, y: 228 });
       expect({ yaw: input.yaw, pitch: input.pitch }).toEqual({ yaw: 0.7, pitch: -0.3 });
     } finally {

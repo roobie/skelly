@@ -130,7 +130,7 @@ describe('content', () => {
           {
             id: 'missing_cone',
             name: 'Missing cone',
-            health: 50,
+            regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,
             sight: 20,
@@ -140,7 +140,6 @@ describe('content', () => {
             attack: { damage: 5, reach: 1, cooldown: 1.5, windup: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
-            model: 'figure_basic',
           },
         ],
       },
@@ -156,7 +155,7 @@ describe('content', () => {
           {
             id: 'missing_step_length',
             name: 'Missing step length',
-            health: 50,
+            regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wander: 0.8, chase: 2.5 },
             sight: 20,
             nightSight: 10,
@@ -166,7 +165,6 @@ describe('content', () => {
             attack: { damage: 5, reach: 1, cooldown: 1.5, windup: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
-            model: 'figure_basic',
           },
         ],
       },
@@ -243,7 +241,7 @@ describe('content references', () => {
           {
             id: 'clerk',
             name: 'Clerk',
-            health: 50,
+            regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,
             wander: {
@@ -286,7 +284,6 @@ describe('content references', () => {
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
             loot: 'till',
-            model: 'figure_basic',
           },
         ],
         items: [

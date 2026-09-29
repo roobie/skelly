@@ -7,6 +7,12 @@ import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
+import {
+  ZOMBIE_REGION_NAMES,
+  type ZombieRegion,
+  type ZombieRegions,
+  zombieRegionHitDistance,
+} from './zombieRegions.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
@@ -58,7 +64,7 @@ export interface Zombie {
   stumbleDuration: number;
   /** Previous fixed-step pose used only by rendering interpolation. */
   renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number };
-  health: number;
+  regions: ZombieRegions;
   lastPerceived?: Vec3 | undefined;
   attackWait: number;
   /** Seconds left in the current attack's telegraph windup; 0 = not winding up. Set to
@@ -119,11 +125,15 @@ export interface ZombieSystemOptions {
   isSolid: SolidAt;
   blockSize: number;
   physics: PhysicsParams;
+  /** Take-off speed in metres per second, like `PLAYER.jump`; the system divides by `blockSize` itself. */
   jumpSpeed: number;
   player: () => PlayerSense;
   hour: () => number;
   hurtPlayer: (amount: number) => void;
+  /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
+  /** A region other than the head ran out of health: the game leaves the severed part behind (an item). */
+  onSevered?: (zombie: Zombie, region: Exclude<ZombieRegion, 'head'>) => void;
   /** Sound-source position is in block coordinates. */
   onSound?: (event: SoundEventId, position: Vec3) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
@@ -194,6 +204,13 @@ const CONTAINING_PARTS: Readonly<Record<(typeof ARM_PARTS)[number], readonly str
   'forearm.R': ['upperArm.R'],
   'upperArm.L': [],
   'upperArm.R': [],
+};
+
+type ArmRegion = 'leftArm' | 'rightArm';
+/** The mobgen part a destroyed arm region cuts at (the figure's own left is -X, mobgen's ".L"). */
+const ARM_REGION_PART: Readonly<Record<ArmRegion, (typeof ARM_PARTS)[number]>> = {
+  leftArm: 'upperArm.L',
+  rightArm: 'upperArm.R',
 };
 
 /** Arm parts still worth severing: not already severed, and not already implied by a containing part
@@ -448,6 +465,7 @@ export class ZombieSystem {
           id,
           zombie: {
             ...state,
+            regions: { ...zombie.regions },
             type: type.id,
             behaviorRng: [...behaviorRng.state()] as RngState,
             soundRng: [...soundRng.state()] as RngState,
@@ -498,10 +516,22 @@ export class ZombieSystem {
       if (!type) {
         throw new Error(`Missing zombie type ${zombie.type}`);
       }
+      if (
+        !zombie.regions ||
+        ZOMBIE_REGION_NAMES.some(
+          (region) =>
+            !Number.isFinite(zombie.regions[region]) ||
+            zombie.regions[region] < (region === 'head' ? Number.MIN_VALUE : 0) ||
+            zombie.regions[region] > type.regions[region],
+        )
+      ) {
+        throw new Error(`Invalid zombie regions for entity ${id}`);
+      }
       const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
       const restored: Zombie = {
         ...fields,
         type,
+        regions: { ...zombie.regions },
         behaviorRng: new Rng(behaviorRng),
         soundRng: new Rng(soundRng),
         dismemberRng: new Rng(dismemberRng),
@@ -732,7 +762,7 @@ export class ZombieSystem {
       stumbleElapsed: 0,
       stumbleDuration: 0,
       renderPrevious: { pos: copy(position), facing: copy(direction), headYaw: 0, gaitPhase: 0 },
-      health: type.health,
+      regions: { ...type.regions },
       attackWait: 0,
       attackWindup: 0,
       gaitPhase: 0,
@@ -934,6 +964,13 @@ export class ZombieSystem {
       }
 
       // A stroll remains a stroll while it gently brakes at the end of its interval.
+      if (zombie.regions.leftLeg <= 0 && zombie.regions.rightLeg <= 0) {
+        // Without either leg the shambler stays in place; head and arm attacks still work.
+        desiredSpeed = 0;
+        direction = [0, 0, 0];
+        aimDirection = undefined;
+        zombie.horizontalSpeed = 0;
+      }
       const acceleration =
         zombie.stumbleFactor < 1 && zombie.horizontalSpeed > desiredSpeed
           ? type.chaseMotion.stumbleDeceleration
@@ -1103,6 +1140,43 @@ export class ZombieSystem {
     return undefined;
   }
 
+  private firstRegionHit(origin: Vec3, direction: Vec3, reach: number): [EntityId, Zombie, ZombieRegion] | undefined {
+    const { blockSize, isSolid } = this.options;
+    let nearest: [EntityId, Zombie, ZombieRegion] | undefined;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (const [id, zombie] of this.store.entries()) {
+      for (const region of ZOMBIE_REGION_NAMES) {
+        if (zombie.regions[region] <= 0) {
+          continue;
+        }
+        const distance = zombieRegionHitDistance({
+          origin,
+          direction,
+          pose: {
+            position: zombie.body.pos,
+            facing: zombie.facing,
+            headYaw: zombie.headYaw,
+            gaitPhase: zombie.gaitPhase,
+            moving: Math.hypot(zombie.body.vel[0], zombie.body.vel[2]) > 0.05,
+          },
+          region,
+          blockSize,
+        });
+        if (
+          distance === undefined ||
+          distance * blockSize > reach ||
+          raycast(origin, direction, distance, isSolid) ||
+          distance >= nearestDistance
+        ) {
+          continue;
+        }
+        nearestDistance = distance;
+        nearest = [id, zombie, region];
+      }
+    }
+    return nearest;
+  }
+
   /** Strikes the first visible zombie within the held weapon's reach. */
   swing(
     origin: Vec3,
@@ -1113,42 +1187,41 @@ export class ZombieSystem {
       return undefined;
     }
     this.options.onSound?.('melee_swing', copy(origin));
-    const dir = unit(direction);
-    let found: [EntityId, Zombie, number] | undefined;
-    for (const [id, zombie] of this.store.entries()) {
-      const center: Vec3 = [zombie.body.pos[0], zombie.body.pos[1] + zombie.body.height * 0.55, zombie.body.pos[2]];
-      const delta = sub(center, origin);
-      const along = delta[0] * dir[0] + delta[1] * dir[1] + delta[2] * dir[2];
-      const perpendicular = Math.hypot(delta[0] - along * dir[0], delta[1] - along * dir[1], delta[2] - along * dir[2]);
-      const metres = along * this.options.blockSize;
-      if (
-        metres < 0 ||
-        metres > weapon.reach ||
-        perpendicular * this.options.blockSize > 0.65 ||
-        raycast(origin, dir, along, this.options.isSolid)
-      ) {
-        continue;
-      }
-      if (!found || along < found[2]) {
-        found = [id, zombie, along];
-      }
-    }
+    const found = this.firstRegionHit(origin, unit(direction), weapon.reach);
     if (!found) {
       return undefined;
     }
     this.playerAttackWait = weapon.cooldown;
-    const [id, zombie] = found;
+    const [id, zombie, region] = found;
     this.options.onSound?.('melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
-    zombie.health -= weapon.damage;
+    const health = Math.max(0, zombie.regions[region] - weapon.damage);
+    zombie.regions[region] = health;
+    const killed = region === 'head' && health === 0;
     // No dedicated dismemberment/gore sound exists in content/base/sounds.json yet (melee_hit/shambler_hurt
     // above already cover every hit) — "play one if a suitable one exists, else skip" per the design.
-    this.rollDismember(id, zombie, zombie.health <= 0);
-    if (zombie.health <= 0) {
+    if (health === 0 && region in ARM_REGION_PART) {
+      // A destroyed arm region is a whole arm gone: the shoulder is the cut, so the renderer hides the
+      // arm and the zombie counts it lost for attacking (canStillAttack).
+      this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion]);
+    }
+    this.rollDismember(id, zombie, killed);
+    if (killed) {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
+    } else if (region !== 'head' && health === 0) {
+      this.options.onSevered?.(zombie, region);
     }
     return id;
+  }
+
+  /** Records `part` as severed (cumulative, saved) and tells the renderer; a part already cut is a no-op. */
+  private sever(id: EntityId, zombie: Zombie, part: string): void {
+    if (zombie.severed.includes(part)) {
+      return;
+    }
+    zombie.severed.push(part);
+    this.options.onSever?.(id, zombie, part);
   }
 
   /** Independent rolls for this hit: type.dismember.chance for a random not-yet-severed arm part (skipping
@@ -1161,13 +1234,11 @@ export class ZombieSystem {
       const available = availableArmParts(zombie.severed);
       if (available.length > 0) {
         const part = available[zombie.dismemberRng.int(0, available.length - 1)]!;
-        zombie.severed.push(part);
-        this.options.onSever?.(id, zombie, part);
+        this.sever(id, zombie, part);
       }
     }
     if (killed && !zombie.severed.includes('head') && zombie.dismemberRng.chance(dismember.headOnKillChance)) {
-      zombie.severed.push('head');
-      this.options.onSever?.(id, zombie, 'head');
+      this.sever(id, zombie, 'head');
     }
   }
 }

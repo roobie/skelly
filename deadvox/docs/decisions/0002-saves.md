@@ -89,13 +89,13 @@ references:
 
 | State | On disk | Reason / restoration rule |
 | --- | --- | --- |
-| Version and world identity | Exact `versionIdentity` plus its components: game build revision; save schema version; deterministic generator versions (worldgen and, once firearms are introduced, gungen); ordered pack IDs/versions/canonical content hashes; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of those four version components. Require exact equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
+| Version and world identity | Exact `versionIdentity` plus its components: simulation-source fingerprint; save schema version; deterministic generator versions (worldgen and, once firearms are introduced, gungen); ordered pack IDs/versions/canonical content hashes; diagnostic Git build revision; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of the simulation fingerprint, schema, generator map and ordered pack identities. The Git build revision is stored alongside as diagnostic metadata, outside the digest and compatibility check. Require exact identity equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
 | Clock/simulation | Simulation time, clock settings, needs, death cause/time, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; do not save or restore god mode/noclip/build toggles (force them off on load). Debug interventions already made to the world remain in its saved state. Reject unknown system IDs rather than silently resetting their phase. |
 | Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. |
 | Items | Recursive items including UID, type ID, count, condition, charges/on/made, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and lights. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
 | Furniture/block entities | Anchor, type ID, size/facing, open/searched state and container pocket trees; `BlockEntities.nextUid` | Address entities by world anchor/type, not load-order-dependent object identity. Restore saved overrides when deterministic worldgen creates an anchor. |
 | World edits | Only changed chunks, each with chunk coordinates, a palette of stable block content IDs, and RLE runs for changed cell offsets/IDs versus the versioned generated base | At the first write to a cell, journal its generated base ID; later writes update or remove the delta if the cell returns to base. Runtime block numbers are registry-order dependent. Store string IDs. Regenerate the base chunk, apply the diff, then rebuild meshes. Preserve explicit air edits. |
-| Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words), including each zombie's `attackWindup` (seconds left in an in-flight attack's telegraph, 0 when not attacking) and `severed` (part names dismembered so far, e.g. `["upperArm.L"]` — cumulative, never shrinks); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each zombie's `soundRng`, `idleSoundTimer`, and `lastVocalNoiseId` | Recreate current threats and prevent dead or previously considered site spawns from coming back. Sound RNG/timer preserve the ambient audio sequence; `lastVocalNoiseId` is required for exact hearing behavior. `attackWindup` must resume exactly so a save/load mid-windup neither skips nor replays the hit resolution. `severed` is the renderer's only source of truth for which limbs to hide (mobgen's `severedBoneSet` expands it) — a corpse's or debris's own render-only lifecycle state is never saved, only which parts were severed while the zombie was still alive. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
+| Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words), including each zombie's `dismemberRng` words (the severing rolls' own stream), `attackWindup` (seconds left in an in-flight attack's telegraph, 0 when not attacking) and `severed` (part names dismembered so far, e.g. `["upperArm.L"]` — cumulative, never shrinks); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each zombie's `soundRng`, `idleSoundTimer`, and `lastVocalNoiseId` | Recreate current threats and prevent dead or previously considered site spawns from coming back. Sound RNG/timer preserve the ambient audio sequence; `lastVocalNoiseId` is required for exact hearing behavior. `attackWindup` must resume exactly so a save/load mid-windup neither skips nor replays the hit resolution. `severed` is the renderer's only source of truth for which limbs to hide (mobgen's `severedBoneSet` expands it) — a corpse's or debris's own render-only lifecycle state is never saved, only which parts were severed while the zombie was still alive. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
 | Player audio state | `vocalNoiseId`, active `vocalNoise` (id, position, radius, expiry), and per-event `SoundPicker` RNG/`lastVariant`/`lastPlayedAt`; omit `footstepClock` and `airbornePeakY` | Noise and the picker cooldown gate zombie hearing and must continue exactly. Footstep cadence and landing peak only schedule sounds whose content disables hearing, so reset them on load. |
 | In-flight jobs | The live queue uses tagged data descriptors (`jobType` plus serializable parameters, elapsed time and duration), not closures. Step 1 converts the current handling jobs to this representation. The 1.9 snapshot omits pending descriptors and clears its transient `searching` set in the saved copy only; it must not cancel or mutate the live queue/set. | Descriptors leave room for later resumable long actions. In 1.9, jobs still apply only on completion; the saved target is untouched and the player can retry. The live session keeps its original job progress and timing. |
 | Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio playback queues after readers drain, render interpolation/feedback, footstep cadence and airborne peak, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
@@ -136,12 +136,13 @@ number handling), not only a checksum. Save at a scheduler/frame barrier; record
 all per-system cursors because recreating them from global time changes tick
 ordering.
 
-The exact version identity binds the worldgen, gungen and content rules to the
-save. Worldgen determinism is required within that exact build and is exercised
-by the save/load equivalence tests; old generator implementations are not
-retained for cross-version restore. A different generator version (including
-gungen), schema, build revision, or content hash is a different identity and is
-refused before any content lookup.
+The exact version identity binds simulation code, worldgen, gungen and content
+rules to the save. Worldgen determinism is required under that source fingerprint
+and is exercised by the save/load equivalence tests; old generator
+implementations are not retained for cross-version restore. A different
+simulation fingerprint, generator version (including gungen), schema, or content
+hash is a different identity and is refused before any content lookup. A Git
+revision change alone is diagnostic and does not invalidate a save.
 
 JSON numeric values use ECMAScript's shortest round-trip representation. Encode
 negative zero with a reserved tagged value (JSON otherwise writes it as `0`);
@@ -166,14 +167,115 @@ invalid ranges, malformed RLE, or an identity mismatch are rejected before
 restore.
 
 The save's exact version identity is the SHA-256 of a canonical tuple containing
-the game build revision, save schema version, the deterministic generator
-version map (including the gungen generator once firearms are introduced), and
-ordered content-pack IDs/versions/canonical hashes; store the components as
-well as the digest for diagnosis. Require an exact identity match before looking up any
-content IDs. On mismatch, explain the save's build/version identity and refuse
-the load; leave its bytes untouched and never upgrade or overwrite it. Under an
-exact match, missing/renamed IDs indicate corruption or a violated build
-contract and are rejected; there is no unknown-content preservation or ID
+the simulation-source fingerprint, save schema version, deterministic
+generator-version map (including gungen once firearms are introduced), and
+ordered content-pack IDs/versions/canonical hashes; store these components and
+the diagnostic Git revision alongside the digest. The fingerprint is computed
+from a canonical, path-sorted list of relative source paths and per-file SHA-256
+hashes, with line endings normalized. It walks Vite-resolved runtime imports
+from these entry points: `src/core/sim.ts` (clock, scheduler and needs),
+`src/core/worldgen.ts` (deterministic generation), `src/core/saveState.ts`,
+`src/core/saveFormat.ts`, and `src/core/storage.ts` (snapshot, disk contract,
+and storage behavior), `src/core/soundPicker.ts` (persisted sound selection
+state), `src/game/player.ts` (movement/body rules), `src/game/rest.ts` and
+`src/game/survival.ts` (stateful controllers), `src/game/streamer.ts` (world
+regeneration and overlays), `src/game/config.ts` (world creation options and
+site/seed parameters), `src/game/worldSetup.ts` (content registry, collision,
+site construction, generated world, streaming and spawn), `src/game/quickbar.ts`
+(stateful selection), `src/game/session.ts` (the DOM-free simulation wiring that the
+game and the snapshot tests share: simulation, shamblers, player, inventory, rest,
+survival, handling queue and `snapshot()`), and `src/game/play.ts` (gameplay
+wiring/actions).
+`play.ts` reaches `worldSetup.ts` at runtime for the spawn-to-body conversion,
+and reaches `src/game/aim.ts` for furniture and melee targeting independently
+of camera feedback roll. Vite recomputes the fingerprint for source create,
+update, and delete events and reloads when it changes. Base content remains
+separately identified by its canonical content-pack hash.
+
+World construction now lives in `worldSetup.ts`; it has no static runtime
+imports of Three.js or renderer modules. `engine.ts` injects a `ChunkMeshes`
+instance through a type-only contract and retains WebGL, camera, light, mesh and
+resize setup. The sole rendering runtime edge is the explicitly allowlisted
+mesher worker URL. Because the gameplay graph does not enter `engine.ts`,
+Three.js version changes and renderer-only edits there do not invalidate saves.
+`src/game/engine.ts` is an explicit renderer-only exclusion. It constructs the
+world setup for the app, while `play.ts` imports `playerStartFromWorld` from
+`worldSetup.ts` at runtime; the setup module and its world-generation graph are
+therefore fingerprinted without traversing Three.js. Type-only imports are
+erased; `src/core/site.ts`'s runtime helpers are reached through the city/hamlet
+builders, and config logic has its own entry.
+
+The excluded runtime import edges reached from non-excluded simulation modules
+are pinned by `test/simulationFingerprint.test.ts`:
+
+- `src/core/sky.ts`, imported by `src/game/play.ts`: values only feed rendered
+  sky state; no simulation system reads them. Include this source if daylight
+  becomes a simulation input.
+- `src/game/damageFeedback.ts`, imported by `src/game/play.ts`: vignette and
+  camera-roll animation only. Camera rotation remains visual in this excluded
+  module; gameplay targeting uses fingerprinted `src/game/aim.ts` with input
+  pitch/yaw only, not the feedback-rolled camera.
+- `src/game/engine.ts`: WebGL renderer, camera, lights, `ChunkMeshes`, and resize
+  setup only. Its `Engine` interface extends `WorldSetup`, but gameplay imports
+  that contract type-only; `engine.ts` is not a simulation entry, so Three.js and
+  render-only edits do not invalidate saves.
+- `src/core/mesher.ts` and `src/core/pileLayout.ts`: render-worker mesh generation
+  and pile mesh placement only; neither changes world, inventory, or save state.
+- `src/render/{flashlight,furniture,hands,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
+  imported by `src/game/play.ts`: mesh construction, draw transforms, and render
+  interpolation only. The simulation never reads these objects back.
+- `src/ui/audioOptions.ts`: output volume controls only. The `GameAudio` event
+  gate is intentionally included in the fingerprint because whether playback
+  succeeds can create persisted vocal-noise state.
+- `src/ui/credits.ts`, `src/ui/gameCursor.ts`: static credits and cursor DOM.
+- `src/ui/death.ts`: death summary and a new-world navigation callback; it does
+  not mutate or restore the current world's saved simulation.
+- `src/ui/hud.ts`, `src/ui/hudOptions.ts`: drawing and visibility settings only.
+  The stateful `Quickbar` was moved to `src/game/quickbar.ts` and is fingerprinted
+  directly by `play.ts`.
+- `src/ui/menuPointer.ts`: the pointer-lock menu cursor and the forwarding of locked
+  pointer and click events to the element under it. It reads only the input's
+  lock and cursor state and the DOM, never simulation state; what the inventory
+  does with a forwarded event stays in the fingerprinted `inventoryScreen.ts`.
+  Browser pointer fixes (such as Firefox's pinned `clientX/Y`) live here so they
+  don't invalidate saves.
+- `src/ui/rest.ts`: read-only rendering of `RestAction` and simulation clock;
+  rest/stop input handling and state transitions live in fingerprinted game
+  modules.
+
+The integration test recursively enumerates all source modules under
+`src/core/` and `src/game/`; every module must be in the fingerprint graph, match
+an explicit `SIMULATION_EXCLUSIONS` rule with the justification above, or have
+an individual non-runtime rule in the test. The only current non-runtime rules
+are `src/core/buildRevision.ts` (test/build diagnostic helper) and
+`src/game/debugInterface.ts` (erased type-only contracts). This prevents a new
+runtime file reachable only through a type-only edge from silently escaping the
+fingerprint; the test fails with each unclassified module's path. The test
+first failed with `city.ts`, `collision.ts`, `hamlet.ts`, `site.ts`, `engine.ts`,
+`testHouse.ts`, and `worldSetup.ts` unclassified when the world-setup edge and
+its renderer exclusion were removed. `src/ui/inventoryScreen.ts` is deliberately
+not excluded: it routes pointer and key actions into inventory and handling mutations.
+`src/game/audio.ts` is included because its playback-success result gates
+hearing-relevant vocal noise. The debug subtree has no reached runtime import
+edges (the play module's debug interfaces are type-only). The graph walker
+follows static/dynamic imports and star re-exports, fails closed for unresolved,
+virtual, out-of-root, and unclassified dependencies, and rejects unrecognized
+`require()`/glob discovery. Its explicit dependency allowlist is limited to the
+base-content globs (`../content/base/*.json` and
+`../content/base/assets/audio/**/*.ogg`, both covered by the canonical
+content-pack hash) and known presentation asset extensions. The sole
+`import.meta.url` worker reference is `src/game/streamer.ts`'s
+`../worker/mesh.worker.ts`; it only builds presentation meshes, so it is
+explicitly allowlisted and the integration test confirms the worker is not in
+the simulation source set. Any newly reached excluded edge fails the pinned
+integration test and requires an explicit compatibility decision. Tests and
+docs are never part of the runtime graph.
+
+Require an exact identity match before looking up any content IDs. On mismatch,
+explain both the save's diagnostic build revision and its simulation fingerprint
+and refuse the load; leave its bytes untouched and never upgrade or overwrite
+it. Under an exact match, missing/renamed IDs indicate corruption or a violated
+build contract and are rejected; there is no unknown-content preservation or ID
 migration in v1. There are no `vN -> vN+1` functions or cross-version restore
 path in 1.9.
 
@@ -335,14 +437,17 @@ generation until the new world's first snapshot commits.
 - JSON is inspectable; RLE chunk diffs keep ordinary saves small. Checksums
   detect damage, not malicious tampering. A/B slots and
   persistence requests reduce corruption/eviction risk but are not backups.
-- Compatibility is intentionally strict: changing the build, schema, worldgen,
-  any deterministic generator (including gungen), or content identity prevents
-  loading that save in the changed version. Thus a
-  playtester's save stops loading on the next deploy; this is acceptable while
-  sessions are short and feature-focused, and permanent players are not yet the
-  product. Version-keyed storage preserves it for a matching build rather than
-  silently applying new rules. Revisit when characters need to persist across
-  releases; version selection or migration would then be a hard fork.
+- Compatibility is intentionally strict: changing simulation source, schema,
+  worldgen, any deterministic generator (including gungen), or content identity
+  prevents loading that save. Only edits confined to explicitly excluded
+  presentation modules (plus tests, docs, and unrelated commits) leave the
+  fingerprint unchanged. UI or presentation code co-located in fingerprinted
+  modules—such as `play.ts`, `inventoryScreen.ts`, or `game/audio.ts`—
+  conservatively invalidates saves too; compatibility follows the module graph,
+  not semantic line-level classification. Version-keyed storage preserves
+  incompatible records rather than silently applying new rules. Revisit when
+  characters need to persist across releases; version selection or migration
+  would then be a hard fork.
 - Save frame time and size are estimates until the implementation benchmark
   proves them. The stated targets are gates, not claimed measurements.
 
@@ -362,6 +467,14 @@ strict version identity and the world/character boundary:
    root state and the character is bound to exactly that world, never moved
    between saves. A new character entering that same world after death remains
    undecided.
+5. **Simulation fingerprint (saves.2b, 2026-09-28):** use a source-graph hash
+   instead of the Git revision as the compatibility component. A hand-bumped
+   SemVer was rejected because a forgotten bump silently accepts saves under
+   changed simulation rules. Keep the Git revision beside the digest only as
+   diagnostic metadata. The Vite-resolved source graph closes both known gaps:
+   newly imported untracked files are included, and builds without Git still
+   produce source-specific identities instead of sharing a `development`
+   version. Content-pack hashes remain a separate exact identity component.
 
 [[THIS contradicts: ../../EPIC.md]]
 

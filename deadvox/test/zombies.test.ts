@@ -12,6 +12,7 @@ import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { FIGURE_BOXES, FIGURE_PARTS, ZOMBIE_REGION_NAMES, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
   FISTS_MELEE,
@@ -22,7 +23,6 @@ import {
   ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { FIGURE_BOXES, FIGURE_PARTS } from '../src/render/figure.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 
 const BASE = 'src/content/base';
@@ -77,6 +77,20 @@ const overlapDepthMetres = (a: Body, b: Body): number => {
   const overlapX = a.halfWidth + b.halfWidth - Math.abs(a.pos[0] - b.pos[0]);
   const overlapZ = a.halfWidth + b.halfWidth - Math.abs(a.pos[2] - b.pos[2]);
   return Math.max(0, Math.min(overlapX, overlapZ) * BLOCK_SIZE);
+};
+const regionRay = (zombie: import('../src/core/zombies.ts').Zombie, region: ZombieRegion) => {
+  const part = region === 'torso' ? 'body' : region;
+  const box = FIGURE_BOXES[part];
+  let sideOffset = 0;
+  if (region === 'leftArm') {
+    sideOffset = -0.025;
+  } else if (region === 'rightArm') {
+    sideOffset = 0.025;
+  }
+  const leg = region === 'leftLeg' || region === 'rightLeg';
+  const x = zombie.body.pos[0] + (box.at[0] + sideOffset) / BLOCK_SIZE;
+  const y = zombie.body.pos[1] + (box.at[1] - (leg ? box.size[1] / 2 : 0)) / BLOCK_SIZE;
+  return { origin: [x, y, zombie.body.pos[2] - 1] as Vec3, direction: [0, 0, 1] as Vec3 };
 };
 const bodyHitsSolid = (body: Body, isSolid: SolidAt): boolean => {
   for (let y = Math.floor(body.pos[1]); y < Math.ceil(body.pos[1] + body.height); y++) {
@@ -654,6 +668,81 @@ describe('shambler scenarios', () => {
     expect(second.body.pos[0]).toBeGreaterThan(2);
   });
 
+  it('aims at each rigid body region deterministically and damages the first one hit', () => {
+    for (const region of ZOMBIE_REGION_NAMES) {
+      const makeSystem = () => new ZombieSystem({ ...senses(() => player([100, 2, 0])), seed: 91 });
+      const system = makeSystem();
+      const replay = makeSystem();
+      const id = system.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+      const replayId = replay.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+      const zombie = system.store.get(id)!;
+      const before = { ...zombie.regions };
+      const { origin, direction } = regionRay(zombie, region);
+      const replayRay = regionRay(replay.store.get(replayId)!, region);
+      expect(system.swing(origin, direction, FISTS_MELEE)).toBe(id);
+      expect(replay.swing(replayRay.origin, replayRay.direction, FISTS_MELEE)).toBe(replayId);
+      expect(zombie.regions[region]).toBe(before[region] - FISTS_MELEE.damage);
+      for (const other of ZOMBIE_REGION_NAMES) {
+        if (other !== region) {
+          expect(zombie.regions[other]).toBe(before[other]);
+        }
+      }
+      expect(system.snapshotState()).toEqual(replay.snapshotState());
+    }
+  });
+
+  it('severs every non-head region without killing; destroying the head alone kills', () => {
+    for (const region of ZOMBIE_REGION_NAMES) {
+      const severed: ZombieRegion[] = [];
+      const sounds: string[] = [];
+      let deaths = 0;
+      const system = new ZombieSystem({
+        ...senses(() => player([100, 2, 0])),
+        onSound: (event) => sounds.push(event),
+        onSevered: (_zombie, part) => severed.push(part),
+        onDeath: () => {
+          deaths += 1;
+        },
+      });
+      const id = system.add(SHAMBLER, [1, 1, 0], [0, 0, -1]);
+      const zombie = system.store.get(id)!;
+      zombie.modeTimer = 1000;
+      const ray = regionRay(zombie, region);
+      const weapon = { ...FISTS_MELEE, cooldown: 0 };
+      const hits = Math.ceil(zombie.regions[region] / weapon.damage);
+      for (let hit = 0; hit < hits; hit++) {
+        expect(system.swing(ray.origin, ray.direction, weapon)).toBe(id);
+      }
+      if (region === 'head') {
+        expect(system.store.get(id)).toBeUndefined();
+        expect(deaths).toBe(1);
+        expect(severed).toEqual([]);
+      } else {
+        expect(system.store.get(id)).toBe(zombie);
+        expect(zombie.regions[region], `region ${region}`).toBe(0);
+        expect(severed).toEqual([region]);
+        expect(sounds).toContain('shambler_hurt');
+        expect(deaths).toBe(0);
+      }
+    }
+  });
+
+  it('cannot walk after both legs are severed', () => {
+    const walking = { ...SHAMBLER, speed: { wander: 0.8, chase: 0.8 } };
+    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
+    const id = system.add(walking, [4, 1, 4]);
+    const zombie = system.store.get(id)!;
+    zombie.regions.leftLeg = 0;
+    zombie.regions.rightLeg = 0;
+    zombie.body.onGround = true;
+    for (let tick = 0; tick < 10 * 20; tick++) {
+      system.tick(1 / 20);
+    }
+    expect(zombie.body.pos[0]).toBe(4);
+    expect(zombie.body.pos[2]).toBe(4);
+    expect(zombie.horizontalSpeed).toBe(0);
+  });
+
   it('F: melee hits obey cooldown, exact damage and range; fists and real crowbar data kill shamblers', () => {
     let elapsed = 0;
     const hitTimes: number[] = [];
@@ -709,13 +798,15 @@ describe('shambler scenarios', () => {
     const fistsId = fists.add(stationary, [0.5, 1, 0]);
     for (let swing = 0; swing < 8; swing++) {
       const target = fists.store.get(fistsId)!;
-      const origin: Vec3 = [0, target.body.pos[1] + target.body.height * 0.55, 0];
-      expect(fists.swing(origin, [1, 0, 0], FISTS_MELEE)).toBe(fistsId);
+      const ray = regionRay(target, 'head');
+      expect(fists.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(fistsId);
       run(fists, FISTS_MELEE.cooldown);
     }
     expect(fists.store.get(fistsId)).toBeUndefined();
     expect(deathDrops).toBe(1);
-    expect(fistSystem.swing([0, 2, 0], [1, 0, 0], FISTS_MELEE)).toBe(fistId);
+    const fistTarget = fistSystem.store.get(fistId)!;
+    const fistRay = regionRay(fistTarget, 'head');
+    expect(fistSystem.swing(fistRay.origin, fistRay.direction, FISTS_MELEE)).toBe(fistId);
 
     const crowbar = registry.items.get('crowbar')!.weapon!.melee!;
     const armed = new ZombieSystem(senses(() => player([100, 2, 0])));
@@ -723,8 +814,8 @@ describe('shambler scenarios', () => {
     let swings = 0;
     while (armed.store.get(armedId)) {
       const target = armed.store.get(armedId)!;
-      const origin: Vec3 = [0, target.body.pos[1] + target.body.height * 0.55, 0];
-      expect(armed.swing(origin, [1, 0, 0], crowbar)).toBe(armedId);
+      const ray = regionRay(target, 'head');
+      expect(armed.swing(ray.origin, ray.direction, crowbar)).toBe(armedId);
       run(armed, crowbar.cooldown);
       swings += 1;
     }
@@ -785,12 +876,8 @@ describe('shambler scenarios', () => {
     expect(initial.length).toBeGreaterThan(0);
     const [id, zombie] = initial[0]!;
     while (system.store.get(id)) {
-      const origin: Vec3 = [
-        zombie.body.pos[0],
-        zombie.body.pos[1] + zombie.body.height * 0.55 + 0.1,
-        zombie.body.pos[2],
-      ];
-      expect(system.swing(origin, [0, -1, 0], FISTS_MELEE)).toBe(id);
+      const ray = regionRay(zombie, 'head');
+      expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
       run(system, FISTS_MELEE.cooldown);
     }
     const survivors = system.store.size;
@@ -926,6 +1013,27 @@ describe('shambler scenarios', () => {
       previousDrawnY = drawnY;
     }
     expect(previousDrawnY).toBeCloseTo(zombie.body.pos[1] * BLOCK_SIZE, 5);
+  });
+
+  it('hides severed regions while keeping the other figure instances visible', () => {
+    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const { system, zombie } = standing([4, 1, 4], [1, 0, 0]);
+    const parts = meshes.group.children as import('three').InstancedMesh[];
+    const meshFor = (part: (typeof FIGURE_PARTS)[number]) => parts[FIGURE_PARTS.indexOf(part)]!;
+    meshes.sync(system.store);
+    expect(parts.every((mesh) => mesh.count === 1)).toBe(true);
+
+    zombie.regions.leftArm = 0;
+    zombie.regions.torso = 0;
+    meshes.sync(system.store);
+
+    expect(meshFor('leftArm').count).toBe(0);
+    expect(meshFor('body').count).toBe(0);
+    for (const part of FIGURE_PARTS) {
+      if (part !== 'leftArm' && part !== 'body') {
+        expect(meshFor(part).count).toBe(1);
+      }
+    }
   });
 
   it('renders collision-sized figures at game scale and swings each leg forward/back about its hip', () => {
@@ -1669,6 +1777,9 @@ describe('dismemberment', () => {
   const stationary = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
   const armParts = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'];
 
+  /** Regions too healthy for a few fist hits to destroy, so only the dismember roll can sever anything. */
+  const survives = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
+
   const swingAt = (system: ZombieSystem, id: number) => {
     const target = system.store.get(id)!;
     const origin: Vec3 = [0, target.body.pos[1] + target.body.height * 0.55, 0];
@@ -1676,7 +1787,7 @@ describe('dismemberment', () => {
   };
 
   it('chance 1 always severs a random arm part on a hit that does not kill', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 1, headOnKillChance: 0 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
     const id = system.add(type, [0.5, 1, 0]);
     expect(swingAt(system, id)).toBe(id);
@@ -1686,7 +1797,7 @@ describe('dismemberment', () => {
   });
 
   it('chance 0 never severs, even across many hits', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 0, headOnKillChance: 0 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 0, headOnKillChance: 0 } };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
     const id = system.add(type, [0.5, 1, 0]);
     for (let i = 0; i < 10; i++) {
@@ -1697,7 +1808,7 @@ describe('dismemberment', () => {
   });
 
   it('the onSever callback fires with the id, the zombie, and the severed part', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 1, headOnKillChance: 0 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
     const calls: [number, string][] = [];
     const system = new ZombieSystem({
       ...senses(() => player([100, 2, 0])),
@@ -1713,7 +1824,7 @@ describe('dismemberment', () => {
   });
 
   it('containment: a part already covered by a severed upperArm is never independently added', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 1, headOnKillChance: 0 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
     const id = system.add(type, [0.5, 1, 0]);
     system.store.get(id)!.severed.push('upperArm.L'); // pre-severed, bypassing the RNG for this check
@@ -1764,7 +1875,7 @@ describe('dismemberment', () => {
   });
 
   it('only severs the head on a killing blow, never on a hit the zombie survives', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 0, headOnKillChance: 1 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 0, headOnKillChance: 1 } };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
     const id = system.add(type, [0.5, 1, 0]);
     swingAt(system, id); // fists deal 8, far from lethal at 1000 health
@@ -1772,7 +1883,11 @@ describe('dismemberment', () => {
   });
 
   it('severs the head on a killing blow when headOnKillChance rolls true', () => {
-    const type = { ...stationary, health: FISTS_MELEE.damage, dismember: { chance: 0, headOnKillChance: 1 } };
+    const type = {
+      ...stationary,
+      regions: { ...survives, head: FISTS_MELEE.damage },
+      dismember: { chance: 0, headOnKillChance: 1 },
+    };
     const severedParts: string[] = [];
     const system = new ZombieSystem({
       ...senses(() => player([100, 2, 0])),
@@ -1780,14 +1895,36 @@ describe('dismemberment', () => {
         severedParts.push(part);
       },
     });
-    const id = system.add(type, [0.5, 1, 0]);
-    expect(swingAt(system, id)).toBe(id); // exactly lethal
+    const id = system.add(type, [1, 1, 0], [0, 0, -1]);
+    const ray = regionRay(system.store.get(id)!, 'head');
+    expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id); // exactly lethal
     expect(system.store.get(id)).toBeUndefined(); // dead, removed from the store
     expect(severedParts).toEqual(['head']);
   });
 
+  it('destroying an arm region cuts the whole arm at the shoulder', () => {
+    const type = { ...stationary, regions: { ...survives, leftArm: FISTS_MELEE.damage, rightArm: FISTS_MELEE.damage } };
+    const calls: string[] = [];
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSever: (_id, _zombie, part) => {
+        calls.push(part);
+      },
+    });
+    const id = system.add(type, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    const weapon = { ...FISTS_MELEE, cooldown: 0 };
+    const left = regionRay(zombie, 'leftArm');
+    expect(system.swing(left.origin, left.direction, weapon)).toBe(id);
+    expect(zombie.severed).toContain('upperArm.L');
+    expect(calls).toContain('upperArm.L');
+    const right = regionRay(zombie, 'rightArm');
+    expect(system.swing(right.origin, right.direction, weapon)).toBe(id);
+    expect(zombie.severed).toContain('upperArm.R');
+  });
+
   it('keeps severed exactly across a snapshot/restore round trip', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 1, headOnKillChance: 0 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
     const id = system.add(type, [0.5, 1, 0]);
     swingAt(system, id);
@@ -1801,7 +1938,7 @@ describe('dismemberment', () => {
   });
 
   it('is deterministic: two identical systems given the same swings sever the same parts', () => {
-    const type = { ...stationary, health: 1000, dismember: { chance: 1, headOnKillChance: 0 } };
+    const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
     const runFour = (): string[] => {
       const system = new ZombieSystem(senses(() => player([100, 2, 0])));
       const id = system.add(type, [0.5, 1, 0]);

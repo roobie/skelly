@@ -54,9 +54,7 @@
       "author": "rubberduck",
       "licence": "CC0-1.0",
       "download": "80-CC0-creature-SFX.zip",
-      "files": [
-        "assets/audio/shambler-hurt-01.ogg"
-      ],
+      "files": ["assets/audio/shambler-hurt-01.ogg"],
       "changes": "Selected one hurt variant (two more were removed as too high-pitched); converted to 24 kHz mono Opus in Ogg containers; unused source files excluded"
     },
     {

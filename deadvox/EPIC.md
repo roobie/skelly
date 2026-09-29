@@ -205,7 +205,10 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 later notes (2026-09-27):
 - “a sickly, fleshy look, not a swamp monster”;
 - “minor details: nose, neck, feet, hands”;
-- “dismemberment when hit hard enough”;
+- “dismemberment when hit hard enough”. Designed on 2026-09-28: see
+  [Damage, destruction and dismemberment](DESIGN.md#damage-destruction-and-dismemberment)
+  (body regions, death only when the head is destroyed, damage types against
+  materials);
 - “at least three basic attack animations, and animations for taking damage”.
 - “Q and E are reserved for later actions” (nothing is bound to them in the world today).
 

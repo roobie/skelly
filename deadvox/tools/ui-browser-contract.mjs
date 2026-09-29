@@ -205,9 +205,20 @@ try {
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
   const moveCursorTo = async (position) => {
     await evaluate(`(() => {
-      const event = new MouseEvent('mousemove', { bubbles: true });
-      Object.defineProperties(event, { movementX: { value: ${position.x - cursor.x} }, movementY: { value: ${position.y - cursor.y} } });
-      document.dispatchEvent(event);
+      const event = new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: -1,
+        buttons: 0,
+      });
+      Object.defineProperties(event, {
+        movementX: { value: ${position.x - cursor.x} },
+        movementY: { value: ${position.y - cursor.y} },
+      });
+      document.querySelector('canvas').dispatchEvent(event);
     })()`);
     cursor = position;
     await delay(120);

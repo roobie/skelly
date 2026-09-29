@@ -85,7 +85,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "family": "handguard",
         "params": {
           "clearance": "L",
-          "layout": "ak",
+          "layout": "standard",
         },
       },
       "lower": {
@@ -114,7 +114,7 @@ exports[`templates > ak > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "L",
+          "length": "M",
           "style": "dropped",
         },
       },
@@ -203,7 +203,7 @@ exports[`templates > ak > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
-          "clearance": "M",
+          "clearance": "L",
           "layout": "ak",
         },
       },
@@ -218,7 +218,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "ak-curved",
-          "variant": "akm",
+          "variant": "ak74",
         },
       },
       "rear-sight": {
@@ -233,7 +233,7 @@ exports[`templates > ak > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "L",
           "style": "dropped",
         },
       },
@@ -316,14 +316,14 @@ exports[`templates > ak > known-good seeds 1`] = `
       "grip": {
         "family": "grip",
         "params": {
-          "length": "M",
+          "length": "S",
         },
       },
       "handguard": {
         "family": "handguard",
         "params": {
           "clearance": "L",
-          "layout": "ak",
+          "layout": "standard",
         },
       },
       "lower": {
@@ -337,7 +337,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "ak-curved",
-          "variant": "ak74",
+          "variant": "akm",
         },
       },
       "rear-sight": {
@@ -352,7 +352,7 @@ exports[`templates > ak > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "L",
+          "length": "M",
           "style": "dropped",
         },
       },

@@ -349,7 +349,7 @@ Numbered to fit between 1.5 and 1.6 without renumbering the milestones after
 it.
 
 - Models are content: a `models` section lists each model's id and file, and
-  an item names its model by id, as zombie types already do. The files are
+  an item names its model by id. The files are
   glTF binaries (`.glb`) in `content/base/assets/models/`, loaded with three.js's
   `GLTFLoader`; a model in another format is converted to `.glb` once and the
   converted file is committed.
@@ -532,6 +532,34 @@ and 300 measured ticks. The ten-shambler test H remains the CI guard.
 
 **Done when:** a scenario test shows the interruption comes at most one step
 late, and playtests confirm players understand why they were woken.
+
+### 1.8.5 Shambler body regions
+
+Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
+[Damage, destruction and dismemberment](DESIGN.md#damage-destruction-and-dismemberment).
+
+- The shambler's single health pool becomes body regions: head, torso, arms and
+  legs, each with its own health.
+- A melee hit damages the region it lands on. Today the hit test only checks the
+  aim ray against one point per shambler, at 0.55 of its height
+  (`src/core/zombies.ts:1025`), so it has to learn which region the ray
+  reaches first.
+- A non-head region at zero is severed: its rigid part is hidden and a matching
+  inventory pile item drops. The existing `shambler_hurt` sound plays on hit;
+  there is no separate severing asset yet. Severing the torso does not cascade
+  to other regions or kill the shambler; its other regions remain active in
+  place. Behaviour otherwise stays unchanged. With both legs gone, it stays
+  where it is (no walking or crawling), but remains alive and can still attack.
+- A shambler dies only when its head is destroyed.
+- Region state is simulation state: it's in the save snapshot and the source
+  fingerprint.
+
+**Order:** after the save-fingerprint fix (saves step 2b) merges, and before
+save storage and the golden save (1.9). Our saves refuse any version mismatch,
+so a golden save committed first would have to be remade.
+
+**Done when:** a scenario test severs each limb and kills only through the
+head; save → reload keeps severed limbs; BR approves it in game.
 
 ### 1.9 Saves
 
@@ -718,7 +746,7 @@ A zombie type:
   "sight": 25, "nightSight": 10, "sightCone": 60, "hearing": 1.0,
   "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
   "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5, "windup": 0.3 },
-  "abilities": [], "loot": "shambler_pockets", "model": "figure_basic" }
+  "abilities": [], "loot": "shambler_pockets" }
 ```
 
 ## Content for Slice 1
