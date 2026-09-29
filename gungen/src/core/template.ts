@@ -19,6 +19,8 @@ export interface SlotTemplate {
   readonly params?: Readonly<Record<string, Choice<string> | ParamReference>>;
   /** Probability the part is included (default 1). */
   readonly chance?: number;
+  /** Include this slot only when the referenced generated part parameter matches. */
+  readonly when?: ParamCondition;
 }
 
 export interface ParamCondition {

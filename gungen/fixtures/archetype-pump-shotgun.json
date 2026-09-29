@@ -5,7 +5,7 @@
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "pump", "feed": "tube", "bore": "L" } },
-    "lower": { "family": "lower", "params": { "layout": "trigger" } },
+    "lower": { "family": "lower", "params": { "layout": "pump" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "tube": { "family": "tube-magazine" },
     "forend": { "family": "forend" },

@@ -35,6 +35,29 @@ describe('generate', () => {
     });
   });
 
+  it('includes conditional slots only when an earlier parameter matches', () => {
+    const t: Template = {
+      name: 'conditional-slot',
+      description: '',
+      root: 'receiver',
+      slots: [
+        { id: 'receiver', family: 'receiver' },
+        { id: 'lower', family: 'lower', params: { layout: ['pump', 'trigger'] } },
+        {
+          id: 'grip',
+          family: 'grip',
+          params: { length: 'M' },
+          when: { part: 'lower', param: 'layout', equals: 'trigger' },
+        },
+      ],
+      connections: [],
+    };
+    for (let seed = 0; seed < 100; seed++) {
+      const assembly = generate(t, gunDomain, seed);
+      expect('grip' in assembly.parts, `seed ${seed}`).toBe(assembly.parts.lower?.params?.layout === 'trigger');
+    }
+  });
+
   it('honours chance 0 and chance 1', () => {
     const t: Template = {
       name: 'probe',
