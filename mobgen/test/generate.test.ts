@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate, generateValid, realize } from '../src/core/generate.ts';
+import type { Genome } from '../src/core/template.ts';
 import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
@@ -34,6 +35,19 @@ describe('generate', () => {
       expect(a.origin).toEqual(b.origin);
       expect([...a.owner]).toEqual([...b.owner]);
       expect([...a.color]).toEqual([...b.color]);
+    }
+  });
+
+  it('a genome survives JSON and realizes to the same voxels (the genome is the save format)', () => {
+    for (const t of TEMPLATES) {
+      const genome = generate(t, 42);
+      const again = JSON.parse(JSON.stringify(genome)) as Genome;
+      expect(again).toEqual(genome);
+      const a = realize(genome).voxels;
+      const b = realize(again).voxels;
+      expect(b.dims).toEqual(a.dims);
+      expect([...b.owner]).toEqual([...a.owner]);
+      expect([...b.color]).toEqual([...a.color]);
     }
   });
 
