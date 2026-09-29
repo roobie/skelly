@@ -35,6 +35,7 @@ import {
   editorStateFromDesign,
   editParam,
   saveDesign,
+  saveDesignForDownload,
   setOptionalPart,
   toggleOptionalPartLock,
   toggleParamLock,
@@ -234,9 +235,14 @@ const renderPanel = (assembly: Assembly) => {
   description.textContent = assembly.description ?? '';
   const failed = [...new Set(report.issues.map((i) => i.rule))].sort();
   const expected = assembly.expect ? [...assembly.expect].sort() : undefined;
-  const verdict = report.ok
-    ? '<span class="pass">PASS</span>'
-    : `<span class="fail">FAIL</span> <span class="note">(${report.issues.length} issue${report.issues.length === 1 ? '' : 's'})</span>`;
+  let verdict: string;
+  if (report.ok) {
+    verdict = '<span class="pass">PASS</span>';
+  } else if (editorState?.template) {
+    verdict = `<span class="warning">WARN</span> <span class="note">(${report.issues.length} issue${report.issues.length === 1 ? '' : 's'}; editing and draft saving remain enabled)</span>`;
+  } else {
+    verdict = `<span class="fail">FAIL</span> <span class="note">(${report.issues.length} issue${report.issues.length === 1 ? '' : 's'})</span>`;
+  }
   const note = expectationNote(expected, failed);
   status.innerHTML = verdict + note;
 
@@ -303,19 +309,19 @@ const renderDesignInfo = () => {
   locks.textContent = `Locks: ${[...params, ...optional].join(', ') || 'none'}`;
   designInfo.append(locks);
 
-  if (model.issues.length === 0) {
-    designInfo.append(line('Issues', 'none'));
+  if (model.infoIssues.length === 0) {
+    designInfo.append(line('Warnings', model.issues.length === 0 ? 'none' : 'See affected part cards.'));
   } else {
     const designIssues = document.createElement('ul');
-    designIssues.className = 'design-issues';
-    for (const issue of model.issues) {
+    designIssues.className = 'design-issues design-warnings';
+    for (const issue of model.infoIssues) {
       const item = document.createElement('li');
       const code = document.createElement('code');
       code.textContent = issue.code;
       item.append(code, ` ${issue.message}`);
       designIssues.append(item);
     }
-    designInfo.append(designIssues);
+    designInfo.append(line('Warnings', ''), designIssues);
   }
 };
 
@@ -381,11 +387,36 @@ const cardTitle = (entry: PanelEntry): HTMLDivElement => {
   return title;
 };
 
+const renderPartWarnings = (
+  warnings: readonly { readonly code: string; readonly message: string }[],
+): HTMLElement | undefined => {
+  if (warnings.length === 0) {
+    return undefined;
+  }
+  const list = document.createElement('ul');
+  list.className = 'part-warnings';
+  for (const warning of warnings) {
+    const item = document.createElement('li');
+    const code = document.createElement('code');
+    code.textContent = warning.code;
+    item.append(code, ` ${warning.message}`);
+    list.append(item);
+  }
+  return list;
+};
+
 /** An optional slot the current model doesn't use, with a button to add it. */
-const renderSlotCard = (entry: PanelSlot): HTMLElement => {
+const renderSlotCard = (
+  entry: PanelSlot,
+  warnings: readonly { readonly code: string; readonly message: string }[] = [],
+): HTMLElement => {
   const card = document.createElement('fieldset');
   card.className = 'param-part optional';
   card.append(cardTitle(entry));
+  const warningList = renderPartWarnings(warnings);
+  if (warningList) {
+    card.append(warningList);
+  }
   const row = document.createElement('div');
   row.className = 'param-slot';
   const note = document.createElement('span');
@@ -558,10 +589,17 @@ const renderPrefabPicker = (entry: PanelPart): HTMLElement | undefined => {
 };
 
 /** A present part: an optional Remove button, then every param row. */
-const renderPartCard = (entry: PanelPart): HTMLElement => {
+const renderPartCard = (
+  entry: PanelPart,
+  warnings: readonly { readonly code: string; readonly message: string }[] = [],
+): HTMLElement => {
   const card = document.createElement('fieldset');
   card.className = entry.optional ? 'param-part optional' : 'param-part';
   card.append(cardTitle(entry));
+  const warningList = renderPartWarnings(warnings);
+  if (warningList) {
+    card.append(warningList);
+  }
   if (entry.prefab) {
     const prefab = document.createElement('div');
     prefab.className = entry.prefab.stale ? 'part-prefab stale' : 'part-prefab';
@@ -586,6 +624,12 @@ const renderPartCard = (entry: PanelPart): HTMLElement => {
   }
   return card;
 };
+
+const warningsForPart = (
+  model: ReturnType<typeof buildDesignViewModel> | undefined,
+  partId: string,
+): readonly { readonly code: string; readonly message: string }[] =>
+  model?.kind === 'loaded' ? (model.issuesByPart[partId] ?? []) : [];
 
 const renderParamPanel = () => {
   if (!(current && baseline)) {
@@ -620,7 +664,11 @@ const renderParamPanel = () => {
     nodes.push(reset);
   }
   for (const entry of model) {
-    nodes.push(entry.present ? renderPartCard(entry) : renderSlotCard(entry));
+    nodes.push(
+      entry.present
+        ? renderPartCard(entry, warningsForPart(designModel, entry.id))
+        : renderSlotCard(entry, warningsForPart(designModel, entry.id)),
+    );
   }
   paramPanel.replaceChildren(...nodes);
 };
@@ -930,10 +978,19 @@ saveButton.addEventListener('click', () => {
   if (!editorState) {
     return;
   }
-  const saved = saveDesign(withEditorStatus(editorState, designStatus.value as 'draft' | 'published'), gunDomain);
+  const requestedState = withEditorStatus(editorState, designStatus.value as 'draft' | 'published');
+  const saved = saveDesignForDownload(requestedState, gunDomain);
   if (!saved.ok) {
     saveMessage.textContent = 'This assembly has no template and cannot be saved as a design.';
     return;
+  }
+  const publicationNotice = saved.downgraded
+    ? ' Saved as draft because validation found issues; npm run check:designs is the publish gate.'
+    : '';
+  if (saved.downgraded) {
+    editorState = withEditorStatus(requestedState, 'draft');
+    designStatus.value = 'draft';
+    renderDesignInfo();
   }
   const url = URL.createObjectURL(new Blob([saved.text], { type: 'application/json' }));
   const a = document.createElement('a');
@@ -941,7 +998,7 @@ saveButton.addEventListener('click', () => {
   a.download = `${saved.design.assembly.name.replace(/[^a-z0-9_-]+/gi, '-') || saved.design.template}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  saveMessage.textContent = `Downloaded ${a.download}.`;
+  saveMessage.textContent = `Downloaded ${a.download}.${publicationNotice}`;
 });
 
 // ?fixture=<name> opens a fixture; ?design=<name> loads a curated design;

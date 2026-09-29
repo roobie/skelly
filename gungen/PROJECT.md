@@ -843,14 +843,17 @@ an implementation except the ones that belong to later packages (`Suggest`,
   failures, with the rule id in the message). A param the template doesn't
   list is a designer choice, not a stale one. A clean load has no issues and
   keeps its declared status. Nothing is materialised on load.
-- Unplaced parts: the loader runs the domain rules only when the assembly
-  resolves without structure issues and every part is placed. Otherwise it
-  reports the structure issues and skips the domain rules. `resolve` itself
+- Unplaced parts: the loader runs domain rules on the placed portions even
+  when the assembly has structure issues or unplaced parts; BR ruled these
+  non-blocking lint warnings belong alongside the structure issues. Rules must
+  tolerate partial placement (the gun rules guard their placement reads), and
+  `validate` turns a crashing rule into a `Rule crashed: …` issue. `resolve`
   reports a part not connected to the root as a `structure` issue, unless an
   unfilled required port of that part already explains it. The loader adds
   its own `[structure] … not connected to the root` issue only for parts
-  `resolve` didn't name. Whether domain rules should also run on the placed
-  parts of a broken draft is still open (BR).
+  `resolve` didn't name. Editing and saving drafts remain enabled; publishing
+  an invalid design saves it as a draft with a notice, and `npm run check:designs`
+  remains the hard CI gate for invalid published designs.
 - `validate` turns a rule that throws into one `Rule crashed: …` issue for
   that rule, so one bad rule can't take down the viewer or the live linter.
   Tests that call `rule.check` directly still see the throw.
@@ -961,10 +964,12 @@ on the AR design's magazine, which references `stanag-20` today: a straight
   cannot be saved as a design. Each param and optional-part choice has a lock
   toggle, and each part's prefab picker is restricted to its registry family.
 
-**3.2 The validator as a live linter.** Rule failures are shown on the part
-cards as you edit. Drafts can be invalid; publishing requires a valid design.
-A dedicated check (not `npm run validate`) fails on any invalid published
-design, and runs in CI.
+**3.2 The validator as a live linter (done).** Rule failures are non-blocking
+warnings shown on the cards of named parts as you edit; part-less warnings go
+in the design info panel. Editing and saving drafts work with issues. If a user
+requests publishing while issues remain, the viewer saves as draft and explains
+why. `npm run check:designs` remains the hard gate: it fails on any invalid
+published design and runs in CI.
 
 **3.3 Variant suggester.** `suggest(design, template, domain, effectiveLocks,
 seed, n, budget)`, a pure core function. The caller resolves prefab
@@ -1105,8 +1110,10 @@ Tests shown failing first, as usual. BR judges every visual result.
   seed value) and prefab references; detaching a prefab on edit; adding and
   removing optional parts still works after reopening; a family the
   template doesn't allow is refused.
-- **3.2:** the publish check fails on an invalid published design and passes
-  on an invalid draft.
+- **3.2 (done):** a broken draft still receives domain-rule warnings on its
+  placed parts; the view model maps them to those cards (and routes part-less
+  issues to design info); an invalid draft can be saved; and the publish check
+  fails on an invalid published design while accepting an invalid draft.
 - **3.3:**
   - deterministic per seed;
   - never changes a locked param or optional part;

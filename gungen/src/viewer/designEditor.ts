@@ -1,5 +1,6 @@
 // Pure design-editor state transitions and persistence. No DOM or rendering.
 import type { Design, DesignLocks, DesignOrigin, DesignStatus } from '../core/design.ts';
+import { loadDesignValue } from '../core/designLoader.ts';
 import { resolve } from '../core/resolve.ts';
 import type { Assembly, Domain, PartInstance } from '../core/schema.ts';
 import type { ParamChoice, Template } from '../core/template.ts';
@@ -360,4 +361,21 @@ export const saveDesign = (state: DesignEditorState, domain: Domain): SaveDesign
     ...(state.origin ? { origin: state.origin } : {}),
   };
   return { ok: true, design, text: `${JSON.stringify(design, null, 2)}\n` };
+};
+
+/** Invalid publication requests download as drafts; draft saving is never gated. */
+export const saveDesignForDownload = (
+  state: DesignEditorState,
+  domain: Domain,
+): SaveDesignResult & { readonly downgraded?: boolean } => {
+  const saved = saveDesign(state, domain);
+  if (!saved.ok || saved.design.status !== 'published' || !state.template) {
+    return saved;
+  }
+  const checked = loadDesignValue(saved.design, { domain, template: state.template, prefabs: GUN_PREFABS });
+  if (checked.ok && checked.issues.length === 0) {
+    return saved;
+  }
+  const draft = saveDesign(withEditorStatus(state, 'draft'), domain);
+  return draft.ok ? { ...draft, downgraded: true } : draft;
 };

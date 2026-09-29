@@ -121,6 +121,18 @@ h1 {
   color: var(--fail);
   margin: 4px 0;
 }
+.design-warnings li {
+  color: var(--normal);
+}
+.part-warnings {
+  padding-left: 16px;
+  margin: 4px 0 8px;
+  font-size: 10px;
+}
+.part-warnings li {
+  color: var(--normal);
+  margin: 3px 0;
+}
 .part-prefab {
   margin: 0 0 8px;
   color: var(--muted);
@@ -135,6 +147,9 @@ h1 {
 }
 #status .pass {
   color: var(--pass);
+}
+#status .warning {
+  color: var(--normal);
 }
 #status .fail {
   color: var(--fail);

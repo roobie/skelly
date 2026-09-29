@@ -12,6 +12,7 @@ import {
   editorStateFromDesign,
   editParam,
   saveDesign,
+  saveDesignForDownload,
   setOptionalPart,
   setPartFamily,
   toggleOptionalPartLock,
@@ -86,6 +87,48 @@ describe('design editor: save and reopen', () => {
     }
     const reopened = loadGunDesign(saved.text);
     expect(reopened.ok && reopened.design.locks.optionalParts).toEqual(['sight']);
+  });
+
+  it('downgrades an invalid publish request to a draft', () => {
+    const assembly: Assembly = {
+      ...seedAssembly,
+      parts: {
+        ...seedAssembly.parts,
+        receiver: {
+          ...seedAssembly.parts.receiver!,
+          params: { ...seedAssembly.parts.receiver?.params, feed: 'tube' },
+        },
+      },
+      connections: seedAssembly.connections.filter((connection) => connection.from !== 'receiver.barrel'),
+    };
+    const saved = saveDesignForDownload(createEditorState(ar, assembly, { status: 'published' }), gunDomain);
+    expect(saved).toMatchObject({ ok: true, downgraded: true, design: { status: 'draft' } });
+  });
+
+  it('saves a draft even when live validation reports issues', () => {
+    const assembly: Assembly = {
+      ...seedAssembly,
+      parts: {
+        ...seedAssembly.parts,
+        receiver: {
+          ...seedAssembly.parts.receiver!,
+          params: { ...seedAssembly.parts.receiver?.params, feed: 'tube' },
+        },
+      },
+      connections: seedAssembly.connections.filter((connection) => connection.from !== 'receiver.barrel'),
+    };
+    const saved = saveDesign(createEditorState(ar, assembly, { status: 'draft' }), gunDomain);
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) {
+      throw new Error(saved.reason);
+    }
+    const reopened = loadGunDesign(saved.text);
+    expect(reopened.ok).toBe(true);
+    if (reopened.ok) {
+      expect(reopened.declaredStatus).toBe('draft');
+      expect(reopened.design.status).toBe('draft');
+      expect(reopened.issues.some((issue) => issue.message.startsWith('[feed-match]'))).toBe(true);
+    }
   });
 
   it('refuses to save a build without a template', () => {

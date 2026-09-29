@@ -1,6 +1,12 @@
 import type { DesignLoadResult } from '../core/design.ts';
 import { GUN_PREFABS, type PrefabCatalogue } from '../gun/prefabs.ts';
 
+export interface DesignIssueView {
+  readonly code: string;
+  readonly message: string;
+  readonly parts: readonly string[];
+}
+
 export interface DesignPrefabView {
   readonly label: string;
   readonly fixedParams: Readonly<Record<string, string>>;
@@ -22,7 +28,9 @@ export type DesignViewModel =
       readonly template: string;
       readonly declaredStatus: string;
       readonly loadedStatus: string;
-      readonly issues: readonly { readonly code: string; readonly message: string }[];
+      readonly issues: readonly DesignIssueView[];
+      readonly issuesByPart: Readonly<Record<string, readonly DesignIssueView[]>>;
+      readonly infoIssues: readonly DesignIssueView[];
       readonly locks: {
         readonly params: Readonly<Record<string, readonly string[]>>;
         readonly optionalParts: readonly string[];
@@ -64,13 +72,32 @@ export const buildDesignViewModel = (
     };
   }
 
+  const issues: DesignIssueView[] = result.issues.map(({ code, message, parts }) => ({
+    code,
+    message,
+    parts: parts ?? [],
+  }));
+  const issuesByPart: Record<string, DesignIssueView[]> = {};
+  for (const issue of issues) {
+    for (const part of issue.parts) {
+      const partIssues = issuesByPart[part];
+      if (partIssues) {
+        partIssues.push(issue);
+      } else {
+        issuesByPart[part] = [issue];
+      }
+    }
+  }
+
   return {
     kind: 'loaded',
     name: result.design.assembly.name,
     template: result.design.template,
     declaredStatus: result.declaredStatus,
     loadedStatus: result.design.status,
-    issues: result.issues.map(({ code, message }) => ({ code, message })),
+    issues,
+    issuesByPart,
+    infoIssues: issues.filter((issue) => issue.parts.length === 0),
     locks: result.design.locks,
     prefabsByPart,
   };
