@@ -151,9 +151,15 @@ try {
     const canvas = document.querySelector('canvas');
     let locked = false;
     window.__pointerCalls = { request: 0, exit: 0 };
+    window.__rejectNextPointerLock = false;
     Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
     canvas.requestPointerLock = () => {
       window.__pointerCalls.request++;
+      if (window.__rejectNextPointerLock) {
+        window.__rejectNextPointerLock = false;
+        setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
+        return Promise.reject(new Error('pointer lock refused by contract stub'));
+      }
       locked = true;
       document.dispatchEvent(new Event('pointerlockchange'));
       return Promise.resolve();
@@ -613,6 +619,28 @@ try {
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
     'locked cursor click on continue resumes play',
+  );
+
+  await evaluate('window.__setPointerLocked(false)');
+  await delay(100);
+  await evaluate(`(() => {
+    window.__rejectNextPointerLock = true;
+    document.querySelector('#go').click();
+  })()`);
+  await delay(100);
+  assert.equal(await evaluate("document.querySelector('#overlay').hidden"), false, 'refused lock leaves the menu open');
+  await evaluate('window.__setPointerLocked(true)');
+  await delay(100);
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    false,
+    'a later unrelated lock does not consume the refused resume intent',
+  );
+  await evaluate("document.querySelector('#go').click()");
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'a fresh resume click closes the menu',
   );
   process.stdout.write(
     'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',
