@@ -117,7 +117,9 @@ compression on and shows a progress bar and the game time passing.
 
 ### Pause
 
-Esc pauses everything. The inventory screen does **not** pause the game. That
+The pause card pauses everything. F9 opens it (the main menu), and so does
+releasing the mouse: Esc is the browser's key, and it only unlocks the pointer,
+which brings the card up. The inventory screen does **not** pause the game. That
 tension is intentional. A "relaxed" setting that pauses inside menus can come
 later as an accessibility option.
 
@@ -148,7 +150,7 @@ catches up in closed form where it can, and in coarse steps otherwise:
   | System | Rate |
   | --- | --- |
   | Player physics | 60 Hz |
-  | Active AI | 10 Hz |
+  | Active AI | 20 Hz |
   | Background AI | 2 Hz |
   | Needs, fire, power | 1 Hz |
   | Region map (hordes, evolution) | once per game minute |
@@ -512,7 +514,7 @@ worse the world gets.
 
   | Level | Where | Simulation |
   | --- | --- | --- |
-  | Active | Within about 48 m | Full AI at 10 Hz, per-frame physics |
+  | Active | Within about 48 m | Full AI at 20 Hz, per-frame physics |
   | Background | Loaded chunks further away | 2 Hz, steering along a shared flow field |
   | Abstract | Unloaded chunks | Hordes moving as groups on the region map |
 
@@ -632,7 +634,7 @@ decoration.
 
 - **HTML and CSS** over the canvas. Dense, legible, and keyboard-first, with
   the mouse also fully supported.
-- The world never pauses for UI (except the Esc menu). UI should make actions
+- The world never pauses for UI (except the F9 menu). UI should make actions
   fast: search, filters, "take all food", and repeating the last move.
 - Every number the simulation uses (weight, time, condition, noise) can be seen
   somewhere in the UI, **on request**: on surfaces the player opens (inspecting an
