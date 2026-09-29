@@ -1,8 +1,8 @@
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
+import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type ZombieRegion } from '../core/zombieRegions.ts';
 import type { Zombie } from '../core/zombies.ts';
-import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart } from './figure.ts';
 import { StepOffset } from './stepOffset.ts';
 
 type Part = FigurePart;
@@ -16,6 +16,14 @@ interface RenderZombie {
   verticalOffset: number;
 }
 const PARTS: readonly Part[] = FIGURE_PARTS;
+const REGION_FOR_PART: Readonly<Record<Part, ZombieRegion>> = {
+  body: 'torso',
+  head: 'head',
+  leftArm: 'leftArm',
+  rightArm: 'rightArm',
+  leftLeg: 'leftLeg',
+  rightLeg: 'rightLeg',
+};
 
 /** Six instanced boxes, never one draw object per shambler. */
 export class ZombieMeshes {
@@ -79,10 +87,11 @@ export class ZombieMeshes {
 
   private syncPart(part: Part, zombies: RenderZombie[]): void {
     const mesh = this.meshes.get(part)!;
-    mesh.count = Math.min(zombies.length, mesh.instanceMatrix.count);
+    const visible = zombies.filter(({ zombie }) => zombie.regions[REGION_FOR_PART[part]] > 0);
+    mesh.count = Math.min(visible.length, mesh.instanceMatrix.count);
     const s = this.blockSize;
     for (let i = 0; i < mesh.count; i++) {
-      const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = zombies[i]!;
+      const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
       const box = FIGURE_BOXES[part];
       const [x, y, z] = position;
       const partYaw = yaw + (part === 'head' ? headYaw : 0);

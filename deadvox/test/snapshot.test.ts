@@ -698,7 +698,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 1,
+  schemaVersion: 2,
   generators: { worldgen: 'worldgen-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -803,6 +803,24 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
+    const source = createRuntime();
+    const id = source.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
+    const zombie = source.zombies.store.get(id)!;
+    zombie.regions.leftArm = 0;
+    zombie.regions.head = 37;
+    zombie.regions.torso = 44;
+
+    const snapshot = capture(source);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    const restored = loaded.zombies.store.get(id)!;
+
+    expect(restored.regions).toEqual(zombie.regions);
+    expect(capture(loaded)).toEqual(decoded.snapshot);
+  });
+
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
     const source = createRuntime();
     source.rest.start('rest');
@@ -988,7 +1006,7 @@ describe('canonical save format', () => {
     badMagic.magic = 'NOT_A_SAVE';
     malformed.push({ name: 'magic', bytes: sealEnvelope(badMagic), message: 'Invalid value' });
     const badSchema = parseEnvelope(valid);
-    badSchema.schemaVersion = 2;
+    badSchema.schemaVersion = 1;
     malformed.push({ name: 'schema version', bytes: sealEnvelope(badSchema), message: 'schema mismatch' });
 
     const badRle = parseEnvelope(valid);

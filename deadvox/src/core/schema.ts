@@ -306,7 +306,14 @@ export const ZOMBIE_ABILITIES = [
 export const ZombieSchema = strictObject({
   id: Id,
   name: Name,
-  health: Positive,
+  regions: strictObject({
+    head: Positive,
+    torso: Positive,
+    leftArm: Positive,
+    rightArm: Positive,
+    leftLeg: Positive,
+    rightLeg: Positive,
+  }),
   /** Metres per second. */
   speed: strictObject({ wander: Positive, chase: Positive }),
   /** Metres advanced by one half-cycle of the leg gait. */

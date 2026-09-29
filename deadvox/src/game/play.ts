@@ -25,6 +25,7 @@ import { stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
+import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import { FISTS_MELEE, type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
@@ -70,6 +71,13 @@ const USE_REACH = 2;
 const CHEST = 1;
 const QUICK_KEY = /^Digit([1-5])$/;
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
+const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
+  torso: 'shambler_torso',
+  leftArm: 'shambler_left_arm',
+  rightArm: 'shambler_right_arm',
+  leftLeg: 'shambler_left_leg',
+  rightLeg: 'shambler_right_leg',
+};
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
@@ -238,6 +246,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         return registry.blocks[block]?.id ?? 'unknown';
       });
       playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
+    },
+    onSevered: (zombie, region) => {
+      const pos: Vec3 = [
+        Math.floor(zombie.body.pos[0]),
+        Math.floor(zombie.body.pos[1]),
+        Math.floor(zombie.body.pos[2]),
+      ];
+      inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
     },
     onDeath: (zombie) => {
       const table = zombie.type.loot;
