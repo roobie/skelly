@@ -798,7 +798,7 @@ export const lower: PartFamily = {
         };
       case 'thumbhole': {
         const frame = magazineWellFrame(
-          -14.75,
+          -15.25,
           conventionalWell.port.pos[0] + MAGAZINE_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE,
           conventionalWell.port.pos[0],
         );
@@ -1751,18 +1751,15 @@ export const stock: PartFamily = {
       required: true,
     };
     if (params.style === 'thumbhole') {
-      const stockDrop = 1.5;
       const combTop = -1.5;
       const sideZ: readonly [number, number] = [-1.5, 1.5];
       const gripFront = 4.25;
       const gripRear = 0.75;
       const buttFront = -0.72 * len;
       const openingRear = gripRear - 4;
-      const openingBottom = -0.34 * len;
-      const stockBottom = -0.42 * len;
-      const gripTop = -4.5;
-      const forwardBarBottom = -4.5;
-      const forwardBarTop = -4;
+      const openingBottom = -7.48;
+      const stockBottom = -9.24;
+      const gripTop = -4;
       const rect = ({
         id,
         x: [x0, x1],
@@ -1787,8 +1784,6 @@ export const stock: PartFamily = {
         solids: [
           rect({ id: 'thumbhole-top', x: [buttFront, 0], y: [gripTop, combTop] }),
           rect({ id: 'thumbhole-rear-post', x: [buttFront, openingRear], y: [openingBottom, gripTop] }),
-          rect({ id: 'wrist-drop', x: [-0.25, 0], y: [forwardBarBottom, -2 - stockDrop] }),
-          rect({ id: 'thumbhole-forward-bar', x: [0, gripFront], y: [forwardBarBottom, forwardBarTop] }),
           rect({ id: 'grip', x: [gripRear, gripFront], y: [stockBottom, gripTop] }),
           rect({ id: 'thumbhole-bottom', x: [buttFront, gripRear], y: [stockBottom, openingBottom] }),
           rect({ id: 'butt', x: [-len, buttFront], y: [stockBottom, combTop] }),

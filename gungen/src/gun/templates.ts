@@ -202,11 +202,21 @@ export const boltRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
-    { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
+    {
+      id: 'lower',
+      family: 'lower',
+      params: {
+        layout: {
+          when: { part: 'stock', param: 'style', equals: 'thumbhole' },
+          onMatch: 'thumbhole',
+          onMismatch: 'conventional',
+        },
+      },
+    },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.9 },
     { id: 'magazine', family: 'magazine', params: { length: 'S' } },
-    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
     { id: 'sight', family: 'sight', chance: 0.8 },
   ],
   connections: [

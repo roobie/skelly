@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { generate } from '../src/core/generate.ts';
 import { applyPoint, type Transform, type Vec3 } from '../src/core/math.ts';
 import type { Assembly, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -35,10 +36,13 @@ const bounds = (solid: Solid): readonly (readonly [number, number])[] =>
 
 const boundsX = (solid: Solid): readonly [number, number] => bounds(solid)[0]!;
 
-const worldBoundsX = (solids: readonly Solid[], transform: Transform): readonly [number, number] => {
-  const xs = solids.flatMap((solid) => vertices(solid).map((point) => applyPoint(transform, point)[0]));
-  return [Math.min(...xs), Math.max(...xs)];
+const worldBounds = (solids: readonly Solid[], transform: Transform, axis: 0 | 1): readonly [number, number] => {
+  const values = solids.flatMap((solid) => vertices(solid).map((point) => applyPoint(transform, point)[axis]));
+  return [Math.min(...values), Math.max(...values)];
 };
+
+const worldBoundsX = (solids: readonly Solid[], transform: Transform): readonly [number, number] =>
+  worldBounds(solids, transform, 0);
 
 const solidsTouch = (a: Solid, b: Solid): boolean =>
   bounds(a).every(([a0, a1], axis) => {
@@ -124,6 +128,7 @@ describe('thumbhole stock and AWM design', () => {
     expect(arGap).toBeCloseTo(0, 6);
     const boltOverride = variant('archetype-bolt-rifle', (draft) => {
       draft.parts.stock!.params!.style = 'thumbhole';
+      draft.parts.lower!.params!.layout = 'thumbhole';
     });
     for (const assembly of [design.assembly, boltOverride]) {
       expect(validate(assembly, gunDomain).issues).toEqual([]);
@@ -135,11 +140,64 @@ describe('thumbhole stock and AWM design', () => {
 
   it('allows a thumbhole on the existing bolt-rifle template without a separate grip', () => {
     const stockChoice = boltRifle.slots.find((slot) => slot.id === 'stock')?.params?.style;
+    const lowerChoice = boltRifle.slots.find((slot) => slot.id === 'lower')?.params?.layout;
     expect(stockChoice).toContain('thumbhole');
+    expect(lowerChoice).toEqual({
+      when: { part: 'stock', param: 'style', equals: 'thumbhole' },
+      onMatch: 'thumbhole',
+      onMismatch: 'conventional',
+    });
     const existing = variant('archetype-bolt-rifle', (draft) => {
       draft.parts.stock!.params!.style = 'thumbhole';
+      draft.parts.lower!.params!.layout = 'thumbhole';
     });
     expect(validate(existing, gunDomain).issues).toEqual([]);
+  });
+
+  it('keeps every size at least the former L height while varying buttstock length', () => {
+    const lengths = { S: 10, M: 16, L: 22 } as const;
+    for (const [size, length] of Object.entries(lengths) as [keyof typeof lengths, number][]) {
+      const stock = FAMILIES.stock!.build({ length: size, style: 'thumbhole' });
+      const all = stock.solids.flatMap(vertices);
+      const ys = all.map(([, y]) => y);
+      expect(Math.max(...ys) - Math.min(...ys), size).toBe(7.74);
+      const butt = stock.solids.find((solid) => solid.id === 'butt')!;
+      expect(Math.min(...vertices(butt).map(([x]) => x)), size).toBe(-length);
+      expect(stock.ports.find((port) => port.id === 'front')?.pos, size).toEqual([0, 0, 0]);
+    }
+  });
+
+  it('extends the thumbhole lower to meet the grip post without intervening stock', () => {
+    for (const assembly of [
+      design.assembly,
+      variant('archetype-bolt-rifle', (draft) => {
+        draft.parts.stock!.params!.style = 'thumbhole';
+        draft.parts.lower!.params!.layout = 'thumbhole';
+      }),
+    ]) {
+      const report = validate(assembly, gunDomain);
+      const stockId = Object.keys(assembly.parts).find((id) => assembly.parts[id]!.family === 'stock')!;
+      const lowerId = Object.keys(assembly.parts).find((id) => assembly.parts[id]!.family === 'lower')!;
+      const stockDef = report.resolved.defs.get(stockId)!;
+      const lowerDef = report.resolved.defs.get(lowerId)!;
+      const grip = stockDef.solids.find((solid) => solid.id === 'grip')!;
+      const lowerFrame = lowerDef.solids.filter((solid) => solid.id.startsWith('frame-'));
+      expect(worldBoundsX([grip], report.resolved.placed.get(stockId)!)[0]).toBe(
+        worldBoundsX(lowerFrame, report.resolved.placed.get(lowerId)!)[0],
+      );
+      expect(worldBounds([grip], report.resolved.placed.get(stockId)!, 1)[1]).toBe(
+        worldBounds(lowerFrame, report.resolved.placed.get(lowerId)!, 1)[0],
+      );
+      expect(stockDef.solids.some((solid) => inside(solid, 2, -3.75, 0))).toBe(false);
+    }
+  });
+
+  it('generates a thumbhole lower only with a thumbhole bolt-rifle stock', () => {
+    for (let seed = 1; seed <= 32; seed += 1) {
+      const assembly = generate(boltRifle, gunDomain, seed);
+      const thumbhole = assembly.parts.stock?.params?.style === 'thumbhole';
+      expect(assembly.parts.lower?.params?.layout === 'thumbhole').toBe(thumbhole);
+    }
   });
 
   it('validates the AWM design with its thumbhole stock as the only grip', () => {
