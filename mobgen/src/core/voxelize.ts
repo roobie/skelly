@@ -268,13 +268,27 @@ const marrowSegments = (body: Body): { readonly bone: string; readonly a: Vec3; 
 
 /** Rasterizes every bone's marrow as forced-filled, forced-owned voxels: the skeleton is always one
  * connected structure, however thin the flesh around a joint is or however much of it was carved away
- * (a marrow voxel a carve removed is flagged `exposedBone`, painted as bone rather than skin/material). */
+ * (a marrow voxel a carve removed is flagged `exposedBone`, painted as bone rather than skin/material).
+ * When sampled points cross a voxel edge on multiple axes at once, insert the intervening cells so the
+ * digital bone remains 6-connected instead of leaving diagonal-only contacts. */
 const applyMarrow = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, number>): void => {
   const { dims, origin, size } = grid;
   for (const seg of marrowSegments(body)) {
     const bi = boneIndexById.get(seg.bone)!;
     const segLen = length([seg.b[0] - seg.a[0], seg.b[1] - seg.a[1], seg.b[2] - seg.a[2]]);
     const steps = Math.max(1, Math.ceil(segLen / (size / 3)));
+    const fill = (cell: readonly [number, number, number]): void => {
+      if (!inBounds(dims, ...cell)) {
+        return;
+      }
+      const idx = cellIndex(dims, ...cell);
+      if (grid.carvedMask[idx]) {
+        grid.exposedBone[idx] = 1;
+      }
+      grid.filled[idx] = 1;
+      grid.owner[idx] = bi + 1;
+    };
+    let previous: [number, number, number] | undefined;
     for (let s = 0; s <= steps; s++) {
       const t = s / steps;
       const p: Vec3 = [
@@ -282,16 +296,18 @@ const applyMarrow = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, 
         seg.a[1] + (seg.b[1] - seg.a[1]) * t,
         seg.a[2] + (seg.b[2] - seg.a[2]) * t,
       ];
-      const [i, j, k] = nearestIndex(p, size, origin);
-      if (!inBounds(dims, i, j, k)) {
-        continue;
+      const cell = [...nearestIndex(p, size, origin)] as [number, number, number];
+      if (previous) {
+        const bridge = [...previous] as [number, number, number];
+        for (const axis of [0, 1, 2] as const) {
+          while (bridge[axis] !== cell[axis]) {
+            bridge[axis] += Math.sign(cell[axis] - bridge[axis]);
+            fill(bridge);
+          }
+        }
       }
-      const idx = cellIndex(dims, i, j, k);
-      if (grid.carvedMask[idx]) {
-        grid.exposedBone[idx] = 1;
-      }
-      grid.filled[idx] = 1;
-      grid.owner[idx] = bi + 1;
+      fill(cell);
+      previous = cell;
     }
   }
 };
@@ -324,10 +340,16 @@ const directlyTouches = (grid: Grid, cells: readonly number[], childIdx: number,
       const ni = i + di;
       const nj = j + dj;
       const nk = k + dk;
-      if (ni >= 0 && ni < nx && nj >= 0 && nj < ny && nk >= 0 && nk < nz) {
-        if (grid.owner[cellIndex(grid.dims, ni, nj, nk)] === parentIdx + 1) {
-          return true;
-        }
+      if (
+        ni >= 0 &&
+        ni < nx &&
+        nj >= 0 &&
+        nj < ny &&
+        nk >= 0 &&
+        nk < nz &&
+        grid.owner[cellIndex(grid.dims, ni, nj, nk)] === parentIdx + 1
+      ) {
+        return true;
       }
     }
   }
@@ -355,20 +377,20 @@ interface JointRepair {
   readonly sign: 1 | -1;
 }
 
-/** Forces one cell to each side of the joint along its dominant axis: one owned by the child, one by
- * the parent, guaranteeing 6-neighbour adjacency regardless of how the marrow rasterized. */
+/** Assigns the joint cell to the child and its face-neighbour toward the parent to the parent,
+ * guaranteeing actual 6-neighbour adjacency regardless of how the marrow rasterized. */
 const forceJointCells = (grid: Grid, repair: JointRepair): void => {
   const { dims } = grid;
   const [ci, cj, ck] = repair.cell;
-  const off: [number, number, number] = [0, 0, 0];
-  off[repair.axis] = repair.sign;
-  const childCell: readonly [number, number, number] = [ci + off[0], cj + off[1], ck + off[2]];
-  const parentCell: readonly [number, number, number] = [ci - off[0], cj - off[1], ck - off[2]];
-  if (inBounds(dims, ...childCell)) {
-    const idx = cellIndex(dims, ...childCell);
-    grid.filled[idx] = 1;
-    grid.owner[idx] = repair.childIdx + 1;
-  }
+  const jointIdx = cellIndex(dims, ci, cj, ck);
+  grid.filled[jointIdx] = 1;
+  grid.owner[jointIdx] = repair.childIdx + 1;
+
+  const parentCell: readonly [number, number, number] = [
+    ci - (repair.axis === 0 ? repair.sign : 0),
+    cj - (repair.axis === 1 ? repair.sign : 0),
+    ck - (repair.axis === 2 ? repair.sign : 0),
+  ];
   if (inBounds(dims, ...parentCell)) {
     const idx = cellIndex(dims, ...parentCell);
     grid.filled[idx] = 1;

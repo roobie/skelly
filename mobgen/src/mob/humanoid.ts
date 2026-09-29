@@ -309,8 +309,8 @@ const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * vo
 // a typical actor's previous default-voxel head size without using LOD voxel size.
 const FACE_HEIGHT_RATIO = 1 / 43;
 
-/** Face landmarks in voxel units, shared between buildFlesh (which shapes the head/jaw around them)
- * and buildClothes (which paints/carves eyes and mouth onto them) so the two can never drift apart. */
+/** Metric face dimensions with grid-snapped landmarks, shared between buildFlesh (which shapes the
+ * head/jaw around them) and buildClothes (which paints/carves eyes and mouth onto them). */
 interface FaceLayout {
   readonly voxel: number;
   /** Metric face scale: height × headScale × calibrated dimensionless ratio. */
@@ -349,7 +349,11 @@ const buildFaceLayout = (layout: JointLayout, p: HumanoidParams, voxelSize: numb
   const browHalf: Vec3 = [1.7 * faceScale, 0.35 * faceScale, 0.55 * faceScale];
   const browCenter: Vec3 = [0, browY, frontZ - 0.5 * faceScale];
   const noseBase: Vec3 = [0, snapRow(eyeY - 1.1 * faceScale, v), frontZ];
-  const noseTip: Vec3 = add(noseBase, [0, 0.3 * faceScale, -(0.55 * faceScale + p.noseLength)]);
+  const noseTip: Vec3 = add(noseBase, [
+    0,
+    0.3 * faceScale,
+    -(0.55 * faceScale + p.noseLength * layout.height * p.headScale),
+  ]);
   const jawCenter = lerp3(layout.jaw.head, layout.jaw.tail, 0.65);
   const jawRadii: Vec3 = [1.7 * faceScale, 1.3 * faceScale, 1.6 * faceScale];
   const mouthY = snapRow(noseBase[1] - 1.1 * faceScale, v);
@@ -418,7 +422,7 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
   features.push(ellipsoidFeature('head', face.headCenter, face.skull));
   features.push(boxFeature('head', face.faceCenter, face.faceHalf, 0.45 * face.faceHalf[2]));
 
-  // Brow ridge: overhangs one voxel forward, right above the eyes.
+  // Brow ridge: a metric half-face-scale overhang, right above the eyes.
   features.push(boxFeature('head', face.browCenter, face.browHalf, 0.15 * face.browHalf[2]));
 
   // Jaw/chin: weighted toward the chin (jaw.tail) rather than the hinge, so the mass — and so the
@@ -427,8 +431,8 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
   // visible step, no special-casing needed.
   features.push(ellipsoidFeature('jaw', face.jawCenter, face.jawRadii));
 
-  // Nose: one voxel forward on the midline, between the eyes and the mouth. noseLength adds to a base
-  // bump so even the shortest sampled nose still reads; a little extra Y makes it 2 voxels tall. A
+  // Nose: a height-scaled bump on the midline, between the eyes and the mouth. noseLength is a
+  // dimensionless height fraction that adds to a base bump; a little extra Y makes it taller. A
   // larger-than-default blend, like the ear below: at extreme hunch + headTilt the tip (thin, ~half a
   // voxel) can sit just far enough from the skull/face-plate surface that the default smin leaves it
   // its own disconnected island (see mobgen bugfix — a `floaters` failure traced to exactly this).
@@ -461,6 +465,9 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
     }
   }
 
+  // At coarse LOD the forearm and hand flesh is thinner than one cell and can rasterize as floating
+  // islands. Their marrow remains, preserving the skeleton/attachment contract while the detail vanishes.
+  const keepDistalFlesh = face.voxel <= 0.06;
   for (const side of SIDES) {
     const arm = layout.arm[side];
     const leg = layout.leg[side];
@@ -494,20 +501,25 @@ const buildFlesh = (layout: JointLayout, p: HumanoidParams, face: FaceLayout): F
     features.push(ellipsoidFeature('chest', shoulderMid, [bridgeR, bridgeR, bridgeR]));
     features.push(
       capsuleFeature(`upperArm.${side}`, arm.shoulder, arm.elbow, [raUpper, rbUpper]),
-      capsuleFeature(`forearm.${side}`, arm.elbow, arm.wrist, [raFore, rbFore]),
+      ...(keepDistalFlesh ? [capsuleFeature(`forearm.${side}`, arm.elbow, arm.wrist, [raFore, rbFore])] : []),
       // The Y radius must clear half of handLen (0.045h, see makeArm) regardless of girth, or the
       // fingertip's forced marrow point sits outside the flesh and floats disconnected.
-      ellipsoidFeature(`hand.${side}`, mid(arm.wrist, arm.handTip), [
-        0.028 * h * g,
-        0.05 * h + 0.03 * h * g,
-        0.022 * h * g,
-      ]),
+      ...(keepDistalFlesh
+        ? [
+            ellipsoidFeature(`hand.${side}`, mid(arm.wrist, arm.handTip), [
+              0.028 * h * g,
+              0.05 * h + 0.03 * h * g,
+              0.022 * h * g,
+            ]),
+          ]
+        : []),
       capsuleFeature(`thigh.${side}`, thighTop, leg.knee, [raThigh, rbThigh]),
       capsuleFeature(`shin.${side}`, leg.knee, leg.ankle, [raShin, rbShin]),
       footFeature(`foot.${side}`, [leg.ankle, leg.toe], [h, g]),
       roundJoint(`upperArm.${side}`, arm.shoulder, raUpper),
-      roundJoint(`forearm.${side}`, arm.elbow, raFore),
-      roundJoint(`hand.${side}`, arm.wrist, 0.032 * h * g),
+      ...(keepDistalFlesh
+        ? [roundJoint(`forearm.${side}`, arm.elbow, raFore), roundJoint(`hand.${side}`, arm.wrist, 0.032 * h * g)]
+        : []),
       // Smaller than raThigh: it only needs to bridge the (small, fixed) gap between the true hip
       // pivot and the inset thighTop above so the joint hides through the walk cycle — sized to the
       // pivot itself, it would undo the trim above by flaring back out to the old width.
@@ -600,13 +612,9 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
     });
   }
 
-  // Eyes: carved into a socket at every voxel size now (mobgen user feedback: at 4+ cm voxels the old
-  // "carve only ≤3.5 cm" rule meant eyes were never more than an invisible paint smear — see
-  // PROJECT.md's Paint-and-carve row). x = ±v is an exact voxel column (worldPosition uses plain
-  // multiples of v for X), so both sockets land symmetrically regardless of the grid's own offset.
-  // Carve one voxel deep, then paint 'eye' one voxel further in — the socket's bottom — rather than at
-  // the carve's own centre: a paint sphere centred there would need a radius of a full voxel to reach
-  // past the hole it just cut, big enough to bleed back out onto the surrounding face.
+  // Eye socket dimensions are metric; their centers use grid-snapped rows/columns, and the paint is
+  // placed one voxel forward from the carve center. Fine sockets may vanish at coarse LOD. x = ±v is an
+  // exact voxel column (worldPosition uses plain multiples of v for X), so the eyes stay symmetric.
   const v = face.voxel;
   for (const side of SIDES) {
     const eyeCenter: Vec3 = [sideSign(side) * v, face.eyeY, face.frontZ];
@@ -627,8 +635,8 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
     });
   }
 
-  // Mouth: a dark line painted at the jaw/head boundary, always present so a closed mouth still reads;
-  // jawOpen carves it into an open one and paints 'mouth' over what that exposes.
+  // Mouth: a metric dark line at the jaw/head boundary; jawOpen carves it into an open mouth. Like other
+  // sub-voxel face details, it may vanish at coarse LOD.
   const mouthHalf: Vec3 = [1.3 * face.scale, 0.32 * face.scale, 0.45 * face.scale];
   features.push({
     bone: 'jaw',
@@ -654,7 +662,11 @@ const buildClothes = (layout: JointLayout, p: HumanoidParams, face: FaceLayout):
     });
     // Metric padding follows the face scale too; padding upward is smaller so paint does not tint
     // face-plate voxels the jaw carve never reached.
-    const paintHalf: Vec3 = [openHalf[0] + 0.5 * face.scale, openHalf[1] + 0.25 * face.scale, openHalf[2] + 0.5 * face.scale];
+    const paintHalf: Vec3 = [
+      openHalf[0] + 0.5 * face.scale,
+      openHalf[1] + 0.25 * face.scale,
+      openHalf[2] + 0.5 * face.scale,
+    ];
     features.push({
       bone: 'jaw',
       op: 'paint',
