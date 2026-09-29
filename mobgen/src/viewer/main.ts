@@ -15,17 +15,19 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { generate, type Realized, realize } from '../core/generate.ts';
+import { generate, generateValid, type Realized, realize } from '../core/generate.ts';
 import { IDENTITY_POSE, type Pose } from '../core/pose.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import {
   advanceClock,
+  createGaitCache,
   footRestExtents,
   type GaitClock,
   INITIAL_CLOCK,
   type LegGeometry,
   legGeometryFor,
+  type WalkActor,
   walkPose,
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
@@ -116,6 +118,8 @@ interface Loaded {
   readonly params: HumanoidParams;
   readonly extents: ReturnType<typeof footRestExtents>;
   readonly legGeometry: LegGeometry;
+  /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
+  readonly walkActor: WalkActor;
 }
 
 let current: Loaded | undefined;
@@ -237,7 +241,15 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   actor.applyPose(IDENTITY_POSE);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
-  current = { genome, realized, actor, params: genome.params as HumanoidParams, extents, legGeometry };
+  const params = genome.params as HumanoidParams;
+  const walkActor: WalkActor = {
+    bones: realized.body.bones,
+    extents,
+    params,
+    seed: genome.seed,
+    cache: createGaitCache(),
+  };
+  current = { genome, realized, actor, params, extents, legGeometry, walkActor };
   clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
@@ -266,19 +278,12 @@ const generateAndLoad = (step = 0): void => {
 
   if (onlyValid.checked) {
     const dir = step < 0 ? -1 : 1;
-    let found: { genome: Genome; realized: Realized } | undefined;
-    for (let i = 0; i < 100 && !found; i++) {
-      const genome = generate(template, seed + dir * i, overrides);
-      const realized = realize(genome);
-      if (realized.report.ok) {
-        found = { genome, realized };
-      }
-    }
+    const found = generateValid(template, seed, { overrides, direction: dir });
     if (!found) {
       status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
       return;
     }
-    ({ seed } = found.genome);
+    ({ seed } = found);
     seedInput.value = String(seed);
     load(found.genome, found.realized, 0);
     return;
@@ -394,6 +399,7 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     geomL: current.legGeometry,
     speed,
     seed: current.genome.seed,
+    cache: current.walkActor.cache,
   });
   gridZ = (gridZ + speed * dt) % 0.5;
   groundGroup.position.z = gridZ;
@@ -430,12 +436,7 @@ renderer.setAnimationLoop(() => {
     const clip = ATTACK_CLIPS.LUNGE_GRAB!;
     advanceAttack(dt, clip.duration);
 
-    const actor = {
-      bones: current.realized.body.bones,
-      extents: current.extents,
-      params: current.params,
-      seed: current.genome.seed,
-    };
+    const actor = current.walkActor;
     const basePose: Pose = walking ? walkPose(actor, clock, speed) : IDENTITY_POSE;
     const pose = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
     current.actor.applyPose(pose);

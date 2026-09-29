@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { build, generateValid } from '../src/core/generate.ts';
+import { generateValid } from '../src/core/generate.ts';
 import { applyPoint, type Mat3 } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
-import { voxelize } from '../src/core/voxelize.ts';
 import {
   advanceClock,
   corners,
+  createGaitCache,
   footRestExtents,
   type GaitBasis,
   type GaitClock,
@@ -25,8 +25,7 @@ const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase (PROJECT.md)
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;
   const found = generateValid(t, seed)!;
-  const body = build(found.genome);
-  const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
+  const { body, voxels } = found.realized;
   const extents = footRestExtents(body.bones, voxels);
   return { body, voxels, extents, params: found.genome.params as HumanoidParams, seed: found.genome.seed };
 };
@@ -200,7 +199,7 @@ describe('walkPose', () => {
           // forward/back. 0.6 voxel was the pre-shamble margin; loosened to 0.8 because a lurch step's
           // longer-than-normal length very slightly outpaces the heel/toe roll's pivot cancellation
           // during its own roll window (worst case: brute, whose bigger legLen means bigger absolute
-          // lurch lengths) — a real, small residual, not a snap (see mobgen's report).
+          // lurch lengths) — a real, small residual, not a snap (its measured size was not recorded).
           expect(worstHeelDrift).toBeLessThan(0.8 * found.voxels.size);
           expect(worstToeDrift).toBeLessThan(0.8 * found.voxels.size);
         });
@@ -436,7 +435,7 @@ describe('strideLength', () => {
   });
 
   it('2.8 m/s (deadvox chase): the bob-budget cap is saturated well before this, so cadence carries it', () => {
-    const cycleAtCap = strideLength(params, geom, 2.1); // already past the cap (see mobgen's report)
+    const cycleAtCap = strideLength(params, geom, 2.1); // already past the cap (the cap binds below 2.1 m/s for the geometry under test)
     const cycle = strideLength(params, geom, 2.8);
     expect(cycle).toBeCloseTo(cycleAtCap, 6);
     const stepsPerMin = ((2 * 2.8) / cycle) * 60;
@@ -460,31 +459,59 @@ describe('strideLength', () => {
   });
 });
 
-describe('strideCap caching (mobgen/CHALLENGES.md §1: keyed on params, must not go stale on a different body)', () => {
-  // Same params object throughout — the exact scenario a stale cache would miss: a voxel-size override,
-  // a re-realize, or (here) simply two unrelated bodies that happen to share a params object.
-  const params = { strideFactor: 1, footLift: 0.04 } as HumanoidParams;
+describe('strideCap/step-plan caching (mobgen/CHALLENGES.md §1: per-actor GaitCache, must not go stale on a different body)', () => {
+  // One cache throughout — the exact scenario a stale cache would miss: a voxel-size override, a
+  // re-realize, or (here) simply two unrelated bodies handed the same cache.
   const geomA = { legLen: 0.75, hipY: 0.89, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 };
   const geomB = { legLen: 1.05, hipY: 1.19, ankleRestY: 0.14, heelLen: 0.104, toeLen: 0.271 }; // longer leg only
 
-  it('gives different (and larger, for the longer leg) caps for two geometries sharing one params object', () => {
-    const capA = strideCap(params, geomA);
-    const capB = strideCap(params, geomB);
+  it('gives different (and larger, for the longer leg) caps for two geometries sharing one cache', () => {
+    const cache = createGaitCache();
+    const capA = strideCap(geomA, cache);
+    const capB = strideCap(geomB, cache);
     expect(capB).toBeGreaterThan(capA);
   });
 
   it("a later call for the first geometry recomputes instead of returning the second geometry's cached value", () => {
-    const capA = strideCap(params, geomA);
-    strideCap(params, geomB); // overwrites params' single cache slot with geomB's entry
-    const capAAgain = strideCap(params, geomA); // must notice geomA no longer matches what's cached
+    const cache = createGaitCache();
+    const capA = strideCap(geomA, cache);
+    strideCap(geomB, cache); // overwrites the cache's single slot with geomB's entry
+    const capAAgain = strideCap(geomA, cache); // must notice geomA no longer matches what's cached
     expect(capAAgain).toBe(capA);
-    expect(capAAgain).not.toBe(strideCap(params, geomB));
+    expect(capAAgain).not.toBe(strideCap(geomB, cache));
   });
 
-  it('a cache hit equals a fully uncached computation (a fresh params object, asked once)', () => {
-    const cached = strideCap(params, geomA); // params already warm from the tests above
-    const fresh = strideCap({ ...params }, geomA); // a distinct object: guaranteed first-ever lookup
-    expect(cached).toBe(fresh);
+  it('a cache hit equals a fully uncached computation', () => {
+    const cache = createGaitCache();
+    strideCap(geomA, cache);
+    expect(strideCap(geomA, cache)).toBe(strideCap(geomA));
+  });
+
+  it('a cloned params object still hits the same per-actor cache (params identity plays no part)', () => {
+    const { body, extents, params, seed } = setup('shambler');
+    const cache = createGaitCache();
+    const geomL = legGeometryFor(body.bones, extents, 'L');
+    const len = stepLengthMeters({ params, geomL, speed: 1.4, seed, cache }, 3);
+    const plans = cache.stepPlans;
+    const cap = cache.strideCap;
+    expect(plans?.entries.size).toBeGreaterThan(0);
+    expect(cap).toBeDefined();
+    const again = stepLengthMeters({ params: structuredClone(params), geomL, speed: 1.4, seed, cache }, 3);
+    expect(again).toBe(len);
+    expect(cache.stepPlans).toBe(plans);
+    expect(cache.strideCap).toBe(cap);
+  });
+
+  it('two actors sharing one params object but not a cache never see each other’s step plans', () => {
+    const { body, extents, params } = setup('shambler');
+    const geomL = legGeometryFor(body.bones, extents, 'L');
+    const a = createGaitCache();
+    const b = createGaitCache();
+    stepLengthMeters({ params, geomL, speed: 1.4, seed: 1, cache: a }, 2);
+    stepLengthMeters({ params, geomL, speed: 1.4, seed: 2, cache: b }, 2);
+    expect(a.stepPlans?.seed).toBe(1);
+    expect(b.stepPlans?.seed).toBe(2);
+    expect(a.stepPlans).not.toBe(b.stepPlans);
   });
 });
 
@@ -540,7 +567,7 @@ describe('the walk at 60 fps', () => {
   // (one smooth Hermite curve through each footfall's own scanned-once peak — see legAndFootRotations) got
   // 2.8 m/s essentially there and cut 0.8/1.4 m/s by ~3x from where they started, but not all the way: a
   // heel-strike roll's toe corner overtaking the stance heel corner as groundOffset's true minimum (a
-  // separate, still-smooth curve, independent of hip drop — see mobgen's report) is the remaining
+  // separate, still-smooth curve, independent of hip drop; the per-frame contribution was not recorded) is the remaining
   // mechanism, and closing it needs more than this task's remaining budget. Thresholds below are the
   // actually-achieved worst case plus headroom, not the original target.
   const maxDyForSpeed = (speed: number): number => {

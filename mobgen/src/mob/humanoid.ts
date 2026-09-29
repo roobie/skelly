@@ -74,7 +74,7 @@ export const HUMANOID_PARAM_ORDER = [
 
 export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>>;
 
-const WOUNDABLE_BONES = [
+export const WOUNDABLE_BONES = [
   'spine',
   'chest',
   'upperArm.L',
@@ -812,4 +812,9 @@ export const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Templa
   return { params, wounds };
 };
 
-registerBodyPlan('humanoid', { sample: sampleHumanoid, build: (genome) => buildHumanoid(genome) });
+registerBodyPlan('humanoid', {
+  sample: sampleHumanoid,
+  build: (genome) => buildHumanoid(genome),
+  paramOrder: HUMANOID_PARAM_ORDER,
+  woundBones: WOUNDABLE_BONES,
+});

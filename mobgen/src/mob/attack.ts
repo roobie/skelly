@@ -4,12 +4,12 @@
 //
 // Rotation convention: same as gait.ts (forward swing = +rotX for a hanging limb — arms, jaw). For an
 // *upright* bone (spine, chest, head), +rotX tips it backward and -rotX pitches it forward instead (the
-// same rotation, but the bone points the other way at rest) — verified against boneTransforms, not
-// assumed; see mobgen's report on this feature for the check.
+// same rotation, but the bone points the other way at rest) — verified against boneTransforms when the
+// clip was added (af2df6a), not assumed; the check itself was not kept.
 
 import type { Bone } from '../core/body.ts';
 import { type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
-import type { Pose } from '../core/pose.ts';
+import type { EulerDeg, Pose } from '../core/pose.ts';
 import { GROUND_SMOOTHING, groundOffset, legGeometryFor, type WalkActor } from './gait.ts';
 import type { HumanoidParams } from './humanoid.ts';
 
@@ -202,8 +202,8 @@ const armSwingWeight = (t: number, clip: AttackClip): number => {
  * Scales baseR's own axis-angle by `weight` (same axis, smaller angle) rather than assuming baseR is a
  * pure rotX and rescaling atan2(m[7],m[4]) — the walk's upperArm rotation is rotZ(stagger-wide) ∘
  * rotX(swing), not pure rotX, and that mismatched assumption produced a real, if small, snap right where
- * this switches to the `weight >= 1` shortcut (see mobgen's report). */
-const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
+ * this switches to the `weight >= 1` shortcut (its size was not recorded). */
+export const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   if (weight >= 1) {
     return baseR;
   }
@@ -229,6 +229,12 @@ const avgLegLen = (bones: readonly Bone[], extents: WalkActor['extents']): numbe
  * clip-touched bone's rotation onto the base, blending the walk's own arm swing down to 0 over the
  * clip's active window (see armSwingWeight) so the clip's arms read clean. Legs are untouched (base
  * keeps them planted); the root is re-grounded (groundOffset) and then dropped by pelvisDrop.
+ *
+ * If `walkBase` carries `angles` (walkPose's `recordAngles`), the result keeps them (the walk layer) and
+ * adds `clipAngles` and `armWalkWeight`, so that for a clip-touched bone
+ * `rotations[bone] = blend(walkMatrix(angles[bone])) ∘ rotZ(z) ∘ rotY(y) ∘ rotX(x)` with (x, y, z) =
+ * `clipAngles[bone]`; `blend` is blendArmBase with `armWalkWeight` for the four arm bones and the
+ * identity function for the rest. See Pose.angles / Pose.clipAngles.
  */
 export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, walkBase: Pose): Pose => {
   const t = clamp(time, 0, clip.duration);
@@ -245,12 +251,16 @@ export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, wal
 
   const weight = armSwingWeight(t, clip);
   const rotations: Record<string, Mat3> = { ...walkBase.rotations };
+  const clipAngles: Record<string, EulerDeg> | undefined = walkBase.angles ? {} : undefined;
   for (const boneId of boneIds) {
     const [x, y, z] = sampleVec3(clip, boneId, t);
     const scaledX = UPPER_ARM_BONES.has(boneId)
       ? upperArmLocalFromNet(x, torsoPitchX, actor.params)
       : scaleForGenome(boneId, x, actor.params);
     const clipR = eulerToMat3([scaledX, y, z]);
+    if (clipAngles) {
+      clipAngles[boneId] = [scaledX, y, z]; // composed rotZ ∘ rotY ∘ rotX, see eulerToMat3
+    }
     const baseR = walkBase.rotations[boneId] ?? IDENTITY_M;
     const blendedBase = ARM_BONES.has(boneId) ? blendArmBase(baseR, weight) : baseR;
     rotations[boneId] = mulMM(blendedBase, clipR);
@@ -266,5 +276,7 @@ export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, wal
     groundOffset(actor.bones, actor.extents, rotations, GROUND_SMOOTHING) - drop,
     walkBase.root[2],
   ];
-  return { root, rotations };
+  return walkBase.angles && clipAngles
+    ? { root, rotations, angles: walkBase.angles, clipAngles, armWalkWeight: weight }
+    : { root, rotations };
 };

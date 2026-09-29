@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { build, generateValid } from '../src/core/generate.ts';
+import { generateValid } from '../src/core/generate.ts';
 import { applyPoint, IDENTITY_M, type Mat3 } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { voxelize } from '../src/core/voxelize.ts';
 import { ATTACK_CLIPS, attackPose } from '../src/mob/attack.ts';
 import {
   advanceClock,
@@ -20,8 +19,7 @@ import { TEMPLATES } from '../src/mob/templates.ts';
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;
   const found = generateValid(t, seed)!;
-  const body = build(found.genome);
-  const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
+  const { body, voxels } = found.realized;
   const extents = footRestExtents(body.bones, voxels);
   return { body, voxels, extents, params: found.genome.params as HumanoidParams, seed: found.genome.seed };
 };
