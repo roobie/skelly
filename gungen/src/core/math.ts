@@ -2,6 +2,25 @@
 // a renderer; the viewer converts these to three.js types at the edge.
 
 export type Vec3 = readonly [number, number, number];
+export type ExtrusionAxis = 'x' | 'y' | 'z';
+
+/** Map right-handed profile coordinates and an axial coordinate into local XYZ. */
+export const extrusionPoint = (
+  axis: ExtrusionAxis | undefined,
+  profile: readonly [number, number],
+  along: number,
+): Vec3 => {
+  switch (axis ?? 'z') {
+    case 'x':
+      return [along, profile[0], profile[1]]; // profile axes Y, Z: Y × Z = X.
+    case 'y':
+      return [profile[1], along, profile[0]]; // profile axes Z, X: Z × X = Y.
+    case 'z':
+      return [profile[0], profile[1], along]; // profile axes X, Y: X × Y = Z.
+    default:
+      throw new Error(`Unsupported extrusion axis: ${axis}`);
+  }
+};
 
 /** 3x3 rotation matrix, row-major. */
 export type Mat3 = readonly [number, number, number, number, number, number, number, number, number];

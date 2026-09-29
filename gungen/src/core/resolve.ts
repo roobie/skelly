@@ -248,7 +248,7 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
       if (solid.kind !== 'extruded-polygon') {
         return true;
       }
-      const error = validateExtrudedPolygon(solid.profile, solid.z);
+      const error = validateExtrudedPolygon(solid.profile, solid.z, solid.axis);
       if (!error) {
         return true;
       }

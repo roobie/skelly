@@ -3,7 +3,7 @@
 // supplied through a Domain.
 
 import type { Issue } from './issue.ts';
-import type { Vec3 } from './math.ts';
+import type { ExtrusionAxis, Vec3 } from './math.ts';
 import type { Resolved } from './resolve.ts';
 
 /** Axis-aligned box in its part's local frame. */
@@ -53,9 +53,11 @@ export type Vec2 = readonly [number, number];
 export interface ExtrudedPolygonSolid {
   readonly id: string;
   readonly kind: 'extruded-polygon';
-  /** Convex profile in local X–Y coordinates, listed counter-clockwise. */
+  /** Convex CCW profile: X uses (Y,Z), Y uses (Z,X), and Z uses (X,Y), keeping profile × axis right-handed. */
   readonly profile: readonly Vec2[];
-  /** Local Z bounds of the extrusion. */
+  /** Extrusion direction; omission keeps existing solids on local Z. */
+  readonly axis?: ExtrusionAxis;
+  /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
   readonly display?: SolidDisplayHints;
 }
