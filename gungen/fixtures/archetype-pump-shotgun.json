@@ -9,7 +9,7 @@
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "tube": { "family": "tube-magazine" },
     "forend": { "family": "forend" },
-    "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } }
+    "stock": { "family": "stock", "params": { "length": "M", "style": "tapered" } }
   },
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },

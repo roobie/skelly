@@ -94,6 +94,20 @@ describe('templates', () => {
             const spec = family!.params[name];
             expect(spec, `${slot.id}.${name}`).toBeDefined();
             if (typeof choice === 'object' && !Array.isArray(choice)) {
+              if ('when' in choice) {
+                const source = t.slots.find((candidate) => candidate.id === choice.when.part);
+                expect(source, `${slot.id}.${name} condition slot`).toBeDefined();
+                expect(t.slots.indexOf(source!), `${slot.id}.${name} condition is chosen first`).toBeLessThan(
+                  t.slots.indexOf(slot),
+                );
+                expect(source!.params?.[choice.when.param], `${slot.id}.${name} condition param`).toBeDefined();
+                for (const branch of [choice.onMatch, choice.onMismatch]) {
+                  for (const value of Array.isArray(branch) ? branch : [branch]) {
+                    expect(spec!.values).toContain(value);
+                  }
+                }
+                continue;
+              }
               const reference = choice as ParamReference;
               const source = t.slots.find((candidate) => candidate.id === reference.fromSlot);
               expect(source, `${slot.id}.${name} source slot`).toBeDefined();

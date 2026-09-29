@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRID } from '../src/core/conventions.ts';
+import { validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -261,6 +262,156 @@ describe('part library', () => {
           expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
         });
       }
+    });
+  }
+});
+
+describe('tapered stock profile', () => {
+  const profile = (stockSize: 'M' | 'L') => {
+    const def = FAMILIES.stock!.build({ length: stockSize, style: 'tapered' });
+    const solids = def.solids.filter((solid) => solid.kind === 'extruded-polygon');
+    const byId = (id: string) => {
+      const solid = solids.find((candidate) => candidate.id === id);
+      if (solid?.kind !== 'extruded-polygon') {
+        throw new Error(`missing profile ${id}`);
+      }
+      return solid;
+    };
+    const [jointX] = def.ports.find((port) => port.id === 'front')!.pos;
+    const stockLength = jointX - Math.min(...byId('butt-pad').profile.map(([x]) => x));
+    return { def, solids, byId, jointX, stockLength };
+  };
+  const segmentSection = (profilePoints: readonly (readonly [number, number])[], x: number): number[] => {
+    const ys: number[] = [];
+    for (let i = 0; i < profilePoints.length; i++) {
+      const a = profilePoints[i]!;
+      const b = profilePoints[(i + 1) % profilePoints.length]!;
+      if (x < Math.min(a[0], b[0]) - 1e-8 || x > Math.max(a[0], b[0]) + 1e-8) {
+        continue;
+      }
+      if (Math.abs(a[0] - b[0]) < 1e-8) {
+        if (Math.abs(x - a[0]) < 1e-8) {
+          ys.push(a[1], b[1]);
+        }
+        continue;
+      }
+      const t = (x - a[0]) / (b[0] - a[0]);
+      ys.push(a[1] + t * (b[1] - a[1]));
+    }
+    return ys;
+  };
+  const section = (solids: ReturnType<typeof profile>['solids'], x: number) => {
+    const ys = solids.flatMap((solid) => segmentSection(solid.profile, x));
+    return { min: Math.min(...ys), max: Math.max(...ys), height: Math.max(...ys) - Math.min(...ys) };
+  };
+  const degrees = (dx: number, dy: number) => (Math.atan2(Math.abs(dy), Math.abs(dx)) * 180) / Math.PI;
+
+  for (const size of ['M', 'L'] as const) {
+    it(`${size}: extruded stock profiles are valid`, () => {
+      for (const solid of profile(size).solids) {
+        expect(validateExtrudedPolygon(solid.profile, solid.z)).toBeUndefined();
+      }
+    });
+
+    it(`${size}: comb starts at the built receiver rear-face centre`, () => {
+      const { def, solids, jointX } = profile(size);
+      const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
+      const body = receiver.solids.find((solid) => solid.id === 'body')!;
+      if (body.kind !== 'box') {
+        throw new Error('pump receiver body is not a box');
+      }
+      const [, centerY] = body.box.center;
+      const [, halfY] = body.box.half;
+      const rearFaceTopY = centerY + halfY;
+      const combAtJoint = section(solids, jointX).max;
+      expect(Math.abs(combAtJoint - centerY)).toBeLessThanOrEqual(0.25);
+      expect(def.ports.find((port) => port.id === 'front')?.pos).toEqual([0, 0, 0]);
+      expect(rearFaceTopY - combAtJoint).toBeCloseTo(halfY, 5);
+    });
+
+    it(`${size}: wrist, grip station/depth, and comb slope stay in their landmark bounds`, () => {
+      const { byId, solids, jointX, stockLength } = profile(size);
+      const grip = byId('grip');
+      const wristX = Math.max(...grip.profile.map(([x]) => x));
+      const wrist = section(solids, wristX);
+      expect((jointX - wristX) / stockLength).toBeGreaterThanOrEqual(0.1);
+      expect((jointX - wristX) / stockLength).toBeLessThanOrEqual(0.25);
+      expect(wrist.height / stockLength).toBeGreaterThanOrEqual(0.15);
+      expect(wrist.height / stockLength).toBeLessThanOrEqual(0.22);
+
+      const lowest = grip.profile.reduce((best, point) => (point[1] < best[1] ? point : best));
+      const depth = section(solids, lowest[0]).max - lowest[1];
+      expect((jointX - lowest[0]) / stockLength).toBeGreaterThanOrEqual(0.18);
+      expect((jointX - lowest[0]) / stockLength).toBeLessThanOrEqual(0.3);
+      expect(depth / stockLength).toBeGreaterThanOrEqual(0.24);
+      expect(depth / stockLength).toBeLessThanOrEqual(0.32);
+    });
+
+    it(`${size}: belly, butt and recoil pad meet their bounds`, () => {
+      const { byId, stockLength } = profile(size);
+      const belly = byId('belly');
+      const pad = byId('butt-pad');
+      const toe = belly.profile[0]!;
+      const bellyRear = belly.profile[1]!;
+      const bellyAngle = degrees(toe[0] - bellyRear[0], toe[1] - bellyRear[1]);
+      expect(bellyAngle).toBeGreaterThanOrEqual(10);
+      expect(bellyAngle).toBeLessThanOrEqual(16);
+
+      const padYs = pad.profile.map(([, y]) => y);
+      const padMinY = Math.min(...padYs);
+      const padMaxY = Math.max(...padYs);
+      expect((padMaxY - padMinY) / stockLength).toBeGreaterThanOrEqual(0.3);
+      expect((padMaxY - padMinY) / stockLength).toBeLessThanOrEqual(0.38);
+      const rearBottom = pad.profile.filter(([, y]) => y === padMinY).sort((a, b) => a[0] - b[0])[0]!;
+      const rearTop = pad.profile.filter(([, y]) => y === padMaxY).sort((a, b) => a[0] - b[0])[0]!;
+      const rake =
+        (Math.atan2(Math.abs(rearTop[0] - rearBottom[0]), Math.abs(rearTop[1] - rearBottom[1])) * 180) / Math.PI;
+      expect(rake).toBeLessThanOrEqual(8);
+      const bottomXs = pad.profile
+        .filter(([, y]) => y === padMinY)
+        .map(([x]) => x)
+        .sort((a, b) => a - b);
+      const topXs = pad.profile
+        .filter(([, y]) => y === padMaxY)
+        .map(([x]) => x)
+        .sort((a, b) => a - b);
+      const padThickness = Math.min(bottomXs[1]! - bottomXs[0]!, topXs[1]! - topXs[0]!) / stockLength;
+      expect(padThickness).toBeGreaterThanOrEqual(0.05);
+      expect(padThickness).toBeLessThanOrEqual(0.08);
+    });
+  }
+});
+
+describe('pump stock raised butt heel', () => {
+  const baselineToeY = { M: -7.518_598_945_248, L: -10.351_249_252_97 } as const;
+  const measure = (size: 'M' | 'L') => {
+    const def = FAMILIES.stock!.build({ length: size, style: 'tapered' });
+    const prism = def.solids.find((solid) => solid.id === 'belly');
+    const pad = def.solids.find((solid) => solid.id === 'butt-pad');
+    if (prism?.kind !== 'extruded-polygon' || pad?.kind !== 'extruded-polygon') {
+      throw new Error('tapered stock must have a belly prism and recoil pad');
+    }
+    const padYs = pad.profile.map(([, y]) => y);
+    const toeY = Math.min(...padYs);
+    const topY = Math.max(...padYs);
+    const rearBottom = prism.profile.find(([, y]) => y === toeY)!;
+    const rearTop = prism.profile.find(([, y]) => y === topY)!;
+    const [jointX] = def.ports.find((port) => port.id === 'front')!.pos;
+    const stockLength = jointX - Math.min(...pad.profile.map(([x]) => x));
+    return { pad, rearBottom, rearTop, stockLength, toeY, topY };
+  };
+
+  for (const size of ['M', 'L'] as const) {
+    it(`${size}: raises only the rear top by 5% and preserves the rear toe`, () => {
+      const result = measure(size);
+      const oldHeight = 0.34 * result.stockLength;
+      const newHeight = result.rearTop[1] - result.rearBottom[1];
+      const ratio = newHeight / oldHeight;
+      expect(ratio).toBeGreaterThanOrEqual(1.045);
+      expect(ratio).toBeLessThanOrEqual(1.055);
+      expect(Math.abs(result.rearBottom[1] - baselineToeY[size])).toBeLessThanOrEqual(1e-9);
+      expect(result.topY).toBe(result.rearTop[1]);
+      expect(result.toeY).toBe(result.rearBottom[1]);
     });
   }
 });

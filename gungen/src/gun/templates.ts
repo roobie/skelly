@@ -275,9 +275,18 @@ export const pumpShotgun: Template = {
       when: { part: 'lower', param: 'layout', equals: 'trigger' },
     },
     {
+      // The stock is the firing grip on the grip-less pump lower: tapered, and
+      // sawed off only with the shortest barrel.
       id: 'stock',
       family: 'stock',
-      params: { length: SML, style: 'sporting' },
+      params: {
+        length: ['M', 'L'],
+        style: {
+          when: { part: 'barrel', param: 'length', equals: 'S' },
+          onMatch: ['tapered', 'tapered-sawed'],
+          onMismatch: 'tapered',
+        },
+      },
       when: { part: 'lower', param: 'layout', equals: 'pump' },
     },
     {
