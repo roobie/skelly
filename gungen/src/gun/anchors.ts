@@ -1,4 +1,12 @@
-import type { AnchorSelectionError, NamedAnchors, PartAnchorDeclaration, SelectedAnchors } from '../core/design.ts';
+import { resolveAnchors } from '../core/anchors.ts';
+import type {
+  AnchorFrame,
+  AnchorSelectionError,
+  NamedAnchors,
+  PartAnchorDeclaration,
+  ResolvedAnchors,
+  SelectedAnchors,
+} from '../core/design.ts';
 import type { Resolved } from '../core/resolve.ts';
 
 /** Gun-domain names; core treats these as caller-supplied strings. */
@@ -19,7 +27,14 @@ export interface GunAnchorDeclaration {
   readonly holdRank?: GunHoldAnchorRank;
 }
 
-/** Part family -> named local anchors and optional hold-candidate rank. */
+/**
+ * Registry key -> named local anchors and optional hold-candidate rank.
+ *
+ * Keyed by the registry key (the key in `FAMILIES`, e.g. `'ak-receiver'`, the same string an assembly's
+ * `PartInstance.family` holds), not by `PartDef.family`. Anchors depend on the geometry and params of the
+ * builder recipe (`'frame'` and `'grip'` both build a firing grip, with different local frames), whereas
+ * compatibility and rules use the `PartDef.family` role, which several recipes share.
+ */
 export type GunAnchorDeclarations = Readonly<Record<string, GunAnchorDeclaration>>;
 
 /** Gun policy to be applied after generic core anchor resolution. */
@@ -35,5 +50,55 @@ export type SelectGunAnchors = (
   policy: GunAnchorSelectionPolicy,
 ) => SelectedAnchors | AnchorSelectionError;
 
-// Keep AnchorFrame named at the domain boundary without redefining its core shape.
+/** The documented policy: a grip outranks a `FIRING_GRIP` stock; equal ranks are ambiguous. */
+export const GUN_ANCHOR_POLICY: GunAnchorSelectionPolicy = {
+  holdPrecedence: ['grip', 'firing-grip-stock'],
+  equalRank: 'ambiguous',
+};
+
+const OTHER_ANCHORS = ['support', 'muzzle'] as const satisfies readonly GunAnchorName[];
+
+/**
+ * Resolves every declared anchor into assembly space (core), then applies the gun policy. The `hold` comes
+ * from the best-ranked candidates; two candidates of that rank are ambiguous and no `hold` is an error.
+ * Other names take the candidate on the lowest part id, so the choice is deterministic.
+ */
+export const selectGunAnchors: SelectGunAnchors = (resolved, declarations, policy) => {
+  const frames = resolveAnchors(
+    resolved,
+    Object.fromEntries(Object.entries(declarations).map(([key, d]) => [key, d.anchors])),
+  );
+  const ids = Object.keys(frames).sort();
+  const candidatesAt = (rank: GunHoldAnchorRank) =>
+    ids.filter((id) => {
+      const decl = declarations[resolved.assembly.parts[id]!.family]!;
+      return frames[id]!.hold && decl.holdRank === rank;
+    });
+  for (const rank of policy.holdPrecedence) {
+    const candidates = candidatesAt(rank);
+    if (candidates.length > 1) {
+      return { code: 'ambiguous-anchor', name: 'hold', candidates };
+    }
+    if (candidates.length === 1) {
+      return selectOthers(frames, ids, frames[candidates[0]!]!.hold!);
+    }
+  }
+  return { code: 'missing-required-anchor', name: 'hold' };
+};
+
+const selectOthers = (
+  frames: ResolvedAnchors<GunAnchorName>,
+  ids: readonly string[],
+  hold: AnchorFrame,
+): SelectedAnchors => {
+  const others: Partial<Record<GunAnchorName, AnchorFrame>> = {};
+  for (const name of OTHER_ANCHORS) {
+    const id = ids.find((i) => frames[i]![name]);
+    if (id) {
+      others[name] = frames[id]![name]!;
+    }
+  }
+  return { hold, others };
+};
+
 export type { AnchorFrame } from '../core/design.ts';
