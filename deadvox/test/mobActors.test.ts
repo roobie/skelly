@@ -21,6 +21,8 @@ import {
   advanceGaitFromMovement,
   attackJustStarted,
   attackStartTime,
+  fallDirectionAwayFromPlayer,
+  flinchSideForId,
   MobActorMeshes,
   variantIndexForId,
 } from '../src/render/mobActors.ts';
@@ -226,6 +228,116 @@ describe('MobActorMeshes', () => {
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(first)).toBe(true);
       expect(renderer.isTracked(second)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+});
+
+describe('flinchSideForId', () => {
+  it('is deterministic and always in [-1, 1)', () => {
+    for (const id of [1, 2, 3, 17, 1000, 999_999]) {
+      const a = flinchSideForId(id);
+      const b = flinchSideForId(id);
+      expect(a).toBe(b);
+      expect(a).toBeGreaterThanOrEqual(-1);
+      expect(a).toBeLessThan(1);
+    }
+  });
+});
+
+describe('fallDirectionAwayFromPlayer', () => {
+  it('falls backward when the player is ahead (in the facing direction) — away from them', () => {
+    expect(fallDirectionAwayFromPlayer([0, 0, -1], [0, 0, 0], [0, 0, -3])).toBe(-1);
+  });
+
+  it('falls forward when the player is behind — away from them', () => {
+    expect(fallDirectionAwayFromPlayer([0, 0, -1], [0, 0, 0], [0, 0, 3])).toBe(1);
+  });
+
+  it('defaults to backward when no player position is available', () => {
+    expect(fallDirectionAwayFromPlayer([0, 0, -1], [0, 0, 0], undefined)).toBe(-1);
+  });
+});
+
+describe('MobActorMeshes reactions', () => {
+  it('starts a flinch only when health drops, not on an unrelated frame', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1); // establishes prevHealth from this zombie's starting health
+      expect(renderer.isFlinching(id)).toBe(false);
+
+      renderer.sync(store, 1 / 60, 1); // no health change this frame
+      expect(renderer.isFlinching(id)).toBe(false);
+
+      zombie.health -= 8;
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isFlinching(id)).toBe(true);
+
+      renderer.sync(store, 10, 1); // well past HIT_FLINCH's 0.35 s duration
+      expect(renderer.isFlinching(id)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 60, 1);
+      store.remove(id);
+      renderer.zombieDied(id, zombie);
+      expect(renderer.isTracked(id)).toBe(true); // still drawn, as a corpse
+
+      renderer.sync(store, 5, 1); // well into lying, nowhere near the end of the lifetime
+      expect(renderer.isTracked(id)).toBe(true);
+
+      renderer.sync(store, 10, 1); // fall + lie + sink is under 11 s total — this pushes well past it
+      expect(renderer.isTracked(id)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('frees a vanished-without-dying zombie immediately (despawn/unload), unlike a death', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(makeZombie([0, 0, 0]));
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isTracked(id)).toBe(true);
+
+      store.remove(id); // no zombieDied call — a plain vanish, not a death
+      renderer.sync(store, 1 / 60, 1);
+      expect(renderer.isTracked(id)).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('caps corpses, evicting the oldest first once the cap is exceeded', () => {
+    const renderer = new MobActorMeshes(0.5, 20, { poolSize: 1 }); // one shared variant, room for every corpse
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const ids: number[] = [];
+      for (let i = 0; i < 17; i++) {
+        const zombie = makeZombie([i, 0, 0]);
+        const id = store.add(zombie);
+        renderer.sync(store, 1 / 60, 1);
+        store.remove(id);
+        renderer.zombieDied(id, zombie);
+        ids.push(id);
+      }
+      expect(renderer.isTracked(ids[0]!)).toBe(false); // the oldest corpse, evicted by the 17th death
+      for (let i = 1; i < 17; i++) {
+        expect(renderer.isTracked(ids[i]!)).toBe(true);
+      }
     } finally {
       renderer.dispose();
     }

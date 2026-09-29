@@ -114,7 +114,7 @@ export interface ZombieSystemOptions {
   player: () => PlayerSense;
   hour: () => number;
   hurtPlayer: (amount: number) => void;
-  onDeath?: (zombie: Zombie) => void;
+  onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Sound-source position is in block coordinates. */
   onSound?: (event: SoundEventId, position: Vec3) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
@@ -1084,7 +1084,7 @@ export class ZombieSystem {
     zombie.health -= weapon.damage;
     if (zombie.health <= 0) {
       this.store.remove(id);
-      this.options.onDeath?.(zombie);
+      this.options.onDeath?.(id, zombie);
     }
     return id;
   }

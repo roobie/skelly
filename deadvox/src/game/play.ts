@@ -238,7 +238,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       });
       playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
     },
-    onDeath: (zombie) => {
+    onDeath: (id, zombie) => {
+      // zombieMeshes is declared further below, but this only ever runs later, during play (see its own
+      // declaration comment); only MobActorMeshes implements zombieDied (a corpse) — ZombieMeshes leaves it
+      // undefined, so a death for it stays the plain vanish-from-the-store it's always been.
+      zombieMeshes.zombieDied?.(id, zombie, playerSense().pos);
       const table = zombie.type.loot;
       if (!table) {
         return;
@@ -265,6 +269,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   // Mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` swaps in ZombieMeshes' six
   // boxes — same ZombieRenderer shape (group/sync/…), so the rest of this function
   // doesn't care which one it has.
+  //
+  // zombieDied ordering: a melee kill's `swing()` runs from a `mousedown` listener (below), not from the
+  // fixed-rate scheduler tick above, so it can land before or after this frame's `zombieMeshes.sync()` call
+  // in either order. onDeath above calls zombieDied synchronously, in the very same call that removes the
+  // zombie from zombieStore — MobActorMeshes' own zombieDied moves that id out of its live-tracking map
+  // *before* returning, so whichever order sync() and a death happen to fall in this frame, sync()'s own
+  // prune pass never mistakes a just-died zombie for a plain vanish (see mobActors.ts's own doc comment).
   const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
   scene.add(zombieMeshes.group);
 
