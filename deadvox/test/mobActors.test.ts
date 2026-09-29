@@ -569,6 +569,26 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.dispose();
     }
   });
+  it('caches template-assigned mass for every severable variant part', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const { variants } = renderer as unknown as {
+        variants: readonly { rigidParts: ReadonlyMap<string, { mass: number }> }[];
+      };
+      const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
+      expect(masses).toEqual([
+        ['hand.L', 70 * 0.006],
+        ['hand.R', 70 * 0.006],
+        ['forearm.L', 70 * 0.022],
+        ['forearm.R', 70 * 0.022],
+        ['upperArm.L', 70 * 0.05],
+        ['upperArm.R', 70 * 0.05],
+        ['head', 70 * 0.081],
+      ]);
+    } finally {
+      renderer.dispose();
+    }
+  });
   it('debris OBB contains the posed limb at spawn', () => {
     const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
     const { realized } = generateValid(template, 1)!;

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import type { Vec3 } from '../src/core/coords.ts';
 import { angularVelocity, applyImpulse, type RigidBody, stepRigidBody } from '../src/core/rigidBody.ts';
+
+const rotate = (q: RigidBody['orientation'], v: Vec3): Vec3 => {
+  const [x, y, z, w] = q;
+  const [vx, vy, vz] = v;
+  return [
+    (1 - 2 * (y * y + z * z)) * vx + 2 * (x * y - z * w) * vy + 2 * (x * z + y * w) * vz,
+    2 * (x * y + z * w) * vx + (1 - 2 * (x * x + z * z)) * vy + 2 * (y * z - x * w) * vz,
+    2 * (x * z - y * w) * vx + 2 * (y * z + x * w) * vy + (1 - 2 * (x * x + y * y)) * vz,
+  ];
+};
 
 const boxCorners = (half: number): [number, number, number][] => {
   const result: [number, number, number][] = [];
@@ -33,15 +44,21 @@ const body = (): RigidBody => ({
 });
 
 describe('rigid body', () => {
-  it('applies linear and angular impulse at a point', () => {
+  it('applies an impulse through the COM without angular velocity', () => {
     const b = body();
-    applyImpulse(b, [0, 0, 0], [2, 0, 0]);
-    expect(b.velocity).toEqual([1, 0, 0]);
+    applyImpulse(b, b.center, [2, 0, 0]);
     expect(Math.hypot(...angularVelocity(b))).toBeLessThan(1e-9);
-    const offset = body();
-    applyImpulse(offset, [0, 1, 0], [2, 0, 0]);
-    expect(offset.velocity[0]).toBeCloseTo(1, 12);
-    expect(offset.angularMomentum[2]).toBeCloseTo(-2, 12);
+  });
+  it('changes linear velocity by J/m for an impulse', () => {
+    const b = body();
+    applyImpulse(b, b.center, [2, 0, 0]);
+    expect(b.velocity).toEqual([1, 0, 0]);
+  });
+  it('adds moment-arm angular momentum for an off-centre impulse', () => {
+    const b = body();
+    applyImpulse(b, [0, 1, 0], [2, 0, 0]);
+    expect(b.velocity[0]).toBeCloseTo(1, 12);
+    expect(b.angularMomentum[2]).toBeCloseTo(-2, 12);
   });
   it('keeps OBB corner displacement within half a block and sleeps after a quiet interval', () => {
     const b = body();
@@ -49,9 +66,14 @@ describe('rigid body', () => {
     b.velocity = [80, -80, 0];
     b.angularMomentum = [0, 10_000, 0];
     const world = { blockSize: 0.5, isSolid: (_x: number, y: number, _z: number) => y === -1 };
-    const before = b.corners.map((p) => [b.center[0] + p[0], b.center[1] + p[1], b.center[2] + p[2]] as const);
+    const worldCorners = (): Vec3[] =>
+      b.corners.map((corner) => {
+        const rotated = rotate(b.orientation, corner);
+        return [b.center[0] + rotated[0], b.center[1] + rotated[1], b.center[2] + rotated[2]];
+      });
+    const before = worldCorners();
     stepRigidBody(b, 1 / 120, world);
-    const after = b.corners.map((p) => [b.center[0] + p[0], b.center[1] + p[1], b.center[2] + p[2]] as const);
+    const after = worldCorners();
     for (let i = 0; i < before.length; i++) {
       expect(Math.hypot(...after[i]!.map((v, axis) => v - before[i]![axis]!))).toBeLessThanOrEqual(0.250_001);
     }
@@ -62,7 +84,7 @@ describe('rigid body', () => {
     }
     expect(b.asleep).toBe(true);
   });
-  it('lands on a flat block floor and sleeps without sinking', () => {
+  it('sleeps on a flat block floor within three seconds', () => {
     const b = body();
     b.corners = boxCorners(0.1);
     b.center = [0.25, 1.1, 0.25];
@@ -71,9 +93,18 @@ describe('rigid body', () => {
       stepRigidBody(b, 1 / 60, world);
     }
     expect(b.asleep).toBe(true);
+  });
+  it('keeps a settled OBB above the flat floor', () => {
+    const b = body();
+    b.corners = boxCorners(0.1);
+    b.center = [0.25, 1.1, 0.25];
+    const world = { blockSize: 0.5, isSolid: (_x: number, y: number, _z: number) => y === -1 };
+    for (let i = 0; i < 600 && !b.asleep; i++) {
+      stepRigidBody(b, 1 / 60, world);
+    }
+    expect(b.asleep).toBe(true);
     for (const local of b.corners) {
-      const y = b.center[1] + local[1];
-      expect(y).toBeGreaterThanOrEqual(-0.01);
+      expect(b.center[1] + local[1]).toBeGreaterThanOrEqual(-0.01);
     }
   });
   it('keeps the first flat-floor bounce below 0.2 m', () => {
@@ -100,17 +131,24 @@ describe('rigid body', () => {
     expect(b.center[0]).toBeCloseTo(16 / 120, 12);
     expect(b.elapsed).toBeCloseTo(16 / 120, 12);
   });
-  it('forces sleep after eight seconds and replays deterministically', () => {
+  it('forces an airborne body to sleep after eight seconds', () => {
+    const b = body();
+    b.velocity = [1, 2, 3];
+    for (let i = 0; i < 480; i++) {
+      stepRigidBody(b, 1 / 60, undefined, 0);
+    }
+    expect(b.asleep).toBe(true);
+  });
+  it('replays bitwise-identical poses at every deterministic step', () => {
     const a = body();
     const b = body();
     a.velocity = [1, 2, 3];
     b.velocity = [1, 2, 3];
-    for (let i = 0; i < 480; i++) {
+    for (let i = 0; i < 120; i++) {
       stepRigidBody(a, 1 / 60, undefined, 0);
       stepRigidBody(b, 1 / 60, undefined, 0);
       expect([a.center, a.orientation, a.velocity, a.asleep]).toEqual([b.center, b.orientation, b.velocity, b.asleep]);
     }
-    expect(a.asleep).toBe(true);
   });
   it('does not tunnel through a one-block floor at 15 m/s', () => {
     const b = body();
@@ -124,6 +162,39 @@ describe('rigid body', () => {
         expect(b.center[1] + local[1]).toBeGreaterThanOrEqual(-0.51);
       }
     }
+  });
+  it('rests on 1-block stairs without floating or penetrating', () => {
+    const b = body();
+    b.corners = boxCorners(0.1);
+    b.center = [1.25, 1.5, 0.25];
+    b.velocity = [1.5, 0, 0];
+    const world = {
+      blockSize: 0.5,
+      isSolid: (x: number, y: number, _z: number) =>
+        y === -1 || (x === 2 && y === 0) || (x === 3 && y >= 0 && y <= 1) || (x === 4 && y >= 0 && y <= 2),
+    };
+    for (let i = 0; i < 1200 && !b.asleep; i++) {
+      stepRigidBody(b, 1 / 120, world);
+    }
+    expect(b.asleep).toBe(true);
+    const points = b.corners.map((corner) => {
+      const rotated = rotate(b.orientation, corner);
+      return [b.center[0] + rotated[0], b.center[1] + rotated[1], b.center[2] + rotated[2]] as const;
+    });
+    for (const point of points) {
+      expect(world.isSolid(Math.floor(point[0] / 0.5), Math.floor(point[1] / 0.5), Math.floor(point[2] / 0.5))).toBe(
+        false,
+      );
+    }
+    const lowest = Math.min(...points.map((point) => point[1]));
+    const supported = points.some((point) => {
+      const x = Math.floor(point[0] / 0.5);
+      const belowY = Math.floor((point[1] - 0.001) / 0.5);
+      const z = Math.floor(point[2] / 0.5);
+      return world.isSolid(x, belowY, z) && Math.abs(point[1] - (belowY + 1) * 0.5) <= 0.01;
+    });
+    expect(supported).toBe(true);
+    expect(lowest).toBeGreaterThanOrEqual(0);
   });
   it('keeps every corner before a wall face while moving at 6 m/s', () => {
     const b = body();

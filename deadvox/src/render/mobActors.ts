@@ -50,7 +50,7 @@
 
 import type { Material } from '@mobgen/core/body.ts';
 import { generateValid, type Realized, realize } from '@mobgen/core/generate.ts';
-import { massProperties, voxelBounds } from '@mobgen/core/massProperties.ts';
+import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import {
   IDENTITY_M,
   type Mat3,
@@ -71,6 +71,7 @@ import {
   type ParentIndex,
   type Pose,
 } from '@mobgen/core/pose.ts';
+import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
 import { ATTACK_CLIPS, attackPose } from '@mobgen/mob/attack.ts';
 import {
@@ -652,7 +653,14 @@ export class MobActorMeshes implements ZombieRenderer {
         const boneIndices = [...severedBoneSet(v.realized.body.bones, [part])]
           .map((boneId) => boneIndexById.get(boneId))
           .filter((index): index is number => index !== undefined);
-        const properties = massProperties(v.realized.voxels, boneIndices, v.realized.voxels.size);
+        const properties = templatePartMassProperties({
+          voxels: v.realized.voxels,
+          partBoneIndices: boneIndices,
+          bodyBoneIndices: v.realized.body.bones.map((_, index) => index),
+          voxelSize: v.realized.voxels.size,
+          template: shamblerTemplate,
+          part,
+        });
         const bounds = voxelBounds(v.realized.voxels, boneIndices, properties.center);
         rigidParts.set(part, {
           mass: properties.mass,

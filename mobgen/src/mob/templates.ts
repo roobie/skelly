@@ -8,6 +8,15 @@ import { FEET_BONES } from './humanoid.ts';
 import './humanoid.ts'; // registers the 'humanoid' body plan (sample + build)
 
 const FEET = FEET_BONES;
+const HUMANOID_MASS_FRACTIONS = {
+  'hand.L': 0.006,
+  'hand.R': 0.006,
+  'forearm.L': 0.022,
+  'forearm.R': 0.022,
+  'upperArm.L': 0.05,
+  'upperArm.R': 0.05,
+  head: 0.081,
+} as const;
 
 /** Params every humanoid template must supply (see mob/humanoid.ts's HUMANOID_PARAM_ORDER). */
 const shamblerParams: Template['params'] = {
@@ -53,6 +62,8 @@ export const shambler: Template = {
   description: 'Average build, hunched, shuffling walk with an occasional forward reach.',
   bodyPlan: 'humanoid',
   voxelSize: 0.5 / 12,
+  bodyMassKg: 70,
+  massFractions: HUMANOID_MASS_FRACTIONS,
   params: shamblerParams,
   feet: FEET,
   budgets: {
@@ -68,6 +79,8 @@ export const runner: Template = {
   description: 'Lean, taller, upright, faster stride.',
   bodyPlan: 'humanoid',
   voxelSize: 0.5 / 12,
+  bodyMassKg: 60,
+  massFractions: HUMANOID_MASS_FRACTIONS,
   params: {
     ...shamblerParams,
     height: { min: 1.75, max: 2.0 },
@@ -93,6 +106,8 @@ export const brute: Template = {
   description: 'Tall, very broad, heavy, big hands. Coarser voxels (1/10 of a block).',
   bodyPlan: 'humanoid',
   voxelSize: 0.5 / 10,
+  bodyMassKg: 140,
+  massFractions: HUMANOID_MASS_FRACTIONS,
   params: {
     ...shamblerParams,
     height: { min: 2.0, max: 2.3 },
