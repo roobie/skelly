@@ -32,6 +32,7 @@
           "reach": 0.9,
           "cooldown": 1.1,
           "stamina": 8,
+          "impulse": 8,
           "type": "blunt"
         }
       }
@@ -54,6 +55,7 @@
           "reach": 0.6,
           "cooldown": 0.8,
           "stamina": 5,
+          "impulse": 6,
           "type": "blunt"
         }
       }
@@ -76,6 +78,7 @@
           "reach": 0.4,
           "cooldown": 0.5,
           "stamina": 3,
+          "impulse": 3.5,
           "type": "cut"
         }
       }
@@ -106,6 +109,7 @@
           "reach": 1.0,
           "cooldown": 1.2,
           "stamina": 9,
+          "impulse": 10,
           "type": "blunt"
         }
       }
@@ -122,6 +126,7 @@
           "reach": 0.9,
           "cooldown": 1.2,
           "stamina": 9,
+          "impulse": 8,
           "type": "blunt"
         }
       },

@@ -113,7 +113,7 @@ import {
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { ZOMBIE_REGION_NAMES } from '../core/zombieRegions.ts';
-import type { Zombie } from '../core/zombies.ts';
+import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { StepOffset } from './stepOffset.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
@@ -130,7 +130,7 @@ export interface ZombieRenderer {
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
   /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
-  zombieSevered?: (id: EntityId, part: string, playerPos?: Vec3) => void;
+  zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse) => void;
 }
 
 const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
@@ -179,8 +179,6 @@ const MAX_CORPSES = 16; // global cap across every variant, corpses AND debris t
 // Flying-limb debris: simple ballistic physics (no terrain query available here, so ground is approximated
 // as the zombie's own feet Y at the instant of severing — see this module's header comment), one bounce,
 // then the same lie/sink timing a corpse uses.
-const DEBRIS_LAUNCH_HORIZONTAL_MPS = 2.5; // "away from player", within the task's ~2-3 m/s
-const DEBRIS_LAUNCH_UP_MPS = 2.5;
 const DEBRIS_GRAVITY_MPS2 = 9.8;
 const DEBRIS_MAX_FLIGHT_S = 3; // safety cap in case it somehow never reaches groundY
 const DEBRIS_BOUNCE_DAMPING = 0.35; // one bounce, most of the energy lost, then it settles
@@ -204,20 +202,6 @@ export const debrisSpinFor = (id: EntityId, part: string): { axis: Vec3; rate: n
   const len = Math.hypot(ax, ay, az) || 1;
   const rate = DEBRIS_MIN_SPIN_RADPS + ((h >>> 24) / 255) * DEBRIS_SPIN_RANGE_RADPS;
   return { axis: [ax / len, ay / len, az / len], rate };
-};
-
-/** A unit XZ direction from `playerBlockPos` (block units, PlayerSense.pos's own convention — see
- * zombieDied's identical assumption) toward `zombieWorldPos` (metres) — "away from the player." Falls back
- * to a fixed direction with no player position available, same documented default as
- * fallDirectionAwayFromPlayer. */
-const awayFromPlayerXZ = (zombieWorldPos: Vec3, playerBlockPos: Vec3 | undefined, blockSize: number): Vec3 => {
-  if (!playerBlockPos) {
-    return [0, 0, 1];
-  }
-  const dx = zombieWorldPos[0] - playerBlockPos[0] * blockSize;
-  const dz = zombieWorldPos[2] - playerBlockPos[2] * blockSize;
-  const len = Math.hypot(dx, dz);
-  return len > 1e-6 ? [dx / len, 0, dz / len] : [0, 0, 1];
 };
 
 /** Deterministic variant pick from a zombie's EntityId — NOT the sim's own behaviour RNG (that must stay
@@ -1019,7 +1003,7 @@ export class MobActorMeshes implements ZombieRenderer {
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
    * MAX_CORPSES exactly like a corpse (see zombieDied's own eviction).
    */
-  zombieSevered(id: EntityId, part: string, playerPos?: Vec3): void {
+  zombieSevered(id: EntityId, part: string, hit?: HitImpulse): void {
     const state = this.states.get(id);
     if (!state?.lastPos) {
       return;
@@ -1058,7 +1042,9 @@ export class MobActorMeshes implements ZombieRenderer {
     variant.mesh.count = variant.liveIds.length;
 
     const zombieWorldPos = state.lastPos;
-    const away = awayFromPlayerXZ(zombieWorldPos, playerPos, this.blockSize);
+    const hitDirection = hit?.direction ?? [0, 0, 1];
+    const impulse = hit?.impulse ?? 4;
+    const launchSpeed = impulse / 1.5; // provisional 1.5 kg subtree estimate; voxel mass properties replace this below.
     const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
       idle: this.idlePoseFor(state, variant),
     });
@@ -1079,7 +1065,7 @@ export class MobActorMeshes implements ZombieRenderer {
       groundY: zombieWorldPos[1],
       insertOrder: order,
       pos: [zombieWorldPos[0], zombieWorldPos[1] + DEBRIS_SPAWN_HEIGHT_M, zombieWorldPos[2]],
-      vel: [away[0] * DEBRIS_LAUNCH_HORIZONTAL_MPS, DEBRIS_LAUNCH_UP_MPS, away[2] * DEBRIS_LAUNCH_HORIZONTAL_MPS],
+      vel: [hitDirection[0] * launchSpeed, Math.max(0.5, hitDirection[1] * launchSpeed), hitDirection[2] * launchSpeed],
       spinAngle: 0,
       bounced: false,
       grounded: false,

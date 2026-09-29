@@ -31,7 +31,7 @@ import type { SoundPickerState } from '../core/soundPicker.ts';
 import type { World } from '../core/world.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
-import { type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
+import { type HitImpulse, type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import {
@@ -124,7 +124,7 @@ export interface SessionOptions {
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
-    onSever?: (id: EntityId, zombie: Zombie, part: string) => void;
+    onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
     onDeath?: (id: EntityId, zombie: Zombie) => void;
   };
@@ -318,7 +318,7 @@ export const createSession = (options: SessionOptions) => {
       ];
       inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
     },
-    onSever: (id, zombie, part) => options.zombieEffects?.onSever?.(id, zombie, part),
+    onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onDeath: (id, zombie) => {
       const table = zombie.type.loot;
       if (table) {

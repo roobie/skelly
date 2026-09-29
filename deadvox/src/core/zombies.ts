@@ -17,7 +17,15 @@ import {
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
-export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4 } as const;
+export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+
+export interface HitImpulse {
+  /** Hit point in block coordinates. */
+  readonly point: Vec3;
+  readonly direction: Vec3;
+  /** N·s. */
+  readonly impulse: number;
+}
 /** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
 export const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
@@ -141,7 +149,7 @@ export interface ZombieSystemOptions {
   /** Called once for every part severed (src/core/zombies.ts's swing — the melee hit path), *after*
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
-  onSever?: (id: EntityId, zombie: Zombie, part: string) => void;
+  onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -1140,9 +1148,13 @@ export class ZombieSystem {
     return undefined;
   }
 
-  private firstRegionHit(origin: Vec3, direction: Vec3, reach: number): [EntityId, Zombie, ZombieRegion] | undefined {
+  private firstRegionHit(
+    origin: Vec3,
+    direction: Vec3,
+    reach: number,
+  ): [EntityId, Zombie, ZombieRegion, number] | undefined {
     const { blockSize, isSolid } = this.options;
-    let nearest: [EntityId, Zombie, ZombieRegion] | undefined;
+    let nearest: [EntityId, Zombie, ZombieRegion, number] | undefined;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (const [id, zombie] of this.store.entries()) {
       for (const region of ZOMBIE_REGION_NAMES) {
@@ -1171,7 +1183,7 @@ export class ZombieSystem {
           continue;
         }
         nearestDistance = distance;
-        nearest = [id, zombie, region];
+        nearest = [id, zombie, region, distance];
       }
     }
     return nearest;
@@ -1181,7 +1193,7 @@ export class ZombieSystem {
   swing(
     origin: Vec3,
     direction: Vec3,
-    weapon: { damage: number; reach: number; cooldown: number },
+    weapon: { damage: number; reach: number; cooldown: number; impulse?: number | undefined },
   ): EntityId | undefined {
     if (this.playerAttackWait > 0) {
       return undefined;
@@ -1192,7 +1204,16 @@ export class ZombieSystem {
       return undefined;
     }
     this.playerAttackWait = weapon.cooldown;
-    const [id, zombie, region] = found;
+    const [id, zombie, region, distance] = found;
+    const hit: HitImpulse = {
+      point: [
+        origin[0] + unit(direction)[0] * distance,
+        origin[1] + unit(direction)[1] * distance,
+        origin[2] + unit(direction)[2] * distance,
+      ],
+      direction: unit(direction),
+      impulse: weapon.impulse ?? 4,
+    };
     this.options.onSound?.('melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     const health = Math.max(0, zombie.regions[region] - weapon.damage);
@@ -1203,9 +1224,9 @@ export class ZombieSystem {
     if (health === 0 && region in ARM_REGION_PART) {
       // A destroyed arm region is a whole arm gone: the shoulder is the cut, so the renderer hides the
       // arm and the zombie counts it lost for attacking (canStillAttack).
-      this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion]);
+      this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion], hit);
     }
-    this.rollDismember(id, zombie, killed);
+    this.rollDismember(id, zombie, killed, hit);
     if (killed) {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
@@ -1216,29 +1237,29 @@ export class ZombieSystem {
   }
 
   /** Records `part` as severed (cumulative, saved) and tells the renderer; a part already cut is a no-op. */
-  private sever(id: EntityId, zombie: Zombie, part: string): void {
+  private sever(id: EntityId, zombie: Zombie, part: string, hit: HitImpulse): void {
     if (zombie.severed.includes(part)) {
       return;
     }
     zombie.severed.push(part);
-    this.options.onSever?.(id, zombie, part);
+    this.options.onSever?.(id, zombie, part, hit);
   }
 
   /** Independent rolls for this hit: type.dismember.chance for a random not-yet-severed arm part (skipping
    * one already implied by a containing part — see availableArmParts), and, only on a killing blow,
    * type.dismember.headOnKillChance for the head too. Uses zombie.dismemberRng, not behaviorRng — see
    * Zombie.dismemberRng's own doc comment. */
-  private rollDismember(id: EntityId, zombie: Zombie, killed: boolean): void {
+  private rollDismember(id: EntityId, zombie: Zombie, killed: boolean, hit: HitImpulse): void {
     const { dismember } = zombie.type;
     if (zombie.dismemberRng.chance(dismember.chance)) {
       const available = availableArmParts(zombie.severed);
       if (available.length > 0) {
         const part = available[zombie.dismemberRng.int(0, available.length - 1)]!;
-        this.sever(id, zombie, part);
+        this.sever(id, zombie, part, hit);
       }
     }
     if (killed && !zombie.severed.includes('head') && zombie.dismemberRng.chance(dismember.headOnKillChance)) {
-      this.sever(id, zombie, 'head');
+      this.sever(id, zombie, 'head', hit);
     }
   }
 }

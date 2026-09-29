@@ -123,6 +123,8 @@ const WeaponSchema = strictObject({
     /** Seconds between swings. */
     cooldown: Positive,
     stamina: NonNegative,
+    /** Impulse delivered by a melee hit, in N·s. */
+    impulse: optional(NonNegative),
     type: picklist(['blunt', 'cut', 'pierce']),
   }),
 });

@@ -1810,9 +1810,11 @@ describe('dismemberment', () => {
   it('the onSever callback fires with the id, the zombie, and the severed part', () => {
     const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
     const calls: [number, string][] = [];
+    let receivedHit: { point: Vec3; direction: Vec3; impulse: number } | undefined;
     const system = new ZombieSystem({
       ...senses(() => player([100, 2, 0])),
-      onSever: (severedId, zombie, part) => {
+      onSever: (severedId, zombie, part, hit) => {
+        receivedHit = hit;
         calls.push([severedId, part]);
         expect(zombie.severed).toContain(part);
       },
@@ -1821,6 +1823,9 @@ describe('dismemberment', () => {
     swingAt(system, id);
     expect(calls).toHaveLength(1);
     expect(calls[0]![0]).toBe(id);
+    expect(receivedHit?.impulse).toBe(4);
+    expect(Math.hypot(...receivedHit!.direction)).toBeCloseTo(1);
+    expect(receivedHit?.point.every(Number.isFinite)).toBe(true);
   });
 
   it('containment: a part already covered by a severed upperArm is never independently added', () => {
