@@ -265,7 +265,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
 
   let started = false;
   let mainMenuOpen = true;
-  const syncMenuState = () => {
+  let resumeRequested = false;
+  const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
       mainMenuOpen,
@@ -273,8 +274,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       debugMenuOpen: debugTools?.menuOpen ?? false,
       pointerLocked: input.locked,
       dead: sim.dead !== undefined,
+      pointerLockChanged,
+      resumeRequested,
     });
     ({ started, mainMenuOpen } = state);
+    if (pointerLockChanged) {
+      resumeRequested = false;
+    }
     if (state.closeOtherMenus) {
       screen.close();
       debugTools?.closeMenus();
@@ -285,14 +291,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     return state;
   };
   const resume = () => {
-    screen.close();
-    debugTools?.closeMenus();
-    mainMenuOpen = false;
     if (!input.locked) {
+      resumeRequested = true;
       input.lock();
-    }
-    if (input.locked) {
-      syncMenuState();
     }
   };
   overlay.addEventListener('click', (e) => {
@@ -319,7 +320,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     if (!input.locked) {
       menuPointer.releaseCaptures();
     }
-    syncMenuState();
+    syncMenuState(true);
   });
 
   const compress = () => {

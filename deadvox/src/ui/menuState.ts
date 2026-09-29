@@ -5,6 +5,10 @@ export interface MenuStateInput {
   debugMenuOpen: boolean;
   pointerLocked: boolean;
   dead: boolean;
+  /** True only while handling the browser's pointerlockchange event, not on animation frames. */
+  pointerLockChanged?: boolean;
+  /** Resume intent is applied only if that request actually acquires the pointer lock. */
+  resumeRequested?: boolean;
 }
 
 export interface MenuState {
@@ -22,8 +26,16 @@ export interface MenuState {
 /** Derives menu, overlay, pointer-cursor and pause presentation without reading game state. */
 export const computeMenuState = (input: MenuStateInput): MenuState => {
   const started = input.started || input.pointerLocked;
-  const closeOtherMenus = started && !input.pointerLocked && !input.dead;
-  const mainMenuOpen = closeOtherMenus || input.mainMenuOpen;
+  const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
+  const resumed = Boolean(input.pointerLockChanged && input.pointerLocked && input.resumeRequested && !input.dead);
+  const closeOtherMenus = pointerUnlocked || resumed;
+  const { mainMenuOpen: requestedMainMenuOpen } = input;
+  let mainMenuOpen = requestedMainMenuOpen;
+  if (pointerUnlocked) {
+    mainMenuOpen = true;
+  } else if (resumed) {
+    mainMenuOpen = false;
+  }
   const inventoryOpen = closeOtherMenus ? false : input.inventoryOpen;
   const debugMenuOpen = closeOtherMenus ? false : input.debugMenuOpen;
   const overlayHidden = (input.pointerLocked && !mainMenuOpen) || inventoryOpen || input.dead;
