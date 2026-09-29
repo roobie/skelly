@@ -530,6 +530,31 @@ and 300 measured ticks. The ten-shambler test H remains the CI guard.
 **Done when:** a scenario test shows the interruption comes at most one step
 late, and playtests confirm players understand why they were woken.
 
+### 1.8.5 Shambler body regions
+
+Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
+[Damage, destruction and dismemberment](DESIGN.md#damage-destruction-and-dismemberment).
+
+- The shambler's single health pool becomes body regions: head, torso, arms and
+  legs, each with its own health.
+- A melee hit damages the region it lands on. Today the hit test only checks the
+  aim ray against one point per shambler, at 0.55 of its height
+  (`src/core/zombies.ts:1025`), so it has to learn which region the ray
+  reaches first.
+- A region at zero is severed: its rigid limb is hidden and a limb prop drops.
+  Otherwise behaviour is unchanged, as simple as possible. The one forced
+  question, how a shambler with no legs moves, is settled here.
+- A shambler dies only when its head is destroyed.
+- Region state is simulation state: it's in the save snapshot and the source
+  fingerprint.
+
+**Order:** after the save-fingerprint fix (saves step 2b) merges, and before
+save storage and the golden save (1.9). Our saves refuse any version mismatch,
+so a golden save committed first would have to be remade.
+
+**Done when:** a scenario test severs each limb and kills only through the
+head; save → reload keeps severed limbs; BR approves it in game.
+
 ### 1.9 Saves
 
 - One slot. OPFS, with an IndexedDB fallback. `navigator.storage.persist()`.
