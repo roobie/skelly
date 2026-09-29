@@ -8,6 +8,7 @@ import { FEET_BONES } from './humanoid.ts';
 import './humanoid.ts'; // registers the 'humanoid' body plan (sample + build)
 
 const FEET = FEET_BONES;
+/** Shares of nominal mass for severable parts; each key covers the whole subtree it cuts off (forearm.L includes its hand). */
 const HUMANOID_MASS_FRACTIONS = {
   'hand.L': 0.006,
   'hand.R': 0.006,

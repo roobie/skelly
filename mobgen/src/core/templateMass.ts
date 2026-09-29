@@ -6,8 +6,7 @@ export interface TemplatePartMassProperties extends MassProperties {
   readonly fraction: number;
 }
 
-/** Assign a template's nominal body mass to a voxel subset while retaining its voxel-derived COM and
- * inertia shape. Overrides are keyed by part id; otherwise the fraction is the subset's body-volume share. */
+/** Inputs for assigning a template's nominal body mass to a voxel subset. */
 export interface TemplatePartMassInput {
   readonly voxels: Voxels;
   readonly partBoneIndices: Iterable<number>;
@@ -17,6 +16,8 @@ export interface TemplatePartMassInput {
   readonly part: string;
 }
 
+/** Assign a template's nominal body mass to a voxel subset while retaining its voxel-derived COM and
+ * inertia shape. Overrides are keyed by part id; otherwise the fraction is the subset's body-volume share. */
 export const templatePartMassProperties = ({
   voxels,
   partBoneIndices,
