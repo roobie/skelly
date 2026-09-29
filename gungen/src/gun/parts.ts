@@ -1754,11 +1754,15 @@ export const stock: PartFamily = {
       const stockDrop = 1.5;
       const combTop = -1.5;
       const sideZ: readonly [number, number] = [-1.5, 1.5];
-      const openingFront = -0.25 * len;
-      const gripRear = -0.4 * len;
+      const gripFront = 4.25;
+      const gripRear = 0.75;
       const buttFront = -0.72 * len;
+      const openingRear = gripRear - 4;
       const openingBottom = -0.34 * len;
       const stockBottom = -0.42 * len;
+      const gripTop = -4.5;
+      const forwardBarBottom = -4.5;
+      const forwardBarTop = -4;
       const rect = ({
         id,
         x: [x0, x1],
@@ -1781,9 +1785,11 @@ export const stock: PartFamily = {
       return {
         family: 'stock',
         solids: [
-          rect({ id: 'fore-stock', x: [openingFront, 0], y: [-2 - stockDrop, combTop] }),
-          rect({ id: 'thumbhole-top', x: [buttFront, openingFront], y: [-2 - stockDrop, combTop] }),
-          rect({ id: 'grip', x: [gripRear, openingFront], y: [stockBottom, -2 - stockDrop] }),
+          rect({ id: 'thumbhole-top', x: [buttFront, 0], y: [gripTop, combTop] }),
+          rect({ id: 'thumbhole-rear-post', x: [buttFront, openingRear], y: [openingBottom, gripTop] }),
+          rect({ id: 'wrist-drop', x: [-0.25, 0], y: [forwardBarBottom, -2 - stockDrop] }),
+          rect({ id: 'thumbhole-forward-bar', x: [0, gripFront], y: [forwardBarBottom, forwardBarTop] }),
+          rect({ id: 'grip', x: [gripRear, gripFront], y: [stockBottom, gripTop] }),
           rect({ id: 'thumbhole-bottom', x: [buttFront, gripRear], y: [stockBottom, openingBottom] }),
           rect({ id: 'butt', x: [-len, buttFront], y: [stockBottom, combTop] }),
         ],

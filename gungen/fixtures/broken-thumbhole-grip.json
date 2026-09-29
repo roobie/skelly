@@ -1,7 +1,7 @@
 {
   "name": "broken-thumbhole-grip",
   "description": "Bolt-action rifle with a detachable box magazine and pistol grip; the sight can sit over the action.",
-  "expect": ["thumbhole-grip-match"],
+  "expect": ["solid-overlap", "thumbhole-grip-match"],
   "root": "receiver",
   "parts": {
     "receiver": {

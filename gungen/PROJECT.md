@@ -1109,8 +1109,10 @@ not part of the export's acceptance:
     schema change that lane A owns.
   Decide which before starting;
 - a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
-  side-profile opening is built from connected convex extrusions, retains the
-  stock mount and `FIRING_GRIP` hold anchor, and is paired with a thumbhole lower
+  side-profile opening is built from connected convex extrusions; its front
+  grip post moves forward under the receiver while the buttplate remains 22u
+  from the mount. The hole stays 4u long as the bottom bar extends forward.
+  It retains the stock mount and `FIRING_GRIP` hold anchor, and is paired with a thumbhole lower
   that omits the separate grip port. A rule and `broken-thumbhole-grip` fixture
   reject a separate grip alongside the thumbhole stock. `designs/archetype-awm.json`
   uses the long heavy-barrel profile, detachable box magazine, and optic rail;
