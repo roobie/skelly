@@ -1847,21 +1847,27 @@ describe('dismemberment', () => {
     return system.swing(origin, [1, 0, 0], FISTS_MELEE);
   };
 
-  it('lands the same severed limb farther for fists, crowbar, then bat within 0.2–8 m', () => {
+  it('scales launch distance monotonically through 40 N·s and keeps weapon distances bounded', () => {
     const type = {
       ...SHAMBLER,
       speed: { wander: 0, chase: 0 },
       regions: { ...survives },
       dismember: { chance: 1, headOnKillChance: 0 },
     };
-    const weapons = [
-      FISTS_MELEE,
-      registry.items.get('crowbar')!.weapon!.melee!,
-      registry.items.get('baseball_bat')!.weapon!.melee!,
-    ];
-    const outcomes = weapons.map((weapon) => {
+    const fists = FISTS_MELEE;
+    const crowbar = registry.items.get('crowbar')!.weapon!.melee!;
+    const bat = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const simulate = (weapon: Parameters<ZombieSystem['swing']>[2]) => {
       const renderer = new MobActorMeshes(BLOCK_SIZE);
-      renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
+      let debrisBody: { asleep: boolean; center: Vec3 } | undefined;
+      let firstTouchdownCenter: Vec3 | undefined;
+      renderer.setWorld((_x, y, _z) => {
+        const solid = y === -1;
+        if (solid && debrisBody && firstTouchdownCenter === undefined) {
+          firstTouchdownCenter = [...debrisBody.center];
+        }
+        return solid;
+      }, BLOCK_SIZE);
       let hit: HitImpulse | undefined;
       const system = new ZombieSystem({
         ...senses(() => player([100, 2, 0])),
@@ -1878,37 +1884,55 @@ describe('dismemberment', () => {
       expect(system.swing(ray.origin, ray.direction, weapon)).toBe(id);
       const debrisMap = (
         renderer as unknown as {
-          debris: Map<string, { body: { asleep: boolean; center: Vec3; velocity: Vec3 }; part: string }>;
+          debris: Map<string, { body: { asleep: boolean; center: Vec3 } }>;
         }
       ).debris;
       const [debrisKey, debris] = [...debrisMap.entries()][0]!;
-      const severedPart = debrisKey.split(':')[2]!;
-      for (let frame = 0; frame < 960 && !debris.body.asleep; frame++) {
+      debrisBody = debris.body;
+      const part = debrisKey.split(':')[2]!;
+      for (let frame = 0; frame < 1200 && !debris.body.asleep; frame++) {
         renderer.sync(system.store, 1 / 120, 1);
       }
-      expect(debris.body.asleep).toBe(true);
+      expect(debris.body.asleep, `impulse ${weapon.impulse} should settle within ten seconds`).toBe(true);
+      expect(firstTouchdownCenter).toBeDefined();
       const hitPointMetres = hit!.point.map((coordinate) => coordinate * BLOCK_SIZE);
-      const distance = Math.hypot(
-        debris.body.center[0] - hitPointMetres[0]!,
-        debris.body.center[2] - hitPointMetres[2]!,
-      );
-      return { distance, part: severedPart, hit };
-    });
+      const horizontalDistance = (center: Vec3) =>
+        Math.hypot(center[0] - hitPointMetres[0]!, center[2] - hitPointMetres[2]!);
+      return {
+        distance: horizontalDistance(firstTouchdownCenter!),
+        restDistance: horizontalDistance(debris.body.center),
+        part,
+        hit,
+      };
+    };
+    const realWeapons = [simulate(fists), simulate(crowbar), simulate(bat)];
+    const impulseByWeapon = new Map([
+      [4, realWeapons[0]!],
+      [8, realWeapons[1]!],
+      [10, realWeapons[2]!],
+    ]);
+    const sweep = [2, 4, 6, 8, 10, 14, 20, 40].map(
+      (impulse) => impulseByWeapon.get(impulse) ?? simulate({ ...FISTS_MELEE, impulse }),
+    );
 
-    // Distances are the landed rigid-body COM offset from the same recorded hit point.
-    expect(outcomes[0]!.part).toBe(outcomes[1]!.part);
-    expect(outcomes[1]!.part).toBe(outcomes[2]!.part);
-    expect(outcomes[0]!.hit?.point).toEqual(outcomes[1]!.hit?.point);
-    expect(outcomes[1]!.hit?.point).toEqual(outcomes[2]!.hit?.point);
-    expect(outcomes[0]!.hit?.direction).toEqual(outcomes[1]!.hit?.direction);
-    expect(outcomes[1]!.hit?.direction).toEqual(outcomes[2]!.hit?.direction);
-    for (const { distance } of outcomes) {
-      expect(distance).toBeGreaterThanOrEqual(0.2);
-      expect(distance).toBeLessThanOrEqual(8);
+    expect(sweep.map(({ part }) => part)).toEqual(Array.from({ length: 8 }, () => 'upperArm.R'));
+    for (const outcome of sweep) {
+      expect(outcome.hit?.point).toEqual(sweep[0]!.hit?.point);
+      expect(outcome.hit?.direction).toEqual(sweep[0]!.hit?.direction);
     }
-    expect(outcomes[0]!.distance).toBeLessThan(outcomes[1]!.distance);
-    expect(outcomes[1]!.distance).toBeLessThan(outcomes[2]!.distance);
-  });
+    for (let index = 1; index < sweep.length; index++) {
+      expect.soft(sweep[index]!.distance).toBeGreaterThan(sweep[index - 1]!.distance);
+    }
+    expect.soft(sweep[7]!.distance).toBeGreaterThanOrEqual(1.5 * sweep[6]!.distance);
+    for (const outcome of realWeapons) {
+      expect(outcome.distance).toBeGreaterThanOrEqual(0.2);
+      expect(outcome.distance).toBeLessThanOrEqual(8);
+      expect(outcome.restDistance).toBeGreaterThanOrEqual(0.2);
+      expect(outcome.restDistance).toBeLessThanOrEqual(8);
+    }
+    expect(realWeapons[0]!.distance).toBeLessThan(realWeapons[1]!.distance);
+    expect(realWeapons[1]!.distance).toBeLessThan(realWeapons[2]!.distance);
+  }, 15_000);
 
   it('chance 1 always severs a random arm part on a hit that does not kill', () => {
     const type = { ...stationary, regions: survives, dismember: { chance: 1, headOnKillChance: 0 } };
