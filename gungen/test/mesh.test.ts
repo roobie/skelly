@@ -6,6 +6,7 @@ import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/sc
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 // Smaller than generate.test.ts's SEEDS: this file already re-runs generate+validate
 // (baseline) and meshForSolid over every solid of every seed (budget), on top of the
@@ -146,22 +147,28 @@ describe('validator results are unchanged by the mesh module (display-only)', ()
   }, 30_000);
 });
 
-describe('per-assembly triangle budget', () => {
-  it(`stays under ${TRIANGLE_BUDGET} triangles across a seed sweep`, () => {
-    for (const t of TEMPLATES) {
-      for (let seed = 0; seed < SEEDS; seed++) {
-        const resolved = resolve(generate(t, gunDomain, seed), gunDomain);
-        let triangles = 0;
-        for (const part of resolved.placed.keys()) {
-          const def = resolved.defs.get(part)!;
-          for (const s of def.displaySolids ?? def.solids) {
-            triangles += meshForSolid(s).triangleCount;
-          }
-        }
-        expect(triangles, `${t.name} seed ${seed}`).toBeLessThan(TRIANGLE_BUDGET);
-      }
+const triangleCount = (resolved: ReturnType<typeof resolve>): number => {
+  let triangles = 0;
+  for (const part of resolved.placed.keys()) {
+    const def = resolved.defs.get(part)!;
+    for (const s of def.displaySolids ?? def.solids) {
+      triangles += meshForSolid(s).triangleCount;
     }
-  }, 30_000);
+  }
+  return triangles;
+};
+
+describe('per-assembly triangle budget', () => {
+  sweepGroup(`stays under ${TRIANGLE_BUDGET} triangles across a seed sweep`, () => {
+    it('passes', () => {
+      for (const t of TEMPLATES) {
+        for (let seed = 0; seed < SEEDS; seed++) {
+          const triangles = triangleCount(resolve(generate(t, gunDomain, seed), gunDomain));
+          expect(triangles, `${t.name} seed ${seed}`).toBeLessThan(TRIANGLE_BUDGET);
+        }
+      }
+    });
+  });
 });
 
 // A regular N-gon profile, radius r, CCW (matches validateExtrudedPolygon's convention).

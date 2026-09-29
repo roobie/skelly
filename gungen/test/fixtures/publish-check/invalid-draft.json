@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "template": "ar",
+  "assembly": {
+    "name": "invalid-draft",
+    "root": "wrong-root",
+    "parts": {},
+    "connections": []
+  },
+  "locks": { "params": {}, "optionalParts": [] },
+  "status": "draft"
+}

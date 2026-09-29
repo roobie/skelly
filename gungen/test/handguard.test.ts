@@ -4,6 +4,7 @@ import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
+import { sweepGroup } from './sweeps.ts';
 
 describe('barrel-fitted handguards', () => {
   it('derives its opening from the barrel and caps outer dimensions at the receiver face', () => {
@@ -50,15 +51,25 @@ describe('barrel-fitted handguards', () => {
     }
   });
 
-  it('keeps every generated template handguard within its receiver over 1,000 seeds', () => {
-    for (const template of TEMPLATES) {
-      for (let seed = 0; seed < 1000; seed++) {
-        const report = validate(generate(template, gunDomain, seed), gunDomain);
-        expect(
-          report.issues.filter(({ rule }) => rule === 'handguard-fit'),
-          `${template.name} seed ${seed}`,
-        ).toEqual([]);
-      }
+  // Chunked by seed range so each test stays well inside the default timeout; the sweep
+  // runs only in CI (see sweeps.ts) and its timeouts are never raised.
+  const Chunk = 200;
+  for (const template of TEMPLATES) {
+    for (let from = 0; from < 1000; from += Chunk) {
+      sweepGroup(
+        `keeps the ${template.name} template handguard within its receiver over seeds ${from}-${from + Chunk - 1}`,
+        () => {
+          it('passes', () => {
+            for (let seed = from; seed < from + Chunk; seed++) {
+              const report = validate(generate(template, gunDomain, seed), gunDomain);
+              expect(
+                report.issues.filter(({ rule }) => rule === 'handguard-fit'),
+                `${template.name} seed ${seed}`,
+              ).toEqual([]);
+            }
+          });
+        },
+      );
     }
-  }, 60_000);
+  }
 });

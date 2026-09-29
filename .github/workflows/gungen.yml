@@ -24,4 +24,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run validate
+      - run: npm run check:designs
       - run: npx vite build

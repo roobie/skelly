@@ -7,7 +7,8 @@ import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { ak } from '../src/gun/templates.ts';
-import { loadFixture } from './helpers.ts';
+import { loadFixture, variant as variantOf } from './helpers.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const akFixture = loadFixture('archetype-ak');
 const extrudedOf = (solid: Solid): Extract<Solid, { kind: 'extruded-polygon' }> => {
@@ -210,17 +211,19 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  it('selects AK-74 or AKM curve data per seed', () => {
-    const variants = new Set<string>();
-    for (let seed = 0; seed < 100; seed++) {
-      const assembly = generate(ak, gunDomain, seed);
-      const variant = assembly.parts.magazine!.params!.variant!;
-      variants.add(variant);
-      expect(['ak74', 'akm']).toContain(variant);
-      expect(validate(assembly, gunDomain).ok).toBe(true);
-    }
-    expect(variants).toEqual(new Set(['ak74', 'akm']));
-  }, 30_000);
+  sweepGroup('selects AK-74 or AKM curve data per seed', () => {
+    it('passes', () => {
+      const variants = new Set<string>();
+      for (let seed = 0; seed < 100; seed++) {
+        const assembly = generate(ak, gunDomain, seed);
+        const variant = assembly.parts.magazine!.params!.variant!;
+        variants.add(variant);
+        expect(['ak74', 'akm']).toContain(variant);
+        expect(validate(assembly, gunDomain).ok).toBe(true);
+      }
+      expect(variants).toEqual(new Set(['ak74', 'akm']));
+    });
+  });
 
   it('builds exact-jointed convex ring sectors and a finer display tessellation from each curve profile', () => {
     const edgeLengths = (profile: readonly (readonly [number, number])[]) =>
@@ -311,4 +314,30 @@ describe('AK-pattern archetype', () => {
       'gas-cylinder.front (gas-block mount on gas-cylinder) is required but empty.',
     );
   });
+  it('takes a standard handguard on the AK receiver: the gas-cylinder port sits on the cylinder axis in both layouts', () => {
+    const standard = variantOf('archetype-ak', (a) => {
+      a.parts.handguard!.params = { layout: 'standard' };
+    });
+    expect(validate(standard, gunDomain).issues).toEqual([]);
+    expect(validate(loadFixture('ak-standard-handguard'), gunDomain).issues).toEqual([]);
+    for (const layout of ['ak', 'standard']) {
+      const port = FAMILIES.handguard!.build({ layout }).ports.find(({ id }) => id === 'gas-cylinder')!;
+      expect(port.pos[1]).toBe(2);
+    }
+  });
+
+  sweepGroup(
+    'offers the standard handguard in the AK template, always clamped so barrel S never meets a free-float one',
+    () => {
+      it('passes', () => {
+        const layouts = new Set<string>();
+        for (let seed = 0; seed < 300; seed++) {
+          const params = generate(ak, gunDomain, seed).parts.handguard!.params ?? {};
+          layouts.add(String(params.layout));
+          expect(params.mount ?? 'clamped', `seed ${seed}`).toBe('clamped');
+        }
+        expect([...layouts].sort()).toEqual(['ak', 'standard']);
+      });
+    },
+  );
 });

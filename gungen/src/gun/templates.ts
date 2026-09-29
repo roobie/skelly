@@ -99,7 +99,7 @@ export const ak: Template = {
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
     { id: 'lower', family: 'lower', params: { layout: 'ak' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
-    { id: 'handguard', family: 'handguard', params: { layout: 'ak', clearance: ['M', 'L'] } },
+    { id: 'handguard', family: 'handguard', params: { layout: ['ak', 'standard'], clearance: ['M', 'L'] } },
     { id: 'gas-cylinder', family: 'gas-cylinder' },
     { id: 'gas-block', family: 'gas-block' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },

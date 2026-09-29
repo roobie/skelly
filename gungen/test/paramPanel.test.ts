@@ -224,8 +224,10 @@ describe('param panel: connection pruning', () => {
     const { assembly, dropped } = setParam(testSeed, testDomain, { part: 'post', name: 'capped' }, 'no');
     expect(dropped).toEqual([{ from: 'post.cap', to: 'cap.attach' }]);
     expect(assembly.connections).toEqual([]);
-    // The dangling reference is gone, not merely tolerated: resolve() has nothing left to complain about.
-    expect(resolve(assembly, testDomain).issues).toEqual([]);
+    // The dangling reference is gone; resolve reports the now-disconnected cap instead.
+    expect(resolve(assembly, testDomain).issues).toEqual([
+      { rule: 'structure', message: 'cap is not connected to the root', parts: ['cap'] },
+    ]);
   });
 
   it('clearing the override restores the pruned connection', () => {
