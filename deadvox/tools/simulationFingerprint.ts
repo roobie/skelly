@@ -72,6 +72,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
   'src/ui/menuPointer.ts',
+  'src/ui/menuState.ts',
   'src/ui/rest.ts',
 ] as const;
 

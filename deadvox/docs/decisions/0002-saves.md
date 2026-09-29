@@ -239,6 +239,11 @@ are pinned by `test/simulationFingerprint.test.ts`:
   does with a forwarded event stays in the fingerprinted `inventoryScreen.ts`.
   Browser pointer fixes (such as Firefox's pinned `clientX/Y`) live here so they
   don't invalidate saves.
+- `src/ui/menuState.ts`: a pure derivation of the menu, inventory/debug, pointer-lock
+  and death flags into menu-pointer, overlay visibility and pause presentation.
+  `play.ts` supplies the inputs and applies the returned pause flag; this helper
+  reads no simulation state. Keep the state acquisition and application in the
+  fingerprinted `play.ts`.
 - `src/ui/rest.ts`: read-only rendering of `RestAction` and simulation clock;
   rest/stop input handling and state transitions live in fingerprinted game
   modules.
