@@ -6,6 +6,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
+import { ATTACK_CLIPS } from '@mobgen/mob/attack.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
@@ -19,9 +20,12 @@ import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import {
   advanceGaitFromMovement,
   attackJustStarted,
+  attackStartTime,
   MobActorMeshes,
   variantIndexForId,
 } from '../src/render/mobActors.ts';
+
+const LUNGE_GRAB_HIT_TIME = ATTACK_CLIPS.LUNGE_GRAB!.hitTime;
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -71,6 +75,7 @@ const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1]): Zombie => ({
   renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
   health: SHAMBLER.health,
   attackWait: 0,
+  attackWindup: 0,
   gaitPhase: 0,
   footstepClock: initialShamblerFootstepClock(SHAMBLER.stepLength),
   wanderClock: 0,
@@ -126,10 +131,21 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 });
 
 describe('attackJustStarted', () => {
-  it('is true only when attackWait rises versus last frame (a fresh attack landing), never on a fall', () => {
-    expect(attackJustStarted(1.5, 0)).toBe(true); // just landed a hit (cooldown jumps up from 0)
+  it('is true only when attackWait rises versus last frame (a fresh attack windup starting), never on a fall', () => {
+    expect(attackJustStarted(1.5, 0)).toBe(true); // windup just started (cooldown jumps up from 0)
     expect(attackJustStarted(1.2, 1.5)).toBe(false); // cooling down
     expect(attackJustStarted(0, 0)).toBe(false); // idle, unchanged
+  });
+});
+
+describe('attackStartTime', () => {
+  it('starts the clip already `windup` seconds in, so the clip hitTime lines up with the sim hit', () => {
+    expect(attackStartTime(0.3)).toBeCloseTo(LUNGE_GRAB_HIT_TIME - 0.3, 9);
+  });
+
+  it('clamps to 0 for a windup at or beyond the clip hitTime, instead of a negative start', () => {
+    expect(attackStartTime(LUNGE_GRAB_HIT_TIME)).toBe(0);
+    expect(attackStartTime(LUNGE_GRAB_HIT_TIME + 1)).toBe(0);
   });
 });
 

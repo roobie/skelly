@@ -48,7 +48,8 @@
       "attack": {
         "damage": 8,
         "reach": 1.2,
-        "cooldown": 1.5
+        "cooldown": 1.5,
+        "windup": 0.3
       },
       "abilities": [],
       "loot": "shambler_pockets",

@@ -355,7 +355,9 @@ describe('shambler scenarios', () => {
     expect(damage).toBe(0);
     expect(positions.every((position) => position[2] > 1)).toBe(true);
     entities.setOpen(door, true);
-    system.tick(1 / 60);
+    // A hit now telegraphs: attack start plays the sound and begins the windup; damage lands only once
+    // the windup elapses, still in reach/LOS (see withinAttackReach in src/core/zombies.ts).
+    run(system, SHAMBLER.attack.windup + 0.1);
     expect(damage).toBe(8);
     const end = positions.at(-1)!;
     expect((end[2] - 1) * BLOCK_SIZE).toBeLessThanOrEqual(1.5);
@@ -376,7 +378,7 @@ describe('shambler scenarios', () => {
       ),
     );
     system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
-    system.tick(1 / 60);
+    run(system, SHAMBLER.attack.windup + 0.1);
     expect(damage).toBe(8);
   });
 
@@ -1533,5 +1535,132 @@ describe('idle and stroll shambling', () => {
       expect((turn * 180) / Math.PI).toBeLessThanOrEqual(4);
       previousYaw = currentYaw;
     }
+  });
+});
+
+describe('attack windup', () => {
+  it('does not damage the player the instant an attack starts — only after the windup elapses', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    expect(damage).toBe(0);
+    const zombie = system.store.get(id)!;
+    expect(zombie.mode).toBe('chase');
+    expect(zombie.attackWindup).toBeCloseTo(SHAMBLER.attack.windup, 5);
+    expect(zombie.attackWait).toBeCloseTo(SHAMBLER.attack.cooldown, 5);
+  });
+
+  it('damages the player exactly once the windup elapses, if still in reach', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    expect(damage).toBe(0);
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(8);
+  });
+
+  it('a miss: no damage if the player steps out of reach during the windup', () => {
+    let target: Vec3 = [0, 2, 0];
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player(target),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.attackWindup).toBeGreaterThan(0);
+    target = [50, 2, 0]; // teleports well outside the shambler's reach mid-windup
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(0);
+    expect(system.store.get(id)!.attackWindup).toBe(0); // the windup still resolves — as a miss, not a stall
+  });
+
+  it('a miss: no damage if line of sight is blocked (a door closes) during the windup', () => {
+    const { entities, door, solid } = makeDoorWorld();
+    entities.setOpen(door, true);
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([5, 1, -0.56]),
+        solid,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
+    system.tick(1 / 60);
+    expect(system.store.get(id)!.attackWindup).toBeGreaterThan(0);
+    entities.setOpen(door, false); // slams shut mid-windup, blocking the chest-to-chest raycast
+    run(system, SHAMBLER.attack.windup + 0.1);
+    expect(damage).toBe(0);
+  });
+
+  it('the cooldown (running since windup start) still gates the next attack after a hit lands', () => {
+    let damage = 0;
+    const system = new ZombieSystem(
+      senses(
+        () => player([0, 2, 0]),
+        FLOOR,
+        () => 12,
+        (amount) => {
+          damage += amount;
+        },
+      ),
+    );
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    run(system, SHAMBLER.attack.windup + 0.05); // resolves the first attack
+    expect(damage).toBe(8);
+    const afterFirstHit = system.store.get(id)!.attackWait;
+    expect(afterFirstHit).toBeGreaterThan(0);
+    // Well within the remaining cooldown: no second windup should start yet.
+    run(system, afterFirstHit - 0.1);
+    expect(system.store.get(id)!.attackWindup).toBe(0);
+    expect(damage).toBe(8);
+  });
+
+  it('keeps attackWindup exactly across a snapshot/restore round trip mid-attack', () => {
+    const system = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
+    const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
+    system.tick(1 / 60); // starts the windup
+    for (let i = 0; i < 5; i++) {
+      system.tick(1 / 60); // partway through — a non-trivial value to round-trip, not just the raw constant
+    }
+    const before = system.store.get(id)!.attackWindup;
+    expect(before).toBeGreaterThan(0);
+    expect(before).toBeLessThan(SHAMBLER.attack.windup);
+
+    const state = system.snapshotState();
+    const restored = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
+    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
+
+    expect(restored.store.get(id)!.attackWindup).toBe(before);
   });
 });

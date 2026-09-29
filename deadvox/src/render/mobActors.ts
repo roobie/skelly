@@ -132,10 +132,19 @@ export const variantIndexForId = (id: EntityId, poolSize: number): number => {
 };
 
 /** True the instant attackWait *increases* versus last frame's value — the sim sets it to the type's own
- * cooldown exactly when a hit lands (src/core/zombies.ts), so a rise (never a fall — it only ever counts
- * down otherwise) means "an attack just started." Exported for test/mobActors.test.ts. */
+ * cooldown exactly when an attack's windup starts, i.e. the telegraph, not when the hit lands
+ * (src/core/zombies.ts), so a rise (never a fall — it only ever counts down otherwise) means "an attack
+ * just started its windup." Exported for test/mobActors.test.ts. */
 export const attackJustStarted = (attackWait: number, previousAttackWait: number): boolean =>
   attackWait > previousAttackWait;
+
+/** Where in mobgen's LUNGE_GRAB clip to start playing an attack so its own hitTime lands exactly when the
+ * sim's windup elapses and the hit resolves (src/core/zombies.ts telegraphs an attack with a windup before
+ * the hit, rather than landing it instantly) — clamped to 0 for a windup at or beyond the clip's hitTime,
+ * so the clip still plays (just with no lead-in) rather than starting at a negative time. Rendering
+ * interpolates roughly one tick behind the sim; not corrected for here. Exported for
+ * test/mobActors.test.ts. */
+export const attackStartTime = (windupSeconds: number): number => Math.max(0, LUNGE_GRAB.hitTime - windupSeconds);
 
 /** The (clock, smoothed/quantized speed) triple advanceGaitFromMovement threads through frame to frame —
  * pulled out of ZombieRenderState so the update itself is a plain, testable function of its inputs. */
@@ -530,10 +539,12 @@ export class MobActorMeshes implements ZombieRenderer {
     state.lastPos = worldPos;
 
     // mobgen's LUNGE_GRAB starts the instant attackWait jumps up (the sim sets it to the type's cooldown
-    // exactly when a hit lands — src/core/zombies.ts), and plays out over the walk until the clip ends,
-    // same as mobgen's own viewer/stress page drive attackPose.
+    // exactly when an attack's windup starts — src/core/zombies.ts), and plays out over the walk until the
+    // clip ends, same as mobgen's own viewer/stress page drive attackPose. Starting the clip at
+    // hitTime − windup (via attackStartTime) lines up the clip's own hitTime with the sim's
+    // real hit, instead of always starting from 0 and landing the visual hit late.
     if (attackJustStarted(zombie.attackWait, state.prevAttackWait)) {
-      state.attackTime = 0;
+      state.attackTime = attackStartTime(zombie.type.attack.windup);
     }
     state.prevAttackWait = zombie.attackWait;
     if (state.attackTime !== undefined) {

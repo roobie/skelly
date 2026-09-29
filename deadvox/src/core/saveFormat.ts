@@ -310,6 +310,7 @@ const zombie = obj({
   health: finite,
   lastPerceived: opt(vec3),
   attackWait: finite,
+  attackWindup: finite,
   gaitPhase: finite,
   wanderClock: finite,
 });

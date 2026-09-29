@@ -57,6 +57,10 @@ export interface Zombie {
   health: number;
   lastPerceived?: Vec3 | undefined;
   attackWait: number;
+  /** Seconds left in the current attack's telegraph windup; 0 = not winding up. Set to
+   * type.attack.windup when an attack starts (alongside attackWait), counts down to exactly 0, then the
+   * hit resolves (hurtPlayer or a miss) if the target is still in reach/LOS. */
+  attackWindup: number;
   /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
   gaitPhase: number;
   /** Surface footfall cadence advances only with grounded travel. */
@@ -136,6 +140,32 @@ const approachAngle = (current: number, target: number, amount: number): number 
 const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
 const inRange = (rng: Rng, range: { min: number; max: number }): number => rng.range(range.min, range.max);
+
+interface AttackReachProbe {
+  zombiePos: Vec3;
+  playerPos: Vec3;
+  type: ZombieDef;
+  blockSize: number;
+  isSolid: SolidAt;
+}
+
+/** Shared by both attack start (telegraph) and attack resolve (after the windup elapses): horizontal
+ * reach, a vertical band matching a standing player, and clear chest-to-chest line of sight. Used
+ * identically at both times so "still in reach" at resolve means exactly what "in reach" meant at start. */
+const withinAttackReach = ({ zombiePos, playerPos, type, blockSize, isSolid }: AttackReachProbe): boolean => {
+  if (horizontalDistance(playerPos, zombiePos) * blockSize > type.attack.reach) {
+    return false;
+  }
+  if (Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= 1.7) {
+    return false;
+  }
+  const chestOffset = 1 / blockSize;
+  const zombieChest: Vec3 = [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
+  const playerChest: Vec3 = [playerPos[0], playerPos[1] + chestOffset, playerPos[2]];
+  const toPlayer = sub(playerChest, zombieChest);
+  const chestDistance = Math.hypot(...toPlayer);
+  return chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined;
+};
 
 interface JumpObstacleProbe {
   body: Body;
@@ -648,6 +678,7 @@ export class ZombieSystem {
       renderPrevious: { pos: copy(position), facing: copy(direction), headYaw: 0, gaitPhase: 0 },
       health: type.health,
       attackWait: 0,
+      attackWindup: 0,
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
@@ -681,6 +712,8 @@ export class ZombieSystem {
         gaitPhase: zombie.gaitPhase,
       };
       zombie.attackWait = Math.max(0, zombie.attackWait - dt);
+      // attackWindup is decremented further below, alongside the reach/LOS check it gates — see
+      // withinAttackReach and its two call sites (attack start and attack resolve).
       const { pos } = zombie.body;
       const { type, behaviorRng: rng } = zombie;
       const perception = { zombie: type, from: pos, facing: zombie.facing, player, hour, blockSize, isSolid };
@@ -930,22 +963,24 @@ export class ZombieSystem {
         }
       }
 
-      if (
-        zombie.mode === 'chase' &&
-        horizontalDistance(player.pos, zombie.body.pos) * blockSize <= type.attack.reach &&
-        Math.abs(player.pos[1] - zombie.body.pos[1]) * blockSize < 1.7 &&
-        zombie.attackWait <= 0
-      ) {
-        const chestOffset = 1 / blockSize;
-        const zombieChest: Vec3 = [pos[0], pos[1] + chestOffset, pos[2]];
-        const playerChest: Vec3 = [player.pos[0], player.pos[1] + chestOffset, player.pos[2]];
-        const toPlayer = sub(playerChest, zombieChest);
-        const chestDistance = Math.hypot(...toPlayer);
-        if (chestDistance > 0 && raycast(zombieChest, unit(toPlayer), chestDistance, isSolid) === undefined) {
-          this.options.onSound?.('shambler_attack', copy(pos));
+      if (zombie.attackWindup > 0) {
+        // Resolve regardless of mode — the zombie may have lost the chase mid-windup; only whether the
+        // target is still in reach/LOS right now decides a hit versus a miss.
+        zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
+        const reach = { zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid };
+        if (zombie.attackWindup <= 0 && withinAttackReach(reach)) {
           this.options.hurtPlayer(type.attack.damage);
-          zombie.attackWait = type.attack.cooldown;
         }
+      } else if (
+        zombie.mode === 'chase' &&
+        zombie.attackWait <= 0 &&
+        withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
+      ) {
+        // Telegraph: sound and the visible windup start together; the cooldown starts now too (from
+        // windup start, not from the hit), so it also gates re-starting an attack during this one's windup.
+        this.options.onSound?.('shambler_attack', copy(pos));
+        zombie.attackWindup = type.attack.windup;
+        zombie.attackWait = type.attack.cooldown;
       }
       if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
         this.beginIdle(zombie);

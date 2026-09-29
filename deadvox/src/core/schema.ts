@@ -380,7 +380,10 @@ export const ZombieSchema = strictObject({
       'stumble duration must allow easing in and out',
     ),
   ),
-  attack: strictObject({ damage: Positive, reach: Positive, cooldown: Positive }),
+  attack: pipe(
+    strictObject({ damage: Positive, reach: Positive, cooldown: Positive, windup: Positive }),
+    check((attack) => attack.windup < attack.cooldown, 'windup must be less than cooldown'),
+  ),
   abilities: array(picklist(ZOMBIE_ABILITIES)),
   /** What's in its pockets. */
   loot: optional(Id),
