@@ -349,7 +349,7 @@ Numbered to fit between 1.5 and 1.6 without renumbering the milestones after
 it.
 
 - Models are content: a `models` section lists each model's id and file, and
-  an item names its model by id, as zombie types already do. The files are
+  an item names its model by id. The files are
   glTF binaries (`.glb`) in `content/base/assets/models/`, loaded with three.js's
   `GLTFLoader`; a model in another format is converted to `.glb` once and the
   converted file is committed.
@@ -743,7 +743,7 @@ A zombie type:
   "sight": 25, "nightSight": 10, "sightCone": 60, "hearing": 1.0,
   "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
   "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
-  "abilities": [], "loot": "shambler_pockets", "model": "figure_basic" }
+  "abilities": [], "loot": "shambler_pockets" }
 ```
 
 ## Content for Slice 1

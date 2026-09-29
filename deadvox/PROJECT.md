@@ -138,8 +138,7 @@ npm run validate   # base content; add paths to validate a mod on top
   piles and hands. The other 16 pack models have no Slice 1 item mapped to them
   yet: baton, cleaver, fire axe, frying pan, golf club, hand axe, katana, machete,
   pickaxe, pocket knife, shovel, sickle, sledgehammer, tanto, KABAR and wrench.
-- Zombie types name a `model`, but it isn't checked against the `models` section
-  yet; shamblers are box figures in 1.7.
+- Shamblers are box figures in 1.7.
 - The hamlet's templates are drawn in half-metre blocks, so only the game's
   block size has it; the benchmark's other sizes use the test house.
 - An open door doesn't block movement anywhere; its swung panel is only drawn.

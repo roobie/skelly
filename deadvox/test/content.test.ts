@@ -139,7 +139,6 @@ describe('content', () => {
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
-            model: 'figure_basic',
           },
         ],
       },
@@ -164,7 +163,6 @@ describe('content', () => {
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
-            model: 'figure_basic',
           },
         ],
       },
@@ -283,7 +281,6 @@ describe('content references', () => {
             attack: { damage: 5, reach: 1, cooldown: 1.5 },
             abilities: [],
             loot: 'till',
-            model: 'figure_basic',
           },
         ],
         items: [
