@@ -1674,10 +1674,11 @@ export const magazine: PartFamily = {
  * sporting: comb dropped below the bore, with a wrist to hold. It clears a
  * bolt's travel and counts as a firing grip.
  * tapered: constant-width side profile, with a narrow wrist and taller butt.
+ * tapered-sawed: the same front and grip, cut off just behind the grip.
  */
 export const stock: PartFamily = {
   name: 'stock',
-  params: { length: size, style: choice('straight', 'sporting', 'dropped', 'tapered') },
+  params: { length: size, style: choice('straight', 'sporting', 'dropped', 'tapered', 'tapered-sawed') },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
     const port: PortDef = {
@@ -1703,7 +1704,7 @@ export const stock: PartFamily = {
         tags: [FIRING_GRIP],
       };
     }
-    if (params.style === 'tapered') {
+    if (params.style === 'tapered' || params.style === 'tapered-sawed') {
       const stockDrop = 1.5;
       const sideZ: readonly [number, number] = [-1.5, 1.5];
       const combStartY = 1.5 - stockDrop;
@@ -1727,29 +1728,60 @@ export const stock: PartFamily = {
       const bellyRearX = -0.45 * len;
       const bellyRearY = toeY + bellyTangent * (bellyRearX - padFrontBottomX);
 
+      const foreStock = extrudedPolygon(
+        'fore-stock',
+        [
+          [wristX, wristBottomY],
+          [0, -2 - stockDrop],
+          [0, combStartY],
+          [wristX, wristTopY],
+        ],
+        sideZ,
+      );
+      const gripSolid = extrudedPolygon(
+        'grip',
+        [
+          [gripX, gripY],
+          [wristX, wristBottomY],
+          [wristX, wristTopY],
+          [gripX, combY(gripX)],
+        ],
+        sideZ,
+      );
+
+      if (params.style === 'tapered-sawed') {
+        const cutBehindGrip = 0.5;
+        const cutX = gripX - cutBehindGrip;
+        const lowerTangent = (bellyRearY - gripY) / (bellyRearX - gripX);
+        const cutBottomY = gripY + lowerTangent * (cutX - gripX);
+        return {
+          family: 'stock',
+          solids: [
+            foreStock,
+            gripSolid,
+            extrudedPolygon(
+              'cut-stub',
+              [
+                [cutX, cutBottomY],
+                [gripX, gripY],
+                [gripX, combY(gripX)],
+                [cutX, combY(cutX)],
+              ],
+              sideZ,
+            ),
+          ],
+          ports: [port],
+          keepOuts: [],
+          axes: [],
+          tags: [FIRING_GRIP],
+        };
+      }
+
       return {
         family: 'stock',
         solids: [
-          extrudedPolygon(
-            'fore-stock',
-            [
-              [wristX, wristBottomY],
-              [0, -2 - stockDrop],
-              [0, combStartY],
-              [wristX, wristTopY],
-            ],
-            sideZ,
-          ),
-          extrudedPolygon(
-            'grip',
-            [
-              [gripX, gripY],
-              [wristX, wristBottomY],
-              [wristX, wristTopY],
-              [gripX, combY(gripX)],
-            ],
-            sideZ,
-          ),
+          foreStock,
+          gripSolid,
           extrudedPolygon(
             'grip-back',
             [

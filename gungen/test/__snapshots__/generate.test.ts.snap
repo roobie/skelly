@@ -1832,7 +1832,7 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "tapered",
+          "style": "tapered-sawed",
         },
       },
       "tube": {

@@ -32,7 +32,7 @@ import {
 } from './parseAssembly.ts';
 import { resolve } from './resolve.ts';
 import type { Assembly, Domain, PartInstance } from './schema.ts';
-import type { ParamReference, SlotTemplate, Template } from './template.ts';
+import type { ConditionalChoice, ParamReference, SlotTemplate, Template } from './template.ts';
 import { validate } from './validate.ts';
 
 /**
@@ -153,6 +153,7 @@ const partPath = (id: string, ...rest: string[]): string => ['assembly', 'parts'
 
 const isParamReference = (choice: unknown): choice is ParamReference =>
   isRecord(choice) && typeof choice.fromSlot === 'string';
+const isConditionalChoice = (choice: unknown): choice is ConditionalChoice => isRecord(choice) && 'when' in choice;
 
 const offeredValues = (choice: string | readonly string[]): readonly string[] =>
   typeof choice === 'string' ? [choice] : choice;
@@ -169,6 +170,18 @@ const staleParam = (
     return undefined;
   }
   const path = partPath(slot.id, 'params', name);
+  if (isConditionalChoice(choice)) {
+    const condition = parts[choice.when.part]?.params?.[choice.when.param];
+    const offered = condition === choice.when.equals ? choice.onMatch : choice.onMismatch;
+    return offeredValues(offered).includes(value)
+      ? undefined
+      : {
+          code: 'template-choice',
+          message: `${slot.id}.${name} is "${value}", which the template no longer offers in this branch (${offeredValues(offered).join(', ')})`,
+          path,
+          parts: [slot.id],
+        };
+  }
   if (isParamReference(choice)) {
     const referenced = parts[choice.fromSlot]?.params?.[choice.param];
     return referenced !== undefined && referenced !== value
