@@ -218,7 +218,7 @@ const substep = (body: RigidBody, dt: number, world: RigidWorld | undefined, gra
     body.asleep = true;
   }
 };
-/** Deterministic fixed-step integration (1/120 s); excess time is dropped after 16 substeps. */
+/** Deterministic 1/120 s steps; world-backed steps split into at most eight collision parts, then excess frame time drops after 16 fixed steps. */
 export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, gravity = 9.8): void => {
   if (body.asleep || dt <= 0) {
     return;
@@ -235,6 +235,7 @@ export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, g
       continue;
     }
     const speed = cornerSpeed(body);
+    // Bound the speed after the fixed step's gravity update as well as the current linear and angular motion.
     const worstCaseSpeed = speed + Math.abs(gravity) * fixedStep;
     const needed = Math.max(1, Math.ceil((worstCaseSpeed * fixedStep) / (0.5 * blockSize!)));
     const innerSteps = Math.min(8, needed);
