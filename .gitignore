@@ -1,3 +1,6 @@
 node_modules/
 # Agent mail (maildirs and scratch) lives in the main checkout, untracked.
 .agent-mail/
+
+# Claude Code agent worktrees (each a full checkout with its own biome.jsonc).
+.claude/worktrees/
