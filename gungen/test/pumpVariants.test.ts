@@ -20,6 +20,19 @@ describe('pump shotgun grip variants', () => {
 
       const report = validate(assembly, gunDomain);
       expect(report.ok, `seed ${seed}: ${JSON.stringify(report.issues)}`).toBe(true);
+      const barrelLength = assembly.parts.barrel?.params?.length;
+      expect(['S', 'M', 'L'], `seed ${seed}: barrel length`).toContain(barrelLength);
+      const tubeSolid = report.resolved.defs.get('tube')?.solids.find((solid) => solid.id === 'tube');
+      if (tubeSolid?.kind !== 'box') {
+        throw new Error(`seed ${seed}: pump tube is not a box`);
+      }
+      const tubeEnd = tubeSolid.box.center[0] + tubeSolid.box.half[0];
+      const expectedTubeEnd = { S: 17, M: 23.5, L: 46 }[barrelLength as 'S' | 'M' | 'L'];
+      expect(tubeEnd, `seed ${seed}: ${barrelLength} tube length`).toBe(expectedTubeEnd);
+      expect(assembly.connections).toContainEqual({ from: 'tube.cap', to: 'barrel.lug' });
+      expect(assembly.connections.some(({ from, to }) => from === 'tube.support' && to === 'barrel.support-lug')).toBe(
+        barrelLength === 'L',
+      );
       const hold = selectGunAnchors(report.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
       expect('code' in hold, `seed ${seed}: one unambiguous hold`).toBe(false);
 

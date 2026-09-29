@@ -860,6 +860,11 @@ export const barrel: PartFamily = {
       params.handguardLayout === 'ak'
         ? akHandguardLength(lengthClass)
         : snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
+    const tubeEnd = lengthClass === 'L' ? len : fore;
+    const supportLug: PortDef[] =
+      lengthClass === 'L'
+        ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y }]
+        : [];
     return {
       family: 'barrel',
       solids: [solid('tube', [0, -r, -r], [len, r, r])],
@@ -924,8 +929,8 @@ export const barrel: PartFamily = {
             ]
           : []),
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
-        { id: 'lug', mount: 'lug', gender: 'female', pos: [fore, -TUBE_DROP, 0], normal: NEG_X, up: Y },
-        { id: 'end-lug', mount: 'lug', gender: 'female', pos: [len, -TUBE_DROP, 0], normal: NEG_X, up: Y },
+        { id: 'lug', mount: 'lug', gender: 'female', pos: [tubeEnd, -TUBE_DROP, 0], normal: NEG_X, up: Y },
+        ...supportLug,
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
@@ -1191,22 +1196,28 @@ export const tubeMagazine: PartFamily = {
     bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
   },
   build(params): PartDef {
-    const length = barrelLength({ length: cls(params, 'length') });
-    const supportX = snapAkGrid(length * HANDGUARD_REACH.barrelFraction);
-    // A slim barrel leaves a gap above the tube; bands bridge it at both barrel lugs.
+    const lengthClass = cls(params, 'length');
+    const barrelEnd = barrelLength({ length: lengthClass });
+    const supportX = snapAkGrid(barrelEnd * HANDGUARD_REACH.barrelFraction);
+    const length = lengthClass === 'L' ? barrelEnd : supportX;
+    // A slim barrel leaves a gap above the tube; bands bridge it at each attached lug.
     const bandTop = TUBE_DROP - BARREL_RADIUS[cls(params, 'bore')];
     const band = (id: string, x: number): Solid[] =>
       bandTop > 1 ? [solid(id, [x - 1, 1, -0.5], [x, bandTop, 0.5])] : [];
+    const supportPort: PortDef[] =
+      lengthClass === 'L'
+        ? [{ id: 'support', mount: 'lug', gender: 'male', pos: [supportX, 0, 0], normal: X, up: Y }]
+        : [];
     return {
       family: 'tube-magazine',
       solids: [
         solid('tube', [0, -1, -1], [length, 1, 1]),
-        ...band('support-band', supportX),
+        ...(lengthClass === 'L' ? band('support-band', supportX) : []),
         ...band('cap-band', length),
       ],
       ports: [
         { id: 'rear', mount: 'tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'support', mount: 'lug', gender: 'male', pos: [supportX, 0, 0], normal: X, up: Y },
+        ...supportPort,
         { id: 'cap', mount: 'lug', gender: 'male', pos: [length, 0, 0], normal: X, up: Y },
         { id: 'forend', mount: 'forend', gender: 'female', pos: [PUMP_FOREND_MOUNT_X, 0, 0], normal: X, up: Y },
       ],

@@ -54,12 +54,8 @@
         "to": "tube.rear"
       },
       {
-        "from": "tube.support",
-        "to": "barrel.lug"
-      },
-      {
         "from": "tube.cap",
-        "to": "barrel.end-lug"
+        "to": "barrel.lug"
       },
       {
         "from": "tube.forend",

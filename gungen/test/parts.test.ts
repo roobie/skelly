@@ -443,11 +443,11 @@ describe('pump shotgun tube and barrel contact', () => {
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
   });
 
-  it('extends the tube only to the barrel end, retaining its original support and adding an end lug', () => {
-    for (const [lengthClass, barrelEnd, supportX] of [
-      ['S', 26, 17],
-      ['M', 36, 23.5],
-      ['L', 46, 30],
+  it('keeps S/M tubes short and extends only the L tube to the barrel end', () => {
+    for (const [lengthClass, barrelEnd, tubeEnd, supportX] of [
+      ['S', 26, 17, undefined],
+      ['M', 36, 23.5, undefined],
+      ['L', 46, 46, 30],
     ] as const) {
       const barrel = FAMILIES.barrel!.build({ bore: 'L', length: lengthClass, profile: 'standard' });
       const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', length: lengthClass });
@@ -455,11 +455,12 @@ describe('pump shotgun tube and barrel contact', () => {
       if (tubeSolid?.kind !== 'box') {
         throw new Error('pump magazine tube must be a box');
       }
-      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(barrelEnd);
-      expect(barrel.ports.find((port) => port.id === 'lug')?.pos[0]).toBe(supportX);
-      expect(barrel.ports.find((port) => port.id === 'end-lug')?.pos[0]).toBe(barrelEnd);
+      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(tubeEnd);
+      expect(tubeEnd).toBeLessThanOrEqual(barrelEnd);
+      expect(barrel.ports.find((port) => port.id === 'lug')?.pos[0]).toBe(tubeEnd);
+      expect(barrel.ports.find((port) => port.id === 'support-lug')?.pos[0]).toBe(supportX);
       expect(tube.ports.find((port) => port.id === 'support')?.pos[0]).toBe(supportX);
-      expect(tube.ports.find((port) => port.id === 'cap')?.pos[0]).toBe(barrelEnd);
+      expect(tube.ports.find((port) => port.id === 'cap')?.pos[0]).toBe(tubeEnd);
     }
   });
 
