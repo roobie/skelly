@@ -816,6 +816,8 @@ describe('shambler scenarios', () => {
   it('incapacitates on torso destruction without death, noise, motion, or sleep blocking, and saves the flag', () => {
     let incapacitations = 0;
     let deaths = 0;
+    let playerHits = 0;
+    let sawAttackWindup = false;
     const emitted: string[] = [];
     const type = {
       ...SHAMBLER,
@@ -823,7 +825,14 @@ describe('shambler scenarios', () => {
       dismember: { chance: 0, headOnKillChance: 1 },
     };
     const options = {
-      ...senses(() => player([100, 2, 0])),
+      ...senses(
+        () => player([1, 1, 0.5]),
+        FLOOR,
+        () => 12,
+        () => {
+          playerHits += 1;
+        },
+      ),
       onSound: (event: string) => emitted.push(event),
       onIncapacitated: () => {
         incapacitations += 1;
@@ -838,6 +847,8 @@ describe('shambler scenarios', () => {
     const system = new ZombieSystem(options);
     const id = system.add(type, [1, 1, 0], [0, 0, -1]);
     const zombie = system.store.get(id)!;
+    zombie.mode = 'chase';
+    expect(system.unsafeReason([1, 1, 0.5])).toBe('A shambler is close');
     const start: Vec3 = [...zombie.body.pos];
     const { mode } = zombie;
     const behaviorRng = zombie.behaviorRng.state();
@@ -850,13 +861,19 @@ describe('shambler scenarios', () => {
     expect(zombie.severed).toEqual([]);
     expect(emitted).toContain('shambler_hurt');
     const soundsAfterHit = emitted.length;
-    run(system, 10);
+    run(system, 10, () => {
+      if (zombie.attackWindup > 0) {
+        sawAttackWindup = true;
+      }
+    });
     expect(metres(start, zombie.body.pos)).toBeLessThan(0.01);
     expect(zombie.attackWindup).toBe(0);
+    expect(sawAttackWindup).toBe(false);
+    expect(playerHits).toBe(0);
     expect(zombie.mode).toBe(mode);
     expect(zombie.behaviorRng.state()).toEqual(behaviorRng);
     expect(emitted).toHaveLength(soundsAfterHit);
-    expect(system.unsafeReason([100, 2, 0])).toBeUndefined();
+    expect(system.unsafeReason([1, 1, 0.5])).toBeUndefined();
 
     const restored = new ZombieSystem(options);
     restored.restoreState(system.snapshotState(), (restoreId) => (restoreId === type.id ? type : undefined));
