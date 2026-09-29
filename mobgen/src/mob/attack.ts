@@ -4,8 +4,8 @@
 //
 // Rotation convention: same as gait.ts (forward swing = +rotX for a hanging limb — arms, jaw). For an
 // *upright* bone (spine, chest, head), +rotX tips it backward and -rotX pitches it forward instead (the
-// same rotation, but the bone points the other way at rest) — verified against boneTransforms, not
-// assumed; see mobgen's report on this feature for the check.
+// same rotation, but the bone points the other way at rest) — verified against boneTransforms when the
+// clip was added (af2df6a), not assumed; the check itself was not kept.
 
 import type { Bone } from '../core/body.ts';
 import { type Mat3, mulMM, rotAxis, rotX, rotY, rotZ, type Vec3 } from '../core/math.ts';
@@ -202,7 +202,7 @@ const armSwingWeight = (t: number, clip: AttackClip): number => {
  * Scales baseR's own axis-angle by `weight` (same axis, smaller angle) rather than assuming baseR is a
  * pure rotX and rescaling atan2(m[7],m[4]) — the walk's upperArm rotation is rotZ(stagger-wide) ∘
  * rotX(swing), not pure rotX, and that mismatched assumption produced a real, if small, snap right where
- * this switches to the `weight >= 1` shortcut (see mobgen's report). */
+ * this switches to the `weight >= 1` shortcut (its size was not recorded). */
 export const blendArmBase = (baseR: Mat3, weight: number): Mat3 => {
   if (weight >= 1) {
     return baseR;

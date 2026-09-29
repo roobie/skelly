@@ -198,7 +198,8 @@ interface CrowdMember {
   /** This member's own WalkActor: shares the pool entry's bones/extents/params/seed, but with its own
    * GaitCache (see mob/gait.ts's GaitCache) — several members reference the same pool entry (and so the
    * same params object) with different speeds and different current stepIndex, and footfallPeak's cache
-   * must be per member or it thrashes on almost every call (see mobgen's report). */
+   * must be per member or it thrashes on almost every call (a params-keyed cache with one speed/window
+   * slot did; the slowdown was not recorded). */
   readonly walkActor: WalkActor;
   readonly path: PathState;
   readonly speed: number;

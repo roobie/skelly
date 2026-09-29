@@ -96,8 +96,8 @@ export const boneLocalTransform = (bone: Bone, pose: Pose): Transform => {
 /** world = compose(parent, local): parent.r · local.r, parent.r · local.t + parent.t — inlined (see this
  * module's header) rather than calling math.ts's generic compose/mulMM/mulMV/add, each of which would
  * allocate its own array. Indexes into r/t directly rather than array-destructuring them: V8 doesn't
- * always optimize destructuring a plain array to simple indexed loads (see the profile in mobgen's
- * report — it showed up as real ArrayIteratorPrototypeNext time on this exact function). */
+ * always optimize destructuring a plain array to simple indexed loads (a profile showed real
+ * ArrayIteratorPrototypeNext time on this exact function; the share of the frame was not recorded). */
 const composeWorld = (parent: Transform, local: Transform): Transform => {
   const pr = parent.r;
   const pr0 = pr[0];

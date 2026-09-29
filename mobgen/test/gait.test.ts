@@ -201,7 +201,7 @@ describe('walkPose', () => {
           // forward/back. 0.6 voxel was the pre-shamble margin; loosened to 0.8 because a lurch step's
           // longer-than-normal length very slightly outpaces the heel/toe roll's pivot cancellation
           // during its own roll window (worst case: brute, whose bigger legLen means bigger absolute
-          // lurch lengths) — a real, small residual, not a snap (see mobgen's report).
+          // lurch lengths) — a real, small residual, not a snap (its measured size was not recorded).
           expect(worstHeelDrift).toBeLessThan(0.8 * found.voxels.size);
           expect(worstToeDrift).toBeLessThan(0.8 * found.voxels.size);
         });
@@ -437,7 +437,7 @@ describe('strideLength', () => {
   });
 
   it('2.8 m/s (deadvox chase): the bob-budget cap is saturated well before this, so cadence carries it', () => {
-    const cycleAtCap = strideLength(params, geom, 2.1); // already past the cap (see mobgen's report)
+    const cycleAtCap = strideLength(params, geom, 2.1); // already past the cap (the cap binds below 2.1 m/s for the geometry under test)
     const cycle = strideLength(params, geom, 2.8);
     expect(cycle).toBeCloseTo(cycleAtCap, 6);
     const stepsPerMin = ((2 * 2.8) / cycle) * 60;
@@ -569,7 +569,7 @@ describe('the walk at 60 fps', () => {
   // (one smooth Hermite curve through each footfall's own scanned-once peak — see legAndFootRotations) got
   // 2.8 m/s essentially there and cut 0.8/1.4 m/s by ~3x from where they started, but not all the way: a
   // heel-strike roll's toe corner overtaking the stance heel corner as groundOffset's true minimum (a
-  // separate, still-smooth curve, independent of hip drop — see mobgen's report) is the remaining
+  // separate, still-smooth curve, independent of hip drop; the per-frame contribution was not recorded) is the remaining
   // mechanism, and closing it needs more than this task's remaining budget. Thresholds below are the
   // actually-achieved worst case plus headroom, not the original target.
   const maxDyForSpeed = (speed: number): number => {

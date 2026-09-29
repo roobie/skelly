@@ -34,7 +34,7 @@ const smoothstep = (x: number): number => x * x * (3 - 2 * x);
 // smoothing*ln(#values within ~smoothing of the true min) — bounded and *not* per-pair-cumulative, unlike
 // folding a pairwise smooth-min across many corners one at a time (tried first: a foot's own rest-box
 // corners routinely tie exactly, e.g. all 4 bottom corners of a flat sole, and folding through N of them
-// each shaved off more, undershooting far past a single pair's own smoothing/2 — see mobgen's report). Used
+// each shaved off more, undershooting far past a single pair's own smoothing/2; by how much was not recorded). Used
 // where a hard min between two otherwise-smooth curves would have a slope kink right at their crossover
 // (see groundOffset).
 const smoothMinAll = (values: readonly number[], smoothing: number): number => {
@@ -57,8 +57,8 @@ const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strik
 // Sideways sway (width-wise waddle): no new sampled params — girth/pelvisSway/limp (already sampled) drive
 // how wide and how much a given actor sways, so a brute (heavy girth) lands widest and a jittery/limping
 // actor sways more. Width is a *target total* (girth-driven), not a fixed add-on — the rig's own sampled
-// hipWidth already varies a lot on its own, and an add-on stacked on top of that overshot badly (see
-// mobgen's report).
+// hipWidth already varies a lot on its own, and an add-on stacked on top of that overshot badly (how far
+// was not recorded; the outcome, per 596311a, is feet landing 0.27-0.44 m apart, brute widest).
 /** Extra outward step width beyond the hip (each side), so ankle-to-ankle lands near a girth-driven target
  * (~0.3-0.45 m total across the three templates) regardless of this actor's own sampled hip width. Can be
  * negative (feet land inside the hips) for a narrow-hipped, high-girth-range-relative actor. */
@@ -315,7 +315,7 @@ const blendStepScalar = (stepIndex: number, progress: number, at: (k: number) =>
 // 2-bone IK's knee angle has an unbounded d(angle)/d(reach) as reach approaches l1+l2 (a genuine
 // singularity of the acos law-of-cosines solve, worst when l1≈l2) — 0.99 left legAndFootRotations right
 // at the edge of it, where per-step jitter's tiny sample-to-sample reach changes produced multi-degree
-// snaps (see mobgen's report); 0.92 keeps the same "never visibly locks straight" intent with real margin.
+// snaps (the sizes were not recorded; fea7772 lowered this from 0.99 when it added per-step jitter); 0.92 keeps the same "never visibly locks straight" intent with real margin.
 const REACH_MARGIN = 0.92;
 
 /** How far the hip must drop (see legAndFootRotations) for `target` to be reachable at no more than
@@ -327,7 +327,7 @@ const requiredDrop = (hipY: number, target: FootTarget, legLen: number): number 
   // 2-bone solve targets hypot(lateral, vertical), not vertical alone — see legAndFootRotations' abduction
   // comment) — reserving that lateral share of reachCap here first keeps drop's own margin honest instead
   // of a same-instant lateral demand quietly exceeding l1+l2 (solveTwoBone's own clamp would fall short of
-  // the intended lateral placement instead of erroring — see mobgen's report).
+  // the intended lateral placement instead of erroring; how large that shortfall got was not recorded).
   const lateralCap = Math.min(Math.abs(target.x), reachCap * 0.999);
   const zCap = Math.sqrt(Math.max(reachCap * reachCap - lateralCap * lateralCap, 0));
   const dz = clamp(target.z, -zCap, zCap); // strideLength's cap keeps |z| well inside reachCap
@@ -599,8 +599,9 @@ interface LegResult {
 //
 // This must be cached *per actor instance*, not per params: a crowd shares one pool entry's WalkActor
 // (and so its params object) across many members with different speeds and different current stepIndex
-// (mobgen's report — a cache keyed on params alone, with one speed/window slot, thrashed on almost every
-// call once more than one member referenced it). GaitCache below lives on the actor (WalkActor.cache, or
+// (a cache keyed on params alone, with one speed/window slot, thrashed on almost every call once more
+// than one member referenced it; how much slower that was is not recorded — 6fdc40c cached the whole
+// posing path for about 2x, 1da3048 then gave each stress actor its own cache). GaitCache below lives on the actor (WalkActor.cache, or
 // the walkActorCacheFallback WeakMap for a caller that doesn't set one), so each member gets its own
 // entries and never evicts another member's. It's still a pure memoization — a hit is bit-identical to
 // recomputing (test/poseEquivalence.test.ts covers this through walkPose) — and the stored geom
@@ -702,7 +703,8 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   const hipWidthTotal = legR.thigh.head[0] - legL.thigh.head[0];
   const widthExtra = stepWidthExtra(params, hipWidthTotal);
   // The step's *base* (stagger-free) landing X — used for the sway amplitude below, so a stagger's own
-  // drift never inflates it (see mobgen's report: it used to read the full, stagger-included landing X).
+  // drift never inflates it (it used to read the full, stagger-included landing X; the inflation was not
+  // measured, 596311a records only that the sway is now taken from the centreline between the feet).
   const baseFootX = (side: Side): number => legFor(side).thigh.head[0] + widthSign(side) * widthExtra;
   // Limit crossover: even a stagger's own inward jitter can't pull this foot's *world* X past
   // MIN_WORLD_OUTWARD off-centre — swingFootTarget's Hermite has zero slope at both ends (see its own
@@ -761,8 +763,8 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   // every footfall, since stance/swing targets already match there, but requiredDrop's own reachCap sqrt
   // has the same near-full-extension steepness as solveTwoBone's, and the roll's true peak reach falls a
   // little *inside* the roll window, not at the boundary sample — sampling that live, continuously, hit
-  // it square on and no amount of smoothMax-ing the crossover tamed the resulting per-frame jumps; see
-  // mobgen's report). A short scan finds that true inside-the-roll peak once per footfall instead, then a
+  // it square on and no amount of smoothMax-ing the crossover tamed the resulting per-frame jumps; the jump
+  // sizes were not recorded). A short scan finds that true inside-the-roll peak once per footfall instead, then a
   // Hermite from peak(footfall k-1) down to 0 over the step's first half and back up to peak(footfall k)
   // over the second (requiredDrop is genuinely ~0 at flat mid-stance/mid-swing) keeps the *playback* curve
   // smooth by construction regardless of how steep the sampled peak is.
@@ -844,8 +846,8 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
   // from 0 at each footfall to a fraction of it at mid-stance and back to 0 — same two-segment Hermite
   // shape as the hip drop above, so it's C1 across footfalls automatically. Deliberately reads baseFootX,
   // not the actual (possibly stagger-shifted) landing X: a stagger's own drift is a separate, slower
-  // component (the landing itself still reflects it) and must not also blow up this faster oscillation —
-  // see mobgen's report.
+  // component (the landing itself still reflects it) and must not also blow up this faster oscillation
+  // (how much it did was not recorded).
   const swayPeak = swayFraction(speed) * baseFootX(stanceSide);
   const sway =
     progress <= 0.5
@@ -889,7 +891,7 @@ const legAndFootRotations = (ctx: GaitContext): LegResult => {
     // fixed lateral offset (rotX, used for the sagittal bend, never touches X, so it survives any bend
     // angle unchanged). The old formula implicitly assumed nativeX = 0 — fine while abduction only had to
     // cancel yaw (tiny), but the wider base's routine, larger lateral targets exposed a real gap between
-    // the intended and actual placement (see mobgen's report). Solving rotZ(θ)·(nativeX, yPrime) = (vx, vy)
+    // the intended and actual placement (sideways foot targets ended up to 16 cm short, per 596311a). Solving rotZ(θ)·(nativeX, yPrime) = (vx, vy)
     // for θ and yPrime generalizes the old (nativeX=0) closed form exactly.
     const nativeX = shin.tail[0] - thigh.head[0];
     const yPrime = -Math.sqrt(Math.max(vx * vx + vy * vy - nativeX * nativeX, 0));
@@ -969,7 +971,7 @@ const armRotations = (
  * `smoothing` (default 0, exact) folds a smooth-min across corners instead of a hard Math.min: mid-walk,
  * which of two feet's corners is lowest can swap (a rolling stance foot vs. a landing swing foot, each on
  * its own smooth trajectory) — exact-min tracks whichever is lower and so has a slope kink right at the
- * swap, a visible per-frame pop in root Y (see mobgen's report); walkPose passes a few mm here so the
+ * swap, a visible per-frame pop in root Y (its size was not recorded); walkPose passes a few mm here so the
  * swap blends instead of snapping, at the cost of also floating everything else by a similar few mm.
  */
 export const groundOffset = (
