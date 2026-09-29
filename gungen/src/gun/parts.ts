@@ -1101,7 +1101,7 @@ export const handguard: PartFamily = {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',
           gender: 'male',
-          pos: [8, akLayout ? AK_GAS_CYLINDER_Y : 2.5, 0],
+          pos: [8, AK_GAS_CYLINDER_Y, 0],
           normal: NEG_X,
           up: Y,
         },
