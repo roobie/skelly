@@ -210,8 +210,11 @@ const boxProfile = (box: Box): { profile: Vec2[]; z: [number, number] } => {
   };
 };
 
-/** A flat-shaded, edge-chamfered mesh for one solid, in its own local frame. */
-export const meshForSolid = (solid: Solid, bevel: number = BEVEL): TriangleMesh => {
+/** A flat-shaded display mesh for one solid, in its own local frame. */
+export const meshForSolid = (
+  solid: Solid,
+  bevel: number = solid.display?.bevel === false ? 0 : BEVEL,
+): TriangleMesh => {
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);

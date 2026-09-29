@@ -1690,7 +1690,14 @@ export const magazine: PartFamily = {
     return {
       family: 'magazine',
       solids: [...geometry.collision, ...floorplate],
-      displaySolids: [...geometry.display, ...floorplate],
+      displaySolids: [
+        ...geometry.display.map((displaySolid) =>
+          displaySolid.id.startsWith('curve-display-')
+            ? { ...displaySolid, display: { bevel: false, outline: false } }
+            : displaySolid,
+        ),
+        ...floorplate,
+      ],
       ports: [
         {
           id: 'top',

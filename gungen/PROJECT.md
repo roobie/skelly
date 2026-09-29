@@ -1137,8 +1137,8 @@ acceptance:
   for BR to choose from: the AR forward assist, magazine and bolt releases,
   and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
-  shapes are one surface built from many solids, like the curved STANAG
-  magazine's run of ring sectors. Bevelling and outlining each segment
+  shapes are one surface built from many solids, like the curved STANAG and
+  AK magazines' runs of ring sectors. Bevelling and outlining each segment
   breaks the curve up; they look best plain and without outlines. Proposed:
   display hints on a solid (no bevel, no outline), set by the part family,
   which the viewer (`src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
@@ -1146,8 +1146,13 @@ acceptance:
   default a solid is bevelled and outlined. The mesh module already accepts a
   zero bevel (`src/core/mesh.ts#meshForSolid`). The export draws no outlines, so for
   the export "no outline" needs nothing. Generic rendering hints can live in
-  the core schema, as `displaySolids` already does. This changes the `Solid`
-  type in `src/core/schema.ts`, so lane A owns it;
+  the core schema, as `displaySolids` already does. Display hints are assigned
+  by the generated part family; they are runtime `Solid` metadata, not fields in
+  assembly/design JSON. `loadDesign` rebuilds parts from family parameters and
+  neither requires nor retains these hints. The viewer honours no-bevel and
+  no-outline; glTF export honours no-bevel (it draws no outlines). Collision
+  and rule checks ignore the metadata. This changes the
+  `Solid` type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
   (gungen.2), with the deadvox schema change they need.
 

@@ -35,10 +35,17 @@ export interface PortDef {
   readonly slots?: { readonly count: number; readonly pitch: number };
 }
 
+/** Rendering-only hints ignored by collision and rule logic; omitted options retain the viewer's bevel and outline defaults. */
+export interface SolidDisplayHints {
+  readonly bevel?: boolean;
+  readonly outline?: boolean;
+}
+
 export interface BoxSolid {
   readonly id: string;
   readonly kind: 'box';
   readonly box: Box;
+  readonly display?: SolidDisplayHints;
 }
 
 export type Vec2 = readonly [number, number];
@@ -50,6 +57,7 @@ export interface ExtrudedPolygonSolid {
   readonly profile: readonly Vec2[];
   /** Local Z bounds of the extrusion. */
   readonly z: readonly [number, number];
+  readonly display?: SolidDisplayHints;
 }
 
 export type Solid = BoxSolid | ExtrudedPolygonSolid;

@@ -124,11 +124,13 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       mesh.matrixAutoUpdate = false;
       mesh.matrix.copy(matrixOf(t.r, t.t));
       mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
-      const edges = new LineSegments(
-        new EdgesGeometry(mesh.geometry),
-        new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),
-      );
-      mesh.add(edges);
+      if (s.display?.outline !== false) {
+        const edges = new LineSegments(
+          new EdgesGeometry(mesh.geometry),
+          new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),
+        );
+        mesh.add(edges);
+      }
       layers.solids.add(mesh);
     }
 
