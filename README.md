@@ -44,13 +44,6 @@ every subproject and to all code, tests included.
   `biome-ignore lint/complexity/noExcessiveCognitiveComplexity`: split those
   functions up when you next change them.
 
-### Long-term maintainability over snapshot stability
-
-Before integration, prefer the design that keeps the system coherent and
-maintainable over avoiding snapshot churn, unless the churn itself is very
-costly. Update snapshots when an intentional change improves the design; keep
-the tests and commit explanation explicit about what changed.
-
 ```
 npm install        # at the repo root, once
 npm run check      # lint + format check

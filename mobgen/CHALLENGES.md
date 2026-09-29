@@ -46,7 +46,7 @@ count:
   scale with inverse cell surface area and height. `src/core/generate.ts` rounds
   the scaled intervals and allows one extra voxel at coarse resolutions for
   boundary quantization. This follows the root
-  [long-term maintainability pillar](../README.md#long-term-maintainability-over-snapshot-stability).
+  [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
 - **A variety pool.** Generate a few dozen variants per template and reuse
   them, rather than one per zombie.
 
