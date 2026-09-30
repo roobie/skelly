@@ -58,6 +58,10 @@
         "to": "barrel.lug"
       },
       {
+        "from": "tube.support",
+        "to": "barrel.support-lug"
+      },
+      {
         "from": "tube.forend",
         "to": "forend.rear"
       },

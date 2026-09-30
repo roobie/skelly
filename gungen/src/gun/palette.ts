@@ -32,10 +32,12 @@ const fromHex = (table: Record<string, number>): Record<string, SrgbColor> =>
   Object.fromEntries(Object.entries(table).map(([k, hex]) => [k, hexToSrgb(hex)]));
 
 /** Colours keyed by `PartDef.family` role. */
+const BARREL_GRAY = 0x5d_63_6b;
+
 const FAMILY_HEX: Record<string, number> = {
   receiver: 0x8d_93_9c,
   lower: 0x6f_75_7e,
-  barrel: 0x5d_63_6b,
+  barrel: BARREL_GRAY,
   'tube-magazine': 0x4d_53_5b,
   forend: 0x8a_6a_52,
   handguard: 0x74_80_5f,
@@ -59,6 +61,7 @@ const FAMILY_HEX: Record<string, number> = {
 const SPECIAL_HEX: Record<string, number> = {
   floorplate: 0x35_42_58,
   'butt-pad': 0x2f_32_38,
+  'cap-lug': BARREL_GRAY,
 };
 
 export const GUN_PALETTE: Palette = createPalette({

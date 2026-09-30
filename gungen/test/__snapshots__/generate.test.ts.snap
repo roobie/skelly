@@ -2027,6 +2027,10 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "to": "barrel.lug",
       },
       {
+        "from": "tube.support",
+        "to": "barrel.support-lug",
+      },
+      {
         "from": "tube.forend",
         "to": "forend.rear",
       },
@@ -2070,6 +2074,9 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       },
       "tube": {
         "family": "tube-magazine",
+        "params": {
+          "lengthPercent": "75",
+        },
       },
     },
     "root": "receiver",
@@ -2091,6 +2098,10 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       {
         "from": "tube.cap",
         "to": "barrel.lug",
+      },
+      {
+        "from": "tube.support",
+        "to": "barrel.support-lug",
       },
       {
         "from": "tube.forend",
@@ -2130,12 +2141,15 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "L",
           "style": "tapered",
         },
       },
       "tube": {
         "family": "tube-magazine",
+        "params": {
+          "lengthPercent": "75",
+        },
       },
     },
     "root": "receiver",
@@ -2159,6 +2173,10 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
         "to": "barrel.lug",
       },
       {
+        "from": "tube.support",
+        "to": "barrel.support-lug",
+      },
+      {
         "from": "tube.forend",
         "to": "forend.rear",
       },
@@ -2169,11 +2187,6 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
       {
         "from": "lower.grip",
         "to": "grip.top",
-      },
-      {
-        "from": "receiver.rail",
-        "slot": 3,
-        "to": "sight.base",
       },
     ],
     "description": "Generated from the "pump-shotgun" template with seed 300.",
@@ -2208,18 +2221,18 @@ exports[`templates > pump-shotgun > known-good seeds 1`] = `
           "feed": "tube",
         },
       },
-      "sight": {
-        "family": "sight",
-      },
       "stock-pistol": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "S",
           "style": "straight",
         },
       },
       "tube": {
         "family": "tube-magazine",
+        "params": {
+          "lengthPercent": "100",
+        },
       },
     },
     "root": "receiver",
