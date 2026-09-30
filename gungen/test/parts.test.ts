@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRID } from '../src/core/conventions.ts';
-import { validateExtrudedPolygon } from '../src/core/geometry.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -44,24 +44,24 @@ const pumpTubeDimensions = (input: {
   });
   const tubeSolid = tube.solids.find((solid) => solid.id === 'tube');
   const capLug = tube.solids.find((solid) => solid.id === 'cap-lug');
-  if (tubeSolid?.kind !== 'box' || capLug?.kind !== 'box') {
-    throw new Error('pump magazine tube and cap lug must be boxes');
+  if (tubeSolid?.kind !== 'extruded-polygon' || capLug?.kind !== 'extruded-polygon') {
+    throw new Error('pump magazine tube and cap lug must be octagonal extrusions');
   }
   return {
     tubeEnd: tube.ports.find((port) => port.id === 'cap')!.pos[0],
-    tubeBodyEnd: tubeSolid.box.center[0] + tubeSolid.box.half[0],
+    tubeBodyEnd: localSolidBounds(tubeSolid)[1][0],
     barrelLug: barrel.ports.find((port) => port.id === 'lug')?.pos[0],
     barrelLugY: barrel.ports.find((port) => port.id === 'lug')?.pos[1],
     barrelSupportLug: barrel.ports.find((port) => port.id === 'support-lug')?.pos[0],
     tubeCap: tube.ports.find((port) => port.id === 'cap')?.pos[0],
     tubeSupport: tube.ports.find((port) => port.id === 'support')?.pos[0],
     capBounds: [
-      capLug.box.center[0] - capLug.box.half[0],
-      capLug.box.center[0] + capLug.box.half[0],
-      capLug.box.center[1] - capLug.box.half[1],
-      capLug.box.center[1] + capLug.box.half[1],
-      capLug.box.center[2] - capLug.box.half[2],
-      capLug.box.center[2] + capLug.box.half[2],
+      localSolidBounds(capLug)[0][0],
+      localSolidBounds(capLug)[1][0],
+      localSolidBounds(capLug)[0][1],
+      localSolidBounds(capLug)[1][1],
+      localSolidBounds(capLug)[0][2],
+      localSolidBounds(capLug)[1][2],
     ] as const,
   };
 };
@@ -95,22 +95,17 @@ describe('part library', () => {
       const roof = slide.solids.find(({ id }) => id === 'top')!;
       const dustCover = frame.solids.find(({ id }) => id === 'dust-cover')!;
       const barrel = FAMILIES.barrel!.build({ bore, length: 'S', profile: 'pistol' }).solids[0]!;
+      expect(barrel.kind).toBe('extruded-polygon');
       expect(left.kind).toBe('box');
       expect(right.kind).toBe('box');
       expect(roof.kind).toBe('box');
       expect(dustCover.kind).toBe('box');
-      expect(barrel.kind).toBe('box');
-      if (
-        left.kind !== 'box' ||
-        right.kind !== 'box' ||
-        roof.kind !== 'box' ||
-        dustCover.kind !== 'box' ||
-        barrel.kind !== 'box'
-      ) {
-        throw new Error('Expected pistol solids to use boxes.');
+      if (left.kind !== 'box' || right.kind !== 'box' || roof.kind !== 'box' || dustCover.kind !== 'box') {
+        throw new Error('Expected pistol slide and frame solids to use boxes.');
       }
-      const barrelMinZ = barrel.box.center[2] - barrel.box.half[2];
-      const barrelMaxZ = barrel.box.center[2] + barrel.box.half[2];
+      const [barrelMin, barrelMax] = localSolidBounds(barrel);
+      const [, , barrelMinZ] = barrelMin;
+      const [, , barrelMaxZ] = barrelMax;
       const leftInnerZ = left.box.center[2] + left.box.half[2];
       const leftClearance = barrelMinZ - leftInnerZ;
       const rightClearance = right.box.center[2] - right.box.half[2] - barrelMaxZ;
@@ -158,10 +153,8 @@ describe('part library', () => {
   it('limits the pistol barrel crown and offers a muzzle attachment port', () => {
     const barrel = FAMILIES.barrel!.build({ bore: 'S', length: 'S', profile: 'pistol' });
     const tube = barrel.solids[0]!;
-    expect(tube.kind).toBe('box');
-    if (tube.kind === 'box') {
-      expect(tube.box.center[0] + tube.box.half[0]).toBeCloseTo(12);
-    }
+    expect(tube.kind).toBe('extruded-polygon');
+    expect(localSolidBounds(tube)[1][0]).toBeCloseTo(12);
     expect(barrel.ports.find((port) => port.id === 'muzzle')?.pos[0]).toBe(12);
     expect(barrel.ports.find((port) => port.id === 'frame')?.required).toBe(true);
   });
@@ -178,10 +171,8 @@ describe('part library', () => {
     const barrel = FAMILIES.barrel!.build({ bore: 'S', length: 'S', profile: 'revolver' });
     expect(barrel.ports.map((port) => port.id)).toContain('cylinder');
     const tube = barrel.solids[0]!;
-    expect(tube.kind).toBe('box');
-    if (tube.kind === 'box') {
-      expect(tube.box.center[0] + tube.box.half[0]).toBeCloseTo(12);
-    }
+    expect(tube.kind).toBe('extruded-polygon');
+    expect(localSolidBounds(tube)[1][0]).toBeCloseTo(12);
   });
 
   it('builds six- or eight-sided revolver cylinders with an aligned chamber axis', () => {

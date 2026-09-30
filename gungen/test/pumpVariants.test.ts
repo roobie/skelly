@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
+import { localSolidBounds } from '../src/core/geometry.ts';
 import { validate } from '../src/core/validate.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
@@ -25,10 +26,12 @@ describe('pump shotgun variants', () => {
       const tubeDef = report.resolved.defs.get('tube');
       const tubeSolid = tubeDef?.solids.find((solid) => solid.id === 'tube');
       const tubeCap = tubeDef?.ports.find((port) => port.id === 'cap');
-      if (tubeSolid?.kind !== 'box' || !tubeCap) {
-        throw new Error(`seed ${seed}: pump tube or cap is missing`);
+      if (tubeSolid?.kind !== 'extruded-polygon' || !tubeCap) {
+        throw new Error(`seed ${seed}: octagonal pump tube or cap is missing`);
       }
-      const tubeBodyEnd = tubeSolid.box.center[0] + tubeSolid.box.half[0];
+      expect(tubeSolid.profile).toHaveLength(8);
+      const [, tubeMax] = localSolidBounds(tubeSolid);
+      const [tubeBodyEnd] = tubeMax;
       const [tubeEnd] = tubeCap.pos;
       const lengthPercent = assembly.parts.tube?.params?.lengthPercent;
       expect(['50', '75', '100'], `seed ${seed}: tube length percentage`).toContain(lengthPercent);
