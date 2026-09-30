@@ -450,6 +450,20 @@ try {
     'menu keys leave pointer lock alone',
   );
 
+  await press('KeyG', 'g', 71);
+  const spawnNames = await evaluate(`Array.from(document.querySelectorAll('#spawn .spawn-list button'))
+    .map((button, index) => ({ index, name: button.querySelector('span')?.textContent }))
+    .filter(({ name }) => name && name !== 'Can of beans')
+    .slice(0, 24)`);
+  assert.ok(spawnNames.length >= 20, 'debug spawn menu has enough distinct items for a scroll regression');
+  for (const { index } of spawnNames) {
+    await evaluate(
+      `document.querySelector('#spawn .spawn-list button:nth-child(${index + 1})').scrollIntoView({ block: 'center' })`,
+    );
+    await clickAt(`#spawn .spawn-list button:nth-child(${index + 1})`);
+  }
+  await press('KeyG', 'g', 71);
+
   const toggles = await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)");
   assert.equal(
     toggles.every((checked) => !checked),
@@ -468,6 +482,65 @@ try {
     ),
     true,
   );
+  const inventoryScroll = await evaluate(`(() => {
+    const pane = document.querySelectorAll('#inventory .inv-pane')[1];
+    pane.scrollTop = Math.min(40, pane.scrollHeight - pane.clientHeight);
+    const view = pane.getBoundingClientRect();
+    const visible = [...pane.querySelectorAll('.inv-item')].find((node) => {
+      const item = node.getBoundingClientRect();
+      return node.querySelector('.inv-item-name')?.textContent === 'AA battery' && item.bottom > view.top && item.top < view.bottom;
+    });
+    return {
+      top: pane.scrollTop,
+      overflow: pane.scrollHeight - pane.clientHeight,
+      uid: visible?.dataset.uid,
+      name: visible?.querySelector('.inv-item-name')?.textContent,
+    };
+  })()`);
+  assert.ok(inventoryScroll.overflow > 1, 'nearby pane has enough items to scroll');
+  assert.ok(inventoryScroll.uid, 'a nearby item is visible to select');
+  await clickAt(`#inventory [data-uid="${inventoryScroll.uid}"]`);
+  assert.equal(
+    await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
+    inventoryScroll.name,
+  );
+  let paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  assert.ok(
+    Math.abs(paneTop - inventoryScroll.top) <= 1,
+    `scroll survives selecting an item (${inventoryScroll.top} -> ${paneTop})`,
+  );
+
+  const focusable = await evaluate(`(() => {
+    const button = document.querySelector('#inventory .inv-details button');
+    if (!button) return false;
+    button.focus();
+    window.__inventoryFocusNode = button;
+    return document.activeElement === button;
+  })()`);
+  await press('KeyE', 'e', 69);
+  if (focusable) {
+    assert.equal(
+      await evaluate('document.activeElement === window.__inventoryFocusNode'),
+      true,
+      'keyboard focus survives redraw',
+    );
+    await evaluate('document.activeElement.blur()');
+  }
+  assert.notEqual(
+    await evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
+    true,
+    'selected item queues a move',
+  );
+  paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives queueing a move');
+  await waitFor(
+    () => evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
+    'inventory handling job completes',
+    15_000,
+  );
+  paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives handling completion');
+
   const transfer = await evaluate(`(() => {
     const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
     const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
