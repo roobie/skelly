@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Body, Material } from '../src/core/body.ts';
+import { FAR_LOD_HALF_BLOCK_TRIANGLE_CAP, FAR_LOD_HALF_BLOCK_VOXEL_SIZE } from '../src/core/generate.ts';
 import { meshBones } from '../src/core/mesh.ts';
 import type { Budgets } from '../src/core/rules.ts';
 import { validate } from '../src/core/validate.ts';
@@ -147,11 +148,32 @@ describe('silhouette profile', () => {
     expect(report.issues.map((issue) => issue.rule)).toContain('grounded');
   });
 
-  it('does not require per-bone ownership or foot ownership', () => {
-    const allChild = voxels([1, 2, 1], [2, 2]);
-    const report = runSilhouette(body(healthyBones), allChild, GENEROUS);
+  it('does not enforce total-voxel or group-voxel budgets', () => {
+    const tightVoxelBudgets: Budgets = {
+      totalVoxels: { min: 1, max: 1 },
+      totalTriangles: { min: 1, max: 2000 },
+      groups: { child: { bones: ['child'], min: 5, max: 10 } },
+    };
+    const report = runSilhouette(body(healthyBones), healthyVoxels, tightVoxelBudgets);
     expect(report.ok).toBe(true);
     expect(report.issues).toEqual([]);
+  });
+
+  it('rejects a synthetic 1/2-block silhouette over the absolute 300-triangle cap', () => {
+    const coarse = { ...healthyVoxels, size: FAR_LOD_HALF_BLOCK_VOXEL_SIZE };
+    const generatedMeshes = meshBones(coarse, healthyBones.length);
+    const mesh = generatedMeshes.get(0)!;
+    const report = validate({
+      profile: 'silhouette',
+      referenceSilhouette: { width: 0, height: FAR_LOD_HALF_BLOCK_VOXEL_SIZE },
+      referenceVoxelSize: 0.1,
+      body: body(healthyBones),
+      voxels: coarse,
+      meshes: new Map([[0, { ...mesh, triangles: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP + 1 }]]),
+      feet: new Set<string>(),
+      budgets: { totalTriangles: { min: 1, max: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP } },
+    });
+    expect(report.issues).toEqual([{ rule: 'budget', message: 'Total triangles 301 is outside [1, 300].' }]);
   });
 
   it('rejects a width or height change beyond the coarse and reference-cell quantization allowance', () => {

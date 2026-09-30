@@ -10,7 +10,7 @@ import type { Body } from './body.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
-import { type Budgets, silhouetteSize, type ValidationProfile } from './rules.ts';
+import { type Budgets, type RuleBudgets, silhouetteSize, type ValidationProfile } from './rules.ts';
 import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByName, type Wound } from './template.ts';
 import { type Report, validate } from './validate.ts';
 import { type Voxels, voxelize } from './voxelize.ts';
@@ -156,6 +156,9 @@ const budgetsForGenome = (template: Template, genome: Genome, allowCoarseCellMar
   };
 };
 
+export const FAR_LOD_HALF_BLOCK_VOXEL_SIZE = 0.5 / 2;
+export const FAR_LOD_HALF_BLOCK_TRIANGLE_CAP = 300;
+
 export interface Realized {
   readonly profile: ValidationProfile;
   readonly body: Body;
@@ -185,15 +188,18 @@ export const realize = (genome: Genome, options: RealizeOptions = {}): Realized 
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
   const scaledBudgets = budgetsForGenome(template, genome, profile !== 'silhouette');
-  // Far LOD is a draw-cost ceiling: scale upper bounds at the requested size, with no coarse
-  // cell margin. Resolution-dependent minima and bone-owner group counts are not silhouette contracts.
-  const budgets =
+  // Silhouette LOD is a draw-cost contract: omit voxel/group budgets entirely. The recommended
+  // 1/2-block tier has BR's fixed 300-triangle cap; other sizes use the m1-scaled triangle ceiling.
+  const budgets: RuleBudgets =
     profile === 'silhouette'
       ? {
-          ...scaledBudgets,
-          totalVoxels: { ...scaledBudgets.totalVoxels, min: 1 },
-          totalTriangles: { ...scaledBudgets.totalTriangles, min: 1 },
-          groups: {},
+          totalTriangles: {
+            min: 1,
+            max:
+              genome.voxelSize === FAR_LOD_HALF_BLOCK_VOXEL_SIZE
+                ? FAR_LOD_HALF_BLOCK_TRIANGLE_CAP
+                : scaledBudgets.totalTriangles.max,
+          },
         }
       : scaledBudgets;
   const report = validate({
