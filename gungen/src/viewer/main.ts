@@ -156,7 +156,7 @@ controls.enableDamping = true;
 // Keep the camera's orbit relation intact while applying held arrow keys every frame.
 const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
 const heldPanKeys = new Set<string>();
-const KEY_PAN_SPEED = 5; // world units per second
+const KEY_PAN_SPEED = 25; // world units per second
 const isEditingText = (target: EventTarget | null): boolean =>
   target instanceof HTMLInputElement ||
   target instanceof HTMLTextAreaElement ||
