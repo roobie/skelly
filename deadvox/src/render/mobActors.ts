@@ -1098,7 +1098,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, this.renderBlend);
     return {
       position: pos,
-      worldPos: [pos[0] * this.blockSize, pos[1] * this.blockSize, pos[2] * this.blockSize],
+      worldPos: [pos[0] * this.blockSize, pos[1] * this.blockSize + (zombie.stepOffset ?? 0), pos[2] * this.blockSize],
       yaw,
       headYaw,
     };

@@ -47,25 +47,28 @@ export const zombiePoseInputFor = (
   id: number,
   blockSize: number,
   root?: PoseRootOverride,
-): ShamblerPoseInput => ({
-  id,
-  seed: zombie.figureSeed,
-  position: root?.position ?? zombie.body.pos,
-  facing: root?.facing ?? zombie.facing,
-  headYaw: root?.headYaw ?? zombie.headYaw,
-  gaitPhase: zombie.gaitPhase,
-  speed: zombie.horizontalSpeed,
-  chasing: zombie.mode === 'chase',
-  attackWindup: zombie.attackWindup,
-  attackWindupSeconds: zombie.type.attack.windup,
-  attackWait: zombie.attackWait,
-  attackCooldown: zombie.type.attack.cooldown,
-  idleTime: zombie.wanderClock,
-  ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
-  ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
-  severed: zombie.severed,
-  blockSize,
-});
+): ShamblerPoseInput => {
+  const position = root?.position ?? zombie.body.pos;
+  return {
+    id,
+    seed: zombie.figureSeed,
+    position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
+    facing: root?.facing ?? zombie.facing,
+    headYaw: root?.headYaw ?? zombie.headYaw,
+    gaitPhase: zombie.gaitPhase,
+    speed: zombie.horizontalSpeed,
+    chasing: zombie.mode === 'chase',
+    attackWindup: zombie.attackWindup,
+    attackWindupSeconds: zombie.type.attack.windup,
+    attackWait: zombie.attackWait,
+    attackCooldown: zombie.type.attack.cooldown,
+    idleTime: zombie.wanderClock,
+    ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
+    ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
+    severed: zombie.severed,
+    blockSize,
+  };
+};
 
 export interface PosedShambler {
   readonly pose: Pose;

@@ -8,6 +8,7 @@ import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
+import { updateStepOffset } from './stepOffset.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import {
   type PosedBoneBox,
@@ -30,6 +31,8 @@ const validHitFlinchTime = (time: number | undefined): boolean =>
   time === undefined || (Number.isFinite(time) && time >= 0);
 const validStanceWeight = (weight: number | undefined): boolean =>
   weight === undefined || (Number.isFinite(weight) && weight >= 0 && weight <= 1);
+const validStepOffset = (offset: number | undefined): boolean =>
+  offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
 export interface MeleeWeapon {
   readonly damage: number;
@@ -150,6 +153,8 @@ export interface Zombie {
   wanderClock: number;
   /** Fixed-step slack/aggravated stance cross-fade (0..1); optional for backward-compatible saves. */
   stanceWeight?: number | undefined;
+  /** Fixed-step visual root compensation for a one-step terrain snap, in metres. */
+  stepOffset?: number | undefined;
   /** Fixed-step hit reaction time; optional for backward-compatible saves. */
   hitFlinchTime?: number | undefined;
   /** Part names (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
@@ -636,6 +641,7 @@ export class ZombieSystem {
         !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
         !validHitFlinchTime(zombie.hitFlinchTime) ||
         !validStanceWeight(zombie.stanceWeight) ||
+        !validStepOffset(zombie.stepOffset) ||
         typeof zombie.incapacitated !== 'boolean'
       ) {
         throw new Error(`Invalid zombie state for entity ${id}`);
@@ -904,6 +910,7 @@ export class ZombieSystem {
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
+      stepOffset: 0,
       severed: [],
     };
     const id = this.store.add(zombie);
@@ -1198,6 +1205,23 @@ export class ZombieSystem {
           }
         }
       }
+      const stepHeightMetres = this.options.physics.stepHeight * blockSize;
+      const stepOffsetState = updateStepOffset(
+        {
+          offset: zombie.stepOffset ?? 0,
+          previous: {
+            position: beforeStep.map((coordinate) => coordinate * blockSize) as Vec3,
+            grounded: groundedAtTickStart.get(zombie) ?? false,
+          },
+        },
+        {
+          position: zombie.body.pos.map((coordinate) => coordinate * blockSize) as Vec3,
+          grounded: zombie.body.onGround,
+          dt,
+          stepHeightMetres,
+        },
+      );
+      zombie.stepOffset = stepOffsetState.offset;
       zombie.gaitPhase += (travelled / type.stepLength) * Math.PI;
       if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
         zombie.wanderClock += dt;

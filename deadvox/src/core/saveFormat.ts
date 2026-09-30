@@ -344,6 +344,7 @@ const zombie = obj({
   gaitPhase: finite,
   wanderClock: finite,
   stanceWeight: opt(finite),
+  stepOffset: opt(finite),
   hitFlinchTime: opt(nonNegative),
   /** Part names severed so far (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS) — cumulative, never
    * shrinks; see Zombie.severed's own doc comment. */

@@ -549,6 +549,21 @@ describe('shambler scenarios', () => {
     expect(playerBody.pos[1]).toBeCloseTo(1, 3);
   });
 
+  it('smooths a grounded shambler step in simulation-owned pose state', () => {
+    const stair: SolidAt = (_x, y, z) => y === 0 || (z === 3 && y === 1);
+    const system = new ZombieSystem(senses(() => player([0, 2, 10], [0, 0, -1]), stair));
+    const id = system.add(SHAMBLER, [0, 1, 2.2], [0, 0, 1]);
+    const zombie = system.store.get(id)!;
+    let maximumOffset = 0;
+    for (let tick = 0; tick < 120; tick++) {
+      system.tick(1 / 60);
+      maximumOffset = Math.max(maximumOffset, Math.abs(zombie.stepOffset ?? 0));
+    }
+    expect(zombie.body.pos[1]).toBeGreaterThan(1);
+    expect(maximumOffset).toBeGreaterThan(0.4);
+    expect(zombie.stepOffset).toBe(0);
+  });
+
   it('does not separate a player standing two metres above a shambler footprint', () => {
     const platform: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
     const playerBody = createPlayerBody(SCALE, 0.5, 5, 0.5);
@@ -1986,17 +2001,20 @@ describe('attack windup', () => {
     run(system, 0.1);
     const savedTime = system.store.get(id)!.hitFlinchTime!;
     system.store.get(id)!.stanceWeight = 0.37;
+    system.store.get(id)!.stepOffset = -0.25;
     expect(savedTime).toBeGreaterThan(0);
     expect(savedTime).toBeLessThan(0.35);
     const restored = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
     restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
     expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
+    expect(restored.store.get(id)!.stepOffset).toBe(-0.25);
 
     restored.setFrozen(true);
     run(restored, 0.5);
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
     expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
+    expect(restored.store.get(id)!.stepOffset).toBe(-0.25);
     restored.setFrozen(false);
     run(restored, 0.3);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
