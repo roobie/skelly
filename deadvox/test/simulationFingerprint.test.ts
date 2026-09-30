@@ -53,6 +53,7 @@ const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
+  'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -73,6 +74,9 @@ async function actualSimulationGraph() {
     projectRoot,
     {
       resolve(specifier, importer) {
+        if (specifier.startsWith('@mobgen/')) {
+          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+        }
         return Promise.resolve(viteResolve(specifier, importer));
       },
       readFile(path) {
@@ -138,6 +142,13 @@ describe('simulation source fingerprint', () => {
       (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
     );
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
+  });
+
+  it('fingerprints pure mobgen modules imported by the simulation', async () => {
+    const graph = await actualSimulationGraph();
+    expect(graph.sources.has('mobgen/mob/shamblerFigure.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/core/pose.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
   });
 
   it('includes runtime-resolved source files, not unrelated UI files or type-only imports', async () => {

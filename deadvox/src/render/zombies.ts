@@ -117,9 +117,11 @@ export class ZombieMeshes {
     mesh.boundingSphere = null;
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, freezeLiving = false): void {
     const blend = Math.max(0, Math.min(1, alpha));
-    const zombies = [...store.entries()].map(([id, zombie]) => this.renderPose(id, zombie, blend, realDt));
+    const zombies = [...store.entries()].map(([id, zombie]) =>
+      this.renderPose(id, zombie, blend, freezeLiving ? 0 : realDt),
+    );
     this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
     for (const part of PARTS) {
       this.syncPart(part, zombies);

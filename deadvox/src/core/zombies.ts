@@ -1,3 +1,4 @@
+import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
@@ -7,17 +8,86 @@ import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
+import { updateStepOffset } from './stepOffset.ts';
+import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import {
+  type PosedBoneBox,
+  posedRegionHitDistance,
+  posedShamblerRegionBoxes,
   ZOMBIE_REGION_NAMES,
   type ZombieRegion,
   type ZombieRegions,
-  zombieRegionHitDistance,
 } from './zombieRegions.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
-export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4 } as const;
+/** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
+export const PLAYER_ARM_REACH_M = 1.2;
+
+export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+
+const validHitFlinchTime = (time: number | undefined): boolean =>
+  time === undefined || (Number.isFinite(time) && time >= 0);
+const validStanceWeight = (weight: number | undefined): boolean =>
+  weight === undefined || (Number.isFinite(weight) && weight >= 0 && weight <= 1);
+const validStepOffset = (offset: number | undefined): boolean =>
+  offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
+
+export interface MeleeWeapon {
+  readonly damage: number;
+  readonly reach: number;
+  readonly cooldown: number;
+  readonly impulse?: number | undefined;
+}
+
+export interface ZombieAim {
+  readonly id: EntityId;
+  readonly region: ZombieRegion;
+  readonly distanceMetres: number;
+  readonly reachMetres: number;
+  readonly inReach: boolean;
+  readonly health: number;
+  readonly maxHealth: number;
+  readonly boxes: readonly PosedBoneBox[];
+}
+
+interface MeleeHitContext {
+  readonly id: EntityId;
+  readonly zombie: Zombie;
+  readonly region: ZombieRegion;
+  readonly origin: Vec3;
+  readonly direction: Vec3;
+  readonly distanceMetres: number;
+  readonly weapon: MeleeWeapon;
+}
+
+interface MeleeEffectsContext {
+  readonly id: EntityId;
+  readonly zombie: Zombie;
+  readonly region: ZombieRegion;
+  readonly healthAfter: number;
+  readonly killed: boolean;
+  readonly hit: HitImpulse;
+}
+
+export interface MeleeResult {
+  readonly id?: EntityId | undefined;
+  readonly region?: ZombieRegion | undefined;
+  readonly damage: number;
+  readonly healthBefore?: number | undefined;
+  readonly healthAfter?: number | undefined;
+  readonly outcome: 'nothing' | 'severed' | 'incapacitated' | 'killed' | 'decapitated';
+  readonly part?: string | undefined;
+}
+
+export interface HitImpulse {
+  /** Hit point in block coordinates. */
+  readonly point: Vec3;
+  readonly direction: Vec3;
+  /** N·s. */
+  readonly impulse: number;
+}
 /** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
 export const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
@@ -65,6 +135,10 @@ export interface Zombie {
   /** Previous fixed-step pose used only by rendering interpolation. */
   renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number };
   regions: ZombieRegions;
+  /** Exact mobgen shambler seed shared with the renderer and persisted as simulation state. */
+  figureSeed: number;
+  /** A destroyed torso leaves an inert, gravity-bound entity that may be revived by a later system. */
+  incapacitated: boolean;
   lastPerceived?: Vec3 | undefined;
   attackWait: number;
   /** Seconds left in the current attack's telegraph windup; 0 = not winding up. Set to
@@ -77,6 +151,12 @@ export interface Zombie {
   footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
+  /** Fixed-step slack/aggravated stance cross-fade (0..1); optional for backward-compatible saves. */
+  stanceWeight?: number | undefined;
+  /** Fixed-step visual root compensation for a one-step terrain snap, in metres. */
+  stepOffset?: number | undefined;
+  /** Fixed-step hit reaction time; optional for backward-compatible saves. */
+  hitFlinchTime?: number | undefined;
   /** Part names (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
    * far — cumulative, never un-severed. A renderer derives what to hide via mobgen's severedBoneSet, not
    * stored pre-expanded here (severing upperArm.L already implies forearm.L/hand.L without listing them). */
@@ -132,6 +212,8 @@ export interface ZombieSystemOptions {
   hurtPlayer: (amount: number) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
+  /** Called once when torso health reaches zero while the head remains intact. */
+  onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
   /** A region other than the head ran out of health: the game leaves the severed part behind (an item). */
   onSevered?: (zombie: Zombie, region: Exclude<ZombieRegion, 'head'>) => void;
   /** Sound-source position is in block coordinates. */
@@ -141,7 +223,9 @@ export interface ZombieSystemOptions {
   /** Called once for every part severed (src/core/zombies.ts's swing — the melee hit path), *after*
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
-  onSever?: (id: EntityId, zombie: Zombie, part: string) => void;
+  onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+  /** Reports the actual result of an attempted player melee swing; absent in normal play. */
+  onMeleeResult?: (result: MeleeResult) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -208,6 +292,16 @@ const CONTAINING_PARTS: Readonly<Record<(typeof ARM_PARTS)[number], readonly str
 
 type ArmRegion = 'leftArm' | 'rightArm';
 /** The mobgen part a destroyed arm region cuts at (the figure's own left is -X, mobgen's ".L"). */
+const meleeOutcome = (killed: boolean, incapacitated: boolean, part: string | undefined): MeleeResult['outcome'] => {
+  if (killed) {
+    return part === 'head' ? 'decapitated' : 'killed';
+  }
+  if (incapacitated) {
+    return 'incapacitated';
+  }
+  return part ? 'severed' : 'nothing';
+};
+
 const ARM_REGION_PART: Readonly<Record<ArmRegion, (typeof ARM_PARTS)[number]>> = {
   leftArm: 'upperArm.L',
   rightArm: 'upperArm.R',
@@ -438,10 +532,40 @@ export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
   private playerAttackWait = 0;
+  private frozen = false;
 
   constructor(options: ZombieSystemOptions) {
     this.options = options;
     this.store = options.store ?? new MapEntityStore<Zombie>();
+  }
+
+  get isFrozen(): boolean {
+    return this.frozen;
+  }
+
+  /** Debug-only caller-controlled pause for living shambler AI; this state is deliberately not saved. */
+  setFrozen(frozen: boolean): void {
+    if (this.frozen === frozen) {
+      return;
+    }
+    this.frozen = frozen;
+    if (frozen) {
+      for (const [, zombie] of this.store.entries()) {
+        this.captureRenderPrevious(zombie);
+        if (!zombie.incapacitated) {
+          zombie.attackWindup = 0;
+        }
+      }
+    }
+  }
+
+  private captureRenderPrevious(zombie: Zombie): void {
+    zombie.renderPrevious = {
+      pos: copy(zombie.body.pos),
+      facing: copy(zombie.facing),
+      headYaw: zombie.headYaw,
+      gaitPhase: zombie.gaitPhase,
+    };
   }
 
   snapshotState(): Readonly<ZombieSystemState> {
@@ -459,6 +583,8 @@ export class ZombieSystem {
           searchAnchor,
           lastPerceived,
           investigationTier,
+          stanceWeight,
+          hitFlinchTime,
           ...state
         } = zombie;
         return {
@@ -472,6 +598,8 @@ export class ZombieSystem {
             dismemberRng: [...dismemberRng.state()] as RngState,
             lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
             ...(investigationTier === undefined ? {} : { investigationTier }),
+            ...(stanceWeight === undefined ? {} : { stanceWeight }),
+            ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
             body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
             facing: [...zombie.facing],
             home: [...zombie.home],
@@ -508,7 +636,13 @@ export class ZombieSystem {
         (zombie.lastVocalNoiseId !== null &&
           (!Number.isSafeInteger(zombie.lastVocalNoiseId) || zombie.lastVocalNoiseId < 0)) ||
         !Array.isArray(zombie.severed) ||
-        zombie.severed.some((part) => typeof part !== 'string')
+        zombie.severed.some((part) => typeof part !== 'string') ||
+        !Number.isSafeInteger(zombie.figureSeed) ||
+        !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
+        !validHitFlinchTime(zombie.hitFlinchTime) ||
+        !validStanceWeight(zombie.stanceWeight) ||
+        !validStepOffset(zombie.stepOffset) ||
+        typeof zombie.incapacitated !== 'boolean'
       ) {
         throw new Error(`Invalid zombie state for entity ${id}`);
       }
@@ -763,11 +897,20 @@ export class ZombieSystem {
       stumbleDuration: 0,
       renderPrevious: { pos: copy(position), facing: copy(direction), headYaw: 0, gaitPhase: 0 },
       regions: { ...type.regions },
+      figureSeed:
+        SHAMBLER_FIGURE_SEEDS[
+          Rng.stream(this.options.seed ?? 0, `zombie-figure:${this.store.nextId}`).int(
+            0,
+            SHAMBLER_FIGURE_SEEDS.length - 1,
+          )
+        ]!,
+      incapacitated: false,
       attackWait: 0,
       attackWindup: 0,
       gaitPhase: 0,
       footstepClock: initialShamblerFootstepClock(type.stepLength),
       wanderClock: 0,
+      stepOffset: 0,
       severed: [],
     };
     const id = this.store.add(zombie);
@@ -786,19 +929,44 @@ export class ZombieSystem {
     if (dt <= 0) {
       return;
     }
+    if (this.frozen) {
+      for (const [, zombie] of this.store.entries()) {
+        this.captureRenderPrevious(zombie);
+        if (!zombie.incapacitated) {
+          continue;
+        }
+        zombie.horizontalSpeed = 0;
+        zombie.attackWait = 0;
+        zombie.attackWindup = 0;
+        zombie.body.vel[0] = 0;
+        zombie.body.vel[2] = 0;
+        stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
+      }
+      // Freeze only shambler timers; the player's own melee cooldown continues to elapse.
+      this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
+      return;
+    }
     const player = this.options.player();
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
     const entries = [...this.store.entries()];
     const groundedAtTickStart = new Map<Zombie, boolean>();
-    for (const [, zombie] of entries) {
+    for (const [id, zombie] of entries) {
       groundedAtTickStart.set(zombie, zombie.body.onGround);
-      zombie.renderPrevious = {
-        pos: copy(zombie.body.pos),
-        facing: copy(zombie.facing),
-        headYaw: zombie.headYaw,
-        gaitPhase: zombie.gaitPhase,
-      };
+      this.captureRenderPrevious(zombie);
+      if (zombie.incapacitated) {
+        zombie.horizontalSpeed = 0;
+        zombie.attackWait = 0;
+        zombie.attackWindup = 0;
+        zombie.body.vel[0] = 0;
+        zombie.body.vel[2] = 0;
+        stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
+        continue;
+      }
+      if (zombie.hitFlinchTime !== undefined) {
+        const nextFlinchTime = zombie.hitFlinchTime + dt;
+        zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
+      }
       zombie.attackWait = Math.max(0, zombie.attackWait - dt);
       // attackWindup is decremented further below, alongside the reach/LOS check it gates — see
       // withinAttackReach and its two call sites (attack start and attack resolve).
@@ -1037,6 +1205,23 @@ export class ZombieSystem {
           }
         }
       }
+      const stepHeightMetres = this.options.physics.stepHeight * blockSize;
+      const stepOffsetState = updateStepOffset(
+        {
+          offset: zombie.stepOffset ?? 0,
+          previous: {
+            position: beforeStep.map((coordinate) => coordinate * blockSize) as Vec3,
+            grounded: groundedAtTickStart.get(zombie) ?? false,
+          },
+        },
+        {
+          position: zombie.body.pos.map((coordinate) => coordinate * blockSize) as Vec3,
+          grounded: zombie.body.onGround,
+          dt,
+          stepHeightMetres,
+        },
+      );
+      zombie.stepOffset = stepOffsetState.offset;
       zombie.gaitPhase += (travelled / type.stepLength) * Math.PI;
       if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
         zombie.wanderClock += dt;
@@ -1082,9 +1267,12 @@ export class ZombieSystem {
         this.beginIdle(zombie);
         zombie.lastPerceived = undefined;
       }
+      const poseInput = zombiePoseInputFor(zombie, id, blockSize);
+      const stanceTarget = targetStanceWeight(poseInput);
+      zombie.stanceWeight = advanceStanceWeight(zombie.stanceWeight ?? stanceTarget, stanceTarget, dt);
     }
     separateBodies({
-      bodies: entries.map(([, zombie]) => zombie.body),
+      bodies: entries.filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body),
       dt,
       isSolid,
       blockSize,
@@ -1092,6 +1280,9 @@ export class ZombieSystem {
     });
     if (player.body) {
       for (const [, zombie] of entries) {
+        if (zombie.incapacitated) {
+          continue;
+        }
         separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });
       }
     }
@@ -1133,112 +1324,188 @@ export class ZombieSystem {
   unsafeReason(playerPos = this.options.player().pos): string | undefined {
     const { blockSize } = this.options;
     for (const [, zombie] of this.store.entries()) {
-      if (zombie.mode === 'chase' || horizontalDistance(zombie.body.pos, playerPos) * blockSize <= 30) {
+      if (
+        !zombie.incapacitated &&
+        (zombie.mode === 'chase' || horizontalDistance(zombie.body.pos, playerPos) * blockSize <= 30)
+      ) {
         return 'A shambler is close';
       }
     }
     return undefined;
   }
 
-  private firstRegionHit(origin: Vec3, direction: Vec3, reach: number): [EntityId, Zombie, ZombieRegion] | undefined {
+  private firstRegionHit(
+    origin: Vec3,
+    direction: Vec3,
+  ): [EntityId, Zombie, ZombieRegion, number, readonly PosedBoneBox[]] | undefined {
     const { blockSize, isSolid } = this.options;
-    let nearest: [EntityId, Zombie, ZombieRegion] | undefined;
+    let nearest: [EntityId, Zombie, ZombieRegion, number, readonly PosedBoneBox[]] | undefined;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (const [id, zombie] of this.store.entries()) {
+      if (zombie.incapacitated) {
+        continue;
+      }
+      const centerY = zombie.body.pos[1] + zombie.body.height * 0.5;
+      const nearestApproach =
+        (zombie.body.pos[0] - origin[0]) * direction[0] +
+        (centerY - origin[1]) * direction[1] +
+        (zombie.body.pos[2] - origin[2]) * direction[2];
+      const nearestT = Math.max(0, nearestApproach);
+      const perpendicular =
+        Math.hypot(
+          origin[0] + direction[0] * nearestT - zombie.body.pos[0],
+          origin[1] + direction[1] * nearestT - centerY,
+          origin[2] + direction[2] * nearestT - zombie.body.pos[2],
+        ) * blockSize;
+      if (perpendicular > 1.0) {
+        continue;
+      }
+      const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
       for (const region of ZOMBIE_REGION_NAMES) {
         if (zombie.regions[region] <= 0) {
           continue;
         }
-        const distance = zombieRegionHitDistance({
-          origin,
-          direction,
-          pose: {
-            position: zombie.body.pos,
-            facing: zombie.facing,
-            headYaw: zombie.headYaw,
-            gaitPhase: zombie.gaitPhase,
-            moving: Math.hypot(zombie.body.vel[0], zombie.body.vel[2]) > 0.05,
-          },
-          region,
-          blockSize,
-        });
-        if (
-          distance === undefined ||
-          distance * blockSize > reach ||
-          raycast(origin, direction, distance, isSolid) ||
-          distance >= nearestDistance
-        ) {
+        const distance = posedRegionHitDistance(posed[region], origin, direction, blockSize);
+        if (distance === undefined || raycast(origin, direction, distance, isSolid) || distance >= nearestDistance) {
           continue;
         }
         nearestDistance = distance;
-        nearest = [id, zombie, region];
+        nearest = [id, zombie, region, distance, posed[region]];
       }
     }
     return nearest;
   }
 
-  /** Strikes the first visible zombie within the held weapon's reach. */
-  swing(
-    origin: Vec3,
-    direction: Vec3,
-    weapon: { damage: number; reach: number; cooldown: number },
-  ): EntityId | undefined {
+  /** Purely queries the first visible posed region along the ray, including hits beyond melee reach. */
+  aimAt(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): ZombieAim | undefined {
+    const found = this.firstRegionHit(origin, unit(direction));
+    if (!found) {
+      return undefined;
+    }
+    const [id, zombie, region, distance, boxes] = found;
+    const distanceMetres = distance * this.options.blockSize;
+    const reachMetres = PLAYER_ARM_REACH_M + weapon.reach;
+    return {
+      id,
+      region,
+      distanceMetres,
+      reachMetres,
+      inReach: distanceMetres <= reachMetres,
+      health: zombie.regions[region],
+      maxHealth: zombie.type.regions[region],
+      boxes,
+    };
+  }
+
+  /** Strikes the first visible zombie within arm reach plus the held weapon's reach beyond the hand. */
+  swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
     if (this.playerAttackWait > 0) {
       return undefined;
     }
     this.options.onSound?.('melee_swing', copy(origin));
-    const found = this.firstRegionHit(origin, unit(direction), weapon.reach);
-    if (!found) {
+    const aim = this.aimAt(origin, direction, weapon);
+    if (!aim?.inReach) {
+      this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
+      return undefined;
+    }
+    const zombie = this.store.get(aim.id);
+    if (!zombie) {
       return undefined;
     }
     this.playerAttackWait = weapon.cooldown;
-    const [id, zombie, region] = found;
+    this.applyMeleeHit({
+      id: aim.id,
+      zombie,
+      region: aim.region,
+      origin,
+      direction,
+      distanceMetres: aim.distanceMetres,
+      weapon,
+    });
+    return aim.id;
+  }
+
+  private applyMeleeHit({ id, zombie, region, origin, direction, distanceMetres, weapon }: MeleeHitContext): void {
+    const ray = unit(direction);
+    const distance = distanceMetres / this.options.blockSize;
+    const hit: HitImpulse = {
+      point: [origin[0] + ray[0] * distance, origin[1] + ray[1] * distance, origin[2] + ray[2] * distance],
+      direction: ray,
+      impulse: weapon.impulse ?? 4,
+    };
+    const healthBefore = zombie.regions[region];
+    const severedBefore = new Set(zombie.severed);
     this.options.onSound?.('melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
-    const health = Math.max(0, zombie.regions[region] - weapon.damage);
-    zombie.regions[region] = health;
-    const killed = region === 'head' && health === 0;
-    // No dedicated dismemberment/gore sound exists in content/base/sounds.json yet (melee_hit/shambler_hurt
-    // above already cover every hit) — "play one if a suitable one exists, else skip" per the design.
-    if (health === 0 && region in ARM_REGION_PART) {
-      // A destroyed arm region is a whole arm gone: the shoulder is the cut, so the renderer hides the
-      // arm and the zombie counts it lost for attacking (canStillAttack).
-      this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion]);
+    const healthAfter = Math.max(0, healthBefore - weapon.damage);
+    zombie.regions[region] = healthAfter;
+    if (healthAfter < healthBefore) {
+      zombie.hitFlinchTime = 0;
     }
-    this.rollDismember(id, zombie, killed);
+    const killed = region === 'head' && healthAfter === 0;
+    const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
+    const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
+    const part = newParts.includes('head') ? 'head' : newParts[0];
+    const outcome = meleeOutcome(killed, incapacitated, part);
+    this.options.onMeleeResult?.({
+      id,
+      region,
+      damage: healthBefore - healthAfter,
+      healthBefore,
+      healthAfter,
+      outcome,
+      ...(part === undefined ? {} : { part }),
+    });
+  }
+
+  private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
+    if (healthAfter === 0 && region in ARM_REGION_PART) {
+      this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion], hit);
+    }
+    this.rollDismember(id, zombie, killed, hit);
+    const incapacitated = region === 'torso' && healthAfter === 0 && zombie.regions.head > 0;
+    if (incapacitated && !zombie.incapacitated) {
+      zombie.incapacitated = true;
+      zombie.horizontalSpeed = 0;
+      zombie.attackWait = 0;
+      zombie.attackWindup = 0;
+      zombie.body.vel[0] = 0;
+      zombie.body.vel[2] = 0;
+      this.options.onIncapacitated?.(id, zombie);
+    }
     if (killed) {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
-    } else if (region !== 'head' && health === 0) {
+    } else if (region !== 'head' && region !== 'torso' && healthAfter === 0) {
       this.options.onSevered?.(zombie, region);
     }
-    return id;
+    return incapacitated;
   }
 
   /** Records `part` as severed (cumulative, saved) and tells the renderer; a part already cut is a no-op. */
-  private sever(id: EntityId, zombie: Zombie, part: string): void {
+  private sever(id: EntityId, zombie: Zombie, part: string, hit: HitImpulse): void {
     if (zombie.severed.includes(part)) {
       return;
     }
     zombie.severed.push(part);
-    this.options.onSever?.(id, zombie, part);
+    this.options.onSever?.(id, zombie, part, hit);
   }
 
   /** Independent rolls for this hit: type.dismember.chance for a random not-yet-severed arm part (skipping
    * one already implied by a containing part — see availableArmParts), and, only on a killing blow,
    * type.dismember.headOnKillChance for the head too. Uses zombie.dismemberRng, not behaviorRng — see
    * Zombie.dismemberRng's own doc comment. */
-  private rollDismember(id: EntityId, zombie: Zombie, killed: boolean): void {
+  private rollDismember(id: EntityId, zombie: Zombie, killed: boolean, hit: HitImpulse): void {
     const { dismember } = zombie.type;
     if (zombie.dismemberRng.chance(dismember.chance)) {
       const available = availableArmParts(zombie.severed);
       if (available.length > 0) {
         const part = available[zombie.dismemberRng.int(0, available.length - 1)]!;
-        this.sever(id, zombie, part);
+        this.sever(id, zombie, part, hit);
       }
     }
     if (killed && !zombie.severed.includes('head') && zombie.dismemberRng.chance(dismember.headOnKillChance)) {
-      this.sever(id, zombie, 'head');
+      this.sever(id, zombie, 'head', hit);
     }
   }
 }

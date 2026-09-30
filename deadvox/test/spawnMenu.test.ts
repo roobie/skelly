@@ -80,6 +80,10 @@ describe('spawnMenuViewModel', () => {
       toggleDanger: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
+      isAimEnabled: () => true,
+      toggleAim: () => undefined,
+      isFrozen: () => false,
+      toggleFrozen: () => undefined,
     });
 
     expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);

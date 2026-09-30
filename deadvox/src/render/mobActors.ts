@@ -22,17 +22,14 @@
 // distance sort of every zombie sharing an overflowing variant, and at the default capacity (64, matching
 // ZombieMeshes') and pool size (12) this essentially never triggers in practice.
 //
-// Reactions (mobgen/src/mob/reactions.ts — EPIC.md's "animations for taking damage"): a hit flinch layers
-// over whatever pose a live zombie is already in (walk, standing, or mid-attack), detected from a health
-// drop each frame (updateFlinch). A death is different — src/core/zombies.ts's onDeath removes the zombie
-// from its store and calls zombieDied here in the very same step, so this renderer, not the sim, owns
-// everything about a corpse from then on: it *keeps* the zombie's existing slot/variant/instance (a corpse
-// is still drawn, so it still counts toward its variant's capacity — a full variant drops its own oldest
-// corpse first to make room for a new live zombie, and a global MAX_CORPSES cap drops the globally oldest
-// corpse on a new death), plays deathPose from the pose/position/facing frozen at the instant of death,
-// holds once it's lying, then sinks (an extra downward Y offset, no re-posing needed) before finally
-// freeing the slot the same way a plain vanish (despawn/unload, never a death) always has. Corpses are
-// render-only: never saved, and forgotten immediately if this whole renderer is disposed/recreated.
+// Living pose (gait, idle clock, attack cooldown phase, head look and hit flinch) is simulation-owned and
+// comes from core/zombiePose.ts, the same pure function used by hit-region FK. This renderer adds only the
+// interpolated root transform; fixed-step state, not render dt or randomness, drives every posed bone. A
+// death is different — src/core/zombies.ts's onDeath removes the zombie from its store and calls zombieDied
+// here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
+// slot/variant/instance, plays deathPose from the frozen living pose, holds once lying, sinks, then frees
+// the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once, lie
+// forever in their existing row, never sink, and are excluded from corpse eviction.
 //
 // Dismemberment (mobgen/src/mob/dismember.ts): src/core/zombies.ts's Zombie.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
@@ -45,23 +42,32 @@
 // shader. A corpse's severed set is frozen at the instant of death, same as its pose. Severing also spawns
 // one piece of flying debris (see the Debris type below) — its own InstancedMesh row shows only the
 // severed subtree (the inverse of a live zombie/corpse: the carried bones are real, everything else is
-// zeroed) and is driven by simple ballistic physics, reusing the corpse cap/eviction/lifecycle machinery
+// zeroed) and is driven by the core rigid-body stepper, reusing the corpse cap/eviction/lifecycle machinery
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
 import type { Material } from '@mobgen/core/body.ts';
-import { generateValid, type Realized, realize } from '@mobgen/core/generate.ts';
-import { IDENTITY_M, type Mat3, type Vec3 as MobVec3, mulMM, rotAxis, rotY } from '@mobgen/core/math.ts';
+import type { Realized } from '@mobgen/core/generate.ts';
+import { voxelBounds } from '@mobgen/core/massProperties.ts';
+import {
+  type Mat3,
+  type Vec3 as MobVec3,
+  mat3ToQuat,
+  mulMM,
+  mulMV,
+  quatToMat3,
+  rotY,
+  transpose,
+} from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
-  blendPose,
   boneTransformsInto,
   indexBonesByParent,
   type MutableTransform,
   type ParentIndex,
   type Pose,
 } from '@mobgen/core/pose.ts';
-import { materialOf, shadeOf } from '@mobgen/core/voxelize.ts';
-import { ATTACK_CLIPS, attackPose } from '@mobgen/mob/attack.ts';
+import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
+import { cellIndex, materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -75,23 +81,11 @@ import {
   packCrowdBoneMatrix,
   packSeveredMask,
 } from '@mobgen/mob/crowd.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import {
-  advanceClock,
-  bodyRestExtents,
-  createGaitCache,
-  type Extent,
-  footRestExtents,
-  type GaitClock,
-  INITIAL_CLOCK,
-  type LegGeometry,
-  legGeometryFor,
-  type WalkActor,
-  walkPose,
-} from '@mobgen/mob/gait.ts';
+import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { bodyRestExtents, createGaitCache, type Extent, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
-import { DEATH_FALL_DURATION, type DeathActor, deathPose, flinchPose, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import { DEATH_FALL_DURATION, type DeathActor, deathPose } from '@mobgen/mob/reactions.ts';
+import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   BufferAttribute,
@@ -112,9 +106,17 @@ import {
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { ZOMBIE_REGION_NAMES } from '../core/zombieRegions.ts';
-import type { Zombie } from '../core/zombies.ts';
-import { StepOffset } from './stepOffset.ts';
+import {
+  angularVelocity,
+  applyImpulseAtClampedPoint,
+  type Quaternion,
+  type RigidBody,
+  type RigidWorld,
+  stepRigidBody,
+} from '../core/rigidBody.ts';
+import { type PosedShambler, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
+
+import type { HitImpulse, Zombie } from '../core/zombies.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`zombieDied` are optional: ZombieMeshes has none of them (see
@@ -124,48 +126,23 @@ import { StepOffset } from './stepOffset.ts';
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
 export interface ZombieRenderer {
   readonly group: Group;
-  sync: (store: EntityStore<Zombie>, realDt?: number, alpha?: number) => void;
+  sync: (store: EntityStore<Zombie>, realDt?: number, alpha?: number, freezeLiving?: boolean) => void;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
+  zombieIncapacitated?: (id: EntityId, zombie: Zombie) => void;
   /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
-  zombieSevered?: (id: EntityId, part: string, playerPos?: Vec3) => void;
+  setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
+  zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => void;
 }
 
-const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
-
-/** Every region's health together: it only ever drops on a hit, which is what starts a flinch. */
-const totalHealth = (zombie: Zombie): number => ZOMBIE_REGION_NAMES.reduce((sum, r) => sum + zombie.regions[r], 0);
-
-const DEFAULT_POOL_SIZE = 12;
+const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
-const BASE_SEED = 1; // fixed and deterministic — not Math.random() (the task's own requirement)
 
-const TELEPORT_METRES = 1; // matches StepOffset's own threshold
-const SPEED_TIME_CONSTANT_S = 0.25; // low-pass time constant for the walk speed fed to mobgen
-// mobgen's per-step caches (mob/gait.ts's cachedFootfallPeak) key on *exact* float speed equality; a
-// continuously-varying (lurch) speed would thrash them every frame (see mobgen's own report on this).
-// Quantizing keeps the speed stable frame-to-frame whenever it isn't genuinely changing.
-const SPEED_QUANTUM = 0.05;
-const STEP_HEIGHT_METRES = 0.5; // matches ZombieMeshes' own StepOffset construction
-
-// Distance-based LOD — identical thresholds/intervals to mobgen's own stress page (src/viewer/stress.ts).
-const LOD_NEAR_M = 15;
-const LOD_FAR_M = 30;
-const PELVIS_HEIGHT_M = 0.9; // rough pelvis height above the feet, for both the LOD distance and the
-// frustum bounding sphere below — same approximation mobgen's stress page uses for its own LOD.
+// Rough pelvis height and bounding radius used only for frustum culling.
+const PELVIS_HEIGHT_M = 0.9;
 const BOUNDING_RADIUS_M = 1.2;
-
-const lodIntervalFor = (distance: number): number => {
-  if (distance > LOD_FAR_M) {
-    return 3;
-  }
-  if (distance > LOD_NEAR_M) {
-    return 2;
-  }
-  return 1;
-};
 
 // Corpse lifecycle: death fall (mobgen's own DEATH_FALL_DURATION), then lies still, then sinks out of
 // view — see MobActorMeshes' own doc comment on why a corpse keeps its slot the whole time.
@@ -173,76 +150,9 @@ const CORPSE_LIE_S = 8;
 const CORPSE_SINK_S = 1.5;
 const CORPSE_SINK_DEPTH_M = 1.5; // comfortably below any visible geometry by the end of the sink
 const CORPSE_LIFETIME_S = DEATH_FALL_DURATION + CORPSE_LIE_S + CORPSE_SINK_S;
-const MAX_CORPSES = 16; // global cap across every variant, corpses AND debris together — see zombieDied's
-// and zombieSevered's own eviction.
-
-// Flying-limb debris: simple ballistic physics (no terrain query available here, so ground is approximated
-// as the zombie's own feet Y at the instant of severing — see this module's header comment), one bounce,
-// then the same lie/sink timing a corpse uses.
-const DEBRIS_LAUNCH_HORIZONTAL_MPS = 2.5; // "away from player", within the task's ~2-3 m/s
-const DEBRIS_LAUNCH_UP_MPS = 2.5;
-const DEBRIS_GRAVITY_MPS2 = 9.8;
-const DEBRIS_MAX_FLIGHT_S = 3; // safety cap in case it somehow never reaches groundY
-const DEBRIS_BOUNCE_DAMPING = 0.35; // one bounce, most of the energy lost, then it settles
-const DEBRIS_SPAWN_HEIGHT_M = 1.2; // rough arm height above the feet — see zombieSevered's own note
-const DEBRIS_MIN_SPIN_RADPS = 2;
-const DEBRIS_SPIN_RANGE_RADPS = 4; // spin rate is DEBRIS_MIN_SPIN_RADPS..+RANGE, from debrisSpinFor's hash
-
-/** Deterministic spin (axis, rate) from a zombie's id and the severed part's own name — same "hash it,
- * don't draw from a live RNG stream" reasoning as variantIndexForId/flinchSideForId. Exported for
- * test/mobActors.test.ts. */
-export const debrisSpinFor = (id: EntityId, part: string): { axis: Vec3; rate: number } => {
-  let h = (id ^ 0x2f_1b_ad_e5) >>> 0;
-  for (let i = 0; i < part.length; i++) {
-    h = Math.imul(h ^ part.charCodeAt(i), 0x01_00_01_93) >>> 0;
-  }
-  h = Math.imul(h ^ (h >>> 15), 0x2c_1b_3c_6d) >>> 0;
-  h = (h ^ (h >>> 12)) >>> 0;
-  const ax = ((h & 0xff) / 255) * 2 - 1;
-  const ay = (((h >>> 8) & 0xff) / 255) * 2 - 1;
-  const az = (((h >>> 16) & 0xff) / 255) * 2 - 1;
-  const len = Math.hypot(ax, ay, az) || 1;
-  const rate = DEBRIS_MIN_SPIN_RADPS + ((h >>> 24) / 255) * DEBRIS_SPIN_RANGE_RADPS;
-  return { axis: [ax / len, ay / len, az / len], rate };
-};
-
-/** A unit XZ direction from `playerBlockPos` (block units, PlayerSense.pos's own convention — see
- * zombieDied's identical assumption) toward `zombieWorldPos` (metres) — "away from the player." Falls back
- * to a fixed direction with no player position available, same documented default as
- * fallDirectionAwayFromPlayer. */
-const awayFromPlayerXZ = (zombieWorldPos: Vec3, playerBlockPos: Vec3 | undefined, blockSize: number): Vec3 => {
-  if (!playerBlockPos) {
-    return [0, 0, 1];
-  }
-  const dx = zombieWorldPos[0] - playerBlockPos[0] * blockSize;
-  const dz = zombieWorldPos[2] - playerBlockPos[2] * blockSize;
-  const len = Math.hypot(dx, dz);
-  return len > 1e-6 ? [dx / len, 0, dz / len] : [0, 0, 1];
-};
-
-/** Deterministic variant pick from a zombie's EntityId — NOT the sim's own behaviour RNG (that must stay
- * reserved for movement/AI decisions; drawing from it here would perturb them by how many zombies exist).
- * Exported for test/mobActors.test.ts. */
-export const variantIndexForId = (id: EntityId, poolSize: number): number => {
-  let h = (id ^ 0x9e_37_79_b9) >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x04_5d_9f_3b) >>> 0;
-  h = Math.imul(h ^ (h >>> 16), 0x04_5d_9f_3b) >>> 0;
-  h = (h ^ (h >>> 16)) >>> 0;
-  return h % poolSize;
-};
-
-/** Deterministic flinch side from a zombie's own EntityId, in [-1, 1) — same "hash the id, not the sim's
- * behaviour RNG" reasoning as variantIndexForId. A judgment call, not the spec's preferred option: the hit
- * direction relative to facing would need the player's position threaded into sync()'s otherwise
- * store/dt/alpha-only signature (shared with ZombieMeshes and the bench harness) for every frame, just for
- * an occasional cosmetic mirror; fixed-per-zombie-life from its id was the documented fallback for exactly
- * this "awkward to plumb through" case. Exported for test/mobActors.test.ts. */
-export const flinchSideForId = (id: EntityId): number => {
-  let h = (id ^ 0x5b_ad_c0_de) >>> 0;
-  h = Math.imul(h ^ (h >>> 15), 0x2c_1b_3c_6d) >>> 0;
-  h = (h ^ (h >>> 12)) >>> 0;
-  return (h % 2000) / 1000 - 1;
-};
+// Global cap across every variant, corpses AND debris together — see zombieDied's and zombieSevered's eviction.
+const MAX_CORPSES = 16;
+const MAX_LAUNCH_SPIN_RADPS = 20; // presentation cap; BR's call.
 
 /** Which way a corpse should topple: away from the player if a position is available (in reach at the
  * moment of death, in the player's forward hemisphere from the zombie's own facing → topple backward,
@@ -256,89 +166,6 @@ export const fallDirectionAwayFromPlayer = (facing: Vec3, zombiePos: Vec3, playe
   const towardPlayerZ = playerPos[2] - zombiePos[2];
   const facingTowardPlayer = facing[0] * towardPlayerX + facing[2] * towardPlayerZ;
   return facingTowardPlayer > 0 ? -1 : 1;
-};
-
-/** True the instant attackWait *increases* versus last frame's value — the sim sets it to the type's own
- * cooldown exactly when an attack's windup starts, i.e. the telegraph, not when the hit lands
- * (src/core/zombies.ts), so a rise (never a fall — it only ever counts down otherwise) means "an attack
- * just started its windup." Exported for test/mobActors.test.ts. */
-export const attackJustStarted = (attackWait: number, previousAttackWait: number): boolean =>
-  attackWait > previousAttackWait;
-
-/** Seconds a stance cross-fade (see advanceStanceWeight) takes to go all the way from slack to aggravated
- * or back — mirrors mobgen's own IDLE_BLEND_SPEED_MPS walk<->idle blend in spirit (smooth, not a pop), just
- * time-driven here instead of speed-driven since a zombie's *stance* changes on mode, not speed. */
-const STANCE_CROSSFADE_S = 0.5;
-
-/** Never the bind pose (this whole module exists so it never appears — see mobActors.ts's header and
- * mobgen's mob/idle.ts): 'aggravated' the instant a zombie is chasing, winding up an attack, or actually
- * mid-attack-clip; 'slack' otherwise. `attacking` is the renderer's own state (state.attackTime !==
- * undefined), not on Zombie itself, since it tracks *this renderer's* clip playback, not the sim's attack
- * cooldown. Exported for test/mobActors.test.ts. */
-export const targetStanceFor = (zombie: Zombie, attacking: boolean): IdleStance =>
-  zombie.mode === 'chase' || zombie.attackWindup > 0 || attacking ? 'aggravated' : 'slack';
-
-/** Moves `current` (0 = slack .. 1 = aggravated) linearly toward `target`'s own weight, covering the full
- * 0..1 range in STANCE_CROSSFADE_S seconds (so a partial cross-fade in progress, e.g. from a rapid
- * chase/lose-interest flicker, still reaches the new target in *less* than that — proportional to how far
- * it already had to go, not always the full 0.5 s). Exported for test/mobActors.test.ts. */
-export const advanceStanceWeight = (current: number, target: IdleStance, dt: number): number => {
-  const targetWeight = target === 'aggravated' ? 1 : 0;
-  const maxDelta = dt / STANCE_CROSSFADE_S;
-  const delta = targetWeight - current;
-  return Math.abs(delta) <= maxDelta ? targetWeight : current + Math.sign(delta) * maxDelta;
-};
-
-/** Where in mobgen's LUNGE_GRAB clip to start playing an attack so its own hitTime lands exactly when the
- * sim's windup elapses and the hit resolves (src/core/zombies.ts telegraphs an attack with a windup before
- * the hit, rather than landing it instantly) — clamped to 0 for a windup at or beyond the clip's hitTime,
- * so the clip still plays (just with no lead-in) rather than starting at a negative time. Rendering
- * interpolates roughly one tick behind the sim; not corrected for here. Exported for
- * test/mobActors.test.ts. */
-export const attackStartTime = (windupSeconds: number): number => Math.max(0, LUNGE_GRAB.hitTime - windupSeconds);
-
-/** The (clock, smoothed/quantized speed) triple advanceGaitFromMovement threads through frame to frame —
- * pulled out of ZombieRenderState so the update itself is a plain, testable function of its inputs. */
-export interface GaitMovementState {
-  readonly clock: GaitClock;
-  readonly smoothedSpeed: number;
-  readonly quantizedSpeed: number;
-}
-
-/** Grouped (see mobgen's own GaitBasis for the same reasoning) since they always travel together. */
-export interface GaitMovementBasis {
-  readonly params: HumanoidParams;
-  readonly geomL: LegGeometry;
-  readonly seed: number;
-}
-
-/**
- * Advances the gait clock by `distance` (metres moved this render frame) and updates the low-pass
- * filtered, quantized speed mobgen's own per-step caches need held steady (mob/gait.ts's
- * cachedFootfallPeak keys on *exact* float speed equality — a continuously-varying lurch speed would
- * thrash it every frame without quantizing; see this module's own SPEED_QUANTUM comment). A `distance`
- * over TELEPORT_METRES in one frame is treated as a teleport: returns `current` unchanged (no clock
- * advance, no speed-filter update) — the caller is still responsible for resetting its own `lastPos` to
- * the new position either way, so the *next* frame's delta doesn't include the jump.
- */
-export const advanceGaitFromMovement = (
-  current: GaitMovementState,
-  distance: number,
-  realDt: number,
-  basis: GaitMovementBasis,
-): GaitMovementState => {
-  if (distance > TELEPORT_METRES) {
-    return current;
-  }
-  let { smoothedSpeed, quantizedSpeed } = current;
-  if (realDt > 0) {
-    const raw = distance / realDt;
-    const lowpass = Math.min(1, realDt / SPEED_TIME_CONSTANT_S);
-    smoothedSpeed += (raw - smoothedSpeed) * lowpass;
-    quantizedSpeed = Math.max(0, Math.round(smoothedSpeed / SPEED_QUANTUM) * SPEED_QUANTUM);
-  }
-  const clock = advanceClock(current.clock, distance, { ...basis, speed: quantizedSpeed });
-  return { clock, smoothedSpeed, quantizedSpeed };
 };
 
 /** Same conversion mobgen's own viewer/scene.ts uses (not importable — that file pulls in three from
@@ -413,20 +240,20 @@ const buildVariantGeometry = (realized: Realized): BufferGeometry => {
 type SlotKey = EntityId | string;
 
 interface Variant {
+  readonly figureSeed: number;
   readonly realized: Realized;
   /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
    * (mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
    * variant have different speeds/step indices at once; see mobgen's own crowd-cache report). */
   readonly walkActorTemplate: WalkActor;
-  readonly legGeometryL: LegGeometry;
   /** Every bone's own rest extents (not just the feet) — deathPose's own re-grounding needs the whole
    * fallen body, since the lowest point once lying down is rarely a foot (see mobgen/src/mob/gait.ts's
    * bodyRestExtents doc comment). */
   readonly bodyExtents: ReadonlyMap<string, Extent>;
-  /** Both idle stances' static base pose (mobgen's idleBasePose — the leg IK/re-grounding, see mob/idle.ts),
-   * computed once here rather than per zombie per frame: every zombie sharing this variant cross-fades
-   * between these same two poses (idlePoseFor), only the per-zombie stanceWeight/idleTime differ. */
-  readonly idleBase: Readonly<Record<IdleStance, Pose>>;
+  readonly rigidParts: ReadonlyMap<
+    string,
+    { mass: number; inertiaBody: RigidBody['inertiaBody']; corners: readonly Vec3[]; boneIndices: readonly number[] }
+  >;
   readonly parentIndex: ParentIndex;
   /** Bone id -> this variant's own bone array index — translates mobgen's severedBoneSet (string ids, body-
    * plan-generic) into the indices the shared texture and its severed mask are keyed by. */
@@ -459,28 +286,8 @@ interface SlotHolder {
 interface ZombieRenderState extends SlotHolder {
   readonly id: EntityId;
   readonly walkActor: WalkActor;
-  clock: GaitClock;
-  /** Cross-fade weight toward the aggravated stance (0 = fully slack, 1 = fully aggravated) — see
-   * advanceStanceWeight. Blended with idleBase (idlePoseFor) rather than switched, so a mode change never
-   * pops. */
-  stanceWeight: number;
-  /** This zombie's own idle clock (render time, never reset) — phase-offset by its id (idlePoseFor) so a
-   * crowd sharing one variant doesn't breathe/sway in lockstep; see mobgen's mob/idle.ts. */
-  idleTime: number;
-  /** World-space (metres) interpolated position last frame, or undefined the first frame we've seen it —
-   * distance moved since then (not since the last *sim tick*) is what advances the gait clock. */
-  lastPos: Vec3 | undefined;
-  smoothedSpeed: number;
-  quantizedSpeed: number;
-  attackTime: number | undefined;
-  prevAttackWait: number;
-  /** health last frame — a drop starts a flinch (see updateFlinch). */
-  prevHealth: number;
-  hitTime: number | undefined;
-  /** Fixed for this zombie's whole life (see flinchSideForId's own doc comment on why it's id-hashed
-   * rather than read from the player's position each hit). */
-  readonly hitSide: number;
-  readonly stepOffset: StepOffset;
+  lastPose: Pose | undefined;
+  lastPlacement: CrowdPlacement | undefined;
   lastSeenFrame: number;
 }
 
@@ -488,6 +295,8 @@ interface ZombieRenderState extends SlotHolder {
  * pose/position/facing/fall-direction it died with, and driven purely by `elapsed` from there — the sim
  * has already forgotten this id entirely. */
 interface Corpse extends SlotHolder {
+  /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
+  readonly incapacitated: boolean;
   readonly walkActor: WalkActor;
   /** The walk (or walk+attack) pose frozen at the instant of death — deathPose's own basePose. */
   readonly basePose: Pose;
@@ -505,6 +314,20 @@ interface Corpse extends SlotHolder {
   readonly insertOrder: number;
 }
 
+/** Arguments kept together for inserting one physics-backed debris slot. */
+interface DebrisSpawn {
+  id: EntityId;
+  part: string;
+  state: ZombieRenderState;
+  variant: Variant;
+  severedIndices: readonly number[];
+  sourceTransforms: Map<number, MutableTransform>;
+  initialCenter: Vec3;
+  initialOrientation: Quaternion;
+  originOffsetY: number;
+  body: RigidBody;
+}
+
 /** A flying piece of debris — a severed limb, physically simulated (see zombieSevered/advanceDebris) —
  * drawn as the *inverse* of a corpse: only `severedIndices` are visible (real, physics-placed matrices),
  * every other bone is zeroed. Reuses a corpse-shaped slot/lifecycle (see this module's header comment). */
@@ -513,62 +336,15 @@ interface Debris extends SlotHolder {
   /** The bone indices this debris carries (the cut bone and everything below it) — visible; every other
    * bone in the variant is hidden. */
   readonly severedIndices: readonly number[];
-  /** The walk (or walk+attack) pose frozen at the instant of severing — gives the carried subtree its own
-   * internal shape (e.g. an elbow bend), same role as a corpse's basePose. */
-  readonly frozenPose: Pose;
-  /** The severed bone itself (not a descendant) — spin is applied here so it carries the whole subtree
-   * with it through ordinary FK composition, same trick deathPose uses for the whole body's topple. */
-  readonly topBoneId: string;
-  readonly spinAxis: Vec3;
-  readonly spinRate: number;
-  /** World Y the debris settles at — the zombie's own feet Y at the instant of severing (see this module's
-   * header comment on why: no terrain height query is available here). */
-  readonly groundY: number;
+  readonly sourceTransforms: ReadonlyMap<number, MutableTransform>;
+  readonly initialCenter: Vec3;
+  readonly initialOrientation: Quaternion;
+  readonly originOffsetY: number;
   readonly insertOrder: number;
-  pos: Vec3;
-  vel: Vec3;
-  spinAngle: number;
-  bounced: boolean;
-  grounded: boolean;
-  /** Seconds since severing — while airborne, capped by DEBRIS_MAX_FLIGHT_S as a safety net; once
-   * `grounded`, this module's own advanceDebris compares it against `groundedAt + CORPSE_LIE_S +
-   * CORPSE_SINK_S` instead, so a quick landing still gets the full lie/sink time (not shortchanged by
-   * however long the flight itself took). */
+  readonly body: RigidBody;
   elapsed: number;
-  /** `elapsed` at the moment this debris settled, or undefined while still airborne. */
   groundedAt: number | undefined;
 }
-
-/** One physics step for an airborne piece of debris: gravity, integrate position, spin, then either bounce
- * once off groundY (halves horizontal speed, reflects and damps vertical speed) or — on the second contact,
- * or past the DEBRIS_MAX_FLIGHT_S safety net — settle (grounded, groundedAt stamped, velocity zeroed).
- * Mutates `d` in place; pulled out of advanceDebris purely to keep that method's own branching simple. */
-const stepAirborneDebris = (d: Debris, realDt: number): void => {
-  d.vel[1] -= DEBRIS_GRAVITY_MPS2 * realDt;
-  d.pos = [d.pos[0] + d.vel[0] * realDt, d.pos[1] + d.vel[1] * realDt, d.pos[2] + d.vel[2] * realDt];
-  d.spinAngle += d.spinRate * realDt;
-  const hitGround = d.pos[1] <= d.groundY || d.elapsed > DEBRIS_MAX_FLIGHT_S;
-  if (!hitGround) {
-    return;
-  }
-  d.pos = [d.pos[0], d.groundY, d.pos[2]];
-  if (!d.bounced && d.elapsed <= DEBRIS_MAX_FLIGHT_S) {
-    d.bounced = true;
-    d.vel = [d.vel[0] * 0.5, Math.abs(d.vel[1]) * DEBRIS_BOUNCE_DAMPING, d.vel[2] * 0.5];
-  } else {
-    d.grounded = true;
-    d.groundedAt = d.elapsed;
-    d.vel = [0, 0, 0];
-  }
-};
-
-/** Lowers a grounded, not-yet-freed debris toward CORPSE_SINK_DEPTH_M below groundY, same envelope a
- * corpse's own sink uses. Mutates `d` in place. */
-const sinkGroundedDebris = (d: Debris): void => {
-  const sinkElapsed = d.elapsed - (d.groundedAt ?? d.elapsed) - CORPSE_LIE_S;
-  const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
-  d.pos = [d.pos[0], d.groundY - sinkT * CORPSE_SINK_DEPTH_M, d.pos[2]];
-};
 
 export interface MobActorMeshesOptions {
   readonly poolSize?: number;
@@ -581,6 +357,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly blockSize: number;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
+  private readonly variantIndexBySeed: ReadonlyMap<number, number>;
   private readonly layout: CrowdTextureLayout;
   private readonly textureData: Float32Array;
   private readonly texture: DataTexture;
@@ -592,15 +369,17 @@ export class MobActorMeshes implements ZombieRenderer {
    * instead of needing to interleave two Maps' own iteration orders. */
   private nextDeadOrder = 0;
   private frameCounter = 0;
+  private renderBlend = 1;
   private camera: Camera | undefined;
   private readonly frustum = new Frustum();
   private readonly frustumMatrix = new Matrix4();
   private readonly boundingSphere = new Sphere(new Vector3(), BOUNDING_RADIUS_M);
+  private world: RigidWorld | undefined;
 
   constructor(blockSize: number, capacity = DEFAULT_CAPACITY, options: MobActorMeshesOptions = {}) {
     this.blockSize = blockSize;
     this.capacity = capacity;
-    const poolSize = Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE);
+    const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
     const shamblerTemplate = TEMPLATES.find((t) => t.name === 'shambler');
     if (!shamblerTemplate) {
       throw new Error("MobActorMeshes: mobgen has no 'shambler' template");
@@ -608,29 +387,23 @@ export class MobActorMeshes implements ZombieRenderer {
 
     const t0 = performance.now();
     const built: {
+      figureSeed: number;
       realized: Realized;
       walkActorTemplate: WalkActor;
-      legGeometryL: LegGeometry;
       bodyExtents: ReadonlyMap<string, Extent>;
     }[] = [];
-    let seed = BASE_SEED;
-    for (let i = 0; i < poolSize; i++) {
-      const found = generateValid(shamblerTemplate, seed);
-      if (!found) {
-        throw new Error(`MobActorMeshes: no valid shambler within 100 seeds of ${seed}`);
-      }
-      seed = found.seed + 1;
-      const realized = realize(found.genome);
+    const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, poolSize);
+    for (const seed of figureSeeds) {
+      const { genome, realized } = shamblerFigure(seed);
       const extents = footRestExtents(realized.body.bones, realized.voxels);
       const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-      const legGeometryL = legGeometryFor(realized.body.bones, extents, 'L');
       const walkActorTemplate: WalkActor = {
         bones: realized.body.bones,
         extents,
-        params: found.genome.params as HumanoidParams,
-        seed: found.genome.seed,
+        params: genome.params as HumanoidParams,
+        seed: genome.seed,
       };
-      built.push({ realized, walkActorTemplate, legGeometryL, bodyExtents });
+      built.push({ figureSeed: seed, realized, walkActorTemplate, bodyExtents });
     }
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
@@ -695,15 +468,45 @@ export class MobActorMeshes implements ZombieRenderer {
       v.realized.body.bones.forEach((bone, index) => {
         boneIndexById.set(bone.id, index);
       });
+      const rigidParts = new Map<
+        string,
+        {
+          mass: number;
+          inertiaBody: RigidBody['inertiaBody'];
+          corners: readonly Vec3[];
+          boneIndices: readonly number[];
+        }
+      >();
+      for (const part of SEVERABLE_PARTS) {
+        const boneIndices = [...severedBoneSet(v.realized.body.bones, [part])]
+          .map((boneId) => boneIndexById.get(boneId))
+          .filter((index): index is number => index !== undefined);
+        const properties = templatePartMassProperties({
+          voxels: v.realized.voxels,
+          partBoneIndices: boneIndices,
+          bodyBoneIndices: v.realized.body.bones.map((_, index) => index),
+          voxelSize: v.realized.voxels.size,
+          template: shamblerTemplate,
+          part,
+        });
+        const bounds = voxelBounds(v.realized.voxels, boneIndices, properties.center);
+        rigidParts.set(part, {
+          mass: properties.mass,
+          inertiaBody: [
+            [...properties.inertia[0]] as Vec3,
+            [...properties.inertia[1]] as Vec3,
+            [...properties.inertia[2]] as Vec3,
+          ],
+          corners: bounds.corners.map((corner) => [...corner] as Vec3),
+          boneIndices,
+        });
+      }
       return {
+        figureSeed: v.figureSeed,
         realized: v.realized,
         walkActorTemplate: v.walkActorTemplate,
-        legGeometryL: v.legGeometryL,
         bodyExtents: v.bodyExtents,
-        idleBase: {
-          slack: idleBasePose(v.walkActorTemplate, 'slack'),
-          aggravated: idleBasePose(v.walkActorTemplate, 'aggravated'),
-        },
+        rigidParts,
         parentIndex: indexBonesByParent(v.realized.body.bones),
         boneIndexById,
         geometry,
@@ -716,10 +519,18 @@ export class MobActorMeshes implements ZombieRenderer {
         variantIndex,
       } satisfies Variant & { variantIndex: number };
     });
+    this.variantIndexBySeed = new Map(this.variants.map((variant, index) => [variant.figureSeed, index]));
   }
 
   setCamera(camera: Camera): void {
     this.camera = camera;
+  }
+
+  setWorld(isSolid: RigidWorld['isSolid'], blockSize: number): void {
+    if (!(blockSize > 0 && Number.isFinite(blockSize))) {
+      throw new RangeError('blockSize must be positive and finite');
+    }
+    this.world = { isSolid, blockSize };
   }
 
   /** The next insertOrder value for a new corpse or debris (see nextDeadOrder's own doc comment). */
@@ -735,18 +546,6 @@ export class MobActorMeshes implements ZombieRenderer {
    * Exported for test/mobActors.test.ts; play.ts has no use for it. */
   isTracked(id: EntityId): boolean {
     return this.states.has(id) || this.corpses.has(id);
-  }
-
-  /** Whether `id` is a live zombie currently mid-flinch. False for a corpse or an untracked id. Exported
-   * for test/mobActors.test.ts; play.ts has no use for it. */
-  isFlinching(id: EntityId): boolean {
-    return this.states.get(id)?.hitTime !== undefined;
-  }
-
-  /** Test-only: a live zombie's current stance cross-fade weight (0 = slack, 1 = aggravated) — see
-   * advanceStanceWeight. Undefined for a corpse or an untracked id. */
-  stanceWeightFor(id: EntityId): number | undefined {
-    return this.states.get(id)?.stanceWeight;
   }
 
   /** Test-only: `boneId`'s *rotation* submatrix (row-major, mobgen's own Mat3 convention — see
@@ -770,6 +569,36 @@ export class MobActorMeshes implements ZombieRenderer {
     const i = crowdTexelIndex(this.layout, holder.globalRow, boneIndex);
     const d = this.textureData;
     return [d[i]!, d[i + 1]!, d[i + 2]!, d[i + 4]!, d[i + 5]!, d[i + 6]!, d[i + 8]!, d[i + 9]!, d[i + 10]!];
+  }
+
+  /** Test-only: full bone matrix currently packed for live-to-debris transform continuity. */
+  boneMatrix(id: EntityId, boneId: string): readonly number[] | undefined {
+    const holder: SlotHolder | undefined = this.states.get(id) ?? this.corpses.get(id);
+    if (!holder) {
+      return undefined;
+    }
+    const variant = this.variants[holder.variantIndex]!;
+    const boneIndex = variant.boneIndexById.get(boneId);
+    if (boneIndex === undefined) {
+      return undefined;
+    }
+    const start = crowdTexelIndex(this.layout, holder.globalRow, boneIndex);
+    return Array.from(this.textureData.slice(start, start + 12));
+  }
+
+  /** Test-only: full matrix for one carried bone in a debris slot. */
+  debrisBoneMatrix(id: EntityId, part: string, boneId: string): readonly number[] | undefined {
+    const debris = [...this.debris.entries()].find(([key]) => key.startsWith(`debris:${id}:${part}:`))?.[1];
+    if (!debris) {
+      return undefined;
+    }
+    const variant = this.variants[debris.variantIndex]!;
+    const boneIndex = variant.boneIndexById.get(boneId);
+    if (boneIndex === undefined) {
+      return undefined;
+    }
+    const start = crowdTexelIndex(this.layout, debris.globalRow, boneIndex);
+    return Array.from(this.textureData.slice(start, start + 12));
   }
 
   /** Test-only: true if `boneId`'s matrix in the shared texture, for the row currently assigned to `id` (a
@@ -816,7 +645,7 @@ export class MobActorMeshes implements ZombieRenderer {
     let oldestCorpseId: EntityId | undefined;
     let oldestDebrisKey: string | undefined;
     for (const [id, corpse] of this.corpses) {
-      if (corpse.variantIndex === variantIndex && corpse.insertOrder < oldestOrder) {
+      if (!corpse.incapacitated && corpse.variantIndex === variantIndex && corpse.insertOrder < oldestOrder) {
         oldestOrder = corpse.insertOrder;
         oldestCorpseId = id;
         oldestDebrisKey = undefined;
@@ -843,7 +672,7 @@ export class MobActorMeshes implements ZombieRenderer {
     let oldestCorpseId: EntityId | undefined;
     let oldestDebrisKey: string | undefined;
     for (const [id, corpse] of this.corpses) {
-      if (corpse.insertOrder < oldestOrder) {
+      if (!corpse.incapacitated && corpse.insertOrder < oldestOrder) {
         oldestOrder = corpse.insertOrder;
         oldestCorpseId = id;
         oldestDebrisKey = undefined;
@@ -864,7 +693,10 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   private addZombie(id: EntityId, zombie: Zombie): ZombieRenderState | undefined {
-    const variantIndex = variantIndexForId(id, this.variants.length);
+    const variantIndex = this.variantIndexBySeed.get(zombie.figureSeed);
+    if (variantIndex === undefined) {
+      return undefined;
+    }
     const variant = this.variants[variantIndex]!;
     if (variant.freeLocalSlots.length === 0) {
       // Corpses and debris count toward capacity (see this module's header comment): make room by dropping
@@ -889,21 +721,8 @@ export class MobActorMeshes implements ZombieRenderer {
       globalRow,
       instanceIndex,
       walkActor: { ...variant.walkActorTemplate, cache: createGaitCache() },
-      clock: INITIAL_CLOCK,
-      // Starts already at its target weight (not always 0/slack) — a zombie first drawn mid-chase (e.g. it
-      // just entered a variant's capacity, or the renderer was just constructed) shouldn't fade in from
-      // slack; see targetStanceFor/advanceStanceWeight.
-      stanceWeight: targetStanceFor(zombie, false) === 'aggravated' ? 1 : 0,
-      idleTime: 0,
-      lastPos: undefined,
-      smoothedSpeed: 0,
-      quantizedSpeed: 0,
-      attackTime: undefined,
-      prevAttackWait: zombie.attackWait,
-      prevHealth: totalHealth(zombie),
-      hitTime: undefined,
-      hitSide: flinchSideForId(id),
-      stepOffset: new StepOffset(STEP_HEIGHT_METRES),
+      lastPose: undefined,
+      lastPlacement: undefined,
       lastSeenFrame: this.frameCounter,
     };
     this.states.set(id, state);
@@ -943,6 +762,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.states.delete(id);
   }
 
+  private evictableDeadThingCount(): number {
+    return [...this.corpses.values()].filter((corpse) => !corpse.incapacitated).length + this.debris.size;
+  }
+
   private freeCorpse(id: EntityId): void {
     const corpse = this.corpses.get(id);
     if (!corpse) {
@@ -959,6 +782,37 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     this.freeSlot(key, d);
     this.debris.delete(key);
+  }
+
+  /** A torso-destroyed zombie remains in the store, so its fallen row is permanent: no sink/despawn and
+   * no MAX_CORPSES eviction. A death corpse is different and remains render-only with the finite lifecycle below. */
+  zombieIncapacitated(id: EntityId, zombie: Zombie): void {
+    const state = this.states.get(id);
+    if (!state || this.corpses.has(id)) {
+      return;
+    }
+    const worldPos: Vec3 = [
+      zombie.body.pos[0] * this.blockSize,
+      zombie.body.pos[1] * this.blockSize,
+      zombie.body.pos[2] * this.blockSize,
+    ];
+    const basePose = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie)).pose;
+    this.corpses.set(id, {
+      incapacitated: true,
+      variantIndex: state.variantIndex,
+      localSlot: state.localSlot,
+      globalRow: state.globalRow,
+      instanceIndex: state.instanceIndex,
+      walkActor: state.walkActor,
+      basePose,
+      worldPos,
+      yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
+      direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, undefined),
+      severed: [...zombie.severed],
+      elapsed: 0,
+      insertOrder: this.takeDeadOrder(),
+    });
+    this.states.delete(id);
   }
 
   /**
@@ -980,7 +834,7 @@ export class MobActorMeshes implements ZombieRenderer {
     // compact the *dying* zombie's own instance into the vacated slot (if it happens to be the one
     // currently last in its variant's liveIds) — freeSlot's lookup must still find it as a SlotHolder,
     // which this.states (not yet deleted) still provides, exactly as it did before this death.
-    if (this.corpses.size + this.debris.size >= MAX_CORPSES) {
+    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
       this.evictOldestDeadThingGlobally();
     }
     const worldPos: Vec3 = [
@@ -988,12 +842,9 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
-    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
-      idle: this.idlePoseFor(state, this.variants[state.variantIndex]!),
-    });
-    const basePose =
-      state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
+    const basePose = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie)).pose;
     this.corpses.set(id, {
+      incapacitated: false,
       variantIndex: state.variantIndex,
       localSlot: state.localSlot,
       globalRow: state.globalRow,
@@ -1019,25 +870,167 @@ export class MobActorMeshes implements ZombieRenderer {
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
    * MAX_CORPSES exactly like a corpse (see zombieDied's own eviction).
    */
-  zombieSevered(id: EntityId, part: string, playerPos?: Vec3): void {
+  zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): void {
     const state = this.states.get(id);
-    if (!state?.lastPos) {
+    if (!state) {
       return;
     }
     const variant = this.variants[state.variantIndex]!;
-    const topBoneIndex = variant.boneIndexById.get(part);
-    if (topBoneIndex === undefined) {
+    if (zombie) {
+      const posed = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie));
+      state.lastPose = posed.pose;
+      state.lastPlacement = posed.placement;
+    }
+    if (!(state.lastPose && state.lastPlacement)) {
       return;
     }
-    const severedIndices: number[] = [];
-    for (const boneId of severedBoneSet(variant.realized.body.bones, [part])) {
-      const index = variant.boneIndexById.get(boneId);
-      if (index !== undefined) {
-        severedIndices.push(index);
-      }
+    const partData = variant.rigidParts.get(part);
+    if (!partData) {
+      return;
     }
 
-    if (this.corpses.size + this.debris.size >= MAX_CORPSES) {
+    const severedIndices = partData.boneIndices;
+    const sourceTransforms = this.posedSourceTransforms(variant, state, severedIndices);
+    const initialCenter = this.posedPartCenter(variant, state, new Set(severedIndices));
+    if (!initialCenter) {
+      return;
+    }
+    const topIndex = variant.boneIndexById.get(part);
+    if (topIndex === undefined) {
+      return;
+    }
+    // The cached OBB and inertia are in the rest-pose model frame. Orient them with the posed cut bone;
+    // relative bends in carried descendants (e.g. an elbow in a whole arm) remain an approximation.
+    const yawRotation = rotY((state.lastPlacement.yawRad * 180) / Math.PI);
+    const initialOrientation = mat3ToQuat(mulMM(yawRotation, variant.scratch[topIndex]!.r)) as Quaternion;
+    const originOffsetY = this.world ? 0 : state.lastPlacement.y;
+    const simulationCenter: Vec3 = [initialCenter[0], initialCenter[1] - originOffsetY, initialCenter[2]];
+    const velocity = zombie?.body.vel ?? [0, 0, 0];
+    const rigidBody: RigidBody = {
+      mass: partData.mass,
+      center: simulationCenter,
+      orientation: initialOrientation,
+      velocity: [velocity[0] * this.blockSize, velocity[1] * this.blockSize, velocity[2] * this.blockSize],
+      angularMomentum: [0, 0, 0],
+      inertiaBody: partData.inertiaBody,
+      corners: partData.corners,
+      elapsed: 0,
+      quietTime: 0,
+      asleep: false,
+    };
+    if (hit) {
+      this.applyDebrisHit(rigidBody, initialCenter, originOffsetY, hit);
+    }
+    this.insertDebris({
+      id,
+      part,
+      state,
+      variant,
+      severedIndices,
+      sourceTransforms,
+      initialCenter,
+      initialOrientation,
+      originOffsetY,
+      body: rigidBody,
+    });
+  }
+
+  private posedSourceTransforms(
+    variant: Variant,
+    state: ZombieRenderState,
+    indices: readonly number[],
+  ): Map<number, MutableTransform> {
+    boneTransformsInto(variant.realized.body.bones, state.lastPose!, variant.parentIndex, variant.scratch);
+    const yawMatrix = rotY((state.lastPlacement!.yawRad * 180) / Math.PI);
+    const { x, y, z } = state.lastPlacement!;
+    const transforms = new Map<number, MutableTransform>();
+    for (const index of indices) {
+      const source = variant.scratch[index]!;
+      const rotated = mulMV(yawMatrix, source.t);
+      transforms.set(index, {
+        r: [...mulMM(yawMatrix, source.r)] as MutableTransform['r'],
+        t: [rotated[0] + x, rotated[1] + y, rotated[2] + z],
+      });
+    }
+    return transforms;
+  }
+
+  /** The rendered pose can bend each carried bone separately; average its voxels in posed world space. */
+  private posedPartCenter(variant: Variant, state: ZombieRenderState, selected: ReadonlySet<number>): Vec3 | undefined {
+    const { voxels } = variant.realized;
+    const { x, y, z, yawRad } = state.lastPlacement!;
+    const cos = Math.cos(yawRad);
+    const sin = Math.sin(yawRad);
+    let count = 0;
+    let sumX = 0;
+    let sumY = 0;
+    let sumZ = 0;
+    for (let k = 0; k < voxels.dims[2]; k++) {
+      for (let j = 0; j < voxels.dims[1]; j++) {
+        for (let i = 0; i < voxels.dims[0]; i++) {
+          const owner = voxels.owner[cellIndex(voxels.dims, i, j, k)]! - 1;
+          if (owner < 0 || !selected.has(owner)) {
+            continue;
+          }
+          const bone = variant.scratch[owner]!;
+          const actorPoint = mulMV(bone.r, worldPosition(voxels, i, j, k));
+          const actorX = actorPoint[0] + bone.t[0];
+          const actorY = actorPoint[1] + bone.t[1];
+          const actorZ = actorPoint[2] + bone.t[2];
+          sumX += cos * actorX + sin * actorZ + x;
+          sumY += actorY + y;
+          sumZ += cos * actorZ - sin * actorX + z;
+          count += 1;
+        }
+      }
+    }
+    return count ? [sumX / count, sumY / count, sumZ / count] : undefined;
+  }
+
+  private applyDebrisHit(body: RigidBody, center: Vec3, originOffsetY: number, hit: HitImpulse): Vec3 {
+    const [dx, dy, dz] = hit.direction;
+    const hitPoint: Vec3 = [
+      hit.point[0] * this.blockSize,
+      hit.point[1] * this.blockSize,
+      hit.point[2] * this.blockSize,
+    ];
+    const projection = (center[0] - hitPoint[0]) * dx + (center[1] - hitPoint[1]) * dy + (center[2] - hitPoint[2]) * dz;
+    const point: Vec3 = [
+      hitPoint[0] + dx * projection,
+      hitPoint[1] + dy * projection - originOffsetY,
+      hitPoint[2] + dz * projection,
+    ];
+    const appliedPoint = applyImpulseAtClampedPoint(body, point, [
+      dx * hit.impulse,
+      dy * hit.impulse,
+      dz * hit.impulse,
+    ]);
+    const spin = Math.hypot(...angularVelocity(body));
+    if (spin > MAX_LAUNCH_SPIN_RADPS) {
+      const factor = MAX_LAUNCH_SPIN_RADPS / spin;
+      body.angularMomentum = [
+        body.angularMomentum[0] * factor,
+        body.angularMomentum[1] * factor,
+        body.angularMomentum[2] * factor,
+      ];
+    }
+    return appliedPoint;
+  }
+
+  private insertDebris(spawn: DebrisSpawn): void {
+    const {
+      id,
+      part,
+      state,
+      variant,
+      severedIndices,
+      sourceTransforms,
+      initialCenter,
+      initialOrientation,
+      originOffsetY,
+      body,
+    } = spawn;
+    if (this.evictableDeadThingCount() >= MAX_CORPSES) {
       this.evictOldestDeadThingGlobally();
     }
     if (variant.freeLocalSlots.length === 0) {
@@ -1045,7 +1038,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     const localSlot = variant.freeLocalSlots.pop();
     if (localSlot === undefined) {
-      return; // still full even after eviction — shouldn't happen at MAX_CORPSES <= total texture rows
+      return;
     }
     const globalRow = state.variantIndex * this.capacity + localSlot;
     const instanceIndex = variant.liveIds.length;
@@ -1056,15 +1049,6 @@ export class MobActorMeshes implements ZombieRenderer {
     variant.crowdSlotAttr.setX(instanceIndex, globalRow);
     variant.crowdSlotAttr.needsUpdate = true;
     variant.mesh.count = variant.liveIds.length;
-
-    const zombieWorldPos = state.lastPos;
-    const away = awayFromPlayerXZ(zombieWorldPos, playerPos, this.blockSize);
-    const walkBase = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
-      idle: this.idlePoseFor(state, variant),
-    });
-    const frozenPose =
-      state.attackTime === undefined ? walkBase : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, walkBase);
-    const spin = debrisSpinFor(id, part);
     this.debris.set(key, {
       variantIndex: state.variantIndex,
       localSlot,
@@ -1072,37 +1056,24 @@ export class MobActorMeshes implements ZombieRenderer {
       instanceIndex,
       walkActor: state.walkActor,
       severedIndices,
-      frozenPose,
-      topBoneId: part,
-      spinAxis: spin.axis,
-      spinRate: spin.rate,
-      groundY: zombieWorldPos[1],
+      sourceTransforms,
+      initialCenter,
+      initialOrientation,
+      originOffsetY,
       insertOrder: order,
-      pos: [zombieWorldPos[0], zombieWorldPos[1] + DEBRIS_SPAWN_HEIGHT_M, zombieWorldPos[2]],
-      vel: [away[0] * DEBRIS_LAUNCH_HORIZONTAL_MPS, DEBRIS_LAUNCH_UP_MPS, away[2] * DEBRIS_LAUNCH_HORIZONTAL_MPS],
-      spinAngle: 0,
-      bounced: false,
-      grounded: false,
+      body,
       elapsed: 0,
       groundedAt: undefined,
     });
   }
 
-  /** True if `worldPelvis` is farther from the camera than LOD_NEAR/FAR_M warrants skipping this frame
-   * (staggered by id so a whole LOD tier doesn't update/skip in lockstep), or outside the frustum. False
-   * (never skip) if no camera has been set yet. */
-  private shouldSkipPose(id: EntityId, worldPelvis: Vector3): boolean {
-    const { camera } = this;
-    if (!camera) {
+  /** Off-screen detailed actors can skip packing; visible actors always use the current simulation pose. */
+  private shouldSkipPose(worldPelvis: Vector3): boolean {
+    if (!this.camera) {
       return false;
     }
     this.boundingSphere.center.copy(worldPelvis);
-    if (!this.frustum.intersectsSphere(this.boundingSphere)) {
-      return true;
-    }
-    const distance = camera.position.distanceTo(worldPelvis);
-    const interval = lodIntervalFor(distance);
-    return interval > 1 && (this.frameCounter + id) % interval !== 0;
+    return !this.frustum.intersectsSphere(this.boundingSphere);
   }
 
   /** Interpolated pos/yaw/headYaw at `blend` between a zombie's last two fixed-step poses — exactly
@@ -1123,86 +1094,14 @@ export class MobActorMeshes implements ZombieRenderer {
     return { pos, yaw, headYaw };
   }
 
-  /** Advances this zombie's gait clock/speed from how far it moved since last frame (see
-   * advanceGaitFromMovement), and its attack timer from attackWait — both regardless of LOD/frustum, so
-   * neither falls behind while this zombie's own expensive pose step is being skipped. */
-  private updateMovementAndAttack(
-    state: ZombieRenderState,
-    zombie: Zombie,
-    frame: { variant: Variant; worldPos: Vec3; realDt: number },
-  ): void {
-    const { variant, worldPos, realDt } = frame;
-    if (state.lastPos) {
-      const dx = worldPos[0] - state.lastPos[0];
-      const dz = worldPos[2] - state.lastPos[2];
-      const distance = Math.hypot(dx, dz);
-      const updated = advanceGaitFromMovement(
-        { clock: state.clock, smoothedSpeed: state.smoothedSpeed, quantizedSpeed: state.quantizedSpeed },
-        distance,
-        realDt,
-        { params: state.walkActor.params, geomL: variant.legGeometryL, seed: state.walkActor.seed },
-      );
-      state.clock = updated.clock;
-      state.smoothedSpeed = updated.smoothedSpeed;
-      state.quantizedSpeed = updated.quantizedSpeed;
-    }
-    state.lastPos = worldPos;
-
-    // mobgen's LUNGE_GRAB starts the instant attackWait jumps up (the sim sets it to the type's cooldown
-    // exactly when an attack's windup starts — src/core/zombies.ts), and plays out over the walk until the
-    // clip ends, same as mobgen's own viewer/stress page drive attackPose. Starting the clip at
-    // hitTime − windup (via attackStartTime) lines up the clip's own hitTime with the sim's
-    // real hit, instead of always starting from 0 and landing the visual hit late.
-    if (attackJustStarted(zombie.attackWait, state.prevAttackWait)) {
-      state.attackTime = attackStartTime(zombie.type.attack.windup);
-    }
-    state.prevAttackWait = zombie.attackWait;
-    if (state.attackTime !== undefined) {
-      state.attackTime += realDt;
-      if (state.attackTime > LUNGE_GRAB.duration) {
-        state.attackTime = undefined;
-      }
-    }
-  }
-
-  /** Starts a flinch the instant total region health drops versus last frame (any amount — the sim only ever decreases
-   * it on a hit; death is handled separately by zombieDied, not here), and advances/ends one already
-   * playing — regardless of LOD/frustum, same reasoning as updateMovementAndAttack's own comment. */
-  private updateFlinch(state: ZombieRenderState, zombie: Zombie, realDt: number): void {
-    const health = totalHealth(zombie);
-    if (health < state.prevHealth) {
-      state.hitTime = 0; // (re)starts even if one is already playing, same restart rule as an attack
-    }
-    state.prevHealth = health;
-    if (state.hitTime !== undefined) {
-      state.hitTime += realDt;
-      if (state.hitTime > HIT_FLINCH.duration) {
-        state.hitTime = undefined;
-      }
-    }
-  }
-
-  /** Advances this zombie's own idle clock and cross-fades its stance weight toward whatever
-   * targetStanceFor says right now — regardless of LOD/frustum, same reasoning as
-   * updateMovementAndAttack's own comment (the fade must keep progressing even while this zombie's pose
-   * step itself is skipped, or it visibly jumps once LOD/frustum lets it resume). Must run after
-   * updateMovementAndAttack, which is what sets state.attackTime for this frame. */
-  private updateStance(state: ZombieRenderState, zombie: Zombie, realDt: number): void {
-    state.idleTime += realDt;
-    const target = targetStanceFor(zombie, state.attackTime !== undefined);
-    state.stanceWeight = advanceStanceWeight(state.stanceWeight, target, realDt);
-  }
-
-  /** This zombie's current idle pose: variant.idleBase's two static stances cross-faded by
-   * state.stanceWeight (mobgen's own blendPose), then the cheap time-varying motion (mob/idle.ts's
-   * applyIdleMotion — breathing/sway/head, plus a restless claw once aggravated is the dominant side of the
-   * fade) layered on top, phase-offset by this zombie's own id so a crowd sharing one variant doesn't move
-   * in lockstep. Passed as walkPose's own `idle` argument (mob/gait.ts) so the walk<->idle blend at low
-   * speed — and the plain standing pose at speed 0 — never falls back to the bind pose. */
-  private idlePoseFor(state: ZombieRenderState, variant: Variant): Pose {
-    const base = blendPose(variant.idleBase.slack, variant.idleBase.aggravated, state.stanceWeight);
-    const dominant: IdleStance = state.stanceWeight >= 0.5 ? 'aggravated' : 'slack';
-    return applyIdleMotion(base, dominant, state.idleTime, state.id);
+  private currentRenderPlacement(zombie: Zombie): { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number } {
+    const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, this.renderBlend);
+    return {
+      position: pos,
+      worldPos: [pos[0] * this.blockSize, pos[1] * this.blockSize + (zombie.stepOffset ?? 0), pos[2] * this.blockSize],
+      yaw,
+      headYaw,
+    };
   }
 
   /** Translates mobgen's severedBoneSet (bone id strings — body-plan-generic) into this variant's own bone
@@ -1237,10 +1136,28 @@ export class MobActorMeshes implements ZombieRenderer {
   private packSkeleton(
     globalRow: number,
     variant: Variant,
-    frame: { pose: Pose; placement: CrowdPlacement; severedIndices: ReadonlySet<number> },
+    frame: {
+      pose: Pose;
+      placement: CrowdPlacement;
+      severedIndices: ReadonlySet<number>;
+      transforms?: PosedShambler['transforms'];
+    },
   ): void {
-    const { pose, placement, severedIndices } = frame;
-    boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
+    const { pose, placement, severedIndices, transforms } = frame;
+    if (transforms) {
+      for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
+        const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
+        const target = variant.scratch[bone]!;
+        for (let i = 0; i < 9; i++) {
+          target.r[i] = source.r[i]!;
+        }
+        for (let i = 0; i < 3; i++) {
+          target.t[i] = source.t[i]!;
+        }
+      }
+    } else {
+      boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
+    }
     for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
       if (severedIndices.has(bone)) {
         this.packZeroBone(globalRow, bone);
@@ -1256,40 +1173,39 @@ export class MobActorMeshes implements ZombieRenderer {
     packSeveredMask(this.textureData, this.layout, globalRow, severedIndices);
   }
 
-  /** The expensive step LOD/frustum culling skips for a distant or off-screen zombie: pose (walk, or walk
-   * + attackPose while lunging, plus the extra head yaw, plus a flinch layered on top of *that* while one
-   * is playing — "layer flinch on top of the attack pose"), FK, and packing every bone into the shared
-   * texture at this zombie's own stable row — hiding whatever zombie.severed currently covers (see this
-   * module's header comment: zombie.severed is the only source of truth, re-expanded every call). */
+  private posedFrame(
+    state: ZombieRenderState,
+    zombie: Zombie,
+    placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number },
+  ): { pose: Pose; transforms: PosedShambler['transforms']; placement: CrowdPlacement } {
+    const { position, worldPos, yaw, headYaw } = placement;
+    const posed = posedShambler(
+      zombiePoseInputFor(zombie, state.id, this.blockSize, {
+        position,
+        facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
+        headYaw,
+      }),
+    );
+    return {
+      pose: posed.pose,
+      transforms: posed.transforms,
+      placement: { x: worldPos[0], y: worldPos[1], z: worldPos[2], yawRad: yaw },
+    };
+  }
+
+  /** Packs the shared simulation pose and its FK into the texture, hiding whatever zombie.severed currently
+   * covers (zombie.severed is the only source of truth, re-expanded every call). */
   private packPose(
     state: ZombieRenderState,
     variant: Variant,
     zombie: Zombie,
-    placement: { worldPos: Vec3; yaw: number; headYaw: number; verticalOffset: number },
+    placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number },
   ): void {
-    const { worldPos, yaw, headYaw, verticalOffset } = placement;
-    const basePose = walkPose(state.walkActor, state.clock, state.quantizedSpeed, {
-      idle: this.idlePoseFor(state, variant),
-    });
-    const attacked =
-      state.attackTime === undefined ? basePose : attackPose(state.walkActor, LUNGE_GRAB, state.attackTime, basePose);
-    const headPose = this.withHeadYaw(attacked, headYaw);
-    const pose =
-      state.hitTime === undefined
-        ? headPose
-        : flinchPose(state.walkActor, state.hitTime, headPose, { side: state.hitSide });
-
-    // Feet land at the pose's own local y = 0 (walkPose's groundOffset puts the lowest foot there — see
-    // mobgen/src/mob/gait.ts) — so placing the whole rig at body.pos's own Y (plus the render-only
-    // StepOffset) puts the feet exactly at body.pos.y, matching ZombieMeshes' box figure.
-    const crowdPlacement: CrowdPlacement = {
-      x: worldPos[0],
-      y: worldPos[1] + verticalOffset,
-      z: worldPos[2],
-      yawRad: yaw,
-    };
+    const posed = this.posedFrame(state, zombie, placement);
     const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, { pose, placement: crowdPlacement, severedIndices });
+    this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices });
+    state.lastPose = posed.pose;
+    state.lastPlacement = posed.placement;
   }
 
   /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
@@ -1301,7 +1217,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
 
     const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + CORPSE_LIE_S);
-    const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
+    const sinkT = corpse.incapacitated ? 0 : Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
     const crowdPlacement: CrowdPlacement = {
       x: corpse.worldPos[0],
       y: corpse.worldPos[1] - sinkT * CORPSE_SINK_DEPTH_M,
@@ -1320,27 +1236,36 @@ export class MobActorMeshes implements ZombieRenderer {
    * perspective), so its own stump face still gets the gore tint. */
   private packDebris(d: Debris): void {
     const variant = this.variants[d.variantIndex]!;
-    const spin = rotAxis(d.spinAxis, (d.spinAngle * 180) / Math.PI);
-    const baseR = d.frozenPose.rotations[d.topBoneId] ?? IDENTITY_M;
-    const rotations: Record<string, Mat3> = { ...d.frozenPose.rotations, [d.topBoneId]: mulMM(baseR, spin) };
-    boneTransformsInto(
-      variant.realized.body.bones,
-      { root: [0, 0, 0], rotations },
-      variant.parentIndex,
-      variant.scratch,
-    );
-
-    const placement: CrowdPlacement = { x: d.pos[0], y: d.pos[1], z: d.pos[2], yawRad: 0 };
+    const currentRotation = quatToMat3(d.body.orientation);
+    const originalRotation = quatToMat3(d.initialOrientation);
+    const delta = mulMM(currentRotation, transpose(originalRotation));
+    const sinkElapsed = d.elapsed - (d.groundedAt ?? d.elapsed) - CORPSE_LIE_S;
+    const sinkT = Math.max(0, Math.min(1, sinkElapsed / CORPSE_SINK_S));
+    const center: Vec3 = [
+      d.body.center[0],
+      d.body.center[1] + d.originOffsetY - sinkT * CORPSE_SINK_DEPTH_M,
+      d.body.center[2],
+    ];
     const carried = new Set(d.severedIndices);
     const hidden = new Set<number>();
     for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
-      if (carried.has(bone)) {
-        packCrowdBoneMatrix(
-          this.textureData,
-          { layout: this.layout, slot: d.globalRow, bone },
-          variant.scratch[bone]!,
-          placement,
-        );
+      const source = d.sourceTransforms.get(bone);
+      if (carried.has(bone) && source) {
+        const offset = mulMV(delta, [
+          source.t[0] - d.initialCenter[0],
+          source.t[1] - d.initialCenter[1],
+          source.t[2] - d.initialCenter[2],
+        ]);
+        const placed: MutableTransform = {
+          r: [...mulMM(delta, source.r)] as MutableTransform['r'],
+          t: [center[0] + offset[0], center[1] + offset[1], center[2] + offset[2]],
+        };
+        packCrowdBoneMatrix(this.textureData, { layout: this.layout, slot: d.globalRow, bone }, placed, {
+          x: 0,
+          y: 0,
+          z: 0,
+          yawRad: 0,
+        });
       } else {
         this.packZeroBone(d.globalRow, bone);
         hidden.add(bone);
@@ -1349,47 +1274,70 @@ export class MobActorMeshes implements ZombieRenderer {
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
+  private syncZombie({ id, zombie }: { id: EntityId; zombie: Zombie }): boolean {
+    let anyDirty = false;
+    if (!zombie.incapacitated && this.corpses.get(id)?.incapacitated) {
+      this.freeCorpse(id);
+      anyDirty = true;
+    }
+    if (zombie.incapacitated) {
+      if (!this.corpses.has(id)) {
+        let state = this.states.get(id);
+        if (!state) {
+          state = this.addZombie(id, zombie);
+        }
+        if (state) {
+          this.zombieIncapacitated(id, zombie);
+        }
+      }
+      return anyDirty;
+    }
+    let state = this.states.get(id);
+    if (!state) {
+      state = this.addZombie(id, zombie);
+      if (!state) {
+        return anyDirty; // this variant is full — not drawn (see this module's header comment)
+      }
+    }
+    state.lastSeenFrame = this.frameCounter;
+    const variant = this.variants[state.variantIndex]!;
+    const placement = this.currentRenderPlacement(zombie);
+    const worldPelvis = new Vector3(
+      placement.worldPos[0],
+      placement.worldPos[1] + PELVIS_HEIGHT_M,
+      placement.worldPos[2],
+    );
+    if (this.shouldSkipPose(worldPelvis)) {
+      return anyDirty;
+    }
+    this.packPose(state, variant, zombie, placement);
+    return true;
+  }
+
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, _freezeLiving = false): void {
     this.frameCounter += 1;
     if (this.camera) {
       this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
       this.frustum.setFromProjectionMatrix(this.frustumMatrix);
     }
     const blend = Math.max(0, Math.min(1, alpha));
+    this.renderBlend = blend;
     let anyDirty = false;
-
+    const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
-      let state = this.states.get(id);
-      if (!state) {
-        state = this.addZombie(id, zombie);
-        if (!state) {
-          continue; // this variant is full — not drawn (see this module's header comment)
-        }
-      }
-      state.lastSeenFrame = this.frameCounter;
-      const variant = this.variants[state.variantIndex]!;
-
-      const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, blend);
-      const worldPos: Vec3 = [pos[0] * this.blockSize, pos[1] * this.blockSize, pos[2] * this.blockSize];
-      const verticalOffset = state.stepOffset.update(worldPos, zombie.body.onGround, realDt);
-      this.updateMovementAndAttack(state, zombie, { variant, worldPos, realDt });
-      this.updateFlinch(state, zombie, realDt);
-      this.updateStance(state, zombie, realDt);
-
-      const worldPelvis = new Vector3(worldPos[0], worldPos[1] + PELVIS_HEIGHT_M, worldPos[2]);
-      if (this.shouldSkipPose(id, worldPelvis)) {
-        continue; // clock/attack/flinch above already advanced; only the expensive pose+pack step skips
-      }
-      this.packPose(state, variant, zombie, { worldPos, yaw, headYaw, verticalOffset });
-      anyDirty = true;
+      present.add(id);
+      anyDirty = this.syncZombie({ id, zombie }) || anyDirty;
     }
-
     for (const [id, state] of this.states) {
       if (state.lastSeenFrame !== this.frameCounter) {
         this.removeZombie(id, state); // a plain vanish (despawn/unload) — a death goes through zombieDied
       }
     }
-
+    for (const [id, corpse] of this.corpses) {
+      if (corpse.incapacitated && !present.has(id)) {
+        this.freeCorpse(id);
+      }
+    }
     const corpsesDirty = this.advanceCorpses(realDt);
     const debrisDirty = this.advanceDebris(realDt);
     if (corpsesDirty || debrisDirty || anyDirty) {
@@ -1403,7 +1351,16 @@ export class MobActorMeshes implements ZombieRenderer {
   private advanceCorpses(realDt: number): boolean {
     let anyDirty = false;
     for (const [id, corpse] of this.corpses) {
+      const wasFalling = corpse.incapacitated && corpse.elapsed < DEATH_FALL_DURATION;
       corpse.elapsed += realDt;
+      if (corpse.incapacitated) {
+        corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
+        if (wasFalling || corpse.elapsed < DEATH_FALL_DURATION) {
+          this.packCorpse(corpse);
+          anyDirty = true;
+        }
+        continue;
+      }
       if (corpse.elapsed >= CORPSE_LIFETIME_S) {
         this.freeCorpse(id);
         continue;
@@ -1414,20 +1371,22 @@ export class MobActorMeshes implements ZombieRenderer {
     return anyDirty;
   }
 
-  /** Simple ballistic physics for every piece of debris: gravity, one damped bounce off groundY, then it
-   * settles; once grounded it lies (CORPSE_LIE_S) and sinks (CORPSE_SINK_S) exactly like a corpse before
-   * freeing its slot. DEBRIS_MAX_FLIGHT_S is a safety net in case it somehow never reaches the ground. */
+  /** Steps each debris rigid body against the loaded voxel world, or a local feet-height plane if no world
+   * was supplied (tests/bench). Lying and sinking begin only after the solver sleeps the body. */
   private advanceDebris(realDt: number): boolean {
     let anyDirty = false;
+    const world = this.world ?? { blockSize: this.blockSize, isSolid: (_x: number, y: number, _z: number) => y < 0 };
     for (const [key, d] of this.debris) {
       d.elapsed += realDt;
-      if (!d.grounded) {
-        stepAirborneDebris(d, realDt);
-      } else if (d.elapsed >= (d.groundedAt ?? d.elapsed) + CORPSE_LIE_S + CORPSE_SINK_S) {
+      if (!d.body.asleep) {
+        stepRigidBody(d.body, realDt, world);
+      }
+      if (d.body.asleep && d.groundedAt === undefined) {
+        d.groundedAt = d.elapsed;
+      }
+      if (d.groundedAt !== undefined && d.elapsed >= d.groundedAt + CORPSE_LIE_S + CORPSE_SINK_S) {
         this.freeDebris(key);
         continue;
-      } else {
-        sinkGroundedDebris(d);
       }
       this.packDebris(d);
       anyDirty = true;
@@ -1439,15 +1398,6 @@ export class MobActorMeshes implements ZombieRenderer {
    * walkPose already gave it) — same "yaw innermost" convention walkPose itself uses for the pelvis (see
    * mob/gait.ts's own pelvisR composition). Cheap and clean since Pose.rotations is just one matrix per
    * bone; nothing more elaborate (e.g. touching the neck too) seemed necessary. */
-  private withHeadYaw(pose: Pose, headYawRad: number): Pose {
-    if (headYawRad === 0) {
-      return pose;
-    }
-    const existing = pose.rotations.head ?? IDENTITY_M;
-    const headYawDeg = (headYawRad * 180) / Math.PI;
-    return { root: pose.root, rotations: { ...pose.rotations, head: mulMM(existing, rotY(headYawDeg)) } };
-  }
-
   dispose(): void {
     this.texture.dispose();
     this.material.dispose();

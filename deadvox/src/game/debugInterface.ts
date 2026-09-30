@@ -1,8 +1,9 @@
 import type { Vec3 } from '../core/coords.ts';
+import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
-import type { ZombieSystem } from '../core/zombies.ts';
+import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
@@ -10,6 +11,8 @@ import type { MoveIntent } from './player.ts';
 export interface DebugHooks {
   readonly engine: Engine;
   readonly body: Body;
+  readonly inventory: Inventory;
+  readonly newGame: boolean;
   readonly sim: Simulation;
   readonly input: { readonly yaw: number; readonly pitch: number };
   readonly zombies: () => ZombieSystem | undefined;
@@ -44,6 +47,9 @@ export interface DebugReadout {
 
 export interface DebugRuntime {
   readonly menuOpen: boolean;
+  readonly aimEnabled: boolean;
+  updateAim: (aim: ZombieAim | undefined) => void;
+  recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;
   readonly spawnOpen: boolean;

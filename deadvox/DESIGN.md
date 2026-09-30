@@ -386,9 +386,11 @@ plain box in your hands. Files are small, and follow
 
 ## Combat and noise
 
-- **Melee.** Weapons have damage, reach and speed, plus stamina cost and
-  damage type (blunt, cut, pierce). Hit detection is a swept sphere cast from
-  the camera against entities.
+- **Melee.** Weapons have damage, reach beyond the player's hand, and speed,
+  plus stamina cost and damage type (blunt, cut, pierce). The swing reaches the
+  player's 1.2 m effective eye-to-hand reach (including the lean into a swing)
+  plus the weapon's reach; hit detection tests
+  posed shambler body-region boxes along the aim ray.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
