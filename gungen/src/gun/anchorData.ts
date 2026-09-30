@@ -6,7 +6,7 @@
 // (leaned) axes, so it tilts with the grip once placed.
 
 import type { AnchorFrame } from '../core/design.ts';
-import type { Vec3 } from '../core/math.ts';
+import { extrusionPoint, type Vec3 } from '../core/math.ts';
 import type { PartDef, Solid } from '../core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { FIRING_GRIP } from './parts.ts';
@@ -23,11 +23,11 @@ const interiorPoint = (s: Solid): Vec3 => {
     return s.box.center;
   }
   const n = s.profile.length;
-  return [
-    s.profile.reduce((sum, p) => sum + p[0], 0) / n,
-    s.profile.reduce((sum, p) => sum + p[1], 0) / n,
+  return extrusionPoint(
+    s.axis,
+    [s.profile.reduce((sum, p) => sum + p[0], 0) / n, s.profile.reduce((sum, p) => sum + p[1], 0) / n],
     (s.z[0] + s.z[1]) / 2,
-  ];
+  );
 };
 
 /** A tapered-stock hold sits low inside the grip, below the trigger centre. */
@@ -35,9 +35,23 @@ const gripHoldPoint = (s: Solid): Vec3 => {
   if (s.kind === 'box') {
     return s.box.center;
   }
-  const lowest = s.profile.reduce((best, point) => (point[1] < best[1] ? point : best));
-  const center = interiorPoint(s);
-  return [lowest[0] * 0.99 + center[0] * 0.01, lowest[1] * 0.99 + center[1] * 0.01, center[2]];
+  const n = s.profile.length;
+  const centroid: readonly [number, number] = [
+    s.profile.reduce((sum, vertex) => sum + vertex[0], 0) / n,
+    s.profile.reduce((sum, vertex) => sum + vertex[1], 0) / n,
+  ];
+  if (s.axis === 'y') {
+    return extrusionPoint(s.axis, centroid, s.z[0]);
+  }
+  const lowestProfileAxis = s.axis === 'x' ? 0 : 1;
+  const lowest = s.profile.reduce((best, vertex) =>
+    vertex[lowestProfileAxis]! < best[lowestProfileAxis]! ? vertex : best,
+  );
+  const blendedProfile: readonly [number, number] = [
+    lowest[0] * 0.99 + centroid[0] * 0.01,
+    lowest[1] * 0.99 + centroid[1] * 0.01,
+  ];
+  return extrusionPoint(s.axis, blendedProfile, (s.z[0] + s.z[1]) / 2);
 };
 
 const frameAt = (position: Vec3, forward: Vec3 = X, up: Vec3 = Y): AnchorFrame => ({ position, forward, up });

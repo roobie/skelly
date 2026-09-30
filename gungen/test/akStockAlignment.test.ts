@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { applyPoint, type Transform, type Vec3 } from '../src/core/math.ts';
+import { applyPoint, extrusionPoint, type Transform, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, PortDef, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -25,7 +25,7 @@ const solidVertices = (solid: Solid): Vec3[] => {
       ),
     );
   }
-  return solid.profile.flatMap(([x, y]) => solid.z.map((z) => [x, y, z] as const));
+  return solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
 };
 
 const facePointsAtX = (solids: readonly Solid[], x: number, transform: Transform): readonly Vec3[] =>

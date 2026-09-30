@@ -1105,11 +1105,15 @@ provided real AR-15 range of 84–99 cm. The muzzle anchor equals the model's
 forward x bound. `deadvox/test/models.test.ts` verifies zero turn, muzzle at the
 forward end, and forward/upright orientation after the held transform.
 
-**3.6 Vocabulary** (the re-scoped queue). The trigger guards finish now.
-Everything else here is scheduled after 3.5, not as part of the export's
-acceptance:
+**3.6 Vocabulary** (the re-scoped queue). Trigger guards are complete:
+`test/triggerGuard.test.ts` checks every lower layout, each fixture and published
+design, and the broken guard fixture; all archetype templates include the
+trigger guard through their lower layout. `test/fixtures.test.ts` also ensures
+there is a broken fixture for every gun rule. The thumbhole stock and AWM-type
+design are complete (gungen.6). The remaining items are scheduled after 3.5,
+not part of the export's acceptance:
 
-- trigger guards on every archetype (gungen.3, in progress);
+- trigger guards on every archetype (gungen.3, done; evidence above);
 - the octagonal barrel as a barrel profile param (gungen.7). A profile
   solid extrudes only along local Z (`src/core/schema.ts#ExtrudedPolygonSolid`), and a
   barrel runs along X. There are two options:
@@ -1119,8 +1123,18 @@ acceptance:
   - add an extrusion-axis option to the profile solid, which is a core
     schema change that lane A owns.
   Decide which before starting;
-- a thumbhole stock family plus an AWM-type design (gungen.6). The thumbhole
-  can be built from several convex solids;
+- a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
+  side-profile opening is built from connected convex extrusions; its grip post
+  moves forward under the receiver while the buttplate remains 22u from the
+  mount on L (16u M, 10u S). The grip post reaches the AR grip's measured
+  world bottom y=-12.5475u (8.5475u below the lower), and the butt drops by the
+  same 3.3075u; every size is now 11.0475u high. The 4u-long hole and bottom
+  bar stay at their previous heights. The grip post meets the matching lower
+  directly; its rear face at x=-16u touches the stock's upper bar across the
+  full rear-face height and width. Tests measure both contacts in world space.
+  A rule rejects a thumbhole stock with a non-thumbhole lower or separate grip.
+  `designs/archetype-awm.json` uses the long heavy-barrel profile, detachable
+  box magazine, and optic rail;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
   `tapered` style, and the pump-shotgun opts in with M/L lengths; the other
@@ -1152,8 +1166,8 @@ acceptance:
   for BR to choose from: the AR forward assist, magazine and bolt releases,
   and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
-  shapes are one surface built from many solids, like the curved STANAG
-  magazine's run of ring sectors. Bevelling and outlining each segment
+  shapes are one surface built from many solids, like the curved STANAG and
+  AK magazines' runs of ring sectors. Bevelling and outlining each segment
   breaks the curve up; they look best plain and without outlines. Proposed:
   display hints on a solid (no bevel, no outline), set by the part family,
   which the viewer (`src/viewer/scene.ts`, bevel and `EdgesGeometry`) and the
@@ -1161,8 +1175,13 @@ acceptance:
   default a solid is bevelled and outlined. The mesh module already accepts a
   zero bevel (`src/core/mesh.ts#meshForSolid`). The export draws no outlines, so for
   the export "no outline" needs nothing. Generic rendering hints can live in
-  the core schema, as `displaySolids` already does. This changes the `Solid`
-  type in `src/core/schema.ts`, so lane A owns it;
+  the core schema, as `displaySolids` already does. Display hints are assigned
+  by the generated part family; they are runtime `Solid` metadata, not fields in
+  assembly/design JSON. `loadDesign` rebuilds parts from family parameters and
+  neither requires nor retains these hints. The viewer honours no-bevel and
+  no-outline; glTF export honours no-bevel (it draws no outlines). Collision
+  and rule checks ignore the metadata. This changes the
+  `Solid` type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
   (gungen.2), with the deadvox schema change they need.
 

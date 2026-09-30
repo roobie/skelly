@@ -1,6 +1,6 @@
 // Gun-specific rules, added to the core rules through the domain.
 
-import { distanceWorld, penetrationWorld, worldSolid } from '../core/geometry.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Vec3 } from '../core/math.ts';
 import { applyDir, applyPoint, dot as dotProduct, sub } from '../core/math.ts';
@@ -18,6 +18,60 @@ const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
   [...r.defs].filter(([part, def]) => r.placed.has(part) && (family === undefined || def.family === family));
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
+export const thumbholeGripMatch: Rule = {
+  id: 'thumbhole-grip-match',
+  title: 'Thumbhole stock and lower match',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [stock] of placedParts(r, 'stock')) {
+      if (r.params.get(stock)?.style?.value !== 'thumbhole') {
+        continue;
+      }
+      const stockMount = r.connections.find((connection) => {
+        const ends = [connection.from, connection.to];
+        return (
+          ends.some((end) => end.part === stock && end.port.id === 'front') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'receiver')
+        );
+      });
+      if (!stockMount) {
+        continue;
+      }
+      const receiver = [stockMount.from.part, stockMount.to.part].find((part) => part !== stock);
+      const lowerMount = r.connections.find((connection) => {
+        const ends = [connection.from, connection.to];
+        return (
+          ends.some((end) => end.part === receiver && r.defs.get(end.part)?.family === 'receiver') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'lower')
+        );
+      });
+      const lower =
+        lowerMount && [lowerMount.from.part, lowerMount.to.part].find((part) => r.defs.get(part)?.family === 'lower');
+      if (!lower) {
+        continue;
+      }
+      if (r.params.get(lower)?.layout?.value !== 'thumbhole') {
+        issues.push({
+          rule: 'thumbhole-grip-match',
+          message: `${stock} uses a thumbhole stock, but ${lower} is not in thumbhole layout.`,
+          parts: [stock, lower],
+        });
+      }
+      for (const connection of r.connections) {
+        const grip = gripPartOnLower(connection, lower);
+        if (grip) {
+          issues.push({
+            rule: 'thumbhole-grip-match',
+            message: `${grip} is a separate pistol grip, but the thumbhole stock provides the firing grip; remove the separate grip.`,
+            parts: [stock, grip],
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
 export const firingGrip: Rule = {
   id: 'firing-grip',
   title: 'There is a firing grip',
@@ -97,13 +151,7 @@ const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Iss
 };
 
 const maximumLocalX = (r: Resolved, part: string): number =>
-  Math.max(
-    ...r.defs
-      .get(part)!
-      .solids.map((solid) =>
-        solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
-      ),
-  );
+  Math.max(...r.defs.get(part)!.solids.map((solid) => localSolidBounds(solid)[1][0]));
 
 /** A pistol barrel may show only a short 0.5–1.5u crown beyond the slide. */
 export const pistolBarrelCrown: Rule = {
@@ -134,17 +182,11 @@ export const pistolBarrelCrown: Rule = {
   },
 };
 
-const solidMaxX = (solid: Solid): number =>
-  solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x));
+const solidMaxX = (solid: Solid): number => localSolidBounds(solid)[1][0];
 
 const solidHalfExtent = (solid: Solid, axis: 1 | 2): number => {
-  if (solid.kind === 'box') {
-    return Math.abs(solid.box.center[axis]) + solid.box.half[axis];
-  }
-  if (axis === 1) {
-    return Math.max(...solid.profile.map(([, y]) => Math.abs(y)));
-  }
-  return Math.max(Math.abs(solid.z[0]), Math.abs(solid.z[1]));
+  const bounds = localSolidBounds(solid);
+  return Math.max(Math.abs(bounds[0][axis]), Math.abs(bounds[1][axis]));
 };
 
 /** Handguards must fit within the receiver's actual front-face cross-section. */
@@ -188,11 +230,7 @@ const freeFloatFitIssue = (
   const { handguardPart, handguardDef, barrelPart, barrelDef } = parts;
   const handguardTransform = r.placed.get(handguardPart)!;
   const barrelTransform = r.placed.get(barrelPart)!;
-  const handguardLength = Math.max(
-    ...handguardDef.solids.map((solid) =>
-      solid.kind === 'box' ? solid.box.center[0] + solid.box.half[0] : Math.max(...solid.profile.map(([x]) => x)),
-    ),
-  );
+  const handguardLength = Math.max(...handguardDef.solids.map((solid) => localSolidBounds(solid)[1][0]));
   const axis = applyDir(handguardTransform, [1, 0, 0]);
   const handguardStart = applyPoint(handguardTransform, [0, 0, 0]);
   const distanceToPort = (id: string): number => {

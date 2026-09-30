@@ -1,6 +1,19 @@
 // Convex geometry in the assembly frame, and signed penetration depth.
 
-import { add, applyPoint, column, cross, dot, length, scale, sub, type Transform, type Vec3 } from './math.ts';
+import {
+  add,
+  applyPoint,
+  column,
+  cross,
+  dot,
+  type ExtrusionAxis,
+  extrusionPoint,
+  length,
+  scale,
+  sub,
+  type Transform,
+  type Vec3,
+} from './math.ts';
 import type { Box, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
 
 export interface Obb {
@@ -25,6 +38,25 @@ export const worldBox = (t: Transform, box: Box): Obb => ({
   r: t.r,
   half: box.half,
 });
+
+/** Exact axis-aligned bounds in a solid's local frame. */
+export const localSolidBounds = (solid: Solid): readonly [Vec3, Vec3] => {
+  if (solid.kind === 'box') {
+    const { center, half } = solid.box;
+    return [
+      [center[0] - half[0], center[1] - half[1], center[2] - half[2]],
+      [center[0] + half[0], center[1] + half[1], center[2] + half[2]],
+    ];
+  }
+  const vertices = solid.profile.flatMap((point) => [
+    extrusionPoint(solid.axis, point, solid.z[0]),
+    extrusionPoint(solid.axis, point, solid.z[1]),
+  ]);
+  return [
+    ([0, 1, 2] as const).map((axis) => Math.min(...vertices.map((point) => point[axis]))) as unknown as Vec3,
+    ([0, 1, 2] as const).map((axis) => Math.max(...vertices.map((point) => point[axis]))) as unknown as Vec3,
+  ];
+};
 
 export const obbPolyhedron = (box: Obb): ConvexPolyhedron => {
   const vertices: Vec3[] = [];
@@ -56,8 +88,8 @@ export const obbPolyhedron = (box: Obb): ConvexPolyhedron => {
 const extrudedPolygonPolyhedron = (t: Transform, solid: ExtrudedPolygonSolid): ConvexPolyhedron => {
   const n = solid.profile.length;
   const local = [
-    ...solid.profile.map(([x, y]) => [x, y, solid.z[0]] as const),
-    ...solid.profile.map(([x, y]) => [x, y, solid.z[1]] as const),
+    ...solid.profile.map((point) => extrusionPoint(solid.axis, point, solid.z[0])),
+    ...solid.profile.map((point) => extrusionPoint(solid.axis, point, solid.z[1])),
   ];
   const vertices = local.map((p) => applyPoint(t, p));
   const bottom = Array.from({ length: n }, (_, i) => n - 1 - i);
@@ -480,7 +512,14 @@ const validateProfileConvexity = (profile: readonly Vec2[]): string | undefined 
 };
 
 /** Returns a structural-error explanation, or undefined for a valid extrusion. */
-export const validateExtrudedPolygon = (profile: readonly Vec2[], z: readonly [number, number]): string | undefined => {
+export const validateExtrudedPolygon = (
+  profile: readonly Vec2[],
+  z: readonly [number, number],
+  axis?: ExtrusionAxis,
+): string | undefined => {
+  if (axis !== undefined && !['x', 'y', 'z'].includes(axis)) {
+    return 'extrusion axis must be x, y, or z';
+  }
   if (!Array.isArray(profile)) {
     return 'profile must be an array of vertices';
   }

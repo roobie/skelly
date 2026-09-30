@@ -39,12 +39,17 @@ const insideSolid = (s: Solid, p: Vec3): boolean => {
   if (s.kind === 'box') {
     return [0, 1, 2].every((i) => Math.abs(p[i]! - s.box.center[i]!) <= s.box.half[i]! + EPS);
   }
-  if (p[2] < s.z[0] - EPS || p[2] > s.z[1] + EPS) {
+  const axis = s.axis ?? 'z';
+  const extrusionAxis = { x: 0, y: 1, z: 2 }[axis];
+  const profileAxes = { x: [1, 2], y: [2, 0], z: [0, 1] } as const;
+  const axes = profileAxes[axis];
+  if (p[extrusionAxis]! < s.z[0] - EPS || p[extrusionAxis]! > s.z[1] + EPS) {
     return false;
   }
+  const point: readonly [number, number] = [p[axes[0]]!, p[axes[1]]!];
   return s.profile.every((a, i) => {
     const b = s.profile[(i + 1) % s.profile.length]!;
-    return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= -EPS;
+    return (b[0] - a[0]) * (point[1] - a[1]) - (b[1] - a[1]) * (point[0] - a[0]) >= -EPS;
   });
 };
 
