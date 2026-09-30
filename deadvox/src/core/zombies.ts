@@ -19,7 +19,10 @@ import {
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
-export const FISTS_MELEE = { damage: 8, reach: 0.7, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+/** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
+export const PLAYER_ARM_REACH_M = 1.2;
+
+export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
 
 export interface HitImpulse {
   /** Hit point in block coordinates. */
@@ -1242,7 +1245,7 @@ export class ZombieSystem {
     return nearest;
   }
 
-  /** Strikes the first visible zombie within the held weapon's reach. */
+  /** Strikes the first visible zombie within arm reach plus the held weapon's reach beyond the hand. */
   swing(
     origin: Vec3,
     direction: Vec3,
@@ -1252,7 +1255,7 @@ export class ZombieSystem {
       return undefined;
     }
     this.options.onSound?.('melee_swing', copy(origin));
-    const found = this.firstRegionHit(origin, unit(direction), weapon.reach);
+    const found = this.firstRegionHit(origin, unit(direction), PLAYER_ARM_REACH_M + weapon.reach);
     if (!found) {
       return undefined;
     }

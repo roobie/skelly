@@ -29,7 +29,7 @@
       "weapon": {
         "melee": {
           "damage": 14,
-          "reach": 0.9,
+          "reach": 0.6,
           "cooldown": 1.1,
           "stamina": 8,
           "impulse": 8,
@@ -52,7 +52,7 @@
       "weapon": {
         "melee": {
           "damage": 10,
-          "reach": 0.6,
+          "reach": 0.4,
           "cooldown": 0.8,
           "stamina": 5,
           "impulse": 6,
@@ -75,7 +75,7 @@
       "weapon": {
         "melee": {
           "damage": 8,
-          "reach": 0.4,
+          "reach": 0.25,
           "cooldown": 0.5,
           "stamina": 3,
           "impulse": 3.5,
@@ -106,7 +106,7 @@
       "weapon": {
         "melee": {
           "damage": 15,
-          "reach": 1.0,
+          "reach": 0.8,
           "cooldown": 1.2,
           "stamina": 9,
           "impulse": 10,
@@ -123,7 +123,7 @@
       "weapon": {
         "melee": {
           "damage": 13,
-          "reach": 0.9,
+          "reach": 0.6,
           "cooldown": 1.2,
           "stamina": 9,
           "impulse": 8,

@@ -498,7 +498,7 @@ export class InventoryScreen {
     }
     if (def.weapon) {
       const m = def.weapon.melee;
-      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m · ${m.cooldown} s a swing`);
+      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldown} s a swing`);
     }
     if (def.light) {
       lines.push(`Lights ${def.light.radius} m · seen from ${def.light.seenFrom} m`);

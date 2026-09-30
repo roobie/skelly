@@ -121,11 +121,43 @@ export interface PosedBoneBox {
   readonly center: Vec3;
   readonly rotation: Mat3;
   readonly halfSize: Vec3;
+  /** Centroid of the drawn voxels owned by this bone, in block coordinates. */
+  readonly voxelCentroid: Vec3;
+  readonly voxelCount: number;
 }
+
+interface BoneVoxelSummary {
+  readonly centroid: Vec3;
+  readonly count: number;
+}
+
+const voxelSummaries = new Map<number, ReadonlyMap<string, BoneVoxelSummary>>();
+const voxelSummaryFor = (
+  seed: number,
+  figure: ReturnType<typeof shamblerFigure>,
+): ReadonlyMap<string, BoneVoxelSummary> => {
+  let summary = voxelSummaries.get(seed);
+  if (!summary) {
+    summary = new Map(
+      [...figure.voxelCentersByBone].map(([bone, centers]) => [
+        bone,
+        {
+          centroid: centers
+            .reduce<Vec3>((sum, point) => [sum[0] + point[0], sum[1] + point[1], sum[2] + point[2]], [0, 0, 0])
+            .map((coordinate) => coordinate / centers.length) as Vec3,
+          count: centers.length,
+        },
+      ]),
+    );
+    voxelSummaries.set(seed, summary);
+  }
+  return summary;
+};
 
 interface PoseBoxContext {
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly figure: ReturnType<typeof shamblerFigure>;
+  readonly voxelSummaries: ReadonlyMap<string, BoneVoxelSummary>;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -153,18 +185,36 @@ const makePosedBoneBox = (
   const worldOffset = applyR(context.yaw, centered);
   let bottomY: number | undefined;
   let topY: number | undefined;
+  const voxelCenters = context.figure.voxelCentersByBone.get(box.bone) ?? [];
+  const summary = context.voxelSummaries.get(box.bone)!;
   if (region === 'head') {
     bottomY = Number.POSITIVE_INFINITY;
     topY = Number.NEGATIVE_INFINITY;
-    for (const point of context.figure.voxelCentersByBone.get(box.bone) ?? []) {
-      const y = context.position[1] + (transform.t[1] + applyR(transform.r, point)[1]) / context.blockSize;
-      bottomY = Math.min(bottomY, y);
-      topY = Math.max(topY, y);
-    }
-    const margin = (context.figure.realized.voxels.size / 2 + 0.001) / context.blockSize;
-    bottomY -= margin;
-    topY += margin;
   }
+  for (const point of voxelCenters) {
+    const posedPoint = applyR(transform.r, point);
+    const y = context.position[1] + (transform.t[1] + posedPoint[1]) / context.blockSize;
+    if (region === 'head') {
+      bottomY = Math.min(bottomY!, y);
+      topY = Math.max(topY!, y);
+    }
+  }
+  if (region === 'head') {
+    const margin = (context.figure.realized.voxels.size / 2 + 0.001) / context.blockSize;
+    bottomY! -= margin;
+    topY! += margin;
+  }
+  const posedCentroid = applyR(transform.r, summary.centroid);
+  const worldCentroid = applyR(context.yaw, [
+    transform.t[0] + posedCentroid[0],
+    transform.t[1] + posedCentroid[1],
+    transform.t[2] + posedCentroid[2],
+  ]);
+  const voxelCentroid: Vec3 = [
+    context.position[0] + worldCentroid[0] / context.blockSize,
+    context.position[1] + worldCentroid[1] / context.blockSize,
+    context.position[2] + worldCentroid[2] / context.blockSize,
+  ];
   return {
     bone: box.bone,
     ...(bottomY === undefined || topY === undefined ? {} : { bottomY, topY }),
@@ -175,13 +225,14 @@ const makePosedBoneBox = (
     ],
     rotation: mulMM(context.yaw, transform.r),
     halfSize: [...box.halfSize] as Vec3,
+    voxelCentroid,
+    voxelCount: summary.count,
   };
 };
 
-/** Bone boxes for one swing pose. The caller builds them once per nearby zombie, then tests every region. */
-export const posedShamblerRegionBoxes = (
-  input: Omit<ZombieHitPoseInput, 'region'>,
-): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
+type ShamblerPoseInput = Omit<ZombieHitPoseInput, 'region'>;
+
+const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
   const {
     seed,
     position,
@@ -213,19 +264,65 @@ export const posedShamblerRegionBoxes = (
             head: mulMM(basePose.rotations.head ?? [1, 0, 0, 0, 1, 0, 0, 0, 1], rotY(headYaw)),
           },
         };
-  const transforms = boneTransforms(bones, pose);
   const figure = shamblerFigure(seed);
-  const hidden = severedBoneSet(bones, severed);
-  const yaw: Mat3 = rotY(Math.atan2(-facing[0], -facing[2]));
-  const poseContext = { transforms, figure, hidden, yaw, position, blockSize };
+  return {
+    transforms: boneTransforms(bones, pose),
+    figure,
+    voxelSummaries: voxelSummaryFor(seed, figure),
+    hidden: severedBoneSet(bones, severed),
+    yaw: rotY(Math.atan2(-facing[0], -facing[2])),
+    position,
+    blockSize,
+  };
+};
+
+/** Bone boxes for one swing pose. The caller builds them once per nearby zombie, then tests every region. */
+export const posedShamblerRegionBoxes = (
+  input: ShamblerPoseInput,
+): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
+  const context = poseContextFor(input);
   const worldBoxes = (region: ZombieRegion, boxes: readonly BoneVoxelBox[]): PosedBoneBox[] =>
     boxes.flatMap((box) => {
-      const posedBox = makePosedBoneBox(region, box, poseContext);
+      const posedBox = makePosedBoneBox(region, box, context);
       return posedBox ? [posedBox] : [];
     });
   return Object.fromEntries(
-    ZOMBIE_REGION_NAMES.map((region) => [region, worldBoxes(region, figure.boxes[region])]),
+    ZOMBIE_REGION_NAMES.map((region) => [region, worldBoxes(region, context.figure.boxes[region])]),
   ) as unknown as Record<ZombieRegion, readonly PosedBoneBox[]>;
+};
+
+/** Actual posed voxel centres owned by the requested bones (for visible-hit-point proofs/tools). */
+export const posedShamblerBoneVoxelCenters = (
+  input: ShamblerPoseInput,
+  bones: readonly string[],
+): readonly { readonly bone: string; readonly center: Vec3 }[] => {
+  const context = poseContextFor(input);
+  return bones.flatMap((bone) => {
+    if (context.hidden.has(bone)) {
+      return [];
+    }
+    const transform = context.transforms.get(bone);
+    if (!transform) {
+      return [];
+    }
+    const centers = context.figure.voxelCentersByBone.get(bone) ?? [];
+    return centers.map((center) => {
+      const posed = applyR(transform.r, center);
+      const world = applyR(context.yaw, [
+        transform.t[0] + posed[0],
+        transform.t[1] + posed[1],
+        transform.t[2] + posed[2],
+      ]);
+      return {
+        bone,
+        center: [
+          context.position[0] + world[0] / context.blockSize,
+          context.position[1] + world[1] / context.blockSize,
+          context.position[2] + world[2] / context.blockSize,
+        ] as Vec3,
+      };
+    });
+  });
 };
 
 /** First surface of an actual, posed, unsevered voxel bone box, in block units. */

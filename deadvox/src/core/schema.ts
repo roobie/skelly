@@ -118,7 +118,7 @@ const ToolSchema = strictObject({
 const WeaponSchema = strictObject({
   melee: strictObject({
     damage: Positive,
-    /** Metres. */
+    /** Metres beyond the player's hand; the arm's reach is added when swinging. */
     reach: Positive,
     /** Seconds between swings. */
     cooldown: Positive,
