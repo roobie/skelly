@@ -25,7 +25,7 @@ jobs:
             deadvox/tools/lit-check/package-lock.json
       - run: npm ci
       - run: npm ci --prefix tools/lit-check
-      - run: npm run lint:lit
+      - run: timeout 300 npm run lint:lit
       - run: npm run typecheck
       - name: Save round-trip and budget benchmark
         run: timeout 300 npm test -- test/snapshot.test.ts -t 'checks a representative ten-hour hamlet save and records its size and timings' --silent=false
