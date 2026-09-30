@@ -291,8 +291,8 @@ The lengths below remain abstract units on the existing grid.
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
   is not a box-magazine user; other archetypes do not offer this exception.
-- Barrel `crossSection` defaults to `round`; `octagonal` is a regular X-axis
-  extrusion with the same flat-to-flat diameter and unchanged ports. The
+- Barrel `crossSection` defaults to `square`; `octagonal` is a regular X-axis
+  extrusion with the same flat-to-flat width and unchanged ports. The
   `octagonal-barrel` prefab offers the variant without changing existing designs.
 - Standard handguards occupy 65% of exposed barrel length; AK handguards occupy
   80% of the barrel-to-gas-port station. Tilted magazine seating is declared
@@ -1117,15 +1117,16 @@ design are complete (gungen.6). The remaining items are scheduled after 3.5,
 not part of the export's acceptance:
 
 - trigger guards on every archetype (gungen.3, done; evidence above);
-- the octagonal barrel as a barrel profile param (gungen.7). A profile
-  solid extrudes only along local Z (`src/core/schema.ts#ExtrudedPolygonSolid`), and a
-  barrel runs along X. There are two options:
-  - build the barrel along local Z and orient the part through its ports,
-    as the revolver cylinder does (`src/gun/parts.ts#cylinder`); this
-    touches every barrel port;
-  - add an extrusion-axis option to the profile solid, which is a core
-    schema change that lane A owns.
-  Decide which before starting;
+- octagonal barrel cross-section (gungen.7, implemented on the core X-axis
+  extrusion option): `barrel.crossSection` defaults to `square`, preserving
+  today's box geometry; `octagonal` preserves the square's flat-to-flat width.
+  The `octagonal-barrel` prefab exposes it. The pump magazine tube, cap lug,
+  and support band inherit the connected barrel's section; a rule rejects an
+  explicit mismatch, with positions and bounds preserved. The AK gas cylinder
+  is a parallel gas-system candidate left unchanged pending BR's ruling; there
+  is no revolver ejector-rod housing or suppressor/muzzle-device family yet. A
+  true round, many-sided barrel cross-section is a separate deferred candidate,
+  not part of gungen.7;
 - a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
   side-profile opening is built from connected convex extrusions; its grip post
   moves forward under the receiver while the buttplate remains 22u from the

@@ -54,9 +54,9 @@ describe('gun prefab catalogue', () => {
     const family = FAMILIES.barrel!;
     const entry = GUN_PREFABS.find((prefab) => prefab.id === 'octagonal-barrel')!;
     const params = Object.fromEntries(Object.entries(family.params).map(([name, spec]) => [name, spec.default]));
-    const round = family.build(params);
+    const square = family.build(params);
     const octagonal = family.build({ ...params, ...entry.fixedParams });
-    expect(octagonal.solids).not.toEqual(round.solids);
+    expect(octagonal.solids).not.toEqual(square.solids);
     expect(octagonal.solids[0]?.kind).toBe('extruded-polygon');
   });
 

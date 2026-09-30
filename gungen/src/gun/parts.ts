@@ -1146,8 +1146,10 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
   return { S: 26, M: 36, L: 46 }[sizeClass];
 };
 
-/** Regular octagon with horizontal and vertical flats at the round barrel's radius. */
-const octagonalBarrelProfile = (flatRadius: number): readonly Vec2[] => {
+const BARREL_CROSS_SECTIONS = ['square', 'octagonal'] as const;
+
+/** Regular octagon with horizontal and vertical flats at the requested half-width. */
+const octagonalProfile = (flatRadius: number): readonly Vec2[] => {
   const corner = flatRadius * (Math.SQRT2 - 1);
   return [
     [flatRadius, corner],
@@ -1161,6 +1163,52 @@ const octagonalBarrelProfile = (flatRadius: number): readonly Vec2[] => {
   ];
 };
 
+const octagonalPrism = (id: string, flatRadius: number, along: readonly [number, number]): Solid => ({
+  id,
+  kind: 'extruded-polygon',
+  profile: octagonalProfile(flatRadius),
+  axis: 'x',
+  z: along,
+});
+
+/** Eight-sided support lug with the existing box's bounds and contact planes. */
+const octagonalLugPrism = (
+  id: string,
+  along: readonly [number, number],
+  vertical: readonly [number, number],
+  lateral: readonly [number, number],
+): Solid => {
+  const [y0, y1] = vertical;
+  const [z0, z1] = lateral;
+  const chamfer = Math.min(y1 - y0, z1 - z0) / 4;
+  return {
+    id,
+    kind: 'extruded-polygon',
+    profile: [
+      [y0 + chamfer, z0],
+      [y1 - chamfer, z0],
+      [y1, z0 + chamfer],
+      [y1, z1 - chamfer],
+      [y1 - chamfer, z1],
+      [y0 + chamfer, z1],
+      [y0, z1 - chamfer],
+      [y0, z0 + chamfer],
+    ],
+    axis: 'x',
+    z: along,
+  };
+};
+
+const barrelSectionPrism = (
+  id: string,
+  crossSection: string | undefined,
+  flatRadius: number,
+  along: readonly [number, number],
+): Solid =>
+  crossSection === 'octagonal'
+    ? octagonalPrism(id, flatRadius, along)
+    : solid(id, [along[0], -flatRadius, -flatRadius], [along[1], flatRadius, flatRadius]);
+
 export const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -1168,7 +1216,7 @@ export const barrel: PartFamily = {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
     profile: choice('standard', 'heavy', 'pistol', 'revolver'),
-    crossSection: choice('round', 'octagonal'),
+    crossSection: choice(...BARREL_CROSS_SECTIONS),
     handguardLayout: { values: ['standard', 'ak'], default: 'standard', from: [{ port: 'clamp', param: 'layout' }] },
     tubeLengthPercent: {
       values: PUMP_TUBE_LENGTH_PERCENTAGES,
@@ -1192,16 +1240,7 @@ export const barrel: PartFamily = {
       tubeEnd > fore
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
-    const tube: Solid =
-      params.crossSection === 'octagonal'
-        ? {
-            id: 'tube',
-            kind: 'extruded-polygon',
-            profile: octagonalBarrelProfile(r),
-            axis: 'x',
-            z: [0, len],
-          }
-        : solid('tube', [0, -r, -r], [len, r, r]);
+    const tube = barrelSectionPrism('tube', params.crossSection, r, [0, len]);
     return {
       family: 'barrel',
       solids: [tube],
@@ -1529,6 +1568,11 @@ export const tubeMagazine: PartFamily = {
   // Tube reach is a percentage of the actual barrel length, not a tube size class.
   params: {
     lengthPercent: { values: PUMP_TUBE_LENGTH_PERCENTAGES, default: '75' },
+    crossSection: {
+      values: BARREL_CROSS_SECTIONS,
+      default: 'square',
+      from: [{ port: 'cap', param: 'crossSection' }],
+    },
     barrelLength: { ...size, from: [{ port: 'cap', param: 'length' }] },
     // The barrel's bore sets how far its underside sits above the tube.
     bore: { ...size, from: [{ port: 'cap', param: 'bore' }] },
@@ -1544,15 +1588,20 @@ export const tubeMagazine: PartFamily = {
     // The support spacer spans the barrel clearance; the enlarged cap encloses the tube's forward end.
     const bandTop = tubeDrop - BARREL_RADIUS[bore];
     const band = (id: string, x: number): Solid[] =>
-      bandTop > TUBE_HALF_HEIGHT ? [solid(id, [x - 1, TUBE_HALF_HEIGHT, -0.5], [x, bandTop, 0.5])] : [];
+      bandTop > TUBE_HALF_HEIGHT
+        ? [
+            params.crossSection === 'octagonal'
+              ? octagonalLugPrism(id, [x - 1, x], [TUBE_HALF_HEIGHT, bandTop], [-0.5, 0.5])
+              : solid(id, [x - 1, TUBE_HALF_HEIGHT, -0.5], [x, bandTop, 0.5]),
+          ]
+        : [];
     const cap: Solid[] =
       bandTop > TUBE_HALF_HEIGHT
         ? [
-            solid(
-              'cap-lug',
-              [length - PUMP_TUBE_CAP_LENGTH, -PUMP_TUBE_CAP_HALF_EXTENT, -PUMP_TUBE_CAP_HALF_EXTENT],
-              [length, PUMP_TUBE_CAP_HALF_EXTENT, PUMP_TUBE_CAP_HALF_EXTENT],
-            ),
+            barrelSectionPrism('cap-lug', params.crossSection, PUMP_TUBE_CAP_HALF_EXTENT, [
+              length - PUMP_TUBE_CAP_LENGTH,
+              length,
+            ]),
           ]
         : [];
     const supportPort: PortDef[] =
@@ -1562,7 +1611,7 @@ export const tubeMagazine: PartFamily = {
     return {
       family: 'tube-magazine',
       solids: [
-        solid('tube', [0, -TUBE_HALF_HEIGHT, -1], [length - PUMP_TUBE_CAP_END_INSET, TUBE_HALF_HEIGHT, 1]),
+        barrelSectionPrism('tube', params.crossSection, TUBE_HALF_HEIGHT, [0, length - PUMP_TUBE_CAP_END_INSET]),
         ...(length > supportX ? band('support-band', supportX) : []),
         ...cap,
       ],
