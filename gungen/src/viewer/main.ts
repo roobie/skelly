@@ -157,6 +157,8 @@ controls.enableDamping = true;
 const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
 const heldPanKeys = new Set<string>();
 const KEY_PAN_SPEED = 25; // world units per second
+const panDirection = new Vector3();
+const panUp = new Vector3();
 const isEditingText = (target: EventTarget | null): boolean =>
   target instanceof HTMLInputElement ||
   target instanceof HTMLTextAreaElement ||
@@ -175,15 +177,20 @@ globalThis.addEventListener('keyup', (event) => {
 globalThis.addEventListener('blur', () => heldPanKeys.clear());
 
 const panFromKeys = (seconds: number) => {
-  const x = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
-  const z = Number(heldPanKeys.has('ArrowDown')) - Number(heldPanKeys.has('ArrowUp'));
-  if (x === 0 && z === 0) {
+  const right = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
+  const up = Number(heldPanKeys.has('ArrowUp')) - Number(heldPanKeys.has('ArrowDown'));
+  if (right === 0 && up === 0) {
     return;
   }
-  const distance = Math.hypot(x, z) || 1;
-  const delta = new Vector3((x / distance) * KEY_PAN_SPEED * seconds, 0, (z / distance) * KEY_PAN_SPEED * seconds);
-  camera.position.add(delta);
-  controls.target.add(delta);
+  camera.updateMatrixWorld();
+  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(right);
+  panUp.setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(up);
+  panDirection
+    .add(panUp)
+    .normalize()
+    .multiplyScalar(KEY_PAN_SPEED * seconds);
+  camera.position.add(panDirection);
+  controls.target.add(panDirection);
 };
 
 const resize = () => {
