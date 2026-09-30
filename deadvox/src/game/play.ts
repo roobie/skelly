@@ -107,6 +107,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
+      ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
     },
   });
   const {
@@ -533,12 +534,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   }
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
-  const swing = () => {
-    const heldWeapon = [inventory.hands.right, inventory.hands.left]
+  const meleeWeapon = () =>
+    [inventory.hands.right, inventory.hands.left]
       .filter((item) => item !== undefined)
       .map((item) => registry.items.get(item.type)?.weapon?.melee)
-      .find((attack) => attack !== undefined);
-    const melee = heldWeapon ?? FISTS_MELEE;
+      .find((attack) => attack !== undefined) ?? FISTS_MELEE;
+
+  const swing = () => {
+    const melee = meleeWeapon();
     if (sim.needs.stamina < melee.stamina) {
       showNotice('You are too tired to swing');
       return;
@@ -675,6 +678,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
     zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
     zombieMeshes.sync(zombieStore, dt, zombieAlpha);
+    if (debugTools) {
+      const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+      debugTools.updateAim(aim);
+    }
     updateDebugReadout(now);
 
     const cameraOffset = cameraStepOffset.update(

@@ -31,7 +31,14 @@ import type { SoundPickerState } from '../core/soundPicker.ts';
 import type { World } from '../core/world.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
-import { type HitImpulse, type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
+import {
+  type HitImpulse,
+  type MeleeResult,
+  type PlayerMovement,
+  type VocalNoise,
+  type Zombie,
+  ZombieSystem,
+} from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import {
@@ -129,6 +136,8 @@ export interface SessionOptions {
     onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
     onDeath?: (id: EntityId, zombie: Zombie) => void;
+    /** The actual result of the player's last swing, for debug-only presentation. */
+    onMeleeResult?: (result: MeleeResult) => void;
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
@@ -322,6 +331,7 @@ export const createSession = (options: SessionOptions) => {
     },
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
+    ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
     onDeath: (id, zombie) => {
       const table = zombie.type.loot;
       if (table) {

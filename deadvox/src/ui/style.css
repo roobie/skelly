@@ -63,6 +63,27 @@ body {
   background: radial-gradient(ellipse at center, transparent 45%, rgb(190 0 0 / 82%) 100%);
 }
 
+.debug-aim-readout {
+  position: fixed;
+  left: 50%;
+  top: calc(50% + 18px);
+  z-index: 9;
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+  background: rgb(12 16 12 / 80%);
+  color: #fff;
+  font:
+    12px / 1.4 ui-monospace,
+    monospace;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+}
+.debug-aim-readout:empty {
+  display: none;
+}
+
 #crosshair {
   position: fixed;
   left: 50%;

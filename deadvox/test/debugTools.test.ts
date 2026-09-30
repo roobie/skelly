@@ -9,7 +9,7 @@ import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
-import { equipDebugStartWeapon } from '../src/debug/index.ts';
+import { equipDebugStartWeapon, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
@@ -44,6 +44,29 @@ const makeDoorWorld = () => {
 const playerEye: Vec3 = [0, (SCALE.blockSize + PLAYER.eye) / SCALE.blockSize, 0];
 
 describe('debug starting equipment', () => {
+  it('formats actual melee hit outcomes for the debug panel', () => {
+    expect(
+      formatMeleeResult({
+        id: 1,
+        region: 'head',
+        damage: 15,
+        healthBefore: 15,
+        healthAfter: 0,
+        outcome: 'decapitated',
+      }),
+    ).toBe('head 15 damage (15→0) · decapitated');
+    expect(
+      formatMeleeResult({
+        id: 2,
+        region: 'torso',
+        damage: 15,
+        healthBefore: 15,
+        healthAfter: 0,
+        outcome: 'incapacitated',
+      }),
+    ).toBe('torso 15 damage (15→0) · incapacitated');
+    expect(formatMeleeResult({ damage: 0, outcome: 'nothing' })).toBe('nothing · no region hit');
+  });
   it('attaches a bat to a fresh debug game and swings with its damage, reach, and 10 N·s impulse', () => {
     const inventory = new Inventory(registry);
     startingLoadout(inventory);

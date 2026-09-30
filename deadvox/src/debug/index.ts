@@ -1,6 +1,8 @@
-import { html, render, type TemplateResult } from 'lit-html';
+import { html, nothing, render, type TemplateResult } from 'lit-html';
 import type { Inventory } from '../core/inventory.ts';
+import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
+import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
@@ -30,6 +32,8 @@ const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
   <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes</span>
   <span>shamblers ${readout.zombies}</span>
 `;
+
+const aimReadoutTemplate = (text: string): TemplateResult => html`${text || nothing}`;
 
 const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
   <section class="debug-sound-log" aria-label="Recent sounds actually played">
@@ -61,6 +65,7 @@ const panelTemplate = ({
   spawnOpen,
   shamblerCount,
   spawnStatus,
+  lastHitText,
   setShamblerCount,
   toggleOpen,
 }: {
@@ -69,11 +74,13 @@ const panelTemplate = ({
   spawnOpen: boolean;
   shamblerCount: number;
   spawnStatus: string;
+  lastHitText: string;
   setShamblerCount: (count: number) => void;
   toggleOpen: () => void;
 }): TemplateResult => html`
   <div id="debug-ui-root">
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
+    <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <div id="debug-readout" class="debug-readout"></div>
@@ -84,6 +91,7 @@ const panelTemplate = ({
       <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
     </div>
     <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
+    <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     <div class="debug-actions">
       ${actions.map(
         (action) => html`
@@ -125,6 +133,8 @@ interface ActionContext {
   toggleDanger: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
+  isAimEnabled: () => boolean;
+  toggleAim: () => void;
 }
 
 export const createDebugActions = ({
@@ -138,6 +148,8 @@ export const createDebugActions = ({
   toggleDanger,
   shamblerCount,
   spawnShambler,
+  isAimEnabled,
+  toggleAim,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
@@ -173,6 +185,7 @@ export const createDebugActions = ({
   { code: 'KeyU', key: 'U', label: 'Danger test', state: isDanger, run: toggleDanger },
   { code: 'KeyK', key: 'K', label: 'Take 25 damage', run: () => hooks.sim.hurt(25, 'a debug key') },
   { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
+  { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', state: isAimEnabled, run: toggleAim },
 ];
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
@@ -184,6 +197,14 @@ export const dispatchDebugAction = (actions: readonly Action[], code: string, re
     action.run();
   }
   return true;
+};
+
+export const formatMeleeResult = (result: MeleeResult): string => {
+  if (result.region === undefined || result.healthBefore === undefined || result.healthAfter === undefined) {
+    return 'nothing · no region hit';
+  }
+  const outcome = result.outcome === 'severed' ? `severed ${result.part ?? 'part'}` : result.outcome;
+  return `${result.region} ${result.damage} damage (${result.healthBefore}→${result.healthAfter}) · ${outcome}`;
 };
 
 const DEBUG_START_WEAPON = 'baseball_bat';
@@ -211,7 +232,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     newGame: hooks.newGame,
   });
   const host = document.body;
+  const aimOverlay = new DebugAimOverlay(hooks.engine.scene, hooks.engine.config.scale.blockSize);
+  let aimReadout: HTMLElement | null = null;
   let panelOpen = false;
+  let aimEnabled = true;
+  let lastHitText = '';
+  let lastHitUntil = 0;
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
@@ -234,6 +260,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       danger = !danger;
     },
     shamblerCount: () => shamblerCount,
+    isAimEnabled: () => aimEnabled,
+    toggleAim: () => {
+      aimEnabled = !aimEnabled;
+      if (!aimEnabled) {
+        aimOverlay.update(undefined);
+        if (aimReadout) {
+          render(aimReadoutTemplate(''), aimReadout);
+        }
+      }
+    },
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
       const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
@@ -279,6 +315,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           spawnOpen: spawnMenu.isOpen,
           shamblerCount,
           spawnStatus,
+          lastHitText: performance.now() < lastHitUntil ? lastHitText : '',
           setShamblerCount: changeShamblerCount,
           toggleOpen: togglePanel,
         }),
@@ -286,6 +323,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       );
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
+      aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
@@ -338,6 +376,33 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     return true;
   }
   const runtime: DebugRuntime = {
+    get aimEnabled() {
+      return aimEnabled;
+    },
+    updateAim(aim: ZombieAim | undefined) {
+      aimOverlay.update(aimEnabled ? aim : undefined);
+      if (aimReadout) {
+        render(
+          aimReadoutTemplate(
+            aimEnabled && aim
+              ? `${aim.region} ${aim.health}/${aim.maxHealth} · ${aim.distanceMetres.toFixed(2)} m / reach ${aim.reachMetres.toFixed(2)} m`
+              : '',
+          ),
+          aimReadout,
+        );
+      }
+      if (lastHitText && performance.now() >= lastHitUntil) {
+        lastHitText = '';
+        shellKey = '';
+        drawShell();
+      }
+    },
+    recordMeleeResult(result: MeleeResult) {
+      lastHitText = formatMeleeResult(result);
+      lastHitUntil = performance.now() + 3000;
+      shellKey = '';
+      drawShell();
+    },
     get menuOpen() {
       return panelOpen || spawnMenu.isOpen;
     },
