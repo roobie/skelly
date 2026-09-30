@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { localSolidBounds } from '../src/core/geometry.ts';
 import { applyPoint } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Domain } from '../src/core/schema.ts';
@@ -247,10 +248,10 @@ describe('resolve: params from neighbours', () => {
       const tubeDef = report.resolved.defs.get('tube');
       const tubeSolid = tubeDef?.solids.find((solid) => solid.id === 'tube');
       const tubeCap = tubeDef?.ports.find((port) => port.id === 'cap');
-      if (tubeSolid?.kind !== 'box' || !tubeCap) {
-        throw new Error('pump magazine tube and cap must be present');
+      if (tubeSolid?.kind !== 'extruded-polygon' || !tubeCap) {
+        throw new Error('octagonal pump magazine tube and cap must be present');
       }
-      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(barrelEnds[length] - 0.5);
+      expect(localSolidBounds(tubeSolid)[1][0]).toBe(barrelEnds[length] - 0.5);
       expect(tubeCap.pos[0]).toBe(barrelEnds[length]);
       expect(report.issues).toEqual([]);
     }

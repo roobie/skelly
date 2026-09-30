@@ -291,10 +291,19 @@ The lengths below remain abstract units on the existing grid.
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
   is not a box-magazine user; other archetypes do not offer this exception.
+- Every barrel profile uses a regular octagonal X-axis extrusion at the
+  former square's flat-to-flat width; bounds and ports are unchanged. Pump tubes
+  and cap lugs are regular octagonal; the support band is an eight-sided prism
+  clipped to its existing rectangular bounds. The AK gas cylinder is a regular
+  octagon with 0.5u flat-to-flat width, matching its former 0.5u height; its
+  lateral extent narrows from 1u to 0.5u to fit. Its corner setback is 0.14645u
+  at 45° (vertex offset 0.10355u from the centreline). The gas-block bracket
+  and centerline stay put.
 - Standard handguards occupy 65% of exposed barrel length; AK handguards use
   compact S/M/L bands and their gas block clears the handguard by about 10% of
-  its length. Tilted magazine seating is declared per lower layout: conventional and AR layouts support the standard magazine
-  profile; bullpup, AK, and trigger layouts do not. Unsupported combinations
+  its length. Tilted magazine seating is declared per lower layout: conventional
+  and AR layouts support the standard magazine profile; bullpup, AK, and trigger
+  layouts do not. Unsupported combinations
   are rejected by `magazine-well-axis`, not surfaced as contact gaps.
 - `handguard.mount` is `clamped` by default. AR templates choose free-float 75%
   of the time; battle-rifle templates choose free-float 50% of the time when the
@@ -318,8 +327,9 @@ The lengths below remain abstract units on the existing grid.
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
 A bore-aware drop keeps a 0.5u gap between the tube and barrel. The forward
-end has an oversized 2.5u-long square barrel-gray cap that encloses the last section of the
-tube; it ends at the selected tube-length station and leaves 0.25u of clearance
+end has an oversized 2.5u-long octagonal barrel-gray cap that encloses the last
+section of the tube; it ends at the selected tube-length station and leaves
+0.25u of clearance
 below the barrel. 75% and 100% variants also use a separate support spacer at
 the 65% station. A local receiver seat supports the lowered tube without moving
 the bore or stock interface.
@@ -1099,8 +1109,8 @@ npm run export:glb -- designs/archetype-ar.json --out ../deadvox/src/content/bas
 The generated sidecar's `grip` and `anchors` are recorded in
 `deadvox/src/content/base/models-firearms.json`. Measured against the replaced
 asset: bounds are 79.35 cm long × 21.46 cm high (new) vs 69.74 cm × 25.30 cm
-(old); grip-to-muzzle distance is 57.91 cm vs 37.03 cm; mesh is 2,080 vs 4,353
-triangles and 174,436 vs 234,384 bytes. The new length is 4.65 cm below the
+(old); grip-to-muzzle distance is 57.91 cm vs 37.03 cm; mesh is 1,980 vs 4,353
+triangles and 173,360 vs 234,384 bytes. The new length is 4.65 cm below the
 provided real AR-15 range of 84–99 cm. The muzzle anchor equals the model's
 forward x bound. `deadvox/test/models.test.ts` verifies zero turn, muzzle at the
 forward end, and forward/upright orientation after the held transform.
@@ -1114,15 +1124,17 @@ design are complete (gungen.6). The remaining items are scheduled after 3.5,
 not part of the export's acceptance:
 
 - trigger guards on every archetype (gungen.3, done; evidence above);
-- the octagonal barrel as a barrel profile param (gungen.7). A profile
-  solid extrudes only along local Z (`src/core/schema.ts#ExtrudedPolygonSolid`), and a
-  barrel runs along X. There are two options:
-  - build the barrel along local Z and orient the part through its ports,
-    as the revolver cylinder does (`src/gun/parts.ts#cylinder`); this
-    touches every barrel port;
-  - add an extrusion-axis option to the profile solid, which is a core
-    schema change that lane A owns.
-  Decide which before starting;
+- octagonal-only barrels (gungen.7, implemented): every barrel profile
+  (standard, heavy, pistol, and revolver) is a regular X-axis octagon at the
+  former square section's flat-to-flat width; there is no cross-section param
+  or octagonal-barrel prefab. Pump tube and cap lug are regular octagonal; the
+  support band is an eight-sided prism clipped to its existing rectangular
+  bounds. All keep their existing bounds, ports, and contacts.
+  The AK gas cylinder is a regular octagon sized to its former 0.5u vertical
+  extent, centered on its existing axis; this narrows its width from 1u to
+  0.5u. The 45° corner setback is 0.14645u (vertex offset 0.10355u). The
+  bracket, handguard, receiver, and gas-block contacts remain valid. No separate
+  true-round barrel option is planned.
 - a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
   side-profile opening is built from connected convex extrusions; its grip post
   moves forward under the receiver while the buttplate remains 22u from the
