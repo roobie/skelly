@@ -228,9 +228,9 @@ const panFromKeys = (seconds: number) => {
   camera.updateMatrixWorld();
   panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(panRight);
   if (shiftHeld) {
-    camera.getWorldDirection(panUp);
+    panUp.copy(camera.up);
   } else {
-    panUp.setFromMatrixColumn(camera.matrixWorld, 1);
+    camera.getWorldDirection(panUp);
   }
   panUp.multiplyScalar(up);
   panDirection
