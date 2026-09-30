@@ -7,6 +7,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
 import { equipDebugStartWeapon, formatMeleeResult } from '../src/debug/index.ts';
@@ -99,35 +100,20 @@ describe('debug starting equipment', () => {
       ...registry.zombies.get('shambler')!,
       dismember: { chance: 0, headOnKillChance: 1 },
     };
-    const id = system.add(shambler, [1.85 / SCALE.blockSize, 1, 0], [1, 0, 0]);
+    const id = system.add(shambler, [1.85 / SCALE.blockSize, 1, 0], [-1, 0, 0]);
     const zombie = system.store.get(id)!;
     zombie.figureSeed = 1;
     zombie.regions.head = weapon.damage;
-    const boxes = posedShamblerRegionBoxes({
-      seed: zombie.figureSeed,
-      position: zombie.body.pos,
-      facing: zombie.facing,
-      headYaw: zombie.headYaw,
-      gaitPhase: zombie.gaitPhase,
-      speed: zombie.horizontalSpeed,
-      chasing: false,
-      attackWindup: 0,
-      attackWindupSeconds: zombie.type.attack.windup,
-      severed: zombie.severed,
-      blockSize: SCALE.blockSize,
-    }).head;
-    const count = boxes.reduce((sum, box) => sum + box.voxelCount, 0);
+    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, SCALE.blockSize)).head;
     const target = boxes
-      .reduce<Vec3>(
-        (sum, box) => [
-          sum[0] + box.voxelCentroid[0] * box.voxelCount,
-          sum[1] + box.voxelCentroid[1] * box.voxelCount,
-          sum[2] + box.voxelCentroid[2] * box.voxelCount,
-        ],
-        [0, 0, 0],
-      )
-      .map((value) => value / count) as Vec3;
-    const direction: Vec3 = [target[0] - playerEye[0], target[1] - playerEye[1], target[2] - playerEye[2]];
+      .map((box) => box.voxelCentroid)
+      .find((candidate) => {
+        const direction = candidate.map((value, axis) => value - playerEye[axis]!) as Vec3;
+        const length = Math.hypot(...direction);
+        const ray = direction.map((value) => value / length) as Vec3;
+        return system.aimAt(playerEye, ray, weapon)?.region === 'head';
+      })!;
+    const direction = target.map((value, axis) => value - playerEye[axis]!) as Vec3;
     const length = Math.hypot(...direction);
     const ray = direction.map((value) => value / length) as Vec3;
     expect(system.swing(playerEye, ray, FISTS_MELEE)).toBeUndefined();

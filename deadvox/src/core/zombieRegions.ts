@@ -1,16 +1,11 @@
 // Detailed melee hit geometry shares the seeded, posed mobgen figures with MobActorMeshes. FIGURE_BOXES below
 // remains only for the optional blocky renderer; it is deliberately not used by the hit test.
 
-import type { Bone } from '@mobgen/core/body.ts';
-import { type Mat3, mulMM, rotY, transpose } from '@mobgen/core/math.ts';
-import { boneTransforms, type Pose as MobPose } from '@mobgen/core/pose.ts';
-import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
-import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { idlePose } from '@mobgen/mob/idle.ts';
+import { type Mat3, mulMM, transpose } from '@mobgen/core/math.ts';
+import type { boneTransforms } from '@mobgen/core/pose.ts';
 import { type BoneVoxelBox, type ShamblerHitRegion, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
+import { posedShambler, type ShamblerPoseInput } from './zombiePose.ts';
 
 export type FigurePart = 'body' | 'head' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
 export interface FigureBox {
@@ -76,41 +71,9 @@ const applyR = (r: readonly number[], p: readonly number[]): Vec3 => [
   r[6]! * p[0]! + r[7]! * p[1]! + r[8]! * p[2]!,
 ];
 
-export interface ZombieHitPoseInput {
-  readonly seed: number;
-  readonly position: Vec3;
-  readonly facing: Vec3;
-  readonly headYaw: number;
-  readonly gaitPhase: number;
-  readonly speed: number;
-  readonly chasing: boolean;
-  readonly attackWindup: number;
-  readonly attackWindupSeconds: number;
-  readonly severed: readonly string[];
+export interface ZombieHitPoseInput extends ShamblerPoseInput {
   readonly region: ZombieRegion;
-  readonly blockSize: number;
 }
-
-const actorFor = (seed: number): { actor: WalkActor; bones: readonly Bone[] } => {
-  const { realized, genome } = shamblerFigure(seed);
-  const extents = footRestExtents(realized.body.bones, realized.voxels);
-  const actor: WalkActor = {
-    bones: realized.body.bones,
-    extents,
-    params: genome.params as HumanoidParams,
-    seed,
-  };
-  return { actor, bones: realized.body.bones };
-};
-const actors = new Map<number, ReturnType<typeof actorFor>>();
-const actorForSeed = (seed: number): ReturnType<typeof actorFor> => {
-  let actor = actors.get(seed);
-  if (!actor) {
-    actor = actorFor(seed);
-    actors.set(seed, actor);
-  }
-  return actor;
-};
 
 export interface PosedBoneBox {
   readonly bone: string;
@@ -230,49 +193,16 @@ const makePosedBoneBox = (
   };
 };
 
-type ShamblerPoseInput = Omit<ZombieHitPoseInput, 'region'>;
-
 const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
-  const {
-    seed,
-    position,
-    facing,
-    headYaw,
-    gaitPhase,
-    speed,
-    chasing,
-    attackWindup,
-    attackWindupSeconds,
-    severed,
-    blockSize,
-  } = input;
-  const { actor, bones } = actorForSeed(seed);
-  const phase = ((gaitPhase % Math.PI) + Math.PI) % Math.PI;
-  const clock: GaitClock = { stepIndex: Math.floor(gaitPhase / Math.PI), progress: phase / Math.PI };
-  const stance = chasing || attackWindup > 0 ? 'aggravated' : 'slack';
-  const walk = walkPose(actor, clock, speed, { idle: idlePose(actor, stance, 0) });
-  const attackStart = Math.max(0, LUNGE_GRAB.hitTime - attackWindupSeconds);
-  const attackTime = attackWindup > 0 ? attackStart + attackWindupSeconds - attackWindup : undefined;
-  const basePose: MobPose = attackTime === undefined ? walk : attackPose(actor, LUNGE_GRAB, attackTime, walk);
-  const pose: MobPose =
-    headYaw === 0
-      ? basePose
-      : {
-          ...basePose,
-          rotations: {
-            ...basePose.rotations,
-            head: mulMM(basePose.rotations.head ?? [1, 0, 0, 0, 1, 0, 0, 0, 1], rotY(headYaw)),
-          },
-        };
-  const figure = shamblerFigure(seed);
+  const posed = posedShambler(input);
   return {
-    transforms: boneTransforms(bones, pose),
-    figure,
-    voxelSummaries: voxelSummaryFor(seed, figure),
-    hidden: severedBoneSet(bones, severed),
-    yaw: rotY(Math.atan2(-facing[0], -facing[2])),
-    position,
-    blockSize,
+    transforms: posed.transforms,
+    figure: posed.figure,
+    voxelSummaries: voxelSummaryFor(input.seed, posed.figure),
+    hidden: posed.hidden,
+    yaw: posed.yaw,
+    position: posed.position,
+    blockSize: posed.blockSize,
   };
 };
 

@@ -12,6 +12,7 @@ import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
@@ -93,19 +94,7 @@ const normalized = (v: Vec3): Vec3 => {
 };
 const nearestRegionDistance = (zombie: import('../src/core/zombies.ts').Zombie, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
-  const posed = posedShamblerRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
-    chasing: zombie.mode === 'chase',
-    attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windup,
-    severed: zombie.severed,
-    blockSize: BLOCK_SIZE,
-  });
+  const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, 1, BLOCK_SIZE));
   for (const region of ZOMBIE_REGION_NAMES) {
     if (zombie.regions[region] <= 0) {
       continue;
@@ -142,19 +131,7 @@ const hitRecordMatches = ({
   );
 };
 const regionRay = (zombie: import('../src/core/zombies.ts').Zombie, region: ZombieRegion) => {
-  const posed = posedShamblerRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
-    chasing: zombie.mode === 'chase',
-    attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windup,
-    severed: zombie.severed,
-    blockSize: BLOCK_SIZE,
-  });
+  const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, 1, BLOCK_SIZE));
   const targetBone: Readonly<Record<ZombieRegion, string>> = {
     head: 'head',
     torso: 'chest',
@@ -166,6 +143,14 @@ const regionRay = (zombie: import('../src/core/zombies.ts').Zombie, region: Zomb
   const boxes = posed[region];
   const { center } = boxes.find((box) => box.bone === targetBone[region])!;
   const front = [-zombie.facing[0], 0, -zombie.facing[2]] as Vec3;
+  if (region === 'head') {
+    const origin: Vec3 = [
+      center[0] + (front[0] * 0.75) / BLOCK_SIZE,
+      center[1] + 1,
+      center[2] + (front[2] * 0.75) / BLOCK_SIZE,
+    ];
+    return { origin, direction: normalized([center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]]) };
+  }
   return {
     origin: [center[0] + (front[0] * 0.45) / BLOCK_SIZE, center[1], center[2] + (front[2] * 0.45) / BLOCK_SIZE] as Vec3,
     direction: [-front[0], 0, -front[2]] as Vec3,
@@ -1988,6 +1973,30 @@ describe('attack windup', () => {
     run(system, afterFirstHit - 0.1);
     expect(system.store.get(id)!.attackWindup).toBe(0);
     expect(damage).toBe(8);
+  });
+
+  it('keeps simulation-backed hit flinch through save/restore and freeze', () => {
+    const system = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
+    const id = system.add(SHAMBLER, [0.5, 1, 0]);
+    const zombie = system.store.get(id)!;
+    const ray = regionRay(zombie, 'head');
+    expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
+    expect(zombie.hitFlinchTime).toBe(0);
+
+    run(system, 0.1);
+    const savedTime = system.store.get(id)!.hitFlinchTime!;
+    expect(savedTime).toBeGreaterThan(0);
+    expect(savedTime).toBeLessThan(0.35);
+    const restored = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
+    restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
+
+    restored.setFrozen(true);
+    run(restored, 0.5);
+    expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
+    restored.setFrozen(false);
+    run(restored, 0.3);
+    expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 
   it('keeps attackWindup exactly across a snapshot/restore round trip mid-attack', () => {

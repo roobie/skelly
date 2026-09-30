@@ -8,7 +8,6 @@ import { generateValid, realize } from '@mobgen/core/generate.ts';
 import { IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { ATTACK_CLIPS } from '@mobgen/mob/attack.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
@@ -21,20 +20,11 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
+import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
-import {
-  advanceGaitFromMovement,
-  advanceStanceWeight,
-  attackJustStarted,
-  attackStartTime,
-  fallDirectionAwayFromPlayer,
-  flinchSideForId,
-  MobActorMeshes,
-  targetStanceFor,
-} from '../src/render/mobActors.ts';
+import { fallDirectionAwayFromPlayer, MobActorMeshes } from '../src/render/mobActors.ts';
 
-const LUNGE_GRAB_HIT_TIME = ATTACK_CLIPS.LUNGE_GRAB!.hitTime;
 interface TestDebris {
   elapsed: number;
   groundedAt: number | undefined;
@@ -49,112 +39,103 @@ interface TestDebris {
 }
 const debrisEntries = (renderer: MobActorMeshes): Map<string, TestDebris> =>
   (renderer as unknown as { debris: Map<string, TestDebris> }).debris;
-const setAttackTime = (renderer: MobActorMeshes, id: number, time: number): void => {
-  const { states } = renderer as unknown as { states: Map<number, { attackTime: number | undefined }> };
-  states.get(id)!.attackTime = time;
-};
-
 interface HitParityPose {
+  readonly name: string;
   readonly speed: number;
   readonly phase: number;
   readonly chase: boolean;
   readonly windup: number;
+  readonly idleTime?: number;
+  readonly headYaw?: number;
+  readonly hitFlinchTime?: number;
+  readonly yaw?: number;
+  readonly stumbleFactor?: number;
 }
 interface HitParityEntry {
   readonly seed: number;
   readonly id: number;
   readonly zombie: Zombie;
 }
-interface HitParityState {
-  id: number;
-  clock: { stepIndex: number; progress: number };
-  smoothedSpeed: number;
-  quantizedSpeed: number;
-  stanceWeight: number;
-  idleTime: number;
-  lastPos: Vec3 | undefined;
-  attackTime: number | undefined;
-  prevAttackWait: number;
-  prevHealth: number;
-  hitTime: number | undefined;
-}
-interface HitParityRenderer {
-  states: Map<number, HitParityState>;
-}
-const hitParityInternals = (renderer: MobActorMeshes): HitParityRenderer => renderer as unknown as HitParityRenderer;
-
-const setHitParityPose = (renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): void => {
-  const { states } = hitParityInternals(renderer);
-  for (const { seed, id, zombie } of entries) {
+const setHitParityPose = (_renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): void => {
+  for (const { zombie } of entries) {
     zombie.mode = pose.chase ? 'chase' : 'idle';
+    if (!pose.chase && pose.speed > 0) {
+      zombie.mode = 'stroll';
+    }
+    zombie.facing = [-Math.sin(pose.yaw ?? 0), 0, -Math.cos(pose.yaw ?? 0)];
     zombie.horizontalSpeed = pose.speed;
+    zombie.stumbleFactor = pose.stumbleFactor ?? 1;
     zombie.gaitPhase = pose.phase;
     zombie.attackWindup = pose.windup;
-    zombie.headYaw = 0;
+    zombie.attackWait = pose.windup > 0 ? zombie.type.attack.cooldown - (zombie.type.attack.windup - pose.windup) : 0;
+    zombie.wanderClock = pose.idleTime ?? 0;
+    zombie.hitFlinchTime = pose.hitFlinchTime;
+    zombie.headYaw = pose.headYaw ?? 0;
     zombie.renderPrevious = {
       pos: [...zombie.body.pos],
       facing: [...zombie.facing],
-      headYaw: 0,
+      headYaw: zombie.headYaw,
       gaitPhase: pose.phase,
     };
-    const state = states.get(id)!;
-    state.id = seed;
-    state.clock = { stepIndex: Math.floor(pose.phase / Math.PI), progress: (pose.phase % Math.PI) / Math.PI };
-    state.smoothedSpeed = pose.speed;
-    state.quantizedSpeed = pose.speed;
-    state.stanceWeight = pose.chase || pose.windup > 0 ? 1 : 0;
-    state.idleTime = 0;
-    state.lastPos = [zombie.body.pos[0] * 0.5, zombie.body.pos[1] * 0.5, zombie.body.pos[2] * 0.5];
-    state.attackTime =
-      pose.windup > 0
-        ? Math.max(0, LUNGE_GRAB_HIT_TIME - zombie.type.attack.windup) + zombie.type.attack.windup - pose.windup
-        : undefined;
-    state.prevAttackWait = zombie.attackWait;
-    state.hitTime = undefined;
   }
 };
 
-const hitParityErrors = (
-  renderer: MobActorMeshes,
-  entries: readonly HitParityEntry[],
-  pose: HitParityPose,
-): string[] => {
-  const errors: string[] = [];
-  for (const { seed, id, zombie } of entries) {
-    const boxes = posedShamblerRegionBoxes({
-      seed,
-      position: zombie.body.pos,
-      facing: zombie.facing,
-      headYaw: 0,
-      gaitPhase: pose.phase,
-      speed: pose.speed,
-      chasing: pose.chase,
-      attackWindup: pose.windup,
-      attackWindupSeconds: zombie.type.attack.windup,
-      severed: [],
-      blockSize: 0.5,
-    });
-    for (const [regionName, region] of Object.entries(boxes)) {
-      for (const box of region) {
-        const matrix = renderer.boneMatrix(id, box.bone)!;
-        const local = shamblerRegionBoxes(seed)[regionName as keyof typeof boxes].find(
-          (rest) => rest.bone === box.bone,
-        )!.center;
-        const rendered: Vec3 = [
-          matrix[0]! * local[0]! + matrix[1]! * local[1]! + matrix[2]! * local[2]! + matrix[3]!,
-          matrix[4]! * local[0]! + matrix[5]! * local[1]! + matrix[6]! * local[2]! + matrix[7]!,
-          matrix[8]! * local[0]! + matrix[9]! * local[1]! + matrix[10]! * local[2]! + matrix[11]!,
-        ];
-        for (let axis = 0; axis < 3; axis++) {
-          if (Math.abs(rendered[axis]! - box.center[axis]! * 0.5) > 0.001) {
-            errors.push(`${seed}/${pose.phase}/${pose.windup}/${box.bone}/axis-${axis}`);
-          }
-        }
-      }
-    }
+const hitParityErrorsForBox = ({
+  renderer,
+  seed,
+  id,
+  phase,
+  windup,
+  regionName,
+  box,
+}: {
+  renderer: MobActorMeshes;
+  seed: number;
+  id: number;
+  phase: number;
+  windup: number;
+  regionName: string;
+  box: { bone: string; center: Vec3; rotation: readonly number[] };
+}): string[] => {
+  const matrix = renderer.boneMatrix(id, box.bone)!;
+  const local = shamblerRegionBoxes(seed)[regionName as keyof ReturnType<typeof shamblerRegionBoxes>].find(
+    (rest) => rest.bone === box.bone,
+  )!.center;
+  const rendered: Vec3 = [
+    matrix[0]! * local[0]! + matrix[1]! * local[1]! + matrix[2]! * local[2]! + matrix[3]!,
+    matrix[4]! * local[0]! + matrix[5]! * local[1]! + matrix[6]! * local[2]! + matrix[7]!,
+    matrix[8]! * local[0]! + matrix[9]! * local[1]! + matrix[10]! * local[2]! + matrix[11]!,
+  ];
+  const key = `${seed}/${phase}/${windup}/${box.bone}`;
+  const errors = rendered.flatMap((value, axis) =>
+    Math.abs(value - box.center[axis]! * 0.5) > 0.001 ? [`${key}/axis-${axis}`] : [],
+  );
+  const renderedRotation = [
+    matrix[0]!,
+    matrix[1]!,
+    matrix[2]!,
+    matrix[4]!,
+    matrix[5]!,
+    matrix[6]!,
+    matrix[8]!,
+    matrix[9]!,
+    matrix[10]!,
+  ];
+  if (rotationAngleDeg(renderedRotation, box.rotation) > 0.1) {
+    errors.push(`${key}/rotation`);
   }
   return errors;
 };
+
+const hitParityErrors = (renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): string[] =>
+  entries.flatMap(({ seed, id, zombie }) => {
+    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5));
+    return Object.entries(boxes).flatMap(([regionName, region]) =>
+      region.flatMap((box) =>
+        hitParityErrorsForBox({ renderer, seed, id, phase: pose.phase, windup: pose.windup, regionName, box }),
+      ),
+    );
+  });
 const rotationAngleDeg = (a: readonly number[], b: readonly number[]): number => {
   const indices = [0, 1, 2, 4, 5, 6, 8, 9, 10];
   const dot = indices.reduce((sum, index) => sum + a[index]! * b[index]!, 0);
@@ -331,46 +312,6 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
   });
 });
 
-describe('attackJustStarted', () => {
-  it('is true only when attackWait rises versus last frame (a fresh attack windup starting), never on a fall', () => {
-    expect(attackJustStarted(1.5, 0)).toBe(true); // windup just started (cooldown jumps up from 0)
-    expect(attackJustStarted(1.2, 1.5)).toBe(false); // cooling down
-    expect(attackJustStarted(0, 0)).toBe(false); // idle, unchanged
-  });
-});
-
-describe('attackStartTime', () => {
-  it('starts the clip already `windup` seconds in, so the clip hitTime lines up with the sim hit', () => {
-    expect(attackStartTime(0.3)).toBeCloseTo(LUNGE_GRAB_HIT_TIME - 0.3, 9);
-  });
-
-  it('clamps to 0 for a windup at or beyond the clip hitTime, instead of a negative start', () => {
-    expect(attackStartTime(LUNGE_GRAB_HIT_TIME)).toBe(0);
-    expect(attackStartTime(LUNGE_GRAB_HIT_TIME + 1)).toBe(0);
-  });
-});
-
-describe('advanceGaitFromMovement', () => {
-  const basis = {
-    params: { footLift: 0.04 } as HumanoidParams,
-    geomL: { legLen: 0.9, l1: 0.45, l2: 0.45, hipY: 0.9, heelLen: 0.1, toeLen: 0.15, ankleRestY: 0.1 },
-    seed: 1,
-  };
-
-  it('advances the clock by the distance travelled and updates the smoothed/quantized speed', () => {
-    const start = { clock: { stepIndex: 0, progress: 0 }, smoothedSpeed: 0, quantizedSpeed: 0 };
-    const next = advanceGaitFromMovement(start, 0.1, 1 / 60, basis);
-    expect(next.clock.progress > 0 || next.clock.stepIndex > 0).toBe(true);
-    expect(next.smoothedSpeed).toBeGreaterThan(0);
-  });
-
-  it('does not advance the clock (or the speed filter) on a teleport-sized jump', () => {
-    const start = { clock: { stepIndex: 2, progress: 0.4 }, smoothedSpeed: 1.2, quantizedSpeed: 1.2 };
-    const next = advanceGaitFromMovement(start, 5, 1 / 60, basis);
-    expect(next).toEqual(start);
-  });
-});
-
 describe('MobActorMeshes', () => {
   it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across poses', () => {
     const renderer = new MobActorMeshes(0.5, 8);
@@ -382,15 +323,27 @@ describe('MobActorMeshes', () => {
       });
       renderer.sync(store, 0, 1);
       const poses: readonly HitParityPose[] = [
-        { speed: 0, phase: 0, chase: false, windup: 0 },
-        { speed: 1, phase: 0, chase: true, windup: 0 },
-        { speed: 1, phase: Math.PI / 2, chase: true, windup: 0 },
-        { speed: 1, phase: Math.PI / 2, chase: true, windup: 0.2 },
+        { name: 'standing idle', speed: 0, phase: 0, chase: false, windup: 0 },
+        { name: 'wander walk', speed: 0.8, phase: 0.8, chase: false, windup: 0, idleTime: 1.2 },
+        { name: 'chase sway', speed: 0.9, phase: 2.2, chase: true, windup: 0, yaw: 0.3 },
+        { name: 'stumble', speed: 0.25, phase: 4.1, chase: true, windup: 0, yaw: -0.2, stumbleFactor: 0.15 },
+        { name: 'attack windup', speed: 0.7, phase: Math.PI / 2, chase: true, windup: 0.2 },
+        {
+          name: 'head look and hit flinch',
+          speed: 0,
+          phase: 0,
+          chase: false,
+          windup: 0,
+          idleTime: 2.5,
+          headYaw: 0.35,
+          hitFlinchTime: 0.08,
+          yaw: 0.2,
+        },
       ];
       for (const pose of poses) {
         setHitParityPose(renderer, entries, pose);
         renderer.sync(store, 0, 1);
-        expect(hitParityErrors(renderer, entries, pose)).toEqual([]);
+        expect(hitParityErrors(renderer, entries, pose), pose.name).toEqual([]);
       }
     } finally {
       renderer.dispose();
@@ -494,29 +447,6 @@ describe('fallDirectionAwayFromPlayer', () => {
 });
 
 describe('MobActorMeshes reactions', () => {
-  it('starts a flinch only when health drops, not on an unrelated frame', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
-    try {
-      const store = new MapEntityStore<Zombie>();
-      const zombie = makeZombie([0, 0, 0]);
-      const id = store.add(zombie);
-      renderer.sync(store, 1 / 60, 1); // establishes prevHealth from this zombie's starting health
-      expect(renderer.isFlinching(id)).toBe(false);
-
-      renderer.sync(store, 1 / 60, 1); // no health change this frame
-      expect(renderer.isFlinching(id)).toBe(false);
-
-      zombie.regions.torso -= 8;
-      renderer.sync(store, 1 / 60, 1);
-      expect(renderer.isFlinching(id)).toBe(true);
-
-      renderer.sync(store, 10, 1); // well past HIT_FLINCH's 0.35 s duration
-      expect(renderer.isFlinching(id)).toBe(false);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
     const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
     try {
@@ -793,7 +723,9 @@ describe('MobActorMeshes dismemberment', () => {
       const handId = handStore.add(handZombie);
       handRenderer.sync(handStore, 0, 1);
       const handRest = handRenderer.boneMatrix(handId, 'hand.L')!;
-      setAttackTime(handRenderer, handId, 0.35);
+      handZombie.mode = 'chase';
+      handZombie.attackWait = handZombie.type.attack.cooldown - 0.35;
+      handZombie.attackWindup = 0;
       handRenderer.sync(handStore, 0, 1);
       const handAttack = handRenderer.boneMatrix(handId, 'hand.L')!;
       expect(rotationAngleDeg(handRest, handAttack)).toBeGreaterThanOrEqual(30);
@@ -840,7 +772,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('severing a LOD-skipped zombie spawns at its current position', () => {
+  it('severing a distant zombie uses its current simulation pose', () => {
     const skipped = new MobActorMeshes(0.5, 4, { poolSize: 1 });
     const reference = new MobActorMeshes(0.5, 4, { poolSize: 1 });
     try {
@@ -856,15 +788,15 @@ describe('MobActorMeshes dismemberment', () => {
       const referenceZombie = makeZombie([0, 0, 0]);
       const skippedId = skippedStore.add(skippedZombie);
       const referenceId = referenceStore.add(referenceZombie);
-      skipped.sync(skippedStore, 0, 1); // frame 1 is stagger-skipped for this id
-      skipped.sync(skippedStore, 0, 1); // frame 2 packs its initial pose
+      skipped.sync(skippedStore, 0, 1);
+      skipped.sync(skippedStore, 0, 1);
       reference.sync(referenceStore, 0, 1);
       reference.sync(referenceStore, 0, 1);
       skippedZombie.body.pos = [4, 0, 0];
       skippedZombie.renderPrevious.pos = [4, 0, 0];
       referenceZombie.body.pos = [4, 0, 0];
       referenceZombie.renderPrevious.pos = [4, 0, 0];
-      skipped.sync(skippedStore, 0, 1); // frame 3 skips again after the two-block move
+      skipped.sync(skippedStore, 0, 1);
       reference.sync(referenceStore, 0, 1);
       skipped.zombieSevered(skippedId, 'hand.L', undefined, skippedZombie);
       reference.zombieSevered(referenceId, 'hand.L', undefined, referenceZombie);
@@ -919,101 +851,7 @@ describe('MobActorMeshes dismemberment', () => {
   });
 });
 
-describe('targetStanceFor', () => {
-  it('is aggravated while chasing, even with no attack in progress', () => {
-    const zombie = makeZombie([0, 0, 0]);
-    zombie.mode = 'chase';
-    expect(targetStanceFor(zombie, false)).toBe('aggravated');
-  });
-
-  it('is aggravated during an attack windup, even in a non-chase mode', () => {
-    const zombie = makeZombie([0, 0, 0]);
-    zombie.mode = 'investigate';
-    zombie.attackWindup = 0.2;
-    expect(targetStanceFor(zombie, false)).toBe('aggravated');
-  });
-
-  it('is aggravated while the attack clip itself is playing, even past the windup', () => {
-    const zombie = makeZombie([0, 0, 0]);
-    zombie.mode = 'chase';
-    zombie.attackWindup = 0; // windup elapsed; the clip is now mid-swing
-    expect(targetStanceFor(zombie, true)).toBe('aggravated');
-  });
-
-  it('is slack for idle/stroll/search/return with no windup and no attack playing', () => {
-    const zombie = makeZombie([0, 0, 0]);
-    for (const mode of ['idle', 'stroll', 'search', 'return'] as const) {
-      zombie.mode = mode;
-      expect(targetStanceFor(zombie, false)).toBe('slack');
-    }
-  });
-});
-
-describe('advanceStanceWeight', () => {
-  it('reaches the target in exactly 0.5 s when starting from the opposite extreme', () => {
-    let w = 0;
-    for (let i = 0; i < 30; i++) {
-      w = advanceStanceWeight(w, 'aggravated', 1 / 60); // 30 frames at 60fps = 0.5s
-    }
-    expect(w).toBeCloseTo(1, 6);
-  });
-
-  it('never overshoots past the target', () => {
-    const w = advanceStanceWeight(0.98, 'aggravated', 1); // a huge dt
-    expect(w).toBe(1);
-  });
-
-  it('is a no-op once already at the target', () => {
-    expect(advanceStanceWeight(1, 'aggravated', 1 / 60)).toBe(1);
-    expect(advanceStanceWeight(0, 'slack', 1 / 60)).toBe(0);
-  });
-
-  it('reaches a partial target in less than the full 0.5 s, proportional to the remaining distance', () => {
-    const w = advanceStanceWeight(0.9, 'aggravated', 1 / 60);
-    expect(w).toBeGreaterThan(0.9);
-    expect(w).toBeLessThanOrEqual(1);
-  });
-});
-
 describe('MobActorMeshes stance', () => {
-  it("cross-fades a chasing zombie's stance toward aggravated over time, not instantly", () => {
-    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
-    try {
-      const store = new MapEntityStore<Zombie>();
-      const zombie = makeZombie([0, 0, 0]);
-      const id = store.add(zombie);
-      renderer.sync(store, 1 / 60, 1); // starts slack (mode is 'idle')
-      expect(renderer.stanceWeightFor(id)).toBe(0);
-
-      zombie.mode = 'chase';
-      renderer.sync(store, 1 / 60, 1); // one frame in: partway, not yet fully aggravated
-      const partway = renderer.stanceWeightFor(id)!;
-      expect(partway).toBeGreaterThan(0);
-      expect(partway).toBeLessThan(1);
-
-      for (let i = 0; i < 60; i++) {
-        renderer.sync(store, 1 / 60, 1); // a full second more — plenty past the 0.5s cross-fade
-      }
-      expect(renderer.stanceWeightFor(id)).toBeCloseTo(1, 6);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
-  it('a freshly-tracked chasing zombie starts already aggravated, not fading in from slack', () => {
-    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
-    try {
-      const store = new MapEntityStore<Zombie>();
-      const zombie = makeZombie([0, 0, 0]);
-      zombie.mode = 'chase';
-      const id = store.add(zombie);
-      renderer.sync(store, 1 / 60, 1);
-      expect(renderer.stanceWeightFor(id)).toBe(1);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
   it('never produces the bind pose (identity rotations) for a standing (speed 0) zombie — the whole point of this task', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
     try {

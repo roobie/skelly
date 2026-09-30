@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   posedRegionHitDistance,
   posedShamblerBoneVoxelCenters,
@@ -50,29 +51,19 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     jumpSpeed: PLAYER.jump,
     hurtPlayer: () => undefined,
   });
-  const id = system.add(registry.zombies.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [1, 0, 0]);
+  const id = system.add(registry.zombies.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);
   const zombie = system.store.get(id)!;
   zombie.figureSeed = seed;
   zombie.mode = pose.mode;
   zombie.horizontalSpeed = pose.speed;
   zombie.gaitPhase = pose.gaitPhase;
   zombie.attackWindup = pose.attackWindup;
+  zombie.attackWait =
+    pose.attackWindup > 0 ? zombie.type.attack.cooldown - (zombie.type.attack.windup - pose.attackWindup) : 0;
   return { system, id, zombie };
 };
 
-const poseInput = (zombie: ReturnType<typeof makeSystem>['zombie']) => ({
-  seed: zombie.figureSeed,
-  position: zombie.body.pos,
-  facing: zombie.facing,
-  headYaw: zombie.headYaw,
-  gaitPhase: zombie.gaitPhase,
-  speed: zombie.horizontalSpeed,
-  chasing: zombie.mode === 'chase',
-  attackWindup: zombie.attackWindup,
-  attackWindupSeconds: zombie.type.attack.windup,
-  severed: zombie.severed,
-  blockSize: BLOCK_SIZE,
-});
+const poseInput = (zombie: ReturnType<typeof makeSystem>['zombie']) => zombiePoseInputFor(zombie, 1, BLOCK_SIZE);
 
 const regionCentroid = (zombie: ReturnType<typeof makeSystem>['zombie'], region: ZombieRegion): Vec3 => {
   const boxes = posedShamblerRegionBoxes(poseInput(zombie))[region].filter((box) => {
@@ -99,31 +90,38 @@ const normalized = (direction: Vec3): Vec3 => {
   return direction.map((coordinate) => coordinate / length) as Vec3;
 };
 
-const visibleTorsoVoxel = (zombie: ReturnType<typeof makeSystem>['zombie']): Vec3 | undefined => {
+const visibleVoxel = (
+  zombie: ReturnType<typeof makeSystem>['zombie'],
+  bones: readonly string[],
+  expectedRegion: ZombieRegion,
+): Vec3 | undefined => {
   const input = poseInput(zombie);
   const boxes = posedShamblerRegionBoxes(input);
-  const candidates = (bones: readonly string[]) =>
-    posedShamblerBoneVoxelCenters(input, bones)
-      .map(({ center }) => ({
-        center,
-        distance: Math.hypot(...center.map((coordinate, axis) => coordinate - playerEye[axis]!)),
-      }))
-      .sort((a, b) => a.distance - b.distance)
-      .find(({ center }) => {
-        const direction = normalized(center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
-        let nearestRegion: ZombieRegion | undefined;
-        let nearestDistance = Number.POSITIVE_INFINITY;
-        for (const region of Object.keys(boxes) as ZombieRegion[]) {
-          const distance = posedRegionHitDistance(boxes[region], playerEye, direction, BLOCK_SIZE);
-          if (distance !== undefined && distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestRegion = region;
-          }
+  return posedShamblerBoneVoxelCenters(input, bones)
+    .map(({ center }) => ({
+      center,
+      distance: Math.hypot(...center.map((coordinate, axis) => coordinate - playerEye[axis]!)),
+    }))
+    .sort((a, b) => a.distance - b.distance)
+    .find(({ center }) => {
+      const direction = normalized(center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
+      let nearestRegion: ZombieRegion | undefined;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const region of Object.keys(boxes) as ZombieRegion[]) {
+        const distance = posedRegionHitDistance(boxes[region], playerEye, direction, BLOCK_SIZE);
+        if (distance !== undefined && distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestRegion = region;
         }
-        return nearestRegion === 'torso';
-      })?.center;
-  return candidates(['chest', 'spine']) ?? candidates(['pelvis']);
+      }
+      return nearestRegion === expectedRegion;
+    })?.center;
 };
+
+const visibleHeadVoxel = (zombie: ReturnType<typeof makeSystem>['zombie']): Vec3 | undefined =>
+  visibleVoxel(zombie, ['head'], 'head');
+const visibleTorsoVoxel = (zombie: ReturnType<typeof makeSystem>['zombie']): Vec3 | undefined =>
+  visibleVoxel(zombie, ['chest', 'spine', 'pelvis'], 'torso');
 
 const swingAt = ({
   seed,
@@ -143,7 +141,8 @@ const swingAt = ({
   const { system, id, zombie } = makeSystem(seed, pose, distance);
   const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
   const before = { ...zombie.regions };
-  if (system.swing(playerEye, direction, weapon) !== id || zombie.regions[region] >= before[region]) {
+  const hit = system.swing(playerEye, direction, weapon);
+  if (hit !== id || zombie.regions[region] >= before[region]) {
     return false;
   }
   return (Object.keys(before) as ZombieRegion[]).every(
@@ -155,13 +154,13 @@ describe('player melee reach at shambler attack distance', () => {
   it('provides a pure aim query that agrees with swing for the posed head, chest, arm, and above-head rays', () => {
     const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
     const rays = [
-      { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'head') },
+      { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleHeadVoxel(zombie)! },
       { name: 'chest', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleTorsoVoxel(zombie)! },
       { name: 'arm', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'leftArm') },
       {
         name: 'above-head',
         target: (zombie: ReturnType<typeof makeSystem>['zombie']) => {
-          const head = regionCentroid(zombie, 'head');
+          const head = visibleHeadVoxel(zombie)!;
           return [head[0], head[1] + 1, head[2]] as Vec3;
         },
       },
@@ -197,7 +196,7 @@ describe('player melee reach at shambler attack distance', () => {
   it('reports the nearest visible posed region beyond reach without changing state', () => {
     const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
     const { system, zombie } = makeSystem(1, poses[0]!, 3.5);
-    const target = regionCentroid(zombie, 'head');
+    const target = visibleHeadVoxel(zombie)!;
     const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
     const before = system.snapshotState();
     const aim = system.aimAt(playerEye, direction, weapon);
@@ -208,9 +207,9 @@ describe('player melee reach at shambler attack distance', () => {
     expect(system.snapshotState()).toEqual(before);
   });
 
-  it('reaches the posed head centroid and nearest visible torso voxel for every weapon, seed, and attack distance', () => {
+  it('reaches visible posed head and torso voxels for every weapon, seed, and attack distance', () => {
     const shamblerReach = registry.zombies.get('shambler')!.attack.reach;
-    const attackDistances = [shamblerReach * 0.9, shamblerReach];
+    const attackDistances = [shamblerReach * 0.65, shamblerReach * 0.8];
     const scenarios = FIGURE_SEEDS.flatMap((seed) =>
       poses.flatMap((pose) =>
         attackDistances.map((distance) => {
@@ -219,7 +218,7 @@ describe('player melee reach at shambler attack distance', () => {
             seed,
             pose,
             distance,
-            head: regionCentroid(zombie, 'head'),
+            head: visibleHeadVoxel(zombie),
             torso: visibleTorsoVoxel(zombie),
           };
         }),
@@ -239,7 +238,7 @@ describe('player melee reach at shambler attack distance', () => {
                 pose,
                 distance,
                 region,
-                target: region === 'head' ? head : torso!,
+                target: region === 'head' ? head! : torso!,
                 weapon,
               }),
           )
@@ -250,13 +249,21 @@ describe('player melee reach at shambler attack distance', () => {
     expect(misses, 'visible posed head/torso reach matrix; first failure identifies the case').toEqual([]);
   });
 
-  it('keeps the first-intersected arm in front of the chest when aiming at the chest centroid', () => {
+  it('keeps the first-intersected arm in front of the torso on an occluded ray', () => {
     const { system, id, zombie } = makeSystem(1, poses[0]!, 1.08);
-    const target = regionCentroid(zombie, 'torso');
+    const input = poseInput(zombie);
+    const torsoCandidates = posedShamblerBoneVoxelCenters(input, ['chest', 'spine', 'pelvis']);
+    const target = torsoCandidates.find(({ center }) => {
+      const direction = normalized(center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
+      return ['leftArm', 'rightArm'].includes(system.aimAt(playerEye, direction, FISTS_MELEE)?.region ?? '');
+    });
+    expect(target, 'find a torso voxel occluded by an arm').toBeDefined();
+    const direction = normalized(target!.center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
     const before = { ...zombie.regions };
-    const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
+    const aim = system.aimAt(playerEye, direction, FISTS_MELEE);
+    expect(['leftArm', 'rightArm']).toContain(aim?.region);
     expect(system.swing(playerEye, direction, FISTS_MELEE)).toBe(id);
-    expect(zombie.regions.leftArm).toBeLessThan(before.leftArm);
+    expect(zombie.regions[aim!.region]).toBeLessThan(before[aim!.region]);
     expect(zombie.regions.torso).toBe(before.torso);
   });
 
@@ -282,12 +289,12 @@ describe('player melee reach at shambler attack distance', () => {
     expect(farthestByName.crowbar).toBe(farthestByName.steel_pipe);
     expect(farthestByName.steel_pipe).toBeLessThan(farthestByName.baseball_bat!);
     expect(distances).toEqual([
-      { name: 'fists', farthest: 1.42 },
-      { name: 'kitchen_knife', farthest: 1.57 },
+      { name: 'fists', farthest: 1.47 },
+      { name: 'kitchen_knife', farthest: 1.62 },
       { name: 'hammer', farthest: 1.73 },
       { name: 'crowbar', farthest: 1.93 },
       { name: 'steel_pipe', farthest: 1.93 },
-      { name: 'baseball_bat', farthest: 2.13 },
+      { name: 'baseball_bat', farthest: 2.14 },
     ]);
   });
 

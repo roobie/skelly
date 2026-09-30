@@ -136,6 +136,7 @@
         "**/deadvox/src/render/mobActors.ts",
         "**/deadvox/src/core/zombies.ts",
         "**/deadvox/src/core/zombieRegions.ts",
+        "**/deadvox/src/core/zombiePose.ts",
         "**/deadvox/test/mobActors.test.ts",
         "**/deadvox/test/zombieRegions.test.ts"
       ],

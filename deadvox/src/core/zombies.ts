@@ -8,6 +8,7 @@ import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
+import { HIT_FLINCH_DURATION, zombiePoseInputFor } from './zombiePose.ts';
 import {
   type PosedBoneBox,
   posedRegionHitDistance,
@@ -24,6 +25,9 @@ export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' 
 export const PLAYER_ARM_REACH_M = 1.2;
 
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+
+const validHitFlinchTime = (time: number | undefined): boolean =>
+  time === undefined || (Number.isFinite(time) && time >= 0);
 
 export interface MeleeWeapon {
   readonly damage: number;
@@ -142,6 +146,8 @@ export interface Zombie {
   footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
+  /** Fixed-step hit reaction time; optional for backward-compatible saves. */
+  hitFlinchTime?: number | undefined;
   /** Part names (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
    * far — cumulative, never un-severed. A renderer derives what to hide via mobgen's severedBoneSet, not
    * stored pre-expanded here (severing upperArm.L already implies forearm.L/hand.L without listing them). */
@@ -568,6 +574,7 @@ export class ZombieSystem {
           searchAnchor,
           lastPerceived,
           investigationTier,
+          hitFlinchTime,
           ...state
         } = zombie;
         return {
@@ -581,6 +588,7 @@ export class ZombieSystem {
             dismemberRng: [...dismemberRng.state()] as RngState,
             lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
             ...(investigationTier === undefined ? {} : { investigationTier }),
+            ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
             body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
             facing: [...zombie.facing],
             home: [...zombie.home],
@@ -620,6 +628,7 @@ export class ZombieSystem {
         zombie.severed.some((part) => typeof part !== 'string') ||
         !Number.isSafeInteger(zombie.figureSeed) ||
         !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
+        !validHitFlinchTime(zombie.hitFlinchTime) ||
         typeof zombie.incapacitated !== 'boolean'
       ) {
         throw new Error(`Invalid zombie state for entity ${id}`);
@@ -939,6 +948,10 @@ export class ZombieSystem {
         zombie.body.vel[2] = 0;
         stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
         continue;
+      }
+      if (zombie.hitFlinchTime !== undefined) {
+        const nextFlinchTime = zombie.hitFlinchTime + dt;
+        zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
       }
       zombie.attackWait = Math.max(0, zombie.attackWait - dt);
       // attackWindup is decremented further below, alongside the reach/LOS check it gates — see
@@ -1313,19 +1326,7 @@ export class ZombieSystem {
       if (perpendicular > 1.0) {
         continue;
       }
-      const posed = posedShamblerRegionBoxes({
-        seed: zombie.figureSeed,
-        position: zombie.body.pos,
-        facing: zombie.facing,
-        headYaw: zombie.headYaw,
-        gaitPhase: zombie.gaitPhase,
-        speed: zombie.horizontalSpeed,
-        chasing: zombie.mode === 'chase',
-        attackWindup: zombie.attackWindup,
-        attackWindupSeconds: zombie.type.attack.windup,
-        severed: zombie.severed,
-        blockSize,
-      });
+      const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
       for (const region of ZOMBIE_REGION_NAMES) {
         if (zombie.regions[region] <= 0) {
           continue;
@@ -1404,6 +1405,9 @@ export class ZombieSystem {
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     const healthAfter = Math.max(0, healthBefore - weapon.damage);
     zombie.regions[region] = healthAfter;
+    if (healthAfter < healthBefore) {
+      zombie.hitFlinchTime = 0;
+    }
     const killed = region === 'head' && healthAfter === 0;
     const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
     const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
