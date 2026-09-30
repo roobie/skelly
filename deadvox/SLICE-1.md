@@ -576,10 +576,31 @@ head; save → reload keeps severed limbs; BR approves it in game.
 **Done when:** the current-build scenario save → reload has an identical state
 hash; CI checks that a 10-game-hour hamlet save is under 50 MiB and loads in
 under 5 s on its `ubuntu-latest` runner (a CI-runner bound, not a general device
-target); and the hamlet snapshot-frame benchmark reports p95 at or below 1 ms on
-the reference laptop. CI records the snapshot p95 without gating on it.
+target); and the initial hamlet snapshot-frame benchmark reports p95 at or
+below 1 ms on the reference laptop. CI records this p95 without gating on it.
 
-**Status:** delivered by ADR 0002 step 5. The current-build round trip replaces
+**Ten-hour CI budget fixture:** seed 13, no ticks simulated. The default 96 m
+radius (`PROJECT.md`, `game/config.ts`) spans 6 chunks at 16 m per chunk
+(`core/coords.ts`); its 13×13 horizontal mesh area and 8 vertical layers
+(`core/scale.ts`, −48 m to +80 m) total 1,352 visited chunks. The stress
+assumption edits 25% of them, 8 blocks each, through `World.setBlock` (the
+world-edit API used by play/debug build mode). It adds one full 8×6 pile for
+each of the hamlet's five lots each game hour: 50 full synthetic piles and 2,400
+distinct 1×1 non-stackable duct-tape items (`core/hamlet.ts`,
+`core/inventory.ts`, `content/base/items-other.json`), plus the harness's one
+initial rag pile/item (51 piles, 2,401 items total). All 36 generated
+containers in the fixture's streamed hamlet area are marked searched. The
+actual seed-13 hamlet spawn set
+has 8 shamblers (`core/hamlet.ts`'s 6–10 population); the fixture keeps 7 alive
+and one removed, with all 8 spawn-ledger keys retained (`core/zombieSpawns.ts`).
+These are explicit high-side session assumptions, not measured player telemetry.
+Construction uses the public world-edit, inventory-pile, furniture, and
+column-spawn APIs; `test/snapshot.test.ts` asserts each population count. The
+1 ms p95 samples the ordinary initial hamlet snapshot before this larger budget
+state; the 10-hour state is used for size, encode/decode, and restore budgets.
+
+**Status:** CI implementation delivered by ADR 0002 step 5; the reference-laptop
+p95 gate remains outstanding. The current-build round trip replaces
 the planned golden fixture, as required by strict version refusal.
 
 **Delivered beyond the plan:** the hamlet scenario compares a SHA-256 state hash
@@ -588,8 +609,9 @@ load-time budgets, and reports snapshot p95 without making CI hardware a gate.
 
 **Missing, carried forward:** the reference-laptop snapshot p95 still needs its
 measurement on the Intel Core i7-1185G7 / Iris Xe laptop running Firefox on
-Linux. CI's Ubuntu runner number is recorded for diagnostics only and does not
-substitute for that result.
+Linux. The current diagnostic p95 is 0.310 ms on the test host (Intel Core
+i5-8500, Linux), not the reference laptop; it does not substitute for that
+result. CI's Ubuntu runner number is likewise recorded for diagnostics only.
 
 ### 1.10 Sound
 

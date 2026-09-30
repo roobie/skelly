@@ -28,7 +28,7 @@ jobs:
       - run: npm run lint:lit
       - run: npm run typecheck
       - name: Save round-trip and budget benchmark
-        run: timeout 300 npm test -- test/snapshot.test.ts -t 'checks the deterministic ten-hour hamlet save size and CI-runner load budget, and records snapshot p95' --silent=false
+        run: timeout 300 npm test -- test/snapshot.test.ts -t 'checks a representative ten-hour hamlet save and records its size and timings' --silent=false
       - run: timeout 300 npm test
       - run: timeout 300 npm run test:ui-browser
       - name: Install headed Firefox and system dependencies
