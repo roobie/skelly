@@ -164,6 +164,7 @@ controls.enableDamping = true;
 // Keep the camera's orbit relation intact while applying held arrow keys every frame.
 const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
 const heldPanKeys = new Set<string>();
+let shiftHeld = false;
 const KEY_PAN_SPEED = 25; // world units per second
 const panDirection = new Vector3();
 const panUp = new Vector3();
@@ -173,6 +174,10 @@ const isEditingText = (target: EventTarget | null): boolean =>
   target instanceof HTMLSelectElement ||
   (target instanceof HTMLElement && target.isContentEditable);
 globalThis.addEventListener('keydown', (event) => {
+  if (event.key === 'Shift') {
+    shiftHeld = true;
+    return;
+  }
   if (!PAN_KEYS.has(event.code) || isEditingText(event.target)) {
     return;
   }
@@ -180,9 +185,15 @@ globalThis.addEventListener('keydown', (event) => {
   event.preventDefault();
 });
 globalThis.addEventListener('keyup', (event) => {
+  if (event.key === 'Shift') {
+    shiftHeld = false;
+  }
   heldPanKeys.delete(event.code);
 });
-globalThis.addEventListener('blur', () => heldPanKeys.clear());
+globalThis.addEventListener('blur', () => {
+  heldPanKeys.clear();
+  shiftHeld = false;
+});
 
 let cameraUrlSyncQueued = false;
 controls.addEventListener('change', () => {
@@ -204,7 +215,12 @@ const panFromKeys = (seconds: number) => {
   }
   camera.updateMatrixWorld();
   panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(right);
-  panUp.setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(up);
+  if (shiftHeld) {
+    camera.getWorldDirection(panUp);
+  } else {
+    panUp.setFromMatrixColumn(camera.matrixWorld, 1);
+  }
+  panUp.multiplyScalar(up);
   panDirection
     .add(panUp)
     .normalize()
