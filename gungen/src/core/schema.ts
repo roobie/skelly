@@ -39,6 +39,8 @@ export interface PortDef {
 export interface SolidDisplayHints {
   readonly bevel?: boolean;
   readonly outline?: boolean;
+  /** Solids in one group are rendered/exported as one receiver display mesh. */
+  readonly mergeGroup?: string;
 }
 
 export interface BoxSolid {
@@ -89,6 +91,14 @@ export interface Axis {
   readonly dir: Vec3;
 }
 
+export interface PartMotion {
+  readonly kind: 'linear';
+  /** Local unit direction of travel, from rest toward rearmost. */
+  readonly axis: Vec3;
+  readonly rest: Vec3;
+  readonly rearmost: Vec3;
+}
+
 export interface PartDef {
   readonly family: string;
   readonly ports: readonly PortDef[];
@@ -97,6 +107,8 @@ export interface PartDef {
   readonly displaySolids?: readonly Solid[];
   readonly keepOuts: readonly KeepOut[];
   readonly axes: readonly Axis[];
+  /** Optional animation path, serialized to this part's glTF node extras. */
+  readonly motion?: PartMotion;
   /** Free-form labels that domain rules can look for. */
   readonly tags?: readonly string[];
 }

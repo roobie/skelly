@@ -5,7 +5,7 @@ import { applyDir, applyPoint } from '../src/core/math.ts';
 import type { Domain, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { FAMILIES } from '../src/gun/parts.ts';
+import { FAMILIES, RECEIVER_SECTION } from '../src/gun/parts.ts';
 import { ak } from '../src/gun/templates.ts';
 import { loadFixture, variant as variantOf } from './helpers.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -84,51 +84,24 @@ describe('AK-pattern archetype', () => {
     expect(receiver.ports.map(({ id }) => id)).toContain('rear-sight');
   });
 
-  it('cuts the receiver rear-top corner while preserving stock and sight interfaces', () => {
+  it('uses an angled AK section while preserving its stock and sight interfaces', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
-    const body = receiver.solids.find(
-      (solid) =>
-        solid.kind === 'extruded-polygon' &&
-        solid.id.startsWith('receiver-body-port-wall') &&
-        solid.profile.some(([x, y]) => x === -16 && y === 1),
-    );
-    expect(body?.kind).toBe('extruded-polygon');
-    if (body?.kind !== 'extruded-polygon') {
-      throw new Error('Expected the uncut AK receiver rear profile.');
-    }
-    expect(validateExtrudedPolygon(body.profile, body.z)).toBeUndefined();
-    expect(body.profile).toContainEqual([-16, 1]);
-    expect(body.profile).toContainEqual([-14, 2.5]);
-    expect(body.profile).not.toContainEqual([-16, 2.5]);
-    const [forwardTop, rearTip] = body.profile.slice(-2);
-    expect(Math.atan2(forwardTop![1] - rearTip![1], forwardTop![0] - rearTip![0]) * (180 / Math.PI)).toBeCloseTo(
-      36.9,
-      0,
-    );
+    const section = receiver.solids.find(({ id }) => id === 'receiver-ak-top');
+    expect(section?.kind).toBe('extruded-polygon');
+    if (section?.kind !== 'extruded-polygon') throw new Error('Expected the shared AK section builder output.');
+    expect(section.axis).toBe('x');
+    expect(RECEIVER_SECTION.ak.outline.length).toBeGreaterThanOrEqual(8);
+    expect(RECEIVER_SECTION.ak.outline[2]![0]).toBeGreaterThan(RECEIVER_SECTION.ak.outline[1]![0]);
+    expect(validateExtrudedPolygon(section.profile, section.z)).toBeUndefined();
+    expect(receiver.solids.some(({ id }) => id.includes('near-side-window'))).toBe(true);
+    expect(receiver.solids.some(({ id }) => id === 'receiver-ak-near-side-after-window')).toBe(true);
 
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
-    const rearFaceY = body.profile.filter(([x]) => x === stockPort.pos[0]).map(([, y]) => y);
-    expect(stockPort.pos).toEqual([-16, 2.5, 0]);
-    expect(stockPort.pos[1] - Math.max(...rearFaceY)).toBeCloseTo(1.5, 8);
-    const rearCap = receiver.solids.find(({ id }) => id === 'receiver-ak-rear');
-    expect(rearCap?.kind).toBe('box');
-    if (rearCap?.kind === 'box') {
-      expect(stockPort.pos[2]).toBeGreaterThanOrEqual(rearCap.box.center[2] - rearCap.box.half[2]);
-      expect(stockPort.pos[2]).toBeLessThanOrEqual(rearCap.box.center[2] + rearCap.box.half[2]);
-    }
-
-    const cover = receiver.solids.find(({ id }) => id === 'dust-cover');
     const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
-    expect(cover?.kind).toBe('box');
-    if (cover?.kind !== 'box') {
-      throw new Error('Expected an AK dust-cover solid.');
-    }
-    expect(cover.box.center[0] - cover.box.half[0]).toBeGreaterThan(forwardTop![0]);
-    expect(cover.box.center[1] - cover.box.half[1]).toBe(2.5);
+    const cover = receiver.solids.find(({ id }) => id === 'dust-cover');
+    expect(stockPort.pos[0]).toBe(-16);
     expect(rearSightPort.pos).toEqual([-2, 3, 0]);
-    expect(rearSightPort.pos[0]).toBeGreaterThan(cover.box.center[0] - cover.box.half[0]);
-    expect(rearSightPort.pos[0]).toBeLessThan(cover.box.center[0] + cover.box.half[0]);
-    expect(rearSightPort.pos[1]).toBe(cover.box.center[1] + cover.box.half[1]);
+    expect(cover?.kind).toBe('box');
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 

@@ -39,6 +39,16 @@ export const assertConvexSection = (profile: readonly Vec2[], id = 'receiver'): 
   }
 };
 
+const cleanProfile = (profile: readonly Vec2[]): Vec2[] => {
+  const output: Vec2[] = [];
+  for (const point of profile) {
+    const previous = output.at(-1);
+    if (!previous || Math.hypot(point[0] - previous[0], point[1] - previous[1]) > 1e-9) output.push(point);
+  }
+  if (output.length > 1 && Math.hypot(output[0]![0] - output.at(-1)![0], output[0]![1] - output.at(-1)![1]) <= 1e-9) output.pop();
+  return output;
+};
+
 const clip = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boolean): Vec2[] => {
   const output: Vec2[] = [];
   const inside = (p: Vec2) => (keepLess ? p[axis] <= edge : p[axis] >= edge);
@@ -55,28 +65,28 @@ const clip = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boo
     }
     if (ci) output.push(current);
   }
-  return output;
+  return cleanProfile(output);
 };
 
 const positive = (profile: readonly Vec2[]): boolean => profile.length >= 3 && Math.abs(signedArea(profile)) > 1e-9;
 const clipBand = (profile: readonly Vec2[], axis: 0 | 1, lo: number, hi: number): Vec2[] =>
   clip(clip(profile, axis, lo, false), axis, hi, true);
 
-const prism = (id: string, profile: readonly Vec2[], x: readonly [number, number]): Solid => ({
+const prism = (id: string, profile: readonly Vec2[], x: readonly [number, number], mergeGroup: string): Solid => ({
   id,
   kind: 'extruded-polygon',
   profile,
   axis: 'x',
   z: x,
-  display: { outline: false },
+  display: { outline: false, bevel: false, mergeGroup },
 });
 
-const subtractSectionWindow = (id: string, profile: readonly Vec2[], x: readonly [number, number], window: SectionWindow): Solid[] => {
+const subtractSectionWindow = (id: string, profile: readonly Vec2[], x: readonly [number, number], window: SectionWindow, mergeGroup: string): Solid[] => {
   const [x0, x1] = window.x;
   const [s0, s1] = window.section;
   const pieces: Solid[] = [];
   const add = (suffix: string, section: readonly Vec2[], range: readonly [number, number]) => {
-    if (positive(section) && range[0] < range[1]) pieces.push(prism(`${id}-${suffix}`, section, range));
+    if (positive(section) && range[0] < range[1]) pieces.push(prism(`${id}-${suffix}`, section, range, mergeGroup));
   };
   add('before-window', profile, [x[0], Math.min(x[1], x0)]);
   add('after-window', profile, [Math.max(x[0], x1), x[1]]);
@@ -112,9 +122,15 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
   const midY = clipBand(spec.outline, 0, y[0], y[1]);
   const far = clip(midY, 1, z[0], true);
   const near = clip(midY, 1, z[1], false);
+  const bottom = clip(spec.outline, 0, y[0], true);
+  const top = clip(spec.outline, 0, y[1], false);
   const bands: [string, Vec2[]][] = [
-    ['bottom', clip(spec.outline, 0, y[0], true)],
-    ['top', clip(spec.outline, 0, y[1], false)],
+    ['bottom-far', clip(bottom, 1, z[0], true)],
+    ['bottom', clipBand(bottom, 1, z[0], z[1])],
+    ['bottom-near', clip(bottom, 1, z[1], false)],
+    ['top-far', clip(top, 1, z[0], true)],
+    ['top', clipBand(top, 1, z[0], z[1])],
+    ['top-near', clip(top, 1, z[1], false)],
     ['far-side', far],
     ['near-side', near],
   ];
@@ -122,7 +138,7 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
   for (const [name, profile] of bands) {
     if (!positive(profile)) continue;
     const window = name === 'near-side' ? spec.port : name === 'bottom' ? spec.magazineWell : undefined;
-    result.push(...(window ? subtractSectionWindow(`${spec.id}-${name}`, profile, spec.x, window) : [prism(`${spec.id}-${name}`, profile, spec.x)]));
+    result.push(...(window ? subtractSectionWindow(`${spec.id}-${name}`, profile, spec.x, window, spec.id) : [prism(`${spec.id}-${name}`, profile, spec.x, spec.id)]));
   }
   return result;
 };

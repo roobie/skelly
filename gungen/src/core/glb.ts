@@ -21,8 +21,8 @@ import type {
 } from './design.ts';
 import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
-import { meshForSolid } from './mesh.ts';
-import type { PartDef, PortDef } from './schema.ts';
+import { meshForSolid, meshForSolidGroup } from './mesh.ts';
+import type { PartDef, PortDef, Solid } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 
@@ -275,8 +275,18 @@ export const exportGlb: ExportGlb = (input) => {
 
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = drawn.map((solid) => {
-      const mesh = meshForSolid(solid);
+    const groups = new Map<string, Solid[]>();
+    for (const solid of drawn) {
+      const group = solid.display?.mergeGroup;
+      if (group) groups.set(group, [...(groups.get(group) ?? []), solid]);
+    }
+    const items: { id: string; solids: Solid[]; merged: boolean }[] = drawn
+      .filter((solid) => !solid.display?.mergeGroup)
+      .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+    for (const [id, solids] of groups) items.push({ id, solids, merged: true });
+    const primitives = items.map((item) => {
+      const solid = item.solids[0]!;
+      const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
       const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
       const { min, max } = bounds(positions);
       const position = bin.add(
@@ -299,7 +309,7 @@ export const exportGlb: ExportGlb = (input) => {
         indices,
         material: materialFor(colorOf(palette, part.def.family, solid.id)),
         mode: 4,
-        extras: { solid: solid.id },
+        extras: item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id },
       };
     });
     const name = partNodeName(part.id, part.family);
@@ -313,7 +323,13 @@ export const exportGlb: ExportGlb = (input) => {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
     }
-    node.extras = { part: part.id, family: part.family, role: part.def.family, solids: drawn.map((s) => s.id) };
+    node.extras = {
+      part: part.id,
+      family: part.family,
+      role: part.def.family,
+      solids: drawn.map((s) => s.id),
+      ...(part.def.motion ? { motion: part.def.motion } : {}),
+    };
 
     const children: number[] = [];
     const nodeIndex = nodes.length;

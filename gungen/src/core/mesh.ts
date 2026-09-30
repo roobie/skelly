@@ -236,3 +236,68 @@ export const meshForSolid = (
   }
   return orientExtrusion(chamferedPrism(solid.profile, solid.z, bevel), solid.axis);
 };
+
+const containsInReceiverSection = (solid: Solid, point: Vec3): boolean => {
+  if (solid.kind === 'box') {
+    const { center, half } = solid.box;
+    return point.every((value, axis) => value >= center[axis]! - half[axis]! - 1e-8 && value <= center[axis]! + half[axis]! + 1e-8);
+  }
+  if ((solid.axis ?? 'z') !== 'x' || point[0] < solid.z[0] - 1e-8 || point[0] > solid.z[1] + 1e-8) return false;
+  const point2: Vec2 = [point[1], point[2]];
+  for (let i = 0; i < solid.profile.length; i++) {
+    const a = solid.profile[i]!;
+    const b = solid.profile[(i + 1) % solid.profile.length]!;
+    const side = (b[0] - a[0]) * (point2[1] - a[1]) - (b[1] - a[1]) * (point2[0] - a[0]);
+    if (side < -1e-7) return false;
+  }
+  return true;
+};
+
+/** Merge un-beveled X-extruded collision pieces and discard their shared interior faces. */
+export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const indices: number[] = [];
+  const meshes = solids.map((solid) => meshForSolid(solid, 0));
+  const triangleKey = (mesh: TriangleMesh, triangle: number): string =>
+    [0, 1, 2].map((corner) => {
+      const index = mesh.indices[triangle + corner]! * 3;
+      return `${mesh.positions[index]!.toFixed(6)},${mesh.positions[index + 1]!.toFixed(6)},${mesh.positions[index + 2]!.toFixed(6)}`;
+    }).sort().join('|');
+  const faceCounts = new Map<string, number>();
+  for (const mesh of meshes) {
+    for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
+      const key = triangleKey(mesh, triangle);
+      faceCounts.set(key, (faceCounts.get(key) ?? 0) + 1);
+    }
+  }
+  for (let solidIndex = 0; solidIndex < solids.length; solidIndex++) {
+    const mesh = meshes[solidIndex]!;
+    for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
+      const vertexIndices = [mesh.indices[triangle]!, mesh.indices[triangle + 1]!, mesh.indices[triangle + 2]!];
+      if ((faceCounts.get(triangleKey(mesh, triangle)) ?? 0) > 1) continue;
+      const points = vertexIndices.map((index) => [mesh.positions[index * 3]!, mesh.positions[index * 3 + 1]!, mesh.positions[index * 3 + 2]!] as Vec3);
+      const normal: Vec3 = [mesh.normals[vertexIndices[0]! * 3]!, mesh.normals[vertexIndices[0]! * 3 + 1]!, mesh.normals[vertexIndices[0]! * 3 + 2]!];
+      const center: Vec3 = [
+        (points[0]![0] + points[1]![0] + points[2]![0]) / 3,
+        (points[0]![1] + points[1]![1] + points[2]![1]) / 3,
+        (points[0]![2] + points[1]![2] + points[2]![2]) / 3,
+      ];
+      const normalPoint: Vec3 = [center[0] + normal[0] * 1e-6, center[1] + normal[1] * 1e-6, center[2] + normal[2] * 1e-6];
+      const reversePoint: Vec3 = [center[0] - normal[0] * 1e-6, center[1] - normal[1] * 1e-6, center[2] - normal[2] * 1e-6];
+      if (solids.some((other, index) => index !== solidIndex && (containsInReceiverSection(other, center) || containsInReceiverSection(other, normalPoint) || containsInReceiverSection(other, reversePoint)))) continue;
+      const base = positions.length / 3;
+      for (const index of vertexIndices) {
+        positions.push(mesh.positions[index * 3]!, mesh.positions[index * 3 + 1]!, mesh.positions[index * 3 + 2]!);
+        normals.push(...normal);
+      }
+      indices.push(base, base + 1, base + 2);
+    }
+  }
+  return {
+    positions: new Float32Array(positions),
+    normals: new Float32Array(normals),
+    indices: new Uint32Array(indices),
+    triangleCount: indices.length / 3,
+  };
+};

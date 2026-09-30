@@ -4,7 +4,8 @@
   "expect": [],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "pump", "feed": "tube", "bore": "L" } },
+    "receiver": { "family": "receiver", "params": { "action": "pump", "feed": "tube", "bore": "L", "section": "pump" } },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "pump" } },
     "lower": { "family": "lower", "params": { "layout": "pump" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "tube": { "family": "tube-magazine" },
@@ -14,6 +15,7 @@
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },
     { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     { "from": "receiver.tube", "to": "tube.rear" },
     { "from": "tube.cap", "to": "barrel.lug" },
     { "from": "tube.support", "to": "barrel.support-lug" },

@@ -60,8 +60,9 @@ export const ar: Template = {
     {
       id: 'receiver',
       family: 'receiver',
-      params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full' },
+      params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full', section: 'ar' },
     },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
     { id: 'lower', family: 'lower', params: { layout: 'ar' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     {
@@ -93,6 +94,7 @@ export const ar: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
     { from: 'lower.grip', to: 'grip.top' },
@@ -132,6 +134,7 @@ export const ak: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ak' } },
     { id: 'lower', family: 'lower', params: { layout: 'ak' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard', params: { layout: ['ak', 'standard'], clearance: ['M', 'L'] } },
@@ -146,6 +149,7 @@ export const ak: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
     { from: 'lower.grip', to: 'grip.top' },
@@ -325,7 +329,8 @@ export const pumpShotgun: Template = {
   description: 'Pump shotgun with either a stock-grip or separate-pistol-grip lower.',
   root: 'receiver',
   slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'pump', feed: 'tube', bore: 'L' } },
+    { id: 'receiver', family: 'receiver', params: { action: 'pump', feed: 'tube', bore: 'L', section: 'pump' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'pump' } },
     {
       id: 'lower',
       family: 'lower',
@@ -367,6 +372,7 @@ export const pumpShotgun: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.tube', to: 'tube.rear' },
     { from: 'tube.cap', to: 'barrel.lug' },
     {
