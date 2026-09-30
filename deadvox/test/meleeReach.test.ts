@@ -152,6 +152,62 @@ const swingAt = ({
 };
 
 describe('player melee reach at shambler attack distance', () => {
+  it('provides a pure aim query that agrees with swing for the posed head, chest, arm, and above-head rays', () => {
+    const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const rays = [
+      { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'head') },
+      { name: 'chest', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleTorsoVoxel(zombie)! },
+      { name: 'arm', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'leftArm') },
+      {
+        name: 'above-head',
+        target: (zombie: ReturnType<typeof makeSystem>['zombie']) => {
+          const head = regionCentroid(zombie, 'head');
+          return [head[0], head[1] + 1, head[2]] as Vec3;
+        },
+      },
+    ];
+    const cases = FIGURE_SEEDS.flatMap((seed) =>
+      [poses[0]!, poses[2]!].flatMap((pose) =>
+        rays.map((ray) => {
+          const { system, id, zombie } = makeSystem(seed, pose, 1.08);
+          const target = ray.target(zombie);
+          const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
+          const before = system.snapshotState();
+          const aim = system.aimAt(playerEye, direction, weapon);
+          expect(system.snapshotState(), `${ray.name} query mutates simulation state`).toEqual(before);
+          const { system: swingSystem, id: swingId, zombie: swingZombie } = makeSystem(seed, pose, 1.08);
+          const beforeHealth = { ...swingZombie.regions };
+          const swingResult = swingSystem.swing(playerEye, direction, weapon);
+          const changed = (Object.keys(beforeHealth) as ZombieRegion[]).find(
+            (region) => swingZombie.regions[region] < beforeHealth[region],
+          );
+          expect(aim?.inReach ? [aim.id, aim.region] : undefined, `${ray.name} seed ${seed} ${pose.name}`).toEqual(
+            changed === undefined ? undefined : [swingId, changed],
+          );
+          expect(swingResult, `${ray.name} should hit entity ${id} only when aim is in reach`).toBe(
+            aim?.inReach ? id : undefined,
+          );
+          return aim;
+        }),
+      ),
+    );
+    expect(cases.every((aim) => aim === undefined || aim.distanceMetres >= 0)).toBe(true);
+  });
+
+  it('reports the nearest visible posed region beyond reach without changing state', () => {
+    const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const { system, zombie } = makeSystem(1, poses[0]!, 3.5);
+    const target = regionCentroid(zombie, 'head');
+    const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
+    const before = system.snapshotState();
+    const aim = system.aimAt(playerEye, direction, weapon);
+    expect(aim?.region).toBe('head');
+    expect(aim?.inReach).toBe(false);
+    expect(aim?.distanceMetres).toBeGreaterThan(aim?.reachMetres ?? Number.POSITIVE_INFINITY);
+    expect(system.swing(playerEye, direction, weapon)).toBeUndefined();
+    expect(system.snapshotState()).toEqual(before);
+  });
+
   it('reaches the posed head centroid and nearest visible torso voxel for every weapon, seed, and attack distance', () => {
     const shamblerReach = registry.zombies.get('shambler')!.attack.reach;
     const attackDistances = [shamblerReach * 0.9, shamblerReach];

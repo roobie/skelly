@@ -9,6 +9,7 @@ import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import {
+  type PosedBoneBox,
   posedRegionHitDistance,
   posedShamblerRegionBoxes,
   ZOMBIE_REGION_NAMES,
@@ -23,6 +24,53 @@ export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' 
 export const PLAYER_ARM_REACH_M = 1.2;
 
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
+
+export interface MeleeWeapon {
+  readonly damage: number;
+  readonly reach: number;
+  readonly cooldown: number;
+  readonly impulse?: number | undefined;
+}
+
+export interface ZombieAim {
+  readonly id: EntityId;
+  readonly region: ZombieRegion;
+  readonly distanceMetres: number;
+  readonly reachMetres: number;
+  readonly inReach: boolean;
+  readonly health: number;
+  readonly maxHealth: number;
+  readonly boxes: readonly PosedBoneBox[];
+}
+
+interface MeleeHitContext {
+  readonly id: EntityId;
+  readonly zombie: Zombie;
+  readonly region: ZombieRegion;
+  readonly origin: Vec3;
+  readonly direction: Vec3;
+  readonly distanceMetres: number;
+  readonly weapon: MeleeWeapon;
+}
+
+interface MeleeEffectsContext {
+  readonly id: EntityId;
+  readonly zombie: Zombie;
+  readonly region: ZombieRegion;
+  readonly healthAfter: number;
+  readonly killed: boolean;
+  readonly hit: HitImpulse;
+}
+
+export interface MeleeResult {
+  readonly id?: EntityId | undefined;
+  readonly region?: ZombieRegion | undefined;
+  readonly damage: number;
+  readonly healthBefore?: number | undefined;
+  readonly healthAfter?: number | undefined;
+  readonly outcome: 'nothing' | 'severed' | 'incapacitated' | 'killed' | 'decapitated';
+  readonly part?: string | undefined;
+}
 
 export interface HitImpulse {
   /** Hit point in block coordinates. */
@@ -161,6 +209,8 @@ export interface ZombieSystemOptions {
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
   onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+  /** Reports the actual result of an attempted player melee swing; absent in normal play. */
+  onMeleeResult?: (result: MeleeResult) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -227,6 +277,16 @@ const CONTAINING_PARTS: Readonly<Record<(typeof ARM_PARTS)[number], readonly str
 
 type ArmRegion = 'leftArm' | 'rightArm';
 /** The mobgen part a destroyed arm region cuts at (the figure's own left is -X, mobgen's ".L"). */
+const meleeOutcome = (killed: boolean, incapacitated: boolean, part: string | undefined): MeleeResult['outcome'] => {
+  if (killed) {
+    return part === 'head' ? 'decapitated' : 'killed';
+  }
+  if (incapacitated) {
+    return 'incapacitated';
+  }
+  return part ? 'severed' : 'nothing';
+};
+
 const ARM_REGION_PART: Readonly<Record<ArmRegion, (typeof ARM_PARTS)[number]>> = {
   leftArm: 'upperArm.L',
   rightArm: 'upperArm.R',
@@ -1188,10 +1248,9 @@ export class ZombieSystem {
   private firstRegionHit(
     origin: Vec3,
     direction: Vec3,
-    reach: number,
-  ): [EntityId, Zombie, ZombieRegion, number] | undefined {
+  ): [EntityId, Zombie, ZombieRegion, number, readonly PosedBoneBox[]] | undefined {
     const { blockSize, isSolid } = this.options;
-    let nearest: [EntityId, Zombie, ZombieRegion, number] | undefined;
+    let nearest: [EntityId, Zombie, ZombieRegion, number, readonly PosedBoneBox[]] | undefined;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (const [id, zombie] of this.store.entries()) {
       if (zombie.incapacitated) {
@@ -1209,7 +1268,7 @@ export class ZombieSystem {
           origin[1] + direction[1] * nearestT - centerY,
           origin[2] + direction[2] * nearestT - zombie.body.pos[2],
         ) * blockSize;
-      if (nearestApproach * blockSize > reach + 0.5 || perpendicular > 1.0) {
+      if (perpendicular > 1.0) {
         continue;
       }
       const posed = posedShamblerRegionBoxes({
@@ -1230,60 +1289,101 @@ export class ZombieSystem {
           continue;
         }
         const distance = posedRegionHitDistance(posed[region], origin, direction, blockSize);
-        if (
-          distance === undefined ||
-          distance * blockSize > reach ||
-          raycast(origin, direction, distance, isSolid) ||
-          distance >= nearestDistance
-        ) {
+        if (distance === undefined || raycast(origin, direction, distance, isSolid) || distance >= nearestDistance) {
           continue;
         }
         nearestDistance = distance;
-        nearest = [id, zombie, region, distance];
+        nearest = [id, zombie, region, distance, posed[region]];
       }
     }
     return nearest;
   }
 
+  /** Purely queries the first visible posed region along the ray, including hits beyond melee reach. */
+  aimAt(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): ZombieAim | undefined {
+    const found = this.firstRegionHit(origin, unit(direction));
+    if (!found) {
+      return undefined;
+    }
+    const [id, zombie, region, distance, boxes] = found;
+    const distanceMetres = distance * this.options.blockSize;
+    const reachMetres = PLAYER_ARM_REACH_M + weapon.reach;
+    return {
+      id,
+      region,
+      distanceMetres,
+      reachMetres,
+      inReach: distanceMetres <= reachMetres,
+      health: zombie.regions[region],
+      maxHealth: zombie.type.regions[region],
+      boxes,
+    };
+  }
+
   /** Strikes the first visible zombie within arm reach plus the held weapon's reach beyond the hand. */
-  swing(
-    origin: Vec3,
-    direction: Vec3,
-    weapon: { damage: number; reach: number; cooldown: number; impulse?: number | undefined },
-  ): EntityId | undefined {
+  swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
     if (this.playerAttackWait > 0) {
       return undefined;
     }
     this.options.onSound?.('melee_swing', copy(origin));
-    const found = this.firstRegionHit(origin, unit(direction), PLAYER_ARM_REACH_M + weapon.reach);
-    if (!found) {
+    const aim = this.aimAt(origin, direction, weapon);
+    if (!aim?.inReach) {
+      this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
+      return undefined;
+    }
+    const zombie = this.store.get(aim.id);
+    if (!zombie) {
       return undefined;
     }
     this.playerAttackWait = weapon.cooldown;
-    const [id, zombie, region, distance] = found;
+    this.applyMeleeHit({
+      id: aim.id,
+      zombie,
+      region: aim.region,
+      origin,
+      direction,
+      distanceMetres: aim.distanceMetres,
+      weapon,
+    });
+    return aim.id;
+  }
+
+  private applyMeleeHit({ id, zombie, region, origin, direction, distanceMetres, weapon }: MeleeHitContext): void {
+    const ray = unit(direction);
+    const distance = distanceMetres / this.options.blockSize;
     const hit: HitImpulse = {
-      point: [
-        origin[0] + unit(direction)[0] * distance,
-        origin[1] + unit(direction)[1] * distance,
-        origin[2] + unit(direction)[2] * distance,
-      ],
-      direction: unit(direction),
+      point: [origin[0] + ray[0] * distance, origin[1] + ray[1] * distance, origin[2] + ray[2] * distance],
+      direction: ray,
       impulse: weapon.impulse ?? 4,
     };
+    const healthBefore = zombie.regions[region];
+    const severedBefore = new Set(zombie.severed);
     this.options.onSound?.('melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
-    const health = Math.max(0, zombie.regions[region] - weapon.damage);
-    zombie.regions[region] = health;
-    const killed = region === 'head' && health === 0;
-    const incapacitated = region === 'torso' && health === 0 && zombie.regions.head > 0;
-    // No dedicated dismemberment/gore sound exists in content/base/sounds.json yet (melee_hit/shambler_hurt
-    // above already cover every hit) — "play one if a suitable one exists, else skip" per the design.
-    if (health === 0 && region in ARM_REGION_PART) {
-      // A destroyed arm region is a whole arm gone: the shoulder is the cut, so the renderer hides the
-      // arm and the zombie counts it lost for attacking (canStillAttack).
+    const healthAfter = Math.max(0, healthBefore - weapon.damage);
+    zombie.regions[region] = healthAfter;
+    const killed = region === 'head' && healthAfter === 0;
+    const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
+    const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
+    const part = newParts.includes('head') ? 'head' : newParts[0];
+    const outcome = meleeOutcome(killed, incapacitated, part);
+    this.options.onMeleeResult?.({
+      id,
+      region,
+      damage: healthBefore - healthAfter,
+      healthBefore,
+      healthAfter,
+      outcome,
+      ...(part === undefined ? {} : { part }),
+    });
+  }
+
+  private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
+    if (healthAfter === 0 && region in ARM_REGION_PART) {
       this.sever(id, zombie, ARM_REGION_PART[region as ArmRegion], hit);
     }
     this.rollDismember(id, zombie, killed, hit);
+    const incapacitated = region === 'torso' && healthAfter === 0 && zombie.regions.head > 0;
     if (incapacitated && !zombie.incapacitated) {
       zombie.incapacitated = true;
       zombie.horizontalSpeed = 0;
@@ -1296,10 +1396,10 @@ export class ZombieSystem {
     if (killed) {
       this.store.remove(id);
       this.options.onDeath?.(id, zombie);
-    } else if (region !== 'head' && region !== 'torso' && health === 0) {
+    } else if (region !== 'head' && region !== 'torso' && healthAfter === 0) {
       this.options.onSevered?.(zombie, region);
     }
-    return id;
+    return incapacitated;
   }
 
   /** Records `part` as severed (cumulative, saved) and tells the renderer; a part already cut is a no-op. */

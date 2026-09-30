@@ -770,6 +770,54 @@ describe('shambler scenarios', () => {
     expect(system.swing(origin, direction, { damage: 1, reach: 2, cooldown: 0 })).toBe(id);
   });
 
+  it('reports the actual damage and final head/torso outcomes from each melee swing', () => {
+    const results: unknown[] = [];
+    const headKill = {
+      ...SHAMBLER,
+      regions: { ...SHAMBLER.regions, head: FISTS_MELEE.damage },
+      dismember: { chance: 1, headOnKillChance: 1 },
+    };
+    const headSystem = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onMeleeResult: (result) => results.push(result),
+    });
+    const headId = headSystem.add(headKill, [1, 1, 0], [0, 0, -1]);
+    const headZombie = headSystem.store.get(headId)!;
+    const headRay = regionRay(headZombie, 'head');
+    expect(headSystem.swing(headRay.origin, headRay.direction, FISTS_MELEE)).toBe(headId);
+    expect(results.pop()).toMatchObject({
+      id: headId,
+      region: 'head',
+      damage: FISTS_MELEE.damage,
+      healthBefore: FISTS_MELEE.damage,
+      healthAfter: 0,
+      outcome: 'decapitated',
+      part: 'head',
+    });
+
+    const torsoKill = {
+      ...SHAMBLER,
+      regions: { ...SHAMBLER.regions, torso: FISTS_MELEE.damage },
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const torsoSystem = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onMeleeResult: (result) => results.push(result),
+    });
+    const torsoId = torsoSystem.add(torsoKill, [1, 1, 0], [0, 0, -1]);
+    const torsoZombie = torsoSystem.store.get(torsoId)!;
+    const torsoRay = regionRay(torsoZombie, 'torso');
+    expect(torsoSystem.swing(torsoRay.origin, torsoRay.direction, FISTS_MELEE)).toBe(torsoId);
+    expect(results.pop()).toMatchObject({
+      id: torsoId,
+      region: 'torso',
+      damage: FISTS_MELEE.damage,
+      healthBefore: FISTS_MELEE.damage,
+      healthAfter: 0,
+      outcome: 'incapacitated',
+    });
+  });
+
   it('aims at each rigid body region deterministically and damages the first one hit', () => {
     for (const region of ZOMBIE_REGION_NAMES) {
       const makeSystem = () => new ZombieSystem({ ...senses(() => player([100, 2, 0])), seed: 91 });
