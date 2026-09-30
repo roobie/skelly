@@ -11,3 +11,9 @@ git worktree add .claude/worktrees/<name> -b <branch>
 
 The directory is in `.gitignore`. Each worktree needs its own `npm install`
 in the subprojects it runs.
+
+## Before pushing
+
+From the repository root, run `npm run ci` and `npm run test:site`. The
+installed pre-push hook runs both checks; `npm install` configures Git to use
+`.githooks` through the root `prepare` script. Fix failures before pushing.
