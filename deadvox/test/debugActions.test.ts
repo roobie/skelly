@@ -16,10 +16,11 @@ describe('debug action table', () => {
       ['K', 'Take 25 damage'],
       ['V', 'Spawn shamblers'],
       ['Y', 'Melee aim boxes'],
+      ['O', 'Freeze shamblers'],
     ]);
   });
 
-  it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY'])(
+  it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO'])(
     '%s updates its displayed toggle state on keydown',
     (code) => {
       const { actions } = makeActions();
@@ -81,6 +82,7 @@ const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: numbe
   let noclip = false;
   let danger = false;
   let aimEnabled = false;
+  let frozen = false;
   const spawnCounts: number[] = [];
   const actions = createDebugActions({
     hooks,
@@ -104,6 +106,10 @@ const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: numbe
     isAimEnabled: () => aimEnabled,
     toggleAim() {
       aimEnabled = !aimEnabled;
+    },
+    isFrozen: () => frozen,
+    toggleFrozen() {
+      frozen = !frozen;
     },
   });
   return { actions, spawnCounts };

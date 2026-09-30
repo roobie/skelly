@@ -147,7 +147,7 @@ import { StepOffset } from './stepOffset.ts';
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
 export interface ZombieRenderer {
   readonly group: Group;
-  sync: (store: EntityStore<Zombie>, realDt?: number, alpha?: number) => void;
+  sync: (store: EntityStore<Zombie>, realDt?: number, alpha?: number, freezeLiving?: boolean) => void;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
@@ -1572,7 +1572,49 @@ export class MobActorMeshes implements ZombieRenderer {
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
   }
 
-  private syncZombie(id: EntityId, zombie: Zombie, realDt: number, blend: number): boolean {
+  private updateLiveActorClocks({
+    state,
+    zombie,
+    variant,
+    worldPos,
+    realDt,
+    freezeLiving,
+  }: {
+    state: ZombieRenderState;
+    zombie: Zombie;
+    variant: Variant;
+    worldPos: Vec3;
+    realDt: number;
+    freezeLiving: boolean;
+  }): void {
+    if (freezeLiving) {
+      state.lastPos = worldPos;
+      state.prevAttackWait = zombie.attackWait;
+      state.prevHealth = totalHealth(zombie);
+      return;
+    }
+    this.updateMovementAndAttack(state, zombie, { variant, worldPos, realDt });
+    this.updateFlinch(state, zombie, realDt);
+    this.updateStance(state, zombie, realDt);
+  }
+
+  private liveActorDelta(realDt: number, freezeLiving: boolean): number {
+    return freezeLiving ? 0 : realDt;
+  }
+
+  private syncZombie({
+    id,
+    zombie,
+    realDt,
+    blend,
+    freezeLiving,
+  }: {
+    id: EntityId;
+    zombie: Zombie;
+    realDt: number;
+    blend: number;
+    freezeLiving: boolean;
+  }): boolean {
     let anyDirty = false;
     if (!zombie.incapacitated && this.corpses.get(id)?.incapacitated) {
       this.freeCorpse(id);
@@ -1601,10 +1643,12 @@ export class MobActorMeshes implements ZombieRenderer {
     const variant = this.variants[state.variantIndex]!;
     const { pos, yaw, headYaw } = this.interpolateRenderPose(zombie, blend);
     const worldPos: Vec3 = [pos[0] * this.blockSize, pos[1] * this.blockSize, pos[2] * this.blockSize];
-    const verticalOffset = state.stepOffset.update(worldPos, zombie.body.onGround, realDt);
-    this.updateMovementAndAttack(state, zombie, { variant, worldPos, realDt });
-    this.updateFlinch(state, zombie, realDt);
-    this.updateStance(state, zombie, realDt);
+    const verticalOffset = state.stepOffset.update(
+      worldPos,
+      zombie.body.onGround,
+      this.liveActorDelta(realDt, freezeLiving),
+    );
+    this.updateLiveActorClocks({ state, zombie, variant, worldPos, realDt, freezeLiving });
     const worldPelvis = new Vector3(worldPos[0], worldPos[1] + PELVIS_HEIGHT_M, worldPos[2]);
     if (this.shouldSkipPose(id, worldPelvis)) {
       return anyDirty; // clock/attack/flinch above already advanced; only the expensive pose+pack step skips
@@ -1613,7 +1657,7 @@ export class MobActorMeshes implements ZombieRenderer {
     return true;
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, freezeLiving = false): void {
     this.frameCounter += 1;
     if (this.camera) {
       this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
@@ -1625,7 +1669,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
-      anyDirty = this.syncZombie(id, zombie, realDt, blend) || anyDirty;
+      anyDirty = this.syncZombie({ id, zombie, realDt, blend, freezeLiving }) || anyDirty;
     }
     for (const [id, state] of this.states) {
       if (state.lastSeenFrame !== this.frameCounter) {

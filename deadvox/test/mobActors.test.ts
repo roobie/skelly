@@ -647,6 +647,29 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
+  it('continues corpse sinking while live zombie animation is frozen', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], 1);
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      renderer.zombieDied(id, zombie);
+      store.remove(id);
+
+      renderer.sync(store, 1, 1, true);
+      for (let second = 0; second < 8; second++) {
+        renderer.sync(store, 1, 1, true);
+      }
+      const beforeSink = renderer.boneMatrix(id, 'pelvis')!;
+      renderer.sync(store, 1, 1, true);
+      const afterSink = renderer.boneMatrix(id, 'pelvis')!;
+      expect(afterSink[7]).toBeLessThan(beforeSink[7]! - 0.5);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('allocates a debris slot on zombieSevered and frees it after its lifetime', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
     try {

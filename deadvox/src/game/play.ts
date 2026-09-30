@@ -677,7 +677,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
     zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
-    zombieMeshes.sync(zombieStore, dt, zombieAlpha);
+    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && zombieSystem.isFrozen);
     if (debugTools) {
       const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
       debugTools.updateAim(aim);

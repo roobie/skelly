@@ -135,6 +135,8 @@ interface ActionContext {
   spawnShambler: (count: number) => void;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
+  isFrozen: () => boolean;
+  toggleFrozen: () => void;
 }
 
 export const createDebugActions = ({
@@ -150,6 +152,8 @@ export const createDebugActions = ({
   spawnShambler,
   isAimEnabled,
   toggleAim,
+  isFrozen,
+  toggleFrozen,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
@@ -186,6 +190,7 @@ export const createDebugActions = ({
   { code: 'KeyK', key: 'K', label: 'Take 25 damage', run: () => hooks.sim.hurt(25, 'a debug key') },
   { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
   { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', state: isAimEnabled, run: toggleAim },
+  { code: 'KeyO', key: 'O', label: 'Freeze shamblers', state: isFrozen, run: toggleFrozen },
 ];
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
@@ -269,6 +274,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           render(aimReadoutTemplate(''), aimReadout);
         }
       }
+    },
+    isFrozen: () => hooks.zombies()?.isFrozen ?? false,
+    toggleFrozen: () => {
+      const zombies = hooks.zombies();
+      zombies?.setFrozen(!zombies.isFrozen);
     },
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
