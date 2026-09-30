@@ -118,8 +118,6 @@ const visibleVoxel = (
     })?.center;
 };
 
-const visibleHeadVoxel = (zombie: ReturnType<typeof makeSystem>['zombie']): Vec3 | undefined =>
-  visibleVoxel(zombie, ['head'], 'head');
 const visibleTorsoVoxel = (zombie: ReturnType<typeof makeSystem>['zombie']): Vec3 | undefined =>
   visibleVoxel(zombie, ['chest', 'spine', 'pelvis'], 'torso');
 
@@ -154,13 +152,13 @@ describe('player melee reach at shambler attack distance', () => {
   it('provides a pure aim query that agrees with swing for the posed head, chest, arm, and above-head rays', () => {
     const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
     const rays = [
-      { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleHeadVoxel(zombie)! },
+      { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'head') },
       { name: 'chest', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleTorsoVoxel(zombie)! },
       { name: 'arm', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'leftArm') },
       {
         name: 'above-head',
         target: (zombie: ReturnType<typeof makeSystem>['zombie']) => {
-          const head = visibleHeadVoxel(zombie)!;
+          const head = regionCentroid(zombie, 'head');
           return [head[0], head[1] + 1, head[2]] as Vec3;
         },
       },
@@ -196,7 +194,7 @@ describe('player melee reach at shambler attack distance', () => {
   it('reports the nearest visible posed region beyond reach without changing state', () => {
     const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
     const { system, zombie } = makeSystem(1, poses[0]!, 3.5);
-    const target = visibleHeadVoxel(zombie)!;
+    const target = regionCentroid(zombie, 'head');
     const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
     const before = system.snapshotState();
     const aim = system.aimAt(playerEye, direction, weapon);
@@ -209,7 +207,7 @@ describe('player melee reach at shambler attack distance', () => {
 
   it('reaches visible posed head and torso voxels for every weapon, seed, and attack distance', () => {
     const shamblerReach = registry.zombies.get('shambler')!.attack.reach;
-    const attackDistances = [shamblerReach * 0.65, shamblerReach * 0.8];
+    const attackDistances = [shamblerReach * 0.9, shamblerReach];
     const scenarios = FIGURE_SEEDS.flatMap((seed) =>
       poses.flatMap((pose) =>
         attackDistances.map((distance) => {
@@ -218,7 +216,7 @@ describe('player melee reach at shambler attack distance', () => {
             seed,
             pose,
             distance,
-            head: visibleHeadVoxel(zombie),
+            head: regionCentroid(zombie, 'head'),
             torso: visibleTorsoVoxel(zombie),
           };
         }),
