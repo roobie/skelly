@@ -88,7 +88,9 @@ describe('AK-pattern archetype', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
     const section = receiver.solids.find(({ id }) => id === 'receiver-ak-top');
     expect(section?.kind).toBe('extruded-polygon');
-    if (section?.kind !== 'extruded-polygon') throw new Error('Expected the shared AK section builder output.');
+    if (section?.kind !== 'extruded-polygon') {
+      throw new Error('Expected the shared AK section builder output.');
+    }
     expect(section.axis).toBe('x');
     expect(RECEIVER_SECTION.ak.outline.length).toBeGreaterThanOrEqual(8);
     expect(RECEIVER_SECTION.ak.outline[2]![0]).toBeGreaterThan(RECEIVER_SECTION.ak.outline[1]![0]);
@@ -99,9 +101,22 @@ describe('AK-pattern archetype', () => {
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
     const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
     const cover = receiver.solids.find(({ id }) => id === 'dust-cover');
-    expect(stockPort.pos[0]).toBe(-16);
+    expect(stockPort.pos).toEqual([-16, 2.5, 0]);
+    const rearProfileZ = RECEIVER_SECTION.ak.outline.filter(([y]) => y === stockPort.pos[1]).map(([, z]) => z);
+    expect(stockPort.pos[2]).toBeGreaterThanOrEqual(Math.min(...rearProfileZ));
+    expect(stockPort.pos[2]).toBeLessThanOrEqual(Math.max(...rearProfileZ));
     expect(rearSightPort.pos).toEqual([-2, 3, 0]);
     expect(cover?.kind).toBe('box');
+    if (cover?.kind === 'box') {
+      const coverMinX = cover.box.center[0] - cover.box.half[0];
+      const coverMaxX = cover.box.center[0] + cover.box.half[0];
+      const coverMinY = cover.box.center[1] - cover.box.half[1];
+      const coverMaxY = cover.box.center[1] + cover.box.half[1];
+      expect(coverMinY).toBe(2.5);
+      expect(rearSightPort.pos[0]).toBeGreaterThan(coverMinX);
+      expect(rearSightPort.pos[0]).toBeLessThan(coverMaxX);
+      expect(rearSightPort.pos[1]).toBe(coverMaxY);
+    }
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 

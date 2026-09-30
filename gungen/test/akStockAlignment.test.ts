@@ -59,10 +59,13 @@ describe('AK dropped-stock alignment', () => {
       const stockFace = facePointsAtX(stock.solids, stockPort.pos[0], stockTransform);
       expect(receiverFace.length, `${label}: receiver rear face vertices`).toBeGreaterThan(0);
       expect(stockFace.length, `${label}: stock mating face vertices`).toBeGreaterThan(0);
+      const receiverTop = Math.max(...receiverFace.map(([, y]) => y));
+      const stockTop = Math.max(...stockFace.map(([, y]) => y));
+      // Pinned pending BR's visual ruling: the receiver rear face stands 1.5u (38.1mm) above the stock comb.
+      expect(receiverTop, `${label}: receiver remains taller than stock`).toBeGreaterThan(stockTop);
+      expect(receiverTop - stockTop, `${label}: receiver-to-stock top step`).toBeCloseTo(1.5, 6);
       expect(assembly.parts.stock?.params?.style, `${label}: dropped stock`).toBe('dropped');
       expect(assembly.parts.stock?.params?.length, `${label}: stock length`).toBe(stockLength);
-      expect(receiverFace.length, `${label}: receiver rear face vertices`).toBeGreaterThan(0);
-      expect(stockFace.length, `${label}: stock mating face vertices`).toBeGreaterThan(0);
     }
   });
 });

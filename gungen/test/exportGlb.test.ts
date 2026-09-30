@@ -212,10 +212,14 @@ describe('glb export: meshes', () => {
     const groups = new Map<string, typeof solids>();
     for (const solid of solids) {
       const group = solid.display?.mergeGroup;
-      if (group) groups.set(group, [...(groups.get(group) ?? []), solid]);
+      if (group) {
+        groups.set(group, [...(groups.get(group) ?? []), solid]);
+      }
     }
     return [
-      ...solids.filter((solid) => !solid.display?.mergeGroup).map((solid) => ({ id: solid.id, solids: [solid], mesh: meshForSolid(solid) })),
+      ...solids
+        .filter((solid) => !solid.display?.mergeGroup)
+        .map((solid) => ({ id: solid.id, solids: [solid], mesh: meshForSolid(solid) })),
       ...[...groups].map(([group, members]) => ({ id: group, solids: members, mesh: meshForSolidGroup(members) })),
     ];
   };
@@ -224,10 +228,12 @@ describe('glb export: meshes', () => {
     for (const id of Object.keys(ar.resolved.assembly.parts)) {
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       const prims = json.meshes[node.mesh!]!.primitives;
-      expect(prims.map((p) => {
-        const extras = p.extras as Record<string, unknown> | undefined;
-        return extras?.solid ?? extras?.mergeGroup;
-      })).toEqual(displayItems(id).map(({ id: itemId }) => itemId));
+      expect(
+        prims.map((p) => {
+          const extras = p.extras as Record<string, unknown> | undefined;
+          return extras?.solid ?? extras?.mergeGroup;
+        }),
+      ).toEqual(displayItems(id).map(({ id: itemId }) => itemId));
     }
   });
 
@@ -235,8 +241,7 @@ describe('glb export: meshes', () => {
     for (const id of Object.keys(ar.resolved.assembly.parts)) {
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       const prims = json.meshes[node.mesh!]!.primitives;
-      displayItems(id).forEach((item, i) => {
-        const mesh = item.mesh;
+      displayItems(id).forEach(({ mesh }, i) => {
         const lo = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
         const hi = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
         for (let v = 0; v < mesh.positions.length; v += 3) {
@@ -281,7 +286,10 @@ describe('glb export: meshes', () => {
       for (const prim of json.meshes[node.mesh!]!.primitives) {
         const extras = prim.extras as Record<string, unknown> | undefined;
         const groupedSolids = extras?.solids as string[] | undefined;
-        const solidId = (extras?.solid as string | undefined) ?? groupedSolids?.[0]!;
+        const solidId = (extras?.solid as string | undefined) ?? groupedSolids?.[0];
+        if (!solidId) {
+          throw new Error(`No source solid for ${id} primitive ${prim.indices}.`);
+        }
         const srgb = solidColor(GUN_PALETTE, role, solidId);
         const factor = json.materials[prim.material]!.pbrMetallicRoughness.baseColorFactor;
         near(factor.slice(0, 3), srgb.map(srgbToLinear));

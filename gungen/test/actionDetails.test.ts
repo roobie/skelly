@@ -30,7 +30,11 @@ const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => 
 
 describe('visible action details', () => {
   it('keeps the ejection aperture and moves the carrier out of the receiver', () => {
-    for (const def of [receiver('auto', 'rear-top'), receiver('pump'), FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' })]) {
+    for (const def of [
+      receiver('auto', 'rear-top'),
+      receiver('pump'),
+      FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
+    ]) {
       const ejection = def.keepOuts.find(({ id }) => id === 'ejection');
       expect(ejection).toBeDefined();
       expect(def.solids.some(({ id }) => id === 'bolt-carrier-face')).toBe(false);
@@ -41,10 +45,22 @@ describe('visible action details', () => {
 
   it('uses a separate procedural bolt-carrier part in AR, AK and pump designs', () => {
     for (const { label, assembly } of loadCorpus()) {
-      if (!['design archetype-ar.json', 'design archetype-ar-free-float.json', 'design archetype-ak.json', 'design archetype-pump-shotgun.json'].includes(label)) continue;
+      if (
+        ![
+          'design archetype-ar.json',
+          'design archetype-ar-free-float.json',
+          'design archetype-ak.json',
+          'design archetype-pump-shotgun.json',
+        ].includes(label)
+      ) {
+        continue;
+      }
       expect(assembly.parts['bolt-carrier'], label).toBeDefined();
       const report = validate(assembly, gunDomain);
-      expect(report.resolved.defs.get('bolt-carrier')?.motion, label).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
+      expect(report.resolved.defs.get('bolt-carrier')?.motion, label).toMatchObject({
+        kind: 'linear',
+        axis: [1, 0, 0],
+      });
     }
   });
 
@@ -58,11 +74,13 @@ describe('visible action details', () => {
       expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBe(0.5);
       expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBe(0.5);
     }
-    const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(({ id }) =>
-      id === 'receiver-ak-near-side-before-window',
+    const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(
+      ({ id }) => id === 'receiver-ak-near-side-before-window',
     );
     expect(akSide?.kind).toBe('extruded-polygon');
-    if (akSide?.kind === 'extruded-polygon') expect(akSide.axis).toBe('x');
+    if (akSide?.kind === 'extruded-polygon') {
+      expect(akSide.axis).toBe('x');
+    }
   });
 
   it('does not add an ejection port to revolver receivers', () => {

@@ -220,6 +220,13 @@ const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
+const BOLT_TRAVEL = {
+  short: { length: 3, restX: -7 },
+  standard: { length: 6.5, restX: -7 },
+  pump: { length: 5.5, restX: -7 },
+  long: { length: 8, restX: -4.5 },
+  bolt: { length: 7, restX: -6 },
+} as const;
 const RECEIVER_FRONT_HALF_WIDTH = 2;
 const BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const tubeDropForBore = (bore: SizeClass): number => TUBE_HALF_HEIGHT + BARREL_RADIUS[bore] + TUBE_BARREL_CLEARANCE;
@@ -325,19 +332,67 @@ const ejectionPortWindow = (receiverDrop = 0) => ({
 
 export const RECEIVER_SECTION = {
   ar: {
-    outline: [[-2.5, -1.75], [-2.25, -2], [2.25, -2], [2.5, -1.75], [2.5, 1.75], [2.25, 2], [-2.25, 2], [-2.5, 1.75]] as const,
+    outline: [
+      [-2.5, -1.75],
+      [-2.25, -2],
+      [2.25, -2],
+      [2.5, -1.75],
+      [2.5, 1.75],
+      [2.25, 2],
+      [-2.25, 2],
+      [-2.5, 1.75],
+    ] as const,
     cavity: { y: [-2, 2], z: [-1.25, 1.25] } as const,
-    faces: { top: { y: 2.5, halfWidth: 2 }, portSide: 2, handleSides: [-2, 2], front: 0, rear: -16, bottom: -2.5 } as const,
+    faces: {
+      top: { y: 2.5, halfWidth: 2 },
+      portSide: 2,
+      handleSides: [-2, 2],
+      front: 0,
+      rear: -16,
+      bottom: -2.5,
+    } as const,
   },
   ak: {
-    outline: [[-2.5, -2], [1, -2], [2, -1.75], [2.5, -1.25], [2.5, 1.25], [2, 1.75], [1, 2], [-2.5, 2]] as const,
+    outline: [
+      [-2.5, -2],
+      [1, -2],
+      [2, -1.75],
+      [2.5, -1.25],
+      [2.5, 1.25],
+      [2, 1.75],
+      [1, 2],
+      [-2.5, 2],
+    ] as const,
     cavity: { y: [-1.75, 1.75], z: [-1, 1] } as const,
-    faces: { top: { y: 2.5, halfWidth: 1.25 }, portSide: 2, handleSides: [-2, 2], front: 0, rear: -16, bottom: -2.5 } as const,
+    faces: {
+      top: { y: 2.5, halfWidth: 1.25 },
+      portSide: 2,
+      handleSides: [-2, 2],
+      front: 0,
+      rear: -16,
+      bottom: -2.5,
+    } as const,
   },
   pump: {
-    outline: [[-2.5, -2], [1, -2], [2, -1.75], [2.5, -1.25], [2.5, 1.25], [2, 1.75], [1, 2], [-2.5, 2]] as const,
+    outline: [
+      [-2.5, -2],
+      [1, -2],
+      [2, -1.75],
+      [2.5, -1.25],
+      [2.5, 1.25],
+      [2, 1.75],
+      [1, 2],
+      [-2.5, 2],
+    ] as const,
     cavity: { y: [0.5, 2], z: [-1, 1] } as const,
-    faces: { top: { y: 2.5, halfWidth: 1.75 }, portSide: 2.25, handleSides: [-2.25, 2.25], front: 0, rear: -16, bottom: -2.5 } as const,
+    faces: {
+      top: { y: 2.5, halfWidth: 1.75 },
+      portSide: 2.25,
+      handleSides: [-2.25, 2.25],
+      front: 0,
+      rear: -16,
+      bottom: -2.5,
+    } as const,
   },
 } as const;
 
@@ -369,9 +424,11 @@ const receiverShellSolids = ({
         wall: 0.5,
         cavity: { y: [data.cavity.y[0] - receiverDrop, data.cavity.y[1] - receiverDrop], z: data.cavity.z },
         port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
-        ...(feed === 'box' ? {
-          magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
-        } : {}),
+        ...(feed === 'box'
+          ? {
+              magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
+            }
+          : {}),
       }),
       solid(`receiver-${section}-barrel-seat`, [-0.5, -0.5, -0.75], [0, 0.5, 0.75]),
     ];
@@ -500,6 +557,209 @@ const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[
 
 // ---- receiver ----
 
+type BoltTravelClass = keyof typeof BOLT_TRAVEL;
+interface ReceiverContext {
+  readonly params: Readonly<Record<string, string>>;
+  readonly bore: SizeClass;
+  readonly tubeFed: boolean;
+  readonly receiverDrop: number;
+  readonly sectionData: (typeof RECEIVER_SECTION)[keyof typeof RECEIVER_SECTION] | undefined;
+  readonly frontFaceX: number;
+  readonly rearFaceX: number;
+  readonly receiverBottom: number;
+  readonly receiverTop: number;
+  readonly portWindow: ReturnType<typeof ejectionPortWindow>;
+  readonly travel: (typeof BOLT_TRAVEL)[BoltTravelClass];
+  readonly carrierY: number;
+}
+
+const receiverTravelClass = (params: Readonly<Record<string, string>>): BoltTravelClass => {
+  if (params.section === 'ak' || params.section === 'ar') {
+    return 'standard';
+  }
+  if (params.action === 'pump' || params.section === 'pump') {
+    return 'pump';
+  }
+  if (params.action === 'auto' && params.bore === 'S') {
+    return 'short';
+  }
+  if (params.action === 'bolt' && params.feed === 'top') {
+    return 'bolt';
+  }
+  if (params.action === 'bolt' && params.bore === 'L') {
+    return 'long';
+  }
+  return 'standard';
+};
+
+const receiverPorts = (context: ReceiverContext): PortDef[] => {
+  const { params, bore, receiverDrop, receiverBottom, receiverTop, frontFaceX, rearFaceX, travel, carrierY } = context;
+  const ports: PortDef[] = [
+    {
+      id: 'barrel',
+      mount: 'barrel',
+      gender: 'female',
+      size: bore,
+      pos: [frontFaceX, 0, 0],
+      normal: X,
+      up: Y,
+      required: true,
+    },
+    { id: 'bolt-carrier', mount: 'bolt-carrier', gender: 'female', pos: [travel.restX, carrierY, 0], normal: X, up: Y },
+    { id: 'handguard', mount: 'handguard', gender: 'female', pos: [frontFaceX, 0, 0], normal: X, up: Y },
+    {
+      id: 'lower',
+      mount: 'lower',
+      gender: 'female',
+      pos: [0, receiverBottom, 0],
+      normal: NEG_Y,
+      up: X,
+      required: true,
+    },
+    { id: 'stock', mount: 'stock', gender: 'female', pos: [rearFaceX, -receiverDrop, 0], normal: NEG_X, up: Y },
+  ];
+  if (params.rail !== 'none') {
+    ports.push({
+      id: 'rail',
+      mount: 'rail',
+      gender: 'female',
+      pos: [-14, receiverTop, 0],
+      normal: Y,
+      up: X,
+      slots: { count: 7, pitch: 2 },
+    });
+  }
+  if (params.feed === 'tube') {
+    ports.push({
+      id: 'tube',
+      mount: 'tube',
+      gender: 'female',
+      pos: [0, -tubeDropForBore(bore), 0],
+      normal: X,
+      up: Y,
+      required: true,
+    });
+  }
+  if (params.action === 'revolver' || params.feed === 'cylinder') {
+    ports.push({
+      id: 'cylinder',
+      mount: 'cylinder',
+      gender: 'female',
+      size: bore,
+      pos: [REVOLVER_CYLINDER_CENTER_X, -REVOLVER_CYLINDER_RADIUS, 0],
+      normal: NEG_X,
+      up: Y,
+      required: true,
+    });
+  }
+  return ports;
+};
+
+const addActionKeepOuts = (params: Readonly<Record<string, string>>, keepOuts: KeepOut[]): void => {
+  switch (params.action) {
+    case 'auto':
+      keepOuts.push(
+        params.chargingHandle === 'rear-top'
+          ? keepOut('charging-handle', [-18, 2.5, -1.5], [-16, 5, 1.5])
+          : keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]),
+      );
+      break;
+    case 'revolver':
+      keepOuts.push(
+        keepOut('cylinder-gap', [-0.25, -3, -3], [0, 0, 3], 'cylinder'),
+        keepOut('cylinder-swing', [-8.25, -6, 3], [-0.25, 0, 8]),
+        keepOut('hammer-travel', [-16, 2.5, -2], [-12, 6, 2]),
+      );
+      break;
+    case 'bolt':
+      keepOuts.push(
+        keepOut('bolt-stock-clearance', [-26, -1.5, -1.5], [-16, 1.5, 1.5]),
+        keepOut('bolt-handle', [-24, -1, 2], [-12, 3, 6]),
+      );
+      break;
+    default:
+      break;
+  }
+};
+
+const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void => {
+  const { params, receiverDrop, receiverBottom } = context;
+  switch (params.feed) {
+    case 'top':
+      keepOuts.push(keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]));
+      break;
+    case 'tube':
+      keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
+      break;
+    default:
+      break;
+  }
+};
+
+const receiverKeepOuts = (context: ReceiverContext): KeepOut[] => {
+  const { params, portWindow, sectionData, travel, carrierY } = context;
+  const keepOuts =
+    params.action === 'revolver'
+      ? []
+      : [
+          keepOut(
+            'ejection',
+            [portWindow.x[0], portWindow.y[0], sectionData?.faces.portSide ?? 2],
+            [portWindow.x[1], portWindow.y[1], 10],
+          ),
+        ];
+  if (params.action !== 'revolver') {
+    keepOuts.push(
+      keepOut(
+        'bolt-travel',
+        [travel.restX - travel.length, carrierY - 0.25, -0.25],
+        [travel.restX, carrierY + 0.25, 0.25],
+        'bolt-carrier',
+      ),
+    );
+  }
+  addActionKeepOuts(params, keepOuts);
+  addFeedKeepOuts(context, keepOuts);
+  return keepOuts;
+};
+
+const revolverReceiverSolids = (): Solid[] => [
+  solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
+  extrudedPolygon(
+    'beavertail-grip-safety',
+    [
+      [-17.5, 0.75],
+      [-15, 0.75],
+      [-15, 2.5],
+      [-16.5, 2.5],
+      [-17.25, 1.75],
+    ],
+    [-1.25, 1.25],
+  ),
+  solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
+  solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
+  solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
+  solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
+  solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
+];
+
+const receiverSolids = (context: ReceiverContext): Solid[] => {
+  const { params, bore, receiverBottom, receiverTop, receiverDrop, portWindow, tubeFed } = context;
+  const shell =
+    params.action === 'revolver'
+      ? revolverReceiverSolids()
+      : receiverShellSolids({
+          section: params.section ?? 'standard',
+          feed: params.feed!,
+          magazineWell: params.magazineWell ?? 'standard',
+          receiverBottom,
+          receiverTop,
+          receiverDrop,
+          portWindow,
+        });
+  return [...shell, ...receiverActionDetails(params), ...receiverTubeSeat(bore, receiverBottom, tubeFed)];
+};
+
 export const receiver: PartFamily = {
   name: 'receiver',
   params: {
@@ -532,139 +792,25 @@ export const receiver: PartFamily = {
     if (sectionData && params.rail !== 'none' && sectionData.faces.top.halfWidth < 1.25) {
       throw new Error(`receiver ${params.section}: top flat is too narrow for its rail.`);
     }
-    const portWindow = ejectionPortWindow(receiverDrop);
-    const ports: PortDef[] = [
-      { id: 'barrel', mount: 'barrel', gender: 'female', size: bore, pos: [frontFaceX, 0, 0], normal: X, up: Y, required: true },
-      { id: 'bolt-carrier', mount: 'bolt-carrier', gender: 'female', pos: [-7, 1.25 - receiverDrop, 0], normal: X, up: Y },
-      { id: 'handguard', mount: 'handguard', gender: 'female', pos: [frontFaceX, 0, 0], normal: X, up: Y },
-      {
-        id: 'lower',
-        mount: 'lower',
-        gender: 'female',
-        pos: [0, receiverBottom, 0],
-        normal: NEG_Y,
-        up: X,
-        required: true,
-      },
-      { id: 'stock', mount: 'stock', gender: 'female', pos: [rearFaceX, -receiverDrop, 0], normal: NEG_X, up: Y },
-    ];
-    if (params.rail !== 'none') {
-      ports.push({
-        id: 'rail',
-        mount: 'rail',
-        gender: 'female',
-        pos: [-14, receiverTop, 0],
-        normal: Y,
-        up: X,
-        slots: { count: 7, pitch: 2 },
-      });
-    }
-    const keepOuts: KeepOut[] =
-      params.action === 'revolver'
-        ? []
-        : [keepOut('ejection', [portWindow.x[0], portWindow.y[0], sectionData?.faces.portSide ?? 2], [portWindow.x[1], portWindow.y[1], 10])];
-
-    switch (params.action) {
-      case 'auto':
-        if (params.chargingHandle === 'rear-top') {
-          keepOuts.push(keepOut('charging-handle', [-18, 2.5, -1.5], [-16, 5, 1.5]));
-        } else {
-          keepOuts.push(keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]));
-        }
-        break;
-      case 'revolver':
-        keepOuts.push(
-          keepOut('cylinder-gap', [-0.25, -3, -3], [0, 0, 3], 'cylinder'),
-          keepOut('cylinder-swing', [-8.25, -6, 3], [-0.25, 0, 8]),
-          keepOut('hammer-travel', [-16, 2.5, -2], [-12, 6, 2]),
-        );
-        break;
-      case 'bolt':
-        // The bolt slides out of the back of the receiver; its handle lifts
-        // and travels back along the right side.
-        keepOuts.push(
-          keepOut('bolt-travel', [-26, -1.5, -1.5], [-16, 1.5, 1.5]),
-          keepOut('bolt-handle', [-24, -1, 2], [-12, 3, 6]),
-        );
-        break;
-      default:
-        // pump: the forend's travel is kept clear by the forend part itself.
-        break;
-    }
-
-    switch (params.feed) {
-      case 'top':
-        keepOuts.push(keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]));
-        break;
-      case 'cylinder':
-        break;
-      case 'tube':
-        ports.push({
-          id: 'tube',
-          mount: 'tube',
-          gender: 'female',
-          pos: [0, -tubeDropForBore(bore), 0],
-          normal: X,
-          up: Y,
-          required: true,
-        });
-        keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
-        break;
-      default:
-        // box: the magazine well and its keep-out belong to the lower.
-        break;
-    }
-
-    if (params.action === 'revolver' || params.feed === 'cylinder') {
-      ports.push({
-        id: 'cylinder',
-        mount: 'cylinder',
-        gender: 'female',
-        size: bore,
-        pos: [REVOLVER_CYLINDER_CENTER_X, -REVOLVER_CYLINDER_RADIUS, 0],
-        normal: NEG_X,
-        up: Y,
-        required: true,
-      });
-    }
-
-    const receiverSolids =
-      params.action === 'revolver'
-        ? [
-            solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
-            extrudedPolygon(
-              'beavertail-grip-safety',
-              [
-                [-17.5, 0.75],
-                [-15, 0.75],
-                [-15, 2.5],
-                [-16.5, 2.5],
-                [-17.25, 1.75],
-              ],
-              [-1.25, 1.25],
-            ),
-            solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
-            solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
-            solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
-            solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
-            solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
-          ]
-        : receiverShellSolids({
-            section: params.section ?? 'standard',
-            feed: params.feed!,
-            magazineWell: params.magazineWell ?? 'standard',
-            receiverBottom,
-            receiverTop,
-            receiverDrop,
-            portWindow,
-          });
-    const solids = [...receiverSolids, ...receiverActionDetails(params)];
-    solids.push(...receiverTubeSeat(bore, receiverBottom, tubeFed));
+    const context: ReceiverContext = {
+      params,
+      bore,
+      tubeFed,
+      receiverDrop,
+      sectionData,
+      frontFaceX,
+      rearFaceX,
+      receiverBottom,
+      receiverTop,
+      portWindow: ejectionPortWindow(receiverDrop),
+      travel: BOLT_TRAVEL[receiverTravelClass(params)],
+      carrierY: 1.25 - receiverDrop,
+    };
     return {
       family: 'receiver',
-      solids,
-      ports,
-      keepOuts,
+      solids: receiverSolids(context),
+      ports: receiverPorts(context),
+      keepOuts: receiverKeepOuts(context),
       axes: [{ kind: 'bore', origin: [rearFaceX, 0, 0], dir: X }],
     };
   },
@@ -673,26 +819,46 @@ export const receiver: PartFamily = {
 /** AK-style stamped receiver with a removable dust cover, gas-cylinder and rear-sight interfaces. */
 export const akReceiver: PartFamily = {
   name: 'receiver',
-  params: { action: choice('bolt'), feed: choice('box'), bore: size, section: choice('ak') },
+  params: {
+    action: choice('bolt'),
+    feed: choice('box'),
+    bore: size,
+    section: choice('ak'),
+  },
   build(params): PartDef {
     const bore = cls(params, 'bore');
-    const base = receiver.build({ action: 'bolt', feed: 'box', bore, section: 'ak', chargingHandle: 'side', rail: 'none' });
+    const base = receiver.build({
+      action: 'bolt',
+      feed: 'box',
+      bore,
+      section: 'ak',
+      chargingHandle: 'side',
+      rail: 'none',
+    });
     const portWindow = ejectionPortWindow();
     return {
       ...base,
       solids: [
         ...receiverShellSolids({
-          section: 'ak', feed: 'box', magazineWell: 'standard',
-          receiverBottom: -RECEIVER_FRONT_HALF_HEIGHT, receiverTop: RECEIVER_FRONT_HALF_HEIGHT,
-          receiverDrop: 0, portWindow,
+          section: 'ak',
+          feed: 'box',
+          magazineWell: 'standard',
+          receiverBottom: -RECEIVER_FRONT_HALF_HEIGHT,
+          receiverTop: RECEIVER_FRONT_HALF_HEIGHT,
+          receiverDrop: 0,
+          portWindow,
         }),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],
       // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.
-      keepOuts: base.keepOuts.map((path) => (path.id === 'bolt-travel' ? { ...path, allowPort: 'stock' } : path)),
+      keepOuts: base.keepOuts.map((path) =>
+        path.id === 'bolt-stock-clearance' ? { ...path, allowPort: 'stock' } : path,
+      ),
       ports: [
         ...base.ports.map((port) =>
-          port.id === 'stock' ? { ...port, pos: [port.pos[0], RECEIVER_SECTION.ak.faces.top.y, port.pos[2]] as const } : port,
+          port.id === 'stock'
+            ? { ...port, pos: [port.pos[0], RECEIVER_SECTION.ak.faces.top.y, port.pos[2]] as const }
+            : port,
         ),
         {
           id: 'gas-cylinder',
@@ -720,16 +886,16 @@ export const boltCarrier: PartFamily = {
   },
   build(params): PartDef {
     const pattern = params.pattern ?? 'ar';
-    const boreScale = params.bore === 'L' ? 1.2 : params.bore === 'S' ? 0.85 : 1;
+    let boreScale = 1;
+    if (params.bore === 'L') {
+      boreScale = 1.2;
+    } else if (params.bore === 'S') {
+      boreScale = 0.85;
+    }
     const snap = (n: number) => Math.round(n / GRID) * GRID;
-    const block = (id: string, min: Vec3, max: Vec3): Solid => solid(
-      id,
-      [snap(min[0]), snap(min[1]), snap(min[2])],
-      [snap(max[0]), snap(max[1]), snap(max[2])],
-    );
-    const solids: Solid[] = [
-      block('carrier-body', [-1.5, -0.5, -1.5 * boreScale], [1.5, 0.5, 1 * boreScale]),
-    ];
+    const block = (id: string, min: Vec3, max: Vec3): Solid =>
+      solid(id, [snap(min[0]), snap(min[1]), snap(min[2])], [snap(max[0]), snap(max[1]), snap(max[2])]);
+    const solids: Solid[] = [block('carrier-body', [-1.5, -0.5, -0.75 * boreScale], [1.5, 0.5, 0.75 * boreScale])];
     if (pattern === 'ar') {
       solids.push(
         block('bolt-head', [0.75, -0.4, -1.25 * boreScale], [1.5, 0.4, 1.25 * boreScale]),
@@ -743,10 +909,10 @@ export const boltCarrier: PartFamily = {
     } else if (pattern === 'pump') {
       solids.push(
         block('action-bar-left', [-6, -0.4, -1.5 * boreScale], [-1.25, -0.15, -1.2 * boreScale]),
-        block('action-bar-right', [-6, -0.4, 0.7 * boreScale], [-1.25, -0.15, 1 * boreScale]),
+        block('action-bar-right', [-6, -0.4, 0.7 * boreScale], [-1.25, -0.15, Number(boreScale)]),
       );
     } else if (pattern === 'barrett') {
-      solids.push(block('heavy-carrier', [-4, -0.75, -1.8], [3, 0.85, 1.8]));
+      solids.push(block('heavy-carrier', [-3, -0.75, -1.2], [3, 0.75, 1.2]));
     } else if (pattern === 'bolt') {
       solids.push(
         block('bolt-cylinder', [-2.5, -0.6, -0.8], [2.5, 0.65, 0.8]),
@@ -759,7 +925,13 @@ export const boltCarrier: PartFamily = {
       ports: [{ id: 'mount', mount: 'bolt-carrier', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
       keepOuts: pattern === 'ak' ? [keepOut('charging-handle', [-1, -0.5, -2.5], [-0.25, 0, -1.75], 'mount')] : [],
       axes: [],
-      motion: { kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0], rearmost: [6.5, 0, 0] },
+      motion: {
+        kind: 'linear',
+        axis: [1, 0, 0],
+        rest: [0, 0, 0],
+        rearmost: [0, 0, 0],
+        sourceKeepOut: { port: 'mount', id: 'bolt-travel' },
+      },
     };
   },
 };

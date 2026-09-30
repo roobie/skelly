@@ -60,7 +60,14 @@ export const ar: Template = {
     {
       id: 'receiver',
       family: 'receiver',
-      params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full', section: 'ar' },
+      params: {
+        action: 'auto',
+        feed: 'box',
+        bore: ['S', 'M'],
+        chargingHandle: 'rear-top',
+        rail: 'full',
+        section: 'ar',
+      },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
     { id: 'lower', family: 'lower', params: { layout: 'ar' } },

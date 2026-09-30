@@ -201,6 +201,29 @@ interface PartExport {
   readonly placed: Transform;
 }
 
+interface DisplayItem {
+  readonly id: string;
+  readonly solids: readonly Solid[];
+  readonly merged: boolean;
+}
+
+const displayItems = (drawn: readonly Solid[]): DisplayItem[] => {
+  const groups = new Map<string, Solid[]>();
+  for (const solid of drawn) {
+    const group = solid.display?.mergeGroup;
+    if (group) {
+      groups.set(group, [...(groups.get(group) ?? []), solid]);
+    }
+  }
+  const items: DisplayItem[] = drawn
+    .filter((solid) => !solid.display?.mergeGroup)
+    .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+  for (const [id, solids] of groups) {
+    items.push({ id, solids, merged: true });
+  }
+  return items;
+};
+
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
@@ -272,46 +295,38 @@ export const exportGlb: ExportGlb = (input) => {
   const meshes: Json[] = [];
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
+  const primitiveFor = (part: PartExport, item: DisplayItem): Json => {
+    const solid = item.solids[0]!;
+    const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
+    const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
+    const { min, max } = bounds(positions);
+    const position = bin.add(
+      positions,
+      { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
+      ARRAY_BUFFER,
+    );
+    const normal = bin.add(
+      mesh.normals,
+      { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
+      ARRAY_BUFFER,
+    );
+    const indices = bin.add(
+      mesh.indices,
+      { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
+      ELEMENT_ARRAY_BUFFER,
+    );
+    return {
+      attributes: { POSITION: position, NORMAL: normal },
+      indices,
+      material: materialFor(colorOf(palette, part.def.family, solid.id)),
+      mode: 4,
+      extras: item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id },
+    };
+  };
 
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const groups = new Map<string, Solid[]>();
-    for (const solid of drawn) {
-      const group = solid.display?.mergeGroup;
-      if (group) groups.set(group, [...(groups.get(group) ?? []), solid]);
-    }
-    const items: { id: string; solids: Solid[]; merged: boolean }[] = drawn
-      .filter((solid) => !solid.display?.mergeGroup)
-      .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
-    for (const [id, solids] of groups) items.push({ id, solids, merged: true });
-    const primitives = items.map((item) => {
-      const solid = item.solids[0]!;
-      const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
-      const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
-      const { min, max } = bounds(positions);
-      const position = bin.add(
-        positions,
-        { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
-        ARRAY_BUFFER,
-      );
-      const normal = bin.add(
-        mesh.normals,
-        { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
-        ARRAY_BUFFER,
-      );
-      const indices = bin.add(
-        mesh.indices,
-        { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
-        ELEMENT_ARRAY_BUFFER,
-      );
-      return {
-        attributes: { POSITION: position, NORMAL: normal },
-        indices,
-        material: materialFor(colorOf(palette, part.def.family, solid.id)),
-        mode: 4,
-        extras: item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id },
-      };
-    });
+    const primitives = displayItems(drawn).map((item) => primitiveFor(part, item));
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);

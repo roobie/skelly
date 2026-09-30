@@ -97,6 +97,8 @@ export interface PartMotion {
   readonly axis: Vec3;
   readonly rest: Vec3;
   readonly rearmost: Vec3;
+  /** Internal source resolved from a connected part's named keep-out. */
+  readonly sourceKeepOut?: { readonly port: string; readonly id: string };
 }
 
 export interface PartDef {

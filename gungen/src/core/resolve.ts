@@ -93,6 +93,32 @@ const placeFrom = (rc: ResolvedConnection, toPart: Transform): Transform => {
   );
 };
 
+const resolveMotionSources = (
+  defs: Map<string, PartDef>,
+  connections: readonly Omit<ResolvedConnection, 'role'>[],
+  structure: ReportStructure,
+): void => {
+  for (const [id, def] of defs) {
+    const source = def.motion?.sourceKeepOut;
+    if (!source) {
+      continue;
+    }
+    const connection = connections.find(
+      (candidate) =>
+        (candidate.from.part === id && candidate.from.port.id === source.port) ||
+        (candidate.to.part === id && candidate.to.port.id === source.port),
+    );
+    const owner = connection?.from.part === id ? connection.to.part : connection?.from.part;
+    const path = owner ? defs.get(owner)?.keepOuts.find(({ id: keepOutId }) => keepOutId === source.id) : undefined;
+    if (!path) {
+      structure(`Part "${id}" motion source ${source.port} → ${source.id} is not connected.`, [id]);
+      continue;
+    }
+    const { sourceKeepOut: _sourceKeepOut, ...motion } = def.motion!;
+    defs.set(id, { ...def, motion: { ...motion, rearmost: [path.box.half[0] * 2, 0, 0] } });
+  }
+};
+
 /** How far a connection is from being mated, given where both parts are. */
 export const connectionMismatch = (
   rc: ResolvedConnection,
@@ -313,6 +339,8 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
     }
     pending.push({ index, conn, from, to });
   });
+
+  resolveMotionSources(defs, pending, structure);
 
   // Place parts by walking out from the root.
   const placed = new Map<string, Transform>();

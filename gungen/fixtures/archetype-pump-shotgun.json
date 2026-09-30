@@ -4,7 +4,10 @@
   "expect": [],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "pump", "feed": "tube", "bore": "L", "section": "pump" } },
+    "receiver": {
+      "family": "receiver",
+      "params": { "action": "pump", "feed": "tube", "bore": "L", "section": "pump" }
+    },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "pump" } },
     "lower": { "family": "lower", "params": { "layout": "pump" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },

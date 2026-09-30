@@ -43,9 +43,13 @@ const cleanProfile = (profile: readonly Vec2[]): Vec2[] => {
   const output: Vec2[] = [];
   for (const point of profile) {
     const previous = output.at(-1);
-    if (!previous || Math.hypot(point[0] - previous[0], point[1] - previous[1]) > 1e-9) output.push(point);
+    if (!previous || Math.hypot(point[0] - previous[0], point[1] - previous[1]) > 1e-9) {
+      output.push(point);
+    }
   }
-  if (output.length > 1 && Math.hypot(output[0]![0] - output.at(-1)![0], output[0]![1] - output.at(-1)![1]) <= 1e-9) output.pop();
+  if (output.length > 1 && Math.hypot(output[0]![0] - output.at(-1)![0], output[0]![1] - output.at(-1)![1]) <= 1e-9) {
+    output.pop();
+  }
   return output;
 };
 
@@ -59,11 +63,15 @@ const clip = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boo
     const pi = inside(previous);
     if (ci !== pi) {
       const t = (edge - previous[axis]) / (current[axis] - previous[axis]);
-      output.push(axis === 0
-        ? [edge, previous[1] + (current[1] - previous[1]) * t]
-        : [previous[0] + (current[0] - previous[0]) * t, edge]);
+      output.push(
+        axis === 0
+          ? [edge, previous[1] + (current[1] - previous[1]) * t]
+          : [previous[0] + (current[0] - previous[0]) * t, edge],
+      );
     }
-    if (ci) output.push(current);
+    if (ci) {
+      output.push(current);
+    }
   }
   return cleanProfile(output);
 };
@@ -81,12 +89,22 @@ const prism = (id: string, profile: readonly Vec2[], x: readonly [number, number
   display: { outline: false, bevel: false, mergeGroup },
 });
 
-const subtractSectionWindow = (id: string, profile: readonly Vec2[], x: readonly [number, number], window: SectionWindow, mergeGroup: string): Solid[] => {
+interface WindowCutSpec {
+  readonly id: string;
+  readonly profile: readonly Vec2[];
+  readonly x: readonly [number, number];
+  readonly window: SectionWindow;
+  readonly mergeGroup: string;
+}
+
+const subtractSectionWindow = ({ id, profile, x, window, mergeGroup }: WindowCutSpec): Solid[] => {
   const [x0, x1] = window.x;
   const [s0, s1] = window.section;
   const pieces: Solid[] = [];
   const add = (suffix: string, section: readonly Vec2[], range: readonly [number, number]) => {
-    if (positive(section) && range[0] < range[1]) pieces.push(prism(`${id}-${suffix}`, section, range, mergeGroup));
+    if (positive(section) && range[0] < range[1]) {
+      pieces.push(prism(`${id}-${suffix}`, section, range, mergeGroup));
+    }
   };
   add('before-window', profile, [x[0], Math.min(x[1], x0)]);
   add('after-window', profile, [Math.max(x[0], x1), x[1]]);
@@ -98,16 +116,14 @@ const subtractSectionWindow = (id: string, profile: readonly Vec2[], x: readonly
   return pieces;
 };
 
-/**
- * Build a hollow receiver from one family outline. The cavity is removed as
- * four convex cross-section regions; side windows remove only the named side
- * band. Every returned collision solid is convex and uses the standard SAT.
- */
-export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
-  assertConvexSection(spec.outline, spec.id);
-  if (!(spec.wall > 0) || spec.wall < 0.5) throw new Error(`${spec.id}: wall thickness must be at least 0.5u.`);
+const assertCavityWall = (spec: ReceiverSectionSpec): void => {
   const { y, z } = spec.cavity;
-  const corners: readonly Vec2[] = [[y[0], z[0]], [y[0], z[1]], [y[1], z[1]], [y[1], z[0]]];
+  const corners: readonly Vec2[] = [
+    [y[0], z[0]],
+    [y[0], z[1]],
+    [y[1], z[1]],
+    [y[1], z[0]],
+  ];
   for (const point of corners) {
     for (let i = 0; i < spec.outline.length; i++) {
       const a = spec.outline[i]!;
@@ -119,6 +135,30 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
       }
     }
   }
+};
+
+const windowForBand = (name: string, spec: ReceiverSectionSpec): SectionWindow | undefined => {
+  if (name === 'near-side') {
+    return spec.port;
+  }
+  if (name === 'bottom') {
+    return spec.magazineWell;
+  }
+  return undefined;
+};
+
+/**
+ * Build a hollow receiver from one family outline. The cavity is removed as
+ * four convex cross-section regions; side windows remove only the named side
+ * band. Every returned collision solid is convex and uses the standard SAT.
+ */
+export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
+  assertConvexSection(spec.outline, spec.id);
+  if (!(spec.wall > 0) || spec.wall < 0.5) {
+    throw new Error(`${spec.id}: wall thickness must be at least 0.5u.`);
+  }
+  assertCavityWall(spec);
+  const { y, z } = spec.cavity;
   const midY = clipBand(spec.outline, 0, y[0], y[1]);
   const far = clip(midY, 1, z[0], true);
   const near = clip(midY, 1, z[1], false);
@@ -136,9 +176,17 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
   ];
   const result: Solid[] = [];
   for (const [name, profile] of bands) {
-    if (!positive(profile)) continue;
-    const window = name === 'near-side' ? spec.port : name === 'bottom' ? spec.magazineWell : undefined;
-    result.push(...(window ? subtractSectionWindow(`${spec.id}-${name}`, profile, spec.x, window, spec.id) : [prism(`${spec.id}-${name}`, profile, spec.x, spec.id)]));
+    if (!positive(profile)) {
+      continue;
+    }
+    const window = windowForBand(name, spec);
+    if (window) {
+      result.push(
+        ...subtractSectionWindow({ id: `${spec.id}-${name}`, profile, x: spec.x, window, mergeGroup: spec.id }),
+      );
+    } else {
+      result.push(prism(`${spec.id}-${name}`, profile, spec.x, spec.id));
+    }
   }
   return result;
 };
