@@ -151,7 +151,40 @@ scene.add(grid);
 const camera = new PerspectiveCamera(40, 1, 0.1, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.listenToKeyEvents(window);
+
+// OrbitControls handles keys only on the browser's delayed key-repeat cadence.
+// Keep the camera's orbit relation intact while applying held arrow keys every frame.
+const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
+const heldPanKeys = new Set<string>();
+const KEY_PAN_SPEED = 5; // world units per second
+const isEditingText = (target: EventTarget | null): boolean =>
+  target instanceof HTMLInputElement ||
+  target instanceof HTMLTextAreaElement ||
+  target instanceof HTMLSelectElement ||
+  (target instanceof HTMLElement && target.isContentEditable);
+globalThis.addEventListener('keydown', (event) => {
+  if (!PAN_KEYS.has(event.code) || isEditingText(event.target)) {
+    return;
+  }
+  heldPanKeys.add(event.code);
+  event.preventDefault();
+});
+globalThis.addEventListener('keyup', (event) => {
+  heldPanKeys.delete(event.code);
+});
+globalThis.addEventListener('blur', () => heldPanKeys.clear());
+
+const panFromKeys = (seconds: number) => {
+  const x = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
+  const z = Number(heldPanKeys.has('ArrowDown')) - Number(heldPanKeys.has('ArrowUp'));
+  if (x === 0 && z === 0) {
+    return;
+  }
+  const distance = Math.hypot(x, z) || 1;
+  const delta = new Vector3((x / distance) * KEY_PAN_SPEED * seconds, 0, (z / distance) * KEY_PAN_SPEED * seconds);
+  camera.position.add(delta);
+  controls.target.add(delta);
+};
 
 const resize = () => {
   const { clientWidth: w, clientHeight: h } = view;
@@ -1059,7 +1092,11 @@ if (queryDesign !== null) {
   }
 }
 
-renderer.setAnimationLoop(() => {
+let previousFrameMs = performance.now();
+renderer.setAnimationLoop((frameMs) => {
+  const elapsedSeconds = Math.min((frameMs - previousFrameMs) / 1000, 0.1);
+  previousFrameMs = frameMs;
+  panFromKeys(elapsedSeconds);
   controls.update();
   renderer.render(scene, camera);
 });
