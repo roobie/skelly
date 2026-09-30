@@ -7,20 +7,23 @@
 import {
   BoxGeometry,
   DirectionalLight,
+  Euler,
   Group,
   HemisphereLight,
   Mesh,
   MeshLambertMaterial,
   Object3D,
   PerspectiveCamera,
+  Quaternion,
   Scene,
-  type Vector3,
+  Vector3,
   type WebGLRenderer,
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { interpolateHandPose, type MeleePoseFrame } from '../core/meleePose.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
@@ -49,6 +52,14 @@ export class HeldItems {
   private drawn = '';
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
+  private readonly arms = new Map<HandSide, Group>();
+  private readonly handBases = new Map<HandSide, Vec3>();
+  private readonly heldByHand = new Map<HandSide, Object3D>();
+  private readonly relativeCamera = new Quaternion();
+  private readonly lockedCamera = new Quaternion();
+  private readonly poseRotation = new Quaternion();
+  private readonly poseEuler = new Euler();
+  private readonly handPosition = new Vector3();
 
   private readonly palette: FigureDef['palette'];
 
@@ -60,8 +71,42 @@ export class HeldItems {
   }
 
   /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */
-  update(main: PerspectiveCamera): void {
+  update(main: PerspectiveCamera, pose?: MeleePoseFrame, recoil = 0): void {
     this.sync();
+    for (const side of ['right', 'left'] as const) {
+      const hand = pose?.[side] ?? { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
+      const base = this.handBases.get(side);
+      if (!base) {
+        continue;
+      }
+      const transform = interpolateHandPose(base, hand);
+      if (pose?.viewOrientation) {
+        this.lockedCamera.setFromEuler(
+          this.poseEuler.set(pose.viewOrientation.pitch, pose.viewOrientation.yaw, 0, 'YXZ'),
+        );
+        this.relativeCamera.copy(main.quaternion).invert().multiply(this.lockedCamera);
+        this.handPosition.set(...transform.offset).applyQuaternion(this.relativeCamera);
+        transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
+        this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
+        this.poseRotation.premultiply(this.relativeCamera);
+        this.poseEuler.setFromQuaternion(this.poseRotation, 'YXZ');
+        transform.rotation = [this.poseEuler.x, this.poseEuler.y, this.poseEuler.z];
+      }
+      const strength = Math.max(0, Math.min(1, recoil));
+      transform.offset[1] += 0.012 * strength;
+      transform.offset[2] += 0.025 * strength;
+      transform.rotation[0] -= 0.08 * strength;
+      const arm = this.arms.get(side);
+      if (arm) {
+        arm.position.set(...transform.offset);
+        arm.rotation.set(...transform.rotation);
+      }
+      const held = this.heldByHand.get(side);
+      if (held) {
+        held.position.set(...transform.offset);
+        held.rotation.set(...transform.rotation);
+      }
+    }
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(main.quaternion);
     this.view.updateMatrixWorld(true);
@@ -109,9 +154,31 @@ export class HeldItems {
     this.drawn = version;
     this.view.clear();
     this.shown.clear();
+    this.arms.clear();
+    this.handBases.clear();
+    this.heldByHand.clear();
     const { hands } = this.inventory;
     this.syncHand('right', hands.right);
     this.syncHand('left', hands.left);
+    this.syncFistHand('right');
+    this.syncFistHand('left');
+  }
+
+  private addArm(side: HandSide, grip: Vec3): void {
+    if (this.arms.has(side)) {
+      return;
+    }
+    const arm = createFirstPersonArm(this.palette, side, [0, 0, 0]);
+    arm.position.set(...grip);
+    this.arms.set(side, arm);
+    this.handBases.set(side, grip);
+    this.view.add(arm);
+  }
+
+  private syncFistHand(side: HandSide): void {
+    if (!this.inventory.hands[side]) {
+      this.addArm(side, HOLD[side]);
+    }
   }
 
   private syncHand(side: HandSide, item: Item | undefined): void {
@@ -120,11 +187,13 @@ export class HeldItems {
     }
     const def = defOf(this.inventory.registry, item.type);
     const heldAt = HOLD[def.twoHanded ? 'both' : side];
-    const held = this.shape(item);
+    const held = new Group();
     held.position.set(...heldAt);
+    held.add(this.shape(item));
     this.view.add(held);
     this.shown.set(item.uid, held);
-    this.view.add(createFirstPersonArm(this.palette, side, heldAt));
+    this.heldByHand.set(side, held);
+    this.addArm(side, heldAt);
     if (def.twoHanded) {
       this.syncOffhandArm(side, heldAt, def.model);
     }
@@ -135,7 +204,7 @@ export class HeldItems {
     const pose = modelId ? this.inventory.registry.models.get(modelId)?.hold : undefined;
     const offhandGrip: Vec3 =
       pose === 'upright' ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]] : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
-    this.view.add(createFirstPersonArm(this.palette, otherSide, offhandGrip));
+    this.addArm(otherSide, offhandGrip);
   }
 
   private shape(item: Item): Object3D {

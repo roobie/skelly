@@ -10,8 +10,9 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
+import { meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
 import { skyAt } from '../core/sky.ts';
-import { FISTS_MELEE } from '../core/zombies.ts';
+import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
@@ -40,6 +41,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './input.ts';
 import { startingLoadout } from './loadout.ts';
+import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PLAYER } from './player.ts';
 import type { RestKind } from './rest.ts';
 import { createSession, LOOT_REACH } from './session.ts';
@@ -76,6 +78,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
 
   // ---- simulation ----
 
+  let meleeRecoilStrength = 0;
+  let meleeRecoilTime = 0;
   const session = createSession({
     registry,
     world: engine.world,
@@ -109,6 +113,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
+      onMeleeContact: (impulse) => {
+        meleeRecoilStrength = Math.max(0, Math.min(1, impulse / 12));
+        meleeRecoilTime = 0.08;
+      },
     },
   });
   const {
@@ -550,20 +558,49 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   }
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
-  const meleeWeapon = () =>
-    [inventory.hands.right, inventory.hands.left]
-      .filter((item) => item !== undefined)
-      .map((item) => registry.items.get(item.type)?.weapon?.melee)
-      .find((attack) => attack !== undefined) ?? FISTS_MELEE;
+  const handUids = () => ({
+    right: inventory.hands.right?.uid ?? null,
+    left: inventory.hands.left?.uid ?? null,
+  });
+  const meleeSelection = (): {
+    weapon: MeleeWeapon;
+    profile: 'blunt' | 'cut' | 'pierce' | 'fists';
+    hand?: 'right' | 'left';
+    twoHanded: boolean;
+    item?: (typeof inventory.hands)['right'];
+  } => {
+    for (const hand of ['right', 'left'] as const) {
+      const item = inventory.hands[hand];
+      const weapon = item && registry.items.get(item.type)?.weapon?.melee;
+      if (item && weapon) {
+        return {
+          weapon,
+          profile: weapon.type,
+          hand,
+          twoHanded: registry.items.get(item.type)?.twoHanded ?? false,
+          item,
+        };
+      }
+    }
+    return { weapon: FISTS_MELEE, profile: 'fists', twoHanded: false };
+  };
+  const meleeWeapon = () => meleeSelection().weapon;
 
   const swing = () => {
-    const melee = meleeWeapon();
-    if (sim.needs.stamina < melee.stamina) {
+    const selected = meleeSelection();
+    const result = startPlayerMelee(zombieSystem, sim.needs, {
+      origin: eye(),
+      direction: lookDir(),
+      weapon: selected.weapon,
+      profile: selected.profile,
+      ...(selected.hand === undefined ? {} : { hand: selected.hand }),
+      twoHanded: selected.twoHanded,
+      hands: handUids(),
+      aimYaw: input.yaw,
+      aimPitch: input.pitch,
+    });
+    if (result === 'too-tired') {
       showNotice('You are too tired to swing');
-      return;
-    }
-    if (zombieSystem.swing(eye(), lookDir(), melee) !== undefined) {
-      sim.needs.stamina = Math.max(0, sim.needs.stamina - melee.stamina);
     }
   };
 
@@ -679,6 +716,27 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     renderHandling(handlingBox, queue);
   };
 
+  const updateHeldItems = (dt: number): void => {
+    camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
+    const selectedMelee = meleeSelection();
+    const ready = shouldEnterMeleeReady({
+      rightMouseHeld: input.rightMouseHeld && input.locked && !input.menuPointer,
+      meleeWeaponHeld: selectedMelee.item !== undefined,
+      handsEmpty: !(inventory.hands.right || inventory.hands.left),
+      debugBuild: debugTools?.buildOn ?? false,
+      inputLocked: compression.locksInput,
+    });
+    const action = zombieSystem.activeMeleeAction;
+    const elapsed = action
+      ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastZombieStep)))
+      : 0;
+    const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready);
+    meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
+    const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
+    held.update(camera, pose, recoil);
+    flashlight.update(registry, survival.lit, held, camera);
+  };
+
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -738,9 +796,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
     renderHandlingFrame();
-    camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
-    held.update(camera);
-    flashlight.update(registry, survival.lit, held, camera);
+    updateHeldItems(dt);
     renderer.render(scene, camera);
     held.render(renderer, camera, engine.sky);
     finishFrame();

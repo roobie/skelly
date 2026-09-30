@@ -138,6 +138,8 @@ export interface SessionOptions {
     onDeath?: (id: EntityId, zombie: Zombie) => void;
     /** The actual result of the player's last swing, for debug-only presentation. */
     onMeleeResult?: (result: MeleeResult) => void;
+    /** Presentation-only first-person recoil for a confirmed hit. */
+    onMeleeContact?: (impulse: number) => void;
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
@@ -302,6 +304,10 @@ export const createSession = (options: SessionOptions) => {
       lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
     };
   };
+  const heldItemUids = () => ({
+    right: inventory.hands.right?.uid ?? null,
+    left: inventory.hands.left?.uid ?? null,
+  });
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
@@ -332,6 +338,7 @@ export const createSession = (options: SessionOptions) => {
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
     ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
+    ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),
     onDeath: (id, zombie) => {
       const table = zombie.type.loot;
       if (table) {
@@ -352,7 +359,7 @@ export const createSession = (options: SessionOptions) => {
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
-      zombieSystem.tick(dt, time);
+      zombieSystem.tick(dt, time, heldItemUids());
       lastZombieStep = time;
     },
   });
@@ -458,6 +465,7 @@ export const createSession = (options: SessionOptions) => {
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
+    lastZombieStep = sim.time;
     rest.restoreState(restored.character.rest);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
     quickbar.restoreState(restored.character.quickbar, inventory);

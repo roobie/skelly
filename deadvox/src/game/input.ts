@@ -39,12 +39,23 @@ export class Input {
   /** Toggled with Z: walk instead of jog. */
   walking = false;
   menuPointer = false;
+  rightMouseHeld = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
 
   constructor(target: HTMLElement) {
     this.target = target;
+    target.addEventListener('mousedown', (event) => {
+      if ((event as MouseEvent).button === 2) {
+        this.rightMouseHeld = true;
+      }
+    });
+    globalThis.addEventListener('mouseup', (event) => {
+      if ((event as MouseEvent).button === 2) {
+        this.rightMouseHeld = false;
+      }
+    });
     globalThis.addEventListener('keydown', (e) => {
       if (e.code === 'Tab') {
         e.preventDefault();
@@ -55,7 +66,10 @@ export class Input {
       this.held.add(e.code);
     });
     globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
-    globalThis.addEventListener('blur', () => this.held.clear());
+    globalThis.addEventListener('blur', () => {
+      this.held.clear();
+      this.rightMouseHeld = false;
+    });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
         return;

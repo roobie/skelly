@@ -389,8 +389,15 @@ plain box in your hands. Files are small, and follow
 - **Melee.** Weapons have damage, reach beyond the player's hand, and speed,
   plus stamina cost and damage type (blunt, cut, pierce). The swing reaches the
   player's 1.2 m effective eye-to-hand reach (including the lean into a swing)
-  plus the weapon's reach; hit detection tests
-  posed shambler body-region boxes along the aim ray.
+  plus the weapon's reach; hit detection tests posed shambler body-region boxes
+  along the aim ray. A click locks aim and starts a wind-up; the hit resolves at
+  contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
+  cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
+  Active swings are saved and fingerprinted so Continue preserves one pending
+  hit; changing held items cancels that hit without refunding cooldown. Holding
+  right mouse raises a cosmetic ready stance. First-person motions use shared
+  blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
+  items animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
