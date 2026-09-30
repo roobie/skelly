@@ -370,12 +370,16 @@ describe('tapered stock profile', () => {
     it(`${size}: comb starts at the built receiver rear-face centre`, () => {
       const { def, solids, jointX } = profile(size);
       const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
-      const body = receiver.solids.find((solid) => solid.id === 'body')!;
-      if (body.kind !== 'box') {
-        throw new Error('pump receiver body is not a box');
-      }
-      const [, centerY] = body.box.center;
-      const [, halfY] = body.box.half;
+      const bodyY = receiver.solids.flatMap((solid) => {
+        if (solid.kind !== 'box' || !solid.id.startsWith('receiver-shell-')) {
+          return [];
+        }
+        return [solid.box.center[1] - solid.box.half[1], solid.box.center[1] + solid.box.half[1]];
+      });
+      const minY = Math.min(...bodyY);
+      const maxY = Math.max(...bodyY);
+      const centerY = (minY + maxY) / 2;
+      const halfY = (maxY - minY) / 2;
       const [, stockPortY] = receiver.ports.find((port) => port.id === 'stock')!.pos;
       const rearFaceTopY = centerY + halfY;
       const combAtJoint = section(solids, jointX).max + stockPortY;
@@ -533,11 +537,14 @@ describe('pump shotgun tube and barrel contact', () => {
 
   it('keeps the bore centered while the receiver edges closely contain the barrel and tube', () => {
     const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
-    const body = receiver.solids.find((solid) => solid.id === 'body');
-    if (body?.kind !== 'box') {
-      throw new Error('pump receiver body is not a box');
-    }
-    const [bodyBottom, bodyTop] = [body.box.center[1] - body.box.half[1], body.box.center[1] + body.box.half[1]];
+    const bodyY = receiver.solids.flatMap((solid) => {
+      if (solid.kind !== 'box' || !solid.id.startsWith('receiver-shell-')) {
+        return [];
+      }
+      return [solid.box.center[1] - solid.box.half[1], solid.box.center[1] + solid.box.half[1]];
+    });
+    const bodyBottom = Math.min(...bodyY);
+    const bodyTop = Math.max(...bodyY);
     const barrelPort = receiver.ports.find((port) => port.id === 'barrel')!;
     const tubePort = receiver.ports.find((port) => port.id === 'tube')!;
     const tubeSeat = receiver.solids.find((solid) => solid.id === 'tube-seat');

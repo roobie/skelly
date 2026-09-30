@@ -1,6 +1,7 @@
 import type { Domain } from '../core/schema.ts';
 import { FAMILIES } from './parts.ts';
 import {
+  actionHandleRest,
   feedMatch,
   firingGrip,
   freeFloatClearance,
@@ -22,6 +23,7 @@ export const gunDomain: Domain = {
   ],
   rules: [
     firingGrip,
+    actionHandleRest,
     thumbholeGripMatch,
     feedMatch,
     pistolBarrelCrown,
