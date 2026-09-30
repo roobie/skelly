@@ -55,6 +55,7 @@ describe('the stress-test city', () => {
     expect(city.bounds.x1 - city.bounds.x0).toBeGreaterThanOrEqual(2 * CITY.reach);
   });
 
+  // Heavy property test over random chunk orders; coverage is the point, so it stays full; 30s absorbs CI parallelism (#29).
   it('generates the same in any chunk order', () => {
     const city = new StressCity(2, registry, scale, 4);
     const a = generate(city, window);
@@ -65,7 +66,7 @@ describe('the stress-test city', () => {
     }
     expect(b.furniture).toEqual(a.furniture);
     expect(a.furniture.length).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it('stacks storeys for taller buildings', () => {
     const house = compileTemplate(registry, registry.templates.get('small_house')!);
