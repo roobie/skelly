@@ -13,21 +13,41 @@ export interface BudgetRange {
   readonly max: number;
 }
 
-export interface Budgets {
-  readonly totalVoxels: BudgetRange;
+export interface RuleBudgets {
+  readonly totalVoxels?: BudgetRange;
   readonly totalTriangles: BudgetRange;
+  readonly groups?: Readonly<
+    Record<string, { readonly bones: readonly string[]; readonly min: number; readonly max: number }>
+  >;
+}
+
+export interface Budgets extends RuleBudgets {
+  readonly totalVoxels: BudgetRange;
   readonly groups: Readonly<
     Record<string, { readonly bones: readonly string[]; readonly min: number; readonly max: number }>
   >;
 }
 
+export type ValidationProfile = 'full' | 'silhouette';
+
+export interface SilhouetteSize {
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface RuleContext {
+  /** Omission keeps every existing caller on the full, per-bone rule set. */
+  readonly profile?: ValidationProfile;
+  /** Full-detail voxel silhouette used only by the silhouette-size rule. */
+  readonly referenceSilhouette?: SilhouetteSize;
+  /** Reference grid resolution, to account for its boundary quantization separately from the coarse cell. */
+  readonly referenceVoxelSize?: number;
   readonly body: Body;
   readonly voxels: Voxels;
   readonly meshes: ReadonlyMap<number, BoneMesh>;
   /** Bone ids the template counts as feet, for the `grounded` rule. */
   readonly feet: ReadonlySet<string>;
-  readonly budgets: Budgets;
+  readonly budgets: RuleBudgets;
 }
 
 export interface Rule {
@@ -248,6 +268,48 @@ export const balance: Rule = {
   },
 };
 
+/** Lowest occupied layer touches the ground plane; bone ownership is intentionally ignored. */
+export const silhouetteGrounded: Rule = {
+  id: 'grounded',
+  check({ voxels }) {
+    let minJ = Number.POSITIVE_INFINITY;
+    forEachFilled(voxels, (_i, j) => {
+      minJ = Math.min(minJ, j);
+    });
+    if (!Number.isFinite(minJ)) {
+      return [{ rule: 'grounded', message: 'The body has no filled voxels.' }];
+    }
+    const groundY = voxels.origin[1] + minJ;
+    return groundY === 0
+      ? []
+      : [{ rule: 'grounded', message: `The lowest voxel layer is at y-index ${groundY}, not on the ground (0).` }];
+  },
+};
+
+const triangleBudgetIssues = (meshes: ReadonlyMap<number, BoneMesh>, budgets: RuleBudgets): Issue[] => {
+  let triangles = 0;
+  for (const mesh of meshes.values()) {
+    triangles += mesh.triangles;
+  }
+  if (triangles < budgets.totalTriangles.min || triangles > budgets.totalTriangles.max) {
+    return [
+      {
+        rule: 'budget',
+        message: `Total triangles ${triangles} is outside [${budgets.totalTriangles.min}, ${budgets.totalTriangles.max}].`,
+      },
+    ];
+  }
+  return [];
+};
+
+/** Far LOD draw cost: total triangles only, with no voxel or group budget. */
+export const triangleBudget: Rule = {
+  id: 'budget',
+  check({ meshes, budgets }) {
+    return triangleBudgetIssues(meshes, budgets);
+  },
+};
+
 /** Total voxels, total triangles and per-group voxel counts stay within the template's budgets. */
 export const budget: Rule = {
   id: 'budget',
@@ -262,23 +324,14 @@ export const budget: Rule = {
         total += 1;
       }
     }
-    if (total < budgets.totalVoxels.min || total > budgets.totalVoxels.max) {
+    if (budgets.totalVoxels && (total < budgets.totalVoxels.min || total > budgets.totalVoxels.max)) {
       issues.push({
         rule: 'budget',
         message: `Total voxels ${total} is outside [${budgets.totalVoxels.min}, ${budgets.totalVoxels.max}].`,
       });
     }
-    let triangles = 0;
-    for (const m of meshes.values()) {
-      triangles += m.triangles;
-    }
-    if (triangles < budgets.totalTriangles.min || triangles > budgets.totalTriangles.max) {
-      issues.push({
-        rule: 'budget',
-        message: `Total triangles ${triangles} is outside [${budgets.totalTriangles.min}, ${budgets.totalTriangles.max}].`,
-      });
-    }
-    for (const [name, group] of Object.entries(budgets.groups)) {
+    issues.push(...triangleBudgetIssues(meshes, budgets));
+    for (const [name, group] of Object.entries(budgets.groups ?? {})) {
       const count = group.bones.reduce((sum, id) => sum + (perBone.get(id) ?? 0), 0);
       if (count < group.min || count > group.max) {
         issues.push({
@@ -292,4 +345,49 @@ export const budget: Rule = {
   },
 };
 
-export const RULES: readonly Rule[] = [floaters, attached, grounded, balance, budget];
+/** Filled-cell silhouette dimensions in the front view (X width × Y height), measured between outer voxel centres. */
+export const silhouetteSize = (voxels: Voxels): SilhouetteSize => {
+  let minI = Number.POSITIVE_INFINITY;
+  let maxI = Number.NEGATIVE_INFINITY;
+  let minJ = Number.POSITIVE_INFINITY;
+  let maxJ = Number.NEGATIVE_INFINITY;
+  forEachFilled(voxels, (i, j) => {
+    minI = Math.min(minI, i);
+    maxI = Math.max(maxI, i);
+    minJ = Math.min(minJ, j);
+    maxJ = Math.max(maxJ, j);
+  });
+  if (!Number.isFinite(minI)) {
+    return { width: 0, height: 0 };
+  }
+  // Comparing centre spans avoids charging both resolutions for their half-cell boundary quantization.
+  return { width: (maxI - minI) * voxels.size, height: (maxJ - minJ) * voxels.size };
+};
+
+/** Coarse X width and Y height stay within one coarse cell, plus one reference-cell quantization allowance. */
+export const silhouette: Rule = {
+  id: 'silhouette',
+  check({ voxels, referenceSilhouette, referenceVoxelSize }) {
+    if (!referenceSilhouette || referenceVoxelSize === undefined) {
+      return [{ rule: 'silhouette', message: 'A full-detail reference silhouette and resolution are required.' }];
+    }
+    const actual = silhouetteSize(voxels);
+    const widthDelta = Math.abs(actual.width - referenceSilhouette.width);
+    const heightDelta = Math.abs(actual.height - referenceSilhouette.height);
+    const allowance = voxels.size + referenceVoxelSize + 1e-9;
+    if (widthDelta <= allowance && heightDelta <= allowance) {
+      return [];
+    }
+    return [
+      {
+        rule: 'silhouette',
+        message: `Silhouette changed by ${widthDelta.toFixed(3)}m wide and ${heightDelta.toFixed(3)}m high (maximum: ${voxels.size.toFixed(3)}m coarse cell + ${referenceVoxelSize.toFixed(3)}m reference-cell quantization).`,
+      },
+    ];
+  },
+};
+
+export const FULL_RULES: readonly Rule[] = [floaters, attached, grounded, balance, budget];
+export const SILHOUETTE_RULES: readonly Rule[] = [floaters, silhouetteGrounded, balance, triangleBudget, silhouette];
+/** Backward-compatible alias for callers that inspect the default rule set. */
+export const RULES = FULL_RULES;

@@ -51,8 +51,10 @@ choices, and a validator with named rules decides what's feasible.
 | Meshing | Greedy, per bone, merging faces of the same colour. Faces between voxels of different bones are kept, so each bone's mesh is closed: a bent joint shows a cut face, not a hole into the body. Seams at bent joints are expected (CHALLENGES §3) |
 | Bones are rigid | No skinning: each voxel moves with its one bone. Joints are made round about their pivot to hide seams |
 | Animation | Forward kinematics: each bone has a rotation about its head, applied down the chain from the pelvis. The walk is driven by speed: stride and pace come from the speed, the genome's gait params and leg length, and the phase advances with distance travelled. During stance the planted foot stays fixed while the root advances; the root's height is solved per phase so the lowest foot is on the ground. Speed 0 is a standing pose |
-| Validation | Named rules, each with a readable message. The generator never checks feasibility itself |
-| Budgets | Voxel bounds scale with inverse voxel volume and actor height; head groups additionally scale with `headScale`. Triangle bounds scale with inverse voxel surface area and actor height. Coarse voxel maxima allow one boundary-quantization cell (`src/core/generate.ts`) |
+| Validation | Named rules, each with a readable message. The generator never checks feasibility itself. `full` is the default and retains per-bone attachment/foot contracts; callers may explicitly select `silhouette` for far LOD |
+| Budgets | Full-profile voxel bounds scale with inverse voxel volume and actor height; head groups additionally scale with `headScale`. Triangle bounds scale with inverse voxel surface area and actor height. Coarse full-profile voxel maxima allow one boundary-quantization cell (`src/core/generate.ts`). Silhouette LOD has no total-voxel or group-voxel budget at any size: voxel occupancy is not draw cost, and mandatory connected marrow is about one cell per bone (18 bones). Its minimum triangle budget is 1. At 1/2 block (0.25 m), the per-actor triangle maximum is the fixed 400-triangle draw budget; the 2026-09-30 100-seed worst was 336 (brute, seed 89). Any future cap increase is deliberate and must cite fresh measurements and rationale; larger templates may need a higher cap. At other sizes the maximum is the m1-scaled upper bound, with no floor or margin |
+| Far LOD validation | The recommended far tier is 1/2 block (0.25 m) with the explicit silhouette profile; 1/4 block remains supported/tested but is not a separate recommended far level. `generateValid` searches only at the template's full-detail resolution. `realizeLod` derives coarser voxels from a full-valid genome and checks whole-body connectivity, ground contact and balance, the size-specific triangle cap, and height/width within one cell at each grid's resolution. It re-voxelizes the full-detail body with the ordinary coarse-cell fill tolerance; it does not silently change the default profile |
+| Profile recommendation | `recommendedProfileFor(genome, voxelSize)` measures the thinnest full-detail upper-arm/forearm/thigh/shin flesh feature in cells; below 1.5 cells it recommends `silhouette`. For BR's roughly 10 cm limb, 1/2 block (25 cm) is 0.4 cells, 1/6 block (8.33 cm) is 1.2 cells, and 1/12 block (4.17 cm) is 2.4 cells. This is advisory only; callers choose and pass the profile explicitly |
 | Determinism | Seeded RNG (mulberry32), never `Math.random`. The same genome gives the same voxels on the same JavaScript engine; engines may differ in the last digit of `Math.sin` and similar, which can flip a voxel on a shape's edge (CHALLENGES §11) |
 | Templates (milestone 1) | `shambler` (1/12), `runner` (1/12), `brute` (1/10) |
 | Tests | Vitest |
@@ -66,12 +68,15 @@ choices, and a validator with named rules decides what's feasible.
 Each bone's flesh is the smooth union of its add features. A voxel is filled
 when the nearest bone's flesh is within 0.15 voxels of its centre (a slight
 dilation, so shapes about one voxel thick survive), then carves remove
-voxels. Marrow is filled last. A voxel's colour comes from the nearest add
+voxels. Silhouette LOD builds the body at full-detail settings, then samples
+those metric shapes on the coarse grid; the usual 0.15-coarse-cell tolerance applies. Marrow is filled last. A voxel's colour comes from the nearest add
 feature of its bone, then every paint feature that covers it, in order. A
 paint can be limited to some materials (bruises only on skin) and broken up
 by noise (torn clothes, patchy hair).
 
 ### 2. Rules
+
+The caller selects `full` (default) or `silhouette` explicitly. `full` remains the default because gameplay-resolution actors still need the existing skeleton contracts, and omission must not silently change any current caller. Full retains the existing attached-per-bone and foot-owned grounding checks. Silhouette instead checks all-cell connectivity, that the body's lowest occupied layer meets y=0, and the existing whole-body support/balance test; it does not require bone or foot ownership. Silhouette budgets enforce global upper bounds scaled at the requested voxel size with no floor or margin; minima are 1, and there are no per-bone group counts. Its X width and Y height must match the full-detail reference within one cell per grid's resolution. A full-detail valid genome is the source for `realizeLod`; `generateValid` never searches at a coarse voxel size.
 
 | Rule id | Checks |
 | --- | --- |
@@ -79,7 +84,8 @@ by noise (torn clothes, patchy hair).
 | `attached` | Every bone owns at least one voxel, and at least one of them touches a voxel of its parent. Marrow makes this hold by construction, so it guards against builder bugs |
 | `grounded` | The lowest voxel layer is at y = 0, and every voxel in it belongs to a foot |
 | `balance` | In the rest pose, the centre of mass, seen from above, is within the rectangle around the ground-layer voxels, widened by one voxel |
-| `budget` | Total voxels, triangles and per-bone voxel counts are within the template's limits, e.g. head and jaw together around 50 |
+| `budget` | Full: total voxels, triangles and per-bone voxel counts are within the template's limits, e.g. head and jaw together around 50. Silhouette: total voxel/triangle budgets only; group counts depend on bone ownership and are excluded |
+| `silhouette` | Coarse X width and Y height, measured between outer occupied-cell centres, each differ by at most one coarse cell plus the reference grid's quantization allowance |
 
 Planned next (CHALLENGES §7): joint limits per bone as data, a
 `joint-limits` rule across the walk, and a `self-overlap` rule for bones

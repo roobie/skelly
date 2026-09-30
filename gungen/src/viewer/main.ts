@@ -25,6 +25,7 @@ import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import {
   availablePrefabs,
   choosePrefab,
@@ -128,6 +129,13 @@ const syncUrl = () => {
   if (hasOverrides(uiState.overrides)) {
     params.set('set', serializeOverrides(uiState.overrides));
   }
+  params.set(
+    'camera',
+    serializeCameraState({
+      position: [camera.position.x, camera.position.y, camera.position.z],
+      target: [controls.target.x, controls.target.y, controls.target.z],
+    }),
+  );
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 };
@@ -151,6 +159,59 @@ scene.add(grid);
 const camera = new PerspectiveCamera(40, 1, 0.1, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+
+// OrbitControls handles keys only on the browser's delayed key-repeat cadence.
+// Keep the camera's orbit relation intact while applying held arrow keys every frame.
+const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
+const heldPanKeys = new Set<string>();
+const KEY_PAN_SPEED = 25; // world units per second
+const panDirection = new Vector3();
+const panUp = new Vector3();
+const isEditingText = (target: EventTarget | null): boolean =>
+  target instanceof HTMLInputElement ||
+  target instanceof HTMLTextAreaElement ||
+  target instanceof HTMLSelectElement ||
+  (target instanceof HTMLElement && target.isContentEditable);
+globalThis.addEventListener('keydown', (event) => {
+  if (!PAN_KEYS.has(event.code) || isEditingText(event.target)) {
+    return;
+  }
+  heldPanKeys.add(event.code);
+  event.preventDefault();
+});
+globalThis.addEventListener('keyup', (event) => {
+  heldPanKeys.delete(event.code);
+});
+globalThis.addEventListener('blur', () => heldPanKeys.clear());
+
+let cameraUrlSyncQueued = false;
+controls.addEventListener('change', () => {
+  if (cameraUrlSyncQueued) {
+    return;
+  }
+  cameraUrlSyncQueued = true;
+  requestAnimationFrame(() => {
+    cameraUrlSyncQueued = false;
+    syncUrl();
+  });
+});
+
+const panFromKeys = (seconds: number) => {
+  const right = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
+  const up = Number(heldPanKeys.has('ArrowUp')) - Number(heldPanKeys.has('ArrowDown'));
+  if (right === 0 && up === 0) {
+    return;
+  }
+  camera.updateMatrixWorld();
+  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(right);
+  panUp.setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(up);
+  panDirection
+    .add(panUp)
+    .normalize()
+    .multiplyScalar(KEY_PAN_SPEED * seconds);
+  camera.position.add(panDirection);
+  controls.target.add(panDirection);
+};
 
 const resize = () => {
   const { clientWidth: w, clientHeight: h } = view;
@@ -190,6 +251,7 @@ let activeTemplate: Template | undefined;
 let lastDropped: readonly Connection[] = [];
 let editorState: DesignEditorState | undefined;
 let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
+let pendingCamera: CameraState | undefined;
 
 const redraw = () => {
   if (!report) {
@@ -359,6 +421,13 @@ const load = (assembly: Assembly) => {
   renderPanel(assembly);
   renderDesignInfo();
   redraw();
+  if (pendingCamera) {
+    const { position, target } = pendingCamera;
+    pendingCamera = undefined;
+    camera.position.set(...position);
+    controls.target.set(...target);
+    controls.update();
+  }
   renderParamPanel();
 };
 
@@ -1005,6 +1074,7 @@ saveButton.addEventListener('click', () => {
 // ?template=<name>&seed=<n> generates one. Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
+pendingCamera = parseCameraState(query.get('camera'));
 const querySet = query.get('set');
 if (querySet !== null) {
   uiState.overrides = parseOverrides(querySet);
@@ -1058,7 +1128,11 @@ if (queryDesign !== null) {
   }
 }
 
-renderer.setAnimationLoop(() => {
+let previousFrameMs = performance.now();
+renderer.setAnimationLoop((frameMs) => {
+  const elapsedSeconds = Math.min((frameMs - previousFrameMs) / 1000, 0.1);
+  previousFrameMs = frameMs;
+  panFromKeys(elapsedSeconds);
   controls.update();
   renderer.render(scene, camera);
 });

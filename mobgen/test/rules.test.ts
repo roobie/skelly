@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Body, Material } from '../src/core/body.ts';
+import { FAR_LOD_HALF_BLOCK_TRIANGLE_CAP, FAR_LOD_HALF_BLOCK_VOXEL_SIZE } from '../src/core/generate.ts';
 import { meshBones } from '../src/core/mesh.ts';
 import type { Budgets } from '../src/core/rules.ts';
 import { validate } from '../src/core/validate.ts';
@@ -40,6 +41,26 @@ const voxels = (
 
 const run = (b: Body, v: Voxels, feet: readonly string[], budgets: Budgets) =>
   validate({ body: b, voxels: v, meshes: meshBones(v, b.bones.length), feet: new Set(feet), budgets });
+
+const runSilhouette = (
+  b: Body,
+  v: Voxels,
+  budgets: Budgets,
+  options: {
+    readonly reference?: { readonly width: number; readonly height: number };
+    readonly referenceVoxelSize?: number;
+  } = {},
+) =>
+  validate({
+    profile: 'silhouette',
+    referenceSilhouette: options.reference ?? { width: 0.1, height: 0.2 },
+    referenceVoxelSize: options.referenceVoxelSize ?? 0.1,
+    body: b,
+    voxels: v,
+    meshes: meshBones(v, b.bones.length),
+    feet: new Set<string>(),
+    budgets,
+  });
 
 // Two bones stacked one voxel high: root (foot) at the bottom, child on top.
 const healthyBones: Body['bones'] = [
@@ -111,6 +132,54 @@ describe('balance', () => {
     const v = voxels([6, 2, 1], owner);
     const report = run(body(bones), v, ['root'], { ...GENEROUS, totalVoxels: { min: 1, max: 20 } });
     expect(report.issues.map((i) => i.rule)).toEqual(['balance']);
+  });
+});
+
+describe('silhouette profile', () => {
+  it('rejects disconnected voxels without requiring bone ownership', () => {
+    const disconnected = voxels([3, 2, 1], [1, 0, 1, 2, 0, 0]);
+    const report = runSilhouette(body(healthyBones), disconnected, GENEROUS);
+    expect(report.issues.map((issue) => issue.rule)).toContain('floaters');
+  });
+
+  it('rejects a connected silhouette floating above the ground', () => {
+    const raised = voxels([1, 2, 1], [1, 2], [0, 1, 0]);
+    const report = runSilhouette(body(healthyBones), raised, GENEROUS);
+    expect(report.issues.map((issue) => issue.rule)).toContain('grounded');
+  });
+
+  it('does not enforce total-voxel or group-voxel budgets', () => {
+    const tightVoxelBudgets: Budgets = {
+      totalVoxels: { min: 1, max: 1 },
+      totalTriangles: { min: 1, max: 2000 },
+      groups: { child: { bones: ['child'], min: 5, max: 10 } },
+    };
+    const report = runSilhouette(body(healthyBones), healthyVoxels, tightVoxelBudgets);
+    expect(report.ok).toBe(true);
+    expect(report.issues).toEqual([]);
+  });
+
+  it('rejects a synthetic 1/2-block silhouette over the absolute 400-triangle cap', () => {
+    const coarse = { ...healthyVoxels, size: FAR_LOD_HALF_BLOCK_VOXEL_SIZE };
+    const generatedMeshes = meshBones(coarse, healthyBones.length);
+    const mesh = generatedMeshes.get(0)!;
+    const report = validate({
+      profile: 'silhouette',
+      referenceSilhouette: { width: 0, height: FAR_LOD_HALF_BLOCK_VOXEL_SIZE },
+      referenceVoxelSize: 0.1,
+      body: body(healthyBones),
+      voxels: coarse,
+      meshes: new Map([[0, { ...mesh, triangles: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP + 1 }]]),
+      feet: new Set<string>(),
+      budgets: { totalTriangles: { min: 1, max: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP } },
+    });
+    expect(report.issues).toEqual([{ rule: 'budget', message: 'Total triangles 401 is outside [1, 400].' }]);
+  });
+
+  it('rejects a width or height change beyond the coarse and reference-cell quantization allowance', () => {
+    const small = voxels([1, 2, 1], [1, 2]);
+    const report = runSilhouette(body(healthyBones), small, GENEROUS, { reference: { width: 1, height: 0.2 } });
+    expect(report.issues.map((issue) => issue.rule)).toContain('silhouette');
   });
 });
 
