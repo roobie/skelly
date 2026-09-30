@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { angularVelocity, applyImpulse, type RigidBody, stepRigidBody } from '../src/core/rigidBody.ts';
+import {
+  angularVelocity,
+  applyImpulse,
+  applyImpulseAtClampedPoint,
+  clampPointToRigidBody,
+  type RigidBody,
+  stepRigidBody,
+} from '../src/core/rigidBody.ts';
 
 const rotate = (q: RigidBody['orientation'], v: Vec3): Vec3 => {
   const [x, y, z, w] = q;
@@ -43,7 +50,75 @@ const body = (): RigidBody => ({
   asleep: false,
 });
 
+const armBodyAtSpin = (omega: Vec3): RigidBody => {
+  const mass = 3.5;
+  const half: Vec3 = [0.05, 0.3, 0.05];
+  const inertiaBody: RigidBody['inertiaBody'] = [
+    [(mass / 3) * (half[1] ** 2 + half[2] ** 2), 0, 0],
+    [0, (mass / 3) * (half[0] ** 2 + half[2] ** 2), 0],
+    [0, 0, (mass / 3) * (half[0] ** 2 + half[1] ** 2)],
+  ];
+  return {
+    ...body(),
+    mass,
+    inertiaBody,
+    angularMomentum: [inertiaBody[0][0] * omega[0], inertiaBody[1][1] * omega[1], inertiaBody[2][2] * omega[2]],
+    corners: boxCorners3D(half),
+  };
+};
+const boxCorners3D = (half: Vec3): Vec3[] => {
+  const result: Vec3[] = [];
+  for (const x of [-half[0], half[0]]) {
+    for (const y of [-half[1], half[1]]) {
+      for (const z of [-half[2], half[2]]) {
+        result.push([x, y, z]);
+      }
+    }
+  }
+  return result;
+};
+const rotationalEnergy = (b: RigidBody): number => {
+  const omega = angularVelocity(b);
+  return 0.5 * b.angularMomentum.reduce((sum, value, axis) => sum + value * omega[axis]!, 0);
+};
+
 describe('rigid body', () => {
+  it('conserves free-flight arm spin energy and angular momentum at 200 rad/s for two seconds', () => {
+    for (const omega of [
+      [0, 200, 0],
+      [120, 160, 0],
+    ] as const) {
+      const b = armBodyAtSpin([...omega]);
+      const initialEnergy = rotationalEnergy(b);
+      const initialMomentum = Math.hypot(...b.angularMomentum);
+      for (let frame = 0; frame < 120; frame++) {
+        stepRigidBody(b, 1 / 60, undefined, 0);
+      }
+      expect(Math.abs(rotationalEnergy(b) / initialEnergy - 1)).toBeLessThanOrEqual(0.01);
+      expect(Math.abs(Math.hypot(...b.angularMomentum) / initialMomentum - 1)).toBeLessThanOrEqual(0.01);
+    }
+  });
+
+  it('clamps impulse application points to the oriented OBB in body space', () => {
+    const b = body();
+    b.orientation = [0, Math.sin(Math.PI / 8), 0, Math.cos(Math.PI / 8)];
+    const outsideLocal: Vec3 = [2, -2, 3];
+    const outsideWorld = [
+      b.center[0] + rotate(b.orientation, outsideLocal)[0],
+      b.center[1] + rotate(b.orientation, outsideLocal)[1],
+      b.center[2] + rotate(b.orientation, outsideLocal)[2],
+    ] as Vec3;
+    const applied = clampPointToRigidBody(b, outsideWorld);
+    const local = rotate(
+      [-b.orientation[0], -b.orientation[1], -b.orientation[2], b.orientation[3]],
+      [applied[0] - b.center[0], applied[1] - b.center[1], applied[2] - b.center[2]],
+    );
+    expect(local[0]).toBeCloseTo(0.2, 12);
+    expect(local[1]).toBeCloseTo(-0.1, 12);
+    expect(local[2]).toBeCloseTo(0.3, 12);
+    expect(applyImpulseAtClampedPoint(b, outsideWorld, [1, 0, 0])).toEqual(applied);
+  });
+
   it('applies an impulse through the COM without angular velocity', () => {
     const b = body();
     applyImpulse(b, b.center, [2, 0, 0]);
@@ -137,6 +212,27 @@ describe('rigid body', () => {
     expect(b.center[0]).toBeGreaterThan(1);
     expect(b.velocity[0]).toBeCloseTo(240, 6);
   });
+  it('splits world-backed rotation at 0.1 rad and clamps only when eight parts are insufficient', () => {
+    const b = armBodyAtSpin([0, 200, 0]);
+    let previous = [...b.orientation] as [number, number, number, number];
+    let maxAngle = 0;
+    const world = {
+      blockSize: 0.5,
+      isSolid: () => {
+        const current = b.orientation;
+        const cosine = Math.abs(current.reduce((sum, value, i) => sum + value * previous[i]!, 0));
+        const angle = 2 * Math.acos(Math.max(-1, Math.min(1, cosine)));
+        maxAngle = Math.max(maxAngle, angle);
+        previous = [...current];
+        return false;
+      },
+    };
+    stepRigidBody(b, 1 / 120, world, 0);
+    expect(maxAngle).toBeLessThanOrEqual(0.100_001);
+    expect(Math.hypot(...angularVelocity(b))).toBeLessThanOrEqual(96.000_001);
+    expect(Math.hypot(...angularVelocity(b))).toBeGreaterThan(20); // no launch-only cap is applied by the stepper
+  });
+
   it('sleeps on a flat block floor within three seconds', () => {
     const b = body();
     b.corners = boxCorners(0.1);

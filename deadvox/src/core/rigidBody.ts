@@ -34,6 +34,19 @@ const qnorm = (q: Quaternion): Quaternion => {
   const n = Math.hypot(...q) || 1;
   return [q[0] / n, q[1] / n, q[2] / n, q[3] / n];
 };
+const axisAngle = (omega: Vec3, dt: number): Quaternion => {
+  const spin = Math.hypot(...omega);
+  const halfAngle = (spin * dt) / 2;
+  const sinHalfAngle = Math.sin(halfAngle);
+  return spin > 1e-12
+    ? [
+        (omega[0] / spin) * sinHalfAngle,
+        (omega[1] / spin) * sinHalfAngle,
+        (omega[2] / spin) * sinHalfAngle,
+        Math.cos(halfAngle),
+      ]
+    : [0, 0, 0, 1];
+};
 const qmul = (a: Quaternion, b: Quaternion): Quaternion => [
   a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
   a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
@@ -44,6 +57,7 @@ const rotate = (q: Quaternion, v: Vec3): Vec3 => {
   const t = scale(cross([q[0], q[1], q[2]], v), 2);
   return add(v, add(scale(t, q[3]), cross([q[0], q[1], q[2]], t)));
 };
+const inverseRotate = (q: Quaternion, v: Vec3): Vec3 => rotate([-q[0], -q[1], -q[2], q[3]], v);
 const matVec = (m: Tensor3, v: Vec3): Vec3 => [dot(m[0], v), dot(m[1], v), dot(m[2], v)];
 const inverseSymmetric = (m: Tensor3): Tensor3 => {
   const [a, b, c] = m[0];
@@ -98,6 +112,29 @@ export const applyImpulse = (body: RigidBody, point: Vec3, impulse: Vec3): void 
   body.quietTime = 0;
   body.velocity = add(body.velocity, scale(impulse, 1 / body.mass));
   body.angularMomentum = add(body.angularMomentum, cross(sub(point, body.center), impulse));
+};
+
+/** Clamp an impulse point into the body's local OBB and return its world-space location. */
+export const clampPointToRigidBody = (body: RigidBody, point: Vec3): Vec3 => {
+  const localPoint = inverseRotate(body.orientation, sub(point, body.center));
+  const halfExtents: Vec3 = [0, 0, 0];
+  for (const corner of body.corners) {
+    for (let axis = 0; axis < 3; axis++) {
+      halfExtents[axis] = Math.max(halfExtents[axis]!, Math.abs(corner[axis]!));
+    }
+  }
+  const clamped: Vec3 = [
+    Math.max(-halfExtents[0], Math.min(halfExtents[0], localPoint[0])),
+    Math.max(-halfExtents[1], Math.min(halfExtents[1], localPoint[1])),
+    Math.max(-halfExtents[2], Math.min(halfExtents[2], localPoint[2])),
+  ];
+  return add(body.center, rotate(body.orientation, clamped));
+};
+
+export const applyImpulseAtClampedPoint = (body: RigidBody, point: Vec3, impulse: Vec3): Vec3 => {
+  const appliedPoint = clampPointToRigidBody(body, point);
+  applyImpulse(body, appliedPoint, impulse);
+  return appliedPoint;
 };
 const contact = (body: RigidBody, point: Vec3, normal: Vec3, penetration: number): void => {
   const arm = sub(point, body.center);
@@ -199,23 +236,72 @@ const clampCornerSpeed = (body: RigidBody, maxCornerSpeed: number): void => {
     body.angularMomentum = scale(body.angularMomentum, factor);
   }
 };
+const clampAngularSpeed = (body: RigidBody, maxAngularSpeed: number): void => {
+  const spin = Math.hypot(...angularVelocity(body));
+  if (spin > maxAngularSpeed) {
+    body.angularMomentum = scale(body.angularMomentum, maxAngularSpeed / spin);
+  }
+};
 const substep = (body: RigidBody, dt: number, world: RigidWorld | undefined, gravity: number): void => {
   body.velocity = [body.velocity[0], body.velocity[1] - gravity * dt, body.velocity[2]];
   body.center = add(body.center, scale(body.velocity, dt));
-  const omega = angularVelocity(body);
-  const dq: Quaternion = [(omega[0] * dt) / 2, (omega[1] * dt) / 2, (omega[2] * dt) / 2, 1];
-  body.orientation = qnorm(qmul(dq, body.orientation));
+  const initialOrientation = body.orientation;
+  let midpointOrientation = qnorm(qmul(axisAngle(angularVelocity(body), dt / 2), initialOrientation));
+  for (let iteration = 0; iteration < 2; iteration++) {
+    const midpointOmega = angularVelocity({ ...body, orientation: midpointOrientation });
+    midpointOrientation = qnorm(qmul(axisAngle(midpointOmega, dt / 2), initialOrientation));
+  }
+  const omega = angularVelocity({ ...body, orientation: midpointOrientation });
+  body.orientation = qnorm(qmul(axisAngle(omega, dt), initialOrientation));
   if (world) {
     collide(body, world);
   }
   const speed = Math.hypot(...body.velocity);
-  const spin = Math.hypot(...angularVelocity(body));
-  body.quietTime = speed < 0.05 && spin < 0.3 ? body.quietTime + dt : 0;
+  const settledSpin = Math.hypot(...angularVelocity(body));
+  body.quietTime = speed < 0.05 && settledSpin < 0.3 ? body.quietTime + dt : 0;
   body.elapsed += dt;
   if (body.quietTime >= 0.25 || body.elapsed >= 8) {
     body.velocity = [0, 0, 0];
     body.angularMomentum = [0, 0, 0];
     body.asleep = true;
+  }
+};
+const stepFreeFlight = (body: RigidBody, fixedStep: number, gravity: number): void => {
+  const spin = Math.hypot(...angularVelocity(body));
+  const rotationSteps = Math.max(1, Math.ceil((spin * fixedStep) / 0.1));
+  const innerDt = fixedStep / rotationSteps;
+  for (let inner = 0; inner < rotationSteps && !body.asleep; inner++) {
+    substep(body, innerDt, undefined, gravity);
+  }
+};
+const stepWithWorld = (body: RigidBody, fixedStep: number, world: RigidWorld, gravity: number): void => {
+  const spin = Math.hypot(...angularVelocity(body));
+  const rotationSteps = Math.max(1, Math.ceil((spin * fixedStep) / 0.1));
+  const speed = cornerSpeed(body);
+  const worstCaseSpeed = speed + Math.abs(gravity) * fixedStep;
+  const travelSteps = Math.max(1, Math.ceil((worstCaseSpeed * fixedStep) / (0.5 * world.blockSize)));
+  const needed = Math.max(rotationSteps, travelSteps);
+  const innerSteps = Math.min(8, needed);
+  if (needed > 8) {
+    const innerDt = fixedStep / 8;
+    if (rotationSteps > 8) {
+      clampAngularSpeed(body, 0.1 / innerDt);
+    }
+    if (travelSteps > 8) {
+      const maxCornerSpeed = (0.5 * world.blockSize) / innerDt - Math.abs(gravity) * innerDt;
+      clampCornerSpeed(body, maxCornerSpeed);
+    }
+  }
+  const innerDt = fixedStep / innerSteps;
+  for (let inner = 0; inner < innerSteps && !body.asleep; inner++) {
+    substep(body, innerDt, world, gravity);
+  }
+};
+const stepFixed = (body: RigidBody, fixedStep: number, world: RigidWorld | undefined, gravity: number): void => {
+  if (world) {
+    stepWithWorld(body, fixedStep, world, gravity);
+  } else {
+    stepFreeFlight(body, fixedStep, gravity);
   }
 };
 /** Deterministic 1/120 s steps; world-backed steps split into at most eight collision parts, then excess frame time drops after 16 fixed steps. */
@@ -230,23 +316,6 @@ export const stepRigidBody = (body: RigidBody, dt: number, world?: RigidWorld, g
   const count = Math.min(16, Math.floor(dt * 120 + 1e-10));
   const fixedStep = 1 / 120;
   for (let step = 0; step < count && !body.asleep; step++) {
-    if (!world) {
-      substep(body, fixedStep, undefined, gravity);
-      continue;
-    }
-    const speed = cornerSpeed(body);
-    // Bound the speed after the fixed step's gravity update as well as the current linear and angular motion.
-    const worstCaseSpeed = speed + Math.abs(gravity) * fixedStep;
-    const needed = Math.max(1, Math.ceil((worstCaseSpeed * fixedStep) / (0.5 * blockSize!)));
-    const innerSteps = Math.min(8, needed);
-    if (needed > 8) {
-      const innerDt = fixedStep / 8;
-      const maxCornerSpeed = (0.5 * blockSize!) / innerDt - Math.abs(gravity) * innerDt;
-      clampCornerSpeed(body, maxCornerSpeed);
-    }
-    const innerDt = fixedStep / innerSteps;
-    for (let inner = 0; inner < innerSteps && !body.asleep; inner++) {
-      substep(body, innerDt, world, gravity);
-    }
+    stepFixed(body, fixedStep, world, gravity);
   }
 };

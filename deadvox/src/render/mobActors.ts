@@ -127,7 +127,14 @@ import {
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { applyImpulse, type Quaternion, type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
+import {
+  angularVelocity,
+  applyImpulseAtClampedPoint,
+  type Quaternion,
+  type RigidBody,
+  type RigidWorld,
+  stepRigidBody,
+} from '../core/rigidBody.ts';
 import { ZOMBIE_REGION_NAMES } from '../core/zombieRegions.ts';
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -190,8 +197,9 @@ const CORPSE_LIE_S = 8;
 const CORPSE_SINK_S = 1.5;
 const CORPSE_SINK_DEPTH_M = 1.5; // comfortably below any visible geometry by the end of the sink
 const CORPSE_LIFETIME_S = DEATH_FALL_DURATION + CORPSE_LIE_S + CORPSE_SINK_S;
-const MAX_CORPSES = 16; // global cap across every variant, corpses AND debris together — see zombieDied's
-// and zombieSevered's own eviction.
+// Global cap across every variant, corpses AND debris together — see zombieDied's and zombieSevered's eviction.
+const MAX_CORPSES = 16;
+const MAX_LAUNCH_SPIN_RADPS = 20; // presentation cap; BR's call.
 
 /** Deterministic flinch side from a zombie's own EntityId, in [-1, 1) — same "hash the id, not the sim's
  * behaviour RNG" reasoning as the figure seed persisted on Zombie. A judgment call, not the spec's preferred option: the hit
@@ -1192,7 +1200,7 @@ export class MobActorMeshes implements ZombieRenderer {
     return count ? [sumX / count, sumY / count, sumZ / count] : undefined;
   }
 
-  private applyDebrisHit(body: RigidBody, center: Vec3, originOffsetY: number, hit: HitImpulse): void {
+  private applyDebrisHit(body: RigidBody, center: Vec3, originOffsetY: number, hit: HitImpulse): Vec3 {
     const [dx, dy, dz] = hit.direction;
     const hitPoint: Vec3 = [
       hit.point[0] * this.blockSize,
@@ -1205,7 +1213,21 @@ export class MobActorMeshes implements ZombieRenderer {
       hitPoint[1] + dy * projection - originOffsetY,
       hitPoint[2] + dz * projection,
     ];
-    applyImpulse(body, point, [dx * hit.impulse, dy * hit.impulse, dz * hit.impulse]);
+    const appliedPoint = applyImpulseAtClampedPoint(body, point, [
+      dx * hit.impulse,
+      dy * hit.impulse,
+      dz * hit.impulse,
+    ]);
+    const spin = Math.hypot(...angularVelocity(body));
+    if (spin > MAX_LAUNCH_SPIN_RADPS) {
+      const factor = MAX_LAUNCH_SPIN_RADPS / spin;
+      body.angularMomentum = [
+        body.angularMomentum[0] * factor,
+        body.angularMomentum[1] * factor,
+        body.angularMomentum[2] * factor,
+      ];
+    }
+    return appliedPoint;
   }
 
   private insertDebris(spawn: DebrisSpawn): void {
