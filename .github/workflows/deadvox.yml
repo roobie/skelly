@@ -2,7 +2,7 @@ name: deadvox
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'deadvox/saves-*']
     paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
   pull_request:
     paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
@@ -27,12 +27,14 @@ jobs:
       - run: npm ci --prefix tools/lit-check
       - run: npm run lint:lit
       - run: npm run typecheck
-      - run: npm test
-      - run: npm run test:ui-browser
+      - name: Save round-trip and budget benchmark
+        run: timeout 300 npm test -- test/snapshot.test.ts -t 'checks the deterministic ten-hour hamlet save size and CI-runner load budget, and records snapshot p95' --silent=false
+      - run: timeout 300 npm test
+      - run: timeout 300 npm run test:ui-browser
       - name: Install headed Firefox and system dependencies
         run: npx playwright install --with-deps firefox
       - name: Firefox browser contract
-        run: xvfb-run -a npm run test:browser:firefox
+        run: xvfb-run -a timeout 300 npm run test:browser:firefox
       - run: npm run validate
       - run: npx vite build
       - run: node tools/check-favicon.mjs
