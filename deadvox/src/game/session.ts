@@ -465,7 +465,7 @@ export const createSession = (options: SessionOptions) => {
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
-    lastZombieStep = sim.time;
+    lastZombieStep = sim.scheduler.snapshotState().systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
     rest.restoreState(restored.character.rest);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
     quickbar.restoreState(restored.character.quickbar, inventory);
