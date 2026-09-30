@@ -5,8 +5,13 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCorpus, loadFixture } from './helpers.ts';
 
-const limits = (box: Box): readonly (readonly [number, number])[] =>
-  box.center.map((center, axis) => [center - box.half[axis]!, center + box.half[axis]!] as const);
+const limits = (
+  box: Box,
+): readonly [readonly [number, number], readonly [number, number], readonly [number, number]] => [
+  [box.center[0] - box.half[0], box.center[0] + box.half[0]],
+  [box.center[1] - box.half[1], box.center[1] + box.half[1]],
+  [box.center[2] - box.half[2], box.center[2] + box.half[2]],
+];
 
 const inside = (solid: Solid, point: readonly [number, number, number]): boolean => {
   if (solid.kind === 'box') {
@@ -33,12 +38,17 @@ const inside = (solid: Solid, point: readonly [number, number, number]): boolean
 const intervalsOverlap = (a: readonly [number, number], b: readonly [number, number]): boolean =>
   Math.min(a[1], b[1]) > Math.max(a[0], b[0]);
 
-const receiver = (action: 'auto' | 'bolt', chargingHandle = 'side') =>
-  FAMILIES.receiver!.build({ action, feed: 'box', bore: 'M', chargingHandle });
+const receiver = (action: 'auto' | 'bolt' | 'pump', chargingHandle = 'side') =>
+  FAMILIES.receiver!.build({ action, feed: action === 'pump' ? 'tube' : 'box', bore: 'M', chargingHandle });
 
 const rayHitFromEjectionPort = (def: ReturnType<typeof receiver>): { id: string; z: number } | null => {
+  const carrier = def.solids.find((solid) => solid.id === 'bolt-carrier-face');
+  if (carrier?.kind !== 'box') {
+    return null;
+  }
+  const [, y] = carrier.box.center;
   for (let z = 2.01; z >= -2; z -= 0.01) {
-    const hit = def.solids.find((solid) => inside(solid, [-7, 1, z]));
+    const hit = def.solids.find((solid) => inside(solid, [-7, y, z]));
     if (hit) {
       return { id: hit.id, z };
     }
@@ -59,13 +69,92 @@ describe('visible action details', () => {
   it('opens only the ejection-side wall and exposes a carrier before the far wall', () => {
     const receivers = [
       receiver('auto', 'rear-top'),
+      receiver('bolt'),
+      receiver('pump'),
       FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
     ];
     for (const def of receivers) {
+      const carrier = def.solids.find((solid) => solid.id === 'bolt-carrier-face');
+      expect(carrier?.kind).toBe('box');
+      const carrierY = carrier?.kind === 'box' ? carrier.box.center[1] : 0;
       expect(def.keepOuts.some(({ id }) => id === 'ejection')).toBe(true);
-      expect(def.solids.some((solid) => inside(solid, [-7, 1, 1.75]))).toBe(false);
-      expect(def.solids.some((solid) => inside(solid, [-7, 1, -1.75]))).toBe(true);
+      expect(def.solids.some((solid) => inside(solid, [-7, carrierY, 1.75]))).toBe(false);
+      expect(def.solids.some((solid) => inside(solid, [-7, carrierY, -1.75]))).toBe(true);
       expect(rayHitFromEjectionPort(def)).toMatchObject({ id: 'bolt-carrier-face', z: expect.closeTo(1.25, 1) });
+    }
+  });
+
+  it('sizes every ejection opening to the carrier face plus 0.25u clearance', () => {
+    const covered = new Set<string>();
+    for (const { label, assembly } of loadCorpus()) {
+      const def = validate(assembly, gunDomain).resolved.defs.get('receiver');
+      const ejection = def?.keepOuts.find(({ id }) => id === 'ejection');
+      if (!(def && ejection)) {
+        continue;
+      }
+      const carrier = def.solids.find((solid) => solid.id === 'bolt-carrier-face');
+      if (carrier?.kind !== 'box') {
+        throw new Error(`${label}: ejection port has no bolt-carrier face box`);
+      }
+      covered.add(label);
+      const [[faceMinX, faceMaxX], [faceMinY, faceMaxY]] = limits(carrier.box);
+      const [[portMinX, portMaxX], [portMinY, portMaxY]] = limits(ejection.box);
+      expect(portMinX, label).toBeCloseTo(faceMinX - 0.25);
+      expect(portMaxX, label).toBeCloseTo(faceMaxX + 0.25);
+      expect(portMinY, label).toBeCloseTo(faceMinY - 0.25);
+      expect(portMaxY, label).toBeCloseTo(faceMaxY + 0.25);
+
+      const x = (portMinX + portMaxX) / 2;
+      const y = (portMinY + portMaxY) / 2;
+      const sideZ = 1.75;
+      expect(
+        def.solids.some((solid) => inside(solid, [x, y, sideZ])),
+        label,
+      ).toBe(false);
+      expect(
+        def.solids.some((solid) => inside(solid, [portMinX + 0.01, y, sideZ])),
+        label,
+      ).toBe(false);
+      expect(
+        def.solids.some((solid) => inside(solid, [portMaxX - 0.01, y, sideZ])),
+        label,
+      ).toBe(false);
+      expect(
+        def.solids.some((solid) => inside(solid, [x, portMinY + 0.01, sideZ])),
+        label,
+      ).toBe(false);
+      expect(
+        def.solids.some((solid) => inside(solid, [x, portMaxY - 0.01, sideZ])),
+        label,
+      ).toBe(false);
+      expect(
+        def.solids.some((solid) => inside(solid, [portMinX - 0.01, y, sideZ])),
+
+        label,
+      ).toBe(true);
+      expect(
+        def.solids.some((solid) => inside(solid, [portMaxX + 0.01, y, sideZ])),
+        label,
+      ).toBe(true);
+      expect(
+        def.solids.some((solid) => inside(solid, [x, portMinY - 0.01, sideZ])),
+        label,
+      ).toBe(true);
+      expect(
+        def.solids.some((solid) => inside(solid, [x, portMaxY + 0.01, sideZ])),
+        label,
+      ).toBe(true);
+    }
+    for (const design of [
+      'archetype-ar.json',
+      'archetype-ak.json',
+      'archetype-bolt-rifle.json',
+      'archetype-pump-shotgun.json',
+      'archetype-smg.json',
+      'archetype-battle-rifle.json',
+      'archetype-bullpup.json',
+    ]) {
+      expect(covered.has(`design ${design}`), design).toBe(true);
     }
   });
 

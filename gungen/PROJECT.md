@@ -1161,10 +1161,12 @@ not part of the export's acceptance:
   `test/actionDetails.test.ts` pins the rest faces and the ejection aperture.
   BR's hollow-shell follow-up (2026-09-30) gives auto/bolt/pump receivers and
   the AK receiver 0.5u (5.75mm) top, bottom, side, and end walls, matching the
-  pistol-slide wall thickness. The ejection aperture is only in the near wall;
-  the far wall closes the cavity, with a bolt-carrier face behind the port and
-  above the magazine path. Revolver receivers have no ejection keep-out and
-  remain solid; the pistol frame/slide are separate parts.
+  pistol-slide wall thickness. The ejection aperture is only in the near wall
+  and its bounds are the bolt-carrier face bounds plus 0.25u on every side; the
+  port and ejection keep-out derive from one clearance definition. Pump receiver
+  ports follow the lowered carrier face. The far wall closes the cavity, with
+  the carrier face above the magazine path. Revolver receivers have no ejection
+  keep-out and remain solid; the pistol frame/slide are separate parts.
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some

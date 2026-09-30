@@ -315,7 +315,18 @@ const PISTOL_GRIP_X = -6;
 const REVOLVER_CYLINDER_RADIUS = 3;
 const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
-const EJECTION_PORT_WINDOW = { x: [-9, -5], y: [-1, 2] } as const;
+const BOLT_CARRIER_FACE_BOUNDS = { x: [-8.5, -5.5], y: [0.75, 1.75], z: [-1.25, 1.25] } as const;
+const EJECTION_PORT_CLEARANCE = { x: 0.25, y: 0.25 } as const;
+const ejectionPortWindow = (receiverDrop = 0) => ({
+  x: [
+    BOLT_CARRIER_FACE_BOUNDS.x[0] - EJECTION_PORT_CLEARANCE.x,
+    BOLT_CARRIER_FACE_BOUNDS.x[1] + EJECTION_PORT_CLEARANCE.x,
+  ] as const,
+  y: [
+    BOLT_CARRIER_FACE_BOUNDS.y[0] - EJECTION_PORT_CLEARANCE.y - receiverDrop,
+    BOLT_CARRIER_FACE_BOUNDS.y[1] + EJECTION_PORT_CLEARANCE.y - receiverDrop,
+  ] as const,
+});
 
 const clipProfile = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boolean): Vec2[] => {
   const output: Vec2[] = [];
@@ -351,11 +362,14 @@ const validProfile = (profile: readonly Vec2[]): boolean => {
   return Math.abs(area) > 1e-8;
 };
 
-const cutEjectionPort = (partSolid: Solid): Solid[] => {
+const cutEjectionPort = (
+  partSolid: Solid,
+  window: ReturnType<typeof ejectionPortWindow> = ejectionPortWindow(),
+): Solid[] => {
   const {
     x: [x0, x1],
     y: [y0, y1],
-  } = EJECTION_PORT_WINDOW;
+  } = window;
   if (partSolid.kind === 'extruded-polygon') {
     const left = clipProfile(partSolid.profile, 0, x0, true);
     const right = clipProfile(partSolid.profile, 0, x1, false);
@@ -396,12 +410,14 @@ const receiverShellSolids = ({
   receiverBottom,
   receiverTop,
   receiverDrop,
+  portWindow,
 }: {
   feed: string;
   magazineWell: string;
   receiverBottom: number;
   receiverTop: number;
   receiverDrop: number;
+  portWindow: ReturnType<typeof ejectionPortWindow>;
 }): Solid[] => {
   const [xMin, xMax] = [-16, 0] as const;
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
@@ -484,8 +500,8 @@ const receiverShellSolids = ({
       ),
     );
   }
-  const [portX0, portX1] = EJECTION_PORT_WINDOW.x;
-  const portY0 = EJECTION_PORT_WINDOW.y[0] - receiverDrop;
+  const [portX0, portX1] = portWindow.x;
+  const [portY0] = portWindow.y;
   solids.push(
     solid(
       'receiver-shell-side-near-rear',
@@ -502,7 +518,11 @@ const receiverShellSolids = ({
       [portX0, innerY[0], innerZ[1]],
       [portX1, portY0, RECEIVER_FRONT_HALF_WIDTH],
     ),
-    solid('bolt-carrier-face', [-8.5, 0.75 - receiverDrop, -1.25], [-5.5, 1.75 - receiverDrop, 1.25]),
+    solid(
+      'bolt-carrier-face',
+      [BOLT_CARRIER_FACE_BOUNDS.x[0], BOLT_CARRIER_FACE_BOUNDS.y[0] - receiverDrop, BOLT_CARRIER_FACE_BOUNDS.z[0]],
+      [BOLT_CARRIER_FACE_BOUNDS.x[1], BOLT_CARRIER_FACE_BOUNDS.y[1] - receiverDrop, BOLT_CARRIER_FACE_BOUNDS.z[1]],
+    ),
   );
   return solids;
 };
@@ -552,6 +572,7 @@ export const receiver: PartFamily = {
     const receiverDrop = params.action === 'pump' && tubeFed ? PUMP_RECEIVER_DROP : 0;
     const receiverBottom = -RECEIVER_FRONT_HALF_HEIGHT - receiverDrop;
     const receiverTop = RECEIVER_FRONT_HALF_HEIGHT - receiverDrop;
+    const portWindow = ejectionPortWindow(receiverDrop);
     const ports: PortDef[] = [
       { id: 'barrel', mount: 'barrel', gender: 'female', size: bore, pos: [0, 0, 0], normal: X, up: Y, required: true },
       { id: 'handguard', mount: 'handguard', gender: 'female', pos: [0, 0, 0], normal: X, up: Y },
@@ -578,7 +599,9 @@ export const receiver: PartFamily = {
       });
     }
     const keepOuts: KeepOut[] =
-      params.action === 'revolver' ? [] : [keepOut('ejection', [-9, -1 - receiverDrop, 2], [-5, 2 - receiverDrop, 10])];
+      params.action === 'revolver'
+        ? []
+        : [keepOut('ejection', [portWindow.x[0], portWindow.y[0], 2], [portWindow.x[1], portWindow.y[1], 10])];
 
     switch (params.action) {
       case 'auto':
@@ -671,6 +694,7 @@ export const receiver: PartFamily = {
             receiverBottom,
             receiverTop,
             receiverDrop,
+            portWindow,
           });
     const solids = [...receiverSolids, ...receiverActionDetails(params)];
     solids.push(...receiverTubeSeat(bore, receiverBottom, tubeFed));
@@ -691,6 +715,7 @@ export const akReceiver: PartFamily = {
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const base = receiver.build({ action: 'bolt', feed: 'box', bore, chargingHandle: 'side', rail: 'none' });
+    const portWindow = ejectionPortWindow();
     const akProfile = [
       [-16, -RECEIVER_FRONT_HALF_HEIGHT],
       [0, -RECEIVER_FRONT_HALF_HEIGHT],
@@ -701,7 +726,7 @@ export const akReceiver: PartFamily = {
     return {
       ...base,
       solids: [
-        ...cutEjectionPort(extrudedPolygon('receiver-body', akProfile, [1.5, RECEIVER_FRONT_HALF_WIDTH])),
+        ...cutEjectionPort(extrudedPolygon('receiver-body', akProfile, [1.5, RECEIVER_FRONT_HALF_WIDTH]), portWindow),
         extrudedPolygon('receiver-far-side', akProfile, [-RECEIVER_FRONT_HALF_WIDTH, -1.5]),
         solid(
           'receiver-ak-rear',
@@ -726,7 +751,11 @@ export const akReceiver: PartFamily = {
           [-0.5, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
           [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
         ),
-        solid('bolt-carrier-face', [-8.5, 0.75, -1.25], [-5.5, 1.75, 1.25]),
+        solid(
+          'bolt-carrier-face',
+          [BOLT_CARRIER_FACE_BOUNDS.x[0], BOLT_CARRIER_FACE_BOUNDS.y[0], BOLT_CARRIER_FACE_BOUNDS.z[0]],
+          [BOLT_CARRIER_FACE_BOUNDS.x[1], BOLT_CARRIER_FACE_BOUNDS.y[1], BOLT_CARRIER_FACE_BOUNDS.z[1]],
+        ),
         ...receiverActionDetails({ action: 'bolt' }),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],

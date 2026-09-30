@@ -1831,22 +1831,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2.5,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2.5,
         2,
       ],
       [
-        -9,
+        -8.75,
         2.5,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2.5,
         2,
       ],
@@ -1858,22 +1858,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2.5,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2.5,
         2,
       ],
       [
-        -5,
+        -5.25,
         2.5,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2.5,
         2,
       ],
@@ -1905,43 +1905,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2.5,
         1.5,
       ],
       [
-        -9,
-        -2.5,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2.5,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2.5,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2.5,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -1952,42 +1952,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2.5,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2.5,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2.5,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2.5,
         2,
       ],
@@ -3951,22 +3951,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -3998,43 +3998,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -4065,22 +4065,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -5846,22 +5846,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -5893,43 +5893,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -5960,22 +5960,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -7308,22 +7308,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -7355,43 +7355,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -7422,22 +7422,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -9015,22 +9015,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -9062,43 +9062,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -9129,22 +9129,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -10524,22 +10524,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -10571,43 +10571,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -10638,22 +10638,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -12231,22 +12231,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -12278,43 +12278,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -12345,22 +12345,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -13515,22 +13515,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -13562,43 +13562,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -13629,22 +13629,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -15546,22 +15546,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -3,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -3,
         2,
       ],
       [
-        -5,
+        -5.25,
         1,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         1,
         2,
       ],
@@ -15593,43 +15593,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -3,
         1.5,
       ],
       [
-        -9,
-        -3,
-        2,
-      ],
-      [
-        -9,
-        -2,
-        1.5,
-      ],
-      [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -5,
-        -3,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -3,
         2,
       ],
       [
-        -5,
-        -2,
+        -8.75,
+        -0.5,
         1.5,
       ],
       [
-        -5,
-        -2,
+        -8.75,
+        -0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -3,
+        1.5,
+      ],
+      [
+        -5.25,
+        -3,
+        2,
+      ],
+      [
+        -5.25,
+        -0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        -0.5,
         2,
       ],
     ],
@@ -15660,22 +15660,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -3,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -3,
         2,
       ],
       [
-        -9,
+        -8.75,
         1,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         1,
         2,
       ],
@@ -18164,22 +18164,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -18211,43 +18211,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -18278,22 +18278,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
