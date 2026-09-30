@@ -314,49 +314,6 @@ const freeFloatFitIssue = (
   };
 };
 
-const barrelAtTubeCap = (r: Resolved, tube: string): string | undefined => {
-  for (const { from, to } of r.connections) {
-    if (
-      from.part === tube &&
-      from.port.id === 'cap' &&
-      to.port.id === 'lug' &&
-      r.defs.get(to.part)?.family === 'barrel'
-    ) {
-      return to.part;
-    }
-    if (
-      to.part === tube &&
-      to.port.id === 'cap' &&
-      from.port.id === 'lug' &&
-      r.defs.get(from.part)?.family === 'barrel'
-    ) {
-      return from.part;
-    }
-  }
-  return undefined;
-};
-
-export const tubeCrossSectionMatch: Rule = {
-  id: 'tube-cross-section-match',
-  title: 'Pump tube cross-section matches its barrel',
-  check(r) {
-    const issues: Issue[] = [];
-    for (const [tube] of placedParts(r, 'tube-magazine')) {
-      const tubeSection = r.params.get(tube)?.crossSection?.value;
-      const barrelPart = barrelAtTubeCap(r, tube);
-      const barrelSection = barrelPart && r.params.get(barrelPart)?.crossSection?.value;
-      if (tubeSection && barrelSection && tubeSection !== barrelSection) {
-        issues.push({
-          rule: 'tube-cross-section-match',
-          message: `${tube}.crossSection (${tubeSection}) does not match ${barrelPart}.crossSection (${barrelSection}).`,
-          parts: [tube, barrelPart],
-        });
-      }
-    }
-    return issues;
-  },
-};
-
 export const freeFloatClearance: Rule = {
   id: 'free-float-clearance',
   title: 'The free-float handguard clears the barrel',

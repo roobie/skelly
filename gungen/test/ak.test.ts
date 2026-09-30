@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { validateExtrudedPolygon } from '../src/core/geometry.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { applyDir, applyPoint } from '../src/core/math.ts';
 import type { Domain, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -162,11 +162,24 @@ describe('AK-pattern archetype', () => {
     expect(gasBlockOnBarrel[0]).toBe(16.5);
     expect(report.resolved.connections.some(({ conn }) => conn.from === 'barrel.gas-port')).toBe(true);
     expect(report.resolved.connections.some(({ conn }) => conn.to === 'gas-cylinder.front')).toBe(true);
-    const cylinder = report.resolved.defs.get('gas-cylinder')!.solids[0]!;
-    expect(cylinder.kind).toBe('box');
-    if (cylinder.kind === 'box') {
-      expect(cylinder.box.center[0] + cylinder.box.half[0]).toBe(16.5);
+    const cylinder = extrudedOf(report.resolved.defs.get('gas-cylinder')!.solids[0]!);
+    expect(cylinder.axis).toBe('x');
+    expect(cylinder.profile).toHaveLength(8);
+    const bounds = localSolidBounds(cylinder);
+    expect(bounds).toEqual([
+      [0, -0.25, -0.25],
+      [16.5, 0.25, 0.25],
+    ]);
+    expect(bounds[1][1] - bounds[0][1]).toBeCloseTo(bounds[1][2] - bounds[0][2]);
+    const edgeLengths = cylinder.profile.map((point, index) => {
+      const next = cylinder.profile[(index + 1) % cylinder.profile.length]!;
+      return Math.hypot(next[0] - point[0], next[1] - point[1]);
+    });
+    for (const edgeLength of edgeLengths) {
+      expect(edgeLength).toBeCloseTo(edgeLengths[0]!);
     }
+    expect(cylinder.profile[0]![1]).toBeCloseTo(0.25 * (Math.SQRT2 - 1));
+    expect(report.resolved.defs.get('gas-block')!.solids.find(({ id }) => id === 'cylinder-support')?.kind).toBe('box');
   });
 
   it('moves the gas block with an overridden AK handguard length', () => {
