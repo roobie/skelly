@@ -41,7 +41,7 @@ approved anything visual. Install each worktree's check dependencies as CI does;
 
 | Where | Checks (run as CI does) |
 |---|---|
-| Root, every change | `npm run ci` and `npm run test:site` (manual until #99 lands; the installed pre-push hook then runs both) |
+| Root, every change | `npm run ci` and `npm run test:site` (the installed pre-push hook runs both for pushes that update refs) |
 | gungen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `validate`, `check:designs`, `build`. Regenerate deadvox's exported models when the export changes |
 | deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with `CHROME_BIN`), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
 | mobgen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `build` |
@@ -69,6 +69,7 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 
 ## Working rules
 
+- **Heavy runs:** serialize full suites, browser suites and builds with `flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 …` on a shared host; single-file tests, typecheck and lint stay unlocked. Why: agent-kit `skills/agent-mail/RESOURCES.md`.
 - **Bound every run:** wrap long shell runs in `timeout 300` (300 seconds). Vitest timeouts are
   in milliseconds; a harness's own tool timeout may be in seconds or milliseconds, so check its
   schema. A browser script bounds each stage as well as the whole run. Mixing the units once

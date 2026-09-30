@@ -1,6 +1,14 @@
 #!/bin/sh
 set -eu
 
+has_non_deletion=0
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in
+    ''|*[!0]*) has_non_deletion=1 ;;
+  esac
+done
+[ "$has_non_deletion" -eq 1 ] || exit 0
+
 npm_via_mise=0
 if command -v npm >/dev/null 2>&1; then
   npm_via_mise=0
