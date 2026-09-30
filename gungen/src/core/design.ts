@@ -130,16 +130,21 @@ export type ResolveAnchors = <Name extends string>(
 export type SrgbColor = readonly [red: number, green: number, blue: number];
 
 /**
- * Special colours are keyed by solid id and win over family colours. Unknown families use `fallbackColor`.
+ * Palette keeps legacy role colours for geometry inspection and optionally supplies material/slot finishing.
+ * A role selects its default slot and shade; colour follows the resolved material.
  */
 export interface Palette {
-  /**
-   * Keyed by the `PartDef.family` role, not the FAMILIES registry key: colour follows what the part does, so an AK
-   * receiver looks like any receiver.
-   */
   readonly familyColors: Readonly<Record<string, SrgbColor>>;
   readonly specialColors: Readonly<Record<string, SrgbColor>>;
   readonly fallbackColor: SrgbColor;
+  readonly materials?: Readonly<Record<string, SrgbColor>>;
+  readonly roleSlots?: Readonly<Record<string, string>>;
+  /** Role-default material ids, used when no special, part, design, or archetype finish applies. */
+  readonly roleMaterials?: Readonly<Record<string, string>>;
+  /** Multipliers, one RGB triple per role, applied to the material's sRGB base colour. */
+  readonly roleShades?: Readonly<Record<string, SrgbColor>>;
+  readonly specialMaterials?: Readonly<Record<string, string>>;
+  readonly archetypeFinishes?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
 /**
@@ -200,6 +205,8 @@ export interface GlbExportInput {
   /** Domain-selected assembly-space frames; core does not apply gun precedence. */
   readonly anchors: SelectedAnchors;
   readonly palette: Palette;
+  /** Optional design-level slot-to-material overrides, ahead of archetype defaults. */
+  readonly finish?: Readonly<Record<string, string>>;
   readonly asset: GlbAssetIdentity;
 }
 

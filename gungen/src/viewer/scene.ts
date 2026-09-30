@@ -28,12 +28,14 @@ import { meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
-import { GUN_PALETTE, solidColor, srgbToHex } from '../gun/palette.ts';
+import { GUN_PALETTE, resolveAppearance, solidColor, srgbToHex } from '../gun/palette.ts';
 
 const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
 const NORMAL = 0xf0_a2_4a;
 const UP = 0x4a_c1_f0;
+const ARCHETYPE_PREFIX = /^archetype-/;
+const GENERATED_SEED_SUFFIX = /-\d+$/;
 
 export interface Layers {
   readonly solids: Group;
@@ -79,7 +81,7 @@ const highlights = (issues: readonly Issue[]) => ({
 });
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
-export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => {
+export function buildLayers(report: Report, focus: readonly Issue[], colorMode: 'finish' | 'role' = 'finish'): Layers {
   const { resolved } = report;
   const hl = highlights(focus);
   const layers: Layers = {
@@ -113,7 +115,15 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     }
     for (const item of rendered) {
       const s = item.solids[0]!;
-      const color = failing ? FAIL : srgbToHex(solidColor(GUN_PALETTE, def.family, s.id));
+      const archetype = resolved.assembly.name.replace(ARCHETYPE_PREFIX, '').replace(GENERATED_SEED_SUFFIX, '');
+      const appearance = resolveAppearance(GUN_PALETTE, def.family, s.id, {
+        archetype,
+        material: def.material,
+        slot: def.slot,
+      });
+      const color = failing
+        ? FAIL
+        : srgbToHex(colorMode === 'role' ? solidColor(GUN_PALETTE, def.family, s.id) : appearance.color);
       const geometry = item.merged ? triangleGeometry(meshForSolidGroup(item.solids)) : meshGeometry(s);
       const mesh = new Mesh(
         geometry,
@@ -196,7 +206,7 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     ).computeLineDistances(),
   );
   return layers;
-};
+}
 
 export const disposeGroup = (group: Object3D) => {
   group.traverse((obj) => {

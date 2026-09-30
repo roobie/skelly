@@ -25,6 +25,8 @@ import { meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef, Solid } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
+const ARCHETYPE_PREFIX = /^archetype-/;
+const GENERATED_SEED_SUFFIX = /-\d+$/;
 
 /** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
 export const partNodeName = (id: string, family: string): string => `${id}:${family}`;
@@ -32,12 +34,46 @@ export const partNodeName = (id: string, family: string): string => `${id}:${fam
 /** The standard sRGB electro-optical transfer: one normalized channel to linear light. */
 export const srgbToLinear = (c: number): number => (c <= 0.040_45 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 
-const own = (table: Readonly<Record<string, SrgbColor>>, key: string): SrgbColor | undefined =>
+const own = <T>(table: Readonly<Record<string, T>>, key: string): T | undefined =>
   Object.hasOwn(table, key) ? table[key] : undefined;
 
 /** Same precedence as the gun palette's `solidColor`: solid id, then role, then the fallback. */
-const colorOf = (palette: Palette, role: string, solidId: string): SrgbColor =>
-  own(palette.specialColors, solidId) ?? own(palette.familyColors, role) ?? palette.fallbackColor;
+const defaultMaterial = (slot: string): string => {
+  if (slot === 'furniture') {
+    return 'polymer-black';
+  }
+  if (slot === 'accent') {
+    return 'rubber-black';
+  }
+  return 'steel-parkerized';
+};
+
+const appearanceOf = (
+  palette: Palette,
+  role: string,
+  solidId: string,
+  options: {
+    readonly archetype: string;
+    readonly finish?: Readonly<Record<string, string>> | undefined;
+    readonly material?: string | undefined;
+    readonly slot?: string | undefined;
+  },
+) => {
+  const slot = options.slot ?? own(palette.roleSlots ?? {}, role) ?? 'metal';
+  const legacySpecial = own(palette.specialColors, solidId);
+  const material =
+    own(palette.specialMaterials ?? {}, solidId) ??
+    (legacySpecial ? `special-${solidId}` : undefined) ??
+    options.material ??
+    own(options.finish ?? {}, slot) ??
+    own(own(palette.archetypeFinishes ?? {}, options.archetype) ?? {}, slot) ??
+    own(palette.roleMaterials ?? {}, role) ??
+    defaultMaterial(slot);
+  const base =
+    legacySpecial ?? own(palette.materials ?? {}, material) ?? own(palette.familyColors, role) ?? palette.fallbackColor;
+  const shade: SrgbColor = own(palette.roleShades ?? {}, role) ?? [1, 1, 1];
+  return { material, slot, color: [base[0] * shade[0], base[1] * shade[1], base[2] * shade[2]] as const };
+};
 
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
@@ -46,6 +82,8 @@ const badPaletteKey = (palette: Palette): string | undefined => {
   const entries: [string, SrgbColor][] = [
     ...Object.entries(palette.familyColors).map(([k, c]): [string, SrgbColor] => [`family ${k}`, c]),
     ...Object.entries(palette.specialColors).map(([k, c]): [string, SrgbColor] => [`special ${k}`, c]),
+    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c]),
+    ...Object.entries(palette.roleShades ?? {}).map(([k, c]): [string, SrgbColor] => [`shade ${k}`, c]),
     ['fallback', palette.fallbackColor],
   ];
   return entries.find(([, c]) => !validColor(c))?.[0];
@@ -315,12 +353,22 @@ export const exportGlb: ExportGlb = (input) => {
       { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
       ELEMENT_ARRAY_BUFFER,
     );
+    const appearance = appearanceOf(palette, part.def.family, solid.id, {
+      archetype: resolved.assembly.name.replace(ARCHETYPE_PREFIX, '').replace(GENERATED_SEED_SUFFIX, ''),
+      finish: input.finish,
+      material: part.def.material,
+      slot: part.def.slot,
+    });
     return {
       attributes: { POSITION: position, NORMAL: normal },
       indices,
-      material: materialFor(colorOf(palette, part.def.family, solid.id)),
+      material: materialFor(appearance.color),
       mode: 4,
-      extras: item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id },
+      extras: {
+        ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
+        material: appearance.material,
+        slot: appearance.slot,
+      },
     };
   };
 
@@ -338,10 +386,18 @@ export const exportGlb: ExportGlb = (input) => {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
     }
+    const appearance = appearanceOf(palette, part.def.family, drawn[0]?.id ?? '', {
+      archetype: resolved.assembly.name.replace(ARCHETYPE_PREFIX, '').replace(GENERATED_SEED_SUFFIX, ''),
+      finish: input.finish,
+      material: part.def.material,
+      slot: part.def.slot,
+    });
     node.extras = {
       part: part.id,
       family: part.family,
       role: part.def.family,
+      material: appearance.material,
+      slot: appearance.slot,
       solids: drawn.map((s) => s.id),
       ...(part.def.motion ? { motion: part.def.motion } : {}),
     };
@@ -372,7 +428,13 @@ export const exportGlb: ExportGlb = (input) => {
   }
 
   (nodes[0] as Json).extras = {
-    gungen: { assembly: resolved.assembly.name, unit: 'u', metresPerUnit: METRES_PER_UNIT, portFrameUnit: 'u' },
+    gungen: {
+      assembly: resolved.assembly.name,
+      unit: 'u',
+      metresPerUnit: METRES_PER_UNIT,
+      portFrameUnit: 'u',
+      materialCount: materials.length,
+    },
   };
 
   const json: Json = {

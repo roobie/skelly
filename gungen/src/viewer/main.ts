@@ -97,6 +97,15 @@ const paramPanel = $<HTMLElement>('param-panel');
 const designStatus = $<HTMLSelectElement>('design-status');
 const saveMessage = $<HTMLParagraphElement>('save-message');
 const saveButton = $<HTMLButtonElement>('save');
+const roleColors = $<HTMLInputElement>('role-colors');
+const initialQuery = new URLSearchParams(location.search);
+let colorMode: 'finish' | 'role' = initialQuery.get('colors') === 'role' ? 'role' : 'finish';
+roleColors.checked = colorMode === 'role';
+roleColors.addEventListener('change', () => {
+  colorMode = roleColors.checked ? 'role' : 'finish';
+  syncUrl();
+  redraw();
+});
 
 const readUiState = (): UiState => {
   try {
@@ -128,6 +137,9 @@ const syncUrl = () => {
   }
   if (hasOverrides(uiState.overrides)) {
     params.set('set', serializeOverrides(uiState.overrides));
+  }
+  if (colorMode === 'role') {
+    params.set('colors', 'role');
   }
   params.set(
     'camera',
@@ -291,7 +303,7 @@ const redraw = () => {
       disposeGroup(g);
     }
   }
-  layers = buildLayers(report, focused ? [focused] : report.issues);
+  layers = buildLayers(report, focused ? [focused] : report.issues, colorMode);
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);

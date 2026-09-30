@@ -933,6 +933,10 @@ and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
 bit-identically for every role that had one. Six roles that used to render as
 the `#888888` fallback now have colours (below).
 
+**Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Solid specials win, then part-owned material, archetype finish, and role default. Archetype finishes cover every slot; a design/part may override. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
+
+Deferred: generator finish variation; patterned finishes (UVs/textures); per-instance tint (deadvox); splitting slots (e.g. upper/lower metal).
+
 **Naming decision (BR, 2026-09-29).** A part has two names:
 
 - the registry key, the key in `FAMILIES` (e.g. `ak-receiver`, `frame`). It
@@ -940,10 +944,10 @@ the `#888888` fallback now have colours (below).
 - the role, `PartDef.family` (e.g. `receiver`), which says what the part does.
 
 Rules and port compatibility use the role. Anchors, prefabs and params use the
-registry key, because they depend on the recipe. The palette uses the role, so
-an AK receiver is coloured like any receiver. `PartFamily.name` is only used
-for labels. The doc comments on `PrefabCatalogueEntry.family`,
-`GunAnchorDeclarations` and `Palette.familyColors` say the same.
+registry key, because they depend on the recipe. Since the 2026-09-30 material
+ruling, the role selects the default slot and shade; the archetype finish picks
+the material, so an AK and AR receiver may differ. `PartFamily.name` is only
+used for labels. `familyColors` remains the role-only geometry-check palette.
 
 **Palette colours (BR accepted, 2026-09-29):** `frame` #4b4a45, `slide`
 #868d97, `cylinder` #4a5566, `front-sight` #363d47, `gas-block` #2f3238,

@@ -13,7 +13,7 @@ import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
-import { GUN_PALETTE, solidColor } from '../src/gun/palette.ts';
+import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { variant } from './helpers.ts';
 
@@ -27,6 +27,7 @@ const design = (name: string): Assembly => {
 
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
+const ARCHETYPE_PREFIX = /^archetype-/;
 
 const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET) => {
   const result = exportGunGlb(assembly, asset);
@@ -121,10 +122,12 @@ describe('glb export: axes and units', () => {
 describe('glb export: nodes', () => {
   const ar = exported(design('archetype-ar'));
 
-  it('writes a valid glb 2.0 container with one scene', () => {
+  it('writes a valid glb 2.0 container with one scene and reports the shared material count', () => {
     expect(ar.read.json.asset.version).toBe('2.0');
     expect(ar.read.json.scenes).toHaveLength(1);
-    expect(ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]?.name).toBe(ASSET.id);
+    const root = ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]!;
+    expect(root.name).toBe(ASSET.id);
+    expect((root.extras!.gungen as { materialCount: number }).materialCount).toBe(ar.read.json.materials.length);
   });
 
   it('emits the BCG as its own node with linear travel extras and keeps port metadata children', () => {
@@ -361,9 +364,13 @@ describe('glb export: meshes', () => {
         if (!solidId) {
           throw new Error(`No source solid for ${id} primitive ${prim.indices}.`);
         }
-        const srgb = solidColor(GUN_PALETTE, role, solidId);
+        const appearance = resolveAppearance(GUN_PALETTE, role, solidId, {
+          archetype: ar.resolved.assembly.name.replace(ARCHETYPE_PREFIX, ''),
+        });
         const factor = json.materials[prim.material]!.pbrMetallicRoughness.baseColorFactor;
-        near(factor.slice(0, 3), srgb.map(srgbToLinear));
+        near(factor.slice(0, 3), appearance.color.map(srgbToLinear));
+        expect(extras?.material).toBe(appearance.material);
+        expect(extras?.slot).toBe(appearance.slot);
         expect(factor[3]).toBe(1);
       }
       expect(inst.family).toBeTruthy();

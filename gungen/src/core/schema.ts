@@ -111,6 +111,10 @@ export interface PartMotion {
 
 export interface PartDef {
   readonly family: string;
+  /** Optional finish override for attachments or aftermarket parts. */
+  readonly material?: string;
+  /** Optional material slot override; otherwise selected from the part role. */
+  readonly slot?: string;
   readonly ports: readonly PortDef[];
   readonly solids: readonly Solid[];
   /** Optional higher-resolution scene tessellation; never used for collision checks. */
