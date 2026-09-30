@@ -93,43 +93,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -8.5,
-        -1,
-        -1,
+        -1.25,
+        -1.25,
       ],
       [
         -8.5,
-        -1,
-        1,
+        -1.25,
+        1.25,
       ],
       [
         -8.5,
-        1,
-        -1,
+        1.25,
+        -1.25,
       ],
       [
         -8.5,
-        1,
-        1,
+        1.25,
+        1.25,
       ],
       [
         -5.5,
-        -1,
-        -1,
+        -1.25,
+        -1.25,
       ],
       [
         -5.5,
-        -1,
-        1,
+        -1.25,
+        1.25,
       ],
       [
         -5.5,
-        1,
-        -1,
+        1.25,
+        -1.25,
       ],
       [
         -5.5,
-        1,
-        1,
+        1.25,
+        1.25,
       ],
     ],
     "id": "carrier-body",
@@ -139,44 +139,44 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -7.25,
+        -5.5,
         -0.5,
-        2,
+        1.25,
       ],
       [
-        -7.25,
+        -5.5,
         -0.5,
-        2.5,
+        1.75,
       ],
       [
-        -7.25,
+        -5.5,
         0.5,
-        2,
+        1.25,
       ],
       [
-        -7.25,
+        -5.5,
         0.5,
-        2.5,
+        1.75,
       ],
       [
-        -5.75,
+        -4,
         -0.5,
-        2,
+        1.25,
       ],
       [
-        -5.75,
+        -4,
         -0.5,
-        2.5,
+        1.75,
       ],
       [
-        -5.75,
+        -4,
         0.5,
-        2,
+        1.25,
       ],
       [
-        -5.75,
+        -4,
         0.5,
-        2.5,
+        1.75,
       ],
     ],
     "id": "charging-handle",
@@ -2400,42 +2400,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -1.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -1.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -1.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -1.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -0.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -0.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -0.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
     ],
     "id": "receiver-ak-bottom-after-window",
@@ -2447,42 +2447,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -0.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -0.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         0,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         0,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         0,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         0,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
     ],
     "id": "receiver-ak-bottom-after-window-span-1",
@@ -2494,42 +2494,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -16,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -16,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -16,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -15.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -15.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -15.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -15.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
     ],
     "id": "receiver-ak-bottom-before-window",
@@ -2541,42 +2541,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -15.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -15.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -15.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -7,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -7,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -7,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -7,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
     ],
     "id": "receiver-ak-bottom-before-window-span-1",
@@ -2593,17 +2593,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -16,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -16,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -15.5,
@@ -2613,17 +2613,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -15.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-bottom-far",
@@ -2640,17 +2640,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -15.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -0.5,
@@ -2660,17 +2660,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-bottom-far-span-1",
@@ -2687,17 +2687,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         0,
@@ -2707,17 +2707,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         -2.5,
-        -1.25,
+        -1.35,
       ],
       [
         0,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         0,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-bottom-far-span-2",
@@ -2729,7 +2729,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -16,
@@ -2738,18 +2738,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -16,
-        -1.25,
+        -1.35,
         2,
       ],
       [
         -15.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -15.5,
@@ -2758,12 +2758,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
         2,
       ],
     ],
@@ -2776,7 +2776,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -15.5,
@@ -2785,18 +2785,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
         2,
       ],
       [
         -0.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -0.5,
@@ -2805,12 +2805,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
         2,
       ],
     ],
@@ -2823,7 +2823,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         -0.5,
@@ -2832,18 +2832,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
         2,
       ],
       [
         0,
         -2.5,
-        1.25,
+        1.35,
       ],
       [
         0,
@@ -2852,12 +2852,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         0,
-        -1.25,
+        -1.35,
         2,
       ],
     ],
@@ -2868,14 +2868,108 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -16,
+        -7,
+        -2.5,
+        1.25,
+      ],
+      [
+        -7,
+        -2.5,
+        1.35,
+      ],
+      [
+        -7,
+        -1.35,
+        1.25,
+      ],
+      [
+        -7,
+        -1.35,
+        1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.25,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -1.35,
+        1.25,
+      ],
+      [
+        -1.5,
+        -1.35,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ak-bottom-window-high",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -7,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -7,
+        -2.5,
         -1.25,
+      ],
+      [
+        -7,
+        -1.35,
+        -1.35,
+      ],
+      [
+        -7,
+        -1.35,
+        -1.25,
+      ],
+      [
+        -1.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        -1.25,
+      ],
+      [
+        -1.5,
+        -1.35,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -1.35,
+        -1.25,
+      ],
+    ],
+    "id": "receiver-ak-bottom-window-low",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        -1.35,
         -2,
       ],
       [
         -16,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -16,
@@ -2885,27 +2979,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         1,
-        -1.25,
+        -1.35,
       ],
       [
-        -15.666667,
-        1.25,
-        -1.9375,
+        -15.533333,
+        1.35,
+        -1.9125,
       ],
       [
-        -15.666667,
-        1.25,
-        -1.25,
+        -15.533333,
+        1.35,
+        -1.35,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -15.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -15.5,
@@ -2914,13 +3008,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -15.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-far-side",
@@ -2931,13 +3025,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -15.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -15.5,
@@ -2946,23 +3040,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -15.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -0.5,
@@ -2971,13 +3065,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-far-side-span-1",
@@ -2988,13 +3082,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -0.5,
@@ -3003,23 +3097,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         0,
-        -1.25,
+        -1.35,
         -2,
       ],
       [
         0,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         0,
@@ -3028,13 +3122,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         0,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-far-side-span-2",
@@ -3045,43 +3139,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -0.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         0,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         0,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         0,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
     ],
     "id": "receiver-ak-front-adapter",
@@ -3091,38 +3185,38 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4.5,
-        -1.25,
-        1.25,
+        -4,
+        -1.35,
+        1.35,
       ],
       [
-        -4.5,
-        -1.25,
+        -4,
+        -1.35,
         2,
       ],
       [
-        -4.5,
+        -4,
         1,
         2,
       ],
       [
-        -4.5,
-        1.25,
-        1.25,
+        -4,
+        1.35,
+        1.35,
       ],
       [
-        -4.5,
-        1.25,
-        1.9375,
-      ],
-      [
-        -0.5,
-        -1.25,
-        1.25,
+        -4,
+        1.35,
+        1.9125,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
         2,
       ],
       [
@@ -3132,13 +3226,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
     ],
     "id": "receiver-ak-near-side-after-window",
@@ -3149,12 +3243,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -0.5,
-        -1.25,
+        -1.35,
         2,
       ],
       [
@@ -3164,22 +3258,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
       [
         0,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         0,
-        -1.25,
+        -1.35,
         2,
       ],
       [
@@ -3189,13 +3283,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         0,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
     ],
     "id": "receiver-ak-near-side-after-window-span-1",
@@ -3206,42 +3300,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -16,
-        -1.25,
+        -1.35,
         2,
-      ],
-      [
-        -16,
-        1,
-        1.25,
       ],
       [
         -16,
         1,
+        1.35,
+      ],
+      [
+        -16,
+        1,
         2,
       ],
       [
-        -15.666667,
-        1.25,
-        1.25,
+        -15.533333,
+        1.35,
+        1.35,
       ],
       [
-        -15.666667,
-        1.25,
-        1.9375,
-      ],
-      [
-        -15.5,
-        -1.25,
-        1.25,
+        -15.533333,
+        1.35,
+        1.9125,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
+        1.35,
+      ],
+      [
+        -15.5,
+        -1.35,
         2,
       ],
       [
@@ -3251,13 +3345,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
     ],
     "id": "receiver-ak-near-side-before-window",
@@ -3268,12 +3362,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -1.25,
-        1.25,
+        -1.35,
+        1.35,
       ],
       [
         -15.5,
-        -1.25,
+        -1.35,
         2,
       ],
       [
@@ -3283,38 +3377,38 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
       [
-        -9.5,
-        -1.25,
-        1.25,
+        -12.25,
+        -1.35,
+        1.35,
       ],
       [
-        -9.5,
-        -1.25,
+        -12.25,
+        -1.35,
         2,
       ],
       [
-        -9.5,
+        -12.25,
         1,
         2,
       ],
       [
-        -9.5,
-        1.25,
-        1.25,
+        -12.25,
+        1.35,
+        1.35,
       ],
       [
-        -9.5,
-        1.25,
-        1.9375,
+        -12.25,
+        1.35,
+        1.9125,
       ],
     ],
     "id": "receiver-ak-near-side-before-window-span-1",
@@ -3325,53 +3419,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -16,
-        -1.25,
-        1.25,
-      ],
-      [
-        -16,
-        1,
-        -1.25,
+        -1.35,
+        1.35,
       ],
       [
         -16,
         1,
-        1.25,
+        -1.35,
       ],
       [
-        -15.666667,
-        1.25,
-        -1.25,
+        -16,
+        1,
+        1.35,
       ],
       [
-        -15.666667,
-        1.25,
-        1.25,
+        -15.533333,
+        1.35,
+        -1.35,
       ],
       [
-        -15.5,
-        -1.25,
-        -1.25,
-      ],
-      [
-        -15.5,
-        -1.25,
-        1.25,
+        -15.533333,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        -1.25,
+        -1.35,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.25,
+        -1.35,
+        1.35,
+      ],
+      [
+        -15.5,
+        1.35,
+        -1.35,
+      ],
+      [
+        -15.5,
+        1.35,
+        1.35,
       ],
     ],
     "id": "receiver-ak-rear-adapter",
@@ -3381,34 +3475,34 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.666667,
-        1.25,
-        -1.25,
+        -15.533333,
+        1.35,
+        -1.35,
       ],
       [
-        -15.666667,
-        1.25,
-        1.25,
-      ],
-      [
-        -15.5,
-        1.25,
-        -1.25,
+        -15.533333,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.25,
+        1.35,
+        -1.35,
       ],
       [
         -15.5,
-        1.375,
-        -1.25,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
         1.375,
-        1.25,
+        -1.35,
+      ],
+      [
+        -15.5,
+        1.375,
+        1.35,
       ],
     ],
     "id": "receiver-ak-top",
@@ -3418,24 +3512,24 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.666667,
-        1.25,
-        -1.9375,
+        -15.533333,
+        1.35,
+        -1.9125,
       ],
       [
-        -15.666667,
-        1.25,
-        -1.25,
-      ],
-      [
-        -15.5,
-        1.25,
-        -1.9375,
+        -15.533333,
+        1.35,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.9125,
+      ],
+      [
+        -15.5,
+        1.35,
+        -1.35,
       ],
       [
         -15.5,
@@ -3445,7 +3539,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         1.375,
-        -1.25,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-top-far",
@@ -3456,13 +3550,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -15.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -15.5,
@@ -3472,7 +3566,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         1.375,
-        -1.25,
+        -1.35,
       ],
       [
         -14.666667,
@@ -3480,19 +3574,19 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.75,
       ],
       [
-        -14,
-        2.5,
-        -1.25,
+        -14.133333,
+        2.4,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -0.5,
@@ -3501,8 +3595,8 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        2.5,
-        -1.25,
+        2.4,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-top-far-span-1",
@@ -3513,13 +3607,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -0.5,
@@ -3528,18 +3622,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        2.5,
-        -1.25,
+        2.4,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        -1.9375,
+        1.35,
+        -1.9125,
       ],
       [
         0,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         0,
@@ -3548,8 +3642,8 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        2.5,
-        -1.25,
+        2.4,
+        -1.35,
       ],
     ],
     "id": "receiver-ak-top-far-span-2",
@@ -3559,29 +3653,29 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.666667,
-        1.25,
-        1.25,
+        -15.533333,
+        1.35,
+        1.35,
       ],
       [
-        -15.666667,
-        1.25,
-        1.9375,
-      ],
-      [
-        -15.5,
-        1.25,
-        1.25,
+        -15.533333,
+        1.35,
+        1.9125,
       ],
       [
         -15.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.35,
+      ],
+      [
+        -15.5,
+        1.35,
+        1.9125,
       ],
       [
         -15.5,
         1.375,
-        1.25,
+        1.35,
       ],
       [
         -15.5,
@@ -3597,18 +3691,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
       [
         -15.5,
         1.375,
-        1.25,
+        1.35,
       ],
       [
         -15.5,
@@ -3621,19 +3715,19 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.75,
       ],
       [
-        -14,
-        2.5,
-        1.25,
+        -14.133333,
+        2.4,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
       [
         -0.5,
@@ -3642,8 +3736,8 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        2.5,
-        1.25,
+        2.4,
+        1.35,
       ],
     ],
     "id": "receiver-ak-top-near-span-1",
@@ -3654,13 +3748,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
       [
         -0.5,
@@ -3669,18 +3763,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        2.5,
-        1.25,
+        2.4,
+        1.35,
       ],
       [
         0,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
       ],
       [
         0,
-        1.25,
-        1.9375,
+        1.35,
+        1.9125,
       ],
       [
         0,
@@ -3689,8 +3783,8 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        2.5,
-        1.25,
+        2.4,
+        1.35,
       ],
     ],
     "id": "receiver-ak-top-near-span-2",
@@ -3701,23 +3795,33 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.25,
-      ],
-      [
-        -15.5,
-        1.375,
-        -1.25,
+        1.35,
+        1.35,
       ],
       [
         -15.5,
         1.375,
-        1.25,
+        -1.35,
+      ],
+      [
+        -15.5,
+        1.375,
+        1.35,
+      ],
+      [
+        -14.133333,
+        2.4,
+        -1.35,
+      ],
+      [
+        -14.133333,
+        2.4,
+        1.35,
       ],
       [
         -14,
@@ -3731,13 +3835,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        2.4,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2.4,
+        1.35,
       ],
       [
         -0.5,
@@ -3758,13 +3872,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        2.4,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2.4,
+        1.35,
       ],
       [
         -0.5,
@@ -3778,13 +3902,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
-        -1.25,
+        1.35,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        1.25,
+        1.35,
+        1.35,
+      ],
+      [
+        0,
+        2.4,
+        -1.35,
+      ],
+      [
+        0,
+        2.4,
+        1.35,
       ],
       [
         0,
@@ -6023,42 +6157,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -1.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -1.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -1.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -1.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-after-window",
@@ -6070,42 +6204,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-after-window-span-1",
@@ -6117,42 +6251,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -16,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-before-window",
@@ -6164,42 +6298,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -7,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -7,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -7,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -7,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-before-window-span-1",
@@ -6216,7 +6350,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -16,
@@ -6225,13 +6359,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
@@ -6241,7 +6375,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
@@ -6250,13 +6384,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-bottom-far",
@@ -6273,7 +6407,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
@@ -6282,13 +6416,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
@@ -6298,7 +6432,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
@@ -6307,13 +6441,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-bottom-far-span-1",
@@ -6330,7 +6464,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
@@ -6339,13 +6473,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
@@ -6355,7 +6489,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
@@ -6364,13 +6498,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-bottom-far-span-2",
@@ -6382,7 +6516,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -16,
@@ -6396,18 +6530,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -16,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -6421,12 +6555,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -6439,7 +6573,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -6453,18 +6587,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -6478,12 +6612,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -6496,7 +6630,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -6510,18 +6644,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         0,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         0,
@@ -6535,12 +6669,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -6558,17 +6692,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -7,
-        -0.75,
+        -0.6,
         1.25,
       ],
       [
         -7,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -1.5,
@@ -6578,17 +6712,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -1.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -1.5,
-        -0.75,
+        -0.6,
         1.25,
       ],
       [
         -1.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-window-high",
@@ -6600,7 +6734,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -7,
@@ -6609,18 +6743,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -7,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -7,
-        -0.75,
+        -0.6,
         -1.25,
       ],
       [
         -1.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -1.5,
@@ -6629,12 +6763,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -1.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -1.5,
-        -0.75,
+        -0.6,
         -1.25,
       ],
     ],
@@ -6646,43 +6780,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -16,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-far-side",
@@ -6693,43 +6827,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-far-side-span-1",
@@ -6740,43 +6874,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         -2,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-far-side-span-2",
@@ -6787,43 +6921,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
     ],
     "id": "receiver-ar-front-adapter",
@@ -6834,42 +6968,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -6881,42 +7015,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -6928,42 +7062,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -16,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -16,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -16,
-        1.25,
+        1.1,
         2,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -6975,42 +7109,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -9,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -9,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -9,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -7022,43 +7156,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -16,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
     ],
     "id": "receiver-ar-rear-adapter",
@@ -7069,43 +7203,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -16,
-        1.25,
-        1.5,
-      ],
-      [
-        -16,
-        2.5,
-        -1.5,
+        1.1,
+        1.35,
       ],
       [
         -16,
         2.5,
-        1.5,
+        -1.35,
+      ],
+      [
+        -16,
+        2.5,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
         2.5,
-        1.5,
+        1.35,
       ],
     ],
     "id": "receiver-ar-top",
@@ -7116,13 +7250,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -16,
@@ -7137,17 +7271,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
@@ -7162,7 +7296,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-top-far",
@@ -7173,13 +7307,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
@@ -7194,17 +7328,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
@@ -7219,7 +7353,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-top-far-span-1",
@@ -7230,13 +7364,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
@@ -7251,17 +7385,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         -2,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
@@ -7276,7 +7410,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         2.5,
-        -1.5,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-top-far-span-2",
@@ -7287,12 +7421,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -16,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -7303,7 +7437,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -16,
@@ -7312,12 +7446,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -7328,7 +7462,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -7344,12 +7478,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -7360,7 +7494,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -7369,12 +7503,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -7385,7 +7519,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -7401,12 +7535,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -7417,7 +7551,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -7426,12 +7560,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -7442,7 +7576,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         0,
@@ -7458,43 +7592,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
         2.5,
-        1.5,
+        -1.35,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
         2.5,
-        1.5,
+        1.35,
       ],
     ],
     "id": "receiver-ar-top-span-1",
@@ -7505,43 +7639,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
         2.5,
-        1.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.35,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
         2.5,
-        1.5,
+        1.35,
       ],
     ],
     "id": "receiver-ar-top-span-2",
@@ -9340,42 +9474,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -1.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -1.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -1.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -1.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-after-window",
@@ -9387,42 +9521,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-after-window-span-1",
@@ -9434,42 +9568,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -16,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-before-window",
@@ -9481,42 +9615,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -7,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -7,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -7,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -7,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-before-window-span-1",
@@ -9533,7 +9667,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -16,
@@ -9542,13 +9676,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
@@ -9558,7 +9692,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
@@ -9567,13 +9701,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-bottom-far",
@@ -9590,7 +9724,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
@@ -9599,13 +9733,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
@@ -9615,7 +9749,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
@@ -9624,13 +9758,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-bottom-far-span-1",
@@ -9647,7 +9781,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
@@ -9656,13 +9790,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
@@ -9672,7 +9806,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
@@ -9681,13 +9815,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-bottom-far-span-2",
@@ -9699,7 +9833,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -16,
@@ -9713,18 +9847,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -16,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -9738,12 +9872,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -9756,7 +9890,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -9770,18 +9904,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -9795,12 +9929,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -9813,7 +9947,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -9827,18 +9961,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         0,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         0,
@@ -9852,12 +9986,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -9875,17 +10009,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -7,
-        -0.75,
+        -0.6,
         1.25,
       ],
       [
         -7,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -1.5,
@@ -9895,17 +10029,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -1.5,
         -2.5,
-        1.5,
+        1.35,
       ],
       [
         -1.5,
-        -0.75,
+        -0.6,
         1.25,
       ],
       [
         -1.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
     ],
     "id": "receiver-ar-bottom-window-high",
@@ -9917,7 +10051,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -7,
@@ -9926,18 +10060,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -7,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -7,
-        -0.75,
+        -0.6,
         -1.25,
       ],
       [
         -1.5,
         -2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -1.5,
@@ -9946,12 +10080,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -1.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -1.5,
-        -0.75,
+        -0.6,
         -1.25,
       ],
     ],
@@ -9963,43 +10097,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -16,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-far-side",
@@ -10010,43 +10144,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-far-side-span-1",
@@ -10057,43 +10191,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         -2,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-far-side-span-2",
@@ -10104,43 +10238,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
     ],
     "id": "receiver-ar-front-adapter",
@@ -10151,42 +10285,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -10198,42 +10332,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
         0,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         0,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -10245,42 +10379,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -16,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -16,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -16,
-        1.25,
+        1.1,
         2,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -10292,42 +10426,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -9,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -9,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -9,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -10339,43 +10473,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -16,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -16,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
     ],
     "id": "receiver-ar-rear-adapter",
@@ -10386,43 +10520,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -16,
-        1.25,
-        1.5,
-      ],
-      [
-        -16,
-        2.5,
-        -1.5,
+        1.1,
+        1.35,
       ],
       [
         -16,
         2.5,
-        1.5,
+        -1.35,
+      ],
+      [
+        -16,
+        2.5,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
         2.5,
-        1.5,
+        1.35,
       ],
     ],
     "id": "receiver-ar-top",
@@ -10433,13 +10567,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -16,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -16,
@@ -10454,17 +10588,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
@@ -10479,7 +10613,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-top-far",
@@ -10490,13 +10624,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
@@ -10511,17 +10645,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
@@ -10536,7 +10670,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-top-far-span-1",
@@ -10547,13 +10681,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
@@ -10568,17 +10702,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         -2,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
@@ -10593,7 +10727,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         2.5,
-        -1.5,
+        -1.35,
       ],
     ],
     "id": "receiver-ar-top-far-span-2",
@@ -10604,12 +10738,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -16,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -10620,7 +10754,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -16,
@@ -10629,12 +10763,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -10645,7 +10779,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -10661,12 +10795,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -10677,7 +10811,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -15.5,
@@ -10686,12 +10820,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -10702,7 +10836,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -10718,12 +10852,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -10734,7 +10868,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         -0.5,
@@ -10743,12 +10877,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -10759,7 +10893,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         2.5,
-        1.5,
+        1.35,
       ],
       [
         0,
@@ -10775,43 +10909,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
         2.5,
-        1.5,
+        -1.35,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         -0.5,
         2.5,
-        1.5,
+        1.35,
       ],
     ],
     "id": "receiver-ar-top-span-1",
@@ -10822,43 +10956,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
         2.5,
-        1.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.35,
       ],
       [
         0,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         0,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         0,
         2.5,
-        -1.5,
+        -1.35,
       ],
       [
         0,
         2.5,
-        1.5,
+        1.35,
       ],
     ],
     "id": "receiver-ar-top-span-2",
@@ -12223,43 +12357,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
     ],
     "id": "receiver-shell-side-far",
@@ -12280,12 +12414,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -1.5,
       ],
       [
@@ -12300,12 +12434,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -1.5,
       ],
     ],
@@ -12317,12 +12451,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         -1.5,
       ],
       [
@@ -12337,12 +12471,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -1.5,
       ],
       [
@@ -12364,42 +12498,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -4,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -4,
-        0.5,
+        0.65,
         2,
       ],
       [
         -4,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -4,
-        1.75,
+        1.6,
         2,
       ],
       [
         -0.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -0.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
     ],
@@ -12421,12 +12555,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -4,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -4,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -12441,12 +12575,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -12458,12 +12592,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -4,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -4,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -12478,12 +12612,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -12552,42 +12686,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -15.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
         -10,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -10,
-        0.5,
+        0.65,
         2,
       ],
       [
         -10,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -10,
-        1.75,
+        1.6,
         2,
       ],
     ],
@@ -12609,12 +12743,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -12629,12 +12763,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -10,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -10,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -12646,12 +12780,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -12666,12 +12800,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -10,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -10,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -12693,12 +12827,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -12713,12 +12847,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -14205,43 +14339,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-shell-side-far",
@@ -14262,12 +14396,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -1.5,
       ],
       [
@@ -14282,12 +14416,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -1.5,
       ],
     ],
@@ -14299,12 +14433,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -1.5,
       ],
       [
@@ -14319,12 +14453,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -1.5,
       ],
       [
@@ -14346,42 +14480,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -14403,12 +14537,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
@@ -14423,12 +14557,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -14440,12 +14574,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -14460,12 +14594,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -14534,42 +14668,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -9,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -9,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -9,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -14591,12 +14725,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
@@ -14611,12 +14745,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -14628,12 +14762,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -14648,12 +14782,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -9,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -14722,12 +14856,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -14742,12 +14876,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -16036,43 +16170,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
     ],
     "id": "receiver-shell-side-far",
@@ -16093,12 +16227,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -1.5,
       ],
       [
@@ -16113,12 +16247,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -1.5,
       ],
     ],
@@ -16130,12 +16264,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         -1.5,
       ],
       [
@@ -16150,12 +16284,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -1.5,
       ],
       [
@@ -16177,42 +16311,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -3,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -3,
-        0.5,
+        0.65,
         2,
       ],
       [
         -3,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -3,
-        1.75,
+        1.6,
         2,
       ],
       [
         -0.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -0.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
     ],
@@ -16234,12 +16368,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -3,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -3,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -16254,12 +16388,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -16271,12 +16405,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -3,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -3,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -16291,12 +16425,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -16365,42 +16499,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -15.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
         -9,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -9,
-        0.5,
+        0.65,
         2,
       ],
       [
         -9,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -9,
-        1.75,
+        1.6,
         2,
       ],
     ],
@@ -16422,12 +16556,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -16442,12 +16576,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -9,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -16459,12 +16593,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -16479,12 +16613,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -9,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -16506,43 +16640,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -4,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -4,
-        1.75,
-        1,
-      ],
-      [
-        -4,
-        2.5,
-        -1,
+        1.6,
+        0.85,
       ],
       [
         -4,
         2.5,
-        1,
+        -0.85,
+      ],
+      [
+        -4,
+        2.5,
+        0.85,
       ],
       [
         -0.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -0.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -0.5,
         2.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
         2.5,
-        1,
+        0.85,
       ],
     ],
     "id": "receiver-shell-top-front",
@@ -16553,43 +16687,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -15.5,
-        1.75,
-        1,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1,
+        1.6,
+        0.85,
       ],
       [
         -15.5,
         2.5,
-        1,
+        -0.85,
+      ],
+      [
+        -15.5,
+        2.5,
+        0.85,
       ],
       [
         -9,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -9,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -9,
         2.5,
-        -1,
+        -0.85,
       ],
       [
         -9,
         2.5,
-        1,
+        0.85,
       ],
     ],
     "id": "receiver-shell-top-rear",
@@ -16600,13 +16734,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -15.5,
@@ -16616,17 +16750,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -0.5,
@@ -16636,7 +16770,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -1,
+        -0.85,
       ],
     ],
     "id": "receiver-shell-top-side-left",
@@ -16647,18 +16781,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
         -15.5,
         2.5,
-        1,
+        0.85,
       ],
       [
         -15.5,
@@ -16667,18 +16801,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
       [
         -0.5,
         2.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
@@ -18018,43 +18152,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
-        -1,
+        1.6,
+        -0.85,
       ],
     ],
     "id": "receiver-shell-side-far",
@@ -18075,12 +18209,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -1.5,
       ],
       [
@@ -18095,12 +18229,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -1.5,
       ],
     ],
@@ -18112,12 +18246,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         -1.5,
       ],
       [
@@ -18132,12 +18266,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -1.5,
       ],
       [
@@ -18159,42 +18293,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -4,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -4,
-        0.5,
+        0.65,
         2,
       ],
       [
         -4,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -4,
-        1.75,
+        1.6,
         2,
       ],
       [
         -0.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -0.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
     ],
@@ -18216,12 +18350,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -4,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -4,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -18236,12 +18370,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -18253,12 +18387,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -4,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -4,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -18273,12 +18407,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -18347,42 +18481,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -15.5,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
         -10,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -10,
-        0.5,
+        0.65,
         2,
       ],
       [
         -10,
-        1.75,
-        1,
+        1.6,
+        0.85,
       ],
       [
         -10,
-        1.75,
+        1.6,
         2,
       ],
     ],
@@ -18404,12 +18538,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -18424,12 +18558,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -10,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -10,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -18441,12 +18575,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -18461,12 +18595,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -10,
-        1.75,
+        1.6,
         1.5,
       ],
       [
         -10,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -18488,12 +18622,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -15.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -18508,12 +18642,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         -2,
       ],
       [
         -0.5,
-        1.75,
+        1.6,
         2,
       ],
       [
@@ -19577,43 +19711,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
-        -1.5,
+        -0.6,
+        -1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
-        -1.5,
+        1.1,
+        -1.35,
       ],
     ],
     "id": "receiver-shell-side-far",
@@ -19634,12 +19768,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         -1.5,
       ],
       [
@@ -19654,12 +19788,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -2,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         -1.5,
       ],
     ],
@@ -19671,12 +19805,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         -1.5,
       ],
       [
@@ -19691,12 +19825,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -1.5,
       ],
       [
@@ -19718,42 +19852,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -0.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -0.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -19775,12 +19909,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
@@ -19795,12 +19929,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -0.5,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -19812,12 +19946,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -19832,12 +19966,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -19906,42 +20040,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -15.5,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
         -9,
-        -0.75,
-        1.5,
+        -0.6,
+        1.35,
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         2,
       ],
       [
         -9,
-        1.25,
-        1.5,
+        1.1,
+        1.35,
       ],
       [
         -9,
-        1.25,
+        1.1,
         2,
       ],
     ],
@@ -19963,12 +20097,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -15.5,
-        -0.75,
+        -0.6,
         2,
       ],
       [
@@ -19983,12 +20117,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         1.5,
       ],
       [
         -9,
-        -0.75,
+        -0.6,
         2,
       ],
     ],
@@ -20000,12 +20134,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -20020,12 +20154,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        1.25,
+        1.1,
         1.5,
       ],
       [
         -9,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -20094,12 +20228,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -15.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -20114,12 +20248,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         -2,
       ],
       [
         -0.5,
-        1.25,
+        1.1,
         2,
       ],
       [
@@ -21971,42 +22105,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -16,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -16,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -16,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -15.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -15.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
     ],
     "id": "receiver-pump-bottom",
@@ -22023,17 +22157,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -16,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -16,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -15.5,
@@ -22043,17 +22177,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-bottom-far",
@@ -22070,17 +22204,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -0.5,
@@ -22090,17 +22224,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-bottom-far-span-1",
@@ -22117,17 +22251,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         0,
@@ -22137,17 +22271,17 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         0,
-        -1,
+        -0.85,
         -2,
       ],
       [
         0,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-bottom-far-span-2",
@@ -22159,7 +22293,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -16,
@@ -22168,18 +22302,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -16,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -16,
-        -1,
+        -0.85,
         2,
       ],
       [
         -15.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -15.5,
@@ -22188,12 +22322,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         2,
       ],
     ],
@@ -22206,7 +22340,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -15.5,
@@ -22215,18 +22349,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         2,
       ],
       [
         -0.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
@@ -22235,12 +22369,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         2,
       ],
     ],
@@ -22253,7 +22387,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
@@ -22262,18 +22396,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         2,
       ],
       [
         0,
         -3.5,
-        1,
+        0.85,
       ],
       [
         0,
@@ -22282,12 +22416,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         0,
-        -1,
+        -0.85,
         2,
       ],
     ],
@@ -22300,42 +22434,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -15.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -0.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
     ],
     "id": "receiver-pump-bottom-span-1",
@@ -22347,42 +22481,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
         -3.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         0,
         -3.5,
-        -1,
+        -0.85,
       ],
       [
         0,
         -3.5,
-        1,
+        0.85,
       ],
       [
         0,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         0,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
     ],
     "id": "receiver-pump-bottom-span-2",
@@ -22393,33 +22527,33 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -16,
-        -1,
-        -1,
-      ],
-      [
-        -16,
-        0,
-        -2,
+        -0.85,
+        -0.85,
       ],
       [
         -16,
         0,
-        -1,
+        -2,
+      ],
+      [
+        -16,
+        0,
+        -0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -15.5,
@@ -22434,7 +22568,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         0.1875,
-        -1,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-far-side",
@@ -22445,13 +22579,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -15.5,
@@ -22466,27 +22600,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         0.1875,
-        -1,
+        -0.85,
       ],
       [
-        -13.333333,
-        1,
-        -1.75,
+        -13.733333,
+        0.85,
+        -1.7875,
       ],
       [
-        -13.333333,
-        1,
-        -1,
+        -13.733333,
+        0.85,
+        -0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -0.5,
@@ -22495,13 +22629,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1,
-        -1.75,
+        0.85,
+        -1.7875,
       ],
       [
         -0.5,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-far-side-span-1",
@@ -22512,13 +22646,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -1,
+        -0.85,
         -2,
       ],
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -0.5,
@@ -22527,23 +22661,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1,
-        -1.75,
+        0.85,
+        -1.7875,
       ],
       [
         -0.5,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
       [
         0,
-        -1,
+        -0.85,
         -2,
       ],
       [
         0,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         0,
@@ -22552,13 +22686,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1,
-        -1.75,
+        0.85,
+        -1.7875,
       ],
       [
         0,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-far-side-span-2",
@@ -22569,43 +22703,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -0.5,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
       [
         -0.5,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         0,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         0,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         0,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
       [
         0,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
     ],
     "id": "receiver-pump-front-adapter",
@@ -22616,12 +22750,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -3.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -3.5,
-        -1,
+        -0.85,
         2,
       ],
       [
@@ -22631,22 +22765,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -3.5,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         -3.5,
-        1,
-        1.75,
+        0.85,
+        1.7875,
       ],
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         2,
       ],
       [
@@ -22656,13 +22790,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         -0.5,
-        1,
-        1.75,
+        0.85,
+        1.7875,
       ],
     ],
     "id": "receiver-pump-near-side-after-window",
@@ -22673,12 +22807,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -0.5,
-        -1,
+        -0.85,
         2,
       ],
       [
@@ -22688,22 +22822,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         -0.5,
-        1,
-        1.75,
+        0.85,
+        1.7875,
       ],
       [
         0,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         0,
-        -1,
+        -0.85,
         2,
       ],
       [
@@ -22713,13 +22847,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         0,
-        1,
-        1.75,
+        0.85,
+        1.7875,
       ],
     ],
     "id": "receiver-pump-near-side-after-window-span-1",
@@ -22730,18 +22864,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -16,
-        -1,
+        -0.85,
         2,
       ],
       [
         -16,
         0,
-        1,
+        0.85,
       ],
       [
         -16,
@@ -22750,12 +22884,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         2,
       ],
       [
@@ -22766,7 +22900,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         0.1875,
-        1,
+        0.85,
       ],
       [
         -15.5,
@@ -22782,12 +22916,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -15.5,
-        -1,
+        -0.85,
         2,
       ],
       [
@@ -22798,7 +22932,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         0.1875,
-        1,
+        0.85,
       ],
       [
         -15.5,
@@ -22806,23 +22940,23 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.953125,
       ],
       [
-        -13.333333,
-        1,
-        1,
+        -13.733333,
+        0.85,
+        0.85,
       ],
       [
-        -13.333333,
-        1,
-        1.75,
-      ],
-      [
-        -10.5,
-        -1,
-        1,
+        -13.733333,
+        0.85,
+        1.7875,
       ],
       [
         -10.5,
-        -1,
+        -0.85,
+        0.85,
+      ],
+      [
+        -10.5,
+        -0.85,
         2,
       ],
       [
@@ -22832,13 +22966,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -10.5,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         -10.5,
-        1,
-        1.75,
+        0.85,
+        1.7875,
       ],
     ],
     "id": "receiver-pump-near-side-before-window-span-1",
@@ -22849,43 +22983,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -16,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -16,
-        -1,
-        1,
-      ],
-      [
-        -16,
-        0,
-        -1,
+        -0.85,
+        0.85,
       ],
       [
         -16,
         0,
-        1,
+        -0.85,
+      ],
+      [
+        -16,
+        0,
+        0.85,
       ],
       [
         -15.5,
-        -1,
-        -1,
+        -0.85,
+        -0.85,
       ],
       [
         -15.5,
-        -1,
-        1,
+        -0.85,
+        0.85,
       ],
       [
         -15.5,
         0.1875,
-        -1,
+        -0.85,
       ],
       [
         -15.5,
         0.1875,
-        1,
+        0.85,
       ],
     ],
     "id": "receiver-pump-rear-adapter",
@@ -22895,14 +23029,19 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -13.333333,
-        1,
-        -1.75,
+        -13.733333,
+        0.85,
+        -1.7875,
+      ],
+      [
+        -13.733333,
+        0.85,
+        -0.85,
       ],
       [
         -13.333333,
         1,
-        -1,
+        -1.75,
       ],
       [
         -12,
@@ -22912,17 +23051,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -12,
         1.5,
-        -1,
+        -0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        -1.7875,
+      ],
+      [
+        -0.5,
+        0.85,
+        -0.85,
       ],
       [
         -0.5,
         1,
         -1.75,
-      ],
-      [
-        -0.5,
-        1,
-        -1,
       ],
       [
         -0.5,
@@ -22932,7 +23076,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         1.5,
-        -1,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-top-far-span-1",
@@ -22943,13 +23087,18 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1,
-        -1.75,
+        0.85,
+        -1.7875,
+      ],
+      [
+        -0.5,
+        0.85,
+        -0.85,
       ],
       [
         -0.5,
         1,
-        -1,
+        -1.75,
       ],
       [
         -0.5,
@@ -22959,17 +23108,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         1.5,
-        -1,
+        -0.85,
+      ],
+      [
+        0,
+        0.85,
+        -1.7875,
+      ],
+      [
+        0,
+        0.85,
+        -0.85,
       ],
       [
         0,
         1,
         -1.75,
-      ],
-      [
-        0,
-        1,
-        -1,
       ],
       [
         0,
@@ -22979,7 +23133,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         1.5,
-        -1,
+        -0.85,
       ],
     ],
     "id": "receiver-pump-top-far-span-2",
@@ -22989,9 +23143,14 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -13.333333,
-        1,
-        1,
+        -13.733333,
+        0.85,
+        0.85,
+      ],
+      [
+        -13.733333,
+        0.85,
+        1.7875,
       ],
       [
         -13.333333,
@@ -23001,7 +23160,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -12,
         1.5,
-        1,
+        0.85,
       ],
       [
         -12,
@@ -23010,8 +23169,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1,
-        1,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
       ],
       [
         -0.5,
@@ -23021,7 +23185,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         1.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
@@ -23037,8 +23201,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1,
-        1,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
       ],
       [
         -0.5,
@@ -23048,7 +23217,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         1.5,
-        1,
+        0.85,
       ],
       [
         -0.5,
@@ -23057,8 +23226,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1,
-        1,
+        0.85,
+        0.85,
+      ],
+      [
+        0,
+        0.85,
+        1.7875,
       ],
       [
         0,
@@ -23068,7 +23242,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         0,
         1.5,
-        1,
+        0.85,
       ],
       [
         0,
@@ -23083,44 +23257,44 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -13.333333,
-        1,
-        -1,
+        -13.733333,
+        0.85,
+        -0.85,
       ],
       [
-        -13.333333,
-        1,
-        1,
-      ],
-      [
-        -12,
-        1.5,
-        -1,
+        -13.733333,
+        0.85,
+        0.85,
       ],
       [
         -12,
         1.5,
-        1,
+        -0.85,
+      ],
+      [
+        -12,
+        1.5,
+        0.85,
       ],
       [
         -0.5,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
       [
         -0.5,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         -0.5,
         1.5,
-        -1,
+        -0.85,
       ],
       [
         -0.5,
         1.5,
-        1,
+        0.85,
       ],
     ],
     "id": "receiver-pump-top-span-1",
@@ -23131,43 +23305,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
       [
         -0.5,
-        1,
-        1,
-      ],
-      [
-        -0.5,
-        1.5,
-        -1,
+        0.85,
+        0.85,
       ],
       [
         -0.5,
         1.5,
-        1,
+        -0.85,
+      ],
+      [
+        -0.5,
+        1.5,
+        0.85,
       ],
       [
         0,
-        1,
-        -1,
+        0.85,
+        -0.85,
       ],
       [
         0,
-        1,
-        1,
+        0.85,
+        0.85,
       ],
       [
         0,
         1.5,
-        -1,
+        -0.85,
       ],
       [
         0,
         1.5,
-        1,
+        0.85,
       ],
     ],
     "id": "receiver-pump-top-span-2",
@@ -25714,43 +25888,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -15.5,
-        2,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        2,
-        -1,
+        1.85,
+        -0.85,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
-        -1,
+        0.65,
+        -0.85,
       ],
       [
         -0.5,
-        2,
+        1.85,
         -2,
       ],
       [
         -0.5,
-        2,
-        -1,
+        1.85,
+        -0.85,
       ],
     ],
     "id": "receiver-shell-side-far",
@@ -25771,12 +25945,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         -1.5,
       ],
       [
@@ -25791,12 +25965,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -2,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         -1.5,
       ],
     ],
@@ -25807,43 +25981,90 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
-        0.5,
-        1,
+        -15.5,
+        1.85,
+        -2,
       ],
       [
-        -5,
-        0.5,
-        2,
+        -15.5,
+        1.85,
+        -1.5,
       ],
       [
-        -5,
+        -15.5,
         2,
-        1,
+        -2,
       ],
       [
-        -5,
+        -15.5,
         2,
-        2,
-      ],
-      [
-        -0.5,
-        0.5,
-        1,
+        -1.5,
       ],
       [
         -0.5,
-        0.5,
-        2,
+        1.85,
+        -2,
       ],
       [
         -0.5,
-        2,
-        1,
+        1.85,
+        -1.5,
       ],
       [
         -0.5,
         2,
+        -2,
+      ],
+      [
+        -0.5,
+        2,
+        -1.5,
+      ],
+    ],
+    "id": "receiver-shell-side-far-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        0.65,
+        0.85,
+      ],
+      [
+        -5,
+        0.65,
+        2,
+      ],
+      [
+        -5,
+        1.85,
+        0.85,
+      ],
+      [
+        -5,
+        1.85,
+        2,
+      ],
+      [
+        -0.5,
+        0.65,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.65,
+        2,
+      ],
+      [
+        -0.5,
+        1.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        1.85,
         2,
       ],
     ],
@@ -25865,12 +26086,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -5,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -25885,16 +26106,63 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -0.5,
-        0.5,
+        0.65,
         2,
       ],
     ],
     "id": "receiver-shell-side-near-front-lower",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5,
+        1.85,
+        1.5,
+      ],
+      [
+        -5,
+        1.85,
+        2,
+      ],
+      [
+        -5,
+        2,
+        1.5,
+      ],
+      [
+        -5,
+        2,
+        2,
+      ],
+      [
+        -0.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -0.5,
+        1.85,
+        2,
+      ],
+      [
+        -0.5,
+        2,
+        1.5,
+      ],
+      [
+        -0.5,
+        2,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-side-near-front-upper",
     "kind": "box",
     "partId": "receiver",
   },
@@ -25949,42 +26217,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        0.5,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
         -15.5,
-        2,
-        1,
+        1.85,
+        0.85,
       ],
       [
         -15.5,
-        2,
-        2,
-      ],
-      [
-        -9,
-        0.5,
-        1,
-      ],
-      [
-        -9,
-        0.5,
+        1.85,
         2,
       ],
       [
         -9,
-        2,
-        1,
+        0.65,
+        0.85,
       ],
       [
         -9,
+        0.65,
         2,
+      ],
+      [
+        -9,
+        1.85,
+        0.85,
+      ],
+      [
+        -9,
+        1.85,
         2,
       ],
     ],
@@ -26006,12 +26274,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -15.5,
-        0.5,
+        0.65,
         2,
       ],
       [
@@ -26026,12 +26294,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -9,
-        0.5,
+        0.65,
         1.5,
       ],
       [
         -9,
-        0.5,
+        0.65,
         2,
       ],
     ],
@@ -26043,12 +26311,59 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -15.5,
+        1.85,
         2,
-        -2,
       ],
       [
         -15.5,
         2,
+        1.5,
+      ],
+      [
+        -15.5,
+        2,
+        2,
+      ],
+      [
+        -9,
+        1.85,
+        1.5,
+      ],
+      [
+        -9,
+        1.85,
+        2,
+      ],
+      [
+        -9,
+        2,
+        1.5,
+      ],
+      [
+        -9,
+        2,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-side-near-rear-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.85,
+        -2,
+      ],
+      [
+        -15.5,
+        1.85,
         2,
       ],
       [
@@ -26063,12 +26378,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        2,
+        1.85,
         -2,
       ],
       [
         -0.5,
-        2,
+        1.85,
         2,
       ],
       [

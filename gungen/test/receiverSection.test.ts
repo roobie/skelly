@@ -115,7 +115,7 @@ describe('receiver section builder', () => {
 
   it('keeps at least 0.5u AK receiver wall around the enlarged carrier cavity', () => {
     const wall = cavityWallThickness(RECEIVER_SECTION.ak.outline, RECEIVER_SECTION.ak.cavity);
-    expect(wall).toBeCloseTo(0.666_972_968_8, 8);
+    expect(wall).toBeCloseTo(0.545_705_156_3, 8);
     expect(wall).toBeGreaterThanOrEqual(0.5);
   });
 

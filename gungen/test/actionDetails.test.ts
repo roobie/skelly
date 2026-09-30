@@ -35,7 +35,7 @@ describe('visible action details', () => {
       { def: receiver('pump'), halfLength: 3.5, halfHeight: 1 },
       {
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
-        halfLength: 2.5,
+        halfLength: 4.125,
         halfHeight: 2,
       },
     ];
@@ -76,8 +76,8 @@ describe('visible action details', () => {
     expect(top?.kind).toBe('box');
     expect(nearSide?.kind).toBe('box');
     if (top?.kind === 'box' && nearSide?.kind === 'box') {
-      expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBeCloseTo(1.25, 8);
-      expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBeCloseTo(0.5, 8);
+      expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBeCloseTo(1.4, 8);
+      expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBeCloseTo(0.65, 8);
     }
     const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(
       ({ id }) => id === 'receiver-ak-near-side-before-window',

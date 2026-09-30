@@ -25,7 +25,7 @@ const vertices = (solid: Solid) => {
 };
 
 describe('M4-only AR stock', () => {
-  it('uses a 2.5u octagonal buffer tube and a flared, deepening sliding body without changing LOP', () => {
+  it('pins the unchanged M/L pull envelopes, 4.5u body wedge, tube wrap, latch, and buttplate', () => {
     for (const length of ['M', 'L'] as const) {
       const stock = FAMILIES.stock!.build({ length, style: 'm4' });
       const tube = stock.solids.find(({ id }) => id === 'buffer-tube');
@@ -68,8 +68,25 @@ describe('M4-only AR stock', () => {
           z: [Math.min(...points.map(([, , z]) => z)), Math.max(...points.map(([, , z]) => z))],
         };
       };
-      expect(boundsAtX(-3)).toEqual({ y: [-1.5, 1.5], z: [-1.5, 1.5] });
-      expect(boundsAtX(-expectedLength)).toEqual({ y: [-6, 1.5], z: [-2, 2] });
+      const frontBounds = boundsAtX(-3);
+      const rearBounds = boundsAtX(-expectedLength);
+      expect(frontBounds).toEqual({ y: [-1.5, 1.5], z: [-1.5, 1.5] });
+      expect(rearBounds).toEqual({ y: [-6, 1.5], z: [-2, 2] });
+      const tubeBounds = {
+        y: [Math.min(...tube.profile.map(([y]) => y)), Math.max(...tube.profile.map(([y]) => y))],
+        z: [Math.min(...tube.profile.map(([, z]) => z)), Math.max(...tube.profile.map(([, z]) => z))],
+      };
+      expect(frontBounds.y[0]! < tubeBounds.y[0]! && frontBounds.y[1]! > tubeBounds.y[1]!).toBe(true);
+      expect(frontBounds.z[0]! < tubeBounds.z[0]! && frontBounds.z[1]! > tubeBounds.z[1]!).toBe(true);
+      expect(tubeBounds.y).toEqual([-1.25, 1.25]);
+      expect(tubeBounds.z).toEqual([-1.25, 1.25]);
+      const allStockVertices = stock.solids.flatMap(vertices);
+      const pullEnvelope = [
+        Math.min(...allStockVertices.map(([x]) => x)),
+        Math.max(...allStockVertices.map(([x]) => x)),
+      ];
+      expect(pullEnvelope).toEqual([-expectedLength - 1, 0]);
+      expect(pullEnvelope[1]! - pullEnvelope[0]!).toBe(expectedLength + 1);
       expect(1.5 - -1.5).toBe(3);
       expect(1.5 - -6).toBe(7.5);
       expect(7.5 - 3).toBe(M4_STOCK_GEOMETRY.depthDifference);
