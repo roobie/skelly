@@ -74,9 +74,17 @@ describe('loadDesign: parse and round trip', () => {
       throw new Error('expected a load');
     }
     expect(result.design.assembly).toEqual(baseAssembly);
-    // handguard.mount is chosen by the template; an inherited or default param is never added.
+    // Template-only choices are materialized; inherited and default params are not.
     expect(result.design.assembly.parts.lower?.params).toEqual({ layout: 'ar' });
-    expect(result.design.assembly.parts['front-sight']).toEqual({ family: 'front-sight' });
+    const mount = result.design.assembly.parts.handguard?.params?.mount;
+    if (mount === 'clamped') {
+      expect(result.design.assembly.parts['front-sight']).toEqual({ family: 'front-sight', params: { style: 'ar' } });
+      expect(result.design.assembly.parts['rail-front-sight']).toBeUndefined();
+    } else {
+      expect(result.design.assembly.parts['front-sight']).toBeUndefined();
+      const railSight = result.design.assembly.parts['rail-front-sight'];
+      expect(railSight === undefined || railSight.family === 'rail-front-sight').toBe(true);
+    }
   });
 
   it('omits an absent origin', () => {
@@ -244,7 +252,8 @@ describe('loadDesign: change policy', () => {
   });
 
   it('a param the template does not list is a designer choice, not a stale one', () => {
-    const assembly = withPart({ family: 'front-sight', params: { style: 'post' } }, 'front-sight');
+    const barrel = baseAssembly.parts.barrel!;
+    const assembly = withPart({ ...barrel, params: { ...barrel.params, profile: 'heavy' } }, 'barrel');
     const result = load(makeDesign({ assembly }));
     expect(result.ok && result.issues.filter((i) => i.code === 'template-choice')).toEqual([]);
   });

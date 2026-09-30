@@ -3,7 +3,7 @@
   "template": "ar",
   "assembly": {
     "name": "archetype-ar-free-float",
-    "description": "AR-pattern rifle with a free-floating handguard.",
+    "description": "Free-floating AR-pattern rifle with a detachable front sight on the forward handguard rail.",
     "root": "receiver",
     "parts": {
       "receiver": {
@@ -31,7 +31,8 @@
       "handguard": {
         "family": "handguard",
         "params": {
-          "mount": "free-float"
+          "mount": "free-float",
+          "layout": "ar"
         }
       },
       "grip": {
@@ -54,8 +55,8 @@
           "style": "straight"
         }
       },
-      "front-sight": {
-        "family": "front-sight"
+      "rail-front-sight": {
+        "family": "rail-front-sight"
       },
       "sight": {
         "family": "sight"
@@ -92,8 +93,9 @@
         "slot": 0
       },
       {
-        "from": "barrel.front-sight",
-        "to": "front-sight.base"
+        "from": "handguard.rail",
+        "to": "rail-front-sight.base",
+        "slot": 10
       }
     ]
   },

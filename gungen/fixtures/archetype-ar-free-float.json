@@ -30,6 +30,7 @@
       "family": "handguard",
       "params": {
         "mount": "free-float",
+        "layout": "ar",
         "length": "M"
       }
     },
@@ -53,8 +54,8 @@
         "style": "straight"
       }
     },
-    "front-sight": {
-      "family": "front-sight"
+    "rail-front-sight": {
+      "family": "rail-front-sight"
     },
     "sight": {
       "family": "sight"
@@ -91,8 +92,9 @@
       "slot": 0
     },
     {
-      "from": "barrel.front-sight",
-      "to": "front-sight.base"
+      "from": "handguard.rail",
+      "to": "rail-front-sight.base",
+      "slot": 10
     }
   ]
 }

@@ -59,7 +59,8 @@
     "front-sight": {
       "family": "front-sight",
       "params": {
-        "bore": "L"
+        "bore": "L",
+        "style": "ak"
       }
     }
   },

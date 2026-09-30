@@ -53,6 +53,7 @@ const FAMILY_HEX: Record<string, number> = {
   cylinder: 0x4a_55_66,
   // Dark small metal parts, near the sight tone; the gas system steps from black block to mid-grey cylinder.
   'front-sight': 0x36_3d_47,
+  'rail-front-sight': 0x36_3d_47,
   'gas-block': 0x2f_32_38,
   'gas-cylinder': 0x54_5a_63,
 };

@@ -53,7 +53,8 @@ export const battleRifle: Template = {
 
 export const ar: Template = {
   name: 'ar',
-  description: 'AR-pattern service rifle: inline stock, rear charging handle, flat-top rail, and front sight block.',
+  description:
+    'AR-pattern rifle: clamped A2 front sight or a free-float handguard with an optional rail-mounted front post.',
   root: 'receiver',
   slots: [
     {
@@ -68,13 +69,25 @@ export const ar: Template = {
       family: 'handguard',
       params: {
         mount: ['free-float', 'free-float', 'free-float', 'clamped'],
+        layout: 'ar',
         length: { fromSlot: 'barrel', param: 'length' },
       },
     },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-curved' } },
     { id: 'stock', family: 'stock', params: { length: 'M', style: 'straight' } },
-    { id: 'front-sight', family: 'front-sight' },
+    {
+      id: 'front-sight',
+      family: 'front-sight',
+      params: { style: 'ar' },
+      when: { part: 'handguard', param: 'mount', equals: 'clamped' },
+    },
+    {
+      id: 'rail-front-sight',
+      family: 'rail-front-sight',
+      chance: 0.8,
+      when: { part: 'handguard', param: 'mount', equals: 'free-float' },
+    },
     { id: 'sight', family: 'sight', chance: 0.7 },
   ],
   connections: [
@@ -86,7 +99,29 @@ export const ar: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.rail', slot: 0, to: 'sight.base' },
-    { from: 'barrel.front-sight', to: 'front-sight.base' },
+    {
+      from: 'barrel.front-sight',
+      to: 'front-sight.base',
+      when: { part: 'handguard', param: 'mount', equals: 'clamped' },
+    },
+    {
+      from: 'handguard.rail',
+      slot: 7,
+      to: 'rail-front-sight.base',
+      when: { part: 'barrel', param: 'length', equals: 'S' },
+    },
+    {
+      from: 'handguard.rail',
+      slot: 10,
+      to: 'rail-front-sight.base',
+      when: { part: 'barrel', param: 'length', equals: 'M' },
+    },
+    {
+      from: 'handguard.rail',
+      slot: 13,
+      to: 'rail-front-sight.base',
+      when: { part: 'barrel', param: 'length', equals: 'L' },
+    },
   ],
 };
 
@@ -106,7 +141,7 @@ export const ak: Template = {
     { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'dropped' } },
     { id: 'rear-sight', family: 'ak-rear-sight' },
-    { id: 'front-sight', family: 'front-sight' },
+    { id: 'front-sight', family: 'front-sight', params: { style: 'ak' } },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },

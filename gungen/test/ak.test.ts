@@ -179,7 +179,46 @@ describe('AK-pattern archetype', () => {
       expect(edgeLength).toBeCloseTo(edgeLengths[0]!);
     }
     expect(cylinder.profile[0]![1]).toBeCloseTo(0.25 * (Math.SQRT2 - 1));
-    expect(report.resolved.defs.get('gas-block')!.solids.find(({ id }) => id === 'cylinder-support')?.kind).toBe('box');
+
+    const gasBlock = report.resolved.defs.get('gas-block')!;
+    const barrelTube = extrudedOf(barrel.solids.find(({ id }) => id === 'tube')!);
+    const collar = gasBlock.solids.filter(({ id }) => id.startsWith('collar-')).map(extrudedOf);
+    expect(collar).toHaveLength(8);
+    for (const segment of collar) {
+      expect(
+        barrelTube.profile.some((point, index) => {
+          const next = barrelTube.profile[(index + 1) % barrelTube.profile.length]!;
+          return (
+            point[0] === segment.profile[0]![0] &&
+            point[1] === segment.profile[0]![1] &&
+            next[0] === segment.profile[3]![0] &&
+            next[1] === segment.profile[3]![1]
+          );
+        }),
+      ).toBe(true);
+    }
+    const riser = extrudedOf(gasBlock.solids.find(({ id }) => id === 'block')!);
+    expect(riser.profile).toEqual([
+      [-0.75, 0.75],
+      [1, 0.75],
+      [0.25, 1.75],
+      [-0.75, 1.75],
+    ]);
+    expect(riser.z).toEqual([-0.5, 0.5]);
+    const cylinderPort = gasBlock.ports.find(({ id }) => id === 'gas-cylinder')!;
+    expect(Math.max(...riser.profile.map(([, y]) => y))).toBe(cylinderPort.pos[1] - 0.25);
+  });
+
+  it('scales the gas-block riser width with bore in absolute quarter-unit steps', () => {
+    for (const [bore, halfWidth] of [
+      ['S', 0.5],
+      ['M', 0.5],
+      ['L', 0.75],
+    ] as const) {
+      const block = FAMILIES['gas-block']!.build({ bore, barrelLength: 'M' });
+      const riser = extrudedOf(block.solids.find(({ id }) => id === 'block')!);
+      expect(riser.z).toEqual([-halfWidth, halfWidth]);
+    }
   });
 
   it('moves the gas block with an overridden AK handguard length', () => {

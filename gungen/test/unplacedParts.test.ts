@@ -63,17 +63,22 @@ describe('rules on assemblies with unplaced parts', () => {
   });
 
   for (const rule of ALL_RULES) {
-    it(`${rule.id} does not throw on any unplaced-part variant`, () => {
-      const failures: string[] = [];
-      for (const { name, assembly } of cases) {
-        try {
-          rule.check(resolve(assembly, gunDomain));
-        } catch (error) {
-          failures.push(`${name}: ${(error as Error).message}`);
+    // Exhaustive solid-pair checks on every broken-fixture variant can exceed Vitest's 5s default.
+    it(
+      `${rule.id} does not throw on any unplaced-part variant`,
+      () => {
+        const failures: string[] = [];
+        for (const { name, assembly } of cases) {
+          try {
+            rule.check(resolve(assembly, gunDomain));
+          } catch (error) {
+            failures.push(`${name}: ${(error as Error).message}`);
+          }
         }
-      }
-      expect(failures).toEqual([]);
-    });
+        expect(failures).toEqual([]);
+      },
+      rule.id === 'solid-overlap' ? 15_000 : 5000,
+    );
   }
 
   it('leaves reporting the unplaced part to the structure and required-ports checks', () => {

@@ -239,6 +239,7 @@ export const keepOut: Rule = {
               })
             : worldBox(ownerT, ko.box);
         const allowed = new Set([owner]);
+        const allowedFamilies = new Set(ko.allowFamilies ?? []);
         if (ko.allowPort) {
           for (const rc of r.connections) {
             if (rc.from.part === owner && rc.from.port.id === ko.allowPort) {
@@ -250,7 +251,7 @@ export const keepOut: Rule = {
           }
         }
         for (const other of r.placed.keys()) {
-          if (allowed.has(other)) {
+          if (allowed.has(other) || allowedFamilies.has(r.defs.get(other)!.family)) {
             continue;
           }
           let worst = Number.NEGATIVE_INFINITY;
