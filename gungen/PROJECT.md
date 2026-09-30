@@ -182,7 +182,7 @@ the generator later has something independent to be tested against (§9).
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
   | `connection-contact` | Solids on connected parts touch or are within 0.25u (one grid step) |
-  | `keep-out` | No solid is inside another part's keep-out volume, except the part attached at the port the volume allows |
+  | `keep-out` | No solid is inside another part's keep-out volume, except parts attached at an allowed port or from an explicitly allowed family |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
 
@@ -267,7 +267,9 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 
 | Fixture | Archetype | Built from |
 | --- | --- | --- |
-| `archetype-ar` | AR-pattern service rifle | conventional lower, straight stock, seven-slot flat-top rail, rear-top charging handle, front-sight block |
+| `archetype-ar` | Classic AR-pattern rifle | A2 front-sight block at the gas-port station; the clamped handguard ends at its collar |
+| `archetype-ar-free-float` | Free-floating AR-pattern rifle | No fixed barrel block; detachable front post on the forward handguard rail slot |
+| `archetype-ak` | AK-pattern rifle | AK block front sight with open ears, 2.5u behind the muzzle |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
@@ -297,22 +299,27 @@ The lengths below remain abstract units on the existing grid.
   clipped to its existing rectangular bounds. The AK gas cylinder is a regular
   octagon with 0.5u flat-to-flat width, matching its former 0.5u height; its
   lateral extent narrows from 1u to 0.5u to fit. Its corner setback is 0.14645u
-  at 45° (vertex offset 0.10355u from the centreline). The gas-block bracket
-  and centerline stay put.
-- Standard handguards occupy 65% of exposed barrel length; AK handguards use
-  compact S/M/L bands and their gas block clears the handguard by about 10% of
-  its length. Tilted magazine seating is declared per lower layout: conventional
+  at 45° (vertex offset 0.10355u from the centreline). The gas block is now an
+  octagonal barrel collar with a bore-scaled riser: its fore face rakes back as
+  it rises, and its rear vertical face mates the cylinder's full front end face.
+- Standard and free-float AR handguards occupy 65% of exposed barrel length;
+  the fixed AR handguard ends at the rear face of the A2 collar. AK handguards
+  use compact S/M/L bands and their gas block clears the handguard by about 10%
+  of its length. The AR front sight is at the standard gas-port station; its
+  muzzle distances are 6.25/9.25/12u for S/M/L. The AK post is 2.5u behind the
+  muzzle. Tilted magazine seating is declared per lower layout: conventional
   and AR layouts support the standard magazine profile; bullpup, AK, and trigger
-  layouts do not. Unsupported combinations
-  are rejected by `magazine-well-axis`, not surfaced as contact gaps.
+  layouts do not. Unsupported combinations are rejected by `magazine-well-axis`,
+  not surfaced as contact gaps.
 - `handguard.mount` is `clamped` by default. AR templates choose free-float 75%
   of the time; battle-rifle templates choose free-float 50% of the time when the
   optional handguard is present. AK, SMG, and bolt-rifle templates stay clamped.
   A free-float handguard attaches at the receiver only, has no front clamp port,
   and owns an explicit `length` value initialized from the selected barrel band.
-  It clears the barrel by at least `0.25u` (S/M) or `0.5u` (L) and ends behind
-  both the front sight and muzzle; `free-float-clearance` reports contact or an
-  undersized gap.
+  Standard and free-float AR handguards reach 65% of the barrel; the clamped AR
+  layout instead ends at the rear face of the A2 sight collar. Free-float rails
+  end behind the barrel's front-sight station and muzzle; `free-float-clearance`
+  reports contact or an undersized gap.
 
 | Family/profile | S (u / mm) | M (u / mm) | L (u / mm) | Measurement basis |
 | --- | ---: | ---: | ---: | --- |
@@ -321,7 +328,8 @@ The lengths below remain abstract units on the existing grid.
 | AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
 | AKM curved magazine | 6 / 69 | 10 / 115 | 19.25 / 221 | Pixel-traced body centreline ratio, `br-ref-akm-mag.jpg` |
 | STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
-| Standard handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
+| Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
+| Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
 | AK handguard | 8 / 92 | 14 / 161 | 22 / 253 | Compact bands; gas block clears its end by 10%, snapped to the grid |
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
@@ -582,13 +590,16 @@ explicitly named `battle-rifle`.
   receiver underside with four walls; its front wall derives its thickness
   from the well frame's front panel, so the lower extension does not step out
   beyond that panel. It reuses the conventional magazine port and insertion
-  keep-out, leaving the magazine path unchanged. Its receiver
-  has an explicit rear-top charging
-  handle keep-out; the barrel has a sight-block port four units from the
-  muzzle, with a front-sight block/post mounted there. Optional sight uses
-  rail slot 0, avoiding the earlier sightline collision at arbitrary slots.
-- The passing fixture and focused part tests cover the geometry and placement.
-  At 1000 seeds, AR is 100% valid with 16 distinct builds. The
+  keep-out, leaving the magazine path unchanged. The fixed A2 post is at the
+  existing gas-port station; the AR handguard layout reaches the rear of its
+  collar. Free-float builds omit the barrel block and may carry a detachable
+  post on the handguard's forward rail slot. AR gas is not otherwise modelled;
+  the port is only the shared station datum. Front sights are explicitly
+  allowed in the rear sight's sightline volume.
+- The passing fixture and focused part tests cover geometry and placement.
+  Fixed AR stem depth is half its former bore-scaled width; its fixed post and
+  detachable rail post both measure 0.25u in Z. Fixed and AK sights preserve
+  the y=5 axis; the detachable post rises to the rear rail sight axis. The
   remaining optional carry-handle style is not modeled.
 
 ### AK
@@ -600,9 +611,13 @@ explicitly named `battle-rifle`.
   Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
   A leaf rear sight mounts on a receiver sight-block port.
 - The gas cylinder runs from the receiver's gas-cylinder port under the rear
-  handguard to the gas block. The block seats on the barrel at the declared
-  gas-port station; the cylinder axis is checked parallel to the bore. The
-  front sight block uses the barrel's separate port four units from the muzzle.
+  handguard to the gas block. The octagonal collar seats on the barrel at the
+  declared gas-port station; its asymmetric riser meets the gas cylinder's
+  top flat and mates the full front end face at its vertical rear face. Its fore
+  face is slanted back. The
+  cylinder axis is checked parallel to the bore. The AK front sight uses its
+  own style with the post 2.5u behind the muzzle, consistent with the gas-block
+  position.
 - Added an `ak` lower layout with a flat face seat and no magazine-well walls.
   The curved AK magazine has seat kind `face` and zero insertion depth; its
   conservative rock-in keep-out starts at the front hook point. This swept box
@@ -1107,13 +1122,16 @@ npm run export:glb -- designs/archetype-ar.json --out ../deadvox/src/content/bas
 ```
 
 The generated sidecar's `grip` and `anchors` are recorded in
-`deadvox/src/content/base/models-firearms.json`. Measured against the replaced
-asset: bounds are 79.35 cm long × 21.46 cm high (new) vs 69.74 cm × 25.30 cm
-(old); grip-to-muzzle distance is 57.91 cm vs 37.03 cm; mesh is 1,980 vs 4,353
-triangles and 173,360 vs 234,384 bytes. The new length is 4.65 cm below the
-provided real AR-15 range of 84–99 cm. The muzzle anchor equals the model's
-forward x bound. `deadvox/test/models.test.ts` verifies zero turn, muzzle at the
-forward end, and forward/upright orientation after the held transform.
+`deadvox/src/content/base/models-firearms.json`. The pre-g23 export measured
+79.35 cm long × 21.46 cm high vs 69.74 cm × 25.30 cm for the replaced asset;
+grip-to-muzzle distance was 57.91 cm vs 37.03 cm, and mesh size was 1,980 vs
+4,353 triangles and 173,360 vs 234,384 bytes. G23 regenerates the same curated
+design with the redesigned front sight; the current GLB is 201,400 bytes, and
+its sidecar retains the grip and muzzle anchors while updating the support
+anchor. The pre-g23 length was 4.65 cm below the provided real AR-15 range of
+84–99 cm. The muzzle anchor equals the model's forward x bound.
+`deadvox/test/models.test.ts` verifies zero turn, muzzle at the forward end, and
+forward/upright orientation after the held transform.
 
 **3.6 Vocabulary** (the re-scoped queue). Trigger guards are complete:
 `test/triggerGuard.test.ts` checks every lower layout, each fixture and published
@@ -1275,7 +1293,9 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
   runs them.
 - **No raising timeouts.** A sweep that is too slow is split into smaller
-  tests (per template, per seed range), never given a longer timeout. Some
+  tests (per template, per seed range), never given a longer timeout. The
+  current generator validation chunks are 25 seeds; the slowest AK chunk stays
+  under 1s locally. Some
   sweeps will be removed, so their cost is not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
   seed range, and the `known-good seeds` snapshots, which are generator

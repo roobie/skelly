@@ -58,6 +58,7 @@ export const FIRING_GRIP = 'firing-grip';
 // Standard handguards reach 65% of the exposed barrel. AK handguards use
 // distinct compact bands, and their gas block clears the end by 10%.
 const HANDGUARD_REACH = { barrelFraction: 0.65 } as const;
+const AR_FRONT_SIGHT_HALF_LENGTH = 1;
 const AK_HANDGUARD_LENGTH: Record<SizeClass, number> = { S: 8, M: 14, L: 22 };
 const AK_GAS_BLOCK_CLEARANCE = 0.1;
 const AK_GAS_BLOCK_HALF_LENGTH = 1;
@@ -216,6 +217,7 @@ const LOWER_TRIGGER_X = {
 } as const;
 const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
 const AK_GAS_CYLINDER_Y = 2;
+const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
@@ -1197,6 +1199,7 @@ const akGasBlockX = (layout: string | undefined, length: SizeClass): number => {
     layout === 'ak' ? akHandguardLength(length) : snapAkGrid(barrelLength({ length }) * HANDGUARD_REACH.barrelFraction);
   return snapAkGrid(handguardLength * (1 + AK_GAS_BLOCK_CLEARANCE) + AK_GAS_BLOCK_HALF_LENGTH);
 };
+const arHandguardLength = (length: SizeClass): number => akGasBlockX('standard', length) - AR_FRONT_SIGHT_HALF_LENGTH;
 export const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -1204,8 +1207,13 @@ export const barrel: PartFamily = {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
     profile: choice('standard', 'heavy', 'pistol', 'revolver'),
-    handguardLayout: { values: ['standard', 'ak'], default: 'standard', from: [{ port: 'clamp', param: 'layout' }] },
+    handguardLayout: {
+      values: ['standard', 'ak', 'ar'],
+      default: 'standard',
+      from: [{ port: 'clamp', param: 'layout' }],
+    },
     handguardLength: { ...size, from: [{ port: 'clamp', param: 'length' }] },
+    frontSightStyle: { ...choice('ar', 'ak'), from: [{ port: 'front-sight', param: 'style' }] },
     tubeLengthPercent: {
       values: PUMP_TUBE_LENGTH_PERCENTAGES,
       default: '75',
@@ -1218,10 +1226,14 @@ export const barrel: PartFamily = {
     const len = barrelLength(params);
     const r = Math.ceil((PISTOL_BARREL_RADIUS[bore] * (params.profile === 'heavy' ? 1.5 : 1)) / GRID) * GRID;
     const handguardLengthClass = cls(params, 'handguardLength');
-    const fore =
-      params.handguardLayout === 'ak'
-        ? akHandguardLength(handguardLengthClass)
-        : snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
+    let fore: number;
+    if (params.handguardLayout === 'ak') {
+      fore = akHandguardLength(handguardLengthClass);
+    } else if (params.handguardLayout === 'ar') {
+      fore = arHandguardLength(handguardLengthClass);
+    } else {
+      fore = snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
+    }
     const tubeLengthPercent = params.tubeLengthPercent ?? '75';
     const tubeDrop = tubeDropForBore(bore);
     const tubeEnd = pumpTubeLength(len, tubeLengthPercent);
@@ -1263,7 +1275,7 @@ export const barrel: PartFamily = {
           mount: 'sight-block',
           gender: 'female',
           size: bore,
-          pos: [len - 4, 0, 0],
+          pos: [params.frontSightStyle === 'ak' ? len - 2.5 : akGasBlockX('standard', lengthClass), 0, 0],
           normal: NEG_X,
           up: Y,
         },
@@ -1312,14 +1324,71 @@ export const barrel: PartFamily = {
 };
 
 /** A front sight block and post mounted near the muzzle. */
+const octagonalCollar = (id: string, flatRadius: number, along: readonly [number, number]): Solid[] => {
+  const inner = octagonalProfile(flatRadius);
+  const outer = octagonalProfile(flatRadius + 0.25);
+  return inner.map((point, index) => {
+    const next = (index + 1) % inner.length;
+    return {
+      id: `${id}-${index}`,
+      kind: 'extruded-polygon' as const,
+      profile: [point, outer[index]!, outer[next]!, inner[next]!],
+      axis: 'x' as const,
+      z: along,
+    };
+  });
+};
+
+/** A fixed A2 or AK front sight block and post, with the bore axis at y = 0. */
 export const frontSight: PartFamily = {
   name: 'front-sight',
-  params: { bore: { ...size, from: [{ port: 'base', param: 'bore' }] } },
+  params: {
+    bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
+    style: choice('ar', 'ak'),
+  },
   build(params): PartDef {
-    const radius = { S: 0.75, M: 1, L: 1.25 }[cls(params, 'bore')];
+    const radius = BARREL_RADIUS[cls(params, 'bore')];
+    const postHalf = GRID;
+    const postHalfZ = params.style === 'ar' ? GRID / 2 : GRID;
+    const postBase = 4.25;
+    const post = solid('post', [-postHalf, postBase, -postHalfZ], [postHalf, 5, postHalfZ]);
+    const earInner = radius - GRID;
+    const commonSolids = octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]);
+    const solids =
+      params.style === 'ak'
+        ? [
+            ...commonSolids,
+            extrudedPolygon(
+              'block',
+              [
+                [-radius, radius],
+                [radius, radius],
+                [radius - GRID, postBase],
+                [-radius + GRID, postBase],
+              ],
+              [-radius, radius],
+            ),
+            post,
+            solid('ear-left', [-postHalf, 4, -radius], [postHalf, 5.5, -earInner]),
+            solid('ear-right', [-postHalf, 4, earInner], [postHalf, 5.5, radius]),
+          ]
+        : [
+            ...commonSolids,
+            extrudedPolygon(
+              'stem',
+              [
+                [-radius, radius],
+                [radius, radius],
+                [Math.max(GRID, radius - GRID), postBase],
+                [-Math.max(GRID, radius - GRID), postBase],
+              ],
+              [-radius / 2, radius / 2],
+            ),
+            post,
+          ];
     return {
       family: 'front-sight',
-      solids: [solid('block', [-1, radius, -1.25], [1, 2, 1.25]), solid('post', [-0.25, 2, -0.25], [0.25, 5, 0.25])],
+      solids,
       ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, 5, 0], dir: X }],
@@ -1327,7 +1396,35 @@ export const frontSight: PartFamily = {
   },
 };
 
-/** A raised AK gas block joins the barrel to the gas cylinder behind the front sight. */
+/** A detachable AR front post that clamps to the forward top-rail slot. */
+export const railFrontSight: PartFamily = {
+  name: 'rail-front-sight',
+  params: {
+    bore: { ...size, from: [{ port: 'base', param: 'barrelBore' }] },
+    clearance: { ...size, from: [{ port: 'base', param: 'clearance' }] },
+  },
+  build(params): PartDef {
+    const bore = cls(params, 'bore');
+    const clearance = cls(params, 'clearance');
+    const handguardTop = Math.min(
+      RECEIVER_FRONT_HALF_HEIGHT,
+      BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[clearance] + HANDGUARD_WALL_THICKNESS,
+    );
+    const sightAxisY = RECEIVER_FRONT_HALF_HEIGHT + 1 - handguardTop;
+    return {
+      family: 'rail-front-sight',
+      solids: [
+        solid('base', [-1, 0, -1], [1, 0.5, 1]),
+        solid('post', [-GRID, 0.5, -GRID / 2], [GRID, sightAxisY, GRID / 2]),
+      ],
+      ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
+      keepOuts: [],
+      axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X }],
+    };
+  },
+};
+
+/** An AK gas block collars the barrel and rises to the gas cylinder with a raked fore face. */
 export const gasBlock: PartFamily = {
   name: 'gas-block',
   params: {
@@ -1339,8 +1436,17 @@ export const gasBlock: PartFamily = {
     return {
       family: 'gas-block',
       solids: [
-        solid('saddle', [-AK_GAS_BLOCK_HALF_LENGTH, radius, -1.5], [AK_GAS_BLOCK_HALF_LENGTH, radius + 0.5, 1.5]),
-        solid('cylinder-support', [-0.5, radius + 0.5, -0.5], [0.5, AK_GAS_CYLINDER_Y, 0.5]),
+        ...octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]),
+        extrudedPolygon(
+          'block',
+          [
+            [0, radius],
+            [1, radius],
+            [0.25, AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH],
+            [0, AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH],
+          ],
+          [-Math.max(GRID, snapAkGrid(radius * 0.5)), Math.max(GRID, snapAkGrid(radius * 0.5))],
+        ),
       ],
       ports: [
         {
@@ -1386,7 +1492,7 @@ export const gasCylinder: PartFamily = {
     const len = akGasBlockX(params.handguardLayout, lengthClass);
     return {
       family: 'gas-cylinder',
-      solids: [octagonalPrism('cylinder', 0.25, [0, len])],
+      solids: [octagonalPrism('cylinder', AK_GAS_CYLINDER_HALF_WIDTH, [0, len])],
       ports: [
         { id: 'rear', mount: 'gas-cylinder', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
         { id: 'handguard', mount: 'gas-cylinder', gender: 'female', pos: [8, 0, 0], normal: X, up: Y, required: true },
@@ -1475,17 +1581,21 @@ export const handguard: PartFamily = {
     },
     clearance: size,
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
-    layout: choice('standard', 'ak'),
+    layout: choice('standard', 'ak', 'ar'),
     fit: { values: ['receiver', 'oversized', 'too-tight'], default: 'receiver', fault: ['oversized', 'too-tight'] },
     mount: choice('clamped', 'free-float'),
   },
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mounting controls both clamp geometry and the exposed front port.
   build(params): PartDef {
     const lengthClass = cls(params, 'length');
-    const len =
-      params.layout === 'ak'
-        ? akHandguardLength(lengthClass)
-        : snapAkGrid(barrelLength({ length: lengthClass }) * HANDGUARD_REACH.barrelFraction);
+    let len: number;
+    if (params.layout === 'ak') {
+      len = akHandguardLength(lengthClass);
+    } else if (params.layout === 'ar' && params.mount !== 'free-float') {
+      len = arHandguardLength(lengthClass);
+    } else {
+      len = snapAkGrid(barrelLength({ length: lengthClass }) * HANDGUARD_REACH.barrelFraction);
+    }
     const bore = (params.barrelBore ?? (params.bore === 'none' ? 'M' : (params.bore ?? 'M'))) as SizeClass;
     const inner =
       params.fit === 'too-tight'
@@ -1504,8 +1614,7 @@ export const handguard: PartFamily = {
       params.fit === 'oversized'
         ? RECEIVER_FRONT_HALF_WIDTH + 1
         : Math.min(RECEIVER_FRONT_HALF_WIDTH, inner + HANDGUARD_WALL_THICKNESS);
-    const cylinderRadius = 0.25;
-    const cylinderTop = AK_GAS_CYLINDER_Y + cylinderRadius;
+    const cylinderTop = AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH;
     const topInner = akLayout ? cylinderTop : inner;
     const sideTop = akLayout ? cylinderTop : inner;
     const clampRadius =
@@ -2355,7 +2464,12 @@ export const sight: PartFamily = {
       solids: [solid('body', [-2, 0, -1], [2, 1.5, 1])],
       ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       // A thin tube around the line of sight, starting at the sight's front.
-      keepOuts: [{ id: 'sightline', kind: 'sightline', box: boxFromMinMax([2, 0.25, -0.75], [42, 1.75, 0.75]) }],
+      keepOuts: [
+        {
+          ...keepOut('sightline', [2, 0.25, -0.75], [42, 1.75, 0.75]),
+          allowFamilies: ['front-sight', 'rail-front-sight'],
+        },
+      ],
       axes: [{ kind: 'sight', origin: [0, 1, 0], dir: X }],
     };
   },
@@ -2370,6 +2484,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   barrel,
   cylinder,
   'front-sight': frontSight,
+  'rail-front-sight': railFrontSight,
   'gas-cylinder': gasCylinder,
   'gas-block': gasBlock,
   'ak-rear-sight': akRearSight,

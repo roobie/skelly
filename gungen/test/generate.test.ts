@@ -8,7 +8,7 @@ import { TEMPLATES } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 300;
-const CHUNK = 100;
+const CHUNK = 25;
 
 describe('seededRng', () => {
   // mulberry32's published sequence for seed 1.

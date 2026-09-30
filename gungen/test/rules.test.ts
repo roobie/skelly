@@ -69,6 +69,33 @@ describe('rules', () => {
     expect(rulesFailed(loadFixture('archetype-battle-rifle'))).toEqual([]);
   });
 
+  it('keep-out: explicitly allowed front sights may occupy a rear sight line', () => {
+    const ar = loadFixture('archetype-ar');
+    expect(validate(ar, gunDomain).issues.filter(({ rule }) => rule === 'keep-out')).toEqual([]);
+    const sight = gunDomain.families.sight!;
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        sight: {
+          ...sight,
+          build: (params) => {
+            const def = sight.build(params);
+            return {
+              ...def,
+              keepOuts: def.keepOuts.map(({ allowFamilies: _allowed, ...ko }) => ko),
+            };
+          },
+        },
+      },
+    };
+    expect(
+      validate(ar, domain).issues.some(
+        ({ rule, parts }) => rule === 'keep-out' && parts.includes('front-sight') && parts.includes('sight'),
+      ),
+    ).toBe(true);
+  });
+
   it('keep-out: without the allowance, the magazine intrudes', () => {
     const lower = gunDomain.families.lower!;
     const domain: Domain = {

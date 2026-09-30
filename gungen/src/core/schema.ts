@@ -78,6 +78,8 @@ export interface KeepOut {
   readonly z?: readonly [number, number];
   /** The part attached at this port of the owner may occupy the volume. */
   readonly allowPort?: string;
+  /** Parts from these families may occupy the volume (e.g. a front sight in a rear sight's sightline). */
+  readonly allowFamilies?: readonly string[];
 }
 
 /** A named axis on a part, such as a bore or a sight line. */

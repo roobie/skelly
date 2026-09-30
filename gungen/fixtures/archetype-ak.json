@@ -57,7 +57,10 @@
       "family": "ak-rear-sight"
     },
     "front-sight": {
-      "family": "front-sight"
+      "family": "front-sight",
+      "params": {
+        "style": "ak"
+      }
     }
   },
   "connections": [

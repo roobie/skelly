@@ -68,6 +68,9 @@ exports[`templates > ak > known-good seeds 1`] = `
       },
       "front-sight": {
         "family": "front-sight",
+        "params": {
+          "style": "ak",
+        },
       },
       "gas-block": {
         "family": "gas-block",
@@ -187,6 +190,9 @@ exports[`templates > ak > known-good seeds 1`] = `
       },
       "front-sight": {
         "family": "front-sight",
+        "params": {
+          "style": "ak",
+        },
       },
       "gas-block": {
         "family": "gas-block",
@@ -306,6 +312,9 @@ exports[`templates > ak > known-good seeds 1`] = `
       },
       "front-sight": {
         "family": "front-sight",
+        "params": {
+          "style": "ak",
+        },
       },
       "gas-block": {
         "family": "gas-block",
@@ -396,8 +405,9 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "sight.base",
       },
       {
-        "from": "barrel.front-sight",
-        "to": "front-sight.base",
+        "from": "handguard.rail",
+        "slot": 10,
+        "to": "rail-front-sight.base",
       },
     ],
     "description": "Generated from the "ar" template with seed 100.",
@@ -409,9 +419,6 @@ exports[`templates > ar > known-good seeds 1`] = `
           "length": "M",
         },
       },
-      "front-sight": {
-        "family": "front-sight",
-      },
       "grip": {
         "family": "grip",
         "params": {
@@ -421,6 +428,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
+          "layout": "ar",
           "length": "M",
           "mount": "free-float",
         },
@@ -437,6 +445,9 @@ exports[`templates > ar > known-good seeds 1`] = `
           "length": "M",
           "profile": "stanag-curved",
         },
+      },
+      "rail-front-sight": {
+        "family": "rail-front-sight",
       },
       "receiver": {
         "family": "receiver",
@@ -488,8 +499,14 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "barrel.front-sight",
-        "to": "front-sight.base",
+        "from": "receiver.rail",
+        "slot": 0,
+        "to": "sight.base",
+      },
+      {
+        "from": "handguard.rail",
+        "slot": 13,
+        "to": "rail-front-sight.base",
       },
     ],
     "description": "Generated from the "ar" template with seed 200.",
@@ -501,9 +518,6 @@ exports[`templates > ar > known-good seeds 1`] = `
           "length": "L",
         },
       },
-      "front-sight": {
-        "family": "front-sight",
-      },
       "grip": {
         "family": "grip",
         "params": {
@@ -513,6 +527,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
+          "layout": "ar",
           "length": "L",
           "mount": "free-float",
         },
@@ -530,6 +545,9 @@ exports[`templates > ar > known-good seeds 1`] = `
           "profile": "stanag-curved",
         },
       },
+      "rail-front-sight": {
+        "family": "rail-front-sight",
+      },
       "receiver": {
         "family": "receiver",
         "params": {
@@ -539,6 +557,9 @@ exports[`templates > ar > known-good seeds 1`] = `
           "feed": "box",
           "rail": "full",
         },
+      },
+      "sight": {
+        "family": "sight",
       },
       "stock": {
         "family": "stock",
@@ -601,6 +622,9 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       "front-sight": {
         "family": "front-sight",
+        "params": {
+          "style": "ar",
+        },
       },
       "grip": {
         "family": "grip",
@@ -611,6 +635,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       "handguard": {
         "family": "handguard",
         "params": {
+          "layout": "ar",
           "length": "M",
           "mount": "clamped",
         },

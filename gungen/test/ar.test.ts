@@ -136,14 +136,13 @@ describe('AR-pattern parts', () => {
     expect(validate(loadFixture('archetype-ar'), gunDomain).ok).toBe(true);
   });
 
-  it('mounts a front sight block four units from the muzzle', () => {
-    const barrel = FAMILIES.barrel!.build({ bore: 'M', length: 'M', profile: 'standard' });
-    const port = barrel.ports.find(({ id }) => id === 'front-sight');
+  it('places the fixed AR front sight at the barrel gas-port station', () => {
+    const barrel = FAMILIES.barrel!.build({ bore: 'M', length: 'M', profile: 'standard', frontSightStyle: 'ar' });
+    const frontSight = barrel.ports.find(({ id }) => id === 'front-sight');
+    const gasPort = barrel.ports.find(({ id }) => id === 'gas-port');
     const muzzle = barrel.ports.find(({ id }) => id === 'muzzle');
-    const sight = FAMILIES['front-sight']!.build({ bore: 'M' });
 
-    expect(port?.pos).toEqual([32, 0, 0]);
+    expect(frontSight?.pos).toEqual(gasPort?.pos);
     expect(muzzle?.pos[0]).toBe(36);
-    expect(sight.solids.map(({ id }) => id)).toEqual(['block', 'post']);
   });
 });

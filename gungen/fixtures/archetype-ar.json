@@ -27,7 +27,10 @@
       }
     },
     "handguard": {
-      "family": "handguard"
+      "family": "handguard",
+      "params": {
+        "layout": "ar"
+      }
     },
     "grip": {
       "family": "grip",
@@ -50,7 +53,10 @@
       }
     },
     "front-sight": {
-      "family": "front-sight"
+      "family": "front-sight",
+      "params": {
+        "style": "ar"
+      }
     },
     "sight": {
       "family": "sight"
