@@ -157,14 +157,15 @@ describe('AK-pattern archetype', () => {
       report.resolved.placed.get('barrel')!,
       barrel.ports.find(({ id }) => id === 'gas-port')!.pos,
     );
-    expect(gasBlockOnBarrel[0] - handguardEnd[0]).toBe(6);
-    expect(gasBlockOnBarrel[0]).toBe(28);
+    const [handguardLength] = handguard.ports.find(({ id }) => id === 'front')!.pos;
+    expect(Math.abs(gasBlockOnBarrel[0] - handguardEnd[0] - handguardLength * 0.1)).toBeLessThanOrEqual(0.25);
+    expect(gasBlockOnBarrel[0]).toBe(15.5);
     expect(report.resolved.connections.some(({ conn }) => conn.from === 'barrel.gas-port')).toBe(true);
     expect(report.resolved.connections.some(({ conn }) => conn.to === 'gas-cylinder.front')).toBe(true);
     const cylinder = report.resolved.defs.get('gas-cylinder')!.solids[0]!;
     expect(cylinder.kind).toBe('box');
     if (cylinder.kind === 'box') {
-      expect(cylinder.box.center[0] + cylinder.box.half[0]).toBe(28);
+      expect(cylinder.box.center[0] + cylinder.box.half[0]).toBe(15.5);
     }
   });
 

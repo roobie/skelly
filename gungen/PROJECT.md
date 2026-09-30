@@ -291,9 +291,9 @@ The lengths below remain abstract units on the existing grid.
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
   is not a box-magazine user; other archetypes do not offer this exception.
-- Standard handguards occupy 65% of exposed barrel length; AK handguards occupy
-  80% of the barrel-to-gas-port station. Tilted magazine seating is declared
-  per lower layout: conventional and AR layouts support the standard magazine
+- Standard handguards occupy 65% of exposed barrel length; AK handguards use
+  compact S/M/L bands and their gas block clears the handguard by about 10% of
+  its length. Tilted magazine seating is declared per lower layout: conventional and AR layouts support the standard magazine
   profile; bullpup, AK, and trigger layouts do not. Unsupported combinations
   are rejected by `magazine-well-axis`, not surfaced as contact gaps.
 - `handguard.mount` is `clamped` by default. AR templates choose free-float 75%
@@ -313,7 +313,7 @@ The lengths below remain abstract units on the existing grid.
 | AKM curved magazine | 6 / 69 | 10 / 115 | 19.25 / 221 | Pixel-traced body centreline ratio, `br-ref-akm-mag.jpg` |
 | STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
 | Standard handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
-| AK handguard | 14 / 161 | 22 / 253 | 30 / 345 | 80% of the gas-port station (18/28/38u), snapped to the 2u AK grid |
+| AK handguard | 8 / 92 | 14 / 161 | 22 / 253 | Compact bands; gas block clears its end by 10%, snapped to the grid |
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.

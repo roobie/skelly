@@ -55,19 +55,12 @@ const keepOut = (id: string, min: Vec3, max: Vec3, allowPort?: string): KeepOut 
 /** Tag for parts the firing hand can hold (see rules.ts). */
 export const FIRING_GRIP = 'firing-grip';
 
-// The handguard reaches 65% of the exposed barrel on standard layouts; AK
-// handguards stop at 80% of the gas-port station. See the references in PROJECT.md.
-const HANDGUARD_REACH = { barrelFraction: 0.65, akGasPortFraction: 0.8 } as const;
-const AK_GAS_PORT_OFFSET = 8;
-
-/** AK barrel gas-port stations from the receiver face; handguards end at 80% of this span. */
-const AK_GAS_PORT_X: Record<SizeClass, number> = {
-  S: 26 - AK_GAS_PORT_OFFSET,
-  M: 36 - AK_GAS_PORT_OFFSET,
-  L: 46 - AK_GAS_PORT_OFFSET,
-};
-const akHandguardLength = (length: SizeClass): number =>
-  Math.round((AK_GAS_PORT_X[length] * HANDGUARD_REACH.akGasPortFraction) / 2) * 2;
+// Standard handguards reach 65% of the exposed barrel. AK handguards use
+// distinct compact bands, and their gas block clears the end by 10%.
+const HANDGUARD_REACH = { barrelFraction: 0.65 } as const;
+const AK_HANDGUARD_LENGTH: Record<SizeClass, number> = { S: 8, M: 14, L: 22 };
+const AK_GAS_BLOCK_CLEARANCE = 0.1;
+const akHandguardLength = (length: SizeClass): number => AK_HANDGUARD_LENGTH[length];
 
 /** Tube magazines keep clearance below the barrel for their cap and support hardware. */
 const TUBE_HALF_HEIGHT = 1;
@@ -1146,6 +1139,12 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
   return { S: 26, M: 36, L: 46 }[sizeClass];
 };
 
+const akGasBlockX = (layout: string | undefined, length: SizeClass): number => {
+  const handguardLength =
+    layout === 'ak' ? akHandguardLength(length) : snapAkGrid(barrelLength({ length }) * HANDGUARD_REACH.barrelFraction);
+  return snapAkGrid(handguardLength * (1 + AK_GAS_BLOCK_CLEARANCE));
+};
+
 export const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -1233,7 +1232,7 @@ export const barrel: PartFamily = {
                 mount: 'gas-block',
                 gender: 'male' as const,
                 size: bore,
-                pos: [AK_GAS_PORT_X[lengthClass], 0, 0] as Vec3,
+                pos: [akGasBlockX(params.handguardLayout, lengthClass), 0, 0] as Vec3,
                 normal: X,
                 up: Y,
               },
@@ -1313,9 +1312,14 @@ export const gasCylinder: PartFamily = {
   name: 'gas-cylinder',
   params: {
     barrelLength: { ...size, from: [{ port: 'front', param: 'barrelLength' }] },
+    handguardLayout: {
+      values: ['standard', 'ak'],
+      default: 'standard',
+      from: [{ port: 'handguard', param: 'layout' }],
+    },
   },
   build(params): PartDef {
-    const len = AK_GAS_PORT_X[cls(params, 'barrelLength')];
+    const len = akGasBlockX(params.handguardLayout, cls(params, 'barrelLength'));
     return {
       family: 'gas-cylinder',
       solids: [solid('cylinder', [0, -0.25, -0.5], [len, 0.25, 0.5])],

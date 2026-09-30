@@ -46,7 +46,7 @@ describe('barrel-fitted handguards', () => {
 
   it('uses independent 65% standard reach and the shorter AK gas-port reach', () => {
     const expectedStandard = { S: 17, M: 23.5, L: 30 };
-    const expectedAk = { S: 14, M: 22, L: 30 };
+    const expectedAk = { S: 8, M: 14, L: 22 };
     for (const size of ['S', 'M', 'L'] as const) {
       const reach = (layout: 'standard' | 'ak') => {
         const handguard = FAMILIES.handguard!.build({ length: size, layout, mount: 'free-float' });
