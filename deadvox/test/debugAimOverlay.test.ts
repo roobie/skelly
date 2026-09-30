@@ -99,10 +99,7 @@ describe('debug melee aim overlay', () => {
       expect(Math.abs(coordinates[index % 3]! - value)).toBeLessThanOrEqual(0.001);
     });
 
-    const { system: distantSystem, id: distantId, zombie: distantZombie } = standing(
-      [6 / BLOCK_SIZE, 1, 0],
-      [1, 0, 0],
-    );
+    const { system: distantSystem, id: distantId, zombie: distantZombie } = standing([6 / BLOCK_SIZE, 1, 0], [1, 0, 0]);
     const distantOrigin: Vec3 = [0, 1 + PLAYER.eye / BLOCK_SIZE, 0];
     const distantHead = posed(distantZombie, distantId).head[0]!;
     const distantDirection: Vec3 = [

@@ -412,14 +412,18 @@ try {
   );
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
   assert.match(
-    await evaluate("document.querySelector('.debug-actions button:last-child').textContent"),
+    await evaluate(
+      "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 1 shamblers')).textContent",
+    ),
     /Spawn 1 shamblers \(V\)/,
   );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
   assert.equal(await evaluate("localStorage.getItem('deadvox.shambler-spawn-count')"), '2');
   assert.match(
-    await evaluate("document.querySelector('.debug-actions button:last-child').textContent"),
+    await evaluate(
+      "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 2 shamblers')).textContent",
+    ),
     /Spawn 2 shamblers \(V\)/,
   );
   await press('Backquote', '`', 192);
