@@ -159,7 +159,7 @@ describe('silhouette profile', () => {
     expect(report.issues).toEqual([]);
   });
 
-  it('rejects a synthetic 1/2-block silhouette over the absolute 300-triangle cap', () => {
+  it('rejects a synthetic 1/2-block silhouette over the absolute 400-triangle cap', () => {
     const coarse = { ...healthyVoxels, size: FAR_LOD_HALF_BLOCK_VOXEL_SIZE };
     const generatedMeshes = meshBones(coarse, healthyBones.length);
     const mesh = generatedMeshes.get(0)!;
@@ -173,7 +173,7 @@ describe('silhouette profile', () => {
       feet: new Set<string>(),
       budgets: { totalTriangles: { min: 1, max: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP } },
     });
-    expect(report.issues).toEqual([{ rule: 'budget', message: 'Total triangles 301 is outside [1, 300].' }]);
+    expect(report.issues).toEqual([{ rule: 'budget', message: 'Total triangles 401 is outside [1, 400].' }]);
   });
 
   it('rejects a width or height change beyond the coarse and reference-cell quantization allowance', () => {
