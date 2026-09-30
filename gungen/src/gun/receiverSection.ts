@@ -89,6 +89,22 @@ const prism = (id: string, profile: readonly Vec2[], x: readonly [number, number
   display: { outline: false, bevel: false, mergeGroup },
 });
 
+const splitAt = (solids: readonly Solid[], planes: readonly number[]): Solid[] =>
+  solids.flatMap((solid) => {
+    if (solid.kind !== 'extruded-polygon' || solid.axis !== 'x') {
+      return [solid];
+    }
+    const interior = [...new Set(planes.filter((plane) => plane > solid.z[0] && plane < solid.z[1]))].sort(
+      (a, b) => a - b,
+    );
+    const cuts = [solid.z[0], ...interior, solid.z[1]];
+    return cuts.slice(0, -1).map((start, index) => ({
+      ...solid,
+      id: index === 0 ? solid.id : `${solid.id}-span-${index}`,
+      z: [start, cuts[index + 1]!] as const,
+    }));
+  });
+
 interface WindowCutSpec {
   readonly id: string;
   readonly profile: readonly Vec2[];
@@ -174,7 +190,18 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
     ['far-side', far],
     ['near-side', near],
   ];
-  const result: Solid[] = [];
+  const cavityProfile: readonly Vec2[] = [
+    [y[0], z[0]],
+    [y[1], z[0]],
+    [y[1], z[1]],
+    [y[0], z[1]],
+  ];
+  const adapterSolid = (end: 'front' | 'rear', x: readonly [number, number]) =>
+    prism(`${spec.id}-${end}-adapter`, cavityProfile, x, spec.id);
+  const result: Solid[] = [
+    adapterSolid('rear', [spec.x[0], spec.x[0] + spec.wall]),
+    adapterSolid('front', [spec.x[1] - spec.wall, spec.x[1]]),
+  ];
   for (const [name, profile] of bands) {
     if (!positive(profile)) {
       continue;
@@ -188,5 +215,5 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
       result.push(prism(`${spec.id}-${name}`, profile, spec.x, spec.id));
     }
   }
-  return result;
+  return splitAt(result, [spec.x[0] + spec.wall, spec.x[1] - spec.wall]);
 };

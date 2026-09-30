@@ -36,7 +36,7 @@ const travelCases = [
     bore: 'M',
     section: 'ar',
     travel: 6.5,
-    mm: 165.1,
+    mm: 74.75,
     cavityY: [-2, 2],
     cavityZ: [-1.25, 1.25],
   },
@@ -47,7 +47,7 @@ const travelCases = [
     bore: 'M',
     section: 'ak',
     travel: 6.5,
-    mm: 165.1,
+    mm: 74.75,
     cavityY: [-1.75, 1.75],
     cavityZ: [-1, 1],
   },
@@ -58,7 +58,7 @@ const travelCases = [
     bore: 'L',
     section: 'pump',
     travel: 5.5,
-    mm: 139.7,
+    mm: 63.25,
     cavityY: [-0.5, 1],
     cavityZ: [-1, 1],
   },
@@ -69,7 +69,7 @@ const travelCases = [
     bore: 'S',
     section: 'standard',
     travel: 3,
-    mm: 76.2,
+    mm: 34.5,
     cavityY: [-2, 2],
     cavityZ: [-1.5, 1.5],
   },
@@ -80,7 +80,7 @@ const travelCases = [
     bore: 'L',
     section: 'standard',
     travel: 8,
-    mm: 203.2,
+    mm: 92,
     cavityY: [-2, 2],
     cavityZ: [-1.5, 1.5],
   },
@@ -91,7 +91,7 @@ const travelCases = [
     bore: 'M',
     section: 'standard',
     travel: 7,
-    mm: 177.8,
+    mm: 80.5,
     cavityY: [-2, 2],
     cavityZ: [-1.5, 1.5],
   },
@@ -219,7 +219,7 @@ describe('procedural bolt carrier', () => {
       expect(measurement.rearOrigin[1], entry.pattern).toBeCloseTo(measurement.restOrigin[1], 6);
       expect(measurement.rearOrigin[2], entry.pattern).toBeCloseTo(measurement.restOrigin[2], 6);
       expect(measurement.distance, entry.pattern).toBeCloseTo(entry.travel, 6);
-      expect(entry.travel * 25.4, `${entry.pattern} mm`).toBeCloseTo(entry.mm, 8);
+      expect(entry.travel * 11.5, `${entry.pattern} mm`).toBeCloseTo(entry.mm, 8);
       expect(coreFitsCavity(entry, resolved), `${entry.pattern} carrier body clearance`).toBe(true);
       expect(allCarrierSolidsStayWithinReceiverLength(resolved), `${entry.pattern} full axial travel`).toBe(true);
     }

@@ -86,7 +86,7 @@ describe('AK-pattern archetype', () => {
 
   it('uses an angled AK section while preserving its stock and sight interfaces', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
-    const section = receiver.solids.find(({ id }) => id === 'receiver-ak-top');
+    const section = receiver.solids.find(({ id }) => id.startsWith('receiver-ak-top'));
     expect(section?.kind).toBe('extruded-polygon');
     if (section?.kind !== 'extruded-polygon') {
       throw new Error('Expected the shared AK section builder output.');

@@ -335,16 +335,16 @@ export const RECEIVER_SECTION = {
     outline: [
       [-2.5, -1.75],
       [-2.25, -2],
-      [2.25, -2],
+      [1.5, -2],
       [2.5, -1.75],
       [2.5, 1.75],
-      [2.25, 2],
+      [1.5, 2],
       [-2.25, 2],
       [-2.5, 1.75],
     ] as const,
     cavity: { y: [-2, 2], z: [-1.25, 1.25] } as const,
     faces: {
-      top: { y: 2.5, halfWidth: 2 },
+      top: { y: 2.5, halfWidth: 1.75 },
       portSide: 2,
       handleSides: [-2, 2],
       front: 0,
@@ -416,22 +416,19 @@ const receiverShellSolids = ({
   const [xMin, xMax] = [-16, 0] as const;
   if (section === 'ar' || section === 'pump' || section === 'ak') {
     const data = RECEIVER_SECTION[section];
-    return [
-      ...buildReceiverSection({
-        id: `receiver-${section}`,
-        outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
-        x: [xMin, xMax],
-        wall: 0.5,
-        cavity: { y: [data.cavity.y[0] - receiverDrop, data.cavity.y[1] - receiverDrop], z: data.cavity.z },
-        port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
-        ...(feed === 'box'
-          ? {
-              magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
-            }
-          : {}),
-      }),
-      solid(`receiver-${section}-barrel-seat`, [-0.5, -0.5, -0.75], [0, 0.5, 0.75]),
-    ];
+    return buildReceiverSection({
+      id: `receiver-${section}`,
+      outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
+      x: [xMin, xMax],
+      wall: 0.5,
+      cavity: { y: [data.cavity.y[0] - receiverDrop, data.cavity.y[1] - receiverDrop], z: data.cavity.z },
+      port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
+      ...(feed === 'box'
+        ? {
+            magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
+          }
+        : {}),
+    });
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
