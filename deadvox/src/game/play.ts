@@ -140,8 +140,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     input.walking = session.restoredLook.walk;
   }
   let snapshotIds = {
-    worldId: options.restore?.world.id ?? crypto.randomUUID(),
-    characterId: options.restore?.character.id ?? crypto.randomUUID(),
+    worldId: options.restore?.world.id ?? '',
+    characterId: options.restore?.character.id ?? '',
   };
   if (options.saveController) {
     snapshotIds = options.saveController.bindSession(
@@ -149,6 +149,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys },
     );
+  } else if (!options.restore) {
+    snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
   const { zombies: zombieSystem, zombieStore } = session;
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);

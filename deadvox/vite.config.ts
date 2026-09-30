@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defineConfig } from 'vitest/config';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
@@ -176,7 +178,8 @@ function simulationFingerprintPlugin() {
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
 export default defineConfig({
-  plugins: [simulationFingerprintPlugin()],
+  // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
+  plugins: [simulationFingerprintPlugin(), ...(process.env.DEADVOX_HTTPS === '1' ? [basicSsl()] : [])],
   define: {
     [buildRevisionDefine]: JSON.stringify(buildRevision),
     [baseContentHashDefine]: JSON.stringify(baseContentHash),

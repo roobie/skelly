@@ -41,6 +41,22 @@ const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): b
 };
 
 const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+const INSECURE_CONTEXT_MESSAGE = "Saves need a secure (https) page; this session won't be saved";
+
+const saveEnvironmentProblem = (): string | undefined => {
+  if (!globalThis.isSecureContext) {
+    return INSECURE_CONTEXT_MESSAGE;
+  }
+  if (
+    typeof globalThis.crypto?.randomUUID !== 'function' ||
+    typeof globalThis.crypto?.subtle?.digest !== 'function' ||
+    !navigator.storage ||
+    !globalThis.indexedDB
+  ) {
+    return 'Required save APIs are unavailable; this session will not be saved.';
+  }
+  return undefined;
+};
 
 const versionLabel = (payload: Uint8Array): string => {
   try {
@@ -58,7 +74,7 @@ const versionLabel = (payload: Uint8Array): string => {
 /** Title-screen discovery, checkpoint scheduling and lifecycle save triggers. */
 export class SaveController {
   readonly storage: SaveStorage;
-  readonly identity = currentSaveVersionIdentity();
+  private readonly identity: Promise<SaveVersionIdentity> | undefined;
   private identityValue: SaveVersionIdentity | undefined;
   namespace = '';
   restored: Readonly<SaveSnapshot> | undefined;
@@ -78,13 +94,20 @@ export class SaveController {
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
   private worldOptions: SaveWorldOptions | undefined;
-  private worldId: string = crypto.randomUUID();
-  private characterId: string = crypto.randomUUID();
+  private worldId = '';
+  private characterId = '';
+  private readonly environmentProblem: string | undefined;
   private nextAutosaveAt = 7200;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
   private writing = false;
 
   constructor(backend: SaveBackendPreference = 'auto') {
+    this.environmentProblem = saveEnvironmentProblem();
+    if (!this.environmentProblem) {
+      this.identity = currentSaveVersionIdentity();
+      this.worldId = globalThis.crypto.randomUUID();
+      this.characterId = globalThis.crypto.randomUUID();
+    }
     this.storage = new SaveStorage({ backend });
     $('continue').addEventListener('click', (event) => this.continueWorld(event));
     $('overlay').addEventListener(
@@ -113,6 +136,13 @@ export class SaveController {
 
   /** Reads the current namespace and diagnoses, but never opens or overwrites, old versions. */
   async prepare(): Promise<SaveWorldIdentity | undefined> {
+    if (this.environmentProblem) {
+      this.storageUnavailable = true;
+      this.statusText = this.environmentProblem;
+      this.ready = true;
+      this.render();
+      return undefined;
+    }
     try {
       await this.discoverSaves();
     } catch (error) {
@@ -127,7 +157,7 @@ export class SaveController {
   private async discoverSaves(): Promise<void> {
     this.statusText = 'Checking save compatibility…';
     this.render();
-    this.identityValue = await this.identity;
+    this.identityValue = await this.identity!;
     this.namespace = this.identityValue.digest;
     this.statusText = 'Checking browser save storage…';
     this.render();
@@ -263,7 +293,6 @@ export class SaveController {
     return this.protectedCurrent ? 'Saved world needs recovery' : 'New world';
   }
 
-
   bindSession(
     snapshot: () => Readonly<SaveSnapshot>,
     simTime: () => number,
@@ -358,7 +387,9 @@ export class SaveController {
     this.entered = true;
     $('save-confirmation').hidden = true;
     $('continue').hidden = true;
-    this.statusText = 'New world ready. The existing save is retained until the first checkpoint commits.';
+    this.statusText = this.storageUnavailable
+      ? `New world ready. ${this.environmentProblem ?? 'Save storage is unavailable; this session will not be saved.'}`
+      : 'New world ready. The existing save is retained until the first checkpoint commits.';
     this.render();
   }
 
