@@ -747,6 +747,29 @@ describe('shambler scenarios', () => {
     expect(second.body.pos[0]).toBeGreaterThan(2);
   });
 
+  it('includes a shambler 1.08 m ahead in the melee broad phase', () => {
+    const system = new ZombieSystem(senses(() => player([0, 1, 0], [1, 0, 0])));
+    const id = system.add(SHAMBLER, [1.08 / BLOCK_SIZE, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.figureSeed = 1;
+    const origin: Vec3 = [0, 1 + PLAYER.eye / BLOCK_SIZE, 0];
+    const head = posedShamblerRegionBoxes({
+      seed: zombie.figureSeed,
+      position: zombie.body.pos,
+      facing: zombie.facing,
+      headYaw: zombie.headYaw,
+      gaitPhase: zombie.gaitPhase,
+      speed: zombie.horizontalSpeed,
+      chasing: false,
+      attackWindup: 0,
+      attackWindupSeconds: zombie.type.attack.windup,
+      severed: zombie.severed,
+      blockSize: BLOCK_SIZE,
+    }).head.find((box) => box.bone === 'head')!;
+    const direction = normalized([head.center[0] - origin[0], head.center[1] - origin[1], head.center[2] - origin[2]]);
+    expect(system.swing(origin, direction, { damage: 1, reach: 2, cooldown: 0 })).toBe(id);
+  });
+
   it('aims at each rigid body region deterministically and damages the first one hit', () => {
     for (const region of ZOMBIE_REGION_NAMES) {
       const makeSystem = () => new ZombieSystem({ ...senses(() => player([100, 2, 0])), seed: 91 });

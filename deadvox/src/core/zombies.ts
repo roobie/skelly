@@ -1196,9 +1196,9 @@ export class ZombieSystem {
       }
       const centerY = zombie.body.pos[1] + zombie.body.height * 0.5;
       const nearestApproach =
-        (origin[0] - zombie.body.pos[0]) * direction[0] +
-        (origin[1] - centerY) * direction[1] +
-        (origin[2] - zombie.body.pos[2]) * direction[2];
+        (zombie.body.pos[0] - origin[0]) * direction[0] +
+        (centerY - origin[1]) * direction[1] +
+        (zombie.body.pos[2] - origin[2]) * direction[2];
       const nearestT = Math.max(0, nearestApproach);
       const perpendicular =
         Math.hypot(
