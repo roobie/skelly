@@ -517,10 +517,40 @@ export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
   private playerAttackWait = 0;
+  private frozen = false;
 
   constructor(options: ZombieSystemOptions) {
     this.options = options;
     this.store = options.store ?? new MapEntityStore<Zombie>();
+  }
+
+  get isFrozen(): boolean {
+    return this.frozen;
+  }
+
+  /** Debug-only caller-controlled pause for living shambler AI; this state is deliberately not saved. */
+  setFrozen(frozen: boolean): void {
+    if (this.frozen === frozen) {
+      return;
+    }
+    this.frozen = frozen;
+    if (frozen) {
+      for (const [, zombie] of this.store.entries()) {
+        this.captureRenderPrevious(zombie);
+        if (!zombie.incapacitated) {
+          zombie.attackWindup = 0;
+        }
+      }
+    }
+  }
+
+  private captureRenderPrevious(zombie: Zombie): void {
+    zombie.renderPrevious = {
+      pos: copy(zombie.body.pos),
+      facing: copy(zombie.facing),
+      headYaw: zombie.headYaw,
+      gaitPhase: zombie.gaitPhase,
+    };
   }
 
   snapshotState(): Readonly<ZombieSystemState> {
@@ -876,6 +906,23 @@ export class ZombieSystem {
     if (dt <= 0) {
       return;
     }
+    if (this.frozen) {
+      for (const [, zombie] of this.store.entries()) {
+        this.captureRenderPrevious(zombie);
+        if (!zombie.incapacitated) {
+          continue;
+        }
+        zombie.horizontalSpeed = 0;
+        zombie.attackWait = 0;
+        zombie.attackWindup = 0;
+        zombie.body.vel[0] = 0;
+        zombie.body.vel[2] = 0;
+        stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
+      }
+      // Freeze only shambler timers; the player's own melee cooldown continues to elapse.
+      this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
+      return;
+    }
     const player = this.options.player();
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
@@ -883,12 +930,7 @@ export class ZombieSystem {
     const groundedAtTickStart = new Map<Zombie, boolean>();
     for (const [, zombie] of entries) {
       groundedAtTickStart.set(zombie, zombie.body.onGround);
-      zombie.renderPrevious = {
-        pos: copy(zombie.body.pos),
-        facing: copy(zombie.facing),
-        headYaw: zombie.headYaw,
-        gaitPhase: zombie.gaitPhase,
-      };
+      this.captureRenderPrevious(zombie);
       if (zombie.incapacitated) {
         zombie.horizontalSpeed = 0;
         zombie.attackWait = 0;
