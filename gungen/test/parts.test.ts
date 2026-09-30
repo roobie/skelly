@@ -23,12 +23,13 @@ const pumpTubeDimensions = (input: {
   lengthPercent: '50' | '75' | '100';
 }): {
   tubeEnd: number;
+  tubeBodyEnd: number;
   barrelLug: number | undefined;
   barrelLugY: number | undefined;
   barrelSupportLug: number | undefined;
   tubeCap: number | undefined;
   tubeSupport: number | undefined;
-  capLugBounds: readonly [number, number, number, number, number, number];
+  capBounds: readonly [number, number, number, number, number, number];
 } => {
   const barrel = FAMILIES.barrel!.build({
     bore: input.bore,
@@ -47,13 +48,14 @@ const pumpTubeDimensions = (input: {
     throw new Error('pump magazine tube and cap lug must be boxes');
   }
   return {
-    tubeEnd: tubeSolid.box.center[0] + tubeSolid.box.half[0],
+    tubeEnd: tube.ports.find((port) => port.id === 'cap')!.pos[0],
+    tubeBodyEnd: tubeSolid.box.center[0] + tubeSolid.box.half[0],
     barrelLug: barrel.ports.find((port) => port.id === 'lug')?.pos[0],
     barrelLugY: barrel.ports.find((port) => port.id === 'lug')?.pos[1],
     barrelSupportLug: barrel.ports.find((port) => port.id === 'support-lug')?.pos[0],
     tubeCap: tube.ports.find((port) => port.id === 'cap')?.pos[0],
     tubeSupport: tube.ports.find((port) => port.id === 'support')?.pos[0],
-    capLugBounds: [
+    capBounds: [
       capLug.box.center[0] - capLug.box.half[0],
       capLug.box.center[0] + capLug.box.half[0],
       capLug.box.center[1] - capLug.box.half[1],
@@ -503,12 +505,13 @@ describe('pump shotgun tube and barrel contact', () => {
       ] as const) {
         const dimensions = pumpTubeDimensions({ bore: 'L', barrelClass, lengthPercent });
         expect(dimensions.tubeEnd).toBe(tubeEnd);
+        expect(dimensions.tubeBodyEnd).toBe(tubeEnd - 0.5);
         expect(dimensions.tubeEnd).toBeLessThanOrEqual(barrelEnd);
         expect(dimensions.barrelLug).toBe(tubeEnd);
         expect(dimensions.barrelSupportLug).toBe(tubeEnd > supportX ? supportX : undefined);
         expect(dimensions.tubeSupport).toBe(tubeEnd > supportX ? supportX : undefined);
         expect(dimensions.tubeCap).toBe(tubeEnd);
-        expect(dimensions.capLugBounds).toEqual([tubeEnd - 2.5, tubeEnd, 1, 1.5, -1.25, 1.25]);
+        expect(dimensions.capBounds).toEqual([tubeEnd - 2.5, tubeEnd, -1.25, 1.25, -1.25, 1.25]);
       }
     }
   });
@@ -521,7 +524,7 @@ describe('pump shotgun tube and barrel contact', () => {
     ] as const) {
       const dimensions = pumpTubeDimensions({ bore, barrelClass: 'M', lengthPercent: '75' });
       expect(dimensions.barrelLugY).toBe(-tubeDrop);
-      expect(dimensions.capLugBounds.slice(2, 4)).toEqual([1, 1.5]);
+      expect(dimensions.capBounds.slice(2, 4)).toEqual([-1.25, 1.25]);
 
       const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore, rail: 'full' });
       expect(receiver.ports.find((port) => port.id === 'tube')?.pos[1]).toBe(-tubeDrop);

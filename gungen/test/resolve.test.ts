@@ -244,11 +244,14 @@ describe('resolve: params from neighbours', () => {
         source: 'inherited',
         from: 'tube.lengthPercent',
       });
-      const tubeSolid = report.resolved.defs.get('tube')?.solids.find((solid) => solid.id === 'tube');
-      if (tubeSolid?.kind !== 'box') {
-        throw new Error('pump magazine tube must be a box');
+      const tubeDef = report.resolved.defs.get('tube');
+      const tubeSolid = tubeDef?.solids.find((solid) => solid.id === 'tube');
+      const tubeCap = tubeDef?.ports.find((port) => port.id === 'cap');
+      if (tubeSolid?.kind !== 'box' || !tubeCap) {
+        throw new Error('pump magazine tube and cap must be present');
       }
-      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(barrelEnds[length]);
+      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(barrelEnds[length] - 0.5);
+      expect(tubeCap.pos[0]).toBe(barrelEnds[length]);
       expect(report.issues).toEqual([]);
     }
   });

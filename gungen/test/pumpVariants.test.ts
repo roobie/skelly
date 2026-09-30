@@ -22,11 +22,14 @@ describe('pump shotgun variants', () => {
       expect(report.ok, `seed ${seed}: ${JSON.stringify(report.issues)}`).toBe(true);
       const barrelLength = assembly.parts.barrel?.params?.length;
       expect(['S', 'M', 'L'], `seed ${seed}: barrel length`).toContain(barrelLength);
-      const tubeSolid = report.resolved.defs.get('tube')?.solids.find((solid) => solid.id === 'tube');
-      if (tubeSolid?.kind !== 'box') {
-        throw new Error(`seed ${seed}: pump tube is not a box`);
+      const tubeDef = report.resolved.defs.get('tube');
+      const tubeSolid = tubeDef?.solids.find((solid) => solid.id === 'tube');
+      const tubeCap = tubeDef?.ports.find((port) => port.id === 'cap');
+      if (tubeSolid?.kind !== 'box' || !tubeCap) {
+        throw new Error(`seed ${seed}: pump tube or cap is missing`);
       }
-      const tubeEnd = tubeSolid.box.center[0] + tubeSolid.box.half[0];
+      const tubeBodyEnd = tubeSolid.box.center[0] + tubeSolid.box.half[0];
+      const [tubeEnd] = tubeCap.pos;
       const lengthPercent = assembly.parts.tube?.params?.lengthPercent;
       expect(['50', '75', '100'], `seed ${seed}: tube length percentage`).toContain(lengthPercent);
       const expectedTubeEnd = {
@@ -35,6 +38,7 @@ describe('pump shotgun variants', () => {
         L: { '50': 23, '75': 34.5, '100': 46 },
       }[barrelLength as 'S' | 'M' | 'L'][lengthPercent as '50' | '75' | '100'];
       expect(tubeEnd, `seed ${seed}: ${lengthPercent}% tube on ${barrelLength} barrel`).toBe(expectedTubeEnd);
+      expect(tubeBodyEnd, `seed ${seed}: tube body enters the cap`).toBe(expectedTubeEnd - 0.5);
       expect(assembly.connections).toContainEqual({ from: 'tube.cap', to: 'barrel.lug' });
       expect(assembly.connections.some(({ from, to }) => from === 'tube.support' && to === 'barrel.support-lug')).toBe(
         lengthPercent !== '50',

@@ -317,10 +317,12 @@ The lengths below remain abstract units on the existing grid.
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
-A bore-aware drop keeps a 0.5u gap below the barrel, bridged by a visible block
-at the tube cap; 75% and 100% variants also use a support lug at the 65% station.
-A local receiver seat supports the lowered tube without moving the bore or stock
-interface.
+A bore-aware drop keeps a 0.5u gap between the tube and barrel. The forward
+end has an oversized 2.5u-long square barrel-gray cap that encloses the last section of the
+tube; it ends at the selected tube-length station and leaves 0.25u of clearance
+below the barrel. 75% and 100% variants also use a separate support spacer at
+the 65% station. A local receiver seat supports the lowered tube without moving
+the bore or stock interface.
 
 On top of one broken fixture per rule, these check constraints specific to an
 archetype:

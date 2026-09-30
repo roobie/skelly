@@ -69,8 +69,11 @@ const AK_GAS_PORT_X: Record<SizeClass, number> = {
 const akHandguardLength = (length: SizeClass): number =>
   Math.round((AK_GAS_PORT_X[length] * HANDGUARD_REACH.akGasPortFraction) / 2) * 2;
 
-/** Tube magazines keep a visible clearance below the barrel for the end lug. */
+/** Tube magazines keep clearance below the barrel for their cap and support hardware. */
 const TUBE_HALF_HEIGHT = 1;
+const PUMP_TUBE_CAP_LENGTH = 2.5;
+const PUMP_TUBE_CAP_END_INSET = 0.5;
+const PUMP_TUBE_CAP_HALF_EXTENT = 1.25;
 const TUBE_BARREL_CLEARANCE = 0.5;
 const TUBE_RECEIVER_CLEARANCE = 0.25;
 const PUMP_RECEIVER_DROP = 1;
@@ -1232,13 +1235,19 @@ export const tubeMagazine: PartFamily = {
     const tubeDrop = tubeDropForBore(bore);
     const supportX = snapAkGrid(barrelEnd * HANDGUARD_REACH.barrelFraction);
     const length = pumpTubeLength(barrelEnd, lengthPercent);
-    // Lug blocks span the designed barrel clearance and sit on the tube's top face.
+    // The support spacer spans the barrel clearance; the enlarged cap encloses the tube's forward end.
     const bandTop = tubeDrop - BARREL_RADIUS[bore];
     const band = (id: string, x: number): Solid[] =>
       bandTop > TUBE_HALF_HEIGHT ? [solid(id, [x - 1, TUBE_HALF_HEIGHT, -0.5], [x, bandTop, 0.5])] : [];
-    const capLug: Solid[] =
+    const cap: Solid[] =
       bandTop > TUBE_HALF_HEIGHT
-        ? [solid('cap-lug', [length - 2.5, TUBE_HALF_HEIGHT, -1.25], [length, bandTop, 1.25])]
+        ? [
+            solid(
+              'cap-lug',
+              [length - PUMP_TUBE_CAP_LENGTH, -PUMP_TUBE_CAP_HALF_EXTENT, -PUMP_TUBE_CAP_HALF_EXTENT],
+              [length, PUMP_TUBE_CAP_HALF_EXTENT, PUMP_TUBE_CAP_HALF_EXTENT],
+            ),
+          ]
         : [];
     const supportPort: PortDef[] =
       length > supportX
@@ -1247,9 +1256,9 @@ export const tubeMagazine: PartFamily = {
     return {
       family: 'tube-magazine',
       solids: [
-        solid('tube', [0, -TUBE_HALF_HEIGHT, -1], [length, TUBE_HALF_HEIGHT, 1]),
+        solid('tube', [0, -TUBE_HALF_HEIGHT, -1], [length - PUMP_TUBE_CAP_END_INSET, TUBE_HALF_HEIGHT, 1]),
         ...(length > supportX ? band('support-band', supportX) : []),
-        ...capLug,
+        ...cap,
       ],
       ports: [
         { id: 'rear', mount: 'tube', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },

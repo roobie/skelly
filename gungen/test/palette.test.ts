@@ -75,9 +75,9 @@ describe('palette coverage', () => {
     expect(srgbToHex(solidColor(GUN_PALETTE, 'stock', 'butt-pad'))).toBe(BUTT_PAD_COLOR);
   });
 
-  it('distinguishes the pump tube cap lug from the tube and its spacer', () => {
+  it('colours the pump tube cap the same dark gray as the barrel', () => {
     const capLugColor = srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'cap-lug'));
-    expect(capLugColor).toBe(0x9a_a4_ae);
+    expect(capLugColor).toBe(srgbToHex(solidColor(GUN_PALETTE, 'barrel', 'tube')));
     expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'tube')));
     expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'support-band')));
   });
