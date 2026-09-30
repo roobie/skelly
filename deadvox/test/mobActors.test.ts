@@ -48,6 +48,7 @@ interface HitParityPose {
   readonly idleTime?: number;
   readonly headYaw?: number;
   readonly hitFlinchTime?: number;
+  readonly stanceWeight?: number;
   readonly yaw?: number;
   readonly stumbleFactor?: number;
 }
@@ -56,27 +57,32 @@ interface HitParityEntry {
   readonly id: number;
   readonly zombie: Zombie;
 }
+const setOneHitParityPose = (zombie: Zombie, pose: HitParityPose): void => {
+  zombie.mode = pose.chase ? 'chase' : 'idle';
+  if (!pose.chase && pose.speed > 0) {
+    zombie.mode = 'stroll';
+  }
+  zombie.facing = [-Math.sin(pose.yaw ?? 0), 0, -Math.cos(pose.yaw ?? 0)];
+  zombie.horizontalSpeed = pose.speed;
+  zombie.stumbleFactor = pose.stumbleFactor ?? 1;
+  zombie.stanceWeight = pose.stanceWeight ?? (pose.chase || pose.windup > 0 ? 1 : 0);
+  zombie.gaitPhase = pose.phase;
+  zombie.attackWindup = pose.windup;
+  zombie.attackWait = pose.windup > 0 ? zombie.type.attack.cooldown - (zombie.type.attack.windup - pose.windup) : 0;
+  zombie.wanderClock = pose.idleTime ?? 0;
+  zombie.hitFlinchTime = pose.hitFlinchTime;
+  zombie.headYaw = pose.headYaw ?? 0;
+  zombie.renderPrevious = {
+    pos: [...zombie.body.pos],
+    facing: [...zombie.facing],
+    headYaw: zombie.headYaw,
+    gaitPhase: pose.phase,
+  };
+};
+
 const setHitParityPose = (_renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): void => {
   for (const { zombie } of entries) {
-    zombie.mode = pose.chase ? 'chase' : 'idle';
-    if (!pose.chase && pose.speed > 0) {
-      zombie.mode = 'stroll';
-    }
-    zombie.facing = [-Math.sin(pose.yaw ?? 0), 0, -Math.cos(pose.yaw ?? 0)];
-    zombie.horizontalSpeed = pose.speed;
-    zombie.stumbleFactor = pose.stumbleFactor ?? 1;
-    zombie.gaitPhase = pose.phase;
-    zombie.attackWindup = pose.windup;
-    zombie.attackWait = pose.windup > 0 ? zombie.type.attack.cooldown - (zombie.type.attack.windup - pose.windup) : 0;
-    zombie.wanderClock = pose.idleTime ?? 0;
-    zombie.hitFlinchTime = pose.hitFlinchTime;
-    zombie.headYaw = pose.headYaw ?? 0;
-    zombie.renderPrevious = {
-      pos: [...zombie.body.pos],
-      facing: [...zombie.facing],
-      headYaw: zombie.headYaw,
-      gaitPhase: pose.phase,
-    };
+    setOneHitParityPose(zombie, pose);
   }
 };
 
@@ -326,6 +332,7 @@ describe('MobActorMeshes', () => {
         { name: 'standing idle', speed: 0, phase: 0, chase: false, windup: 0 },
         { name: 'wander walk', speed: 0.8, phase: 0.8, chase: false, windup: 0, idleTime: 1.2 },
         { name: 'chase sway', speed: 0.9, phase: 2.2, chase: true, windup: 0, yaw: 0.3 },
+        { name: 'mid stance fade', speed: 0, phase: 0, chase: true, windup: 0, stanceWeight: 0.5 },
         { name: 'stumble', speed: 0.25, phase: 4.1, chase: true, windup: 0, yaw: -0.2, stumbleFactor: 0.15 },
         { name: 'attack windup', speed: 0.7, phase: Math.PI / 2, chase: true, windup: 0.2 },
         {

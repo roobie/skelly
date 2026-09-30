@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { advanceStanceWeight, posedShambler, targetStanceWeight, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -107,6 +107,7 @@ describe('rendered and hit shambler poses', () => {
     const zombie = system.store.get(id)!;
     zombie.figureSeed = 1;
     zombie.mode = 'chase';
+    zombie.stanceWeight = 1;
     zombie.horizontalSpeed = 0;
     zombie.gaitPhase = 0;
     zombie.attackWindup = 0;
@@ -125,6 +126,78 @@ describe('rendered and hit shambler poses', () => {
     }
   });
 
+  it('targets aggravated stance while chasing, winding up, and during the attack clip', () => {
+    const system = new ZombieSystem({
+      player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      isSolid: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      hurtPlayer: () => undefined,
+    });
+    const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
+    const input = zombiePoseInputFor(system.store.get(id)!, id, BLOCK_SIZE);
+    expect(targetStanceWeight({ ...input, chasing: true })).toBe(1);
+    expect(targetStanceWeight({ ...input, chasing: false, attackWindup: 0.2 })).toBe(1);
+    expect(targetStanceWeight({ ...input, chasing: false, attackWait: 0.8 })).toBe(1);
+    expect(targetStanceWeight({ ...input, chasing: false, attackWindup: 0, attackWait: 0 })).toBe(0);
+  });
+
+  it('cross-fades stance in fixed steps without overshoot', () => {
+    let weight = 0;
+    for (let frame = 0; frame < 30; frame++) {
+      weight = advanceStanceWeight(weight, 1, 1 / 60);
+    }
+    expect(weight).toBeCloseTo(1, 6);
+    expect(advanceStanceWeight(0.98, 1, 1)).toBe(1);
+    expect(advanceStanceWeight(1, 1, 1 / 60)).toBe(1);
+    expect(advanceStanceWeight(0, 0, 1 / 60)).toBe(0);
+    expect(advanceStanceWeight(0.9, 1, 1 / 60)).toBeGreaterThan(0.9);
+    expect(advanceStanceWeight(0.9, 1, 1 / 60)).toBeLessThanOrEqual(1);
+    expect(advanceStanceWeight(0, 1, 0)).toBe(0);
+  });
+
+  it('blends slack and aggravated idle poses and initializes a newly tracked chase as aggravated', () => {
+    const system = new ZombieSystem({
+      player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      isSolid: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      hurtPlayer: () => undefined,
+    });
+    const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const { stanceWeight: _savedStanceWeight, ...legacyInput } = input;
+    const untrackedChase = posedShambler({ ...legacyInput, chasing: true });
+    const trackedChase = posedShambler({ ...input, chasing: true, stanceWeight: 1 });
+    expect(untrackedChase.pose).toEqual(trackedChase.pose);
+    const slack = posedShambler({ ...input, stanceWeight: 0 }).pose;
+    const midpoint = posedShambler({ ...input, stanceWeight: 0.5 }).pose;
+    const aggravated = posedShambler({ ...input, stanceWeight: 1 }).pose;
+    expect(midpoint.rotations.chest).not.toEqual(slack.rotations.chest);
+    expect(midpoint.rotations.chest).not.toEqual(aggravated.rotations.chest);
+
+    const freshSystem = new ZombieSystem({
+      player: () => ({ pos: [2, 1, 1], facing: [0, 0, 1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      isSolid: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      hurtPlayer: () => undefined,
+    });
+    const freshId = freshSystem.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
+    const freshZombie = freshSystem.store.get(freshId)!;
+    expect(freshZombie.stanceWeight).toBeUndefined();
+    freshSystem.tick(1 / 20);
+    expect(freshZombie.mode).toBe('chase');
+    expect(freshZombie.stanceWeight).toBe(1);
+  });
+
   it('aimAt hits the rendered head centre during a frozen lunge and turned head-look', () => {
     const system = new ZombieSystem({
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
@@ -139,6 +212,7 @@ describe('rendered and hit shambler poses', () => {
     const zombie = system.store.get(id)!;
     zombie.figureSeed = 1;
     zombie.mode = 'chase';
+    zombie.stanceWeight = 1;
     zombie.headYaw = 0.45;
     zombie.horizontalSpeed = 0.7;
     zombie.gaitPhase = 0.8;

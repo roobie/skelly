@@ -1985,15 +1985,18 @@ describe('attack windup', () => {
 
     run(system, 0.1);
     const savedTime = system.store.get(id)!.hitFlinchTime!;
+    system.store.get(id)!.stanceWeight = 0.37;
     expect(savedTime).toBeGreaterThan(0);
     expect(savedTime).toBeLessThan(0.35);
     const restored = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
     restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
+    expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
 
     restored.setFrozen(true);
     run(restored, 0.5);
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
+    expect(restored.store.get(id)!.stanceWeight).toBe(0.37);
     restored.setFrozen(false);
     run(restored, 0.3);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();

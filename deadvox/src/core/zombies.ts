@@ -8,7 +8,7 @@ import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
-import { HIT_FLINCH_DURATION, zombiePoseInputFor } from './zombiePose.ts';
+import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import {
   type PosedBoneBox,
   posedRegionHitDistance,
@@ -28,6 +28,8 @@ export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, i
 
 const validHitFlinchTime = (time: number | undefined): boolean =>
   time === undefined || (Number.isFinite(time) && time >= 0);
+const validStanceWeight = (weight: number | undefined): boolean =>
+  weight === undefined || (Number.isFinite(weight) && weight >= 0 && weight <= 1);
 
 export interface MeleeWeapon {
   readonly damage: number;
@@ -146,6 +148,8 @@ export interface Zombie {
   footstepClock: ShamblerFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
+  /** Fixed-step slack/aggravated stance cross-fade (0..1); optional for backward-compatible saves. */
+  stanceWeight?: number | undefined;
   /** Fixed-step hit reaction time; optional for backward-compatible saves. */
   hitFlinchTime?: number | undefined;
   /** Part names (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS, e.g. "upperArm.L", "head") severed so
@@ -574,6 +578,7 @@ export class ZombieSystem {
           searchAnchor,
           lastPerceived,
           investigationTier,
+          stanceWeight,
           hitFlinchTime,
           ...state
         } = zombie;
@@ -588,6 +593,7 @@ export class ZombieSystem {
             dismemberRng: [...dismemberRng.state()] as RngState,
             lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
             ...(investigationTier === undefined ? {} : { investigationTier }),
+            ...(stanceWeight === undefined ? {} : { stanceWeight }),
             ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
             body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
             facing: [...zombie.facing],
@@ -629,6 +635,7 @@ export class ZombieSystem {
         !Number.isSafeInteger(zombie.figureSeed) ||
         !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
         !validHitFlinchTime(zombie.hitFlinchTime) ||
+        !validStanceWeight(zombie.stanceWeight) ||
         typeof zombie.incapacitated !== 'boolean'
       ) {
         throw new Error(`Invalid zombie state for entity ${id}`);
@@ -937,7 +944,7 @@ export class ZombieSystem {
     const { blockSize, isSolid } = this.options;
     const entries = [...this.store.entries()];
     const groundedAtTickStart = new Map<Zombie, boolean>();
-    for (const [, zombie] of entries) {
+    for (const [id, zombie] of entries) {
       groundedAtTickStart.set(zombie, zombie.body.onGround);
       this.captureRenderPrevious(zombie);
       if (zombie.incapacitated) {
@@ -1236,6 +1243,9 @@ export class ZombieSystem {
         this.beginIdle(zombie);
         zombie.lastPerceived = undefined;
       }
+      const poseInput = zombiePoseInputFor(zombie, id, blockSize);
+      const stanceTarget = targetStanceWeight(poseInput);
+      zombie.stanceWeight = advanceStanceWeight(zombie.stanceWeight ?? stanceTarget, stanceTarget, dt);
     }
     separateBodies({
       bodies: entries.filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body),

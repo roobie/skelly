@@ -83,6 +83,34 @@ const regionRay = (zombie: Zombie, region: ZombieRegion) => {
 };
 
 describe('debug shambler freeze', () => {
+  it('advances stance over 0.5 simulation seconds and pauses the fade while frozen', () => {
+    let target: Vec3 = [100, 1, 100];
+    const system = new ZombieSystem({
+      player: () => player(target),
+      isSolid: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      hurtPlayer: () => undefined,
+      seed: 31,
+    });
+    const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
+    const zombie = system.store.get(id)!;
+    run(system, 0.25);
+    target = [0, 1, 3.2];
+    run(system, 0.25);
+    expect(zombie.mode).toBe('chase');
+    expect(zombie.stanceWeight).toBeCloseTo(0.5, 5);
+    system.setFrozen(true);
+    const midway = zombie.stanceWeight;
+    run(system, 1);
+    expect(zombie.stanceWeight).toBe(midway);
+    system.setFrozen(false);
+    run(system, 0.25);
+    expect(zombie.stanceWeight).toBe(1);
+  });
+
   it('holds chasing position, heading, timers, and posed hit boxes for five seconds without hurting the player', () => {
     let playerHealth = 100;
     const system = makeSystem([0, 1, 3.2], (damage) => {

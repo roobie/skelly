@@ -1,11 +1,11 @@
 import type { Bone } from '@mobgen/core/body.ts';
 import { IDENTITY_M, type Mat3, mulMM, rotY } from '@mobgen/core/math.ts';
-import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
+import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { idlePose } from '@mobgen/mob/idle.ts';
+import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { flinchPose, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { type ShamblerFigure, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
@@ -28,6 +28,8 @@ export interface ShamblerPoseInput {
   readonly attackCooldown?: number;
   /** Simulation-clock-backed idle motion. */
   readonly idleTime?: number;
+  /** Fixed-step cross-fade from slack (0) to aggravated (1); omitted in older saves. */
+  readonly stanceWeight?: number;
   /** Fixed-step hit reaction; omitted only for older snapshots/tests. */
   readonly hitFlinchTime?: number;
   readonly severed: readonly string[];
@@ -59,6 +61,7 @@ export const zombiePoseInputFor = (
   attackWait: zombie.attackWait,
   attackCooldown: zombie.type.attack.cooldown,
   idleTime: zombie.wanderClock,
+  ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
   ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
   severed: zombie.severed,
   blockSize,
@@ -75,7 +78,13 @@ export interface PosedShambler {
   readonly blockSize: number;
 }
 
-const actorForFigure = (figure: ShamblerFigure): { actor: WalkActor; bones: readonly Bone[] } => {
+const actorForFigure = (
+  figure: ShamblerFigure,
+): {
+  actor: WalkActor;
+  bones: readonly Bone[];
+  idleBases: Readonly<Record<IdleStance, Pose>>;
+} => {
   const {
     realized: {
       body: { bones },
@@ -89,7 +98,11 @@ const actorForFigure = (figure: ShamblerFigure): { actor: WalkActor; bones: read
     params: genome.params as HumanoidParams,
     seed: figure.seed,
   };
-  return { actor, bones };
+  return {
+    actor,
+    bones,
+    idleBases: { slack: idleBasePose(actor, 'slack'), aggravated: idleBasePose(actor, 'aggravated') },
+  };
 };
 
 const actorCache = new Map<number, ReturnType<typeof actorForFigure>>();
@@ -128,16 +141,39 @@ const attackTimeFor = ({
     : undefined;
 };
 
+export const STANCE_CROSSFADE_SECONDS = 0.5;
+
+export const targetStanceWeight = (input: ShamblerPoseInput): number => {
+  const attackTime = attackTimeFor(input);
+  return input.chasing || input.attackWindup > 0 || (attackTime !== undefined && attackTime <= LUNGE_GRAB.duration)
+    ? 1
+    : 0;
+};
+
+export const advanceStanceWeight = (current: number, target: number, dt: number): number => {
+  if (dt <= 0) {
+    return current;
+  }
+  const delta = target - current;
+  const maxDelta = dt / STANCE_CROSSFADE_SECONDS;
+  return Math.abs(delta) <= maxDelta + 1e-12 ? target : current + Math.sign(delta) * maxDelta;
+};
+
 /** The sole living-shambler pose source. Both render and hit FK consume this exact simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
-  const { actor, bones } = actorForSeed(input.seed);
+  const { actor, bones, idleBases } = actorForSeed(input.seed);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
   const attackTime = attackTimeFor(input);
-  const stance = input.chasing || attackTime !== undefined ? 'aggravated' : 'slack';
-  const walk = walkPose(actor, clock, input.speed, {
-    idle: idlePose(actor, stance, input.idleTime ?? 0),
-  });
+  const stanceWeight = input.stanceWeight ?? targetStanceWeight(input);
+  const stance: IdleStance = stanceWeight >= 0.5 ? 'aggravated' : 'slack';
+  const idle = applyIdleMotion(
+    blendPose(idleBases.slack, idleBases.aggravated, stanceWeight),
+    stance,
+    input.idleTime ?? 0,
+    input.id ?? input.seed,
+  );
+  const walk = walkPose(actor, clock, input.speed, { idle });
   const basePose =
     attackTime === undefined || attackTime > LUNGE_GRAB.duration
       ? walk
