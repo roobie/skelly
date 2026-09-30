@@ -8,6 +8,7 @@
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
 // Vertices are in the part's local frame times `METRES_PER_UNIT`; the node transform supplies the placement.
 
+import { resolveAppearance } from './appearance.ts';
 import type {
   DeadvoxModelEntry,
   DeadvoxModelFile,
@@ -25,55 +26,11 @@ import { meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef, Solid } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
-const ARCHETYPE_PREFIX = /^archetype-/;
-const GENERATED_SEED_SUFFIX = /-\d+$/;
-
 /** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
 export const partNodeName = (id: string, family: string): string => `${id}:${family}`;
 
 /** The standard sRGB electro-optical transfer: one normalized channel to linear light. */
 export const srgbToLinear = (c: number): number => (c <= 0.040_45 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-
-const own = <T>(table: Readonly<Record<string, T>>, key: string): T | undefined =>
-  Object.hasOwn(table, key) ? table[key] : undefined;
-
-/** Same precedence as the gun palette's `solidColor`: solid id, then role, then the fallback. */
-const defaultMaterial = (slot: string): string => {
-  if (slot === 'furniture') {
-    return 'polymer-black';
-  }
-  if (slot === 'accent') {
-    return 'rubber-black';
-  }
-  return 'steel-parkerized';
-};
-
-const appearanceOf = (
-  palette: Palette,
-  role: string,
-  solidId: string,
-  options: {
-    readonly archetype: string;
-    readonly finish?: Readonly<Record<string, string>> | undefined;
-    readonly material?: string | undefined;
-    readonly slot?: string | undefined;
-  },
-) => {
-  const slot = options.slot ?? own(palette.roleSlots ?? {}, role) ?? 'metal';
-  const legacySpecial = own(palette.specialColors, solidId);
-  const material =
-    own(palette.specialMaterials ?? {}, solidId) ??
-    (legacySpecial ? `special-${solidId}` : undefined) ??
-    options.material ??
-    own(options.finish ?? {}, slot) ??
-    own(own(palette.archetypeFinishes ?? {}, options.archetype) ?? {}, slot) ??
-    own(palette.roleMaterials ?? {}, role) ??
-    defaultMaterial(slot);
-  const base =
-    legacySpecial ?? own(palette.materials ?? {}, material) ?? own(palette.familyColors, role) ?? palette.fallbackColor;
-  const shade: SrgbColor = own(palette.roleShades ?? {}, role) ?? [1, 1, 1];
-  return { material, slot, color: [base[0] * shade[0], base[1] * shade[1], base[2] * shade[2]] as const };
-};
 
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
@@ -331,8 +288,14 @@ export const exportGlb: ExportGlb = (input) => {
   };
 
   const meshes: Json[] = [];
+  const appearanceFinish = input.finish ?? input.appearance?.finish;
+  const appearanceContext = {
+    ...input.appearance,
+    ...(appearanceFinish === undefined ? {} : { finish: appearanceFinish }),
+  };
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mesh attributes, shared appearance, and extras are one glTF primitive contract.
   const primitiveFor = (part: PartExport, item: DisplayItem): Json => {
     const solid = item.solids[0]!;
     const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
@@ -353,11 +316,14 @@ export const exportGlb: ExportGlb = (input) => {
       { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
       ELEMENT_ARRAY_BUFFER,
     );
-    const appearance = appearanceOf(palette, part.def.family, solid.id, {
-      archetype: resolved.assembly.name.replace(ARCHETYPE_PREFIX, '').replace(GENERATED_SEED_SUFFIX, ''),
-      finish: input.finish,
-      material: part.def.material,
-      slot: part.def.slot,
+    const appearance = resolveAppearance(palette, part.def.family, solid.id, {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+        ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+        ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+      },
     });
     return {
       attributes: { POSITION: position, NORMAL: normal },
@@ -366,12 +332,13 @@ export const exportGlb: ExportGlb = (input) => {
       mode: 4,
       extras: {
         ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
-        material: appearance.material,
-        slot: appearance.slot,
+        ...(appearance.material === undefined ? {} : { material: appearance.material }),
+        ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
       },
     };
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
     const primitives = displayItems(drawn).map((item) => primitiveFor(part, item));
@@ -386,18 +353,19 @@ export const exportGlb: ExportGlb = (input) => {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
     }
-    const appearance = appearanceOf(palette, part.def.family, drawn[0]?.id ?? '', {
-      archetype: resolved.assembly.name.replace(ARCHETYPE_PREFIX, '').replace(GENERATED_SEED_SUFFIX, ''),
-      finish: input.finish,
-      material: part.def.material,
-      slot: part.def.slot,
+    const appearance = resolveAppearance(palette, part.def.family, '', {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+      },
     });
     node.extras = {
       part: part.id,
       family: part.family,
       role: part.def.family,
-      material: appearance.material,
-      slot: appearance.slot,
+      ...(appearance.material === undefined ? {} : { material: appearance.material }),
+      ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
       solids: drawn.map((s) => s.id),
       ...(part.def.motion ? { motion: part.def.motion } : {}),
     };

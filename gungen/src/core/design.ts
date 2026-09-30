@@ -35,6 +35,8 @@ export interface Design {
   readonly assembly: Assembly;
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
+  /** Optional slot-to-material finish overrides; absent keeps template defaults. */
+  readonly finish?: Readonly<Record<string, string>>;
   readonly origin?: DesignOrigin;
 }
 
@@ -133,6 +135,11 @@ export type SrgbColor = readonly [red: number, green: number, blue: number];
  * Palette keeps legacy role colours for geometry inspection and optionally supplies material/slot finishing.
  * A role selects its default slot and shade; colour follows the resolved material.
  */
+export interface AppearanceContext {
+  readonly variant?: string;
+  readonly finish?: Readonly<Record<string, string>>;
+}
+
 export interface Palette {
   readonly familyColors: Readonly<Record<string, SrgbColor>>;
   readonly specialColors: Readonly<Record<string, SrgbColor>>;
@@ -143,7 +150,6 @@ export interface Palette {
   readonly roleMaterials?: Readonly<Record<string, string>>;
   /** Multipliers, one RGB triple per role, applied to the material's sRGB base colour. */
   readonly roleShades?: Readonly<Record<string, SrgbColor>>;
-  readonly specialMaterials?: Readonly<Record<string, string>>;
   readonly archetypeFinishes?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
@@ -205,7 +211,9 @@ export interface GlbExportInput {
   /** Domain-selected assembly-space frames; core does not apply gun precedence. */
   readonly anchors: SelectedAnchors;
   readonly palette: Palette;
-  /** Optional design-level slot-to-material overrides, ahead of archetype defaults. */
+  /** Optional domain-agnostic appearance context, supplied by the caller (never inferred from assembly.name). */
+  readonly appearance?: AppearanceContext;
+  /** Optional design-level slot-to-material overrides, ahead of variant defaults. */
   readonly finish?: Readonly<Record<string, string>>;
   readonly asset: GlbAssetIdentity;
 }

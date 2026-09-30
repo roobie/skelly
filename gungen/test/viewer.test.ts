@@ -8,8 +8,9 @@ import { loadFixture } from './helpers.ts';
 describe('viewer geometry', () => {
   it('defaults to archetype finishes and preserves role colours as a geometry-check mode', () => {
     const report = validate(loadFixture('archetype-ar'), gunDomain);
-    const finish = buildLayers(report, []);
-    const role = buildLayers(report, [], 'role');
+    const finish = buildLayers(report, [], 'finish', { variant: 'ar' });
+    const override = buildLayers(report, [], 'finish', { variant: 'ar', finish: { furniture: 'polymer-fde' } });
+    const role = buildLayers(report, [], 'role', { variant: 'ar' });
     try {
       const colorOfStock = (layers: typeof finish) => {
         const mesh = layers.solids.children.find((child) =>
@@ -19,8 +20,12 @@ describe('viewer geometry', () => {
         return material.color.getHex();
       };
       expect(colorOfStock(finish)).not.toBe(colorOfStock(role));
+      expect(colorOfStock(override)).not.toBe(colorOfStock(finish));
     } finally {
       for (const group of Object.values(finish)) {
+        disposeGroup(group);
+      }
+      for (const group of Object.values(override)) {
         disposeGroup(group);
       }
       for (const group of Object.values(role)) {

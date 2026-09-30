@@ -2075,7 +2075,13 @@ export const tubeMagazine: PartFamily = {
         : [];
     const cap: Solid[] =
       bandTop > TUBE_HALF_HEIGHT
-        ? [octagonalPrism('cap-lug', PUMP_TUBE_CAP_HALF_EXTENT, [length - PUMP_TUBE_CAP_LENGTH, length])]
+        ? [
+            {
+              ...octagonalPrism('cap-lug', PUMP_TUBE_CAP_HALF_EXTENT, [length - PUMP_TUBE_CAP_LENGTH, length]),
+              material: 'steel-blued',
+              slot: 'metal',
+            },
+          ]
         : [];
     const supportPort: PortDef[] =
       length > supportX
@@ -2575,11 +2581,15 @@ export const magazine: PartFamily = {
     const geometry = magazineGeometryFor(params, shape);
     const floorplate = isCompactBoltMagazine
       ? [
-          solid(
-            'floorplate',
-            [-depth / 2, resolvedInsertion - len, -width / 2 - 0.25],
-            [depth / 2 + 0.25, resolvedInsertion - len + 0.25, width / 2 + 0.25],
-          ),
+          {
+            ...solid(
+              'floorplate',
+              [-depth / 2, resolvedInsertion - len, -width / 2 - 0.25],
+              [depth / 2 + 0.25, resolvedInsertion - len + 0.25, width / 2 + 0.25],
+            ),
+            material: 'steel-blued',
+            slot: 'accent',
+          },
         ]
       : [];
     return {
@@ -2859,16 +2869,20 @@ export const stock: PartFamily = {
             ],
             sideZ,
           ),
-          extrudedPolygon(
-            'butt-pad',
-            [
-              [padRearBottomX, toeY],
-              [padFrontBottomX, toeY],
-              [padFrontTopX, raisedHeelY],
-              [padRearTopX, raisedHeelY],
-            ],
-            sideZ,
-          ),
+          {
+            ...extrudedPolygon(
+              'butt-pad',
+              [
+                [padRearBottomX, toeY],
+                [padFrontBottomX, toeY],
+                [padFrontTopX, raisedHeelY],
+                [padRearTopX, raisedHeelY],
+              ],
+              sideZ,
+            ),
+            material: 'rubber-black',
+            slot: 'accent',
+          },
         ],
         ports: [port],
         keepOuts: [],

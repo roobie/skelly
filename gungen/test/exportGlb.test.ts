@@ -27,10 +27,8 @@ const design = (name: string): Assembly => {
 
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
-const ARCHETYPE_PREFIX = /^archetype-/;
-
-const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET) => {
-  const result = exportGunGlb(assembly, asset);
+const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
+  const result = exportGunGlb(assembly, asset, variantName === undefined ? {} : { variant: variantName });
   if (!result.ok) {
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
@@ -120,7 +118,7 @@ describe('glb export: axes and units', () => {
 });
 
 describe('glb export: nodes', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
 
   it('writes a valid glb 2.0 container with one scene and reports the shared material count', () => {
     expect(ar.read.json.asset.version).toBe('2.0');
@@ -182,7 +180,7 @@ describe('glb export: nodes', () => {
 });
 
 describe('glb export: port metadata', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
   const partNode = (id: string) => ar.read.json.nodes.find((n) => n.extras?.part === id)!;
 
   it('records a port in its child node extras with the stable id, mount, gender, size and mating frame', () => {
@@ -228,7 +226,7 @@ describe('glb export: port metadata', () => {
 });
 
 describe('glb export: meshes', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
   const { json } = ar.read;
 
   const drawn = (id: string) => {
@@ -277,7 +275,7 @@ describe('glb export: meshes', () => {
       { designName: 'archetype-pump-shotgun', group: 'receiver-pump' },
     ];
     for (const { designName, group } of samples) {
-      const model = exported(design(designName));
+      const model = exported(design(designName), ASSET, designName.replace('archetype-', ''));
       const def = model.resolved.defs.get('receiver')!;
       const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
       const expectedMesh = meshForSolidGroup(solids);
@@ -353,6 +351,7 @@ describe('glb export: meshes', () => {
     expect(checked).toBeGreaterThan(1000);
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this contract walks exported primitives and compares full material metadata against each source solid.
   it('colours each solid with the palette converted from sRGB to linear', () => {
     for (const [id, inst] of Object.entries(ar.resolved.assembly.parts)) {
       const role = ar.resolved.defs.get(id)!.family;
@@ -364,9 +363,19 @@ describe('glb export: meshes', () => {
         if (!solidId) {
           throw new Error(`No source solid for ${id} primitive ${prim.indices}.`);
         }
+        const solid = [...(ar.resolved.defs.get(id)!.displaySolids ?? ar.resolved.defs.get(id)!.solids)].find(
+          (candidate) => candidate.id === solidId,
+        );
         const appearance = resolveAppearance(GUN_PALETTE, role, solidId, {
-          archetype: ar.resolved.assembly.name.replace(ARCHETYPE_PREFIX, ''),
+          archetype: 'ar',
+          ...(ar.resolved.defs.get(id)!.material ? { material: ar.resolved.defs.get(id)!.material } : {}),
+          ...(ar.resolved.defs.get(id)!.slot ? { slot: ar.resolved.defs.get(id)!.slot } : {}),
         });
+        if (solid?.material) {
+          expect(extras?.material).toBe(solid.material);
+          expect(extras?.slot).toBe(solid.slot);
+          continue;
+        }
         const factor = json.materials[prim.material]!.pbrMetallicRoughness.baseColorFactor;
         near(factor.slice(0, 3), appearance.color.map(srgbToLinear));
         expect(extras?.material).toBe(appearance.material);
@@ -375,6 +384,20 @@ describe('glb export: meshes', () => {
       }
       expect(inst.family).toBeTruthy();
     }
+  });
+
+  it('exports butt-pad and floorplate primitive extras in the independently specified accent slot', () => {
+    const pump = exported(design('archetype-pump-shotgun'), ASSET, 'pump-shotgun');
+    const compactBolt = exported(design('archetype-bolt-rifle-box'), ASSET, 'bolt-rifle-box');
+    const primitive = (glb: ReadGlb, solid: string) =>
+      glb.json.meshes
+        .flatMap((mesh) => mesh.primitives)
+        .find((candidate) => (candidate.extras as Record<string, unknown> | undefined)?.solid === solid);
+    expect(primitive(pump.read, 'butt-pad')?.extras).toMatchObject({ material: 'rubber-black', slot: 'accent' });
+    expect(primitive(compactBolt.read, 'floorplate')?.extras).toMatchObject({
+      material: 'steel-blued',
+      slot: 'accent',
+    });
   });
 
   it('converts sRGB to linear with the standard transfer function', () => {

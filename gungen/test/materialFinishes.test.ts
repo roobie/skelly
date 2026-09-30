@@ -3,10 +3,17 @@ import { GUN_PALETTE, resolveAppearance, srgbToHex } from '../src/gun/palette.ts
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 
+const REQUIRED_SLOTS = ['metal', 'furniture', 'accent'] as const;
+
 describe('materials, slots, and finishes', () => {
   it('resolves special, part-owned, archetype, then role-default appearances', () => {
     const p = GUN_PALETTE;
-    expect(resolveAppearance(p, 'stock', 'butt-pad', { archetype: 'ar' }).material).toBe('rubber-black');
+    expect(
+      resolveAppearance(p, 'stock', 'butt-pad', { archetype: 'ar', material: 'rubber-black', slot: 'accent' }),
+    ).toMatchObject({
+      material: 'rubber-black',
+      slot: 'accent',
+    });
     expect(resolveAppearance(p, 'stock', 'plain', { archetype: 'ar', material: 'polymer-fde' }).material).toBe(
       'polymer-fde',
     );
@@ -30,11 +37,10 @@ describe('materials, slots, and finishes', () => {
   });
 
   it('gives every archetype a material for every slot', () => {
-    const slots = [...new Set(Object.values(GUN_PALETTE.roleSlots ?? {}))];
     for (const template of TEMPLATES) {
       const finish = GUN_PALETTE.archetypeFinishes?.[template.name];
       expect(finish, template.name).toBeDefined();
-      for (const slot of slots) {
+      for (const slot of REQUIRED_SLOTS) {
         expect(GUN_PALETTE.materials?.[finish?.[slot] ?? ''], `${template.name}.${slot}`).toBeDefined();
       }
     }

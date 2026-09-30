@@ -4,6 +4,7 @@ import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/
 import { generateValid } from '../src/core/generate.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar } from '../src/gun/templates.ts';
@@ -121,6 +122,8 @@ describe('loadDesign: fatal errors', () => {
     ['no status', { ...makeDesign(), status: undefined }, undefined, 'status'],
     ['a malformed assembly', { ...makeDesign(), assembly: { name: 'x' } }, 'published', 'assembly.root'],
     ['bad origin', { ...makeDesign(), origin: { template: 'ar' } }, 'published', 'origin.seed'],
+    ['bad finish values', { ...makeDesign(), finish: { metal: 3 } }, 'published', 'finish.metal'],
+    ['empty finish values', { ...makeDesign(), finish: { metal: '  ' } }, 'published', 'finish.metal'],
     ['no format', { ...makeDesign(), format: undefined }, 'published', 'format'],
   ])('refuses a design with %s as invalid-shape', (_label, value, declared, path) => {
     const result = expectFatal(load(value));
@@ -147,6 +150,19 @@ describe('loadDesign: fatal errors', () => {
   it.each([3, 99])('refuses an unknown version %d of a known prefab id', (version) => {
     const assembly = withPart({ family: 'magazine', prefab: { id: 'test-stanag', version } });
     expect(expectFatal(load(makeDesign({ assembly }))).error.code).toBe('unknown-prefab');
+  });
+});
+
+describe('loadDesign: finish validation', () => {
+  it('rejects unknown gun finish slots and materials', () => {
+    for (const finish of [{ unknown: 'polymer-fde' }, { metal: 'not-a-material' }]) {
+      const loaded = loadGunDesign(JSON.stringify(makeDesign({ finish })));
+      expect(loaded.ok).toBe(false);
+      if (!loaded.ok) {
+        expect(loaded.error.code).toBe('invalid-shape');
+        expect(loaded.error.path?.startsWith('finish.')).toBe(true);
+      }
+    }
   });
 });
 

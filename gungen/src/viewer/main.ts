@@ -303,7 +303,11 @@ const redraw = () => {
       disposeGroup(g);
     }
   }
-  layers = buildLayers(report, focused ? [focused] : report.issues, colorMode);
+  const contextTemplate = editorState?.template ?? activeTemplate;
+  layers = buildLayers(report, focused ? [focused] : report.issues, colorMode, {
+    ...(contextTemplate ? { variant: contextTemplate.name } : {}),
+    ...(editorState?.finish ? { finish: editorState.finish } : {}),
+  });
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);

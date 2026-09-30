@@ -1,4 +1,4 @@
-import type { DeadvoxModelEntry, GlbAssetIdentity } from '../core/design.ts';
+import type { AppearanceContext, DeadvoxModelEntry, GlbAssetIdentity } from '../core/design.ts';
 import { parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly } from '../core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
@@ -14,7 +14,9 @@ export type ExportFileResult =
   | { readonly ok: false; readonly message: string };
 
 /** A design file has a `format`; anything else is read as a bare assembly (a fixture). */
-const readAssembly = (text: string): { assembly: Assembly; warnings: string[] } | { message: string } => {
+const readAssembly = (
+  text: string,
+): { assembly: Assembly; warnings: string[]; appearance: AppearanceContext } | { message: string } => {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -29,13 +31,17 @@ const readAssembly = (text: string): { assembly: Assembly; warnings: string[] } 
     return {
       assembly: loaded.design.assembly,
       warnings: loaded.issues.map((issue) => `design issue (${issue.code}): ${issue.message}`),
+      appearance: {
+        variant: loaded.design.template,
+        ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
+      },
     };
   }
   const parsed = parseAssemblyJson(text);
   if (!parsed.ok) {
     return { message: `${parsed.error.path}: ${parsed.error.message}` };
   }
-  return { assembly: parsed.assembly, warnings: [] };
+  return { assembly: parsed.assembly, warnings: [], appearance: {} };
 };
 
 /** Turns a design or fixture file's text into the `.glb` bytes and the deadvox model entry. */
@@ -44,7 +50,7 @@ export const exportFileText = (text: string, asset: GlbAssetIdentity): ExportFil
   if ('message' in read) {
     return { ok: false, message: read.message };
   }
-  const result = exportGunGlb(read.assembly, asset);
+  const result = exportGunGlb(read.assembly, asset, read.appearance);
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };
   }

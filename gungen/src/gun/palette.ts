@@ -1,3 +1,4 @@
+import { type ResolvedAppearance, resolveAppearance as resolveCoreAppearance } from '../core/appearance.ts';
 import type { Palette, SrgbColor } from '../core/design.ts';
 
 /** Normalizes a 0xRRGGBB integer to an sRGB triple in [0,1]. */
@@ -53,8 +54,6 @@ const FAMILY_HEX: Record<string, number> = {
   'gas-block': 0x2f_32_38,
   'gas-cylinder': 0x54_5a_63,
 };
-const SPECIAL_HEX: Record<string, number> = { floorplate: 0x35_42_58, 'butt-pad': 0x2f_32_38, 'cap-lug': 0x5d_63_6b };
-
 const ROLE_SLOTS: Record<string, string> = {
   receiver: 'metal',
   'ak-receiver': 'metal',
@@ -147,34 +146,18 @@ const FINISHES: Record<string, Readonly<Record<string, string>>> = {
 
 export const GUN_PALETTE: Palette = createPalette({
   familyColors: fromHex(FAMILY_HEX),
-  specialColors: fromHex(SPECIAL_HEX),
+  specialColors: {},
   fallbackColor: hexToSrgb(0x88_88_88),
   materials: fromHex(MATERIAL_HEX),
   roleSlots: ROLE_SLOTS,
   roleMaterials: ROLE_MATERIALS,
   roleShades: ROLE_SHADES,
-  specialMaterials: { floorplate: 'steel-blued', 'butt-pad': 'rubber-black', 'cap-lug': 'steel-blued' },
   archetypeFinishes: FINISHES,
 });
 
-const own = <T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined =>
-  table && Object.hasOwn(table, key) ? table[key] : undefined;
+export type Appearance = ResolvedAppearance;
 
-export interface Appearance {
-  readonly material: string;
-  readonly slot: string;
-  readonly color: SrgbColor;
-}
-const defaultMaterial = (slot: string): string => {
-  if (slot === 'furniture') {
-    return 'polymer-black';
-  }
-  if (slot === 'accent') {
-    return 'rubber-black';
-  }
-  return 'steel-parkerized';
-};
-/** Resolves special, part-owned, archetype-finish, then role-default appearance and applies the role shade. */
+/** Gun-facing convenience adapter; policy lives in the shared core resolver. */
 export const resolveAppearance = (
   palette: Palette,
   role: string,
@@ -182,27 +165,27 @@ export const resolveAppearance = (
   options: {
     readonly archetype?: string;
     readonly finish?: Readonly<Record<string, string>>;
-    readonly material?: string | undefined;
-    readonly slot?: string | undefined;
+    readonly material?: string;
+    readonly slot?: string;
   } = {},
-): Appearance => {
-  const slot = options.slot ?? own(palette.roleSlots, role) ?? 'metal';
-  const legacySpecial = own(palette.specialColors, solidId);
-  const material =
-    own(palette.specialMaterials, solidId) ??
-    (legacySpecial ? `special-${solidId}` : undefined) ??
-    options.material ??
-    own(options.finish ?? {}, slot) ??
-    own(own(palette.archetypeFinishes, options.archetype ?? ''), slot) ??
-    own(palette.roleMaterials, role) ??
-    defaultMaterial(slot);
-  const base =
-    legacySpecial ?? own(palette.materials, material) ?? own(palette.familyColors, role) ?? palette.fallbackColor;
-  const shade = own(palette.roleShades, role) ?? [1, 1, 1];
-  const color: SrgbColor = [base[0] * shade[0], base[1] * shade[1], base[2] * shade[2]];
-  return { material, slot, color };
-};
+): Appearance =>
+  resolveCoreAppearance(palette, role, solidId, {
+    context: {
+      ...(options.archetype === undefined ? {} : { variant: options.archetype }),
+      ...(options.finish === undefined ? {} : { finish: options.finish }),
+    },
+    overrides: {
+      ...(options.material === undefined ? {} : { partMaterial: options.material }),
+      ...(options.slot === undefined ? {} : { partSlot: options.slot }),
+    },
+  });
 
-/** Legacy role-only colour, available for geometry inspection. */
-export const solidColor = (palette: Palette, family: string, solidId: string): SrgbColor =>
-  own(palette.specialColors, solidId) ?? own(palette.familyColors, family) ?? palette.fallbackColor;
+const own = <T>(table: Readonly<Record<string, T>> | undefined, key: string): T | undefined =>
+  table && Object.hasOwn(table, key) ? table[key] : undefined;
+
+/** Role-only geometry-check colour; explicitly finished solids keep their own material base colour. */
+export const solidColor = (palette: Palette, family: string, solidId: string, material?: string): SrgbColor =>
+  (material ? own(palette.materials, material) : undefined) ??
+  own(palette.specialColors, solidId) ??
+  own(palette.familyColors, family) ??
+  palette.fallbackColor;

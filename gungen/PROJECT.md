@@ -755,11 +755,12 @@ palette as arguments.
     applies only when there is no grip. Equal-rank `hold` anchors are
     ambiguous, and the design cannot be published. `SelectGunAnchors` applies
     this policy before the core exporter receives `SelectedAnchors`.
-- **Palette.** One table of family colours and special colours keyed by solid
-  id, shared by viewer and export. A solid-id special colour wins over its
-  part-family colour; if the family is unknown, use the palette's
-  `fallbackColor` (the current viewer grey, `#888888`). `fallbackColor` is
-  explicit so the exporter cannot invent its own fallback.
+- **Appearance.** The viewer and exporter share `src/core/appearance.ts`'s
+  domain-agnostic resolver. Callers pass a variant explicitly; assembly display
+  names are never parsed as archetypes. Precedence is solid material, part
+  material, design finish, variant finish, then role material. Missing palette
+  material ids remain absent from metadata rather than being fabricated. Legacy
+  family/special/fallback colours still support generic domains.
 - **Export metadata** (frozen here for lane B), per port: stable id
   `<part>.<port>`, mount, gender, optional size, and the full assembly-space
   mating frame (position, normal, up). Rails carry one count/pitch record for
@@ -820,11 +821,14 @@ Decisions where the plan left representation open:
   `AnchorSelectionError` for a missing or ambiguous hold. The core exporter
   accepts only that selection; it never chooses gun anchors. `hold`,
   `support`, and `muzzle` are gun-only names.
-- Palette RGB channels are normalized sRGB triples; `specialColors` is keyed
-  by solid id and wins over `familyColors`, then `fallbackColor` handles an
-  unknown family (`#888888` for the current viewer). Export converts sRGB to
+- Palette RGB channels are normalized sRGB triples; legacy `specialColors` is
+  keyed by solid id and wins over `familyColors`, then `fallbackColor` handles
+  an unknown family (`#888888` for the current viewer). Export converts sRGB to
   linear space. Types cannot bound finite color channels to `[0,1]`; palette
-  construction and export validate them. Port metadata ids are
+  construction and export validate them. Solids may declare optional `material`
+  and `slot` overrides; design format 1 may declare an optional `finish` map,
+  shape-checked generically and material/slot-checked by the gun loader. Export
+  and viewer callers pass the design template explicitly. Port metadata ids are
   `<part>.<port>`; frames are in gungen assembly coordinates and units, and a
   rail carries one count/pitch record. `PartPortId` cannot exclude empty
   components or embedded dots, so export validates both ids. The exporter
@@ -933,7 +937,7 @@ and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
 bit-identically for every role that had one. Six roles that used to render as
 the `#888888` fallback now have colours (below).
 
-**Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Solid specials win, then part-owned material, archetype finish, and role default. Archetype finishes cover every slot; a design/part may override. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. Magazines default to the metal slot; the AK's darkened blued-steel magazine reads black, while AR magazines resolve to anodized aluminium. Pump shotguns have no box magazine; their tube magazine is metal. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
+**Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Explicit solid material/slot wins, then part-owned material/slot, design finish, variant finish, and role default. Archetype finishes cover every slot; design or part may override. Finish maps survive load, editor save/reopen, viewer rendering, and shipped export. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. Magazines default to the metal slot; the AK's darkened blued-steel magazine reads black, while AR magazines resolve to anodized aluminium. Pump shotguns have no box magazine; their tube magazine is metal. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
 
 Deferred: generator finish variation; patterned finishes (UVs/textures); per-instance tint (deadvox); splitting slots (e.g. upper/lower metal); material opacity (an optional opacity field with opaque default remains unimplemented).
 - AK-74-style magazines match the furniture (e.g. plum or brown polymer). Later as a magazine variant or attachment bringing its own material, not a slot change (BR, 2026-10-01).
