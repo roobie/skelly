@@ -166,8 +166,10 @@ const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
 const heldPanKeys = new Set<string>();
 let shiftHeld = false;
 const KEY_PAN_SPEED = 25; // world units per second
+const KEY_TURN_SPEED = Math.PI / 2; // radians per second
 const panDirection = new Vector3();
 const panUp = new Vector3();
+const orbitOffset = new Vector3();
 const isEditingText = (target: EventTarget | null): boolean =>
   target instanceof HTMLInputElement ||
   target instanceof HTMLTextAreaElement ||
@@ -210,11 +212,21 @@ controls.addEventListener('change', () => {
 const panFromKeys = (seconds: number) => {
   const right = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
   const up = Number(heldPanKeys.has('ArrowUp')) - Number(heldPanKeys.has('ArrowDown'));
-  if (right === 0 && up === 0) {
+  const turn = shiftHeld ? right : 0;
+  const panRight = shiftHeld ? 0 : right;
+  if (turn !== 0) {
+    orbitOffset
+      .copy(camera.position)
+      .sub(controls.target)
+      .applyAxisAngle(camera.up, -turn * KEY_TURN_SPEED * seconds);
+    camera.position.copy(controls.target).add(orbitOffset);
+    camera.lookAt(controls.target);
+  }
+  if (panRight === 0 && up === 0) {
     return;
   }
   camera.updateMatrixWorld();
-  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(right);
+  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(panRight);
   if (shiftHeld) {
     camera.getWorldDirection(panUp);
   } else {
