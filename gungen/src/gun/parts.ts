@@ -82,7 +82,6 @@ const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_HEIGHT = 1;
 const MAGAZINE_WELL_CENTER_X = -7 + MAGAZINE_DEPTH / 2;
 const RECESSED_MAGAZINE_PORT_Y = 2;
-const RECESSED_MAGAZINE_WELL_TOP_Y = 0.5;
 /** A magazine's section (front to back, side to side) by profile. */
 const magazineSection = (profile: string | undefined): { readonly depth: number; readonly width: number } => {
   if (profile === 'pistol') {
@@ -365,6 +364,119 @@ const cutEjectionPort = (partSolid: Solid): Solid[] => {
   return pieces;
 };
 
+const receiverShellSolids = (feed: string, magazineWell: string): Solid[] => {
+  const [xMin, xMax] = [-16, 0] as const;
+  const wall = PISTOL_SLIDE_WALL_THICKNESS;
+  const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
+  const innerY: readonly [number, number] = [-RECEIVER_FRONT_HALF_HEIGHT + wall, RECEIVER_FRONT_HALF_HEIGHT - wall];
+  const innerZ: readonly [number, number] = [-RECEIVER_FRONT_HALF_WIDTH + wall, RECEIVER_FRONT_HALF_WIDTH - wall];
+  const solids: Solid[] = [
+    solid(
+      'receiver-shell-rear',
+      [xMin, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+      [innerX[0], RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+    ),
+    solid(
+      'receiver-shell-front',
+      [innerX[1], -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+      [xMax, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+    ),
+    solid(
+      'receiver-shell-side-far',
+      [innerX[0], innerY[0], -RECEIVER_FRONT_HALF_WIDTH],
+      [innerX[1], innerY[1], innerZ[0]],
+    ),
+  ];
+  if (magazineWell === 'recessed') {
+    const x0 = MAGAZINE_WELL_CENTER_X - MAGAZINE_WELL_DEPTH / 2;
+    const x1 = MAGAZINE_WELL_CENTER_X + MAGAZINE_WELL_DEPTH / 2;
+    solids.push(
+      solid(
+        'receiver-shell-bottom-rear',
+        [innerX[0], -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+        [x0, innerY[0], RECEIVER_FRONT_HALF_WIDTH],
+      ),
+      solid(
+        'receiver-shell-bottom-front',
+        [x1, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+        [innerX[1], innerY[0], RECEIVER_FRONT_HALF_WIDTH],
+      ),
+      solid(
+        'receiver-shell-bottom-well-side-left',
+        [x0, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+        [x1, innerY[0], innerZ[0]],
+      ),
+      solid(
+        'receiver-shell-bottom-well-side-right',
+        [x0, -RECEIVER_FRONT_HALF_HEIGHT, innerZ[1]],
+        [x1, innerY[0], RECEIVER_FRONT_HALF_WIDTH],
+      ),
+    );
+  } else {
+    solids.push(
+      solid(
+        'receiver-shell-bottom',
+        [innerX[0], -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+        [innerX[1], innerY[0], RECEIVER_FRONT_HALF_WIDTH],
+      ),
+    );
+  }
+  if (feed === 'top') {
+    const portX: readonly [number, number] = [-9, -4];
+    solids.push(
+      solid(
+        'receiver-shell-top-side-left',
+        [innerX[0], innerY[1], -RECEIVER_FRONT_HALF_WIDTH],
+        [innerX[1], RECEIVER_FRONT_HALF_HEIGHT, innerZ[0]],
+      ),
+      solid(
+        'receiver-shell-top-side-right',
+        [innerX[0], innerY[1], innerZ[1]],
+        [innerX[1], RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+      ),
+      solid(
+        'receiver-shell-top-rear',
+        [innerX[0], innerY[1], innerZ[0]],
+        [portX[0], RECEIVER_FRONT_HALF_HEIGHT, innerZ[1]],
+      ),
+      solid(
+        'receiver-shell-top-front',
+        [portX[1], innerY[1], innerZ[0]],
+        [innerX[1], RECEIVER_FRONT_HALF_HEIGHT, innerZ[1]],
+      ),
+    );
+  } else {
+    solids.push(
+      solid(
+        'receiver-shell-top',
+        [innerX[0], innerY[1], -RECEIVER_FRONT_HALF_WIDTH],
+        [innerX[1], RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+      ),
+    );
+  }
+  const [portX0, portX1] = EJECTION_PORT_WINDOW.x;
+  const [portY0] = EJECTION_PORT_WINDOW.y;
+  solids.push(
+    solid(
+      'receiver-shell-side-near-rear',
+      [innerX[0], innerY[0], innerZ[1]],
+      [portX0, innerY[1], RECEIVER_FRONT_HALF_WIDTH],
+    ),
+    solid(
+      'receiver-shell-side-near-front',
+      [portX1, innerY[0], innerZ[1]],
+      [innerX[1], innerY[1], RECEIVER_FRONT_HALF_WIDTH],
+    ),
+    solid(
+      'receiver-shell-side-near-lower',
+      [portX0, innerY[0], innerZ[1]],
+      [portX1, portY0, RECEIVER_FRONT_HALF_WIDTH],
+    ),
+    solid('bolt-carrier-face', [-8.5, 0.75, -1.25], [-5.5, 1.75, 1.25]),
+  );
+  return solids;
+};
+
 const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[] => {
   if (params.action === 'auto') {
     if (params.chargingHandle === 'rear-top') {
@@ -489,62 +601,28 @@ export const receiver: PartFamily = {
       });
     }
 
-    let solids: Solid[];
-    if (params.action === 'revolver') {
-      solids = [
-        solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
-        extrudedPolygon(
-          'beavertail-grip-safety',
-          [
-            [-17.5, 0.75],
-            [-15, 0.75],
-            [-15, 2.5],
-            [-16.5, 2.5],
-            [-17.25, 1.75],
-          ],
-          [-1.25, 1.25],
-        ),
-        solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
-        solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
-        solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
-        solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
-        solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
-      ];
-    } else if (params.magazineWell === 'recessed') {
-      const x0 = MAGAZINE_WELL_CENTER_X - MAGAZINE_WELL_DEPTH / 2;
-      const x1 = MAGAZINE_WELL_CENTER_X + MAGAZINE_WELL_DEPTH / 2;
-      const z0 = MAGAZINE_WELL_WIDTH / 2;
-      const y0 = -RECEIVER_FRONT_HALF_HEIGHT;
-      const top = RECESSED_MAGAZINE_WELL_TOP_Y;
-      solids = [
-        solid(
-          'body-rear',
-          [-16, y0, -RECEIVER_FRONT_HALF_WIDTH],
-          [x0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
-        solid(
-          'body-front',
-          [x1, y0, -RECEIVER_FRONT_HALF_WIDTH],
-          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
-        solid('magwell-wall-left', [x0, y0, -RECEIVER_FRONT_HALF_WIDTH], [x1, top, -z0]),
-        solid('magwell-wall-right', [x0, y0, z0], [x1, top, RECEIVER_FRONT_HALF_WIDTH]),
-        solid(
-          'magwell-roof',
-          [x0, top, -RECEIVER_FRONT_HALF_WIDTH],
-          [x1, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
-      ];
-    } else {
-      solids = [
-        solid(
-          'body',
-          [-16, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
-          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
-        ),
-      ];
-    }
-    const receiverSolids = keepOuts.some(({ id }) => id === 'ejection') ? solids.flatMap(cutEjectionPort) : solids;
+    const receiverSolids =
+      params.action === 'revolver'
+        ? [
+            solid('top-strap', [-16, 1.25, -3.25], [0, 2.5, 3.25]),
+            extrudedPolygon(
+              'beavertail-grip-safety',
+              [
+                [-17.5, 0.75],
+                [-15, 0.75],
+                [-15, 2.5],
+                [-16.5, 2.5],
+                [-17.25, 1.75],
+              ],
+              [-1.25, 1.25],
+            ),
+            solid('back-strap', [-16, -2.5, -1.5], [-13.5, 1.25, 1.5]),
+            solid('front-strap', [-0.25, -2.5, -1.5], [0, 1.25, 1.5]),
+            solid('cylinder-side-near', [-8.25, -6, -3.25], [-0.25, 0, -3]),
+            solid('cylinder-side-far', [-8.25, -6, 3], [-0.25, 0, 3.25]),
+            solid('cylinder-bottom', [-8.25, -6.5, -2.5], [-0.25, -6, 2.5]),
+          ]
+        : receiverShellSolids(params.feed!, params.magazineWell ?? 'standard');
     return {
       family: 'receiver',
       solids: [...receiverSolids, ...receiverActionDetails(params)],
@@ -562,22 +640,42 @@ export const akReceiver: PartFamily = {
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const base = receiver.build({ action: 'bolt', feed: 'box', bore, chargingHandle: 'side', rail: 'none' });
+    const akProfile = [
+      [-16, -RECEIVER_FRONT_HALF_HEIGHT],
+      [0, -RECEIVER_FRONT_HALF_HEIGHT],
+      [0, RECEIVER_FRONT_HALF_HEIGHT],
+      [-16 + AK_RECEIVER_REAR_CUT_DEPTH, RECEIVER_FRONT_HALF_HEIGHT],
+      [-16, RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP],
+    ] as const;
     return {
       ...base,
       solids: [
-        ...cutEjectionPort(
-          extrudedPolygon(
-            'receiver-body',
-            [
-              [-16, -RECEIVER_FRONT_HALF_HEIGHT],
-              [0, -RECEIVER_FRONT_HALF_HEIGHT],
-              [0, RECEIVER_FRONT_HALF_HEIGHT],
-              [-16 + AK_RECEIVER_REAR_CUT_DEPTH, RECEIVER_FRONT_HALF_HEIGHT],
-              [-16, RECEIVER_FRONT_HALF_HEIGHT - AK_RECEIVER_REAR_CUT_DROP],
-            ],
-            [-RECEIVER_FRONT_HALF_WIDTH, RECEIVER_FRONT_HALF_WIDTH],
-          ),
+        ...cutEjectionPort(extrudedPolygon('receiver-body', akProfile, [1.5, RECEIVER_FRONT_HALF_WIDTH])),
+        extrudedPolygon('receiver-far-side', akProfile, [-RECEIVER_FRONT_HALF_WIDTH, -1.5]),
+        solid(
+          'receiver-ak-rear',
+          [-16, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+          [-15.5, 1, RECEIVER_FRONT_HALF_WIDTH],
         ),
+        solid('receiver-ak-rear-inner', [-15.5, -2, -1.5], [-15, 1.25, 1.5]),
+        extrudedPolygon(
+          'receiver-ak-slope-top',
+          [
+            [-16, 1],
+            [-15.7, 0.6],
+            [-13.7, 2.1],
+            [-14, 2.5],
+          ],
+          [-1.5, 1.5],
+        ),
+        solid('receiver-ak-bottom', [-15.5, -RECEIVER_FRONT_HALF_HEIGHT, -1.5], [-0.5, -2, 1.5]),
+        solid('receiver-ak-top', [-14, 2, -1.5], [-0.5, RECEIVER_FRONT_HALF_HEIGHT, 1.5]),
+        solid(
+          'receiver-ak-front',
+          [-0.5, -RECEIVER_FRONT_HALF_HEIGHT, -RECEIVER_FRONT_HALF_WIDTH],
+          [0, RECEIVER_FRONT_HALF_HEIGHT, RECEIVER_FRONT_HALF_WIDTH],
+        ),
+        solid('bolt-carrier-face', [-8.5, 0.75, -1.25], [-5.5, 1.75, 1.25]),
         ...receiverActionDetails({ action: 'bolt' }),
         solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],

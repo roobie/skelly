@@ -36,6 +36,16 @@ const intervalsOverlap = (a: readonly [number, number], b: readonly [number, num
 const receiver = (action: 'auto' | 'bolt', chargingHandle = 'side') =>
   FAMILIES.receiver!.build({ action, feed: 'box', bore: 'M', chargingHandle });
 
+const rayHitFromEjectionPort = (def: ReturnType<typeof receiver>): { id: string; z: number } | null => {
+  for (let z = 2.01; z >= -2; z -= 0.01) {
+    const hit = def.solids.find((solid) => inside(solid, [-7, 1, z]));
+    if (hit) {
+      return { id: hit.id, z };
+    }
+  }
+  return null;
+};
+
 const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => {
   const handle = def.solids.find((solid) => solid.id === handleId);
   const travel = def.keepOuts.find((keepOut) => keepOut.id === handleId);
@@ -46,15 +56,42 @@ const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => 
 };
 
 describe('visible action details', () => {
-  it('cuts an ejection opening through receiver and AK-receiver solids', () => {
+  it('opens only the ejection-side wall and exposes a carrier before the far wall', () => {
     const receivers = [
       receiver('auto', 'rear-top'),
       FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
     ];
     for (const def of receivers) {
       expect(def.keepOuts.some(({ id }) => id === 'ejection')).toBe(true);
-      expect(def.solids.some((solid) => inside(solid, [-7, 0, 1.75]))).toBe(false);
+      expect(def.solids.some((solid) => inside(solid, [-7, 1, 1.75]))).toBe(false);
+      expect(def.solids.some((solid) => inside(solid, [-7, 1, -1.75]))).toBe(true);
+      expect(rayHitFromEjectionPort(def)).toMatchObject({ id: 'bolt-carrier-face', z: expect.closeTo(1.25, 1) });
     }
+  });
+
+  it('uses 0.5u receiver-shell walls, matching the pistol-slide wall thickness', () => {
+    const generic = receiver('auto');
+    const top = generic.solids.find(({ id }) => id === 'receiver-shell-top');
+    const nearSide = generic.solids.find(({ id }) => id === 'receiver-shell-side-near-rear');
+    expect(top?.kind).toBe('box');
+    expect(nearSide?.kind).toBe('box');
+    if (top?.kind === 'box' && nearSide?.kind === 'box') {
+      expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBe(0.5);
+      expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBe(0.5);
+    }
+    const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(({ id }) =>
+      id.startsWith('receiver-body-port-wall'),
+    );
+    expect(akSide?.kind).toBe('extruded-polygon');
+    if (akSide?.kind === 'extruded-polygon') {
+      expect(akSide.z[1] - akSide.z[0]).toBe(0.5);
+    }
+  });
+
+  it('does not add an ejection port to revolver receivers', () => {
+    const revolver = FAMILIES.receiver!.build({ action: 'revolver', feed: 'cylinder', bore: 'S' });
+    expect(revolver.keepOuts.some(({ id }) => id === 'ejection')).toBe(false);
+    expect(revolver.solids.some(({ id }) => id.startsWith('receiver-shell-side-near'))).toBe(false);
   });
 
   it('places side, rear-top, and bolt handles at touching, non-overlapping rest faces', () => {

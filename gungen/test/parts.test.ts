@@ -317,7 +317,7 @@ describe('tapered stock profile', () => {
       const { def, solids, jointX } = profile(size);
       const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
       const bodyY = receiver.solids.flatMap((solid) => {
-        if (solid.kind !== 'box' || !solid.id.startsWith('body-port-')) {
+        if (solid.kind !== 'box' || !solid.id.startsWith('receiver-shell-')) {
           return [];
         }
         return [solid.box.center[1] - solid.box.half[1], solid.box.center[1] + solid.box.half[1]];
