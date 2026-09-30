@@ -231,6 +231,26 @@ describe('watertightness (welded by exact position)', () => {
     });
   }
 
+  it('renders a clipped prism with its new cap and preserves watertight topology', () => {
+    const clipped: ExtrudedPolygonSolid = {
+      id: 'clipped-box',
+      kind: 'extruded-polygon',
+      profile: [
+        [0, 0],
+        [2, 0],
+        [2, 2],
+        [0, 2],
+      ],
+      z: [0, 2],
+      clip: [{ normal: [1, 1, 0], offset: 2 }],
+    };
+    const mesh = meshForSolid(clipped);
+    const { badEdges, vertices, edges, faces } = weldedTopology(mesh);
+    expect(mesh.triangleCount).toBe(8);
+    expect(badEdges).toEqual([]);
+    expect(vertices - edges + faces).toBe(2);
+  });
+
   it('is watertight for every solid (including displaySolids) of every template at a few seeds', () => {
     for (const t of TEMPLATES) {
       for (const seed of [0, 1, 2]) {

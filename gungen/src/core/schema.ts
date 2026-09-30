@@ -52,6 +52,12 @@ export interface BoxSolid {
 
 export type Vec2 = readonly [number, number];
 
+export interface ClipPlane {
+  readonly normal: Vec3;
+  /** Keeps the half-space where dot(normal, point) <= offset. */
+  readonly offset: number;
+}
+
 export interface ExtrudedPolygonSolid {
   readonly id: string;
   readonly kind: 'extruded-polygon';
@@ -61,6 +67,8 @@ export interface ExtrudedPolygonSolid {
   readonly axis?: ExtrusionAxis;
   /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
+  /** Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset. */
+  readonly clip?: readonly ClipPlane[];
   readonly display?: SolidDisplayHints;
 }
 

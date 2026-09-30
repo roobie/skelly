@@ -128,7 +128,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "dropped",
+          "style": "ak-dropped",
         },
       },
     },
@@ -260,7 +260,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "L",
-          "style": "dropped",
+          "style": "ak-dropped",
         },
       },
     },
@@ -392,7 +392,7 @@ exports[`templates > ak > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "dropped",
+          "style": "ak-dropped",
         },
       },
     },
@@ -507,7 +507,7 @@ exports[`templates > ar > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "straight",
+          "style": "m4",
         },
       },
     },
@@ -617,7 +617,7 @@ exports[`templates > ar > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "straight",
+          "style": "m4",
         },
       },
     },
@@ -733,7 +733,7 @@ exports[`templates > ar > known-good seeds 1`] = `
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "straight",
+          "style": "m4",
         },
       },
     },

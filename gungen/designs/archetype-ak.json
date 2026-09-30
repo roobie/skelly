@@ -62,7 +62,7 @@
         "family": "stock",
         "params": {
           "length": "L",
-          "style": "dropped"
+          "style": "ak-dropped"
         }
       },
       "rear-sight": {

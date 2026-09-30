@@ -217,6 +217,13 @@ const LOWER_TRIGGER_X = {
 const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
 const AK_GAS_CYLINDER_Y = 2;
 const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
+export const AK_REAR_BEVEL = {
+  run: 2,
+  rise: 1.5,
+  angleDegrees: (Math.atan(1.5 / 2) * 180) / Math.PI,
+  clip: { normal: [-0.75, 1, 0], offset: 13 },
+} as const;
+const AK_STOCK_PORT_Y = 0.5;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
@@ -353,6 +360,7 @@ export const RECEIVER_SECTION = {
     } as const,
   },
   ak: {
+    clip: [AK_REAR_BEVEL.clip],
     outline: [
       [-2.5, -2],
       [1, -2],
@@ -423,6 +431,7 @@ const receiverShellSolids = ({
       wall: 0.5,
       cavity: { y: [data.cavity.y[0] - receiverDrop, data.cavity.y[1] - receiverDrop], z: data.cavity.z },
       port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
+      ...('clip' in data && data.clip.length > 0 ? { clip: data.clip } : {}),
       ...(feed === 'box'
         ? {
             magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
@@ -845,7 +854,6 @@ export const akReceiver: PartFamily = {
           receiverDrop: 0,
           portWindow,
         }),
-        solid('dust-cover', [-13, 2.5, -1.75], [-1, 3, 1.75]),
       ],
       // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.
       keepOuts: base.keepOuts.map((path) =>
@@ -853,9 +861,7 @@ export const akReceiver: PartFamily = {
       ),
       ports: [
         ...base.ports.map((port) =>
-          port.id === 'stock'
-            ? { ...port, pos: [port.pos[0], RECEIVER_SECTION.ak.faces.top.y, port.pos[2]] as const }
-            : port,
+          port.id === 'stock' ? { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const } : port,
         ),
         {
           id: 'gas-cylinder',
@@ -866,7 +872,15 @@ export const akReceiver: PartFamily = {
           up: Y,
           required: true,
         },
-        { id: 'rear-sight', mount: 'sight-block', gender: 'female', pos: [-2, 3, 0], normal: Y, up: X, required: true },
+        {
+          id: 'rear-sight',
+          mount: 'sight-block',
+          gender: 'female',
+          pos: [-2, 2.5, 0],
+          normal: Y,
+          up: X,
+          required: true,
+        },
       ],
     };
   },
@@ -2400,18 +2414,36 @@ export const magazine: PartFamily = {
  */
 export const stock: PartFamily = {
   name: 'stock',
-  params: { length: size, style: choice('straight', 'sporting', 'dropped', 'tapered', 'tapered-sawed', 'thumbhole') },
+  params: {
+    length: size,
+    style: choice('straight', 'sporting', 'dropped', 'ak-dropped', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
+  },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
     const port: PortDef = {
       id: 'front',
       mount: 'stock',
       gender: 'male',
-      pos: [0, 0, 0],
+      pos: [0, params.style === 'ak-dropped' ? -2 : 0, 0],
       normal: X,
       up: Y,
       required: true,
     };
+    if (params.style === 'm4') {
+      const profile = RECEIVER_SECTION.ar.outline;
+      return {
+        family: 'stock',
+        solids: [
+          octagonalPrism('buffer-tube', 0.75, [-len, 0]),
+          { id: 'm4-stock-body', kind: 'extruded-polygon', profile, axis: 'x', z: [-len, -3] },
+          { id: 'buttplate', kind: 'extruded-polygon', profile, axis: 'x', z: [-len - 1, -len] },
+          solid('latch-rib', [-6, -3.25, -1.25], [-3, -2.5, 1.25]),
+        ],
+        ports: [port],
+        keepOuts: [],
+        axes: [],
+      };
+    }
     if (params.style === 'thumbhole') {
       const combTop = -1.5;
       const sideZ: readonly [number, number] = [-THUMBHOLE_HALF_WIDTH, THUMBHOLE_HALF_WIDTH];
@@ -2588,7 +2620,7 @@ export const stock: PartFamily = {
         tags: [FIRING_GRIP],
       };
     }
-    if (params.style === 'dropped') {
+    if (params.style === 'dropped' || params.style === 'ak-dropped') {
       return {
         family: 'stock',
         solids: [

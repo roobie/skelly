@@ -10,6 +10,7 @@
 // X/Y extrusion axes are then mapped through right-handed coordinate cycles.
 
 import { GRID } from './conventions.ts';
+import { clippedExtrudedPolygonPolyhedron } from './geometry.ts';
 import { cross, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
 import type { Box, Solid, Vec2 } from './schema.ts';
 
@@ -233,6 +234,17 @@ export const meshForSolid = (
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);
+  }
+  if (solid.clip?.length) {
+    const polyhedron = clippedExtrudedPolygonPolyhedron(solid);
+    if (!polyhedron) {
+      throw new Error(`Solid "${solid.id}" clips to an empty or degenerate mesh.`);
+    }
+    const builder = new MeshBuilder();
+    for (const face of polyhedron.faces) {
+      builder.face(face.map((index) => polyhedron.vertices[index]!));
+    }
+    return builder.build();
   }
   return orientExtrusion(chamferedPrism(solid.profile, solid.z, bevel), solid.axis);
 };

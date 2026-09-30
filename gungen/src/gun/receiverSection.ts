@@ -1,4 +1,5 @@
-import type { Solid, Vec2 } from '../core/schema.ts';
+import { clippedExtrudedPolygonPolyhedron } from '../core/geometry.ts';
+import type { ClipPlane, Solid, Vec2 } from '../core/schema.ts';
 
 export interface SectionWindow {
   readonly x: readonly [number, number];
@@ -12,6 +13,7 @@ export interface ReceiverSectionSpec {
   readonly outline: readonly Vec2[];
   readonly x: readonly [number, number];
   readonly wall: number;
+  readonly clip?: readonly ClipPlane[];
   readonly cavity: { readonly y: readonly [number, number]; readonly z: readonly [number, number] };
   readonly port?: SectionWindow;
   readonly magazineWell?: SectionWindow;
@@ -80,13 +82,19 @@ const positive = (profile: readonly Vec2[]): boolean => profile.length >= 3 && M
 const clipBand = (profile: readonly Vec2[], axis: 0 | 1, lo: number, hi: number): Vec2[] =>
   clip(clip(profile, axis, lo, false), axis, hi, true);
 
-const prism = (id: string, profile: readonly Vec2[], x: readonly [number, number], mergeGroup: string): Solid => ({
+interface PrismOptions {
+  readonly mergeGroup: string;
+  readonly clipPlanes?: readonly ClipPlane[];
+}
+
+const prism = (id: string, profile: readonly Vec2[], x: readonly [number, number], options: PrismOptions): Solid => ({
   id,
   kind: 'extruded-polygon',
   profile,
   axis: 'x',
   z: x,
-  display: { outline: false, bevel: false, mergeGroup },
+  ...(options.clipPlanes?.length ? { clip: options.clipPlanes } : {}),
+  display: { outline: false, bevel: false, mergeGroup: options.mergeGroup },
 });
 
 const splitAt = (solids: readonly Solid[], planes: readonly number[]): Solid[] =>
@@ -111,15 +119,16 @@ interface WindowCutSpec {
   readonly x: readonly [number, number];
   readonly window: SectionWindow;
   readonly mergeGroup: string;
+  readonly clip?: readonly ClipPlane[];
 }
 
-const subtractSectionWindow = ({ id, profile, x, window, mergeGroup }: WindowCutSpec): Solid[] => {
+const subtractSectionWindow = ({ id, profile, x, window, mergeGroup, clip: clipPlanes }: WindowCutSpec): Solid[] => {
   const [x0, x1] = window.x;
   const [s0, s1] = window.section;
   const pieces: Solid[] = [];
   const add = (suffix: string, section: readonly Vec2[], range: readonly [number, number]) => {
     if (positive(section) && range[0] < range[1]) {
-      pieces.push(prism(`${id}-${suffix}`, section, range, mergeGroup));
+      pieces.push(prism(`${id}-${suffix}`, section, range, { mergeGroup, ...(clipPlanes ? { clipPlanes } : {}) }));
     }
   };
   add('before-window', profile, [x[0], Math.min(x[1], x0)]);
@@ -197,7 +206,10 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
     [y[0], z[1]],
   ];
   const adapterSolid = (end: 'front' | 'rear', x: readonly [number, number]) =>
-    prism(`${spec.id}-${end}-adapter`, cavityProfile, x, spec.id);
+    prism(`${spec.id}-${end}-adapter`, cavityProfile, x, {
+      mergeGroup: spec.id,
+      ...(spec.clip ? { clipPlanes: spec.clip } : {}),
+    });
   const result: Solid[] = [
     adapterSolid('rear', [spec.x[0], spec.x[0] + spec.wall]),
     adapterSolid('front', [spec.x[1] - spec.wall, spec.x[1]]),
@@ -209,11 +221,25 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
     const window = windowForBand(name, spec);
     if (window) {
       result.push(
-        ...subtractSectionWindow({ id: `${spec.id}-${name}`, profile, x: spec.x, window, mergeGroup: spec.id }),
+        ...subtractSectionWindow({
+          id: `${spec.id}-${name}`,
+          profile,
+          x: spec.x,
+          window,
+          mergeGroup: spec.id,
+          ...(spec.clip ? { clip: spec.clip } : {}),
+        }),
       );
     } else {
-      result.push(prism(`${spec.id}-${name}`, profile, spec.x, spec.id));
+      result.push(
+        prism(`${spec.id}-${name}`, profile, spec.x, {
+          mergeGroup: spec.id,
+          ...(spec.clip ? { clipPlanes: spec.clip } : {}),
+        }),
+      );
     }
   }
-  return splitAt(result, [spec.x[0] + spec.wall, spec.x[1] - spec.wall]);
+  return splitAt(result, [spec.x[0] + spec.wall, spec.x[1] - spec.wall]).filter(
+    (solid) => solid.kind !== 'extruded-polygon' || clippedExtrudedPolygonPolyhedron(solid) !== undefined,
+  );
 };

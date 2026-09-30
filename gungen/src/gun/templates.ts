@@ -83,7 +83,7 @@ export const ar: Template = {
     },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-curved' } },
-    { id: 'stock', family: 'stock', params: { length: 'M', style: 'straight' } },
+    { id: 'stock', family: 'stock', params: { length: 'M', style: 'm4' } },
     {
       id: 'front-sight',
       family: 'front-sight',
@@ -149,7 +149,7 @@ export const ak: Template = {
     { id: 'gas-block', family: 'gas-block' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] } },
-    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'dropped' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'ak-dropped' } },
     { id: 'rear-sight', family: 'ak-rear-sight' },
     { id: 'front-sight', family: 'front-sight', params: { style: 'ak' } },
   ],
