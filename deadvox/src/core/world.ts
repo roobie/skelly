@@ -24,13 +24,20 @@ export class World {
   readonly chunks = new Map<string, Chunk>();
   private readonly deltas = new Map<string, { x: number; y: number; z: number; base: number; id: number }>();
   private readonly deltaCounts = new Map<string, number>();
+  private readonly pendingRestore = new Map<string, { diff: ChunkDiff; blockId: (id: string) => number }>();
 
   getChunk(cx: number, cy: number, cz: number): Chunk | undefined {
     return this.chunks.get(chunkKey(cx, cy, cz));
   }
 
   addChunk(chunk: Chunk): void {
-    this.chunks.set(chunkKey(chunk.cx, chunk.cy, chunk.cz), chunk);
+    const key = chunkKey(chunk.cx, chunk.cy, chunk.cz);
+    this.chunks.set(key, chunk);
+    const pending = this.pendingRestore.get(key);
+    if (pending) {
+      this.restoreChunkDiff(chunk, pending.diff, pending.blockId);
+      this.pendingRestore.delete(key);
+    }
   }
 
   removeChunk(cx: number, cy: number, cz: number): void {
@@ -40,6 +47,9 @@ export class World {
   /** Changed cells only, with stable content ids; the live world and chunks are untouched. */
   snapshotDiffs(contentId: (blockId: number) => string): Readonly<WorldDiffs> {
     const chunks = new Map<string, ChunkDiff>();
+    for (const [key, pending] of this.pendingRestore) {
+      chunks.set(key, structuredClone(pending.diff));
+    }
     for (const delta of this.deltas.values()) {
       const cx = toChunk(delta.x);
       const cy = toChunk(delta.y);
@@ -66,19 +76,35 @@ export class World {
     });
   }
 
-  /** Applies saved changes to already-regenerated base chunks, refusing a wrong base. */
+  /** Restores changes now or when each deterministic base chunk is first generated. */
   restoreDiffs(diffs: WorldDiffs, blockId: (contentId: string) => number): void {
-    if (this.deltas.size > 0) {
-      throw new Error('Cannot restore world diffs over an edited world');
+    if (this.deltas.size > 0 || this.pendingRestore.size > 0) {
+      throw new Error('Cannot restore world diffs over an edited or restored world');
     }
+    const seen = new Set<string>();
     for (const diff of diffs.chunks) {
+      const key = chunkKey(diff.cx, diff.cy, diff.cz);
+      if (seen.has(key)) {
+        throw new Error(`Duplicate world diff chunk ${key}`);
+      }
+      seen.add(key);
       const chunk = this.getChunk(diff.cx, diff.cy, diff.cz);
-      if (!chunk) {
-        throw new Error(`Missing generated base chunk ${chunkKey(diff.cx, diff.cy, diff.cz)}`);
+      if (chunk) {
+        this.restoreChunkDiff(chunk, diff, blockId);
+      } else {
+        this.pendingRestore.set(key, { diff: structuredClone(diff), blockId });
       }
-      for (const cell of diff.cells) {
-        this.restoreCell(chunk, diff, cell, blockId);
+    }
+  }
+
+  private restoreChunkDiff(chunk: Chunk, diff: ChunkDiff, blockId: (contentId: string) => number): void {
+    let previousIndex = -1;
+    for (const cell of diff.cells) {
+      if (cell.index <= previousIndex) {
+        throw new Error(`Unsorted or duplicate block delta index ${cell.index}`);
       }
+      previousIndex = cell.index;
+      this.restoreCell(chunk, diff, cell, blockId);
     }
   }
 

@@ -78,6 +78,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
   'src/ui/rest.ts',
+  'src/ui/saveController.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);

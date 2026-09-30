@@ -99,6 +99,7 @@ describe('simulation source fingerprint', () => {
         'src/game/saveStorageRecord.ts',
         'src/game/saveStorageProtocol.ts',
         'src/worker/save.worker.ts',
+        'src/ui/saveController.ts',
       ]),
     );
     expect(graph.excludedImports).toEqual([

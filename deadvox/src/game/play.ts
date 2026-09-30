@@ -10,6 +10,7 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
+import type { SaveSnapshot } from '../core/saveState.ts';
 import { skyAt } from '../core/sky.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
@@ -32,6 +33,7 @@ import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import { renderRest } from '../ui/rest.ts';
+import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
@@ -51,7 +53,12 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const USE_REACH = 2;
 const QUICK_KEY = /^Digit([1-5])$/;
 
-export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
+export interface StartPlayOptions {
+  readonly restore?: Readonly<SaveSnapshot>;
+  readonly saveController?: SaveController;
+}
+
+export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
   const { scale } = config;
   const s = scale.blockSize;
@@ -85,6 +92,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
+    ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     controls: {
       active: () => input.locked && !input.menuPointer,
@@ -128,10 +136,28 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     search,
   } = session;
   const { compression } = sim;
+  if (session.restoredLook) {
+    input.yaw = session.restoredLook.yaw;
+    input.pitch = session.restoredLook.pitch;
+    input.walking = session.restoredLook.walk;
+  }
+  let snapshotIds = {
+    worldId: options.restore?.world.id ?? crypto.randomUUID(),
+    characterId: options.restore?.character.id ?? crypto.randomUUID(),
+  };
+  if (options.saveController) {
+    snapshotIds = options.saveController.bindSession(
+      () => session.snapshot(snapshotIds),
+      () => sim.time,
+      { blockSize: s, site: config.site, storeys: config.storeys },
+    );
+  }
   const { zombies: zombieSystem, zombieStore } = session;
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   let playerGaitPhase = 0;
-  startingLoadout(inventory);
+  if (!options.restore) {
+    startingLoadout(inventory);
+  }
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => session.onColumn(cx, cz, engine.site);
   const models = new ModelLibrary(registry, (message) => {
@@ -213,6 +239,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         return;
       }
       queue.cancel();
+      if (kind === 'sleep') {
+        options.saveController?.beforeSleep();
+      }
     }
     const reason = rest.toggle(kind);
     if (reason) {
@@ -268,7 +297,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     compress: () => compress(),
   });
 
-  let started = false;
+  let started = options.restore !== undefined;
   let mainMenuOpen = true;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
@@ -281,6 +310,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       dead: sim.dead !== undefined,
       pointerLockChanged,
       resumeRequested,
+      ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
     });
     ({ started, mainMenuOpen } = state);
     if (pointerLockChanged || state.closeOtherMenus) {
@@ -309,7 +339,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     if (target?.closest('a')) {
       return;
     }
-    if (target?.closest('#go') || (!input.locked && target === overlay)) {
+    if (target?.closest('#go') || target?.closest('#save-replace-confirm') || (!input.locked && target === overlay)) {
       resume();
     }
   });
@@ -688,6 +718,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = menuState.paused;
     session.frame(dt);
+    options.saveController?.afterFrame();
     applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);

@@ -205,6 +205,27 @@ body {
   font-weight: 600;
   margin: 0;
 }
+#save-status {
+  overflow-wrap: anywhere;
+}
+#continue,
+#save-persist,
+#save-export,
+#save-replace-confirm,
+#save-replace-cancel {
+  margin: 0 0 12px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--text);
+  color: #121418;
+  font: inherit;
+  cursor: pointer;
+}
+#continue:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* ---- death screen ---- */
 #death {

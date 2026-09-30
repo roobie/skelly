@@ -1,3 +1,5 @@
+import type { SaveVersionComponents, SaveWorldOptions } from '../core/saveFormat.ts';
+import type { SaveSnapshot } from '../core/saveState.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -8,7 +10,7 @@ import {
 } from './saveStorageProtocol.ts';
 
 type SaveBackend = 'opfs' | 'indexeddb';
-type BackendPreference = 'auto' | SaveBackend;
+export type SaveBackendPreference = 'auto' | SaveBackend;
 type SlotName = 'a' | 'b';
 const SAVE_WRITE_LOCK = 'deadvox-save-storage';
 const PERSISTENCE_STATUS_TIMEOUT_MS = 1000;
@@ -27,9 +29,9 @@ interface WorkerResponse {
   readonly result?: unknown;
   readonly error?: string;
 }
-interface SaveStorageOptions {
+export interface SaveStorageOptions {
   /** Force a backend in tests; production should leave this on `auto`. */
-  readonly backend?: BackendPreference;
+  readonly backend?: SaveBackendPreference;
   readonly requestTimeoutMs?: number;
   /** Test-only abrupt worker termination at a named physical-write stage. */
   readonly testCrashAt?: CrashStage;
@@ -52,9 +54,14 @@ export interface SaveStorageStatus {
   readonly persistent: boolean | null;
   readonly quota: SaveQuota;
 }
+export interface SaveEncodingOptions {
+  readonly worldOptions: SaveWorldOptions;
+  readonly version: SaveVersionComponents;
+  readonly buildRevision: string;
+}
 
 export class SaveStorage {
-  private readonly preference: BackendPreference;
+  private readonly preference: SaveBackendPreference;
   private readonly timeoutMs: number;
   private readonly crashAt: CrashStage | undefined;
   private worker: Worker | undefined;
@@ -169,6 +176,20 @@ export class SaveStorage {
     const usageBytes = estimate.usage ?? 0;
     const quotaBytes = estimate.quota ?? 0;
     return { supported: true, usageBytes, quotaBytes, availableBytes: Math.max(0, quotaBytes - usageBytes) };
+  }
+
+  async listNamespaces(): Promise<readonly string[]> {
+    await this.status();
+    return this.request<string[]>({ operation: 'list' });
+  }
+
+  async encodeSnapshot(
+    snapshot: Readonly<SaveSnapshot>,
+    generation: number,
+    options: SaveEncodingOptions,
+  ): Promise<Uint8Array> {
+    await this.status();
+    return this.request<Uint8Array>({ operation: 'encode', snapshot, generation, ...options });
   }
 
   async readRawSlots(namespace: string): Promise<RawSaveSlots> {
