@@ -11,7 +11,7 @@
 
 import { GRID } from './conventions.ts';
 import { clippedExtrudedPolygonPolyhedron } from './geometry.ts';
-import { cross, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
+import { cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
 import type { Box, Solid, Vec2 } from './schema.ts';
 
 export interface TriangleMesh {
@@ -79,8 +79,8 @@ class MeshBuilder {
   /** Adds a face, reversing its winding first if that would point away from `outwardHint`. */
   orientedFace(points: readonly Vec3[], outwardHint: Vec3): void {
     const normal = cross(sub(points[1]!, points[0]!), sub(points[2]!, points[0]!));
-    const dot = normal[0] * outwardHint[0] + normal[1] * outwardHint[1] + normal[2] * outwardHint[2];
-    this.face(dot < 0 ? [...points].reverse() : points);
+    const facing = normal[0] * outwardHint[0] + normal[1] * outwardHint[1] + normal[2] * outwardHint[2];
+    this.face(facing < 0 ? [...points].reverse() : points);
   }
 
   build(): TriangleMesh {
@@ -249,117 +249,340 @@ export const meshForSolid = (
   return orientExtrusion(chamferedPrism(solid.profile, solid.z, bevel), solid.axis);
 };
 
-const containsInReceiverSection = (solid: Solid, point: Vec3): boolean => {
-  if (solid.kind === 'box') {
-    const { center, half } = solid.box;
-    return point.every(
-      (value, axis) => value >= center[axis]! - half[axis]! - 1e-8 && value <= center[axis]! + half[axis]! + 1e-8,
-    );
+const GROUP_WELD_TOLERANCE_U = 1e-5;
+const weldCoordinate = (coordinate: number): number =>
+  Math.round(coordinate / GROUP_WELD_TOLERANCE_U) * GROUP_WELD_TOLERANCE_U;
+const weldPoint = (point: Vec3): Vec3 => [weldCoordinate(point[0]), weldCoordinate(point[1]), weldCoordinate(point[2])];
+const weldKey = (point: Vec3): string => point.map((coordinate) => weldCoordinate(coordinate).toFixed(5)).join(',');
+
+interface HalfSpace {
+  readonly normal: Vec3;
+  readonly offset: number;
+}
+interface SurfacePolygon {
+  readonly points: readonly Vec3[];
+  readonly normal: Vec3;
+}
+interface MeshGroupBuffers {
+  readonly positions: number[];
+  readonly normals: number[];
+  readonly indices: number[];
+}
+
+const trianglePoints = (mesh: TriangleMesh, triangle: number): [Vec3, Vec3, Vec3] =>
+  [0, 1, 2].map((corner) => {
+    const index = mesh.indices[triangle + corner]! * 3;
+    return weldPoint([mesh.positions[index]!, mesh.positions[index + 1]!, mesh.positions[index + 2]!]);
+  }) as [Vec3, Vec3, Vec3];
+
+const triangleNormal = (mesh: TriangleMesh, triangle: number): Vec3 => {
+  const vertex = mesh.indices[triangle]! * 3;
+  return [mesh.normals[vertex]!, mesh.normals[vertex + 1]!, mesh.normals[vertex + 2]!];
+};
+
+const polygonArea = (points: readonly Vec3[]): number => {
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  for (let i = 0; i < points.length; i++) {
+    const normal = cross(points[i]!, points[(i + 1) % points.length]!);
+    x += normal[0];
+    y += normal[1];
+    z += normal[2];
   }
-  if ((solid.axis ?? 'z') !== 'x' || point[0] < solid.z[0] - 1e-8 || point[0] > solid.z[1] + 1e-8) {
-    return false;
-  }
-  const point2: Vec2 = [point[1], point[2]];
-  for (let i = 0; i < solid.profile.length; i++) {
-    const a = solid.profile[i]!;
-    const b = solid.profile[(i + 1) % solid.profile.length]!;
-    const side = (b[0] - a[0]) * (point2[1] - a[1]) - (b[1] - a[1]) * (point2[0] - a[0]);
-    if (side < -1e-7) {
-      return false;
+  return Math.hypot(x, y, z) / 2;
+};
+
+const cleanPolygon = (points: readonly Vec3[]): Vec3[] => {
+  const clean: Vec3[] = [];
+  for (const point of points.map(weldPoint)) {
+    const previous = clean.at(-1);
+    if (
+      !previous ||
+      Math.hypot(point[0] - previous[0], point[1] - previous[1], point[2] - previous[2]) > GROUP_WELD_TOLERANCE_U
+    ) {
+      clean.push(point);
     }
   }
-  return true;
-};
-
-const triangleKey = (mesh: TriangleMesh, triangle: number): string =>
-  [0, 1, 2]
-    .map((corner) => {
-      const index = mesh.indices[triangle + corner]! * 3;
-      return `${mesh.positions[index]!.toFixed(6)},${mesh.positions[index + 1]!.toFixed(6)},${mesh.positions[index + 2]!.toFixed(6)}`;
-    })
-    .sort()
-    .join('|');
-
-const groupFaceCounts = (meshes: readonly TriangleMesh[]): Map<string, number> => {
-  const counts = new Map<string, number>();
-  for (const mesh of meshes) {
-    for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
-      const key = triangleKey(mesh, triangle);
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+  if (clean.length > 2) {
+    const first = clean[0]!;
+    const last = clean.at(-1)!;
+    if (Math.hypot(first[0] - last[0], first[1] - last[1], first[2] - last[2]) <= GROUP_WELD_TOLERANCE_U) {
+      clean.pop();
     }
   }
-  return counts;
+  return clean.length >= 3 && polygonArea(clean) > GROUP_WELD_TOLERANCE_U ** 2 ? clean : [];
 };
 
-const isOccludedTriangle = (
-  solids: readonly Solid[],
-  solidIndex: number,
-  mesh: TriangleMesh,
-  triangle: number,
-): boolean => {
-  const indices = [mesh.indices[triangle]!, mesh.indices[triangle + 1]!, mesh.indices[triangle + 2]!];
-  const points = indices.map(
-    (index) => [mesh.positions[index * 3]!, mesh.positions[index * 3 + 1]!, mesh.positions[index * 3 + 2]!] as Vec3,
-  );
-  const normal: Vec3 = [
-    mesh.normals[indices[0]! * 3]!,
-    mesh.normals[indices[0]! * 3 + 1]!,
-    mesh.normals[indices[0]! * 3 + 2]!,
-  ];
-  const center: Vec3 = [
-    (points[0]![0] + points[1]![0] + points[2]![0]) / 3,
-    (points[0]![1] + points[1]![1] + points[2]![1]) / 3,
-    (points[0]![2] + points[1]![2] + points[2]![2]) / 3,
-  ];
-  const probes = [
-    center,
-    [center[0] + normal[0] * 1e-6, center[1] + normal[1] * 1e-6, center[2] + normal[2] * 1e-6] as Vec3,
-    [center[0] - normal[0] * 1e-6, center[1] - normal[1] * 1e-6, center[2] - normal[2] * 1e-6] as Vec3,
-  ];
-  return solids.some(
-    (other, index) => index !== solidIndex && probes.some((probe) => containsInReceiverSection(other, probe)),
-  );
+const polygonHalfSpaces = (mesh: TriangleMesh): HalfSpace[] => {
+  const vertices: Vec3[] = [];
+  for (let i = 0; i < mesh.positions.length; i += 3) {
+    vertices.push([mesh.positions[i]!, mesh.positions[i + 1]!, mesh.positions[i + 2]!]);
+  }
+  const center = [0, 1, 2].map(
+    (axis) => vertices.reduce((sum, point) => sum + point[axis]!, 0) / vertices.length,
+  ) as unknown as Vec3;
+  const planes = new Map<string, HalfSpace>();
+  for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
+    const [a, b, c] = trianglePoints(mesh, triangle);
+    let normal = normalize(cross(sub(b, a), sub(c, a)));
+    let offset = dot(normal, a);
+    if (dot(normal, center) > offset) {
+      normal = [-normal[0], -normal[1], -normal[2]];
+      offset = -offset;
+    }
+    const plane = { normal, offset };
+    const key = `${weldKey(normal)}|${weldCoordinate(offset).toFixed(5)}`;
+    planes.set(key, plane);
+  }
+  return [...planes.values()];
 };
 
-const appendTriangle = (
-  mesh: TriangleMesh,
-  triangle: number,
-  output: { positions: number[]; normals: number[]; indices: number[] },
+const clipPolygonEdges = (polygon: readonly Vec3[], distances: readonly number[], keepInside: boolean): Vec3[] => {
+  const result: Vec3[] = [];
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i]!;
+    const b = polygon[(i + 1) % polygon.length]!;
+    const distanceA = distances[i]!;
+    const distanceB = distances[(i + 1) % polygon.length]!;
+    const insideA = keepInside ? distanceA <= 0 : distanceA >= 0;
+    const insideB = keepInside ? distanceB <= 0 : distanceB >= 0;
+    if (insideA !== insideB) {
+      const ratio = distanceA / (distanceA - distanceB);
+      result.push([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
+    }
+    if (insideB) {
+      result.push(b);
+    }
+  }
+  return cleanPolygon(result);
+};
+
+const clipPolygon = (polygon: readonly Vec3[], plane: HalfSpace, keepInside: boolean): Vec3[] => {
+  if (polygon.length < 3) {
+    return [];
+  }
+  const distances = polygon.map((point) => dot(plane.normal, point) - plane.offset);
+  const minimum = Math.min(...distances);
+  const maximum = Math.max(...distances);
+  if (maximum <= GROUP_WELD_TOLERANCE_U) {
+    return keepInside ? [...polygon] : [];
+  }
+  if (minimum >= -GROUP_WELD_TOLERANCE_U) {
+    return keepInside ? [] : [...polygon];
+  }
+  return clipPolygonEdges(polygon, distances, keepInside);
+};
+
+/** Subtract one convex piece from a planar convex polygon, returning disjoint survivors. */
+const subtractConvexPiece = (polygon: readonly Vec3[], planes: readonly HalfSpace[]): Vec3[][] => {
+  let intersection = [cleanPolygon(polygon)];
+  const survivors: Vec3[][] = [];
+  for (const plane of planes) {
+    const nextIntersection: Vec3[][] = [];
+    for (const part of intersection) {
+      const inside = clipPolygon(part, plane, true);
+      const outside = clipPolygon(part, plane, false);
+      if (outside.length > 0) {
+        survivors.push(outside);
+      }
+      if (inside.length > 0) {
+        nextIntersection.push(inside);
+      }
+    }
+    intersection = nextIntersection;
+    if (intersection.length === 0) {
+      break;
+    }
+  }
+  return survivors;
+};
+
+interface PlanarFaceEdges {
+  readonly normal: Vec3;
+  readonly edges: Map<string, { readonly from: Vec3; readonly to: Vec3 }>;
+}
+
+const registerPlanarTriangle = (
+  groups: Map<string, PlanarFaceEdges>,
+  points: readonly [Vec3, Vec3, Vec3],
+  normal: Vec3,
 ): void => {
-  const vertices = [mesh.indices[triangle]!, mesh.indices[triangle + 1]!, mesh.indices[triangle + 2]!];
+  const offset = dot(normal, points[0]);
+  const key = `${weldKey(normal)}|${weldCoordinate(offset).toFixed(5)}`;
+  let group = groups.get(key);
+  if (!group) {
+    group = { normal, edges: new Map() };
+    groups.set(key, group);
+  }
+  for (let edge = 0; edge < 3; edge++) {
+    const from = points[edge]!;
+    const to = points[(edge + 1) % 3]!;
+    const edgeKey = [weldKey(from), weldKey(to)].sort().join('|');
+    if (group.edges.has(edgeKey)) {
+      group.edges.delete(edgeKey);
+    } else {
+      group.edges.set(edgeKey, { from, to });
+    }
+  }
+};
+
+const tracePlanarBoundary = (group: PlanarFaceEdges): Vec3[] | undefined => {
+  const edges = [...group.edges.values()];
+  if (edges.length < 3) {
+    return undefined;
+  }
+  const points: Vec3[] = [];
+  const startKey = weldKey(edges[0]!.from);
+  let currentKey = startKey;
+  while (points.length <= group.edges.size) {
+    const edgeIndex = edges.findIndex((candidate) => weldKey(candidate.from) === currentKey);
+    if (edgeIndex < 0) {
+      return undefined;
+    }
+    const edge = edges.splice(edgeIndex, 1)[0]!;
+    points.push(edge.from);
+    currentKey = weldKey(edge.to);
+    if (currentKey === startKey) {
+      return edges.length === 0 && polygonArea(points) > GROUP_WELD_TOLERANCE_U ** 2 ? points : undefined;
+    }
+  }
+  return undefined;
+};
+
+const facesFromMesh = (mesh: TriangleMesh): SurfacePolygon[] => {
+  const groups = new Map<string, PlanarFaceEdges>();
+  for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
+    registerPlanarTriangle(groups, trianglePoints(mesh, triangle), triangleNormal(mesh, triangle));
+  }
+  return [...groups.values()].flatMap((group) => {
+    const points = tracePlanarBoundary(group);
+    return points ? [{ points, normal: group.normal }] : [];
+  });
+};
+
+const pointsOnEdge = (a: Vec3, b: Vec3, candidates: readonly Vec3[]): Vec3[] => {
+  const direction = sub(b, a);
+  const lengthSquared = dot(direction, direction);
+  if (lengthSquared <= GROUP_WELD_TOLERANCE_U ** 2) {
+    return [];
+  }
+  const edgeLength = Math.sqrt(lengthSquared);
+  return candidates
+    .map((point) => {
+      const along = dot(sub(point, a), direction) / lengthSquared;
+      const nearest: Vec3 = [a[0] + direction[0] * along, a[1] + direction[1] * along, a[2] + direction[2] * along];
+      const distance = Math.hypot(point[0] - nearest[0], point[1] - nearest[1], point[2] - nearest[2]);
+      return { point, along, distance };
+    })
+    .filter(
+      ({ along, distance }) =>
+        along > GROUP_WELD_TOLERANCE_U / edgeLength &&
+        along < 1 - GROUP_WELD_TOLERANCE_U / edgeLength &&
+        distance <= GROUP_WELD_TOLERANCE_U,
+    )
+    .sort((left, right) => left.along - right.along)
+    .map(({ point }) => point);
+};
+
+const polygonBoundaryWithTJunctions = (polygon: readonly Vec3[], vertices: readonly Vec3[]): Vec3[] => {
+  const boundary: Vec3[] = [];
+  for (let edge = 0; edge < polygon.length; edge++) {
+    const a = polygon[edge]!;
+    const b = polygon[(edge + 1) % polygon.length]!;
+    boundary.push(a, ...pointsOnEdge(a, b, vertices));
+  }
+  return boundary;
+};
+
+const appendFlatTriangle = (points: readonly Vec3[], normal: Vec3, output: MeshGroupBuffers): void => {
   const base = output.positions.length / 3;
-  const normal: Vec3 = [
-    mesh.normals[vertices[0]! * 3]!,
-    mesh.normals[vertices[0]! * 3 + 1]!,
-    mesh.normals[vertices[0]! * 3 + 2]!,
-  ];
-  for (const vertex of vertices) {
-    output.positions.push(
-      mesh.positions[vertex * 3]!,
-      mesh.positions[vertex * 3 + 1]!,
-      mesh.positions[vertex * 3 + 2]!,
-    );
+  for (const point of points) {
+    output.positions.push(...weldPoint(point));
     output.normals.push(...normal);
   }
   output.indices.push(base, base + 1, base + 2);
 };
 
-/** Merge un-beveled X-extruded collision pieces and discard their shared interior faces. */
-export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
-  const output = { positions: [] as number[], normals: [] as number[], indices: [] as number[] };
-  const meshes = solids.map((solid) => meshForSolid(solid, 0));
-  const faceCounts = groupFaceCounts(meshes);
-  for (let solidIndex = 0; solidIndex < solids.length; solidIndex++) {
-    const mesh = meshes[solidIndex]!;
-    for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
-      if ((faceCounts.get(triangleKey(mesh, triangle)) ?? 0) > 1) {
-        continue;
+const triangulateConvexBoundary = (boundary: readonly Vec3[], normal: Vec3): [Vec3, Vec3, Vec3][] => {
+  const remaining = [...boundary];
+  const triangles: [Vec3, Vec3, Vec3][] = [];
+  while (remaining.length > 3) {
+    let ear = -1;
+    for (let i = 0; i < remaining.length; i++) {
+      const previous = remaining[(i + remaining.length - 1) % remaining.length]!;
+      const current = remaining[i]!;
+      const next = remaining[(i + 1) % remaining.length]!;
+      const turn = dot(cross(sub(current, previous), sub(next, current)), normal);
+      if (turn > GROUP_WELD_TOLERANCE_U ** 2) {
+        ear = i;
+        triangles.push([previous, current, next]);
+        break;
       }
-      if (isOccludedTriangle(solids, solidIndex, mesh, triangle)) {
-        continue;
-      }
-      appendTriangle(mesh, triangle, output);
     }
+    if (ear < 0) {
+      return [];
+    }
+    remaining.splice(ear, 1);
+  }
+  if (remaining.length === 3) {
+    triangles.push([remaining[0]!, remaining[1]!, remaining[2]!]);
+  }
+  return triangles;
+};
+
+const appendSurfacePolygon = (surface: SurfacePolygon, vertices: readonly Vec3[], output: MeshGroupBuffers): void => {
+  const boundary = polygonBoundaryWithTJunctions(surface.points, vertices);
+  const triangles = triangulateConvexBoundary(boundary, surface.normal);
+  for (const triangle of triangles) {
+    appendFlatTriangle(triangle, surface.normal, output);
+  }
+};
+
+const subtractFaceByOtherPieces = (
+  face: SurfacePolygon,
+  ownerIndex: number,
+  allHalfSpaces: readonly HalfSpace[][],
+): SurfacePolygon[] => {
+  let fragments: Vec3[][] = [cleanPolygon(face.points)];
+  for (let other = 0; other < allHalfSpaces.length && fragments.length > 0; other++) {
+    if (other !== ownerIndex) {
+      fragments = fragments.flatMap((fragment) => subtractConvexPiece(fragment, allHalfSpaces[other]!));
+    }
+  }
+  return fragments
+    .filter((points) => polygonArea(points) > GROUP_WELD_TOLERANCE_U ** 2)
+    .map((points) => ({ points, normal: face.normal }));
+};
+
+const boundarySurfaces = (meshes: readonly TriangleMesh[], halfSpaces: readonly HalfSpace[][]): SurfacePolygon[] =>
+  meshes.flatMap((mesh, ownerIndex) =>
+    facesFromMesh(mesh).flatMap((face) => subtractFaceByOtherPieces(face, ownerIndex, halfSpaces)),
+  );
+
+const surfaceVertices = (surfaces: readonly SurfacePolygon[]): Vec3[] => {
+  const vertices = new Map<string, Vec3>();
+  for (const surface of surfaces) {
+    for (const point of surface.points) {
+      const welded = weldPoint(point);
+      vertices.set(weldKey(welded), welded);
+    }
+  }
+  return [...vertices.values()];
+};
+
+/**
+ * Merge un-beveled section pieces, Boolean-subtract internal faces, weld within 1e-5u,
+ * and split T-junction edges. Collision continues to use the original convex pieces.
+ */
+export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
+  const meshes = solids.map((solid) => meshForSolid(solid, 0));
+  const halfSpaces = meshes.map(polygonHalfSpaces);
+  const surfaces = boundarySurfaces(meshes, halfSpaces);
+  const vertices = surfaceVertices(surfaces);
+  const output: MeshGroupBuffers = { positions: [], normals: [], indices: [] };
+  for (const surface of surfaces) {
+    appendSurfacePolygon(surface, vertices, output);
   }
   return {
     positions: new Float32Array(output.positions),

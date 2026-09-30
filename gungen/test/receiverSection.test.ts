@@ -169,6 +169,20 @@ describe('receiver section builder', () => {
       expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
       expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(0);
     }
+    const familyTopology = receivers.map(({ id, def }) => {
+      const receiverMesh = meshForSolidGroup(def.solids.filter((solid) => solid.display?.mergeGroup === id));
+      const counts = topology(receiverMesh);
+      return {
+        id,
+        openEdges: counts.openEdges.length,
+        duplicateFaces: counts.duplicateFaces,
+      };
+    });
+    expect(familyTopology).toEqual([
+      { id: 'receiver-ar', openEdges: 0, duplicateFaces: 0 },
+      { id: 'receiver-ak', openEdges: 0, duplicateFaces: 0 },
+      { id: 'receiver-pump', openEdges: 0, duplicateFaces: 0 },
+    ]);
   });
 
   it('requires the declared wall thickness around the entire cavity', () => {
