@@ -151,6 +151,7 @@ scene.add(grid);
 const camera = new PerspectiveCamera(40, 1, 0.1, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.listenToKeyEvents(window);
 
 const resize = () => {
   const { clientWidth: w, clientHeight: h } = view;
