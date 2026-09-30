@@ -152,6 +152,47 @@ const camera = new PerspectiveCamera(40, 1, 0.1, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+// OrbitControls handles keys only on the browser's delayed key-repeat cadence.
+// Keep the camera's orbit relation intact while applying held arrow keys every frame.
+const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
+const heldPanKeys = new Set<string>();
+const KEY_PAN_SPEED = 25; // world units per second
+const panDirection = new Vector3();
+const panUp = new Vector3();
+const isEditingText = (target: EventTarget | null): boolean =>
+  target instanceof HTMLInputElement ||
+  target instanceof HTMLTextAreaElement ||
+  target instanceof HTMLSelectElement ||
+  (target instanceof HTMLElement && target.isContentEditable);
+globalThis.addEventListener('keydown', (event) => {
+  if (!PAN_KEYS.has(event.code) || isEditingText(event.target)) {
+    return;
+  }
+  heldPanKeys.add(event.code);
+  event.preventDefault();
+});
+globalThis.addEventListener('keyup', (event) => {
+  heldPanKeys.delete(event.code);
+});
+globalThis.addEventListener('blur', () => heldPanKeys.clear());
+
+const panFromKeys = (seconds: number) => {
+  const right = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
+  const up = Number(heldPanKeys.has('ArrowUp')) - Number(heldPanKeys.has('ArrowDown'));
+  if (right === 0 && up === 0) {
+    return;
+  }
+  camera.updateMatrixWorld();
+  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(right);
+  panUp.setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(up);
+  panDirection
+    .add(panUp)
+    .normalize()
+    .multiplyScalar(KEY_PAN_SPEED * seconds);
+  camera.position.add(panDirection);
+  controls.target.add(panDirection);
+};
+
 const resize = () => {
   const { clientWidth: w, clientHeight: h } = view;
   renderer.setSize(w, h);
@@ -1058,7 +1099,11 @@ if (queryDesign !== null) {
   }
 }
 
-renderer.setAnimationLoop(() => {
+let previousFrameMs = performance.now();
+renderer.setAnimationLoop((frameMs) => {
+  const elapsedSeconds = Math.min((frameMs - previousFrameMs) / 1000, 0.1);
+  previousFrameMs = frameMs;
+  panFromKeys(elapsedSeconds);
   controls.update();
   renderer.render(scene, camera);
 });
