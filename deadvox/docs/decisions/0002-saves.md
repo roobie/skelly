@@ -175,8 +175,8 @@ from a canonical, path-sorted list of relative source paths and per-file SHA-256
 hashes, with line endings normalized. It walks Vite-resolved runtime imports
 from these entry points: `src/core/sim.ts` (clock, scheduler and needs),
 `src/core/worldgen.ts` (deterministic generation), `src/core/saveState.ts`,
-`src/core/saveFormat.ts`, and `src/core/storage.ts` (snapshot, disk contract,
-and storage behavior), `src/core/soundPicker.ts` (persisted sound selection
+`src/core/saveFormat.ts`, and `src/core/storage.ts` (in-memory chunk storage statistics; browser save backends
+are runtime-only), `src/core/soundPicker.ts` (persisted sound selection
 state), `src/game/player.ts` (movement/body rules), `src/game/rest.ts` and
 `src/game/survival.ts` (stateful controllers), `src/game/streamer.ts` (world
 regeneration and overlays), `src/game/config.ts` (world creation options and
@@ -208,6 +208,11 @@ builders, and config logic has its own entry.
 The excluded runtime import edges reached from non-excluded simulation modules
 are pinned by `test/simulationFingerprint.test.ts`:
 
+- `src/game/saveStorage.ts`, `src/game/saveStorageRecord.ts`,
+  `src/game/saveStorageProtocol.ts`, and `src/worker/save.worker.ts`: browser
+  persistence, A/B slot framing and disk I/O
+  only. Save bytes are already bound to the simulation by `versionIdentity`;
+  changing OPFS/IndexedDB mechanics must not invalidate a save.
 - `src/core/sky.ts`, imported by `src/game/play.ts`: values only feed rendered
   sky state; no simulation system reads them. Include this source if daylight
   becomes a simulation input.

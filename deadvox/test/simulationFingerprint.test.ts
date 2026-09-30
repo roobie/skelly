@@ -89,6 +89,14 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
+    expect(SIMULATION_EXCLUSIONS).toEqual(
+      expect.arrayContaining([
+        'src/game/saveStorage.ts',
+        'src/game/saveStorageRecord.ts',
+        'src/game/saveStorageProtocol.ts',
+        'src/worker/save.worker.ts',
+      ]),
+    );
     expect(graph.excludedImports).toEqual([
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
