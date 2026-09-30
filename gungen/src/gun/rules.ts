@@ -18,6 +18,106 @@ const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
   [...r.defs].filter(([part, def]) => r.placed.has(part) && (family === undefined || def.family === family));
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
+export const thumbholeGripMatch: Rule = {
+  id: 'thumbhole-grip-match',
+  title: 'Thumbhole stock and lower match',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [stock] of placedParts(r, 'stock')) {
+      if (r.params.get(stock)?.style?.value !== 'thumbhole') {
+        continue;
+      }
+      const stockMount = r.connections.find((connection) => {
+        const ends = [connection.from, connection.to];
+        return (
+          ends.some((end) => end.part === stock && end.port.id === 'front') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'receiver')
+        );
+      });
+      if (!stockMount) {
+        continue;
+      }
+      const receiver = [stockMount.from.part, stockMount.to.part].find((part) => part !== stock);
+      const lowerMount = r.connections.find((connection) => {
+        const ends = [connection.from, connection.to];
+        return (
+          ends.some((end) => end.part === receiver && r.defs.get(end.part)?.family === 'receiver') &&
+          ends.some((end) => r.defs.get(end.part)?.family === 'lower')
+        );
+      });
+      const lower =
+        lowerMount && [lowerMount.from.part, lowerMount.to.part].find((part) => r.defs.get(part)?.family === 'lower');
+      if (!lower) {
+        continue;
+      }
+      if (r.params.get(lower)?.layout?.value !== 'thumbhole') {
+        issues.push({
+          rule: 'thumbhole-grip-match',
+          message: `${stock} uses a thumbhole stock, but ${lower} is not in thumbhole layout.`,
+          parts: [stock, lower],
+        });
+      }
+      for (const connection of r.connections) {
+        const grip = gripPartOnLower(connection, lower);
+        if (grip) {
+          issues.push({
+            rule: 'thumbhole-grip-match',
+            message: `${grip} is a separate pistol grip, but the thumbhole stock provides the firing grip; remove the separate grip.`,
+            parts: [stock, grip],
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
+export const actionHandleRest: Rule = {
+  id: 'action-handle-rest',
+  title: 'Action handles sit outside their travel volumes at rest',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [part, def] of placedParts(r)) {
+      for (const handle of def.solids.filter((solid) => solid.id === 'charging-handle' || solid.id === 'bolt-handle')) {
+        const travel = def.keepOuts.find(({ id }) => id === handle.id);
+        if (!travel) {
+          issues.push({
+            rule: 'action-handle-rest',
+            message: `${part}.${handle.id} has no matching travel volume.`,
+            parts: [part],
+          });
+          continue;
+        }
+        if (handle.kind !== 'box') {
+          continue;
+        }
+        const handleBounds = handle.box.center.map((center, axis) => [
+          center - handle.box.half[axis]!,
+          center + handle.box.half[axis]!,
+        ]);
+        const travelBounds = travel.box.center.map((center, axis) => [
+          center - travel.box.half[axis]!,
+          center + travel.box.half[axis]!,
+        ]);
+        const overlaps = handleBounds.map(([min, max], axis) => {
+          const [travelMin, travelMax] = travelBounds[axis]!;
+          return Math.min(max!, travelMax!) - Math.max(min!, travelMin!);
+        });
+        const overlap = Math.min(...overlaps);
+        if (overlap > 1e-6) {
+          issues.push({
+            rule: 'action-handle-rest',
+            message: `${part}.${handle.id} overlaps its rest travel volume by ${overlap.toFixed(2)}u.`,
+            parts: [part],
+            keepOut: { part, id: travel.id },
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
 export const firingGrip: Rule = {
   id: 'firing-grip',
   title: 'There is a firing grip',

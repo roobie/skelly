@@ -226,13 +226,32 @@ describe('resolve: params from neighbours', () => {
     }
   });
 
-  it('re-sizes a tube magazine to the barrel its cap fixes to', () => {
-    for (const length of ['S', 'M', 'L']) {
+  it('sizes the selected tube percentage from the actual barrel and shares it with the lug', () => {
+    const barrelEnds = { S: 26, M: 36, L: 46 } as const;
+    for (const length of ['S', 'M', 'L'] as const) {
       const a = variant('archetype-pump-shotgun', (x) => {
         x.parts.barrel!.params = { length };
+        x.parts.tube!.params = { lengthPercent: '100' };
       });
       const report = validate(a, gunDomain);
-      expect(param(report.resolved, 'tube', 'length').value).toBe(length);
+      expect(param(report.resolved, 'tube', 'barrelLength')).toEqual({
+        value: length,
+        source: 'inherited',
+        from: 'barrel.length',
+      });
+      expect(param(report.resolved, 'barrel', 'tubeLengthPercent')).toEqual({
+        value: '100',
+        source: 'inherited',
+        from: 'tube.lengthPercent',
+      });
+      const tubeDef = report.resolved.defs.get('tube');
+      const tubeSolid = tubeDef?.solids.find((solid) => solid.id === 'tube');
+      const tubeCap = tubeDef?.ports.find((port) => port.id === 'cap');
+      if (tubeSolid?.kind !== 'box' || !tubeCap) {
+        throw new Error('pump magazine tube and cap must be present');
+      }
+      expect(tubeSolid.box.center[0] + tubeSolid.box.half[0]).toBe(barrelEnds[length] - 0.5);
+      expect(tubeCap.pos[0]).toBe(barrelEnds[length]);
       expect(report.issues).toEqual([]);
     }
   });

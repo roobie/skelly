@@ -198,15 +198,25 @@ export const smg: Template = {
 
 export const boltRifle: Template = {
   name: 'bolt-rifle',
-  description: 'Bolt-action rifle loaded from the top: sporting stock, long handguard.',
+  description: 'Bolt-action rifle loaded from the top: sporting or thumbhole stock, long handguard.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
-    { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
+    {
+      id: 'lower',
+      family: 'lower',
+      params: {
+        layout: {
+          when: { part: 'stock', param: 'style', equals: 'thumbhole' },
+          onMatch: 'thumbhole',
+          onMismatch: 'conventional',
+        },
+      },
+    },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.9 },
     { id: 'magazine', family: 'magazine', params: { length: 'S' } },
-    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'sporting' } },
     { id: 'sight', family: 'sight', chance: 0.8 },
   ],
   connections: [
@@ -253,6 +263,28 @@ export const boltRifleBox: Template = {
   ],
 };
 
+export const boltRifleThumbhole: Template = {
+  ...boltRifleBox,
+  name: 'bolt-rifle-thumbhole',
+  description:
+    'AWM-type bolt-action rifle with a heavy barrel, detachable box magazine, thumbhole stock, and optic rail.',
+  slots: boltRifleBox.slots
+    .filter((slot) => slot.id !== 'grip')
+    .map((slot) => (slot.id === 'receiver' ? { ...slot, params: { ...slot.params, bore: 'M' } } : slot))
+    .map((slot) => (slot.id === 'lower' ? { ...slot, params: { ...slot.params, layout: 'thumbhole' } } : slot))
+    .map((slot) => (slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'thumbhole' } } : slot))
+    .map((slot) => {
+      if (slot.id !== 'handguard') {
+        return slot;
+      }
+      return { ...slot, params: { ...slot.params, barrelBore: 'L', clearance: 'L' } };
+    })
+    .map((slot) =>
+      slot.id === 'barrel' ? { ...slot, params: { ...slot.params, profile: 'heavy', length: 'L' } } : slot,
+    ),
+  connections: boltRifleBox.connections.filter((connection) => connection.from !== 'lower.grip'),
+};
+
 export const pumpShotgun: Template = {
   name: 'pump-shotgun',
   description: 'Pump shotgun with either a stock-grip or separate-pistol-grip lower.',
@@ -266,7 +298,7 @@ export const pumpShotgun: Template = {
       params: { layout: ['pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'trigger', 'trigger', 'trigger'] },
     },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'tube', family: 'tube-magazine' },
+    { id: 'tube', family: 'tube-magazine', params: { lengthPercent: ['50', '75', '100'] } },
     { id: 'forend', family: 'forend' },
     {
       id: 'grip',
@@ -302,6 +334,16 @@ export const pumpShotgun: Template = {
     { from: 'receiver.barrel', to: 'barrel.rear' },
     { from: 'receiver.tube', to: 'tube.rear' },
     { from: 'tube.cap', to: 'barrel.lug' },
+    {
+      from: 'tube.support',
+      to: 'barrel.support-lug',
+      when: { part: 'tube', param: 'lengthPercent', equals: '75' },
+    },
+    {
+      from: 'tube.support',
+      to: 'barrel.support-lug',
+      when: { part: 'tube', param: 'lengthPercent', equals: '100' },
+    },
     { from: 'tube.forend', to: 'forend.rear' },
     { from: 'receiver.stock', to: 'stock.front', when: { part: 'lower', param: 'layout', equals: 'pump' } },
     {
@@ -347,6 +389,7 @@ export const TEMPLATES: readonly Template[] = [
   smg,
   boltRifle,
   boltRifleBox,
+  boltRifleThumbhole,
   pumpShotgun,
   bullpup,
 ];

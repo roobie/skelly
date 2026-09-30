@@ -1,12 +1,14 @@
 import type { Domain } from '../core/schema.ts';
 import { FAMILIES } from './parts.ts';
 import {
+  actionHandleRest,
   feedMatch,
   firingGrip,
   freeFloatClearance,
   handguardFit,
   magazineWellAxis,
   pistolBarrelCrown,
+  thumbholeGripMatch,
   triggerGuard,
 } from './rules.ts';
 
@@ -19,5 +21,15 @@ export const gunDomain: Domain = {
     { kind: 'sight', mode: 'parallel' },
     { kind: 'gas-cylinder', mode: 'parallel' },
   ],
-  rules: [firingGrip, feedMatch, pistolBarrelCrown, triggerGuard, handguardFit, freeFloatClearance, magazineWellAxis],
+  rules: [
+    firingGrip,
+    actionHandleRest,
+    thumbholeGripMatch,
+    feedMatch,
+    pistolBarrelCrown,
+    triggerGuard,
+    handguardFit,
+    freeFloatClearance,
+    magazineWellAxis,
+  ],
 };

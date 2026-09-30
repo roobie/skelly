@@ -9,7 +9,7 @@ import { pumpShotgun } from '../src/gun/templates.ts';
 
 const SEEDS = Array.from({ length: 100 }, (_, seed) => seed);
 
-describe('pump shotgun grip variants', () => {
+describe('pump shotgun variants', () => {
   it('generates valid gripless and pistol-grip builds with exactly one hold', () => {
     const counts = { pump: 0, trigger: 0 };
     for (const seed of SEEDS) {
@@ -20,6 +20,29 @@ describe('pump shotgun grip variants', () => {
 
       const report = validate(assembly, gunDomain);
       expect(report.ok, `seed ${seed}: ${JSON.stringify(report.issues)}`).toBe(true);
+      const barrelLength = assembly.parts.barrel?.params?.length;
+      expect(['S', 'M', 'L'], `seed ${seed}: barrel length`).toContain(barrelLength);
+      const tubeDef = report.resolved.defs.get('tube');
+      const tubeSolid = tubeDef?.solids.find((solid) => solid.id === 'tube');
+      const tubeCap = tubeDef?.ports.find((port) => port.id === 'cap');
+      if (tubeSolid?.kind !== 'box' || !tubeCap) {
+        throw new Error(`seed ${seed}: pump tube or cap is missing`);
+      }
+      const tubeBodyEnd = tubeSolid.box.center[0] + tubeSolid.box.half[0];
+      const [tubeEnd] = tubeCap.pos;
+      const lengthPercent = assembly.parts.tube?.params?.lengthPercent;
+      expect(['50', '75', '100'], `seed ${seed}: tube length percentage`).toContain(lengthPercent);
+      const expectedTubeEnd = {
+        S: { '50': 13, '75': 19.5, '100': 26 },
+        M: { '50': 18, '75': 27, '100': 36 },
+        L: { '50': 23, '75': 34.5, '100': 46 },
+      }[barrelLength as 'S' | 'M' | 'L'][lengthPercent as '50' | '75' | '100'];
+      expect(tubeEnd, `seed ${seed}: ${lengthPercent}% tube on ${barrelLength} barrel`).toBe(expectedTubeEnd);
+      expect(tubeBodyEnd, `seed ${seed}: tube body enters the cap`).toBe(expectedTubeEnd - 0.5);
+      expect(assembly.connections).toContainEqual({ from: 'tube.cap', to: 'barrel.lug' });
+      expect(assembly.connections.some(({ from, to }) => from === 'tube.support' && to === 'barrel.support-lug')).toBe(
+        lengthPercent !== '50',
+      );
       const hold = selectGunAnchors(report.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
       expect('code' in hold, `seed ${seed}: one unambiguous hold`).toBe(false);
 

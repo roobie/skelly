@@ -86,10 +86,15 @@ describe('AK-pattern archetype', () => {
 
   it('cuts the receiver rear-top corner while preserving stock and sight interfaces', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
-    const body = receiver.solids.find(({ id }) => id === 'receiver-body');
+    const body = receiver.solids.find(
+      (solid) =>
+        solid.kind === 'extruded-polygon' &&
+        solid.id.startsWith('receiver-body-port-wall') &&
+        solid.profile.some(([x, y]) => x === -16 && y === 1),
+    );
     expect(body?.kind).toBe('extruded-polygon');
     if (body?.kind !== 'extruded-polygon') {
-      throw new Error('Expected a profiled AK receiver body.');
+      throw new Error('Expected the uncut AK receiver rear profile.');
     }
     expect(validateExtrudedPolygon(body.profile, body.z)).toBeUndefined();
     expect(body.profile).toContainEqual([-16, 1]);
@@ -105,8 +110,12 @@ describe('AK-pattern archetype', () => {
     const rearFaceY = body.profile.filter(([x]) => x === stockPort.pos[0]).map(([, y]) => y);
     expect(stockPort.pos).toEqual([-16, 2.5, 0]);
     expect(stockPort.pos[1] - Math.max(...rearFaceY)).toBeCloseTo(1.5, 8);
-    expect(stockPort.pos[2]).toBeGreaterThanOrEqual(body.z[0]);
-    expect(stockPort.pos[2]).toBeLessThanOrEqual(body.z[1]);
+    const rearCap = receiver.solids.find(({ id }) => id === 'receiver-ak-rear');
+    expect(rearCap?.kind).toBe('box');
+    if (rearCap?.kind === 'box') {
+      expect(stockPort.pos[2]).toBeGreaterThanOrEqual(rearCap.box.center[2] - rearCap.box.half[2]);
+      expect(stockPort.pos[2]).toBeLessThanOrEqual(rearCap.box.center[2] + rearCap.box.half[2]);
+    }
 
     const cover = receiver.solids.find(({ id }) => id === 'dust-cover');
     const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;

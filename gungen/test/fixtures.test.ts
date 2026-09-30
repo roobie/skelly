@@ -21,6 +21,7 @@ describe('fixtures', () => {
       'archetype-ak',
       'archetype-ar',
       'archetype-ar-free-float',
+      'archetype-awm',
       'archetype-battle-rifle',
       'archetype-bolt-rifle',
       'archetype-bolt-rifle-box',

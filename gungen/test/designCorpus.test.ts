@@ -19,6 +19,7 @@ const expectedTemplates: Readonly<Record<string, string>> = {
   'archetype-battle-rifle': 'battle-rifle',
   'archetype-bolt-rifle': 'bolt-rifle',
   'archetype-bolt-rifle-box': 'bolt-rifle-box',
+  'archetype-awm': 'bolt-rifle-thumbhole',
   'archetype-bullpup': 'bullpup',
   'archetype-pistol': 'pistol',
   'archetype-pump-shotgun': 'pump-shotgun',

@@ -315,6 +315,15 @@ The lengths below remain abstract units on the existing grid.
 | Standard handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
 | AK handguard | 14 / 161 | 22 / 253 | 30 / 345 | 80% of the gas-port station (18/28/38u), snapped to the 2u AK grid |
 
+Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
+percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
+A bore-aware drop keeps a 0.5u gap between the tube and barrel. The forward
+end has an oversized 2.5u-long square barrel-gray cap that encloses the last section of the
+tube; it ends at the selected tube-length station and leaves 0.25u of clearance
+below the barrel. 75% and 100% variants also use a separate support spacer at
+the 65% station. A local receiver seat supports the lowered tube without moving
+the bore or stock interface.
+
 On top of one broken fixture per rule, these check constraints specific to an
 archetype:
 
@@ -333,9 +342,12 @@ archetype:
   to hit the loading port. *(Fixed in 1.2.)*
 - **The SMG differs from the battle rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
-- **Parts still don't read their neighbours' params.** Barrel length, and the
-  handguard or tube length that has to match it, are still matched by hand.
-  *(Fixed in 1.2.)*
+- **The forend can overrun the shortest tube.** With an S barrel and 50% tube,
+  the tube ends at x=13 while the fixed forend reaches x=17.6. This is currently
+  allowed; decide later whether forend length should scale with tube coverage.
+- **Neighbour params are discrete values, not computed geometry.** A tube's
+  percentage and the barrel's size class are resolved across their lugs; each
+  part builder must still compute the matching physical station from both.
 - **Ergonomics is just "is there a firing grip".** Reach, length of pull and
   cheek weld (§5) are not checked. For a bullpup, the ejection port sits next
   to the shooter's face, and nothing checks that yet.
@@ -359,12 +371,15 @@ archetype:
   | Part | Param | Read from |
   | --- | --- | --- |
   | barrel | `bore` | the receiver on its `rear` port |
+  | barrel | `tubeLengthPercent` | the tube magazine on its `lug` port (`lengthPercent`) |
   | handguard | `length` | the barrel on its `front` (clamp) port |
-  | tube-magazine | `length` | the barrel on its `cap` (lug) port |
+  | tube-magazine | `barrelLength` | the barrel on its `cap` (lug) port (`length`) |
 
-  So changing a barrel's length re-sizes a clamped handguard or tube magazine
-  to match. The archetype fixtures now leave those params unset. The broken
-  fixtures set them on purpose to create mismatches.
+  The tube's explicit `lengthPercent` (50/75/100) scales against its inherited
+  actual barrel length; the barrel reads that percentage back to place its cap
+  lug. This keeps both independently built parts on the same station. The
+  archetype fixtures leave these params unset; the broken tube fixture overrides
+  the barrel's expected percentage to create a mismatch.
 - Every part's final params, and where each came from, are in
   `Resolved.params`. The viewer shows them on hover, e.g.
   `length M ← barrel.length`.
@@ -390,9 +405,9 @@ The validator then judges it like any hand-written fixture.
 - **Templates** (`src/core/template.ts` for the schema, `src/gun/templates.ts`
   for the ten current archetypes). A template lists slots and connections:
   - A **slot** names a part family and, per param, a value or a list to pick
-    from. Params it leaves out are default or read from neighbours, so a
-    template picks the barrel length and a clamped handguard or tube magazine
-    follows.
+    from. Params it leaves out are default or read from neighbours; a pump
+    template picks the tube's coverage percentage while the tube derives its
+    physical reach from the connected barrel length.
   - A slot or connection can have a **chance** of being included. That covers
     optional stocks and sights, and handguards that are clamped or floating.
   - A connection's `from` can be a **list of ports** (a sight on the receiver
@@ -1090,11 +1105,15 @@ provided real AR-15 range of 84–99 cm. The muzzle anchor equals the model's
 forward x bound. `deadvox/test/models.test.ts` verifies zero turn, muzzle at the
 forward end, and forward/upright orientation after the held transform.
 
-**3.6 Vocabulary** (the re-scoped queue). The trigger guards finish now.
-Everything else here is scheduled after 3.5, not as part of the export's
-acceptance:
+**3.6 Vocabulary** (the re-scoped queue). Trigger guards are complete:
+`test/triggerGuard.test.ts` checks every lower layout, each fixture and published
+design, and the broken guard fixture; all archetype templates include the
+trigger guard through their lower layout. `test/fixtures.test.ts` also ensures
+there is a broken fixture for every gun rule. The thumbhole stock and AWM-type
+design are complete (gungen.6). The remaining items are scheduled after 3.5,
+not part of the export's acceptance:
 
-- trigger guards on every archetype (gungen.3, in progress);
+- trigger guards on every archetype (gungen.3, done; evidence above);
 - the octagonal barrel as a barrel profile param (gungen.7). A profile
   solid extrudes only along local Z (`src/core/schema.ts#ExtrudedPolygonSolid`), and a
   barrel runs along X. There are two options:
@@ -1104,8 +1123,20 @@ acceptance:
   - add an extrusion-axis option to the profile solid, which is a core
     schema change that lane A owns.
   Decide which before starting;
-- a thumbhole stock family plus an AWM-type design (gungen.6). The thumbhole
-  can be built from several convex solids;
+- a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
+  side-profile opening is built from connected convex extrusions; its grip post
+  moves forward under the receiver while the buttplate remains 22u from the
+  mount on L (16u M, 10u S). The grip post reaches the AR grip's measured
+  world bottom y=-12.5475u (8.5475u below the lower), and the butt drops by the
+  same 3.3075u; every size is now 11.0475u high. The 4u-long hole and bottom
+  bar stay at their previous heights. It retains the stock mount and
+  `FIRING_GRIP` hold anchor. The grip post meets the matching lower directly;
+  its rear face at x=-16u touches the stock's upper bar across the full
+  rear-face height and width. Tests measure both contacts in world space. The
+  grip-post-to-trigger-guard gap stays within 0.25u on AWM and the bolt-rifle
+  override. A rule rejects a thumbhole stock with a non-thumbhole lower or
+  separate grip. `designs/archetype-awm.json` uses the long heavy-barrel
+  profile, detachable box magazine, and optic rail;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
   `tapered` style, and the pump-shotgun opts in with M/L lengths; the other
@@ -1121,21 +1152,23 @@ acceptance:
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
   `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower
   at the wrist from above) would need a new convex solid kind and is not asked for;
-- visible action details (BR, 2026-09-28; deferred): charging handles,
-  ejection ports, bolt handles, "and stuff like that". Receivers already
-  declare keep-outs for ejection, the charging handle (side or rear-top) and
-  bolt travel (`src/gun/parts.ts#receiver`), but draw no solid for any of
-  them. The pistol slide is the only part with a visible ejection port, cut
-  as an opening by building the slide from walls around it
-  (`src/gun/parts.ts#pistolSlide`). The same wall construction can cut a
-  receiver's port, provided the mounting contact is kept
-  (`src/core/rules.ts#connectionContact`). A handle is a small solid at the rest end of
-  its travel keep-out, touching it but not inside it. The keep-out rule
-  exempts the keep-out's own part (`src/core/rules.ts#keepOut`), so it won't catch
-  a built-in handle placed inside its own travel. Targeted rest-position
-  tests and a broken fixture have to catch that. Candidates beyond those three,
-  for BR to choose from: the AR forward assist, magazine and bolt releases,
-  and the safety selector;
+- visible action details (BR, 2026-09-28; three basics done): receivers with
+  ejection keep-outs have a real opening; side/rear-top charging handles and
+  bolt handles touch the rest face of their travel volumes. The domain's
+  `action-handle-rest` rule checks each built-in handle against its own travel
+  because the core keep-out rule excludes its owner; `broken-action-handle`
+  proves the bad placement is rejected without changing that core exemption.
+  `test/actionDetails.test.ts` pins the rest faces and the ejection aperture.
+  BR's hollow-shell follow-up (2026-09-30) gives auto/bolt/pump receivers and
+  the AK receiver 0.5u (5.75mm) top, bottom, side, and end walls, matching the
+  pistol-slide wall thickness. The ejection aperture is only in the near wall
+  and its bounds are the bolt-carrier face bounds plus 0.25u on every side; the
+  port and ejection keep-out derive from one clearance definition. Pump receiver
+  ports follow the lowered carrier face. The far wall closes the cavity, with
+  the carrier face above the magazine path. Revolver receivers have no ejection
+  keep-out and remain solid; the pistol frame/slide are separate parts.
+  Candidates beyond these three, for BR to choose from: the AR forward assist,
+  magazine and bolt releases, and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
   shapes are one surface built from many solids, like the curved STANAG and
   AK magazines' runs of ring sectors. Bevelling and outlining each segment
