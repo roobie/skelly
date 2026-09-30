@@ -8,6 +8,10 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/index.html');
 const JSON_FILE = /\.json$/;
+const intentionallyUnofferedGungenParams = {
+  camera:
+    'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
+};
 
 const paramsReadBy = (sources) => {
   const found = new Set();
@@ -48,8 +52,15 @@ describe('site launchers track the games’ URL parameters', () => {
     );
   });
 
-  it('offers exactly the parameters gungen reads', () => {
-    assert.deepEqual(paramsOfferedBy('gungen-form'), paramsReadBy(['gungen/src/viewer/main.ts']));
+  it('offers exactly the launcher-editable parameters gungen reads', () => {
+    const gungenParamsRead = paramsReadBy(['gungen/src/viewer/main.ts']);
+    for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
+      assert.ok(gungenParamsRead.includes(name), `${name} is intentionally omitted: ${reason}`);
+    }
+    assert.deepEqual(
+      paramsOfferedBy('gungen-form'),
+      gungenParamsRead.filter((name) => !Object.hasOwn(intentionallyUnofferedGungenParams, name)),
+    );
   });
 
   it('lists the current gungen templates and fixtures', () => {
