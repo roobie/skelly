@@ -1,7 +1,7 @@
 import type { Body } from './body.ts';
 import type { Issue } from './issue.ts';
 import type { BoneMesh } from './mesh.ts';
-import { RULES, type RuleContext } from './rules.ts';
+import { FULL_RULES, type RuleContext, SILHOUETTE_RULES } from './rules.ts';
 import type { Voxels } from './voxelize.ts';
 
 export interface Stats {
@@ -38,6 +38,7 @@ const statsOf = (body: Body, voxels: Voxels, meshes: ReadonlyMap<number, BoneMes
 /** Takes a RuleContext directly (rather than its five fields separately) so the rules and the
  * report are built from exactly the same bundle — see rules.ts. */
 export const validate = (ctx: RuleContext): Report => {
-  const issues = RULES.flatMap((rule) => rule.check(ctx));
+  const rules = ctx.profile === 'silhouette' ? SILHOUETTE_RULES : FULL_RULES;
+  const issues = rules.flatMap((rule) => rule.check(ctx));
   return { issues, ok: issues.length === 0, stats: statsOf(ctx.body, ctx.voxels, ctx.meshes) };
 };
