@@ -255,6 +255,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   debugTools = debugModule?.attachDebugTools({
     engine,
     body,
+    inventory,
+    newGame: session.restoredLook === undefined,
     sim,
     input,
     zombies: () => zombieSystem,

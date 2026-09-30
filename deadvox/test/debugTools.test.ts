@@ -3,10 +3,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
+import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
+import { equipDebugStartWeapon } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
-import { createPlayerBody, physicsFor } from '../src/game/player.ts';
+import { startingLoadout } from '../src/game/loadout.ts';
+import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -16,6 +22,7 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 const SCALE = makeScale(0.5);
+const FLOOR = (_x: number, y: number) => y === 0;
 const INTENT = { forward: 1, right: 0, jump: false, sprint: false, walk: false };
 const IDLE = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
 const RISE = { ...IDLE, jump: true };
@@ -33,6 +40,105 @@ const makeDoorWorld = () => {
   const solid = (x: number, y: number, z: number) => y === 0 || wall(x, y) || entities.isSolid(x, y, z);
   return { door, entities, solid, wall };
 };
+
+const playerEye: Vec3 = [0, (SCALE.blockSize + PLAYER.eye) / SCALE.blockSize, 0];
+
+describe('debug starting equipment', () => {
+  it('attaches a bat to a fresh debug game and swings with its damage, reach, and 10 N·s impulse', () => {
+    const inventory = new Inventory(registry);
+    startingLoadout(inventory);
+    equipDebugStartWeapon({ inventory, debugMode: true, newGame: true });
+    const bat = inventory.hands.right;
+    expect(bat?.type).toBe('baseball_bat');
+
+    const weapon = registry.items.get(bat!.type)!.weapon!.melee!;
+    expect(weapon).toMatchObject({ damage: 15, reach: 0.8, impulse: 10 });
+    let launchImpulse: number | undefined;
+    const system = new ZombieSystem({
+      player: () => ({
+        pos: [0, playerEye[1] - PLAYER.eye / SCALE.blockSize, 0],
+        facing: [1, 0, 0],
+        movement: 'still',
+        lit: false,
+        lightSeenFrom: 40,
+      }),
+      isSolid: FLOOR,
+      hour: () => 12,
+      blockSize: SCALE.blockSize,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      hurtPlayer: () => undefined,
+      onSever: (_id, _zombie, _part, hit) => {
+        launchImpulse = hit.impulse;
+      },
+    });
+    const shambler = {
+      ...registry.zombies.get('shambler')!,
+      dismember: { chance: 0, headOnKillChance: 1 },
+    };
+    const id = system.add(shambler, [1.85 / SCALE.blockSize, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.figureSeed = 1;
+    zombie.regions.head = weapon.damage;
+    const boxes = posedShamblerRegionBoxes({
+      seed: zombie.figureSeed,
+      position: zombie.body.pos,
+      facing: zombie.facing,
+      headYaw: zombie.headYaw,
+      gaitPhase: zombie.gaitPhase,
+      speed: zombie.horizontalSpeed,
+      chasing: false,
+      attackWindup: 0,
+      attackWindupSeconds: zombie.type.attack.windup,
+      severed: zombie.severed,
+      blockSize: SCALE.blockSize,
+    }).head;
+    const count = boxes.reduce((sum, box) => sum + box.voxelCount, 0);
+    const target = boxes
+      .reduce<Vec3>(
+        (sum, box) => [
+          sum[0] + box.voxelCentroid[0] * box.voxelCount,
+          sum[1] + box.voxelCentroid[1] * box.voxelCount,
+          sum[2] + box.voxelCentroid[2] * box.voxelCount,
+        ],
+        [0, 0, 0],
+      )
+      .map((value) => value / count) as Vec3;
+    const direction: Vec3 = [target[0] - playerEye[0], target[1] - playerEye[1], target[2] - playerEye[2]];
+    const length = Math.hypot(...direction);
+    const ray = direction.map((value) => value / length) as Vec3;
+    expect(system.swing(playerEye, ray, FISTS_MELEE)).toBeUndefined();
+    expect(system.swing(playerEye, ray, weapon)).toBe(id);
+    expect(zombie.regions.head).toBe(0);
+    expect(launchImpulse).toBe(10);
+  });
+
+  it('does not replace occupied hands or add equipment to a restored or non-debug game', () => {
+    const inventory = new Inventory(registry);
+    const flashlight = inventory.create('flashlight');
+    expect(inventory.add(flashlight, { kind: 'hand', side: 'right' })).toBe(true);
+    equipDebugStartWeapon({ inventory, debugMode: true, newGame: true });
+    expect(inventory.hands.right).toBe(flashlight);
+    expect(inventory.hands.left).toBeUndefined();
+
+    const restored = new Inventory(registry);
+    const savedBat = restored.create('baseball_bat');
+    expect(restored.add(savedBat, { kind: 'hand', side: 'right' })).toBe(true);
+    equipDebugStartWeapon({ inventory: restored, debugMode: true, newGame: false });
+    expect(restored.hands.right).toBe(savedBat);
+    expect(restored.hands.left).toBeUndefined();
+
+    const nonDebug = new Inventory(registry);
+    equipDebugStartWeapon({ inventory: nonDebug, debugMode: false, newGame: true });
+    expect(nonDebug.hands).toEqual({});
+  });
+
+  it('keeps ordinary starting hands empty', () => {
+    const inventory = new Inventory(registry);
+    startingLoadout(inventory);
+    expect(inventory.hands).toEqual({});
+  });
+});
 
 describe('debug god mode and noclip', () => {
   it('noclip passes through a solid wall and closed real wood door and stays aloft without ground', () => {

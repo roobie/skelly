@@ -1,4 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
+import type { Inventory } from '../core/inventory.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { BuildMode } from './build.ts';
 import { stepNoclip } from './noclip.ts';
@@ -185,7 +186,30 @@ export const dispatchDebugAction = (actions: readonly Action[], code: string, re
   return true;
 };
 
+const DEBUG_START_WEAPON = 'baseball_bat';
+
+export const equipDebugStartWeapon = ({
+  inventory,
+  debugMode,
+  newGame,
+}: {
+  inventory: Inventory;
+  debugMode: boolean;
+  newGame: boolean;
+}): void => {
+  if (!(debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
+    return;
+  }
+  const bat = inventory.create(DEBUG_START_WEAPON);
+  inventory.add(bat, { kind: 'hand', side: 'right' });
+};
+
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
+  equipDebugStartWeapon({
+    inventory: hooks.inventory,
+    debugMode: hooks.engine.config.debug,
+    newGame: hooks.newGame,
+  });
   const host = document.body;
   let panelOpen = false;
   let readout = emptyReadout;
