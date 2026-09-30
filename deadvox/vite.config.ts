@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
@@ -117,6 +117,13 @@ function simulationFingerprintPlugin() {
       );
     },
     closeBundle() {
+      const outputFiles = filesUnder(resolve(packageRoot, 'dist'), '').filter(({ name }) => name.endsWith('.js'));
+      for (const { path } of outputFiles) {
+        const code = readFileSync(path, 'utf8');
+        if (code.includes(simulationHashPlaceholder)) {
+          writeFileSync(path, code.replaceAll(simulationHashPlaceholder, JSON.stringify(simulationHash)));
+        }
+      }
       const builtSources = filesUnder(resolve(packageRoot, 'dist'), '')
         .filter(({ name }) => name.endsWith('.html') || name.endsWith('.js'))
         .map(({ path }) => readFileSync(path, 'utf8'));

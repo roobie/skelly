@@ -593,6 +593,16 @@ function versionDigest(version: SaveVersionComponents): Promise<string> {
   return sha256(canonicalBytes(identityTuple(version)));
 }
 
+export async function currentSaveVersionIdentity(): Promise<SaveVersionIdentity> {
+  const components = structuredClone(defaultVersion());
+  validateVersion(components);
+  return {
+    digest: await versionDigest(components),
+    components,
+    buildRevision: defaultBuildRevision(),
+  };
+}
+
 function regionIndex(blockCoordinate: number, blockSize: number): number {
   return Math.floor((blockCoordinate * blockSize) / WORLD_REGION_METRES);
 }
