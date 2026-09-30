@@ -30,16 +30,21 @@ const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => 
 
 describe('visible action details', () => {
   it('keeps the ejection aperture and moves the carrier out of the receiver', () => {
-    for (const def of [
-      receiver('auto', 'rear-top'),
-      receiver('pump'),
-      FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
-    ]) {
+    const apertures = [
+      { def: receiver('auto', 'rear-top'), halfLength: 2, halfHeight: 1.25 },
+      { def: receiver('pump'), halfLength: 3.5, halfHeight: 1 },
+      {
+        def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
+        halfLength: 2.5,
+        halfHeight: 2,
+      },
+    ];
+    for (const { def, halfLength, halfHeight } of apertures) {
       const ejection = def.keepOuts.find(({ id }) => id === 'ejection');
       expect(ejection).toBeDefined();
       expect(def.solids.some(({ id }) => id === 'bolt-carrier-face')).toBe(false);
-      expect(ejection?.box.half[0]).toBe(1.75);
-      expect(ejection?.box.half[1]).toBe(0.75);
+      expect(ejection?.box.half[0]).toBe(halfLength);
+      expect(ejection?.box.half[1]).toBe(halfHeight);
     }
   });
 
@@ -64,15 +69,15 @@ describe('visible action details', () => {
     }
   });
 
-  it('uses 0.5u receiver-shell walls, matching the pistol-slide wall thickness', () => {
+  it('keeps receiver-shell walls at least 0.5u thick around the carrier cavity', () => {
     const generic = receiver('auto');
     const top = generic.solids.find(({ id }) => id === 'receiver-shell-top');
     const nearSide = generic.solids.find(({ id }) => id === 'receiver-shell-side-near-rear');
     expect(top?.kind).toBe('box');
     expect(nearSide?.kind).toBe('box');
     if (top?.kind === 'box' && nearSide?.kind === 'box') {
-      expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBe(0.5);
-      expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBe(0.5);
+      expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBeCloseTo(1.25, 8);
+      expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBeCloseTo(0.5, 8);
     }
     const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(
       ({ id }) => id === 'receiver-ak-near-side-before-window',

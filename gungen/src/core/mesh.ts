@@ -272,7 +272,7 @@ interface MeshGroupBuffers {
 const trianglePoints = (mesh: TriangleMesh, triangle: number): [Vec3, Vec3, Vec3] =>
   [0, 1, 2].map((corner) => {
     const index = mesh.indices[triangle + corner]! * 3;
-    return weldPoint([mesh.positions[index]!, mesh.positions[index + 1]!, mesh.positions[index + 2]!]);
+    return [mesh.positions[index]!, mesh.positions[index + 1]!, mesh.positions[index + 2]!] as Vec3;
   }) as [Vec3, Vec3, Vec3];
 
 const triangleNormal = (mesh: TriangleMesh, triangle: number): Vec3 => {
@@ -295,7 +295,7 @@ const polygonArea = (points: readonly Vec3[]): number => {
 
 const cleanPolygon = (points: readonly Vec3[]): Vec3[] => {
   const clean: Vec3[] = [];
-  for (const point of points.map(weldPoint)) {
+  for (const point of points) {
     const previous = clean.at(-1);
     if (
       !previous ||

@@ -99,7 +99,7 @@ describe('AK-pattern archetype', () => {
     expect(RECEIVER_SECTION.ak.outline.length).toBeGreaterThanOrEqual(8);
     expect(RECEIVER_SECTION.ak.outline[2]![0]).toBeGreaterThan(RECEIVER_SECTION.ak.outline[1]![0]);
     expect(validateExtrudedPolygon(section.profile, section.z, section.axis, section.clip)).toBeUndefined();
-    expect(receiver.solids.some(({ id }) => id.includes('near-side-window'))).toBe(true);
+    expect(receiver.solids.some(({ id }) => id.includes('near-side-before-window'))).toBe(true);
     expect(receiver.solids.some(({ id }) => id === 'receiver-ak-near-side-after-window')).toBe(true);
 
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;

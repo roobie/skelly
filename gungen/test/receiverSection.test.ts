@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { meshForSolidGroup } from '../src/core/mesh.ts';
 import type { Vec2 } from '../src/core/schema.ts';
-import { FAMILIES, RECEIVER_SECTION } from '../src/gun/parts.ts';
+import { FAMILIES, PUMP_REAR_SLOPE, RECEIVER_SECTION } from '../src/gun/parts.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
 
 const CONVEX_ERROR = /convex polygon/;
@@ -51,6 +51,27 @@ const topology = (mesh: ReturnType<typeof meshForSolidGroup>) => {
   };
 };
 
+const cavityWallThickness = (
+  outline: readonly Vec2[],
+  cavity: { readonly y: readonly [number, number]; readonly z: readonly [number, number] },
+): number => {
+  const corners: readonly Vec2[] = [
+    [cavity.y[0], cavity.z[0]],
+    [cavity.y[0], cavity.z[1]],
+    [cavity.y[1], cavity.z[0]],
+    [cavity.y[1], cavity.z[1]],
+  ];
+  return Math.min(
+    ...corners.flatMap((point) =>
+      outline.map((a, index) => {
+        const b = outline[(index + 1) % outline.length]!;
+        const edgeLength = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        return ((b[0] - a[0]) * (point[1] - a[1]) - (b[1] - a[1]) * (point[0] - a[0])) / edgeLength;
+      }),
+    ),
+  );
+};
+
 const faceContainsPoint = (mesh: ReturnType<typeof meshForSolidGroup>, x: number, y: number, z: number): boolean => {
   const side = (a: readonly number[], b: readonly number[]) =>
     (b[0]! - a[0]!) * (z - a[1]!) - (b[1]! - a[1]!) * (y - a[0]!);
@@ -92,6 +113,12 @@ describe('receiver section builder', () => {
     ).toThrow(DEGENERATE_ERROR);
   });
 
+  it('keeps at least 0.5u AK receiver wall around the enlarged carrier cavity', () => {
+    const wall = cavityWallThickness(RECEIVER_SECTION.ak.outline, RECEIVER_SECTION.ak.cavity);
+    expect(wall).toBeCloseTo(0.666_972_968_8, 8);
+    expect(wall).toBeGreaterThanOrEqual(0.5);
+  });
+
   it('gives the AR a distinct flat-top upper profile with stepped shoulders', () => {
     const { outline } = RECEIVER_SECTION.ar;
     expect(() => assertConvexSection(outline, 'AR')).not.toThrow();
@@ -129,6 +156,20 @@ describe('receiver section builder', () => {
     expect(counts.duplicateFaces).toBe(0);
   });
 
+  it('pins the pump top-rear taper to a 4u run over 1.5u rise', () => {
+    const bottomY = 1;
+    const topY = 2.5;
+    const { normal, offset } = PUMP_REAR_SLOPE.clip;
+    const rearXAt = (y: number) => (offset - normal[1] * y) / normal[0];
+    const run = Math.abs(rearXAt(topY) - rearXAt(bottomY));
+    const rise = topY - bottomY;
+    expect(run).toBe(PUMP_REAR_SLOPE.run);
+    expect(rise).toBe(PUMP_REAR_SLOPE.rise);
+    expect(PUMP_REAR_SLOPE.angleDegrees).toBeCloseTo((Math.atan(rise / run) * 180) / Math.PI, 12);
+    expect(rearXAt(bottomY)).toBe(-16);
+    expect(rearXAt(topY)).toBe(-12);
+  });
+
   it('closes and adapts the AR, AK, and pump receiver sections at both mating ends', () => {
     const receivers = [
       {
@@ -154,7 +195,11 @@ describe('receiver section builder', () => {
       const receiverDrop = -(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[1] ?? 0);
       const cavityCenterY = (outlineSection.cavity.y[0] + outlineSection.cavity.y[1]) / 2 - receiverDrop;
       const cavityCenterZ = (outlineSection.cavity.z[0] + outlineSection.cavity.z[1]) / 2;
-      expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
+      if (id === 'receiver-pump') {
+        expect(faceContainsPoint(receiverMesh, -16, -1, 0), `${id} rear stock interface`).toBe(true);
+      } else {
+        expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
+      }
       expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
       expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(true);
       expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(true);
