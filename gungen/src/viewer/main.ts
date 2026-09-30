@@ -25,6 +25,7 @@ import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import {
   availablePrefabs,
   choosePrefab,
@@ -128,6 +129,13 @@ const syncUrl = () => {
   if (hasOverrides(uiState.overrides)) {
     params.set('set', serializeOverrides(uiState.overrides));
   }
+  params.set(
+    'camera',
+    serializeCameraState({
+      position: [camera.position.x, camera.position.y, camera.position.z],
+      target: [controls.target.x, controls.target.y, controls.target.z],
+    }),
+  );
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 };
@@ -175,6 +183,18 @@ globalThis.addEventListener('keyup', (event) => {
   heldPanKeys.delete(event.code);
 });
 globalThis.addEventListener('blur', () => heldPanKeys.clear());
+
+let cameraUrlSyncQueued = false;
+controls.addEventListener('change', () => {
+  if (cameraUrlSyncQueued) {
+    return;
+  }
+  cameraUrlSyncQueued = true;
+  requestAnimationFrame(() => {
+    cameraUrlSyncQueued = false;
+    syncUrl();
+  });
+});
 
 const panFromKeys = (seconds: number) => {
   const right = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
@@ -231,6 +251,7 @@ let activeTemplate: Template | undefined;
 let lastDropped: readonly Connection[] = [];
 let editorState: DesignEditorState | undefined;
 let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
+let pendingCamera: CameraState | undefined;
 
 const redraw = () => {
   if (!report) {
@@ -400,6 +421,13 @@ const load = (assembly: Assembly) => {
   renderPanel(assembly);
   renderDesignInfo();
   redraw();
+  if (pendingCamera) {
+    const { position, target } = pendingCamera;
+    pendingCamera = undefined;
+    camera.position.set(...position);
+    controls.target.set(...target);
+    controls.update();
+  }
   renderParamPanel();
 };
 
@@ -1046,6 +1074,7 @@ saveButton.addEventListener('click', () => {
 // ?template=<name>&seed=<n> generates one. Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
+pendingCamera = parseCameraState(query.get('camera'));
 const querySet = query.get('set');
 if (querySet !== null) {
   uiState.overrides = parseOverrides(querySet);
