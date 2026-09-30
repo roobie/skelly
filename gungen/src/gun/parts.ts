@@ -1146,6 +1146,21 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
   return { S: 26, M: 36, L: 46 }[sizeClass];
 };
 
+/** Regular octagon with horizontal and vertical flats at the round barrel's radius. */
+const octagonalBarrelProfile = (flatRadius: number): readonly Vec2[] => {
+  const corner = flatRadius * (Math.SQRT2 - 1);
+  return [
+    [flatRadius, corner],
+    [corner, flatRadius],
+    [-corner, flatRadius],
+    [-flatRadius, corner],
+    [-flatRadius, -corner],
+    [-corner, -flatRadius],
+    [corner, -flatRadius],
+    [flatRadius, -corner],
+  ];
+};
+
 export const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -1153,6 +1168,7 @@ export const barrel: PartFamily = {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
     profile: choice('standard', 'heavy', 'pistol', 'revolver'),
+    crossSection: choice('round', 'octagonal'),
     handguardLayout: { values: ['standard', 'ak'], default: 'standard', from: [{ port: 'clamp', param: 'layout' }] },
     tubeLengthPercent: {
       values: PUMP_TUBE_LENGTH_PERCENTAGES,
@@ -1176,9 +1192,19 @@ export const barrel: PartFamily = {
       tubeEnd > fore
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
+    const tube: Solid =
+      params.crossSection === 'octagonal'
+        ? {
+            id: 'tube',
+            kind: 'extruded-polygon',
+            profile: octagonalBarrelProfile(r),
+            axis: 'x',
+            z: [0, len],
+          }
+        : solid('tube', [0, -r, -r], [len, r, r]);
     return {
       family: 'barrel',
-      solids: [solid('tube', [0, -r, -r], [len, r, r])],
+      solids: [tube],
       ports: [
         {
           id: 'rear',

@@ -291,6 +291,9 @@ The lengths below remain abstract units on the existing grid.
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
   is not a box-magazine user; other archetypes do not offer this exception.
+- Barrel `crossSection` defaults to `round`; `octagonal` is a regular X-axis
+  extrusion with the same flat-to-flat diameter and unchanged ports. The
+  `octagonal-barrel` prefab offers the variant without changing existing designs.
 - Standard handguards occupy 65% of exposed barrel length; AK handguards occupy
   80% of the barrel-to-gas-port station. Tilted magazine seating is declared
   per lower layout: conventional and AR layouts support the standard magazine

@@ -32,10 +32,11 @@ const expected = [
     family: 'magazine',
     fixedParams: { length: 'L', profile: 'ak-curved', variant: 'akm' },
   },
+  { id: 'octagonal-barrel', version: 1, family: 'barrel', fixedParams: { crossSection: 'octagonal' } },
 ] as const;
 
 describe('gun prefab catalogue', () => {
-  it('defines the STANAG and AK magazines from supported family values', () => {
+  it('defines the STANAG and AK magazines and octagonal barrel from supported family values', () => {
     expect(GUN_PREFABS).toEqual(expected);
   });
 
@@ -47,6 +48,16 @@ describe('gun prefab catalogue', () => {
       return family.build({ ...params, ...entry.fixedParams });
     };
     expect(build('stanag-20').solids).not.toEqual(build('stanag-30').solids);
+  });
+
+  it('builds a geometry-distinct octagonal barrel prefab', () => {
+    const family = FAMILIES.barrel!;
+    const entry = GUN_PREFABS.find((prefab) => prefab.id === 'octagonal-barrel')!;
+    const params = Object.fromEntries(Object.entries(family.params).map(([name, spec]) => [name, spec.default]));
+    const round = family.build(params);
+    const octagonal = family.build({ ...params, ...entry.fixedParams });
+    expect(octagonal.solids).not.toEqual(round.solids);
+    expect(octagonal.solids[0]?.kind).toBe('extruded-polygon');
   });
 
   it('has valid unique ids and positive versions, and every entry builds', () => {
