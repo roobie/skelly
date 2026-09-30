@@ -131,7 +131,7 @@ const parameterCenter = (spec: ParamSpec | undefined, name: string): number => {
  * height × headScale dimensions. Triangle budgets scale with inverse cell surface area and height.
  * Floors/ceilings preserve the scaled intervals; coarse voxel-count maxima get one cell for boundary
  * quantization. */
-const budgetsForGenome = (template: Template, genome: Genome): Budgets => {
+const budgetsForGenome = (template: Template, genome: Genome, allowCoarseCellMargin = true): Budgets => {
   const ratio = template.voxelSize / genome.voxelSize;
   const { height, headScale } = genome.params;
   if (height === undefined || headScale === undefined) {
@@ -142,7 +142,7 @@ const budgetsForGenome = (template: Template, genome: Genome): Budgets => {
   const volumeScale = ratio ** 3 * heightRatio ** 3;
   const headVolumeScale = volumeScale * headScaleRatio ** 3;
   const surfaceScale = ratio ** 2 * heightRatio ** 2;
-  const cellMargin = ratio < 1 ? 1 : 0;
+  const cellMargin = allowCoarseCellMargin && ratio < 1 ? 1 : 0;
   const groups = Object.fromEntries(
     Object.entries(template.budgets.groups).map(([name, group]) => [
       name,
@@ -184,28 +184,15 @@ export const realize = (genome: Genome, options: RealizeOptions = {}): Realized 
       : undefined;
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
-  // Below 1/4-block resolution, mandatory connected/marrow cells dominate the inverse-volume estimate.
-  // Keep the m1-scaled budget floor at 1/4 rather than shrinking the allowance below that occupancy floor.
-  const budgetGenome =
-    profile === 'silhouette' && genome.voxelSize > 0.5 / 4 ? { ...genome, voxelSize: 0.5 / 4 } : genome;
-  const scaledBudgets = budgetsForGenome(template, budgetGenome);
-  // At far LOD, total upper bounds still cap cost, but lower bounds and group counts depend on
-  // resolution-specific occupancy and bone ownership rather than silhouette quality. Retaining the
-  // full-detail body's fine flesh adds quantization overhead, so silhouette upper bounds keep a 10% margin.
+  const scaledBudgets = budgetsForGenome(template, genome, profile !== 'silhouette');
+  // Far LOD is a draw-cost ceiling: scale upper bounds at the requested size, with no coarse
+  // cell margin. Resolution-dependent minima and bone-owner group counts are not silhouette contracts.
   const budgets =
     profile === 'silhouette'
       ? {
           ...scaledBudgets,
-          totalVoxels: {
-            ...scaledBudgets.totalVoxels,
-            min: 1,
-            max: Math.ceil(scaledBudgets.totalVoxels.max * 1.1),
-          },
-          totalTriangles: {
-            ...scaledBudgets.totalTriangles,
-            min: 1,
-            max: Math.ceil(scaledBudgets.totalTriangles.max * 1.1),
-          },
+          totalVoxels: { ...scaledBudgets.totalVoxels, min: 1 },
+          totalTriangles: { ...scaledBudgets.totalTriangles, min: 1 },
           groups: {},
         }
       : scaledBudgets;

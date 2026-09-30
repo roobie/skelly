@@ -34,9 +34,10 @@ count:
 - **Batching.** Draw many actors from one three.js `BatchedMesh`, or one
   geometry buffer with per-actor bone matrices in a texture.
 - **Level of detail.** Near actors use the template's voxel size; the
-  background tier re-voxelizes the same genome at a coarser size (1/6 or 1/4
-  of a block) or falls back to box figures. It comes from the same genome, so
-  an actor's colours and proportions match between levels.
+  far tier re-voxelizes the same genome at 1/2 block (0.25 m) or falls back to
+  box figures. A 1/4-block size remains available for testing, not as a separate
+  recommended far level. It comes from the same genome, so an actor's colours
+  and proportions match between levels.
 
   **BR ruling (2026-09-29):** Face dimensions are metric, proportional to
   `height × headScale`, and independent of voxel size; calibration uses the
@@ -48,7 +49,7 @@ count:
   boundary quantization. This follows the root
   [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
 
-  **BR ruling (2026-09-29, m3):** Keep `full` as the default for gameplay detail (including 1/12 and 1/16 tests); expose `full` and `silhouette` as explicit caller-selected validation profiles. `generateValid` searches only at the template's full-detail size. A far LOD is derived from an already full-valid genome, re-voxelizing the full-detail body rather than searching/generating a new coarse actor. The silhouette profile checks one connected body, whole-body ground contact and balance, scaled global voxel/triangle upper budgets, and X width/Y height within one coarse cell plus one full-detail reference-cell quantization allowance. Bone/foot ownership and per-bone budget groups are not contracts at that distance. Build the full-detail body before coarse sampling; hold the m1-scaled budget floor at 1/4 block and add a 10% coarse-occupancy margin rather than shrinking below the connected/marrow occupancy floor. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at all three far sizes; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
+  **BR ruling (2026-09-29, m3; clarified 2026-09-30):** Keep `full` as the default for gameplay detail (including 1/12 and 1/16 tests); expose `full` and `silhouette` as explicit caller-selected validation profiles. `generateValid` searches only at the template's full-detail size. Far LOD is 1/2 block (0.25 m) with silhouette validation; 1/4 remains supported and tested but is not a separate recommended far level. Derive it from an already full-valid genome, re-voxelizing the full-detail body rather than searching/generating a new coarse actor. The silhouette profile checks one connected body, whole-body ground contact and balance, scaled global voxel/triangle upper budgets, and X width/Y height within one cell at each grid's resolution. Bone/foot ownership and per-bone budget groups are not contracts at that distance. Scale budgets at the requested voxel size by m1's inverse-volume/inverse-area rule, with no floor or upper margin; minima may stay at 1. If the 100-seed sweep fails at 1/2 or 1/6, report the exact bound and excess rather than adding headroom, for reviewer/BR to set any absolute cap. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at 1/6, 1/4 and 1/2; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
 
 - **A variety pool.** Generate a few dozen variants per template and reuse
   them, rather than one per zombie.

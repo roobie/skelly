@@ -176,9 +176,79 @@ describe('coarser voxel sizes', () => {
 
 const LOD_SIZES = [0.5 / 6, 0.5 / 4, 0.5 / 2] as const;
 
+interface BudgetFailureSummary {
+  count: number;
+  worstExcess: number;
+  seed: number;
+  actual: number;
+  bound: number;
+}
+
+const BUDGET_FAILURE_PATTERN = /(Total voxels|Total triangles) (\d+) is outside \[1, (\d+)\]\./;
+
+const recordBudgetFailure = (input: {
+  readonly template: (typeof TEMPLATES)[number];
+  readonly seed: number;
+  readonly voxelSize: number;
+  readonly message: string;
+  readonly failures: Map<string, BudgetFailureSummary>;
+}): string | undefined => {
+  const { template, seed, voxelSize, message, failures } = input;
+  const match = message.match(BUDGET_FAILURE_PATTERN);
+  if (!match) {
+    return `${template.name} seed ${seed} at ${voxelSize}: ${message}`;
+  }
+  const actual = Number(match[2]);
+  const bound = Number(match[3]);
+  const key = `${voxelSize} ${match[1]!.toLowerCase()}`;
+  const summary = failures.get(key);
+  if (summary) {
+    summary.count += 1;
+    if (actual - bound > summary.worstExcess) {
+      summary.worstExcess = actual - bound;
+      summary.seed = seed;
+      summary.actual = actual;
+      summary.bound = bound;
+    }
+  } else {
+    failures.set(key, { count: 1, worstExcess: actual - bound, seed, actual, bound });
+  }
+  return undefined;
+};
+
+const collectFarLodFailures = (
+  template: (typeof TEMPLATES)[number],
+  source: {
+    readonly genome: Genome;
+    readonly realized: ReturnType<typeof realize>;
+    readonly seed: number;
+    readonly attempts: number;
+  },
+  budgetFailures: Map<string, BudgetFailureSummary>,
+): string[] => {
+  const otherFailures: string[] = [];
+  for (const voxelSize of LOD_SIZES) {
+    const lod = realizeLod(source, voxelSize);
+    for (const issue of lod.realized.report.issues) {
+      const failure = recordBudgetFailure({
+        template,
+        seed: source.seed,
+        voxelSize,
+        message: issue.message,
+        failures: budgetFailures,
+      });
+      if (failure) {
+        otherFailures.push(failure);
+      }
+    }
+  }
+  return otherFailures;
+};
+
 const validateFarLodSeeds = (template: (typeof TEMPLATES)[number]) => {
   let validSources = 0;
-  const failures: string[] = [];
+  const otherFailures: string[] = [];
+  const budgetFailures = new Map<string, BudgetFailureSummary>();
   for (let seed = 0; seed < 100; seed++) {
     const genome = generate(template, seed);
     const realized = realize(genome);
@@ -186,13 +256,14 @@ const validateFarLodSeeds = (template: (typeof TEMPLATES)[number]) => {
       continue;
     }
     validSources += 1;
-    const source = { genome, realized, seed, attempts: 1 };
-    for (const voxelSize of LOD_SIZES) {
-      const lod = realizeLod(source, voxelSize);
-      if (!lod.realized.report.ok) {
-        failures.push(`${template.name} seed ${seed} at ${voxelSize}: ${JSON.stringify(lod.realized.report.issues)}`);
-      }
-    }
+    otherFailures.push(...collectFarLodFailures(template, { genome, realized, seed, attempts: 1 }, budgetFailures));
+  }
+  const failures = [...budgetFailures].map(
+    ([key, value]) =>
+      `${key}: ${value.count}/${validSources}, worst +${value.worstExcess} (seed ${value.seed}: ${value.actual} > ${value.bound})`,
+  );
+  if (otherFailures.length > 0) {
+    failures.push(`${otherFailures.length} non-budget failures; example ${otherFailures[0]}`);
   }
   return { validSources, failures };
 };
@@ -247,11 +318,15 @@ describe('validation profiles', () => {
 
   sweepGroup('far LOD silhouette validation', () => {
     it('passes for every full-valid genome in 100 seeds per template at 1/6, 1/4 and 1/2 block', () => {
-      for (const template of TEMPLATES) {
-        const result = validateFarLodSeeds(template);
-        expect(result.validSources, `${template.name} full-valid sources`).toBeGreaterThanOrEqual(80);
-        expect(result.failures, `${template.name} far LOD failures`).toEqual([]);
-      }
+      const results = TEMPLATES.map((template) => validateFarLodSeeds(template));
+      const insufficientSources = results.flatMap((result, index) =>
+        result.validSources < 80 ? [`${TEMPLATES[index]!.name}: ${result.validSources}`] : [],
+      );
+      const failures = results.flatMap((result, index) =>
+        result.failures.map((failure) => `${TEMPLATES[index]!.name}: ${failure}`),
+      );
+      expect(insufficientSources, 'templates with too few full-valid sources').toEqual([]);
+      expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
     }, 120_000);
   });
 });
