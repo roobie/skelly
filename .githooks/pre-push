@@ -1,0 +1,36 @@
+#!/bin/sh
+set -eu
+
+npm_via_mise=0
+if command -v npm >/dev/null 2>&1; then
+  npm_via_mise=0
+elif command -v mise >/dev/null 2>&1; then
+  npm_via_mise=1
+else
+  echo "Pre-push checks unavailable: npm not found (and mise is not available to provide it)." >&2
+  exit 127
+fi
+
+run_npm() {
+  if [ "$npm_via_mise" -eq 1 ]; then
+    mise x -- npm "$@"
+  else
+    npm "$@"
+  fi
+}
+
+run_check() {
+  name=$1
+  shift
+  printf 'Pre-push: running %s\n' "$name"
+  if run_npm "$@"; then
+    return 0
+  fi
+  echo "Pre-push check failed: $name." >&2
+  echo 'Run `npm run fix` for formatting.' >&2
+  echo '`git push --no-verify` exists for emergencies only.' >&2
+  exit 1
+}
+
+run_check 'npm run ci' run ci
+run_check 'npm run test:site' run test:site
