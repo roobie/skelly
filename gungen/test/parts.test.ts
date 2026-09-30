@@ -273,7 +273,7 @@ describe('part library', () => {
         let gridStep = GRID;
         if (family.name === 'forend') {
           gridStep = GRID / 5;
-        } else if (family.name === 'frame' || family.name === 'slide') {
+        } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
           gridStep = GRID / 2;
         }
 

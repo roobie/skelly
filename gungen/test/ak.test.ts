@@ -199,14 +199,37 @@ describe('AK-pattern archetype', () => {
     }
     const riser = extrudedOf(gasBlock.solids.find(({ id }) => id === 'block')!);
     expect(riser.profile).toEqual([
-      [-0.75, 0.75],
+      [0, 0.75],
       [1, 0.75],
-      [0.25, 1.75],
-      [-0.75, 1.75],
+      [0.25, 2.25],
+      [0, 2.25],
     ]);
     expect(riser.z).toEqual([-0.5, 0.5]);
-    const cylinderPort = gasBlock.ports.find(({ id }) => id === 'gas-cylinder')!;
-    expect(Math.max(...riser.profile.map(([, y]) => y))).toBe(cylinderPort.pos[1] - 0.25);
+    expect(Math.min(...riser.profile.map(([x]) => x))).toBe(0);
+
+    const blockPlaced = report.resolved.placed.get('gas-block')!;
+    const cylinderPlaced = report.resolved.placed.get('gas-cylinder')!;
+    const [, [cylinderFrontX]] = bounds;
+    const cylinderFront = cylinder.profile.map(([y, z]) => applyPoint(cylinderPlaced, [cylinderFrontX, y, z]));
+    const blockRear = [
+      applyPoint(blockPlaced, [0, 0.75, -0.5]),
+      applyPoint(blockPlaced, [0, 0.75, 0.5]),
+      applyPoint(blockPlaced, [0, 2.25, -0.5]),
+      applyPoint(blockPlaced, [0, 2.25, 0.5]),
+    ];
+    const [firstBlockRear] = blockRear;
+    const [planeX] = firstBlockRear!;
+    const minY = Math.min(...blockRear.map((point) => point[1]));
+    const maxY = Math.max(...blockRear.map((point) => point[1]));
+    const minZ = Math.min(...blockRear.map((point) => point[2]));
+    const maxZ = Math.max(...blockRear.map((point) => point[2]));
+    for (const point of cylinderFront) {
+      expect(point[0]).toBeCloseTo(planeX, 10);
+      expect(point[1]).toBeGreaterThanOrEqual(minY);
+      expect(point[1]).toBeLessThanOrEqual(maxY);
+      expect(point[2]).toBeGreaterThanOrEqual(minZ);
+      expect(point[2]).toBeLessThanOrEqual(maxZ);
+    }
   });
 
   it('scales the gas-block riser width with bore in absolute quarter-unit steps', () => {

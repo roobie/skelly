@@ -1349,8 +1349,9 @@ export const frontSight: PartFamily = {
   build(params): PartDef {
     const radius = BARREL_RADIUS[cls(params, 'bore')];
     const postHalf = GRID;
+    const postHalfZ = params.style === 'ar' ? GRID / 2 : GRID;
     const postBase = 4.25;
-    const post = solid('post', [-postHalf, postBase, -postHalf], [postHalf, 5, postHalf]);
+    const post = solid('post', [-postHalf, postBase, -postHalfZ], [postHalf, 5, postHalfZ]);
     const earInner = radius - GRID;
     const commonSolids = octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]);
     const solids =
@@ -1381,7 +1382,7 @@ export const frontSight: PartFamily = {
                 [Math.max(GRID, radius - GRID), postBase],
                 [-Math.max(GRID, radius - GRID), postBase],
               ],
-              [-radius, radius],
+              [-radius / 2, radius / 2],
             ),
             post,
           ];
@@ -1412,7 +1413,10 @@ export const railFrontSight: PartFamily = {
     const sightAxisY = RECEIVER_FRONT_HALF_HEIGHT + 1 - handguardTop;
     return {
       family: 'rail-front-sight',
-      solids: [solid('base', [-1, 0, -1], [1, 0.5, 1]), solid('post', [-GRID, 0.5, -GRID], [GRID, sightAxisY, GRID])],
+      solids: [
+        solid('base', [-1, 0, -1], [1, 0.5, 1]),
+        solid('post', [-GRID, 0.5, -GRID / 2], [GRID, sightAxisY, GRID / 2]),
+      ],
       ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X }],
@@ -1436,10 +1440,10 @@ export const gasBlock: PartFamily = {
         extrudedPolygon(
           'block',
           [
-            [-0.75, radius],
+            [0, radius],
             [1, radius],
-            [0.25, AK_GAS_CYLINDER_Y - AK_GAS_CYLINDER_HALF_WIDTH],
-            [-0.75, AK_GAS_CYLINDER_Y - AK_GAS_CYLINDER_HALF_WIDTH],
+            [0.25, AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH],
+            [0, AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH],
           ],
           [-Math.max(GRID, snapAkGrid(radius * 0.5)), Math.max(GRID, snapAkGrid(radius * 0.5))],
         ),

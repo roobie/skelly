@@ -93,6 +93,24 @@ describe('front-sight families', () => {
     expect(rightEar[1][1]).toBe(5.5);
   });
 
+  it('halves AR upright depth while retaining collar contact and matching the rail post', () => {
+    for (const [bore, radius] of [
+      ['S', 0.75],
+      ['M', 1],
+      ['L', 1.25],
+    ] as const) {
+      const fixed = FAMILIES['front-sight']!.build({ bore, style: 'ar' });
+      const stem = polygon(fixed.solids.find(({ id }) => id === 'stem')!);
+      const fixedPost = localSolidBounds(fixed.solids.find(({ id }) => id === 'post')!);
+      const rail = FAMILIES['rail-front-sight']!.build({ bore, clearance: bore });
+      const railPost = localSolidBounds(rail.solids.find(({ id }) => id === 'post')!);
+      expect(stem.z).toEqual([-radius / 2, radius / 2]);
+      expect(stem.z[1]).toBeGreaterThan(radius * (Math.SQRT2 - 1));
+      expect(fixedPost[1][2] - fixedPost[0][2]).toBe(0.25);
+      expect(railPost[1][2] - railPost[0][2]).toBe(0.25);
+    }
+  });
+
   it('mounts the detachable AR post at the forward rail slot and matches the rear sight axis', () => {
     const { report, sight, placed } = fixedSight('archetype-ar-free-float', 'rail-front-sight');
     expect(report.resolved.defs.has('front-sight')).toBe(false);

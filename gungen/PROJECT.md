@@ -301,7 +301,7 @@ The lengths below remain abstract units on the existing grid.
   lateral extent narrows from 1u to 0.5u to fit. Its corner setback is 0.14645u
   at 45° (vertex offset 0.10355u from the centreline). The gas block is now an
   octagonal barrel collar with a bore-scaled riser: its fore face rakes back as
-  it rises, its rear face stays vertical, and its top contacts the cylinder.
+  it rises, and its rear vertical face mates the cylinder's full front end face.
 - Standard and free-float AR handguards occupy 65% of exposed barrel length;
   the fixed AR handguard ends at the rear face of the A2 collar. AK handguards
   use compact S/M/L bands and their gas block clears the handguard by about 10%
@@ -597,9 +597,10 @@ explicitly named `battle-rifle`.
   the port is only the shared station datum. Front sights are explicitly
   allowed in the rear sight's sightline volume.
 - The passing fixture and focused part tests cover geometry and placement.
-  The fixed and rail-mounted sights preserve the y=5 axis for the A2/AK parts;
-  the detachable post rises to the rear rail sight axis.
-  The remaining optional carry-handle style is not modeled.
+  Fixed AR stem depth is half its former bore-scaled width; its fixed post and
+  detachable rail post both measure 0.25u in Z. Fixed and AK sights preserve
+  the y=5 axis; the detachable post rises to the rear rail sight axis. The
+  remaining optional carry-handle style is not modeled.
 
 ### AK
 
@@ -612,7 +613,8 @@ explicitly named `battle-rifle`.
 - The gas cylinder runs from the receiver's gas-cylinder port under the rear
   handguard to the gas block. The octagonal collar seats on the barrel at the
   declared gas-port station; its asymmetric riser meets the gas cylinder's
-  lower flat, with the fore face slanted back and the rear face upright. The
+  top flat and mates the full front end face at its vertical rear face. Its fore
+  face is slanted back. The
   cylinder axis is checked parallel to the bore. The AK front sight uses its
   own style with the post 2.5u behind the muzzle, consistent with the gas-block
   position.
@@ -1291,7 +1293,9 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
   runs them.
 - **No raising timeouts.** A sweep that is too slow is split into smaller
-  tests (per template, per seed range), never given a longer timeout. Some
+  tests (per template, per seed range), never given a longer timeout. The
+  current generator validation chunks are 25 seeds; the slowest AK chunk stays
+  under 1s locally. Some
   sweeps will be removed, so their cost is not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
   seed range, and the `known-good seeds` snapshots, which are generator
