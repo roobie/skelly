@@ -1437,10 +1437,9 @@ export const handguard: PartFamily = {
         ? RECEIVER_FRONT_HALF_WIDTH + 1
         : Math.min(RECEIVER_FRONT_HALF_WIDTH, inner + HANDGUARD_WALL_THICKNESS);
     const cylinderRadius = 0.25;
-    const cylinderBottom = AK_GAS_CYLINDER_Y - cylinderRadius;
     const cylinderTop = AK_GAS_CYLINDER_Y + cylinderRadius;
     const topInner = akLayout ? cylinderTop : inner;
-    const sideTop = akLayout ? cylinderBottom : inner;
+    const sideTop = akLayout ? cylinderTop : inner;
     const clampRadius =
       params.mount === 'free-float' || params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
     const clamp = clampRadius

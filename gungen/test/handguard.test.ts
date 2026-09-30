@@ -33,6 +33,17 @@ describe('barrel-fitted handguards', () => {
     }
   });
 
+  it('extends AK sides to the top cover around the gas cylinder', () => {
+    const handguard = FAMILIES.handguard!.build({ length: 'M', layout: 'ak' });
+    const top = handguard.solids.find(({ id }) => id === 'top')!;
+    const left = handguard.solids.find(({ id }) => id === 'left')!;
+    const right = handguard.solids.find(({ id }) => id === 'right')!;
+
+    const topBounds = localSolidBounds(top);
+    expect(localSolidBounds(left)[1][1]).toBe(topBounds[0][1]);
+    expect(localSolidBounds(right)[1][1]).toBe(topBounds[0][1]);
+  });
+
   it('uses independent 65% standard reach and the shorter AK gas-port reach', () => {
     const expectedStandard = { S: 17, M: 23.5, L: 30 };
     const expectedAk = { S: 14, M: 22, L: 30 };
