@@ -6,7 +6,7 @@ import { createPalette, GUN_PALETTE, hexToSrgb, solidColor, srgbToHex } from '..
 import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCorpus, loadFixtures } from './helpers.ts';
 
-/** Frozen copy of the pre-palette scene.ts table; the migration must not change any colour it produced. */
+/** Frozen pre-palette scene.ts table; the new cap-lug is intentionally excluded because it has a distinct metal colour. */
 const OLD_FAMILY_COLORS: Record<string, number> = {
   receiver: 0x8d_93_9c,
   lower: 0x6f_75_7e,
@@ -49,7 +49,9 @@ const renderedSolids = (assemblies: Assembly[]): { family: string; id: string }[
 
 describe('palette migration', () => {
   const oldColored = (assemblies: Assembly[]) =>
-    renderedSolids(assemblies).filter((x) => x.family in OLD_FAMILY_COLORS || x.id === 'floorplate');
+    renderedSolids(assemblies).filter(
+      (x) => x.id !== 'cap-lug' && (x.family in OLD_FAMILY_COLORS || x.id === 'floorplate'),
+    );
   const mismatches = (solids: { family: string; id: string }[]) =>
     solids
       .filter(({ family, id }) => srgbToHex(solidColor(GUN_PALETTE, family, id)) !== oldColor(family, id))
@@ -71,6 +73,13 @@ describe('palette migration', () => {
 describe('palette coverage', () => {
   it('colours the tapered-stock recoil pad near-black by solid id', () => {
     expect(srgbToHex(solidColor(GUN_PALETTE, 'stock', 'butt-pad'))).toBe(BUTT_PAD_COLOR);
+  });
+
+  it('colours the pump tube cap the same dark gray as the barrel', () => {
+    const capLugColor = srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'cap-lug'));
+    expect(capLugColor).toBe(srgbToHex(solidColor(GUN_PALETTE, 'barrel', 'tube')));
+    expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'tube')));
+    expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'support-band')));
   });
 
   /** Every role any family can report: defaults, plus each param varied on its own across all its values. */

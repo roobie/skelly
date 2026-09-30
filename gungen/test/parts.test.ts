@@ -17,6 +17,55 @@ const variants = (family: PartFamily): Record<string, string>[] =>
 
 const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
 
+const pumpTubeDimensions = (input: {
+  bore: 'S' | 'M' | 'L';
+  barrelClass: string;
+  lengthPercent: '50' | '75' | '100';
+}): {
+  tubeEnd: number;
+  tubeBodyEnd: number;
+  barrelLug: number | undefined;
+  barrelLugY: number | undefined;
+  barrelSupportLug: number | undefined;
+  tubeCap: number | undefined;
+  tubeSupport: number | undefined;
+  capBounds: readonly [number, number, number, number, number, number];
+} => {
+  const barrel = FAMILIES.barrel!.build({
+    bore: input.bore,
+    length: input.barrelClass,
+    profile: 'standard',
+    tubeLengthPercent: input.lengthPercent,
+  });
+  const tube = FAMILIES['tube-magazine']!.build({
+    bore: input.bore,
+    barrelLength: input.barrelClass,
+    lengthPercent: input.lengthPercent,
+  });
+  const tubeSolid = tube.solids.find((solid) => solid.id === 'tube');
+  const capLug = tube.solids.find((solid) => solid.id === 'cap-lug');
+  if (tubeSolid?.kind !== 'box' || capLug?.kind !== 'box') {
+    throw new Error('pump magazine tube and cap lug must be boxes');
+  }
+  return {
+    tubeEnd: tube.ports.find((port) => port.id === 'cap')!.pos[0],
+    tubeBodyEnd: tubeSolid.box.center[0] + tubeSolid.box.half[0],
+    barrelLug: barrel.ports.find((port) => port.id === 'lug')?.pos[0],
+    barrelLugY: barrel.ports.find((port) => port.id === 'lug')?.pos[1],
+    barrelSupportLug: barrel.ports.find((port) => port.id === 'support-lug')?.pos[0],
+    tubeCap: tube.ports.find((port) => port.id === 'cap')?.pos[0],
+    tubeSupport: tube.ports.find((port) => port.id === 'support')?.pos[0],
+    capBounds: [
+      capLug.box.center[0] - capLug.box.half[0],
+      capLug.box.center[0] + capLug.box.half[0],
+      capLug.box.center[1] - capLug.box.half[1],
+      capLug.box.center[1] + capLug.box.half[1],
+      capLug.box.center[2] - capLug.box.half[2],
+      capLug.box.center[2] + capLug.box.half[2],
+    ] as const,
+  };
+};
+
 describe('part library', () => {
   it('integrates the rear grip, magazine well, dust cover, and trigger guard into the pistol frame', () => {
     const frame = FAMILIES.frame!.build({ bore: 'S', gripLength: 'M', slideLength: 'S' });
@@ -230,7 +279,12 @@ describe('part library', () => {
         const def = family.build(params);
         const tag = JSON.stringify(params);
 
-        const gridStep = family.name === 'frame' || family.name === 'slide' ? GRID / 2 : GRID;
+        let gridStep = GRID;
+        if (family.name === 'forend') {
+          gridStep = GRID / 5;
+        } else if (family.name === 'frame' || family.name === 'slide') {
+          gridStep = GRID / 2;
+        }
 
         it(`${tag}: positions and extents are on the ${gridStep}u grid`, () => {
           const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
@@ -322,8 +376,9 @@ describe('tapered stock profile', () => {
       }
       const [, centerY] = body.box.center;
       const [, halfY] = body.box.half;
+      const [, stockPortY] = receiver.ports.find((port) => port.id === 'stock')!.pos;
       const rearFaceTopY = centerY + halfY;
-      const combAtJoint = section(solids, jointX).max;
+      const combAtJoint = section(solids, jointX).max + stockPortY;
       expect(Math.abs(combAtJoint - centerY)).toBeLessThanOrEqual(0.25);
       expect(def.ports.find((port) => port.id === 'front')?.pos).toEqual([0, 0, 0]);
       expect(rearFaceTopY - combAtJoint).toBeCloseTo(halfY, 5);
@@ -417,6 +472,87 @@ describe('pump stock raised butt heel', () => {
 });
 
 describe('pump shotgun tube and barrel contact', () => {
+  it('lengthens the forend forward and thickens its walls without moving its mounting station', () => {
+    const forend = FAMILIES.forend!.build({});
+    const bottom = forend.solids.find((solid) => solid.id === 'bottom');
+    const left = forend.solids.find((solid) => solid.id === 'left');
+    const right = forend.solids.find((solid) => solid.id === 'right');
+    if (bottom?.kind !== 'box' || left?.kind !== 'box' || right?.kind !== 'box') {
+      throw new Error('pump forend solids must be boxes');
+    }
+    expect(bottom.box.center[0] - bottom.box.half[0]).toBe(0);
+    expect(bottom.box.center[0] + bottom.box.half[0]).toBeCloseTo(9.6);
+    expect(bottom.box.center[1] - bottom.box.half[1]).toBeCloseTo(-1.55);
+    expect(bottom.box.center[1] + bottom.box.half[1]).toBeCloseTo(-1);
+    expect(left.box.center[2] - left.box.half[2]).toBeCloseTo(-1.55);
+    expect(left.box.center[2] + left.box.half[2]).toBeCloseTo(-1);
+    expect(right.box.center[2] - right.box.half[2]).toBeCloseTo(1);
+    expect(right.box.center[2] + right.box.half[2]).toBeCloseTo(1.55);
+    const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
+    expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
+  });
+
+  it('sizes tube reach as a percentage of the actual barrel and aligns its lug/support ports', () => {
+    for (const [barrelClass, barrelEnd, supportX] of [
+      ['S', 26, 17],
+      ['M', 36, 23.5],
+      ['L', 46, 30],
+    ] as const) {
+      for (const [lengthPercent, tubeEnd] of [
+        ['50', barrelEnd / 2],
+        ['75', (barrelEnd * 3) / 4],
+        ['100', barrelEnd],
+      ] as const) {
+        const dimensions = pumpTubeDimensions({ bore: 'L', barrelClass, lengthPercent });
+        expect(dimensions.tubeEnd).toBe(tubeEnd);
+        expect(dimensions.tubeBodyEnd).toBe(tubeEnd - 0.5);
+        expect(dimensions.tubeEnd).toBeLessThanOrEqual(barrelEnd);
+        expect(dimensions.barrelLug).toBe(tubeEnd);
+        expect(dimensions.barrelSupportLug).toBe(tubeEnd > supportX ? supportX : undefined);
+        expect(dimensions.tubeSupport).toBe(tubeEnd > supportX ? supportX : undefined);
+        expect(dimensions.tubeCap).toBe(tubeEnd);
+        expect(dimensions.capBounds).toEqual([tubeEnd - 2.5, tubeEnd, -1.25, 1.25, -1.25, 1.25]);
+      }
+    }
+  });
+
+  it('keeps a 0.5u barrel-to-tube gap for every bore size', () => {
+    for (const [bore, tubeDrop] of [
+      ['S', 2.25],
+      ['M', 2.5],
+      ['L', 2.75],
+    ] as const) {
+      const dimensions = pumpTubeDimensions({ bore, barrelClass: 'M', lengthPercent: '75' });
+      expect(dimensions.barrelLugY).toBe(-tubeDrop);
+      expect(dimensions.capBounds.slice(2, 4)).toEqual([-1.25, 1.25]);
+
+      const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore, rail: 'full' });
+      expect(receiver.ports.find((port) => port.id === 'tube')?.pos[1]).toBe(-tubeDrop);
+    }
+  });
+
+  it('keeps the bore centered while the receiver edges closely contain the barrel and tube', () => {
+    const receiver = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', rail: 'full' });
+    const body = receiver.solids.find((solid) => solid.id === 'body');
+    if (body?.kind !== 'box') {
+      throw new Error('pump receiver body is not a box');
+    }
+    const [bodyBottom, bodyTop] = [body.box.center[1] - body.box.half[1], body.box.center[1] + body.box.half[1]];
+    const barrelPort = receiver.ports.find((port) => port.id === 'barrel')!;
+    const tubePort = receiver.ports.find((port) => port.id === 'tube')!;
+    const tubeSeat = receiver.solids.find((solid) => solid.id === 'tube-seat');
+    if (tubeSeat?.kind !== 'box') {
+      throw new Error('pump receiver must provide a tube seat');
+    }
+    const tubeSeatBottom = tubeSeat.box.center[1] - tubeSeat.box.half[1];
+    const lowerPort = receiver.ports.find((port) => port.id === 'lower')!;
+    expect(barrelPort.pos[1]).toBe(0);
+    expect(receiver.axes[0]?.origin[1]).toBe(0);
+    expect(bodyTop - (barrelPort.pos[1] + 1.25)).toBeCloseTo(0.25);
+    expect(tubePort.pos[1] - 1 - tubeSeatBottom).toBeCloseTo(0.25);
+    expect(lowerPort.pos[1]).toBe(bodyBottom);
+  });
+
   for (const bore of ['S', 'M', 'L']) {
     it(`bore ${bore}: the tube reaches the barrel lug without a contact gap`, () => {
       const assembly = variant('archetype-pump-shotgun', (draft) => {
