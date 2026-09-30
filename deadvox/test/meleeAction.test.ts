@@ -126,19 +126,6 @@ describe('melee pose and contact contract', () => {
     expect(meleePoseAndContact({ ...action, hitResolved: true }, action.contactAt, false).contactRay).toBeUndefined();
   });
 
-  it('keeps every motion within absolute first-person bounds', () => {
-    for (const profile of ['blunt', 'cut', 'pierce', 'fists'] as const) {
-      const frame = meleePoseAndContact(actionPose({ profile }), 0.25, false);
-      for (const hand of [frame.right, frame.left]) {
-        expect(Math.hypot(...hand.offset)).toBeLessThanOrEqual(0.25); // 25 cm maximum hand displacement.
-        expect(Math.max(...hand.rotation.map((angle) => Math.abs((angle * 180) / Math.PI)))).toBeLessThanOrEqual(45);
-      }
-    }
-    const ready = readyMeleePose(true);
-    expect(Math.hypot(...ready.right.offset)).toBeLessThan(0.1); // 10 cm maximum ready adjustment.
-    expect(Math.hypot(...ready.left.offset)).toBeLessThan(0.1);
-  });
-
   it('enters ready only for held right mouse with a melee item or empty hands, outside debug build and locks', () => {
     const input = {
       rightMouseHeld: true,

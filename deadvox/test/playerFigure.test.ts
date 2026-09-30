@@ -305,7 +305,7 @@ describe('player figure', () => {
           const weapon = internals.heldByHand.get(side)!;
           const anchor = internals.arms.get(supportSide)!.getObjectByName('grip-anchor')!;
           const localGrip = weapon.worldToLocal(anchor.getWorldPosition(new Vector3()));
-          for (const elapsed of [0.05, 0.15, 0.25, 0.4, 0.8]) {
+          for (const elapsed of [0, 0.05, 0.09, 0.15, 0.25, 0.32, 0.46, 0.8, 1.2]) {
             held.update(camera, meleePoseAndContact(swing, elapsed, false));
             internals.view.updateMatrixWorld(true);
             const expected = weapon.localToWorld(localGrip.clone());

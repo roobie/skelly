@@ -44,6 +44,36 @@ const handPose = (offset: Vec3 = [0, 0, 0], rotation: Vec3 = [0, 0, 0]): HandPos
   offset: offset.map(cleanZero) as Vec3,
   rotation: rotation.map(cleanZero) as Vec3,
 });
+const smooth = (value: number): number => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
+const blendHand = (from: HandPose, to: HandPose, amount: number): HandPose =>
+  handPose(
+    from.offset.map((value, index) => value + (to.offset[index]! - value) * amount) as Vec3,
+    from.rotation.map((value, index) => value + (to.rotation[index]! - value) * amount) as Vec3,
+  );
+const swingPath = (
+  elapsed: number,
+  timing: { contact: number; cooldown: number },
+  path: { pull: HandPose; strike: HandPose; follow: HandPose },
+) => {
+  const { contact, cooldown } = timing;
+  const { pull, strike, follow } = path;
+  const pullEnd = contact * 0.36;
+  if (elapsed <= pullEnd) {
+    return blendHand(handPose(), pull, smooth(elapsed / pullEnd));
+  }
+  if (elapsed < contact) {
+    return blendHand(pull, strike, smooth((elapsed - pullEnd) / (contact - pullEnd)));
+  }
+  const recovery = Math.max(0.001, cooldown - contact);
+  const followEnd = contact + recovery * 0.22;
+  if (elapsed <= followEnd) {
+    return blendHand(strike, follow, smooth((elapsed - contact) / (followEnd - contact)));
+  }
+  return blendHand(follow, handPose(), smooth((elapsed - followEnd) / (cooldown - followEnd)));
+};
 
 /** Pure pose-and-contact contract shared by first-person rendering and hit resolution. */
 export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, ready: boolean): MeleePoseFrame => {
@@ -59,52 +89,36 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
   }
 
   const contact = Math.max(0.001, action.contactAt);
-  const recovery = Math.max(0.001, action.cooldown - contact);
-  const windup = clamp01(elapsed / contact);
-  const recover = clamp01((elapsed - contact) / recovery);
-  const envelope = elapsed < contact ? windup : 1 - recover;
   const sign = action.hand === 'right' ? 1 : -1;
-  let reach = 0;
-  let lateral = 0;
-  let rise = 0;
-  let yaw = 0;
-  let pitch = 0;
-  let roll = 0;
-
+  let pull: HandPose;
+  let strike: HandPose;
+  let follow: HandPose;
   switch (action.profile) {
     case 'blunt':
-      reach = -0.13 * envelope;
-      lateral = sign * 0.11 * envelope;
-      rise = 0.04 * envelope;
-      yaw = sign * 0.55 * envelope;
-      pitch = 0.28 * envelope;
-      roll = -sign * 0.18 * envelope;
+      pull = handPose([sign * 0.48, 0.12, 0.04], [-0.2, -sign * 1.25, sign * 0.2]);
+      strike = handPose([-sign * 0.2, 0.18, -0.1], [-1.5, sign * 0.55, -sign * 0.08]);
+      follow = handPose([-sign * 0.5, 0.04, -0.08], [-1.2, sign * 1.2, -sign * 0.18]);
       break;
     case 'cut':
-      reach = -0.16 * envelope;
-      lateral = sign * 0.16 * envelope;
-      rise = 0.015 * envelope;
-      yaw = -sign * 0.72 * envelope;
-      pitch = 0.12 * envelope;
-      roll = sign * 0.23 * envelope;
+      pull = handPose([sign * 0.32, 0.48, 0.04], [-sign * 0.35, sign * 0.6, -sign * 0.15]);
+      strike = handPose([-sign * 0.2, -0.12, -0.14], [sign * 0.45, -sign * 0.55, sign * 0.25]);
+      follow = handPose([-sign * 0.52, -0.5, -0.12], [sign * 0.55, -sign * 0.9, sign * 0.35]);
       break;
     case 'pierce':
-      reach = -0.23 * envelope;
-      pitch = -0.08 * envelope;
+      pull = handPose([sign * 0.1, 0.08, 0.16], [-1.1, -sign * 0.1, 0]);
+      strike = handPose([-sign * 0.2, 0.2, -0.42], [-1.5, sign * 0.02, 0]);
+      follow = handPose([-sign * 0.18, 0.12, -0.3], [-1.3, sign * 0.02, 0]);
       break;
     case 'fists':
-      reach = -0.2 * envelope;
-      lateral = sign * 0.025 * envelope;
-      pitch = -0.08 * envelope;
+      pull = handPose([sign * 0.12, 0.04, 0.08], [-0.1, -sign * 0.1, sign * 0.04]);
+      strike = handPose([-sign * 0.2, 0.18, -0.34], [-0.14, sign * 0.05, -sign * 0.04]);
+      follow = handPose([-sign * 0.16, 0.1, -0.24], [-0.05, sign * 0.02, 0]);
       break;
     default:
-      break;
+      throw new Error(`Unknown melee profile: ${action.profile}`);
   }
-
-  const primary = handPose([sign * lateral, rise, reach], [pitch, yaw, roll]);
-  const support = action.twoHanded
-    ? handPose()
-    : handPose([-sign * lateral * 0.35, rise * 0.5, reach * 0.15], [pitch * 0.5, yaw * 0.3, -roll * 0.4]);
+  const primary = swingPath(elapsed, { contact, cooldown: action.cooldown }, { pull, strike, follow });
+  const support = action.twoHanded ? handPose() : blendHand(handPose(), primary, 0.2);
   const right = action.hand === 'right' ? primary : support;
   const left = action.hand === 'left' ? primary : support;
   return {

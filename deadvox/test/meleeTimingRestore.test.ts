@@ -2,13 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { encodeSave, decodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { SoundPicker } from '../src/core/soundPicker.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -19,11 +19,21 @@ const { registry } = buildRegistry(
 );
 const scale = makeScale(0.5);
 const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  if (kind === 'block') return registry.blockIds.has(id);
-  if (kind === 'item') return registry.items.has(id);
-  if (kind === 'furniture') return registry.furniture.has(id);
-  if (kind === 'zombie') return registry.zombies.has(id);
-  if (kind === 'sound') return registry.sounds.has(id);
+  if (kind === 'block') {
+    return registry.blockIds.has(id);
+  }
+  if (kind === 'item') {
+    return registry.items.has(id);
+  }
+  if (kind === 'furniture') {
+    return registry.furniture.has(id);
+  }
+  if (kind === 'zombie') {
+    return registry.zombies.has(id);
+  }
+  if (kind === 'sound') {
+    return registry.sounds.has(id);
+  }
   return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const saveVersion = {
@@ -43,7 +53,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
     isSolid: () => false,
     scale,
     seed: 13,
-    start: 43200,
+    start: 43_200,
     spawn: [0, 4, 0],
     ready: () => false,
     controls: {
@@ -99,7 +109,9 @@ describe('melee click timing after session restore', () => {
         }),
       ).toBe('started');
 
-      for (let i = 0; i < 250; i++) session.frame(0.001);
+      for (let i = 0; i < 250; i++) {
+        session.frame(0.001);
+      }
       expect(contacts).toEqual([]);
       expect(session.sim.time - clickTime).toBeCloseTo(0.25, 9);
       session.frame(0.001);
