@@ -58,8 +58,10 @@ export class HeldItems {
   private readonly relativeCamera = new Quaternion();
   private readonly lockedCamera = new Quaternion();
   private readonly poseRotation = new Quaternion();
+  private readonly recoilRotation = new Quaternion();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
+  private readonly pivotPosition = new Vector3();
 
   private readonly palette: FigureDef['palette'];
 
@@ -79,7 +81,12 @@ export class HeldItems {
       if (!base) {
         continue;
       }
+      const arm = this.arms.get(side);
+      if (!arm || arm.parent !== this.view) {
+        continue;
+      }
       const transform = interpolateHandPose(base, hand);
+      this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
       if (pose?.viewOrientation) {
         this.lockedCamera.setFromEuler(
           this.poseEuler.set(pose.viewOrientation.pitch, pose.viewOrientation.yaw, 0, 'YXZ'),
@@ -87,24 +94,19 @@ export class HeldItems {
         this.relativeCamera.copy(main.quaternion).invert().multiply(this.lockedCamera);
         this.handPosition.set(...transform.offset).applyQuaternion(this.relativeCamera);
         transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
-        this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
         this.poseRotation.premultiply(this.relativeCamera);
-        this.poseEuler.setFromQuaternion(this.poseRotation, 'YXZ');
-        transform.rotation = [this.poseEuler.x, this.poseEuler.y, this.poseEuler.z];
       }
       const strength = Math.max(0, Math.min(1, recoil));
       transform.offset[1] += 0.012 * strength;
       transform.offset[2] += 0.025 * strength;
-      transform.rotation[0] -= 0.08 * strength;
-      const arm = this.arms.get(side);
-      if (arm) {
-        arm.position.set(...transform.offset);
-        arm.rotation.set(...transform.rotation);
-      }
+      this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
+      this.poseRotation.multiply(this.recoilRotation);
+      arm.position.set(...transform.offset);
+      arm.quaternion.copy(this.poseRotation);
       const held = this.heldByHand.get(side);
       if (held) {
         held.position.set(...transform.offset);
-        held.rotation.set(...transform.rotation);
+        held.quaternion.copy(this.poseRotation);
       }
     }
     this.camera.quaternion.copy(main.quaternion);
@@ -164,15 +166,20 @@ export class HeldItems {
     this.syncFistHand('left');
   }
 
-  private addArm(side: HandSide, grip: Vec3): void {
+  private addArm(side: HandSide, grip: Vec3, parent: Group = this.view, parentOrigin: Vec3 = [0, 0, 0]): void {
     if (this.arms.has(side)) {
       return;
     }
-    const arm = createFirstPersonArm(this.palette, side, [0, 0, 0]);
-    arm.position.set(...grip);
+    const arm = createFirstPersonArm(this.palette, side, grip);
+    this.pivotPosition.set(...grip);
+    for (const child of arm.children) {
+      child.position.sub(this.pivotPosition);
+    }
+    const localGrip: Vec3 = [grip[0] - parentOrigin[0], grip[1] - parentOrigin[1], grip[2] - parentOrigin[2]];
+    arm.position.set(...localGrip);
     this.arms.set(side, arm);
-    this.handBases.set(side, grip);
-    this.view.add(arm);
+    this.handBases.set(side, localGrip);
+    parent.add(arm);
   }
 
   private syncFistHand(side: HandSide): void {
@@ -195,16 +202,16 @@ export class HeldItems {
     this.heldByHand.set(side, held);
     this.addArm(side, heldAt);
     if (def.twoHanded) {
-      this.syncOffhandArm(side, heldAt, def.model);
+      this.syncOffhandArm(side, heldAt, def.model, held);
     }
   }
 
-  private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined): void {
+  private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined, held: Group): void {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
     const pose = modelId ? this.inventory.registry.models.get(modelId)?.hold : undefined;
     const offhandGrip: Vec3 =
       pose === 'upright' ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]] : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
-    this.addArm(otherSide, offhandGrip);
+    this.addArm(otherSide, offhandGrip, held, heldAt);
   }
 
   private shape(item: Item): Object3D {

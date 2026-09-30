@@ -10,7 +10,7 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
-import { meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
+import { MELEE_START_OFFSET_MAX_SECONDS, meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
 import { skyAt } from '../core/sky.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
@@ -598,6 +598,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       hands: handUids(),
       aimYaw: input.yaw,
       aimPitch: input.pitch,
+      startOffset: Math.min(MELEE_START_OFFSET_MAX_SECONDS, Math.max(0, sim.time - session.lastZombieStep)),
     });
     if (result === 'too-tired') {
       showNotice('You are too tired to swing');
@@ -728,7 +729,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     });
     const action = zombieSystem.activeMeleeAction;
     const elapsed = action
-      ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastZombieStep)))
+      ? Math.min(
+          action.cooldown,
+          action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastZombieStep - action.startOffset)),
+        )
       : 0;
     const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready);
     meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);

@@ -7,6 +7,7 @@ import {
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState, PlacedState } from './items.ts';
+import { MELEE_START_OFFSET_MAX_SECONDS } from './meleePose.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { MeleeActionState, ZombieState } from './zombies.ts';
@@ -128,7 +129,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -204,6 +205,7 @@ const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
 const nonNegative = num({ min: 0 });
 const positive = num({ min: Number.MIN_VALUE });
+const meleeStartOffset = num({ min: 0, max: MELEE_START_OFFSET_MAX_SECONDS });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
 const needs = obj({
@@ -371,6 +373,7 @@ const meleeAction = nullable(
     aimYaw: finite,
     aimPitch: finite,
     elapsed: nonNegative,
+    startOffset: meleeStartOffset,
     hitResolved: bool,
     origin: vec3,
     direction: vec3,

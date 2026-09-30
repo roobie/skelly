@@ -1,21 +1,25 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  Euler,
   Frustum,
+  type Group,
   type InstancedMesh,
   Matrix4,
   type Mesh,
   type MeshLambertMaterial,
   PerspectiveCamera,
+  Quaternion,
   Raycaster,
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
-import { HOLD } from '../src/render/hands.ts';
+import { HeldItems, HOLD } from '../src/render/hands.ts';
 import {
   createFirstPersonArm,
   PLAYER_ARM_PARTS,
@@ -190,6 +194,129 @@ describe('player figure', () => {
     expect(parts[indexes.rightForearm]!.count).toBe(0);
     expect(parts[indexes.leftHand]!.count).toBe(0);
     expect(parts[indexes.rightHand]!.count).toBe(0);
+  });
+
+  it('keeps idle first-person grips camera-relative when the camera turns', () => {
+    const inventory = new Inventory(registry);
+    const held = new HeldItems(inventory, undefined, palette);
+    const internals = held as unknown as { view: Group; arms: Map<'left' | 'right', Group> };
+    const camera = new PerspectiveCamera();
+    camera.rotation.set(0, Math.PI / 2, 0, 'YXZ');
+    held.update(camera, readyMeleePose(false));
+    internals.view.updateMatrixWorld(true);
+    const actual = internals.arms.get('right')!.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
+    const expected = new Vector3(...HOLD.right).applyQuaternion(camera.quaternion);
+    expect(actual.distanceTo(expected)).toBeLessThan(0.001);
+  });
+
+  it('preserves the origin/main rest geometry through the HeldItems grip pivot', () => {
+    const inventory = new Inventory(registry);
+    const held = new HeldItems(inventory, undefined, palette);
+    const internals = held as unknown as { view: Group; arms: Map<'left' | 'right', Group> };
+    const camera = new PerspectiveCamera();
+    held.update(camera);
+    internals.view.updateMatrixWorld(true);
+    for (const side of ['left', 'right'] as const) {
+      const actual = internals.arms.get(side)!;
+      const expected = createFirstPersonArm(palette, side, HOLD[side]);
+      expected.updateMatrixWorld(true);
+      for (let index = 0; index < expected.children.length; index++) {
+        const actualPart = actual.children[index]!;
+        const expectedPart = expected.children[index]!;
+        const actualPosition = actualPart.getWorldPosition(new Vector3());
+        const expectedPosition = expectedPart.getWorldPosition(new Vector3());
+        expect(actualPosition.distanceTo(expectedPosition)).toBeLessThan(0.001);
+        expect(
+          actualPart.getWorldQuaternion(new Quaternion()).angleTo(expectedPart.getWorldQuaternion(new Quaternion())),
+        ).toBeLessThan(0.001);
+        expect(actualPart.scale.distanceTo(expectedPart.scale)).toBeLessThan(0.001);
+      }
+    }
+  });
+
+  it('keeps the locked click-time world quaternion through simultaneous camera yaw and pitch', () => {
+    const inventory = new Inventory(registry);
+    const knife = inventory.create('kitchen_knife');
+    inventory.add(knife, { kind: 'hand', side: 'right' });
+    const held = new HeldItems(inventory, undefined, palette);
+    const internals = held as unknown as {
+      view: Group;
+      arms: Map<'left' | 'right', Group>;
+      heldByHand: Map<'left' | 'right', Group>;
+    };
+    const camera = new PerspectiveCamera();
+    camera.rotation.set(0.6, -0.8, 0, 'YXZ');
+    const action = {
+      profile: 'cut' as const,
+      hand: 'right' as const,
+      twoHanded: false,
+      cooldown: 0.8,
+      contactAt: 0.25,
+      aimYaw: 0.7,
+      aimPitch: -0.3,
+      origin: [0, 0, 0] as [number, number, number],
+      direction: [0, 0, -1] as [number, number, number],
+      hitResolved: false,
+    };
+    const pose = meleePoseAndContact(action, action.contactAt, false);
+    held.update(camera, pose);
+    internals.view.updateMatrixWorld(true);
+    const expected = new Quaternion().setFromEuler(new Euler(action.aimPitch, action.aimYaw, 0, 'YXZ'));
+    expected.multiply(new Quaternion().setFromEuler(new Euler(...pose.right.rotation, 'YXZ')));
+    const actualArm = internals.arms.get('right')!.getWorldQuaternion(new Quaternion());
+    const actualItem = internals.heldByHand.get('right')!.getWorldQuaternion(new Quaternion());
+    expect(actualArm.angleTo(expected) * (180 / Math.PI)).toBeLessThan(0.1);
+    expect(actualItem.angleTo(expected) * (180 / Math.PI)).toBeLessThan(0.1);
+  });
+
+  it('keeps two-handed support grips attached to weapon-local grip for both sides and hold orientations', () => {
+    const def = registry.items.get('baseball_bat')!;
+    const model = registry.models.get(def.model!)! as { hold: 'forward' | 'upright' };
+    const originalHold = model.hold;
+    const camera = new PerspectiveCamera();
+    try {
+      for (const side of ['left', 'right'] as const) {
+        for (const hold of ['forward', 'upright'] as const) {
+          model.hold = hold;
+          const inventory = new Inventory(registry);
+          const bat = inventory.create('baseball_bat');
+          inventory.add(bat, { kind: 'hand', side });
+          const held = new HeldItems(inventory, undefined, palette);
+          const internals = held as unknown as {
+            view: Group;
+            arms: Map<'left' | 'right', Group>;
+            heldByHand: Map<'left' | 'right', Group>;
+          };
+          const swing = {
+            profile: 'blunt' as const,
+            hand: side,
+            twoHanded: true,
+            cooldown: 1.2,
+            contactAt: 0.25,
+            aimYaw: 0,
+            aimPitch: 0,
+            origin: [0, 0, 0] as [number, number, number],
+            direction: [0, 0, -1] as [number, number, number],
+            hitResolved: false,
+          };
+          const supportSide = side === 'right' ? 'left' : 'right';
+          held.update(camera);
+          internals.view.updateMatrixWorld(true);
+          const weapon = internals.heldByHand.get(side)!;
+          const anchor = internals.arms.get(supportSide)!.getObjectByName('grip-anchor')!;
+          const localGrip = weapon.worldToLocal(anchor.getWorldPosition(new Vector3()));
+          for (const elapsed of [0.05, 0.15, 0.25, 0.4, 0.8]) {
+            held.update(camera, meleePoseAndContact(swing, elapsed, false));
+            internals.view.updateMatrixWorld(true);
+            const expected = weapon.localToWorld(localGrip.clone());
+            const actual = anchor.getWorldPosition(new Vector3());
+            expect(actual.distanceTo(expected)).toBeLessThanOrEqual(0.01);
+          }
+        }
+      }
+    } finally {
+      model.hold = originalHold;
+    }
   });
 
   it('ends each first-person arm at the held grip for forward and upright weapons', () => {

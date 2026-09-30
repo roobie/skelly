@@ -712,7 +712,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 4,
+  schemaVersion: 5,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -819,6 +819,8 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 describe('canonical save format', () => {
   it('round-trips an active player swing and resolves its one pending hit after restore', async () => {
     const source = createRuntime();
+    source.sim.frame(0.049);
+    expect(source.sim.time).toBeCloseTo(0.049);
     for (const [id] of [...source.zombies.store.entries()]) {
       source.zombies.store.remove(id);
     }
@@ -855,30 +857,32 @@ describe('canonical save format', () => {
         hand: 'right',
         twoHanded: false,
         hands,
+        startOffset: source.sim.time - source.session.lastZombieStep,
       }),
     ).toBe('started');
     const initialHealth = zombie.regions.head;
-    for (let tick = 0; tick < 4; tick++) {
-      source.zombies.tick(0.05, 0, hands);
-    }
-    expect(zombie.regions.head).toBe(initialHealth);
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
     expect(decoded.snapshot.world.zombies.meleeAction).toEqual(snapshot.world.zombies.meleeAction);
     const loaded = createRuntime(decoded.snapshot);
     loaded.zombies.setFrozen(true);
-    expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0.2);
+    expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0);
+    expect(loaded.zombies.activeMeleeAction?.startOffset).toBeCloseTo(0.049);
 
     for (const runtime of [source, loaded]) {
       const held = {
         right: runtime.inventory.hands.right?.uid ?? null,
         left: runtime.inventory.hands.left?.uid ?? null,
       };
-      runtime.zombies.tick(0.05, 0, held);
+      for (let tick = 1; tick <= 5; tick++) {
+        runtime.zombies.tick(0.05, tick * 0.05, held);
+        expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
+      }
+      runtime.zombies.tick(0.05, 0.3, held);
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
       for (let tick = 0; tick < 16; tick++) {
-        runtime.zombies.tick(0.05, 0, held);
+        runtime.zombies.tick(0.05, 0.3 + (tick + 1) * 0.05, held);
       }
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
     }

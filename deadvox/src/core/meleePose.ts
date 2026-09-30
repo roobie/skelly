@@ -6,6 +6,8 @@ export type MeleeHand = 'right' | 'left';
 /** Contact is quick for heavy weapons too; recovery still fills the item's full cooldown. */
 export const MELEE_WINDUP_FRACTION = 0.4;
 export const MELEE_WINDUP_CAP_SECONDS = 0.25;
+/** Maximum click offset inside one 20 Hz zombie simulation step. */
+export const MELEE_START_OFFSET_MAX_SECONDS = 0.05;
 
 export const meleeContactTime = (cooldown: number): number =>
   Math.min(MELEE_WINDUP_FRACTION * cooldown, MELEE_WINDUP_CAP_SECONDS);
@@ -100,10 +102,9 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
   }
 
   const primary = handPose([sign * lateral, rise, reach], [pitch, yaw, roll]);
-  const support = handPose(
-    [-sign * lateral * 0.35, rise * 0.5, reach * (action.twoHanded ? 0.65 : 0.15)],
-    [pitch * 0.5, yaw * 0.3, -roll * 0.4],
-  );
+  const support = action.twoHanded
+    ? handPose()
+    : handPose([-sign * lateral * 0.35, rise * 0.5, reach * 0.15], [pitch * 0.5, yaw * 0.3, -roll * 0.4]);
   const right = action.hand === 'right' ? primary : support;
   const left = action.hand === 'left' ? primary : support;
   return {
@@ -117,22 +118,12 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
 };
 
 export const readyMeleePose = (ready: boolean): MeleePoseFrame =>
-  meleePoseAndContact(
-    {
-      profile: 'fists',
-      hand: 'right',
-      twoHanded: false,
-      cooldown: 1,
-      contactAt: 0.4,
-      aimYaw: 0,
-      aimPitch: 0,
-      origin: [0, 0, 0],
-      direction: [0, 0, -1],
-      hitResolved: true,
-    },
-    0,
-    ready,
-  );
+  ready
+    ? {
+        right: handPose([0.025, 0.085, 0.015], [0.12, -0.08, -0.04]),
+        left: handPose([-0.025, 0.075, 0.01], [0.1, 0.08, 0.04]),
+      }
+    : { right: handPose(), left: handPose() };
 
 export const interpolateHandPose = (base: Vec3, pose: HandPose): { offset: Vec3; rotation: Vec3 } => ({
   offset: [base[0] + pose.offset[0], base[1] + pose.offset[1], base[2] + pose.offset[2]],
