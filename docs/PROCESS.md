@@ -2,8 +2,8 @@
 
 The working process, kept tight: what's done, how a change moves, and the rules that came out
 of things going wrong. It grows by one line when a mistake repeats, and it shrinks when a rule
-stops earning its place. The code-quality pillars are in `README.md`, and agent setup is in
-`AGENTS.md`. This file doesn't repeat them.
+stops earning its place. The code-quality pillars are in `README.md`, and worktree and
+install conventions are in `AGENTS.md`. This file doesn't repeat them.
 
 ## Who decides
 
@@ -36,14 +36,18 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 ## Done, per subproject
 
 A change is done when its subproject's CI checks pass locally, the root checks pass, and BR has
-approved anything visual.
+approved anything visual. Install each worktree's check dependencies as CI does; see
+`AGENTS.md`.
 
 | Where | Checks (run as CI does) |
 |---|---|
-| Root, every change | `npm run ci` and `npm run test:site`; the pre-push hook runs both |
-| gungen | `typecheck`, `test` (sweeps run under `CI` or `GUNGEN_SWEEPS=1`: run `test:sweeps` locally), `validate`, `check:designs`, `vite build`. Regenerate deadvox's exported models when the export changes |
-| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with `CHROME_BIN`), `test:browser:firefox` (under xvfb), `validate`, `vite build`, and the simulation fingerprint when simulation code changes |
-| mobgen | `typecheck`, `test`, `vite build` |
+| Root, every change | `npm run ci` and `npm run test:site` (manual until #99 lands; the installed pre-push hook then runs both) |
+| gungen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `validate`, `check:designs`, `build`. Regenerate deadvox's exported models when the export changes |
+| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with `CHROME_BIN`), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
+| mobgen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `build` |
+
+A plain `test` skips the sweeps that CI runs, which has turned main red before (#85). Use
+`test:sweeps` wherever it exists.
 
 ## Reviews by eye and by play
 
@@ -65,8 +69,10 @@ approved anything visual.
 
 ## Working rules
 
-- **Bound every run:** Vitest and tool timeouts are in milliseconds, and long runs are wrapped in
-  `timeout 300`. A run with no bound once hung for three hours.
+- **Bound every run:** wrap long shell runs in `timeout 300` (300 seconds). Vitest timeouts are
+  in milliseconds; a harness's own tool timeout may be in seconds or milliseconds, so check its
+  schema. A browser script bounds each stage as well as the whole run. Mixing the units once
+  turned a 4-minute limit into 67 hours, and the run hung for three hours before anyone noticed.
 - **Units:** gungen uses 11.5 mm per u; deadvox and mobgen use metres and seconds.
 - **Determinism:** seeded RNG only; no `Math.random` in simulation or generators.
 - **Don't loosen a test to make room for a change.** Pin the new measured value as a documented
