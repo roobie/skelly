@@ -17,18 +17,24 @@ export interface SpawnMenuItem {
 export interface SpawnMenuViewModel {
   readonly filter: string;
   readonly status: string;
+  readonly selectedIndex: number;
   /** Matching the filter's words against name, id and category; category then name. */
   readonly items: readonly SpawnMenuItem[];
 }
 
 /** Every item whose name, id or category contains each word of the filter. */
-export const spawnMenuViewModel = (registry: Registry, filter: string, status: string): SpawnMenuViewModel => {
+export const spawnMenuViewModel = (
+  registry: Registry,
+  filter: string,
+  status: string,
+  selectedIndex = 0,
+): SpawnMenuViewModel => {
   const words = filter.toLowerCase().split(WHITESPACE).filter(Boolean);
   const items = [...registry.items.values()]
     .filter((def) => words.every((w) => `${def.name} ${def.id} ${def.category}`.toLowerCase().includes(w)))
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
     .map((def) => ({ id: def.id, name: def.name, meta: `${def.category}${def.model ? ', model' : ''}` }));
-  return { filter, status, items };
+  return { filter, status, selectedIndex: Math.min(selectedIndex, Math.max(0, items.length - 1)), items };
 };
 
 interface SpawnMenuActions {
@@ -39,7 +45,7 @@ interface SpawnMenuActions {
 const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): TemplateResult => html`
   <div class="card">
     <h2>Spawn an item</h2>
-    <p>Drops it at your feet. Press G to close.</p>
+    <p>Drops it at your feet. Press Tab to close.</p>
     <input
       type="search"
       placeholder="Filter by name, id or category"
@@ -48,8 +54,14 @@ const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): T
     />
     <div class="spawn-list">
       ${vm.items.map(
-        (item) => html`
-          <button type="button" @click=${() => actions.onSpawn(item.id)}>
+        (item, index) => html`
+          <button
+            type="button"
+            data-spawn-item=${item.id}
+            class=${index === vm.selectedIndex ? 'selected' : ''}
+            aria-current=${index === vm.selectedIndex ? 'true' : 'false'}
+            @click=${() => actions.onSpawn(item.id)}
+          >
             <span>${item.name}</span>
             <span>${item.meta}</span>
           </button>
@@ -68,6 +80,7 @@ export class SpawnMenu {
   private readonly drawTemplate: (template: TemplateResult, root: HTMLElement) => void;
   private filter = '';
   private status = '';
+  private selectedIndex = 0;
   private drawn = '';
 
   /** `spawn` makes one of the item type and says what happened. */
@@ -90,6 +103,7 @@ export class SpawnMenu {
     this.root.hidden = !this.opened;
     if (this.opened) {
       this.render();
+      this.focusInput();
     }
   }
 
@@ -100,19 +114,63 @@ export class SpawnMenu {
     }
     this.filter = '';
     this.status = '';
+    this.selectedIndex = 0;
     this.drawn = '';
     this.render();
     const input = this.root?.querySelector('input');
     if (input) {
       input.value = this.filter;
+      input.focus();
     }
   }
 
   close(): void {
     this.opened = false;
+    this.root?.querySelector('input')?.blur();
     if (this.root) {
       this.root.hidden = true;
     }
+  }
+
+  /** Keyboard commands are handled here; other open-menu keys remain available to the search field. */
+  handleKey(event: KeyboardEvent): boolean {
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      this.close();
+      return true;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const { items, selectedIndex } = this.viewModel;
+      if (items.length > 0) {
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        this.selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex + direction));
+        this.render();
+        [...(this.root?.querySelectorAll<HTMLButtonElement>('[data-spawn-item]') ?? [])]
+          .find((button) => button.dataset.spawnItem === items[this.selectedIndex]?.id)
+          ?.scrollIntoView({ block: 'nearest' });
+      }
+      return true;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const { items, selectedIndex } = this.viewModel;
+      const selected = items[selectedIndex];
+      if (selected) {
+        this.spawn(selected.id);
+        this.close();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private focusInput(): void {
+    this.root?.querySelector<HTMLInputElement>('input')?.focus();
+  }
+
+  get viewModel(): SpawnMenuViewModel {
+    return spawnMenuViewModel(this.registry, this.filter, this.status, this.selectedIndex);
   }
 
   /** Redraws when the filter or the status changed. */
@@ -120,15 +178,16 @@ export class SpawnMenu {
     if (!this.root) {
       return;
     }
-    const key = `${this.filter}|${this.status}`;
+    const key = `${this.filter}|${this.status}|${this.selectedIndex}`;
     if (key === this.drawn) {
       return;
     }
     this.drawn = key;
     this.drawTemplate(
-      spawnMenuTemplate(spawnMenuViewModel(this.registry, this.filter, this.status), {
+      spawnMenuTemplate(this.viewModel, {
         onFilter: (value) => {
           this.filter = value;
+          this.selectedIndex = 0;
           this.render();
         },
         onSpawn: (id) => {

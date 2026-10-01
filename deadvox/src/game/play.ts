@@ -516,7 +516,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
 
   const handleMenuKey = (e: KeyboardEvent): boolean => {
+    const walkingBefore = input.walking;
     if (debugTools?.handleKey(e)) {
+      if (debugTools.spawnOpen && e.target instanceof HTMLInputElement) {
+        input.held.delete(e.code);
+        input.walking = walkingBefore;
+      }
       syncMenuState();
       return true;
     }
