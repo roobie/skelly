@@ -94,6 +94,15 @@ describe('menu input', () => {
       expect(input.intent().primaryAction).toBe(true);
       input.consumePrimaryAction();
       expect(input.intent().primaryAction).toBe(false);
+      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.leftHandAction.code, repeat: false } as KeyboardEvent);
+      expect(input.intent().leftHandAction).toBe(true);
+      input.consumeLeftHandAction();
+      expect(input.intent().leftHandAction).toBe(false);
+      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.leftHandAction.code, repeat: true } as KeyboardEvent);
+      expect(input.intent().leftHandAction).toBe(false);
+      windowListeners.get('keyup')?.({ code: KEY_BINDINGS.leftHandAction.code } as KeyboardEvent);
+      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.leftHandAction.code, repeat: false } as KeyboardEvent);
+      expect(input.intent().leftHandAction).toBe(true);
       targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
       expect(input.intent().primaryAction).toBe(false);
       windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);

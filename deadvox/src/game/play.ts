@@ -38,6 +38,7 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
+import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
@@ -49,7 +50,7 @@ import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './inpu
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PLAYER } from './player.ts';
-import { primaryActionHint, selectPrimaryAction } from './primaryAction.ts';
+import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
 import type { RestKind } from './rest.ts';
 import { createSession, LOOT_REACH } from './session.ts';
 import { toHands } from './targets.ts';
@@ -73,7 +74,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   input.yaw = playerStart.yaw;
   let cameraRoll = 0;
   let debugTools: DebugRuntime | undefined;
-  let performPrimaryAction = (): void => undefined;
+  let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
   // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
   applyLook(renderer, meshes, DEFAULT_LOOK);
   engine.mood.restore(DEFAULT_MOOD);
@@ -112,10 +113,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
       consumePrimaryAction: () => input.consumePrimaryAction(),
+      consumeLeftHandAction: () => input.consumeLeftHandAction(),
       primaryAction: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         if (!debugTools?.buildOn) {
-          performPrimaryAction();
+          performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
+        }
+      },
+      leftHandAction: () => {
+        if (!debugTools?.buildOn) {
+          performPrimaryAction(ACTION_HAND_BINDINGS.leftHandKey);
         }
       },
       yaw: () => input.yaw,
@@ -653,7 +660,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         };
       }
     }
-    return { weapon: FISTS_MELEE, profile: 'fists', twoHanded: false };
+    return {
+      weapon: FISTS_MELEE,
+      profile: 'fists',
+      ...(preferredHand === undefined ? {} : { hand: preferredHand }),
+      twoHanded: false,
+    };
   };
   const meleeWeapon = () => meleeSelection().weapon;
 
@@ -675,8 +687,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
   };
 
-  performPrimaryAction = () => {
-    const action = selectPrimaryAction(registry, inventory.hands);
+  performPrimaryAction = (hand: 'right' | 'left') => {
+    const action = selectPrimaryAction(registry, inventory.hands, hand);
     switch (action.kind) {
       case 'melee':
         swing(action.hand);
@@ -692,7 +704,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         showNotice('Firearms are not usable yet');
         return;
       case 'fists':
-        swing();
+        swing(action.hand);
+        return;
+      case 'noop':
         return;
       case 'none':
         showNotice(primaryActionHint(registry, action.item));
@@ -861,7 +875,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
-    const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready);
+    const offHand = action?.hand === 'right' ? 'left' : 'right';
+    const pose = action
+      ? meleePoseAndContact({ ...action, offHandOccupied: action.hands[offHand] !== null }, elapsed, false)
+      : readyMeleePose(ready);
     meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
     const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
     held.update(camera, pose, recoil);

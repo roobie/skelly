@@ -8,6 +8,7 @@ const SENSITIVITY = 0.0022;
 export const KEY_BINDINGS = {
   mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
+  leftHandAction: { code: 'Equal', label: '=' },
 } as const;
 
 export const isMenuOpeningKey = (code: string, debug: boolean, menuOpen: boolean): boolean =>
@@ -42,6 +43,8 @@ export class Input {
   rightMouseHeld = false;
   private primaryActionPressed = false;
   private primaryActionDown = false;
+  private leftHandActionPressed = false;
+  private leftHandActionDown = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -74,14 +77,25 @@ export class Input {
       if (e.code === 'KeyZ' && !e.repeat) {
         this.walking = !this.walking;
       }
+      if (e.code === KEY_BINDINGS.leftHandAction.code && !this.leftHandActionDown) {
+        this.leftHandActionPressed = true;
+        this.leftHandActionDown = true;
+      }
       this.held.add(e.code);
     });
-    globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
+    globalThis.addEventListener('keyup', (e) => {
+      this.held.delete(e.code);
+      if (e.code === KEY_BINDINGS.leftHandAction.code) {
+        this.leftHandActionDown = false;
+      }
+    });
     globalThis.addEventListener('blur', () => {
       this.held.clear();
       this.rightMouseHeld = false;
       this.primaryActionDown = false;
       this.primaryActionPressed = false;
+      this.leftHandActionDown = false;
+      this.leftHandActionPressed = false;
     });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
@@ -130,11 +144,17 @@ export class Input {
       sprint: this.held.has('ShiftLeft') || this.held.has('ShiftRight'),
       walk: this.walking,
       primaryAction: this.primaryActionPressed,
+      leftHandAction: this.leftHandActionPressed,
     };
   }
 
   /** Called once after the player tick samples its intent. */
   consumePrimaryAction(): void {
     this.primaryActionPressed = false;
+  }
+
+  /** Called once after the player tick samples the left-hand action. */
+  consumeLeftHandAction(): void {
+    this.leftHandActionPressed = false;
   }
 }

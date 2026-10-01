@@ -80,10 +80,13 @@ export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
-  /** Clears edge-triggered intent after the player tick samples it. */
+  /** Clears edge-triggered intents after the player tick samples them. */
   consumePrimaryAction?: () => void;
-  /** Runs the primary action on the player-tick boundary, with that tick's aim/state. */
+  consumeLeftHandAction?: () => void;
+  /** Runs the right-hand action on the player-tick boundary, with that tick's aim/state. */
   primaryAction?: () => void;
+  /** Runs the left-hand action on the player-tick boundary, with that tick's aim/state. */
+  leftHandAction?: () => void;
   /** Radians; 0 looks down -z. */
   yaw: () => number;
   pitch: () => number;
@@ -360,6 +363,17 @@ export const createSession = (options: SessionOptions) => {
   });
   let lastZombieStep = 0;
   let lastPlayerStep = 0;
+  const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
+    if (!moving) {
+      return;
+    }
+    if (intent.primaryAction) {
+      controls.primaryAction?.();
+    }
+    if (intent.leftHandAction) {
+      controls.leftHandAction?.();
+    }
+  };
   sim.scheduler.register({
     id: 'zombies',
     rate: ZOMBIE_RATE,
@@ -380,10 +394,9 @@ export const createSession = (options: SessionOptions) => {
       const moving = controls.active() && !compression.locksInput;
       const intent = moving ? controls.intent() : IDLE;
       controls.consumePrimaryAction?.();
+      controls.consumeLeftHandAction?.();
       zombieSystem.tickPlayerAction(dt, heldItemUids());
-      if (moving && intent.primaryAction) {
-        controls.primaryAction?.();
-      }
+      dispatchPlayerActions(moving, intent);
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }

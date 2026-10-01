@@ -286,10 +286,14 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
 - What you hold shows in first person, what you drop lies on the floor as a
   pile, and furniture holds what its grid shows.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
-  with the thing you're holding." For two hands, use the right-hand item's action if it has one;
-  otherwise the left-hand item's action. Empty hands use fists; an unsupported
-  held item gives a hint, not a punch. Melee keeps its current swing, and a
-  light switches through the existing instant-use path.
+  with the thing you're holding." The initial hand mapping (BR, 2026-10-01; open
+  to revision) is left click = right hand and `=` = left hand. A right-hand item
+  uses its action; if that hand is empty, jab with the right fist. `=` uses the
+  left-hand item's action, or does nothing when empty. Fists alternate only when
+  both hands are empty; never punch with a hand holding an item. Unsupported
+  held items give a hint. Melee keeps its current swing, and a light uses the
+  existing instant-use path. The hand mapping is `ACTION_HAND_BINDINGS`; item
+  capabilities are selected from content data.
 - **Long actions gather what they need.** Crafting, repair, disassembly and
   reading take their items from within reach (your hands, what you wear, and
   piles and furniture within 2 m) at the start. The gathering time is part of

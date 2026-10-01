@@ -116,8 +116,7 @@ export class HeldItems {
       }
       const held = this.heldByHand.get(side);
       if (held) {
-        held.position.set(...transform.offset);
-        held.quaternion.copy(this.poseRotation);
+        this.placeHeldItem(held, arm, transform);
       }
     }
     this.camera.quaternion.copy(main.quaternion);
@@ -142,6 +141,17 @@ export class HeldItems {
     this.handPosition.set(...transform.offset).applyQuaternion(this.relativeCamera);
     transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
     this.poseRotation.premultiply(this.relativeCamera);
+  }
+
+  private placeHeldItem(held: Object3D, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
+    if (arm.parent === this.torso) {
+      this.handPosition.copy(arm.position).applyQuaternion(this.torso.quaternion);
+      held.position.copy(this.handPosition);
+      held.quaternion.copy(this.torso.quaternion).multiply(arm.quaternion);
+      return;
+    }
+    held.position.set(...transform.offset);
+    held.quaternion.copy(this.poseRotation);
   }
 
   private placeTorsoArm(side: HandSide, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
