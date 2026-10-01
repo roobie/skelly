@@ -445,7 +445,7 @@ export const antiMateriel: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'heavy-receiver', params: { action: 'auto', feed: 'box', bore: 'L' } },
-    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
+    { id: 'bolt-carrier', family: 'heavy-bolt-carrier' },
     { id: 'lower', family: 'heavy-lower' },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'shroud', family: 'barrel-shroud', params: { length: ['M', 'L'] } },

@@ -5,7 +5,7 @@
   "root": "receiver",
   "parts": {
     "receiver": { "family": "heavy-receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
-    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
+    "bolt-carrier": { "family": "heavy-bolt-carrier" },
     "lower": { "family": "heavy-lower" },
     "barrel": { "family": "barrel", "params": { "length": "L" } },
     "shroud": { "family": "barrel-shroud", "params": { "length": "L" } },

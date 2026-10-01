@@ -41,11 +41,12 @@ through these single-line registrations:
 | `carry-handle` | `carry-handle` | none | Four posts and a grip bar on the receiver rail; carries a `hand-room` keep-out |
 | `recoil-stock` | `stock` | `length` M/L (16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
 | `monopod` | `monopod` | `pose` folded/deployed | Mounts under the butt |
-| `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 23.5u long instead of 16u, sized for the .50 round (see "Magazine and action") |
+| `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action") |
+| `heavy-bolt-carrier` | `bolt-carrier` | none | A plain 12.5u block, as long as the ejection port less its margins; moves along the receiver's `bolt-travel` keep-out |
 | `heavy-lower` | `lower` | none | The shared conventional lower with a 13.5u x 4.5u magazine well; trigger guard and grip keep their distances from the well |
 | `heavy-magazine` | `magazine` | none | 10-round .50 BMG box magazine, 13 x 4 x 10.75u |
 
-Reused as they are: `bolt-carrier` (barrett), `barrel` (standard profile, length L), `grip`, `sight` and the shroud rail.
+Reused as they are: `barrel` (standard profile, length L), `grip`, `sight` and the shroud rail.
 No param value of an existing family was added or changed.
 
 `heavy-receiver`, `heavy-lower` and `heavy-magazine` are their own families because the shared
@@ -53,7 +54,7 @@ ones are sized for 5.56 and 7.62 rounds: the `magazine` family's section is 5.5u
 `lower`'s well is built around it, and the `receiver` is 16u long. Each plays its shared role
 (`PartDef.family`), so `feed-match`, `magazine-well-axis`, `trigger-guard`, the keep-outs and the
 palette treat them as a receiver, a lower and a magazine. Their registry keys (`heavy-*`) are what the
-design files name. `bolt-carrier` and `barrel` read `action` and `bore` from the heavy receiver as
+design files name. `barrel` reads `bore` from the heavy receiver as
 they do from the shared one.
 
 `recoil-stock` is its own family because the monopod needs a mount on the stock
@@ -61,9 +62,9 @@ and the shared `stock` has no such port. It plays the `stock` role so palette an
 rules treat it as a stock; it is not tagged as a firing grip (the pistol grip is).
 
 Param value lists are kept short on purpose: `test/parts.test.ts` builds every
-combination of every family's params. The new families add 30 cases there (brake
+combination of every family's params. The new families add 31 cases there (brake
 3 bores x 2 profiles x 2 lengths = 12, shroud 3, bipod 3 x 2 = 6, handle 1,
-recoil stock 2, monopod 2, heavy receiver 2 bores, heavy lower 1, heavy magazine 1).
+recoil stock 2, monopod 2, heavy receiver 2 bores, heavy lower 1, heavy magazine 1, heavy bolt carrier 1).
 The brake's `bore` and `profile` are inherited from the barrel, so their lists must
 cover the values the barrel can hand over.
 
@@ -121,17 +122,16 @@ manufacturer specification.
 
 | | Reference | In gungen |
 | --- | --- | --- |
-| Overall length | 48 to 57 in (1219 to 1448 mm; 106 to 126u) | 102.5u, about 1179 mm: stock L 22 + pad 1.5, receiver 23.5, barrel L 46 starting 1.5u inside the receiver, brake L 11 |
+| Overall length | 48 to 57 in (1219 to 1448 mm; 106 to 126u) | 109u, about 1254 mm: stock L 22 + pad 1.5, receiver 30, barrel L 46 starting 1.5u inside the receiver, brake L 11 |
 | Barrel length | 20 to 29 in (508 to 737 mm; 44 to 64u) | 46u, about 529 mm: the largest existing barrel class, at the short end of the range |
 | Magazine | detachable box, 5 or 10 rounds | `heavy-magazine`, 10 rounds, 13 x 4 x 10.75u (about 150 x 46 x 124 mm); derived below |
 | Features | folding carrying handle and bipod; detachable rear monopod under the butt; recoil pad; two-chamber muzzle brake; stamped upper and lower receiver; barrel recoils about 1 in | handle, bipod, monopod, pad, two-chamber brake, stamped-box shroud; recoil travel itself is not modelled |
 
-The rifle is about 3% shorter than the shortest published overall length (it was
-9% shorter before the receiver was lengthened for the .50 round, and 2% before the
-barrel's breech was moved back into the receiver). Closing the rest
-would need a barrel class longer than `L`, which every family that reads
-`barrel.length` (handguard, tube, gas block) would have to learn. It was left out
-to keep existing families untouched.
+The rifle is now inside the published range, about 3% above its shortest end (it was
+9% below it before the receiver was lengthened for the .50 round). The barrel is
+still the largest existing class (`L`), at the short end of its own range; a longer
+one would need every family that reads `barrel.length` (handguard, tube, gas block)
+to learn it, so it was left out to keep existing families untouched.
 
 ## Magazine and action
 
@@ -192,15 +192,20 @@ long enough for the cartridge:
 
 | | Derivation | u | mm |
 | --- | --- | ---: | ---: |
-| Length | 1.25u behind the lower's rearmost frame (-22.25u), the margin the shared receiver leaves behind its lower | 23.5 | 270 |
 | Bolt face at rest | over the magazine's front face (-8.0 well centre + 6.5 half depth) | -1.5 | -17 |
 | Barrel port (breech) | at the bolt face: the barrel reaches back 1.5u into the receiver through a ring at the front face, so the chamber starts at the bolt and the 8.64u case lies in the barrel | -1.5 | -17 |
-| Carrier at rest | face at -1.5, the `barrett` carrier is 6u long, so its centre is 3u behind the face | -4.5 | -52 |
+| Carrier length | `heavy-bolt-carrier`: the magazine's depth (13u) less the 0.25u ejection margin at each end | 12.5 | 144 |
+| Carrier at rest | face at -1.5, so its centre is half a carrier length (6.25u) behind the face | -7.75 | -89 |
+| Ejection port | the carrier's face bounds at rest plus 0.25u on every side, the rule `ejectionPortWindow` in `parts.ts` applies to every receiver (the keep-out and the opening share the definition): x from -14.25 to -1.25 (front edge 0.25u ahead of the bolt face, over the well's front face), y from 0 to 2. 13u long, so the 8.64u case passes with room to spare | 13.0 | 149.5 |
 | Carrier travel | back until the face is 2.5u behind the magazine's rear wall (-14.5u), at -17.0, so the next round can rise: 17.0 - 1.5 | 15.5 | 178 |
-| Ejection port | one case length plus 0.25u at each end, up to the grid: 8.64 + 0.5; front edge 0.25u ahead of the bolt face (-1.25, the well's front face), rear edge at -10.5 | 9.25 | 106.4 |
+| Length | the longer of two needs: 1.25u behind the lower's rearmost frame (-22.25u, giving 23.5), and room for the carrier parked behind the magazine (its rear at -29.5u, plus the 0.5u end wall, giving 30.0) | 30.0 | 345 |
 
-The rail has 11 slots (the shared receiver's 7), starting 1.5u in from the rear face. The sight is on
-slot 5 and the carry handle on slot 8, which puts both at the same stations (x = -12 and -6) as before.
+The carrier is its own family because the shared `barrett` envelope is 6u long and cannot change. Its
+face bounds are what size the port; the margin `HEAVY_EJECTION_PORT_MARGIN_U` repeats
+`EJECTION_PORT_MARGIN_U` (it cannot be imported without a cycle) and a test pins the copy.
+
+The rail has 11 slots (the shared receiver's 7) at x = -22 ... -2, the front 22u of the receiver. The sight
+is on slot 5 and the carry handle on slot 8 (x = -12 and -6) as before.
 
 **Not modelled.** The feed opening in the receiver floor (the shared `standard` section has none
 either), feed lips, and the magazine's follower and rounds.
@@ -216,5 +221,5 @@ either), feed lips, and the magazine's follower and rounds.
   the height argument above; Barrett's product photograph of the M82A1 (barrett.net, "model-82a1-product-img.jpg")
   shows a magazine visibly deeper than it hangs below the receiver, read by eye and not measured. The
   stagger geometry is the close-packed limit, not a measured magazine.
-- The receiver length (23.5u) and the bolt travel are derived from the cartridge and the shared
+- The receiver length (30u), the carrier length and the bolt travel are derived from the cartridge and the shared
   lower's layout, not from a published dimension of the rifle.

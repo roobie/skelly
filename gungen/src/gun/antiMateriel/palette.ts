@@ -2,8 +2,8 @@
 // each gain one line. Pure data: no imports, so the palette can import it from anywhere.
 
 /**
- * Role-only geometry-check colours, keyed by `PartDef.family`. The recoil stock and the heavy receiver, lower and
- * magazine reuse the `stock`, `receiver`, `lower` and `magazine` roles.
+ * Role-only geometry-check colours, keyed by `PartDef.family`. The recoil stock and the heavy receiver, lower,
+ * magazine and bolt carrier reuse the `stock`, `receiver`, `lower`, `magazine` and `bolt-carrier` roles.
  */
 export const ANTI_MATERIEL_FAMILY_COLORS: Readonly<Record<string, number>> = {
   'muzzle-brake': 0x3b_41_49,
@@ -24,6 +24,7 @@ export const ANTI_MATERIEL_ROLE_SLOTS: Readonly<Record<string, string>> = {
   'heavy-receiver': 'metal',
   'heavy-lower': 'metal',
   'heavy-magazine': 'metal',
+  'heavy-bolt-carrier': 'metal',
 };
 
 export const ANTI_MATERIEL_SHADES: Readonly<Record<string, number>> = {
@@ -36,6 +37,7 @@ export const ANTI_MATERIEL_SHADES: Readonly<Record<string, number>> = {
   'heavy-receiver': 1,
   'heavy-lower': 0.83,
   'heavy-magazine': 0.48,
+  'heavy-bolt-carrier': 0.78,
 };
 
 /** Dark parkerized metal, tan furniture, black rubber pad and perforations. */

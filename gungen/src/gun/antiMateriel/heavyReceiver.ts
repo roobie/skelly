@@ -1,7 +1,7 @@
 import { boxFromMinMax } from '../../core/geometry.ts';
 import type { KeepOut, PartDef, PartFamily, PortDef, Solid } from '../../core/schema.ts';
-import { BMG_CASE_LENGTH_U, ceilTo } from './cartridge.ts';
 import { box, choice, NEG_X, NEG_Y, X, Y } from './common.ts';
+import { HEAVY_CARRIER_ENVELOPE, HEAVY_EJECTION_PORT_MARGIN_U } from './heavyBoltCarrier.ts';
 import { HEAVY_LOWER_REAR_X, HEAVY_WELL_CENTER_X } from './heavyLower.ts';
 import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';
 
@@ -10,41 +10,44 @@ import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';
  * 5u tall and 4u wide, rail on top, the same ports and keep-outs), but long enough for the cartridge. It plays the
  * `receiver` role and takes `action: auto`, `feed: box`, as `bolt-carrier` and the `feed-match` rule read them.
  *
- * Lengths follow the .50 BMG case (cartridge.ts), not the shared receiver's 16u:
+ * Lengths follow the magazine and the .50 BMG case (cartridge.ts), not the shared receiver's 16u:
  * - the bolt face rests over the magazine's front face, as on the real rifle where the action sits over the
  *   magazine. The barrel's breech reaches back to the bolt face (the barrel port is there, not at the front
  *   face), so the chamber, one case long, starts at the bolt and runs forward through the front ring into the
  *   barrel;
- * - the bolt carrier (a 6u block, as `bolt-carrier`'s barrett pattern builds it) rests with its face there and
- *   travels back until its face is 2.5u behind the magazine's rear wall, so the next round can rise;
- * - the ejection port is one case length plus 0.25u margins at each end, so a spent case can leave sideways; its
- *   front edge is 0.25u ahead of the bolt face, which puts it over the well's front face;
- * - the receiver ends 1.25u behind the lower's frame, the margin the shared receiver leaves behind its lower.
+ * - the bolt carrier (`heavy-bolt-carrier`, 12.5u long) rests with its face there and travels back until its face
+ *   is 2.5u behind the magazine's rear wall, so the next round can rise;
+ * - the ejection port is the carrier's face bounds at rest plus the ejection margin on every side, the definition
+ *   `ejectionPortWindow` in parts.ts gives every other receiver. That makes it as long as the magazine (13u) and
+ *   puts its front edge 0.25u ahead of the bolt face, over the well's front face. A 13u port passes the 8.64u case
+ *   with room to spare, so the case no longer sizes anything here;
+ * - the receiver is as long as the longer of two needs: 1.25u behind the lower's frame (the margin the shared
+ *   receiver leaves behind its lower), and room for the carrier parked behind the magazine.
  */
-const CARRIER_HALF_LENGTH = 3;
 const CARRIER_Y = 1;
 const MAGAZINE_FRONT_X = HEAVY_WELL_CENTER_X + HEAVY_MAGAZINE_DEPTH / 2;
 const MAGAZINE_REAR_X = HEAVY_WELL_CENTER_X - HEAVY_MAGAZINE_DEPTH / 2;
 const BOLT_FACE_X = MAGAZINE_FRONT_X;
-const CARRIER_REST_X = BOLT_FACE_X - CARRIER_HALF_LENGTH;
+const [CARRIER_REAR_OFFSET, CARRIER_FRONT_OFFSET] = HEAVY_CARRIER_ENVELOPE.x;
+const CARRIER_REST_X = BOLT_FACE_X - CARRIER_FRONT_OFFSET;
 const BOLT_PARK_CLEARANCE = 2.5;
 const BOLT_TRAVEL = BOLT_FACE_X - (MAGAZINE_REAR_X - BOLT_PARK_CLEARANCE);
-const PORT_MARGIN = 0.25;
-const PORT_LENGTH = ceilTo(BMG_CASE_LENGTH_U + 2 * PORT_MARGIN, 0.25);
-const PORT_FRONT_X = BOLT_FACE_X + PORT_MARGIN;
-const PORT_REAR_X = PORT_FRONT_X - PORT_LENGTH;
-const PORT_BOTTOM_Y = 0;
-const PORT_TOP_Y = 2;
+const [CARRIER_BOTTOM_OFFSET, CARRIER_TOP_OFFSET] = HEAVY_CARRIER_ENVELOPE.y;
+const PORT_FRONT_X = CARRIER_REST_X + CARRIER_FRONT_OFFSET + HEAVY_EJECTION_PORT_MARGIN_U;
+const PORT_REAR_X = CARRIER_REST_X + CARRIER_REAR_OFFSET - HEAVY_EJECTION_PORT_MARGIN_U;
+const PORT_BOTTOM_Y = CARRIER_Y + CARRIER_BOTTOM_OFFSET - HEAVY_EJECTION_PORT_MARGIN_U;
+const PORT_TOP_Y = CARRIER_Y + CARRIER_TOP_OFFSET + HEAVY_EJECTION_PORT_MARGIN_U;
 
-export const HEAVY_RECEIVER_LENGTH = -HEAVY_LOWER_REAR_X + 1.25;
+const WALL = 0.5;
+const PARKED_CARRIER_REAR_X = BOLT_FACE_X - BOLT_TRAVEL + CARRIER_REAR_OFFSET - CARRIER_FRONT_OFFSET;
+export const HEAVY_RECEIVER_LENGTH = Math.max(-HEAVY_LOWER_REAR_X + 1.25, -PARKED_CARRIER_REAR_X + WALL);
 const HALF_HEIGHT = 2.5;
 const HALF_WIDTH = 2;
-const WALL = 0.5;
 const INNER_HALF_HEIGHT = HALF_HEIGHT - WALL;
 const INNER_HALF_WIDTH = HALF_WIDTH - WALL;
 const RAIL_SLOT_PITCH = 2;
-/** The rail starts 1.5u in from the rear face and its last slot sits 2u behind the front face. */
-const RAIL_START_X = 1.5 - HEAVY_RECEIVER_LENGTH;
+/** The rail keeps the 11 slots it had when the receiver was shorter, at x = -22 ... -2 (the front 22u). */
+const RAIL_START_X = -22;
 const RAIL_SLOTS = (-2 - RAIL_START_X) / RAIL_SLOT_PITCH + 1;
 
 /** The charging handle rides on the side opposite the ejection port, ahead of the carrier's centre at rest. */

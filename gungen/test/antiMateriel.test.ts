@@ -5,6 +5,7 @@ import type { PartDef, PartFamily, Solid } from '../src/core/schema.ts';
 import { SHROUD_HALF_HEIGHT, SHROUD_HALF_WIDTH, SHROUD_LENGTH } from '../src/gun/antiMateriel/barrelShroud.ts';
 import { BIPOD_LEG_LENGTH } from '../src/gun/antiMateriel/bipod.ts';
 import { BMG_BASE_DIAMETER_U, BMG_CASE_LENGTH_U, BMG_OVERALL_LENGTH_U } from '../src/gun/antiMateriel/cartridge.ts';
+import { HEAVY_EJECTION_PORT_MARGIN_U } from '../src/gun/antiMateriel/heavyBoltCarrier.ts';
 import { HEAVY_GRIP_MOUNT_PROFILE, HEAVY_TRIGGER_GUARD } from '../src/gun/antiMateriel/heavyLower.ts';
 import {
   HEAVY_MAGAZINE_DEPTH,
@@ -14,7 +15,7 @@ import {
 } from '../src/gun/antiMateriel/heavyMagazine.ts';
 import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
+import { EJECTION_PORT_MARGIN_U, FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
 
 const family = (key: string): PartFamily => FAMILIES[key]!;
@@ -36,6 +37,7 @@ describe('registration', () => {
     ['heavy-receiver', 'receiver'],
     ['heavy-lower', 'lower'],
     ['heavy-magazine', 'magazine'],
+    ['heavy-bolt-carrier', 'bolt-carrier'],
   ])('gives %s the %s role, so the palette and the rules that look for that role treat it as one', (key, role) => {
     expect(family(key).build({}).family).toBe(role);
   });
@@ -46,6 +48,18 @@ describe('.50 BMG magazine, well and action', () => {
   const lower = family('heavy-lower').build({});
   const receiver = family('heavy-receiver').build({ action: 'auto', feed: 'box', bore: 'L' });
   const extent = (solid: Solid, axis: 0 | 1 | 2) => bounds(solid).max[axis]! - bounds(solid).min[axis]!;
+  const carrier = family('heavy-bolt-carrier').build({});
+  const carrierExtent = (axis: 0 | 1 | 2) => ({
+    min: Math.min(...carrier.solids.map((solid) => bounds(solid).min[axis]!)),
+    max: Math.max(...carrier.solids.map((solid) => bounds(solid).max[axis]!)),
+  });
+  const receiverKeepOutBounds = (id: string) => {
+    const { box } = receiver.keepOuts.find((keepOut) => keepOut.id === id)!;
+    return {
+      min: box.center.map((c, axis) => c - box.half[axis]!) as [number, number, number],
+      max: box.center.map((c, axis) => c + box.half[axis]!) as [number, number, number],
+    };
+  };
 
   it('sizes the magazine from the round: deeper than the round is long, in two columns, shorter than ten cases stacked', () => {
     const body = solidById(magazine, 'body');
@@ -104,28 +118,31 @@ describe('.50 BMG magazine, well and action', () => {
     const [barrelX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
     const [wellX] = lower.ports.find(({ id }) => id === 'magazine')!.pos;
     const magazineFront = wellX + HEAVY_MAGAZINE_DEPTH / 2;
-    const carrier = family('bolt-carrier').build({ pattern: 'barrett' });
-    const carrierFront = Math.max(...carrier.solids.map((solid) => bounds(solid).max[0]));
     const [restX] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
-    const ejection = bounds({ id: 'e', kind: 'box', box: receiver.keepOuts.find(({ id }) => id === 'ejection')!.box });
-    expect(restX + carrierFront).toBe(magazineFront);
+    const ejection = receiverKeepOutBounds('ejection');
+    expect(restX + carrierExtent(0).max).toBe(magazineFront);
     expect(barrelX).toBe(magazineFront);
     expect(ejection.max[0] - magazineFront).toBeCloseTo(0.25);
   });
 
-  it('gives the bolt room for the round: a port longer than the case, a park behind the magazine', () => {
-    const carrier = family('bolt-carrier').build({ pattern: 'barrett' });
-    const carrierX = [
-      Math.min(...carrier.solids.map((solid) => bounds(solid).min[0])),
-      Math.max(...carrier.solids.map((solid) => bounds(solid).max[0])),
-    ] as const;
-    const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
-    const travel = receiver.keepOuts.find(({ id }) => id === 'bolt-travel')!;
-    const parkedX = travel.box.center[0] - travel.box.half[0];
+  it("derives the ejection port from the carrier's face bounds plus the margin every receiver uses", () => {
+    const [restX, carrierY] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
+    const ejection = receiverKeepOutBounds('ejection');
+    expect(HEAVY_EJECTION_PORT_MARGIN_U).toBe(EJECTION_PORT_MARGIN_U);
+    expect(ejection.min[0]).toBeCloseTo(restX + carrierExtent(0).min - EJECTION_PORT_MARGIN_U);
+    expect(ejection.max[0]).toBeCloseTo(restX + carrierExtent(0).max + EJECTION_PORT_MARGIN_U);
+    expect(ejection.min[1]).toBeCloseTo(carrierY + carrierExtent(1).min - EJECTION_PORT_MARGIN_U);
+    expect(ejection.max[1]).toBeCloseTo(carrierY + carrierExtent(1).max + EJECTION_PORT_MARGIN_U);
+    // As long as the magazine, so the 8.64u case passes with room to spare.
+    expect(ejection.max[0] - ejection.min[0]).toBeCloseTo(HEAVY_MAGAZINE_DEPTH);
+    expect(ejection.max[0] - ejection.min[0]).toBeGreaterThan(BMG_CASE_LENGTH_U);
+  });
+
+  it('parks the carrier behind the magazine so the next round can rise, inside the receiver', () => {
+    const travel = receiverKeepOutBounds('bolt-travel');
     const magazineRearWall = lower.ports.find(({ id }) => id === 'magazine')!.pos[0] - HEAVY_MAGAZINE_DEPTH / 2;
-    expect(2 * ejection.box.half[0]).toBeGreaterThan(BMG_CASE_LENGTH_U);
-    expect(parkedX + carrierX[1]).toBeLessThan(magazineRearWall);
-    expect(parkedX + carrierX[0]).toBeGreaterThanOrEqual(-HEAVY_RECEIVER_LENGTH);
+    expect(travel.min[0] + carrierExtent(0).max).toBeLessThan(magazineRearWall);
+    expect(travel.min[0] + carrierExtent(0).min).toBeGreaterThanOrEqual(-HEAVY_RECEIVER_LENGTH);
   });
 });
 

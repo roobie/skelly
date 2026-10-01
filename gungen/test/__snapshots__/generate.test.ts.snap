@@ -469,10 +469,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         },
       },
       "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": {
-          "pattern": "barrett",
-        },
+        "family": "heavy-bolt-carrier",
       },
       "brake": {
         "family": "muzzle-brake",
@@ -586,10 +583,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         },
       },
       "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": {
-          "pattern": "barrett",
-        },
+        "family": "heavy-bolt-carrier",
       },
       "brake": {
         "family": "muzzle-brake",
@@ -706,10 +700,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         },
       },
       "bolt-carrier": {
-        "family": "bolt-carrier",
-        "params": {
-          "pattern": "barrett",
-        },
+        "family": "heavy-bolt-carrier",
       },
       "brake": {
         "family": "muzzle-brake",

@@ -5,6 +5,7 @@ import type { PartFamily, Rule } from '../../core/schema.ts';
 import { barrelShroud } from './barrelShroud.ts';
 import { bipod } from './bipod.ts';
 import { carryHandle } from './carryHandle.ts';
+import { heavyBoltCarrier } from './heavyBoltCarrier.ts';
 import { heavyLower } from './heavyLower.ts';
 import { heavyMagazine } from './heavyMagazine.ts';
 import { heavyReceiver } from './heavyReceiver.ts';
@@ -23,6 +24,7 @@ export const ANTI_MATERIEL_FAMILIES: Readonly<Record<string, PartFamily>> = {
   'heavy-receiver': heavyReceiver,
   'heavy-lower': heavyLower,
   'heavy-magazine': heavyMagazine,
+  'heavy-bolt-carrier': heavyBoltCarrier,
 };
 
 export const ANTI_MATERIEL_RULES: readonly Rule[] = [shroudFit, bipodGroundClearance];
