@@ -31,7 +31,7 @@ const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => 
 describe('visible action details', () => {
   it('keeps the ejection aperture and moves the carrier out of the receiver', () => {
     const apertures = [
-      { def: receiver('auto', 'rear-top'), halfLength: 1.75, halfHeight: 1 },
+      { def: receiver('auto', 'rear-top'), halfLength: 2.25, halfHeight: 1 },
       { def: receiver('pump'), halfLength: 3.375, halfHeight: 1 },
       {
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),

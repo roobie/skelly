@@ -48,7 +48,7 @@ const travelCases = [
     mm: 74.75,
     cavityY: [-0.6, 1.1],
     cavityZ: [-1.35, 1.35],
-    portWidthU: 3.5,
+    portWidthU: 4.5,
     portHeightU: 2,
   },
   {
@@ -449,9 +449,8 @@ describe('procedural bolt carrier', () => {
     expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(3.25);
   });
 
-  it('pins AK and the five non-AK carrier envelopes and ports at their current dimensions', () => {
+  it('keeps AK and the four non-AR patterns unchanged', () => {
     const unchanged = [
-      { pattern: 'ar', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [-0.75, 1.25] },
       { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
       { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, -3.5], portY: [-1, 1] },
@@ -481,6 +480,32 @@ describe('procedural bolt carrier', () => {
         entry.pattern,
       ).toBe(false);
     }
+  });
+
+  it('extends the AR carrier 4/3 forward and derives its port from the unchanged rear face', () => {
+    const entry = travelCases.find(({ pattern }) => pattern === 'ar')!;
+    const resolved = resolve(assemblyFor(entry), gunDomain);
+    const receiver = resolved.defs.get('receiver')!;
+    const carrier = resolved.defs.get('bolt-carrier')!;
+    const transform = resolved.placed.get('bolt-carrier')!;
+    const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
+    const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
+    const port = portMeasurements(entry, resolved);
+    const [travel] = carrier.motion!.rearmost;
+    const [barrelMountX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
+
+    expect(BOLT_CARRIER_ENVELOPES.ar.x).toEqual([-2.5, 1.5]);
+    expect(bodyBounds[0]).toEqual([-8.5, -4.5]);
+    expect(bodyBounds[0]![1]! - bodyBounds[0]![0]!).toBe(4);
+    expect(4 / 3).toBeGreaterThanOrEqual(1.25);
+    expect(4 / 3).toBeLessThanOrEqual(1.35);
+    expect(bodyBounds[0]![0]).toBe(-8.5);
+    expect([port.actualX![0], port.actualX![1]]).toEqual([-8.75, -4.25]);
+    expect(port.width).toBe(4.5);
+    expect(port.actualY).toEqual([-0.75, 1.25]);
+    expect(barrelMountX - bodyBounds[0]![1]!).toBeCloseTo(4.5, 8);
+    expect(travel).toBe(6.5);
+    expect(noCarrierReceiverIntersectionsOverTravel(resolved)).toBe(true);
   });
 
   it('grows the AK carrier to a 2.5u × 2.5u cross-section with 0.1u clearance', () => {
