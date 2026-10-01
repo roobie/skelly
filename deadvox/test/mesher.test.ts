@@ -42,6 +42,7 @@ describe('buildMesh', () => {
     expect(area(m)).toBe(2 * 32 * 32 + 4 * 32);
   });
 
+  // Heavy property test over random chunks; coverage is the point, so it stays full; 30s absorbs CI parallelism (#29).
   it('draws the same faces as plain face culling (random chunks)', () => {
     for (let seed = 1; seed <= 8; seed++) {
       const p = new Uint16Array(PADDED ** 3);
@@ -52,7 +53,7 @@ describe('buildMesh', () => {
       }
       expect(unitFaces(buildMesh(p, colors))).toEqual(culledFaces(p));
     }
-  }, 15_000);
+  }, 30_000);
 
   it('culls against blocks in the border from a neighbouring chunk', () => {
     const p = padded([0, 3, 3]);

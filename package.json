@@ -6,7 +6,8 @@
     "check": "biome check",
     "fix": "biome check --write",
     "ci": "biome ci",
-    "test:site": "node --test test/site-launcher.test.mjs"
+    "test:site": "node --test test/site-launcher.test.mjs",
+    "prepare": "sh .githooks/prepare"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14"
