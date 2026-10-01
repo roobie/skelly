@@ -11,7 +11,7 @@
 // `selectShadowCasters`), draws one map per light through it, and leaves the main pass's already
 // queued draw list alone. A light's `castShadow` stays true while its setting is on, so day and
 // night don't change shader programs; the sun just fades `shadow.intensity` to 0 and stops redrawing
-// its map. The flashlight's `castShadow` follows its beam being on and bright (flashlight.ts), a second
+// its map (but a casting light with no map yet always gets one allocated by three's pass, `needsMap`). The flashlight's `castShadow` follows its beam being on and bright (flashlight.ts), a second
 // program variant that `warmUp` compiles in advance.
 //
 // The held items are drawn from their own scene (hands.ts) with lights that don't cast, so they are
@@ -95,6 +95,17 @@ export const withinRange =
   (at: Vector3, radius: number) =>
   (box: Box3): boolean =>
     box.distanceToPoint(at) <= radius;
+
+/** Caster filter that picks nothing. */
+const noBoxes = (): boolean => false;
+
+/**
+ * Whether `light` casts but has no shadow map yet. three.js allocates the map (a depth texture with a compare
+ * function, which `sampler2DShadow` needs) only inside its own `shadowMap.render`, so every such light must go
+ * through it before the main pass, whether or not we want its map redrawn this frame.
+ */
+export const needsMap = (light: { castShadow: boolean; shadow: { map: unknown } }): boolean =>
+  light.castShadow && light.shadow.map === null;
 
 type DrawMaps = (lights: Light[], scene: Scene, camera: Camera) => void;
 
@@ -276,6 +287,14 @@ export class Shadows {
       return;
     }
     const { light, torch, meshes } = this;
+    if (!this.sunDue && needsMap(light)) {
+      // A casting light whose map three.js hasn't allocated yet (night or sun shadows just switched on):
+      // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
+      // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
+      // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
+      this.sunCasters = meshes.selectShadowCasters(noBoxes);
+      draw([light], scene, camera);
+    }
     if (this.sunDue) {
       light.shadow.updateMatrices(light);
       this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()));

@@ -27,6 +27,7 @@ import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import {
   IDLE_REFRESH_EVERY,
   inFrustum,
+  needsMap,
   Shadows,
   SUN_MAP_SIZE,
   snapToTexels,
@@ -219,6 +220,9 @@ describe('Shadows', () => {
         type: 0,
         render(lights: Light[], _scene: Scene, view: Camera) {
           for (const light of lights) {
+            // three.js allocates a casting light's map inside this call.
+            const { shadow } = light as DirectionalLight | SpotLight;
+            shadow.map ??= {} as never;
             draws.push({ light, seesFigure: figure.layers.test(view.layers) });
           }
         },
@@ -315,7 +319,25 @@ describe('Shadows', () => {
     expect(frame(0.2)).toHaveLength(1);
   });
 
-  it('draws no sun map with sun shadows off, however bright the sun', () => {
+  it("has three.js allocate a casting light's map before the first main pass, even at night, with no casters", () => {
+    const { frame, light, shadows, torch } = setup();
+    expect(needsMap(light)).toBe(true);
+    // Night from the first frame: no real draw is due, but the map must exist or the programs bind a placeholder.
+    expect(frame(0)).toEqual([light]);
+    expect(light.shadow.map).not.toBeNull();
+    expect(shadows.casters.sun).toBe(0);
+    expect(needsMap(light)).toBe(false);
+    expect([frame(0), frame(0)]).toEqual([[], []]);
+    // Day comes: the real draw follows, with casters.
+    expect(frame(0.5)).toEqual([light]);
+    expect(shadows.casters.sun).toBe(2);
+    // The flashlight's map is allocated through the same pass the first frame it casts.
+    torch.castShadow = true;
+    expect(frame(0.5)).toContain(torch);
+    expect(torch.shadow.map).not.toBeNull();
+  });
+
+  it('draws no sun map with sun shadows off, however bright the sun, and allocates one when they come on', () => {
     const { shadows, frame, light } = setup();
     shadows.setSun(false);
     expect(light.castShadow).toBe(false);
@@ -323,6 +345,10 @@ describe('Shadows', () => {
     shadows.setSun(true);
     expect(light.castShadow).toBe(true);
     expect(frame(1)).toHaveLength(1);
+    // Switched off and on again at night: the map exists already, so nothing is drawn.
+    shadows.setSun(false);
+    shadows.setSun(true);
+    expect(frame(0)).toEqual([]);
   });
 
   it('picks sun casters by the box around the player, including chunks behind them, and drops far ones', () => {
@@ -337,6 +363,8 @@ describe('Shadows', () => {
     const { frame, torch, draws, shadows } = setup();
     torch.position.set(0, 1.6, 0);
     torch.castShadow = false;
+    frame(0); // the sun's map is allocated here, empty
+    draws.length = 0;
     frame(0);
     expect(draws).toHaveLength(0);
     torch.castShadow = true;
