@@ -3,10 +3,13 @@ name: lint
 # Biome over the whole repo: formatting, lint and import order (see biome.jsonc).
 # Subproject dependencies are installed so module-graph rules can resolve imports.
 
+# Markdown-only changes skip it: Biome processes no Markdown, and the site test reads none.
 on:
   push:
     branches: [main]
+    paths-ignore: ['**/*.md']
   pull_request:
+    paths-ignore: ['**/*.md']
 
 jobs:
   site-launcher:

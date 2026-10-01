@@ -1,11 +1,23 @@
 name: deadvox
 
+# Markdown-only changes skip this workflow, except TROUBLESHOOTING.md, whose generated key
+# table test/debugActions.test.ts checks against the code. Later patterns override earlier ones.
 on:
   push:
     branches: [main]
-    paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
+    paths:
+      - 'deadvox/**'
+      - 'mobgen/src/**'
+      - '!**/*.md'
+      - 'deadvox/TROUBLESHOOTING.md'
+      - '.github/workflows/deadvox.yml'
   pull_request:
-    paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
+    paths:
+      - 'deadvox/**'
+      - 'mobgen/src/**'
+      - '!**/*.md'
+      - 'deadvox/TROUBLESHOOTING.md'
+      - '.github/workflows/deadvox.yml'
   workflow_dispatch: {}
 
 jobs:
