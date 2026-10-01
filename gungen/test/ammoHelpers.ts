@@ -185,6 +185,18 @@ const walk = (root: Json, segments: readonly string[]): Json => {
   return node;
 };
 
+/** Whether `path` leads to a field of `root`, a field holding null included. */
+export const hasPath = (root: JsonObject, path: string): boolean => {
+  let node: Json = root;
+  for (const segment of tokens(path)) {
+    if (node === null || typeof node !== 'object' || !(segment in node)) {
+      return false;
+    }
+    node = (node as JsonObject)[segment] as Json;
+  }
+  return true;
+};
+
 export const setPath = (root: JsonObject, path: string, value: Json): void => {
   const segments = tokens(path);
   (walk(root, segments.slice(0, -1)) as JsonObject)[segments.at(-1) as string] = value;
