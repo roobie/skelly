@@ -81,8 +81,15 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const HTTP_URL = /^https?:\/\//;
 
-const isCalendarDate = (text: string): boolean =>
-  ISO_DATE.test(text) && new Date(`${text}T00:00:00Z`).toISOString().slice(0, 10) === text;
+// Date.UTC rolls an impossible day over (month 13, Feb 30), so a round trip catches those.
+const isCalendarDate = (text: string): boolean => {
+  if (!ISO_DATE.test(text)) {
+    return false;
+  }
+  const [year, month, day] = text.split('-').map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+};
 
 const sourceDocumentIssues = (cartridge: Cartridge): CartridgeIssue[] =>
   Object.entries(cartridge.sources).flatMap(([id, source]) => {
