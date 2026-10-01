@@ -39,12 +39,34 @@ export class Input {
   /** Toggled with Z: walk instead of jog. */
   walking = false;
   menuPointer = false;
+  rightMouseHeld = false;
+  private primaryActionPressed = false;
+  private primaryActionDown = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
 
   constructor(target: HTMLElement) {
     this.target = target;
+    target.addEventListener('mousedown', (event) => {
+      const mouse = event as MouseEvent;
+      if (mouse.button === 2) {
+        this.rightMouseHeld = true;
+      }
+      if (mouse.button === 0 && !this.primaryActionDown) {
+        this.primaryActionPressed = true;
+        this.primaryActionDown = true;
+      }
+    });
+    globalThis.addEventListener('mouseup', (event) => {
+      const { button } = event as MouseEvent;
+      if (button === 2) {
+        this.rightMouseHeld = false;
+      }
+      if (button === 0) {
+        this.primaryActionDown = false;
+      }
+    });
     globalThis.addEventListener('keydown', (e) => {
       if (e.code === 'Tab') {
         e.preventDefault();
@@ -55,7 +77,12 @@ export class Input {
       this.held.add(e.code);
     });
     globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
-    globalThis.addEventListener('blur', () => this.held.clear());
+    globalThis.addEventListener('blur', () => {
+      this.held.clear();
+      this.rightMouseHeld = false;
+      this.primaryActionDown = false;
+      this.primaryActionPressed = false;
+    });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
         return;
@@ -102,6 +129,12 @@ export class Input {
       jump: this.held.has('Space'),
       sprint: this.held.has('ShiftLeft') || this.held.has('ShiftRight'),
       walk: this.walking,
+      primaryAction: this.primaryActionPressed,
     };
+  }
+
+  /** Called once after the player tick samples its intent. */
+  consumePrimaryAction(): void {
+    this.primaryActionPressed = false;
   }
 }

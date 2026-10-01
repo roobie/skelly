@@ -76,6 +76,8 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
+  /** Edge-triggered primary action; the player tick consumes this once. */
+  primaryAction?: boolean;
   /** Speed factor from load and handling (paceFactor); 1 when absent. */
   pace?: number;
 }
