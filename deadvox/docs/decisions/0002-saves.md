@@ -230,6 +230,15 @@ are pinned by `test/simulationFingerprint.test.ts`:
   render-only edits do not invalidate saves.
 - `src/core/mesher.ts` and `src/core/pileLayout.ts`: render-worker mesh generation
   and pile mesh placement only; neither changes world, inventory, or save state.
+- `src/core/meshInput.ts`, `src/core/shell.ts` and `src/core/occlusion.ts`: what the
+  mesher reads from the world (the padded and wide block arrays copied out of
+  chunks, the surface-pattern ids) and the wide ambient occlusion's maths. Reached
+  from `world.ts` (which repeats the occlusion radius as `MESH_REACH`, checked
+  equal by a test, so it need not import `occlusion.ts`), `streamer.ts` and
+  `worldSetup.ts`; they only feed meshing.
+- `src/core/sideButton.ts`, imported by `src/game/play.ts`: which pointer events
+  count as the Mouse 5 side button and the de-duplication of one press; what the
+  button does is in the fingerprinted `src/core/lights.ts` and `play.ts`.
 - `src/render/{flashlight,furniture,hands,look,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
   imported by `src/game/play.ts`: mesh construction, draw transforms, and render
   interpolation only. The simulation never reads these objects back.
