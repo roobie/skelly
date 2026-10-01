@@ -240,7 +240,7 @@ const inventoryTemplate = (
             <div class="inv-slot inv-slot-worn" data-target=${slot.target}>
               <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
             </div>
-            ${slot.pockets?.map(pocketTemplate) ?? nothing}
+            ${slot.pockets?.length ? html`<div class="inv-pockets">${slot.pockets.map(pocketTemplate)}</div>` : nothing}
           </div>
         `,
       )}
@@ -362,7 +362,7 @@ export class InventoryScreen {
       .join(';');
     const containers = this.hooks
       .containers()
-      .map((e) => e.uid)
+      .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
     const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}`;
     if (key !== this.drawn) {

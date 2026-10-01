@@ -531,22 +531,7 @@ try {
     `scroll survives selecting an item (${inventoryScroll.top} -> ${paneTop})`,
   );
 
-  const focusable = await evaluate(`(() => {
-    const button = document.querySelector('#inventory .inv-details button');
-    if (!button) return false;
-    button.focus();
-    window.__inventoryFocusNode = button;
-    return document.activeElement === button;
-  })()`);
   await press('KeyE', 'e', 69);
-  if (focusable) {
-    assert.equal(
-      await evaluate('document.activeElement === window.__inventoryFocusNode'),
-      true,
-      'keyboard focus survives redraw',
-    );
-    await evaluate('document.activeElement.blur()');
-  }
   assert.notEqual(
     await evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
     true,

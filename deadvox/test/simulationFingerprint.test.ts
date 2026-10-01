@@ -92,6 +92,8 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(SIMULATION_EXCLUSIONS).toEqual(
       expect.arrayContaining([
@@ -120,6 +122,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
