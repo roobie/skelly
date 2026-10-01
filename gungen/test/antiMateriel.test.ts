@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { localSolidBounds } from '../src/core/geometry.ts';
+import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { PartDef, PartFamily, Solid } from '../src/core/schema.ts';
 import { SHROUD_HALF_HEIGHT, SHROUD_HALF_WIDTH, SHROUD_LENGTH } from '../src/gun/antiMateriel/barrelShroud.ts';
 import { BIPOD_LEG_LENGTH } from '../src/gun/antiMateriel/bipod.ts';
 import { BMG_BASE_DIAMETER_U, BMG_CASE_LENGTH_U, BMG_OVERALL_LENGTH_U } from '../src/gun/antiMateriel/cartridge.ts';
 import { HEAVY_GRIP_MOUNT_PROFILE, HEAVY_TRIGGER_GUARD } from '../src/gun/antiMateriel/heavyLower.ts';
-import { HEAVY_MAGAZINE_DEPTH, HEAVY_MAGAZINE_ROUNDS } from '../src/gun/antiMateriel/heavyMagazine.ts';
+import {
+  HEAVY_MAGAZINE_DEPTH,
+  HEAVY_MAGAZINE_LENGTH,
+  HEAVY_MAGAZINE_ROUNDS,
+  HEAVY_MAGAZINE_SLANT_DEGREES,
+} from '../src/gun/antiMateriel/heavyMagazine.ts';
 import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
@@ -49,6 +54,22 @@ describe('.50 BMG magazine, well and action', () => {
     expect(extent(body, 2)).toBeGreaterThan(1.8 * BMG_BASE_DIAMETER_U);
     expect(extent(body, 1)).toBeLessThan(HEAVY_MAGAZINE_ROUNDS * BMG_BASE_DIAMETER_U);
     expect(extent(body, 1)).toBeGreaterThan((HEAVY_MAGAZINE_ROUNDS / 2) * BMG_BASE_DIAMETER_U);
+  });
+
+  it('slants the bottom up toward the front by about 8 degrees, with the back face, top and depth unchanged', () => {
+    const body = solidById(magazine, 'body');
+    if (body.kind !== 'extruded-polygon') {
+      throw new Error('the heavy magazine body must be a convex extrusion');
+    }
+    expect(validateExtrudedPolygon(body.profile, body.z)).toBeUndefined();
+    const ys = body.profile.map(([, y]) => y);
+    const [backBottom, frontBottom] = ys as [number, number];
+    const degrees = (Math.atan((frontBottom - backBottom) / HEAVY_MAGAZINE_DEPTH) * 180) / Math.PI;
+    expect(Math.abs(degrees - HEAVY_MAGAZINE_SLANT_DEGREES)).toBeLessThan(0.5);
+    // Back face keeps the full height; the front face is the shorter one.
+    expect(bounds(body).max[1]! - backBottom).toBe(HEAVY_MAGAZINE_LENGTH);
+    expect(bounds(body).max[1]! - frontBottom).toBeLessThan(HEAVY_MAGAZINE_LENGTH);
+    expect(extent(body, 0)).toBe(HEAVY_MAGAZINE_DEPTH);
   });
 
   it('is deeper and wider than the rifle-cartridge magazine, and shorter than its L length (the review feedback)', () => {

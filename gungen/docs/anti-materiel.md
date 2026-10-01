@@ -169,6 +169,16 @@ and each column's rounds touch), so 10.75u is the least height that holds ten ca
 allowance is a modelling allowance, not a measured figure. The magazine stands 0.75u up into the well,
 as the shared magazine does.
 
+**Slanted bottom.** The magazine's bottom rises toward the front: the back face keeps the full 10.75u,
+the front face is 9.0u. The side profile is a convex extruded polygon along Z whose rise is the depth
+times tan 8 degrees (13 x 0.1405 = 1.83u), snapped to the 0.25u grid as the shared slanted magazine
+snaps its vertex (`snapAkGrid` in `parts.ts`), so the rise is 1.75u and the real angle 7.67 degrees. The
+top, the well and the two faces' x are unchanged, and the lowest point is still the back-bottom edge
+(y = -14.0), so `bipod-ground-clearance` and its fixture measure the same figures as before. The slant is a
+styling choice on the archetype, not derived from the cartridge: at the front end of the lowest case the
+floor has risen about 1.2u against the 0.75u base allowance, so it cuts about 0.45u into that case, which the
+round's narrowing toward the nose (neck 0.560 in against base 0.804 in) only partly explains.
+
 **Well and lower.** The well is the magazine plus 0.25u on every side (13.5u x 4.5u), with a 0.25u
 wall outside that, so the lower is 5u wide where the receiver is 4u. Its front face stays 1.25u behind the
 receiver's front face, where the shared lower has it, so the bipod's swing clears the magazine exactly as

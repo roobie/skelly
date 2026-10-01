@@ -1,6 +1,6 @@
 import type { PartDef, PartFamily } from '../../core/schema.ts';
 import { BMG_BASE_DIAMETER_U, BMG_OVERALL_LENGTH_U, ceilTo } from './cartridge.ts';
-import { box, RUBBER, X, Y } from './common.ts';
+import { RUBBER, X, Y } from './common.ts';
 
 /**
  * A 10-round .50 BMG box magazine, sized from the cartridge rather than picked from the shared `magazine`
@@ -29,23 +29,51 @@ export const HEAVY_MAGAZINE_LENGTH = ceilTo(
 export const HEAVY_MAGAZINE_INSERTION = 0.75;
 const FLOORPLATE_THICKNESS = 0.25;
 
+/**
+ * The bottom slants up toward the front, so the front face is shorter than the back face; the back face keeps the
+ * full height above and the top, well and both faces' x stay as they were. The rise is the depth times tan(8
+ * degrees), snapped to the 0.25u grid the way the shared slanted magazine snaps its vertex (so the real angle is
+ * 7.67 degrees, not 8).
+ */
+export const HEAVY_MAGAZINE_SLANT_DEGREES = 8;
+export const HEAVY_MAGAZINE_SLANT_RISE =
+  Math.round((HEAVY_MAGAZINE_DEPTH * Math.tan((HEAVY_MAGAZINE_SLANT_DEGREES * Math.PI) / 180)) / 0.25) * 0.25;
+
 export const heavyMagazine: PartFamily = {
   name: 'heavy-magazine',
   params: {},
   build(): PartDef {
     const bottom = HEAVY_MAGAZINE_INSERTION - HEAVY_MAGAZINE_LENGTH;
+    const frontBottom = bottom + HEAVY_MAGAZINE_SLANT_RISE;
     const halfDepth = HEAVY_MAGAZINE_DEPTH / 2;
     const halfWidth = HEAVY_MAGAZINE_WIDTH / 2;
+    // Convex side profiles (x, y), counter-clockwise, extruded along Z (the width).
     return {
       family: 'magazine',
       solids: [
-        box('body', [-halfDepth, bottom, -halfWidth], [halfDepth, HEAVY_MAGAZINE_INSERTION, halfWidth]),
-        box(
-          'floorplate',
-          [-halfDepth, bottom, -halfWidth - WALL],
-          [halfDepth + WALL, bottom + FLOORPLATE_THICKNESS, halfWidth + WALL],
-          RUBBER,
-        ),
+        {
+          id: 'body',
+          kind: 'extruded-polygon',
+          profile: [
+            [-halfDepth, bottom],
+            [halfDepth, frontBottom],
+            [halfDepth, HEAVY_MAGAZINE_INSERTION],
+            [-halfDepth, HEAVY_MAGAZINE_INSERTION],
+          ],
+          z: [-halfWidth, halfWidth],
+        },
+        {
+          id: 'floorplate',
+          kind: 'extruded-polygon',
+          profile: [
+            [-halfDepth, bottom],
+            [halfDepth, frontBottom],
+            [halfDepth, frontBottom + FLOORPLATE_THICKNESS],
+            [-halfDepth, bottom + FLOORPLATE_THICKNESS],
+          ],
+          z: [-halfWidth - WALL, halfWidth + WALL],
+          ...RUBBER,
+        },
       ],
       ports: [
         {
