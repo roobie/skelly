@@ -418,6 +418,7 @@ describe('procedural bolt carrier', () => {
     const rearHandleBounds = worldBounds(corners(handle).map((point) => applyPoint(rearTransform, point)));
     const portMin = port.actualX![0]!;
     const portMax = port.actualX![1]!;
+    const [, receiverSideFace] = RECEIVER_SECTION.ak.faces.handleSides;
 
     expect(bodyBounds[0]).toEqual([-7.25, -1.25]);
     expect(bodyBounds[0]![0]).toBeCloseTo(-7.25, 2);
@@ -433,8 +434,9 @@ describe('procedural bolt carrier', () => {
     expect(paddleBounds[0]![0]).toBeCloseTo(-2.75, 8);
     expect(paddleBounds[0]![1]).toBeCloseTo(-1.5, 8);
     expect(paddleBounds[1]).toEqual([-0.75, -0.25]);
-    expect(paddleBounds[2]![0]).toBeCloseTo(1.75, 8);
-    expect(paddleBounds[2]![1]).toBeCloseTo(2.25, 8);
+    expect(paddleBounds[2]![0]).toBeCloseTo(3.75, 8);
+    expect(paddleBounds[2]![1]).toBeCloseTo(4.25, 8);
+    expect(paddleBounds[2]![1]! - receiverSideFace!).toBeGreaterThanOrEqual(2.25);
     expect(localHandleBounds[0]![0]).toBe(localBodyBounds[0]![0]);
     expect(localHandleBounds[1]![0]).toBe(localBodyBounds[1]![0]);
     const rootY = localHandleBounds[1]![0]!;
@@ -474,6 +476,55 @@ describe('procedural bolt carrier', () => {
     expect(rearHandleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - entry.travel - 1e-6);
     expect(rearHandleBounds[0]![1]!).toBeLessThan(portMax);
     expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(3.25);
+  });
+
+  it('puts the SMG slide at the forward end of a handguard-mounted MP5 tube', () => {
+    const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-smg.json')!;
+    const resolved = resolve(assembly, gunDomain);
+    const receiver = resolved.defs.get('receiver')!;
+    const handguard = resolved.defs.get('handguard')!;
+    const sight = resolved.defs.get('front-sight')!;
+    const handle = resolved.defs.get('smg-handle')!;
+    const handguardTransform = resolved.placed.get('handguard')!;
+    const sightTransform = resolved.placed.get('front-sight')!;
+    const handleTransform = resolved.placed.get('smg-handle')!;
+    const tube = handguard.solids.find(({ id }) => id === 'smg-cocking-tube')!;
+    const tubeBounds = worldBounds(corners(tube).map((point) => applyPoint(handguardTransform, point)));
+    const sightBounds = worldBounds(sight.solids.flatMap(corners).map((point) => applyPoint(sightTransform, point)));
+    const receiverTransform = resolved.placed.get('receiver')!;
+    const [receiverFrontX] = applyPoint(receiverTransform, receiver.ports.find(({ id }) => id === 'barrel')!.pos);
+    const sightRearX = sightBounds[0]![0]!;
+    const handleOrigin = applyPoint(handleTransform, [0, 0, 0]);
+    const gripBounds = worldBounds(handle.solids.flatMap(corners).map((point) => applyPoint(handleTransform, point)));
+    const guardBounds = worldBounds(
+      handguard.solids
+        .filter(({ id }) => id !== 'smg-cocking-tube')
+        .flatMap(corners)
+        .map((point) => applyPoint(handguardTransform, point)),
+    );
+    const lateralOutstand = Math.max(
+      gripBounds[2]![1]! - guardBounds[2]![1]!,
+      guardBounds[2]![0]! - gripBounds[2]![0]!,
+    );
+    const handKeepOut = handle.keepOuts.find(({ id }) => id === 'smg-handle-hand')!;
+    const sweep = handle.keepOuts.find(({ id }) => id === 'smg-handle-sweep')!;
+    const supportHand = handguard.keepOuts.find(({ id }) => id === 'smg-support-hand')!;
+    const sweepSolid = worldSolid(handleTransform, { id: sweep.id, kind: 'box', box: sweep.box });
+    const supportHandSolid = worldSolid(handguardTransform, { id: supportHand.id, kind: 'box', box: supportHand.box });
+    const movedOrigin = applyPoint(compose(handleTransform, translation(handle.motion!.rearmost)), [0, 0, 0]);
+
+    expect(tube.kind).toBe('box');
+    expect(tubeBounds[0]![0]).toBeCloseTo(receiverFrontX, 8);
+    expect(sightRearX - tubeBounds[0]![1]!).toBeCloseTo(0.5, 8);
+    expect(Math.abs(tubeBounds[0]![1]! - handleOrigin[0])).toBeLessThanOrEqual(1.5);
+    expect(lateralOutstand).toBeGreaterThanOrEqual(1.5);
+    expect(handKeepOut).toBeDefined();
+    expect(handle.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], rearmost: [2.5, 0, 0] });
+    expect(movedOrigin[0]).toBeLessThan(handleOrigin[0]);
+    expect(penetrationWorld(sweepSolid, supportHandSolid)).toBeLessThanOrEqual(0);
+    for (const solid of handguard.solids.filter(({ id }) => id !== 'smg-cocking-tube')) {
+      expect(penetrationWorld(sweepSolid, worldSolid(handguardTransform, solid)), solid.id).toBeLessThanOrEqual(0);
+    }
   });
 
   it('keeps the AK and carrier/ejection-port anchors unchanged', () => {
@@ -691,7 +742,6 @@ describe('procedural bolt carrier', () => {
   it('covers the catalog styles with compatible owners and slotted handle geometry', () => {
     const receiverStyles = [
       { style: 'ar', bore: 'M', expected: ['charging-handle', 'ar-handle-crossbar', 'ar-handle-latch'] },
-      { style: 'smg', bore: 'S', expected: ['smg-cocking-tube'] },
       { style: 'battle', bore: 'M', expected: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob'] },
     ] as const;
     for (const entry of receiverStyles) {
@@ -739,6 +789,112 @@ describe('procedural bolt carrier', () => {
         def.solids.filter(({ id }) => HANDLE_ID_REGEX.test(id)),
         style,
       ).toEqual([]);
+    }
+  });
+
+  it('covers every catalog handle style with its compatible owner and pattern', () => {
+    const pairings = [
+      {
+        style: 'ar',
+        pattern: 'ar',
+        owner: 'receiver',
+        receiver: ['charging-handle', 'ar-handle-crossbar', 'ar-handle-latch'],
+        handguard: [],
+        carrier: [],
+      },
+      {
+        style: 'ak',
+        pattern: 'ak',
+        owner: 'carrier',
+        receiver: [],
+        handguard: [],
+        carrier: ['ak-handle-stick', 'charging-handle'],
+      },
+      {
+        style: 'autoShotgun',
+        pattern: 'ak',
+        owner: 'carrier',
+        receiver: [],
+        handguard: [],
+        carrier: ['ak-handle-stick', 'charging-handle'],
+      },
+      {
+        style: 'bolt',
+        pattern: 'bolt',
+        owner: 'carrier',
+        receiver: [],
+        handguard: [],
+        carrier: ['bolt-handle', 'bolt-handle-arm', 'bolt-handle-ball'],
+      },
+      { style: 'smg', pattern: 'smg', owner: 'handguard', receiver: [], handguard: ['smg-cocking-tube'], carrier: [] },
+      {
+        style: 'battle',
+        pattern: 'ar',
+        owner: 'receiver',
+        receiver: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob'],
+        handguard: [],
+        carrier: [],
+      },
+      {
+        style: 'barrett',
+        pattern: 'barrett',
+        owner: 'carrier',
+        receiver: [],
+        handguard: [],
+        carrier: ['charging-handle', 'barrett-handle-crank', 'barrett-handle-knob'],
+      },
+      { style: 'pump', pattern: 'pump', owner: 'none', receiver: [], handguard: [], carrier: [] },
+      { style: 'pistol', pattern: 'ar', owner: 'none', receiver: [], handguard: [], carrier: [] },
+      { style: 'bullpup', pattern: 'ar', owner: 'none', receiver: [], handguard: [], carrier: [] },
+      { style: 'none', pattern: 'ar', owner: 'none', receiver: [], handguard: [], carrier: [] },
+    ] as const;
+    expect(Object.keys(CARRIER_HANDLE_STYLES).sort()).toEqual(pairings.map(({ style }) => style).sort());
+
+    for (const pairing of pairings) {
+      expect(CARRIER_HANDLE_STYLES[pairing.style].owner, `${pairing.style} catalog owner`).toBe(pairing.owner);
+      const receiver = FAMILIES.receiver!.build({
+        action: 'auto',
+        feed: 'box',
+        bore: 'M',
+        carrierPattern: pairing.pattern,
+        handleStyle: pairing.style,
+      });
+      const handguard = FAMILIES.handguard!.build({
+        length: 'S',
+        barrelBore: 'S',
+        bore: 'S',
+        handleStyle: pairing.style === 'smg' ? 'smg' : 'none',
+      });
+      const carrier = FAMILIES['bolt-carrier']!.build({
+        action: 'bolt',
+        feed: 'box',
+        bore: 'M',
+        pattern: pairing.pattern,
+        handleStyle: pairing.style,
+      });
+      const receiverIds = receiver.solids
+        .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
+        .map(({ id }) => id);
+      const handguardIds = handguard.solids
+        .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
+        .map(({ id }) => id);
+      const carrierIds = carrier.solids.filter(({ id }) => HANDLE_ID_REGEX.test(id)).map(({ id }) => id);
+      expect(receiverIds, `${pairing.style} receiver owner`).toEqual(pairing.receiver);
+      expect(handguardIds, `${pairing.style} handguard owner`).toEqual(pairing.handguard);
+      expect(carrierIds, `${pairing.style} carrier owner`).toEqual(pairing.carrier);
+      expect(
+        receiver.solids
+          .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
+          .every(({ slot }) => slot === 'metal'),
+      ).toBe(true);
+      expect(
+        handguard.solids
+          .filter(({ id }) => HANDLE_OR_COCKING_TUBE_ID_REGEX.test(id))
+          .every(({ slot }) => slot === 'metal'),
+      ).toBe(true);
+      expect(carrier.solids.filter(({ id }) => HANDLE_ID_REGEX.test(id)).every(({ slot }) => slot === 'metal')).toBe(
+        true,
+      );
     }
   });
 

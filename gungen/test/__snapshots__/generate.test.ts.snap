@@ -2743,20 +2743,20 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "magazine.top",
       },
       {
-        "from": "receiver.stock",
-        "to": "stock.front",
-      },
-      {
         "from": "receiver.bolt-carrier",
         "to": "bolt-carrier.mount",
       },
       {
-        "from": "receiver.smg-handle",
+        "from": "handguard.smg-handle",
         "to": "smg-handle.mount",
       },
       {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 0,
         "to": "sight.base",
       },
     ],
@@ -2775,16 +2775,23 @@ exports[`templates > smg > known-good seeds 1`] = `
           "pattern": "smg",
         },
       },
+      "front-sight": {
+        "family": "front-sight",
+        "params": {
+          "style": "ar",
+        },
+      },
       "grip": {
         "family": "grip",
         "params": {
-          "length": "M",
+          "length": "S",
         },
       },
       "handguard": {
         "family": "handguard",
         "params": {
           "clearance": "M",
+          "handleStyle": "smg",
         },
       },
       "lower": {
@@ -2813,13 +2820,6 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       "smg-handle": {
         "family": "smg-handle",
-      },
-      "stock": {
-        "family": "stock",
-        "params": {
-          "length": "M",
-          "style": "straight",
-        },
       },
     },
     "root": "receiver",
@@ -2855,17 +2855,21 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
-        "from": "receiver.smg-handle",
+        "from": "handguard.smg-handle",
         "to": "smg-handle.mount",
       },
       {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 0,
         "to": "sight.base",
       },
     ],
-    "description": "Generated from the "smg" template with seed 200.",
-    "name": "smg-200",
+    "description": "Generated from the "smg" template with seed 201.",
+    "name": "smg-201",
     "parts": {
       "barrel": {
         "family": "barrel",
@@ -2879,6 +2883,12 @@ exports[`templates > smg > known-good seeds 1`] = `
           "pattern": "smg",
         },
       },
+      "front-sight": {
+        "family": "front-sight",
+        "params": {
+          "style": "ar",
+        },
+      },
       "grip": {
         "family": "grip",
         "params": {
@@ -2889,6 +2899,7 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "handguard",
         "params": {
           "clearance": "M",
+          "handleStyle": "smg",
         },
       },
       "lower": {
@@ -2900,7 +2911,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       "magazine": {
         "family": "magazine",
         "params": {
-          "length": "L",
+          "length": "M",
           "profile": "smg",
         },
       },
@@ -2956,13 +2967,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
-        "from": "receiver.smg-handle",
+        "from": "handguard.smg-handle",
         "to": "smg-handle.mount",
       },
       {
-        "from": "receiver.rail",
-        "slot": 6,
-        "to": "sight.base",
+        "from": "barrel.front-sight",
+        "to": "front-sight.base",
       },
     ],
     "description": "Generated from the "smg" template with seed 300.",
@@ -2980,16 +2990,23 @@ exports[`templates > smg > known-good seeds 1`] = `
           "pattern": "smg",
         },
       },
+      "front-sight": {
+        "family": "front-sight",
+        "params": {
+          "style": "ar",
+        },
+      },
       "grip": {
         "family": "grip",
         "params": {
-          "length": "M",
+          "length": "S",
         },
       },
       "handguard": {
         "family": "handguard",
         "params": {
           "clearance": "M",
+          "handleStyle": "smg",
         },
       },
       "lower": {
@@ -3013,16 +3030,13 @@ exports[`templates > smg > known-good seeds 1`] = `
           "feed": "box",
         },
       },
-      "sight": {
-        "family": "sight",
-      },
       "smg-handle": {
         "family": "smg-handle",
       },
       "stock": {
         "family": "stock",
         "params": {
-          "length": "M",
+          "length": "S",
           "style": "straight",
         },
       },

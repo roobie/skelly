@@ -70,31 +70,43 @@ const solidBounds = (component: Solid): readonly [Vec3, Vec3] => {
     [profileBounds[0]![1]!, profileBounds[1]![1]!, component.z[1]],
   ];
 };
+const AK_CHARGING_HANDLE_OUTSTAND_U = 2.25;
+const AK_CHARGING_HANDLE_PADDLE_THICKNESS_U = 0.5;
 const akChargingHandleSolids = (envelope: CarrierEnvelope = BOLT_CARRIER_ENVELOPES.ak): Solid[] => {
   const [rootX] = envelope.x;
   const [rootY] = envelope.y;
-  const sideZ = envelope.z[0] - 0.5;
-  const profile = (id: string, points: readonly Vec2[]): Extract<Solid, { kind: 'extruded-polygon' }> => ({
+  const [, receiverSideFace] = RECEIVER_SECTION.ak.faces.handleSides;
+  const paddleOuterZ = -receiverSideFace - AK_CHARGING_HANDLE_OUTSTAND_U;
+  const paddleInnerZ = paddleOuterZ + AK_CHARGING_HANDLE_PADDLE_THICKNESS_U;
+  const polygon = (id: string, points: readonly Vec2[], z: readonly [number, number]): Solid => ({
     id,
     kind: 'extruded-polygon',
     profile: points,
-    z: [sideZ - 0.5, sideZ],
+    z,
     slot: 'metal',
   });
   return [
-    profile('ak-handle-stick', [
-      [rootX, rootY],
-      [rootX + 0.25, rootY],
-      [rootX + 0.5, rootY + 0.75],
-      [rootX + 0.25, rootY + 0.75],
-    ]),
-    profile('charging-handle', [
-      [rootX + 0.25, rootY + 0.5],
-      [rootX + 1.25, rootY + 0.5],
-      [rootX + 1.5, rootY + 0.75],
-      [rootX + 1.25, rootY + 1],
-      [rootX + 0.25, rootY + 1],
-    ]),
+    polygon(
+      'ak-handle-stick',
+      [
+        [rootX, rootY],
+        [rootX + 0.25, rootY],
+        [rootX + 0.5, rootY + 0.75],
+        [rootX + 0.25, rootY + 0.75],
+      ],
+      [paddleInnerZ, envelope.z[0]],
+    ),
+    polygon(
+      'charging-handle',
+      [
+        [rootX + 0.25, rootY + 0.5],
+        [rootX + 1.25, rootY + 0.5],
+        [rootX + 1.5, rootY + 0.75],
+        [rootX + 1.25, rootY + 1],
+        [rootX + 0.25, rootY + 1],
+      ],
+      [paddleOuterZ, paddleInnerZ],
+    ),
   ];
 };
 const solidsBounds = (components: readonly Solid[]): readonly [Vec3, Vec3] => {
@@ -122,12 +134,21 @@ const metalPolygon = (
   profile: readonly Vec2[],
   z: readonly [number, number],
 ): Extract<Solid, { kind: 'extruded-polygon' }> => ({ ...extrudedPolygon(id, profile, z), slot: 'metal' });
-const keepOut = (id: string, min: Vec3, max: Vec3, allowPort?: string): KeepOut => ({
-  id,
-  kind: id,
-  box: boxFromMinMax(min, max),
-  ...(allowPort ? { allowPort } : {}),
-});
+const keepOut = (
+  id: string,
+  min: Vec3,
+  max: Vec3,
+  allowPortOrOptions?: string | { readonly allowPort?: string; readonly allowFamilies?: readonly string[] },
+): KeepOut => {
+  const options = typeof allowPortOrOptions === 'string' ? { allowPort: allowPortOrOptions } : allowPortOrOptions;
+  return {
+    id,
+    kind: id,
+    box: boxFromMinMax(min, max),
+    ...(options?.allowPort ? { allowPort: options.allowPort } : {}),
+    ...(options?.allowFamilies ? { allowFamilies: options.allowFamilies } : {}),
+  };
+};
 /** Tag for parts the firing hand can hold (see rules.ts). */
 export const FIRING_GRIP = 'firing-grip';
 
@@ -434,7 +455,7 @@ export const CARRIER_HANDLE_STYLES = {
   bolt: { shape: 'down-back-ball', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   smg: {
     shape: 'mp5-cocking-tube',
-    owner: 'receiver',
+    owner: 'handguard',
     motion: 'linear',
     handClearanceU: 0.25,
     sweep: true,
@@ -840,13 +861,14 @@ const receiverShellSolids = ({
   return solids.filter((component) => component.kind !== 'box' || component.box.half.every((half) => half > 0));
 };
 
-const arRearTHandle = (inside = false): Solid[] => [
-  metalSolid('charging-handle', [-18, 2.75, inside ? 1 : 1.5], [-16, 3.25, inside ? 1.75 : 2]),
-  metalSolid('ar-handle-crossbar', [-18, 3, -2], [-17.5, 3.5, 2]),
-  metalSolid('ar-handle-latch', [-16.5, 2.5, -0.5], [-16, 3, 0.5]),
-];
-
-const smgCockingTube = (): Solid[] => [metalSolid('smg-cocking-tube', [-5.5, 0.75, -2.75], [-0.5, 1.25, -2])];
+const arRearTHandle = (inside = false): Solid[] => {
+  const receiverTop = RECEIVER_SECTION.ar.faces.top.y;
+  return [
+    metalSolid('charging-handle', [-18, receiverTop - 0.5, inside ? 1 : 1.5], [-16, receiverTop, inside ? 1.75 : 2]),
+    metalSolid('ar-handle-crossbar', [-18, receiverTop - 0.5, -2], [-17.5, receiverTop, 2]),
+    metalSolid('ar-handle-latch', [-16.5, receiverTop - 1, -0.5], [-16, receiverTop - 0.5, 0.5]),
+  ];
+};
 
 const falChargingHandle = (): Solid[] => [
   metalSolid('fal-handle-pivot', [-14.5, 1.25, -2.75], [-13.5, 1.75, -2.15]),
@@ -868,9 +890,6 @@ const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[
   }
   if (style.shape === 'rear-t') {
     return arRearTHandle();
-  }
-  if (style.shape === 'mp5-cocking-tube') {
-    return smgCockingTube();
   }
   if (style.shape === 'fal-folded-out') {
     return falChargingHandle();
@@ -955,10 +974,6 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       up: Y,
     },
   ];
-  const handleStyle = CARRIER_HANDLE_STYLES[carrierHandleStyleFor(params)];
-  if (params.action === 'auto' && 'segment' in handleStyle && handleStyle.segment === 'receiver-connected') {
-    ports.push({ id: 'smg-handle', mount: 'smg-handle', gender: 'female', pos: [-4, 1.5, -2.75], normal: X, up: Y });
-  }
   if (params.rail !== 'none') {
     ports.push({
       id: 'rail',
@@ -1033,19 +1048,33 @@ const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, kee
     const [minimum, maximum] = solidBounds(crossbar);
     const clearance = style.handClearanceU;
     const pullReach = maximum[0] - minimum[0] + 1.5;
+    const chargingHandle = solids.find(({ id }) => id === 'charging-handle');
+    if (!chargingHandle) {
+      throw new Error('AR rear-T style requires its shaft profile.');
+    }
+    const [shaftMinimum, shaftMaximum] = solidBounds(chargingHandle);
     keepOuts.push(
-      keepOut('charging-handle', [-18, 2.5, -1.5], [-16, 5, 1.5]),
+      keepOut(
+        'charging-handle',
+        [shaftMinimum[0], shaftMinimum[1] - clearance, -1.5],
+        [
+          shaftMaximum[0],
+          shaftMaximum[1] + clearance,
+          shaftMinimum[2] + (params.chargingHandle === 'inside' ? clearance : 0),
+        ],
+        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
+      ),
       keepOut(
         'rear-t-hand-grip-clearance',
         [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
-        [maximum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
-        'bolt-carrier',
+        [maximum[0], maximum[1] + clearance, maximum[2] + clearance],
+        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
       ),
       keepOut(
         'rear-t-hand-clearance',
         [minimum[0] - pullReach, minimum[1] - clearance, minimum[2] - clearance],
         [minimum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
-        'bolt-carrier',
+        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
       ),
     );
     return;
@@ -1101,23 +1130,6 @@ const receiverKeepOuts = (context: ReceiverContext): KeepOut[] => {
   }
   addActionKeepOuts(params, keepOuts);
   addReceiverHandleKeepOuts(params, keepOuts);
-  const style = CARRIER_HANDLE_STYLES[carrierHandleStyleFor(params)];
-  if (
-    params.action === 'auto' &&
-    'segment' in style &&
-    style.segment === 'receiver-connected' &&
-    style.motion === 'linear' &&
-    style.sweep
-  ) {
-    keepOuts.push(
-      keepOut(
-        'smg-handle-sweep',
-        [-4 - SMG_HANDLE_TRAVEL_U / 2, 0.75, -3.5],
-        [-4 + SMG_HANDLE_TRAVEL_U / 2, 2.25, -2],
-        'smg-handle',
-      ),
-    );
-  }
   addFeedKeepOuts(context, keepOuts);
   return keepOuts;
 };
@@ -1483,8 +1495,8 @@ const carrierHandleKeepOuts = (style: CarrierHandleStyle, solids: readonly Solid
 // ---- independent receiver-connected SMG slide ----
 
 const smgHandleShape = (): Solid[] => [
-  metalSolid('smg-sliding-handle', [-0.75, -0.25, 0], [0.5, 0.25, 0.5]),
-  metalSolid('smg-handle-grip', [-0.75, 0.25, 0], [0.25, 0.75, 0.75]),
+  metalSolid('smg-sliding-handle', [-0.5, -0.25, -0.25], [0.5, 0.25, 0.25]),
+  metalSolid('smg-handle-grip', [-0.25, -0.25, -2], [0.25, 0.25, -0.25]),
 ];
 
 const smgSlidingHandle: PartFamily = {
@@ -1518,8 +1530,8 @@ const smgSlidingHandle: PartFamily = {
         kind: 'linear',
         axis: [1, 0, 0],
         rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
-        sourceKeepOut: { port: 'mount', id: 'smg-handle-sweep' },
+        rearmost: [travel, 0, 0],
+        sourceKeepOut: { port: 'mount', id: 'smg-handle-travel' },
       },
     };
   },
@@ -2013,6 +2025,10 @@ const akGasBlockX = (layout: string | undefined, length: SizeClass): number => {
     layout === 'ak' ? akHandguardLength(length) : snapAkGrid(barrelLength({ length }) * HANDGUARD_REACH.barrelFraction);
   return snapAkGrid(handguardLength * (1 + AK_GAS_BLOCK_CLEARANCE) + AK_GAS_BLOCK_HALF_LENGTH);
 };
+const frontSightPosition = (style: string, length: SizeClass): number =>
+  style === 'ak' ? barrelLength({ length }) - 2.5 : akGasBlockX('standard', length);
+const smgCockingTubeEnd = (length: SizeClass): number =>
+  frontSightPosition('ar', length) - AR_FRONT_SIGHT_HALF_LENGTH - 0.5;
 const arHandguardLength = (length: SizeClass): number => akGasBlockX('standard', length) - AR_FRONT_SIGHT_HALF_LENGTH;
 export const barrel: PartFamily = {
   name: 'barrel',
@@ -2089,7 +2105,7 @@ export const barrel: PartFamily = {
           mount: 'sight-block',
           gender: 'female',
           size: bore,
-          pos: [params.frontSightStyle === 'ak' ? len - 2.5 : akGasBlockX('standard', lengthClass), 0, 0],
+          pos: [frontSightPosition(params.frontSightStyle ?? 'ar', lengthClass), 0, 0],
           normal: NEG_X,
           up: Y,
         },
@@ -2396,6 +2412,7 @@ export const handguard: PartFamily = {
     clearance: size,
     bore: { values: ['none', ...SIZE_CLASSES], default: 'none', from: [{ port: 'front', param: 'bore' }] },
     layout: choice('standard', 'ak', 'ar'),
+    handleStyle: choice('none', 'smg'),
     fit: { values: ['receiver', 'oversized', 'too-tight'], default: 'receiver', fault: ['oversized', 'too-tight'] },
     mount: choice('clamped', 'free-float'),
   },
@@ -2433,6 +2450,16 @@ export const handguard: PartFamily = {
     const sideTop = akLayout ? cylinderTop : inner;
     const clampRadius =
       params.mount === 'free-float' || params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
+    const handleStyleKey = (params.handleStyle ?? 'none') as keyof typeof CARRIER_HANDLE_STYLES;
+    const handleStyle = CARRIER_HANDLE_STYLES[handleStyleKey];
+    const tubeEnd =
+      handleStyle.owner === 'handguard' && handleStyle.shape === 'mp5-cocking-tube'
+        ? smgCockingTubeEnd(lengthClass)
+        : undefined;
+    const cockingTube =
+      tubeEnd === undefined
+        ? []
+        : [metalSolid('smg-cocking-tube', [0, outerY + 0.5, outerZ - 0.5], [tubeEnd, outerY + 1, outerZ])];
     const clamp = clampRadius
       ? [
           solid(
@@ -2457,6 +2484,7 @@ export const handguard: PartFamily = {
         solid('left', [0, -inner, -outerZ], [len, sideTop, -inner]),
         solid('right', [0, -inner, inner], [len, sideTop, outerZ]),
         ...clamp,
+        ...cockingTube,
       ],
       ports: [
         { id: 'rear', mount: 'handguard', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
@@ -2480,8 +2508,35 @@ export const handguard: PartFamily = {
           up: X,
           slots: { count: (len - 4) / 2 + 1, pitch: 2 },
         },
+        ...(tubeEnd === undefined
+          ? []
+          : [
+              {
+                id: 'smg-handle',
+                mount: 'smg-handle',
+                gender: 'female' as const,
+                pos: [tubeEnd, outerY + 0.75, outerZ - 0.25] as Vec3,
+                normal: X,
+                up: Y,
+              },
+            ]),
       ],
-      keepOuts: [],
+      keepOuts:
+        tubeEnd === undefined
+          ? []
+          : [
+              keepOut(
+                'smg-support-hand',
+                [snapAkGrid(len * 0.25), -outerY, outerZ],
+                [snapAkGrid(len * 0.75), outerY, outerZ + 1],
+              ),
+              keepOut(
+                'smg-handle-travel',
+                [tubeEnd - SMG_HANDLE_TRAVEL_U / 2, outerY + 0.25, outerZ],
+                [tubeEnd + SMG_HANDLE_TRAVEL_U / 2, outerY + 1.25, outerZ + 1],
+                'smg-handle',
+              ),
+            ],
       axes: [],
     };
   },

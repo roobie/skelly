@@ -74,12 +74,18 @@ describe('visible action details', () => {
     expect(entry).toBeDefined();
     const { resolved } = validate(entry!.assembly, gunDomain);
     const receiverDef = resolved.defs.get('receiver')!;
+    const handguardDef = resolved.defs.get('handguard')!;
     const movingDef = resolved.defs.get('smg-handle')!;
-    const tube = receiverDef.solids.find(({ id }) => id === 'smg-cocking-tube');
+    const tube = handguardDef.solids.find(({ id }) => id === 'smg-cocking-tube');
     expect(tube?.slot).toBe('metal');
-    expect(receiverDef.solids.some(({ id }) => id === 'smg-sliding-handle' || id === 'smg-handle-grip')).toBe(false);
+    expect(
+      receiverDef.solids.some(
+        ({ id }) => id === 'smg-cocking-tube' || id === 'smg-sliding-handle' || id === 'smg-handle-grip',
+      ),
+    ).toBe(false);
+    expect(handguardDef.keepOuts.some(({ id }) => id === 'smg-support-hand')).toBe(true);
     expect(movingDef.solids.map(({ id }) => id)).toEqual(['smg-sliding-handle', 'smg-handle-grip']);
-    expect(movingDef.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0] });
+    expect(movingDef.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0], rearmost: [2.5, 0, 0] });
     const hand = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-hand')!.box;
     const sweep = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-sweep')!.box;
     expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0])).toBe(movingDef.motion!.rearmost[0]);
@@ -117,6 +123,12 @@ describe('visible action details', () => {
     expect(intervalsOverlap(rearTop.handle[1]!, rearTop.travel[1]!)).toBe(true);
     const receiverDef = receiver('auto', 'rear-top');
     expect(receiverDef.solids.filter(({ id }) => id.startsWith('ar-handle-'))).toHaveLength(2);
+    const crossbar = receiverDef.solids.find(({ id }) => id === 'ar-handle-crossbar');
+    expect(crossbar?.kind).toBe('box');
+    if (crossbar?.kind === 'box') {
+      const [, receiverTop] = receiverDef.ports.find(({ id }) => id === 'rail')!.pos;
+      expect(Math.abs(limits(crossbar.box)[1]![1] - receiverTop)).toBeLessThanOrEqual(0.1);
+    }
     expect(receiverDef.keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
 
     const bolt = FAMILIES['bolt-carrier']!.build({ pattern: 'bolt', action: 'bolt', bore: 'M', feed: 'top' });

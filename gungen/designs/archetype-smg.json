@@ -28,8 +28,10 @@
           "length": "S"
         }
       },
+      "front-sight": { "family": "front-sight", "params": { "style": "ar" } },
       "handguard": {
-        "family": "handguard"
+        "family": "handguard",
+        "params": { "handleStyle": "smg" }
       },
       "grip": {
         "family": "grip",
@@ -69,7 +71,7 @@
         "to": "bolt-carrier.mount"
       },
       {
-        "from": "receiver.smg-handle",
+        "from": "handguard.smg-handle",
         "to": "smg-handle.mount"
       },
       {
@@ -79,6 +81,10 @@
       {
         "from": "handguard.front",
         "to": "barrel.clamp"
+      },
+      {
+        "from": "barrel.front-sight",
+        "to": "front-sight.base"
       },
       {
         "from": "lower.grip",

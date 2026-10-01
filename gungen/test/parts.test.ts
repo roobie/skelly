@@ -8,10 +8,10 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
 
-/** Every family-parameter combination except handle style/section, whose compatible pairings are tested separately. */
+/** Every family-parameter combination except handle style, whose compatible pairings are tested separately. */
 const variants = (family: PartFamily): Record<string, string>[] =>
   Object.entries(family.params)
-    .filter(([name]) => name !== 'handleStyle' && name !== 'section')
+    .filter(([name]) => name !== 'handleStyle')
     .reduce<Record<string, string>[]>(
       (acc, [name, spec]) => acc.flatMap((p) => spec.values.map((v) => ({ ...p, [name]: v }))),
       [{}],
