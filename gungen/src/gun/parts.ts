@@ -24,6 +24,7 @@ import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
+import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
 const size: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
@@ -1741,7 +1742,7 @@ export const barrel: PartFamily = {
         ...supportLug,
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
-      keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
+      keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
     };
   },
@@ -3002,4 +3003,5 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   magazine,
   stock,
   sight,
+  ...ANTI_MATERIEL_FAMILIES,
 };
