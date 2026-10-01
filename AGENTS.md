@@ -53,21 +53,6 @@ pixels; 2 on bad usage. Read the screenshot with the Read tool. Debug params liv
 - The renderer line says what drew the pixels. SwiftShader is not a GPU: a clean run
   does not rule out GPU- or driver-specific issues. It is slow; keep the 25 s default wait.
 
-### Shader varyings under MSAA
-
-The scene renders with MSAA, so an edge pixel can be shaded at a point outside its
-triangle, and every non-`flat` varying is then extrapolated past its vertex values. Maths
-that looks bounded is not: an interpolated colour, AO factor or fog depth can go negative
-or overshoot, and `exp()`, ACES and bloom turn that into white pixels or discs at grazing
-view angles. It took three fixes to find them all: the chunk vertex colour (`438e1bb`,
-`dbc7759`) and the height-fog depth (`1b65f7d`). When you add or patch a shader:
-
-- Declare varyings that feed shading `centroid` (per-quad ids `flat`), and clamp what you
-  derive from them to its valid range, as a guard for drivers without proper centroid.
-- Run the hot check after the last colour change (after fog), or it misses values that
-  fog or later steps produce.
-- SwiftShader did not reproduce every case; confirm on a real GPU at the reported `cam=`.
-
 ## Before pushing
 
 From the repository root, run `npm run ci` and `npm run test:site`. For a
