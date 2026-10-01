@@ -134,7 +134,7 @@
     },
     {
       "id": "footstep_leaves",
-      "variants": ["assets/audio/footstep-leaves-01.ogg", "assets/audio/footstep-leaves-02.ogg"],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"],
       "gain": 0.18,
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.86, 1.12],
@@ -224,7 +224,7 @@
     },
     {
       "id": "shambler_step_leaves",
-      "variants": ["assets/audio/footstep-leaves-01.ogg", "assets/audio/footstep-leaves-02.ogg"],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"],
       "gain": 0.34,
       "pitchJitter": [0.68, 0.82],
       "gainJitter": [0.9, 1.1],

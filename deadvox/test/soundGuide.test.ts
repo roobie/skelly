@@ -43,6 +43,16 @@ describe('audio listening guide', () => {
     expect(guide.find(({ id }) => id === 'door_blocked_close')?.note).toContain('distinct stuck-door sound');
   });
 
+  it('uses only the BR-approved leaves clip for player and shambler steps', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    const leaves = ['assets/audio/footstep-leaves-01.ogg'];
+    expect(definitions.get('footstep_leaves')?.variants).toEqual(leaves);
+    expect(definitions.get('shambler_step_leaves')?.variants).toEqual(leaves);
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.find(({ id }) => id === 'footstep_leaves')?.variants.map(({ file }) => file)).toEqual(leaves);
+    expect(guide.find(({ id }) => id === 'shambler_step_leaves')?.variants.map(({ file }) => file)).toEqual(leaves);
+  });
+
   it('uses only the selected generic swing and exposes the new drop and pouch cues without noise emission', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
     expect(definitions.get('melee_swing')?.variants).toEqual(['assets/audio/melee_swing-01.ogg']);
