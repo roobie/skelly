@@ -91,3 +91,20 @@ pixels; 2 on bad usage. Look at the screenshot itself too.
 - Any hot-check or crack-check pixel is flagged.
 - The renderer line says what drew the pixels. SwiftShader is not a GPU: a clean run does
   not rule out GPU- or driver-specific issues. It is slow; keep the 25 s default wait.
+
+## Browser contracts on software GL
+
+On software GL (SwiftShader, headless or under Xvfb) the look slows start-up: in a cut-down
+Firefox start-up probe, page load took 6.1 s with the default look against 2.5 s with
+`post=0&sunshadow=0&torchshadow=0`. `npm run test:ui-browser` therefore opens the game with
+those three parameters (commit `3299e50`; on the full look the contract took 8m09s against
+its 300 s cap). It tests the UI, not the look.
+
+`npm run test:browser:firefox` still runs with the full look, on purpose, as it covers the
+real start-up path. On a loaded machine it can time out at its 10 s pointer-lock and overlay
+wait (`test/browser/firefox-first-click.mjs:103`): on this branch it failed once and then
+passed twice on a host at load ~5, and it passed on `main` at the branch point and on a real
+GPU. Re-run it before suspecting the code, and compare with a real-GPU run. Install Firefox
+once with `npx playwright install --with-deps firefox`, then from `deadvox/` run
+`xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop), as
+`.github/workflows/deadvox.yml` does.
