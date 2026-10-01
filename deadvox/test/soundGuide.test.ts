@@ -30,6 +30,19 @@ describe('audio listening guide', () => {
     );
   });
 
+  it('lists only BR-approved door close/open variants on the generated listening sheet', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    const close = ['assets/audio/door_blocked_close-01.ogg'];
+    const open = ['assets/audio/door-open-03.ogg'];
+    expect(definitions.get('door_close')?.variants).toEqual(close);
+    expect(definitions.get('door_open')?.variants).toEqual(open);
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.find(({ id }) => id === 'door_close')?.variants.map(({ file }) => file)).toEqual(close);
+    expect(guide.find(({ id }) => id === 'door_open')?.variants.map(({ file }) => file)).toEqual(open);
+    expect(guide.find(({ id }) => id === 'door_close')?.note).toContain('door_blocked_close');
+    expect(guide.find(({ id }) => id === 'door_blocked_close')?.note).toContain('distinct stuck-door sound');
+  });
+
   it('uses only the selected generic swing and exposes the new drop and pouch cues without noise emission', () => {
     const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
     expect(definitions.get('melee_swing')?.variants).toEqual(['assets/audio/melee_swing-01.ogg']);

@@ -26,12 +26,18 @@ const TRIGGER_ENTRIES = [
   ['footstep_wood', { trigger: 'Walk, jog, or sprint over planks.' }],
   ['footstep_leaves', { trigger: 'Walk, jog, or sprint over fabric or carpet.' }],
   ['door_open', { trigger: 'Press F while looking at a closed, reachable door.' }],
-  ['door_close', { trigger: 'Press F while looking at an open, reachable door.' }],
+  [
+    'door_close',
+    {
+      trigger: 'Press F while looking at an open, reachable door.',
+      note: 'Temporary BR-approved stand-in; shares its recording with door_blocked_close.',
+    },
+  ],
   [
     'door_blocked_close',
     {
       trigger: 'Press F to close a door while something blocks it.',
-      note: 'Subtle stuck-door attempt; sourced from Thwack Sounds.',
+      note: 'Temporary stand-in: shares the door-close recording; a distinct stuck-door sound is future work.',
     },
   ],
   ['player_strain', { trigger: 'Press Space while grounded to jump.' }],

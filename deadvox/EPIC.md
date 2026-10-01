@@ -205,7 +205,12 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Split item-drop sounds by pile surface; the wood clips currently play on every surface because piles expose no surface classification.
 - Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
 - Wood tap or knock: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/wood_tap--thwack-02.wav` is in the mail scratch and intentionally not in the repo.
-- Still needs a source: a better fist hit, a blunt hit on a wall, a hard landing, and more swing variants.
+- New sources for `footstep_mud` and `shambler_step_mud` (all current variants rejected).
+- New sources for `footstep_stone` and `shambler_step_stone`; park the current gravel-sounding clips for a future gravel surface.
+- More `door_open` variants; only `door-open-03.ogg` is currently accepted.
+- A distinct stuck-door sound; `door_close` and `door_blocked_close` temporarily share `door_blocked_close-01.ogg`.
+- A better fist-hit source (the current placeholder is retained).
+- A blunt hit on a wall, a hard landing, and more swing variants.
 
 ## Later, after the game is more playable
 
