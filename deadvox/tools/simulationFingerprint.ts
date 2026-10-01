@@ -75,6 +75,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/gameCursor.ts',
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
+  'src/ui/inventoryScreen.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
   'src/ui/rest.ts',
