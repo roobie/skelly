@@ -83,6 +83,42 @@
       "name": "Window frame",
       "color": "#e6e2d8",
       "solid": true
+    },
+    {
+      "id": "siding_red",
+      "name": "Painted siding (faded red)",
+      "color": "#8f4b4b",
+      "solid": true
+    },
+    {
+      "id": "siding_blue",
+      "name": "Painted siding (faded blue-grey)",
+      "color": "#7a8d94",
+      "solid": true
+    },
+    {
+      "id": "galvanized",
+      "name": "Galvanized sheet",
+      "color": "#aab4b8",
+      "solid": true
+    },
+    {
+      "id": "cobblestone_mossy",
+      "name": "Mossy cobblestone",
+      "color": "#5f6b58",
+      "solid": true
+    },
+    {
+      "id": "dressed_stone",
+      "name": "Dressed stone",
+      "color": "#bcab8a",
+      "solid": true
+    },
+    {
+      "id": "hazard_yellow",
+      "name": "Hazard paint",
+      "color": "#c9a43a",
+      "solid": true
     }
   ]
 }

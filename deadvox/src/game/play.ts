@@ -133,7 +133,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let playerGaitPhase = 0;
   startingLoadout(inventory);
   // Furniture, with the loot rolled for it, arrives with its column.
-  streamer.onColumn = (cx, cz) => session.onColumn(cx, cz, engine.site);
+  streamer.onColumn = (cx, cz) => {
+    session.onColumn(cx, cz, engine.site);
+    for (const { spec, loot } of engine.furnitureIn(cx, cz)) {
+      inventory.furnish(spec, loot);
+    }
+  };
   const models = new ModelLibrary(registry, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
@@ -266,6 +271,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     showNotice,
     spawnItem,
     compress: () => compress(),
+    useItem: (item) => survival.use(item),
   });
 
   let started = false;
@@ -688,7 +694,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = menuState.paused;
     session.frame(dt);
-    applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
+    // Debug may move or freeze the drawn hour; the simulation's own clock is untouched.
+    applySky(engine.sky, skyAt(debugTools?.skyHour() ?? hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
@@ -697,6 +704,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     if (debugTools) {
       const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
       debugTools.updateAim(aim);
+      debugTools.updateLookedAt(eye(), lookDir(), input.locked);
     }
     updateDebugReadout(now);
 

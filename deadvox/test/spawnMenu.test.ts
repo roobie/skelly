@@ -4,6 +4,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
+import { TimeOfDayControls } from '../src/debug/timeOfDay.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 
 const { registry } = buildRegistry([
@@ -77,6 +78,7 @@ describe('spawnMenuViewModel', () => {
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
         { linearColorsOn: false, setLinearColors: () => undefined },
       ),
+      time: new TimeOfDayControls(() => 12),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,
       toggleSpawn: () => menu.open(),

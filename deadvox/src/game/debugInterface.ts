@@ -1,5 +1,6 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -20,6 +21,8 @@ export interface DebugHooks {
   readonly showNotice: (text: string) => void;
   readonly spawnItem: (type: string) => string;
   readonly compress: () => void;
+  /** Uses an item in your hands as F or its quickbar key would; switches a light on or off. */
+  readonly useItem: (item: Item) => string | undefined;
 }
 
 export interface DebugNoclipStep {
@@ -49,6 +52,10 @@ export interface DebugRuntime {
   readonly menuOpen: boolean;
   readonly aimEnabled: boolean;
   updateAim: (aim: ZombieAim | undefined) => void;
+  /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
+  updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
+  /** The hour of day that sky, fog and light are drawn at: the simulation's, unless the debug time picker moved or froze it. */
+  skyHour: () => number;
   recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;

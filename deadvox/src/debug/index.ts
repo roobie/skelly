@@ -1,14 +1,20 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { hourOfDay } from '../core/clock.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
 import { LookControls } from './look.ts';
+import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
+import { describeLookedAt } from './lookedAt.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
+import { TimeOfDayControls } from './timeOfDay.ts';
 
 export interface Action {
   readonly code: string;
@@ -71,6 +77,8 @@ const panelTemplate = ({
   lastHitText,
   setShamblerCount,
   toggleOpen,
+  dumpLook,
+  download,
 }: {
   open: boolean;
   actions: readonly ActionView[];
@@ -80,10 +88,14 @@ const panelTemplate = ({
   lastHitText: string;
   setShamblerCount: (count: number) => void;
   toggleOpen: () => void;
+  dumpLook: () => void;
+  /** A file to save: the link below is clicked once while this is set. */
+  download: { url: string; name: string } | undefined;
 }): TemplateResult => html`
   <div id="debug-ui-root">
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
+    <div id="debug-look-readout" class="debug-aim-readout"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <div id="debug-readout" class="debug-readout"></div>
@@ -103,6 +115,8 @@ const panelTemplate = ({
         </button>
       `,
       )}
+      <button type="button" @click=${dumpLook}>Dump look settings (JSON)</button>
+      <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     </div>
       <div id="debug-sound-log-root"></div>
       <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote.</p>
@@ -141,6 +155,7 @@ interface ActionContext {
   isFrozen: () => boolean;
   toggleFrozen: () => void;
   look: LookControls;
+  time: TimeOfDayControls;
 }
 
 export const createDebugActions = ({
@@ -159,6 +174,7 @@ export const createDebugActions = ({
   isFrozen,
   toggleFrozen,
   look,
+  time,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
@@ -224,6 +240,28 @@ export const createDebugActions = ({
     state: () => look.linearColors,
     run: () => look.toggleLinearColors(),
   },
+  {
+    code: 'Comma',
+    key: ',',
+    label: 'Time of day −1 h',
+    detail: () => time.label,
+    run: () => time.step(-1),
+  },
+  {
+    code: 'Period',
+    key: '.',
+    label: 'Time of day +1 h',
+    detail: () => time.label,
+    run: () => time.step(1),
+  },
+  {
+    code: 'KeyM',
+    key: 'M',
+    label: 'Freeze time of day',
+    state: () => time.frozen,
+    detail: () => time.label,
+    run: () => time.toggleFrozen(),
+  },
 ];
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
@@ -245,33 +283,44 @@ export const formatMeleeResult = (result: MeleeResult): string => {
   return `${result.region} ${result.damage} damage (${result.healthBefore}→${result.healthAfter}) · ${outcome}`;
 };
 
-const DEBUG_START_WEAPON = 'baseball_bat';
+const DEBUG_START_LIGHT = 'flashlight';
 
-export const equipDebugStartWeapon = ({
+/** A fresh debug game starts with a lit flashlight in the left hand, which leaves the right free. */
+export const equipDebugStartLight = ({
   inventory,
   debugMode,
   newGame,
+  switchOn,
 }: {
   inventory: Inventory;
   debugMode: boolean;
   newGame: boolean;
+  /** Uses the light as the player would, which is what makes it the lit one. */
+  switchOn: (light: Item) => string | undefined;
 }): void => {
   if (!(debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
     return;
   }
-  const bat = inventory.create(DEBUG_START_WEAPON);
-  inventory.add(bat, { kind: 'hand', side: 'right' });
+  const light = inventory.create(DEBUG_START_LIGHT);
+  if (inventory.add(light, { kind: 'hand', side: 'left' })) {
+    switchOn(light);
+  }
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
-  equipDebugStartWeapon({
+  equipDebugStartLight({
     inventory: hooks.inventory,
     debugMode: hooks.engine.config.debug,
     newGame: hooks.newGame,
+    switchOn: hooks.useItem,
   });
   const host = document.body;
   const aimOverlay = new DebugAimOverlay(hooks.engine.scene, hooks.engine.config.scale.blockSize);
   let aimReadout: HTMLElement | null = null;
+  let lookReadout: HTMLElement | null = null;
+  let download: { url: string; name: string } | undefined;
+  /** The aim readout is showing a shambler, which the looked-at readout then yields to. */
+  let zombieAimShown = false;
   let panelOpen = false;
   let aimEnabled = true;
   let lastHitText = '';
@@ -285,9 +334,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes);
+  const time = new TimeOfDayControls(() => hourOfDay(hooks.sim.calendar));
   const actions = createDebugActions({
     hooks,
     look,
+    time,
     build,
     spawnMenu,
     toggleSpawn,
@@ -365,12 +416,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           lastHitText: performance.now() < lastHitUntil ? lastHitText : '',
           setShamblerCount: changeShamblerCount,
           toggleOpen: togglePanel,
+          dumpLook,
+          download,
         }),
         host,
       );
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
       aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');
+      lookReadout = host.querySelector<HTMLElement>('#debug-look-readout');
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
@@ -380,6 +434,39 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (soundRoot) {
       render(soundLogTemplate(readout), soundRoot);
     }
+  }
+  function dumpLook(): void {
+    const { config } = hooks.engine;
+    const metres = config.scale.blockSize;
+    const now = new Date();
+    const dump = lookDump({
+      toneMapping: look.toneMappingName,
+      exposure: look.exposure,
+      srgbBlockColours: look.linearColors,
+      timeOfDay: time.label,
+      timeFrozen: time.frozen,
+      site: config.site,
+      seed: config.seed,
+      viewRadiusM: config.radiusM,
+      blockSizeM: metres,
+      positionM: hooks.body.pos.map((v) => v * metres) as Vec3,
+      yawRad: hooks.input.yaw,
+      pitchRad: hooks.input.pitch,
+      buildRevision: buildRevision(),
+      now,
+    });
+    // Blob link rendered by the panel template, clicked, then dropped again.
+    download = {
+      url: URL.createObjectURL(new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' })),
+      name: lookDumpFilename(now),
+    };
+    shellKey = '';
+    drawShell();
+    host.querySelector<HTMLAnchorElement>('#debug-download')?.click();
+    URL.revokeObjectURL(download.url);
+    download = undefined;
+    shellKey = '';
+    drawShell();
   }
   function changeShamblerCount(count: number): void {
     shamblerCount = writeShamblerCount(count);
@@ -427,6 +514,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return aimEnabled;
     },
     updateAim(aim: ZombieAim | undefined) {
+      zombieAimShown = aimEnabled && aim !== undefined;
       aimOverlay.update(aimEnabled ? aim : undefined);
       if (aimReadout) {
         render(
@@ -444,6 +532,27 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         drawShell();
       }
     },
+    updateLookedAt(eye: Vec3, dir: Vec3, active: boolean) {
+      if (lookReadout) {
+        const { engine } = hooks;
+        const text =
+          active && !zombieAimShown
+            ? describeLookedAt(
+                {
+                  world: engine.world,
+                  registry: engine.registry,
+                  entities: engine.entities,
+                  isSolid: engine.isSolid,
+                  blockSize: engine.config.scale.blockSize,
+                },
+                eye,
+                dir,
+              )
+            : '';
+        render(aimReadoutTemplate(text), lookReadout);
+      }
+    },
+    skyHour: () => time.hour(),
     recordMeleeResult(result: MeleeResult) {
       lastHitText = formatMeleeResult(result);
       lastHitUntil = performance.now() + 3000;

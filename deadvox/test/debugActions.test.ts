@@ -2,6 +2,7 @@ import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
+import { TimeOfDayControls } from '../src/debug/timeOfDay.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 
 interface FakeRenderer {
@@ -28,7 +29,27 @@ describe('debug action table', () => {
       ['-', 'Exposure −'],
       ['=', 'Exposure +'],
       ['I', 'sRGB block colours'],
+      [',', 'Time of day −1 h'],
+      ['.', 'Time of day +1 h'],
+      ['M', 'Freeze time of day'],
     ]);
+  });
+
+  it('steps and freezes the drawn time of day from the panel, showing HH:MM', () => {
+    const { actions, clock } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    expect(byCode('Period').detail?.()).toBe('19:30');
+    dispatchDebugAction(actions, 'Period');
+    expect(byCode('Period').detail?.()).toBe('20:30');
+    dispatchDebugAction(actions, 'Comma');
+    dispatchDebugAction(actions, 'Comma');
+    expect(byCode('Comma').detail?.()).toBe('18:30');
+
+    expect(byCode('KeyM').state?.()).toBe(false);
+    dispatchDebugAction(actions, 'KeyM');
+    expect(byCode('KeyM').state?.()).toBe(true);
+    clock.hour = 23;
+    expect(byCode('KeyM').detail?.()).toBe('18:30');
   });
 
   it('cycles tone mapping, clamps exposure and toggles linear colours, with details for the panel', () => {
@@ -89,8 +110,12 @@ describe('debug action table', () => {
   });
 });
 
-const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: number[]; renderer: FakeRenderer } => {
+const makeActions = (
+  shamblerCount = 1,
+): { actions: Action[]; spawnCounts: number[]; renderer: FakeRenderer; clock: { hour: number } } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
+  const clock = { hour: 19.5 };
+  const time = new TimeOfDayControls(() => clock.hour);
   let linear = false;
   const look = new LookControls(renderer, {
     get linearColorsOn() {
@@ -136,6 +161,7 @@ const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: numbe
   const actions = createDebugActions({
     hooks,
     look,
+    time,
     build,
     spawnMenu,
     toggleSpawn() {
@@ -162,5 +188,5 @@ const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: numbe
       frozen = !frozen;
     },
   });
-  return { actions, spawnCounts, renderer };
+  return { actions, spawnCounts, renderer, clock };
 };
