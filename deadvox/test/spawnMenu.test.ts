@@ -90,6 +90,8 @@ describe('spawnMenuViewModel', () => {
       toggleAim: () => undefined,
       isFrozen: () => false,
       toggleFrozen: () => undefined,
+      isGameFrozen: () => false,
+      toggleGameFrozen: () => undefined,
     });
 
     expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);

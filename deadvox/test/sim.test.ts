@@ -212,6 +212,23 @@ describe('Simulation', () => {
       expect(sim.needs.hydration).toBeLessThan(10);
     });
 
+    it('waits out a pause, e.g. the debug game freeze, and then reaches the same target', () => {
+      const sim = new Simulation({ seed: 1 });
+      sim.compress();
+      const until = skipTarget(sim.clock, sim.time, 1);
+      sim.frame(FRAME, until);
+      const frozenAt = { time: sim.time, c: sim.compression.c };
+      sim.paused = true;
+      for (let i = 0; i < 120; i++) {
+        sim.frame(FRAME, until);
+      }
+      expect({ time: sim.time, c: sim.compression.c }).toEqual(frozenAt);
+      expect(sim.compression.active).toBe(true);
+      sim.paused = false;
+      runUntil(sim, until);
+      expect(sim.time).toBeCloseTo(until, 6);
+    });
+
     it('lands the same simulation state as playing the span at 1x', () => {
       const plain = new Simulation({ seed: 1 });
       runUntil(plain, HOUR);

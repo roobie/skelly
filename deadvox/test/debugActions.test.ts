@@ -24,6 +24,7 @@ describe('debug action table', () => {
       ['V', 'Spawn shamblers'],
       ['Y', 'Melee aim boxes'],
       ['O', 'Freeze shamblers'],
+      ['M', 'Freeze game'],
       ['J', 'Tone mapping'],
       ['-', 'Exposure −'],
       ['=', 'Exposure +'],
@@ -74,7 +75,7 @@ describe('debug action table', () => {
     expect(byCode('KeyI').state?.()).toBe(true);
   });
 
-  it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO'])(
+  it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO', 'KeyM'])(
     '%s updates its displayed toggle state on keydown',
     (code) => {
       const { actions } = makeActions();
@@ -163,6 +164,7 @@ const makeActions = (
   let danger = false;
   let aimEnabled = false;
   let frozen = false;
+  let gameFrozen = false;
   const spawnCounts: number[] = [];
   const actions = createDebugActions({
     hooks,
@@ -191,6 +193,10 @@ const makeActions = (
     isFrozen: () => frozen,
     toggleFrozen() {
       frozen = !frozen;
+    },
+    isGameFrozen: () => gameFrozen,
+    toggleGameFrozen() {
+      gameFrozen = !gameFrozen;
     },
   });
   return { actions, spawnCounts, skips, renderer, clock };

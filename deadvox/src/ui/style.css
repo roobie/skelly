@@ -975,6 +975,13 @@ body.bench #quickbar {
   cursor: pointer;
   pointer-events: auto;
 }
+#debug-ui-root .debug-marker.debug-frozen {
+  right: auto;
+  left: 10px;
+  color: var(--accent);
+  cursor: default;
+  pointer-events: none;
+}
 #debug-ui-root .debug-panel {
   position: fixed;
   top: 36px;

@@ -63,6 +63,8 @@ export interface DebugRuntime {
   recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;
+  /** The whole simulation is stopped (M): the game combines this with the pause menu's pause. */
+  readonly frozen: boolean;
   readonly spawnOpen: boolean;
   dangerReason: () => string | undefined;
   handleKey: (e: KeyboardEvent) => boolean;

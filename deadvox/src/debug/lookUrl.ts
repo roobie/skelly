@@ -4,6 +4,7 @@
 //   tone=none|agx|aces|neutral   tone mapping (J); omitted for none
 //   exposure=<0.2..3.0>          exposure in tenths (- =); omitted for 1; out of range is clamped
 //   srgb=1                       block colours decoded from sRGB (I); omitted when off
+//   freeze=1                     whole game frozen (M), so a reload resumes frozen; omitted when off
 //
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
@@ -14,15 +15,18 @@ export interface LookUrlState {
   tone: string;
   exposure: number;
   srgb: boolean;
+  /** The debug game freeze (M). */
+  freeze: boolean;
 }
 
 export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
   tone: TONE_MODES[0]!.key,
   exposure: DEFAULT_EXPOSURE,
   srgb: false,
+  freeze: false,
 };
 
-const LOOK_PARAMS = ['tone', 'exposure', 'srgb'] as const;
+const LOOK_PARAMS = ['tone', 'exposure', 'srgb', 'freeze'] as const;
 
 export const parseLookParams = (params: URLSearchParams): LookUrlState => {
   const tone = params.get('tone') ?? '';
@@ -33,6 +37,7 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
     tone: TONE_MODES.some((mode) => mode.key === tone) ? tone : DEFAULT_LOOK_URL_STATE.tone,
     exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_EXPOSURE,
     srgb: params.get('srgb') === '1',
+    freeze: params.get('freeze') === '1',
   };
 };
 
@@ -50,6 +55,9 @@ export const writeLookParams = (params: URLSearchParams, state: LookUrlState): U
   }
   if (state.srgb) {
     next.set('srgb', '1');
+  }
+  if (state.freeze) {
+    next.set('freeze', '1');
   }
   return next;
 };

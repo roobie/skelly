@@ -22,13 +22,20 @@ describe('look URL parameters', () => {
   });
 
   it('round-trips a state', () => {
-    const state: LookUrlState = { tone: 'aces', exposure: 1.4, srgb: true };
-    expect(write('', state)).toBe('tone=aces&exposure=1.4&srgb=1');
+    const state: LookUrlState = { tone: 'aces', exposure: 1.4, srgb: true, freeze: true };
+    expect(write('', state)).toBe('tone=aces&exposure=1.4&srgb=1&freeze=1');
     expect(parse(write('', state))).toEqual(state);
   });
 
+  it('keeps the game freeze only while it is on', () => {
+    expect(parse('freeze=1').freeze).toBe(true);
+    expect(parse('freeze=true').freeze).toBe(false);
+    expect(write('debug=1&freeze=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, freeze: true })).toBe('debug=1&freeze=1');
+  });
+
   it('ignores invalid values instead of throwing', () => {
-    expect(parse('tone=sepia&exposure=abc&srgb=yes')).toEqual(DEFAULT_LOOK_URL_STATE);
+    expect(parse('tone=sepia&exposure=abc&srgb=yes&freeze=yes')).toEqual(DEFAULT_LOOK_URL_STATE);
     expect(parse('exposure=&tone=')).toEqual(DEFAULT_LOOK_URL_STATE);
     expect(parse('exposure=Infinity').exposure).toBe(1);
   });

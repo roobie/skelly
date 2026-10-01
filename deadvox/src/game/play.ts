@@ -13,7 +13,7 @@ import type { Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
 import { skyAt } from '../core/sky.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
-import { Flashlight } from '../render/flashlight.ts';
+import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
@@ -723,6 +723,36 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     renderHandling(handlingBox, queue);
   };
 
+  /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
+  const stepFrozenNoclip = (dt: number, frozenAndPlaying: boolean): void => {
+    if (!(frozenAndPlaying && debugTools?.noclip && input.locked && !input.menuPointer)) {
+      return;
+    }
+    debugTools.stepNoclip({
+      body,
+      scale,
+      yaw: input.yaw,
+      pitch: input.pitch,
+      intent: input.intent(),
+      descend: input.held.has('KeyR'),
+      dt,
+    });
+  };
+
+  /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
+  const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
+    // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
+    const gameFrozen = debugTools?.frozen ?? false;
+    sim.paused = menuPaused || gameFrozen;
+    session.frame(dt, skipUntil);
+    // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
+    if (skipUntil !== undefined) {
+      updateSkip(skipUntil);
+    }
+    stepFrozenNoclip(dt, gameFrozen && !menuPaused);
+    return gameFrozen;
+  };
+
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -730,17 +760,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
 
     const menuState = syncMenuState();
     streamer.update(body.pos[0], body.pos[2]);
-    sim.paused = menuState.paused;
-    session.frame(dt, skipUntil);
-    if (skipUntil !== undefined) {
-      updateSkip(skipUntil);
-    }
-    applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
+    const gameFrozen = stepSimulation(dt, menuState.paused);
+    const sky = skyAt(hourOfDay(sim.calendar));
+    applySky(engine.sky, sky);
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
     zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
-    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && zombieSystem.isFrozen);
+    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen));
     if (debugTools) {
       const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
       debugTools.updateAim(aim);
@@ -788,6 +815,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     renderHandlingFrame();
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     held.update(camera);
+    flashlight.daylightScale = flashlightDaylightScale(sky);
     flashlight.update(registry, survival.lit, held, camera);
     renderer.render(scene, camera);
     held.render(renderer, camera, engine.sky);

@@ -71,6 +71,7 @@ const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
 const panelTemplate = ({
   open,
   actions,
+  gameFrozen,
   spawnOpen,
   shamblerCount,
   spawnStatus,
@@ -82,6 +83,7 @@ const panelTemplate = ({
 }: {
   open: boolean;
   actions: readonly ActionView[];
+  gameFrozen: boolean;
   spawnOpen: boolean;
   shamblerCount: number;
   spawnStatus: string;
@@ -94,6 +96,7 @@ const panelTemplate = ({
 }): TemplateResult => html`
   <div id="debug-ui-root">
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
+    <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · M</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <div id="debug-look-readout" class="debug-aim-readout"></div>
     <section class="debug-panel" ?hidden=${!open}>
@@ -154,6 +157,8 @@ interface ActionContext {
   toggleAim: () => void;
   isFrozen: () => boolean;
   toggleFrozen: () => void;
+  isGameFrozen: () => boolean;
+  toggleGameFrozen: () => void;
   look: LookControls;
 }
 
@@ -172,6 +177,8 @@ export const createDebugActions = ({
   toggleAim,
   isFrozen,
   toggleFrozen,
+  isGameFrozen,
+  toggleGameFrozen,
   look,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
@@ -210,6 +217,7 @@ export const createDebugActions = ({
   { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
   { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', state: isAimEnabled, run: toggleAim },
   { code: 'KeyO', key: 'O', label: 'Freeze shamblers', state: isFrozen, run: toggleFrozen },
+  { code: 'KeyM', key: 'M', label: 'Freeze game', state: isGameFrozen, run: toggleGameFrozen },
   {
     code: 'KeyJ',
     key: 'J',
@@ -330,10 +338,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes);
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
+  /** The whole simulation is stopped (M); play.ts reads it each frame and combines it with the pause menu. */
+  let gameFrozen = initialLook.freeze;
   const lookState = (): LookUrlState => ({
     tone: look.toneKey,
     exposure: look.exposure,
     srgb: look.linearColors,
+    freeze: gameFrozen,
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
@@ -371,6 +382,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     toggleFrozen: () => {
       const zombies = hooks.zombies();
       zombies?.setFrozen(!zombies.isFrozen);
+    },
+    isGameFrozen: () => gameFrozen,
+    toggleGameFrozen: () => {
+      gameFrozen = !gameFrozen;
     },
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
@@ -417,6 +432,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         panelTemplate({
           open: panelOpen,
           actions: views,
+          gameFrozen,
           spawnOpen: spawnMenu.isOpen,
           shamblerCount,
           spawnStatus,
@@ -574,6 +590,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     get noclip() {
       return noclip;
+    },
+    get frozen() {
+      return gameFrozen;
     },
     get spawnOpen() {
       return spawnMenu.isOpen;
