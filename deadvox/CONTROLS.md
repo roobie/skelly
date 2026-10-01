@@ -22,15 +22,17 @@ acting").
 ## What's already ruled
 
 - **Ready before acting (BR, 2026-09-27):** holding the right mouse button
-  readies a weapon; left click strikes or shoots only while ready; a middle click
-  or Shift toggles hip and sights while a firearm is ready; ready caps speed at a
-  hurried march; right mouse plus S blocks melee.
+  readies a weapon; firearms shoot only while ready. A middle click or Shift
+  toggles hip and sights while a firearm is ready; ready caps speed at a hurried
+  march; right mouse plus S blocks melee. The current melee action remains the
+  d7 left-click swing.
 - **F interacts; Q and E are reserved (BR, 2026-09-27).**
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
-- **Left click uses what you hold**, direction rather than a ruling (BR on
-  issue #27, 2026-09-28): "hold the flashlight in hands, then left-click to
-  activate (left-click generally means - do the thing with the thing you're
-  holding)". BR held the details back for this design.
+- **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
+  flashlight in hands, then left-click to activate (left-click generally means
+  'do the thing with the thing you're holding')." D10 implements capability
+  dispatch; the current two-hand default is right-hand action, then left-hand
+  action, fists only when both hands are empty.
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
   ruling: holding left click performs a long use, and releasing it early
   cancels.
@@ -108,7 +110,7 @@ below).
 | --- | --- | --- | --- | --- | --- |
 | W A S D | move | move, capped at a hurried march; S backs off (block with right mouse) | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
 | Mouse | look | aim | drawn cursor | look | look |
-| Left click, tap | use the main-hand item's instant use (light on/off). A weapon: nothing, and the hand shifts its grip as a cue | strike / shoot | click under the drawn cursor | nothing | nothing |
+| Left click, tap | primary action of the right-hand item, otherwise the left: melee swing or light toggle; empty hands punch, unsupported items show a hint | melee swing; firearms shoot only while ready | click under the drawn cursor | nothing | nothing |
 | Left click, hold | long use of the main-hand item (eat, drink, bandage, read); releasing early cancels, nothing applied | — | drag | keep holding | — |
 | Mouse 5 (side forward button) | use the left-hand item's instant use (light on/off); nothing if the left hand is empty or has none | same | — | — | — |
 | Right mouse, hold | ready the main-hand weapon; with nothing to ready, nothing | stays ready | — | — | — |
@@ -129,9 +131,9 @@ below).
 
 Notes on the proposal:
 
-- **Quickbar second press** (issue #27's FM-6): pressing the slot of the item
-  already in your hands puts it away instead of using it. Use moves to left click
-  only, so there's one way to use an item and it's visible.
+- **Quickbar second press:** using an item already in your hands still calls
+  the shared `Survival.use` path. A left-click light action calls that same path;
+  the other capabilities dispatch to their existing actions.
 - **R is overloaded by state** (rest when unready, reload when ready, rotate while
   dragging). Each state is visible (weapon raised, a drag in progress). If that
   reads as too much, reload moves to a key of its own; see open question 4.
@@ -140,16 +142,19 @@ Notes on the proposal:
   weakest overload in the map. Open question 5.
 - **Crouch on C, not Ctrl**, whatever the Ctrl verification finds, because of
   the Ctrl + W risk.
-- **An unreadied left click on a weapon does nothing** except a small grip cue.
-  Today it swings (`play.ts:755-763`, any left click swings the melee weapon).
-  Under the ruled ready stance that changes.
+- **Melee stays immediate:** d7's left-click swing is not gated by the firearm
+  ready stance. D10 adds light and empty-hand actions to that same click; a
+  firearm's future shot remains ready-only.
 
 ## The two hands (issue #27, open)
 
-**Adopted for now (BR, 2026-10-01): option B, an off-hand control, with Mouse 5
-(the side forward button) as the off-hand use.** Mouse 4 (side back) is left
-unbound; both side buttons are browser history keys, so the game cancels their
-default. Customisable key binds are planned later, which will let the control move.
+**Current d10 resolution for primary click:** dispatch the actionable right-hand
+item first, otherwise the actionable left-hand item; empty hands use fists, and
+an unsupported held item gives a hint rather than punching. The right-hand
+precedence is proposed for BR review. Mouse 5 (the side forward button) remains
+the explicit off-hand use. Mouse 4 (side back) is left unbound; both side buttons
+are browser history keys, so the game cancels their default. Customisable key
+binds are planned later.
 
 deadvox has a left and a right hand (`HOLD.left` / `HOLD.right` in
 `src/render/hands.ts`); DayZ, the reference for "left click uses", has one active
@@ -187,7 +192,8 @@ a letter). That frees the letters for shipped verbs.
 
 ## Open questions for BR
 
-1. **The two hands:** A, B, C or D? Recommendation: B.
+1. **The two hands:** confirm or revise d10's proposed right-action, then
+   left-action, then empty-hands-fists precedence.
 2. **Ctrl:** verify Ctrl + W under pointer lock in Chrome and Firefox before any
    Ctrl binding. If the tab can close, no Ctrl bindings at all. Recommendation:
    treat Ctrl as unusable until verified.

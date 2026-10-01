@@ -358,3 +358,9 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    time is equal, so leftovers get used up.
 5. **Per-place versions.** Not a decision yet: redrawing on the one inventory
    counter stays until profiling in Slice 5 shows it costs too much.
+6. **Held-item primary action (BR, 2026-09-26, issue #27):** "Left click does
+   the thing with the thing you're holding." Dispatch by item capability, not id: right hand
+   first, then left if the right has no action; fists only when both hands are
+   empty, and unsupported held items give a hint instead of falling back to a
+   punch. Lights reuse `Survival.use` for the instant toggle. Right-hand
+   precedence is the d10 implementation's proposed two-hand default.

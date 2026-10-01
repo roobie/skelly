@@ -160,9 +160,11 @@ to use it:
   readiness trades mobility for being able to fight.
 - **Blocking is a ready-only move:** holding right-click and backing off (S)
   blocks incoming melee. Unreadied, S is only a step back.
-- **Left click acts only while ready:** a strike, or a shot from the hip or the
-  sights. Unreadied, a left click does not attack, so looking around with a
-  weapon in hand is safe.
+- **Left click performs the held item's primary action (BR, issue #27):**
+  capability selection prefers the right hand, then the left; empty hands use
+  fists, and an unsupported item does nothing but show a hint. Melee and unarmed
+  swings keep d7's immediate action; lights toggle through `Survival.use`.
+  Firearms still require the ready stance to shoot.
 - Lowered, a held item may block part of the view (as held models do today);
   readying is what brings it to where it's used.
 

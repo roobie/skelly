@@ -8,7 +8,7 @@
     "build": "tsc && vite build && node tools/check-favicon.mjs",
     "typecheck": "tsc",
     "test": "vitest run",
-    "test:ui-browser": "timeout 300 node tools/ui-browser-contract.mjs && timeout 300 node test/browser/melee-build-click.mjs && timeout 300 node test/browser/save-storage.mjs chromium",
+    "test:ui-browser": "timeout 300 node tools/ui-browser-contract.mjs && timeout 300 node test/browser/melee-build-click.mjs && timeout 300 node test/browser/primary-action.mjs && timeout 300 node test/browser/save-storage.mjs chromium",
     "test:browser:firefox": "timeout 300 node test/browser/firefox-first-click.mjs && timeout 300 node test/browser/save-storage.mjs firefox",
     "probe:render": "node tools/render-probe.mjs",
     "validate": "node src/cli/validate.ts",

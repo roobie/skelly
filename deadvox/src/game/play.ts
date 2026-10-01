@@ -49,6 +49,7 @@ import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './inpu
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PLAYER } from './player.ts';
+import { primaryActionHint, selectPrimaryAction } from './primaryAction.ts';
 import type { RestKind } from './rest.ts';
 import { createSession, LOOT_REACH } from './session.ts';
 import { toHands } from './targets.ts';
@@ -629,14 +630,17 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
   });
-  const meleeSelection = (): {
+  const meleeSelection = (
+    preferredHand?: 'right' | 'left',
+  ): {
     weapon: MeleeWeapon;
     profile: 'blunt' | 'cut' | 'pierce' | 'fists';
     hand?: 'right' | 'left';
     twoHanded: boolean;
     item?: (typeof inventory.hands)['right'];
   } => {
-    for (const hand of ['right', 'left'] as const) {
+    const handOrder: readonly ('right' | 'left')[] = preferredHand ? [preferredHand] : ['right', 'left'];
+    for (const hand of handOrder) {
       const item = inventory.hands[hand];
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
       if (item && weapon) {
@@ -653,8 +657,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
   const meleeWeapon = () => meleeSelection().weapon;
 
-  const swing = () => {
-    const selected = meleeSelection();
+  const swing = (preferredHand?: 'right' | 'left') => {
+    const selected = meleeSelection(preferredHand);
     const result = startPlayerMelee(zombieSystem, sim.needs, {
       origin: eye(),
       direction: lookDir(),
@@ -671,7 +675,34 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
   };
 
-  performPrimaryAction = swing;
+  performPrimaryAction = () => {
+    const action = selectPrimaryAction(registry, inventory.hands);
+    switch (action.kind) {
+      case 'melee':
+        swing(action.hand);
+        return;
+      case 'light': {
+        const reason = survival.use(action.item);
+        if (reason) {
+          showNotice(reason);
+        }
+        return;
+      }
+      case 'firearm':
+        showNotice('Firearms are not usable yet');
+        return;
+      case 'fists':
+        swing();
+        return;
+      case 'none':
+        showNotice(primaryActionHint(registry, action.item));
+        return;
+      default: {
+        const unhandled: never = action;
+        throw new Error(`Unhandled primary action ${String(unhandled)}`);
+      }
+    }
+  };
   // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
   // Listened on the document (capture) in case the pointer-lock target isn't the canvas; the mouse and pointer
   // events can both arrive for one press, so the forward press is deduped.
