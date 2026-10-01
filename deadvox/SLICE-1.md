@@ -878,6 +878,12 @@ was 1674 × 972 pixels at pixel ratio 1.2.
 **Feel test:** 0.5 m blocks feel far better than 1 m: doorways, furniture and
 interiors read at a human scale, and stairs are walked instead of jumped.
 
+**0.25 m look (2026-10-01):** `BLOCK_SIZE` set to 0.25 with nothing else
+changed, and the test house walked by eye (the hamlet only builds at 0.5 m).
+It didn't feel better than 0.5 m. Nothing was benchmarked; it would have cost
+about 8× the chunks at the same view radius and a redraw of the building
+templates.
+
 The decision is final: 0.5 m blocks, a 96 m default view distance, and a view
 distance setting (64, 96 or 128 m) for other hardware.
 
