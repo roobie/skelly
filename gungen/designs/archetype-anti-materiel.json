@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "template": "anti-materiel",
+  "assembly": {
+    "name": "archetype-anti-materiel",
+    "description": "Semi-automatic anti-materiel rifle: perforated box shroud over a recoiling barrel, two-chamber arrowhead muzzle brake, folding bipod, carry handle over the rail, wide recoil-pad stock with a rear monopod, 10-round box magazine.",
+    "root": "receiver",
+    "parts": {
+      "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
+      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
+      "lower": { "family": "lower", "params": { "layout": "conventional" } },
+      "barrel": { "family": "barrel", "params": { "length": "L" } },
+      "shroud": { "family": "barrel-shroud", "params": { "length": "L" } },
+      "brake": { "family": "muzzle-brake", "params": { "length": "L" } },
+      "grip": { "family": "grip", "params": { "length": "M" } },
+      "magazine": { "family": "magazine", "params": { "length": "L" } },
+      "stock": { "family": "recoil-stock", "params": { "length": "L" } },
+      "sight": { "family": "sight" },
+      "handle": { "family": "carry-handle" },
+      "bipod": { "family": "bipod", "params": { "legs": "L", "pose": "folded" } },
+      "monopod": { "family": "monopod", "params": { "pose": "folded" } }
+    },
+    "connections": [
+      { "from": "receiver.lower", "to": "lower.top" },
+      { "from": "receiver.barrel", "to": "barrel.rear" },
+      { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
+      { "from": "receiver.handguard", "to": "shroud.rear" },
+      { "from": "barrel.muzzle", "to": "brake.base" },
+      { "from": "lower.grip", "to": "grip.top" },
+      { "from": "lower.magazine", "to": "magazine.top" },
+      { "from": "receiver.stock", "to": "stock.front" },
+      { "from": "receiver.rail", "slot": 1, "to": "sight.base" },
+      { "from": "receiver.rail", "slot": 4, "to": "handle.base" },
+      { "from": "shroud.bipod", "to": "bipod.base" },
+      { "from": "stock.monopod", "to": "monopod.base" }
+    ]
+  },
+  "locks": {
+    "params": {},
+    "optionalParts": []
+  },
+  "status": "published"
+}

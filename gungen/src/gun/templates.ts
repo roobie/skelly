@@ -438,6 +438,43 @@ export const bullpup: Template = {
   ],
 };
 
+export const antiMateriel: Template = {
+  name: 'anti-materiel',
+  description:
+    'Semi-automatic anti-materiel rifle: perforated box shroud, two-chamber arrowhead muzzle brake, folding bipod, carry handle, recoil-pad stock with optional monopod.',
+  root: 'receiver',
+  slots: [
+    { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'L' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
+    { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
+    { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
+    { id: 'shroud', family: 'barrel-shroud', params: { length: ['M', 'L'] } },
+    { id: 'brake', family: 'muzzle-brake', params: { length: SML } },
+    { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
+    { id: 'magazine', family: 'magazine', params: { length: 'L' } },
+    { id: 'stock', family: 'recoil-stock', params: { length: ['M', 'L'] } },
+    { id: 'sight', family: 'sight', chance: 0.9 },
+    { id: 'handle', family: 'carry-handle', chance: 0.8 },
+    { id: 'bipod', family: 'bipod', params: { legs: ['M', 'L'], pose: ['folded', 'deployed'] } },
+    { id: 'monopod', family: 'monopod', params: { pose: ['folded', 'deployed'] }, chance: 0.5 },
+  ],
+  connections: [
+    { from: 'receiver.lower', to: 'lower.top' },
+    { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'receiver.handguard', to: 'shroud.rear' },
+    { from: 'barrel.muzzle', to: 'brake.base' },
+    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'lower.magazine', to: 'magazine.top' },
+    { from: 'receiver.stock', to: 'stock.front' },
+    // The two rear rail slots stay clear of the handle's hand room (slot 4); the sight sits behind it.
+    { from: 'receiver.rail', to: 'sight.base', slot: [0, 1] },
+    { from: 'receiver.rail', to: 'handle.base', slot: 4 },
+    { from: 'shroud.bipod', to: 'bipod.base' },
+    { from: 'stock.monopod', to: 'monopod.base' },
+  ],
+};
+
 export const TEMPLATES: readonly Template[] = [
   battleRifle,
   ar,
@@ -450,4 +487,5 @@ export const TEMPLATES: readonly Template[] = [
   boltRifleThumbhole,
   pumpShotgun,
   bullpup,
+  antiMateriel,
 ];

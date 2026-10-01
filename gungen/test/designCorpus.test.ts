@@ -15,6 +15,7 @@ const PUBLISH_CHECK = join(import.meta.dirname, 'fixtures', 'publish-check');
 const JSON_SUFFIX = /\.json$/;
 const expectedTemplates: Readonly<Record<string, string>> = {
   'archetype-ak': 'ak',
+  'archetype-anti-materiel': 'anti-materiel',
   'archetype-ar': 'ar',
   'archetype-ar-free-float': 'ar',
   'archetype-battle-rifle': 'battle-rifle',
