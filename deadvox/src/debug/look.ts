@@ -33,7 +33,10 @@ type MoodControls = Pick<
 type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setSun' | 'setTorch' | 'stepDistance'>;
 
 type LookRenderer = Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>;
-type LookMeshes = Pick<ChunkMeshes, 'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns'>;
+type LookMeshes = Pick<
+  ChunkMeshes,
+  'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns' | 'occlusionOn' | 'setOcclusion'
+>;
 
 export class LookControls {
   private mode: number;
@@ -129,6 +132,11 @@ export class LookControls {
     return this.meshes.patternsOn;
   }
 
+  /** Wide ambient occlusion on ambient light. */
+  get occlusion(): boolean {
+    return this.meshes.occlusionOn;
+  }
+
   cycleToneMapping(): void {
     this.mode = (this.mode + 1) % TONE_MODES.length;
     this.renderer.toneMapping = TONE_MODES[this.mode]!.mapping;
@@ -184,5 +192,10 @@ export class LookControls {
 
   togglePatterns(): void {
     this.meshes.setPatterns(!this.meshes.patternsOn);
+  }
+
+  /** A uniform, so no remesh and no recompile. */
+  toggleOcclusion(): void {
+    this.meshes.setOcclusion(!this.meshes.occlusionOn);
   }
 }

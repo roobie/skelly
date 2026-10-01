@@ -1,9 +1,84 @@
 import { describe, expect, it } from 'vitest';
 import { Chunk } from '../src/core/chunk.ts';
-import { CHUNK, toChunk, toLocal } from '../src/core/coords.ts';
+import { CHUNK, toChunk, toLocal, type Vec3 } from '../src/core/coords.ts';
 import { buildMesh } from '../src/core/mesher.ts';
-import { affectedChunks, BEDROCK, extractPadded, isEnclosed, PADDED, paddedIndex, World } from '../src/core/world.ts';
+import { OCCLUSION_RADIUS, WIDE } from '../src/core/occlusion.ts';
+import { hash3 } from '../src/core/random.ts';
+import {
+  affectedChunks,
+  BEDROCK,
+  extractPadded,
+  extractWide,
+  isEnclosed,
+  PADDED,
+  paddedIndex,
+  World,
+} from '../src/core/world.ts';
 import { unitFaces } from './meshFaces.ts';
+
+/** Chunks whose shell (the chunk plus OCCLUSION_RADIUS on every side) holds the cell, by brute force. */
+const chunksWithShellAround = (cell: Vec3): Set<string> => {
+  const inShell = (v: number, c: number) => v >= c * CHUNK - OCCLUSION_RADIUS && v < (c + 1) * CHUNK + OCCLUSION_RADIUS;
+  const found = new Set<string>();
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const c = [toChunk(cell[0]) + dx, toChunk(cell[1]) + dy, toChunk(cell[2]) + dz];
+        if (c.every((chunk, axis) => inShell(cell[axis]!, chunk))) {
+          found.add(c.join(','));
+        }
+      }
+    }
+  }
+  return found;
+};
+
+/** Random blocks in a few chunks around the origin, one uniform solid chunk, and gaps (including below). */
+const mixedWorld = (): World => {
+  const world = new World();
+  for (const [cx, cy, cz] of [
+    [0, 0, 0],
+    [-1, 0, 0],
+    [0, 0, 1],
+    [1, 1, 1],
+    [-1, -1, -1],
+  ] as Vec3[]) {
+    const chunk = new Chunk(cx, cy, cz);
+    for (let i = 0; i < 4000; i++) {
+      const at = (k: number) => Math.floor(hash3(5 + k, i, cx * 7 + cy * 13 + cz * 17, 0) * CHUNK);
+      chunk.set(at(0), at(1), at(2), 1 + (i % 3));
+    }
+    world.addChunk(chunk);
+  }
+  world.addChunk(new Chunk(0, 1, 0, 4));
+  return world;
+};
+
+/** Cells of chunk 0,0,0's padded array that differ from a per-cell read of the world. */
+const paddedMismatches = (world: World, bottomCy: number): number => {
+  const padded = extractPadded(world, [0, 0, 0], bottomCy);
+  let wrong = 0;
+  for (let i = 0; i < padded.length; i++) {
+    const [x, y, z] = [i % PADDED, Math.floor(i / PADDED ** 2), Math.floor(i / PADDED) % PADDED];
+    const expected = y === 0 && bottomCy === 0 ? BEDROCK : world.getBlock(x - 1, y - 1, z - 1);
+    wrong += padded[paddedIndex(x, y, z)] === expected ? 0 : 1;
+  }
+  return wrong;
+};
+
+/** The same for the wide solidity array, where everything below the bottom layer reads as solid. */
+const wideMismatches = (world: World, bottomCy: number): number => {
+  const wide = extractWide(world, [0, 0, 0], bottomCy);
+  let wrong = 0;
+  for (let i = 0; i < wide.length; i++) {
+    const [x, y, z] = [i % WIDE, Math.floor(i / WIDE ** 2), Math.floor(i / WIDE) % WIDE].map(
+      (c) => c - OCCLUSION_RADIUS,
+    );
+    const solid = (bottomCy === 0 && y! < 0) || world.getBlock(x!, y!, z!) !== 0;
+    wrong += wide[i] === (solid ? 1 : 0) ? 0 : 1;
+  }
+  return wrong;
+};
 
 describe('coords', () => {
   it('floors negative block coordinates into the right chunk', () => {
@@ -25,13 +100,34 @@ describe('World', () => {
     expect(world.getBlock(1000, -1000, 7)).toBe(0);
   });
 
-  it('reports neighbour chunks as stale only for blocks on a chunk face', () => {
-    expect(affectedChunks(5, 5, 5)).toEqual([[0, 0, 0]]);
-    expect(affectedChunks(0, 5, CHUNK - 1)).toEqual([
+  it('reports every chunk within the occlusion radius of an edited block as stale', () => {
+    const mid = CHUNK >> 1;
+    expect(affectedChunks(mid, mid, mid)).toEqual([[0, 0, 0]]);
+    expect(affectedChunks(OCCLUSION_RADIUS - 1 + CHUNK, mid, mid)).toEqual([
+      [1, 0, 0],
       [0, 0, 0],
-      [-1, 0, 0],
-      [0, 0, 1],
     ]);
+    expect(affectedChunks(OCCLUSION_RADIUS + CHUNK, mid, mid)).toEqual([[1, 0, 0]]);
+    expect(affectedChunks(0, 0, 0)).toHaveLength(8); // a chunk corner: every neighbour touching it, diagonals too
+    for (let i = 0; i < 200; i++) {
+      const cell = [0, 1, 2].map((k) => Math.floor(hash3(11, i, k, 0) * 4 * CHUNK) - 2 * CHUNK) as Vec3;
+      const got = affectedChunks(...cell);
+      expect(new Set(got.map((c) => c.join(',')))).toEqual(chunksWithShellAround(cell));
+      expect(got).toHaveLength(chunksWithShellAround(cell).size); // no duplicates
+      expect(got[0]).toEqual(cell.map(toChunk));
+    }
+  });
+
+  it('extracts the padded array exactly as a per-cell read of the world would', () => {
+    const world = mixedWorld();
+    expect(paddedMismatches(world, Number.NEGATIVE_INFINITY)).toBe(0);
+    expect(paddedMismatches(world, 0)).toBe(0);
+  });
+
+  it('extracts the wide solidity array as a per-cell read would: missing chunks air, below the bottom solid', () => {
+    const world = mixedWorld();
+    expect(wideMismatches(world, Number.NEGATIVE_INFINITY)).toBe(0);
+    expect(wideMismatches(world, 0)).toBe(0);
   });
 
   it("pads a chunk with its neighbours' border blocks", () => {

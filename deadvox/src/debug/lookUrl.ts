@@ -7,7 +7,8 @@
 //   exposure=<0.2..3.0>          exposure in tenths (- =); omitted for 3; out of range is clamped
 //   srgb=0                       block colours left undecoded (I); omitted when decoded, which is the default
 //   patterns=0                   surface patterns off (;); omitted when on, which is the default
-//   freeze=1                     whole game frozen (M), so a reload resumes frozen; omitted when off
+//   vao=0                        wide ambient occlusion off (9); omitted when on, which is the default
+//   freeze=1                    whole game frozen (M), so a reload resumes frozen; omitted when off
 //   post=0                       whole mood pass off (Q): no bloom, grade, film or height fog; omitted when on
 //   bloom=0                      bloom off (');  omitted when on
 //   film=0                       vignette and grain off (\); omitted when on
@@ -62,6 +63,7 @@ const LOOK_PARAMS = [
   'exposure',
   'srgb',
   'patterns',
+  'vao',
   'freeze',
   'post',
   'bloom',
@@ -97,6 +99,7 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
     exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_LOOK.exposure,
     srgb: params.get('srgb') !== '0',
     patterns: params.get('patterns') !== '0',
+    vao: params.get('vao') !== '0',
     shadows: {
       sun: params.get('sunshadow') !== '0',
       torch: params.get('torchshadow') !== '0',
@@ -125,6 +128,9 @@ export const writeLookParams = (params: URLSearchParams, state: LookUrlState): U
   }
   if (!state.patterns) {
     next.set('patterns', '0');
+  }
+  if (!state.vao) {
+    next.set('vao', '0');
   }
   if (state.freeze) {
     next.set('freeze', '1');

@@ -11,9 +11,9 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
     ({ colors, patterns } = msg);
     return;
   }
-  const { key, version, padded } = msg;
+  const { key, version, padded, wide } = msg;
   const start = performance.now();
-  const mesh = buildMesh(padded, colors, patterns);
+  const mesh = buildMesh(padded, colors, patterns, wide);
   const reply: FromMesher = { type: 'mesh', key, version, mesh, ms: performance.now() - start };
   postMessage(reply, {
     transfer: [
@@ -21,6 +21,7 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
       mesh.normals.buffer,
       mesh.colors.buffer,
       mesh.patterns.buffer,
+      mesh.occlusion.buffer,
       mesh.indices.buffer,
     ],
   });

@@ -1,14 +1,15 @@
 // Keeps the world around the player generated and meshed.
 // Terrain is generated one column at a time on the main thread; meshes are built in
 // workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
-// and AO at chunk borders are correct and never need a second pass.
+// and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
+// and never need a second pass.
 
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { Scale } from '../core/scale.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
-import { extractPadded, isEnclosed } from '../core/world.ts';
+import { extractPadded, extractWide, isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
@@ -247,6 +248,7 @@ export class Streamer {
     }
     this.inFlight.add(key);
     const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
+    const wide = extractWide(world, [cx, cy, cz], scale.minCy);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     this.send(worker, {
@@ -254,6 +256,7 @@ export class Streamer {
       key,
       version: this.versions.get(key) ?? 0,
       padded,
+      wide,
     });
   }
 
@@ -280,6 +283,6 @@ export class Streamer {
   }
 
   private send(worker: Worker, msg: ToMesher): void {
-    worker.postMessage(msg, msg.type === 'mesh' ? [msg.padded.buffer] : []);
+    worker.postMessage(msg, msg.type === 'mesh' ? [msg.padded.buffer, msg.wide.buffer] : []);
   }
 }

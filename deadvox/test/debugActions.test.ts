@@ -33,6 +33,7 @@ describe('debug action table', () => {
       ['=', 'Exposure +'],
       ['I', 'sRGB block colours'],
       [';', 'Surface patterns'],
+      ['9', 'Wide ambient occlusion'],
       ['Q', 'Mood post-processing (all)'],
       ["'", 'Bloom'],
       ['\\', 'Film (vignette, grain)'],
@@ -89,6 +90,14 @@ describe('debug action table', () => {
     expect(byCode('KeyI').state?.()).toBe(false);
     dispatchDebugAction(actions, 'KeyI');
     expect(byCode('KeyI').state?.()).toBe(true);
+  });
+
+  it('toggles the wide ambient occlusion on Digit9, on by default', () => {
+    const { actions } = makeActions();
+    const action = actions.find((candidate) => candidate.code === 'Digit9')!;
+    expect(action.state?.()).toBe(true);
+    dispatchDebugAction(actions, 'Digit9');
+    expect(action.state?.()).toBe(false);
   });
 
   it('toggles the mood effects and steps the grade, which clamps to 0..1', () => {
@@ -196,6 +205,7 @@ const makeActions = (
   const skips: number[] = [];
   let linear = false;
   let patterns = true;
+  let occlusion = true;
   const mood = new FakeMood();
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const shadows = new FakeShadows();
@@ -213,6 +223,12 @@ const makeActions = (
       },
       setPatterns(on: boolean) {
         patterns = on;
+      },
+      get occlusionOn() {
+        return occlusion;
+      },
+      setOcclusion(on: boolean) {
+        occlusion = on;
       },
     },
     mood,

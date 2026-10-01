@@ -13,7 +13,7 @@ link reproduces what you saw:
   from the address bar to share an exact pose.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture).
 - Look and diagnostics: see `src/debug/lookUrl.ts` and `camUrl.ts` for the full list
-  (`post=0`, `bloom=0`, `patterns=0`, `sunshadow=0`, `fog=…`, `freeze=1`, …).
+  (`post=0`, `bloom=0`, `patterns=0`, `vao=0`, `sunshadow=0`, `fog=…`, `freeze=1`, …).
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.

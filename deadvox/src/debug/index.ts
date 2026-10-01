@@ -273,6 +273,14 @@ export const createDebugActions = ({
     state: () => look.patterns,
     run: () => look.togglePatterns(),
   },
+  // 9: the number row beyond the quickbar's 1-5, next to 0 (sun shadows); no letter is free (CONTROLS.md).
+  {
+    code: 'Digit9',
+    key: '9',
+    label: 'Wide ambient occlusion',
+    state: () => look.occlusion,
+    run: () => look.toggleOcclusion(),
+  },
   // The mood pass. Q is the A/B master; the rest keep their own state under it.
   {
     code: 'KeyQ',
@@ -482,6 +490,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     exposure: look.exposure,
     srgb: look.linearColors,
     patterns: look.patterns,
+    vao: look.occlusion,
     freeze: gameFrozen,
     fogginess: look.fogginess,
     shadows: look.shadowState,
@@ -642,6 +651,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       exposure: look.exposure,
       srgbBlockColours: look.linearColors,
       surfacePatterns: look.patterns,
+      wideOcclusion: look.occlusion,
       mood: look.moodState,
       fogginess: look.fogginess,
       shadows: look.shadowState,

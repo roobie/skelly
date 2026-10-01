@@ -77,7 +77,14 @@ describe('spawnMenuViewModel', () => {
       hooks,
       look: new LookControls(
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
-        { linearColorsOn: false, setLinearColors: () => undefined, patternsOn: true, setPatterns: () => undefined },
+        {
+          linearColorsOn: false,
+          setLinearColors: () => undefined,
+          patternsOn: true,
+          setPatterns: () => undefined,
+          occlusionOn: true,
+          setOcclusion: () => undefined,
+        },
         new FakeMood(),
         { weather: { fogginess: 0.2 }, shadows: new FakeShadows() },
       ),

@@ -27,6 +27,8 @@ export interface LookState {
   srgb: boolean;
   /** Procedural surface patterns on blocks. */
   patterns: boolean;
+  /** Wide-radius ambient occlusion on ambient light (computed in the mesher; this only scales it). */
+  vao: boolean;
 }
 
 /**
@@ -34,7 +36,7 @@ export interface LookState {
  * controls and URL record only deviations from it. The benchmark does not apply it: it keeps
  * three.js's own defaults (no tone mapping, exposure 1, colours undecoded) and the mood pass off.
  */
-export const DEFAULT_LOOK: LookState = { tone: 'aces', exposure: 3, srgb: true, patterns: true };
+export const DEFAULT_LOOK: LookState = { tone: 'aces', exposure: 3, srgb: true, patterns: true, vao: true };
 
 /** Which shadows are drawn, and how far from the player the sun's reach. Render-only; the debug controls and URL change it. */
 export interface ShadowState {

@@ -69,7 +69,7 @@ describe('grade strength steps', () => {
 
 describe('the default look', () => {
   it('is the operator-chosen one', () => {
-    expect(DEFAULT_LOOK).toEqual({ tone: 'aces', exposure: 3, srgb: true, patterns: true });
+    expect(DEFAULT_LOOK).toEqual({ tone: 'aces', exposure: 3, srgb: true, patterns: true, vao: true });
     expect(TONE_MODES.map((mode) => mode.key)).toContain(DEFAULT_LOOK.tone);
   });
 

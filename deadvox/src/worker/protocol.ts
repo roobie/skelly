@@ -2,7 +2,7 @@ import type { MeshData } from '../core/mesher.ts';
 
 export type ToMesher =
   | { type: 'init'; colors: Uint8Array; patterns: Uint8Array }
-  | { type: 'mesh'; key: string; version: number; padded: Uint16Array };
+  | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array };
 
 export interface FromMesher {
   type: 'mesh';

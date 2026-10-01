@@ -31,6 +31,7 @@ describe('look URL parameters', () => {
       exposure: 3,
       srgb: true,
       patterns: true,
+      vao: true,
       freeze: false,
       post: true,
       bloom: true,
@@ -57,6 +58,7 @@ describe('look URL parameters', () => {
       exposure: 1.4,
       srgb: false,
       patterns: false,
+      vao: false,
       freeze: true,
       post: false,
       bloom: false,
@@ -68,7 +70,7 @@ describe('look URL parameters', () => {
       hotCheck: true,
     };
     expect(write('', state)).toBe(
-      'tone=none&exposure=1.4&srgb=0&patterns=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7&sunshadow=0&torchshadow=0&shadowdist=64&crackcheck=1&hotcheck=1',
+      'tone=none&exposure=1.4&srgb=0&patterns=0&vao=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7&sunshadow=0&torchshadow=0&shadowdist=64&crackcheck=1&hotcheck=1',
     );
     expect(parse(write('', state))).toEqual(state);
   });
@@ -145,6 +147,14 @@ describe('look URL parameters', () => {
     expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, patterns: false })).toBe('debug=1&patterns=0');
   });
 
+  it('keeps wide ambient occlusion on unless vao=0', () => {
+    expect(parse('vao=0').vao).toBe(false);
+    expect(parse('vao=1').vao).toBe(true);
+    expect(parse('vao=off').vao).toBe(true);
+    expect(write('debug=1&vao=0', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, vao: false })).toBe('debug=1&vao=0');
+  });
+
   it('keeps the game freeze only while it is on', () => {
     expect(parse('freeze=1').freeze).toBe(true);
     expect(parse('freeze=true').freeze).toBe(false);
@@ -186,6 +196,10 @@ describe('restoring look controls from URL state', () => {
     setPatterns(on: boolean) {
       meshes.patternsOn = on;
     },
+    occlusionOn: true,
+    setOcclusion(on: boolean) {
+      meshes.occlusionOn = on;
+    },
   };
 
   it('takes the parsed tone, exposure, colour decode and patterns', () => {
@@ -193,8 +207,14 @@ describe('restoring look controls from URL state', () => {
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
     });
-    look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0'));
-    expect([look.toneKey, look.exposure, look.linearColors, look.patterns]).toEqual(['neutral', 2.5, true, false]);
+    look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0&vao=0'));
+    expect([look.toneKey, look.exposure, look.linearColors, look.patterns, look.occlusion]).toEqual([
+      'neutral',
+      2.5,
+      true,
+      false,
+      false,
+    ]);
   });
 
   it('takes the parsed mood pass and fogginess', () => {

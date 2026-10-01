@@ -22,7 +22,7 @@ export const TONE_MODES: readonly { readonly key: string; readonly name: string;
 
 export const applyLook = (
   renderer: Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>,
-  meshes: Pick<ChunkMeshes, 'setLinearColors' | 'setPatterns'>,
+  meshes: Pick<ChunkMeshes, 'setLinearColors' | 'setPatterns' | 'setOcclusion'>,
   look: LookState,
 ): void => {
   const mode = TONE_MODES.find((candidate) => candidate.key === look.tone);
@@ -32,4 +32,5 @@ export const applyLook = (
   renderer.toneMappingExposure = clampExposure(look.exposure);
   meshes.setLinearColors(look.srgb);
   meshes.setPatterns(look.patterns);
+  meshes.setOcclusion(look.vao);
 };

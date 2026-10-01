@@ -22,6 +22,8 @@ export interface LookDumpInput {
   exposure: number;
   srgbBlockColours: boolean;
   surfacePatterns: boolean;
+  /** Wide-radius ambient occlusion on ambient light. */
+  wideOcclusion: boolean;
   /** The mood pass: post master, bloom, film (vignette and grain), grade strength. */
   mood: MoodState;
   /** The weather's fogginess: 0 clear, 1 thick fog. */
@@ -60,6 +62,7 @@ export const lookDump = (input: LookDumpInput) => ({
     exposure: round(input.exposure, 2),
     srgbBlockColours: input.srgbBlockColours,
     surfacePatterns: input.surfacePatterns,
+    wideOcclusion: input.wideOcclusion,
     postProcessing: input.mood.post,
     bloom: input.mood.bloom,
     film: input.mood.film,
