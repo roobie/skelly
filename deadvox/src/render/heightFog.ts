@@ -4,7 +4,7 @@
 // post-processing. The parameters are one shared set of uniforms, driven by `Mood`.
 
 import { Color, type IUniform, type Material, Vector3, type WebGLProgramParametersWithUniforms } from 'three';
-import { patchHotCheck } from './hotCheck.ts';
+import { type HotCategory, patchHotCheck } from './hotCheck.ts';
 
 /** Mist is at full density at and below this height (metres); terrain spans about 8 to 56 m. */
 export const HEIGHT_FOG_BASE_M = 16;
@@ -43,7 +43,7 @@ if (uHeightFog.x > 0.0) {
 #endif`;
 
 /** Adds the mist to a three.js built-in material's shader. Call from `onBeforeCompile`. */
-export const patchHeightFog = (shader: WebGLProgramParametersWithUniforms): void => {
+export const patchHeightFog = (shader: WebGLProgramParametersWithUniforms, category: HotCategory = 'other'): void => {
   shader.uniforms.uHeightFog = heightFogUniforms.uHeightFog;
   shader.uniforms.uHeightFogColor = heightFogUniforms.uHeightFogColor;
   shader.vertexShader = shader.vertexShader
@@ -53,12 +53,12 @@ export const patchHeightFog = (shader: WebGLProgramParametersWithUniforms): void
     .replace('#include <fog_pars_fragment>', `#include <fog_pars_fragment>\n${FRAGMENT_PARS}`)
     .replace('#include <fog_fragment>', `${FRAGMENT_MIX}\n#include <fog_fragment>`);
   // Every world material that gets the mist also gets the debug hot-pixel check (render/hotCheck.ts).
-  patchHotCheck(shader);
+  patchHotCheck(shader, category);
 };
 
 /** A built-in material that has no shader patch of its own, fogged with the mist. */
-export const withHeightFog = <T extends Material>(material: T): T => {
-  material.onBeforeCompile = patchHeightFog;
+export const withHeightFog = <T extends Material>(material: T, category: HotCategory = 'other'): T => {
+  material.onBeforeCompile = (shader) => patchHeightFog(shader, category);
   material.customProgramCacheKey = () => 'deadvox-height-fog';
   return material;
 };

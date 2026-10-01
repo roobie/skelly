@@ -13,7 +13,7 @@ import { castsAndReceives } from './shadowFlags.ts';
 export class PileMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
-  private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }));
+  private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';

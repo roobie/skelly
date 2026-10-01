@@ -52,7 +52,7 @@ const chunkMaterial = (
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
     shader.uniforms.uPatterns = patterns;
-    patchHeightFog(shader);
+    patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -78,7 +78,11 @@ vFaceN = normalize(normal);`,
         // shading replaces the per-block hash (its cell jitter would otherwise cut across joints);
         // with patterns off every block gets the hash, as before. The derivatives are taken here, in
         // uniform control flow, whatever the block.
+        // The clamp comes right after the vertex colour: at a silhouette edge MSAA shades the pixel centre
+        // even when it lies outside the triangle, so the (AO-scaled) colour varying is extrapolated and can
+        // leave 0..1, which the sRGB decode and the lighting turn into negative or over-bright light.
         `#include <color_fragment>
+diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);
 if (uLinearColors > 0.5) diffuseColor.rgb = srgbToLinear(diffuseColor.rgb);
 vec2 patUV = surfaceUV(vWorld, vFaceN);
 vec2 patFw = fwidth(patUV);

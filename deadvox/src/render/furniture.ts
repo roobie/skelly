@@ -38,7 +38,7 @@ export class FurnitureMeshes {
   private material(color: string): MeshLambertMaterial {
     let material = this.materials.get(color);
     if (!material) {
-      material = withHeightFog(new MeshLambertMaterial({ color }));
+      material = withHeightFog(new MeshLambertMaterial({ color }), 'furniture');
       this.materials.set(color, material);
     }
     return material;

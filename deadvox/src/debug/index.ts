@@ -5,6 +5,7 @@ import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
+import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
@@ -135,6 +136,9 @@ const panelTemplate = ({
       <button type="button" @click=${dumpLook}>Dump look settings (JSON)</button>
       <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     </div>
+    <p class="debug-hot-legend">Hot-pixel check (PgDn) colour = material:
+      ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
+      · brightness = kind: ${HOT_KINDS.join('; ')}.</p>
       <div id="debug-sound-log-root"></div>
       <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, [ ] grade. Fog: L / fogginess − +. Shadows: 0 sun, Home flashlight, PageUp distance.</p>
     </section>
@@ -309,7 +313,7 @@ export const createDebugActions = ({
     run: () => look.stepShadowDistance(),
   },
   // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
-  // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments cyan.
+  // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
   {
     code: 'End',
     key: 'End',
@@ -320,7 +324,7 @@ export const createDebugActions = ({
   {
     code: 'PageDown',
     key: 'PgDn',
-    label: 'Hot-pixel check (cyan)',
+    label: 'Hot-pixel check (coloured)',
     state: () => look.hotCheck,
     run: () => look.toggleHotCheck(),
   },

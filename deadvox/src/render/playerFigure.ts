@@ -166,7 +166,7 @@ export class PlayerMeshes {
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = new InstancedMesh(
         new BoxGeometry(1, 1, 1),
-        withHeightFog(new MeshLambertMaterial({ color: palette[PLAYER_COLORS[part]] })),
+        withHeightFog(new MeshLambertMaterial({ color: palette[PLAYER_COLORS[part]] }), 'player'),
         1,
       );
       mesh.count = 0;

@@ -40,7 +40,7 @@ describe('debug action table', () => {
       ['Home', 'Flashlight shadows'],
       ['PgUp', 'Sun shadow distance'],
       ['End', 'Crack check (magenta background)'],
-      ['PgDn', 'Hot-pixel check (cyan)'],
+      ['PgDn', 'Hot-pixel check (coloured)'],
       ['L', 'Fogginess −'],
       ['/', 'Fogginess +'],
       ['[', 'Grade −'],

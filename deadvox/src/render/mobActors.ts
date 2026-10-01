@@ -437,7 +437,7 @@ export class MobActorMeshes implements ZombieRenderer {
     this.material.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
       shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
-      patchHeightFog(shader);
+      patchHeightFog(shader, 'mob');
       shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`
         .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
         .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);

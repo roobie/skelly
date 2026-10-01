@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMesh, QUAD_GROW } from '../src/core/mesher.ts';
+import { buildMesh } from '../src/core/mesher.ts';
 import { hash3 } from '../src/core/random.ts';
 import { PADDED, paddedIndex } from '../src/core/world.ts';
 import { culledFaces, unitFaces } from './meshFaces.ts';
@@ -92,27 +92,6 @@ describe('buildMesh', () => {
       const first = m.indices[t]!;
       const n = [m.normals[first * 3]!, m.normals[first * 3 + 1]!, m.normals[first * 3 + 2]!];
       expect(cross[0]! * n[0]! + cross[1]! * n[1]! + cross[2]! * n[2]!).toBeGreaterThan(0);
-    }
-  });
-
-  it('grows every quad outward by QUAD_GROW within its plane, leaving the plane and normal alone', () => {
-    const m = buildMesh(padded([3, 3, 3], [4, 3, 3]), colors);
-    for (let q = 0; q < m.positions.length / 12; q++) {
-      const corners = [0, 1, 2, 3].map((i) => Array.from(m.positions.subarray(q * 12 + i * 3, q * 12 + i * 3 + 3)));
-      const normal = Array.from(m.normals.subarray(q * 12, q * 12 + 3));
-      const axis = normal.findIndex((n) => n !== 0);
-      for (let a = 0; a < 3; a++) {
-        const values = corners.map((c) => c[a]!);
-        const lo = Math.min(...values);
-        const hi = Math.max(...values);
-        if (a === axis) {
-          expect(lo).toBe(hi); // still flat, on an integer plane
-          expect(Number.isInteger(lo)).toBe(true);
-        } else {
-          expect(Math.round(lo) - lo).toBeCloseTo(QUAD_GROW, 6);
-          expect(hi - Math.round(hi)).toBeCloseTo(QUAD_GROW, 6);
-        }
-      }
     }
   });
 

@@ -21,7 +21,17 @@ describe('hot-pixel check patch', () => {
     expect(code.indexOf('#include <opaque_fragment>')).toBeLessThan(code.indexOf('uHotCheck > 0.5'));
     expect(code.indexOf('uHotCheck > 0.5')).toBeLessThan(code.indexOf('#include <tonemapping_fragment>'));
     expect(code).toContain(`vec3(${HOT_CHECK_LIMIT}.0)`);
-    expect(code).toContain('vec3(0.0, 1.0, 1.0)');
+    expect(code).toContain('uniform vec3 uHotColor;');
+  });
+
+  it('gives each material its own category colour without touching the shader text', () => {
+    const chunk = shader();
+    const mob = shader();
+    patchHotCheck(chunk, 'chunk');
+    patchHotCheck(mob, 'mob');
+    expect(chunk.uniforms.uHotColor?.value.toArray()).toEqual([0, 1, 1]);
+    expect(mob.uniforms.uHotColor?.value.toArray()).toEqual([0, 0, 1]);
+    expect(chunk.fragmentShader).toBe(mob.fragmentShader);
   });
 
   it('comes with the height-fog patch, so every world material has it', () => {
