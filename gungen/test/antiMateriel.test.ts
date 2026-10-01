@@ -36,7 +36,6 @@ import {
   STRUT_UP,
 } from '../src/gun/antiMateriel/carryHandle.ts';
 import { BMG_BASE_DIAMETER_U, BMG_CASE_LENGTH_U, BMG_OVERALL_LENGTH_U } from '../src/gun/antiMateriel/cartridge.ts';
-import { HEAVY_EJECTION_PORT_MARGIN_U } from '../src/gun/antiMateriel/heavyBoltCarrier.ts';
 import { HEAVY_GRIP_MOUNT_PROFILE, HEAVY_TRIGGER_GUARD } from '../src/gun/antiMateriel/heavyLower.ts';
 import {
   HEAVY_MAGAZINE_DEPTH,
@@ -160,7 +159,7 @@ describe('.50 BMG magazine, well and action', () => {
   it("derives the ejection port from the carrier's face bounds plus the margin every receiver uses", () => {
     const [restX, carrierY] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
     const ejection = receiverKeepOutBounds('ejection');
-    expect(HEAVY_EJECTION_PORT_MARGIN_U).toBe(EJECTION_PORT_MARGIN_U);
+    expect(EJECTION_PORT_MARGIN_U).toBe(0.25);
     expect(ejection.min[0]).toBeCloseTo(restX + carrierExtent(0).min - EJECTION_PORT_MARGIN_U);
     expect(ejection.max[0]).toBeCloseTo(restX + carrierExtent(0).max + EJECTION_PORT_MARGIN_U);
     expect(ejection.min[1]).toBeCloseTo(carrierY + carrierExtent(1).min - EJECTION_PORT_MARGIN_U);

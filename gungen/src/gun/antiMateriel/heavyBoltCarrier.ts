@@ -1,4 +1,5 @@
 import type { PartDef, PartFamily } from '../../core/schema.ts';
+import { EJECTION_PORT_MARGIN_U } from '../ejectionPort.ts';
 import { box, X } from './common.ts';
 import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';
 
@@ -9,17 +10,14 @@ import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';
  * long as the magazine, as on the real rifle. It plays the `bolt-carrier` role and moves along the receiver's
  * `bolt-travel` keep-out like the shared one.
  *
- * `HEAVY_EJECTION_PORT_MARGIN_U` repeats `EJECTION_PORT_MARGIN_U` from parts.ts (the clearance every ejection
- * aperture leaves around its carrier), which this file cannot import: parts.ts imports it. test/antiMateriel.test.ts
- * pins the copy.
+ * `EJECTION_PORT_MARGIN_U` is the shared clearance every receiver ejection aperture leaves around its carrier.
  */
-export const HEAVY_EJECTION_PORT_MARGIN_U = 0.25;
 
 /** Carrier extents (x, y, z), centred on the carrier port. */
 export const HEAVY_CARRIER_ENVELOPE = {
   x: [
-    -(HEAVY_MAGAZINE_DEPTH - 2 * HEAVY_EJECTION_PORT_MARGIN_U) / 2,
-    (HEAVY_MAGAZINE_DEPTH - 2 * HEAVY_EJECTION_PORT_MARGIN_U) / 2,
+    -(HEAVY_MAGAZINE_DEPTH - 2 * EJECTION_PORT_MARGIN_U) / 2,
+    (HEAVY_MAGAZINE_DEPTH - 2 * EJECTION_PORT_MARGIN_U) / 2,
   ],
   y: [-0.75, 0.75],
   z: [-1.25, 1.25],

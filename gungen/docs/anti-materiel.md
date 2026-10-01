@@ -204,8 +204,8 @@ long enough for the cartridge:
 | Length | the longer of two needs: 1.25u behind the lower's rearmost frame (-22.25u, giving 23.5), and room for the carrier parked behind the magazine (its rear at -29.5u, plus the 0.5u end wall, giving 30.0) | 30.0 | 345 |
 
 The carrier is its own family because the shared `barrett` envelope is 6u long and cannot change. Its
-face bounds are what size the port; the margin `HEAVY_EJECTION_PORT_MARGIN_U` repeats
-`EJECTION_PORT_MARGIN_U` (it cannot be imported without a cycle) and a test pins the copy.
+face bounds are what size the port; both the carrier and receiver use the shared `EJECTION_PORT_MARGIN_U`, which
+the test pins directly.
 
 The rail has 11 slots (the shared receiver's 7) at x = -22 ... -2, the front 22u of the receiver. The sight
 is on slot 5 (x = -12) as before; the carry handle is bolted to the shroud's left wall (next section).
