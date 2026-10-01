@@ -141,6 +141,7 @@ try {
     await send('Input.dispatchKeyEvent', { type: 'keyUp', code, key, windowsVirtualKeyCode: virtualKey });
     await delay(80);
   };
+  const typeText = async (text) => send('Input.insertText', { text });
   const lastKeyEvent = async (code) =>
     evaluate(`window.__keyEvents.filter((event) => event.code === ${JSON.stringify(code)}).at(-1)`);
 
@@ -501,7 +502,15 @@ try {
     'G is not typed into the focused search field',
   );
   await press('KeyG', 'g', 71);
-  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'G closes spawn menu');
+  assert.equal(
+    await evaluate("!document.querySelector('#spawn').hidden"),
+    true,
+    'G does not close the menu while the search field is focused',
+  );
+  await typeText('g');
+  assert.equal(await evaluate("document.querySelector('#spawn input').value"), 'g', 'focused search accepts text');
+  await press('Tab', 'Tab', 9);
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes spawn menu');
   await press('Backquote', '`', 192);
   assert.equal(await evaluate("!document.querySelector('.debug-panel').hidden"), true, 'Backquote opens debug panel');
   assert.equal(
@@ -561,6 +570,75 @@ try {
     'menu keys leave pointer lock alone',
   );
 
+  // Exercise keyboard input while pointer lock is held; the game's drawn-cursor menu route is active.
+  await press('KeyG', 'g', 71);
+  assert.equal(
+    await evaluate("document.activeElement === document.querySelector('#spawn input')"),
+    true,
+    'G focuses search',
+  );
+  const positionBeforeSearchKey = await evaluate(
+    "document.querySelector('#debug-readout').textContent.match(/position ([0-9.-]+, [0-9.-]+, [0-9.-]+)/)?.[1]",
+  );
+  await press('KeyW', 'w', 87);
+  await delay(150);
+  assert.equal(
+    await evaluate(
+      "document.querySelector('#debug-readout').textContent.match(/position ([0-9.-]+, [0-9.-]+, [0-9.-]+)/)?.[1]",
+    ),
+    positionBeforeSearchKey,
+    'typing W in search does not move the player',
+  );
+  await press('Tab', 'Tab', 9);
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes without spawning');
+
+  await press('KeyG', 'g', 71);
+  await typeText('a');
+  assert.ok(
+    (await evaluate("document.querySelectorAll('#spawn .spawn-list button').length")) > 1,
+    'typed filter narrows results',
+  );
+  const firstSpawnName = await evaluate(
+    "document.querySelector('#spawn .spawn-list button[aria-current=true] span').textContent",
+  );
+  await press('ArrowDown', 'ArrowDown', 40);
+  const selectedSpawnName = await evaluate(
+    "document.querySelector('#spawn .spawn-list button[aria-current=true] span').textContent",
+  );
+  assert.notEqual(selectedSpawnName, firstSpawnName, 'ArrowDown visibly changes the selected item');
+  await press('Enter', 'Enter', 13);
+  assert.equal(
+    await evaluate("document.querySelector('#spawn').hidden"),
+    true,
+    'Enter spawns selection and closes menu',
+  );
+  assert.deepEqual(
+    await evaluate('window.__pointerCalls'),
+    { request: 0, exit: 0 },
+    'keyboard flow leaves pointer lock alone',
+  );
+  await press('Tab', 'Tab', 9);
+  const nearbyAfterEnter = await evaluate(
+    "[...document.querySelectorAll('#inventory .inv-pane:nth-child(2) .inv-item-name')].map((item) => item.textContent)",
+  );
+  assert.ok(nearbyAfterEnter.includes(selectedSpawnName), 'Enter spawned the selected item');
+  await press('Tab', 'Tab', 9);
+
+  await press('KeyG', 'g', 71);
+  await typeText('crowbar');
+  assert.equal(await evaluate("document.querySelectorAll('#spawn .spawn-list button').length"), 1);
+  await press('Tab', 'Tab', 9);
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab dismisses the filtered menu');
+  await press('Tab', 'Tab', 9);
+  assert.deepEqual(
+    await evaluate(
+      "[...document.querySelectorAll('#inventory .inv-pane:nth-child(2) .inv-item-name')].map((item) => item.textContent)",
+    ),
+    nearbyAfterEnter,
+    'Tab dismissed without spawning',
+  );
+  await press('Tab', 'Tab', 9);
+
   await press('KeyG', 'g', 71);
   const spawnNames = await evaluate(`Array.from(document.querySelectorAll('#spawn .spawn-list button'))
     .map((button, index) => ({ index, name: button.querySelector('span')?.textContent }))
@@ -573,7 +651,7 @@ try {
     );
     await clickAt(`#spawn .spawn-list button:nth-child(${index + 1})`);
   }
-  await press('KeyG', 'g', 71);
+  await press('Tab', 'Tab', 9);
   if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
     await clickAt('#go', 'edge');
   }

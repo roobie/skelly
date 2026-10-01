@@ -60,6 +60,8 @@ test fails when it drifts.
 | Share | — | Dump look settings (JSON), a button | — |
 <!-- debug-keys:end -->
 
+In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every content item that has a melee weapon definition; normal games and restored saves are unchanged. `G` opens the spawn menu with its search field focused. Type to filter, use Up/Down to move the highlighted selection, Enter to spawn and close, or Tab to dismiss without spawning. Search-field keys do not control the player.
+
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture).
