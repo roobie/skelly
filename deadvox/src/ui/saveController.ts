@@ -106,7 +106,6 @@ export class SaveController {
   private readonly environmentProblem: string | undefined;
   private nextAutosaveAt = 0;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
-  private failedTask: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
   private checkpointInterval = SAVE_CHECKPOINT_GAME_HOURS * 450;
   private writing = false;
 
@@ -406,9 +405,7 @@ export class SaveController {
       this.savedGeneration = result.generation;
       this.statusText = `Saved generation ${result.generation} · ${task.reason}`;
       this.failure = '';
-      this.failedTask = undefined;
     } catch (error) {
-      this.failedTask = task;
       this.failure = `Save failed (${task.reason}): ${errorMessage(error)}. The previous A/B generation remains available.`;
       this.statusText = this.failure;
     }
@@ -468,7 +465,7 @@ export class SaveController {
     if (!(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
-    this.queued = this.failedTask ?? { snapshot: this.snapshot(), reason: 'manual retry' };
+    this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };
     this.failure = '';
     if (!this.writing) {
       this.flush().catch(() => undefined);
