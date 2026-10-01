@@ -7,6 +7,7 @@ import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
+import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
 import { LookControls } from './look.ts';
 import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
@@ -440,6 +441,20 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
+  // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
+  // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
+  // them. Roll is ignored: it only comes from damage feedback.
+  const startPose = parseCamParam(new URLSearchParams(location.search));
+  if (startPose) {
+    const { body, input } = hooks;
+    startPose.position.forEach((metres, axis) => {
+      body.pos[axis] = metres / hooks.engine.config.scale.blockSize;
+    });
+    body.vel = [0, 0, 0];
+    body.onGround = false;
+    input.yaw = startPose.yaw;
+    input.pitch = startPose.pitch;
+  }
   /** The whole simulation is stopped (M); play.ts reads it each frame and combines it with the pause menu. */
   let gameFrozen = initialLook.freeze;
   const lookState = (): LookUrlState => ({
@@ -458,7 +473,35 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (next !== location.href) {
       history.replaceState(history.state, '', next);
     }
+    syncCamUrl(true);
   }
+  const metresPerBlock = hooks.engine.config.scale.blockSize;
+  /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
+  const camNow: CamPose = { position: [0, 0, 0], yaw: 0, pitch: 0, roll: 0 };
+  let camWritten: CamPose | undefined;
+  let camWrittenAt = Number.NEGATIVE_INFINITY;
+  /** Writes `cam` (the feet pose, camUrl.ts) when it moved and the interval passed, or at once when `force`. */
+  function syncCamUrl(force = false): void {
+    const { body, input, roll } = hooks;
+    for (let i = 0; i < 3; i++) {
+      camNow.position[i] = body.pos[i]! * metresPerBlock;
+    }
+    camNow.yaw = input.yaw;
+    camNow.pitch = input.pitch;
+    camNow.roll = roll();
+    const now = performance.now();
+    if (!camWriteDue(camWritten, camNow, now - camWrittenAt, force)) {
+      return;
+    }
+    camWritten = { ...camNow, position: [...camNow.position] as Vec3 };
+    camWrittenAt = now;
+    const next = camUrl(location.href, camNow);
+    if (next !== location.href) {
+      history.replaceState(history.state, '', next);
+    }
+  }
+  // Pausing (the pointer lock is lost) is when the operator reaches for the address bar.
+  document.addEventListener('pointerlockchange', () => syncCamUrl(true));
   const actions = createDebugActions({
     hooks,
     look,
@@ -590,7 +633,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       yawRad: hooks.input.yaw,
       pitchRad: hooks.input.pitch,
       buildRevision: buildRevision(),
-      url: lookUrl(location.href, lookState()),
+      rollRad: hooks.roll(),
+      url: camUrl(lookUrl(location.href, lookState()), {
+        position: hooks.body.pos.map((v) => v * metres) as Vec3,
+        yaw: hooks.input.yaw,
+        pitch: hooks.input.pitch,
+        roll: hooks.roll(),
+      }),
       now,
     });
     // Blob link rendered by the panel template, clicked, then dropped again.
@@ -726,6 +775,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     stepNoclip: (step: DebugNoclipStep) => stepNoclip(step),
     update(next: DebugReadout) {
       readout = next;
+      syncCamUrl();
       drawShell();
     },
   };

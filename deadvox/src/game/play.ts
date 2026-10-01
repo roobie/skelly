@@ -68,6 +68,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const playerStart = playerStartFromWorld(engine, scale);
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
+  let cameraRoll = 0;
   let debugTools: DebugRuntime | undefined;
   // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
   applyLook(renderer, meshes, DEFAULT_LOOK);
@@ -283,6 +284,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     newGame: session.restoredLook === undefined,
     sim,
     input,
+    roll: () => cameraRoll,
     zombies: () => zombieSystem,
     feet,
     showNotice,
@@ -739,6 +741,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       }
     }
     const feedback = damageFeedback.step(dt);
+    cameraRoll = feedback.roll;
     camera.rotation.copy(cameraRotation(input.pitch, input.yaw, feedback.roll));
     $('damage').style.opacity = String(feedback.vignetteOpacity);
   };

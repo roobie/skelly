@@ -4,6 +4,7 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { MoodState, ShadowState } from '../core/mood.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
+import { camValue } from './camUrl.ts';
 
 // `vite.config.ts` supplies it; outside a Vite build (tests) it isn't defined.
 declare const __DEADVOX_BUILD_REVISION__: string;
@@ -39,6 +40,8 @@ export interface LookDumpInput {
   positionM: Vec3;
   yawRad: number;
   pitchRad: number;
+  /** Camera roll from damage feedback; 0 normally. */
+  rollRad: number;
   buildRevision: string;
   /** The page URL with the look parameters set, which reproduces this look when opened. */
   url: string;
@@ -84,6 +87,8 @@ export const lookDump = (input: LookDumpInput) => ({
     positionM: input.positionM.map((v) => round(v, 2)),
     yawRad: round(input.yawRad, 3),
     pitchRad: round(input.pitchRad, 3),
+    /** The `?cam=` value that returns to this view (camUrl.ts). */
+    cam: camValue({ position: input.positionM, yaw: input.yawRad, pitch: input.pitchRad, roll: input.rollRad }),
   },
 });
 

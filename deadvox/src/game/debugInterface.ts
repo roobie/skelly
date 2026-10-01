@@ -18,7 +18,10 @@ export interface DebugHooks {
   readonly inventory: Inventory;
   readonly newGame: boolean;
   readonly sim: Simulation;
-  readonly input: { readonly yaw: number; readonly pitch: number };
+  /** Debug tools may set the look direction (`?cam=` restore, debug/camUrl.ts). */
+  readonly input: { yaw: number; pitch: number };
+  /** The camera's current roll in radians (damage feedback; 0 otherwise). */
+  readonly roll: () => number;
   readonly zombies: () => ZombieSystem | undefined;
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;

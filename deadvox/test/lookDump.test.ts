@@ -20,6 +20,7 @@ describe('look settings dump', () => {
       positionM: [1.234, 2, -3.456],
       yawRad: -1.5708,
       pitchRad: 0.1234,
+      rollRad: 0.01,
       buildRevision: 'abc123-dirty',
       url: 'http://localhost:5173/?debug=1&tone=aces',
       now: new Date('2026-10-01T12:34:56.000Z'),
@@ -43,7 +44,7 @@ describe('look settings dump', () => {
       },
       performance: { fps: 60, frameMs: { p50: 16.7, p95: 21 }, cpuMs: { p50: 5, p95: 6.3 } },
       world: { site: 'testHouse', seed: 7, viewRadiusM: 120, blockSizeM: 0.5 },
-      player: { positionM: [1.23, 2, -3.46], yawRad: -1.571, pitchRad: 0.123 },
+      player: { positionM: [1.23, 2, -3.46], yawRad: -1.571, pitchRad: 0.123, cam: '1.23,2.00,-3.46,-90.0,7.1,0.6' },
     });
     expect(JSON.parse(JSON.stringify(dump))).toEqual(dump);
   });
