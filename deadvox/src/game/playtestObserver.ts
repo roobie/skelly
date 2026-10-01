@@ -1,7 +1,6 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
-import type { HandlingQueue, MoveJob, TickResult } from '../core/handling.ts';
+import type { CompletedMove, HandlingQueue, MoveJob, TickResult } from '../core/handling.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
-import { defOf } from '../core/items.ts';
 import {
   measureSnapshots,
   type SessionMetrics,
@@ -16,11 +15,7 @@ interface LootWindow {
   uiSeconds: number;
 }
 
-interface PendingMove {
-  readonly job: MoveJob;
-  readonly source?: Location;
-  readonly sourceCount?: number;
-}
+type PendingMove = CompletedMove;
 
 interface MetricsFrame {
   realSeconds: number;
@@ -75,7 +70,6 @@ const inspectLiveSession = (session: Session): unknown => ({
 /** Excluded, observational bookkeeping for playtest metrics; the game supplies live state. */
 export class PlaytestObserver {
   private readonly lootWindows = new Map<number, LootWindow>();
-  private readonly pendingMoves = new Map<MoveJob, PendingMove>();
   private readonly outcomes: TickResult[] = [];
   private frameActiveUid: number | undefined;
   private uiContainerUid: number | undefined;
@@ -88,52 +82,46 @@ export class PlaytestObserver {
   }
 
   beginSearch(entity: BlockEntity, name: string): void {
-    this.lootWindows.set(entity.uid, this.lootWindows.get(entity.uid) ?? { name, handlingSeconds: 0, uiSeconds: 0 });
-    this.uiContainerUid = entity.uid;
+    this.guard(() => {
+      this.lootWindows.set(entity.uid, this.lootWindows.get(entity.uid) ?? { name, handlingSeconds: 0, uiSeconds: 0 });
+      this.uiContainerUid = entity.uid;
+    });
   }
 
-  /** Capture every queued move's source before the simulation advances it. */
+  /** Attribute elapsed handling time to the queue head; queued jobs are not active yet. */
   beforeFrame(queue: HandlingQueue, inventory: Inventory): void {
-    const [active] = queue.jobs;
-    for (const job of queue.jobs) {
-      if (job.kind === 'move' && !this.pendingMoves.has(job)) {
-        this.captureMove(job, inventory);
-      }
-    }
-    this.frameActiveUid = this.sourceUid(active, inventory);
+    this.guard(() => {
+      this.frameActiveUid = this.sourceUid(queue.jobs[0], inventory);
+    });
   }
 
   /** Called at HandlingQueue.tick's actual completion boundary, never on queue disappearance. */
   handlingOutcomes(result: TickResult): void {
-    this.outcomes.push(result);
+    this.guard(() => this.outcomes.push(result));
   }
 
   afterFrame(
     frame: { realSeconds: number; screenOpen: boolean; visible: boolean },
-    queue: HandlingQueue,
+    _queue: HandlingQueue,
     session: Session,
   ): void {
-    const runningSeconds = !session.sim.paused && frame.visible ? Math.max(0, frame.realSeconds) : 0;
-    const handlingActive = runningSeconds > 0 && session.sim.compression.c <= 1;
-    this.recordFrameTime(runningSeconds, frame.screenOpen, handlingActive ? this.frameActiveUid : undefined);
-    this.commitOutcomes(session.inventory);
-    this.discardCancelled(queue);
-  }
-
-  private captureMove(job: MoveJob, inventory: Inventory): void {
-    const item = inventory.itemByUid(job.itemUid);
-    const source = item ? inventory.locate(item) : undefined;
-    if (source?.kind === 'furniture') {
-      this.ensureWindow(source.entity, inventory);
-    }
-    this.pendingMoves.set(job, { job, ...(source ? { source } : {}), ...(item ? { sourceCount: item.count } : {}) });
+    this.guard(() => {
+      const runningSeconds = !session.sim.paused && frame.visible ? Math.max(0, frame.realSeconds) : 0;
+      const handlingActive = runningSeconds > 0 && session.sim.compression.c <= 1;
+      this.recordFrameTime(runningSeconds, frame.screenOpen, handlingActive ? this.frameActiveUid : undefined);
+      this.commitOutcomes(session.inventory);
+    });
   }
 
   private sourceUid(job: HandlingQueue['jobs'][number] | undefined, inventory: Inventory): number | undefined {
     if (job?.kind === 'move') {
       const item = inventory.itemByUid(job.itemUid);
       const source = item ? inventory.locate(item) : undefined;
-      return source?.kind === 'furniture' ? source.entity.uid : undefined;
+      if (source?.kind === 'furniture') {
+        this.ensureWindow(source.entity, inventory);
+        return source.entity.uid;
+      }
+      return undefined;
     }
     if (job?.kind === 'action' && job.jobType === 'furniture.search' && typeof job.params.entityUid === 'number') {
       const entity = inventory.entities.byUid(job.params.entityUid);
@@ -157,32 +145,11 @@ export class PlaytestObserver {
 
   private commitOutcomes(inventory: Inventory): void {
     for (const result of this.outcomes) {
-      for (const { job } of result.failed) {
-        if (job.kind === 'move') {
-          this.pendingMoves.delete(job);
-        }
-      }
-      for (const job of result.done) {
-        if (job.kind !== 'move') {
-          continue;
-        }
-        const pending = this.pendingMoves.get(job);
-        if (pending) {
-          this.completeMove(pending, inventory);
-        } else {
-          this.recordPocketUse(job, inventory);
-        }
+      for (const completed of result.completedMoves ?? []) {
+        this.completeMove(completed, inventory);
       }
     }
     this.outcomes.length = 0;
-  }
-
-  private discardCancelled(queue: HandlingQueue): void {
-    for (const job of this.pendingMoves.keys()) {
-      if (!queue.jobs.includes(job)) {
-        this.pendingMoves.delete(job);
-      }
-    }
   }
 
   private ensureWindow(entity: BlockEntity, inventory: Inventory): LootWindow {
@@ -201,7 +168,6 @@ export class PlaytestObserver {
     const current = item ? inventory.locate(item) : undefined;
     this.recordSourceLoot(pending, current, item, inventory);
     this.recordPocketUse(job, inventory);
-    this.pendingMoves.delete(job);
   }
 
   private recordSourceLoot(
@@ -249,8 +215,9 @@ export class PlaytestObserver {
     if (!entity) {
       return;
     }
-    const name = inventory.entities.defOf(entity).name.toLowerCase();
-    const spec = defOf(inventory.registry, entity.type).container?.pockets[job.target.pocket];
+    const definition = inventory.entities.defOf(entity);
+    const name = definition.name.toLowerCase();
+    const spec = definition.container?.pockets[job.target.pocket];
     const pocketName = spec?.name ? ` · ${spec.name}` : '';
     this.metrics.recordPocketUse(
       `furniture:${entity.uid}:${job.target.pocket}:${name}${pocketName} pocket ${job.target.pocket + 1}`,
@@ -259,15 +226,19 @@ export class PlaytestObserver {
 
   /** Owns pause, visibility, compression, and interruption accounting policy. */
   frame(frame: MetricsFrame): boolean {
-    const runningSeconds = !frame.paused && frame.visible ? frame.realSeconds : 0;
-    const interrupted = frame.interruption !== undefined && frame.interruption !== this.lastInterruption;
-    this.lastInterruption = frame.interruption;
-    this.metrics.frame(runningSeconds, !frame.paused && frame.compression > 1, interrupted);
-    if (interrupted || frame.now - this.lastPersistAt >= 5000) {
-      this.lastPersistAt = frame.now;
-      return true;
+    try {
+      const runningSeconds = !frame.paused && frame.visible ? frame.realSeconds : 0;
+      const interrupted = frame.interruption !== undefined && frame.interruption !== this.lastInterruption;
+      this.lastInterruption = frame.interruption;
+      this.metrics.frame(runningSeconds, !frame.paused && frame.compression > 1, interrupted);
+      if (interrupted || frame.now - this.lastPersistAt >= 5000) {
+        this.lastPersistAt = frame.now;
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   measureSnapshot(
@@ -276,10 +247,26 @@ export class PlaytestObserver {
     history: SnapshotHistory,
     repeats = 50,
   ): SnapshotMeasurement {
-    const result = measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
-    for (const duration of result.durationsMs) {
-      history.add(duration);
+    try {
+      const result = measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
+      for (const duration of result.durationsMs) {
+        history.add(duration);
+      }
+      return result;
+    } catch {
+      return { samples: 0, p50Ms: 0, p95Ms: 0, durationsMs: [], stateUnchanged: false };
     }
-    return result;
+  }
+
+  /** Metrics must never make an otherwise valid simulation frame fail. */
+  private guard(operation: () => void): void {
+    try {
+      operation();
+    } catch {
+      this.lootWindows.clear();
+      this.outcomes.length = 0;
+      this.frameActiveUid = undefined;
+      this.uiContainerUid = undefined;
+    }
   }
 }

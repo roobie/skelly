@@ -5,7 +5,7 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { formatClock, hourOfDay, SECONDS_PER_DAY, skipTarget } from '../core/clock.ts';
+import { formatClock, hourOfDay, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
@@ -369,11 +369,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {
       const timeOfDay = hour * 3600 + minute * 60;
-      const day = Math.max(
-        Math.floor(sim.calendar / SECONDS_PER_DAY),
-        Math.ceil((sim.clock.start - timeOfDay) / SECONDS_PER_DAY),
-      );
-      sim.setDebugCalendarTime(day * SECONDS_PER_DAY + timeOfDay);
+      sim.setDebugCalendarTime(nextTimeOfDay(sim.calendar, timeOfDay));
     },
     revealZombies: (enabled) => {
       revealZombies = enabled;

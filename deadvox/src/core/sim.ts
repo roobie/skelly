@@ -149,7 +149,7 @@ export class Simulation {
   /** Explicit debug-panel time travel; skipped time is not simulated. */
   setDebugCalendarTime(calendarSeconds: number): void {
     const time = (calendarSeconds - this.clock.start) / this.clock.ratio;
-    if (!Number.isFinite(time) || time < 0) {
+    if (!Number.isFinite(time) || time < this.time) {
       throw new Error(`Invalid debug calendar time ${calendarSeconds}`);
     }
     this.scheduler.seek(time);

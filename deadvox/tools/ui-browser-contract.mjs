@@ -152,11 +152,16 @@ try {
   const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
   const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
   assert.equal(
-    await evaluate(
-      "document.querySelectorAll('#controls dt').length >= 13 && document.querySelector('#controls').textContent.includes('F9')",
-    ),
+    await evaluate(`(() => {
+      const controls = document.querySelector('#controls');
+      const entries = [...controls.querySelectorAll('dt')];
+      const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
+      return entries.length >= 13 && controls.textContent.includes('F9') &&
+        entries.every((key) => key.nextElementSibling?.tagName === 'DD') &&
+        columns.length === 1 && document.querySelector('#overlay .card').getBoundingClientRect().width <= 362;
+    })()`),
     true,
-    'controls card is populated from current control bindings',
+    'binding-derived controls stack in one column inside the narrower pause card',
   );
   assert.equal(
     await evaluate(
@@ -186,8 +191,8 @@ try {
     Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Reveal zombies'))?.click();
   })()`);
   await waitFor(
-    () => evaluate("document.querySelector('#debug-readout').textContent.includes('08:00')"),
-    'debug time control',
+    () => evaluate("document.querySelector('#debug-readout').textContent.includes('Day 2, 08:00')"),
+    'backward debug-time request advances to the next day',
   );
   assert.match(
     await evaluate(
