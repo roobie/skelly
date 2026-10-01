@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { penetrationWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
 import { IDENTITY } from '../src/core/math.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import type { Solid, Vec2 } from '../src/core/schema.ts';
-import { FAMILIES, PUMP_REAR_SLOPE, RECEIVER_SECTION } from '../src/gun/parts.ts';
+import { carrierCavityBounds, FAMILIES, PUMP_REAR_SLOPE, RECEIVER_SECTION } from '../src/gun/parts.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
 import { expectWatertightMesh } from './helpers.ts';
 
@@ -107,8 +107,71 @@ describe('receiver section builder', () => {
     ).toThrow(DEGENERATE_ERROR);
   });
 
-  it('keeps at least 0.5u AK receiver wall around the enlarged carrier cavity', () => {
-    const wall = cavityWallThickness(RECEIVER_SECTION.ak.outline, RECEIVER_SECTION.ak.cavity);
+  it('matches the core profile validator for concave, clockwise, collinear, self-intersecting, and valid profiles', () => {
+    const tinySquare: readonly Vec2[] = [
+      [-1e-5, -1e-5],
+      [1e-5, -1e-5],
+      [1e-5, 1e-5],
+      [-1e-5, 1e-5],
+    ];
+    const profiles: readonly [string, readonly Vec2[]][] = [
+      [
+        'concave',
+        [
+          [-2, -2],
+          [2, -2],
+          [0, 0],
+          [2, 2],
+          [-2, 2],
+        ],
+      ],
+      ['clockwise', [...square].reverse()],
+      [
+        'collinear',
+        [
+          [-2, -2],
+          [0, -2],
+          [2, -2],
+          [2, 2],
+          [-2, 2],
+        ],
+      ],
+      [
+        'self-intersecting',
+        [
+          [0, 0],
+          [2, 2],
+          [0, 2],
+          [2, 0],
+        ],
+      ],
+      ['valid', square],
+      ['small valid square', tinySquare],
+    ];
+
+    for (const [name, outline] of profiles) {
+      const acceptedByCore = validateExtrudedPolygon(outline, [0, 1], 'x') === undefined;
+      let acceptedByReceiver = true;
+      try {
+        assertConvexSection(outline, name);
+      } catch {
+        acceptedByReceiver = false;
+      }
+      expect(acceptedByReceiver, name).toBe(acceptedByCore);
+    }
+  });
+
+  it('derives section cavities from carrier envelopes and preserves approved bounds', () => {
+    const cavities = {
+      ar: carrierCavityBounds('ar', 0),
+      ak: carrierCavityBounds('ak', 0),
+      pump: carrierCavityBounds('pump', 1),
+    };
+    expect(cavities.ar).toEqual({ y: [-0.6, 1.1], z: [-1.35, 1.35] });
+    expect(cavities.ak).toEqual({ y: [-1.35, 1.35], z: [-1.35, 1.35] });
+    expect(cavities.pump).toEqual({ y: [0.15, 1.85], z: [-0.85, 0.85] });
+    expect(carrierCavityBounds('pump', 0).y).toEqual([-0.85, 0.85]);
+    const wall = cavityWallThickness(RECEIVER_SECTION.ak.outline, cavities.ak);
     expect(wall).toBeCloseTo(0.545_705_156_3, 8);
     expect(wall).toBeGreaterThanOrEqual(0.5);
   });
@@ -164,27 +227,26 @@ describe('receiver section builder', () => {
     const receivers = [
       {
         id: 'receiver-ar',
-        outlineSection: RECEIVER_SECTION.ar,
+        cavity: carrierCavityBounds('ar', 0),
         def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' }),
       },
       {
         id: 'receiver-ak',
-        outlineSection: RECEIVER_SECTION.ak,
+        cavity: carrierCavityBounds('ak', 0),
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
       },
       {
         id: 'receiver-pump',
-        outlineSection: RECEIVER_SECTION.pump,
+        cavity: carrierCavityBounds('pump', 0),
         def: FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', section: 'pump', rail: 'none' }),
       },
     ];
-    for (const { id, outlineSection, def } of receivers) {
+    for (const { id, cavity, def } of receivers) {
       const sectionSolids = def.solids.filter((solid) => solid.display?.mergeGroup === id);
       const ids = sectionSolids.map(({ id: solidId }) => solidId);
       const receiverMesh = meshForSolidGroup(sectionSolids);
-      const receiverDrop = -(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[1] ?? 0);
-      const cavityCenterY = (outlineSection.cavity.y[0] + outlineSection.cavity.y[1]) / 2 - receiverDrop;
-      const cavityCenterZ = (outlineSection.cavity.z[0] + outlineSection.cavity.z[1]) / 2;
+      const cavityCenterY = (cavity.y[0] + cavity.y[1]) / 2;
+      const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
       if (id === 'receiver-pump') {
         expect(faceContainsPoint(receiverMesh, -16, -1, 0), `${id} rear stock interface`).toBe(true);
       } else {

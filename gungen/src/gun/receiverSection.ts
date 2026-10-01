@@ -1,4 +1,4 @@
-import { clippedExtrudedPolygonPolyhedron } from '../core/geometry.ts';
+import { clippedExtrudedPolygonPolyhedron, validateExtrudedPolygon } from '../core/geometry.ts';
 import type { ClipPlane, Solid, Vec2 } from '../core/schema.ts';
 
 export interface SectionWindow {
@@ -21,64 +21,14 @@ export interface ReceiverSectionSpec {
   readonly magazineWell?: SectionWindow;
 }
 
-const signedArea = (profile: readonly Vec2[]): number =>
-  profile.reduce((area, point, index) => {
-    const next = profile[(index + 1) % profile.length]!;
-    return area + point[0] * next[1] - next[0] * point[1];
-  }, 0) / 2;
-
-const orientation = (a: Vec2, b: Vec2, c: Vec2): number =>
-  (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-
-const onSegment = (a: Vec2, b: Vec2, point: Vec2): boolean =>
-  Math.min(a[0], b[0]) - 1e-9 <= point[0] &&
-  point[0] <= Math.max(a[0], b[0]) + 1e-9 &&
-  Math.min(a[1], b[1]) - 1e-9 <= point[1] &&
-  point[1] <= Math.max(a[1], b[1]) + 1e-9;
-
-const segmentsIntersect = (a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean => {
-  const abC = orientation(a, b, c);
-  const abD = orientation(a, b, d);
-  const cdA = orientation(c, d, a);
-  const cdB = orientation(c, d, b);
-  if (
-    ((abC > 1e-9 && abD < -1e-9) || (abC < -1e-9 && abD > 1e-9)) &&
-    ((cdA > 1e-9 && cdB < -1e-9) || (cdA < -1e-9 && cdB > 1e-9))
-  ) {
-    return true;
-  }
-  return (
-    (Math.abs(abC) <= 1e-9 && onSegment(a, b, c)) ||
-    (Math.abs(abD) <= 1e-9 && onSegment(a, b, d)) ||
-    (Math.abs(cdA) <= 1e-9 && onSegment(c, d, a)) ||
-    (Math.abs(cdB) <= 1e-9 && onSegment(c, d, b))
-  );
-};
-
-/** Reject degenerate, clockwise, concave, or self-intersecting receiver sections at their source. */
+/** Delegate section outline policy to core while retaining receiver-specific diagnostics. */
 export const assertConvexSection = (profile: readonly Vec2[], id = 'receiver'): void => {
-  if (
-    profile.length < 3 ||
-    profile.some((point) => point.some((coordinate) => !Number.isFinite(coordinate))) ||
-    signedArea(profile) <= 1e-9
-  ) {
-    throw new Error(`${id}: receiver outline must be a non-degenerate counter-clockwise convex polygon.`);
-  }
-  for (let i = 0; i < profile.length; i++) {
-    const a = profile[i]!;
-    const b = profile[(i + 1) % profile.length]!;
-    const c = profile[(i + 2) % profile.length]!;
-    if (orientation(a, b, c) <= 1e-9) {
-      throw new Error(`${id}: receiver outline must be a non-degenerate counter-clockwise convex polygon.`);
-    }
-    for (let j = i + 1; j < profile.length; j++) {
-      if (j === i || j === (i + 1) % profile.length || i === (j + 1) % profile.length) {
-        continue;
-      }
-      if (segmentsIntersect(a, b, profile[j]!, profile[(j + 1) % profile.length]!)) {
-        throw new Error(`${id}: receiver outline must not self-intersect.`);
-      }
-    }
+  const error = validateExtrudedPolygon(profile, [0, 1], 'x');
+  if (error) {
+    const message = error.includes('self-intersect')
+      ? 'receiver outline must not self-intersect.'
+      : 'receiver outline must be a non-degenerate counter-clockwise convex polygon.';
+    throw new Error(`${id}: ${message}`);
   }
 };
 
@@ -119,7 +69,7 @@ const clip = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boo
   return cleanProfile(output);
 };
 
-const positive = (profile: readonly Vec2[]): boolean => profile.length >= 3 && Math.abs(signedArea(profile)) > 1e-9;
+const positive = (profile: readonly Vec2[]): boolean => validateExtrudedPolygon(profile, [0, 1], 'x') === undefined;
 const windowIntersectsProfile = (profile: readonly Vec2[], window: SectionWindow): boolean => {
   const values = profile.map((point) => point[window.sectionAxis]);
   return Math.max(...values) > window.section[0] + 1e-9 && Math.min(...values) < window.section[1] - 1e-9;

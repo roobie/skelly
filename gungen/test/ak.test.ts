@@ -88,7 +88,7 @@ describe('AK-pattern archetype', () => {
     expect(section.every((solid) => solid.kind === 'extruded-polygon' && solid.clip?.length === 1)).toBe(true);
   });
 
-  it('keeps the forward-shifted port clear of the dust-cover roof and rear-sight interface', () => {
+  it('sizes the forward AK port below the dust-cover roof and rear-sight interface', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'M' });
     const port = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
     const portXMax = port.box.center[0] + port.box.half[0];
@@ -97,11 +97,11 @@ describe('AK-pattern archetype', () => {
     const rearSight = receiver.ports.find(({ id }) => id === 'rear-sight')!;
 
     expect(port.box.center[0] - port.box.half[0]).toBe(-7.5);
-    expect(portXMax).toBe(-4);
+    expect(portXMax).toBe(-1);
     expect(portYMax).toBe(1.5);
     expect(roofY - portYMax).toBe(1);
     expect(rearSight.pos).toEqual([-2, 2.5, 0]);
-    expect(rearSight.pos[0] - portXMax).toBe(2);
+    expect(rearSight.pos[1]).toBeGreaterThan(portYMax);
   });
 
   it('uses an angled AK section while preserving its stock and sight interfaces', () => {

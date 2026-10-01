@@ -8,12 +8,14 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
 
-/** Every combination of a family's parameter values. */
+/** Every family-parameter combination except handle style, whose compatible pairings are tested separately. */
 const variants = (family: PartFamily): Record<string, string>[] =>
-  Object.entries(family.params).reduce<Record<string, string>[]>(
-    (acc, [name, spec]) => acc.flatMap((p) => spec.values.map((v) => ({ ...p, [name]: v }))),
-    [{}],
-  );
+  Object.entries(family.params)
+    .filter(([name]) => name !== 'handleStyle')
+    .reduce<Record<string, string>[]>(
+      (acc, [name, spec]) => acc.flatMap((p) => spec.values.map((v) => ({ ...p, [name]: v }))),
+      [{}],
+    );
 
 const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
 
