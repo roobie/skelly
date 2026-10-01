@@ -792,6 +792,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleStyle": "battle",
           "pattern": "barrett",
         },
       },
@@ -887,6 +888,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleStyle": "battle",
           "pattern": "barrett",
         },
       },
@@ -975,6 +977,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleStyle": "battle",
           "pattern": "barrett",
         },
       },
@@ -1882,6 +1885,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleStyle": "bullpup",
           "pattern": "barrett",
         },
       },
@@ -1957,6 +1961,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleStyle": "bullpup",
           "pattern": "barrett",
         },
       },
@@ -2040,6 +2045,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       "bolt-carrier": {
         "family": "bolt-carrier",
         "params": {
+          "handleStyle": "bullpup",
           "pattern": "barrett",
         },
       },

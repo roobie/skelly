@@ -39,22 +39,35 @@ const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', b
 const solidBounds = (component: Solid): readonly [Vec3, Vec3] => {
   if (component.kind === 'box') {
     return [
-      component.box.center.map((center, axis) => center - component.box.half[axis]!) as unknown as Vec3,
-      component.box.center.map((center, axis) => center + component.box.half[axis]!) as unknown as Vec3,
+      component.box.center.map(
+        (coordinateCenter, axisIndex) => coordinateCenter - component.box.half[axisIndex]!,
+      ) as unknown as Vec3,
+      component.box.center.map(
+        (coordinateCenter, axisIndex) => coordinateCenter + component.box.half[axisIndex]!,
+      ) as unknown as Vec3,
     ];
   }
-  const axis: ExtrusionAxis = component.axis ?? 'z';
+  const extrusionAxis: ExtrusionAxis = component.axis ?? 'z';
   const profileBounds = [0, 1].map((coordinate) => [
     Math.min(...component.profile.map((point) => point[coordinate]!)),
     Math.max(...component.profile.map((point) => point[coordinate]!)),
   ]);
-  if (axis === 'x') {
-    return [[component.z[0], profileBounds[0]![0]!, profileBounds[1]![0]!], [component.z[1], profileBounds[0]![1]!, profileBounds[1]![1]!]];
+  if (extrusionAxis === 'x') {
+    return [
+      [component.z[0], profileBounds[0]![0]!, profileBounds[1]![0]!],
+      [component.z[1], profileBounds[0]![1]!, profileBounds[1]![1]!],
+    ];
   }
-  if (axis === 'y') {
-    return [[profileBounds[1]![0]!, component.z[0], profileBounds[0]![0]!], [profileBounds[1]![1]!, component.z[1], profileBounds[0]![1]!]];
+  if (extrusionAxis === 'y') {
+    return [
+      [profileBounds[1]![0]!, component.z[0], profileBounds[0]![0]!],
+      [profileBounds[1]![1]!, component.z[1], profileBounds[0]![1]!],
+    ];
   }
-  return [[profileBounds[0]![0]!, profileBounds[1]![0]!, component.z[0]], [profileBounds[0]![1]!, profileBounds[1]![1]!, component.z[1]]];
+  return [
+    [profileBounds[0]![0]!, profileBounds[1]![0]!, component.z[0]],
+    [profileBounds[0]![1]!, profileBounds[1]![1]!, component.z[1]],
+  ];
 };
 const AK_CHARGING_HANDLE_BASE = {
   min: [-1.75, -0.5, -1.75] as Vec3,
@@ -1083,7 +1096,10 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     params.action === 'bolt' && carrierPattern === 'bolt'
       ? {
           ...portWindow,
-          x: [Math.min(portWindow.x[0], travel.restX - travel.length - BOLT_HANDLE_REAR_REACH_U), portWindow.x[1]] as const,
+          x: [
+            Math.min(portWindow.x[0], travel.restX - travel.length - BOLT_HANDLE_REAR_REACH_U),
+            portWindow.x[1],
+          ] as const,
         }
       : portWindow;
   const shell =
@@ -1246,7 +1262,16 @@ export const akReceiver: PartFamily = {
 const BOLT_HANDLE_REAR_REACH_U = 2.25;
 const boltActionHandleSolids = (): Solid[] => [
   solid('bolt-handle', [1.5, -0.25, -1.25], [2, 0.25, -0.75]),
-  extrudedPolygon('bolt-handle-arm', [[1.5, 0], [1.75, -0.75], [2.25, -0.5], [2, -0.25]], [-1.25, -0.75]),
+  extrudedPolygon(
+    'bolt-handle-arm',
+    [
+      [1.5, 0],
+      [1.75, -0.75],
+      [2.25, -0.5],
+      [2, -0.25],
+    ],
+    [-1.25, -0.75],
+  ),
   {
     id: 'bolt-handle-ball',
     kind: 'extruded-polygon',
@@ -1300,11 +1325,7 @@ const carrierTravelLength = (params: Readonly<Record<string, string>>): number =
   return BOLT_TRAVEL.standard.length;
 };
 
-const carrierHandleKeepOuts = (
-  style: CarrierHandleStyle,
-  solids: readonly Solid[],
-  travel: number,
-): KeepOut[] => {
+const carrierHandleKeepOuts = (style: CarrierHandleStyle, solids: readonly Solid[], travel: number): KeepOut[] => {
   const definition = CARRIER_HANDLE_STYLES[style];
   if (definition.owner !== 'carrier' || !('handClearanceU' in definition) || solids.length === 0) {
     return [];
@@ -1326,17 +1347,22 @@ const carrierHandleKeepOuts = (
   const primaryId = style === 'bolt' ? 'bolt-handle' : 'charging-handle';
   const primary = solids.find(({ id }) => id === primaryId);
   const restFace = primary ? solidBounds(primary) : undefined;
-  const rest =
-    restFace && style === 'bolt'
-      ? keepOut('bolt-handle', [restFace[1][0], restFace[0][1], restFace[0][2]], [restFace[1][0] + clearance, restFace[1][1], restFace[1][2]], 'mount')
-      : restFace
-        ? keepOut(
-            'charging-handle',
-            [restFace[0][0], restFace[0][1], restFace[0][2] - clearance],
-            [restFace[1][0], restFace[1][1], restFace[0][2]],
-            'mount',
-          )
-        : undefined;
+  let rest: KeepOut | undefined;
+  if (restFace && style === 'bolt') {
+    rest = keepOut(
+      'bolt-handle',
+      [restFace[1][0], restFace[0][1], restFace[0][2]],
+      [restFace[1][0] + clearance, restFace[1][1], restFace[1][2]],
+      'mount',
+    );
+  } else if (restFace) {
+    rest = keepOut(
+      'charging-handle',
+      [restFace[0][0], restFace[0][1], restFace[0][2] - clearance],
+      [restFace[1][0], restFace[1][1], restFace[0][2]],
+      'mount',
+    );
+  }
   return rest ? [hand, swept, rest] : [hand, swept];
 };
 
