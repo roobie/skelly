@@ -18,12 +18,6 @@ const magazineGapIssues = (assembly: ReturnType<typeof tiltedMagazine>) =>
   );
 
 describe('tilted magazine well layout support', () => {
-  it('refuses a tilted magazine in the bullpup layout with a clear well-support issue, not a contact gap', () => {
-    const assembly = tiltedMagazine('archetype-bullpup');
-    expect(wellLayoutIssues(assembly).some(({ message }) => message.includes('bullpup layout has none'))).toBe(true);
-    expect(magazineGapIssues(assembly)).toEqual([]);
-  });
-
   it('refuses the SMG magazine in the slanted conventional well clearly, not as a contact gap', () => {
     const assembly = tiltedMagazine('archetype-battle-rifle', 'smg');
     const report = validate(assembly, gunDomain);

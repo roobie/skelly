@@ -55,6 +55,7 @@ test fails when it drifts.
 | Diagnostics | `End` | Crack check (magenta background) | `crackcheck=1` |
 | Diagnostics | `PgDn` | Hot-pixel check (coloured) | `hotcheck=1` |
 | Diagnostics | — | Mouse readout (bottom left, always on) | — |
+| Diagnostics | `F4` | Performance overlay | — |
 | Share | — | Camera pose, kept in the address bar | `cam=x,y,z,yaw,pitch,roll` |
 | Share | — | Dump look settings (JSON), a button | — |
 <!-- debug-keys:end -->

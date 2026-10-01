@@ -37,6 +37,12 @@ export const skipTarget = (clock: ClockSettings, from: number, hours: number): n
 export const hourOfDay = (calendar: number): number =>
   (((calendar % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY) / SECONDS_PER_HOUR;
 
+/** The next calendar occurrence of a time of day, strictly after `calendar`. */
+export const nextTimeOfDay = (calendar: number, timeOfDay: number): number => {
+  const today = Math.floor(calendar / SECONDS_PER_DAY) * SECONDS_PER_DAY + timeOfDay;
+  return today > calendar ? today : today + SECONDS_PER_DAY;
+};
+
 /** Day number, starting at 1. */
 export const dayOf = (calendar: number): number => Math.floor(calendar / SECONDS_PER_DAY) + 1;
 

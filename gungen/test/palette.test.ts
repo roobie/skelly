@@ -67,7 +67,10 @@ describe('palette migration', () => {
     expect(mismatches(old)).toEqual([]);
   });
 
-  it('reproduces the old FAMILY_COLORS lookup bit-identically across every fixture and design', () => {
+  // Measured about 1.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('reproduces the old FAMILY_COLORS lookup bit-identically across every fixture and design', {
+    timeout: 10_000,
+  }, () => {
     const old = oldColored(corpusAssemblies());
     expect(old.length).toBeGreaterThan(100);
     expect(mismatches(old)).toEqual([]);
@@ -120,7 +123,8 @@ describe('palette coverage', () => {
     expect(usingFallback(fixtureAssemblies())).toEqual([]);
   });
 
-  it('never needs the fallback for any solid of any fixture or design', () => {
+  // Measured about 1.9 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('never needs the fallback for any solid of any fixture or design', { timeout: 10_000 }, () => {
     expect(usingFallback(corpusAssemblies())).toEqual([]);
   });
 });

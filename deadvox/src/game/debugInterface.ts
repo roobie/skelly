@@ -29,12 +29,12 @@ export interface DebugHooks {
   readonly showNotice: (text: string) => void;
   readonly spawnItem: (type: string) => string;
   readonly compress: () => void;
-  /**
-   * Fast-forwards the real game clock by this many game hours through compression, ignoring
-   * danger; calling it during a skip extends the target. Real interruptions (damage, a need
-   * turning critical, noise) still end it.
-   */
+  /** Fast-forwards through compression; real interruptions still end the skip. */
   readonly skipGameHours: (hours: number) => void;
+  readonly setTimeOfDay: (hour: number, minute: number) => void;
+  readonly revealZombies: (enabled: boolean) => void;
+  readonly measureSnapshot: () => { samples: number; p50Ms: number; p95Ms: number; stateUnchanged: boolean };
+  readonly exportMetrics: () => void;
 }
 
 export interface DebugNoclipStep {
@@ -62,6 +62,17 @@ export interface DebugReadout {
   readonly holes: number;
   readonly zombies: number;
   readonly sounds: readonly HeardSound[];
+  readonly simulationMs: number;
+  readonly renderMs: number;
+  readonly meshingQueueMs: number;
+  readonly entities: number;
+  readonly memoryBytes: number;
+  readonly clock: string;
+  readonly compression: number;
+  readonly snapshotLastMs: number;
+  readonly snapshotP95Ms: number;
+  readonly snapshotCount: number;
+  readonly revealedZombies: readonly string[];
 }
 
 export interface DebugRuntime {
@@ -76,6 +87,7 @@ export interface DebugRuntime {
   /** The whole simulation is stopped (M): the game combines this with the pause menu's pause. */
   readonly frozen: boolean;
   readonly spawnOpen: boolean;
+  readonly revealZombies: boolean;
   dangerReason: () => string | undefined;
   handleKey: (e: KeyboardEvent) => boolean;
   closeMenus: () => void;

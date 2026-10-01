@@ -175,7 +175,7 @@ body {
   pointer-events: none;
 }
 #overlay .card {
-  max-width: 420px;
+  max-width: 360px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   margin-right: 16px;
@@ -205,6 +205,16 @@ body {
 }
 #overlay dd {
   margin: 0;
+}
+#overlay #controls {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+}
+#overlay #controls dt {
+  margin-top: 6px;
+}
+#overlay #controls dd {
+  margin-bottom: 4px;
 }
 #overlay .go {
   color: var(--text);
@@ -1142,4 +1152,29 @@ body.bench #quickbar {
 #debug-ui-root #hotbar,
 #debug-ui-root #spawn {
   pointer-events: auto;
+}
+
+#f3-debug-overlay {
+  position: fixed;
+  z-index: 1000;
+  top: 0.5rem;
+  left: 0.5rem;
+  max-width: min(48rem, calc(100vw - 1rem));
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem 0.65rem;
+  color: #d7f7c7;
+  background: rgb(0 0 0 / 78%);
+  font:
+    12px / 1.35 ui-monospace,
+    monospace;
+  pointer-events: none;
+}
+
+#f3-debug-overlay[hidden] {
+  display: none;
+}
+
+#f3-debug-overlay .debug-revealed-zombies {
+  color: #ffcf7a;
 }

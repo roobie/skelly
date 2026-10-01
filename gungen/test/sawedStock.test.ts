@@ -74,7 +74,10 @@ describe('sawed-off tapered stock', () => {
     expect(sawed.map((solid) => solid.id)).toEqual(['fore-stock', 'grip', 'cut-stub']);
   });
 
-  it('generates sawed stocks only on short-barrel builds, in a 10–20% seed share, with one valid hold', () => {
+  // Measured about 5.2 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('generates sawed stocks only on short-barrel builds, in a 10–20% seed share, with one valid hold', {
+    timeout: 30_000,
+  }, () => {
     const sawedSeeds: number[] = [];
     for (let seed = 0; seed < 300; seed++) {
       const assembly = generate(pumpShotgun, gunDomain, seed);
