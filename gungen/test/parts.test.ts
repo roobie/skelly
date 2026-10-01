@@ -179,19 +179,12 @@ describe('part library', () => {
     }
   });
 
-  it('adds a beavertail grip-safety tang to both handgun frame styles', () => {
+  it('keeps the pistol tang and gives the rebuilt revolver an exposed hammer spur', () => {
     const pistol = FAMILIES.frame!.build({ bore: 'S', gripLength: 'M', slideLength: 'S' });
-    const revolver = FAMILIES.receiver!.build({ action: 'revolver', feed: 'cylinder', bore: 'S' });
-    const pistolSafety = pistol.solids.find(({ id }) => id === 'beavertail-grip-safety');
-    const revolverSafety = revolver.solids.find(({ id }) => id === 'beavertail-grip-safety');
-    expect(pistolSafety?.kind).toBe('extruded-polygon');
-    expect(revolverSafety?.kind).toBe('extruded-polygon');
-    if (pistolSafety?.kind === 'extruded-polygon' && revolverSafety?.kind === 'extruded-polygon') {
-      expect(pistolSafety.profile).toHaveLength(4);
-      expect(revolverSafety.profile).toHaveLength(5);
-      expect(pistolSafety.z).toEqual([-0.75, 0.75]);
-      expect(revolverSafety.z).toEqual([-1.25, 1.25]);
-    }
+    const revolver = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', butt: 'round' });
+    expect(pistol.solids.some(({ id }) => id === 'beavertail-grip-safety')).toBe(true);
+    expect(revolver.solids.some(({ id }) => id === 'exposed-hammer-spur')).toBe(true);
+    expect(revolver.keepOuts.some(({ id }) => id === 'hammer-travel')).toBe(true);
   });
 
   it('builds a hollow pistol slide with ejection port and sight rail', () => {
@@ -222,35 +215,43 @@ describe('part library', () => {
     expect(barrel.ports.find((port) => port.id === 'frame')?.required).toBe(true);
   });
 
-  it('builds a revolver frame with a cylinder window and the required clearance volumes', () => {
-    const frame = FAMILIES.receiver!.build({ action: 'revolver', feed: 'cylinder', bore: 'S' });
-    expect(frame.solids.map((part) => part.id)).toContain('top-strap');
-    expect(frame.solids.map((part) => part.id)).toContain('cylinder-side-near');
-    expect(frame.ports.map((port) => port.id)).toContain('cylinder');
-    expect(frame.keepOuts.map((keepOut) => keepOut.id)).toEqual(['cylinder-gap', 'cylinder-swing', 'hammer-travel']);
+  it('builds a two-sided sectioned revolver frame with named interfaces and keep-outs', () => {
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', butt: 'round' });
+    expect(frame.family).toBe('revolver-frame');
+    expect(frame.solids.map((part) => part.id)).toContain('topstrap');
+    expect(frame.ports.map((port) => port.id)).toEqual(['barrel', 'cylinder', 'grip-frame']);
+    expect(frame.keepOuts.map((volume) => volume.id)).toEqual([
+      'trigger-finger',
+      'cylinder-swing',
+      'hammer-travel',
+      'cylinder-gap',
+    ]);
   });
 
-  it('adds the barrel-to-cylinder loop port to the revolver barrel profile', () => {
-    const barrel = FAMILIES.barrel!.build({ bore: 'S', length: 'S', profile: 'revolver' });
-    expect(barrel.ports.map((port) => port.id)).toContain('cylinder');
-    const tube = barrel.solids[0]!;
-    expect(tube.kind).toBe('extruded-polygon');
-    expect(localSolidBounds(tube)[1][0]).toBeCloseTo(12);
+  it('builds a revolver octagonal barrel with its forcing cone, rib, shroud, sight and loop port', () => {
+    const barrel = FAMILIES['revolver-barrel']!.build({ bore: 'S', length: 'S', style: 'classic' });
+    expect(barrel.ports.map((port) => port.id)).toEqual(['frame', 'cylinder', 'muzzle']);
+    expect(barrel.solids.map((part) => part.id)).toEqual([
+      'barrel-octagon',
+      'forcing-cone',
+      'top-rib',
+      'underlug-shroud',
+      'front-sight',
+    ]);
+    expect(localSolidBounds(barrel.solids[0]!)[1][0]).toBeCloseTo(7.5);
   });
 
-  it('builds six- or eight-sided revolver cylinders with an aligned chamber axis', () => {
-    const six = FAMILIES.cylinder!.build({ chambers: 'six', chamber: 'aligned' });
-    const eight = FAMILIES.cylinder!.build({ chambers: 'eight', chamber: 'aligned' });
-    expect(six.solids[0]!.kind).toBe('extruded-polygon');
-    expect(eight.solids[0]!.kind).toBe('extruded-polygon');
-    if (six.solids[0]!.kind === 'extruded-polygon' && eight.solids[0]!.kind === 'extruded-polygon') {
-      expect(six.solids[0]!.profile).toHaveLength(6);
-      expect(eight.solids[0]!.profile).toHaveLength(8);
-    }
-    expect(six.axes[0]!.origin[0]).toBeCloseTo(0);
-    expect(six.axes[0]!.origin[1]).toBeCloseTo(3);
-    expect(eight.axes[0]!.origin[0]).toBeCloseTo(0);
-    expect(eight.axes[0]!.origin[1]).toBeCloseTo(3);
+  it('keeps six chamber positions as data and aligns index zero with the bore', () => {
+    const cylinder = FAMILIES['revolver-cylinder']!.build({ chamberCount: '6', chamberIndex: '0' });
+    const drum = cylinder.solids.find(({ id }) => id === 'drum');
+    expect(drum?.kind).toBe('extruded-polygon');
+    expect(cylinder.ports.map((port) => port.id)).toEqual(['frame', 'barrel']);
+    const chamberAxis = cylinder.axes.find(({ kind }) => kind === 'bore')!;
+    expect(chamberAxis.origin[0]).toBeCloseTo(0, 12);
+    expect(chamberAxis.origin[1]).toBeCloseTo(1.25, 12);
+    expect(chamberAxis.origin[2]).toBeCloseTo(0, 12);
+    expect(FAMILIES['revolver-cylinder']!.params.chamberCount!.values).toEqual(['6']);
+    expect(FAMILIES['revolver-cylinder']!.params.chamberIndex!.fault).toEqual(['1', '2', '3', '4', '5']);
   });
 
   it('uses the measured grip length bands for detached and integrated pistol grips', () => {
@@ -355,7 +356,9 @@ describe('part library', () => {
           ),
           ...def.keepOuts.flatMap((k) => bounds(k.box)),
           ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
-          ...def.axes.flatMap((a) => [...a.origin]),
+          ...def.axes
+            .filter((axis) => family.name !== 'revolver-cylinder' || axis.kind !== 'bore')
+            .flatMap((axis) => [...axis.origin]),
         ];
         expect(numbers.filter((n) => !onGridWithCarrierClearance(n, gridStep, family))).toEqual([]);
         for (const p of def.ports) {

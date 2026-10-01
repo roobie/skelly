@@ -89,10 +89,11 @@ describe('visible action details', () => {
     }
   });
 
-  it('does not add an ejection port to revolver receivers', () => {
-    const revolver = FAMILIES.receiver!.build({ action: 'revolver', feed: 'cylinder', bore: 'S' });
-    expect(revolver.keepOuts.some(({ id }) => id === 'ejection')).toBe(false);
-    expect(revolver.solids.some(({ id }) => id.startsWith('receiver-shell-side-near'))).toBe(false);
+  it('keeps rebuilt revolver geometry out of the generic receiver family', () => {
+    const generic = FAMILIES.receiver!.build({ action: 'revolver', feed: 'box', bore: 'S' });
+    expect(generic.solids.some(({ id }) => id === 'top-strap')).toBe(false);
+    expect(generic.solids.some(({ id }) => id.startsWith('cylinder-side'))).toBe(false);
+    expect(generic.keepOuts.some(({ id }) => id === 'cylinder-swing')).toBe(false);
   });
 
   it('places side, rear-top, and bolt handles at touching, non-overlapping rest faces', () => {

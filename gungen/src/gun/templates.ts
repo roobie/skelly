@@ -195,21 +195,23 @@ export const pistol: Template = {
 
 export const revolver: Template = {
   name: 'revolver',
-  description: 'Revolver: aligned cylinder chambers, frame window, and exposed barrel.',
-  root: 'receiver',
+  description: 'Rebuilt K/L-frame revolver with an aligned six-chamber cylinder.',
+  root: 'frame',
   slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'revolver', feed: 'cylinder', bore: ['S', 'M'] } },
-    { id: 'lower', family: 'lower', params: { layout: 'trigger' } },
-    { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'], profile: 'revolver' } },
-    { id: 'cylinder', family: 'cylinder', params: { chambers: ['six', 'eight'], chamber: 'aligned' } },
-    { id: 'grip', family: 'grip', params: { length: SML, well: 'none' } },
+    {
+      id: 'frame',
+      family: 'revolver-frame',
+      params: { bore: ['S', 'M'], frameSize: SML, butt: ['round', 'square'] },
+    },
+    { id: 'barrel', family: 'revolver-barrel', params: { length: SML, style: ['classic', 'vented'] } },
+    { id: 'cylinder', family: 'revolver-cylinder', params: { chamberCount: '6', chamberIndex: '0' } },
+    { id: 'grip', family: 'revolver-grip', params: { length: SML } },
   ],
   connections: [
-    { from: 'receiver.lower', to: 'lower.top' },
-    { from: 'receiver.barrel', to: 'barrel.rear' },
-    { from: 'receiver.cylinder', to: 'cylinder.frame' },
+    { from: 'frame.barrel', to: 'barrel.frame' },
+    { from: 'frame.cylinder', to: 'cylinder.frame' },
     { from: 'barrel.cylinder', to: 'cylinder.barrel' },
-    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'frame.grip-frame', to: 'grip.frame-joint' },
   ],
 };
 

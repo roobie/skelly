@@ -80,6 +80,16 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
     holdRank: 'grip',
     anchors: gripHold(['body-upper', 'body'], () => ({ forward: X, up: Y })),
   },
+  'revolver-grip': {
+    holdRank: 'grip',
+    anchors: gripHold(['grip-core'], () => ({ forward: X, up: Y })),
+  },
+  'revolver-barrel': {
+    anchors: (_params, part) => {
+      const muzzle = part.ports.find((port) => port.id === 'muzzle');
+      return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
+    },
+  },
   // Integrated pistol grip: the grip was rotated into the frame's coordinates; its magazine port carries
   // that rotation (grip local -Y is the port normal, grip local X is the port up).
   frame: {

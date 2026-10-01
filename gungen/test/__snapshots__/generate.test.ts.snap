@@ -2272,15 +2272,11 @@ exports[`templates > revolver > known-good seeds 1`] = `
   {
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top",
+        "from": "frame.barrel",
+        "to": "barrel.frame",
       },
       {
-        "from": "receiver.barrel",
-        "to": "barrel.rear",
-      },
-      {
-        "from": "receiver.cylinder",
+        "from": "frame.cylinder",
         "to": "cylinder.frame",
       },
       {
@@ -2288,63 +2284,52 @@ exports[`templates > revolver > known-good seeds 1`] = `
         "to": "cylinder.barrel",
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top",
+        "from": "frame.grip-frame",
+        "to": "grip.frame-joint",
       },
     ],
     "description": "Generated from the "revolver" template with seed 100.",
     "name": "revolver-100",
     "parts": {
       "barrel": {
-        "family": "barrel",
+        "family": "revolver-barrel",
         "params": {
-          "length": "S",
-          "profile": "revolver",
+          "length": "L",
+          "style": "vented",
         },
       },
       "cylinder": {
-        "family": "cylinder",
+        "family": "revolver-cylinder",
         "params": {
-          "chamber": "aligned",
-          "chambers": "eight",
+          "chamberCount": "6",
+          "chamberIndex": "0",
+        },
+      },
+      "frame": {
+        "family": "revolver-frame",
+        "params": {
+          "bore": "S",
+          "butt": "square",
+          "frameSize": "S",
         },
       },
       "grip": {
-        "family": "grip",
+        "family": "revolver-grip",
         "params": {
           "length": "L",
-          "well": "none",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "trigger",
-        },
-      },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "revolver",
-          "bore": "S",
-          "feed": "cylinder",
         },
       },
     },
-    "root": "receiver",
+    "root": "frame",
   },
   {
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top",
+        "from": "frame.barrel",
+        "to": "barrel.frame",
       },
       {
-        "from": "receiver.barrel",
-        "to": "barrel.rear",
-      },
-      {
-        "from": "receiver.cylinder",
+        "from": "frame.cylinder",
         "to": "cylinder.frame",
       },
       {
@@ -2352,63 +2337,52 @@ exports[`templates > revolver > known-good seeds 1`] = `
         "to": "cylinder.barrel",
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top",
+        "from": "frame.grip-frame",
+        "to": "grip.frame-joint",
       },
     ],
     "description": "Generated from the "revolver" template with seed 200.",
     "name": "revolver-200",
     "parts": {
       "barrel": {
-        "family": "barrel",
+        "family": "revolver-barrel",
         "params": {
           "length": "M",
-          "profile": "revolver",
+          "style": "vented",
         },
       },
       "cylinder": {
-        "family": "cylinder",
+        "family": "revolver-cylinder",
         "params": {
-          "chamber": "aligned",
-          "chambers": "six",
+          "chamberCount": "6",
+          "chamberIndex": "0",
+        },
+      },
+      "frame": {
+        "family": "revolver-frame",
+        "params": {
+          "bore": "S",
+          "butt": "round",
+          "frameSize": "M",
         },
       },
       "grip": {
-        "family": "grip",
+        "family": "revolver-grip",
         "params": {
           "length": "M",
-          "well": "none",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "trigger",
-        },
-      },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "revolver",
-          "bore": "S",
-          "feed": "cylinder",
         },
       },
     },
-    "root": "receiver",
+    "root": "frame",
   },
   {
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top",
+        "from": "frame.barrel",
+        "to": "barrel.frame",
       },
       {
-        "from": "receiver.barrel",
-        "to": "barrel.rear",
-      },
-      {
-        "from": "receiver.cylinder",
+        "from": "frame.cylinder",
         "to": "cylinder.frame",
       },
       {
@@ -2416,50 +2390,43 @@ exports[`templates > revolver > known-good seeds 1`] = `
         "to": "cylinder.barrel",
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top",
+        "from": "frame.grip-frame",
+        "to": "grip.frame-joint",
       },
     ],
     "description": "Generated from the "revolver" template with seed 300.",
     "name": "revolver-300",
     "parts": {
       "barrel": {
-        "family": "barrel",
+        "family": "revolver-barrel",
         "params": {
-          "length": "S",
-          "profile": "revolver",
+          "length": "M",
+          "style": "classic",
         },
       },
       "cylinder": {
-        "family": "cylinder",
+        "family": "revolver-cylinder",
         "params": {
-          "chamber": "aligned",
-          "chambers": "eight",
+          "chamberCount": "6",
+          "chamberIndex": "0",
+        },
+      },
+      "frame": {
+        "family": "revolver-frame",
+        "params": {
+          "bore": "M",
+          "butt": "square",
+          "frameSize": "S",
         },
       },
       "grip": {
-        "family": "grip",
+        "family": "revolver-grip",
         "params": {
-          "length": "M",
-          "well": "none",
-        },
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "trigger",
-        },
-      },
-      "receiver": {
-        "family": "receiver",
-        "params": {
-          "action": "revolver",
-          "bore": "M",
-          "feed": "cylinder",
+          "length": "L",
         },
       },
     },
-    "root": "receiver",
+    "root": "frame",
   },
 ]
 `;
