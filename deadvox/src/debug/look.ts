@@ -32,11 +32,11 @@ export const clampExposure = (value: number): number =>
 export class LookControls {
   private mode = 0;
   private readonly renderer: Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>;
-  private readonly meshes: Pick<ChunkMeshes, 'linearColorsOn' | 'setLinearColors'>;
+  private readonly meshes: Pick<ChunkMeshes, 'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns'>;
 
   constructor(
     renderer: Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>,
-    meshes: Pick<ChunkMeshes, 'linearColorsOn' | 'setLinearColors'>,
+    meshes: Pick<ChunkMeshes, 'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns'>,
   ) {
     this.renderer = renderer;
     this.meshes = meshes;
@@ -55,6 +55,10 @@ export class LookControls {
     return this.meshes.linearColorsOn;
   }
 
+  get patterns(): boolean {
+    return this.meshes.patternsOn;
+  }
+
   cycleToneMapping(): void {
     this.mode = (this.mode + 1) % TONE_MODES.length;
     this.apply();
@@ -71,7 +75,7 @@ export class LookControls {
   }
 
   /** Applies a state read from the URL; an unknown tone key leaves the mode alone. */
-  restore(state: { tone: string; exposure: number; srgb: boolean }): void {
+  restore(state: { tone: string; exposure: number; srgb: boolean; patterns: boolean }): void {
     const mode = TONE_MODES.findIndex((candidate) => candidate.key === state.tone);
     if (mode >= 0) {
       this.mode = mode;
@@ -79,10 +83,15 @@ export class LookControls {
     }
     this.renderer.toneMappingExposure = clampExposure(state.exposure);
     this.meshes.setLinearColors(state.srgb);
+    this.meshes.setPatterns(state.patterns);
   }
 
   toggleLinearColors(): void {
     this.meshes.setLinearColors(!this.meshes.linearColorsOn);
+  }
+
+  togglePatterns(): void {
+    this.meshes.setPatterns(!this.meshes.patternsOn);
   }
 
   private apply(): void {

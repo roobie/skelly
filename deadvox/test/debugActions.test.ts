@@ -29,6 +29,7 @@ describe('debug action table', () => {
       ['-', 'Exposure −'],
       ['=', 'Exposure +'],
       ['I', 'sRGB block colours'],
+      [';', 'Surface patterns'],
       [',', 'Skip +23 h (−1 h tomorrow)'],
       ['.', 'Skip +1 h'],
     ]);
@@ -118,12 +119,19 @@ const makeActions = (
   const clock = { calendar: 19.5 * 3600 };
   const skips: number[] = [];
   let linear = false;
+  let patterns = true;
   const look = new LookControls(renderer, {
     get linearColorsOn() {
       return linear;
     },
     setLinearColors(on: boolean) {
       linear = on;
+    },
+    get patternsOn() {
+      return patterns;
+    },
+    setPatterns(on: boolean) {
+      patterns = on;
     },
   });
   const sim = {

@@ -7,6 +7,7 @@ describe('look settings dump', () => {
       toneMapping: 'ACES Filmic',
       exposure: 3,
       srgbBlockColours: true,
+      surfacePatterns: false,
       gameTime: 'Day 2, 12:00',
       site: 'testHouse',
       seed: 7,
@@ -23,7 +24,13 @@ describe('look settings dump', () => {
       timestamp: '2026-10-01T12:34:56.000Z',
       buildRevision: 'abc123-dirty',
       url: 'http://localhost:5173/?debug=1&tone=aces',
-      look: { toneMapping: 'ACES Filmic', exposure: 3, srgbBlockColours: true, gameTime: 'Day 2, 12:00' },
+      look: {
+        toneMapping: 'ACES Filmic',
+        exposure: 3,
+        srgbBlockColours: true,
+        surfacePatterns: false,
+        gameTime: 'Day 2, 12:00',
+      },
       world: { site: 'testHouse', seed: 7, viewRadiusM: 120, blockSizeM: 0.5 },
       player: { positionM: [1.23, 2, -3.46], yawRad: -1.571, pitchRad: 0.123 },
     });

@@ -75,7 +75,7 @@ describe('spawnMenuViewModel', () => {
       hooks,
       look: new LookControls(
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
-        { linearColorsOn: false, setLinearColors: () => undefined },
+        { linearColorsOn: false, setLinearColors: () => undefined, patternsOn: true, setPatterns: () => undefined },
       ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,

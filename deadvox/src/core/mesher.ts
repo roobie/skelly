@@ -14,6 +14,7 @@ export interface MeshData {
   positions: Float32Array; // chunk-local, 3 per vertex
   normals: Int8Array; // 3 per vertex, -1/0/1
   colors: Uint8Array; // RGB, 3 per vertex
+  patterns: Uint8Array; // surface pattern id (schema.ts BLOCK_PATTERNS), 1 per vertex; constant per quad
   indices: Uint32Array;
 }
 
@@ -86,10 +87,12 @@ const flatAlong = (face: Face, key: number, axis: 'u' | 'v'): boolean => {
 interface Context {
   padded: Uint16Array;
   colors: Uint8Array;
+  patterns: Uint8Array;
   mask: Int32Array;
   positions: number[];
   normals: number[];
   vcolors: number[];
+  vpatterns: number[];
   indices: number[];
 }
 
@@ -152,6 +155,7 @@ const emitQuad = (ctx: Context, face: Face, key: number, [slice, u0, v0, w, h]: 
     ctx.positions.push(pos[0], pos[1], pos[2]);
     ctx.normals.push(nx, ny, nz);
     ctx.vcolors.push(ctx.colors[id * 3]! * k, ctx.colors[id * 3 + 1]! * k, ctx.colors[id * 3 + 2]! * k);
+    ctx.vpatterns.push(ctx.patterns[id] ?? 0);
   }
   // Split along the brighter diagonal so AO interpolates without a seam.
   if (aoAt(key, 0) + aoAt(key, 2) >= aoAt(key, 1) + aoAt(key, 3)) {
@@ -208,15 +212,22 @@ const mergeMask = (ctx: Context, face: Face, slice: number): void => {
  * Builds a mesh for one chunk.
  * @param padded block ids for the chunk plus a 1-block border (see extractPadded)
  * @param colors RGB per block id (3 bytes each)
+ * @param patterns surface pattern id per block id; omitted means every block is unpatterned
  */
-export const buildMesh = (padded: Uint16Array, colors: Uint8Array): MeshData => {
+export const buildMesh = (
+  padded: Uint16Array,
+  colors: Uint8Array,
+  patterns: Uint8Array = new Uint8Array(0),
+): MeshData => {
   const ctx: Context = {
     padded,
     colors,
+    patterns,
     mask: new Int32Array(CHUNK * CHUNK),
     positions: [],
     normals: [],
     vcolors: [],
+    vpatterns: [],
     indices: [],
   };
   for (const face of FACES) {
@@ -230,6 +241,7 @@ export const buildMesh = (padded: Uint16Array, colors: Uint8Array): MeshData => 
     positions: new Float32Array(ctx.positions),
     normals: new Int8Array(ctx.normals),
     colors: new Uint8Array(ctx.vcolors),
+    patterns: new Uint8Array(ctx.vpatterns),
     indices: new Uint32Array(ctx.indices),
   };
 };

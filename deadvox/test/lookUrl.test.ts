@@ -22,9 +22,17 @@ describe('look URL parameters', () => {
   });
 
   it('round-trips a state', () => {
-    const state: LookUrlState = { tone: 'aces', exposure: 1.4, srgb: true, freeze: true };
-    expect(write('', state)).toBe('tone=aces&exposure=1.4&srgb=1&freeze=1');
+    const state: LookUrlState = { tone: 'aces', exposure: 1.4, srgb: true, patterns: false, freeze: true };
+    expect(write('', state)).toBe('tone=aces&exposure=1.4&srgb=1&patterns=0&freeze=1');
     expect(parse(write('', state))).toEqual(state);
+  });
+
+  it('keeps surface patterns on unless patterns=0', () => {
+    expect(parse('patterns=0').patterns).toBe(false);
+    expect(parse('patterns=1').patterns).toBe(true);
+    expect(parse('patterns=off').patterns).toBe(true);
+    expect(write('debug=1&patterns=0', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, patterns: false })).toBe('debug=1&patterns=0');
   });
 
   it('keeps the game freeze only while it is on', () => {
@@ -64,11 +72,15 @@ describe('restoring look controls from URL state', () => {
     setLinearColors(on: boolean) {
       meshes.linearColorsOn = on;
     },
+    patternsOn: true,
+    setPatterns(on: boolean) {
+      meshes.patternsOn = on;
+    },
   };
 
-  it('takes the parsed tone, exposure and colour decode', () => {
+  it('takes the parsed tone, exposure, colour decode and patterns', () => {
     const look = new LookControls(renderer, meshes);
-    look.restore(parse('tone=neutral&exposure=2.5&srgb=1'));
-    expect([look.toneKey, look.exposure, look.linearColors]).toEqual(['neutral', 2.5, true]);
+    look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0'));
+    expect([look.toneKey, look.exposure, look.linearColors, look.patterns]).toEqual(['neutral', 2.5, true, false]);
   });
 });

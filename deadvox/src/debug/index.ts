@@ -245,6 +245,13 @@ export const createDebugActions = ({
     state: () => look.linearColors,
     run: () => look.toggleLinearColors(),
   },
+  {
+    code: 'Semicolon',
+    key: ';',
+    label: 'Surface patterns',
+    state: () => look.patterns,
+    run: () => look.togglePatterns(),
+  },
   // The real clock only runs forward (saves pin it), so "an hour earlier" is 23 h on, tomorrow.
   {
     code: 'Comma',
@@ -336,6 +343,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     tone: look.toneKey,
     exposure: look.exposure,
     srgb: look.linearColors,
+    patterns: look.patterns,
     freeze: gameFrozen,
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
@@ -458,6 +466,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       toneMapping: look.toneMappingName,
       exposure: look.exposure,
       srgbBlockColours: look.linearColors,
+      surfacePatterns: look.patterns,
       gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,

@@ -18,6 +18,7 @@ export interface LookDumpInput {
   toneMapping: string;
   exposure: number;
   srgbBlockColours: boolean;
+  surfacePatterns: boolean;
   /** The game clock, "Day N, HH:MM". */
   gameTime: string;
   site: string;
@@ -45,6 +46,7 @@ export const lookDump = (input: LookDumpInput) => ({
     toneMapping: input.toneMapping,
     exposure: round(input.exposure, 2),
     srgbBlockColours: input.srgbBlockColours,
+    surfacePatterns: input.surfacePatterns,
     gameTime: input.gameTime,
   },
   world: {

@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import {
+  BLOCK_PATTERNS,
   type BlockDef,
   type ContentFile,
   ContentFileSchema,
@@ -428,3 +429,7 @@ export const blockColors = (registry: Registry): Uint8Array => {
   });
   return out;
 };
+
+/** Surface pattern id (index into BLOCK_PATTERNS) per runtime block id, for the mesher. */
+export const blockPatterns = (registry: Registry): Uint8Array =>
+  Uint8Array.from(registry.blocks, (b) => BLOCK_PATTERNS.indexOf(b.pattern ?? 'none'));

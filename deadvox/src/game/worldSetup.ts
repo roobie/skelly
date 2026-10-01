@@ -1,7 +1,14 @@
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldSolid } from '../core/collision.ts';
-import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
+import {
+  blockColors,
+  blockId,
+  blockPatterns,
+  buildRegistry,
+  type ContentSource,
+  type Registry,
+} from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import type { Scale } from '../core/scale.ts';
@@ -125,6 +132,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     seed,
     terrain: { grass: id('grass'), dirt: id('dirt'), stone: id('stone'), sand: id('sand') },
     colors: blockColors(registry),
+    patterns: blockPatterns(registry),
     scale,
     structures: site.structures,
     surface: built?.surface,

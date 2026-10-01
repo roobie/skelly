@@ -11,6 +11,7 @@ import {
   Sphere,
 } from 'three';
 import type { MeshData } from '../core/mesher.ts';
+import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
 // fragment shader from the block each fragment belongs to, so the mesher can merge
@@ -30,29 +31,60 @@ vec3 srgbToLinear(vec3 c) {
   return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
 }`;
 
-/** Lambert with vertex colours, plus the per-block variation. `linearColors` is shared with the compiled shader. */
-const chunkMaterial = (blockSize: number, linearColors: { value: number }): MeshLambertMaterial => {
+// Per-quad surface pattern: its id (constant per quad, so interpolation only needs rounding),
+// the fragment's world position in metres and the face normal (object space is axis-aligned and
+// the group only scales, so it is the world normal too).
+const PATTERN_VARYING = 'varying float vPattern;\nvarying vec3 vWorld;\nvarying vec3 vFaceN;';
+
+/**
+ * Lambert with vertex colours, plus the per-block variation or, on patterned blocks, the surface
+ * pattern. `linearColors` and `patterns` are shared with the compiled shader, so changing them
+ * doesn't recompile.
+ */
+const chunkMaterial = (
+  blockSize: number,
+  linearColors: { value: number },
+  patterns: { value: number },
+): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
+    shader.uniforms.uPatterns = patterns;
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', `#include <common>\nuniform float uBlockSize;\n${CELL_VARYING}`)
+      .replace(
+        '#include <common>',
+        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\n${CELL_VARYING}\n${PATTERN_VARYING}`,
+      )
       .replace(
         '#include <begin_vertex>',
         // Half a block inside the face, in world block coordinates.
-        '#include <begin_vertex>\nvCell = (modelMatrix * vec4(position - normal * 0.5, 1.0)).xyz / uBlockSize;',
+        `#include <begin_vertex>
+vCell = (modelMatrix * vec4(position - normal * 0.5, 1.0)).xyz / uBlockSize;
+vPattern = pattern;
+vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+vFaceN = normal;`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\n${CELL_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <color_fragment>',
+        // The sRGB decode comes first so patterns modulate decoded colour. A patterned block's own
+        // shading replaces the per-block hash (its cell jitter would otherwise cut across joints);
+        // with patterns off every block gets the hash, as before. The derivatives are taken here, in
+        // uniform control flow, whatever the block.
         `#include <color_fragment>
 if (uLinearColors > 0.5) diffuseColor.rgb = srgbToLinear(diffuseColor.rgb);
-diffuseColor.rgb *= 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));`,
+vec2 patUV = surfaceUV(vWorld, vFaceN);
+vec2 patFw = fwidth(patUV);
+float patId = floor(vPattern + 0.5);
+float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
+diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
+  ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
+  : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));`,
       );
   };
   material.customProgramCacheKey = () => 'deadvox-chunk';
@@ -71,12 +103,13 @@ export class ChunkMeshes {
   private readonly material: MeshLambertMaterial;
   private readonly blockSize: number;
   private readonly linearColors = { value: 0 };
+  private readonly patterns = { value: 1 };
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
 
   /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number) {
-    this.material = chunkMaterial(blockSize, this.linearColors);
+    this.material = chunkMaterial(blockSize, this.linearColors, this.patterns);
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
   }
@@ -89,6 +122,16 @@ export class ChunkMeshes {
   /** Takes effect next frame; the uniform is shared, so no recompile. */
   setLinearColors(on: boolean): void {
     this.linearColors.value = on ? 1 : 0;
+  }
+
+  /** Whether patterned blocks draw their procedural surface pattern. On by default. */
+  get patternsOn(): boolean {
+    return this.patterns.value > 0.5;
+  }
+
+  /** Takes effect next frame; the uniform is shared, so no recompile. */
+  setPatterns(on: boolean): void {
+    this.patterns.value = on ? 1 : 0;
   }
 
   get count(): number {
@@ -108,6 +151,7 @@ export class ChunkMeshes {
     geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
     geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
     geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
+    geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
     geometry.setIndex(new BufferAttribute(data.indices, 1));
     // Tight bounds: a chunk with only ground in its bottom blocks gets a flat box, not a
     // box around the whole chunk.
