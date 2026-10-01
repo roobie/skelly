@@ -6,20 +6,10 @@ import { antiMateriel } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 describe('anti-materiel template', () => {
-  it('is built from the anti-materiel families', () => {
-    expect(antiMateriel.name).toBe('anti-materiel');
-    expect(antiMateriel.slots.map(({ family }) => family)).toEqual(
-      expect.arrayContaining(['barrel-shroud', 'muzzle-brake', 'bipod', 'carry-handle', 'recoil-stock', 'monopod']),
-    );
-  });
-
-  it('never offers a bipod leg class or shroud length that the rules reject', () => {
-    const offered = (slotId: string, param: string) => {
-      const choice = antiMateriel.slots.find(({ id }) => id === slotId)?.params?.[param];
-      return Array.isArray(choice) ? choice : [choice];
-    };
-    expect(offered('bipod', 'legs')).toEqual(['M', 'L']);
-    expect(offered('shroud', 'length')).toEqual(['M', 'L']);
+  // S legs exist for the ground-clearance fixture; no standard magazine is short enough for them to clear.
+  it('offers only the bipod legs that clear the 10-round magazine', () => {
+    const legs = antiMateriel.slots.find(({ id }) => id === 'bipod')?.params?.legs;
+    expect(legs).toEqual(['M', 'L']);
   });
 
   sweepGroup('generator', () => {

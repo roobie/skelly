@@ -1,6 +1,5 @@
-import type { SizeClass } from '../../core/conventions.ts';
 import type { PartDef, PartFamily } from '../../core/schema.ts';
-import { box, cls, NEG_Y, RUBBER, sizeParam, X, Y } from './common.ts';
+import { box, choice, NEG_Y, RUBBER, X, Y } from './common.ts';
 
 /**
  * A straight stock for a heavy rifle: a tall body in line with the bore, a cheek rest, and a wide, flat
@@ -8,7 +7,7 @@ import { box, cls, NEG_Y, RUBBER, sizeParam, X, Y } from './common.ts';
  * for a rear monopod under the butt, which the shared stock has no port for. The grip is separate, so the
  * stock is not tagged as a firing grip.
  */
-export const RECOIL_STOCK_LENGTH: Readonly<Record<SizeClass, number>> = { S: 10, M: 16, L: 22 };
+export const RECOIL_STOCK_LENGTH: Readonly<Record<string, number>> = { M: 16, L: 22 };
 
 const BODY_TOP = 2.5;
 const BODY_BOTTOM = -3;
@@ -26,9 +25,9 @@ const MONOPOD_SETBACK = 2;
 
 export const recoilStock: PartFamily = {
   name: 'recoil-stock',
-  params: { length: sizeParam },
+  params: { length: choice('M', 'L') },
   build(params): PartDef {
-    const length = RECOIL_STOCK_LENGTH[cls(params, 'length')];
+    const length = RECOIL_STOCK_LENGTH[params.length ?? 'M']!;
     return {
       family: 'stock',
       solids: [

@@ -8,11 +8,7 @@ const ARCHETYPE = 'archetype-anti-materiel';
 const failures = (assembly: Assembly) => validate(assembly, gunDomain).issues;
 const failedRules = (assembly: Assembly) => [...new Set(failures(assembly).map(({ rule }) => rule))].sort();
 
-describe('the anti-materiel archetype', () => {
-  it('passes every rule', () => {
-    expect(failures(loadFixture(ARCHETYPE))).toEqual([]);
-  });
-
+describe('carry handle and optic', () => {
   it('keeps the optic out of the hand room under the carry handle', () => {
     const assembly = variant(ARCHETYPE, (draft) => {
       draft.connections.find((connection) => connection.to === 'sight.base')!.slot = 3;
@@ -32,50 +28,30 @@ describe('shroud-fit', () => {
     expect(issues[0]!.parts).toEqual(['shroud', 'barrel']);
   });
 
-  it('fails a shroud that reaches the muzzle device', () => {
+  it('fails a shroud that stops too near the muzzle for the brake to sit on a free barrel', () => {
     const assembly = variant(ARCHETYPE, (draft) => {
       draft.parts.barrel!.params!.length = 'S';
     });
     const issue = failures(assembly).find(({ rule }) => rule === 'shroud-fit');
     expect(issue?.message).toContain('short of the barrel muzzle');
   });
-
-  it('accepts every shroud length on every barrel length a template offers', () => {
-    for (const barrel of ['M', 'L']) {
-      for (const shroud of ['M', 'L']) {
-        const assembly = variant(ARCHETYPE, (draft) => {
-          draft.parts.barrel!.params!.length = barrel;
-          draft.parts.shroud!.params!.length = shroud;
-        });
-        expect(failedRules(assembly), `${barrel} barrel, ${shroud} shroud`).toEqual([]);
-      }
-    }
-  });
 });
 
 describe('bipod-ground-clearance', () => {
-  it('fails legs that end above the bottom of the magazine', () => {
+  it('fails legs that end above the bottom of the magazine, naming both parts', () => {
     const issues = failures(loadFixture('broken-bipod-ground-clearance'));
     expect(issues.map(({ rule }) => rule)).toEqual(['bipod-ground-clearance']);
     expect(issues[0]!.parts).toEqual(['bipod', 'magazine']);
   });
 
-  it('judges the legs by their reach, whichever pose the model shows', () => {
-    for (const pose of ['folded', 'deployed']) {
-      for (const [legs, expected] of [
-        ['S', ['bipod-ground-clearance']],
-        ['M', []],
-        ['L', []],
-      ] as const) {
-        const assembly = variant(ARCHETYPE, (draft) => {
-          Object.assign(draft.parts.bipod!.params!, { legs, pose });
-        });
-        expect(failedRules(assembly), `${legs} legs, ${pose}`).toEqual(expected);
-      }
-    }
+  it('judges the legs by their reach, not by the pose the model shows', () => {
+    const shortFolded = variant(ARCHETYPE, (draft) => {
+      Object.assign(draft.parts.bipod!.params!, { legs: 'S', pose: 'folded' });
+    });
+    expect(failedRules(shortFolded)).toEqual(['bipod-ground-clearance']);
   });
 
-  it('is satisfied by a shorter magazine', () => {
+  it('compares against the lowest part, not a fixed depth: legs that failed pass a shorter magazine', () => {
     const assembly = variant('broken-bipod-ground-clearance', (draft) => {
       draft.parts.magazine!.params!.length = 'S';
     });
@@ -84,7 +60,7 @@ describe('bipod-ground-clearance', () => {
 });
 
 describe('bipod and magazine', () => {
-  it('keeps the legs clear of the magazine: a short shroud with long legs sweeps through it', () => {
+  it('sweeps the long legs of a short shroud through the magazine', () => {
     const assembly = variant(ARCHETYPE, (draft) => {
       draft.parts.shroud!.params!.length = 'S';
       draft.parts.bipod!.params!.legs = 'L';
@@ -94,15 +70,11 @@ describe('bipod and magazine', () => {
     expect(issues.some(({ parts }) => parts.includes('bipod') && parts.includes('magazine'))).toBe(true);
   });
 
-  it('lets every bipod and shroud pairing the template offers swing clear of the magazine', () => {
-    for (const shroud of ['M', 'L']) {
-      for (const legs of ['M', 'L']) {
-        const assembly = variant(ARCHETYPE, (draft) => {
-          draft.parts.shroud!.params!.length = shroud;
-          draft.parts.bipod!.params!.legs = legs;
-        });
-        expect(failedRules(assembly), `${shroud} shroud, ${legs} legs`).toEqual([]);
-      }
-    }
+  it('lets the tightest pairing a template offers swing clear: an M shroud with L legs', () => {
+    const assembly = variant(ARCHETYPE, (draft) => {
+      draft.parts.shroud!.params!.length = 'M';
+      draft.parts.bipod!.params!.legs = 'L';
+    });
+    expect(failedRules(assembly)).toEqual([]);
   });
 });

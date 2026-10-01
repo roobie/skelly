@@ -9,8 +9,7 @@ import { choice, cls, NEG_X, octagonPrism, sizeParam, X, Y } from './common.ts';
  */
 
 /** Core of the brake: collar then nose. `split` is where the vent slot between the two chambers starts. */
-const BRAKE_LENGTH: Readonly<Record<SizeClass, { readonly nose: number; readonly split: number }>> = {
-  S: { nose: 7, split: 3.75 },
+const BRAKE_LENGTH: Readonly<Record<string, { readonly nose: number; readonly split: number }>> = {
   M: { nose: 9, split: 4.75 },
   L: { nose: 11, split: 5.75 },
 };
@@ -50,14 +49,15 @@ const chamber = (wing: WingShape, id: string, side: 1 | -1, planX: readonly [num
 
 export const muzzleBrake: PartFamily = {
   name: 'muzzle-brake',
-  // Bore and profile follow the barrel it is threaded on, like a front sight follows its barrel.
+  // Bore and profile follow the barrel it is threaded on, like a front sight follows its barrel. A rifle brake:
+  // a pistol or revolver barrel would be refused as a `structure` issue, since its profile is not listed here.
   params: {
     bore: { ...sizeParam, from: [{ port: 'base', param: 'bore' }] },
-    profile: { ...choice('standard', 'heavy', 'pistol', 'revolver'), from: [{ port: 'base', param: 'profile' }] },
-    length: sizeParam,
+    profile: { ...choice('standard', 'heavy'), from: [{ port: 'base', param: 'profile' }] },
+    length: choice('M', 'L'),
   },
   build(params): PartDef {
-    const { nose, split } = BRAKE_LENGTH[cls(params, 'length')];
+    const { nose, split } = BRAKE_LENGTH[params.length ?? 'M']!;
     const coreHalf = barrelFlatRadius(cls(params, 'bore'), params.profile) + COLLAR_MARGIN;
     const height = coreHalf + COLLAR_MARGIN;
     const reach = coreHalf + WING_REACH;

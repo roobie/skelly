@@ -477,7 +477,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       "brake": {
         "family": "muzzle-brake",
         "params": {
-          "length": "M",
+          "length": "L",
         },
       },
       "grip": {

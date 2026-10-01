@@ -35,11 +35,11 @@ through these single-line registrations:
 
 | Registry key | Role | Params | What it is |
 | --- | --- | --- | --- |
-| `muzzle-brake` | `muzzle-brake` | `length` S/M/L; `bore`, `profile` follow the barrel | Threads on the barrel's `muzzle` port. Octagonal core and collar, and four swept wing chambers (two per side) split by a 0.5u vent slot. In plan it is an arrowhead: widest at the barrel, narrowing to the nose |
+| `muzzle-brake` | `muzzle-brake` | `length` M/L (9/11u); `bore` and `profile` (standard, heavy) follow the barrel | Threads on the barrel's `muzzle` port. Octagonal core and collar, and four swept wing chambers (two per side) split by a 0.5u vent slot. In plan it is an arrowhead: widest at the barrel, narrowing to the nose. A pistol or revolver barrel is refused as a `structure` issue |
 | `barrel-shroud` | `barrel-shroud` | `length` S/M/L (16/22/28u) | A stamped-box upper the barrel recoils inside: receiver front-face height and width, 0.5u walls, a front bulkhead that guides the barrel. Extends the top rail and carries the bipod port |
 | `bipod` | `bipod` | `legs` S/M/L (14/18/20u reach), `pose` folded/deployed | Mounts under the shroud; carries a `leg-sweep` keep-out |
 | `carry-handle` | `carry-handle` | none | Four posts and a grip bar on the receiver rail; carries a `hand-room` keep-out |
-| `recoil-stock` | `stock` | `length` S/M/L (10/16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
+| `recoil-stock` | `stock` | `length` M/L (16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
 | `monopod` | `monopod` | `pose` folded/deployed | Mounts under the butt |
 
 Reused as they are: `receiver` (auto, box, bore L), `bolt-carrier` (barrett),
@@ -50,6 +50,12 @@ No param value of an existing family was added or changed.
 `recoil-stock` is its own family because the monopod needs a mount on the stock
 and the shared `stock` has no such port. It plays the `stock` role so palette and
 rules treat it as a stock; it is not tagged as a firing grip (the pistol grip is).
+
+Param value lists are kept short on purpose: `test/parts.test.ts` builds every
+combination of every family's params. The new families add 26 cases there (brake
+3 bores x 2 profiles x 2 lengths = 12, shroud 3, bipod 3 x 2 = 6, handle 1,
+recoil stock 2, monopod 2). The brake's `bore` and `profile` are inherited from
+the barrel, so their lists must cover the values the barrel can hand over.
 
 ## Rules
 

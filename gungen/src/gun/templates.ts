@@ -449,7 +449,7 @@ export const antiMateriel: Template = {
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'shroud', family: 'barrel-shroud', params: { length: ['M', 'L'] } },
-    { id: 'brake', family: 'muzzle-brake', params: { length: SML } },
+    { id: 'brake', family: 'muzzle-brake', params: { length: ['M', 'L'] } },
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'L' } },
     { id: 'stock', family: 'recoil-stock', params: { length: ['M', 'L'] } },
