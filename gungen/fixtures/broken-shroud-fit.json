@@ -4,14 +4,14 @@
   "expect": ["shroud-fit"],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
+    "receiver": { "family": "heavy-receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
-    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "lower": { "family": "heavy-lower" },
     "barrel": { "family": "barrel", "params": { "length": "L", "profile": "heavy" } },
     "shroud": { "family": "barrel-shroud", "params": { "length": "L" } },
     "brake": { "family": "muzzle-brake", "params": { "length": "L" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "L" } },
+    "magazine": { "family": "heavy-magazine" },
     "stock": { "family": "recoil-stock", "params": { "length": "L" } }
   },
   "connections": [

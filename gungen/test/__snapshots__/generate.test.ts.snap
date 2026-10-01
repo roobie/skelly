@@ -439,12 +439,12 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 5,
         "to": "sight.base",
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 8,
         "to": "handle.base",
       },
       {
@@ -490,19 +490,13 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "family": "carry-handle",
       },
       "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "conventional",
-        },
+        "family": "heavy-lower",
       },
       "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "L",
-        },
+        "family": "heavy-magazine",
       },
       "receiver": {
-        "family": "receiver",
+        "family": "heavy-receiver",
         "params": {
           "action": "auto",
           "bore": "L",
@@ -563,7 +557,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 5,
         "to": "sight.base",
       },
       {
@@ -610,16 +604,10 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         },
       },
       "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "conventional",
-        },
+        "family": "heavy-lower",
       },
       "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "L",
-        },
+        "family": "heavy-magazine",
       },
       "monopod": {
         "family": "monopod",
@@ -628,7 +616,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         },
       },
       "receiver": {
-        "family": "receiver",
+        "family": "heavy-receiver",
         "params": {
           "action": "auto",
           "bore": "L",
@@ -689,7 +677,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 8,
         "to": "handle.base",
       },
       {
@@ -739,16 +727,10 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "family": "carry-handle",
       },
       "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "conventional",
-        },
+        "family": "heavy-lower",
       },
       "magazine": {
-        "family": "magazine",
-        "params": {
-          "length": "L",
-        },
+        "family": "heavy-magazine",
       },
       "monopod": {
         "family": "monopod",
@@ -757,7 +739,7 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         },
       },
       "receiver": {
-        "family": "receiver",
+        "family": "heavy-receiver",
         "params": {
           "action": "auto",
           "bore": "L",

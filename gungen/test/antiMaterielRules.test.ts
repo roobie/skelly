@@ -11,7 +11,7 @@ const failedRules = (assembly: Assembly) => [...new Set(failures(assembly).map((
 describe('carry handle and optic', () => {
   it('keeps the optic out of the hand room under the carry handle', () => {
     const assembly = variant(ARCHETYPE, (draft) => {
-      draft.connections.find((connection) => connection.to === 'sight.base')!.slot = 3;
+      draft.connections.find((connection) => connection.to === 'sight.base')!.slot = 7;
     });
     const issues = failures(assembly);
     expect(issues.map(({ rule }) => rule)).toEqual(['keep-out']);
@@ -51,9 +51,9 @@ describe('bipod-ground-clearance', () => {
     expect(failedRules(shortFolded)).toEqual(['bipod-ground-clearance']);
   });
 
-  it('compares against the lowest part, not a fixed depth: legs that failed pass a shorter magazine', () => {
+  it('passes the same rifle once the legs are long enough to reach below the magazine', () => {
     const assembly = variant('broken-bipod-ground-clearance', (draft) => {
-      draft.parts.magazine!.params!.length = 'S';
+      draft.parts.bipod!.params!.legs = 'M';
     });
     expect(failedRules(assembly)).toEqual([]);
   });

@@ -1,7 +1,10 @@
 // Palette data for the anti-materiel families, spread into gun/palette.ts's tables so those tables
 // each gain one line. Pure data: no imports, so the palette can import it from anywhere.
 
-/** Role-only geometry-check colours, keyed by `PartDef.family`. The recoil stock reuses the `stock` role. */
+/**
+ * Role-only geometry-check colours, keyed by `PartDef.family`. The recoil stock and the heavy receiver, lower and
+ * magazine reuse the `stock`, `receiver`, `lower` and `magazine` roles.
+ */
 export const ANTI_MATERIEL_FAMILY_COLORS: Readonly<Record<string, number>> = {
   'muzzle-brake': 0x3b_41_49,
   'barrel-shroud': 0x7a_80_88,
@@ -18,6 +21,9 @@ export const ANTI_MATERIEL_ROLE_SLOTS: Readonly<Record<string, string>> = {
   'carry-handle': 'metal',
   monopod: 'metal',
   'recoil-stock': 'furniture',
+  'heavy-receiver': 'metal',
+  'heavy-lower': 'metal',
+  'heavy-magazine': 'metal',
 };
 
 export const ANTI_MATERIEL_SHADES: Readonly<Record<string, number>> = {
@@ -27,6 +33,9 @@ export const ANTI_MATERIEL_SHADES: Readonly<Record<string, number>> = {
   'carry-handle': 0.75,
   monopod: 0.7,
   'recoil-stock': 1,
+  'heavy-receiver': 1,
+  'heavy-lower': 0.83,
+  'heavy-magazine': 0.48,
 };
 
 /** Dark parkerized metal, tan furniture, black rubber pad and perforations. */

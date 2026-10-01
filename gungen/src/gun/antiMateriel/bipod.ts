@@ -9,7 +9,7 @@ import { box, choice, cls, sizeParam, X, Y } from './common.ts';
  * below the mount and `pose` picks which of the two states the model shows: folded (legs lie back along the
  * underside) or deployed (legs hang straight down, for a rifle resting on them).
  */
-export const BIPOD_LEG_LENGTH: Readonly<Record<SizeClass, number>> = { S: 14, M: 18, L: 20 };
+export const BIPOD_LEG_LENGTH: Readonly<Record<SizeClass, number>> = { S: 12, M: 18, L: 20 };
 /** Deployed feet must reach this far below the lowest other part for the rifle to rest on them (see rules.ts). */
 export const BIPOD_GROUND_CLEARANCE_U = 1;
 

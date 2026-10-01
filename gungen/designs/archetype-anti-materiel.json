@@ -6,14 +6,14 @@
     "description": "Semi-automatic anti-materiel rifle: perforated box shroud over a recoiling barrel, two-chamber arrowhead muzzle brake, folding bipod, carry handle over the rail, wide recoil-pad stock with a rear monopod, 10-round box magazine.",
     "root": "receiver",
     "parts": {
-      "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
+      "receiver": { "family": "heavy-receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
       "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
-      "lower": { "family": "lower", "params": { "layout": "conventional" } },
+      "lower": { "family": "heavy-lower" },
       "barrel": { "family": "barrel", "params": { "length": "L" } },
       "shroud": { "family": "barrel-shroud", "params": { "length": "L" } },
       "brake": { "family": "muzzle-brake", "params": { "length": "L" } },
       "grip": { "family": "grip", "params": { "length": "M" } },
-      "magazine": { "family": "magazine", "params": { "length": "L" } },
+      "magazine": { "family": "heavy-magazine" },
       "stock": { "family": "recoil-stock", "params": { "length": "L" } },
       "sight": { "family": "sight" },
       "handle": { "family": "carry-handle" },
@@ -29,8 +29,8 @@
       { "from": "lower.grip", "to": "grip.top" },
       { "from": "lower.magazine", "to": "magazine.top" },
       { "from": "receiver.stock", "to": "stock.front" },
-      { "from": "receiver.rail", "slot": 1, "to": "sight.base" },
-      { "from": "receiver.rail", "slot": 4, "to": "handle.base" },
+      { "from": "receiver.rail", "slot": 5, "to": "sight.base" },
+      { "from": "receiver.rail", "slot": 8, "to": "handle.base" },
       { "from": "shroud.bipod", "to": "bipod.base" },
       { "from": "stock.monopod", "to": "monopod.base" }
     ]

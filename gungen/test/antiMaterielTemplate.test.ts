@@ -6,7 +6,7 @@ import { antiMateriel } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 describe('anti-materiel template', () => {
-  // S legs exist for the ground-clearance fixture; no standard magazine is short enough for them to clear.
+  // S legs exist for the ground-clearance fixture; they end above the 10-round magazine's floorplate.
   it('offers only the bipod legs that clear the 10-round magazine', () => {
     const legs = antiMateriel.slots.find(({ id }) => id === 'bipod')?.params?.legs;
     expect(legs).toEqual(['M', 'L']);

@@ -4,8 +4,12 @@ import { resolve } from '../src/core/resolve.ts';
 import type { PartDef, PartFamily, Solid } from '../src/core/schema.ts';
 import { SHROUD_HALF_HEIGHT, SHROUD_HALF_WIDTH, SHROUD_LENGTH } from '../src/gun/antiMateriel/barrelShroud.ts';
 import { BIPOD_LEG_LENGTH } from '../src/gun/antiMateriel/bipod.ts';
+import { BMG_BASE_DIAMETER_U, BMG_CASE_LENGTH_U, BMG_OVERALL_LENGTH_U } from '../src/gun/antiMateriel/cartridge.ts';
+import { HEAVY_GRIP_MOUNT_PROFILE, HEAVY_TRIGGER_GUARD } from '../src/gun/antiMateriel/heavyLower.ts';
+import { HEAVY_MAGAZINE_DEPTH, HEAVY_MAGAZINE_ROUNDS } from '../src/gun/antiMateriel/heavyMagazine.ts';
+import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { FAMILIES } from '../src/gun/parts.ts';
+import { FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
 
 const family = (key: string): PartFamily => FAMILIES[key]!;
@@ -22,8 +26,74 @@ const bounds = (solid: Solid) => {
 };
 
 describe('registration', () => {
-  it('gives the recoil stock the stock role, so the palette and the stock rules treat it as a stock', () => {
-    expect(family('recoil-stock').build({}).family).toBe('stock');
+  it.each([
+    ['recoil-stock', 'stock'],
+    ['heavy-receiver', 'receiver'],
+    ['heavy-lower', 'lower'],
+    ['heavy-magazine', 'magazine'],
+  ])('gives %s the %s role, so the palette and the rules that look for that role treat it as one', (key, role) => {
+    expect(family(key).build({}).family).toBe(role);
+  });
+});
+
+describe('.50 BMG magazine, well and action', () => {
+  const magazine = family('heavy-magazine').build({});
+  const lower = family('heavy-lower').build({});
+  const receiver = family('heavy-receiver').build({ action: 'auto', feed: 'box', bore: 'L' });
+  const extent = (solid: Solid, axis: 0 | 1 | 2) => bounds(solid).max[axis]! - bounds(solid).min[axis]!;
+
+  it('sizes the magazine from the round: deeper than the round is long, in two columns, shorter than ten cases stacked', () => {
+    const body = solidById(magazine, 'body');
+    expect(extent(body, 0)).toBeGreaterThan(BMG_OVERALL_LENGTH_U);
+    expect(extent(body, 0) - BMG_OVERALL_LENGTH_U).toBeLessThan(1);
+    expect(extent(body, 2)).toBeGreaterThan(1.8 * BMG_BASE_DIAMETER_U);
+    expect(extent(body, 1)).toBeLessThan(HEAVY_MAGAZINE_ROUNDS * BMG_BASE_DIAMETER_U);
+    expect(extent(body, 1)).toBeGreaterThan((HEAVY_MAGAZINE_ROUNDS / 2) * BMG_BASE_DIAMETER_U);
+  });
+
+  it('is deeper and wider than the rifle-cartridge magazine, and shorter than its L length (the review feedback)', () => {
+    const standard = solidById(family('magazine').build({ length: 'L' }), 'body');
+    const heavy = solidById(magazine, 'body');
+    expect(extent(heavy, 0)).toBeGreaterThan(2 * extent(standard, 0));
+    expect(extent(heavy, 2)).toBeGreaterThan(extent(standard, 2));
+    expect(extent(heavy, 1)).toBeLessThan(extent(standard, 1));
+  });
+
+  it('opens a well 0.25u larger than the magazine on each side, in front of the magazine port', () => {
+    const body = bounds(solidById(magazine, 'body'));
+    const port = lower.ports.find(({ id }) => id === 'magazine')!;
+    const path = lower.keepOuts.find(({ id }) => id === 'magazine-path')!;
+    const lo = path.box.center.map((c, axis) => c - path.box.half[axis]!);
+    const hi = path.box.center.map((c, axis) => c + path.box.half[axis]!);
+    expect([port.pos[0] + body.min[0] - lo[0]!, hi[0]! - (port.pos[0] + body.max[0])]).toEqual([0.25, 0.25]);
+    expect([body.min[2] - lo[2]!, hi[2]! - body.max[2]]).toEqual([0.25, 0.25]);
+  });
+
+  it("keeps the well's front face where the shared conventional lower has it, so the bipod swing clears as before", () => {
+    const front = (def: PartDef) => bounds(solidById(def, 'frame-front')).min[0];
+    expect(front(lower)).toBe(front(family('lower').build({ layout: 'conventional' })));
+  });
+
+  it("repeats the shared lower's trigger-guard and grip numbers, which it cannot import", () => {
+    expect(HEAVY_TRIGGER_GUARD).toEqual({ ...TRIGGER_GUARD, innerXClearance: 0.5 });
+    expect(HEAVY_GRIP_MOUNT_PROFILE).toEqual(GRIP_MOUNT_PROFILE);
+  });
+
+  it('gives the bolt room for the round: a chambered case ahead of the face, a port longer than the case, a park behind the magazine', () => {
+    const carrier = family('bolt-carrier').build({ pattern: 'barrett' });
+    const carrierX = [
+      Math.min(...carrier.solids.map((solid) => bounds(solid).min[0])),
+      Math.max(...carrier.solids.map((solid) => bounds(solid).max[0])),
+    ] as const;
+    const [restX] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
+    const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
+    const travel = receiver.keepOuts.find(({ id }) => id === 'bolt-travel')!;
+    const parkedX = travel.box.center[0] - travel.box.half[0];
+    const magazineRearWall = lower.ports.find(({ id }) => id === 'magazine')!.pos[0] - HEAVY_MAGAZINE_DEPTH / 2;
+    expect(-(restX + carrierX[1])).toBeGreaterThanOrEqual(BMG_CASE_LENGTH_U);
+    expect(2 * ejection.box.half[0]).toBeGreaterThan(BMG_CASE_LENGTH_U);
+    expect(parkedX + carrierX[1]).toBeLessThan(magazineRearWall);
+    expect(parkedX + carrierX[0]).toBeGreaterThanOrEqual(-HEAVY_RECEIVER_LENGTH);
   });
 });
 
@@ -77,7 +147,7 @@ describe('muzzle brake', () => {
 
 describe('barrel shroud', () => {
   it('continues the receiver front face at the same height and width', () => {
-    const receiver = family('receiver').build({ action: 'auto', feed: 'box', bore: 'L', section: 'standard' });
+    const receiver = family('heavy-receiver').build({ action: 'auto', feed: 'box', bore: 'L' });
     const frontFace = receiver.solids.filter((solid) => localSolidBounds(solid)[1][0] === 0);
     const halfHeight = Math.max(...frontFace.map((solid) => localSolidBounds(solid)[1][1]));
     const halfWidth = Math.max(...frontFace.map((solid) => localSolidBounds(solid)[1][2]));

@@ -4,14 +4,14 @@
   "expect": ["bipod-ground-clearance"],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
+    "receiver": { "family": "heavy-receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
-    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "lower": { "family": "heavy-lower" },
     "barrel": { "family": "barrel", "params": { "length": "L" } },
     "shroud": { "family": "barrel-shroud", "params": { "length": "L" } },
     "brake": { "family": "muzzle-brake", "params": { "length": "L" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
-    "magazine": { "family": "magazine", "params": { "length": "L" } },
+    "magazine": { "family": "heavy-magazine" },
     "stock": { "family": "recoil-stock", "params": { "length": "L" } },
     "bipod": { "family": "bipod", "params": { "legs": "S", "pose": "deployed" } }
   },
