@@ -1,11 +1,12 @@
 name: mobgen
 
+# Markdown-only changes skip this workflow (no mobgen check reads Markdown).
 on:
   push:
     branches: [main]
-    paths: ['mobgen/**', '.github/workflows/mobgen.yml']
+    paths: ['mobgen/**', '!**/*.md', '.github/workflows/mobgen.yml']
   pull_request:
-    paths: ['mobgen/**', '.github/workflows/mobgen.yml']
+    paths: ['mobgen/**', '!**/*.md', '.github/workflows/mobgen.yml']
 
 jobs:
   check:

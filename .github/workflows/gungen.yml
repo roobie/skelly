@@ -1,11 +1,13 @@
 name: gungen
 
+# Markdown-only changes skip this workflow, except PROJECT.md, whose code citations
+# test/projectDoc.test.ts checks. Later patterns override earlier ones.
 on:
   push:
     branches: [main]
-    paths: ['gungen/**', '.github/workflows/gungen.yml']
+    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', '.github/workflows/gungen.yml']
   pull_request:
-    paths: ['gungen/**', '.github/workflows/gungen.yml']
+    paths: ['gungen/**', '!**/*.md', 'gungen/PROJECT.md', '.github/workflows/gungen.yml']
 
 jobs:
   check:
