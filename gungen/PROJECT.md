@@ -697,6 +697,16 @@ Current limits the plan works within:
 - **Deferred:** runtime mods in deadvox, attachment game properties
   (gungen.2), and any deadvox schema change for attachments. These come after
   the static export round trip works (3.5).
+- **The goal (BR, 2026-10-01):** modular weapons, where the player chooses mods
+  as they find or craft them (deadvox's EPIC, slice 3). So every part a player
+  could swap (optics first, then suppressors and other muzzle devices,
+  foregrips, tactical flashlights and lasers, magazines, stocks) is built as
+  a self-contained part: its own catalog entry, footprint and clearances, a
+  stable id that can become a deadvox item, and attachment only through a mount
+  interface. Compatibility is data (the mounts a part needs, the mount points a
+  gun offers). Every compatible swap resolves and validates, and removing the
+  part leaves a valid gun. A template's probability mix only picks the
+  defaults for a generated gun.
 
 ### Work packages
 
