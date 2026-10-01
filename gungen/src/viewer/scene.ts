@@ -19,7 +19,9 @@ import {
   type Object3D,
   Vector3,
 } from 'three';
+import { resolveAppearance } from '../core/appearance.ts';
 import { MAIN_AXIS } from '../core/conventions.ts';
+import type { AppearanceContext } from '../core/design.ts';
 import { displayItems } from '../core/display.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
@@ -35,7 +37,6 @@ const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
 const NORMAL = 0xf0_a2_4a;
 const UP = 0x4a_c1_f0;
-
 export interface Layers {
   readonly solids: Group;
   readonly ports: Group;
@@ -72,6 +73,9 @@ const solidGeometry = (solid: Solid) => {
   return meshGeometry(solid, 0);
 };
 
+const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
+  a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
+
 /** Which parts, ports and keep-outs the given issues point at. */
 const highlights = (issues: readonly Issue[]) => ({
   parts: new Set(issues.flatMap((i) => i.parts)),
@@ -80,7 +84,12 @@ const highlights = (issues: readonly Issue[]) => ({
 });
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
-export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => {
+export function buildLayers(
+  report: Report,
+  focus: readonly Issue[],
+  colorMode: 'finish' | 'role' = 'finish',
+  appearanceContext: AppearanceContext = {},
+): Layers {
   const { resolved } = report;
   const hl = highlights(focus);
   const layers: Layers = {
@@ -99,9 +108,31 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     const failing = hl.parts.has(part);
 
     const drawn = def.displaySolids ?? def.solids;
-    for (const item of displayItems(drawn)) {
+    const appearanceFor = (solid: Solid) =>
+      resolveAppearance(GUN_PALETTE, def.family, solid.id, {
+        context: appearanceContext,
+        overrides: {
+          ...(def.material === undefined ? {} : { partMaterial: def.material }),
+          ...(def.slot === undefined ? {} : { partSlot: def.slot }),
+          ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+          ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+        },
+      });
+    const rendered = displayItems(drawn).flatMap((item) => {
+      if (!item.merged) {
+        return [item];
+      }
+      const first = appearanceFor(item.solids[0]!);
+      return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+        ? [item]
+        : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+    });
+    for (const item of rendered) {
       const s = item.solids[0]!;
-      const color = failing ? FAIL : srgbToHex(solidColor(GUN_PALETTE, def.family, s.id));
+      const appearance = appearanceFor(s);
+      const color = failing
+        ? FAIL
+        : srgbToHex(colorMode === 'role' ? solidColor(GUN_PALETTE, def.family, s.id, s.material) : appearance.color);
       const geometry = item.merged ? triangleGeometry(meshForSolidGroup(item.solids)) : meshGeometry(s);
       const mesh = new Mesh(
         geometry,
@@ -184,7 +215,7 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     ).computeLineDistances(),
   );
   return layers;
-};
+}
 
 export const disposeGroup = (group: Object3D) => {
   group.traverse((obj) => {

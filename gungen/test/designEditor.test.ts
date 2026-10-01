@@ -24,7 +24,10 @@ const stanag20 = GUN_PREFABS.find((prefab) => prefab.id === 'stanag-20')!;
 
 describe('design editor: save and reopen', () => {
   it('round-trips a template pick, prefab reference, and lock on an unchanged seed value', () => {
-    let state = createEditorState(ar, seedAssembly, { status: 'published' });
+    let state = createEditorState(ar, seedAssembly, {
+      status: 'published',
+      finish: { furniture: 'polymer-fde' },
+    });
     const seedGripLength = seedAssembly.parts.grip?.params?.length;
     expect(seedGripLength).toBeDefined();
     state = toggleParamLock(state, gunDomain, 'grip', 'length');
