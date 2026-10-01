@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { TEMPLATES } from '../gungen/src/gun/templates.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
@@ -66,10 +67,9 @@ describe('site launchers track the games’ URL parameters', () => {
   });
 
   it('lists the current gungen templates and fixtures', () => {
-    const templateNames = [...read('gungen/src/gun/templates.ts').matchAll(/\bname:\s*'([^']+)'/g)].map(
-      (match) => match[1],
-    );
+    const templateNames = TEMPLATES.map(({ name }) => name);
     assert.deepEqual(optionValues('gungen-template'), templateNames);
+    assert.ok(!templateNames.includes('bullpup'), 'suspended bullpup is not offered by the launcher');
 
     const fixtureNames = readdirSync(join(ROOT, 'gungen/fixtures'))
       .filter((name) => name.endsWith('.json'))

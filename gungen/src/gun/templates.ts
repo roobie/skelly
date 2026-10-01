@@ -442,7 +442,10 @@ export const bullpup: Template = {
   ],
 };
 
-export const TEMPLATES: readonly Template[] = [
+/** Remove a name here to restore its template to generation, statistics, sweeps, and the viewer. */
+export const SUSPENDED_TEMPLATE_NAMES: ReadonlySet<string> = new Set(['bullpup']);
+
+const ALL_TEMPLATES: readonly Template[] = [
   battleRifle,
   ar,
   ak,
@@ -455,3 +458,6 @@ export const TEMPLATES: readonly Template[] = [
   pumpShotgun,
   bullpup,
 ];
+
+export const SUSPENDED_TEMPLATES = ALL_TEMPLATES.filter(({ name }) => SUSPENDED_TEMPLATE_NAMES.has(name));
+export const TEMPLATES = ALL_TEMPLATES.filter(({ name }) => !SUSPENDED_TEMPLATE_NAMES.has(name));

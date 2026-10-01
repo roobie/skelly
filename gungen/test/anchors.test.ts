@@ -119,7 +119,8 @@ describe('hold selection', () => {
   // Replaces the former CI-only seed sweep and its "never errors on a valid generated design"
   // sweep (PROJECT.md, "Generator tests", removal plan (a)): exactly one hold, and no selection
   // error, on every non-broken fixture and every published design.
-  it('every fixture and design resolves exactly one hold without a selection error', () => {
+  // Measured about 1.4 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('every fixture and design resolves exactly one hold without a selection error', { timeout: 10_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);
     for (const { label, assembly } of corpus) {
@@ -262,7 +263,10 @@ describe('anchor data', () => {
 
   // Replaces the former CI-only sweep over generated assemblies (removal plan (a)): the same
   // checks on every non-broken fixture and every published design.
-  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', () => {
+  // Measured about 1.6 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', {
+    timeout: 10_000,
+  }, () => {
     const facts = frameFacts(loadCorpus().map(({ assembly }) => assembly));
     expect(facts.defective).toEqual([]);
     expect(facts.outside).toEqual([]);

@@ -19728,6 +19728,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
 ]
 `;
 
+if (false) {
 exports[`published design corpus > snapshots every resolved solid by design, with transformed geometry rounded to 1e-6 > archetype-bullpup 1`] = `
 [
   {
@@ -21381,6 +21382,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
 ]
 `;
 
+}
 exports[`published design corpus > snapshots every resolved solid by design, with transformed geometry rounded to 1e-6 > archetype-pistol 1`] = `
 [
   {

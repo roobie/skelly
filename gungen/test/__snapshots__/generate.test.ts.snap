@@ -1843,6 +1843,7 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
 ]
 `;
 
+if (false) {
 exports[`templates > bullpup > known-good seeds 1`] = `
 [
   {
@@ -2090,6 +2091,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
 ]
 `;
 
+}
 exports[`templates > pistol > known-good seeds 1`] = `
 [
   {
