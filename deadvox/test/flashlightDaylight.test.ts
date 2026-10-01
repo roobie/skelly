@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { skyAt } from '../src/core/sky.ts';
 import { FLASHLIGHT_DECAY, FLASHLIGHT_INTENSITY, flashlightDaylightScale } from '../src/render/flashlight.ts';
+import { NEAR_FIELD_M } from '../src/render/lightFalloff.ts';
 
 const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour));
 
@@ -12,8 +13,8 @@ describe('flashlight daylight scale', () => {
   });
 
   it('leaves a negligible pool at noon: at most 3% of the sun at 3 m', () => {
-    // Beam at 3 m is INTENSITY / 3^DECAY candela; the sun's own light is lightIntensity.
-    const pool = (FLASHLIGHT_INTENSITY / 3 ** FLASHLIGHT_DECAY) * scaleAt(12);
+    // Beam at 3 m is INTENSITY / (3 + NEAR_FIELD_M)^DECAY candela; the sun's own light is lightIntensity.
+    const pool = (FLASHLIGHT_INTENSITY / (3 + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * scaleAt(12);
     expect(pool).toBeLessThanOrEqual(0.03 * skyAt(12).lightIntensity);
   });
 

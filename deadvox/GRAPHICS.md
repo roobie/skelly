@@ -32,9 +32,9 @@ Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) an
   Neutral and 1.0 with no tone mapping (`BLOOM_CLIP_BY_TONE`, derived in `src/core/mood.ts`), divided by the
   exposure for the pass's threshold. The clip is never below 1, which keeps the sky from blooming. Debug: Delete /
   Insert step it (`?bloomclip=`), by default it follows the tone mapper.
-- The flashlight beam is 1.4 cd with a decay of 1, set by eye (`src/render/flashlight.ts`, arithmetic in the
-  comment): about 0.3 to 0.2 after exposure on a mid-albedo block at 2 to 3 m, 0.06 at 10 m, 1.2 on a white block
-  at 1 m. Debug: numpad - / + scale it by 1.25 per press
+- The flashlight beam is 5 cd with a near-field-capped falloff, 1 / (d + 4 m) (`src/render/flashlight.ts` and
+  `lightFalloff.ts`, arithmetic in the comment): after exposure about 0.4 on a mid-albedo block at 2 m, 0.15 at
+  10 m, and 0.86 on a white block at 1 m. Debug: numpad - / + scale it by 1.25 per press
   (`?torch=`, 1 by default).
 - Fogginess 0.2. It is render-only for now; the Slice 4 weather system will drive it, and
   then it becomes saved simulation state (see [ADR 0002](docs/decisions/0002-saves.md)).
@@ -79,6 +79,10 @@ look is settled.
 - **Sun shadows rely on a three.js internal.** `src/render/shadows.ts` wraps
   `renderer.shadowMap.render` to choose casters, which a three.js upgrade could break.
   Needs a proper solution before merging.
+- **The flashlight falloff patches a three.js internal.** `src/render/lightFalloff.ts` rewrites one line of
+  `ShaderChunk.lights_pars_begin` (the distance falloff) once at start-up, for every material. It throws if the
+  line is not found and `test/lightFalloff.test.ts` checks that, so an upgrade fails loudly, but it still needs
+  a proper solution (like the shadow hook above) before merging. The flashlight is the only punctual light.
 - **Wide occlusion is tuned by eye on the test house only.** Floor 0.35 and gamma 1 are first
   guesses; revisit them with indoor scenes once skylight (item 5) lands, which will
   overlap with it. The extra quads (up to 47% in the city) are the main cost to watch.
