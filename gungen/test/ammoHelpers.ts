@@ -151,8 +151,6 @@ export const SYNTHETIC_METALLIC_SHAPES: readonly SyntheticShape[] = [
   'rimmed-bottleneck',
 ];
 
-export const SYNTHETIC_SHOTSHELL_SHAPES: readonly ShotshellShape[] = ['shotshell-buck', 'shotshell-slug'];
-
 export const syntheticJson = (shape: SyntheticShape | ShotshellShape): JsonObject =>
   shape.startsWith('shotshell') ? shotshell(shape as ShotshellShape) : metallic(shape as SyntheticShape);
 

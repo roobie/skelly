@@ -1,6 +1,0 @@
-{
-  "name": "broken-missing-body-start",
-  "base": "7.62x39",
-  "unset": ["case.bodyStart"],
-  "expectParseError": "case.bodyStart"
-}

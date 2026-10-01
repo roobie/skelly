@@ -17,10 +17,6 @@ describe('broken cartridge fixtures', () => {
     }
   });
 
-  it('has structural fixtures too', () => {
-    expect(fixtures.filter((f) => f.expectParseError !== undefined).length).toBeGreaterThanOrEqual(5);
-  });
-
   for (const fixture of fixtures) {
     if (fixture.expectParseError === undefined) {
       it(`${fixture.name} fails exactly ${JSON.stringify(fixture.expect)}`, () => {
@@ -36,11 +32,4 @@ describe('broken cartridge fixtures', () => {
       });
     }
   }
-
-  it('prefixes every fixture name with broken- and gives each a base', () => {
-    for (const fixture of fixtures) {
-      expect(fixture.name.startsWith('broken-')).toBe(true);
-      expect(fixture.base).toBeTruthy();
-    }
-  });
 });

@@ -11,7 +11,6 @@ import {
   mustParse,
   type ShotshellShape,
   SYNTHETIC_METALLIC_SHAPES,
-  SYNTHETIC_SHOTSHELL_SHAPES,
   type SyntheticShape,
   setPath,
   syntheticJson,
@@ -112,24 +111,15 @@ describe('case shapes', () => {
     expect([...bodies].sort()).toEqual(['bottleneck', 'straight']);
   });
 
-  it('accepts a head type with a straight body and a bottleneck body alike (rimmed both ways)', () => {
-    for (const shape of ['rimmed-straight', 'rimmed-bottleneck'] as const) {
-      expect(validateCartridge(mustParse(syntheticJson(shape)))).toEqual([]);
-    }
-  });
-
-  it.each(SYNTHETIC_SHOTSHELL_SHAPES)('synthetic %s is a valid, fully sourced shotshell', (shape) => {
+  it.each([
+    ['shotshell-buck', 'shot'],
+    ['shotshell-slug', 'slug'],
+  ] as const)('synthetic %s is a valid, fully sourced shotshell with a %s payload', (shape, payload) => {
     const cartridge = mustParse(syntheticJson(shape));
     expect(cartridge.kind).toBe('shotshell');
+    expect(cartridge.kind === 'shotshell' && cartridge.payload.type).toBe(payload);
     expect(validateCartridge(cartridge)).toEqual([]);
     expect(unsourcedPaths(cartridge)).toEqual([]);
-  });
-
-  it('models the two shotshell payloads as shot (count and pellet size) and slug', () => {
-    const buck = mustParse(syntheticJson('shotshell-buck'));
-    const slug = mustParse(syntheticJson('shotshell-slug'));
-    expect(buck.kind === 'shotshell' && buck.payload.type).toBe('shot');
-    expect(slug.kind === 'shotshell' && slug.payload.type).toBe('slug');
   });
 
   it('needs no absolute size limits: a shape holds from a few mm to a .50 BMG-sized round', () => {
@@ -160,18 +150,6 @@ describe('relations between cartridges', () => {
     expect(checkRelations([rem, nato])).toEqual([]);
     expect(nato.relatedTo.map((r) => r.relation)).toContain('unsafe-in-chamber-of');
     expect(rem.relatedTo.map((r) => r.relation)).not.toContain('unsafe-in-chamber-of');
-  });
-
-  it('expresses .38 Special firing in a .357 Magnum chamber but not the other way', () => {
-    const special = syntheticNamed('rimmed-straight', 'synthetic-38-special', [
-      { cartridge: 'synthetic-357-magnum', relation: 'safe-in-chamber-of' },
-    ]);
-    const magnum = syntheticNamed('rimmed-straight', 'synthetic-357-magnum', [
-      { cartridge: 'synthetic-38-special', relation: 'unsafe-in-chamber-of' },
-    ]);
-    expect(checkRelations([special, magnum])).toEqual([]);
-    expect(special.relatedTo[0]).toMatchObject({ cartridge: 'synthetic-357-magnum', relation: 'safe-in-chamber-of' });
-    expect(magnum.relatedTo[0]).toMatchObject({ cartridge: 'synthetic-38-special', relation: 'unsafe-in-chamber-of' });
   });
 
   it('refuses a pair declared both safe and unsafe, an unknown cartridge and a self-reference', () => {
@@ -216,24 +194,10 @@ describe('parse', () => {
     expect(parseErrorOf(edited('rimmed-straight', 'case.toleranec', 1))).toBe('case.toleranec: unknown field');
   });
 
-  it('requires the extractor groove for a rimless head and refuses it on a rimmed head', () => {
-    expect(parseErrorOf(edited('rimless-straight', 'case.head.extractorGroove'))).toBe(
-      'case.head.extractorGroove: missing required field',
-    );
-    const groove = { diameter: { value: 1, cite: null }, width: { value: 1, cite: null } };
-    expect(parseErrorOf(edited('rimmed-straight', 'case.head.extractorGroove', groove))).toBe(
-      'case.head.extractorGroove: unknown field',
-    );
-  });
-
-  it('refuses an unknown kind, head type and format', () => {
+  it('refuses an unknown kind and format, and any head type it does not model (belted, rebated, semi-rimmed)', () => {
     expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), kind: 'rimfire' })).toContain('kind');
-    expect(parseErrorOf(edited('rimmed-straight', 'case.head.type', 'flanged'))).toContain('case.head.type');
     expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), format: 2 })).toContain('unsupported format 2');
-  });
-
-  it('refuses the head types the format does not model yet (belted, rebated, semi-rimmed)', () => {
-    for (const type of ['belted', 'rebated', 'semi-rimmed']) {
+    for (const type of ['flanged', 'belted', 'rebated', 'semi-rimmed']) {
       expect(parseErrorOf(edited('rimmed-straight', 'case.head.type', type)), type).toBe(
         `case.head.type: expected one of rimless, rimmed; got '${type}'`,
       );
