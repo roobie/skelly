@@ -5,6 +5,7 @@ import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
+import { KEY_BINDINGS } from '../game/input.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
@@ -219,7 +220,7 @@ const panelTemplate = ({
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
-    <p>F3 toggles the performance overlay. ${snapshotStatus}</p>
+    <p>F4 toggles the performance overlay. ${snapshotStatus}</p>
     <div id="debug-readout" class="debug-readout"></div>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
@@ -983,11 +984,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   };
   function handleKey(e: KeyboardEvent): boolean {
     if (
-      toggleOnShortcut(e, 'F3', () => {
+      toggleOnShortcut(e, KEY_BINDINGS.performanceOverlay.code, () => {
         f3Open = !f3Open;
         drawShell();
       })
     ) {
+      e.preventDefault();
       return true;
     }
     if (toggleOnShortcut(e, 'Backquote', togglePanel)) {

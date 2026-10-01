@@ -7,6 +7,7 @@ const SENSITIVITY = 0.0022;
 /** UI key bindings and browser-owned keys referenced by the help and browser contract. */
 export const KEY_BINDINGS = {
   mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
+  performanceOverlay: { code: 'F4', label: 'F4', virtualKeyCode: 115 },
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
 } as const;
 
@@ -76,6 +77,11 @@ export const PLAYER_CONTROL_BINDINGS = [
     context: 'inventory',
   },
   { keys: KEY_BINDINGS.mainMenu.label, codes: [CONTROL_CODES.menu], action: 'Main menu, HUD and audio settings' },
+  {
+    keys: KEY_BINDINGS.performanceOverlay.label,
+    codes: [KEY_BINDINGS.performanceOverlay.code],
+    action: 'Toggle performance overlay',
+  },
   { keys: 'Escape', codes: ['Escape'], action: 'Release the mouse (browser control)' },
 ] as const;
 

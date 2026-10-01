@@ -137,6 +137,7 @@ describe('controls card', () => {
   it('is rendered from the actual input binding declarations', () => {
     const rows = controlsCardRows();
     expect(rows.map(({ keys }) => keys)).toContain('F9');
+    expect(rows.map(({ keys }) => keys)).toContain('F4');
     expect(rows.map(({ keys }) => keys)).toContain('Tab');
     expect(rows.at(-1)?.action).toContain('E: Move to your best pocket');
   });

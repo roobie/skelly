@@ -638,7 +638,7 @@ sound event with its position.
 
 ### 1.11 Playtest build
 
-- A debug overlay (F3):
+- A debug overlay (F4):
   - frame time broken down into simulation, render and meshing queue
   - chunk, entity and memory counts
   - clock and compression
@@ -654,7 +654,7 @@ sound event with its position.
 **Done when:** a playtester can play a full session and send back the metrics
 file and their notes.
 
-**Status:** delivered as a playtest build. F3 reports simulation/render/meshing-queue
+**Status:** delivered as a playtest build. F4 reports simulation/render/meshing-queue
 frame costs, chunk/entity/memory counts, clock/compression, and snapshot last/p95
 cost; the debug panel can set the game clock, reveal zombie positions, measure 50
 pure snapshots on demand, and export versioned metrics JSON. Metrics persist in

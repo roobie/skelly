@@ -176,14 +176,28 @@ try {
     URL.revokeObjectURL = () => {};
     HTMLAnchorElement.prototype.click = function() { if (this.download) window.__metricsFilename = this.download; };
   })()`);
+  await evaluate(`(() => {
+    window.__f4Prevented = false;
+    window.addEventListener('keydown', (event) => {
+      if (event.code === 'F4') window.__f4Prevented = event.defaultPrevented;
+    });
+  })()`);
   await press('F3', 'F3', 114);
-  await waitFor(() => evaluate("!document.querySelector('#f3-debug-overlay').hidden"), 'F3 overlay opens');
+  assert.equal(
+    await evaluate("document.querySelector('#f3-debug-overlay').hidden"),
+    true,
+    'F3 no longer toggles the performance overlay',
+  );
+  await press('F4', 'F4', 115);
+  await waitFor(() => evaluate("!document.querySelector('#f3-debug-overlay').hidden"), 'F4 overlay opens');
   assert.match(
     await evaluate("document.querySelector('#f3-debug-overlay').textContent"),
     /snapshot .*p95/i,
-    'F3 readout includes snapshot statistics',
+    'F4 readout includes snapshot statistics',
   );
-  await press('F3', 'F3', 114);
+  assert.equal(await evaluate('window.__f4Prevented'), true, 'F4 prevents the browser default');
+  await press('F4', 'F4', 115);
+  await waitFor(() => evaluate("document.querySelector('#f3-debug-overlay').hidden"), 'F4 overlay closes');
   await press('Backquote', '`', 192);
   await evaluate(`(() => {
     document.querySelector('#debug-time').value = '08:00';
