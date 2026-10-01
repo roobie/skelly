@@ -122,7 +122,8 @@ See [SLICE-1.md](SLICE-1.md). It covers:
   is the last screen, so it completes [ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md).
 - Recipes with tool qualities and groups of alternative components, and crafting
   in compressed time that can be interrupted and resumed.
-- Disassembly and salvage, and repairing items' condition.
+- Disassembly and salvage, and repairing items' condition. Weapon mods can be
+  crafted and salvaged like other items (see Modular weapons in slice 3).
 - Workbenches, and materials used from nearby piles and containers.
 - Skills that go up with use, books and reading, and recipe discovery.
 - Light you make: torches, candles and glowsticks (see
@@ -137,6 +138,13 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - Melee depth (weapon types, stamina, knockback) and blocking.
 - Firearms from gungen assemblies: ammo, magazines, reloading as handling,
   noise and recoil.
+- Modular weapons: the player fits mods (optics first, then suppressors and
+  other muzzle devices, foregrips, tactical flashlights and lasers, magazines,
+  stocks and so on) found as loot or crafted, through the mount points a gun
+  offers. Mods change the gun in play (a suppressor's noise, a flashlight's
+  light as a sense, a grip's handling). Fitting and removing a mod is
+  handling. A found gun comes with the generator's default mods (BR,
+  2026-10-01; the gungen side is gungen.2 in `gungen/PROJECT.md`).
 - The noise system (sources, reduction by walls), sight at night and when
   crouching, and a smell trail.
 - Light as a sense: zombies see light sources from far away and see you when
@@ -211,6 +219,12 @@ later notes (2026-09-27):
   materials);
 - “at least three basic attack animations, and animations for taking damage”.
 - “Q and E are reserved for later actions” (nothing is bound to them in the world today).
+
+**Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”
+- Fist variations: cross, hook, uppercut (BR).
+- Per-weapon motion overrides where a weapon does not fit its damage-type profile.
+- Surface-hit result from the combat query for a thud or recoil when a swing hits a wall (today it counts as a miss).
+- Full player figure (`playerFigure.ts`) following first-person swings; third-person views do not animate yet.
 
 ## Cut list
 

@@ -70,6 +70,7 @@ const senses = (
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   const frames = Math.ceil(seconds * 60);
   for (let frame = 0; frame < frames; frame++) {
+    system.tickPlayerAction(1 / 60, { right: null, left: null });
     system.tick(1 / 60);
     onStep?.();
   }

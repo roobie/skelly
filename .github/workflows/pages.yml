@@ -10,6 +10,8 @@ name: pages
 on:
   push:
     branches: [main]
+    # The site publishes no Markdown, so a Markdown-only change has nothing to redeploy.
+    paths-ignore: ['**/*.md']
   workflow_dispatch:
 
 permissions:
