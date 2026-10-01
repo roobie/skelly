@@ -439,13 +439,20 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 5,
+        "slot": 4,
         "to": "sight.base",
       },
       {
-        "from": "shroud.rail",
-        "slot": 0,
-        "to": "handle.base",
+        "from": "shroud.trunnion",
+        "to": "trunnion.base",
+      },
+      {
+        "from": "trunnion.strut",
+        "to": "strut.base",
+      },
+      {
+        "from": "strut.top",
+        "to": "bar.base",
       },
       {
         "from": "shroud.bipod",
@@ -455,6 +462,9 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
     "description": "Generated from the "anti-materiel" template with seed 100.",
     "name": "anti-materiel-100",
     "parts": {
+      "bar": {
+        "family": "handle-bar",
+      },
       "barrel": {
         "family": "barrel",
         "params": {
@@ -483,9 +493,6 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
           "length": "L",
         },
       },
-      "handle": {
-        "family": "carry-handle",
-      },
       "lower": {
         "family": "heavy-lower",
       },
@@ -513,6 +520,15 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "family": "recoil-stock",
         "params": {
           "length": "L",
+        },
+      },
+      "strut": {
+        "family": "handle-strut",
+      },
+      "trunnion": {
+        "family": "handle-trunnion",
+        "params": {
+          "pose": "carry",
         },
       },
     },
@@ -554,8 +570,20 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 5,
+        "slot": 4,
         "to": "sight.base",
+      },
+      {
+        "from": "shroud.trunnion",
+        "to": "trunnion.base",
+      },
+      {
+        "from": "trunnion.strut",
+        "to": "strut.base",
+      },
+      {
+        "from": "strut.top",
+        "to": "bar.base",
       },
       {
         "from": "shroud.bipod",
@@ -569,6 +597,9 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
     "description": "Generated from the "anti-materiel" template with seed 200.",
     "name": "anti-materiel-200",
     "parts": {
+      "bar": {
+        "family": "handle-bar",
+      },
       "barrel": {
         "family": "barrel",
         "params": {
@@ -632,6 +663,15 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
           "length": "L",
         },
       },
+      "strut": {
+        "family": "handle-strut",
+      },
+      "trunnion": {
+        "family": "handle-trunnion",
+        "params": {
+          "pose": "stowed",
+        },
+      },
     },
     "root": "receiver",
   },
@@ -670,9 +710,16 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "shroud.rail",
-        "slot": 0,
-        "to": "handle.base",
+        "from": "shroud.trunnion",
+        "to": "trunnion.base",
+      },
+      {
+        "from": "trunnion.strut",
+        "to": "strut.base",
+      },
+      {
+        "from": "strut.top",
+        "to": "bar.base",
       },
       {
         "from": "shroud.bipod",
@@ -686,6 +733,9 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
     "description": "Generated from the "anti-materiel" template with seed 300.",
     "name": "anti-materiel-300",
     "parts": {
+      "bar": {
+        "family": "handle-bar",
+      },
       "barrel": {
         "family": "barrel",
         "params": {
@@ -713,9 +763,6 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "params": {
           "length": "L",
         },
-      },
-      "handle": {
-        "family": "carry-handle",
       },
       "lower": {
         "family": "heavy-lower",
@@ -747,6 +794,15 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "family": "recoil-stock",
         "params": {
           "length": "M",
+        },
+      },
+      "strut": {
+        "family": "handle-strut",
+      },
+      "trunnion": {
+        "family": "handle-trunnion",
+        "params": {
+          "pose": "carry",
         },
       },
     },
