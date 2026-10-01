@@ -151,8 +151,15 @@ export const SYNTHETIC_METALLIC_SHAPES: readonly SyntheticShape[] = [
   'rimmed-bottleneck',
 ];
 
+// A JSON round trip rather than structuredClone: the builders share one citation object between all
+// nodes and one sources table between all cartridges, and structuredClone keeps shared references,
+// so patching one node would patch every node that shares it.
 export const syntheticJson = (shape: SyntheticShape | ShotshellShape): JsonObject =>
-  shape.startsWith('shotshell') ? shotshell(shape as ShotshellShape) : metallic(shape as SyntheticShape);
+  JSON.parse(
+    JSON.stringify(
+      shape.startsWith('shotshell') ? shotshell(shape as ShotshellShape) : metallic(shape as SyntheticShape),
+    ),
+  ) as JsonObject;
 
 /** A synthetic cartridge with its id and relations replaced, for the relation tests. */
 export const syntheticNamed = (
