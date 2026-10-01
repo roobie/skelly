@@ -61,7 +61,7 @@ const travelCases = [
     mm: 74.75,
     cavityY: [-1.35, 1.35],
     cavityZ: [-1.35, 1.35],
-    portWidthU: 3.5,
+    portWidthU: 6.5,
     portHeightU: 3,
   },
   {
@@ -375,27 +375,62 @@ describe('procedural bolt carrier', () => {
     const port = portMeasurements(entry, resolved);
     const transform = resolved.placed.get('bolt-carrier')!;
     const handle = carrier.solids.find(({ id }) => id === 'charging-handle')!;
+    const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
+    const piston = carrier.solids.find(({ id }) => id === 'piston')!;
+    const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
     const handleBounds = worldBounds(corners(handle).map((point) => applyPoint(transform, point)));
+    const pistonBounds = worldBounds(corners(piston).map((point) => applyPoint(transform, point)));
     const motion = carrier.motion!;
     const rearTransform = compose(transform, translation(motion.rearmost));
     const rearHandleBounds = worldBounds(corners(handle).map((point) => applyPoint(rearTransform, point)));
     const portMin = port.actualX![0]!;
     const portMax = port.actualX![1]!;
 
-    expect([portMin, portMax]).toEqual([-7.5, -4]);
-    expect(portMax).toBeCloseTo(-4, 8);
+    expect(bodyBounds[0]).toEqual([-7.25, -1.25]);
+    expect(bodyBounds[0]![0]).toBeCloseTo(-7.25, 2);
+    expect(bodyBounds[0]![1]! - bodyBounds[0]![0]!).toBeGreaterThanOrEqual(5.75);
+    expect(bodyBounds[0]![1]! - bodyBounds[0]![0]!).toBeLessThanOrEqual(6.25);
+    const [barrelMountX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
+    expect(barrelMountX - bodyBounds[0]![1]!).toBeCloseTo(1.25, 8);
+    expect([portMin, portMax]).toEqual([-7.5, -1]);
+    expect(portMax).toBeCloseTo(-1, 8);
+    expect(handleBounds[0]).toEqual([-5.5, -4]);
+    expect(pistonBounds[0]).toEqual([-5.5, -1]);
     expect(handleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - 1e-6);
     expect(handleBounds[0]![1]!).toBeLessThanOrEqual(portMax + 1e-6);
     const slot = akChargingHandleSlotWindow(0, { x: [portMin, portMax], y: [-1.5, 1.5] }, entry.travel);
     expect(slot.section[1] - slot.section[0]).toBe(1 + 2 * BOLT_CARRIER_RUNNING_CLEARANCE_U);
     expect(slot.x).toEqual([portMin - entry.travel, portMin + 0.25]);
-    expect(port.width).toBe(3.5);
-    expect(port.width * 11.5).toBeCloseTo(40.25, 8);
+    expect(port.width).toBe(6.5);
+    expect(port.width * 11.5).toBeCloseTo(74.75, 8);
     expect(port.height).toBe(3);
     expect(port.height * 11.5).toBeCloseTo(34.5, 8);
     expect(rearHandleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - entry.travel - 1e-6);
     expect(rearHandleBounds[0]![1]!).toBeLessThan(portMax);
-    expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(1.75);
+    expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(3.25);
+  });
+
+  it('keeps every non-AK carrier envelope and port at its approved dimensions', () => {
+    const unchanged = [
+      { pattern: 'ar', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [-0.75, 1.25] },
+      { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
+      { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, -3.5], portY: [-1, 1] },
+      { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
+      { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25], portY: [0.5, 1.75] },
+    ] as const;
+
+    for (const expected of unchanged) {
+      const entry = travelCases.find(({ pattern }) => pattern === expected.pattern)!;
+      const resolved = resolve(assemblyFor(entry), gunDomain);
+      const port = portMeasurements(entry, resolved);
+      expect(BOLT_CARRIER_ENVELOPES[expected.pattern].x, expected.pattern).toEqual(expected.carrierX);
+      expect(
+        resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'bolt-carrier')!.pos[0],
+        expected.pattern,
+      ).toBe(expected.restX);
+      expect(port.actualX, expected.pattern).toEqual(expected.portX);
+      expect(port.actualY, expected.pattern).toEqual(expected.portY);
+    }
   });
 
   it('grows the AK carrier to a 2.5u × 2.5u cross-section with 0.1u clearance', () => {
@@ -410,7 +445,8 @@ describe('procedural bolt carrier', () => {
     if (body.kind !== 'box') {
       throw new Error('AK carrier body must remain a box solid.');
     }
-    expect(body.box.half).toEqual([1.5, 1.25, 1.25]);
+    expect(BOLT_CARRIER_ENVELOPES.ak.x).toEqual([-4.5, 1.5]);
+    expect(body.box.half).toEqual([3, 1.25, 1.25]);
   });
 
   it('uses one carrier-face margin, a pump shell minimum, and unchanged pistol apertures', () => {

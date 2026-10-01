@@ -350,7 +350,7 @@ export const EJECTION_PORT_MARGIN_U = 0.25;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 export const BOLT_CARRIER_ENVELOPES = {
   ar: { x: [-1.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
-  ak: { x: [-1.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
+  ak: { x: [-4.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
   pump: { x: [-3.25, 3], y: [-0.75, 0.75], z: [-0.75, 0.75] },
   smg: { x: [-1.5, 1.5], y: [-0.5, 0.5], z: [-0.75, 0.75] },
   barrett: { x: [-3, 3], y: [-0.75, 0.75], z: [-1.25, 1.25] },
@@ -1140,7 +1140,7 @@ export const boltCarrier: PartFamily = {
     const snap = (n: number) => Math.round(n / GRID) * GRID;
     const block = (id: string, min: Vec3, max: Vec3): Solid =>
       solid(id, [snap(min[0]), snap(min[1]), snap(min[2])], [snap(max[0]), snap(max[1]), snap(max[2])]);
-    const bodyX: readonly [number, number] = pattern === 'pump' ? envelope.x : [-1.5, 1.5];
+    const bodyX: readonly [number, number] = pattern === 'pump' || pattern === 'ak' ? envelope.x : [-1.5, 1.5];
     const solids: Solid[] = [
       solid('carrier-body', [bodyX[0], envelope.y[0], envelope.z[0]], [bodyX[1], envelope.y[1], envelope.z[1]]),
     ];

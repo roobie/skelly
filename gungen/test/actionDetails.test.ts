@@ -35,7 +35,7 @@ describe('visible action details', () => {
       { def: receiver('pump'), halfLength: 3.375, halfHeight: 1 },
       {
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
-        halfLength: 1.75,
+        halfLength: 3.25,
         halfHeight: 1.5,
       },
     ];
