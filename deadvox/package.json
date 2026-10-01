@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:ui-browser": "timeout 300 node tools/ui-browser-contract.mjs && timeout 300 node test/browser/save-storage.mjs chromium",
     "test:browser:firefox": "timeout 300 node test/browser/firefox-first-click.mjs && timeout 300 node test/browser/save-storage.mjs firefox",
+    "probe:render": "node tools/render-probe.mjs",
     "validate": "node src/cli/validate.ts",
     "lint:lit": "tools/lit-check/node_modules/.bin/lit-analyzer 'src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && tools/lit-check/node_modules/.bin/lit-analyzer 'src/debug/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && vitest run test/uiLitHtml.test.ts",
     "bench:shamblers": "node --experimental-strip-types src/bench/shamblers-cpu.mjs"
@@ -23,6 +24,7 @@
     "@types/node": "^26.6.2",
     "@types/three": "^0.186.0",
     "es-module-lexer": "^3.0.2",
+    "happy-dom": "20.14.5",
     "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",

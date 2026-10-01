@@ -15,6 +15,15 @@ with a walk cycle that follows its speed. It works the same way gungen takes a
 template and a seed to a firearm that fits together: the generator only makes
 choices, and a validator with named rules decides what's feasible.
 
+### Creature range (BR, 2026-09-29)
+
+mobgen's actors are monsters, not people. Their proportions are stylized
+(the heads are oversized so the face fits), and planned enemies range from
+rabbit-sized to huge, including ones that are neither humanoid nor
+proportional. Shared systems (physics, animation, rules) must not assume
+human anatomy or a density-true mass. The specifics belong in per-template
+data, and the defaults must work for any body plan.
+
 ### Non-goals
 
 - Smooth or skinned meshes, textures, or realistic rendering. Voxel colour
@@ -56,6 +65,7 @@ choices, and a validator with named rules decides what's feasible.
 | Far LOD validation | The recommended far tier is 1/2 block (0.25 m) with the explicit silhouette profile; 1/4 block remains supported/tested but is not a separate recommended far level. `generateValid` searches only at the template's full-detail resolution. `realizeLod` derives coarser voxels from a full-valid genome and checks whole-body connectivity, ground contact and balance, the size-specific triangle cap, and height/width within one cell at each grid's resolution. It re-voxelizes the full-detail body with the ordinary coarse-cell fill tolerance; it does not silently change the default profile |
 | Profile recommendation | `recommendedProfileFor(genome, voxelSize)` measures the thinnest full-detail upper-arm/forearm/thigh/shin flesh feature in cells; below 1.5 cells it recommends `silhouette`. For BR's roughly 10 cm limb, 1/2 block (25 cm) is 0.4 cells, 1/6 block (8.33 cm) is 1.2 cells, and 1/12 block (4.17 cm) is 2.4 cells. This is advisory only; callers choose and pass the profile explicitly |
 | Determinism | Seeded RNG (mulberry32), never `Math.random`. The same genome gives the same voxels on the same JavaScript engine; engines may differ in the last digit of `Math.sin` and similar, which can flip a voxel on a shape's edge (CHALLENGES §11) |
+| Mass | Each template declares a total body mass (`bodyMassKg`). A part's mass is that total times its fraction: by default its share of the body's voxel volume; a template may override the fraction per part (the humanoids use anatomical values for the severable parts). The centre of mass and the shape of the inertia come from the part's voxels, scaled to the assigned mass. Being worked on in sk1 (severed-limb physics) |
 | Templates (milestone 1) | `shambler` (1/12), `runner` (1/12), `brute` (1/10) |
 | Tests | Vitest |
 | CI | `.github/workflows/mobgen.yml`: typecheck, tests, viewer build |

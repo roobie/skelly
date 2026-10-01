@@ -53,6 +53,7 @@ const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
+  'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -73,6 +74,9 @@ async function actualSimulationGraph() {
     projectRoot,
     {
       resolve(specifier, importer) {
+        if (specifier.startsWith('@mobgen/')) {
+          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+        }
         return Promise.resolve(viteResolve(specifier, importer));
       },
       readFile(path) {
@@ -88,6 +92,8 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(SIMULATION_EXCLUSIONS).toEqual(
       expect.arrayContaining([
@@ -98,11 +104,16 @@ describe('simulation source fingerprint', () => {
       ]),
     );
     expect(graph.excludedImports).toEqual([
+      { importer: 'src/game/play.ts', excluded: 'src/core/mood.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/look.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/mobActors.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/models.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/piles.ts' },
@@ -116,9 +127,12 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
+      { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
+      { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
   });
 
@@ -138,6 +152,13 @@ describe('simulation source fingerprint', () => {
       (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
     );
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
+  });
+
+  it('fingerprints pure mobgen modules imported by the simulation', async () => {
+    const graph = await actualSimulationGraph();
+    expect(graph.sources.has('mobgen/mob/shamblerFigure.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/core/pose.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
   });
 
   it('includes runtime-resolved source files, not unrelated UI files or type-only imports', async () => {

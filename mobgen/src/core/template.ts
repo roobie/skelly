@@ -17,6 +17,10 @@ export interface Template {
   readonly description: string;
   readonly bodyPlan: BodyPlan;
   readonly voxelSize: number;
+  /** Nominal total actor mass, used by template-aware part mass assignments. */
+  readonly bodyMassKg: number;
+  /** Optional mass fractions by part id; unspecified parts use voxel-volume share. */
+  readonly massFractions?: Readonly<Record<string, number>>;
   readonly params: Readonly<Record<string, ParamSpec>>;
   readonly budgets: Budgets;
   /** Bone ids the `grounded` rule accepts for the ground layer. */
