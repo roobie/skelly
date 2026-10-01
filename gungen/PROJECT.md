@@ -1320,11 +1320,15 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   aliased `it.runIf` would trip Biome's `noMisplacedAssertion`. `npm run test:sweeps` runs the whole suite that
   way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
   runs them.
-- **No raising timeouts.** A sweep that is too slow is split into smaller
-  tests (per template, per seed range), never given a longer timeout. The
-  current generator validation chunks are 25 seeds; the slowest AK chunk stays
-  under 1s locally. Some
-  sweeps will be removed, so their cost is not worth accommodating.
+- **Split before raising timeouts.** A sweep that is too slow is split into
+  smaller tests (per template, per seed range) rather than given a longer
+  timeout. A sweep that cannot be split gets a timeout proportional to its
+  work (see "Testing"), never a flat generous one. The current generator
+  validation chunks are 25 seeds. A 2026-10-01 measurement found them
+  unreliable under load: `generate.test.ts` chunks took 5-8 s at load 6-10 on
+  6 cores, and 17 timed out at the 5 s default, so the earlier "under 1 s
+  locally" claim is unverified. Some sweeps will be removed, so their cost is
+  not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
   seed range, and the `known-good seeds` snapshots, which are generator
   output. Tests over `fixtures/`, hand-built assemblies and single fixed
@@ -1371,6 +1375,30 @@ Removal plan, one line per gated sweep:
 Golden designs (3.1) become the regression corpus. Each published design
 gets a snapshot of its resolved solids (already planned), and property tests
 iterate `fixtures/` plus `designs/` instead of seeds.
+
+## Testing
+
+- **Say what a test protects.** Each test, or the comment above a group, states
+  the behaviour it guards. Two tests that catch the same bugs are one too many,
+  and a sweep earns its size only if its extra cases exercise different
+  behaviour.
+- **Exhaustive sweeps go behind `GUNGEN_SWEEPS`.** Use `sweepGroup` from
+  `test/sweeps.ts`; the default `npm test` keeps a representative sample and CI
+  runs everything. Build no cases for a skipped group (`runSweeps ? cases : []`),
+  because a skipped group still registers every case.
+- **Prefer a covering array to a full product in the default run.**
+  `test/coveringArray.ts` generates a fixed-seed t-wise array from a family's
+  `params`. `test/parts.test.ts` lists the array-sampled families in one place,
+  `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
+  explicit case for an interaction the array is known to miss.
+- **Removals need a reason.** The commit says what the removed tests protected
+  and which remaining test or sample still protects it, ideally with a mutation
+  or coverage result as evidence.
+- **Timeouts.** A test that takes about 1 s or more and still has the 5 s
+  default gets its own timeout, about 5x its measured time, with a comment
+  saying why. A sweep is split into smaller tests where it can be; one that
+  cannot (`unplacedParts.test.ts`) gets a timeout proportional to its case
+  count.
 
 ## Running it
 
