@@ -16,8 +16,9 @@ import {
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems, HOLD } from '../src/render/hands.ts';
 import {
@@ -233,6 +234,69 @@ describe('player figure', () => {
         expect(actualPart.scale.distanceTo(expectedPart.scale)).toBeLessThan(0.001);
       }
     }
+  });
+
+  it('keeps exactly two first-person arm chains across inventory and model rebuilds, at rest and contact', () => {
+    const inventory = new Inventory(registry);
+    const models = { version: 0, held: () => undefined } as unknown as NonNullable<
+      ConstructorParameters<typeof HeldItems>[1]
+    >;
+    const held = new HeldItems(inventory, models, palette);
+    const internals = held as unknown as { scene: Group; arms: Map<'left' | 'right', Group> };
+    const camera = new PerspectiveCamera();
+    const renderedArmCount = () => {
+      let count = 0;
+      internals.scene.traverse((object) => {
+        if (object.name.startsWith('first-person-arm-')) {
+          count += 1;
+        }
+      });
+      return count;
+    };
+    const counts: number[] = [];
+    const record = (pose?: ReturnType<typeof readyMeleePose>) => {
+      held.update(camera, pose);
+      counts.push(renderedArmCount());
+    };
+
+    record(readyMeleePose(false));
+    const originalArms = [...internals.arms.values()];
+    const backpack = inventory.create('hiking_backpack');
+    expect(inventory.add(backpack, { kind: 'worn' })).toBe(true);
+    record(readyMeleePose(false));
+    for (let index = 0; index < 3; index++) {
+      expect(inventory.add(inventory.create('canned_beans'), { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(
+        true,
+      );
+      record(readyMeleePose(false));
+    }
+
+    models.version += 1;
+    record(readyMeleePose(false));
+    const { cooldown } = FISTS_MELEE;
+    const contactAt = meleeContactTime(cooldown);
+    const contact = meleePoseAndContact(
+      {
+        profile: 'fists',
+        hand: 'right',
+        twoHanded: false,
+        cooldown,
+        contactAt,
+        aimYaw: 0,
+        aimPitch: 0,
+        origin: [0, 0, 0],
+        direction: [0, 0, -1],
+        hitResolved: false,
+      },
+      contactAt,
+      false,
+    );
+    record(contact);
+
+    expect(inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' })).toBe(true);
+    record(readyMeleePose(false));
+    expect(counts).toEqual(Array.from({ length: counts.length }, () => 2));
+    expect(originalArms.every((arm) => arm.parent === null)).toBe(true);
   });
 
   it('keeps the locked click-time world quaternion through simultaneous camera yaw and pitch', () => {

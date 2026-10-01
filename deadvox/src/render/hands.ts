@@ -6,10 +6,12 @@
 
 import {
   BoxGeometry,
+  type BufferGeometry,
   DirectionalLight,
   Euler,
   Group,
   HemisphereLight,
+  type Material,
   Mesh,
   MeshLambertMaterial,
   Object3D,
@@ -196,10 +198,10 @@ export class HeldItems {
       return;
     }
     this.drawn = version;
+    this.clearArms();
     this.view.clear();
     this.view.add(this.torso);
     this.shown.clear();
-    this.arms.clear();
     this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
@@ -208,6 +210,30 @@ export class HeldItems {
     this.syncHand('left', hands.left);
     this.syncFistHand('right');
     this.syncFistHand('left');
+  }
+
+  /** Detaches and disposes arm chains before rebuilding the hands scene on an inventory/model version change. */
+  private clearArms(): void {
+    const geometries = new Set<BufferGeometry>();
+    const materials = new Set<Material>();
+    for (const arm of this.arms.values()) {
+      arm.traverse((object) => {
+        if (object instanceof Mesh) {
+          geometries.add(object.geometry);
+          for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+            materials.add(material);
+          }
+        }
+      });
+      arm.removeFromParent();
+    }
+    for (const geometry of geometries) {
+      geometry.dispose();
+    }
+    for (const material of materials) {
+      material.dispose();
+    }
+    this.arms.clear();
   }
 
   private updateArmChain(side: HandSide, arm: Group): void {
