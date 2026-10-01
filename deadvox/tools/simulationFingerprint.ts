@@ -60,6 +60,8 @@ export const SIMULATION_ENTRIES = [
 export const SIMULATION_EXCLUSIONS = [
   'src/render',
   'src/debug',
+  // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
+  'src/core/sideButton.ts',
   'src/core/sky.ts',
   'src/core/mood.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).

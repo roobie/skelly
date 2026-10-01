@@ -103,6 +103,7 @@ describe('simulation source fingerprint', () => {
     );
     expect(graph.excludedImports).toEqual([
       { importer: 'src/game/play.ts', excluded: 'src/core/mood.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
