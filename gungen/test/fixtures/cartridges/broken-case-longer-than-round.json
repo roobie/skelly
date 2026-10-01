@@ -1,0 +1,6 @@
+{
+  "name": "broken-case-longer-than-round",
+  "base": "7.62x39",
+  "set": { "overallLength.max.value": 38 },
+  "expect": ["lengths"]
+}

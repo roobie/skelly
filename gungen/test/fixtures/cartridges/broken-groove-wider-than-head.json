@@ -1,0 +1,6 @@
+{
+  "name": "broken-groove-wider-than-head",
+  "base": "7.62x39",
+  "set": { "case.head.extractorGroove.diameter.value": 12 },
+  "expect": ["head-type"]
+}

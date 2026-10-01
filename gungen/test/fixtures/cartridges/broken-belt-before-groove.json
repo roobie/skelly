@@ -1,0 +1,6 @@
+{
+  "name": "broken-belt-before-groove",
+  "base": "synthetic:belted-bottleneck",
+  "set": { "case.head.belt.width.value": 2 },
+  "expect": ["positions"]
+}

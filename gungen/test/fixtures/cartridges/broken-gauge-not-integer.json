@@ -1,0 +1,6 @@
+{
+  "name": "broken-gauge-not-integer",
+  "base": "synthetic:shotshell-buck",
+  "set": { "gauge.value": 12.5 },
+  "expect": ["units"]
+}

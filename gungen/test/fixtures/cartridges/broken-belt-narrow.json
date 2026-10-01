@@ -1,0 +1,6 @@
+{
+  "name": "broken-belt-narrow",
+  "base": "synthetic:belted-bottleneck",
+  "set": { "case.head.belt.diameter.value": 11.5 },
+  "expect": ["head-type"]
+}
