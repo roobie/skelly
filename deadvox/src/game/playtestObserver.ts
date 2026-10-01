@@ -1,5 +1,5 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
-import type { HandlingQueue, MoveJob } from '../core/handling.ts';
+import type { HandlingQueue, MoveJob, TickResult } from '../core/handling.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import {
@@ -22,98 +22,65 @@ interface PendingMove {
   readonly sourceCount?: number;
 }
 
-const moveReachedTarget = (job: MoveJob, location: Location | undefined): boolean => {
-  if (!location) {
+interface MetricsFrame {
+  realSeconds: number;
+  paused: boolean;
+  visible: boolean;
+  compression: number;
+  interruption: string | undefined;
+  now: number;
+}
+
+const samePlace = (a: Location | undefined, b: Location | undefined): boolean => {
+  if (!(a && b) || a.kind !== b.kind) {
     return false;
   }
-  switch (job.target.kind) {
-    case 'pocket':
-      return (
-        location.kind === 'pocket' &&
-        location.owner.uid === job.target.ownerUid &&
-        location.pocket === job.target.pocket
-      );
-    case 'furniture':
-      return (
-        location.kind === 'furniture' &&
-        location.entity.uid === job.target.entityUid &&
-        location.pocket === job.target.pocket
-      );
-    case 'pile':
-      return (
-        location.kind === 'pile' &&
-        location.pile.pos[0] === job.target.pos[0] &&
-        location.pile.pos[1] === job.target.pos[1] &&
-        location.pile.pos[2] === job.target.pos[2]
-      );
+  switch (a.kind) {
     case 'hand':
-      return location.kind === 'hand' && location.side === job.target.side;
+      return b.kind === 'hand' && a.side === b.side;
     case 'worn':
-      return location.kind === 'worn';
+      return b.kind === 'worn' && a.slot === b.slot;
+    case 'pocket':
+      return b.kind === 'pocket' && a.owner.uid === b.owner.uid && a.pocket === b.pocket;
+    case 'furniture':
+      return b.kind === 'furniture' && a.entity.uid === b.entity.uid && a.pocket === b.pocket;
+    case 'pile':
+      return b.kind === 'pile' && a.pile.pos.every((part, i) => part === b.pile.pos[i]);
     default:
       return false;
   }
 };
 
-const inspectLiveSession = (session: Session): unknown => {
-  const inspectItem = (item: import('../core/items.ts').Item): unknown => ({
-    uid: item.uid,
-    type: item.type,
-    count: item.count,
-    condition: item.condition,
-    charges: item.charges,
-    on: item.on,
-    pockets: item.pockets?.map((grid) =>
-      grid.map((placed) => ({ x: placed.x, y: placed.y, rotated: placed.rotated, item: inspectItem(placed.item) })),
-    ),
-  });
-  const scheduler = (
-    session.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
-  ).entries;
-  return {
-    sim: {
-      calendar: session.sim.calendar,
-      time: session.sim.time,
-      needs: { ...session.sim.needs },
-      dead: session.sim.dead,
-      compression: {
-        c: session.sim.compression.c,
-        active: session.sim.compression.active,
-        interruption: session.sim.compression.interruption,
-      },
-      scheduler: scheduler.map((entry) => [entry.spec.id, entry.done, entry.ticks]),
-    },
-    body: structuredClone(session.body),
-    inventory: {
-      version: session.inventory.version,
-      nextUid: session.inventory.factory.next,
-      hands: Object.fromEntries(
-        Object.entries(session.inventory.hands).map(([key, item]) => [key, item && inspectItem(item)]),
-      ),
-      worn: Object.fromEntries(
-        Object.entries(session.inventory.worn).map(([key, item]) => [key, item && inspectItem(item)]),
-      ),
-      piles: [...session.inventory.piles.entries()].map(([key, pile]) => [
-        key,
-        pile.items.map((placed) => inspectItem(placed.item)),
-      ]),
-      looted: [...session.inventory.looted.entries()],
-    },
-    furniture: [...session.entities.all].map((entity) => ({
-      uid: entity.uid,
-      searched: session.searching(entity),
-      pockets: entity.pockets?.map((grid) => grid.map((placed) => inspectItem(placed.item))),
-    })),
-    jobs: session.queue.jobs.map((job) => structuredClone(job)),
-  };
-};
+const inspectLiveSession = (session: Session): unknown => ({
+  simulation: {
+    state: session.sim.snapshotState(),
+    paused: session.sim.paused,
+    godMode: session.sim.godMode,
+    ignoreUnsafe: session.sim.ignoreUnsafe,
+  },
+  body: structuredClone(session.body),
+  worldDiffs: session.worldDiffs(),
+  inventory: session.inventory.snapshotState(),
+  quickbar: session.quickbar.snapshotState(),
+  searching: [...session.entities.all].map((entity) => [entity.uid, entity.searched, session.searching(entity)]),
+  jobs: session.queue.jobs.map((job) => structuredClone(job)),
+  zombies: session.zombies.snapshotState(),
+  spawner: session.spawner.snapshotState(),
+  rest: session.rest.snapshotState(),
+  survival: session.survival.snapshotState(),
+  playerAudio: structuredClone(session.playerAudio),
+  audio: session.audioState(),
+});
 
 /** Excluded, observational bookkeeping for playtest metrics; the game supplies live state. */
 export class PlaytestObserver {
   private readonly lootWindows = new Map<number, LootWindow>();
   private readonly pendingMoves = new Map<MoveJob, PendingMove>();
+  private readonly outcomes: TickResult[] = [];
+  private frameActiveUid: number | undefined;
   private uiContainerUid: number | undefined;
   private lastPersistAt = 0;
+  private lastInterruption: string | undefined;
   private readonly metrics: SessionMetrics;
 
   constructor(metrics: SessionMetrics) {
@@ -125,58 +92,115 @@ export class PlaytestObserver {
     this.uiContainerUid = entity.uid;
   }
 
-  /** Capture queued moves before the simulation advances them; counts are committed only on success. */
+  /** Capture every queued move's source before the simulation advances it. */
   beforeFrame(queue: HandlingQueue, inventory: Inventory): void {
+    const [active] = queue.jobs;
     for (const job of queue.jobs) {
-      if (job.kind !== 'move' || this.pendingMoves.has(job)) {
-        continue;
+      if (job.kind === 'move' && !this.pendingMoves.has(job)) {
+        this.captureMove(job, inventory);
       }
+    }
+    this.frameActiveUid = this.sourceUid(active, inventory);
+  }
+
+  /** Called at HandlingQueue.tick's actual completion boundary, never on queue disappearance. */
+  handlingOutcomes(result: TickResult): void {
+    this.outcomes.push(result);
+  }
+
+  afterFrame(
+    frame: { realSeconds: number; screenOpen: boolean; visible: boolean },
+    queue: HandlingQueue,
+    session: Session,
+  ): void {
+    const runningSeconds = !session.sim.paused && frame.visible ? Math.max(0, frame.realSeconds) : 0;
+    const handlingActive = runningSeconds > 0 && session.sim.compression.c <= 1;
+    this.recordFrameTime(runningSeconds, frame.screenOpen, handlingActive ? this.frameActiveUid : undefined);
+    this.commitOutcomes(session.inventory);
+    this.discardCancelled(queue);
+  }
+
+  private captureMove(job: MoveJob, inventory: Inventory): void {
+    const item = inventory.itemByUid(job.itemUid);
+    const source = item ? inventory.locate(item) : undefined;
+    if (source?.kind === 'furniture') {
+      this.ensureWindow(source.entity, inventory);
+    }
+    this.pendingMoves.set(job, { job, ...(source ? { source } : {}), ...(item ? { sourceCount: item.count } : {}) });
+  }
+
+  private sourceUid(job: HandlingQueue['jobs'][number] | undefined, inventory: Inventory): number | undefined {
+    if (job?.kind === 'move') {
       const item = inventory.itemByUid(job.itemUid);
       const source = item ? inventory.locate(item) : undefined;
-      if (source?.kind === 'furniture') {
-        const { entity } = source;
-        this.lootWindows.set(
-          entity.uid,
-          this.lootWindows.get(entity.uid) ?? {
-            name: inventory.entities.defOf(entity).name.toLowerCase(),
-            handlingSeconds: 0,
-            uiSeconds: 0,
-          },
-        );
+      return source?.kind === 'furniture' ? source.entity.uid : undefined;
+    }
+    if (job?.kind === 'action' && job.jobType === 'furniture.search' && typeof job.params.entityUid === 'number') {
+      const entity = inventory.entities.byUid(job.params.entityUid);
+      if (entity) {
+        this.ensureWindow(entity, inventory);
+        return entity.uid;
       }
-      this.pendingMoves.set(job, { job, ...(source ? { source } : {}), ...(item ? { sourceCount: item.count } : {}) });
+    }
+    return undefined;
+  }
+
+  private recordFrameTime(runningSeconds: number, screenOpen: boolean, activeUid: number | undefined): void {
+    for (const [uid, window] of this.lootWindows) {
+      if (activeUid === uid) {
+        window.handlingSeconds += runningSeconds;
+      } else if (runningSeconds > 0 && screenOpen && this.uiContainerUid === uid) {
+        window.uiSeconds += runningSeconds;
+      }
     }
   }
 
-  afterFrame(realSeconds: number, screenOpen: boolean, queue: HandlingQueue, inventory: Inventory): void {
-    const activeSources = new Set(
-      [...this.pendingMoves.values()].flatMap((pending) =>
-        pending.source?.kind === 'furniture' ? [pending.source.entity.uid] : [],
-      ),
-    );
-    for (const [uid, window] of this.lootWindows) {
-      if (activeSources.has(uid)) {
-        window.handlingSeconds += realSeconds;
-      } else if (screenOpen && this.uiContainerUid === uid) {
-        window.uiSeconds += realSeconds;
+  private commitOutcomes(inventory: Inventory): void {
+    for (const result of this.outcomes) {
+      for (const { job } of result.failed) {
+        if (job.kind === 'move') {
+          this.pendingMoves.delete(job);
+        }
+      }
+      for (const job of result.done) {
+        if (job.kind !== 'move') {
+          continue;
+        }
+        const pending = this.pendingMoves.get(job);
+        if (pending) {
+          this.completeMove(pending, inventory);
+        } else {
+          this.recordPocketUse(job, inventory);
+        }
       }
     }
+    this.outcomes.length = 0;
+  }
 
-    for (const pending of this.pendingMoves.values()) {
-      if (!queue.jobs.includes(pending.job)) {
-        this.completeMove(pending, inventory);
+  private discardCancelled(queue: HandlingQueue): void {
+    for (const job of this.pendingMoves.keys()) {
+      if (!queue.jobs.includes(job)) {
+        this.pendingMoves.delete(job);
       }
     }
+  }
+
+  private ensureWindow(entity: BlockEntity, inventory: Inventory): LootWindow {
+    const existing = this.lootWindows.get(entity.uid);
+    if (existing) {
+      return existing;
+    }
+    const window = { name: inventory.entities.defOf(entity).name.toLowerCase(), handlingSeconds: 0, uiSeconds: 0 };
+    this.lootWindows.set(entity.uid, window);
+    return window;
   }
 
   private completeMove(pending: PendingMove, inventory: Inventory): void {
     const { job } = pending;
     const item = inventory.itemByUid(job.itemUid);
     const current = item ? inventory.locate(item) : undefined;
-    if (moveReachedTarget(job, current)) {
-      this.recordSourceLoot(pending, current, item, inventory);
-      this.recordPocketUse(job, inventory);
-    }
+    this.recordSourceLoot(pending, current, item, inventory);
+    this.recordPocketUse(job, inventory);
     this.pendingMoves.delete(job);
   }
 
@@ -186,22 +210,18 @@ export class PlaytestObserver {
     item: ReturnType<Inventory['itemByUid']>,
     inventory: Inventory,
   ): void {
-    const { source } = pending;
+    const { source, job } = pending;
     if (source?.kind !== 'furniture') {
       return;
     }
-    const sourceMoved =
-      current?.kind !== 'furniture' ||
-      current.entity.uid !== source.entity.uid ||
-      Boolean(item && pending.sourceCount !== undefined && item.count < pending.sourceCount);
-    if (!sourceMoved) {
+    const targetIsSameFurniture = job.target.kind === 'furniture' && job.target.entityUid === source.entity.uid;
+    const sourceChanged =
+      !samePlace(source, current) ||
+      Boolean(item && pending.sourceCount !== undefined && item.count <= pending.sourceCount - job.count);
+    if (!sourceChanged || targetIsSameFurniture) {
       return;
     }
-    const window = this.lootWindows.get(source.entity.uid) ?? {
-      name: inventory.entities.defOf(source.entity).name.toLowerCase(),
-      handlingSeconds: 0,
-      uiSeconds: 0,
-    };
+    const window = this.ensureWindow(source.entity, inventory);
     this.metrics.recordContainerLoot(window.name, window.handlingSeconds, window.uiSeconds);
     this.lootWindows.delete(source.entity.uid);
     if (this.uiContainerUid === source.entity.uid) {
@@ -237,10 +257,14 @@ export class PlaytestObserver {
     );
   }
 
-  frame(realSeconds: number, compressed: boolean, interrupted: boolean, now: number): boolean {
-    this.metrics.frame(realSeconds, compressed, interrupted);
-    if (interrupted || now - this.lastPersistAt >= 5000) {
-      this.lastPersistAt = now;
+  /** Owns pause, visibility, compression, and interruption accounting policy. */
+  frame(frame: MetricsFrame): boolean {
+    const runningSeconds = !frame.paused && frame.visible ? frame.realSeconds : 0;
+    const interrupted = frame.interruption !== undefined && frame.interruption !== this.lastInterruption;
+    this.lastInterruption = frame.interruption;
+    this.metrics.frame(runningSeconds, !frame.paused && frame.compression > 1, interrupted);
+    if (interrupted || frame.now - this.lastPersistAt >= 5000) {
+      this.lastPersistAt = frame.now;
       return true;
     }
     return false;
@@ -252,7 +276,7 @@ export class PlaytestObserver {
     history: SnapshotHistory,
     repeats = 50,
   ): SnapshotMeasurement {
-    const result = measureSnapshots(snapshot, () => JSON.stringify(inspectLiveSession(session)), repeats);
+    const result = measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
     for (const duration of result.durationsMs) {
       history.add(duration);
     }

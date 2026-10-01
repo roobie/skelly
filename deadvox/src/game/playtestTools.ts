@@ -196,30 +196,99 @@ const percentile = (values: readonly number[], p: number): number => {
   return sorted[Math.min(sorted.length - 1, Math.ceil(p * sorted.length) - 1)]!;
 };
 
-/** A side-effect-free timed call to a pure snapshot producer. Hashes bracket the run. */
+const equalArray = (
+  left: readonly unknown[],
+  right: readonly unknown[],
+  seen: WeakMap<object, WeakSet<object>>,
+): boolean => left.length === right.length && left.every((value, index) => exactStateEqual(value, right[index], seen));
+
+const equalMap = (
+  left: Map<unknown, unknown>,
+  right: Map<unknown, unknown>,
+  seen: WeakMap<object, WeakSet<object>>,
+): boolean => {
+  if (left.size !== right.size) {
+    return false;
+  }
+  const rightEntries = [...right.entries()];
+  return [...left.entries()].every(
+    ([key, value], index) =>
+      exactStateEqual(key, rightEntries[index]?.[0], seen) && exactStateEqual(value, rightEntries[index]?.[1], seen),
+  );
+};
+
+const equalSet = (left: Set<unknown>, right: Set<unknown>, seen: WeakMap<object, WeakSet<object>>): boolean =>
+  left.size === right.size && equalArray([...left], [...right], seen);
+
+const equalProperties = (left: object, right: object, seen: WeakMap<object, WeakSet<object>>): boolean => {
+  const leftKeys = Reflect.ownKeys(left);
+  const rightKeys = Reflect.ownKeys(right);
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key, index) =>
+        key === rightKeys[index] &&
+        exactStateEqual(
+          (left as Record<PropertyKey, unknown>)[key],
+          (right as Record<PropertyKey, unknown>)[key],
+          seen,
+        ),
+    )
+  );
+};
+
+export const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean => {
+  if (Object.is(a, b)) {
+    return true;
+  }
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return false;
+  }
+  const paired = seen.get(a) ?? new WeakSet<object>();
+  if (paired.has(b)) {
+    return true;
+  }
+  paired.add(b);
+  seen.set(a, paired);
+  if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) {
+    return false;
+  }
+  if (Array.isArray(a)) {
+    return Array.isArray(b) && equalArray(a, b, seen);
+  }
+  if (a instanceof Map) {
+    return b instanceof Map && equalMap(a, b, seen);
+  }
+  if (a instanceof Set) {
+    return b instanceof Set && equalSet(a, b, seen);
+  }
+  return equalProperties(a, b, seen);
+};
+
+/** A side-effect-free timed call to a pure snapshot producer. Compares live state without serialization. */
 export const measureSnapshots = (
   snapshot: () => unknown,
-  stateHash: () => string,
+  liveState: () => unknown,
   repeats = 50,
   now: () => number = () => performance.now(),
 ): SnapshotMeasurement => {
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
     throw new Error(`Invalid snapshot repetitions: ${repeats}`);
   }
-  const before = stateHash();
+  const before = liveState();
   const samples: number[] = [];
   for (let i = 0; i < repeats; i++) {
     const start = now();
     snapshot();
     samples.push(Math.max(0, now() - start));
   }
-  const after = stateHash();
+  const after = liveState();
   return {
     samples: repeats,
     p50Ms: percentile(samples, 0.5),
     p95Ms: percentile(samples, 0.95),
     durationsMs: samples,
-    stateUnchanged: before === after,
+    stateUnchanged: exactStateEqual(before, after),
   };
 };
 

@@ -99,7 +99,20 @@ describe('snapshot measurement', () => {
         state += 1;
         return state;
       },
-      () => String(state),
+      () => state,
+      1,
+      () => 0,
+    );
+    expect(result.stateUnchanged).toBe(false);
+  });
+
+  it('compares exact numeric values without JSON normalization', () => {
+    const state = { value: 0 };
+    const result = measureSnapshots(
+      () => {
+        state.value = -0;
+      },
+      () => ({ ...state }),
       1,
       () => 0,
     );

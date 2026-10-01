@@ -29,9 +29,11 @@ describe('playtest observer', () => {
     const observer = new PlaytestObserver(observerMetrics);
     observer.beginSearch(counter as never, 'counter');
     observer.beforeFrame(queue as never, inventory as never);
+    const session = { sim: { paused: false, compression: { c: 1 } }, inventory } as never;
     location = { kind: 'pile', pile: { pos: [0, 0, 0], items: [placed] }, placed };
     queue.jobs.length = 0;
-    observer.afterFrame(1, true, queue as never, inventory as never);
+    observer.handlingOutcomes({ done: [job as never], failed: [] });
+    observer.afterFrame({ realSeconds: 1, screenOpen: true, visible: true }, queue as never, session);
     expect(observerMetrics.toJSON().containersLooted).toEqual([
       { container: 'cupboard', handlingSeconds: 1, uiSeconds: 0 },
     ]);
@@ -69,8 +71,13 @@ describe('playtest observer', () => {
       queue.jobs.push(job);
       observer.beforeFrame(queue as never, inventory as never);
       location = { kind: 'pocket', owner, pocket: 0, placed: { item, x: 0, y: 0, rotated: false } };
+      observer.handlingOutcomes({ done: [job as never], failed: [] });
       queue.jobs.length = 0;
-      observer.afterFrame(0, false, queue as never, inventory as never);
+      observer.afterFrame(
+        { realSeconds: 0, screenOpen: false, visible: true },
+        queue as never,
+        { sim: { paused: false, compression: { c: 1 } }, inventory } as never,
+      );
       location = { kind: 'hand', side: 'left' };
     }
     expect(Object.keys(metrics.toJSON().pocketUses)).toHaveLength(2);
@@ -82,9 +89,12 @@ describe('playtest observer', () => {
     const entity = { uid: 30, type: 'cabinet', pockets: [] };
     const metrics = new SessionMetrics(1);
     const observer = new PlaytestObserver(metrics);
-    const inventory = { itemByUid: () => undefined, locate: () => undefined };
     observer.beginSearch(entity as never, 'cabinet');
-    observer.afterFrame(1, true, { jobs: [] } as never, inventory as never);
+    observer.afterFrame(
+      { realSeconds: 1, screenOpen: true, visible: true },
+      { jobs: [] } as never,
+      { sim: { paused: false, compression: { c: 1 } }, inventory: {} } as never,
+    );
     const item = { uid: 92, type: 'matches', count: 1 };
     let location: unknown = { kind: 'furniture', entity, pocket: 0, placed: { item, x: 0, y: 0, rotated: false } };
     const sourceInventory = {
@@ -104,8 +114,13 @@ describe('playtest observer', () => {
     const queue = { jobs: [job] };
     observer.beforeFrame(queue as never, sourceInventory as never);
     location = { kind: 'pile', pile: { pos: [0, 0, 0], items: [] }, placed: { item, x: 0, y: 0, rotated: false } };
+    observer.handlingOutcomes({ done: [job as never], failed: [] });
     queue.jobs.length = 0;
-    observer.afterFrame(0, true, queue as never, sourceInventory as never);
+    observer.afterFrame(
+      { realSeconds: 0, screenOpen: true, visible: true },
+      queue as never,
+      { sim: { paused: false, compression: { c: 1 } }, inventory: sourceInventory } as never,
+    );
     expect(metrics.toJSON().containersLooted[0]?.uiSeconds).toBe(1);
   });
 });
@@ -115,25 +130,25 @@ describe('playtest observer snapshot oracle', () => {
     const entity = { uid: 9, pockets: [] };
     const runtime = {
       sim: {
-        calendar: 10,
-        time: 2,
         needs: { health: 100 },
-        dead: undefined,
-        compression: { c: 1, active: false, interruption: undefined },
-        scheduler: { entries: [{ spec: { id: 'search' }, done: 1, ticks: 2 }] },
+        paused: false,
+        godMode: false,
+        ignoreUnsafe: false,
+        snapshotState: () => ({ health: runtime.sim.needs.health }),
       },
       body: { pos: [1, 2, 3], vel: [0, -1, 0], onGround: false },
-      inventory: {
-        version: 0,
-        factory: { next: 1 },
-        hands: {},
-        worn: {},
-        piles: new Map(),
-        looted: new Map(),
-      },
+      inventory: { snapshotState: () => ({ version: 0 }) },
+      quickbar: { snapshotState: () => [null, null] },
       entities: { all: new Set([entity]) },
       searching: () => true,
       queue: { jobs: [{ kind: 'action', jobType: 'furniture.search', elapsed: 1 }] },
+      zombies: { snapshotState: () => ({}) },
+      spawner: { snapshotState: () => [] },
+      rest: { snapshotState: () => ({}) },
+      survival: { snapshotState: () => ({}) },
+      playerAudio: {},
+      worldDiffs: () => ({ chunks: [] }),
+      audioState: () => ({}),
     } as unknown as Session;
     const observer = new PlaytestObserver(new SessionMetrics(1));
     const result = observer.measureSnapshot(

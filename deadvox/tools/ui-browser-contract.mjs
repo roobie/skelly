@@ -517,6 +517,17 @@ try {
     '2',
     'spawn count remains selected',
   );
+  await evaluate(
+    `document.querySelector('[aria-label="Decrease shambler count"]').scrollIntoView({ block: 'center' })`,
+  );
+  await clickAt('[aria-label="Decrease shambler count"]');
+  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
+  assert.equal(await evaluate('document.querySelector(\'[aria-label="Decrease shambler count"]\').disabled'), true);
+  await evaluate(
+    `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
+  );
+  await clickAt('[aria-label="Increase shambler count"]');
+  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
   await press('KeyV', 'v', 86);
   assert.match(
     await evaluate("document.querySelector('#shambler-spawn-status').textContent"),

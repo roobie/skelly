@@ -107,6 +107,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
 
   // ---- simulation ----
 
+  let playtestObserver: PlaytestObserver | undefined;
   const session = createSession({
     registry,
     world: engine.world,
@@ -132,6 +133,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       restoreState: (state) => audio.restoreState(state),
     },
     notice: (text) => showNotice(text),
+    onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
@@ -269,7 +271,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     });
   };
 
-  let playtestObserver: PlaytestObserver | undefined;
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
     feet,
     nearby: () => inventory.pilesNear(body.pos, LOOT_REACH / s),
@@ -752,7 +753,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let simulationMs = 0;
   let renderMs = 0;
   let meshingQueueMs = 0;
-  let previousInterruption: string | undefined;
 
   const displayCalendar = (): number => sim.calendar;
   const clockText = (): string => {
@@ -873,16 +873,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     });
   };
 
-  const updatePlaytestMetrics = (realSeconds: number, now: number): void => {
-    const { interruption } = compression;
-    const newInterruption = interruption !== undefined && interruption !== previousInterruption;
-    previousInterruption = interruption;
-    const runningSeconds = !sim.paused && document.visibilityState === 'visible' ? realSeconds : 0;
-    if (playtestObserver?.frame(runningSeconds, !sim.paused && compression.c > 1, newInterruption, now)) {
-      saveMetrics();
-    }
-  };
-
   const renderHandlingFrame = (): void => {
     if (screen.isOpen || !hudVisibility(hudOptions).handling) {
       handlingBox.hidden = true;
@@ -947,12 +937,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const gameFrozen = stepSimulation(dt, menuState.paused);
     simulationMs = performance.now() - mark;
     playtestObserver?.afterFrame(
-      !sim.paused && document.visibilityState === 'visible' ? realSeconds : 0,
-      screen.isOpen,
+      { realSeconds, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
-      inventory,
+      session,
     );
-    updatePlaytestMetrics(realSeconds, now);
+    if (
+      playtestObserver?.frame({
+        realSeconds,
+        paused: sim.paused,
+        visible: document.visibilityState === 'visible',
+        compression: compression.c,
+        interruption: compression.interruption,
+        now,
+      })
+    ) {
+      saveMetrics();
+    }
     const hour = hourOfDay(sim.calendar);
     const sky = skyInWeather(skyAt(hour), weather);
     applySky(engine.sky, sky);
