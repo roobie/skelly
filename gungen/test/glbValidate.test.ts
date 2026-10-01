@@ -22,7 +22,14 @@ describe('gltf-validator', () => {
       throw new Error(`${file}: ${loaded.error.message}`);
     }
     const id = basename(file, '.json').replaceAll('-', '_');
-    const result = exportGunGlb(loaded.design.assembly, { id, file: `assets/models/${id}.glb` });
+    const result = exportGunGlb(
+      loaded.design.assembly,
+      { id, file: `assets/models/${id}.glb` },
+      {
+        variant: loaded.design.template,
+        ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
+      },
+    );
     if (!result.ok) {
       throw new Error(`${file}: ${JSON.stringify(result.error)}`);
     }

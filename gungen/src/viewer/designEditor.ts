@@ -12,6 +12,7 @@ export interface DesignEditorState {
   readonly assembly: Assembly;
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
+  readonly finish?: Readonly<Record<string, string>>;
   readonly origin?: DesignOrigin;
   /** Explicit values already present in a design file are all deliberate choices. */
   readonly chosenParams: Readonly<Record<string, readonly string[]>>;
@@ -51,12 +52,18 @@ const withParamNames = (
 export const createEditorState = (
   template: Template | undefined,
   assembly: Assembly,
-  options: { readonly status?: DesignStatus; readonly locks?: DesignLocks; readonly origin?: DesignOrigin } = {},
+  options: {
+    readonly status?: DesignStatus;
+    readonly locks?: DesignLocks;
+    readonly finish?: Readonly<Record<string, string>>;
+    readonly origin?: DesignOrigin;
+  } = {},
 ): DesignEditorState => ({
   template,
   assembly,
   locks: options.locks ?? EMPTY_LOCKS,
   status: options.status ?? 'draft',
+  ...(options.finish ? { finish: options.finish } : {}),
   ...(options.origin ? { origin: options.origin } : {}),
   chosenParams: {},
 });
@@ -67,6 +74,7 @@ export const editorStateFromDesign = (design: Design, template: Template | undef
   assembly: design.assembly,
   locks: design.locks,
   status: design.status,
+  ...(design.finish ? { finish: design.finish } : {}),
   ...(design.origin ? { origin: design.origin } : {}),
   chosenParams: Object.fromEntries(
     Object.entries(design.assembly.parts).map(([id, part]) => [id, Object.keys(part.params ?? {})]),
@@ -358,6 +366,7 @@ export const saveDesign = (state: DesignEditorState, domain: Domain): SaveDesign
     assembly: chosenAssembly(state, domain),
     locks: state.locks,
     status: state.status,
+    ...(state.finish ? { finish: state.finish } : {}),
     ...(state.origin ? { origin: state.origin } : {}),
   };
   return { ok: true, design, text: `${JSON.stringify(design, null, 2)}\n` };

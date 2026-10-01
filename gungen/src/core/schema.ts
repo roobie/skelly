@@ -43,7 +43,14 @@ export interface SolidDisplayHints {
   readonly mergeGroup?: string;
 }
 
-export interface BoxSolid {
+export interface SolidFinish {
+  /** Material id for this solid, taking precedence over its owning part and palette defaults. */
+  readonly material?: string;
+  /** Slot id for this solid; otherwise inherited from its part or role. */
+  readonly slot?: string;
+}
+
+export interface BoxSolid extends SolidFinish {
   readonly id: string;
   readonly kind: 'box';
   readonly box: Box;
@@ -58,7 +65,7 @@ export interface ClipPlane {
   readonly offset: number;
 }
 
-export interface ExtrudedPolygonSolid {
+export interface ExtrudedPolygonSolid extends SolidFinish {
   readonly id: string;
   readonly kind: 'extruded-polygon';
   /** Convex CCW profile: X uses (Y,Z), Y uses (Z,X), and Z uses (X,Y), keeping profile × axis right-handed. */
@@ -111,6 +118,10 @@ export interface PartMotion {
 
 export interface PartDef {
   readonly family: string;
+  /** Optional finish override for attachments or aftermarket parts. */
+  readonly material?: string;
+  /** Optional material slot override; otherwise selected from the part role. */
+  readonly slot?: string;
   readonly ports: readonly PortDef[];
   readonly solids: readonly Solid[];
   /** Optional higher-resolution scene tessellation; never used for collision checks. */

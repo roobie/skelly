@@ -8,6 +8,7 @@
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
 // Vertices are in the part's local frame times `METRES_PER_UNIT`; the node transform supplies the placement.
 
+import { resolveAppearance } from './appearance.ts';
 import type {
   DeadvoxModelEntry,
   DeadvoxModelFile,
@@ -26,19 +27,11 @@ import { meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
-
 /** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
 export const partNodeName = (id: string, family: string): string => `${id}:${family}`;
 
 /** The standard sRGB electro-optical transfer: one normalized channel to linear light. */
 export const srgbToLinear = (c: number): number => (c <= 0.040_45 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-
-const own = (table: Readonly<Record<string, SrgbColor>>, key: string): SrgbColor | undefined =>
-  Object.hasOwn(table, key) ? table[key] : undefined;
-
-/** Same precedence as the gun palette's `solidColor`: solid id, then role, then the fallback. */
-const colorOf = (palette: Palette, role: string, solidId: string): SrgbColor =>
-  own(palette.specialColors, solidId) ?? own(palette.familyColors, role) ?? palette.fallbackColor;
 
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
@@ -47,6 +40,8 @@ const badPaletteKey = (palette: Palette): string | undefined => {
   const entries: [string, SrgbColor][] = [
     ...Object.entries(palette.familyColors).map(([k, c]): [string, SrgbColor] => [`family ${k}`, c]),
     ...Object.entries(palette.specialColors).map(([k, c]): [string, SrgbColor] => [`special ${k}`, c]),
+    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c]),
+    ...Object.entries(palette.roleShades ?? {}).map(([k, c]): [string, SrgbColor] => [`shade ${k}`, c]),
     ['fallback', palette.fallbackColor],
   ];
   return entries.find(([, c]) => !validColor(c))?.[0];
@@ -202,6 +197,23 @@ interface PartExport {
   readonly placed: Transform;
 }
 
+const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
+  a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
+
+/** Keep g27's finish boundary when using the shared g24 display groups. */
+const splitMixedAppearance = (
+  items: DisplayItem[],
+  appearanceFor: (solid: DisplayItem['solids'][number]) => ReturnType<typeof resolveAppearance>,
+): DisplayItem[] =>
+  items.flatMap((item) => {
+    if (!item.merged) {
+      return [item];
+    }
+    const first = appearanceFor(item.solids[0]!);
+    return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+      ? [item]
+      : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+  });
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
@@ -271,8 +283,23 @@ export const exportGlb: ExportGlb = (input) => {
   };
 
   const meshes: Json[] = [];
+  const appearanceFinish = input.finish ?? input.appearance?.finish;
+  const appearanceContext = {
+    ...input.appearance,
+    ...(appearanceFinish === undefined ? {} : { finish: appearanceFinish }),
+  };
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
+  const appearanceFor = (part: PartExport, solid: DisplayItem['solids'][number]) =>
+    resolveAppearance(palette, part.def.family, solid.id, {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+        ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+        ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+      },
+    });
   const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
     const solid = item.solids[0]!;
     const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
@@ -296,21 +323,29 @@ export const exportGlb: ExportGlb = (input) => {
       { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
       ELEMENT_ARRAY_BUFFER,
     );
+    const appearance = appearanceFor(part, solid);
     return {
       attributes: { POSITION: position, NORMAL: normal },
       indices,
-      material: materialFor(colorOf(palette, part.def.family, solid.id)),
+      material: materialFor(appearance.color),
       mode: 4,
-      extras: item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id },
+      extras: {
+        ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
+        ...(appearance.material === undefined ? {} : { material: appearance.material }),
+        ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
+      },
     };
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = displayItems(drawn).flatMap((item) => {
-      const primitive = primitiveFor(part, item);
-      return primitive ? [primitive] : [];
-    });
+    const primitives = splitMixedAppearance(displayItems(drawn), (solid) => appearanceFor(part, solid)).flatMap(
+      (item) => {
+        const primitive = primitiveFor(part, item);
+        return primitive ? [primitive] : [];
+      },
+    );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);
@@ -322,10 +357,19 @@ export const exportGlb: ExportGlb = (input) => {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
     }
+    const appearance = resolveAppearance(palette, part.def.family, '', {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+      },
+    });
     node.extras = {
       part: part.id,
       family: part.family,
       role: part.def.family,
+      ...(appearance.material === undefined ? {} : { material: appearance.material }),
+      ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
       solids: drawn.map((s) => s.id),
       ...(part.def.motion ? { motion: part.def.motion } : {}),
     };
@@ -356,7 +400,13 @@ export const exportGlb: ExportGlb = (input) => {
   }
 
   (nodes[0] as Json).extras = {
-    gungen: { assembly: resolved.assembly.name, unit: 'u', metresPerUnit: METRES_PER_UNIT, portFrameUnit: 'u' },
+    gungen: {
+      assembly: resolved.assembly.name,
+      unit: 'u',
+      metresPerUnit: METRES_PER_UNIT,
+      portFrameUnit: 'u',
+      materialCount: materials.length,
+    },
   };
 
   const json: Json = {
