@@ -18,6 +18,7 @@ import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
+import { scrollPanelByWheel } from './wheel.ts';
 
 export interface Action {
   readonly code: string;
@@ -570,6 +571,17 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   }
   // Pausing (the pointer lock is lost) is when the operator reaches for the address bar.
   document.addEventListener('pointerlockchange', () => syncCamUrl(true));
+  // Locked, the wheel scrolls an open, overflowing panel (rule in wheel.ts); unlocked, the browser does.
+  globalThis.addEventListener(
+    'wheel',
+    (e) => {
+      const panel = host.querySelector<HTMLElement>('.debug-panel');
+      if (scrollPanelByWheel(panel, panelOpen, document.pointerLockElement !== null, e)) {
+        e.preventDefault();
+      }
+    },
+    { passive: false },
+  );
   const actions = createDebugActions({
     hooks,
     look,
