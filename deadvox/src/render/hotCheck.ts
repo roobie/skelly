@@ -1,5 +1,5 @@
 // Debug hot-pixel check: world materials paint any fragment whose lit colour is NaN, infinite,
-// negative or above HOT_CHECK_LIMIT (linear, before tone mapping and fog), or whose alpha leaves
+// negative or above HOT_CHECK_LIMIT (linear, before tone mapping and fog, and again after fog), or whose alpha leaves
 // 0..1, in a colour that names the material category (HOT_CATEGORIES) and brightness/pattern that
 // names the kind of failure (HOT_KINDS), so a stray bright pixel can be told apart from background
 // showing through (see Mood's crack check) and traced to the material that produced it.
@@ -48,8 +48,9 @@ uniform vec3 uHotColor;`;
 // `x != x` test is added as a second route to NaN, but an optimiser may fold it to false, so the
 // classification never depends on it. isnan() is avoided for the same reason.
 // Precedence when channels disagree: negative, then > 8/Inf, then NaN. Alpha is only judged
-// when the colour is fine. The patch runs after the lit colour is written and before the mist and
-// distance fog, so the paint is faded by them like any fragment (stand close to read it).
+// when the colour is fine. The check runs twice: after the lit colour is written (before tone mapping,
+// mist and distance fog; that paint is then faded by them, so stand close to read it) and again after
+// fog_fragment, which catches values the mist or fog produce (that paint is the final colour).
 const FRAGMENT_CHECK = `
 if (uHotCheck > 0.5) {
   vec4 hot = gl_FragColor;
@@ -73,12 +74,14 @@ if (uHotCheck > 0.5) {
 
 /**
  * Adds the check to a three.js built-in material's shader, right after the lit colour is written
- * (`opaque_fragment`) and before tone mapping and fog. Call from `onBeforeCompile`.
+ * (`opaque_fragment`, before tone mapping and fog) and again right after `fog_fragment`, so values
+ * produced by the mist or fog are caught too. Call from `onBeforeCompile`.
  */
 export const patchHotCheck = (shader: WebGLProgramParametersWithUniforms, category: HotCategory = 'other'): void => {
   shader.uniforms.uHotCheck = hotCheckUniform;
   shader.uniforms.uHotColor = { value: new Vector3(...HOT_CATEGORIES[category].rgb) };
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <common>', `#include <common>\n${FRAGMENT_PARS}`)
-    .replace('#include <opaque_fragment>', `#include <opaque_fragment>${FRAGMENT_CHECK}`);
+    .replace('#include <opaque_fragment>', `#include <opaque_fragment>${FRAGMENT_CHECK}`)
+    .replace('#include <fog_fragment>', `#include <fog_fragment>${FRAGMENT_CHECK}`);
 };

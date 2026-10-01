@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { patchHeightFog } from '../src/render/heightFog.ts';
 import { HOT_CHECK_LIMIT, hotCheckOn, hotCheckUniform, patchHotCheck, setHotCheck } from '../src/render/hotCheck.ts';
 
+// A declaration not preceded by `centroid `.
+const PLAIN_FOG_DEPTH = /(?<!centroid )varying float vFogDepth;/;
+const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vHeightFogView;/;
+
 const shader = (): WebGLProgramParametersWithUniforms =>
   ({
     uniforms: {},
@@ -24,6 +28,15 @@ describe('hot-pixel check patch', () => {
     expect(code).toContain('uniform vec3 uHotColor;');
   });
 
+  it('checks again after fog_fragment, so values the mist or fog produce are caught', () => {
+    const s = shader();
+    patchHeightFog(s);
+    const code = s.fragmentShader;
+    const fog = code.indexOf('#include <fog_fragment>');
+    expect(code.indexOf('uHotCheck > 0.5', fog)).toBeGreaterThan(fog);
+    expect(code.split('uHotCheck > 0.5')).toHaveLength(3);
+  });
+
   it('gives each material its own category colour without touching the shader text', () => {
     const chunk = shader();
     const mob = shader();
@@ -38,6 +51,20 @@ describe('hot-pixel check patch', () => {
     const s = shader();
     patchHeightFog(s);
     expect(s.uniforms.uHotCheck).toBe(hotCheckUniform);
+  });
+
+  it('declares the height-fog varyings centroid, once each, and clamps the mist', () => {
+    const s = shader();
+    patchHeightFog(s);
+    for (const code of [s.vertexShader, s.fragmentShader]) {
+      expect(code).toContain('centroid varying float vFogDepth;');
+      expect(code).not.toMatch(PLAIN_FOG_DEPTH);
+      expect(code.split('varying float vFogDepth;')).toHaveLength(2);
+      expect(code).toContain('centroid varying vec3 vHeightFogView;');
+      expect(code).not.toMatch(PLAIN_FOG_VIEW);
+    }
+    expect(s.fragmentShader).toContain('float hfMist = clamp(1.0 - exp(');
+    expect(s.fragmentShader).toContain('0.0, 1.0);');
   });
 
   it('is a plain on/off switch, off by default', () => {
