@@ -14,7 +14,7 @@ import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
-import { GUN_PALETTE, solidColor } from '../src/gun/palette.ts';
+import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { expectWatertightMesh, variant } from './helpers.ts';
 
@@ -28,9 +28,8 @@ const design = (name: string): Assembly => {
 
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
-
-const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET) => {
-  const result = exportGunGlb(assembly, asset);
+const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
+  const result = exportGunGlb(assembly, asset, { variant: variantName ?? 'ar' });
   if (!result.ok) {
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
@@ -104,12 +103,14 @@ describe('glb export: axes and units', () => {
 });
 
 describe('glb export: nodes', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
 
-  it('writes a valid glb 2.0 container with one scene', () => {
+  it('writes a valid glb 2.0 container with one scene and reports the shared material count', () => {
     expect(ar.read.json.asset.version).toBe('2.0');
     expect(ar.read.json.scenes).toHaveLength(1);
-    expect(ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]?.name).toBe(ASSET.id);
+    const root = ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]!;
+    expect(root.name).toBe(ASSET.id);
+    expect((root.extras!.gungen as { materialCount: number }).materialCount).toBe(ar.read.json.materials.length);
   });
 
   it('emits the BCG as its own node with linear travel extras and keeps port metadata children', () => {
@@ -164,7 +165,7 @@ describe('glb export: nodes', () => {
 });
 
 describe('glb export: port metadata', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
   const partNode = (id: string) => ar.read.json.nodes.find((n) => n.extras?.part === id)!;
 
   it('records a port in its child node extras with the stable id, mount, gender, size and mating frame', () => {
@@ -210,7 +211,7 @@ describe('glb export: port metadata', () => {
 });
 
 describe('glb export: meshes', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
   const { json } = ar.read;
 
   const drawn = (id: string) => {
@@ -256,7 +257,7 @@ describe('glb export: meshes', () => {
       { designName: 'archetype-pump-shotgun', group: 'receiver-pump' },
     ];
     for (const { designName, group } of samples) {
-      const model = exported(design(designName));
+      const model = exported(design(designName), ASSET, designName.replace('archetype-', ''));
       const def = model.resolved.defs.get('receiver')!;
       const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
       const expectedMesh = meshForSolidGroup(solids);
@@ -340,6 +341,7 @@ describe('glb export: meshes', () => {
     expect(checked).toBeGreaterThan(1000);
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this contract walks exported primitives and compares full material metadata against each source solid.
   it('colours each solid with the palette converted from sRGB to linear', () => {
     for (const [id, inst] of Object.entries(ar.resolved.assembly.parts)) {
       const role = ar.resolved.defs.get(id)!.family;
@@ -351,13 +353,41 @@ describe('glb export: meshes', () => {
         if (!solidId) {
           throw new Error(`No source solid for ${id} primitive ${prim.indices}.`);
         }
-        const srgb = solidColor(GUN_PALETTE, role, solidId);
+        const solid = [...(ar.resolved.defs.get(id)!.displaySolids ?? ar.resolved.defs.get(id)!.solids)].find(
+          (candidate) => candidate.id === solidId,
+        );
+        const appearance = resolveAppearance(GUN_PALETTE, role, solidId, {
+          archetype: 'ar',
+          ...(ar.resolved.defs.get(id)!.material ? { material: ar.resolved.defs.get(id)!.material } : {}),
+          ...(ar.resolved.defs.get(id)!.slot ? { slot: ar.resolved.defs.get(id)!.slot } : {}),
+        });
+        if (solid?.material) {
+          expect(extras?.material).toBe(solid.material);
+          expect(extras?.slot).toBe(solid.slot);
+          continue;
+        }
         const factor = json.materials[prim.material]!.pbrMetallicRoughness.baseColorFactor;
-        near(factor.slice(0, 3), srgb.map(srgbToLinear));
+        near(factor.slice(0, 3), appearance.color.map(srgbToLinear));
+        expect(extras?.material).toBe(appearance.material);
+        expect(extras?.slot).toBe(appearance.slot);
         expect(factor[3]).toBe(1);
       }
       expect(inst.family).toBeTruthy();
     }
+  });
+
+  it('exports butt-pad and floorplate primitive extras in the independently specified accent slot', () => {
+    const pump = exported(design('archetype-pump-shotgun'), ASSET, 'pump-shotgun');
+    const compactBolt = exported(design('archetype-bolt-rifle-box'), ASSET, 'bolt-rifle-box');
+    const primitive = (glb: ReadGlb, solid: string) =>
+      glb.json.meshes
+        .flatMap((mesh) => mesh.primitives)
+        .find((candidate) => (candidate.extras as Record<string, unknown> | undefined)?.solid === solid);
+    expect(primitive(pump.read, 'butt-pad')?.extras).toMatchObject({ material: 'rubber-black', slot: 'accent' });
+    expect(primitive(compactBolt.read, 'floorplate')?.extras).toMatchObject({
+      material: 'steel-blued',
+      slot: 'accent',
+    });
   });
 
   it('converts sRGB to linear with the standard transfer function', () => {
@@ -439,8 +469,8 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it('is deterministic', () => {
-    const a = exportGunGlb(design('archetype-ar'), ASSET);
-    const b = exportGunGlb(design('archetype-ar'), ASSET);
+    const a = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
+    const b = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
     expect(a.ok && b.ok && Buffer.from(a.glb).equals(Buffer.from(b.glb))).toBe(true);
   });
 });
@@ -454,7 +484,7 @@ describe('glb export: errors', () => {
     const broken = variant('archetype-ar', (a) => {
       a.connections.push({ from: 'receiver.nope', to: 'grip.top' });
     });
-    const result = exportGunGlb(broken, ASSET);
+    const result = exportGunGlb(broken, ASSET, { variant: 'ar' });
     expect(result.ok).toBe(false);
     if (!result.ok && 'issues' in result.error) {
       expect(result.error.code).toBe('structure-issues');
@@ -518,7 +548,7 @@ describe('glb export: errors', () => {
       'assets/models/.glb',
       'assets/models/x.gltf',
     ]) {
-      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] });
+      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] }, { variant: 'ar' });
       expect(result).toEqual({ ok: false, error: { code: 'invalid-asset-file', file } });
     }
   });

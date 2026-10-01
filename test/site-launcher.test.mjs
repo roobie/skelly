@@ -16,7 +16,9 @@ const intentionallyUnofferedGungenParams = {
 const paramsReadBy = (sources) => {
   const found = new Set();
   for (const source of sources) {
-    for (const match of read(source).matchAll(/\b(?:params|query)\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    for (const match of read(source).matchAll(
+      /\b(?:params|query|initialQuery)\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
+    )) {
       found.add(match[1]);
     }
   }

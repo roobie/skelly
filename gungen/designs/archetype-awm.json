@@ -1,6 +1,11 @@
 {
   "format": 1,
   "template": "bolt-rifle-thumbhole",
+  "finish": {
+    "metal": "steel-parkerized",
+    "furniture": "polymer-od-green",
+    "accent": "rubber-black"
+  },
   "assembly": {
     "name": "archetype-awm",
     "description": "AWM-type bolt-action rifle with a heavy barrel, detachable box magazine, thumbhole stock, and optic.",

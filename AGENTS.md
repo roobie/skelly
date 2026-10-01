@@ -13,8 +13,10 @@ the clone:
 git worktree add .claude/worktrees/<name> -b <branch>
 ```
 
-The directory is in `.gitignore`. Each worktree needs its own `npm install`
-in the subprojects it runs.
+The directory is in `.gitignore`. A new worktree has no `node_modules`, and the
+pre-push hook (below) runs checks across every subproject. Run the full install
+under "Installing check dependencies" in it before its first push, including the
+push that publishes a new branch, or that push fails.
 
 ## Installing check dependencies
 
