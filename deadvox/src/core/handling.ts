@@ -58,9 +58,16 @@ export interface HandlingQueueState {
   jobs: [];
 }
 
+export interface CompletedMove {
+  readonly job: MoveJob;
+  readonly source?: ReturnType<Inventory['locate']>;
+  readonly sourceCount?: number;
+}
+
 export interface TickResult {
   done: Job[];
   failed: { job: Job; reason: string }[];
+  completedMoves: CompletedMove[];
 }
 
 export class HandlingQueue {
@@ -144,7 +151,7 @@ export class HandlingQueue {
 
   /** Spends `dt` seconds on the queue, finishing jobs in order. */
   tick(dt: number): TickResult {
-    const result: TickResult = { done: [], failed: [] };
+    const result: TickResult = { done: [], failed: [], completedMoves: [] };
     let left = dt;
     while (this.jobs.length > 0) {
       const job = this.jobs[0]!;
@@ -156,14 +163,28 @@ export class HandlingQueue {
       left -= need;
       job.elapsed = job.duration;
       this.jobs.shift();
-      const reason = this.finish(job);
-      if (reason === undefined) {
-        result.done.push(job);
-      } else {
-        result.failed.push({ job, reason });
-      }
+      this.execute(job, result);
     }
     return result;
+  }
+
+  private execute(job: Job, result: TickResult): void {
+    const item = job.kind === 'move' ? this.inventory.itemByUid(job.itemUid) : undefined;
+    const source = item ? this.inventory.locate(item) : undefined;
+    const sourceCount = item?.count;
+    const reason = this.finish(job);
+    if (reason !== undefined) {
+      result.failed.push({ job, reason });
+      return;
+    }
+    result.done.push(job);
+    if (job.kind === 'move') {
+      result.completedMoves.push({
+        job,
+        ...(source ? { source } : {}),
+        ...(sourceCount === undefined ? {} : { sourceCount }),
+      });
+    }
   }
 
   private finish(job: Job): string | undefined {

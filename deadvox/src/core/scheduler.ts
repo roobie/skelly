@@ -80,6 +80,18 @@ export class Scheduler {
     this.time = state.time;
   }
 
+  /** Debug/test time travel: reset every cursor at the destination without replaying skipped ticks. */
+  seek(time: number): void {
+    if (!Number.isFinite(time) || time < 0) {
+      throw new Error(`Invalid scheduler time ${time}`);
+    }
+    this.time = time;
+    for (const entry of this.entries) {
+      entry.done = time;
+      entry.ticks = 0;
+    }
+  }
+
   register(spec: SystemSpec): void {
     if (this.entries.some((e) => e.spec.id === spec.id)) {
       throw new Error(`System ${spec.id} is already registered`);
