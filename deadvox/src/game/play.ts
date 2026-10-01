@@ -10,7 +10,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
-import { chargeShare } from '../core/lights.ts';
+import { chargeShare, offHandUse } from '../core/lights.ts';
 import { skyAt } from '../core/sky.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
 import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
@@ -610,7 +610,17 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
   };
 
+  // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
+  const swallowSideButton = (e: MouseEvent) => {
+    if (e.button === 3 || e.button === 4) {
+      e.preventDefault();
+    }
+  };
+  renderer.domElement.addEventListener('mouseup', swallowSideButton);
+  renderer.domElement.addEventListener('auxclick', swallowSideButton);
+
   renderer.domElement.addEventListener('mousedown', (e) => {
+    swallowSideButton(e);
     if (!input.locked || input.menuPointer || compression.locksInput) {
       return;
     }
@@ -618,6 +628,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       debugTools.click(e.button, eye(), lookDir());
     } else if (e.button === 0) {
       swing();
+    } else if (e.button === 4) {
+      // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
+      const item = offHandUse(registry, inventory);
+      const reason = item && survival.use(item);
+      if (reason) {
+        showNotice(reason);
+      }
     }
   });
 
