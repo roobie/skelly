@@ -19,10 +19,18 @@ import {
   syntheticJson,
   syntheticNamed,
   unsetPath,
+  unusableIssues,
 } from './ammoHelpers.ts';
 
-const issues = (raw: unknown): string[] =>
-  validateCartridge(mustParse(raw)).map((issue) => `${issue.rule} ${issue.path}`);
+/** The `rule path` of each issue; fails if an issue lacks a message or names a field the file does not have. */
+const issues = (raw: unknown): string[] => {
+  const found = validateCartridge(mustParse(raw));
+  const unusable = unusableIssues(raw as JsonObject, found);
+  if (unusable.length > 0) {
+    throw new Error(`unusable issues: ${unusable.join('; ')}`);
+  }
+  return found.map((issue) => `${issue.rule} ${issue.path}`);
+};
 
 describe('cartridge files', () => {
   it('has at least the first cartridge', () => {
@@ -241,10 +249,19 @@ const withEveryOptionalField = (): JsonObject => {
   return json;
 };
 
-/** The JSON of every synthetic shape, the all-optional-fields cartridge and every shipped file. */
+/** `withEveryOptionalField` with a text and a measure left unsourced: null value, null citation, a note. */
+const withUnsourcedNodes = (): JsonObject => {
+  const json = withEveryOptionalField();
+  setPath(json, 'case.materials[0]', { value: null, cite: null, note: 'not printed by the source' });
+  setPath(json, 'case.rim.diameter', { value: null, cite: null, note: 'not printed by the source' });
+  return json;
+};
+
+/** The JSON of every synthetic shape, the all-optional-fields cartridges and every shipped file. */
 const everyCartridgeJson = (): JsonObject[] => [
   ...ALL_SHAPES.map((shape) => syntheticJson(shape)),
   withEveryOptionalField(),
+  withUnsourcedNodes(),
   ...cartridgeFiles().map((file) => readJson(join(CARTRIDGES, file))),
 ];
 
@@ -321,6 +338,12 @@ describe('parse', () => {
       path: 'case.materials',
       value: 'brass',
       message: 'case.materials: expected an array, got a string',
+    },
+    {
+      name: 'a number for the sources table',
+      path: 'sources',
+      value: 5,
+      message: 'sources: expected an object, got a number',
     },
     { name: 'null for an object', path: 'case.rim', value: null, message: 'case.rim: expected an object, got null' },
     {
@@ -462,10 +485,7 @@ describe('measures', () => {
   });
 
   it('reports exactly the measures and texts whose value is null as unsourced', () => {
-    const json = withEveryOptionalField();
-    setPath(json, 'case.materials[0].value', null);
-    setPath(json, 'case.rim.diameter.value', null);
-    expect(unsourcedPaths(mustParse(json)).sort()).toEqual(['case.materials[0]', 'case.rim.diameter']);
+    expect(unsourcedPaths(mustParse(withUnsourcedNodes())).sort()).toEqual(['case.materials[0]', 'case.rim.diameter']);
   });
 });
 

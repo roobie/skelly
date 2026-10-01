@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Cartridge } from '../src/ammo/cartridge.ts';
 import { formatCartridgeParseError, parseCartridge, parseCartridgeJson } from '../src/ammo/parseCartridge.ts';
+import type { CartridgeIssue } from '../src/ammo/rules.ts';
 
 export const CARTRIDGES = join(import.meta.dirname, '..', 'cartridges');
 export const CARTRIDGE_FIXTURES = join(import.meta.dirname, 'fixtures', 'cartridges');
@@ -37,6 +38,28 @@ export const loadCartridgeFile = (file: string): Cartridge => {
 };
 
 export const loadCartridges = (): Cartridge[] => cartridgeFiles().map(loadCartridgeFile);
+
+// A comparison issue reads '<path> (<value>) must be <op> <path> (<value>)', optionally prefixed.
+const COMPARISON_MESSAGE = /^(?:neck wall is not positive: )?(\S+) \(.+\) must be \S+ (\S+) \(.+\)$/;
+
+/**
+ * What is unusable about `issues`, empty when nothing is. An issue is only useful if it says what is
+ * wrong and where: a message, a path that leads to a field of `json`, and for a comparison both
+ * fields it names. A path with a space is the label of a computed quantity ('rim thickness + groove
+ * width'), not a field, and is not looked up.
+ */
+export const unusableIssues = (json: JsonObject, issues: readonly CartridgeIssue[]): string[] =>
+  issues.flatMap((issue) => {
+    const label = `${issue.rule} ${issue.path}`;
+    const named = [issue.path, ...(COMPARISON_MESSAGE.exec(issue.message)?.slice(1) ?? [])];
+    return [
+      ...(issue.rule === '' || issue.path === '' ? [`${label}: no rule or path`] : []),
+      ...(issue.message === '' ? [`${label}: no message`] : []),
+      ...named
+        .filter((path) => !(path.includes(' ') || hasPath(json, path)))
+        .map((path) => `${label}: no field ${path}`),
+    ];
+  });
 
 // ---------------------------------------------------------------- synthetic cartridges
 //
