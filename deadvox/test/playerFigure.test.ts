@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import {
   Euler,
   Frustum,
-  type Group,
+  Group,
   type InstancedMesh,
   Matrix4,
   type Mesh,
@@ -238,9 +238,11 @@ describe('player figure', () => {
 
   it('keeps exactly two first-person arm chains across inventory and model rebuilds, at rest and contact', () => {
     const inventory = new Inventory(registry);
-    const models = { version: 0, held: () => undefined } as unknown as NonNullable<
-      ConstructorParameters<typeof HeldItems>[1]
-    >;
+    let modelLoaded = false;
+    const models = {
+      version: 0,
+      held: () => (modelLoaded ? new Group() : undefined),
+    } as unknown as NonNullable<ConstructorParameters<typeof HeldItems>[1]>;
     const held = new HeldItems(inventory, models, palette);
     const internals = held as unknown as { scene: Group; arms: Map<'left' | 'right', Group> };
     const camera = new PerspectiveCamera();
@@ -271,8 +273,13 @@ describe('player figure', () => {
       record(readyMeleePose(false));
     }
 
+    const knife = inventory.create('kitchen_knife');
+    expect(inventory.add(knife, { kind: 'hand', side: 'right' })).toBe(true);
+    record(readyMeleePose(false));
+    modelLoaded = true;
     models.version += 1;
     record(readyMeleePose(false));
+    record(readyMeleePose(true));
     const { cooldown } = FISTS_MELEE;
     const contactAt = meleeContactTime(cooldown);
     const contact = meleePoseAndContact(
@@ -291,12 +298,64 @@ describe('player figure', () => {
       contactAt,
       false,
     );
+    record(readyMeleePose(true));
     record(contact);
 
-    expect(inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.move(knife, { kind: 'hand', side: 'left' }).ok).toBe(true);
+    record(readyMeleePose(false));
+    expect(inventory.move(knife, { kind: 'hand', side: 'right' }).ok).toBe(true);
     record(readyMeleePose(false));
     expect(counts).toEqual(Array.from({ length: counts.length }, () => 2));
     expect(originalArms.every((arm) => arm.parent === null)).toBe(true);
+  });
+
+  it('keeps exactly two first-person chains for a two-handed bat through hand swaps and real inventory restore', () => {
+    const inventory = new Inventory(registry);
+    const bat = inventory.create('baseball_bat');
+    expect(inventory.add(bat, { kind: 'hand', side: 'right' })).toBe(true);
+    const held = new HeldItems(inventory, undefined, palette);
+    const internals = held as unknown as { scene: Group };
+    const camera = new PerspectiveCamera();
+    const armCount = () => {
+      let count = 0;
+      internals.scene.traverse((object) => {
+        if (object.name.startsWith('first-person-arm-')) {
+          count += 1;
+        }
+      });
+      return count;
+    };
+
+    held.update(camera, readyMeleePose(false));
+    expect(armCount()).toBe(2);
+    expect(inventory.move(bat, { kind: 'hand', side: 'left' }).ok).toBe(true);
+    held.update(camera, readyMeleePose(false));
+    expect(armCount()).toBe(2);
+
+    const restored = Inventory.restoreState(
+      registry,
+      inventory.snapshotState() as Parameters<typeof Inventory.restoreState>[1],
+    );
+    const restoredHeld = new HeldItems(restored, undefined, palette);
+    const restoredInternals = restoredHeld as unknown as { scene: Group };
+    restoredHeld.update(camera, readyMeleePose(false));
+    let restoredArmCount = 0;
+    restoredInternals.scene.traverse((object) => {
+      if (object.name.startsWith('first-person-arm-')) {
+        restoredArmCount += 1;
+      }
+    });
+    expect(restoredArmCount).toBe(2);
+    const restoredBackpack = restored.create('hiking_backpack');
+    expect(restored.add(restoredBackpack, { kind: 'worn' })).toBe(true);
+    restoredHeld.update(camera, readyMeleePose(true));
+    let rebuiltArmCount = 0;
+    restoredInternals.scene.traverse((object) => {
+      if (object.name.startsWith('first-person-arm-')) {
+        rebuiltArmCount += 1;
+      }
+    });
+    expect(rebuiltArmCount).toBe(2);
   });
 
   it('keeps the locked click-time world quaternion through simultaneous camera yaw and pitch', () => {

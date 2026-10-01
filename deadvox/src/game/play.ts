@@ -111,7 +111,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
       consumePrimaryAction: () => input.consumePrimaryAction(),
-      primaryAction: () => performPrimaryAction(),
+      primaryAction: () => {
+        // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
+        if (!debugTools?.buildOn) {
+          performPrimaryAction();
+        }
+      },
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
