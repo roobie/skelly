@@ -205,7 +205,7 @@ export const revolver: Template = {
     },
     { id: 'barrel', family: 'revolver-barrel', params: { length: SML, style: ['classic', 'vented'] } },
     { id: 'cylinder', family: 'revolver-cylinder', params: { chamberCount: '6', chamberIndex: '0' } },
-    { id: 'grip', family: 'revolver-grip', params: { length: SML } },
+    { id: 'grip', family: 'revolver-grip', params: { length: ['M'] } },
   ],
   connections: [
     { from: 'frame.barrel', to: 'barrel.frame' },

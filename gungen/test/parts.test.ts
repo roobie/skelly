@@ -215,17 +215,75 @@ describe('part library', () => {
     expect(barrel.ports.find((port) => port.id === 'frame')?.required).toBe(true);
   });
 
-  it('builds a two-sided sectioned revolver frame with named interfaces and keep-outs', () => {
+  it('builds a sectioned revolver frame with the rear grip block, named interfaces, and keep-outs', () => {
     const frame = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', butt: 'round' });
     expect(frame.family).toBe('revolver-frame');
     expect(frame.solids.map((part) => part.id)).toContain('topstrap');
-    expect(frame.ports.map((port) => port.id)).toEqual(['barrel', 'cylinder', 'grip-frame']);
+    expect(frame.solids.map((part) => part.id)).toContain('rear-grip-block');
+    expect(frame.ports.map((port) => port.id)).toEqual([
+      'barrel',
+      'cylinder',
+      'grip-frame',
+      'hammer',
+      'trigger-guard',
+    ]);
     expect(frame.keepOuts.map((volume) => volume.id)).toEqual([
       'trigger-finger',
       'cylinder-swing',
       'hammer-travel',
       'cylinder-gap',
     ]);
+  });
+
+  it('joins the grip port to the rear block lower face below the cylinder window', () => {
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
+    const block = frame.solids.find((solid) => solid.id === 'rear-grip-block')!;
+    const gripPort = frame.ports.find((port) => port.id === 'grip-frame')!;
+    const [min, max] = localSolidBounds(block);
+    expect(gripPort.pos[1]).toBe(min[1]);
+    expect(gripPort.pos[0]).toBeGreaterThan(min[0]);
+    expect(gripPort.pos[0]).toBeLessThan(max[0]);
+    expect(gripPort.pos[1]).toBeLessThan(-3.75);
+  });
+
+  it('extends the revolver cylinder and topstrap to a 5.00u window with the original gap', () => {
+    const cylinder = FAMILIES['revolver-cylinder']!.build({ chamberCount: '6', chamberIndex: '0' });
+    const drum = cylinder.solids.find((solid) => solid.id === 'drum')!;
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
+    const topstrap = frame.solids.find((solid) => solid.id === 'topstrap')!;
+    expect(drum.kind).toBe('extruded-polygon');
+    if (drum.kind === 'extruded-polygon') {
+      expect(drum.z[1] - drum.z[0]).toBe(5);
+    }
+    expect(localSolidBounds(topstrap)[0][0]).toBe(-5.25);
+    expect(frame.ports.find((port) => port.id === 'cylinder')?.pos[0]).toBe(-2.75);
+  });
+
+  it('builds the raked two-piece grip to the approved 10.50u centreline and butt variants', () => {
+    const round = FAMILIES['revolver-grip']!.build({ length: 'M', butt: 'round' });
+    const square = FAMILIES['revolver-grip']!.build({ length: 'M', butt: 'square' });
+    const upper = round.solids.find((solid) => solid.id === 'grip-core-upper')!;
+    const lower = round.solids.find((solid) => solid.id === 'grip-core')!;
+    const squareLower = square.solids.find((solid) => solid.id === 'grip-core')!;
+    expect(upper.kind).toBe('extruded-polygon');
+    expect(lower.kind).toBe('extruded-polygon');
+    expect(squareLower.kind).toBe('extruded-polygon');
+    if (upper.kind !== 'extruded-polygon' || lower.kind !== 'extruded-polygon' || squareLower.kind !== 'extruded-polygon') {
+      throw new Error('revolver grip sections must be extruded polygons');
+    }
+    expect(upper.profile[1]).toEqual(lower.profile[0]);
+    expect(upper.profile[2]).toEqual(lower.profile.at(-1));
+    const bottomY = Math.min(...lower.profile.map((point) => point[1]));
+    const bottomXs = lower.profile.filter((point) => point[1] === bottomY).map((point) => point[0]);
+    const bottomX = (Math.min(...bottomXs) + Math.max(...bottomXs)) / 2;
+    const length = Math.hypot(bottomX, bottomY);
+    const rake = (Math.acos(bottomX / length) * 180) / Math.PI;
+    expect(length).toBeCloseTo(10.5, 6);
+    expect(rake).toBeGreaterThanOrEqual(110);
+    expect(rake).toBeLessThanOrEqual(115);
+    expect(lower.clip).toHaveLength(2);
+    expect(squareLower.clip).toBeUndefined();
+    expect(round.solids.filter((solid) => solid.id.startsWith('grip-panel-'))).toHaveLength(4);
   });
 
   it('builds a revolver octagonal barrel with its forcing cone, rib, shroud, sight and loop port', () => {

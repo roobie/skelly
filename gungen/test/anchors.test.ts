@@ -262,6 +262,16 @@ describe('anchor data', () => {
     };
   };
 
+  it('leans the revolver hold frame with its 22.5-degree grip rake', () => {
+    const declared = localFrames(loadFixture('archetype-revolver')).find(({ name }) => name === 'hold');
+    expect(declared).toBeDefined();
+    expect(declared!.label).toBe('archetype-revolver grip');
+    expect(declared!.frame.up[0]).toBeCloseTo(Math.sin(Math.PI / 8));
+    expect(declared!.frame.up[1]).toBeCloseTo(Math.cos(Math.PI / 8));
+    expect(declared!.frame.forward[0]).toBeCloseTo(Math.cos(Math.PI / 8));
+    expect(declared!.frame.forward[1]).toBeCloseTo(-Math.sin(Math.PI / 8));
+  });
+
   it('archetype frames are unit-length and right-handed; hold frames sit within their part', () => {
     const facts = frameFacts(ARCHETYPES);
     expect(facts.defective).toEqual([]);
