@@ -1355,6 +1355,30 @@ Golden designs (3.1) become the regression corpus. Each published design
 gets a snapshot of its resolved solids (already planned), and property tests
 iterate `fixtures/` plus `designs/` instead of seeds.
 
+## Testing
+
+- **Say what a test protects.** Each test, or the comment above a group, states
+  the behaviour it guards. Two tests that catch the same bugs are one too many,
+  and a sweep earns its size only if its extra cases exercise different
+  behaviour.
+- **Exhaustive sweeps go behind `GUNGEN_SWEEPS`.** Use `sweepGroup` from
+  `test/sweeps.ts`; the default `npm test` keeps a representative sample and CI
+  runs everything. Build no cases for a skipped group (`runSweeps ? cases : []`),
+  because a skipped group still registers every case.
+- **Prefer a covering array to a full product in the default run.**
+  `test/coveringArray.ts` generates a fixed-seed t-wise array from a family's
+  `params`. `test/parts.test.ts` lists the array-sampled families in one place,
+  `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
+  explicit case for an interaction the array is known to miss.
+- **Removals need a reason.** The commit says what the removed tests protected
+  and which remaining test or sample still protects it, ideally with a mutation
+  or coverage result as evidence.
+- **Timeouts.** A test that takes about 1 s or more and still has the 5 s
+  default gets its own timeout, about 5x its measured time, with a comment
+  saying why. A sweep is split into smaller tests where it can be; one that
+  cannot (`unplacedParts.test.ts`) gets a timeout proportional to its case
+  count.
+
 ## Running it
 
 ```sh
