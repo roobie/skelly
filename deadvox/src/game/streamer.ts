@@ -6,10 +6,11 @@
 
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
+import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
-import { extractPadded, extractWide, isEnclosed } from '../core/world.ts';
+import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';

@@ -127,6 +127,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
+      { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
     ]);
   });
 

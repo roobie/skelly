@@ -11,6 +11,7 @@
 // with the same merge rule. It is the ambient factor only; it never touches the vertex colours.
 
 import { CHUNK, type Vec3 } from './coords.ts';
+import { BEDROCK, PADDED, paddedIndex } from './meshInput.ts';
 import {
   boxSum,
   buildSums,
@@ -20,7 +21,6 @@ import {
   occlusionByte,
   occlusionLevel,
 } from './occlusion.ts';
-import { BEDROCK, PADDED, paddedIndex } from './world.ts';
 
 export interface MeshData {
   positions: Float32Array; // chunk-local, 3 per vertex
