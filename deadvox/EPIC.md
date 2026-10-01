@@ -199,6 +199,14 @@ See [SLICE-1.md](SLICE-1.md). It covers:
   save migration.
 - Content filled up to the minimums.
 
+### Sound polish — BR 2026-10-01
+
+- Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood still need recordings. Implement after d7's deferred surface-hit result.
+- Split item-drop sounds by pile surface; the wood clips currently play on every surface because piles expose no surface classification.
+- Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
+- Wood tap or knock: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/wood_tap--thwack-02.wav` is in the mail scratch and intentionally not in the repo.
+- Still needs a source: a better fist hit, a blunt hit on a wall, a hard landing, and more swing variants.
+
 ## Later, after the game is more playable
 
 **Shambler polish — not scheduled; take up once the game is more playable.** BR's

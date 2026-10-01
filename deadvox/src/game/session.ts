@@ -180,7 +180,6 @@ export const createSession = (options: SessionOptions) => {
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities)
     : new Inventory(registry, undefined, options.entities);
   const { entities } = inventory;
-  const queue = new HandlingQueue(inventory);
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
   const zombieStore = new MapEntityStore<Zombie>();
@@ -242,6 +241,29 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  const queue = new HandlingQueue(
+    inventory,
+    ({ from, target }) => {
+      if (from?.kind === 'pocket') {
+        const location = inventory.locate(from.owner);
+        if (
+          location?.kind === 'worn' &&
+          !(target.kind === 'pocket' && target.owner === from.owner && target.pocket === from.pocket)
+        ) {
+          playWorldSound('pouch_take', chest());
+        }
+      }
+    },
+    ({ from, target }) => {
+      if (target.kind === 'pile') {
+        const samePile = from?.kind === 'pile' && from.pile.pos.every((v, i) => v === target.pos[i]);
+        if (!samePile) {
+          const [x, y, z] = target.pos;
+          playWorldSound('item_drop_wood', [(x + 0.5) * s, y * s, (z + 0.5) * s]);
+        }
+      }
+    },
+  );
 
   const survival = new Survival(sim, inventory, queue, {
     feet: () => ({ kind: 'pile', pos: feet() }),

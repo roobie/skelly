@@ -30,6 +30,21 @@ describe('audio listening guide', () => {
     );
   });
 
+  it('uses only the selected generic swing and exposes the new drop and pouch cues without noise emission', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    expect(definitions.get('melee_swing')?.variants).toEqual(['assets/audio/melee_swing-01.ogg']);
+    expect(definitions.get('door_blocked_close')?.variants).toEqual(['assets/audio/door_blocked_close-01.ogg']);
+    for (const id of ['melee_hit_fist', 'item_drop_wood', 'pouch_take']) {
+      expect(definitions.get(id)?.noise.enabled).toBe(false);
+      expect(SOUND_TRIGGER_GUIDE[id as keyof typeof SOUND_TRIGGER_GUIDE]).toBeDefined();
+    }
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.map(({ id }) => id)).toContain('item_drop_wood');
+    expect(guide.map(({ id }) => id)).toContain('pouch_take');
+    expect(guide.find(({ id }) => id === 'melee_hit_fist')?.note).toContain('Stand-in');
+    expect(manifest.sources.flatMap(({ files }) => files)).toContain('assets/audio/melee_hit_fist-01.ogg');
+  });
+
   it('credits every listed variant from its manifest source', () => {
     const guide = buildSoundGuide(sounds, manifest);
     expect(

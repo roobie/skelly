@@ -31,7 +31,7 @@ const TRIGGER_ENTRIES = [
     'door_blocked_close',
     {
       trigger: 'Press F to close a door while something blocks it.',
-      note: 'Stand-in: reuses the door_close recordings at a lower configured gain.',
+      note: 'Subtle stuck-door attempt; sourced from Thwack Sounds.',
     },
   ],
   ['player_strain', { trigger: 'Press Space while grounded to jump.' }],
@@ -134,7 +134,16 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ['melee_swing', { trigger: 'Click the primary mouse button to swing while able to attack.' }],
-  ['melee_hit', { trigger: 'Land a melee swing on a shambler.' }],
+  ['melee_hit', { trigger: 'Land a weapon melee swing on a shambler.' }],
+  [
+    'melee_hit_fist',
+    {
+      trigger: 'Land a fist swing on a shambler.',
+      note: 'Stand-in recording until a better fist-hit source is found.',
+    },
+  ],
+  ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
+  ['pouch_take', { trigger: 'Take an item out of a pocket on a worn item.' }],
 ] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];
 
 export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundEventId, SoundTriggerGuide>;

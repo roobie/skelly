@@ -234,11 +234,7 @@
     },
     {
       "id": "melee_swing",
-      "variants": [
-        "assets/audio/melee-swing-01.ogg",
-        "assets/audio/melee-swing-02.ogg",
-        "assets/audio/melee-swing-03.ogg"
-      ],
+      "variants": ["assets/audio/melee_swing-01.ogg"],
       "gain": 0.55,
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.9, 1.1],
@@ -258,6 +254,36 @@
       "pitchJitter": [0.94, 1.06],
       "gainJitter": [0.88, 1.12],
       "minIntervalSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "melee_hit_fist",
+      "variants": ["assets/audio/melee_hit_fist-01.ogg"],
+      "gain": 0.85,
+      "pitchJitter": [0.94, 1.06],
+      "gainJitter": [0.88, 1.12],
+      "minIntervalSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "item_drop_wood",
+      "variants": ["assets/audio/item_drop_wood-01.ogg", "assets/audio/item_drop_wood-02.ogg"],
+      "gain": 0.55,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "pouch_take",
+      "variants": ["assets/audio/pouch_take-01.ogg"],
+      "gain": 0.3,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.1,
       "category": "world",
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
@@ -344,11 +370,7 @@
     },
     {
       "id": "door_blocked_close",
-      "variants": [
-        "assets/audio/door-close-01.ogg",
-        "assets/audio/door-close-02.ogg",
-        "assets/audio/door-close-03.ogg"
-      ],
+      "variants": ["assets/audio/door_blocked_close-01.ogg"],
       "gain": 0.5,
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.9, 1.1],
