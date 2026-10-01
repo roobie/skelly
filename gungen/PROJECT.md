@@ -277,7 +277,6 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
-| `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
 The lengths below remain abstract units on the existing grid.
@@ -350,7 +349,6 @@ archetype:
 | `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
 | `broken-bolt-sight-over-loading-port` | `keep-out` | On a top-loaded action, a sight over the receiver blocks the loading port |
 | `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
-| `broken-bullpup-with-stock` | `solid-overlap` | A stock added where the built-in butt already is |
 
 ### Known gaps
 
@@ -367,8 +365,8 @@ archetype:
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
 - **Ergonomics is just "is there a firing grip".** Reach, length of pull and
-  cheek weld (§5) are not checked. For a bullpup, the ejection port sits next
-  to the shooter's face, and nothing checks that yet.
+  cheek weld (§5) are not checked. If the suspended bullpup returns, its ejection
+  port will need a face-clearance check.
 
 ## Milestone 1.2: feed check and params from neighbours
 
@@ -1238,7 +1236,16 @@ not part of the export's acceptance:
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
-  (gungen.2), with the deadvox schema change they need.
+  (gungen.2), with the deadvox schema change they need;
+- **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
+  but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
+  and its curated design and fixtures live byte-identically under `designs/suspended/`
+  and `fixtures/suspended/`. Its launcher options, corpus entries, generated snapshots,
+  and archetype-specific fixture test are out of the active pipeline. To restore it,
+  remove `bullpup` from that one set, move the three JSON files back to their scanned
+  directories, restore launcher/corpus references, and regenerate the scoped snapshots.
+  The default finish, palette, and `exportFile` variant entries remain as harmless dormant
+  data; the family code stays available for restoration.
 
 ### Parallel lanes
 
