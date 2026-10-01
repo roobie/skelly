@@ -10,7 +10,8 @@ import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
 import { loadFixture } from './helpers.ts';
 
 describe('viewer geometry', () => {
-  it('defaults to archetype finishes and preserves role colours as a geometry-check mode', () => {
+  // Measured about 1.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('defaults to archetype finishes and preserves role colours as a geometry-check mode', { timeout: 10_000 }, () => {
     const report = validate(loadFixture('archetype-ar'), gunDomain);
     const finish = buildLayers(report, [], 'finish', { variant: 'ar' });
     const override = buildLayers(report, [], 'finish', { variant: 'ar', finish: { furniture: 'polymer-fde' } });

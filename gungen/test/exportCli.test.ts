@@ -42,7 +42,8 @@ describe('export CLI core', () => {
     expect(stockMaterial(ak.glb)).toBe('#754324');
   });
 
-  it('preserves the generated template finish through a bare assembly file export', () => {
+  // Measured about 1.7 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('preserves the generated template finish through a bare assembly file export', { timeout: 10_000 }, () => {
     for (const template of ['ak', 'pump-shotgun']) {
       const generated = execFileSync(
         process.execPath,

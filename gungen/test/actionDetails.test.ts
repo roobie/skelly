@@ -48,7 +48,8 @@ describe('visible action details', () => {
     }
   });
 
-  it('uses a separate procedural bolt-carrier part in AR, AK and pump designs', () => {
+  // Measured about 2 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('uses a separate procedural bolt-carrier part in AR, AK and pump designs', { timeout: 10_000 }, () => {
     for (const { label, assembly } of loadCorpus()) {
       if (
         ![
@@ -111,7 +112,8 @@ describe('visible action details', () => {
     expect(intervalsOverlap(bolt.handle[2]!, bolt.travel[2]!)).toBe(true);
   });
 
-  it('keeps action details valid throughout all fixtures and published designs', () => {
+  // Measured about 2.8 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('keeps action details valid throughout all fixtures and published designs', { timeout: 15_000 }, () => {
     for (const { label, assembly } of loadCorpus()) {
       const report = validate(assembly, gunDomain);
       expect(
