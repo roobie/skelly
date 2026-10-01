@@ -251,6 +251,10 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
   const receiver = resolved.defs.get('receiver')!;
   const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
   const envelope = BOLT_CARRIER_ENVELOPES[entry.pattern];
+  const transform = resolved.placed.get('bolt-carrier')!;
+  const carrierBounds = worldBounds(
+    envelope.x.flatMap((x) => envelope.y.flatMap((y) => envelope.z.map((z) => applyPoint(transform, [x, y, z])))),
+  );
   const bounds = [0, 1, 2].map((axis) => [
     ejection.box.center[axis]! - ejection.box.half[axis]!,
     ejection.box.center[axis]! + ejection.box.half[axis]!,
@@ -261,10 +265,6 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
   const margin = EJECTION_PORT_MARGIN_U;
   let expectedXMin = receiverPort.pos[0] - envelope.x[1] - margin;
   let expectedXMax = receiverPort.pos[0] - envelope.x[0] + margin;
-  if (entry.pattern === 'ak') {
-    expectedXMax = -4;
-    expectedXMin = expectedXMax - (envelope.x[1] - envelope.x[0] + 2 * margin);
-  }
   const pumpMinimum =
     entry.pattern === 'pump'
       ? EJECTION_PORT_RULES.pumpShellMinimum.lengthU + 2 * EJECTION_PORT_RULES.pumpShellMinimum.endClearanceU
@@ -283,6 +283,8 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
   return {
     actualX: bounds[0],
     expectedX: [expectedXMin, expectedXMax],
+    carrierX: carrierBounds[0],
+    carrierY: carrierBounds[1],
     width: portX[1]! - portX[0]!,
     actualY: bounds[1],
     expectedY,
@@ -342,8 +344,22 @@ describe('procedural bolt carrier', () => {
         expect(gap.upper, `${entry.pattern} upper gap ${gap.axis}`).toBeCloseTo(BOLT_CARRIER_RUNNING_CLEARANCE_U, 6);
       }
       const port = portMeasurements(entry, resolved);
+      if (entry.pattern === 'pump') {
+        expect(port.width).toBeGreaterThanOrEqual(
+          EJECTION_PORT_RULES.pumpShellMinimum.lengthU + 2 * EJECTION_PORT_RULES.pumpShellMinimum.endClearanceU,
+        );
+      } else {
+        expect(port.actualX, `${entry.pattern} carrier face + margin`).toEqual([
+          port.carrierX![0]! - EJECTION_PORT_MARGIN_U,
+          port.carrierX![1]! + EJECTION_PORT_MARGIN_U,
+        ]);
+      }
       expect(port.actualX).toEqual(port.expectedX);
       expect(port.width).toBe(entry.portWidthU);
+      expect(port.actualY, `${entry.pattern} carrier height + margin`).toEqual([
+        port.carrierY![0]! - EJECTION_PORT_MARGIN_U,
+        port.carrierY![1]! + EJECTION_PORT_MARGIN_U,
+      ]);
       expect(port.actualY).toEqual(port.expectedY);
       expect(port.height).toBe(entry.portHeightU);
       expect(port.lowerRim).toBeGreaterThanOrEqual(0.25);

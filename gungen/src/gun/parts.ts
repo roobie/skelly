@@ -36,7 +36,7 @@ const Y: Vec3 = [0, 1, 0];
 const NEG_Y: Vec3 = [0, -1, 0];
 
 const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
-const akChargingHandleSolid = (): Solid => solid('charging-handle', [-3, -0.5, -1.75], [-1.5, 0.5, -1.25]);
+const akChargingHandleSolid = (): Solid => solid('charging-handle', [-1.75, -0.5, -1.75], [-0.25, 0.5, -1.25]);
 const boxBounds = (component: Solid, axis: 0 | 1): readonly [number, number] => {
   if (component.kind !== 'box') {
     throw new Error('Charging handle must remain a box solid.');
@@ -250,6 +250,7 @@ const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
 const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
   standard: { length: 6.5, restX: -7 },
+  ak: { length: 6.5, restX: -5.75 },
   pump: { length: 5.5, restX: -7 },
   long: { length: 8, restX: -4.5 },
   bolt: { length: 7, restX: -6 },
@@ -346,7 +347,6 @@ const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
 export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
 export const EJECTION_PORT_MARGIN_U = 0.25;
-const AK_PORT_FORWARD_EDGE_X = -4;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 export const BOLT_CARRIER_ENVELOPES = {
   ar: { x: [-1.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
@@ -367,10 +367,6 @@ const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY
   const margin = EJECTION_PORT_MARGIN_U;
   let xMin = restX - envelope.x[1] - margin;
   let xMax = restX - envelope.x[0] + margin;
-  if (pattern === 'ak') {
-    xMax = AK_PORT_FORWARD_EDGE_X;
-    xMin = xMax - (envelope.x[1] - envelope.x[0] + 2 * margin);
-  }
   const pumpMinimum =
     pattern === 'pump'
       ? EJECTION_PORT_RULES.pumpShellMinimum.lengthU + 2 * EJECTION_PORT_RULES.pumpShellMinimum.endClearanceU
@@ -783,7 +779,10 @@ interface ReceiverContext {
 }
 
 const receiverTravelClass = (params: Readonly<Record<string, string>>): BoltTravelClass => {
-  if (params.section === 'ak' || params.section === 'ar') {
+  if (params.section === 'ak') {
+    return 'ak';
+  }
+  if (params.section === 'ar') {
     return 'standard';
   }
   if (params.action === 'pump' || params.section === 'pump') {
@@ -1069,7 +1068,7 @@ export const akReceiver: PartFamily = {
     });
     const carrierPattern: BoltCarrierPattern = 'ak';
     const carrierY = carrierAxisY(carrierPattern, 0);
-    const travel = BOLT_TRAVEL.standard;
+    const travel = BOLT_TRAVEL.ak;
     const portWindow = ejectionPortWindow(carrierPattern, travel.restX, carrierY);
     return {
       ...base,
@@ -1149,7 +1148,7 @@ export const boltCarrier: PartFamily = {
         block('gas-key', [-0.75, 0.5, -0.4], [1.1, 1, 0.4]),
       );
     } else if (pattern === 'ak') {
-      solids.push(block('piston', [-6, 0.2, -0.35], [-1.5, 0.6, 0.35]), akChargingHandleSolid());
+      solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]), akChargingHandleSolid());
     } else if (pattern === 'pump') {
       solids.push(
         block('action-bar-left', [-6, -0.4, -2.5], [-1.25, -0.15, -2]),
