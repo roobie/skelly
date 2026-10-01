@@ -1,6 +1,0 @@
-{
-  "name": "broken-rebated-wide-rim",
-  "base": "synthetic:rebated-bottleneck",
-  "set": { "case.rim.diameter.value": 13 },
-  "expect": ["head-type"]
-}

@@ -138,14 +138,8 @@ export interface ExtractorGroove {
   readonly bevelAngle?: Measure;
 }
 
-export interface Belt {
-  readonly diameter: Measure;
-  /** Axial distance from the head face to the front face of the belt. */
-  readonly width: Measure;
-}
-
 /** How the head is formed; independent of the body shape. */
-export const HEAD_TYPES = ['rimless', 'rebated', 'belted', 'rimmed', 'semi-rimmed'] as const;
+export const HEAD_TYPES = ['rimless', 'rimmed'] as const;
 export type HeadType = (typeof HEAD_TYPES)[number];
 
 /** Rim equal to the head diameter, cut with an extractor groove. */
@@ -154,30 +148,12 @@ export interface RimlessHead {
   readonly extractorGroove: ExtractorGroove;
 }
 
-/** Rim narrower than the head diameter, with an extractor groove. */
-export interface RebatedHead {
-  readonly type: 'rebated';
-  readonly extractorGroove: ExtractorGroove;
-}
-
-/** A belt ahead of the rim and groove. */
-export interface BeltedHead {
-  readonly type: 'belted';
-  readonly extractorGroove: ExtractorGroove;
-  readonly belt: Belt;
-}
-
-/** Rim clearly wider than the head; no groove. */
+/** Rim wider than the head; no groove. */
 export interface RimmedHead {
   readonly type: 'rimmed';
 }
 
-/** Rim only slightly wider than the head; no groove. */
-export interface SemiRimmedHead {
-  readonly type: 'semi-rimmed';
-}
-
-export type Head = RimlessHead | RebatedHead | BeltedHead | RimmedHead | SemiRimmedHead;
+export type Head = RimlessHead | RimmedHead;
 
 export interface Shoulder {
   /** Axial position where the body ends and the shoulder cone starts. */
@@ -216,7 +192,7 @@ export type Body = BottleneckBody | StraightBody;
 export interface MetallicCase {
   /** Head face to mouth. */
   readonly length: Measure;
-  /** Axial position where the full-diameter body begins, after the rim, groove and belt. */
+  /** Axial position where the full-diameter body begins, after the rim and groove. */
   readonly bodyStart: Measure;
   readonly rim: Rim;
   readonly head: Head;

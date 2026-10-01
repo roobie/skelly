@@ -58,35 +58,16 @@ const SOURCES = {
 const m = (value: number): JsonObject => ({ value, cite: CITE });
 const sourced = (value: Json): JsonObject => ({ value, cite: CITE });
 
-export type SyntheticShape =
-  | 'rimless-bottleneck'
-  | 'rimless-straight'
-  | 'rimmed-straight'
-  | 'rimmed-bottleneck'
-  | 'semi-rimmed-straight'
-  | 'rebated-bottleneck'
-  | 'belted-bottleneck';
+export type SyntheticShape = 'rimless-bottleneck' | 'rimless-straight' | 'rimmed-straight' | 'rimmed-bottleneck';
 
-const HEADS: Record<
-  string,
-  { rim: number; head: number; thickness: number; bodyStart: number; groove?: number; belt?: number }
-> = {
+const HEADS: Record<string, { rim: number; head: number; thickness: number; bodyStart: number; groove?: number }> = {
   rimless: { rim: 12, head: 12, thickness: 1.5, bodyStart: 3, groove: 10.5 },
   rimmed: { rim: 13, head: 11, thickness: 1.5, bodyStart: 2 },
-  'semi-rimmed': { rim: 11.4, head: 11, thickness: 1.5, bodyStart: 2 },
-  rebated: { rim: 11, head: 12, thickness: 1.5, bodyStart: 3, groove: 9.5 },
-  belted: { rim: 12, head: 12, thickness: 1.5, bodyStart: 6, groove: 11, belt: 12.5 },
 };
 
 const headJson = (type: string): JsonObject => {
   const spec = HEADS[type] as NonNullable<(typeof HEADS)[string]>;
-  const groove = { diameter: m(spec.groove ?? 0), width: m(1) };
-  if (type === 'rimmed' || type === 'semi-rimmed') {
-    return { type };
-  }
-  return type === 'belted'
-    ? { type, extractorGroove: groove, belt: { diameter: m(spec.belt ?? 0), width: m(4) } }
-    : { type, extractorGroove: groove };
+  return type === 'rimmed' ? { type } : { type, extractorGroove: { diameter: m(spec.groove ?? 0), width: m(1) } };
 };
 
 const bodyJson = (shape: string, head: number): JsonObject =>
@@ -168,9 +149,6 @@ export const SYNTHETIC_METALLIC_SHAPES: readonly SyntheticShape[] = [
   'rimless-straight',
   'rimmed-straight',
   'rimmed-bottleneck',
-  'semi-rimmed-straight',
-  'rebated-bottleneck',
-  'belted-bottleneck',
 ];
 
 export const SYNTHETIC_SHOTSHELL_SHAPES: readonly ShotshellShape[] = ['shotshell-buck', 'shotshell-slug'];

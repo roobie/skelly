@@ -304,31 +304,12 @@ const parseGroove: Parse<ExtractorGroove> = (value, path) => {
 
 const parseHead: Parse<Head> = (value, path) => {
   const type = discriminant(value, path, 'type', HEAD_TYPES);
-  switch (type) {
-    case 'rimmed':
-    case 'semi-rimmed':
-      object(value, path, ['type']);
-      return { type };
-    case 'rimless':
-    case 'rebated': {
-      const source = object(value, path, ['type', 'extractorGroove']);
-      return { type, extractorGroove: field(source, 'extractorGroove', path, parseGroove) };
-    }
-    case 'belted': {
-      const source = object(value, path, ['type', 'extractorGroove', 'belt']);
-      const belt = object(source.belt, join(path, 'belt'), ['diameter', 'width']);
-      return {
-        type,
-        extractorGroove: field(source, 'extractorGroove', path, parseGroove),
-        belt: {
-          diameter: field(belt, 'diameter', join(path, 'belt'), parseMeasure),
-          width: field(belt, 'width', join(path, 'belt'), parseMeasure),
-        },
-      };
-    }
-    default:
-      return fail(join(path, 'type'), 'unhandled head type');
+  if (type === 'rimmed') {
+    object(value, path, ['type']);
+    return { type };
   }
+  const source = object(value, path, ['type', 'extractorGroove']);
+  return { type, extractorGroove: field(source, 'extractorGroove', path, parseGroove) };
 };
 
 const parseBody: Parse<Body> = (value, path) => {

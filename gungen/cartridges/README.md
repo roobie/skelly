@@ -42,10 +42,12 @@ A metallic cartridge is a head type crossed with a body shape:
 | Head | Rim | Extractor groove |
 | --- | --- | --- |
 | `rimless` | equal to the head diameter | required |
-| `rebated` | narrower than the head | required |
-| `belted` | at least the head diameter, plus a `belt` wider than the head | required |
 | `rimmed` | wider than the head | none |
-| `semi-rimmed` | slightly wider than the head | none |
+
+Other head types (`belted`, `rebated`, `semi-rimmed`) are not in the format: no planned
+cartridge needs them, so they would be code with no data. .300 Winchester Magnum is planned
+as the first belted cartridge, and belted support comes back with it and its real data
+(roobie/skelly#109).
 
 | Body | Fields |
 | --- | --- |
@@ -77,7 +79,6 @@ Planned cartridges map onto these shapes without a format change:
 | 9×19, 9×18, .45 ACP | metallic | rimless | straight | tapered cases use a mouth narrower than the head |
 | .357 Magnum, .38 Special | metallic | rimmed | straight | the one-way relation above |
 | 12 gauge 00 buck, 12 gauge slug | shotshell | | | `shot` and `slug` payloads, 70 mm nominal length for 2¾″ |
-| belted magnums | metallic | belted | bottleneck | supported, none planned |
 
 ## Checks
 

@@ -45,23 +45,16 @@ const primerMeasures = (path: string, primer: MetallicCartridge['case']['primer'
 
 const headMeasures = (head: MetallicCartridge['case']['head']): MeasureRef[] => {
   const base = 'case.head';
-  if (head.type === 'rimmed' || head.type === 'semi-rimmed') {
+  if (head.type === 'rimmed') {
     return [];
   }
-  const groove = [
+  return [
     measure(`${base}.extractorGroove.diameter`, head.extractorGroove.diameter, 'mm'),
     measure(`${base}.extractorGroove.width`, head.extractorGroove.width, 'mm'),
     ...(head.extractorGroove.bevelAngle === undefined
       ? []
       : [measure(`${base}.extractorGroove.bevelAngle`, head.extractorGroove.bevelAngle, 'deg' as const)]),
   ];
-  return head.type === 'belted'
-    ? [
-        ...groove,
-        measure(`${base}.belt.diameter`, head.belt.diameter, 'mm'),
-        measure(`${base}.belt.width`, head.belt.width, 'mm'),
-      ]
-    : groove;
 };
 
 const bodyMeasures = (body: MetallicCartridge['case']['body']): MeasureRef[] => {

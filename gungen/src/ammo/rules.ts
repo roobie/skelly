@@ -193,43 +193,27 @@ const unitsRule: CartridgeRule = {
 
 // ---------------------------------------------------------------- metallic geometry
 
-/** Rim against head diameter, and what the groove and belt must clear, by head type. */
+/** Rim against head diameter, and what the groove must clear, by head type. */
 const headTypeIssues = (c: MetallicCartridge): CartridgeIssue[] => {
   const rim = quantity('case.rim.diameter', c.case.rim.diameter);
   const head = quantity('case.body.diameterAtHead', c.case.body.diameterAtHead);
   const rule = 'head-type';
-  const spread = rim.value !== null && head.value !== null ? Math.abs(rim.value - head.value) : 0;
-  switch (c.case.head.type) {
-    case 'rimless':
-      return [
-        ...(spread > RIMLESS_RIM_HEAD_TOLERANCE_MM
-          ? [
-              {
-                rule,
-                path: rim.path,
-                message: `a rimless rim (${rim.value}) must be within ${RIMLESS_RIM_HEAD_TOLERANCE_MM} mm of the head diameter (${head.value})`,
-              },
-            ]
-          : []),
-        ...chain(rule, '<', quantity('case.head.extractorGroove.diameter', c.case.head.extractorGroove.diameter), head),
-      ];
-    case 'rebated':
-      return [
-        ...chain(rule, '<', rim, head),
-        ...chain(rule, '<', quantity('case.head.extractorGroove.diameter', c.case.head.extractorGroove.diameter), rim),
-      ];
-    case 'rimmed':
-    case 'semi-rimmed':
-      return chain(rule, '>', rim, head);
-    case 'belted':
-      return [
-        ...chain(rule, '>=', rim, head),
-        ...chain(rule, '>', quantity('case.head.belt.diameter', c.case.head.belt.diameter), head),
-        ...chain(rule, '<', quantity('case.head.extractorGroove.diameter', c.case.head.extractorGroove.diameter), head),
-      ];
-    default:
-      return [];
+  if (c.case.head.type === 'rimmed') {
+    return chain(rule, '>', rim, head);
   }
+  const spread = rim.value !== null && head.value !== null ? Math.abs(rim.value - head.value) : 0;
+  return [
+    ...(spread > RIMLESS_RIM_HEAD_TOLERANCE_MM
+      ? [
+          {
+            rule,
+            path: rim.path,
+            message: `a rimless rim (${rim.value}) must be within ${RIMLESS_RIM_HEAD_TOLERANCE_MM} mm of the head diameter (${head.value})`,
+          },
+        ]
+      : []),
+    ...chain(rule, '<', quantity('case.head.extractorGroove.diameter', c.case.head.extractorGroove.diameter), head),
+  ];
 };
 
 const headTypeRule: CartridgeRule = {
@@ -284,7 +268,7 @@ const neckWallRule: CartridgeRule = {
   check: (cartridge) => (cartridge.kind === 'metallic' ? neckWallIssues(cartridge) : []),
 };
 
-// Positions run from the head face to the mouth in this order: rim, groove, (belt), body start,
+// Positions run from the head face to the mouth in this order: rim, groove, body start,
 // shoulder start, shoulder end, case length.
 const positionIssues = (c: MetallicCartridge): CartridgeIssue[] => {
   const rule = 'positions';
@@ -292,17 +276,14 @@ const positionIssues = (c: MetallicCartridge): CartridgeIssue[] => {
   const bodyStart = quantity('case.bodyStart', c.case.bodyStart);
   const { head, body } = c.case;
   const grooveEnd =
-    head.type === 'rimmed' || head.type === 'semi-rimmed'
+    head.type === 'rimmed'
       ? rimThickness
       : sum(
           'rim thickness + groove width',
           rimThickness,
           quantity('case.head.extractorGroove.width', head.extractorGroove.width),
         );
-  const headIssues =
-    head.type === 'belted'
-      ? chain(rule, '<=', grooveEnd, quantity('case.head.belt.width', head.belt.width), bodyStart)
-      : chain(rule, '<=', grooveEnd, bodyStart);
+  const headIssues = chain(rule, '<=', grooveEnd, bodyStart);
   const caseLength = quantity('case.length', c.case.length);
   const bodyIssues =
     body.type === 'straight'

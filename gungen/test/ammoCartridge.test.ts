@@ -108,7 +108,7 @@ describe('case shapes', () => {
     const shapes = SYNTHETIC_METALLIC_SHAPES.map((shape) => mustParse(syntheticJson(shape)));
     const heads = new Set(shapes.flatMap((c) => (c.kind === 'metallic' ? [c.case.head.type] : [])));
     const bodies = new Set(shapes.flatMap((c) => (c.kind === 'metallic' ? [c.case.body.type] : [])));
-    expect([...heads].sort()).toEqual(['belted', 'rebated', 'rimless', 'rimmed', 'semi-rimmed']);
+    expect([...heads].sort()).toEqual(['rimless', 'rimmed']);
     expect([...bodies].sort()).toEqual(['bottleneck', 'straight']);
   });
 
@@ -230,6 +230,14 @@ describe('parse', () => {
     expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), kind: 'rimfire' })).toContain('kind');
     expect(parseErrorOf(edited('rimmed-straight', 'case.head.type', 'flanged'))).toContain('case.head.type');
     expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), format: 2 })).toContain('unsupported format 2');
+  });
+
+  it('refuses the head types the format does not model yet (belted, rebated, semi-rimmed)', () => {
+    for (const type of ['belted', 'rebated', 'semi-rimmed']) {
+      expect(parseErrorOf(edited('rimmed-straight', 'case.head.type', type)), type).toBe(
+        `case.head.type: expected one of rimless, rimmed; got '${type}'`,
+      );
+    }
   });
 
   it('requires a null value to be written out, not left out', () => {
