@@ -39,8 +39,9 @@ export const loadCartridgeFile = (file: string): Cartridge => {
 
 export const loadCartridges = (): Cartridge[] => cartridgeFiles().map(loadCartridgeFile);
 
-// A comparison issue reads '<path> (<value>) must be <op> <path> (<value>)', optionally prefixed.
-const COMPARISON_MESSAGE = /^(?:neck wall is not positive: )?(\S+) \(.+\) must be \S+ (\S+) \(.+\)$/;
+// A comparison issue reads '<path> (<value>) must be <op> <path> (<value>)', optionally prefixed. The
+// paths are matched loosely (even empty) so that a missing one is reported instead of not matching.
+const COMPARISON_MESSAGE = /^(?:neck wall is not positive: )?(.*) \([^()]*\) must be \S+ (.*) \([^()]*\)$/;
 
 /**
  * What is unusable about `issues`, empty when nothing is. An issue is only useful if it says what is
@@ -56,8 +57,8 @@ export const unusableIssues = (json: JsonObject, issues: readonly CartridgeIssue
       ...(issue.rule === '' || issue.path === '' ? [`${label}: no rule or path`] : []),
       ...(issue.message === '' ? [`${label}: no message`] : []),
       ...named
-        .filter((path) => !(path.includes(' ') || hasPath(json, path)))
-        .map((path) => `${label}: no field ${path}`),
+        .filter((path) => path === '' || !(path.includes(' ') || hasPath(json, path)))
+        .map((path) => `${label}: no field '${path}'`),
     ];
   });
 

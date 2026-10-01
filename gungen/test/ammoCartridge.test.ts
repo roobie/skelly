@@ -543,6 +543,67 @@ describe('rules at their edges', () => {
       set: { 'case.body.neck.diameterAtMouth.value': 8 },
       expected: ['neck-wall case.body.neck.diameterAtMouth'],
     },
+    // One refusal for each comparison the rows above do not reach, so none can stop firing unnoticed.
+    {
+      name: 'a rimmed rim thicker than the body start is refused (no groove to count)',
+      shape: 'rimmed-straight',
+      set: { 'case.rim.thickness.value': 3 },
+      expected: ['positions case.rim.thickness'],
+    },
+    {
+      name: 'a straight body that starts at the case length is refused',
+      shape: 'rimmed-straight',
+      set: { 'case.bodyStart.value': 40 },
+      expected: ['positions case.bodyStart'],
+    },
+    {
+      name: 'a shoulder that ends where it starts is refused',
+      shape: 'rimless-bottleneck',
+      set: { 'case.body.shoulder.endPosition.value': 30 },
+      expected: ['positions case.body.shoulder.startPosition'],
+    },
+    {
+      name: 'a shoulder that ends at the case length is refused',
+      shape: 'rimless-bottleneck',
+      set: { 'case.body.shoulder.endPosition.value': 40 },
+      expected: ['positions case.body.shoulder.endPosition'],
+    },
+    {
+      name: 'a shoulder start as wide as the neck base is refused (diameters narrow)',
+      shape: 'rimmed-bottleneck',
+      set: { 'case.body.neck.diameterAtBase.value': 10 },
+      expected: ['diameters case.body.diameterAtShoulderStart'],
+    },
+    {
+      name: 'a rim as thick as the metal head is refused',
+      shape: 'shotshell-buck',
+      set: { 'head.rimThickness.value': 16 },
+      expected: ['shotshell head.rimThickness'],
+    },
+    {
+      name: 'a metal head rim as wide as the hull is refused (it must overhang)',
+      shape: 'shotshell-buck',
+      set: { 'head.rimDiameter.value': 20 },
+      expected: ['shotshell head.rimDiameter'],
+    },
+    {
+      name: 'a bore as wide as the hull is refused',
+      shape: 'shotshell-buck',
+      set: { 'boreDiameter.value': 20 },
+      expected: ['shotshell boreDiameter'],
+    },
+    {
+      name: 'a slug as long as the loaded shell is refused',
+      shape: 'shotshell-slug',
+      set: { 'payload.length.value': 66 },
+      expected: ['shotshell payload.length'],
+    },
+    {
+      name: 'a crimped shell longer than the opened one is refused',
+      shape: 'shotshell-buck',
+      set: { 'length.loaded.value': 71 },
+      expected: ['shotshell length.loaded'],
+    },
     {
       name: 'a zero mass is refused',
       shape: 'rimmed-straight',
