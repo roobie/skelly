@@ -1,9 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { distanceWorld, localSolidBounds, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
+import { MAIN_AXIS, TOLERANCE } from '../src/core/conventions.ts';
+import {
+  distanceWorld,
+  localSolidBounds,
+  penetrationWorld,
+  validateExtrudedPolygon,
+  worldSolid,
+} from '../src/core/geometry.ts';
+import {
+  angleBetween,
+  applyDir,
+  applyPoint,
+  invert,
+  length,
+  sub,
+  type Transform,
+  type Vec3,
+} from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { PartDef, PartFamily, Solid } from '../src/core/schema.ts';
-import { SHROUD_HALF_HEIGHT, SHROUD_HALF_WIDTH, SHROUD_LENGTH } from '../src/gun/antiMateriel/barrelShroud.ts';
+import { validate } from '../src/core/validate.ts';
+import {
+  SHROUD_HALF_HEIGHT,
+  SHROUD_HALF_WIDTH,
+  SHROUD_LENGTH,
+  TRUNNION_SETBACK,
+} from '../src/gun/antiMateriel/barrelShroud.ts';
 import { BIPOD_LEG_LENGTH } from '../src/gun/antiMateriel/bipod.ts';
+import {
+  BAR_FLAT_RADIUS,
+  BAR_HALF_LENGTH,
+  STRUT_LEFT,
+  STRUT_LENGTH,
+  STRUT_TILT_DEGREES,
+  STRUT_UP,
+} from '../src/gun/antiMateriel/carryHandle.ts';
 import { BMG_BASE_DIAMETER_U, BMG_CASE_LENGTH_U, BMG_OVERALL_LENGTH_U } from '../src/gun/antiMateriel/cartridge.ts';
 import { HEAVY_EJECTION_PORT_MARGIN_U } from '../src/gun/antiMateriel/heavyBoltCarrier.ts';
 import { HEAVY_GRIP_MOUNT_PROFILE, HEAVY_TRIGGER_GUARD } from '../src/gun/antiMateriel/heavyLower.ts';
@@ -264,47 +295,149 @@ describe('bipod', () => {
 });
 
 describe('carry handle', () => {
-  it('stands wholly to the left of the line of sight, overhanging the receiver wall by more than a post', () => {
+  const resolved = resolve(loadFixture('archetype-anti-materiel'), gunDomain);
+  const placed = (id: string) => resolved.placed.get(id)!;
+  const def = (id: string) => resolved.defs.get(id)!;
+  const onGrid = (n: number) => Math.abs(n / 0.25 - Math.round(n / 0.25)) < 1e-9;
+  const XAxis: Vec3 = [1, 0, 0];
+  /** A world point as seen from the shroud's own frame, where the design's numbers are on the 0.25u grid. */
+  const inShroud = (point: Vec3): Vec3 => applyPoint(invert(placed('shroud')), point);
+  /** World coordinates along one axis of a solid's corner points (a box's eight, or a prism's vertices). */
+  const worldCoords = (solid: Solid, transform: Transform, axis: 0 | 1 | 2): number[] => {
+    const world = worldSolid(transform, solid);
+    if ('vertices' in world) {
+      return world.vertices.map((point) => point[axis]);
+    }
+    if (solid.kind !== 'box') {
+      throw new Error(`${solid.id} has no corner points`);
+    }
+    const { center, half } = solid.box;
+    return [-1, 1].flatMap((sx) =>
+      [-1, 1].flatMap((sy) =>
+        [-1, 1].map(
+          (sz) =>
+            applyPoint(transform, [center[0] + sx * half[0], center[1] + sy * half[1], center[2] + sz * half[2]])[axis],
+        ),
+      ),
+    );
+  };
+  const extent = (solid: Solid, transform: Transform, axis: 0 | 1 | 2): number => {
+    const values = worldCoords(solid, transform, axis);
+    return Math.max(...values) - Math.min(...values);
+  };
+
+  it('has a diagonal strut: up and to the left at the stated angle in world space, not vertical or horizontal', () => {
+    const axis = applyDir(placed('strut'), XAxis);
+    expect(axis[0]).toBeCloseTo(0);
+    expect(axis[1]).toBeGreaterThan(0);
+    expect(axis[2]).toBeLessThan(0);
+    expect(angleBetween(axis, [0, 1, 0])).toBeCloseTo(STRUT_TILT_DEGREES, 6);
+    expect(STRUT_TILT_DEGREES).toBeCloseTo(36.87, 2);
+  });
+
+  it('lands the strut end on the bar and on the grid: the bar is at the stated place, to the left of the shroud wall', () => {
+    const end = applyPoint(placed('strut'), [STRUT_LENGTH, 0, 0]);
+    const barPort = applyPoint(placed('bar'), def('bar').ports.find(({ id }) => id === 'base')!.pos);
+    expect(length(sub(end, barPort))).toBeLessThan(0.01);
+    expect(inShroud(end).map((n) => Math.round(n * 1e6) / 1e6)).toEqual([TRUNNION_SETBACK, 7.5, -7.5]);
+    expect(inShroud(applyPoint(placed('bar'), [0, 0, 0])).every(onGrid)).toBe(true);
+    // It overhangs the shroud's wall by more than a fist's width of 4u.
+    expect(inShroud(end)[2]).toBeLessThan(-(SHROUD_HALF_WIDTH + 4));
+  });
+
+  it('sinks both strut ends into their neighbours, within the nesting allowance, so no joint or gap shows', () => {
+    const strut = def('strut').solids[0]!;
+    const block = def('trunnion').solids[0]!;
+    const grip = def('bar').solids[0]!;
+    const strutWorld = worldSolid(placed('strut'), strut);
+    if (!('vertices' in strutWorld)) {
+      throw new Error('the strut must be a prism');
+    }
+    const ringSize = strutWorld.vertices.length / 2;
+    const baseCap = strutWorld.vertices.slice(0, ringSize);
+    const topCap = strutWorld.vertices.slice(ringSize);
+    for (const [neighbour, nested] of [
+      ['trunnion', block],
+      ['bar', grip],
+    ] as const) {
+      const depth = penetrationWorld(strutWorld, worldSolid(placed(neighbour), nested));
+      expect(depth, neighbour).toBeGreaterThan(0.25);
+      expect(depth, neighbour).toBeLessThanOrEqual(TOLERANCE.interface);
+    }
+    // The base cap lies inside the trunnion's section, below its top face (which is square to the strut).
+    for (const point of baseCap) {
+      const [, y, z] = applyPoint(invert(placed('trunnion')), point);
+      expect(y, 'base y').toBeLessThanOrEqual(2.25);
+      expect(z, 'base z').toBeGreaterThanOrEqual(-2);
+      expect(z, 'base z').toBeLessThanOrEqual(0);
+      expect(STRUT_UP * y - STRUT_LEFT * z, 'below the top face').toBeLessThanOrEqual(1.8 + 1e-9);
+    }
+    // The top cap lies inside the bar's octagonal section.
+    for (const point of topCap) {
+      const [, y, z] = applyPoint(invert(placed('bar')), point);
+      expect(Math.max(Math.abs(y), Math.abs(z)), 'top cap').toBeLessThanOrEqual(BAR_FLAT_RADIUS + 1e-9);
+      expect(Math.abs(y) + Math.abs(z), 'top cap').toBeLessThanOrEqual(BAR_FLAT_RADIUS * Math.SQRT2 + 1e-9);
+    }
+  });
+
+  it('keeps the bar level and parallel to the bore, with its flats horizontal', () => {
+    const bar = placed('bar');
+    expect(angleBetween(applyDir(bar, XAxis), MAIN_AXIS.dir)).toBeLessThan(TOLERANCE.angle);
+    const [grip] = def('bar').solids;
+    expect(extent(grip!, bar, 1)).toBeCloseTo(2 * BAR_FLAT_RADIUS);
+    expect(extent(grip!, bar, 2)).toBeCloseTo(2 * BAR_FLAT_RADIUS);
+  });
+
+  it('reaches back from the strut toward the stock: most of the bar and all of the hand room lie behind the strut', () => {
+    const [strutX] = applyPoint(placed('strut'), [STRUT_LENGTH, 0, 0]);
+    const [grip] = def('bar').solids;
+    const bar = worldCoords(grip!, placed('bar'), 0);
+    expect(strutX - Math.min(...bar)).toBeGreaterThan(Math.max(...bar) - strutX);
+    const room = def('bar').keepOuts.find(({ id }) => id === 'hand-room')!;
+    const [roomFront] = applyPoint(placed('bar'), [room.box.center[0] + room.box.half[0], 0, 0]);
+    expect(roomFront).toBeLessThan(strutX);
+  });
+
+  it('stands wholly to the left of the line of sight', () => {
     const sightline = family('sight')
       .build({})
       .keepOuts.find(({ id }) => id === 'sightline')!;
     const [, , sightHalfWidth] = sightline.box.half;
-    const handle = family('carry-handle').build({});
-    for (const solid of handle.solids) {
-      expect(bounds(solid).max[2], solid.id).toBeLessThan(-sightHalfWidth);
-    }
-    const outerEdge = Math.min(...handle.solids.map((solid) => bounds(solid).min[2]));
-    expect(outerEdge).toBeLessThan(-(SHROUD_HALF_WIDTH + 2));
-  });
-
-  it('clears a full-size scope mounted where the sight is, by at least 0.25u (stand-in envelope)', () => {
-    const resolved = resolve(loadFixture('archetype-anti-materiel'), gunDomain);
-    const sight = resolved.placed.get('sight')!;
-    const handle = resolved.placed.get('handle')!;
-    const handleDef = resolved.defs.get('handle')!;
-    const room = handleDef.keepOuts.find(({ id }) => id === 'hand-room')!;
-    const handleVolumes: Solid[] = [...handleDef.solids, { id: room.id, kind: 'box', box: room.box }];
-    for (const part of STAND_IN_SCOPE_ENVELOPE) {
-      for (const volume of handleVolumes) {
-        const gap = distanceWorld(worldSolid(sight, part), worldSolid(handle, volume));
-        expect(gap, `${part.id} to ${volume.id}`).toBeGreaterThanOrEqual(0.25 - 1e-9);
+    for (const id of ['trunnion', 'strut', 'bar']) {
+      for (const solid of def(id).solids) {
+        expect(Math.max(...worldCoords(solid, placed(id), 2)), `${id} ${solid.id}`).toBeLessThan(-sightHalfWidth);
       }
     }
   });
 
-  it('leaves its hand room empty of its own posts and bar', () => {
-    const handle = family('carry-handle').build({});
-    const room = handle.keepOuts.find(({ id }) => id === 'hand-room')!;
-    for (const solid of handle.solids) {
-      const { min, max } = bounds(solid);
-      const overlaps = [0, 1, 2].every(
-        (axis) =>
-          Math.min(max[axis]!, room.box.center[axis]! + room.box.half[axis]!) -
-            Math.max(min[axis]!, room.box.center[axis]! - room.box.half[axis]!) >
-          1e-9,
-      );
-      expect(overlaps, solid.id).toBe(false);
+  it('clears a full-size scope mounted where the sight is, by at least 0.25u (stand-in envelope)', () => {
+    const sight = placed('sight');
+    const volumes = ['trunnion', 'strut', 'bar'].flatMap((id) => {
+      const room = def(id).keepOuts.find(({ id: keepOutId }) => keepOutId === 'hand-room');
+      const solids: Solid[] = [
+        ...def(id).solids,
+        ...(room ? [{ id: room.id, kind: 'box' as const, box: room.box }] : []),
+      ];
+      return solids.map((solid) => ({ label: `${id} ${solid.id}`, solid, transform: placed(id) }));
+    });
+    for (const part of STAND_IN_SCOPE_ENVELOPE) {
+      for (const { label, solid, transform } of volumes) {
+        const gap = distanceWorld(worldSolid(sight, part), worldSolid(transform, solid));
+        expect(gap, `${part.id} to ${label}`).toBeGreaterThanOrEqual(0.25 - 1e-9);
+      }
     }
+  });
+
+  it('gives a gloved hand room: the free stretch of bar is longer than a hand and the room is empty of other parts', () => {
+    const room = def('bar').keepOuts.find(({ id }) => id === 'hand-room')!;
+    // About 100 mm (8.7u) of gloved palm breadth is an assumption, not a measured figure.
+    expect(room.box.half[0] * 2).toBeGreaterThanOrEqual(8.7);
+    expect(room.box.half[0] * 2).toBeLessThanOrEqual(2 * BAR_HALF_LENGTH);
+    // The room reaches 2u beyond the bar's surface on every side.
+    expect(room.box.half[1] - BAR_FLAT_RADIUS).toBeCloseTo(2);
+    expect(room.box.half[2] - BAR_FLAT_RADIUS).toBeCloseTo(2);
+    const { issues } = validate(loadFixture('archetype-anti-materiel'), gunDomain);
+    expect(issues.filter(({ rule }) => rule === 'keep-out')).toEqual([]);
   });
 });
 

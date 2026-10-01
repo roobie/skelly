@@ -3,7 +3,7 @@
   "template": "anti-materiel",
   "assembly": {
     "name": "archetype-anti-materiel",
-    "description": "Semi-automatic anti-materiel rifle: perforated box shroud over a recoiling barrel, two-chamber arrowhead muzzle brake, folding bipod, carry handle over the rail, wide recoil-pad stock with a rear monopod, 10-round box magazine.",
+    "description": "Semi-automatic anti-materiel rifle: perforated box shroud over a recoiling barrel, two-chamber arrowhead muzzle brake, folding bipod, diagonal-strut carry handle on the left, wide recoil-pad stock with a rear monopod, 10-round box magazine.",
     "root": "receiver",
     "parts": {
       "receiver": { "family": "heavy-receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
@@ -16,7 +16,9 @@
       "magazine": { "family": "heavy-magazine" },
       "stock": { "family": "recoil-stock", "params": { "length": "L" } },
       "sight": { "family": "sight" },
-      "handle": { "family": "carry-handle" },
+      "trunnion": { "family": "handle-trunnion" },
+      "strut": { "family": "handle-strut" },
+      "bar": { "family": "handle-bar" },
       "bipod": { "family": "bipod", "params": { "legs": "L", "pose": "folded" } },
       "monopod": { "family": "monopod", "params": { "pose": "folded" } }
     },
@@ -30,7 +32,9 @@
       { "from": "lower.magazine", "to": "magazine.top" },
       { "from": "receiver.stock", "to": "stock.front" },
       { "from": "receiver.rail", "slot": 5, "to": "sight.base" },
-      { "from": "shroud.rail", "slot": 0, "to": "handle.base" },
+      { "from": "shroud.trunnion", "to": "trunnion.base" },
+      { "from": "trunnion.strut", "to": "strut.base" },
+      { "from": "strut.top", "to": "bar.base" },
       { "from": "shroud.bipod", "to": "bipod.base" },
       { "from": "stock.monopod", "to": "monopod.base" }
     ]

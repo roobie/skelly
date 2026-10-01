@@ -441,7 +441,7 @@ export const bullpup: Template = {
 export const antiMateriel: Template = {
   name: 'anti-materiel',
   description:
-    'Semi-automatic anti-materiel rifle: perforated box shroud, two-chamber arrowhead muzzle brake, folding bipod, carry handle, recoil-pad stock with optional monopod.',
+    'Semi-automatic anti-materiel rifle: perforated box shroud, two-chamber arrowhead muzzle brake, folding bipod, strut-mounted carry handle, recoil-pad stock with optional monopod.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'heavy-receiver', params: { action: 'auto', feed: 'box', bore: 'L' } },
@@ -454,7 +454,11 @@ export const antiMateriel: Template = {
     { id: 'magazine', family: 'heavy-magazine' },
     { id: 'stock', family: 'recoil-stock', params: { length: ['M', 'L'] } },
     { id: 'sight', family: 'sight', chance: 0.9 },
-    { id: 'handle', family: 'carry-handle', chance: 0.8 },
+    // The handle's three parts come together or not at all, so they are always present (a slot has no way to
+    // depend on another slot's chance, and a strut without its trunnion would leave required ports empty).
+    { id: 'trunnion', family: 'handle-trunnion' },
+    { id: 'strut', family: 'handle-strut' },
+    { id: 'bar', family: 'handle-bar' },
     { id: 'bipod', family: 'bipod', params: { legs: ['M', 'L'], pose: ['folded', 'deployed'] } },
     { id: 'monopod', family: 'monopod', params: { pose: ['folded', 'deployed'] }, chance: 0.5 },
   ],
@@ -467,10 +471,12 @@ export const antiMateriel: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
-    // The sight sits on the receiver rail (slots x = -14, -12). The carry handle stands to the left on the shroud rail's
-    // first slot (x = 2), clear of a full-size scope mounted where the sight is.
+    // The sight sits on the receiver rail (slots x = -14, -12). The carry handle's trunnion bolts to the shroud's left
+    // wall, and its strut and bar stand to the left, clear of a full-size scope mounted where the sight is.
     { from: 'receiver.rail', to: 'sight.base', slot: [4, 5] },
-    { from: 'shroud.rail', to: 'handle.base', slot: 0 },
+    { from: 'shroud.trunnion', to: 'trunnion.base' },
+    { from: 'trunnion.strut', to: 'strut.base' },
+    { from: 'strut.top', to: 'bar.base' },
     { from: 'shroud.bipod', to: 'bipod.base' },
     { from: 'stock.monopod', to: 'monopod.base' },
   ],

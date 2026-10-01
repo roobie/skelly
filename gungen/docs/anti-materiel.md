@@ -36,9 +36,11 @@ through these single-line registrations:
 | Registry key | Role | Params | What it is |
 | --- | --- | --- | --- |
 | `muzzle-brake` | `muzzle-brake` | `length` M/L (9/11u); `bore` and `profile` (standard, heavy) follow the barrel | Threads on the barrel's `muzzle` port. Octagonal core and collar, and four swept wing chambers (two per side) split by a 0.5u vent slot. In plan it is an arrowhead: widest at the barrel, narrowing to the nose. A pistol or revolver barrel is refused as a `structure` issue |
-| `barrel-shroud` | `barrel-shroud` | `length` S/M/L (16/22/28u) | A stamped-box upper the barrel recoils inside: receiver front-face height and width, 0.5u walls, a front bulkhead that guides the barrel. Extends the top rail and carries the bipod port |
+| `barrel-shroud` | `barrel-shroud` | `length` S/M/L (16/22/28u) | A stamped-box upper the barrel recoils inside: receiver front-face height and width, 0.5u walls, a front bulkhead that guides the barrel. Extends the top rail and carries the bipod port and the handle's `trunnion` port (left wall, 2u from the rear) |
 | `bipod` | `bipod` | `legs` S/M/L (12/18/20u reach), `pose` folded/deployed | Mounts under the shroud; carries a `leg-sweep` keep-out |
-| `carry-handle` | `carry-handle` | none | A low shelf on the shroud rail reaching out to the left past the receiver's side wall, four posts and a grip bar on its outer part; carries a `hand-room` keep-out. Left (-Z) is fixed, not a param |
+| `handle-trunnion` | `carry-handle` | none | A 4 x 3 x 2.5u block bolted to the shroud's left wall (its `trunnion` port); one port on its top face points diagonally up and to the left |
+| `handle-strut` | `carry-handle` | none | One octagonal prism, 7.5u long, mounted on that port so it runs diagonally in world space; its top port is tilted back so the bar mounted there is level |
+| `handle-bar` | `carry-handle` | none | The grip bar, an octagonal prism along the bore reaching back from the strut, overhanging the left; carries the `hand-room` keep-out. Left (-Z) is fixed, not a param |
 | `recoil-stock` | `stock` | `length` M/L (16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
 | `monopod` | `monopod` | `pose` folded/deployed | Mounts under the butt |
 | `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action") |
@@ -62,8 +64,8 @@ and the shared `stock` has no such port. It plays the `stock` role so palette an
 rules treat it as a stock; it is not tagged as a firing grip (the pistol grip is).
 
 Param value lists are kept short on purpose: `test/parts.test.ts` builds every
-combination of every family's params. The new families add 31 cases there (brake
-3 bores x 2 profiles x 2 lengths = 12, shroud 3, bipod 3 x 2 = 6, handle 1,
+combination of every family's params. The new families add 33 cases there (brake
+3 bores x 2 profiles x 2 lengths = 12, shroud 3, bipod 3 x 2 = 6, handle trunnion, strut and bar 1 each = 3,
 recoil stock 2, monopod 2, heavy receiver 2 bores, heavy lower 1, heavy magazine 1, heavy bolt carrier 1).
 The brake's `bore` and `profile` are inherited from the barrel, so their lists must
 cover the values the barrel can hand over.
@@ -82,7 +84,7 @@ The core `keep-out` rule does the rest, with no new code:
   the lower's `magazine-path`. Tested in `test/antiMaterielRules.test.ts`.
 - **Optic sees past the handle.** The handle stands to the left of the rail, wholly outside the `sightline`
   tube and clear of a full-size scope's envelope (see "Carry handle and scope envelope"). Nothing on the
-  rail can reach the handle's `hand-room`, which only the keep-out rule would guard.
+  rail or the receiver can reach the handle's `hand-room`, which only the keep-out rule would guard.
 - **Brake sits on the muzzle port.** `port-compat` (`muzzle` mount) and the
   barrel's `muzzle` keep-out, which only the part on that port may enter.
 
@@ -205,25 +207,72 @@ face bounds are what size the port; the margin `HEAVY_EJECTION_PORT_MARGIN_U` re
 `EJECTION_PORT_MARGIN_U` (it cannot be imported without a cycle) and a test pins the copy.
 
 The rail has 11 slots (the shared receiver's 7) at x = -22 ... -2, the front 22u of the receiver. The sight
-is on slot 5 (x = -12) as before; the carry handle is on the shroud's rail (next section).
+is on slot 5 (x = -12) as before; the carry handle is bolted to the shroud's left wall (next section).
 
 ## Carry handle and scope envelope
 
 The handle was centred over the rail, which a real scope (a long tube, a large objective bell, tall rings)
-would run through. It now stands to the **left** (-Z; gungen's +Z is right) and is larger. The side is fixed,
-not a param; the other side would be a mirror of its z values.
+would run through; a second version put a table-like shelf, four posts and a bar to its left. It is now three
+parts to the **left** (-Z; gungen's +Z is right) of the rifle: a trunnion block on the shroud's left wall, one
+diagonal strut, and a level grip bar that reaches back from the strut's top end. The side is fixed, not a
+param; the other side would be a mirror of its z values. The three parts always come together (a template slot
+cannot depend on another slot's chance), so the template no longer gives the handle a 0.8 chance.
 
-| | Before | Now |
+**Frame and numbers.** In the shroud's own frame (x forward from its rear end, which is the receiver's front
+face; y up from the bore axis; z right), 1u = 11.5 mm:
+
+| Part | What | Numbers |
 | --- | --- | --- |
-| Mounted on | receiver rail, slot 8 (x = -6) | shroud rail, slot 0 (x = 2) |
-| Position across the rail | centred, posts z = 1.25 to 1.75 | centre line z = -5, posts z = -3.5 to -3.0 (inner) and -7.0 to -6.5 (outer): 5u beyond the receiver's wall |
-| Length | 8u | 10u |
-| Height (shelf or rail face to the bar's top) | 3.25u | 4.5u (posts to 3.25u, bar 1.25u thick, from 1u) |
-| Hand room (length x width x height) | 6 x 2.5 x 2.25u | 7.5 x 3 x 2.5u |
+| Trunnion (`handle-trunnion`) | block bolted to the shroud's left wall | port `trunnion` on the wall at (2.5, 0, -2); 4u long (x 0.5 to 4.5), 2u out (z -4 to -2), y -1.5 to 2.25. Its top face slopes (up toward the wall) and is square to the strut |
+| Strut (`handle-strut`) | octagonal prism, 1.5u (17 mm) across flats | from (2.5, 1.5, -3) to (2.5, 7.5, -7.5): 7.5u long, 6u up and 4.5u to the left, a 3-4-5 triangle: 36.87 degrees from vertical (53.13 above horizontal), so its end is on the 0.25u grid |
+| Grip bar (`handle-bar`) | octagonal prism along the bore, 2.5u (28.75 mm) across flats | 12u (138 mm) long, x -7.5 to 4.5, axis at y 8.75, z -8: 6u (69 mm) to the left of the shroud wall, its outer surface 7.25u (83 mm) out. The strut meets it 4u ahead of its middle, so it reaches back from there |
+| Hand room | keep-out box | 9 x 6.5 x 6.5u (x -7.5 to 1.5, y 5.5 to 12, z -11.25 to -4.75): the bar plus 2u clear on every side, from the bar's rear end to 0.25u behind the strut |
 
-A 0.75u shelf on the rail passes under a scope's objective bell and carries the posts, so the posts and bar
-need no support over the receiver. It sits on the shroud's rail because the scope's rings take the receiver
-rail behind it.
+**Why those sizes (assumptions, not measurements).** The bar is 28.75 mm across flats, inside the 25 to 35 mm a
+hand closes around comfortably; it was 3u (34.5 mm) and the strut 2u (23 mm) in the version before this, and was
+thinned at BR's request. Its free stretch behind the strut is 9u (103.5 mm), for a gloved palm breadth taken as
+about 100 mm; 2u (23 mm) around the bar is a gloved finger's thickness. For the load, a rough estimate rather
+than an engineering check: a 13 kg rifle at 3 g is about 380 N; the bar sits 4.5u (52 mm) sideways of the
+strut's foot, so about 20 N m at the foot; a 17 mm octagon (I about 0.0547 d^4, 4.8e-9 m^4) takes that at about
+35 MPa, far under the yield of steel or aluminium (hundreds of MPa). No source was consulted for any of these.
+
+**How the diagonal and the level bar come out of port orientation.** No solid is skewed, as the pistol grip is
+not either (its port's normal and up are tilted, `parts.ts` near the grip port). The trunnion's `strut` port has
+the normal (0, 0.8, -0.6): up and to the left. A part's frame comes from its mating port's normal and up
+(`portFrame`, `core/resolve.ts`), so the strut, an octagonal prism along its own X, lies along that normal. The
+strut's `top` port is tilted back by the same angle: normal (0.8, 0, -0.6) in the strut's frame is world up, so
+the bar's `base` port (normal down, up = bore direction) puts the bar axis-aligned: level and parallel to the
+bore. `test/antiMateriel.test.ts` checks the angle and the bar's attitude in world space.
+
+**Sunk ends, one solid to the eye.** The strut's solid reaches 0.5u past its foot port into the trunnion and
+0.625u past its top port into the bar. The mechanism is the nesting allowance every directly connected pair of
+parts already has: `solid-overlap` lets connected parts interpenetrate up to `TOLERANCE.interface` (0.75u),
+unless the mount has its own entry in `INTERFACE_TOLERANCE_BY_MOUNT` (`grip` and `clamp` do; these three mounts
+do not), and `connection-contact` only asks for solids within one grid step. No `allowPort`, keep-out exemption
+or `seat` is used: `seat` and `allowPort` serve the magazine well and the barrel's muzzle volume, and the barrel
+breech reaches into the receiver through a hollow ring, which a tilted round strut cannot copy. Measured depths
+are 0.5u at the trunnion and about 0.64u at the bar, both under 0.75u, and a test pins them. The trunnion's top
+face is square to the strut, so the strut leaves it in a clean ring with no wedge gap; the bar end is placed 0.5u
+inboard of the bar's centre line so the sunk end lies inside the bar's section instead of poking out of its
+outer face. `SolidDisplayHints.mergeGroup` does not weld them: `displayItems` is called on one part's solids
+at a time (`viewer/scene.ts`, `glb.ts`), so a group cannot span parts. The parts still draw as three meshes
+that meet in a ring; nothing here fakes a single mesh.
+
+**Why a trunnion on the shroud.** The barrel runs inside the shroud, 0.25u clear of it, and recoils, so a collar
+on the barrel at the receiver's front face would be hidden by the shroud and could not carry a handle outside it.
+The honest attachment point is the shroud's left wall just ahead of where the barrel leaves the receiver: the
+shroud is bolted to the receiver the barrel enters. This is a modelling choice (where the real rifle's handle
+mounts was not researched), and it needed a `trunnion` port on `barrel-shroud` (in this folder, so no shared
+family changes).
+
+**Clearances** (measured by `test/antiMateriel.test.ts` and a scratch script; the keep-out rule passes on the fixture):
+strut to the scope envelope's objective box 0.65u, trunnion 1.25u, hand room 2u, bar 4u (all at least 0.25u).
+The sunk strut end is 0.1u from the shroud's left wall inside the block, with no overlap, and the trunnion
+touches the shroud wall only, 0.5u ahead of the receiver. The nearest other part to the hand room is the receiver's top
+shell, 4.07u away. The bar's rear end lies over the front of the receiver's rail zone, its underside 5u above the
+rail face and its axis 6u to the left of the shroud wall; it is nowhere near the sightline tube, the sight, the
+bipod or the ejection port (y 0 to 2, x up to -1.25). The resolved assembly closes exactly: the three new
+connections show 0 u and 0 degrees of mismatch (largest 1e-15 u), against the 0.01u and 0.5 degrees allowed.
 
 **Scope envelope: a stand-in until the attachments work lands.** The scope vocabulary (optics, mounts) is the
 next gungen iteration and is not built here; `src/gun/antiMateriel/scopeEnvelope.ts` holds the space of a

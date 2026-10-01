@@ -4,7 +4,7 @@
 import type { PartFamily, Rule } from '../../core/schema.ts';
 import { barrelShroud } from './barrelShroud.ts';
 import { bipod } from './bipod.ts';
-import { carryHandle } from './carryHandle.ts';
+import { handleBar, handleStrut, handleTrunnion } from './carryHandle.ts';
 import { heavyBoltCarrier } from './heavyBoltCarrier.ts';
 import { heavyLower } from './heavyLower.ts';
 import { heavyMagazine } from './heavyMagazine.ts';
@@ -18,7 +18,9 @@ export const ANTI_MATERIEL_FAMILIES: Readonly<Record<string, PartFamily>> = {
   'muzzle-brake': muzzleBrake,
   'barrel-shroud': barrelShroud,
   bipod,
-  'carry-handle': carryHandle,
+  'handle-trunnion': handleTrunnion,
+  'handle-strut': handleStrut,
+  'handle-bar': handleBar,
   'recoil-stock': recoilStock,
   monopod,
   'heavy-receiver': heavyReceiver,

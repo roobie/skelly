@@ -11,6 +11,8 @@ export const X: Vec3 = [1, 0, 0];
 export const NEG_X: Vec3 = [-1, 0, 0];
 export const Y: Vec3 = [0, 1, 0];
 export const NEG_Y: Vec3 = [0, -1, 0];
+export const Z: Vec3 = [0, 0, 1];
+export const NEG_Z: Vec3 = [0, 0, -1];
 
 export const sizeParam: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
 export const choice = (...values: string[]): ParamSpec => ({ values, default: values[0]! });

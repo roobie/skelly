@@ -1,6 +1,6 @@
 import type { SizeClass } from '../../core/conventions.ts';
 import type { PartDef, PartFamily, PortDef, Solid } from '../../core/schema.ts';
-import { box, cls, NEG_X, NEG_Y, RUBBER, sizeParam, X, Y } from './common.ts';
+import { box, cls, NEG_X, NEG_Y, NEG_Z, RUBBER, sizeParam, X, Y } from './common.ts';
 
 /**
  * A long stamped-box upper that the barrel recoils inside. It continues the receiver's silhouette forward
@@ -25,6 +25,8 @@ const BULKHEAD_LENGTH = 1;
 const BULKHEAD_OPENING = 1.5;
 /** Where the bipod hangs, measured back from the shroud's front end. */
 export const BIPOD_SETBACK = 3;
+/** Where the carry handle's trunnion block bolts to the left wall, measured forward from the shroud's rear end. */
+export const TRUNNION_SETBACK = 2.5;
 
 const HOLE_ROWS = [-0.75, 0.75] as const;
 const HOLE_PITCH = 2;
@@ -95,6 +97,14 @@ export const barrelShroud: PartFamily = {
         pos: [length - BIPOD_SETBACK, -SHROUD_HALF_HEIGHT, 0],
         normal: NEG_Y,
         up: X,
+      },
+      {
+        id: 'trunnion',
+        mount: 'trunnion',
+        gender: 'female',
+        pos: [TRUNNION_SETBACK, 0, -SHROUD_HALF_WIDTH],
+        normal: NEG_Z,
+        up: Y,
       },
     ];
     return {
