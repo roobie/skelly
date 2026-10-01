@@ -36,7 +36,23 @@ const Y: Vec3 = [0, 1, 0];
 const NEG_Y: Vec3 = [0, -1, 0];
 
 const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
-const akChargingHandleSolid = (): Solid => solid('charging-handle', [-1.75, -0.5, -1.75], [-0.25, 0.5, -1.25]);
+const AK_CHARGING_HANDLE_BASE = {
+  min: [-1.75, -0.5, -1.75] as Vec3,
+  max: [-0.25, 0.5, -1.25] as Vec3,
+};
+const akChargingHandleSolid = (): Solid => {
+  const envelope = BOLT_CARRIER_ENVELOPES.ak;
+  const offset: Vec3 = [
+    envelope.x[0] - AK_CHARGING_HANDLE_BASE.min[0],
+    envelope.y[0] - AK_CHARGING_HANDLE_BASE.min[1],
+    0,
+  ];
+  return solid(
+    'charging-handle',
+    AK_CHARGING_HANDLE_BASE.min.map((value, axis) => value + offset[axis]!) as unknown as Vec3,
+    AK_CHARGING_HANDLE_BASE.max.map((value, axis) => value + offset[axis]!) as unknown as Vec3,
+  );
+};
 const boxBounds = (component: Solid, axis: 0 | 1): readonly [number, number] => {
   if (component.kind !== 'box') {
     throw new Error('Charging handle must remain a box solid.');

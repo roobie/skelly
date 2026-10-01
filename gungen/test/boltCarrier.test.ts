@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, compose, translation, type Vec3 } from '../src/core/math.ts';
+import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Box, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -190,6 +190,15 @@ const worldBounds = (points: readonly Vec3[]) =>
     Math.max(...points.map((point) => point[axis]!)),
   ]);
 
+const receiverSectionHasMaterialAt = (solids: readonly Solid[], x: number, y: number, z: number): boolean => {
+  const probe = worldSolid(IDENTITY, {
+    id: 'section-probe',
+    kind: 'box',
+    box: { center: [x, y, z], half: [0.01, 0.01, 0.01] },
+  });
+  return solids.some((solid) => penetrationWorld(worldSolid(IDENTITY, solid), probe) > 0);
+};
+
 const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof resolve>): boolean => {
   const receiver = resolved.defs.get('receiver')!;
   const carrier = resolved.defs.get('bolt-carrier')!;
@@ -367,7 +376,7 @@ describe('procedural bolt carrier', () => {
     }
   });
 
-  it('sizes the AK carrier-face port and narrow handle slot from the rest position', () => {
+  it('moves the AK charging handle front-low and merges its slot with the ejection opening', () => {
     const entry = travelCases.find(({ pattern }) => pattern === 'ak')!;
     const resolved = resolve(assemblyFor(entry), gunDomain);
     const receiver = resolved.defs.get('receiver')!;
@@ -379,6 +388,8 @@ describe('procedural bolt carrier', () => {
     const piston = carrier.solids.find(({ id }) => id === 'piston')!;
     const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
     const handleBounds = worldBounds(corners(handle).map((point) => applyPoint(transform, point)));
+    const localBodyBounds = limits(corners(body));
+    const localHandleBounds = limits(corners(handle));
     const pistonBounds = worldBounds(corners(piston).map((point) => applyPoint(transform, point)));
     const motion = carrier.motion!;
     const rearTransform = compose(transform, translation(motion.rearmost));
@@ -394,13 +405,41 @@ describe('procedural bolt carrier', () => {
     expect(barrelMountX - bodyBounds[0]![1]!).toBeCloseTo(1.25, 8);
     expect([portMin, portMax]).toEqual([-7.5, -1]);
     expect(portMax).toBeCloseTo(-1, 8);
-    expect(handleBounds[0]).toEqual([-5.5, -4]);
+    expect(handleBounds[0]).toEqual([-2.75, -1.25]);
+    expect(handleBounds[1]).toEqual([-1.25, -0.25]);
+    expect(handleBounds[2]![0]).toBeCloseTo(1.25, 8);
+    expect(handleBounds[2]![1]).toBeCloseTo(1.75, 8);
+    expect(localHandleBounds[0]![0]).toBe(localBodyBounds[0]![0]);
+    expect(localHandleBounds[1]![0]).toBe(localBodyBounds[1]![0]);
+    const rootCenterY = (localHandleBounds[1]![0]! + localHandleBounds[1]![1]!) / 2;
+    const lowerThirdTop = localBodyBounds[1]![0]! + (localBodyBounds[1]![1]! - localBodyBounds[1]![0]!) / 3;
+    expect(rootCenterY).toBeGreaterThanOrEqual(localBodyBounds[1]![0]!);
+    expect(rootCenterY).toBeLessThanOrEqual(lowerThirdTop);
     expect(pistonBounds[0]).toEqual([-5.5, -1]);
     expect(handleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - 1e-6);
     expect(handleBounds[0]![1]!).toBeLessThanOrEqual(portMax + 1e-6);
     const slot = akChargingHandleSlotWindow(0, { x: [portMin, portMax], y: [-1.5, 1.5] }, entry.travel);
-    expect(slot.section[1] - slot.section[0]).toBe(1 + 2 * BOLT_CARRIER_RUNNING_CLEARANCE_U);
+    expect(slot.section).toEqual([-1.35, -0.15]);
+    expect(slot.section[1] - slot.section[0]).toBeCloseTo(1 + 2 * BOLT_CARRIER_RUNNING_CLEARANCE_U, 8);
     expect(slot.x).toEqual([portMin - entry.travel, portMin + 0.25]);
+    expect([Math.max(portMin, slot.x[0]), Math.min(portMax, slot.x[1])]).toEqual([-7.5, -7.25]);
+    expect([Math.min(portMin, slot.x[0]), Math.max(portMax, slot.x[1])]).toEqual([-14, -1]);
+    expect([Math.max(port.actualY![0]!, slot.section[0]), Math.min(port.actualY![1]!, slot.section[1])]).toEqual([
+      -1.35, -0.15,
+    ]);
+    const outlineBottom = Math.min(...RECEIVER_SECTION.ak.outline.map(([y]) => y));
+    for (let x = portMin - 1 + 0.125; x < portMax; x += 0.25) {
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, -0.75, 1.6), `merged opening at x=${x}`).toBe(false);
+    }
+    expect(receiverSectionHasMaterialAt(receiver.solids, portMax + 0.125, -0.75, 1.6)).toBe(true);
+    for (let sample = 0; sample <= 26; sample++) {
+      const progress = (entry.travel * sample) / 26;
+      const movingTransform = compose(transform, translation([progress, 0, 0]));
+      const movedHandle = worldBounds(corners(handle).map((point) => applyPoint(movingTransform, point)));
+      expect(movedHandle[0]![0]!).toBeGreaterThanOrEqual(slot.x[0] - 1e-6);
+      expect(movedHandle[0]![1]!).toBeLessThanOrEqual(portMax + 1e-6);
+      expect(Math.min(port.actualY![0]!, slot.section[0]) - outlineBottom).toBeGreaterThanOrEqual(0.5);
+    }
     expect(port.width).toBe(6.5);
     expect(port.width * 11.5).toBeCloseTo(74.75, 8);
     expect(port.height).toBe(3);
@@ -410,9 +449,10 @@ describe('procedural bolt carrier', () => {
     expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(3.25);
   });
 
-  it('keeps every non-AK carrier envelope and port at its approved dimensions', () => {
+  it('pins AK and the five non-AK carrier envelopes and ports at their current dimensions', () => {
     const unchanged = [
       { pattern: 'ar', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [-0.75, 1.25] },
+      { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
       { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, -3.5], portY: [-1, 1] },
       { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
@@ -430,6 +470,16 @@ describe('procedural bolt carrier', () => {
       ).toBe(expected.restX);
       expect(port.actualX, expected.pattern).toEqual(expected.portX);
       expect(port.actualY, expected.pattern).toEqual(expected.portY);
+    }
+  });
+
+  it('keeps the AK charging-slot window exclusive to the AK receiver section', () => {
+    for (const entry of travelCases.filter(({ pattern }) => pattern !== 'ak')) {
+      const receiver = resolve(assemblyFor(entry), gunDomain).defs.get('receiver')!;
+      expect(
+        receiver.solids.some(({ display }) => display?.mergeGroup === 'receiver-ak'),
+        entry.pattern,
+      ).toBe(false);
     }
   });
 
