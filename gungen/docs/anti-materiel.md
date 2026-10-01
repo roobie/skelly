@@ -121,13 +121,14 @@ manufacturer specification.
 
 | | Reference | In gungen |
 | --- | --- | --- |
-| Overall length | 48 to 57 in (1219 to 1448 mm; 106 to 126u) | 104u, about 1196 mm: stock L 22 + pad 1.5, receiver 23.5, barrel L 46, brake L 11 |
+| Overall length | 48 to 57 in (1219 to 1448 mm; 106 to 126u) | 102.5u, about 1179 mm: stock L 22 + pad 1.5, receiver 23.5, barrel L 46 starting 1.5u inside the receiver, brake L 11 |
 | Barrel length | 20 to 29 in (508 to 737 mm; 44 to 64u) | 46u, about 529 mm: the largest existing barrel class, at the short end of the range |
 | Magazine | detachable box, 5 or 10 rounds | `heavy-magazine`, 10 rounds, 13 x 4 x 10.75u (about 150 x 46 x 124 mm); derived below |
 | Features | folding carrying handle and bipod; detachable rear monopod under the butt; recoil pad; two-chamber muzzle brake; stamped upper and lower receiver; barrel recoils about 1 in | handle, bipod, monopod, pad, two-chamber brake, stamped-box shroud; recoil travel itself is not modelled |
 
-The rifle is about 2% shorter than the shortest published overall length (it was
-9% shorter before the receiver was lengthened for the .50 round). Closing the rest
+The rifle is about 3% shorter than the shortest published overall length (it was
+9% shorter before the receiver was lengthened for the .50 round, and 2% before the
+barrel's breech was moved back into the receiver). Closing the rest
 would need a barrel class longer than `L`, which every family that reads
 `barrel.length` (handguard, tube, gas block) would have to learn. It was left out
 to keep existing families untouched.
@@ -182,10 +183,11 @@ long enough for the cartridge:
 | | Derivation | u | mm |
 | --- | --- | ---: | ---: |
 | Length | 1.25u behind the lower's rearmost frame (-22.25u), the margin the shared receiver leaves behind its lower | 23.5 | 270 |
-| Bolt face at rest | behind the barrel port by one case length plus 0.25u, up to the grid: 8.64 + 0.25, so a chambered case fits in front of it | -9.0 | -103.5 |
-| Carrier at rest | face at -9.0, the `barrett` carrier is 6u long, so its centre is 3u behind the face | -12.0 | -138 |
-| Carrier travel | parks the face 2.5u behind the magazine's rear wall (-14.5u) so the next round can rise | 8.0 | 92 |
-| Ejection port | one case length plus 0.25u at each end, up to the grid: 8.64 + 0.5 | 9.25 | 106.4 |
+| Bolt face at rest | over the magazine's front face (-8.0 well centre + 6.5 half depth) | -1.5 | -17 |
+| Barrel port (breech) | at the bolt face: the barrel reaches back 1.5u into the receiver through a ring at the front face, so the chamber starts at the bolt and the 8.64u case lies in the barrel | -1.5 | -17 |
+| Carrier at rest | face at -1.5, the `barrett` carrier is 6u long, so its centre is 3u behind the face | -4.5 | -52 |
+| Carrier travel | back until the face is 2.5u behind the magazine's rear wall (-14.5u), at -17.0, so the next round can rise: 17.0 - 1.5 | 15.5 | 178 |
+| Ejection port | one case length plus 0.25u at each end, up to the grid: 8.64 + 0.5; front edge 0.25u ahead of the bolt face (-1.25, the well's front face), rear edge at -10.5 | 9.25 | 106.4 |
 
 The rail has 11 slots (the shared receiver's 7), starting 1.5u in from the rear face. The sight is on
 slot 5 and the carry handle on slot 8, which puts both at the same stations (x = -12 and -6) as before.

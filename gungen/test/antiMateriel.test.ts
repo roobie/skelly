@@ -79,18 +79,29 @@ describe('.50 BMG magazine, well and action', () => {
     expect(HEAVY_GRIP_MOUNT_PROFILE).toEqual(GRIP_MOUNT_PROFILE);
   });
 
-  it('gives the bolt room for the round: a chambered case ahead of the face, a port longer than the case, a park behind the magazine', () => {
+  it('puts the action over the magazine: bolt face and ejection port front at its front face, breech at the bolt', () => {
+    const [barrelX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
+    const [wellX] = lower.ports.find(({ id }) => id === 'magazine')!.pos;
+    const magazineFront = wellX + HEAVY_MAGAZINE_DEPTH / 2;
+    const carrier = family('bolt-carrier').build({ pattern: 'barrett' });
+    const carrierFront = Math.max(...carrier.solids.map((solid) => bounds(solid).max[0]));
+    const [restX] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
+    const ejection = bounds({ id: 'e', kind: 'box', box: receiver.keepOuts.find(({ id }) => id === 'ejection')!.box });
+    expect(restX + carrierFront).toBe(magazineFront);
+    expect(barrelX).toBe(magazineFront);
+    expect(ejection.max[0] - magazineFront).toBeCloseTo(0.25);
+  });
+
+  it('gives the bolt room for the round: a port longer than the case, a park behind the magazine', () => {
     const carrier = family('bolt-carrier').build({ pattern: 'barrett' });
     const carrierX = [
       Math.min(...carrier.solids.map((solid) => bounds(solid).min[0])),
       Math.max(...carrier.solids.map((solid) => bounds(solid).max[0])),
     ] as const;
-    const [restX] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
     const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
     const travel = receiver.keepOuts.find(({ id }) => id === 'bolt-travel')!;
     const parkedX = travel.box.center[0] - travel.box.half[0];
     const magazineRearWall = lower.ports.find(({ id }) => id === 'magazine')!.pos[0] - HEAVY_MAGAZINE_DEPTH / 2;
-    expect(-(restX + carrierX[1])).toBeGreaterThanOrEqual(BMG_CASE_LENGTH_U);
     expect(2 * ejection.box.half[0]).toBeGreaterThan(BMG_CASE_LENGTH_U);
     expect(parkedX + carrierX[1]).toBeLessThan(magazineRearWall);
     expect(parkedX + carrierX[0]).toBeGreaterThanOrEqual(-HEAVY_RECEIVER_LENGTH);

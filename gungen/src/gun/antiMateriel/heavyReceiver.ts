@@ -2,7 +2,8 @@ import { boxFromMinMax } from '../../core/geometry.ts';
 import type { KeepOut, PartDef, PartFamily, PortDef, Solid } from '../../core/schema.ts';
 import { BMG_CASE_LENGTH_U, ceilTo } from './cartridge.ts';
 import { box, choice, NEG_X, NEG_Y, X, Y } from './common.ts';
-import { HEAVY_LOWER_REAR_X } from './heavyLower.ts';
+import { HEAVY_LOWER_REAR_X, HEAVY_WELL_CENTER_X } from './heavyLower.ts';
+import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';
 
 /**
  * The action body for the .50 rifle: the shared `receiver`'s box shell and port layout (front face at x = 0,
@@ -10,18 +11,24 @@ import { HEAVY_LOWER_REAR_X } from './heavyLower.ts';
  * `receiver` role and takes `action: auto`, `feed: box`, as `bolt-carrier` and the `feed-match` rule read them.
  *
  * Lengths follow the .50 BMG case (cartridge.ts), not the shared receiver's 16u:
- * - the bolt face stands one case length plus 0.25u behind the barrel port, rounded to the grid, so a chambered
- *   round fits in front of it;
+ * - the bolt face rests over the magazine's front face, as on the real rifle where the action sits over the
+ *   magazine. The barrel's breech reaches back to the bolt face (the barrel port is there, not at the front
+ *   face), so the chamber, one case long, starts at the bolt and runs forward through the front ring into the
+ *   barrel;
  * - the bolt carrier (a 6u block, as `bolt-carrier`'s barrett pattern builds it) rests with its face there and
- *   travels 8u back, which parks its face 2.5u behind the magazine's rear wall, so the next round can rise;
- * - the ejection port is one case length plus 0.25u margins at each end, so a spent case can leave sideways;
+ *   travels back until its face is 2.5u behind the magazine's rear wall, so the next round can rise;
+ * - the ejection port is one case length plus 0.25u margins at each end, so a spent case can leave sideways; its
+ *   front edge is 0.25u ahead of the bolt face, which puts it over the well's front face;
  * - the receiver ends 1.25u behind the lower's frame, the margin the shared receiver leaves behind its lower.
  */
 const CARRIER_HALF_LENGTH = 3;
 const CARRIER_Y = 1;
-const BOLT_FACE_X = -ceilTo(BMG_CASE_LENGTH_U + 0.25, 0.25);
+const MAGAZINE_FRONT_X = HEAVY_WELL_CENTER_X + HEAVY_MAGAZINE_DEPTH / 2;
+const MAGAZINE_REAR_X = HEAVY_WELL_CENTER_X - HEAVY_MAGAZINE_DEPTH / 2;
+const BOLT_FACE_X = MAGAZINE_FRONT_X;
 const CARRIER_REST_X = BOLT_FACE_X - CARRIER_HALF_LENGTH;
-const BOLT_TRAVEL = 8;
+const BOLT_PARK_CLEARANCE = 2.5;
+const BOLT_TRAVEL = BOLT_FACE_X - (MAGAZINE_REAR_X - BOLT_PARK_CLEARANCE);
 const PORT_MARGIN = 0.25;
 const PORT_LENGTH = ceilTo(BMG_CASE_LENGTH_U + 2 * PORT_MARGIN, 0.25);
 const PORT_FRONT_X = BOLT_FACE_X + PORT_MARGIN;
@@ -40,8 +47,8 @@ const RAIL_SLOT_PITCH = 2;
 const RAIL_START_X = 1.5 - HEAVY_RECEIVER_LENGTH;
 const RAIL_SLOTS = (-2 - RAIL_START_X) / RAIL_SLOT_PITCH + 1;
 
-/** The charging handle rides on the side opposite the ejection port, a carrier-length ahead of the bolt's rest. */
-const HANDLE_X: readonly [number, number] = [CARRIER_REST_X + 3, CARRIER_REST_X + 4.5];
+/** The charging handle rides on the side opposite the ejection port, ahead of the carrier's centre at rest. */
+const HANDLE_X: readonly [number, number] = [CARRIER_REST_X + 1.5, CARRIER_REST_X + 3];
 
 export const heavyReceiver: PartFamily = {
   name: 'heavy-receiver',
@@ -60,10 +67,17 @@ export const heavyReceiver: PartFamily = {
         [rear, -INNER_HALF_HEIGHT, -INNER_HALF_WIDTH],
         [rear + WALL, INNER_HALF_HEIGHT, INNER_HALF_WIDTH],
       ),
+      // A ring at the front face that the barrel's breech passes through: the walls and these two strips frame
+      // a square opening as wide as the interior, big enough for the heaviest barrel profile.
       box(
-        'receiver-shell-front',
-        [-WALL, -INNER_HALF_HEIGHT, -INNER_HALF_WIDTH],
+        'receiver-shell-front-top',
+        [-WALL, INNER_HALF_WIDTH, -INNER_HALF_WIDTH],
         [0, INNER_HALF_HEIGHT, INNER_HALF_WIDTH],
+      ),
+      box(
+        'receiver-shell-front-bottom',
+        [-WALL, -INNER_HALF_HEIGHT, -INNER_HALF_WIDTH],
+        [0, -INNER_HALF_WIDTH, INNER_HALF_WIDTH],
       ),
       box(
         'receiver-shell-side-far',
@@ -93,7 +107,7 @@ export const heavyReceiver: PartFamily = {
         mount: 'barrel',
         gender: 'female',
         size: params.bore ?? 'L',
-        pos: [0, 0, 0],
+        pos: [BOLT_FACE_X, 0, 0],
         normal: X,
         up: Y,
         required: true,
