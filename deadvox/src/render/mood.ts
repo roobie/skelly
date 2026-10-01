@@ -14,6 +14,7 @@
 
 import {
   type Camera,
+  Color,
   HalfFloatType,
   type Material,
   Mesh,
@@ -111,6 +112,8 @@ export class Mood {
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
+  private crackOn = false;
+  private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
   private readonly drawPass = new DrawPass();
   private bloomPass: UnrealBloomPass | undefined;
@@ -187,6 +190,33 @@ export class Mood {
    * when post is on, onto the screen when it's off.
    */
   render(drawHands: () => void): void {
+    // Crack check: only the clear colour changes (the fog on geometry keeps the sky colour), so
+    // magenta shows exactly where no geometry covered the sample. Post-on scales it like the sky.
+    const { background } = this.scene;
+    if (this.crackOn) {
+      this.crackColor.setRGB(1, 0, 1);
+      if (this.state.post) {
+        this.crackColor.multiplyScalar(targetColorScale(this.renderer.toneMappingExposure));
+      }
+      this.scene.background = this.crackColor;
+    }
+    try {
+      this.draw(drawHands);
+    } finally {
+      this.scene.background = background;
+    }
+  }
+
+  /** Debug crack check (see `render`). */
+  get crackCheck(): boolean {
+    return this.crackOn;
+  }
+
+  setCrackCheck(on: boolean): void {
+    this.crackOn = on;
+  }
+
+  private draw(drawHands: () => void): void {
     if (!this.state.post) {
       this.renderer.render(this.scene, this.camera);
       drawHands();

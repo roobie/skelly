@@ -8,6 +8,7 @@ import {
   parseLookParams,
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
+import { hotCheckUniform } from '../src/render/hotCheck.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 
@@ -37,7 +38,17 @@ describe('look URL parameters', () => {
       grade: 1,
       fogginess: 0.2,
       shadows: { sun: true, torch: true, distance: 40 },
+      crackCheck: false,
+      hotCheck: false,
     });
+  });
+
+  it('reads the diagnostic checks only from "1", and writes them only when on', () => {
+    expect(parse('crackcheck=1&hotcheck=1')).toMatchObject({ crackCheck: true, hotCheck: true });
+    expect(parse('crackcheck=0&hotcheck=true')).toMatchObject({ crackCheck: false, hotCheck: false });
+    expect(write('debug=1&crackcheck=1&hotcheck=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, crackCheck: true })).toBe('debug=1&crackcheck=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, hotCheck: true })).toBe('debug=1&hotcheck=1');
   });
 
   it('round-trips a state', () => {
@@ -53,9 +64,11 @@ describe('look URL parameters', () => {
       grade: 0.6,
       fogginess: 0.7,
       shadows: { sun: false, torch: false, distance: 64 },
+      crackCheck: true,
+      hotCheck: true,
     };
     expect(write('', state)).toBe(
-      'tone=none&exposure=1.4&srgb=0&patterns=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7&sunshadow=0&torchshadow=0&shadowdist=64',
+      'tone=none&exposure=1.4&srgb=0&patterns=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7&sunshadow=0&torchshadow=0&shadowdist=64&crackcheck=1&hotcheck=1',
     );
     expect(parse(write('', state))).toEqual(state);
   });
@@ -192,6 +205,18 @@ describe('restoring look controls from URL state', () => {
     expect(look.moodState).toEqual({ post: false, bloom: false, film: false, grade: 0.5 });
     expect(mood.grade).toBe(0.5);
     expect(weather.fogginess).toBe(0.6);
+  });
+
+  it('takes the parsed diagnostic checks and toggles them', () => {
+    const mood = new FakeMood();
+    const look = new LookControls(renderer, meshes, mood, { weather: { fogginess: 0.2 }, shadows: new FakeShadows() });
+    look.restore(parse('crackcheck=1&hotcheck=1'));
+    expect([look.crackCheck, mood.crackCheck, look.hotCheck, hotCheckUniform.value]).toEqual([true, true, true, 1]);
+    look.toggleCrackCheck();
+    look.toggleHotCheck();
+    expect([look.crackCheck, look.hotCheck, hotCheckUniform.value]).toEqual([false, false, 0]);
+    look.restore(parse(''));
+    expect([look.crackCheck, look.hotCheck]).toEqual([false, false]);
   });
 
   it('takes the parsed shadow settings', () => {

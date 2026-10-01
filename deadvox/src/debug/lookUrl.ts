@@ -16,6 +16,8 @@
 //   sunshadow=0                  sun shadows off (0); omitted when on, which is the default
 //   torchshadow=0                flashlight shadows off (Home); omitted when on, which is the default
 //   shadowdist=<16..96>          the sun's shadow distance in metres (PageUp steps 24, 40, 64); omitted for 40
+//   crackcheck=1                 background drawn magenta, fog on geometry unchanged (End); omitted when off
+//   hotcheck=1                   NaN / negative / over-bright lit fragments drawn cyan (PageDown); omitted when off
 //
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
@@ -39,6 +41,10 @@ export interface LookUrlState extends LookState, MoodState {
   shadows: ShadowState;
   /** The debug game freeze (M). */
   freeze: boolean;
+  /** Background drawn magenta, to find holes in the world (End). */
+  crackCheck: boolean;
+  /** Hot fragments drawn cyan (PageDown). */
+  hotCheck: boolean;
 }
 
 export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
@@ -47,6 +53,8 @@ export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
   fogginess: DEFAULT_FOGGINESS,
   shadows: DEFAULT_SHADOWS,
   freeze: false,
+  crackCheck: false,
+  hotCheck: false,
 };
 
 const LOOK_PARAMS = [
@@ -63,6 +71,8 @@ const LOOK_PARAMS = [
   'sunshadow',
   'torchshadow',
   'shadowdist',
+  'crackcheck',
+  'hotcheck',
 ] as const;
 
 /** A number parameter, NaN when absent, blank or unparseable (Number('') is 0, which would pass as a value). */
@@ -93,6 +103,8 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
       distance: clampShadowDistance(shadowDistance),
     },
     freeze: params.get('freeze') === '1',
+    crackCheck: params.get('crackcheck') === '1',
+    hotCheck: params.get('hotcheck') === '1',
   };
 };
 
@@ -141,7 +153,18 @@ export const writeLookParams = (params: URLSearchParams, state: LookUrlState): U
   if (state.shadows.distance !== DEFAULT_SHADOWS.distance) {
     next.set('shadowdist', String(state.shadows.distance));
   }
+  writeCheckParams(next, state);
   return next;
+};
+
+/** The diagnostic checks are written only when on. */
+const writeCheckParams = (next: URLSearchParams, { crackCheck, hotCheck }: LookUrlState): void => {
+  if (crackCheck) {
+    next.set('crackcheck', '1');
+  }
+  if (hotCheck) {
+    next.set('hotcheck', '1');
+  }
 };
 
 /** `href` with the look parameters set from `state`; other parameters, path and hash are kept. */

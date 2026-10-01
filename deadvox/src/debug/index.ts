@@ -308,6 +308,22 @@ export const createDebugActions = ({
     detail: () => `${look.shadowState.distance} m`,
     run: () => look.stepShadowDistance(),
   },
+  // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
+  // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments cyan.
+  {
+    code: 'End',
+    key: 'End',
+    label: 'Crack check (magenta background)',
+    state: () => look.crackCheck,
+    run: () => look.toggleCrackCheck(),
+  },
+  {
+    code: 'PageDown',
+    key: 'PgDn',
+    label: 'Hot-pixel check (cyan)',
+    state: () => look.hotCheck,
+    run: () => look.toggleHotCheck(),
+  },
   // Fogginess is weather, not mood; a weather system will drive it. 0 is clear (no height fog either).
   {
     code: 'KeyL',
@@ -465,6 +481,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     freeze: gameFrozen,
     fogginess: look.fogginess,
     shadows: look.shadowState,
+    crackCheck: look.crackCheck,
+    hotCheck: look.hotCheck,
     ...look.moodState,
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */

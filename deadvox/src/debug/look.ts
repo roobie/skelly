@@ -6,6 +6,7 @@ import type { WebGLRenderer } from 'three';
 import { clampExposure, clampGrade, type LookState, type MoodState, type ShadowState } from '../core/mood.ts';
 import { clampFogginess, type Weather } from '../core/weather.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
+import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';
 import { applyLook, TONE_MODES } from '../render/look.ts';
 import type { Mood } from '../render/mood.ts';
 import type { Shadows } from '../render/shadows.ts';
@@ -16,7 +17,17 @@ const FOGGINESS_STEP = 0.1;
 
 type MoodControls = Pick<
   Mood,
-  'post' | 'bloom' | 'film' | 'grade' | 'restore' | 'setPost' | 'setBloom' | 'setFilm' | 'setGrade'
+  | 'post'
+  | 'bloom'
+  | 'film'
+  | 'grade'
+  | 'crackCheck'
+  | 'restore'
+  | 'setPost'
+  | 'setBloom'
+  | 'setFilm'
+  | 'setGrade'
+  | 'setCrackCheck'
 >;
 
 type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setSun' | 'setTorch' | 'stepDistance'>;
@@ -134,7 +145,9 @@ export class LookControls {
   }
 
   /** Applies a state read from the URL; an unknown tone key leaves the mode alone. */
-  restore(state: LookState & MoodState & { fogginess: number; shadows: ShadowState }): void {
+  restore(
+    state: LookState & MoodState & { fogginess: number; shadows: ShadowState; crackCheck: boolean; hotCheck: boolean },
+  ): void {
     applyLook(this.renderer, this.meshes, state);
     const mode = TONE_MODES.findIndex((candidate) => candidate.key === state.tone);
     if (mode >= 0) {
@@ -143,6 +156,26 @@ export class LookControls {
     this.weather.fogginess = clampFogginess(state.fogginess);
     this.mood.restore({ post: state.post, bloom: state.bloom, film: state.film, grade: state.grade });
     this.shadows.restore(state.shadows);
+    this.mood.setCrackCheck(state.crackCheck);
+    setHotCheck(state.hotCheck);
+  }
+
+  /** Background drawn magenta: magenta pixels on the world are holes that show it. */
+  get crackCheck(): boolean {
+    return this.mood.crackCheck;
+  }
+
+  toggleCrackCheck(): void {
+    this.mood.setCrackCheck(!this.mood.crackCheck);
+  }
+
+  /** Lit fragments that are NaN, negative or over-bright drawn cyan. */
+  get hotCheck(): boolean {
+    return hotCheckOn();
+  }
+
+  toggleHotCheck(): void {
+    setHotCheck(!hotCheckOn());
   }
 
   toggleLinearColors(): void {

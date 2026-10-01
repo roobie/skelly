@@ -6,6 +6,11 @@ export class FakeMood {
   bloom = true;
   film = true;
   grade = 1;
+  crackCheck = false;
+
+  setCrackCheck(on: boolean): void {
+    this.crackCheck = on;
+  }
 
   restore(state: MoodState): void {
     Object.assign(this, state);

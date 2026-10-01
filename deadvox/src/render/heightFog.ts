@@ -4,6 +4,7 @@
 // post-processing. The parameters are one shared set of uniforms, driven by `Mood`.
 
 import { Color, type IUniform, type Material, Vector3, type WebGLProgramParametersWithUniforms } from 'three';
+import { patchHotCheck } from './hotCheck.ts';
 
 /** Mist is at full density at and below this height (metres); terrain spans about 8 to 56 m. */
 export const HEIGHT_FOG_BASE_M = 16;
@@ -51,6 +52,8 @@ export const patchHeightFog = (shader: WebGLProgramParametersWithUniforms): void
   shader.fragmentShader = shader.fragmentShader
     .replace('#include <fog_pars_fragment>', `#include <fog_pars_fragment>\n${FRAGMENT_PARS}`)
     .replace('#include <fog_fragment>', `${FRAGMENT_MIX}\n#include <fog_fragment>`);
+  // Every world material that gets the mist also gets the debug hot-pixel check (render/hotCheck.ts).
+  patchHotCheck(shader);
 };
 
 /** A built-in material that has no shader patch of its own, fogged with the mist. */

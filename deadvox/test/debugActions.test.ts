@@ -39,6 +39,8 @@ describe('debug action table', () => {
       ['0', 'Sun shadows'],
       ['Home', 'Flashlight shadows'],
       ['PgUp', 'Sun shadow distance'],
+      ['End', 'Crack check (magenta background)'],
+      ['PgDn', 'Hot-pixel check (cyan)'],
       ['L', 'Fogginess −'],
       ['/', 'Fogginess +'],
       ['[', 'Grade −'],
