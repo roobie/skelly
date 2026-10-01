@@ -1,6 +1,5 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -27,8 +26,6 @@ export interface DebugHooks {
    * turning critical, noise) still end it.
    */
   readonly skipGameHours: (hours: number) => void;
-  /** Uses an item in your hands as F or its quickbar key would; switches a light on or off. */
-  readonly useItem: (item: Item) => string | undefined;
 }
 
 export interface DebugNoclipStep {

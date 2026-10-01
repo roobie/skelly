@@ -275,7 +275,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     spawnItem,
     compress: () => compress(),
     skipGameHours: (hours) => skipGameHours(hours),
-    useItem: (item) => survival.use(item),
   });
 
   let started = false;

@@ -5,8 +5,6 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { toggleLight } from '../src/core/lights.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -118,46 +116,33 @@ describe('debug starting equipment', () => {
     expect(launchImpulse).toBe(10);
   });
 
-  it('puts a switched-on flashlight in the left hand of a fresh debug game, leaving the right free', () => {
+  it('puts a switched-off flashlight in the left hand of a fresh debug game, leaving the right free', () => {
     const inventory = new Inventory(registry);
     startingLoadout(inventory);
-    const switched: Item[] = [];
-    equipDebugStartLight({
-      inventory,
-      debugMode: true,
-      newGame: true,
-      switchOn: (item) => {
-        switched.push(item);
-        return toggleLight(registry, item);
-      },
-    });
+    equipDebugStartLight({ inventory, debugMode: true, newGame: true });
     const light = inventory.hands.left;
     expect(light?.type).toBe('flashlight');
-    expect(light?.on).toBe(true);
-    expect(switched).toEqual([light]);
+    expect(light?.on).toBeFalsy();
     expect(inventory.hands.right).toBeUndefined();
   });
 
   it('does not replace occupied hands or add equipment to a restored or non-debug game', () => {
-    const switchOn = () => {
-      throw new Error('nothing should be switched on');
-    };
     const inventory = new Inventory(registry);
     const bat = inventory.create('baseball_bat');
     expect(inventory.add(bat, { kind: 'hand', side: 'right' })).toBe(true);
-    equipDebugStartLight({ inventory, debugMode: true, newGame: true, switchOn });
+    equipDebugStartLight({ inventory, debugMode: true, newGame: true });
     expect(inventory.hands.right).toBe(bat);
     expect(inventory.hands.left).toBeUndefined();
 
     const restored = new Inventory(registry);
     const savedLight = restored.create('flashlight');
     expect(restored.add(savedLight, { kind: 'hand', side: 'right' })).toBe(true);
-    equipDebugStartLight({ inventory: restored, debugMode: true, newGame: false, switchOn });
+    equipDebugStartLight({ inventory: restored, debugMode: true, newGame: false });
     expect(restored.hands.right).toBe(savedLight);
     expect(restored.hands.left).toBeUndefined();
 
     const nonDebug = new Inventory(registry);
-    equipDebugStartLight({ inventory: nonDebug, debugMode: false, newGame: true, switchOn });
+    equipDebugStartLight({ inventory: nonDebug, debugMode: false, newGame: true });
     expect(nonDebug.hands).toEqual({});
   });
 

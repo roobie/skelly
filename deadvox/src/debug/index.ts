@@ -2,7 +2,6 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -287,26 +286,20 @@ export const formatMeleeResult = (result: MeleeResult): string => {
 
 const DEBUG_START_LIGHT = 'flashlight';
 
-/** A fresh debug game starts with a lit flashlight in the left hand, which leaves the right free. */
+/** A fresh debug game starts with a switched-off flashlight in the left hand, which leaves the right free. */
 export const equipDebugStartLight = ({
   inventory,
   debugMode,
   newGame,
-  switchOn,
 }: {
   inventory: Inventory;
   debugMode: boolean;
   newGame: boolean;
-  /** Uses the light as the player would, which is what makes it the lit one. */
-  switchOn: (light: Item) => string | undefined;
 }): void => {
   if (!(debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
     return;
   }
-  const light = inventory.create(DEBUG_START_LIGHT);
-  if (inventory.add(light, { kind: 'hand', side: 'left' })) {
-    switchOn(light);
-  }
+  inventory.add(inventory.create(DEBUG_START_LIGHT), { kind: 'hand', side: 'left' });
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
@@ -314,7 +307,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     inventory: hooks.inventory,
     debugMode: hooks.engine.config.debug,
     newGame: hooks.newGame,
-    switchOn: hooks.useItem,
   });
   const host = document.body;
   const aimOverlay = new DebugAimOverlay(hooks.engine.scene, hooks.engine.config.scale.blockSize);
