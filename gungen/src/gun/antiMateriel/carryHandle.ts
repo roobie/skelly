@@ -1,6 +1,6 @@
 import { boxFromMinMax } from '../../core/geometry.ts';
-import type { ExtrudedPolygonSolid, KeepOut, PartDef, PartFamily, Vec2 } from '../../core/schema.ts';
-import { NEG_X, NEG_Y, octagonPrism, X, Y, Z } from './common.ts';
+import type { ExtrudedPolygonSolid, KeepOut, ParamSpec, PartDef, PartFamily, Vec2 } from '../../core/schema.ts';
+import { choice, NEG_X, NEG_Y, octagonPrism, X, Y, Z } from './common.ts';
 
 /**
  * A carry handle in three parts, to the left of the rifle (-Z; the side is fixed, not a param): a trunnion block
@@ -32,17 +32,22 @@ export const TRUNNION_HALF_LENGTH = 2;
 
 /**
  * The trunnion's section across the bore (profile axes Y, Z): the shroud wall at z = 0, the block reaching 2u out to
- * the left. Its top face is the plane through the strut's port perpendicular to the strut's axis, so the strut
+ * the left, symmetric about the bore's horizontal plane so it is the same in both poses. Each sloped face is the
+ * plane through a strut port (1.5, -1) or (-1.5, -1) perpendicular to the strut's axis in that pose, so the strut
  * stands square on it: from the wall (2.25, 0) out to (0.75, -2) along the direction (0.6, 0.8), 1.25u either side of
- * the port at (1.5, -1). Counter-clockwise, convex.
+ * the port (the carry pose's upper face, mirrored for the stowed pose's lower one). Counter-clockwise, convex.
  */
 const TRUNNION_PROFILE: readonly Vec2[] = [
-  [-1.5, 0],
-  [-1.5, -2],
+  [-2.25, 0],
+  [-0.75, -2],
   [0.75, -2],
   [2.25, 0],
 ];
-const STRUT_FOOT: readonly [number, number, number] = [0, 1.5, -1];
+const POSES = ['carry', 'stowed'] as const;
+/** +1 for the raised `carry` pose, -1 for the mirrored `stowed` pose: the sign of the strut's rise. */
+const rise = (pose: string | undefined): 1 | -1 => (pose === 'stowed' ? -1 : 1);
+/** The strut and the bar take the pose of whatever they are mounted on, so the design sets it on the trunnion only. */
+const inheritedPose: ParamSpec = { values: POSES, default: 'carry', from: [{ port: 'base', param: 'pose' }] };
 
 export const BAR_FLAT_RADIUS = 1.25;
 export const BAR_HALF_LENGTH = 6;
@@ -58,12 +63,11 @@ const HAND_FRONT_X = 3;
 const HAND_CLEARANCE = 2;
 const HAND_HALF_SPAN = BAR_FLAT_RADIUS + HAND_CLEARANCE;
 
-const strutNormal = [0, STRUT_UP, -STRUT_LEFT] as const;
-
 export const handleTrunnion: PartFamily = {
   name: 'handle-trunnion',
-  params: {},
-  build(): PartDef {
+  params: { pose: choice(...POSES) },
+  build(params): PartDef {
+    const sign = rise(params.pose);
     const block: ExtrudedPolygonSolid = {
       id: 'block',
       kind: 'extruded-polygon',
@@ -76,7 +80,14 @@ export const handleTrunnion: PartFamily = {
       solids: [block],
       ports: [
         { id: 'base', mount: 'trunnion', gender: 'male', pos: [0, 0, 0], normal: Z, up: Y, required: true },
-        { id: 'strut', mount: 'handle-strut', gender: 'female', pos: STRUT_FOOT, normal: strutNormal, up: X },
+        {
+          id: 'strut',
+          mount: 'handle-strut',
+          gender: 'female',
+          pos: [0, sign * 1.5, -1],
+          normal: [0, sign * STRUT_UP, -STRUT_LEFT],
+          up: X,
+        },
       ],
       keepOuts: [],
       axes: [],
@@ -86,20 +97,21 @@ export const handleTrunnion: PartFamily = {
 
 export const handleStrut: PartFamily = {
   name: 'handle-strut',
-  params: {},
-  build(): PartDef {
+  params: { pose: inheritedPose },
+  build(params): PartDef {
     return {
       family: 'carry-handle',
       solids: [octagonPrism('strut', STRUT_FLAT_RADIUS, [-STRUT_SINK_BASE, STRUT_LENGTH + STRUT_SINK_TOP])],
       ports: [
         { id: 'base', mount: 'handle-strut', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        // Tilted back by the strut's angle: the bar mounted here comes out level.
+        // Tilted back by the strut's angle: the bar mounted here comes out level. Stowed, the strut points down and
+        // the bar must sit on its far side, so the port leans the other way (world normal down instead of up).
         {
           id: 'top',
           mount: 'handle-bar',
           gender: 'female',
           pos: [STRUT_LENGTH, 0, 0],
-          normal: [STRUT_UP, 0, -STRUT_LEFT],
+          normal: [STRUT_UP, 0, -rise(params.pose) * STRUT_LEFT],
           up: Y,
         },
       ],
@@ -111,8 +123,9 @@ export const handleStrut: PartFamily = {
 
 export const handleBar: PartFamily = {
   name: 'handle-bar',
-  params: {},
-  build(): PartDef {
+  params: { pose: inheritedPose },
+  build(params): PartDef {
+    const sign = rise(params.pose);
     const handRoom: KeepOut = {
       id: 'hand-room',
       kind: 'hand-room',
@@ -129,8 +142,9 @@ export const handleBar: PartFamily = {
           id: 'base',
           mount: 'handle-bar',
           gender: 'male',
-          pos: [BAR_STRUT_X, -BAR_FLAT_RADIUS, BAR_STRUT_Z],
-          normal: NEG_Y,
+          // Carried, the strut meets the bar's underside; stowed, its top.
+          pos: [BAR_STRUT_X, -sign * BAR_FLAT_RADIUS, BAR_STRUT_Z],
+          normal: sign > 0 ? NEG_Y : Y,
           up: X,
           required: true,
         },

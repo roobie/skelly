@@ -456,7 +456,8 @@ export const antiMateriel: Template = {
     { id: 'sight', family: 'sight', chance: 0.9 },
     // The handle's three parts come together or not at all, so they are always present (a slot has no way to
     // depend on another slot's chance, and a strut without its trunnion would leave required ports empty).
-    { id: 'trunnion', family: 'handle-trunnion' },
+    // Only the trunnion carries the pose; the strut and bar inherit it.
+    { id: 'trunnion', family: 'handle-trunnion', params: { pose: ['carry', 'stowed'] } },
     { id: 'strut', family: 'handle-strut' },
     { id: 'bar', family: 'handle-bar' },
     { id: 'bipod', family: 'bipod', params: { legs: ['M', 'L'], pose: ['folded', 'deployed'] } },

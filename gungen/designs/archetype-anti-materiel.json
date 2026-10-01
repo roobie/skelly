@@ -16,7 +16,7 @@
       "magazine": { "family": "heavy-magazine" },
       "stock": { "family": "recoil-stock", "params": { "length": "L" } },
       "sight": { "family": "sight" },
-      "trunnion": { "family": "handle-trunnion" },
+      "trunnion": { "family": "handle-trunnion", "params": { "pose": "stowed" } },
       "strut": { "family": "handle-strut" },
       "bar": { "family": "handle-bar" },
       "bipod": { "family": "bipod", "params": { "legs": "L", "pose": "folded" } },

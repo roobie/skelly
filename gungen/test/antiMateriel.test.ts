@@ -48,7 +48,7 @@ import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts'
 import { STAND_IN_SCOPE_ENVELOPE } from '../src/gun/antiMateriel/scopeEnvelope.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { EJECTION_PORT_MARGIN_U, FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
-import { loadFixture, variant } from './helpers.ts';
+import { variant } from './helpers.ts';
 
 const family = (key: string): PartFamily => FAMILIES[key]!;
 const solidById = (def: PartDef, id: string): Solid => {
@@ -294,8 +294,17 @@ describe('bipod', () => {
   });
 });
 
-describe('carry handle', () => {
-  const resolved = resolve(loadFixture('archetype-anti-materiel'), gunDomain);
+/** The anti-materiel fixture with the handle in one pose and the bipod in one pose (its legs L, as published). */
+const withHandlePose = (pose: 'carry' | 'stowed', bipodPose = 'folded') =>
+  variant('archetype-anti-materiel', (draft) => {
+    draft.parts.trunnion!.params = { pose };
+    draft.parts.bipod!.params!.pose = bipodPose;
+  });
+
+describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
+  // +1 when the strut rises (carry), -1 when it hangs (stowed).
+  const sign = pose === 'stowed' ? -1 : 1;
+  const resolved = resolve(withHandlePose(pose), gunDomain);
   const placed = (id: string) => resolved.placed.get(id)!;
   const def = (id: string) => resolved.defs.get(id)!;
   const onGrid = (n: number) => Math.abs(n / 0.25 - Math.round(n / 0.25)) < 1e-9;
@@ -326,12 +335,18 @@ describe('carry handle', () => {
     return Math.max(...values) - Math.min(...values);
   };
 
-  it('has a diagonal strut: up and to the left at the stated angle in world space, not vertical or horizontal', () => {
+  it('passes the pose to the strut and the bar from the trunnion alone', () => {
+    for (const id of ['strut', 'bar']) {
+      expect(resolved.params.get(id)!.pose).toMatchObject({ value: pose, source: 'inherited' });
+    }
+  });
+
+  it('has a diagonal strut: up (carry) or down (stowed) and to the left at the stated angle, not vertical or horizontal', () => {
     const axis = applyDir(placed('strut'), XAxis);
     expect(axis[0]).toBeCloseTo(0);
-    expect(axis[1]).toBeGreaterThan(0);
+    expect(sign * axis[1]).toBeGreaterThan(0);
     expect(axis[2]).toBeLessThan(0);
-    expect(angleBetween(axis, [0, 1, 0])).toBeCloseTo(STRUT_TILT_DEGREES, 6);
+    expect(angleBetween(axis, [0, sign, 0])).toBeCloseTo(STRUT_TILT_DEGREES, 6);
     expect(STRUT_TILT_DEGREES).toBeCloseTo(36.87, 2);
   });
 
@@ -339,7 +354,7 @@ describe('carry handle', () => {
     const end = applyPoint(placed('strut'), [STRUT_LENGTH, 0, 0]);
     const barPort = applyPoint(placed('bar'), def('bar').ports.find(({ id }) => id === 'base')!.pos);
     expect(length(sub(end, barPort))).toBeLessThan(0.01);
-    expect(inShroud(end).map((n) => Math.round(n * 1e6) / 1e6)).toEqual([TRUNNION_SETBACK, 7.5, -7.5]);
+    expect(inShroud(end).map((n) => Math.round(n * 1e6) / 1e6)).toEqual([TRUNNION_SETBACK, sign * 7.5, -7.5]);
     expect(inShroud(applyPoint(placed('bar'), [0, 0, 0])).every(onGrid)).toBe(true);
     // It overhangs the shroud's wall by more than a fist's width of 4u.
     expect(inShroud(end)[2]).toBeLessThan(-(SHROUD_HALF_WIDTH + 4));
@@ -367,10 +382,10 @@ describe('carry handle', () => {
     // The base cap lies inside the trunnion's section, below its top face (which is square to the strut).
     for (const point of baseCap) {
       const [, y, z] = applyPoint(invert(placed('trunnion')), point);
-      expect(y, 'base y').toBeLessThanOrEqual(2.25);
+      expect(sign * y, 'base y').toBeLessThanOrEqual(2.25);
       expect(z, 'base z').toBeGreaterThanOrEqual(-2);
       expect(z, 'base z').toBeLessThanOrEqual(0);
-      expect(STRUT_UP * y - STRUT_LEFT * z, 'below the top face').toBeLessThanOrEqual(1.8 + 1e-9);
+      expect(STRUT_UP * sign * y - STRUT_LEFT * z, 'below the top face').toBeLessThanOrEqual(1.8 + 1e-9);
     }
     // The top cap lies inside the bar's octagonal section.
     for (const point of topCap) {
@@ -436,8 +451,89 @@ describe('carry handle', () => {
     // The room reaches 2u beyond the bar's surface on every side.
     expect(room.box.half[1] - BAR_FLAT_RADIUS).toBeCloseTo(2);
     expect(room.box.half[2] - BAR_FLAT_RADIUS).toBeCloseTo(2);
-    const { issues } = validate(loadFixture('archetype-anti-materiel'), gunDomain);
-    expect(issues.filter(({ rule }) => rule === 'keep-out')).toEqual([]);
+    expect(validate(withHandlePose(pose), gunDomain).issues).toEqual([]);
+  });
+
+  it.each(['folded', 'deployed'])(
+    'clears the magazine, lower, grip, bolt carrier and the %s bipod by at least 0.25u, and the shroud but for its wall',
+    (bipodPose) => {
+      const other = resolve(withHandlePose(pose, bipodPose), gunDomain);
+      expect(validate(withHandlePose(pose, bipodPose), gunDomain).issues).toEqual([]);
+      const handleVolumes = ['trunnion', 'strut', 'bar'].flatMap((id) => {
+        const room = other.defs.get(id)!.keepOuts.find(({ id: keepOutId }) => keepOutId === 'hand-room');
+        const solids: Solid[] = [
+          ...other.defs.get(id)!.solids,
+          ...(room ? [{ id: room.id, kind: 'box' as const, box: room.box }] : []),
+        ];
+        return solids.map((solid) => ({ solid, transform: other.placed.get(id)! }));
+      });
+      for (const partId of ['magazine', 'lower', 'grip', 'bolt-carrier', 'bipod']) {
+        for (const theirs of other.defs.get(partId)!.solids) {
+          for (const { solid, transform } of handleVolumes) {
+            const gap = distanceWorld(worldSolid(other.placed.get(partId)!, theirs), worldSolid(transform, solid));
+            expect(gap, `${partId} ${theirs.id} to ${solid.id}`).toBeGreaterThanOrEqual(0.25 - 1e-9);
+          }
+        }
+      }
+    },
+  );
+});
+
+describe('carry handle, stowed pose', () => {
+  const resolved = resolve(withHandlePose('stowed'), gunDomain);
+  const inShroud = (id: string, point: Vec3): Vec3 =>
+    applyPoint(invert(resolved.placed.get('shroud')!), applyPoint(resolved.placed.get(id)!, point));
+
+  it('keeps the bar below the bore line and left of centre, out of the first-person view above the bore', () => {
+    const [grip] = resolved.defs.get('bar')!.solids;
+    const corners = (axis: 1 | 2) => {
+      const world = worldSolid(resolved.placed.get('bar')!, grip!);
+      if (!('vertices' in world)) {
+        throw new Error('the bar must be a prism');
+      }
+      return world.vertices.map((point) => point[axis]);
+    };
+    expect(Math.max(...corners(1))).toBeLessThan(0);
+    expect(Math.max(...corners(2))).toBeLessThan(0);
+    // The hand room hangs below the bore line too.
+    const room = resolved.defs.get('bar')!.keepOuts.find(({ id }) => id === 'hand-room')!;
+    expect(inShroud('bar', [0, room.box.center[1] + room.box.half[1], 0])[1]).toBeLessThan(0);
+  });
+
+  it('has the same trunnion block in both poses, symmetric about the horizontal plane: only its port differs', () => {
+    const carryBlock = family('handle-trunnion').build({ pose: 'carry' });
+    const stowedBlock = family('handle-trunnion').build({ pose: 'stowed' });
+    expect(stowedBlock.solids).toEqual(carryBlock.solids);
+    const [block] = stowedBlock.solids;
+    if (block?.kind !== 'extruded-polygon') {
+      throw new Error('the trunnion block must be a convex extrusion');
+    }
+    expect(validateExtrudedPolygon(block.profile, block.z, block.axis)).toBeUndefined();
+    const mirrored = block.profile.map(([y, z]) => `${-y},${z}`).sort();
+    expect(block.profile.map(([y, z]) => `${y},${z}`).sort()).toEqual(mirrored);
+    const strutPort = (pose: string) =>
+      family('handle-trunnion')
+        .build({ pose })
+        .ports.find(({ id }) => id === 'strut')!;
+    expect(strutPort('carry').normal).toEqual([0, 0.8, -0.6]);
+    expect(strutPort('stowed').normal).toEqual([0, -0.8, -0.6]);
+  });
+
+  it('is the carry pose mirrored about the horizontal plane: the trunnion and the strut and bar ends flip in y only', () => {
+    const carry = resolve(withHandlePose('carry'), gunDomain);
+    const point = (r: typeof carry, id: string, local: Vec3) =>
+      applyPoint(invert(r.placed.get('shroud')!), applyPoint(r.placed.get(id)!, local));
+    for (const [id, local] of [
+      ['strut', [0, 0, 0]],
+      ['strut', [STRUT_LENGTH, 0, 0]],
+      ['bar', [0, 0, 0]],
+    ] as const) {
+      const [cx, cy, cz] = point(carry, id, local);
+      const [sx, sy, sz] = point(resolved, id, local);
+      expect([sx, sy, sz].map((n) => Math.round(n * 1e6) / 1e6)).toEqual(
+        [cx, -cy, cz].map((n) => Math.round(n * 1e6) / 1e6),
+      );
+    }
   });
 });
 
