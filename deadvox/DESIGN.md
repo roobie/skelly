@@ -580,6 +580,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 
 ## Rendering
 
+The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
+
 - **The look:** flat colour per block, with small per-block variation, ambient
   occlusion and fog. Textures only if colour alone can't carry the look. The
   palette is muted and grey; the saturated colours are the ones that mean
