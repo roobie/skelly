@@ -25,7 +25,6 @@ describe('fixtures', () => {
       'archetype-battle-rifle',
       'archetype-bolt-rifle',
       'archetype-bolt-rifle-box',
-      'archetype-bullpup',
       'archetype-pistol',
       'archetype-pump-shotgun',
       'archetype-revolver',
