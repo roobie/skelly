@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { collectNodes, unsourcedPaths } from '../src/ammo/measures.ts';
+import { allCitations, collectNodes, unsourcedPaths } from '../src/ammo/measures.ts';
 import { formatCartridgeParseError, parseCartridge, parseCartridgeJson } from '../src/ammo/parseCartridge.ts';
 import { checkRelations, validateCartridge } from '../src/ammo/rules.ts';
 import {
@@ -241,6 +241,13 @@ const withEveryOptionalField = (): JsonObject => {
   return json;
 };
 
+/** The JSON of every synthetic shape, the all-optional-fields cartridge and every shipped file. */
+const everyCartridgeJson = (): JsonObject[] => [
+  ...ALL_SHAPES.map((shape) => syntheticJson(shape)),
+  withEveryOptionalField(),
+  ...cartridgeFiles().map((file) => readJson(join(CARTRIDGES, file))),
+];
+
 describe('parse', () => {
   it.each(ALL_SHAPES)(
     '%s: a missing field is reported at its own path, a measure value included (unsourced is null, never absent)',
@@ -277,8 +284,7 @@ describe('parse', () => {
   );
 
   it('keeps every field it accepts, optional ones included, and invents none', () => {
-    const files = cartridgeFiles().map((file) => readJson(join(CARTRIDGES, file)));
-    for (const json of [...ALL_SHAPES.map(syntheticJson), withEveryOptionalField(), ...files]) {
+    for (const json of everyCartridgeJson()) {
       expect(mustParse(json), String(json.id)).toStrictEqual(json);
     }
   });
@@ -372,6 +378,8 @@ describe('parse', () => {
 });
 
 const CITE = { source: 'synthetic', locator: 'invented for tests' };
+const ALTERNATIVE_PATH = /\.alternatives\[\d+\]$/;
+const ANGLE_PATH = /(^|\.)(angle|bevelAngle)$/;
 
 /** The `rule path` issues of a synthetic cartridge after setting each path to its value. */
 const issuesAfter = (shape: SyntheticShape | ShotshellShape, set: Record<string, Json>): string[] => {
@@ -395,6 +403,71 @@ interface EdgeCase {
   readonly set: Record<string, Json>;
   readonly expected: string[];
 }
+
+describe('measures', () => {
+  /** Every `{ value, cite }` node of a cartridge's JSON by path; an alternative is not a node of its own. */
+  const sourcedNodes = (json: JsonObject): Map<string, JsonObject> => {
+    const found = new Map<string, JsonObject>();
+    walkObjects(json, (path, node) => {
+      if ('value' in node && 'cite' in node && !ALTERNATIVE_PATH.test(path)) {
+        found.set(path, node);
+      }
+    });
+    return found;
+  };
+
+  const unitOf = (path: string): string => {
+    if (ANGLE_PATH.test(path)) {
+      return 'deg';
+    }
+    if (path.endsWith('massGrains')) {
+      return 'grains';
+    }
+    return path === 'gauge' || path === 'payload.pelletCount' ? 'count' : 'mm';
+  };
+
+  it('lists every sourced node of a cartridge at its path, a measure with the unit its field implies', () => {
+    for (const json of everyCartridgeJson()) {
+      const label = String(json.id);
+      const { measures, texts } = collectNodes(mustParse(json));
+      const nodes = sourcedNodes(json);
+      expect([...measures, ...texts].map((ref) => ref.path).sort(), label).toEqual([...nodes.keys()].sort());
+      for (const ref of measures) {
+        expect(ref.unit, `${label} ${ref.path}`).toBe(unitOf(ref.path));
+      }
+      const measurePaths = new Set(measures.map((ref) => ref.path));
+      for (const [path, node] of nodes) {
+        if (node.value !== null) {
+          expect(measurePaths.has(path), `${label} ${path} is a measure`).toBe(typeof node.value === 'number');
+        }
+      }
+    }
+  });
+
+  it('lists every citation of a cartridge at its path: measures, alternatives, texts, aliases, relations, variants', () => {
+    for (const json of everyCartridgeJson()) {
+      const expected: string[] = [];
+      walkObjects(json, (path, node) => {
+        if ('source' in node && 'locator' in node) {
+          expected.push(path);
+        }
+      });
+      expect(
+        allCitations(mustParse(json))
+          .map((ref) => ref.path)
+          .sort(),
+        String(json.id),
+      ).toEqual(expected.sort());
+    }
+  });
+
+  it('reports exactly the measures and texts whose value is null as unsourced', () => {
+    const json = withEveryOptionalField();
+    setPath(json, 'case.materials[0].value', null);
+    setPath(json, 'case.rim.diameter.value', null);
+    expect(unsourcedPaths(mustParse(json)).sort()).toEqual(['case.materials[0]', 'case.rim.diameter']);
+  });
+});
 
 describe('rules at their edges', () => {
   // Each row makes two compared values equal, so it fails if a strict comparison turns inclusive or back.
