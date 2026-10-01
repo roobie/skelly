@@ -50,6 +50,7 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
       roof: id('roof'),
       dirt: id('dirt'),
       grass: id('grass'),
+      stone: id('stone'),
     },
     scale.blockSize,
   );

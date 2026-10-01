@@ -56,11 +56,15 @@ export type SiteName = 'hamlet' | 'testHouse' | 'city';
 
 const MAX_STOREYS = 20;
 
-/** `?site=city` and `?storeys=N` build the stress-test city; `fallback` is the site otherwise. */
+/**
+ * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
+ * `fallback` is the site otherwise.
+ */
 export const siteFromUrl = (params: URLSearchParams, fallback: SiteName): { site: SiteName; storeys: number } => {
   const storeys = Number(params.get('storeys') ?? 1);
+  const requested = params.get('site');
   return {
-    site: params.get('site') === 'city' ? 'city' : fallback,
+    site: requested === 'city' || requested === 'testHouse' ? requested : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,
   };
 };

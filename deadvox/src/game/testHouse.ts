@@ -1,7 +1,8 @@
 // Milestone 1.0's test scene: a small two-room house next to spawn, defined in
 // metres so it can be compared at different block sizes. Its rooms have a front door,
 // windows, a kitchen counter, a table, a bed, and full-block stairs up to a roof
-// terrace. The ground around it is levelled.
+// terrace. The ground around it is levelled. Stonework for looking at stone: a plinth
+// under the walls, an outside chimney, a low garden wall with a gate gap, and a flagstone path.
 
 import type { Vec3 } from '../core/coords.ts';
 import type { MetreBox } from '../core/structure.ts';
@@ -15,6 +16,7 @@ export interface HouseBlocks {
   roof: number;
   dirt: number;
   grass: number;
+  stone: number;
 }
 
 /** Storey height in metres. */
@@ -38,6 +40,8 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([-10, -8, -3], [13, 0, 10], b.dirt),
     box([-10, -0.5, -3], [13, 0, 10], b.grass),
     box([-10, 0, -3], [13, 16, 10], air),
+    // Flagstone path from the spawn area to the front door, flush with the ground.
+    box([-8, -0.5, 3], [0, 0, 4], b.stone),
     // Floor (kitchen tiled), outer walls, interior wall, roof.
     box([0, -0.5, 0], [10, 0, 7], b.planks),
     box([0.5, -0.5, 0.5], [5, 0, 6.5], b.tiles),
@@ -47,6 +51,11 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([9.5, 0, 0], [10, STOREY, 7], b.brick),
     box([5, 0, 0.5], [5.5, STOREY, 6.5], b.plaster),
     box([0, STOREY, 0], [10, STOREY + 0.5, 7], b.roof),
+    // Stone plinth: the bottom half metre of the outer walls. Before the openings, so the door still cuts through.
+    box([0, 0, 0], [10, 0.5, 0.5], b.stone),
+    box([0, 0, 6.5], [10, 0.5, 7], b.stone),
+    box([0, 0, 0], [0.5, 0.5, 7], b.stone),
+    box([9.5, 0, 0], [10, 0.5, 7], b.stone),
     // Openings: front door (west), interior doorway, windows, roof hatch over the stairs.
     box([0, 0, 3], [0.5, 2, 4], air),
     box([5, 0, 3], [5.5, 2, 4], air),
@@ -55,6 +64,10 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([7, 1, 6.5], [8, 2, 7], air),
     box([9.5, 1, 3], [10, 2, 4], air),
     box([6, STOREY, 0.5], [9, STOREY + 0.5, 1.5], air),
+    // Outside: a stone chimney against the east wall, and a dry-stone garden wall along the south side with a 1 m gate gap.
+    box([10, 0, 5], [11, STOREY + 1.5, 6.5], b.stone),
+    box([-6, 0, 8.5], [2, 1, 9], b.stone),
+    box([3, 0, 8.5], [10, 1, 9], b.stone),
     // Kitchen: counter along the north wall, table. Bedroom: bed.
     box([1, 0, 0.5], [4, 0.9, 1.1], b.tiles),
     box([2.5, 0, 4.5], [4, 0.75, 5.5], b.planks),

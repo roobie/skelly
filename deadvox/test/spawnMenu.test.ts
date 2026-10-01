@@ -1,6 +1,8 @@
+import { NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
+import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 
@@ -71,6 +73,10 @@ describe('spawnMenuViewModel', () => {
     const hooks = { sim, compress: () => undefined } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
+      look: new LookControls(
+        { toneMapping: NoToneMapping, toneMappingExposure: 1 },
+        { linearColorsOn: false, setLinearColors: () => undefined },
+      ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,
       toggleSpawn: () => menu.open(),

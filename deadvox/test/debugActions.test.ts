@@ -1,6 +1,13 @@
+import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
+import { LookControls } from '../src/debug/look.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+
+interface FakeRenderer {
+  toneMapping: ToneMapping;
+  toneMappingExposure: number;
+}
 
 describe('debug action table', () => {
   it('keeps every action and shortcut in the one panel table', () => {
@@ -17,7 +24,39 @@ describe('debug action table', () => {
       ['V', 'Spawn shamblers'],
       ['Y', 'Melee aim boxes'],
       ['O', 'Freeze shamblers'],
+      ['J', 'Tone mapping'],
+      ['-', 'Exposure −'],
+      ['=', 'Exposure +'],
+      ['I', 'sRGB block colours'],
     ]);
+  });
+
+  it('cycles tone mapping, clamps exposure and toggles linear colours, with details for the panel', () => {
+    const { actions, renderer } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    expect(byCode('KeyJ').detail?.()).toBe('None');
+    for (const name of ['AgX', 'ACES Filmic', 'Neutral', 'None']) {
+      dispatchDebugAction(actions, 'KeyJ');
+      expect(byCode('KeyJ').detail?.()).toBe(name);
+    }
+    dispatchDebugAction(actions, 'KeyJ');
+    expect(renderer.toneMapping).toBe(AgXToneMapping);
+
+    dispatchDebugAction(actions, 'Equal');
+    dispatchDebugAction(actions, 'Equal');
+    expect(byCode('Equal').detail?.()).toBe('1.2');
+    for (let i = 0; i < 40; i++) {
+      dispatchDebugAction(actions, 'Equal');
+    }
+    expect(renderer.toneMappingExposure).toBe(3);
+    for (let i = 0; i < 60; i++) {
+      dispatchDebugAction(actions, 'Minus');
+    }
+    expect(renderer.toneMappingExposure).toBe(0.2);
+
+    expect(byCode('KeyI').state?.()).toBe(false);
+    dispatchDebugAction(actions, 'KeyI');
+    expect(byCode('KeyI').state?.()).toBe(true);
   });
 
   it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO'])(
@@ -50,7 +89,17 @@ describe('debug action table', () => {
   });
 });
 
-const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: number[] } => {
+const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: number[]; renderer: FakeRenderer } => {
+  const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
+  let linear = false;
+  const look = new LookControls(renderer, {
+    get linearColorsOn() {
+      return linear;
+    },
+    setLinearColors(on: boolean) {
+      linear = on;
+    },
+  });
   const sim = {
     godMode: false,
     compression: {
@@ -86,6 +135,7 @@ const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: numbe
   const spawnCounts: number[] = [];
   const actions = createDebugActions({
     hooks,
+    look,
     build,
     spawnMenu,
     toggleSpawn() {
@@ -112,5 +162,5 @@ const makeActions = (shamblerCount = 1): { actions: Action[]; spawnCounts: numbe
       frozen = !frozen;
     },
   });
-  return { actions, spawnCounts };
+  return { actions, spawnCounts, renderer };
 };

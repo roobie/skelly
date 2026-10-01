@@ -4,6 +4,7 @@ import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
+import { LookControls } from './look.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
@@ -14,6 +15,8 @@ export interface Action {
   readonly key: string;
   readonly label: string;
   readonly state?: () => boolean;
+  /** Current value, appended to the label in the panel. */
+  readonly detail?: () => string;
   readonly run: () => void;
 }
 
@@ -137,6 +140,7 @@ interface ActionContext {
   toggleAim: () => void;
   isFrozen: () => boolean;
   toggleFrozen: () => void;
+  look: LookControls;
 }
 
 export const createDebugActions = ({
@@ -154,6 +158,7 @@ export const createDebugActions = ({
   toggleAim,
   isFrozen,
   toggleFrozen,
+  look,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
@@ -191,6 +196,34 @@ export const createDebugActions = ({
   { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
   { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', state: isAimEnabled, run: toggleAim },
   { code: 'KeyO', key: 'O', label: 'Freeze shamblers', state: isFrozen, run: toggleFrozen },
+  {
+    code: 'KeyJ',
+    key: 'J',
+    label: 'Tone mapping',
+    detail: () => look.toneMappingName,
+    run: () => look.cycleToneMapping(),
+  },
+  {
+    code: 'Minus',
+    key: '-',
+    label: 'Exposure −',
+    detail: () => look.exposure.toFixed(1),
+    run: () => look.stepExposure(-1),
+  },
+  {
+    code: 'Equal',
+    key: '=',
+    label: 'Exposure +',
+    detail: () => look.exposure.toFixed(1),
+    run: () => look.stepExposure(1),
+  },
+  {
+    code: 'KeyI',
+    key: 'I',
+    label: 'sRGB block colours',
+    state: () => look.linearColors,
+    run: () => look.toggleLinearColors(),
+  },
 ];
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
@@ -251,8 +284,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
+  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes);
   const actions = createDebugActions({
     hooks,
+    look,
     build,
     spawnMenu,
     toggleSpawn,
@@ -298,7 +333,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   function actionViews(): ActionView[] {
     return actions.map((action) => ({
       key: action.key,
-      label: action.code === 'KeyV' ? `Spawn ${shamblerCount} shamblers` : action.label,
+      label:
+        (action.code === 'KeyV' ? `Spawn ${shamblerCount} shamblers` : action.label) +
+        (action.detail ? `: ${action.detail()}` : ''),
       state: viewState(action),
       run: () => {
         action.run();
