@@ -1589,7 +1589,7 @@ export class ZombieSystem {
     this.options.onMeleeContact?.(hit.impulse);
     const healthBefore = zombie.regions[region];
     const severedBefore = new Set(zombie.severed);
-    this.options.onSound?.('melee_hit', copy(zombie.body.pos));
+    this.options.onSound?.(weapon === FISTS_MELEE ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     const healthAfter = Math.max(0, healthBefore - weapon.damage);
     zombie.regions[region] = healthAfter;
