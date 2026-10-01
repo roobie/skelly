@@ -20,7 +20,7 @@ describe('menu input', () => {
     const descriptors = ['document', 'innerWidth', 'innerHeight', 'addEventListener'].map(
       (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
     );
-    const target = {} as HTMLElement;
+    const target = { addEventListener: () => undefined } as unknown as HTMLElement;
     let mousemove: ((event: MouseEvent) => void) | undefined;
     const documentStub = {
       pointerLockElement: target,
@@ -52,6 +52,63 @@ describe('menu input', () => {
         } else {
           Reflect.deleteProperty(globalThis, key);
         }
+      }
+    }
+  });
+
+  it('tracks held right mouse for the ready stance and clears it on release or blur', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener');
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    const windowListeners = new Map<string, EventListener>();
+    const targetListeners = new Map<string, EventListener>();
+    const target = {
+      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (typeof listener === 'function') {
+          targetListeners.set(type, listener);
+        }
+      },
+    } as unknown as HTMLElement;
+    Object.defineProperty(globalThis, 'addEventListener', {
+      configurable: true,
+      value: (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (typeof listener === 'function') {
+          windowListeners.set(type, listener);
+        }
+      },
+    });
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { addEventListener: () => undefined, pointerLockElement: null },
+    });
+    try {
+      const input = new Input(target);
+      targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
+      expect(input.rightMouseHeld).toBe(true);
+      windowListeners.get('mouseup')?.({ button: 2 } as MouseEvent);
+      expect(input.rightMouseHeld).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
+      windowListeners.get('blur')?.(new Event('blur'));
+      expect(input.rightMouseHeld).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(true);
+      expect(input.intent().primaryAction).toBe(true);
+      input.consumePrimaryAction();
+      expect(input.intent().primaryAction).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(false);
+      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(true);
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, 'addEventListener', original);
+      } else {
+        Reflect.deleteProperty(globalThis, 'addEventListener');
+      }
+      if (originalDocument) {
+        Object.defineProperty(globalThis, 'document', originalDocument);
+      } else {
+        Reflect.deleteProperty(globalThis, 'document');
       }
     }
   });

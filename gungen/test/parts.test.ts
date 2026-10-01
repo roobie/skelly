@@ -5,17 +5,80 @@ import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { FAMILIES } from '../src/gun/parts.ts';
+import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
+import { fullProduct, tWiseCases } from './coveringArray.ts';
 import { variant } from './helpers.ts';
+import { runSweeps, sweepGroup } from './sweeps.ts';
 
-/** Every combination of a family's parameter values. */
-const variants = (family: PartFamily): Record<string, string>[] =>
-  Object.entries(family.params).reduce<Record<string, string>[]>(
-    (acc, [name, spec]) => acc.flatMap((p) => spec.values.map((v) => ({ ...p, [name]: v }))),
-    [{}],
-  );
+/**
+ * Keys of `FAMILIES` (not family names: `ak-receiver` is also named `receiver`) whose default-run cases are a 3-wise covering array instead of the full product. Any
+ * family not listed here (including every family added later) gets the full product.
+ *
+ * Why these three: `receiver` (the AR/pump one) is 32,256 of the 37,320 combinations, `barrel` and
+ * `handguard` 1,944 each. The array keeps coverage of the built geometry: on a sample of
+ * `parts.ts` mutants it killed every mutant the full product killed, where 2-wise missed one.
+ * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
+ * The full product of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
+ */
+const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard'] as const;
+const ARRAY_STRENGTH = 3;
+
+/**
+ * Interactions the array is known to miss, as explicit cases. `receiver`'s shell coordinates depend
+ * on action, feed, section, carrierPattern and bore together; the 3-wise array does not hit this combination.
+ */
+const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>> = {
+  receiver: [
+    {
+      action: 'pump',
+      feed: 'tube',
+      section: 'pump',
+      carrierPattern: 'auto',
+      bore: 'S',
+      chargingHandle: 'side',
+      boltHandle: 'rest',
+      rail: 'full',
+      magazineWell: 'standard',
+    },
+  ],
+};
+
+const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly string[]).includes(key);
+
+const sameParams = (a: Record<string, string>, b: Record<string, string>): boolean =>
+  Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
+
+/** The cases the default run checks for a family. */
+const defaultCases = (key: string, family: PartFamily): Record<string, string>[] => {
+  if (!isArraySampled(key)) {
+    return fullProduct(family.params);
+  }
+  const cases = tWiseCases(family.params, ARRAY_STRENGTH);
+  for (const extra of EXPLICIT_CASES[key] ?? []) {
+    for (const [name, spec] of Object.entries(family.params)) {
+      if (!spec.values.includes(extra[name] ?? '')) {
+        throw new Error(`explicit ${key} case: ${name}=${extra[name]} is not one of ${spec.values.join(', ')}`);
+      }
+    }
+    if (!cases.some((c) => sameParams(c, extra))) {
+      cases.push(extra);
+    }
+  }
+  return cases;
+};
 
 const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
+
+const onGridWithCarrierClearance = (value: number, step: number, family: PartFamily): boolean => {
+  if (onGrid(value, step)) {
+    return true;
+  }
+  if (family.name !== 'receiver') {
+    return false;
+  }
+  const nearest = Math.round(value / step) * step;
+  return Math.abs(Math.abs(value - nearest) - BOLT_CARRIER_RUNNING_CLEARANCE_U) < 1e-9;
+};
 
 const pumpTubeDimensions = (input: {
   bore: 'S' | 'M' | 'L';
@@ -264,51 +327,64 @@ describe('part library', () => {
     }
   });
 
-  for (const family of Object.values(FAMILIES)) {
-    describe(family.name, () => {
-      for (const params of variants(family)) {
-        const def = family.build(params);
-        const tag = JSON.stringify(params);
+  // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
+  // ports, unique port ids and positive box sizes. No rules or geometry checks run.
+  const definePartChecks = (family: PartFamily, cases: Record<string, string>[]): void => {
+    for (const params of cases) {
+      const tag = JSON.stringify(params);
 
-        let gridStep = GRID;
-        if (family.name === 'forend') {
-          gridStep = GRID / 5;
-        } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
-          gridStep = GRID / 2;
-        }
-
-        it(`${tag}: positions and extents are on the ${gridStep}u grid`, () => {
-          const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
-            box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
-          // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
-          const numbers = [
-            ...def.solids.flatMap((s) =>
-              s.kind === 'box' &&
-              !s.id.startsWith('trigger-guard-') &&
-              !(family.name === 'magazine' && params.profile === 'smg')
-                ? bounds(s.box)
-                : [],
-            ),
-            ...def.keepOuts.flatMap((k) => bounds(k.box)),
-            ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
-            ...def.axes.flatMap((a) => [...a.origin]),
-          ];
-          expect(numbers.filter((n) => !onGrid(n, gridStep))).toEqual([]);
-        });
-
-        it(`${tag}: port frames are orthonormal and ids unique`, () => {
-          for (const p of def.ports) {
-            expect(length(p.normal)).toBeCloseTo(1);
-            expect(length(p.up)).toBeCloseTo(1);
-            expect(dot(p.normal, p.up)).toBeCloseTo(0);
-            expect(length(cross(p.normal, p.up))).toBeCloseTo(1);
-          }
-          expect(new Set(def.ports.map((p) => p.id)).size).toBe(def.ports.length);
-          expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
-        });
+      let gridStep = GRID;
+      if (family.name === 'forend') {
+        gridStep = GRID / 5;
+      } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
+        gridStep = GRID / 2;
       }
+
+      it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+        const def = family.build(params);
+        const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
+          box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
+        // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
+        const numbers = [
+          ...def.solids.flatMap((s) =>
+            s.kind === 'box' &&
+            !s.id.startsWith('trigger-guard-') &&
+            !(family.name === 'magazine' && params.profile === 'smg')
+              ? bounds(s.box)
+              : [],
+          ),
+          ...def.keepOuts.flatMap((k) => bounds(k.box)),
+          ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
+          ...def.axes.flatMap((a) => [...a.origin]),
+        ];
+        expect(numbers.filter((n) => !onGridWithCarrierClearance(n, gridStep, family))).toEqual([]);
+        for (const p of def.ports) {
+          expect(length(p.normal)).toBeCloseTo(1);
+          expect(length(p.up)).toBeCloseTo(1);
+          expect(dot(p.normal, p.up)).toBeCloseTo(0);
+          expect(length(cross(p.normal, p.up))).toBeCloseTo(1);
+        }
+        expect(new Set(def.ports.map((p) => p.id)).size).toBe(def.ports.length);
+        expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
+      });
+    }
+  };
+
+  for (const [key, family] of Object.entries(FAMILIES)) {
+    describe(key, () => {
+      definePartChecks(family, defaultCases(key, family));
     });
   }
+
+  // The exhaustive product for the families the default run samples with a covering array.
+  sweepGroup('full parameter product of the array-sampled families', () => {
+    for (const [key, family] of Object.entries(FAMILIES).filter(([k]) => isArraySampled(k))) {
+      describe(key, () => {
+        // A skipped group still registers its cases, so build none in the default run.
+        definePartChecks(family, runSweeps ? fullProduct(family.params) : []);
+      });
+    }
+  });
 });
 
 describe('tapered stock profile', () => {

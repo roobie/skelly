@@ -2,7 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkDesignFiles } from '../src/cli/designCheck.ts';
-import { applyPoint, extrusionPoint, type Vec3 } from '../src/core/math.ts';
+import { worldSolid } from '../src/core/geometry.ts';
+import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Solid } from '../src/core/schema.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
@@ -20,7 +21,6 @@ const expectedTemplates: Readonly<Record<string, string>> = {
   'archetype-bolt-rifle': 'bolt-rifle',
   'archetype-bolt-rifle-box': 'bolt-rifle-box',
   'archetype-awm': 'bolt-rifle-thumbhole',
-  'archetype-bullpup': 'bullpup',
   'archetype-pistol': 'pistol',
   'archetype-pump-shotgun': 'pump-shotgun',
   'archetype-revolver': 'revolver',
@@ -33,6 +33,12 @@ const localVertices = (solid: Solid): Vec3[] => {
     const [xmin, ymin, zmin] = center.map((value, axis) => value - half[axis]!);
     const [xmax, ymax, zmax] = center.map((value, axis) => value + half[axis]!);
     return [xmin!, xmax!].flatMap((x) => [ymin!, ymax!].flatMap((y) => [zmin!, zmax!].map((z) => [x, y, z] as const)));
+  }
+  if (solid.clip?.length) {
+    const polyhedron = worldSolid(IDENTITY, solid);
+    if ('vertices' in polyhedron) {
+      return [...polyhedron.vertices];
+    }
   }
   return solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
 };
@@ -72,7 +78,8 @@ const mustLoad = (text: string) => {
 };
 
 describe('published design corpus', () => {
-  it('contains one loadable published design for every convertible archetype', () => {
+  // Measured about 3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('contains one loadable published design for every convertible archetype', { timeout: 15_000 }, () => {
     const files = designFiles();
     expect(files.map((file) => file.replace(JSON_SUFFIX, '')).sort()).toEqual(Object.keys(expectedTemplates).sort());
     for (const file of files) {
@@ -95,7 +102,8 @@ describe('published design corpus', () => {
     }
   });
 
-  it('snapshots every resolved solid by design, with transformed geometry rounded to 1e-6', () => {
+  // Measured about 2.1 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('snapshots every resolved solid by design, with transformed geometry rounded to 1e-6', { timeout: 15_000 }, () => {
     for (const file of designFiles()) {
       const text = readFileSync(join(DESIGNS, file), 'utf8');
       const { design } = mustLoad(text);

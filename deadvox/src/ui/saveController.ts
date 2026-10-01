@@ -101,6 +101,7 @@ export class SaveController {
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
   private worldOptions: SaveWorldOptions | undefined;
+  private recordSnapshotDuration: ((durationMs: number) => void) | undefined;
   private worldId = '';
   private characterId = '';
   private readonly environmentProblem: string | undefined;
@@ -352,14 +353,24 @@ export class SaveController {
     simTime: () => number,
     worldOptions: SaveWorldOptions,
     clock: ClockSettings = defaultClock,
+    recordSnapshotDuration?: (durationMs: number) => void,
   ): { worldId: string; characterId: string } {
     this.snapshot = snapshot;
     this.simTime = simTime;
     this.worldOptions = worldOptions;
+    this.recordSnapshotDuration = recordSnapshotDuration;
     const interval = saveCheckpointInterval(clock);
     this.checkpointInterval = interval;
     this.nextAutosaveAt = (Math.floor(simTime() / interval) + 1) * interval;
     return { worldId: this.worldId, characterId: this.characterId };
+  }
+
+  /** Move the next checkpoint to the first interval after an explicit forward debug-time seek. */
+  rearmAutosaveAfterTimeSeek(): void {
+    const time = this.simTime?.();
+    if (time !== undefined) {
+      this.nextAutosaveAt = (Math.floor(time / this.checkpointInterval) + 1) * this.checkpointInterval;
+    }
   }
 
   /** Called after each simulation frame; thresholds are in simulated seconds. */
@@ -380,7 +391,10 @@ export class SaveController {
     if (!(this.snapshot && this.namespace && this.entered) || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
-    this.queued = { snapshot: this.snapshot(), reason };
+    const startedAt = performance.now();
+    const snapshot = this.snapshot();
+    this.recordSnapshotDuration?.(performance.now() - startedAt);
+    this.queued = { snapshot, reason };
     if (!this.writing) {
       this.flush().catch(() => undefined);
     }

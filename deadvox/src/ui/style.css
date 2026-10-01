@@ -185,22 +185,28 @@ body {
   position: fixed;
   inset: 0;
   display: grid;
-  place-items: center;
-  background: rgb(0 0 0 / 55%);
+  /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so
+     the paused frame stays unaltered; the layer itself still takes the click that resumes play. */
+  place-items: center end;
   cursor: pointer;
 }
 #overlay[hidden],
 #inventory[hidden] {
   display: none;
 }
+#inventory-drag-root {
+  pointer-events: none;
+}
 #overlay .card {
-  max-width: 420px;
+  max-width: 360px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
+  margin-right: 16px;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--panel);
+  /* Opaque: with no dimming layer behind it the card must stay readable on its own. */
+  background: rgb(18 20 24);
 }
 #overlay h1 {
   margin: 0 0 4px;
@@ -222,6 +228,16 @@ body {
 }
 #overlay dd {
   margin: 0;
+}
+#overlay #controls {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+}
+#overlay #controls dt {
+  margin-top: 6px;
+}
+#overlay #controls dd {
+  margin-bottom: 4px;
 }
 #overlay .go {
   color: var(--text);
@@ -496,6 +512,26 @@ body {
 }
 .inv-preview.drop-no,
 .inv-slot.drop-no {
+  background: rgb(224 135 110 / 22%);
+  border: 1px dashed #e0876e;
+}
+.inv-grid.drop-ok::after,
+.inv-grid.drop-no::after {
+  content: "";
+  position: absolute;
+  left: var(--preview-left);
+  top: var(--preview-top);
+  width: var(--preview-width);
+  height: var(--preview-height);
+  box-sizing: border-box;
+  pointer-events: none;
+  border-radius: 3px;
+}
+.inv-grid.drop-ok::after {
+  background: rgb(224 176 74 / 22%);
+  border: 1px dashed var(--accent);
+}
+.inv-grid.drop-no::after {
   background: rgb(224 135 110 / 22%);
   border: 1px dashed #e0876e;
 }
@@ -1019,6 +1055,13 @@ body.bench #quickbar {
   cursor: pointer;
   pointer-events: auto;
 }
+#debug-ui-root .debug-marker.debug-frozen {
+  right: auto;
+  left: 10px;
+  color: var(--accent);
+  cursor: default;
+  pointer-events: none;
+}
 #debug-ui-root .debug-panel {
   position: fixed;
   top: 36px;
@@ -1072,8 +1115,53 @@ body.bench #quickbar {
   cursor: default;
 }
 #debug-ui-root .debug-panel .debug-actions button:hover,
-#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover {
+#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover,
+#debug-ui-root .debug-panel .debug-group-header:hover,
+#debug-ui-root .debug-panel .debug-group-header.game-cursor-hover {
   border-color: var(--accent);
+}
+/* A group: a full-width header button (title left, keys right) over its buttons. */
+#debug-ui-root .debug-panel .debug-group {
+  margin-top: 6px;
+}
+#debug-ui-root .debug-panel .debug-group-header {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 35%);
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+  text-align: left;
+  cursor: pointer;
+}
+#debug-ui-root .debug-panel .debug-group-header::before {
+  content: "▾";
+  flex: none;
+  color: var(--muted);
+}
+#debug-ui-root .debug-panel .debug-group-header[aria-expanded="false"]::before {
+  content: "▸";
+}
+#debug-ui-root .debug-panel .debug-group-header strong {
+  flex: none;
+  margin-right: auto;
+}
+#debug-ui-root .debug-panel .debug-group-keys {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#debug-ui-root .debug-panel .debug-group-body {
+  padding-top: 6px;
 }
 #debug-ui-root .debug-panel p {
   margin: 6px 0 0;
@@ -1104,4 +1192,29 @@ body.bench #quickbar {
 #debug-ui-root #hotbar,
 #debug-ui-root #spawn {
   pointer-events: auto;
+}
+
+#f3-debug-overlay {
+  position: fixed;
+  z-index: 1000;
+  top: 0.5rem;
+  left: 0.5rem;
+  max-width: min(48rem, calc(100vw - 1rem));
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem 0.65rem;
+  color: #d7f7c7;
+  background: rgb(0 0 0 / 78%);
+  font:
+    12px / 1.35 ui-monospace,
+    monospace;
+  pointer-events: none;
+}
+
+#f3-debug-overlay[hidden] {
+  display: none;
+}
+
+#f3-debug-overlay .debug-revealed-zombies {
+  color: #ffcf7a;
 }

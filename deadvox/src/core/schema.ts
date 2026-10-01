@@ -50,12 +50,34 @@ const Size = tuple([
 
 // ---- blocks ----
 
+/**
+ * Procedural surface patterns, drawn in the chunk shader. The index is the id the mesher
+ * emits and the shader switches on (render/chunks.ts), so append, never reorder.
+ */
+export const BLOCK_PATTERNS = [
+  'none',
+  'brick',
+  'planks',
+  'cobble',
+  'dressed',
+  'rough',
+  'tiles',
+  'siding',
+  'corrugated',
+  'shingles',
+  'noise',
+] as const;
+
+export type BlockPattern = (typeof BLOCK_PATTERNS)[number];
+
 export const BlockSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
   /** Blocks movement. Non-solid blocks still render as cubes for now. */
   solid: vBoolean(),
+  /** Surface pattern; `none` when omitted. */
+  pattern: optional(picklist(BLOCK_PATTERNS)),
 });
 
 // ---- items ----

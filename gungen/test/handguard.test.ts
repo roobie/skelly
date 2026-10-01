@@ -60,7 +60,8 @@ describe('barrel-fitted handguards', () => {
   // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)):
   // the property is checked on every non-broken fixture and every published design.
   // broken-handguard-fit and the other broken-* fixtures are skipped: they exist to break a rule.
-  it('keeps the handguard within its receiver in every fixture and design', () => {
+  // Measured about 3.3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('keeps the handguard within its receiver in every fixture and design', { timeout: 20_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);
     for (const { label, assembly } of corpus) {

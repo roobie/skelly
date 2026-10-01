@@ -89,6 +89,7 @@ const environmentLines = (record: BenchRecord): string[] => {
     return ['Environment: not recorded'];
   }
   return [
+    ...(record.post ? ['Rendering: with post-processing and shadows (the default look)'] : []),
     `GPU: ${env.gpu}`,
     `CPU threads: ${env.cores}${env.deviceMemory === undefined ? '' : `, memory ≥ ${env.deviceMemory} GiB`}`,
     `Canvas: ${env.canvas} at pixel ratio ${env.pixelRatio}`,

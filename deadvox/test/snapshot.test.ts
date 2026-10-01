@@ -6,6 +6,7 @@ import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -19,6 +20,11 @@ import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
+import type { MeleeWeapon } from '../src/core/zombies.ts';
+import { startPlayerMelee } from '../src/game/melee.ts';
+import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -202,6 +208,7 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   ),
 });
 const inspect = (runtime: Runtime): unknown => {
+  const zombieContinuation = runtime.zombies.snapshotState();
   const scheduler = (
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
@@ -260,7 +267,9 @@ const inspect = (runtime: Runtime): unknown => {
     },
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
-      playerAttackWait: (runtime.zombies as unknown as { playerAttackWait: number }).playerAttackWait,
+      playerAttackWait: zombieContinuation.playerAttackWait,
+      meleeAction: zombieContinuation.meleeAction,
+      nextFistHand: zombieContinuation.nextFistHand,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
         const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
         return [
@@ -703,7 +712,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 3,
+  schemaVersion: 5,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -808,6 +817,83 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: integration test couples save round-trip, tick advancement and single-contact restore.
+  it('round-trips an active player swing and resolves its one pending hit after restore', async () => {
+    const source = createRuntime();
+    source.sim.frame(0.049);
+    expect(source.sim.time).toBeCloseTo(0.049);
+    for (const [id] of [...source.zombies.store.entries()]) {
+      source.zombies.store.remove(id);
+    }
+    const id = source.zombies.add(
+      registry.zombies.get('shambler')!,
+      [source.player.body.pos[0] + 5, source.player.body.pos[1], source.player.body.pos[2]],
+      [0, 0, 1],
+    );
+    const zombie = source.zombies.store.get(id)!;
+    zombie.body.onGround = true;
+    source.zombies.setFrozen(true);
+    const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, scale.blockSize));
+    const { center } = posed.head.find((box) => box.bone === 'head')!;
+    const origin: Vec3 = [
+      source.player.body.pos[0],
+      source.player.body.pos[1] + PLAYER.eye / scale.blockSize,
+      source.player.body.pos[2],
+    ];
+    const delta: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];
+    const length = Math.hypot(...delta);
+    const direction = delta.map((value) => value / length) as Vec3;
+    const weapon: MeleeWeapon = { damage: 1, reach: 4, cooldown: 0.8, stamina: 4, impulse: 4, type: 'blunt' };
+    expect(source.zombies.aimAt(origin, direction, weapon)?.inReach).toBe(true);
+    const hands = {
+      right: source.inventory.hands.right?.uid ?? null,
+      left: source.inventory.hands.left?.uid ?? null,
+    };
+    expect(
+      startPlayerMelee(source.zombies, source.sim.needs, {
+        origin,
+        direction,
+        weapon,
+        profile: 'blunt',
+        hand: 'right',
+        twoHanded: false,
+        hands,
+      }),
+    ).toBe('started');
+    const initialHealth = zombie.regions.head;
+    const snapshot = capture(source);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.world.zombies.meleeAction).toEqual(snapshot.world.zombies.meleeAction);
+    const loaded = createRuntime(decoded.snapshot);
+    loaded.zombies.setFrozen(true);
+    expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0);
+
+    for (const runtime of [source, loaded]) {
+      const held = {
+        right: runtime.inventory.hands.right?.uid ?? null,
+        left: runtime.inventory.hands.left?.uid ?? null,
+      };
+      for (let tick = 1; tick < 15; tick++) {
+        runtime.zombies.tickPlayerAction(1 / 60, held);
+        if (tick % 3 === 0) {
+          runtime.zombies.tick(0.05, tick / 20, held);
+        }
+        expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
+      }
+      runtime.zombies.tickPlayerAction(1 / 60, held);
+      runtime.zombies.tick(0.05, 0.25, held);
+      expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
+      for (let tick = 0; tick < 48; tick++) {
+        runtime.zombies.tickPlayerAction(1 / 60, held);
+        if (tick % 3 === 2) {
+          runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
+        }
+      }
+      expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
+    }
+  });
+
   it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
     const source = createRuntime();
     const id = source.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);

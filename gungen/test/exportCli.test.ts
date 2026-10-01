@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
+import { readGlb } from './glbReader.ts';
 
 const read = (dir: string, name: string): string =>
   readFileSync(join(import.meta.dirname, '..', dir, `${name}.json`), 'utf8');
@@ -18,6 +19,51 @@ describe('export CLI core', () => {
     if (fromDesign.ok && fromFixture.ok) {
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
       expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
+    }
+  });
+
+  it('preserves curated AWM and bare AK fixture appearances on the file-export path', () => {
+    const awm = exportFileText(read('designs', 'archetype-awm'), ASSET);
+    const ak = exportFileText(read('fixtures', 'archetype-ak'), ASSET);
+    expect(awm.ok && ak.ok).toBe(true);
+    if (!(awm.ok && ak.ok)) {
+      return;
+    }
+    const stockMaterial = (bytes: Uint8Array): string => {
+      const glb = readGlb(bytes);
+      const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
+      if (stock?.mesh === undefined) {
+        throw new Error('exported stock mesh is missing');
+      }
+      const primitive = glb.json.meshes[stock.mesh]!.primitives[0]!;
+      return glb.json.materials[primitive.material]!.name!;
+    };
+    expect(stockMaterial(awm.glb)).toBe('#4b5836');
+    expect(stockMaterial(ak.glb)).toBe('#754324');
+  });
+
+  // Measured about 1.7 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('preserves the generated template finish through a bare assembly file export', { timeout: 10_000 }, () => {
+    for (const template of ['ak', 'pump-shotgun']) {
+      const generated = execFileSync(
+        process.execPath,
+        [join(import.meta.dirname, '../src/cli/generate.ts'), '--template', template, '--seed', '0', '--valid'],
+        { cwd: join(import.meta.dirname, '..'), encoding: 'utf8', timeout: 300_000 },
+      );
+      const output = JSON.parse(generated) as { appearance?: unknown };
+      expect(output.appearance).toEqual({ variant: template });
+
+      const exported = exportFileText(generated, ASSET);
+      expect(exported.ok).toBe(true);
+      if (!exported.ok) {
+        continue;
+      }
+      const glb = readGlb(exported.glb);
+      const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
+      expect(stock?.mesh).toBeDefined();
+      const primitive = glb.json.meshes[stock!.mesh!]!.primitives[0]!;
+      expect(primitive.extras).toMatchObject({ material: 'wood-walnut', slot: 'furniture' });
+      expect(glb.json.materials[primitive.material]!.name).toBe('#754324');
     }
   });
 

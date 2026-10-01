@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { blockPatterns } from '../src/core/meshInput.ts';
+import { BLOCK_PATTERNS } from '../src/core/schema.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -391,5 +393,45 @@ describe('content', () => {
       { source: 'a', data: { blocks: [{ id: 'r', name: 'R', color: '#ff8001', solid: true }] } },
     ]);
     expect([...blockColors(registry)]).toEqual([0, 0, 0, 255, 128, 1]);
+  });
+
+  it('turns block patterns into ids, none when omitted', () => {
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'a',
+        data: {
+          blocks: [
+            { id: 'b', name: 'B', color: '#ffffff', solid: true, pattern: 'brick' },
+            { id: 'p', name: 'P', color: '#ffffff', solid: true },
+            { id: 'n', name: 'N', color: '#ffffff', solid: true, pattern: 'noise' },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    expect([...blockPatterns(registry)]).toEqual([
+      0,
+      BLOCK_PATTERNS.indexOf('brick'),
+      0,
+      BLOCK_PATTERNS.indexOf('noise'),
+    ]);
+  });
+
+  it('reports an unknown block pattern like any other content error', () => {
+    const issues = validateContent({
+      source: 'a.json',
+      data: { blocks: [{ id: 'x', name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }] },
+    });
+    expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
+  });
+
+  it('gives every base block a known pattern and patterns the stone work', () => {
+    const { registry } = buildRegistry(base);
+    const patternOf = (id: string) => BLOCK_PATTERNS[blockPatterns(registry)[registry.blockIds.get(id)!]!];
+    expect(patternOf('brick')).toBe('brick');
+    expect(patternOf('stone')).toBe('rough');
+    expect(patternOf('dressed_stone')).toBe('dressed');
+    expect(patternOf('cobblestone_mossy')).toBe('cobble');
+    expect(patternOf('hazard_yellow')).toBe('none');
   });
 });

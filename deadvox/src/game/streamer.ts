@@ -1,14 +1,16 @@
 // Keeps the world around the player generated and meshed.
 // Terrain is generated one column at a time on the main thread; meshes are built in
 // workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
-// and AO at chunk borders are correct and never need a second pass.
+// and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
+// and never need a second pass.
 
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
+import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { BlockBox } from '../core/structure.ts';
 import type { World } from '../core/world.ts';
-import { extractPadded, isEnclosed } from '../core/world.ts';
+import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
@@ -30,6 +32,8 @@ export interface StreamerOptions {
   seed: number;
   terrain: TerrainBlocks;
   colors: Uint8Array;
+  /** Surface pattern id per block id, for the mesher. */
+  patterns: Uint8Array;
   scale: Scale;
   /** Stamped into every column as it generates. */
   structures: readonly BlockBox[];
@@ -76,7 +80,7 @@ export class Streamer {
     for (let i = 0; i < count; i++) {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(e.data);
-      this.send(worker, { type: 'init', colors: opts.colors });
+      this.send(worker, { type: 'init', colors: opts.colors, patterns: opts.patterns });
       this.workers.push(worker);
     }
     this.maxInFlight = count * 2;
@@ -266,6 +270,7 @@ export class Streamer {
     }
     this.inFlight.add(key);
     const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
+    const wide = extractWide(world, [cx, cy, cz], scale.minCy);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
     this.send(worker, {
@@ -273,6 +278,7 @@ export class Streamer {
       key,
       version: this.versions.get(key) ?? 0,
       padded,
+      wide,
     });
   }
 
@@ -299,6 +305,6 @@ export class Streamer {
   }
 
   private send(worker: Worker, msg: ToMesher): void {
-    worker.postMessage(msg, msg.type === 'mesh' ? [msg.padded.buffer] : []);
+    worker.postMessage(msg, msg.type === 'mesh' ? [msg.padded.buffer, msg.wide.buffer] : []);
   }
 }

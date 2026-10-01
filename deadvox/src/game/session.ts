@@ -16,7 +16,7 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue } from '../core/handling.ts';
+import { HandlingQueue, type TickResult } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
@@ -64,7 +64,7 @@ const ZOMBIE_RATE = 20;
 const HANDLING_RATE = 20;
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
-export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
+export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, primaryAction: false };
 
 /** The item a severed shambler region leaves behind. */
 export const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
@@ -80,6 +80,10 @@ export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
+  /** Clears edge-triggered intent after the player tick samples it. */
+  consumePrimaryAction?: () => void;
+  /** Runs the primary action on the player-tick boundary, with that tick's aim/state. */
+  primaryAction?: () => void;
   /** Radians; 0 looks down -z. */
   yaw: () => number;
   pitch: () => number;
@@ -128,6 +132,8 @@ export interface SessionOptions {
   audio: SessionAudio;
   /** A message that isn't an interruption, such as why a move was refused. */
   notice: (text: string) => void;
+  /** Observational hook for actual handling completion/failure outcomes. */
+  onHandlingOutcomes?: (result: TickResult) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -138,6 +144,8 @@ export interface SessionOptions {
     onDeath?: (id: EntityId, zombie: Zombie) => void;
     /** The actual result of the player's last swing, for debug-only presentation. */
     onMeleeResult?: (result: MeleeResult) => void;
+    /** Presentation-only first-person recoil for a confirmed hit. */
+    onMeleeContact?: (impulse: number) => void;
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
@@ -302,6 +310,10 @@ export const createSession = (options: SessionOptions) => {
       lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
     };
   };
+  const heldItemUids = () => ({
+    right: inventory.hands.right?.uid ?? null,
+    left: inventory.hands.left?.uid ?? null,
+  });
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
@@ -332,6 +344,7 @@ export const createSession = (options: SessionOptions) => {
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
     ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
+    ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),
     onDeath: (id, zombie) => {
       const table = zombie.type.loot;
       if (table) {
@@ -348,11 +361,12 @@ export const createSession = (options: SessionOptions) => {
     },
   });
   let lastZombieStep = 0;
+  let lastPlayerStep = 0;
   sim.scheduler.register({
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
-      zombieSystem.tick(dt, time);
+      zombieSystem.tick(dt, time, heldItemUids());
       lastZombieStep = time;
     },
   });
@@ -364,11 +378,17 @@ export const createSession = (options: SessionOptions) => {
     id: 'player',
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
+      lastPlayerStep = time;
+      const moving = controls.active() && !compression.locksInput;
+      const intent = moving ? controls.intent() : IDLE;
+      controls.consumePrimaryAction?.();
+      zombieSystem.tickPlayerAction(dt, heldItemUids());
+      if (moving && intent.primaryAction) {
+        controls.primaryAction?.();
+      }
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }
-      const moving = controls.active() && !compression.locksInput;
-      const intent = moving ? controls.intent() : IDLE;
       const handling = queue.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
       sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
@@ -414,7 +434,9 @@ export const createSession = (options: SessionOptions) => {
       if (compression.c > 1) {
         return;
       }
-      for (const { job, reason } of queue.tick(dt).failed) {
+      const result = queue.tick(dt);
+      options.onHandlingOutcomes?.(result);
+      for (const { job, reason } of result.failed) {
         options.notice(`${job.label}: ${reason.toLowerCase()}`);
       }
     },
@@ -458,6 +480,9 @@ export const createSession = (options: SessionOptions) => {
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
+    const schedulerState = sim.scheduler.snapshotState();
+    lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
+    lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
     rest.restoreState(restored.character.rest);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
     quickbar.restoreState(restored.character.quickbar, inventory);
@@ -479,6 +504,8 @@ export const createSession = (options: SessionOptions) => {
     restoredLook,
     /** The player's noise state; saved with the character. */
     playerAudio,
+    worldDiffs: () => world.snapshotDiffs((id) => registry.blocks[id]!.id),
+    audioState: () => audio.snapshotState(),
     feet,
     chest,
     pileDistance,
@@ -488,6 +515,9 @@ export const createSession = (options: SessionOptions) => {
     /** Time of the last shambler step, for render interpolation. */
     get lastZombieStep() {
       return lastZombieStep;
+    },
+    get lastPlayerStep() {
+      return lastPlayerStep;
     },
     get sprinting() {
       return sprinting;
@@ -514,9 +544,12 @@ export const createSession = (options: SessionOptions) => {
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),
     nameOf,
-    /** One real-time frame: advances the simulation (through rest, if any) and the player's own sounds. */
-    frame: (dt: number): void => {
-      rest.frame(dt);
+    /**
+     * One real-time frame: advances the simulation (through rest, if any) and the player's own
+     * sounds. `until` caps the simulation time reached, for the debug time skip.
+     */
+    frame: (dt: number, until?: number): void => {
+      rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);

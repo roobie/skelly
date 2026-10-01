@@ -38,6 +38,7 @@ describe('lazy restored world diffs', () => {
       seed: 17,
       terrain,
       colors: new Uint8Array(256 * 4),
+      patterns: new Uint8Array(256),
       scale,
       structures: [],
       radius: 0,

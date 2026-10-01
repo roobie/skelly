@@ -638,7 +638,7 @@ sound event with its position.
 
 ### 1.11 Playtest build
 
-- A debug overlay (F3):
+- A debug overlay (F4):
   - frame time broken down into simulation, render and meshing queue
   - chunk, entity and memory counts
   - clock and compression
@@ -653,6 +653,25 @@ sound event with its position.
 
 **Done when:** a playtester can play a full session and send back the metrics
 file and their notes.
+
+**Status:** delivered as a playtest build. F4 reports simulation/render/meshing-queue
+frame costs, chunk/entity/memory counts, clock/compression, and snapshot last/p95
+cost; the debug panel can set the game clock, reveal zombie positions, measure 50
+pure snapshots on demand, and export versioned metrics JSON. Metrics persist in
+localStorage per seed and are never sent automatically. The controls card is
+rendered from the input binding declarations, and Send feedback opens the
+playtest issue template.
+
+**Beyond the plan:** snapshot p50/p95 is available immediately on demand, rather
+than requiring an autosave; the measurement hashes the session snapshot before
+and after and does not write storage. Debug time travel resets scheduler cursors
+without simulating skipped time. The reference-laptop snapshot p95 target (≤1 ms)
+is shown for evaluation, not enforced.
+
+**Carried forward:** run a full playtest on the reference laptop, confirm the
+snapshot p95 target against a long/heavy session, and submit the exported metrics
+JSON with player notes. That human playtest is not claimed by the implementation
+checks.
 
 ## Data format sketches
 
@@ -877,6 +896,12 @@ was 1674 × 972 pixels at pixel ratio 1.2.
 
 **Feel test:** 0.5 m blocks feel far better than 1 m: doorways, furniture and
 interiors read at a human scale, and stairs are walked instead of jumped.
+
+**0.25 m look (2026-10-01):** `BLOCK_SIZE` set to 0.25 with nothing else
+changed, and the test house walked by eye (the hamlet only builds at 0.5 m).
+It didn't feel better than 0.5 m. Nothing was benchmarked; it would have cost
+about 8× the chunks at the same view radius and a redraw of the building
+templates.
 
 The decision is final: 0.5 m blocks, a 96 m default view distance, and a view
 distance setting (64, 96 or 128 m) for other hardware.

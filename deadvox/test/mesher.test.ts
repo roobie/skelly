@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildMesh } from '../src/core/mesher.ts';
+import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
 import { hash3 } from '../src/core/random.ts';
-import { PADDED, paddedIndex } from '../src/core/world.ts';
 import { culledFaces, unitFaces } from './meshFaces.ts';
 
 const colors = new Uint8Array([0, 0, 0, 200, 100, 50, 50, 100, 200]);
@@ -22,6 +22,19 @@ describe('buildMesh', () => {
     const m = buildMesh(padded([3, 3, 3]), colors);
     expect(quads(m)).toBe(6);
     expect(m.positions.length).toBe(6 * 4 * 3);
+  });
+
+  it("emits the block's surface pattern per vertex, constant over each quad, and 0 without a table", () => {
+    const p = padded([3, 3, 3]);
+    p[paddedIndex(5, 4, 4)] = 2; // a second block type beside the first
+    const patterns = new Uint8Array([0, 4, 9]);
+    const m = buildMesh(p, colors, patterns);
+    expect(m.patterns.length).toBe(m.positions.length / 3);
+    for (let q = 0; q < m.patterns.length; q += 4) {
+      expect(new Set(m.patterns.slice(q, q + 4)).size).toBe(1);
+    }
+    expect(new Set(m.patterns)).toEqual(new Set([4, 9]));
+    expect(new Set(buildMesh(p, colors).patterns)).toEqual(new Set([0]));
   });
 
   it('culls the shared face between neighbours and merges the rest', () => {

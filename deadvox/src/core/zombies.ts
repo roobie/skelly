@@ -3,6 +3,13 @@ import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
+import {
+  type MeleeActionPose,
+  type MeleeHand,
+  type MeleeProfile,
+  meleeContactTime,
+  meleePoseAndContact,
+} from './meleePose.ts';
 import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
@@ -27,6 +34,12 @@ export const PLAYER_ARM_REACH_M = 1.2;
 
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
 
+export interface MeleeActionState extends MeleeActionPose {
+  elapsed: number;
+  hands: { right: number | null; left: number | null };
+  weapon: MeleeWeapon;
+}
+
 const validHitFlinchTime = (time: number | undefined): boolean =>
   time === undefined || (Number.isFinite(time) && time >= 0);
 const validStanceWeight = (weight: number | undefined): boolean =>
@@ -38,7 +51,21 @@ export interface MeleeWeapon {
   readonly damage: number;
   readonly reach: number;
   readonly cooldown: number;
+  readonly stamina?: number | undefined;
   readonly impulse?: number | undefined;
+  readonly type?: 'blunt' | 'cut' | 'pierce' | undefined;
+}
+
+export interface BeginMeleeSwing {
+  origin: Vec3;
+  direction: Vec3;
+  weapon: MeleeWeapon;
+  profile: MeleeProfile;
+  hand?: MeleeHand;
+  twoHanded: boolean;
+  hands: { right: number | null; left: number | null };
+  aimYaw?: number;
+  aimPitch?: number;
 }
 
 export interface ZombieAim {
@@ -176,6 +203,8 @@ export type ZombieState = Omit<
 
 export interface ZombieSystemState {
   playerAttackWait: number;
+  meleeAction: MeleeActionState | null;
+  nextFistHand: MeleeHand;
   nextEntityId: number;
   zombies: { id: number; zombie: ZombieState }[];
 }
@@ -226,6 +255,8 @@ export interface ZombieSystemOptions {
   onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
   /** Reports the actual result of an attempted player melee swing; absent in normal play. */
   onMeleeResult?: (result: MeleeResult) => void;
+  /** Presentation-only recoil for a confirmed hit. */
+  onMeleeContact?: (impulse: number) => void;
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -532,6 +563,8 @@ export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
   private playerAttackWait = 0;
+  private meleeAction: MeleeActionState | null = null;
+  private nextFistHand: MeleeHand = 'right';
   private frozen = false;
 
   constructor(options: ZombieSystemOptions) {
@@ -541,6 +574,10 @@ export class ZombieSystem {
 
   get isFrozen(): boolean {
     return this.frozen;
+  }
+
+  get activeMeleeAction(): Readonly<MeleeActionState> | undefined {
+    return this.meleeAction ?? undefined;
   }
 
   /** Debug-only caller-controlled pause for living shambler AI; this state is deliberately not saved. */
@@ -571,6 +608,8 @@ export class ZombieSystem {
   snapshotState(): Readonly<ZombieSystemState> {
     return freezeSnapshot({
       playerAttackWait: this.playerAttackWait,
+      meleeAction: this.meleeAction === null ? null : structuredClone(this.meleeAction),
+      nextFistHand: this.nextFistHand,
       nextEntityId: this.store.nextId,
       zombies: [...this.store.entries()].map(([id, zombie]) => {
         const {
@@ -691,8 +730,78 @@ export class ZombieSystem {
     if (!Number.isFinite(state.playerAttackWait) || state.playerAttackWait < 0) {
       throw new Error('Invalid player attack cooldown');
     }
+    if (state.nextFistHand !== 'right' && state.nextFistHand !== 'left') {
+      throw new Error('Invalid next fist hand');
+    }
+    this.validateMeleeAction(state.meleeAction);
     this.store.restore(entries, state.nextEntityId);
     this.playerAttackWait = state.playerAttackWait;
+    this.meleeAction = state.meleeAction === null ? null : structuredClone(state.meleeAction);
+    this.nextFistHand = state.nextFistHand;
+  }
+
+  private validateMeleeAction(action: MeleeActionState | null): void {
+    if (action === null) {
+      return;
+    }
+    const vector3 = (value: unknown): value is Vec3 =>
+      Array.isArray(value) && value.length === 3 && value.every((component) => Number.isFinite(component));
+    const validUid = (uid: number | null): boolean => uid === null || (Number.isSafeInteger(uid) && uid > 0);
+    if (
+      !['blunt', 'cut', 'pierce', 'fists'].includes(action.profile) ||
+      (action.hand !== 'right' && action.hand !== 'left') ||
+      typeof action.twoHanded !== 'boolean' ||
+      !Number.isFinite(action.cooldown) ||
+      action.cooldown <= 0 ||
+      !Number.isFinite(action.contactAt) ||
+      Math.abs(action.contactAt - meleeContactTime(action.cooldown)) > 1e-9 ||
+      !Number.isFinite(action.aimYaw) ||
+      !Number.isFinite(action.aimPitch) ||
+      !Number.isFinite(action.elapsed) ||
+      action.elapsed < 0 ||
+      action.elapsed >= action.cooldown ||
+      typeof action.hitResolved !== 'boolean' ||
+      (action.hitResolved && action.elapsed < action.contactAt) ||
+      !vector3(action.origin) ||
+      !vector3(action.direction) ||
+      !Number.isFinite(action.weapon.damage) ||
+      action.weapon.damage <= 0 ||
+      !Number.isFinite(action.weapon.reach) ||
+      action.weapon.reach <= 0 ||
+      action.weapon.cooldown !== action.cooldown ||
+      (action.weapon.stamina !== undefined && (!Number.isFinite(action.weapon.stamina) || action.weapon.stamina < 0)) ||
+      (action.weapon.impulse !== undefined && (!Number.isFinite(action.weapon.impulse) || action.weapon.impulse < 0)) ||
+      (action.weapon.type !== undefined && !['blunt', 'cut', 'pierce'].includes(action.weapon.type)) ||
+      !action.hands ||
+      !validUid(action.hands.right) ||
+      !validUid(action.hands.left)
+    ) {
+      throw new Error('Invalid player melee action');
+    }
+  }
+
+  private tickMeleeAction(dt: number, hands?: { right: number | null; left: number | null }): void {
+    const action = this.meleeAction;
+    if (!action) {
+      return;
+    }
+    if (hands && (hands.right !== action.hands.right || hands.left !== action.hands.left)) {
+      this.meleeAction = null;
+      return;
+    }
+    const elapsed = Math.min(action.cooldown, action.elapsed + dt);
+    if (!action.hitResolved && elapsed + 1e-9 >= action.contactAt) {
+      const contact = meleePoseAndContact(action, action.contactAt, false).contactRay;
+      if (contact) {
+        this.resolveMeleeNow(contact.origin, contact.direction, action.weapon);
+      }
+      action.hitResolved = true;
+    }
+    if (elapsed >= action.cooldown) {
+      this.meleeAction = null;
+    } else {
+      action.elapsed = elapsed;
+    }
   }
 
   private tickLookAround(zombie: Zombie, dt: number): void {
@@ -925,7 +1034,7 @@ export class ZombieSystem {
 
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
-  tick(dt: number, time = 0): void {
+  tick(dt: number, time = 0, _hands?: { right: number | null; left: number | null }): void {
     if (dt <= 0) {
       return;
     }
@@ -942,8 +1051,6 @@ export class ZombieSystem {
         zombie.body.vel[2] = 0;
         stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
       }
-      // Freeze only shambler timers; the player's own melee cooldown continues to elapse.
-      this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
       return;
     }
     const player = this.options.player();
@@ -1318,7 +1425,15 @@ export class ZombieSystem {
         this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode);
       }
     }
+  }
+
+  /** Advances player attack timing once per player physics tick, independently of shambler AI cadence. */
+  tickPlayerAction(dt: number, hands: { right: number | null; left: number | null }): void {
+    if (dt <= 0) {
+      return;
+    }
     this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
+    this.tickMeleeAction(dt, hands);
   }
 
   unsafeReason(playerPos = this.options.player().pos): string | undefined {
@@ -1397,12 +1512,38 @@ export class ZombieSystem {
     };
   }
 
-  /** Strikes the first visible zombie within arm reach plus the held weapon's reach beyond the hand. */
-  swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
-    if (this.playerAttackWait > 0) {
-      return undefined;
+  /** Starts an attack from the player's sampled tick aim; contact resolves after its bounded wind-up. */
+  beginMeleeSwing(start: BeginMeleeSwing): boolean {
+    const { weapon, profile } = start;
+    if (this.playerAttackWait > 0 || this.meleeAction !== null || weapon.cooldown <= 0) {
+      return false;
     }
-    this.options.onSound?.('melee_swing', copy(origin));
+    const hand = profile === 'fists' ? this.nextFistHand : (start.hand ?? 'right');
+    const direction = unit(start.direction);
+    if (profile === 'fists') {
+      this.nextFistHand = hand === 'right' ? 'left' : 'right';
+    }
+    this.playerAttackWait = weapon.cooldown;
+    this.meleeAction = {
+      profile,
+      hand,
+      twoHanded: start.twoHanded,
+      cooldown: weapon.cooldown,
+      contactAt: meleeContactTime(weapon.cooldown),
+      aimYaw: start.aimYaw ?? Math.atan2(-direction[0], -direction[2]),
+      aimPitch: start.aimPitch ?? Math.asin(Math.max(-1, Math.min(1, direction[1]))),
+      elapsed: 0,
+      hitResolved: false,
+      origin: copy(start.origin),
+      direction,
+      hands: { ...start.hands },
+      weapon: { ...weapon },
+    };
+    this.options.onSound?.('melee_swing', copy(start.origin));
+    return true;
+  }
+
+  private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
     const aim = this.aimAt(origin, direction, weapon);
     if (!aim?.inReach) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
@@ -1412,7 +1553,6 @@ export class ZombieSystem {
     if (!zombie) {
       return undefined;
     }
-    this.playerAttackWait = weapon.cooldown;
     this.applyMeleeHit({
       id: aim.id,
       zombie,
@@ -1425,6 +1565,19 @@ export class ZombieSystem {
     return aim.id;
   }
 
+  /** Immediate combat-query helper retained for deterministic geometry tests; live input uses beginMeleeSwing. */
+  swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
+    if (this.playerAttackWait > 0) {
+      return undefined;
+    }
+    this.options.onSound?.('melee_swing', copy(origin));
+    const id = this.resolveMeleeNow(origin, direction, weapon);
+    if (id !== undefined) {
+      this.playerAttackWait = weapon.cooldown;
+    }
+    return id;
+  }
+
   private applyMeleeHit({ id, zombie, region, origin, direction, distanceMetres, weapon }: MeleeHitContext): void {
     const ray = unit(direction);
     const distance = distanceMetres / this.options.blockSize;
@@ -1433,6 +1586,7 @@ export class ZombieSystem {
       direction: ray,
       impulse: weapon.impulse ?? 4,
     };
+    this.options.onMeleeContact?.(hit.impulse);
     const healthBefore = zombie.regions[region];
     const severedBefore = new Set(zombie.severed);
     this.options.onSound?.('melee_hit', copy(zombie.body.pos));

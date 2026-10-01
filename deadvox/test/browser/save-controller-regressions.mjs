@@ -63,11 +63,20 @@ try {
       const { controller } = deadvoxSaveTest;
       let time = 0;
       let writes = 0;
+      const measuredDurations = [];
       controller.storage.save = () => {
         writes += 1;
         return { generation: writes, slot: 'a', backend: 'indexeddb' };
       };
-      controller.bindSession(controller.snapshot, () => time, controller.worldOptions);
+      const bindAtCurrentTime = () =>
+        controller.bindSession(
+          controller.snapshot,
+          () => time,
+          controller.worldOptions,
+          undefined,
+          (durationMs) => measuredDurations.push(durationMs),
+        );
+      bindAtCurrentTime();
       const samples = [];
       for (time of [899.999, 900, 1800]) {
         controller.afterFrame();
@@ -75,15 +84,28 @@ try {
         samples.push(writes);
       }
       time = 900;
-      controller.bindSession(controller.snapshot, () => time, controller.worldOptions);
+      bindAtCurrentTime();
       for (time of [1799, 1800]) {
         controller.afterFrame();
         await new Promise((resolve) => setTimeout(resolve, 0));
         samples.push(writes);
       }
-      return samples;
+      time = 0;
+      bindAtCurrentTime();
+      time = 950; // the debug clock moved past the scheduled 900-second checkpoint
+      controller.rearmAutosaveAfterTimeSeek();
+      const afterSeek = [];
+      for (time of [950, 1799, 1800, 1801]) {
+        controller.afterFrame();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        afterSeek.push(writes);
+      }
+      return { samples, afterSeek, measuredDurations };
     });
-    assert.deepEqual(schedule, [0, 1, 2, 2, 3]);
+    assert.deepEqual(schedule.samples, [0, 1, 2, 2, 3]);
+    assert.deepEqual(schedule.afterSeek, [3, 3, 4, 4]);
+    assert.equal(schedule.measuredDurations.length, 4);
+    assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
     await page.evaluate(async () => {
       const { controller } = deadvoxSaveTest;
