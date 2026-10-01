@@ -141,7 +141,7 @@ const secs = (s: number) => `${s.toFixed(1)} s`;
 const kg = (g: number) => `${(g / 1000).toFixed(2)} kg`;
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
-  <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? nothing}>
+  <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? ''}>
     <span class="inv-item-name">${vm.name}</span>
     ${vm.count ? html`<span class="inv-item-count">${vm.count}</span>` : nothing}
   </div>
@@ -364,7 +364,7 @@ export class InventoryScreen {
       .containers()
       .map((e) => e.uid)
       .join(',');
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${this.queue.jobs.length}`;
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -437,7 +437,6 @@ export class InventoryScreen {
 
   private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
     const result = this.queue.enqueue(item, target, count);
-    this.drawn = '';
     return result.ok ? undefined : result.reason;
   }
 

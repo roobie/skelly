@@ -98,6 +98,9 @@ try {
     }
   }, 'Chrome page');
   const page = await getPage();
+  if (!page) {
+    throw new Error('Chrome page disappeared after startup');
+  }
   ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
@@ -176,15 +179,20 @@ try {
     window.__keyEvents = [];
     const hitTest = document.elementFromPoint.bind(document);
     document.elementFromPoint = (x, y) => {
-      window.__lastHitTest = { x, y, target: hitTest(x, y) };
-      return window.__lastHitTest.target;
+      const target = hitTest(x, y);
+      window.__lastHitTest = {
+        x,
+        y,
+        insideGo: Boolean(target?.closest('#go')),
+        buttonText: target?.closest('button')?.textContent?.trim() ?? '',
+      };
+      return target;
     };
     document.addEventListener('click', (event) => {
       if (event.target !== canvas) {
         window.__lastForwardedClick = {
           x: event.clientX,
           y: event.clientY,
-          target: event.target,
           hitTest: window.__lastHitTest,
         };
       }
@@ -238,6 +246,11 @@ try {
       isPrimary: true,
       button: ${button},
       buttons: ${buttons},
+    }))`);
+  const dispatchPointerAt = async (type, button, buttons, position) =>
+    evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true,
+      button: ${button}, buttons: ${buttons}, clientX: ${position.x}, clientY: ${position.y},
     }))`);
   const clickAt = async (selector, anchor = 'center') => {
     await evaluate('window.__lastForwardedClick = null');
@@ -366,7 +379,7 @@ try {
       background: cursor.background,
       blend: cursor.blend,
       rootBlend: cursor.rootBlend,
-      hitGo: click.hitTest.target?.closest('#go') === document.querySelector('#go'),
+      hitGo: click.hitTest.insideGo,
       hitX: click.hitTest.x,
       hitY: click.hitTest.y,
     };
@@ -443,6 +456,7 @@ try {
     /^Placed \d+ of 1$/,
     'V reports the number placed out of the selected count',
   );
+  await press('KeyO', 'o', 79);
   await press('Backquote', '`', 192);
   assert.deepEqual(
     await evaluate('window.__pointerCalls'),
@@ -463,7 +477,14 @@ try {
     await clickAt(`#spawn .spawn-list button:nth-child(${index + 1})`);
   }
   await press('KeyG', 'g', 71);
-
+  if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
+    await clickAt('#go', 'edge');
+  }
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'play is resumed before inventory queue checks',
+  );
   const toggles = await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)");
   assert.equal(
     toggles.every((checked) => !checked),
@@ -556,15 +577,18 @@ try {
   })()`);
   assert.match(transfer.sourceTarget, /^pocket:/, 'source item is in a container pocket');
   await moveCursorTo(transfer.source);
-  await dispatchPointer('pointerdown', 0, 1);
+  await evaluate(`document.elementFromPoint(${transfer.source.x}, ${transfer.source.y}).dispatchEvent(new PointerEvent('pointerdown', {
+    bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
+    clientX: ${transfer.source.x}, clientY: ${transfer.source.y},
+  }))`);
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
     'Can of beans',
     'drawn-cursor pointerdown selects an item in a container',
   );
   await moveCursorTo(transfer.destination);
-  await dispatchPointer('pointermove', -1, 1);
-  await dispatchPointer('pointerup', -1, 0);
+  await dispatchPointerAt('pointermove', -1, 1, transfer.destination);
+  await dispatchPointerAt('pointerup', -1, 0, transfer.destination);
   await delay(100);
   assert.match(
     await evaluate("document.querySelector('#inventory .inv-queue').textContent"),
@@ -597,8 +621,14 @@ try {
   // With a menu open and pointer locked, move the drawn cursor, dispatch a click to its target,
   // and verify both a button handler and input focus receive the forwarded click.
   await press('KeyG', 'g', 71);
+  await evaluate("document.querySelector('#spawn .spawn-list button').scrollIntoView({ block: 'center' })");
   await evaluate('window.__setPointerLocked(true)');
-  await delay(100);
+  await waitFor(() => evaluate("!document.querySelector('#game-cursor').hidden"), 'menu cursor visibility');
+  cursor = await evaluate(`(() => {
+    const node = document.querySelector('#game-cursor');
+    const rect = node.getBoundingClientRect();
+    return { x: rect.left + (node.classList.contains('hand') ? 4 : 0), y: rect.top };
+  })()`);
   await clickAt('#spawn .spawn-list button');
   const hotspot = await evaluate(`(() => {
     const cursor = document.querySelector('#game-cursor').getBoundingClientRect();
@@ -608,7 +638,7 @@ try {
       tipY: cursor.top,
       hitTest: window.__lastHitTest,
       forwarded: window.__lastForwardedClick,
-      hitButton: window.__lastHitTest.target?.closest('button') === button,
+      hitButton: window.__lastHitTest.buttonText === button.textContent.trim(),
     };
   })()`);
   assert.ok(Math.abs(hotspot.tipX - cursor.x) < 0.1, 'pointing-hand fingertip sits at cursor x');
