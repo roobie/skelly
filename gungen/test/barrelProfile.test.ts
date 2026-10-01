@@ -64,7 +64,8 @@ describe('octagonal barrel and gas-system geometry', () => {
     expect(cylinder.profile[0]![1]).toBeCloseTo(0.25 * (Math.SQRT2 - 1));
   });
 
-  it('keeps every curated design and passing fixture valid with octagonal barrels', () => {
+  // Measured about 4.3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('keeps every curated design and passing fixture valid with octagonal barrels', { timeout: 25_000 }, () => {
     for (const { label, assembly } of loadCorpus()) {
       const report = validate(assembly, gunDomain);
       expect(report.issues, label).toEqual([]);
