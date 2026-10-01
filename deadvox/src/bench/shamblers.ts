@@ -21,6 +21,7 @@ import {
   type ShamblerRunResult,
   saveRecord,
 } from './plan.ts';
+import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
 import { environment } from './run.ts';
 import { findShamblerBenchPlayer, placeShamblerRing } from './shamblerPlacement.ts';
 import { frameStats, sampleStats } from './stats.ts';
@@ -31,6 +32,8 @@ export interface ShamblerBenchRun {
   seed: number;
   time: string;
   actors: ActorRenderer;
+  /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
+  post: boolean;
 }
 
 export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | undefined => {
@@ -47,14 +50,14 @@ export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | 
   ) {
     return undefined;
   }
-  return { counts, index, seed, time, actors: actorRendererFromUrl(params) };
+  return { counts, index, seed, time, actors: actorRendererFromUrl(params), post: benchPostFromUrl(params) };
 };
 
 const nextUrl = (run: ShamblerBenchRun): string => {
   if (run.index + 1 >= run.counts.length) {
     return '?bench=report';
   }
-  return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}&actors=${run.actors}`;
+  return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}&actors=${run.actors}${postUrlPart(run.post)}`;
 };
 
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
@@ -66,6 +69,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
   document.getElementById('overlay')!.hidden = true;
   const startTime = parseTimeOfDay(run.time)!;
   applySky(engine.sky, skyAt(hourOfDay(startTime)));
+  const drawFrame = benchDraw(engine, run.post, hourOfDay(startTime));
   streamer.onColumn = (cx, cz) => {
     for (const { spec } of engine.site?.furnitureIn(cx, cz) ?? []) {
       engine.entities.add(spec);
@@ -79,6 +83,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
           quick: false,
           site: 'hamlet',
           time: run.time,
+          ...(run.post ? { post: true } : {}),
           env: environment(engine),
           runs: [],
           shamblers: [],
@@ -292,7 +297,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
       }
     }
     const submitStart = performance.now();
-    renderer.render(scene, camera);
+    drawFrame();
     if (measuring) {
       renderSubmit.push(performance.now() - submitStart);
       // The population is fixed for the whole run, so one snapshot per measured frame is representative
