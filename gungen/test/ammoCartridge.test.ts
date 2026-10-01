@@ -165,11 +165,16 @@ describe('relations between cartridges', () => {
       { cartridge: 'synthetic-missing', relation: 'same-external-dimensions' },
       { cartridge: 'synthetic-b', relation: 'same-external-dimensions' },
     ]);
-    const found = checkRelations([both, other]).map((issue) => issue.message);
-    expect(found).toHaveLength(3);
-    expect(found.join('\n')).toContain('both safe and unsafe');
-    expect(found.join('\n')).toContain("unknown cartridge 'synthetic-missing'");
-    expect(found.join('\n')).toContain('related to itself');
+    const found = checkRelations([both, other]);
+    expect(found.map((issue) => `${issue.rule} ${issue.path}`).sort()).toEqual([
+      'relations synthetic-a.relatedTo',
+      'relations synthetic-b.relatedTo[0]',
+      'relations synthetic-b.relatedTo[1]',
+    ]);
+    const messages = found.map((issue) => issue.message).join('\n');
+    expect(messages).toContain('both safe and unsafe');
+    expect(messages).toContain("unknown cartridge 'synthetic-missing'");
+    expect(messages).toContain('related to itself');
   });
 });
 
@@ -347,8 +352,12 @@ describe('parse', () => {
   });
 
   it('refuses an unknown kind and format, and any head type it does not model (belted, rebated, semi-rimmed)', () => {
-    expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), kind: 'rimfire' })).toContain('kind');
-    expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), format: 2 })).toContain('unsupported format 2');
+    expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), kind: 'rimfire' })).toBe(
+      "kind: expected one of metallic, shotshell; got 'rimfire'",
+    );
+    expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), format: 2 })).toBe(
+      'format: unsupported format 2; this reader understands 1',
+    );
     for (const type of ['flanged', 'belted', 'rebated', 'semi-rimmed']) {
       expect(parseErrorOf(edited('rimmed-straight', 'case.head.type', type)), type).toBe(
         `case.head.type: expected one of rimless, rimmed; got '${type}'`,
@@ -359,5 +368,212 @@ describe('parse', () => {
   it('loads a structurally valid file whose physics is absurd, and leaves judging it to the rules', () => {
     const json = edited('rimmed-straight', 'case.length.value', 500);
     expect([...new Set(issues(json))]).toEqual(['lengths case.length']);
+  });
+});
+
+const CITE = { source: 'synthetic', locator: 'invented for tests' };
+
+/** The `rule path` issues of a synthetic cartridge after setting each path to its value. */
+const issuesAfter = (shape: SyntheticShape | ShotshellShape, set: Record<string, Json>): string[] => {
+  const json = syntheticJson(shape);
+  for (const [path, value] of Object.entries(set)) {
+    setPath(json, path, value);
+  }
+  return issues(json);
+};
+
+/** Issues for the synthetic source document after patching its fields. */
+const sourceIssues = (patch: Record<string, Json>): string[] =>
+  issuesAfter(
+    'rimmed-straight',
+    Object.fromEntries(Object.entries(patch).map(([field, value]) => [`sources.synthetic.${field}`, value])),
+  );
+
+interface EdgeCase {
+  readonly name: string;
+  readonly shape: SyntheticShape | ShotshellShape;
+  readonly set: Record<string, Json>;
+  readonly expected: string[];
+}
+
+describe('rules at their edges', () => {
+  // Each row makes two compared values equal, so it fails if a strict comparison turns inclusive or back.
+  it.each<EdgeCase>([
+    {
+      name: 'a shoulder that starts where the body starts is refused (positions are strictly ordered)',
+      shape: 'rimless-bottleneck',
+      set: { 'case.body.shoulder.startPosition.value': 3 },
+      expected: ['positions case.bodyStart'],
+    },
+    {
+      name: 'a groove that ends exactly at the body start is allowed',
+      shape: 'rimless-bottleneck',
+      set: { 'case.bodyStart.value': 2.5 },
+      expected: [],
+    },
+    {
+      name: 'a rimmed rim as wide as the head is refused (it must be wider)',
+      shape: 'rimmed-straight',
+      set: { 'case.rim.diameter.value': 11 },
+      expected: ['head-type case.rim.diameter'],
+    },
+    {
+      name: 'a rimless rim exactly at the tolerance from the head is allowed',
+      shape: 'rimless-straight',
+      set: { 'case.rim.diameter.value': 12.5 },
+      expected: [],
+    },
+    {
+      name: 'a straight mouth as wide as the head is allowed (a taper may be zero)',
+      shape: 'rimmed-straight',
+      set: { 'case.body.diameterAtMouth.value': 11 },
+      expected: [],
+    },
+    {
+      name: 'a case as long as the round is refused (the bullet must stick out)',
+      shape: 'rimmed-straight',
+      set: { 'case.length.value': 54 },
+      expected: ['lengths case.length'],
+    },
+    {
+      name: 'a maximum overall length equal to the typical one is allowed',
+      shape: 'rimmed-straight',
+      set: { 'overallLength.typical.value': 55 },
+      expected: [],
+    },
+    {
+      name: 'a crimped shell as long as the opened one is allowed',
+      shape: 'shotshell-buck',
+      set: { 'length.loaded.value': 70 },
+      expected: [],
+    },
+    {
+      name: 'a metal head as tall as the loaded shell is refused',
+      shape: 'shotshell-buck',
+      set: { 'head.height.value': 66 },
+      expected: ['shotshell head.height'],
+    },
+    {
+      name: 'a bullet wider than the mouth of a straight case leaves no wall',
+      shape: 'rimless-straight',
+      set: { 'payload.diameter.value': 11.8 },
+      expected: ['neck-wall case.body.diameterAtMouth'],
+    },
+    {
+      name: 'a bullet as wide as the base of a bottleneck neck leaves no wall',
+      shape: 'rimmed-bottleneck',
+      set: { 'case.body.neck.diameterAtBase.value': 8 },
+      expected: ['neck-wall case.body.neck.diameterAtBase'],
+    },
+    {
+      name: 'a bullet as wide as the mouth of a bottleneck neck leaves no wall',
+      shape: 'rimmed-bottleneck',
+      set: { 'case.body.neck.diameterAtMouth.value': 8 },
+      expected: ['neck-wall case.body.neck.diameterAtMouth'],
+    },
+    {
+      name: 'a zero length is refused',
+      shape: 'rimless-straight',
+      set: { 'case.primer.diameter.value': 0 },
+      expected: ['units case.primer.diameter'],
+    },
+    {
+      name: 'a zero mass is refused',
+      shape: 'rimmed-straight',
+      set: { 'payload.variants[0].massGrains.value': 0 },
+      expected: ['units payload.variants[0].massGrains'],
+    },
+    {
+      name: 'an angle of 0 degrees is refused',
+      shape: 'rimless-bottleneck',
+      set: { 'case.body.shoulder.angle.value': 0 },
+      expected: ['units case.body.shoulder.angle'],
+    },
+    {
+      name: 'an angle of 180 degrees is refused',
+      shape: 'rimless-bottleneck',
+      set: { 'case.body.shoulder.angle.value': 180 },
+      expected: ['units case.body.shoulder.angle'],
+    },
+    {
+      name: 'a gauge of zero is refused',
+      shape: 'shotshell-buck',
+      set: { 'gauge.value': 0 },
+      expected: ['units gauge'],
+    },
+    {
+      name: 'an alternative value is checked like the primary one',
+      shape: 'rimmed-straight',
+      set: { 'case.length.alternatives': [{ value: -1, cite: CITE }] },
+      expected: ['units case.length.alternatives[0]'],
+    },
+    {
+      name: 'a tolerance of zero is allowed (only a negative one is refused)',
+      shape: 'rimmed-straight',
+      set: { 'case.length.tolerance': { minus: 0, plus: 0 } },
+      expected: [],
+    },
+  ])('$name', ({ shape, set, expected }) => {
+    expect([...new Set(issuesAfter(shape, set))]).toEqual(expected);
+  });
+
+  it.each([
+    { name: 'on the left of a comparison', shape: 'rimmed-straight', path: 'case.rim.diameter' },
+    { name: 'on the right of a comparison', shape: 'rimmed-straight', path: 'overallLength.max' },
+    { name: 'as the limit a groove end is compared with', shape: 'rimless-bottleneck', path: 'case.bodyStart' },
+    { name: 'as the rim of a rimless head', shape: 'rimless-bottleneck', path: 'case.rim.diameter' },
+    { name: 'as the head diameter of a rimless head', shape: 'rimless-bottleneck', path: 'case.body.diameterAtHead' },
+  ] as const)('an unsourced (null) value $name drops its comparisons instead of failing them', ({ shape, path }) => {
+    const json = edited(shape, `${path}.value`, null);
+    setPath(json, `${path}.note`, 'not printed by the source');
+    expect(issues(json)).toEqual([]);
+  });
+
+  it('treats a sum with an unsourced part as unknown, not as the sum of the rest', () => {
+    // The groove end is rim thickness + groove width. With the thickness unknown, the groove width
+    // alone (1) would not fit before a body start of 0.5, but the sum is unknown so nothing is compared.
+    expect(
+      issuesAfter('rimless-bottleneck', {
+        'case.rim.thickness.value': null,
+        'case.rim.thickness.note': 'not printed by the source',
+        'case.bodyStart.value': 0.5,
+      }),
+    ).toEqual([]);
+  });
+
+  it('accepts only real calendar dates written YYYY-MM-DD', () => {
+    const wrong = ['2026-02-30', '2026-13-05', '2026-00-10', '2026-1-1', ' 2026-10-01', '2026-10-01 '];
+    for (const retrieved of wrong) {
+      expect(sourceIssues({ retrieved }), retrieved).toEqual(['sources sources.synthetic.retrieved']);
+    }
+    for (const retrieved of ['2024-02-29', '2026-12-31']) {
+      expect(sourceIssues({ retrieved }), retrieved).toEqual([]);
+    }
+  });
+
+  it('accepts only an http(s) URL for a real source, and any text for a synthetic one', () => {
+    for (const url of ['ftp://example.org/x', 'see the library', ' https://example.org', 'xhttps://example.org']) {
+      expect(sourceIssues({ reliability: 'standard', url }), url).toEqual(['sources sources.synthetic.url']);
+    }
+    for (const url of ['http://example.org/x', 'https://example.org/x']) {
+      expect(sourceIssues({ reliability: 'standard', url }), url).toEqual([]);
+    }
+    expect(sourceIssues({ url: 'none' })).toEqual([]);
+  });
+
+  it('accepts a SHA-256 only as exactly 64 lowercase hex digits', () => {
+    const wrong = ['abc', 'a'.repeat(63), 'a'.repeat(65), 'A'.repeat(64), `x${'a'.repeat(64)}`, `${'a'.repeat(64)}x`];
+    for (const sha256 of wrong) {
+      expect(sourceIssues({ sha256 }), sha256).toEqual(['sources sources.synthetic.sha256']);
+    }
+    expect(sourceIssues({ sha256: '0123456789abcdef'.repeat(4) })).toEqual([]);
+  });
+
+  it('treats a note of only whitespace as no note on an unsourced value', () => {
+    const json = edited('rimmed-straight', 'case.length.value', null);
+    setPath(json, 'case.length.note', '   ');
+    expect(issues(json)).toEqual(['sourced-values case.length']);
+    setPath(json, 'case.length.note', 'not printed by the source');
+    expect(issues(json)).toEqual([]);
   });
 });
