@@ -71,13 +71,10 @@ const solidBounds = (component: Solid): readonly [Vec3, Vec3] => {
   ];
 };
 const akChargingHandleSolids = (envelope: CarrierEnvelope = BOLT_CARRIER_ENVELOPES.ak): Solid[] => {
-  const rootX = envelope.x[0];
-  const rootY = envelope.y[0];
+  const [rootX] = envelope.x;
+  const [rootY] = envelope.y;
   const sideZ = envelope.z[0] - 0.5;
-  const profile = (
-    id: string,
-    points: readonly Vec2[],
-  ): Extract<Solid, { kind: 'extruded-polygon' }> => ({
+  const profile = (id: string, points: readonly Vec2[]): Extract<Solid, { kind: 'extruded-polygon' }> => ({
     id,
     kind: 'extruded-polygon',
     profile: points,
@@ -435,7 +432,14 @@ export const CARRIER_HANDLE_STYLES = {
   ak: { shape: 'stick-paddle', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   autoShotgun: { shape: 'stick-paddle', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   bolt: { shape: 'down-back-ball', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
-  smg: { shape: 'mp5-cocking-tube', owner: 'receiver', motion: 'linear', handClearanceU: 0.25, sweep: true, segment: 'receiver-connected' },
+  smg: {
+    shape: 'mp5-cocking-tube',
+    owner: 'receiver',
+    motion: 'linear',
+    handClearanceU: 0.25,
+    sweep: true,
+    segment: 'receiver-connected',
+  },
   battle: { shape: 'fal-folded-out', owner: 'receiver', motion: 'fixed', handClearanceU: 0.25 },
   barrett: { shape: 'right-side-crank', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   pump: { shape: 'none', owner: 'none', motion: 'none' },
@@ -842,9 +846,7 @@ const arRearTHandle = (inside = false): Solid[] => [
   metalSolid('ar-handle-latch', [-16.5, 2.5, -0.5], [-16, 3, 0.5]),
 ];
 
-const smgCockingTube = (): Solid[] => [
-  metalSolid('smg-cocking-tube', [-5.5, 0.75, -2.75], [-0.5, 1.25, -2]),
-];
+const smgCockingTube = (): Solid[] => [metalSolid('smg-cocking-tube', [-5.5, 0.75, -2.75], [-0.5, 1.25, -2])];
 
 const falChargingHandle = (): Solid[] => [
   metalSolid('fal-handle-pivot', [-14.5, 1.25, -2.75], [-13.5, 1.75, -2.15]),
@@ -1100,7 +1102,13 @@ const receiverKeepOuts = (context: ReceiverContext): KeepOut[] => {
   addActionKeepOuts(params, keepOuts);
   addReceiverHandleKeepOuts(params, keepOuts);
   const style = CARRIER_HANDLE_STYLES[carrierHandleStyleFor(params)];
-  if (params.action === 'auto' && 'segment' in style && style.segment === 'receiver-connected' && style.motion === 'linear' && style.sweep) {
+  if (
+    params.action === 'auto' &&
+    'segment' in style &&
+    style.segment === 'receiver-connected' &&
+    style.motion === 'linear' &&
+    style.sweep
+  ) {
     keepOuts.push(
       keepOut(
         'smg-handle-sweep',
@@ -1155,7 +1163,10 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
       ? {
           ...portWindow,
           x: [
-            Math.min(portWindow.x[0], travel.restX - travel.length - handleRearReach - BOLT_CARRIER_RUNNING_CLEARANCE_U),
+            Math.min(
+              portWindow.x[0],
+              travel.restX - travel.length - handleRearReach - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+            ),
             portWindow.x[1],
           ] as const,
         }
@@ -1321,7 +1332,10 @@ const translateSolid = (component: Solid, offset: Vec3): Solid => {
   if (component.kind === 'box') {
     return {
       ...component,
-      box: { ...component.box, center: component.box.center.map((value, axis) => value + offset[axis]!) as unknown as Vec3 },
+      box: {
+        ...component.box,
+        center: component.box.center.map((value, coordinateAxis) => value + offset[coordinateAxis]!) as unknown as Vec3,
+      },
     };
   }
   const axis = component.axis ?? 'z';
@@ -1346,11 +1360,7 @@ const translateSolid = (component: Solid, offset: Vec3): Solid => {
   };
 };
 
-const relativeToEnvelope = (
-  solids: readonly Solid[],
-  source: CarrierEnvelope,
-  target: CarrierEnvelope,
-): Solid[] => {
+const relativeToEnvelope = (solids: readonly Solid[], source: CarrierEnvelope, target: CarrierEnvelope): Solid[] => {
   const offset: Vec3 = [target.x[0] - source.x[0], target.y[0] - source.y[0], target.z[0] - source.z[0]];
   return solids.map((component) => translateSolid(component, offset));
 };
