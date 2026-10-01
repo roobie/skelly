@@ -25,8 +25,9 @@ an overshoot clamped to 1 is white).
   derive from them to its valid range, as a guard for drivers without proper centroid.
 - Run the debug hot check (`hotcheck=1`) after the last colour change (after fog), or it
   misses values that fog or later steps produce.
-- Reproduce at the reported `cam=` pose with `tools/render-probe.mjs` (see the repo's
-  AGENTS.md), but SwiftShader did not reproduce every case: confirm on a real GPU.
+- Reproduce at the reported `cam=` pose with `tools/render-probe.mjs` (see
+  [TROUBLESHOOTING.md](TROUBLESHOOTING.md)), but SwiftShader did not reproduce every case:
+  confirm on a real GPU.
 - Bisect with the debug toggles one at a time (`post=0`, `bloom=0`, `patterns=0`,
   `sunshadow=0`, `actors=boxes`, `crackcheck=1`, `hotcheck=1`) before theorising; two
   plausible hypotheses (mesh cracks, a too-low bloom threshold) were wrong here.

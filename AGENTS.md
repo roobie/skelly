@@ -27,31 +27,10 @@ npm ci --prefix deadvox/tools/lit-check   # for deadvox's lint:lit
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
-## Seeing the game without a display
+## Further docs
 
-`deadvox/tools/render-probe.mjs` renders a URL in headless Chromium on SwiftShader
-(software WebGL), screenshots it, and scans the pixels. Use it to verify shader or
-rendering changes and to reproduce a reported visual bug at an exact `cam=` pose.
-Headless Firefox cannot create a WebGL context on a display-less host; use this instead.
-
-One-time per host: `npx playwright install chromium`. Then, with `npm run dev` running
-in `deadvox/`:
-
-```sh
-cd deadvox
-node tools/render-probe.mjs "http://localhost:5173/?debug=1&site=testHouse&cam=-5.21,23.00,5.01,-87.8,-10.2,0.0&hotcheck=1&bloom=0" --out /tmp/shot.png
-```
-
-It prints the WebGL renderer, console errors, page errors, and scan counts with the first
-hits; `--window x,y,w,h` dumps raw RGB. Exit 1 on a page error, no WebGL, or flagged
-pixels; 2 on bad usage. Read the screenshot with the Read tool. Debug params live in
-`deadvox/src/debug/lookUrl.ts` and `camUrl.ts`.
-
-- Hot check (`hotcheck=1`): colour = material; full / half / checker fill = NaN /
-  Inf-or->8 / negative. Any cyan-family pixel is flagged.
-- Crack check (`crackcheck=1`): magenta = background visible through a gap. Flagged.
-- The renderer line says what drew the pixels. SwiftShader is not a GPU: a clean run
-  does not rule out GPU- or driver-specific issues. It is slow; keep the 25 s default wait.
+- Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
+- Lessons from past problems: `deadvox/LESSONS.md`.
 
 ## Before pushing
 
