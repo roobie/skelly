@@ -126,6 +126,8 @@ const MATERIAL_HEX: Record<string, number> = {
   'alu-anodized-black': 0x27_2c_31,
   'rubber-black': 0x18_1a_1b,
 };
+export const GUN_FINISH_SLOTS = ['metal', 'furniture', 'accent'] as const;
+
 const finish = (furniture: string, metal: string, accent = 'rubber-black') => ({ furniture, metal, accent });
 const FINISHES: Record<string, Readonly<Record<string, string>>> = {
   ak: finish('wood-walnut', 'steel-blued'),

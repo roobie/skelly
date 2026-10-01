@@ -72,6 +72,9 @@ const solidGeometry = (solid: Solid) => {
   return meshGeometry(solid, 0);
 };
 
+const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
+  a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
+
 /** Which parts, ports and keep-outs the given issues point at. */
 const highlights = (issues: readonly Issue[]) => ({
   parts: new Set(issues.flatMap((i) => i.parts)),
@@ -104,6 +107,16 @@ export function buildLayers(
     const failing = hl.parts.has(part);
 
     const drawn = def.displaySolids ?? def.solids;
+    const appearanceFor = (solid: Solid) =>
+      resolveAppearance(GUN_PALETTE, def.family, solid.id, {
+        context: appearanceContext,
+        overrides: {
+          ...(def.material === undefined ? {} : { partMaterial: def.material }),
+          ...(def.slot === undefined ? {} : { partSlot: def.slot }),
+          ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+          ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+        },
+      });
     const groups = new Map<string, Solid[]>();
     for (const solid of drawn) {
       const group = solid.display?.mergeGroup;
@@ -115,19 +128,16 @@ export function buildLayers(
       .filter((solid) => !solid.display?.mergeGroup)
       .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
     for (const [id, solids] of groups) {
-      rendered.push({ id, solids, merged: true });
+      const first = appearanceFor(solids[0]!);
+      if (solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))) {
+        rendered.push({ id, solids, merged: true });
+      } else {
+        rendered.push(...solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false })));
+      }
     }
     for (const item of rendered) {
       const s = item.solids[0]!;
-      const appearance = resolveAppearance(GUN_PALETTE, def.family, s.id, {
-        context: appearanceContext,
-        overrides: {
-          ...(def.material === undefined ? {} : { partMaterial: def.material }),
-          ...(def.slot === undefined ? {} : { partSlot: def.slot }),
-          ...(s.material === undefined ? {} : { solidMaterial: s.material }),
-          ...(s.slot === undefined ? {} : { solidSlot: s.slot }),
-        },
-      });
+      const appearance = appearanceFor(s);
       const color = failing
         ? FAIL
         : srgbToHex(colorMode === 'role' ? solidColor(GUN_PALETTE, def.family, s.id, s.material) : appearance.color);

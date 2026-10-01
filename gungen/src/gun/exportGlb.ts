@@ -25,7 +25,7 @@ export type GunExportResult =
 export const exportGunGlb = (
   assembly: Assembly,
   asset: GlbAssetIdentity,
-  appearance: AppearanceContext = {},
+  appearance: AppearanceContext,
 ): GunExportResult => {
   const resolved = resolve(assembly, gunDomain);
   // Anchor selection needs placed parts; a broken assembly gets the writer's own structure report first.

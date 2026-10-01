@@ -28,7 +28,7 @@ const design = (name: string): Assembly => {
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
 const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
-  const result = exportGunGlb(assembly, asset, variantName === undefined ? {} : { variant: variantName });
+  const result = exportGunGlb(assembly, asset, { variant: variantName ?? 'ar' });
   if (!result.ok) {
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
@@ -479,8 +479,8 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it('is deterministic', () => {
-    const a = exportGunGlb(design('archetype-ar'), ASSET);
-    const b = exportGunGlb(design('archetype-ar'), ASSET);
+    const a = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
+    const b = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
     expect(a.ok && b.ok && Buffer.from(a.glb).equals(Buffer.from(b.glb))).toBe(true);
   });
 });
@@ -494,7 +494,7 @@ describe('glb export: errors', () => {
     const broken = variant('archetype-ar', (a) => {
       a.connections.push({ from: 'receiver.nope', to: 'grip.top' });
     });
-    const result = exportGunGlb(broken, ASSET);
+    const result = exportGunGlb(broken, ASSET, { variant: 'ar' });
     expect(result.ok).toBe(false);
     if (!result.ok && 'issues' in result.error) {
       expect(result.error.code).toBe('structure-issues');
@@ -558,7 +558,7 @@ describe('glb export: errors', () => {
       'assets/models/.glb',
       'assets/models/x.gltf',
     ]) {
-      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] });
+      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] }, { variant: 'ar' });
       expect(result).toEqual({ ok: false, error: { code: 'invalid-asset-file', file } });
     }
   });

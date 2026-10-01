@@ -4,6 +4,22 @@ import type { Assembly } from '../core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb } from '../gun/exportGlb.ts';
 
+/** Canonical fixture identities supply appearance independently from their mechanical templates. */
+const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = {
+  'archetype-ak': { variant: 'ak' },
+  'archetype-ar': { variant: 'ar' },
+  'archetype-ar-free-float': { variant: 'ar-free-float' },
+  'archetype-awm': { variant: 'awm' },
+  'archetype-battle-rifle': { variant: 'battle-rifle' },
+  'archetype-bolt-rifle': { variant: 'bolt-rifle' },
+  'archetype-bolt-rifle-box': { variant: 'bolt-rifle-box' },
+  'archetype-bullpup': { variant: 'bullpup' },
+  'archetype-pistol': { variant: 'pistol' },
+  'archetype-pump-shotgun': { variant: 'pump-shotgun' },
+  'archetype-revolver': { variant: 'revolver' },
+  'archetype-smg': { variant: 'smg' },
+};
+
 export type ExportFileResult =
   | {
       readonly ok: true;
@@ -41,7 +57,11 @@ const readAssembly = (
   if (!parsed.ok) {
     return { message: `${parsed.error.path}: ${parsed.error.message}` };
   }
-  return { assembly: parsed.assembly, warnings: [], appearance: {} };
+  return {
+    assembly: parsed.assembly,
+    warnings: [],
+    appearance: FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
+  };
 };
 
 /** Turns a design or fixture file's text into the `.glb` bytes and the deadvox model entry. */

@@ -202,7 +202,14 @@ interface DisplayItem {
   readonly merged: boolean;
 }
 
-const displayItems = (drawn: readonly Solid[]): DisplayItem[] => {
+const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
+  a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
+
+/** Mixed-finish merge groups are emitted as their source solids so no finish is silently discarded. */
+const displayItems = (
+  drawn: readonly Solid[],
+  appearanceFor: (solid: Solid) => ReturnType<typeof resolveAppearance>,
+): DisplayItem[] => {
   const groups = new Map<string, Solid[]>();
   for (const solid of drawn) {
     const group = solid.display?.mergeGroup;
@@ -214,7 +221,12 @@ const displayItems = (drawn: readonly Solid[]): DisplayItem[] => {
     .filter((solid) => !solid.display?.mergeGroup)
     .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
   for (const [id, solids] of groups) {
-    items.push({ id, solids, merged: true });
+    const first = appearanceFor(solids[0]!);
+    if (solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))) {
+      items.push({ id, solids, merged: true });
+    } else {
+      items.push(...solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false })));
+    }
   }
   return items;
 };
@@ -295,7 +307,16 @@ export const exportGlb: ExportGlb = (input) => {
   };
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mesh attributes, shared appearance, and extras are one glTF primitive contract.
+  const appearanceFor = (part: PartExport, solid: Solid) =>
+    resolveAppearance(palette, part.def.family, solid.id, {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+        ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+        ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+      },
+    });
   const primitiveFor = (part: PartExport, item: DisplayItem): Json => {
     const solid = item.solids[0]!;
     const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
@@ -316,15 +337,7 @@ export const exportGlb: ExportGlb = (input) => {
       { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
       ELEMENT_ARRAY_BUFFER,
     );
-    const appearance = resolveAppearance(palette, part.def.family, solid.id, {
-      context: appearanceContext,
-      overrides: {
-        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
-        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
-        ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
-        ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
-      },
-    });
+    const appearance = appearanceFor(part, solid);
     return {
       attributes: { POSITION: position, NORMAL: normal },
       indices,
@@ -341,7 +354,9 @@ export const exportGlb: ExportGlb = (input) => {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = displayItems(drawn).map((item) => primitiveFor(part, item));
+    const primitives = displayItems(drawn, (solid) => appearanceFor(part, solid)).map((item) =>
+      primitiveFor(part, item),
+    );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);

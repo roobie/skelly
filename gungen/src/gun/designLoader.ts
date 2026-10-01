@@ -1,7 +1,7 @@
 import type { DesignLoadResult } from '../core/design.ts';
 import { loadDesign } from '../core/designLoader.ts';
 import { gunDomain } from './domain.ts';
-import { GUN_PALETTE } from './palette.ts';
+import { GUN_FINISH_SLOTS, GUN_PALETTE } from './palette.ts';
 import { GUN_PREFABS } from './prefabs.ts';
 import { TEMPLATES } from './templates.ts';
 
@@ -20,7 +20,7 @@ export const loadGunDesign = (text: string): DesignLoadResult => {
   if (!(loaded.ok && loaded.design.finish)) {
     return loaded;
   }
-  const validSlots = new Set(Object.values(GUN_PALETTE.roleSlots ?? {}));
+  const validSlots = new Set<string>(GUN_FINISH_SLOTS);
   const invalid = Object.entries(loaded.design.finish).find(
     ([slot, material]) => !(validSlots.has(slot) && Object.hasOwn(GUN_PALETTE.materials ?? {}, material)),
   );

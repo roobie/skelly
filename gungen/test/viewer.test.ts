@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Mesh, type MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { validate } from '../src/core/validate.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { TEMPLATES } from '../src/gun/templates.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
 import { loadFixture } from './helpers.ts';
 
@@ -29,6 +33,28 @@ describe('viewer geometry', () => {
         disposeGroup(group);
       }
       for (const group of Object.values(role)) {
+        disposeGroup(group);
+      }
+    }
+  });
+
+  it('uses the curated AWM finish with its independent mechanical template on the viewer path', () => {
+    const text = readFileSync(join(import.meta.dirname, '..', 'designs', 'archetype-awm.json'), 'utf8');
+    const loaded = loadGunDesign(text);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) {
+      return;
+    }
+    const template = TEMPLATES.find((candidate) => candidate.name === loaded.design.template);
+    const layers = buildLayers(validate(loaded.design.assembly, gunDomain), [], 'finish', {
+      ...(template ? { variant: template.name } : {}),
+      ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
+    });
+    try {
+      const stock = layers.solids.children.find((child) => String(child.userData.label).startsWith('stock (')) as Mesh;
+      expect((stock.material as MeshStandardMaterial).color.getHex()).toBe(0x4b_58_36);
+    } finally {
+      for (const group of Object.values(layers)) {
         disposeGroup(group);
       }
     }

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
+import { readGlb } from './glbReader.ts';
 
 const read = (dir: string, name: string): string =>
   readFileSync(join(import.meta.dirname, '..', dir, `${name}.json`), 'utf8');
@@ -19,6 +20,26 @@ describe('export CLI core', () => {
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
       expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
     }
+  });
+
+  it('preserves curated AWM and bare AK fixture appearances on the file-export path', () => {
+    const awm = exportFileText(read('designs', 'archetype-awm'), ASSET);
+    const ak = exportFileText(read('fixtures', 'archetype-ak'), ASSET);
+    expect(awm.ok && ak.ok).toBe(true);
+    if (!(awm.ok && ak.ok)) {
+      return;
+    }
+    const stockMaterial = (bytes: Uint8Array): string => {
+      const glb = readGlb(bytes);
+      const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
+      if (stock?.mesh === undefined) {
+        throw new Error('exported stock mesh is missing');
+      }
+      const primitive = glb.json.meshes[stock.mesh]!.primitives[0]!;
+      return glb.json.materials[primitive.material]!.name!;
+    };
+    expect(stockMaterial(awm.glb)).toBe('#4b5836');
+    expect(stockMaterial(ak.glb)).toBe('#754324');
   });
 
   it('writes the glb and model entry to separate output directories when requested', () => {
