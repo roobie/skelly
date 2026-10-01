@@ -5,7 +5,7 @@ import { buildMesh } from '../src/core/mesher.ts';
 import { BEDROCK, extractPadded, extractWide, PADDED, paddedIndex } from '../src/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '../src/core/occlusion.ts';
 import { hash3 } from '../src/core/random.ts';
-import { affectedChunks, isEnclosed, World } from '../src/core/world.ts';
+import { affectedChunks, isEnclosed, MESH_REACH, World } from '../src/core/world.ts';
 import { unitFaces } from './meshFaces.ts';
 
 /** Chunks whose shell (the chunk plus OCCLUSION_RADIUS on every side) holds the cell, by brute force. */
@@ -90,6 +90,10 @@ describe('World', () => {
     expect(world.getBlock(0, 5, 40)).toBe(4);
     expect(world.getBlock(1, 5, 40)).toBe(0);
     expect(world.getBlock(1000, -1000, 7)).toBe(0);
+  });
+
+  it('reaches as far as the occlusion radius, which the simulation graph repeats rather than imports', () => {
+    expect(MESH_REACH).toBe(OCCLUSION_RADIUS);
   });
 
   it('reports every chunk within the occlusion radius of an edited block as stale', () => {

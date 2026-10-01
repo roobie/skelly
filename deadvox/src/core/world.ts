@@ -1,7 +1,13 @@
 import { Chunk } from './chunk.ts';
 import { CHUNK, chunkKey, localIndex, toChunk, toLocal, type Vec3 } from './coords.ts';
-import { OCCLUSION_RADIUS } from './occlusion.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+
+/**
+ * Blocks beyond a chunk's faces that its mesh reads (the wide ambient occlusion's reach). Equal to
+ * OCCLUSION_RADIUS in core/occlusion.ts, which a test checks; it is repeated here so the simulation
+ * graph does not import that presentation module.
+ */
+export const MESH_REACH = 8;
 
 export interface BlockDelta {
   index: number;
@@ -153,17 +159,17 @@ export class World {
   }
 }
 
-/** -1 or 1 if a chunk-local coordinate is within OCCLUSION_RADIUS of the low or high face of its chunk, else 0. */
+/** -1 or 1 if a chunk-local coordinate is within MESH_REACH of the low or high face of its chunk, else 0. */
 const borderStep = (local: number): number => {
-  if (local < OCCLUSION_RADIUS) {
+  if (local < MESH_REACH) {
     return -1;
   }
-  return local >= CHUNK - OCCLUSION_RADIUS ? 1 : 0;
+  return local >= CHUNK - MESH_REACH ? 1 : 0;
 };
 
 /**
  * The chunk holding a block plus every neighbour chunk whose mesh reads it: the wide ambient occlusion
- * looks OCCLUSION_RADIUS blocks out (and the 1-block padding of the corner AO is inside that), so any
+ * looks MESH_REACH blocks out (and the 1-block padding of the corner AO is inside that), so any
  * chunk, including diagonal ones, whose border shell holds the block is stale. The block's own chunk
  * is first.
  */

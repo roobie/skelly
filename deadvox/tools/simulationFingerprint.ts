@@ -67,6 +67,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/mesher.ts',
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'src/core/meshInput.ts',
+  'src/core/occlusion.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
   'src/game/damageFeedback.ts',
