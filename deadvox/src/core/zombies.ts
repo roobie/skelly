@@ -87,6 +87,7 @@ interface MeleeHitContext {
   readonly direction: Vec3;
   readonly distanceMetres: number;
   readonly weapon: MeleeWeapon;
+  readonly isFist: boolean;
 }
 
 interface MeleeEffectsContext {
@@ -793,7 +794,7 @@ export class ZombieSystem {
     if (!action.hitResolved && elapsed + 1e-9 >= action.contactAt) {
       const contact = meleePoseAndContact(action, action.contactAt, false).contactRay;
       if (contact) {
-        this.resolveMeleeNow(contact.origin, contact.direction, action.weapon);
+        this.resolveMeleeNow(contact.origin, contact.direction, action.weapon, action.profile === 'fists');
       }
       action.hitResolved = true;
     }
@@ -1543,7 +1544,12 @@ export class ZombieSystem {
     return true;
   }
 
-  private resolveMeleeNow(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
+  private resolveMeleeNow(
+    origin: Vec3,
+    direction: Vec3,
+    weapon: MeleeWeapon,
+    isFist = weapon === FISTS_MELEE,
+  ): EntityId | undefined {
     const aim = this.aimAt(origin, direction, weapon);
     if (!aim?.inReach) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
@@ -1561,6 +1567,7 @@ export class ZombieSystem {
       direction,
       distanceMetres: aim.distanceMetres,
       weapon,
+      isFist,
     });
     return aim.id;
   }
@@ -1578,7 +1585,16 @@ export class ZombieSystem {
     return id;
   }
 
-  private applyMeleeHit({ id, zombie, region, origin, direction, distanceMetres, weapon }: MeleeHitContext): void {
+  private applyMeleeHit({
+    id,
+    zombie,
+    region,
+    origin,
+    direction,
+    distanceMetres,
+    weapon,
+    isFist,
+  }: MeleeHitContext): void {
     const ray = unit(direction);
     const distance = distanceMetres / this.options.blockSize;
     const hit: HitImpulse = {
@@ -1589,7 +1605,7 @@ export class ZombieSystem {
     this.options.onMeleeContact?.(hit.impulse);
     const healthBefore = zombie.regions[region];
     const severedBefore = new Set(zombie.severed);
-    this.options.onSound?.(weapon === FISTS_MELEE ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos));
+    this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos));
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     const healthAfter = Math.max(0, healthBefore - weapon.damage);
     zombie.regions[region] = healthAfter;

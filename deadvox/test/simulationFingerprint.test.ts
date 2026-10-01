@@ -66,25 +66,26 @@ async function sourceFilesUnder(directory: string): Promise<string[]> {
   return [...direct, ...nested.flat()].sort();
 }
 
-async function actualSimulationGraph() {
+async function actualSimulationHost(): Promise<SimulationModuleGraphHost> {
   const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
   const viteResolve = config.createResolver();
-  return collectSimulationSourceGraph(
-    SIMULATION_ENTRIES,
-    projectRoot,
-    {
-      resolve(specifier, importer) {
-        if (specifier.startsWith('@mobgen/')) {
-          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-        }
-        return Promise.resolve(viteResolve(specifier, importer));
-      },
-      readFile(path) {
-        return readFile(path, 'utf8');
-      },
+  return {
+    resolve(specifier, importer) {
+      if (specifier.startsWith('@mobgen/')) {
+        return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+      }
+      return Promise.resolve(viteResolve(specifier, importer));
     },
-    { exclude: SIMULATION_EXCLUSIONS },
-  );
+    readFile(path) {
+      return readFile(path, 'utf8');
+    },
+  };
+}
+
+async function actualSimulationGraph() {
+  return collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, await actualSimulationHost(), {
+    exclude: SIMULATION_EXCLUSIONS,
+  });
 }
 
 describe('simulation source fingerprint', () => {
@@ -97,6 +98,7 @@ describe('simulation source fingerprint', () => {
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(SIMULATION_EXCLUSIONS).toEqual(
       expect.arrayContaining([
+        'src/game/audioPresentation.ts',
         'src/game/saveStorage.ts',
         'src/game/saveStorageRecord.ts',
         'src/game/saveStorageProtocol.ts',
@@ -108,6 +110,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/audioPresentation.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
@@ -134,6 +137,34 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
       { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
+  });
+
+  it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {
+    const host = await actualSimulationHost();
+    const options = { exclude: SIMULATION_EXCLUSIONS };
+    const before = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, options);
+    const path = resolve(projectRoot, 'src/game/audioPresentation.ts');
+    const source = await host.readFile(path);
+    const changed = source.replace("event: 'pouch_take'", "event: 'melee_swing'");
+    expect(changed).not.toBe(source);
+    let reads = 0;
+    const after = await fingerprintSimulationSources(
+      SIMULATION_ENTRIES,
+      projectRoot,
+      {
+        ...host,
+        readFile(file) {
+          if (file === path) {
+            reads += 1;
+            return Promise.resolve(changed);
+          }
+          return host.readFile(file);
+        },
+      },
+      options,
+    );
+    expect(reads).toBe(0);
+    expect(after).toBe(before);
   });
 
   it('classifies every core and game source module', async () => {

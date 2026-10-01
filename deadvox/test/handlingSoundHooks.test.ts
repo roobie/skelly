@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue, type MoveStart } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { handlingMoveCompleteCue, handlingMoveStartCue } from '../src/game/audioPresentation.ts';
 
 const base = 'src/content/base';
 const { registry } = buildRegistry(
@@ -40,6 +41,10 @@ describe('handling move sound hooks', () => {
     expect(result.ok).toBe(true);
     expect(started).toHaveLength(1);
     expect(started[0]?.from).toMatchObject({ kind: 'pocket' });
+    const startedMove = started[0]!;
+    const ownerLocation = startedMove.from.kind === 'pocket' ? inventory.locate(startedMove.from.owner) : undefined;
+    const startCue = handlingMoveStartCue(startedMove, ownerLocation, [4, 2, -3]);
+    expect(startCue).toEqual({ event: 'pouch_take', position: [4, 2, -3] });
     expect(completed).toHaveLength(0);
     queue.tick(result.ok ? result.job.duration : 0);
     expect(completed).toHaveLength(1);
@@ -50,17 +55,21 @@ describe('handling move sound hooks', () => {
     const { inventory, item } = dressedInventory();
     const completed: MoveStart[] = [];
     const queue = new HandlingQueue(inventory, undefined, (move) => completed.push(move));
-    const first = queue.enqueue(item, { kind: 'pile', pos: [0, 0, 0] });
+    const first = queue.enqueue(item, { kind: 'pile', pos: [0, 4, 0] });
     expect(first.ok).toBe(true);
     expect(completed).toHaveLength(0);
     queue.tick(first.ok ? first.job.duration : 0);
     expect(completed).toHaveLength(1);
     expect(completed[0]?.target.kind).toBe('pile');
+    const dropCue = handlingMoveCompleteCue(completed[0]!);
+    expect(dropCue).toEqual({ event: 'item_drop_wood', position: [0.5, 4, 0.5] });
+    expect(dropCue?.position.map((value) => value * 0.5)).toEqual([0.25, 2, 0.25]);
 
-    const samePile = queue.enqueue(item, { kind: 'pile', pos: [0, 0, 0], at: { x: 1, y: 0, rotated: false } });
+    const samePile = queue.enqueue(item, { kind: 'pile', pos: [0, 4, 0], at: { x: 1, y: 0, rotated: false } });
     expect(samePile.ok).toBe(true);
     queue.tick(samePile.ok ? samePile.job.duration : 0);
     expect(completed).toHaveLength(2);
     expect(completed[1]?.from).toMatchObject({ kind: 'pile' });
+    expect(handlingMoveCompleteCue(completed[1]!)).toBeUndefined();
   });
 });

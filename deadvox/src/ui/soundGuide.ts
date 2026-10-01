@@ -155,6 +155,44 @@ const TRIGGER_ENTRIES = [
 export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundEventId, SoundTriggerGuide>;
 const ORDER = TRIGGER_ENTRIES.map(([id]) => id);
 
+/** BR's listening verdicts, joined into the existing guide note shown on /sounds.html. */
+const BR_STATUS_NOTES = new Map<SoundEventId, string>([
+  ['player_hurt_light', 'Approved by BR.'],
+  ['player_hurt_heavy', 'Approved by BR.'],
+  ['player_strain', 'Approved by BR.'],
+  ['player_landing_hard', 'Approved by BR.'],
+  ['footstep_grass', 'Approved by BR.'],
+  ['footstep_mud', 'To replace: BR rejected the current mud footsteps.'],
+  ['footstep_sand', 'Approved by BR.'],
+  ['footstep_stone', 'To replace as stone: BR heard gravel; keep current clips for a future gravel surface.'],
+  ['footstep_wood', 'Re-leveled after BR found the original clips too quiet; current variants retained.'],
+  ['footstep_leaves', 'Passable to BR as one variant; leaves-02 was rejected as linoleum and remains unreferenced.'],
+  ['shambler_step_grass', 'Approved by BR.'],
+  ['shambler_step_mud', 'To replace: BR rejected the current mud footsteps.'],
+  ['shambler_step_sand', 'Approved by BR.'],
+  ['shambler_step_stone', 'To replace as stone: BR heard gravel; keep current clips for a future gravel surface.'],
+  ['shambler_step_wood', 'Re-leveled after BR found the original clips too quiet; current variants retained.'],
+  [
+    'shambler_step_leaves',
+    'Passable to BR as one variant; leaves-02 was rejected as linoleum and remains unreferenced.',
+  ],
+  ['melee_swing', 'Approved by BR.'],
+  ['melee_hit', 'Approved by BR.'],
+  ['melee_hit_fist', 'Placeholder approved by BR; replace when a better fist-hit source is found.'],
+  ['item_drop_wood', 'Approved by BR.'],
+  ['pouch_take', 'Approved by BR.'],
+  ['shambler_idle', 'Approved by BR.'],
+  ['shambler_alert', 'Approved by BR.'],
+  ['shambler_attack', 'Approved by BR.'],
+  ['shambler_hurt', 'Approved by BR.'],
+  ['door_open', 'Passable to BR with door-open-03 only; more variants are future work.'],
+  ['door_close', 'Approved by BR.'],
+  [
+    'door_blocked_close',
+    'Placeholder: shares door_close’s BR-approved recording; a distinct stuck-door sound is future work.',
+  ],
+]);
+
 export interface SoundVariantGuide {
   readonly file: string;
   readonly sourcePack: string;
@@ -198,7 +236,7 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
         gainJitter: sound.gainJitter,
         minIntervalSeconds: sound.minIntervalSeconds,
         noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
-        note: trigger.note ?? null,
+        note: [BR_STATUS_NOTES.get(id), trigger.note].filter((note) => note !== undefined).join(' '),
         variants: sound.variants.map((file) => {
           const source = byFile.get(file);
           return {

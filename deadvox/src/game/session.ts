@@ -16,8 +16,8 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue } from '../core/handling.ts';
-import { Inventory } from '../core/inventory.ts';
+import { HandlingQueue, type MoveStart } from '../core/handling.ts';
+import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, stepBody } from '../core/physics.ts';
@@ -104,6 +104,9 @@ export interface SessionAudio {
   ) => boolean;
   snapshotState: () => Readonly<SoundPickerState>;
   restoreState: (state: SoundPickerState) => void;
+  /** Presentation-only cues for inventory handling; never affect noise or simulation state. */
+  onMoveStart?: (move: MoveStart, ownerLocation: Location | undefined, chest: Vec3, time: number) => void;
+  onMoveComplete?: (move: MoveStart, time: number) => void;
 }
 
 /** The part of the debug tools that changes what the simulation does. */
@@ -249,26 +252,14 @@ export const createSession = (options: SessionOptions) => {
   };
   const queue = new HandlingQueue(
     inventory,
-    ({ from, target }) => {
-      if (from?.kind === 'pocket') {
-        const location = inventory.locate(from.owner);
-        if (
-          location?.kind === 'worn' &&
-          !(target.kind === 'pocket' && target.owner === from.owner && target.pocket === from.pocket)
-        ) {
-          playWorldSound('pouch_take', chest());
-        }
-      }
-    },
-    ({ from, target }) => {
-      if (target.kind === 'pile') {
-        const samePile = from?.kind === 'pile' && from.pile.pos.every((v, i) => v === target.pos[i]);
-        if (!samePile) {
-          const [x, y, z] = target.pos;
-          playWorldSound('item_drop_wood', [(x + 0.5) * s, y * s, (z + 0.5) * s]);
-        }
-      }
-    },
+    (move) =>
+      options.audio.onMoveStart?.(
+        move,
+        move.from.kind === 'pocket' ? inventory.locate(move.from.owner) : undefined,
+        chest(),
+        sim.time,
+      ),
+    (move) => options.audio.onMoveComplete?.(move, sim.time),
   );
 
   const survival = new Survival(sim, inventory, queue, {
