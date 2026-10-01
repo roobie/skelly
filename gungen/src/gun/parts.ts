@@ -22,7 +22,7 @@
 
 import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
-import type { Vec3 } from '../core/math.ts';
+import type { ExtrusionAxis, Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
@@ -36,14 +36,40 @@ const Y: Vec3 = [0, 1, 0];
 const NEG_Y: Vec3 = [0, -1, 0];
 
 const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
-const akChargingHandleSolid = (): Solid => solid('charging-handle', [-3, -0.5, -1.75], [-1.5, 0.5, -1.25]);
-const boxBounds = (component: Solid, axis: 0 | 1): readonly [number, number] => {
-  if (component.kind !== 'box') {
-    throw new Error('Charging handle must remain a box solid.');
+const solidBounds = (component: Solid): readonly [Vec3, Vec3] => {
+  if (component.kind === 'box') {
+    return [
+      component.box.center.map((center, axis) => center - component.box.half[axis]!) as unknown as Vec3,
+      component.box.center.map((center, axis) => center + component.box.half[axis]!) as unknown as Vec3,
+    ];
   }
-  const { center, half } = component.box;
-  return [center[axis] - half[axis], center[axis] + half[axis]];
+  const axis: ExtrusionAxis = component.axis ?? 'z';
+  const profileBounds = [0, 1].map((coordinate) => [
+    Math.min(...component.profile.map((point) => point[coordinate]!)),
+    Math.max(...component.profile.map((point) => point[coordinate]!)),
+  ]);
+  if (axis === 'x') {
+    return [[component.z[0], profileBounds[0]![0]!, profileBounds[1]![0]!], [component.z[1], profileBounds[0]![1]!, profileBounds[1]![1]!]];
+  }
+  if (axis === 'y') {
+    return [[profileBounds[1]![0]!, component.z[0], profileBounds[0]![0]!], [profileBounds[1]![1]!, component.z[1], profileBounds[0]![1]!]];
+  }
+  return [[profileBounds[0]![0]!, profileBounds[1]![0]!, component.z[0]], [profileBounds[0]![1]!, profileBounds[1]![1]!, component.z[1]]];
 };
+const solidsBounds = (components: readonly Solid[]): readonly [Vec3, Vec3] => {
+  if (components.length === 0) {
+    throw new Error('Charging-handle bounds require at least one solid.');
+  }
+  const bounds = components.map(solidBounds);
+  return [
+    [0, 1, 2].map((axis) => Math.min(...bounds.map(([minimum]) => minimum[axis]!))) as unknown as Vec3,
+    [0, 1, 2].map((axis) => Math.max(...bounds.map(([, maximum]) => maximum[axis]!))) as unknown as Vec3,
+  ];
+};
+const akChargingHandleSolids = (): Solid[] => [
+  solid('charging-handle', [-3, -0.15, -2.25], [-2.25, 0.15, -1.25]),
+  solid('ak-handle-paddle', [-2.6, -0.5, -2.5], [-1.5, 0.5, -1.75]),
+];
 const extrudedPolygon = (
   id: string,
   profile: readonly Vec2[],
@@ -60,11 +86,6 @@ const keepOut = (id: string, min: Vec3, max: Vec3, allowPort?: string): KeepOut 
   box: boxFromMinMax(min, max),
   ...(allowPort ? { allowPort } : {}),
 });
-const akChargingHandleKeepOut = (): KeepOut => {
-  const [minX, maxX] = boxBounds(akChargingHandleSolid(), 0);
-  return keepOut('charging-handle', [minX, -0.5, -2.25], [maxX, 0.5, -1.75], 'mount');
-};
-
 /** Tag for parts the firing hand can hold (see rules.ts). */
 export const FIRING_GRIP = 'firing-grip';
 
@@ -357,6 +378,20 @@ export const BOLT_CARRIER_ENVELOPES = {
   bolt: { x: [-2.5, 2.5], y: [-0.5, 0.25], z: [-0.75, 0.75] },
 } as const;
 type BoltCarrierPattern = keyof typeof BOLT_CARRIER_ENVELOPES;
+
+export const CARRIER_HANDLE_STYLES = {
+  ar: { shape: 'rear-t', owner: 'receiver', motion: 'fixed', handClearanceU: 0.25 },
+  ak: { shape: 'stick-paddle', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
+  bolt: { shape: 'down-back-ball', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
+  smg: { shape: 'mp5-cocking-tube', owner: 'receiver', motion: 'fixed', handClearanceU: 0.25 },
+  battle: { shape: 'fal-folded-out', owner: 'receiver', motion: 'fixed', handClearanceU: 0.25 },
+  barrett: { shape: 'right-side-crank', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
+  pump: { shape: 'none', owner: 'none', motion: 'none' },
+  pistol: { shape: 'none', owner: 'none', motion: 'none' },
+  bullpup: { shape: 'none', owner: 'none', motion: 'none' },
+  none: { shape: 'none', owner: 'none', motion: 'none' },
+  autoShotgun: { shape: 'stick-paddle', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
+} as const;
 export const EJECTION_PORT_RULES = {
   marginU: EJECTION_PORT_MARGIN_U,
   pumpShellMinimum: { lengthU: 6.25, endClearanceU: EJECTION_PORT_MARGIN_U },
@@ -391,12 +426,12 @@ export const akChargingHandleSlotWindow = (
   port: ReturnType<typeof ejectionPortWindow>,
   travel: number,
 ) => {
-  const [handleMinY, handleMaxY] = boxBounds(akChargingHandleSolid(), 1);
+  const [handleMinimum, handleMaximum] = solidsBounds(akChargingHandleSolids());
   const margin = BOLT_CARRIER_RUNNING_CLEARANCE_U;
   return {
     x: [port.x[0] - travel, port.x[0] + AK_CHARGING_SLOT_MUZZLE_SHIFT_U] as const,
     sectionAxis: 0 as const,
-    section: [carrierY + handleMinY - margin, carrierY + handleMaxY + margin] as const,
+    section: [carrierY + handleMinimum[1] - margin, carrierY + handleMaximum[1] + margin] as const,
   };
 };
 
@@ -421,6 +456,18 @@ const carrierPatternFor = (params: Readonly<Record<string, string>>): BoltCarrie
     return 'bolt';
   }
   return params.bore === 'S' ? 'smg' : 'ar';
+};
+
+type CarrierHandleStyle = keyof typeof CARRIER_HANDLE_STYLES;
+const carrierHandleStyleFor = (params: Readonly<Record<string, string>>): CarrierHandleStyle => {
+  const requested = params.handleStyle;
+  if (requested && requested !== 'auto' && Object.hasOwn(CARRIER_HANDLE_STYLES, requested)) {
+    return requested as CarrierHandleStyle;
+  }
+  if (params.pattern && Object.hasOwn(CARRIER_HANDLE_STYLES, params.pattern)) {
+    return params.pattern as CarrierHandleStyle;
+  }
+  return carrierPatternFor(params);
 };
 
 const carrierAxisY = (pattern: BoltCarrierPattern, receiverDrop: number): number => {
@@ -740,25 +787,44 @@ const receiverShellSolids = ({
   return solids.filter((component) => component.kind !== 'box' || component.box.half.every((half) => half > 0));
 };
 
+const arRearTHandle = (inside = false): Solid[] => [
+  solid('charging-handle', [-18, 2.75, inside ? 1 : 1.5], [-16, 3.25, inside ? 1.75 : 2]),
+  solid('ar-handle-crossbar', [-18, 3, -2,], [-17.5, 3.6, 2]),
+  solid('ar-handle-latch', [-16.5, 2.55, -0.5], [-16, 3.05, 0.5]),
+];
+
+const smgCockingHandle = (): Solid[] => [
+  solid('smg-cocking-tube', [-5.5, 0.8, -2.75], [-0.5, 1.3, -2]),
+  solid('smg-sliding-handle', [-4, 1.1, -3], [-3.2, 2.1, -2.2]),
+  solid('smg-handle-grip', [-4.2, 1.8, -3.1], [-3, 2.2, -2.2]),
+];
+
+const falChargingHandle = (): Solid[] => [
+  solid('fal-handle-pivot', [-14.5, 1.25, -2.75], [-13.5, 1.75, -2.15]),
+  solid('fal-handle-arm', [-13.75, 1.3, -3.25], [-12.5, 1.65, -2.65]),
+  solid('fal-handle-knob', [-12.75, 1.1, -3.35], [-12, 1.9, -2.55]),
+];
+
 const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[] => {
-  if (params.action === 'auto') {
-    if (params.chargingHandle === 'rear-top') {
-      return [solid('charging-handle', [-18, 2, 1.5], [-16, 4, 3])];
-    }
-    if (params.chargingHandle === 'inside') {
-      return [solid('charging-handle', [-10, 0, -3.5], [-8.5, 1, -2.5])];
-    }
-    return [solid('charging-handle', [-4, 0.5, -3.5], [-2.5, 1.5, -2])];
-  }
-  if (params.action === 'bolt' && params.carrierPattern === 'bolt') {
+  if (params.action !== 'auto') {
     return [];
   }
-  if (params.action === 'bolt') {
-    return [
-      params.boltHandle === 'inside'
-        ? solid('bolt-handle', [-18, 0, 2.5], [-16.5, 1, 4])
-        : solid('bolt-handle', [-12, -0.5, 2], [-10.5, 1, 3.5]),
-    ];
+  const handleStyle = carrierHandleStyleFor(params);
+  const style = CARRIER_HANDLE_STYLES[handleStyle];
+  if (params.chargingHandle === 'inside' && handleStyle === 'ar') {
+    return arRearTHandle(true);
+  }
+  if (style.owner !== 'receiver') {
+    return [];
+  }
+  if (style.shape === 'rear-t') {
+    return arRearTHandle();
+  }
+  if (style.shape === 'mp5-cocking-tube') {
+    return smgCockingHandle();
+  }
+  if (style.shape === 'fal-folded-out') {
+    return falChargingHandle();
   }
   return [];
 };
@@ -876,13 +942,6 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
 
 const addActionKeepOuts = (params: Readonly<Record<string, string>>, keepOuts: KeepOut[]): void => {
   switch (params.action) {
-    case 'auto':
-      keepOuts.push(
-        params.chargingHandle === 'rear-top'
-          ? keepOut('charging-handle', [-18, 2.5, -1.5], [-16, 5, 1.5])
-          : keepOut('charging-handle', [-12, 0, -4], [-4, 2, -2]),
-      );
-      break;
     case 'revolver':
       keepOuts.push(
         keepOut('cylinder-gap', [-0.25, -3, -3], [0, 0, 3], 'cylinder'),
@@ -899,6 +958,34 @@ const addActionKeepOuts = (params: Readonly<Record<string, string>>, keepOuts: K
     default:
       break;
   }
+};
+
+const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, keepOuts: KeepOut[]): void => {
+  const style = CARRIER_HANDLE_STYLES[carrierHandleStyleFor(params)];
+  if (style.owner !== 'receiver' || !('handClearanceU' in style)) {
+    return;
+  }
+  const solids = receiverActionDetails(params);
+  if (solids.length === 0) {
+    return;
+  }
+  if (style.shape === 'rear-t') {
+    keepOuts.push(
+      keepOut('charging-handle', [-18, 2.5, -1.5], [-16, 5, 1.5]),
+      keepOut('rear-t-hand-clearance', [-20, 3, -2], [-18, 4, 2], 'bolt-carrier'),
+    );
+    return;
+  }
+  const [minimum, maximum] = solidsBounds(solids);
+  const clearance = style.handClearanceU;
+  keepOuts.push(
+    keepOut(
+      `${style.shape}-hand-clearance`,
+      [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
+      [maximum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
+      'bolt-carrier',
+    ),
+  );
 };
 
 const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void => {
@@ -939,6 +1026,7 @@ const receiverKeepOuts = (context: ReceiverContext): KeepOut[] => {
     );
   }
   addActionKeepOuts(params, keepOuts);
+  addReceiverHandleKeepOuts(params, keepOuts);
   addFeedKeepOuts(context, keepOuts);
   return keepOuts;
 };
@@ -995,6 +1083,11 @@ export const receiver: PartFamily = {
       values: ['auto', ...Object.keys(BOLT_CARRIER_ENVELOPES)],
       default: 'auto',
       from: [{ port: 'bolt-carrier', param: 'pattern' }],
+    },
+    handleStyle: {
+      values: ['auto', ...Object.keys(CARRIER_HANDLE_STYLES)],
+      default: 'auto',
+      from: [{ port: 'bolt-carrier', param: 'handleStyle' }],
     },
     bore: size,
     chargingHandle: { values: ['side', 'rear-top', 'inside'], default: 'side', fault: ['inside'] },
@@ -1118,6 +1211,102 @@ export const akReceiver: PartFamily = {
   },
 };
 
+const boltActionHandleSolids = (): Solid[] => [
+  solid('bolt-handle', [1.5, -0.3, -0.85], [1.9, 0.15, -0.55]),
+  extrudedPolygon('bolt-handle-arm', [[1.65, -0.05], [1.95, -0.05], [2, -0.5], [1.7, -0.55]], [-0.85, -0.65]),
+  {
+    id: 'bolt-handle-ball',
+    kind: 'extruded-polygon',
+    axis: 'x',
+    z: [1.55, 2],
+    profile: [
+      [-0.3, -0.85],
+      [-0.05, -0.8],
+      [0.05, -0.7],
+      [-0.05, -0.6],
+      [-0.3, -0.55],
+      [-0.55, -0.6],
+      [-0.65, -0.7],
+      [-0.55, -0.8],
+    ],
+  },
+];
+
+const barrettCrankHandleSolids = (): Solid[] => [
+  solid('charging-handle', [2.1, -0.2, -1.2], [2.5, 0.2, -0.95]),
+  solid('barrett-handle-crank', [2.2, -0.5, -1.2], [2.6, 0.3, -1.05]),
+  solid('barrett-handle-knob', [1.9, -0.6, -1.2], [2.9, 0.1, -0.8]),
+];
+
+const carrierHandleSolids = (style: CarrierHandleStyle): Solid[] => {
+  if (style === 'ak') {
+    return akChargingHandleSolids();
+  }
+  if (style === 'bolt') {
+    return boltActionHandleSolids();
+  }
+  if (style === 'barrett') {
+    return barrettCrankHandleSolids();
+  }
+  return [];
+};
+
+const carrierTravelLength = (params: Readonly<Record<string, string>>): number => {
+  if (params.action === 'pump') {
+    return BOLT_TRAVEL.pump.length;
+  }
+  if (params.action === 'auto' && params.bore === 'S') {
+    return BOLT_TRAVEL.short.length;
+  }
+  if (params.action === 'bolt' && params.feed === 'top') {
+    return BOLT_TRAVEL.bolt.length;
+  }
+  if (params.action === 'bolt' && params.bore === 'L') {
+    return BOLT_TRAVEL.long.length;
+  }
+  return BOLT_TRAVEL.standard.length;
+};
+
+const carrierHandleKeepOuts = (
+  style: CarrierHandleStyle,
+  solids: readonly Solid[],
+  travel: number,
+): KeepOut[] => {
+  const definition = CARRIER_HANDLE_STYLES[style];
+  if (definition.owner !== 'carrier' || !('handClearanceU' in definition) || solids.length === 0) {
+    return [];
+  }
+  const clearance = definition.handClearanceU;
+  const [minimum, maximum] = solidsBounds(solids);
+  const hand = keepOut(
+    `${style}-handle-hand`,
+    [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
+    [maximum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
+    'mount',
+  );
+  const swept = keepOut(
+    `${style}-handle-sweep`,
+    [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
+    [maximum[0] + travel + clearance, maximum[1] + clearance, maximum[2] + clearance],
+    'mount',
+  );
+  const primaryId = style === 'bolt' ? 'bolt-handle' : 'charging-handle';
+  const primary = solids.find(({ id }) => id === primaryId);
+  const restFace = primary ? solidBounds(primary) : undefined;
+  const rest =
+    restFace && style === 'bolt'
+      ? keepOut('bolt-handle', [restFace[1][0], restFace[0][1], restFace[0][2]], [restFace[1][0] + clearance, restFace[1][1], restFace[1][2]], 'mount')
+      : restFace
+        ? keepOut(
+            'charging-handle',
+            [restFace[0][0], restFace[0][1], restFace[0][2] - clearance],
+            [restFace[1][0], restFace[1][1], restFace[0][2]],
+            'mount',
+          )
+        : undefined;
+  return rest ? [hand, swept, rest] : [hand, swept];
+};
+
 // ---- procedural bolt-carrier group ----
 
 export const boltCarrier: PartFamily = {
@@ -1126,9 +1315,12 @@ export const boltCarrier: PartFamily = {
     action: { ...choice('auto', 'bolt', 'pump'), from: [{ port: 'mount', param: 'action' }] },
     bore: { ...size, from: [{ port: 'mount', param: 'bore' }] },
     pattern: choice('ar', 'ak', 'pump', 'smg', 'barrett', 'bolt'),
+    handleStyle: choice('auto', ...Object.keys(CARRIER_HANDLE_STYLES)),
+    feed: { ...choice('box', 'top', 'tube', 'cylinder'), from: [{ port: 'mount', param: 'feed' }] },
   },
   build(params): PartDef {
     const pattern = (params.pattern ?? 'ar') as BoltCarrierPattern;
+    const handleStyle = carrierHandleStyleFor(params);
     const envelope = BOLT_CARRIER_ENVELOPES[pattern];
     let boreScale = 1;
     if (params.bore === 'L') {
@@ -1149,7 +1341,7 @@ export const boltCarrier: PartFamily = {
         block('gas-key', [-0.75, 0.5, -0.4], [1.1, 1, 0.4]),
       );
     } else if (pattern === 'ak') {
-      solids.push(block('piston', [-6, 0.2, -0.35], [-1.5, 0.6, 0.35]), akChargingHandleSolid());
+      solids.push(block('piston', [-6, 0.2, -0.35], [-1.5, 0.6, 0.35]));
     } else if (pattern === 'pump') {
       solids.push(
         block('action-bar-left', [-6, -0.4, -2.5], [-1.25, -0.15, -2]),
@@ -1158,19 +1350,15 @@ export const boltCarrier: PartFamily = {
     } else if (pattern === 'barrett') {
       solids.push(block('heavy-carrier', [-3, -0.75, -1.2], [3, 0.75, 1.2]));
     } else if (pattern === 'bolt') {
-      solids.push(
-        block('bolt-cylinder', [-2.5, -0.5, -0.75], [2.5, 0.25, 0.75]),
-        block('bolt-handle', [-0.5, -1, -2.5], [1, -0.4, -2]),
-      );
+      solids.push(block('bolt-cylinder', [-2.5, -0.5, -0.75], [2.5, 0.25, 0.75]));
     }
+    const handles = carrierHandleSolids(handleStyle);
+    solids.push(...handles);
     return {
       family: 'bolt-carrier',
       solids,
       ports: [{ id: 'mount', mount: 'bolt-carrier', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
-      keepOuts: [
-        ...(pattern === 'ak' ? [akChargingHandleKeepOut()] : []),
-        ...(pattern === 'bolt' ? [keepOut('bolt-handle', [1, -1, -2.5], [8, -0.25, -2])] : []),
-      ],
+      keepOuts: carrierHandleKeepOuts(handleStyle, handles, carrierTravelLength(params)),
       axes: [],
       motion: {
         kind: 'linear',

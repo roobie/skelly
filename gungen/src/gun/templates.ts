@@ -17,7 +17,7 @@ export const battleRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: ['M', 'L'] } },
-    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett', handleStyle: 'battle' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     {
@@ -418,7 +418,7 @@ export const bullpup: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'M' } },
-    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett', handleStyle: 'bullpup' } },
     { id: 'lower', family: 'lower', params: { layout: 'bullpup' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.3 },

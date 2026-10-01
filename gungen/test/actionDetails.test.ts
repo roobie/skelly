@@ -94,21 +94,23 @@ describe('visible action details', () => {
     expect(revolver.solids.some(({ id }) => id.startsWith('receiver-shell-side-near'))).toBe(false);
   });
 
-  it('places side, rear-top, and bolt handles at touching, non-overlapping rest faces', () => {
-    const side = handleAndTravel(receiver('auto', 'side'), 'charging-handle');
-    expect(side.handle[0]![0]).toBe(side.travel[0]![1]);
-    expect(intervalsOverlap(side.handle[1]!, side.travel[1]!)).toBe(true);
-    expect(intervalsOverlap(side.handle[2]!, side.travel[2]!)).toBe(true);
-
+  it('places the AR T-handle at the rear rest face and keeps its pull zone clear', () => {
     const rearTop = handleAndTravel(receiver('auto', 'rear-top'), 'charging-handle');
     expect(rearTop.handle[2]![0]).toBe(rearTop.travel[2]![1]);
     expect(intervalsOverlap(rearTop.handle[0]!, rearTop.travel[0]!)).toBe(true);
     expect(intervalsOverlap(rearTop.handle[1]!, rearTop.travel[1]!)).toBe(true);
+    const receiverDef = receiver('auto', 'rear-top');
+    expect(receiverDef.solids.filter(({ id }) => id.startsWith('ar-handle-'))).toHaveLength(2);
+    expect(receiverDef.keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
 
-    const bolt = handleAndTravel(FAMILIES.receiver!.build({ action: 'bolt', feed: 'box', bore: 'M' }), 'bolt-handle');
-    expect(bolt.handle[0]![0]).toBe(bolt.travel[0]![1]);
-    expect(intervalsOverlap(bolt.handle[1]!, bolt.travel[1]!)).toBe(true);
-    expect(intervalsOverlap(bolt.handle[2]!, bolt.travel[2]!)).toBe(true);
+    const bolt = FAMILIES['bolt-carrier']!.build({ pattern: 'bolt', action: 'bolt', bore: 'M', feed: 'top' });
+    const boltHandle = bolt.solids.find(({ id }) => id === 'bolt-handle');
+    const boltTravel = bolt.keepOuts.find(({ id }) => id === 'bolt-handle');
+    expect(boltHandle?.kind).toBe('box');
+    expect(boltTravel).toBeDefined();
+    if (boltHandle?.kind === 'box' && boltTravel) {
+      expect(limits(boltHandle.box)[0]![1]).toBe(limits(boltTravel.box)[0]![0]);
+    }
   });
 
   it('keeps action details valid throughout all fixtures and published designs', () => {
