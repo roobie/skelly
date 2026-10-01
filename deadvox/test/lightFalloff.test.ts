@@ -13,12 +13,12 @@ describe('near-field light falloff', () => {
   });
 
   it('throws when three changes the line, rather than lighting wrong silently', () => {
-    expect(() => withNearFieldFalloff('float distanceFalloff = 1.0 / pow( d, e );', 4)).toThrow(/not found/);
+    expect(() => withNearFieldFalloff('float distanceFalloff = 1.0 / pow( d, e );', 4)).toThrow('not found');
   });
 
   it('rejects an offset that is not a non-negative number of metres', () => {
     for (const offset of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => withNearFieldFalloff(ShaderChunk.lights_pars_begin, offset)).toThrow(/offset/);
+      expect(() => withNearFieldFalloff(ShaderChunk.lights_pars_begin, offset)).toThrow('offset');
     }
   });
 
