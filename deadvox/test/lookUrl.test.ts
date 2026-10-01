@@ -7,6 +7,7 @@ import {
   parseLookParams,
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
+import { FakeMood } from './fakeMood.ts';
 
 const parse = (query: string) => parseLookParams(new URLSearchParams(query));
 const write = (query: string, state: LookUrlState) => writeLookParams(new URLSearchParams(query), state).toString();
@@ -22,9 +23,50 @@ describe('look URL parameters', () => {
   });
 
   it('round-trips a state', () => {
-    const state: LookUrlState = { tone: 'aces', exposure: 1.4, srgb: true, patterns: false, freeze: true };
-    expect(write('', state)).toBe('tone=aces&exposure=1.4&srgb=1&patterns=0&freeze=1');
+    const state: LookUrlState = {
+      tone: 'aces',
+      exposure: 1.4,
+      srgb: true,
+      patterns: false,
+      freeze: true,
+      post: false,
+      bloom: false,
+      film: false,
+      heightFog: false,
+      grade: 0.6,
+    };
+    expect(write('', state)).toBe(
+      'tone=aces&exposure=1.4&srgb=1&patterns=0&freeze=1&post=0&bloom=0&film=0&hfog=0&grade=0.6',
+    );
     expect(parse(write('', state))).toEqual(state);
+  });
+
+  it('keeps the mood pass on unless a parameter turns a part off, and omits the defaults', () => {
+    expect(parse('')).toMatchObject({ post: true, bloom: true, film: true, heightFog: true, grade: 1 });
+    expect(parse('post=0&bloom=0&film=0&hfog=0')).toMatchObject({
+      post: false,
+      bloom: false,
+      film: false,
+      heightFog: false,
+    });
+    expect(parse('post=1&bloom=off&film=&hfog=no')).toMatchObject({
+      post: true,
+      bloom: true,
+      film: true,
+      heightFog: true,
+    });
+    expect(write('debug=1&post=0&bloom=0&film=0&hfog=0&grade=0.4', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, heightFog: false })).toBe('debug=1&hfog=0');
+  });
+
+  it('clamps the grade to 0..1 in tenths and ignores nonsense', () => {
+    expect(parse('grade=0').grade).toBe(0);
+    expect(parse('grade=0.34').grade).toBe(0.3);
+    expect(parse('grade=7').grade).toBe(1);
+    expect(parse('grade=-2').grade).toBe(0);
+    expect(parse('grade=').grade).toBe(1);
+    expect(parse('grade=abc').grade).toBe(1);
+    expect(write('', { ...DEFAULT_LOOK_URL_STATE, grade: 0 })).toBe('grade=0.0');
   });
 
   it('keeps surface patterns on unless patterns=0', () => {
@@ -79,8 +121,16 @@ describe('restoring look controls from URL state', () => {
   };
 
   it('takes the parsed tone, exposure, colour decode and patterns', () => {
-    const look = new LookControls(renderer, meshes);
+    const look = new LookControls(renderer, meshes, new FakeMood());
     look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0'));
     expect([look.toneKey, look.exposure, look.linearColors, look.patterns]).toEqual(['neutral', 2.5, true, false]);
+  });
+
+  it('takes the parsed mood pass', () => {
+    const mood = new FakeMood();
+    const look = new LookControls(renderer, meshes, mood);
+    look.restore(parse('post=0&bloom=0&film=0&hfog=0&grade=0.5'));
+    expect(look.moodState).toEqual({ post: false, bloom: false, film: false, heightFog: false, grade: 0.5 });
+    expect(mood.grade).toBe(0.5);
   });
 });

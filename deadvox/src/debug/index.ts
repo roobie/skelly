@@ -10,6 +10,7 @@ import { LookControls } from './look.ts';
 import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
+import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
@@ -98,6 +99,7 @@ const panelTemplate = ({
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · M</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <div id="debug-look-readout" class="debug-aim-readout"></div>
+    <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <div id="debug-readout" class="debug-readout"></div>
@@ -121,7 +123,7 @@ const panelTemplate = ({
       <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     </div>
       <div id="debug-sound-log-root"></div>
-      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote.</p>
+      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, / height fog, [ ] grade.</p>
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
@@ -252,6 +254,43 @@ export const createDebugActions = ({
     state: () => look.patterns,
     run: () => look.togglePatterns(),
   },
+  // The mood pass. Q is the A/B master; the rest keep their own state under it.
+  {
+    code: 'KeyQ',
+    key: 'Q',
+    label: 'Mood post-processing (all)',
+    state: () => look.moodState.post,
+    run: () => look.togglePost(),
+  },
+  { code: 'Quote', key: "'", label: 'Bloom', state: () => look.moodState.bloom, run: () => look.toggleBloom() },
+  {
+    code: 'Backslash',
+    key: '\\',
+    label: 'Film (vignette, grain)',
+    state: () => look.moodState.film,
+    run: () => look.toggleFilm(),
+  },
+  {
+    code: 'Slash',
+    key: '/',
+    label: 'Height fog',
+    state: () => look.moodState.heightFog,
+    run: () => look.toggleHeightFog(),
+  },
+  {
+    code: 'BracketLeft',
+    key: '[',
+    label: 'Grade −',
+    detail: () => look.moodState.grade.toFixed(1),
+    run: () => look.stepGrade(-1),
+  },
+  {
+    code: 'BracketRight',
+    key: ']',
+    label: 'Grade +',
+    detail: () => look.moodState.grade.toFixed(1),
+    run: () => look.stepGrade(1),
+  },
   // The real clock only runs forward (saves pin it), so "an hour earlier" is 23 h on, tomorrow.
   {
     code: 'Comma',
@@ -268,6 +307,13 @@ export const createDebugActions = ({
     run: () => hooks.skipGameHours(SKIP_SHORT_HOURS),
   },
 ];
+
+/** A debug key the browser shouldn't also act on: '/' and "'" open Firefox's quick find when nothing is focused. */
+const keepFromBrowser = (e: KeyboardEvent): void => {
+  if (!(e.ctrlKey || e.metaKey || e.altKey)) {
+    e.preventDefault();
+  }
+};
 
 export const SKIP_SHORT_HOURS = 1;
 export const SKIP_LONG_HOURS = 23;
@@ -316,6 +362,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     newGame: hooks.newGame,
   });
   const host = document.body;
+  let mouseReadout: HTMLElement | null = null;
+  let mouseText = formatMouseDiag(undefined);
+  attachMouseDiag((text) => {
+    mouseText = text;
+    if (mouseReadout) {
+      render(aimReadoutTemplate(text), mouseReadout);
+    }
+  });
   const aimOverlay = new DebugAimOverlay(hooks.engine.scene, hooks.engine.config.scale.blockSize);
   let aimReadout: HTMLElement | null = null;
   let lookReadout: HTMLElement | null = null;
@@ -334,7 +388,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
-  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes);
+  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood);
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
   /** The whole simulation is stopped (M); play.ts reads it each frame and combines it with the pause menu. */
@@ -345,6 +399,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     srgb: look.linearColors,
     patterns: look.patterns,
     freeze: gameFrozen,
+    ...look.moodState,
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
@@ -448,6 +503,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
       aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');
       lookReadout = host.querySelector<HTMLElement>('#debug-look-readout');
+      mouseReadout = host.querySelector<HTMLElement>('#debug-mouse-readout');
+      if (mouseReadout) {
+        render(aimReadoutTemplate(mouseText), mouseReadout);
+      }
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
@@ -467,6 +526,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       exposure: look.exposure,
       srgbBlockColours: look.linearColors,
       surfacePatterns: look.patterns,
+      mood: look.moodState,
       gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,
@@ -527,6 +587,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (!dispatchDebugAction(actions, e.code, e.repeat)) {
       return panelOpen;
     }
+    keepFromBrowser(e);
     if (!e.repeat) {
       syncLookUrl();
       shellKey = '';

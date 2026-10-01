@@ -7,6 +7,7 @@
 import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { DAY_SKY } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
+import { Mood } from '../render/mood.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import type { GameConfig } from './config.ts';
 import type { StreamerStats } from './streamer.ts';
@@ -19,6 +20,8 @@ export interface Engine extends WorldSetup {
   meshes: ChunkMeshes;
   /** The scene's lights and fog, for time of day. Starts in daylight, which the benchmark keeps. */
   sky: SkyTargets;
+  /** Bloom, grade, film and height fog. Everything starts off; play turns it on (benchmarks never do). */
+  mood: Mood;
 }
 
 export const createEngine = (config: GameConfig, view: HTMLElement, stats?: StreamerStats): Engine => {
@@ -41,8 +44,11 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   scene.onBeforeRender = (_renderer, _scene, cam) => meshes.cull(cam);
 
+  const mood = new Mood(renderer, scene, camera);
+
   const resize = () => {
     renderer.setSize(view.clientWidth, view.clientHeight);
+    mood.setSize(view.clientWidth, view.clientHeight);
     camera.aspect = view.clientWidth / Math.max(view.clientHeight, 1);
     camera.updateProjectionMatrix();
   };
@@ -56,5 +62,6 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     camera,
     meshes,
     sky,
+    mood,
   };
 };

@@ -6,12 +6,13 @@ import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
 import { type Inventory, PILE_GRID } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import { pileLayout } from '../core/pileLayout.ts';
+import { withHeightFog } from './heightFog.ts';
 import type { ModelLibrary } from './models.ts';
 
 export class PileMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
-  private readonly material = new MeshLambertMaterial({ color: 0x5a_50_46 });
+  private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }));
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';

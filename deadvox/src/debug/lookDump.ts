@@ -1,7 +1,8 @@
-// Records the current look (tone mapping, exposure, colour decode, game time) with where
+// Records the current look (tone mapping, exposure, colour decode, mood pass, game time) with where
 // and on what build it was seen, as a JSON file the operator can keep next to a screenshot.
 
 import type { Vec3 } from '../core/coords.ts';
+import type { MoodState } from '../core/mood.ts';
 
 // `vite.config.ts` supplies it; outside a Vite build (tests) it isn't defined.
 declare const __DEADVOX_BUILD_REVISION__: string;
@@ -19,6 +20,8 @@ export interface LookDumpInput {
   exposure: number;
   srgbBlockColours: boolean;
   surfacePatterns: boolean;
+  /** The mood pass: post master, bloom, film (vignette and grain), grade strength, height fog. */
+  mood: MoodState;
   /** The game clock, "Day N, HH:MM". */
   gameTime: string;
   site: string;
@@ -47,6 +50,11 @@ export const lookDump = (input: LookDumpInput) => ({
     exposure: round(input.exposure, 2),
     srgbBlockColours: input.srgbBlockColours,
     surfacePatterns: input.surfacePatterns,
+    postProcessing: input.mood.post,
+    bloom: input.mood.bloom,
+    film: input.mood.film,
+    gradeStrength: round(input.mood.grade, 2),
+    heightFog: input.mood.heightFog,
     gameTime: input.gameTime,
   },
   world: {

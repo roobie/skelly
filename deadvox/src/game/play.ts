@@ -11,6 +11,8 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
+import { DEFAULT_MOOD } from '../core/mood.ts';
+import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt } from '../core/sky.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
 import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
@@ -64,6 +66,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
+  // The mood pass is on in play by default; debug tools may then restore a look from the URL.
+  engine.mood.restore(DEFAULT_MOOD);
 
   const audio = new GameAudio({
     registry,
@@ -611,16 +615,36 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
 
   // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
+  // Listened on the document (capture) in case the pointer-lock target isn't the canvas; the mouse and pointer
+  // events can both arrive for one press, so the forward press is deduped.
   const swallowSideButton = (e: MouseEvent) => {
     if (e.button === 3 || e.button === 4) {
       e.preventDefault();
     }
   };
-  renderer.domElement.addEventListener('mouseup', swallowSideButton);
-  renderer.domElement.addEventListener('auxclick', swallowSideButton);
+  for (const type of ['pointerdown', 'mousedown', 'mouseup', 'auxclick']) {
+    document.addEventListener(type, (e) => swallowSideButton(e as MouseEvent), true);
+  }
+
+  const forwardPress = new PressDedupe();
+  const onForwardPress = (e: MouseEvent) => {
+    if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
+      return;
+    }
+    if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
+      return;
+    }
+    // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
+    const item = offHandUse(registry, inventory);
+    const reason = item && survival.use(item);
+    if (reason) {
+      showNotice(reason);
+    }
+  };
+  document.addEventListener('pointerdown', onForwardPress, true);
+  document.addEventListener('mousedown', onForwardPress, true);
 
   renderer.domElement.addEventListener('mousedown', (e) => {
-    swallowSideButton(e);
     if (!input.locked || input.menuPointer || compression.locksInput) {
       return;
     }
@@ -628,13 +652,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       debugTools.click(e.button, eye(), lookDir());
     } else if (e.button === 0) {
       swing();
-    } else if (e.button === 4) {
-      // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
-      const item = offHandUse(registry, inventory);
-      const reason = item && survival.use(item);
-      if (reason) {
-        showNotice(reason);
-      }
     }
   });
 
@@ -779,6 +796,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const gameFrozen = stepSimulation(dt, menuState.paused);
     const sky = skyAt(hourOfDay(sim.calendar));
     applySky(engine.sky, sky);
+    engine.mood.setSky(sky);
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
@@ -833,8 +851,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     held.update(camera);
     flashlight.daylightScale = flashlightDaylightScale(sky);
     flashlight.update(registry, survival.lit, held, camera);
-    renderer.render(scene, camera);
-    held.render(renderer, camera, engine.sky);
+    engine.mood.render(() => held.render(renderer, camera, engine.sky));
     finishFrame();
   };
 

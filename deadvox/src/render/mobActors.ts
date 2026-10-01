@@ -117,6 +117,7 @@ import {
 import { type PosedShambler, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
+import { patchHeightFog } from './heightFog.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`zombieDied` are optional: ZombieMeshes has none of them (see
@@ -434,6 +435,7 @@ export class MobActorMeshes implements ZombieRenderer {
     this.material.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
       shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
+      patchHeightFog(shader);
       shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`
         .replace('#include <begin_vertex>', CROWD_BEGIN_VERTEX)
         .replace('#include <beginnormal_vertex>', CROWD_BEGINNORMAL_VERTEX);

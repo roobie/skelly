@@ -4,6 +4,7 @@
 
 import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
 import { type BlockEntities, type BlockEntity, doorPanel } from '../core/blockEntities.ts';
+import { withHeightFog } from './heightFog.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
@@ -36,7 +37,7 @@ export class FurnitureMeshes {
   private material(color: string): MeshLambertMaterial {
     let material = this.materials.get(color);
     if (!material) {
-      material = new MeshLambertMaterial({ color });
+      material = withHeightFog(new MeshLambertMaterial({ color }));
       this.materials.set(color, material);
     }
     return material;

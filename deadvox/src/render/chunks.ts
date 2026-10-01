@@ -11,6 +11,7 @@ import {
   Sphere,
 } from 'three';
 import type { MeshData } from '../core/mesher.ts';
+import { patchHeightFog } from './heightFog.ts';
 import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 
 // Per-block brightness variation stands in for textures. It's computed in the
@@ -51,6 +52,7 @@ const chunkMaterial = (
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
     shader.uniforms.uPatterns = patterns;
+    patchHeightFog(shader);
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -63,7 +65,7 @@ const chunkMaterial = (
 vCell = (modelMatrix * vec4(position - normal * 0.5, 1.0)).xyz / uBlockSize;
 vPattern = pattern;
 vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
-vFaceN = normal;`,
+vFaceN = normalize(normal);`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(

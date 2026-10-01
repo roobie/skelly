@@ -1,0 +1,248 @@
+// The mood pass: bloom, colour grade, vignette and film grain on top of the scene, plus the
+// height-fog mist. All of it is optional and cheap; with `post` off the frame is drawn
+// straight to the screen with `renderer.render`, exactly as before the pass existed.
+//
+// Pipeline (post on), all in an MSAA half-float linear target until the last step:
+//   RenderPass (scene) -> hands -> bloom -> OutputPass (tone mapping + sRGB) -> grade/film -> screen
+// Tone mapping happens exactly once, in OutputPass, which reads the renderer's `toneMapping`
+// and `toneMappingExposure` (what the debug look controls set). three.js skips its own
+// per-material tone mapping while rendering to a target, so nothing is applied twice. The
+// grade runs after it, in display space, and writes to the screen without a colour-space
+// conversion (a ShaderMaterial gets none unless it asks).
+
+import {
+  HalfFloatType,
+  type PerspectiveCamera,
+  type Scene,
+  SRGBColorSpace,
+  Vector2,
+  type WebGLRenderer,
+  WebGLRenderTarget,
+} from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {
+  BLOOM_RADIUS,
+  BLOOM_THRESHOLD,
+  clampGrade,
+  GRAIN,
+  gradeParams,
+  type MoodState,
+  VIGNETTE,
+} from '../core/mood.ts';
+import type { Sky } from '../core/sky.ts';
+import { DrawPass } from './drawPass.ts';
+import { heightFogUniforms } from './heightFog.ts';
+
+/** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
+const MSAA_SAMPLES = 4;
+
+// Display-referred colour in, display-referred colour out (this runs after OutputPass), so the
+// numbers read as they would in a grading tool. Contrast is a smoothstep S-curve blend, which
+// keeps black and white where they are. Grain is hashed from the pixel and a per-frame seed.
+const GRADE_SHADER = {
+  name: 'MoodGradeShader',
+  uniforms: {
+    tDiffuse: { value: null },
+    uSaturation: { value: 1 },
+    uContrast: { value: 0 },
+    uShadowTint: { value: [0, 0, 0] },
+    uHighlightTint: { value: [0, 0, 0] },
+    uVignette: { value: 0 },
+    uGrain: { value: 0 },
+    uSeed: { value: 0 },
+  },
+  vertexShader: `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`,
+  fragmentShader: `
+uniform sampler2D tDiffuse;
+uniform float uSaturation;
+uniform float uContrast;
+uniform vec3 uShadowTint;
+uniform vec3 uHighlightTint;
+uniform float uVignette;
+uniform float uGrain;
+uniform float uSeed;
+varying vec2 vUv;
+
+float hash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+void main() {
+  vec3 c = clamp(texture2D(tDiffuse, vUv).rgb, 0.0, 1.0);
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(l), c, uSaturation);
+  c += uShadowTint * (1.0 - smoothstep(0.0, 0.5, l)) + uHighlightTint * smoothstep(0.5, 1.0, l);
+  c = clamp(c, 0.0, 1.0);
+  c = mix(c, c * c * (3.0 - 2.0 * c), uContrast);
+  // 0.7071 is the corner's distance from the centre.
+  c *= 1.0 - uVignette * smoothstep(0.25, 0.7071, length(vUv - 0.5));
+  c += (hash(gl_FragCoord.xy + uSeed) - 0.5) * uGrain;
+  gl_FragColor = vec4(c, 1.0);
+}`,
+};
+
+export class Mood {
+  private readonly renderer: WebGLRenderer;
+  private readonly scene: Scene;
+  private readonly camera: PerspectiveCamera;
+  // Everything off until the game turns it on, so the benchmark renders as it always did.
+  private state: MoodState = { post: false, bloom: false, film: false, grade: 0, heightFog: false };
+  private width = 1;
+  private height = 1;
+  private frame = 0;
+  private skyBloom = 0;
+  private skyMist = 0;
+  private composer: EffectComposer | undefined;
+  private readonly drawPass = new DrawPass();
+  private bloomPass: UnrealBloomPass | undefined;
+  private gradePass: ShaderPass | undefined;
+
+  constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
+    this.renderer = renderer;
+    this.scene = scene;
+    this.camera = camera;
+  }
+
+  get post(): boolean {
+    return this.state.post;
+  }
+
+  get bloom(): boolean {
+    return this.state.bloom;
+  }
+
+  get film(): boolean {
+    return this.state.film;
+  }
+
+  get grade(): number {
+    return this.state.grade;
+  }
+
+  get heightFog(): boolean {
+    return this.state.heightFog;
+  }
+
+  /** Takes a whole state, as read from the defaults or the URL. */
+  restore(state: MoodState): void {
+    this.state = { ...state, grade: clampGrade(state.grade) };
+    this.sync();
+  }
+
+  setPost(on: boolean): void {
+    this.restore({ ...this.state, post: on });
+  }
+
+  setBloom(on: boolean): void {
+    this.restore({ ...this.state, bloom: on });
+  }
+
+  setFilm(on: boolean): void {
+    this.restore({ ...this.state, film: on });
+  }
+
+  setGrade(strength: number): void {
+    this.restore({ ...this.state, grade: strength });
+  }
+
+  setHeightFog(on: boolean): void {
+    this.restore({ ...this.state, heightFog: on });
+  }
+
+  /** Takes the sky's bloom strength and mist; cheap enough to call every frame. */
+  setSky(sky: Sky): void {
+    // sRGB in, working (linear) colour out: the mist is mixed in while the scene is still linear.
+    const [r, g, b] = sky.heightFogColor;
+    heightFogUniforms.uHeightFogColor.value.setRGB(r, g, b, SRGBColorSpace);
+    if (sky.bloom !== this.skyBloom || sky.heightFog !== this.skyMist) {
+      this.skyBloom = sky.bloom;
+      this.skyMist = sky.heightFog;
+      this.sync();
+    }
+  }
+
+  /** Follows the renderer's size, in CSS pixels. */
+  setSize(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+    this.composer?.setSize(width, height);
+  }
+
+  /**
+   * Draws the frame. `drawHands` draws the held items on top of the scene: into the post chain
+   * when post is on, onto the screen when it's off.
+   */
+  render(drawHands: () => void): void {
+    if (!this.state.post) {
+      this.renderer.render(this.scene, this.camera);
+      drawHands();
+      return;
+    }
+    const composer = this.ensureComposer();
+    this.drawPass.draw = drawHands;
+    // A new seed each frame animates the grain; any irrational-ish step will do.
+    this.frame = (this.frame + 1) % 4096;
+    this.gradePass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
+    composer.render(0);
+  }
+
+  /** The values the passes and shaders read, from the state and the sky. */
+  private sync(): void {
+    const { post, bloom, film, grade, heightFog } = this.state;
+    heightFogUniforms.uHeightFog.value.x = post && heightFog ? this.skyMist : 0;
+    if (!this.composer) {
+      return;
+    }
+    const bloomPass = this.bloomPass!;
+    bloomPass.enabled = bloom && this.skyBloom > 0;
+    bloomPass.strength = this.skyBloom;
+    const gradePass = this.gradePass!;
+    // Nothing to grade or film: leave the pass out, so OutputPass is the last and draws to the screen.
+    gradePass.enabled = grade > 0 || film;
+    const params = gradeParams(grade);
+    const u = gradePass.uniforms;
+    u.uSaturation!.value = params.saturation;
+    u.uContrast!.value = params.contrast;
+    u.uShadowTint!.value = [...params.shadowTint];
+    u.uHighlightTint!.value = [...params.highlightTint];
+    u.uVignette!.value = film ? VIGNETTE : 0;
+    u.uGrain!.value = film ? GRAIN : 0;
+  }
+
+  /** Built on first use, so a run that never turns post on (the benchmark) allocates no targets. */
+  private ensureComposer(): EffectComposer {
+    if (this.composer) {
+      return this.composer;
+    }
+    const ratio = this.renderer.getPixelRatio();
+    const target = new WebGLRenderTarget(this.width * ratio, this.height * ratio, {
+      type: HalfFloatType,
+      samples: MSAA_SAMPLES,
+    });
+    const composer = new EffectComposer(this.renderer, target);
+    composer.addPass(new RenderPass(this.scene, this.camera));
+    composer.addPass(this.drawPass);
+    // UnrealBloomPass runs its blur chain from half of this resolution down.
+    this.bloomPass = new UnrealBloomPass(new Vector2(this.width, this.height), 0, BLOOM_RADIUS, BLOOM_THRESHOLD);
+    composer.addPass(this.bloomPass);
+    composer.addPass(new OutputPass());
+    this.gradePass = new ShaderPass(GRADE_SHADER);
+    composer.addPass(this.gradePass);
+    // The constructor treats a given target's size as CSS pixels' worth, so size everything here.
+    composer.setSize(this.width, this.height);
+    this.composer = composer;
+    this.sync();
+    return composer;
+  }
+}

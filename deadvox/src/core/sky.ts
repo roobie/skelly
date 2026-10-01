@@ -22,6 +22,12 @@ export interface Sky {
   /** Fog start and end as fractions of the view radius. */
   fogNear: number;
   fogFar: number;
+  /** Height-fog density per metre of view path at the mist's base height; the mist thins with altitude. */
+  heightFog: number;
+  /** Colour of the height mist: sky-like by day, warmed by the low sun at dawn and dusk, a pale cool at night. */
+  heightFogColor: Rgb;
+  /** Bloom strength: a faint halo by day, a stronger one by night when little else is bright. */
+  bloom: number;
 }
 
 type Look = Omit<Sky, 'light'>;
@@ -37,6 +43,9 @@ const NIGHT: Look = {
   ambientIntensity: 0.22,
   fogNear: 0.1,
   fogFar: 0.5,
+  heightFog: 0.01,
+  heightFogColor: hex(0x1c_24_30),
+  bloom: 0.5,
 };
 
 /** The dead of night: the dusk glow is gone, and there's barely more than shapes. */
@@ -49,6 +58,9 @@ const DEEP_NIGHT: Look = {
   ambientIntensity: 0.1,
   fogNear: 0.05,
   fogFar: 0.35,
+  heightFog: 0.012,
+  heightFogColor: hex(0x12_18_21),
+  bloom: 0.55,
 };
 
 const DAWN: Look = {
@@ -60,6 +72,9 @@ const DAWN: Look = {
   ambientIntensity: 0.8,
   fogNear: 0.3,
   fogFar: 0.8,
+  heightFog: 0.014,
+  heightFogColor: hex(0xb0_9a_90),
+  bloom: 0.2,
 };
 
 /** The look before time of day existed; the benchmark still renders with it. */
@@ -72,6 +87,9 @@ const DAY: Look = {
   ambientIntensity: 1.3,
   fogNear: 0.6,
   fogFar: 0.95,
+  heightFog: 0.002,
+  heightFogColor: hex(0xb4_c6_d4),
+  bloom: 0.08,
 };
 
 const DUSK: Look = {
@@ -83,6 +101,9 @@ const DUSK: Look = {
   ambientIntensity: 0.7,
   fogNear: 0.3,
   fogFar: 0.8,
+  heightFog: 0.008,
+  heightFogColor: hex(0x8a_6e_66),
+  bloom: 0.25,
 };
 
 /** Keyframes by hour; the look is interpolated between them and wraps at midnight. */
@@ -118,6 +139,9 @@ const lookAt = (hour: number): Look => {
         ambientIntensity: mix(a.ambientIntensity, b.ambientIntensity, t),
         fogNear: mix(a.fogNear, b.fogNear, t),
         fogFar: mix(a.fogFar, b.fogFar, t),
+        heightFog: mix(a.heightFog, b.heightFog, t),
+        heightFogColor: mixRgb(a.heightFogColor, b.heightFogColor, t),
+        bloom: mix(a.bloom, b.bloom, t),
       };
     }
   }

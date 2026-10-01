@@ -5,6 +5,7 @@ import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+import { FakeMood } from './fakeMood.ts';
 
 const { registry } = buildRegistry([
   {
@@ -76,6 +77,7 @@ describe('spawnMenuViewModel', () => {
       look: new LookControls(
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
         { linearColorsOn: false, setLinearColors: () => undefined, patternsOn: true, setPatterns: () => undefined },
+        new FakeMood(),
       ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+import { FakeMood } from './fakeMood.ts';
 
 interface FakeRenderer {
   toneMapping: ToneMapping;
@@ -30,6 +31,12 @@ describe('debug action table', () => {
       ['=', 'Exposure +'],
       ['I', 'sRGB block colours'],
       [';', 'Surface patterns'],
+      ['Q', 'Mood post-processing (all)'],
+      ["'", 'Bloom'],
+      ['\\', 'Film (vignette, grain)'],
+      ['/', 'Height fog'],
+      ['[', 'Grade −'],
+      [']', 'Grade +'],
       [',', 'Skip +23 h (−1 h tomorrow)'],
       ['.', 'Skip +1 h'],
     ]);
@@ -76,6 +83,29 @@ describe('debug action table', () => {
     expect(byCode('KeyI').state?.()).toBe(true);
   });
 
+  it('toggles the mood effects and steps the grade, which clamps to 0..1', () => {
+    const { actions, mood } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    for (const code of ['KeyQ', 'Quote', 'Backslash', 'Slash']) {
+      expect(byCode(code).state?.()).toBe(true);
+      dispatchDebugAction(actions, code);
+      expect(byCode(code).state?.()).toBe(false);
+    }
+    expect([mood.post, mood.bloom, mood.film, mood.heightFog]).toEqual([false, false, false, false]);
+    expect(byCode('BracketLeft').detail?.()).toBe('1.0');
+    dispatchDebugAction(actions, 'BracketLeft');
+    dispatchDebugAction(actions, 'BracketLeft');
+    expect(byCode('BracketRight').detail?.()).toBe('0.8');
+    for (let i = 0; i < 20; i++) {
+      dispatchDebugAction(actions, 'BracketLeft');
+    }
+    expect(mood.grade).toBe(0);
+    for (let i = 0; i < 20; i++) {
+      dispatchDebugAction(actions, 'BracketRight');
+    }
+    expect(mood.grade).toBe(1);
+  });
+
   it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO', 'KeyM'])(
     '%s updates its displayed toggle state on keydown',
     (code) => {
@@ -102,7 +132,7 @@ describe('debug action table', () => {
     const godMode = actions.find((candidate) => candidate.code === 'KeyH')!;
     expect(dispatchDebugAction(actions, 'KeyH', true)).toBe(true);
     expect(godMode.state?.()).toBe(false);
-    expect(dispatchDebugAction(actions, 'KeyQ')).toBe(false);
+    expect(dispatchDebugAction(actions, 'F12')).toBe(false);
   });
 });
 
@@ -114,26 +144,32 @@ const makeActions = (
   skips: number[];
   renderer: FakeRenderer;
   clock: { calendar: number };
+  mood: FakeMood;
 } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
   const clock = { calendar: 19.5 * 3600 };
   const skips: number[] = [];
   let linear = false;
   let patterns = true;
-  const look = new LookControls(renderer, {
-    get linearColorsOn() {
-      return linear;
+  const mood = new FakeMood();
+  const look = new LookControls(
+    renderer,
+    {
+      get linearColorsOn() {
+        return linear;
+      },
+      setLinearColors(on: boolean) {
+        linear = on;
+      },
+      get patternsOn() {
+        return patterns;
+      },
+      setPatterns(on: boolean) {
+        patterns = on;
+      },
     },
-    setLinearColors(on: boolean) {
-      linear = on;
-    },
-    get patternsOn() {
-      return patterns;
-    },
-    setPatterns(on: boolean) {
-      patterns = on;
-    },
-  });
+    mood,
+  );
   const sim = {
     godMode: false,
     get calendar() {
@@ -207,5 +243,5 @@ const makeActions = (
       gameFrozen = !gameFrozen;
     },
   });
-  return { actions, spawnCounts, skips, renderer, clock };
+  return { actions, spawnCounts, skips, renderer, clock, mood };
 };
