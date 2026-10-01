@@ -27,8 +27,9 @@ const quadFaces = (mesh: MeshData, q: number): string[] => {
   const normal = Array.from(mesh.normals.subarray(q * 12, q * 12 + 3));
   const axis = normal.findIndex((n) => n !== 0);
   const sign = normal[axis]!;
-  const lo = [0, 1, 2].map((a) => Math.min(...corners.map((c) => c[a]!)));
-  const hi = [0, 1, 2].map((a) => Math.max(...corners.map((c) => c[a]!)));
+  // Quads are grown by QUAD_GROW past their unit faces; round back to the integer extent.
+  const lo = [0, 1, 2].map((a) => Math.round(Math.min(...corners.map((c) => c[a]!))));
+  const hi = [0, 1, 2].map((a) => Math.round(Math.max(...corners.map((c) => c[a]!))));
   // The block the face belongs to sits behind the face plane.
   lo[axis] = sign > 0 ? lo[axis]! - 1 : lo[axis]!;
   hi[axis] = lo[axis]! + 1;

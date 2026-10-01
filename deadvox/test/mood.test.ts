@@ -9,6 +9,7 @@ import {
   DEFAULT_MOOD,
   GRAIN,
   gradeParams,
+  targetColorScale,
   VIGNETTE,
 } from '../src/core/mood.ts';
 import { TONE_MODES } from '../src/render/look.ts';
@@ -92,5 +93,23 @@ describe('bloom threshold', () => {
   it('falls as exposure rises and stays finite at zero', () => {
     expect(bloomThreshold(3)).toBeLessThan(bloomThreshold(1));
     expect(Number.isFinite(bloomThreshold(0))).toBe(true);
+  });
+});
+
+describe('target colour scale (sky and fog in the post chain)', () => {
+  it('cancels the exposure OutputPass applies, so the sky shows as its own colour', () => {
+    for (const exposure of [0.2, 0.7, 1, 3]) {
+      expect(targetColorScale(exposure) * exposure).toBeCloseTo(1, 12);
+    }
+  });
+
+  it('keeps any sky colour (<= 1) at or under the bloom threshold, at every exposure', () => {
+    for (const exposure of [0.2, 0.7, 1, 3]) {
+      expect(targetColorScale(exposure)).toBeLessThanOrEqual(bloomThreshold(exposure) + 1e-12);
+    }
+  });
+
+  it('stays finite at zero exposure', () => {
+    expect(Number.isFinite(targetColorScale(0))).toBe(true);
   });
 });

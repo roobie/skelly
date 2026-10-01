@@ -122,3 +122,11 @@ export const BLOOM_CLIP = 1.0;
 
 /** The bloom pass's luminance threshold in pre-exposure linear light, for the renderer's exposure. */
 export const bloomThreshold = (exposure: number): number => BLOOM_CLIP / Math.max(exposure, 1e-3);
+
+/**
+ * Factor for colours that are cleared or fogged into the post chain's linear target but are not
+ * lights: OutputPass multiplies the whole frame by the exposure, so scaling them by 1 / exposure
+ * lets them reach the screen as they would without post. It also keeps them at or below
+ * `bloomThreshold` (a sky colour is at most 1), so the sky never counts as bright.
+ */
+export const targetColorScale = (exposure: number): number => 1 / Math.max(exposure, 1e-3);

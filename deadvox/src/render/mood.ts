@@ -38,6 +38,7 @@ import {
   GRAIN,
   gradeParams,
   type MoodState,
+  targetColorScale,
   VIGNETTE,
 } from '../core/mood.ts';
 import type { Sky } from '../core/sky.ts';
@@ -198,8 +199,29 @@ export class Mood {
     this.gradePass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
     // Bloom sees the linear frame before OutputPass applies exposure, so its threshold follows the
     // exposure (the debug controls change it at any time) to keep selecting what will be near white.
-    this.bloomPass!.threshold = bloomThreshold(this.renderer.toneMappingExposure);
-    composer.render(0);
+    const exposure = this.renderer.toneMappingExposure;
+    this.bloomPass!.threshold = bloomThreshold(exposure);
+    // The clear colour, the distance fog and the mist all land in the linear target and then get
+    // the exposure from OutputPass, which would push a bright sky past the bloom threshold and
+    // brighten it against the no-post frame. Scaled by 1 / exposure for this frame, they come out
+    // as the sky's own colour. All three scale alike, so geometry still fades into the background
+    // exactly at the far plane. The originals are put back afterwards (scene.background is the fog's
+    // own Color, see applySky), so the post-off path and the next frame see the unscaled sky.
+    const scale = targetColorScale(exposure);
+    const fogColor = this.scene.fog?.color;
+    const mist = heightFogUniforms.uHeightFogColor.value;
+    const savedFog = fogColor?.clone();
+    const savedMist = mist.clone();
+    fogColor?.multiplyScalar(scale);
+    mist.multiplyScalar(scale);
+    try {
+      composer.render(0);
+    } finally {
+      if (fogColor && savedFog) {
+        fogColor.copy(savedFog);
+      }
+      mist.copy(savedMist);
+    }
   }
 
   /**

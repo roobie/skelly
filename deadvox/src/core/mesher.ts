@@ -140,7 +140,18 @@ const fillMask = (ctx: Context, face: Face, slice: number): boolean => {
   return any;
 };
 
-/** Appends one quad covering [u0, u0 + w) × [v0, v0 + h) of a slice. */
+/**
+ * How far, in blocks, each quad grows past its edges in its own plane. Neighbouring quads (and
+ * the T-junctions greedy merging makes) are then rasterised from slightly different vertices, so
+ * float rounding after the model/view transforms could leave a sub-pixel crack between them; the
+ * overlap closes it. 5e-4 is well above the rounding at chunk-local coordinates (f32 spacing is
+ * ~4e-6 at 32) and under the 1e-3 slack the per-block shader hash (render/chunks.ts) allows, so
+ * the grown rim still reads as its own block's cell. The overlap is coplanar, so it only adds a
+ * sub-pixel rim of depth ties between neighbours.
+ */
+export const QUAD_GROW = 5e-4;
+
+/** Appends one quad covering [u0, u0 + w) × [v0, v0 + h) of a slice, grown by QUAD_GROW in-plane. */
 const emitQuad = (ctx: Context, face: Face, key: number, [slice, u0, v0, w, h]: number[]): void => {
   const base = ctx.positions.length / 3;
   const id = key >> 8;
@@ -149,8 +160,8 @@ const emitQuad = (ctx: Context, face: Face, key: number, [slice, u0, v0, w, h]: 
   const [nx, ny, nz] = face.normal;
   for (let corner = 0; corner < 4; corner++) {
     const [cu, cv] = face.uv[corner]!;
-    pos[face.u] = u0! + cu * w!;
-    pos[face.v] = v0! + cv * h!;
+    pos[face.u] = u0! + cu * w! + (cu ? QUAD_GROW : -QUAD_GROW);
+    pos[face.v] = v0! + cv * h! + (cv ? QUAD_GROW : -QUAD_GROW);
     const k = AO_LEVELS[aoAt(key, corner)]!;
     ctx.positions.push(pos[0], pos[1], pos[2]);
     ctx.normals.push(nx, ny, nz);
