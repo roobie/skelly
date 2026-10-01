@@ -5,7 +5,7 @@ import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { FAMILIES } from '../src/gun/parts.ts';
+import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
 
 /** Every combination of a family's parameter values. */
@@ -16,6 +16,17 @@ const variants = (family: PartFamily): Record<string, string>[] =>
   );
 
 const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
+
+const onGridWithCarrierClearance = (value: number, step: number, family: PartFamily): boolean => {
+  if (onGrid(value, step)) {
+    return true;
+  }
+  if (family.name !== 'receiver') {
+    return false;
+  }
+  const nearest = Math.round(value / step) * step;
+  return Math.abs(Math.abs(value - nearest) - BOLT_CARRIER_RUNNING_CLEARANCE_U) < 1e-9;
+};
 
 const pumpTubeDimensions = (input: {
   bore: 'S' | 'M' | 'L';
@@ -267,7 +278,6 @@ describe('part library', () => {
   for (const family of Object.values(FAMILIES)) {
     describe(family.name, () => {
       for (const params of variants(family)) {
-        const def = family.build(params);
         const tag = JSON.stringify(params);
 
         let gridStep = GRID;
@@ -277,7 +287,8 @@ describe('part library', () => {
           gridStep = GRID / 2;
         }
 
-        it(`${tag}: positions and extents are on the ${gridStep}u grid`, () => {
+        it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+          const def = family.build(params);
           const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
             box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
           // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
@@ -293,10 +304,7 @@ describe('part library', () => {
             ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
             ...def.axes.flatMap((a) => [...a.origin]),
           ];
-          expect(numbers.filter((n) => !onGrid(n, gridStep))).toEqual([]);
-        });
-
-        it(`${tag}: port frames are orthonormal and ids unique`, () => {
+          expect(numbers.filter((n) => !onGridWithCarrierClearance(n, gridStep, family))).toEqual([]);
           for (const p of def.ports) {
             expect(length(p.normal)).toBeCloseTo(1);
             expect(length(p.up)).toBeCloseTo(1);

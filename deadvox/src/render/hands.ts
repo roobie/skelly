@@ -75,6 +75,15 @@ export class HeldItems {
     this.palette = palette;
     this.view.add(this.torso);
     this.scene.add(this.view, this.light, this.ambient);
+    // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
+    const warmUp = new Mesh(this.geometry, this.material);
+    warmUp.visible = false;
+    this.scene.add(warmUp);
+  }
+
+  /** The hands' own scene and camera, for precompiling their shaders. */
+  get warmUpTarget(): { scene: Scene; camera: PerspectiveCamera } {
+    return { scene: this.scene, camera: this.camera };
   }
 
   /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */

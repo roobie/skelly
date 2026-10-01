@@ -84,5 +84,7 @@ describe('the stress-test city', () => {
     expect(siteFromUrl(new URLSearchParams(''), 'hamlet')).toEqual({ site: 'hamlet', storeys: 1 });
     expect(siteFromUrl(new URLSearchParams('site=city&storeys=6'), 'testHouse')).toEqual({ site: 'city', storeys: 6 });
     expect(siteFromUrl(new URLSearchParams('site=city&storeys=99'), 'hamlet')).toEqual({ site: 'city', storeys: 1 });
+    expect(siteFromUrl(new URLSearchParams('site=testHouse'), 'hamlet')).toEqual({ site: 'testHouse', storeys: 1 });
+    expect(siteFromUrl(new URLSearchParams('site=bogus'), 'hamlet')).toEqual({ site: 'hamlet', storeys: 1 });
   });
 });

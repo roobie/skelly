@@ -46,7 +46,8 @@ const chrome = spawn(
     `--remote-debugging-port=${cdpPort}`,
     `--user-data-dir=${profile}`,
     '--window-size=1280,900',
-    `http://127.0.0.1:${port}/?debug=1`,
+    // The contract tests UI, not the look: without a GPU the post chain and shadows make each frame several times slower.
+    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
   ],
   { stdio: 'ignore' },
 );
@@ -98,6 +99,9 @@ try {
     }
   }, 'Chrome page');
   const page = await getPage();
+  if (!page) {
+    throw new Error('Chrome page disappeared after startup');
+  }
   ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
@@ -176,15 +180,20 @@ try {
     window.__keyEvents = [];
     const hitTest = document.elementFromPoint.bind(document);
     document.elementFromPoint = (x, y) => {
-      window.__lastHitTest = { x, y, target: hitTest(x, y) };
-      return window.__lastHitTest.target;
+      const target = hitTest(x, y);
+      window.__lastHitTest = {
+        x,
+        y,
+        insideGo: Boolean(target?.closest('#go')),
+        buttonText: target?.closest('button')?.textContent?.trim() ?? '',
+      };
+      return target;
     };
     document.addEventListener('click', (event) => {
       if (event.target !== canvas) {
         window.__lastForwardedClick = {
           x: event.clientX,
           y: event.clientY,
-          target: event.target,
           hitTest: window.__lastHitTest,
         };
       }
@@ -238,6 +247,11 @@ try {
       isPrimary: true,
       button: ${button},
       buttons: ${buttons},
+    }))`);
+  const dispatchPointerAt = async (type, button, buttons, position) =>
+    evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true,
+      button: ${button}, buttons: ${buttons}, clientX: ${position.x}, clientY: ${position.y},
     }))`);
   const clickAt = async (selector, anchor = 'center') => {
     await evaluate('window.__lastForwardedClick = null');
@@ -366,7 +380,7 @@ try {
       background: cursor.background,
       blend: cursor.blend,
       rootBlend: cursor.rootBlend,
-      hitGo: click.hitTest.target?.closest('#go') === document.querySelector('#go'),
+      hitGo: click.hitTest.insideGo,
       hitX: click.hitTest.x,
       hitY: click.hitTest.y,
     };
@@ -443,6 +457,7 @@ try {
     /^Placed \d+ of 1$/,
     'V reports the number placed out of the selected count',
   );
+  await press('KeyO', 'o', 79);
   await press('Backquote', '`', 192);
   assert.deepEqual(
     await evaluate('window.__pointerCalls'),
@@ -450,6 +465,27 @@ try {
     'menu keys leave pointer lock alone',
   );
 
+  await press('KeyG', 'g', 71);
+  const spawnNames = await evaluate(`Array.from(document.querySelectorAll('#spawn .spawn-list button'))
+    .map((button, index) => ({ index, name: button.querySelector('span')?.textContent }))
+    .filter(({ name }) => name && name !== 'Can of beans')
+    .slice(0, 24)`);
+  assert.ok(spawnNames.length >= 20, 'debug spawn menu has enough distinct items for a scroll regression');
+  for (const { index } of spawnNames) {
+    await evaluate(
+      `document.querySelector('#spawn .spawn-list button:nth-child(${index + 1})').scrollIntoView({ block: 'center' })`,
+    );
+    await clickAt(`#spawn .spawn-list button:nth-child(${index + 1})`);
+  }
+  await press('KeyG', 'g', 71);
+  if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
+    await clickAt('#go', 'edge');
+  }
+  assert.equal(
+    await evaluate("document.querySelector('#overlay').hidden"),
+    true,
+    'play is resumed before inventory queue checks',
+  );
   const toggles = await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)");
   assert.equal(
     toggles.every((checked) => !checked),
@@ -468,6 +504,50 @@ try {
     ),
     true,
   );
+  const inventoryScroll = await evaluate(`(() => {
+    const pane = document.querySelectorAll('#inventory .inv-pane')[1];
+    pane.scrollTop = Math.min(40, pane.scrollHeight - pane.clientHeight);
+    const view = pane.getBoundingClientRect();
+    const visible = [...pane.querySelectorAll('.inv-item')].find((node) => {
+      const item = node.getBoundingClientRect();
+      return node.querySelector('.inv-item-name')?.textContent === 'AA battery' && item.bottom > view.top && item.top < view.bottom;
+    });
+    return {
+      top: pane.scrollTop,
+      overflow: pane.scrollHeight - pane.clientHeight,
+      uid: visible?.dataset.uid,
+      name: visible?.querySelector('.inv-item-name')?.textContent,
+    };
+  })()`);
+  assert.ok(inventoryScroll.overflow > 1, 'nearby pane has enough items to scroll');
+  assert.ok(inventoryScroll.uid, 'a nearby item is visible to select');
+  await clickAt(`#inventory [data-uid="${inventoryScroll.uid}"]`);
+  assert.equal(
+    await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
+    inventoryScroll.name,
+  );
+  let paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  assert.ok(
+    Math.abs(paneTop - inventoryScroll.top) <= 1,
+    `scroll survives selecting an item (${inventoryScroll.top} -> ${paneTop})`,
+  );
+
+  await press('KeyE', 'e', 69);
+  assert.notEqual(
+    await evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
+    true,
+    'selected item queues a move',
+  );
+  paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives queueing a move');
+  await waitFor(
+    () => evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
+    'inventory handling job completes',
+    15_000,
+  );
+  paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives handling completion');
+
   const transfer = await evaluate(`(() => {
     const item = [...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans');
     const legs = [...document.querySelectorAll('#inventory .inv-worn')].find((node) => node.querySelector('.inv-slot-label')?.textContent === 'Legs');
@@ -483,15 +563,18 @@ try {
   })()`);
   assert.match(transfer.sourceTarget, /^pocket:/, 'source item is in a container pocket');
   await moveCursorTo(transfer.source);
-  await dispatchPointer('pointerdown', 0, 1);
+  await evaluate(`document.elementFromPoint(${transfer.source.x}, ${transfer.source.y}).dispatchEvent(new PointerEvent('pointerdown', {
+    bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1,
+    clientX: ${transfer.source.x}, clientY: ${transfer.source.y},
+  }))`);
   assert.equal(
     await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
     'Can of beans',
     'drawn-cursor pointerdown selects an item in a container',
   );
   await moveCursorTo(transfer.destination);
-  await dispatchPointer('pointermove', -1, 1);
-  await dispatchPointer('pointerup', -1, 0);
+  await dispatchPointerAt('pointermove', -1, 1, transfer.destination);
+  await dispatchPointerAt('pointerup', -1, 0, transfer.destination);
   await delay(100);
   assert.match(
     await evaluate("document.querySelector('#inventory .inv-queue').textContent"),
@@ -524,8 +607,14 @@ try {
   // With a menu open and pointer locked, move the drawn cursor, dispatch a click to its target,
   // and verify both a button handler and input focus receive the forwarded click.
   await press('KeyG', 'g', 71);
+  await evaluate("document.querySelector('#spawn .spawn-list button').scrollIntoView({ block: 'center' })");
   await evaluate('window.__setPointerLocked(true)');
-  await delay(100);
+  await waitFor(() => evaluate("!document.querySelector('#game-cursor').hidden"), 'menu cursor visibility');
+  cursor = await evaluate(`(() => {
+    const node = document.querySelector('#game-cursor');
+    const rect = node.getBoundingClientRect();
+    return { x: rect.left + (node.classList.contains('hand') ? 4 : 0), y: rect.top };
+  })()`);
   await clickAt('#spawn .spawn-list button');
   const hotspot = await evaluate(`(() => {
     const cursor = document.querySelector('#game-cursor').getBoundingClientRect();
@@ -535,7 +624,7 @@ try {
       tipY: cursor.top,
       hitTest: window.__lastHitTest,
       forwarded: window.__lastForwardedClick,
-      hitButton: window.__lastHitTest.target?.closest('button') === button,
+      hitButton: window.__lastHitTest.buttonText === button.textContent.trim(),
     };
   })()`);
   assert.ok(Math.abs(hotspot.tipX - cursor.x) < 0.1, 'pointing-hand fingertip sits at cursor x');

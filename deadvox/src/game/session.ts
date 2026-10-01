@@ -538,9 +538,12 @@ export const createSession = (options: SessionOptions) => {
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),
     nameOf,
-    /** One real-time frame: advances the simulation (through rest, if any) and the player's own sounds. */
-    frame: (dt: number): void => {
-      rest.frame(dt);
+    /**
+     * One real-time frame: advances the simulation (through rest, if any) and the player's own
+     * sounds. `until` caps the simulation time reached, for the debug time skip.
+     */
+    frame: (dt: number, until?: number): void => {
+      rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);

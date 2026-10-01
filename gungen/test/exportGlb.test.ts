@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import { displayItems as selectDisplayItems } from '../src/core/display.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/core/exportFrame.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
 import { applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, type Vec3 } from '../src/core/math.ts';
-import { meshForSolid } from '../src/core/mesh.ts';
+import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
@@ -13,9 +14,9 @@ import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
-import { GUN_PALETTE, solidColor } from '../src/gun/palette.ts';
-import { readGlb } from './glbReader.ts';
-import { variant } from './helpers.ts';
+import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
+import { type ReadGlb, readGlb } from './glbReader.ts';
+import { expectWatertightMesh, variant } from './helpers.ts';
 
 const design = (name: string): Assembly => {
   const result = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8'));
@@ -27,9 +28,8 @@ const design = (name: string): Assembly => {
 
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
-
-const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET) => {
-  const result = exportGunGlb(assembly, asset);
+const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
+  const result = exportGunGlb(assembly, asset, { variant: variantName ?? 'ar' });
   if (!result.ok) {
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
@@ -39,6 +39,15 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET) => {
 const near = (a: readonly number[], b: readonly number[], digits = 6): void => {
   // biome-ignore lint/suspicious/noMisplacedAssertion: a small comparison helper called from tests
   expect(a).toEqual(b.map((x) => expect.closeTo(x, digits)));
+};
+
+const glbIndices = (glb: ReadGlb, accessorIndex: number): Uint32Array => {
+  const accessor = glb.json.accessors[accessorIndex]!;
+  const bufferView = glb.json.bufferViews[accessor.bufferView]!;
+  const view = new DataView(glb.bin.buffer, glb.bin.byteOffset, glb.bin.byteLength);
+  return Uint32Array.from({ length: accessor.count }, (_, index) =>
+    view.getUint32(bufferView.byteOffset + index * 4, true),
+  );
 };
 
 interface PortExtras {
@@ -94,12 +103,21 @@ describe('glb export: axes and units', () => {
 });
 
 describe('glb export: nodes', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
 
-  it('writes a valid glb 2.0 container with one scene', () => {
+  it('writes a valid glb 2.0 container with one scene and reports the shared material count', () => {
     expect(ar.read.json.asset.version).toBe('2.0');
     expect(ar.read.json.scenes).toHaveLength(1);
-    expect(ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]?.name).toBe(ASSET.id);
+    const root = ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]!;
+    expect(root.name).toBe(ASSET.id);
+    expect((root.extras!.gungen as { materialCount: number }).materialCount).toBe(ar.read.json.materials.length);
+  });
+
+  it('emits the BCG as its own node with linear travel extras and keeps port metadata children', () => {
+    const node = ar.read.json.nodes.find((entry) => entry.extras?.part === 'bolt-carrier')!;
+    expect(node.name).toBe(partNodeName('bolt-carrier', 'bolt-carrier'));
+    expect(node.extras?.motion).toEqual({ kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0], rearmost: [6.5, 0, 0] });
+    expect((node.children ?? []).some((index) => ar.read.json.nodes[index]!.name === 'bolt-carrier.mount')).toBe(true);
   });
 
   it('names one node per part by part id and registry-key family', () => {
@@ -147,7 +165,7 @@ describe('glb export: nodes', () => {
 });
 
 describe('glb export: port metadata', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
   const partNode = (id: string) => ar.read.json.nodes.find((n) => n.extras?.part === id)!;
 
   it('records a port in its child node extras with the stable id, mount, gender, size and mating frame', () => {
@@ -193,19 +211,91 @@ describe('glb export: port metadata', () => {
 });
 
 describe('glb export: meshes', () => {
-  const ar = exported(design('archetype-ar'));
+  const ar = exported(design('archetype-ar'), ASSET, 'ar');
   const { json } = ar.read;
 
   const drawn = (id: string) => {
     const def = ar.resolved.defs.get(id)!;
     return def.displaySolids ?? def.solids;
   };
+  const displayItems = (id: string) =>
+    selectDisplayItems(drawn(id)).map((item) => ({
+      ...item,
+      mesh: item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!),
+    }));
 
-  it('draws the solids the viewer draws (displaySolids, else solids), one primitive each', () => {
+  it('exports the merged AR receiver as the same closed, manifold mesh', () => {
+    const receiverMesh = displayItems('receiver').find(({ id }) => id === 'receiver-ar')!.mesh;
+    expectWatertightMesh(receiverMesh, 'AR source receiver');
+    const receiverNode = json.nodes.find((node) => node.extras?.part === 'receiver')!;
+    const primitive = json.meshes[receiverNode.mesh!]!.primitives.find(
+      (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === 'receiver-ar',
+    )!;
+    const positions = ar.read.floats(primitive.attributes.POSITION);
+    const indices = glbIndices(ar.read, primitive.indices);
+    expect(positions.length).toBe(receiverMesh.positions.length);
+    expect(indices).toEqual(receiverMesh.indices);
+    near(
+      Array.from(positions),
+      Array.from(receiverMesh.positions, (value) => value * S),
+      7,
+    );
+    expectWatertightMesh(
+      {
+        positions: Float32Array.from(positions, (value) => value / S),
+        normals: ar.read.floats(primitive.attributes.NORMAL),
+        indices,
+        triangleCount: indices.length / 3,
+      },
+      'AR exported receiver',
+    );
+  });
+
+  it('exports AK and pump receiver primitives with the same closed merged meshes', () => {
+    const samples = [
+      { designName: 'archetype-ak', group: 'receiver-ak' },
+      { designName: 'archetype-pump-shotgun', group: 'receiver-pump' },
+    ];
+    for (const { designName, group } of samples) {
+      const model = exported(design(designName), ASSET, designName.replace('archetype-', ''));
+      const def = model.resolved.defs.get('receiver')!;
+      const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
+      const expectedMesh = meshForSolidGroup(solids);
+      expectWatertightMesh(expectedMesh, `${designName}: source topology`);
+      const node = model.read.json.nodes.find((entry) => entry.extras?.part === 'receiver')!;
+      const primitive = model.read.json.meshes[node.mesh!]!.primitives.find(
+        (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === group,
+      )!;
+      const positions = model.read.floats(primitive.attributes.POSITION);
+      const indices = glbIndices(model.read, primitive.indices);
+      expect(indices).toEqual(expectedMesh.indices);
+      near(
+        Array.from(positions),
+        Array.from(expectedMesh.positions, (value) => value * S),
+        7,
+      );
+      expectWatertightMesh(
+        {
+          positions: Float32Array.from(positions, (value) => value / S),
+          normals: model.read.floats(primitive.attributes.NORMAL),
+          indices,
+          triangleCount: indices.length / 3,
+        },
+        `${designName}: exported topology`,
+      );
+    }
+  });
+
+  it('draws normal solids individually and section shells as one merged primitive', () => {
     for (const id of Object.keys(ar.resolved.assembly.parts)) {
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       const prims = json.meshes[node.mesh!]!.primitives;
-      expect(prims.map((p) => p.extras?.solid)).toEqual(drawn(id).map((s) => s.id));
+      expect(
+        prims.map((p) => {
+          const extras = p.extras as Record<string, unknown> | undefined;
+          return extras?.solid ?? extras?.mergeGroup;
+        }),
+      ).toEqual(displayItems(id).map(({ id: itemId }) => itemId));
     }
   });
 
@@ -213,8 +303,7 @@ describe('glb export: meshes', () => {
     for (const id of Object.keys(ar.resolved.assembly.parts)) {
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       const prims = json.meshes[node.mesh!]!.primitives;
-      drawn(id).forEach((solid, i) => {
-        const mesh = meshForSolid(solid);
+      displayItems(id).forEach(({ mesh }, i) => {
         const lo = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
         const hi = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
         for (let v = 0; v < mesh.positions.length; v += 3) {
@@ -252,18 +341,53 @@ describe('glb export: meshes', () => {
     expect(checked).toBeGreaterThan(1000);
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this contract walks exported primitives and compares full material metadata against each source solid.
   it('colours each solid with the palette converted from sRGB to linear', () => {
     for (const [id, inst] of Object.entries(ar.resolved.assembly.parts)) {
       const role = ar.resolved.defs.get(id)!.family;
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       for (const prim of json.meshes[node.mesh!]!.primitives) {
-        const srgb = solidColor(GUN_PALETTE, role, prim.extras!.solid!);
+        const extras = prim.extras as Record<string, unknown> | undefined;
+        const groupedSolids = extras?.solids as string[] | undefined;
+        const solidId = (extras?.solid as string | undefined) ?? groupedSolids?.[0];
+        if (!solidId) {
+          throw new Error(`No source solid for ${id} primitive ${prim.indices}.`);
+        }
+        const solid = [...(ar.resolved.defs.get(id)!.displaySolids ?? ar.resolved.defs.get(id)!.solids)].find(
+          (candidate) => candidate.id === solidId,
+        );
+        const appearance = resolveAppearance(GUN_PALETTE, role, solidId, {
+          archetype: 'ar',
+          ...(ar.resolved.defs.get(id)!.material ? { material: ar.resolved.defs.get(id)!.material } : {}),
+          ...(ar.resolved.defs.get(id)!.slot ? { slot: ar.resolved.defs.get(id)!.slot } : {}),
+        });
+        if (solid?.material) {
+          expect(extras?.material).toBe(solid.material);
+          expect(extras?.slot).toBe(solid.slot);
+          continue;
+        }
         const factor = json.materials[prim.material]!.pbrMetallicRoughness.baseColorFactor;
-        near(factor.slice(0, 3), srgb.map(srgbToLinear));
+        near(factor.slice(0, 3), appearance.color.map(srgbToLinear));
+        expect(extras?.material).toBe(appearance.material);
+        expect(extras?.slot).toBe(appearance.slot);
         expect(factor[3]).toBe(1);
       }
       expect(inst.family).toBeTruthy();
     }
+  });
+
+  it('exports butt-pad and floorplate primitive extras in the independently specified accent slot', () => {
+    const pump = exported(design('archetype-pump-shotgun'), ASSET, 'pump-shotgun');
+    const compactBolt = exported(design('archetype-bolt-rifle-box'), ASSET, 'bolt-rifle-box');
+    const primitive = (glb: ReadGlb, solid: string) =>
+      glb.json.meshes
+        .flatMap((mesh) => mesh.primitives)
+        .find((candidate) => (candidate.extras as Record<string, unknown> | undefined)?.solid === solid);
+    expect(primitive(pump.read, 'butt-pad')?.extras).toMatchObject({ material: 'rubber-black', slot: 'accent' });
+    expect(primitive(compactBolt.read, 'floorplate')?.extras).toMatchObject({
+      material: 'steel-blued',
+      slot: 'accent',
+    });
   });
 
   it('converts sRGB to linear with the standard transfer function', () => {
@@ -345,8 +469,8 @@ describe('glb export: deadvox model entry', () => {
   });
 
   it('is deterministic', () => {
-    const a = exportGunGlb(design('archetype-ar'), ASSET);
-    const b = exportGunGlb(design('archetype-ar'), ASSET);
+    const a = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
+    const b = exportGunGlb(design('archetype-ar'), ASSET, { variant: 'ar' });
     expect(a.ok && b.ok && Buffer.from(a.glb).equals(Buffer.from(b.glb))).toBe(true);
   });
 });
@@ -360,7 +484,7 @@ describe('glb export: errors', () => {
     const broken = variant('archetype-ar', (a) => {
       a.connections.push({ from: 'receiver.nope', to: 'grip.top' });
     });
-    const result = exportGunGlb(broken, ASSET);
+    const result = exportGunGlb(broken, ASSET, { variant: 'ar' });
     expect(result.ok).toBe(false);
     if (!result.ok && 'issues' in result.error) {
       expect(result.error.code).toBe('structure-issues');
@@ -424,7 +548,7 @@ describe('glb export: errors', () => {
       'assets/models/.glb',
       'assets/models/x.gltf',
     ]) {
-      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] });
+      const result = exportGunGlb(ar, { id: 'x', file: file as GlbAssetIdentity['file'] }, { variant: 'ar' });
       expect(result).toEqual({ ok: false, error: { code: 'invalid-asset-file', file } });
     }
   });

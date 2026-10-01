@@ -135,6 +135,19 @@ const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
   if (!assembly.ok) {
     return { ok: false, error: prefixed('assembly', assembly.error) };
   }
+  const finish =
+    raw.finish === undefined
+      ? success(undefined)
+      : parseRecord(raw.finish, 'finish', (v, p) => {
+          const parsed = parseString(v, p);
+          if (!parsed.ok) {
+            return parsed;
+          }
+          return parsed.value.trim() === '' ? failure(p, 'expected a non-empty material id') : parsed;
+        });
+  if (!finish.ok) {
+    return finish;
+  }
   const origin = raw.origin === undefined ? success(undefined) : parseOrigin(raw.origin);
   if (!origin.ok) {
     return origin;
@@ -145,6 +158,7 @@ const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
     assembly: assembly.assembly,
     locks: locks.value,
     status: raw.status,
+    ...(finish.value === undefined ? {} : { finish: finish.value }),
     ...(origin.value === undefined ? {} : { origin: origin.value }),
   });
 };

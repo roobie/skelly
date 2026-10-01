@@ -9,6 +9,7 @@
         "bore": "S"
       }
     },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "ak" } },
     "lower": {
       "family": "lower",
       "params": {
@@ -50,7 +51,7 @@
       "family": "stock",
       "params": {
         "length": "L",
-        "style": "dropped"
+        "style": "ak-dropped"
       }
     },
     "rear-sight": {
@@ -72,6 +73,7 @@
       "from": "receiver.barrel",
       "to": "barrel.rear"
     },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     {
       "from": "receiver.handguard",
       "to": "handguard.rear"

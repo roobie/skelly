@@ -5,7 +5,8 @@ For each: why it's hard, what we plan to do, when we'll deal with it, and how
 we'll know it's solved. Some of the numbers here are estimates; the ones marked
 *measure* get checked before we rely on them.
 
-Design context is in [DESIGN.md](DESIGN.md).
+Design context is in [DESIGN.md](DESIGN.md). Lessons from past problems, for
+troubleshooting, are in [LESSONS.md](LESSONS.md).
 
 ## 1. Half-metre blocks
 

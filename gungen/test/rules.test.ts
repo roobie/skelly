@@ -34,7 +34,7 @@ describe('rules', () => {
     const messages = validate(a, gunDomain)
       .issues.filter((i) => i.rule === 'port-compat')
       .map((i) => i.message);
-    expect(messages).toEqual(['receiver.rail[3] is used by both connection #7 and #8.']);
+    expect(messages).toEqual(['receiver.rail[3] is used by both connection #8 and #9.']);
   });
 
   it('axis-alignment: rejects a bore that is parallel but offset', () => {

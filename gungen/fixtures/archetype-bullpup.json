@@ -5,6 +5,7 @@
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
     "lower": { "family": "lower", "params": { "layout": "bullpup" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "grip": { "family": "grip", "params": { "length": "M" } },
@@ -14,6 +15,7 @@
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },
     { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     { "from": "lower.grip", "to": "grip.top" },
     { "from": "lower.magazine", "to": "magazine.top" },
     { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
