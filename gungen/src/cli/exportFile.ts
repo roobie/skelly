@@ -20,6 +20,38 @@ const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = {
   'archetype-smg': { variant: 'smg' },
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const generatedAppearance = (
+  raw: unknown,
+): { readonly ok: true; readonly context?: AppearanceContext } | { readonly ok: false; readonly message: string } => {
+  if (!(isRecord(raw) && Object.hasOwn(raw, 'appearance'))) {
+    return { ok: true };
+  }
+  const value = raw.appearance;
+  if (!isRecord(value)) {
+    return { ok: false, message: 'appearance: expected an object' };
+  }
+  const { variant, finish } = value;
+  if (variant !== undefined && typeof variant !== 'string') {
+    return { ok: false, message: 'appearance.variant: expected a string' };
+  }
+  if (
+    finish !== undefined &&
+    (!isRecord(finish) || Object.values(finish).some((material) => typeof material !== 'string'))
+  ) {
+    return { ok: false, message: 'appearance.finish: expected a map of material ids' };
+  }
+  return {
+    ok: true,
+    context: {
+      ...(variant === undefined ? {} : { variant }),
+      ...(finish === undefined ? {} : { finish: finish as Record<string, string> }),
+    },
+  };
+};
+
 export type ExportFileResult =
   | {
       readonly ok: true;
@@ -57,10 +89,14 @@ const readAssembly = (
   if (!parsed.ok) {
     return { message: `${parsed.error.path}: ${parsed.error.message}` };
   }
+  const metadata = generatedAppearance(raw);
+  if (!metadata.ok) {
+    return { message: metadata.message };
+  }
   return {
     assembly: parsed.assembly,
     warnings: [],
-    appearance: FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
+    appearance: metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
   };
 };
 

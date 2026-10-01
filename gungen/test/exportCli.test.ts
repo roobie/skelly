@@ -42,6 +42,30 @@ describe('export CLI core', () => {
     expect(stockMaterial(ak.glb)).toBe('#754324');
   });
 
+  it('preserves the generated template finish through a bare assembly file export', () => {
+    for (const template of ['ak', 'pump-shotgun']) {
+      const generated = execFileSync(
+        process.execPath,
+        [join(import.meta.dirname, '../src/cli/generate.ts'), '--template', template, '--seed', '0', '--valid'],
+        { cwd: join(import.meta.dirname, '..'), encoding: 'utf8', timeout: 300_000 },
+      );
+      const output = JSON.parse(generated) as { appearance?: unknown };
+      expect(output.appearance).toEqual({ variant: template });
+
+      const exported = exportFileText(generated, ASSET);
+      expect(exported.ok).toBe(true);
+      if (!exported.ok) {
+        continue;
+      }
+      const glb = readGlb(exported.glb);
+      const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
+      expect(stock?.mesh).toBeDefined();
+      const primitive = glb.json.meshes[stock!.mesh!]!.primitives[0]!;
+      expect(primitive.extras).toMatchObject({ material: 'wood-walnut', slot: 'furniture' });
+      expect(glb.json.materials[primitive.material]!.name).toBe('#754324');
+    }
+  });
+
   it('writes the glb and model entry to separate output directories when requested', () => {
     const temp = mkdtempSync(join(tmpdir(), 'gungen-export-'));
     const glbDir = join(temp, 'models');

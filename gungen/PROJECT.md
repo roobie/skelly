@@ -435,8 +435,9 @@ The validator then judges it like any hand-written fixture.
   is deterministic. It uses a seeded RNG (`src/core/random.ts`, mulberry32),
   never `Math.random`. `generateValid` tries seed, seed + 1, … until a build
   passes. The generator never checks feasibility itself.
-- **CLI:** `npm run generate` prints one assembly (`--valid` skips to the next
-  valid seed; `--out` writes a file). `npm run stats` reports the §9 metrics.
+- **CLI:** `npm run generate` prints one assembly with explicit appearance
+  context metadata (`--valid` skips to the next valid seed; `--out` writes a file).
+  `npm run stats` reports the §9 metrics.
 - **Viewer:** a Generate panel with a template picker, a seed field, previous
   and next buttons, "skip to the next valid seed", and "Save JSON" to keep a
   generated build as a fixture.
@@ -1364,7 +1365,7 @@ npm run test:sweeps    # the generator seed sweeps too; CI runs them
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json
-npm run generate -- --template battle-rifle --seed 42  # print a generated assembly
+npm run generate -- --template battle-rifle --seed 42  # assembly + appearance context
 npm run generate -- --template battle-rifle --seed 42 --valid # skip to the next valid seed
 npm run stats          # generator metrics over 1000 seeds per template
 npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>
