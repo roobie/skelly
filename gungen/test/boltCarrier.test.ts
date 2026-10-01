@@ -8,6 +8,7 @@ import {
   akChargingHandleSlotWindow,
   BOLT_CARRIER_ENVELOPES,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
+  CARRIER_HANDLE_STYLES,
   carrierCavityBounds,
   EJECTION_PORT_MARGIN_U,
   EJECTION_PORT_RULES,
@@ -400,12 +401,14 @@ describe('procedural bolt carrier', () => {
     const port = portMeasurements(entry, resolved);
     const transform = resolved.placed.get('bolt-carrier')!;
     const handle = carrier.solids.find(({ id }) => id === 'charging-handle')!;
+    const akHandles = carrier.solids.filter(({ id }) => id === 'charging-handle' || id === 'ak-handle-stick');
     const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
     const piston = carrier.solids.find(({ id }) => id === 'piston')!;
     const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
     const handleBounds = worldBounds(corners(handle).map((point) => applyPoint(transform, point)));
     const localBodyBounds = limits(corners(body));
-    const localHandleBounds = limits(corners(handle));
+    const localHandleBounds = limits(akHandles.flatMap(corners));
+    const paddleBounds = worldBounds(corners(handle).map((point) => applyPoint(transform, point)));
     const pistonBounds = worldBounds(corners(piston).map((point) => applyPoint(transform, point)));
     const motion = carrier.motion!;
     const rearTransform = compose(transform, translation(motion.rearmost));
@@ -421,16 +424,20 @@ describe('procedural bolt carrier', () => {
     expect(barrelMountX - bodyBounds[0]![1]!).toBeCloseTo(1.25, 8);
     expect([portMin, portMax]).toEqual([-7.5, -1]);
     expect(portMax).toBeCloseTo(-1, 8);
-    expect(handleBounds[0]).toEqual([-2.75, -1.25]);
-    expect(handleBounds[1]).toEqual([-1.25, -0.25]);
-    expect(handleBounds[2]![0]).toBeCloseTo(1.25, 8);
-    expect(handleBounds[2]![1]).toBeCloseTo(1.75, 8);
+    expect(handle.kind).toBe('extruded-polygon');
+    expect(akHandles).toHaveLength(2);
+    expect(akHandles.every(({ kind, slot }) => kind === 'extruded-polygon' && slot === 'metal')).toBe(true);
+    expect(paddleBounds[0]![0]).toBeCloseTo(-2.75, 8);
+    expect(paddleBounds[0]![1]).toBeCloseTo(-1.5, 8);
+    expect(paddleBounds[1]).toEqual([-0.75, -0.25]);
+    expect(paddleBounds[2]![0]).toBeCloseTo(1.75, 8);
+    expect(paddleBounds[2]![1]).toBeCloseTo(2.25, 8);
     expect(localHandleBounds[0]![0]).toBe(localBodyBounds[0]![0]);
     expect(localHandleBounds[1]![0]).toBe(localBodyBounds[1]![0]);
-    const rootCenterY = (localHandleBounds[1]![0]! + localHandleBounds[1]![1]!) / 2;
+    const rootY = localHandleBounds[1]![0]!;
     const lowerThirdTop = localBodyBounds[1]![0]! + (localBodyBounds[1]![1]! - localBodyBounds[1]![0]!) / 3;
-    expect(rootCenterY).toBeGreaterThanOrEqual(localBodyBounds[1]![0]!);
-    expect(rootCenterY).toBeLessThanOrEqual(lowerThirdTop);
+    expect(rootY).toBe(localBodyBounds[1]![0]);
+    expect(rootY).toBeLessThanOrEqual(lowerThirdTop);
     expect(pistonBounds[0]).toEqual([-5.5, -1]);
     expect(handleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - 1e-6);
     expect(handleBounds[0]![1]!).toBeLessThanOrEqual(portMax + 1e-6);
@@ -465,7 +472,7 @@ describe('procedural bolt carrier', () => {
     expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(3.25);
   });
 
-  it('keeps AK and the four non-AR patterns unchanged', () => {
+  it('keeps the AK and carrier/ejection-port anchors unchanged', () => {
     const unchanged = [
       { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
@@ -600,4 +607,133 @@ describe('procedural bolt carrier', () => {
     expect(build('barrett').solids.map(({ id }) => id)).toContain('heavy-carrier');
     expect(build('bolt').solids.map(({ id }) => id)).toContain('bolt-handle');
   });
+
+  it('derives each moving handle sweep from the same receiver source as PartMotion', () => {
+    const cases = [
+      { pattern: 'ak', section: 'ak', action: 'bolt', feed: 'box', bore: 'L', handleStyle: 'ak', travel: 6.5 },
+      { pattern: 'ak', section: 'ar', action: 'auto', feed: 'box', bore: 'S', handleStyle: 'ak', travel: 6.5 },
+      { pattern: 'bolt', section: 'standard', action: 'bolt', feed: 'top', bore: 'L', handleStyle: 'bolt', travel: 7 },
+      { pattern: 'barrett', section: 'standard', action: 'bolt', feed: 'box', bore: 'L', handleStyle: 'barrett', travel: 8 },
+    ] as const;
+    for (const entry of cases) {
+      const assembly: Assembly = {
+        name: `handle-sweep-${entry.pattern}-${entry.section}-${entry.bore}`,
+        root: 'receiver',
+        parts: {
+          receiver: {
+            family: 'receiver',
+            params: {
+              action: entry.action,
+              feed: entry.feed,
+              bore: entry.bore,
+              section: entry.section,
+              carrierPattern: entry.pattern,
+            },
+          },
+          carrier: { family: 'bolt-carrier', params: { pattern: entry.pattern, handleStyle: entry.handleStyle } },
+        },
+        connections: [{ from: 'receiver.bolt-carrier', to: 'carrier.mount' }],
+      };
+      const resolved = resolve(assembly, gunDomain);
+      expect(resolved.issues, entry.pattern).toEqual([]);
+      const carrier = resolved.defs.get('carrier')!;
+      const style = CARRIER_HANDLE_STYLES[entry.handleStyle];
+      const hand = carrier.keepOuts.find(({ id }) => id === `${entry.handleStyle}-handle-hand`)!.box;
+      const sweep = carrier.keepOuts.find(({ id }) => id === `${entry.handleStyle}-handle-sweep`)!.box;
+      const actualMotion = carrier.motion!.rearmost[0];
+      expect(actualMotion, entry.pattern).toBe(entry.travel);
+      expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0]), entry.pattern).toBe(actualMotion);
+      expect(style.motion).toBe('linear');
+    }
+  });
+
+  it('uses profile attachment for the AK, bolt, and Barrett handles when their envelopes move', () => {
+    for (const pattern of ['ak', 'bolt', 'barrett'] as const) {
+      const envelope = BOLT_CARRIER_ENVELOPES[pattern] as unknown as {
+        x: readonly [number, number];
+        y: readonly [number, number];
+        z: readonly [number, number];
+      };
+      const originalY = envelope.y;
+      const handleBounds = () => {
+        const solids = FAMILIES['bolt-carrier']!
+          .build({ pattern, handleStyle: pattern, action: 'bolt', feed: 'box', bore: 'M' })
+          .solids.filter(({ id }) => /handle/i.test(id));
+        return limits(solids.flatMap(corners));
+      };
+      const before = handleBounds();
+      try {
+        envelope.y = [originalY[0] + 0.25, originalY[1] + 0.25];
+        const after = handleBounds();
+        expect(after[1]![0]! - before[1]![0]!, pattern).toBeCloseTo(0.25, 8);
+      } finally {
+        envelope.y = originalY;
+      }
+    }
+  });
+
+  it('covers the catalog styles with compatible owners and slotted handle geometry', () => {
+    const receiverStyles = [
+      { style: 'ar', bore: 'M', expected: ['charging-handle', 'ar-handle-crossbar', 'ar-handle-latch'] },
+      { style: 'smg', bore: 'S', expected: ['smg-cocking-tube'] },
+      { style: 'battle', bore: 'M', expected: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob'] },
+    ] as const;
+    for (const entry of receiverStyles) {
+      const def = FAMILIES.receiver!.build({
+        action: 'auto',
+        feed: 'box',
+        bore: entry.bore,
+        handleStyle: entry.style,
+      });
+      expect(def.solids.filter(({ id }) => /handle|cocking-tube/.test(id)).map(({ id }) => id), entry.style).toEqual(
+        entry.expected,
+      );
+      expect(def.solids.filter(({ id }) => /handle|cocking-tube/.test(id)).every(({ slot }) => slot === 'metal')).toBe(
+        true,
+      );
+    }
+    const carrierStyles = [
+      { style: 'ak', pattern: 'ak', expected: ['ak-handle-stick', 'charging-handle'] },
+      { style: 'autoShotgun', pattern: 'ak', expected: ['ak-handle-stick', 'charging-handle'] },
+      { style: 'bolt', pattern: 'bolt', expected: ['bolt-handle', 'bolt-handle-arm', 'bolt-handle-ball'] },
+      { style: 'barrett', pattern: 'barrett', expected: ['charging-handle', 'barrett-handle-crank', 'barrett-handle-knob'] },
+    ] as const;
+    for (const entry of carrierStyles) {
+      const def = FAMILIES['bolt-carrier']!.build({
+        pattern: entry.pattern,
+        handleStyle: entry.style,
+        action: 'bolt',
+        feed: 'top',
+        bore: 'M',
+      });
+      expect(def.solids.filter(({ id }) => /handle/i.test(id)).map(({ id }) => id), entry.style).toEqual(entry.expected);
+      expect(def.solids.filter(({ id }) => /handle/i.test(id)).every(({ slot }) => slot === 'metal')).toBe(true);
+    }
+    for (const style of ['pump', 'pistol', 'bullpup', 'none']) {
+      const def = FAMILIES['bolt-carrier']!.build({ pattern: 'ar', handleStyle: style, action: 'auto', bore: 'M' });
+      expect(def.solids.filter(({ id }) => /handle/i.test(id)), style).toEqual([]);
+    }
+  });
+
+  it('makes the style catalog authoritative for shape and owner policy', () => {
+    const style = CARRIER_HANDLE_STYLES.bolt as unknown as { shape: string; owner: string; motion: string };
+    const saved = { shape: style.shape, owner: style.owner, motion: style.motion };
+    try {
+      style.shape = 'none';
+      style.owner = 'none';
+      style.motion = 'none';
+      const carrier = FAMILIES['bolt-carrier']!.build({
+        pattern: 'bolt',
+        handleStyle: 'bolt',
+        action: 'bolt',
+        feed: 'top',
+        bore: 'M',
+      });
+      expect(carrier.solids.filter(({ id }) => /handle/i.test(id))).toEqual([]);
+      expect(carrier.keepOuts.some(({ id }) => id.includes('handle'))).toBe(false);
+    } finally {
+      Object.assign(style, saved);
+    }
+  });
+
 });

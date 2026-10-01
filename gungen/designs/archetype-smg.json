@@ -15,6 +15,7 @@
         }
       },
       "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "smg" } },
+      "smg-handle": { "family": "smg-handle" },
       "lower": {
         "family": "lower",
         "params": {
@@ -66,6 +67,10 @@
       {
         "from": "receiver.bolt-carrier",
         "to": "bolt-carrier.mount"
+      },
+      {
+        "from": "receiver.smg-handle",
+        "to": "smg-handle.mount"
       },
       {
         "from": "receiver.handguard",

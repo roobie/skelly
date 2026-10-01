@@ -37,6 +37,7 @@ const fromHex = (table: Record<string, number>): Record<string, SrgbColor> =>
 const FAMILY_HEX: Record<string, number> = {
   receiver: 0x8d_93_9c,
   'bolt-carrier': 0x6d_73_7c,
+  'smg-handle': 0x6d_73_7c,
   lower: 0x6f_75_7e,
   barrel: 0x5d_63_6b,
   'tube-magazine': 0x4d_53_5b,
@@ -58,6 +59,7 @@ const ROLE_SLOTS: Record<string, string> = {
   receiver: 'metal',
   'ak-receiver': 'metal',
   'bolt-carrier': 'metal',
+  'smg-handle': 'metal',
   lower: 'metal',
   barrel: 'metal',
   'ak-rear-sight': 'metal',
@@ -80,6 +82,7 @@ const SHADE: Record<string, number> = {
   receiver: 1,
   'ak-receiver': 0.93,
   'bolt-carrier': 0.78,
+  'smg-handle': 0.78,
   lower: 0.83,
   barrel: 0.67,
   'tube-magazine': 0.72,

@@ -69,6 +69,24 @@ describe('visible action details', () => {
     }
   });
 
+  it('models the SMG sliding handle as its own receiver-connected linear part with a matching sweep', () => {
+    const entry = loadCorpus().find(({ label }) => label === 'design archetype-smg.json');
+    expect(entry).toBeDefined();
+    const resolved = validate(entry!.assembly, gunDomain).resolved;
+    const receiverDef = resolved.defs.get('receiver')!;
+    const movingDef = resolved.defs.get('smg-handle')!;
+    const tube = receiverDef.solids.find(({ id }) => id === 'smg-cocking-tube');
+    expect(tube?.slot).toBe('metal');
+    expect(receiverDef.solids.some(({ id }) => id === 'smg-sliding-handle' || id === 'smg-handle-grip')).toBe(false);
+    expect(movingDef.solids.map(({ id }) => id)).toEqual(['smg-sliding-handle', 'smg-handle-grip']);
+    expect(movingDef.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0] });
+    const hand = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-hand')!.box;
+    const sweep = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-sweep')!.box;
+    expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0])).toBe(
+      movingDef.motion!.rearmost[0],
+    );
+  });
+
   it('keeps receiver-shell walls at least 0.5u thick around the carrier cavity', () => {
     const generic = receiver('auto');
     const top = generic.solids.find(({ id }) => id === 'receiver-shell-top');

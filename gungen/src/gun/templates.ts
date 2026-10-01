@@ -220,6 +220,7 @@ export const smg: Template = {
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'S' } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'smg' } },
+    { id: 'smg-handle', family: 'smg-handle' },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.7 },
@@ -242,6 +243,7 @@ export const smg: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'receiver.smg-handle', to: 'smg-handle.mount' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };

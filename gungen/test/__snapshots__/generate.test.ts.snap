@@ -2751,8 +2751,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
+        "from": "receiver.smg-handle",
+        "to": "smg-handle.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 3,
+        "slot": 1,
         "to": "sight.base",
       },
     ],
@@ -2807,6 +2811,9 @@ exports[`templates > smg > known-good seeds 1`] = `
       "sight": {
         "family": "sight",
       },
+      "smg-handle": {
+        "family": "smg-handle",
+      },
       "stock": {
         "family": "stock",
         "params": {
@@ -2848,8 +2855,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
+        "from": "receiver.smg-handle",
+        "to": "smg-handle.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 4,
         "to": "sight.base",
       },
     ],
@@ -2904,6 +2915,9 @@ exports[`templates > smg > known-good seeds 1`] = `
       "sight": {
         "family": "sight",
       },
+      "smg-handle": {
+        "family": "smg-handle",
+      },
     },
     "root": "receiver",
   },
@@ -2940,6 +2954,10 @@ exports[`templates > smg > known-good seeds 1`] = `
       {
         "from": "receiver.bolt-carrier",
         "to": "bolt-carrier.mount",
+      },
+      {
+        "from": "receiver.smg-handle",
+        "to": "smg-handle.mount",
       },
       {
         "from": "receiver.rail",
@@ -2997,6 +3015,9 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+      },
+      "smg-handle": {
+        "family": "smg-handle",
       },
       "stock": {
         "family": "stock",
