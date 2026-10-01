@@ -21,6 +21,12 @@ export interface DebugHooks {
   readonly showNotice: (text: string) => void;
   readonly spawnItem: (type: string) => string;
   readonly compress: () => void;
+  /**
+   * Fast-forwards the real game clock by this many game hours through compression, ignoring
+   * danger; calling it during a skip extends the target. Real interruptions (damage, a need
+   * turning critical, noise) still end it.
+   */
+  readonly skipGameHours: (hours: number) => void;
   /** Uses an item in your hands as F or its quickbar key would; switches a light on or off. */
   readonly useItem: (item: Item) => string | undefined;
 }
@@ -54,8 +60,6 @@ export interface DebugRuntime {
   updateAim: (aim: ZombieAim | undefined) => void;
   /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
-  /** The hour of day that sky, fog and light are drawn at: the simulation's, unless the debug time picker moved or froze it. */
-  skyHour: () => number;
   recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;

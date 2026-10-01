@@ -1,5 +1,5 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
-import { hourOfDay } from '../core/clock.ts';
+import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -15,7 +15,6 @@ import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
-import { TimeOfDayControls } from './timeOfDay.ts';
 
 export interface Action {
   readonly code: string;
@@ -156,7 +155,6 @@ interface ActionContext {
   isFrozen: () => boolean;
   toggleFrozen: () => void;
   look: LookControls;
-  time: TimeOfDayControls;
 }
 
 export const createDebugActions = ({
@@ -175,7 +173,6 @@ export const createDebugActions = ({
   isFrozen,
   toggleFrozen,
   look,
-  time,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
@@ -241,29 +238,25 @@ export const createDebugActions = ({
     state: () => look.linearColors,
     run: () => look.toggleLinearColors(),
   },
+  // The real clock only runs forward (saves pin it), so "an hour earlier" is 23 h on, tomorrow.
   {
     code: 'Comma',
     key: ',',
-    label: 'Time of day −1 h',
-    detail: () => time.label,
-    run: () => time.step(-1),
+    label: 'Skip +23 h (−1 h tomorrow)',
+    detail: () => formatClock(hooks.sim.calendar),
+    run: () => hooks.skipGameHours(SKIP_LONG_HOURS),
   },
   {
     code: 'Period',
     key: '.',
-    label: 'Time of day +1 h',
-    detail: () => time.label,
-    run: () => time.step(1),
-  },
-  {
-    code: 'KeyM',
-    key: 'M',
-    label: 'Freeze time of day',
-    state: () => time.frozen,
-    detail: () => time.label,
-    run: () => time.toggleFrozen(),
+    label: 'Skip +1 h',
+    detail: () => formatClock(hooks.sim.calendar),
+    run: () => hooks.skipGameHours(SKIP_SHORT_HOURS),
   },
 ];
+
+export const SKIP_SHORT_HOURS = 1;
+export const SKIP_LONG_HOURS = 23;
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
   const action = actions.find((candidate) => candidate.code === code);
@@ -335,7 +328,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes);
-  const time = new TimeOfDayControls(() => hourOfDay(hooks.sim.calendar));
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
   const lookState = (): LookUrlState => ({
@@ -353,7 +345,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const actions = createDebugActions({
     hooks,
     look,
-    time,
     build,
     spawnMenu,
     toggleSpawn,
@@ -459,8 +450,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       toneMapping: look.toneMappingName,
       exposure: look.exposure,
       srgbBlockColours: look.linearColors,
-      timeOfDay: time.label,
-      timeFrozen: time.frozen,
+      gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,
       viewRadiusM: config.radiusM,
@@ -570,7 +560,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         render(aimReadoutTemplate(text), lookReadout);
       }
     },
-    skyHour: () => time.hour(),
     recordMeleeResult(result: MeleeResult) {
       lastHitText = formatMeleeResult(result);
       lastHitUntil = performance.now() + 3000;

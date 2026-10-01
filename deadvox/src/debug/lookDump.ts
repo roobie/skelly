@@ -1,4 +1,4 @@
-// Records the current look (tone mapping, exposure, colour decode, time of day) with where
+// Records the current look (tone mapping, exposure, colour decode, game time) with where
 // and on what build it was seen, as a JSON file the operator can keep next to a screenshot.
 
 import type { Vec3 } from '../core/coords.ts';
@@ -18,9 +18,8 @@ export interface LookDumpInput {
   toneMapping: string;
   exposure: number;
   srgbBlockColours: boolean;
-  /** "HH:MM" as drawn, which may differ from the simulation's clock. */
-  timeOfDay: string;
-  timeFrozen: boolean;
+  /** The game clock, "Day N, HH:MM". */
+  gameTime: string;
   site: string;
   seed: number;
   viewRadiusM: number;
@@ -46,8 +45,7 @@ export const lookDump = (input: LookDumpInput) => ({
     toneMapping: input.toneMapping,
     exposure: round(input.exposure, 2),
     srgbBlockColours: input.srgbBlockColours,
-    timeOfDay: input.timeOfDay,
-    timeFrozen: input.timeFrozen,
+    gameTime: input.gameTime,
   },
   world: {
     site: input.site,

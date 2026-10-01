@@ -2,7 +2,6 @@ import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
-import { TimeOfDayControls } from '../src/debug/timeOfDay.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 
 interface FakeRenderer {
@@ -29,27 +28,22 @@ describe('debug action table', () => {
       ['-', 'Exposure −'],
       ['=', 'Exposure +'],
       ['I', 'sRGB block colours'],
-      [',', 'Time of day −1 h'],
-      ['.', 'Time of day +1 h'],
-      ['M', 'Freeze time of day'],
+      [',', 'Skip +23 h (−1 h tomorrow)'],
+      ['.', 'Skip +1 h'],
     ]);
   });
 
-  it('steps and freezes the drawn time of day from the panel, showing HH:MM', () => {
-    const { actions, clock } = makeActions();
+  it('skips the real game clock forward by 1 and 23 hours, showing the game time', () => {
+    const { actions, skips, clock } = makeActions();
     const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    expect(byCode('Period').detail?.()).toBe('19:30');
+    expect(byCode('Period').detail?.()).toBe('Day 1, 19:30');
     dispatchDebugAction(actions, 'Period');
-    expect(byCode('Period').detail?.()).toBe('20:30');
     dispatchDebugAction(actions, 'Comma');
-    dispatchDebugAction(actions, 'Comma');
-    expect(byCode('Comma').detail?.()).toBe('18:30');
-
-    expect(byCode('KeyM').state?.()).toBe(false);
-    dispatchDebugAction(actions, 'KeyM');
-    expect(byCode('KeyM').state?.()).toBe(true);
-    clock.hour = 23;
-    expect(byCode('KeyM').detail?.()).toBe('18:30');
+    expect(skips).toEqual([1, 23]);
+    clock.calendar += 23 * 3600;
+    expect(byCode('Comma').detail?.()).toBe('Day 2, 18:30');
+    dispatchDebugAction(actions, 'Period', true);
+    expect(skips).toEqual([1, 23]);
   });
 
   it('cycles tone mapping, clamps exposure and toggles linear colours, with details for the panel', () => {
@@ -112,10 +106,16 @@ describe('debug action table', () => {
 
 const makeActions = (
   shamblerCount = 1,
-): { actions: Action[]; spawnCounts: number[]; renderer: FakeRenderer; clock: { hour: number } } => {
+): {
+  actions: Action[];
+  spawnCounts: number[];
+  skips: number[];
+  renderer: FakeRenderer;
+  clock: { calendar: number };
+} => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
-  const clock = { hour: 19.5 };
-  const time = new TimeOfDayControls(() => clock.hour);
+  const clock = { calendar: 19.5 * 3600 };
+  const skips: number[] = [];
   let linear = false;
   const look = new LookControls(renderer, {
     get linearColorsOn() {
@@ -127,6 +127,9 @@ const makeActions = (
   });
   const sim = {
     godMode: false,
+    get calendar() {
+      return clock.calendar;
+    },
     compression: {
       active: false,
       stop() {
@@ -145,6 +148,9 @@ const makeActions = (
     compress() {
       sim.compression.active = true;
     },
+    skipGameHours(hours: number) {
+      skips.push(hours);
+    },
   } as unknown as DebugHooks;
   const build = {
     on: false,
@@ -161,7 +167,6 @@ const makeActions = (
   const actions = createDebugActions({
     hooks,
     look,
-    time,
     build,
     spawnMenu,
     toggleSpawn() {
@@ -188,5 +193,5 @@ const makeActions = (
       frozen = !frozen;
     },
   });
-  return { actions, spawnCounts, renderer, clock };
+  return { actions, spawnCounts, skips, renderer, clock };
 };

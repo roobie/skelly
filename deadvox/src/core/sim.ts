@@ -60,6 +60,8 @@ export class Simulation {
   dead: { cause: string; time: number } | undefined;
   /** Debug-only control is owned by the game; damage sources still run normally. */
   godMode = false;
+  /** Debug-only: compression ignores `unsafe` (a hostile nearby), as in the debug time skip. Interrupt events still stop it. */
+  ignoreUnsafe = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private pendingInterrupt: string | undefined;
   private readonly unsafe: () => string | undefined;
@@ -131,6 +133,7 @@ export class Simulation {
     }
     this.paused = true;
     this.godMode = false;
+    this.ignoreUnsafe = false;
   }
 
   /** Simulation seconds since the start. */
@@ -188,7 +191,11 @@ export class Simulation {
 
   /** Starts compression for a long action. Refused, with the reason, when it isn't safe. */
   compress(): { ok: true } | { ok: false; reason: string } {
-    return this.compression.start(this.unsafe());
+    return this.compression.start(this.unsafeReason());
+  }
+
+  private unsafeReason(): string | undefined {
+    return this.ignoreUnsafe ? undefined : this.unsafe();
   }
 
   /**
@@ -220,7 +227,7 @@ export class Simulation {
     if (!(compression.active || compression.c > 1)) {
       return false;
     }
-    const reason = emitted?.reason ?? this.unsafe();
+    const reason = emitted?.reason ?? this.unsafeReason();
     if (reason === undefined) {
       return false;
     }

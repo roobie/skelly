@@ -5,7 +5,7 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { formatClock, hourOfDay } from '../core/clock.ts';
+import { formatClock, hourOfDay, skipTarget } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
@@ -50,6 +50,8 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
 const QUICK_KEY = /^Digit([1-5])$/;
+/** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
+const SKIP_SLACK = 1e-6;
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
@@ -271,6 +273,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     showNotice,
     spawnItem,
     compress: () => compress(),
+    skipGameHours: (hours) => skipGameHours(hours),
     useItem: (item) => survival.use(item),
   });
 
@@ -345,6 +348,40 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const result = sim.compress();
     if (!result.ok) {
       showNotice(`Can't rest: ${result.reason}`);
+    }
+  };
+
+  /** Debug time skip: the simulation time it runs to, while one is running. */
+  let skipUntil: number | undefined;
+  /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
+  const endSkip = (): void => {
+    skipUntil = undefined;
+    sim.ignoreUnsafe = false;
+    compression.stop();
+    compression.snap();
+  };
+
+  /**
+   * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
+   * stepping as rest (needs, scheduler and shamblers all run), ignoring danger. Another call
+   * during a skip pushes the target out. It replaces a rest/sleep in progress.
+   */
+  const skipGameHours = (hours: number): void => {
+    rest.stop();
+    queue.cancel();
+    skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
+    sim.ignoreUnsafe = true;
+    sim.compress();
+  };
+
+  /** Ends the skip when it arrives, is interrupted, the player dies or the debug T key stops compression. */
+  const updateSkip = (until: number): void => {
+    const { interruption } = compression;
+    if (interruption !== undefined) {
+      showNotice(`Time skip stopped: ${interruption}`);
+    }
+    if (interruption !== undefined || sim.dead || !compression.active || until - sim.time <= SKIP_SLACK) {
+      endSkip();
     }
   };
 
@@ -693,9 +730,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const menuState = syncMenuState();
     streamer.update(body.pos[0], body.pos[2]);
     sim.paused = menuState.paused;
-    session.frame(dt);
-    // Debug may move or freeze the drawn hour; the simulation's own clock is untouched.
-    applySky(engine.sky, skyAt(debugTools?.skyHour() ?? hourOfDay(sim.calendar)));
+    session.frame(dt, skipUntil);
+    if (skipUntil !== undefined) {
+      updateSkip(skipUntil);
+    }
+    applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));

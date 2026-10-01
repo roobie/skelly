@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { calendarAt, defaultClock, formatClock, parseTimeOfDay, simSecondsPerHour } from '../src/core/clock.ts';
+import {
+  calendarAt,
+  defaultClock,
+  formatClock,
+  parseTimeOfDay,
+  simSecondsPerHour,
+  skipTarget,
+} from '../src/core/clock.ts';
 import { COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { Simulation } from '../src/core/sim.ts';
@@ -170,6 +177,67 @@ describe('Simulation', () => {
     sim.godMode = false;
     sim.frame(HOUR);
     expect(sim.needs.health).toBeLessThan(100);
+  });
+
+  describe('debug time skip', () => {
+    it('computes the target as game hours of simulation seconds after now', () => {
+      expect(skipTarget(defaultClock, 0, 1)).toBe(HOUR);
+      expect(skipTarget(defaultClock, 100, 23)).toBe(100 + 23 * HOUR);
+      expect(skipTarget({ ratio: 4, start: 0 }, 10, 2)).toBe(10 + 2 * 900);
+    });
+
+    it('advances the calendar by exactly the skipped game hours, danger notwithstanding', () => {
+      const sim = new Simulation({ seed: 1, unsafe: () => 'A shambler is close' });
+      expect(sim.compress().ok).toBe(false);
+      sim.ignoreUnsafe = true;
+      expect(sim.compress().ok).toBe(true);
+      const until = skipTarget(sim.clock, sim.time, 1);
+      runUntil(sim, until);
+      expect(sim.time).toBeCloseTo(until, 6);
+      expect(sim.compression.interruption).toBeUndefined();
+      expect(formatClock(sim.calendar)).toBe('Day 1, 20:30');
+    });
+
+    it('runs the needs for the whole span, so a long skip is cut short when one turns critical', () => {
+      const sim = new Simulation({ seed: 1 });
+      sim.ignoreUnsafe = true;
+      sim.compress();
+      const until = skipTarget(sim.clock, sim.time, 23);
+      for (let frames = 0; sim.compression.interruption === undefined && frames < 100_000; frames++) {
+        sim.frame(FRAME, until);
+      }
+      // Spawn needs run out of hydration and rest within about 5 game hours.
+      expect(sim.compression.interruption).toBe("You're parched");
+      expect(sim.time).toBeLessThan(until);
+      expect(sim.needs.hydration).toBeLessThan(10);
+    });
+
+    it('lands the same simulation state as playing the span at 1x', () => {
+      const plain = new Simulation({ seed: 1 });
+      runUntil(plain, HOUR);
+      const skipped = new Simulation({ seed: 1 });
+      skipped.compress();
+      runUntil(skipped, skipTarget(skipped.clock, skipped.time, 1));
+      expect(skipped.calendar).toBeCloseTo(plain.calendar, 6);
+      expect(skipped.scheduler.tickCounts().get('needs')!).toBeLessThan(plain.scheduler.tickCounts().get('needs')!);
+    });
+
+    it('still stops at a real interruption, and refuses danger again once ignoreUnsafe is off', () => {
+      let danger: string | undefined = 'A shambler is close';
+      const sim = new Simulation({ seed: 1, unsafe: () => danger });
+      sim.ignoreUnsafe = true;
+      sim.compress();
+      sim.frame(FRAME, HOUR);
+      sim.emit({ kind: 'interrupt', reason: "You're hurt" });
+      sim.frame(FRAME, HOUR);
+      expect(sim.compression.interruption).toBe("You're hurt");
+
+      sim.compression.stop();
+      sim.ignoreUnsafe = false;
+      expect(sim.compress()).toEqual({ ok: false, reason: danger });
+      danger = undefined;
+      expect(sim.compress().ok).toBe(true);
+    });
   });
 
   it('gives each system its own repeatable random stream', () => {
