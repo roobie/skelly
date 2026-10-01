@@ -72,7 +72,8 @@ describe('debug action table', () => {
     const { actions, renderer } = makeActions();
     const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
     expect(byCode('KeyJ').detail?.()).toBe('None');
-    for (const name of ['AgX', 'ACES Filmic', 'Neutral', 'None']) {
+    // Auto shows the sky's current weight, 0.00 until a sky has been applied.
+    for (const name of ['AgX', 'ACES Filmic', 'Neutral', 'Auto (0.00)', 'None']) {
       dispatchDebugAction(actions, 'KeyJ');
       expect(byCode('KeyJ').detail?.()).toBe(name);
     }

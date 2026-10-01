@@ -68,6 +68,40 @@ describe('sky', () => {
     }
   });
 
+  it('weighs the auto tone mapping by phase: Neutral by day, ACES at night, mostly ACES at dawn and dusk', () => {
+    expect(skyAt(12).tone).toBe(0);
+    expect(skyAt(8.5).tone).toBe(0); // the DAY keyframes
+    expect(skyAt(17.5).tone).toBe(0);
+    expect(skyAt(6.5).tone).toBe(0.85); // DAWN
+    expect(skyAt(19.5).tone).toBe(0.85); // DUSK
+    for (const hour of [0, 1, 3.5, 5, 21, 23]) {
+      expect(skyAt(hour).tone).toBe(1);
+    }
+    // Halfway between two keyframes is the mean of their weights.
+    expect(skyAt(7.5).tone).toBeCloseTo(0.425, 9);
+    expect(skyAt(5.75).tone).toBeCloseTo(0.925, 9);
+  });
+
+  it('moves the auto tone weight monotonically through sunrise and sunset, never stepping', () => {
+    let { tone: last } = skyAt(5);
+    for (let hour = 5.05; hour <= 8.5; hour += 0.05) {
+      const { tone } = skyAt(hour);
+      expect(tone).toBeLessThanOrEqual(last + 1e-12);
+      expect(last - tone).toBeLessThan(0.05);
+      last = tone;
+    }
+    ({ tone: last } = skyAt(17.5));
+    for (let hour = 17.55; hour <= 21; hour += 0.05) {
+      const { tone } = skyAt(hour);
+      expect(tone).toBeGreaterThanOrEqual(last - 1e-12);
+      expect(tone - last).toBeLessThan(0.05);
+      last = tone;
+    }
+    for (let hour = 0; hour < 24; hour += 0.05) {
+      expect(Math.abs(skyAt((hour + 0.05) % 24).tone - skyAt(hour).tone)).toBeLessThan(0.05);
+    }
+  });
+
   it('changes smoothly through the day, across midnight too', () => {
     for (let hour = 0; hour < 24; hour += 0.05) {
       const step = Math.abs(brightness((hour + 0.05) % 24) - brightness(hour));

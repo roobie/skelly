@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AUTO_TONE,
   BLOOM_CLIP_BY_TONE,
   bloomClipFor,
   bloomThreshold,
@@ -76,7 +77,7 @@ describe('grade strength steps', () => {
 
 describe('the default look', () => {
   it('is the operator-chosen one', () => {
-    expect(DEFAULT_LOOK).toEqual({ tone: 'aces', exposure: 3, srgb: true, patterns: true, vao: true });
+    expect(DEFAULT_LOOK).toEqual({ tone: 'auto', exposure: 3, srgb: true, patterns: true, vao: true });
     expect(TONE_MODES.map((mode) => mode.key)).toContain(DEFAULT_LOOK.tone);
   });
 
@@ -106,14 +107,16 @@ describe('bloom threshold', () => {
 
 describe('bloom clip per tone mapper', () => {
   const keys = TONE_MODES.map((mode) => mode.key);
+  // `auto` is the Neutral and ACES values mixed, not a table entry.
+  const fixedKeys = keys.filter((key) => key !== AUTO_TONE);
 
-  it('has a value for every tone mode and none for anything else', () => {
-    expect(Object.keys(BLOOM_CLIP_BY_TONE).sort()).toEqual([...keys].sort());
+  it('has a value for every fixed tone mode and none for anything else', () => {
+    expect(Object.keys(BLOOM_CLIP_BY_TONE).sort()).toEqual([...fixedKeys].sort());
     expect(bloomClipFor('sepia')).toBe(1);
   });
 
   it('is where a grey reaches about 0.95 on screen, to within the tenth it is rounded to', () => {
-    for (const tone of keys.filter((key) => key !== 'none')) {
+    for (const tone of fixedKeys.filter((key) => key !== 'none')) {
       const derived = inputForDisplay(tone, 0.95);
       expect(Math.abs(bloomClipFor(tone) - derived)).toBeLessThanOrEqual(0.05);
       expect(displayed(tone, bloomClipFor(tone))).toBeGreaterThan(0.94);
@@ -142,6 +145,29 @@ describe('bloom clip per tone mapper', () => {
   it('never goes below 1, which keeps the sky, at most 1 after exposure, from blooming', () => {
     for (const key of keys) {
       expect(bloomClipFor(key)).toBeGreaterThanOrEqual(MIN_BLOOM_CLIP);
+    }
+  });
+
+  it('mixes the Neutral and ACES values by the auto weight, clamped to [0, 1]', () => {
+    expect(bloomClipFor(AUTO_TONE)).toBe(BLOOM_CLIP_BY_TONE.neutral);
+    expect(bloomClipFor(AUTO_TONE, 0)).toBe(BLOOM_CLIP_BY_TONE.neutral);
+    expect(bloomClipFor(AUTO_TONE, 1)).toBe(BLOOM_CLIP_BY_TONE.aces);
+    expect(bloomClipFor(AUTO_TONE, 0.5)).toBeCloseTo(1.55, 12);
+    expect(bloomClipFor(AUTO_TONE, 0.85)).toBeCloseTo(1.1 + 0.9 * 0.85, 12);
+    expect(bloomClipFor(AUTO_TONE, -3)).toBe(BLOOM_CLIP_BY_TONE.neutral);
+    expect(bloomClipFor(AUTO_TONE, 9)).toBe(BLOOM_CLIP_BY_TONE.aces);
+    // The fixed tone mappers ignore the weight.
+    expect(bloomClipFor('aces', 0)).toBe(2);
+  });
+
+  it('keeps the auto clip at or above 1 at every weight, so the sky never blooms', () => {
+    for (let w = 0; w <= 1; w += 0.05) {
+      expect(bloomClipFor(AUTO_TONE, w)).toBeGreaterThanOrEqual(MIN_BLOOM_CLIP);
+      for (const exposure of [0.2, 1, 3]) {
+        expect(targetColorScale(exposure)).toBeLessThanOrEqual(
+          bloomThreshold(exposure, bloomClipFor(AUTO_TONE, w)) + 1e-12,
+        );
+      }
     }
   });
 

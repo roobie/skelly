@@ -3,7 +3,7 @@
 // Absent parameters mean the game's default look (DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_FOGGINESS), and
 // only deviations from it are written.
 //
-//   tone=none|agx|aces|neutral   tone mapping (J); omitted for aces
+//   tone=none|agx|aces|neutral|auto  tone mapping (J); omitted for auto (Neutral by day, ACES by night, by the sky)
 //   exposure=<0.2..3.0>          exposure in tenths (- =); omitted for 3; out of range is clamped
 //   srgb=0                       block colours left undecoded (I); omitted when decoded, which is the default
 //   patterns=0                   surface patterns off (;); omitted when on, which is the default
@@ -12,7 +12,8 @@
 //   post=0                       whole mood pass off (Q): no bloom, grade, film or height fog; omitted when on
 //   bloom=0                      bloom off (');  omitted when on
 //   bloomclip=<1..8>             bloom clip, the post-exposure value where bloom starts, in tenths (Delete Insert);
-//                                omitted for the tone mapper's own value (BLOOM_CLIP_BY_TONE), which it follows
+//                                omitted for the tone mapper's own value (BLOOM_CLIP_BY_TONE), which it follows;
+//                                under auto that value moves with the time of day, so it is never omitted
 //   film=0                       vignette and grain off (\); omitted when on
 //   grade=<0..1>                 colour grade strength in tenths ([ ]); omitted for 1; 0 is no grade
 //   torch=<0.1..16>              flashlight intensity multiplier in hundredths (numpad - +); omitted for 1
@@ -26,6 +27,7 @@
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
 import {
+  AUTO_TONE,
   bloomClipFor,
   clampBloomClip,
   clampExposure,
@@ -89,6 +91,9 @@ const LOOK_PARAMS = [
   'hotcheck',
 ] as const;
 
+/** The tone mapper's own bloom clip when it is one value; null for `auto`, whose clip moves with the time of day, so any override is kept. */
+const fixedBloomClip = (tone: string): number | null => (tone === AUTO_TONE ? null : bloomClipFor(tone));
+
 /** A number parameter, NaN when absent, blank or unparseable (Number('') is 0, which would pass as a value). */
 const numberParam = (params: URLSearchParams, name: string): number => {
   const text = params.get(name);
@@ -110,7 +115,7 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
     film: params.get('film') !== '0',
     grade: Number.isFinite(grade) ? clampGrade(grade) : DEFAULT_GRADE,
     // The tone mapper's own value is not an override: it keeps following the tone mapper.
-    bloomClip: clip === bloomClipFor(toneKey) ? null : clip,
+    bloomClip: clip === fixedBloomClip(toneKey) ? null : clip,
     fogginess: Number.isFinite(fogginess) ? clampFogginess(fogginess) : DEFAULT_FOGGINESS,
     torch: clampTorch(numberParam(params, 'torch')),
     tone: toneKey,
@@ -137,7 +142,7 @@ const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
   if (!state.bloom) {
     next.set('bloom', '0');
   }
-  if (state.bloomClip !== null && state.bloomClip !== bloomClipFor(state.tone)) {
+  if (state.bloomClip !== null && state.bloomClip !== fixedBloomClip(state.tone)) {
     next.set('bloomclip', state.bloomClip.toFixed(1));
   }
   if (!state.film) {

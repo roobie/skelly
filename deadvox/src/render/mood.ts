@@ -13,16 +13,20 @@
 // (core/mood.ts), set each frame, so it follows what OutputPass will push towards white.
 
 import {
+  ACESFilmicToneMapping,
   type Camera,
   Color,
+  CustomToneMapping,
   HalfFloatType,
   type Material,
   Mesh,
+  NeutralToneMapping,
   type Object3D,
   type PerspectiveCamera,
   PlaneGeometry,
   Scene,
   SRGBColorSpace,
+  type ToneMapping,
   Vector2,
   type WebGLRenderer,
   WebGLRenderTarget,
@@ -45,12 +49,24 @@ import {
   VIGNETTE,
 } from '../core/mood.ts';
 import type { Sky } from '../core/sky.ts';
+import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 
 /** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
 const MSAA_SAMPLES = 4;
+
+/**
+ * The tone mapping for drawing straight to the screen: plain materials have no weight uniform for `auto`
+ * (render/autoTone.ts), so it draws with whichever of its two curves the weight is nearer.
+ */
+const screenToneMapping = (mapping: ToneMapping): ToneMapping => {
+  if (mapping !== CustomToneMapping) {
+    return mapping;
+  }
+  return autoToneUniforms.autoToneWeight.value >= 0.5 ? ACESFilmicToneMapping : NeutralToneMapping;
+};
 
 // Display-referred colour in, display-referred colour out (this runs after OutputPass), so the
 // numbers read as they would in a grading tool. Contrast is a smoothstep S-curve blend, which
@@ -126,6 +142,7 @@ export class Mood {
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
+    installAutoToneMapping();
   }
 
   get post(): boolean {
@@ -161,7 +178,8 @@ export class Mood {
 
   /** The clip bloom uses now: the override, or the active tone mapper's derived value. */
   effectiveBloomClip(): number {
-    return this.state.bloomClip ?? bloomClipFor(toneKeyOf(this.renderer.toneMapping));
+    const tone = toneKeyOf(this.renderer.toneMapping);
+    return this.state.bloomClip ?? bloomClipFor(tone, autoToneUniforms.autoToneWeight.value);
   }
 
   setBloomClip(clip: number | null): void {
@@ -190,6 +208,7 @@ export class Mood {
    */
   setSky(sky: Sky): void {
     // sRGB in, working (linear) colour out: the mist is mixed in while the scene is still linear.
+    setAutoToneWeight(sky.tone);
     const [r, g, b] = sky.heightFogColor;
     heightFogUniforms.uHeightFogColor.value.setRGB(r, g, b, SRGBColorSpace);
     if (sky.bloom !== this.skyBloom || sky.heightFog !== this.skyMist) {
@@ -239,8 +258,15 @@ export class Mood {
 
   private draw(drawHands: () => void): void {
     if (!this.state.post) {
-      this.renderer.render(this.scene, this.camera);
-      drawHands();
+      const { renderer } = this;
+      const chosen = renderer.toneMapping;
+      renderer.toneMapping = screenToneMapping(chosen);
+      try {
+        renderer.render(this.scene, this.camera);
+        drawHands();
+      } finally {
+        renderer.toneMapping = chosen;
+      }
       return;
     }
     const composer = this.ensureComposer();
@@ -297,8 +323,15 @@ export class Mood {
       }
     };
     if (!this.state.post) {
-      for (const { scene, camera } of scenes) {
-        compile(null, scene, camera);
+      // Compile for the curve `draw` will actually use under `auto`, not the custom one.
+      const chosen = renderer.toneMapping;
+      renderer.toneMapping = screenToneMapping(chosen);
+      try {
+        for (const { scene, camera } of scenes) {
+          compile(null, scene, camera);
+        }
+      } finally {
+        renderer.toneMapping = chosen;
       }
       return Promise.all(compiling);
     }
@@ -377,7 +410,10 @@ export class Mood {
       bloomThreshold(this.renderer.toneMappingExposure, this.effectiveBloomClip()),
     );
     composer.addPass(this.bloomPass);
-    composer.addPass(new OutputPass());
+    const output = new OutputPass();
+    // The `auto` tone mapping's weight (render/autoTone.ts); the same object every frame, so it needs no copying.
+    output.uniforms.autoToneWeight = autoToneUniforms.autoToneWeight;
+    composer.addPass(output);
     this.gradePass = new ShaderPass(GRADE_SHADER);
     composer.addPass(this.gradePass);
     // The constructor treats a given target's size as CSS pixels' worth, so size everything here.

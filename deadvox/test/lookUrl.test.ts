@@ -1,4 +1,4 @@
-import { ACESFilmicToneMapping, NoToneMapping } from 'three';
+import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { LookControls } from '../src/debug/look.ts';
 import {
@@ -8,6 +8,7 @@ import {
   parseLookParams,
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
+import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
@@ -27,7 +28,7 @@ describe('look URL parameters', () => {
 
   it('has the game look as its defaults', () => {
     expect(DEFAULT_LOOK_URL_STATE).toEqual({
-      tone: 'aces',
+      tone: 'auto',
       exposure: 3,
       srgb: true,
       patterns: true,
@@ -107,7 +108,18 @@ describe('look URL parameters', () => {
     expect(write('', { ...DEFAULT_LOOK_URL_STATE, exposure: 1 })).toBe('exposure=1.0');
     expect(write('', { ...DEFAULT_LOOK_URL_STATE, fogginess: 0 })).toBe('fog=0.0');
     // The old defaults' spellings are now just noise: they read as the default and are dropped.
-    expect(write('debug=1&tone=aces&exposure=3&fog=0.2&grade=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1&tone=auto&exposure=3&fog=0.2&grade=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+  });
+
+  it('reads every tone key, with auto the default and aces now written out', () => {
+    for (const tone of ['none', 'agx', 'aces', 'neutral', 'auto']) {
+      expect(parse(`tone=${tone}`).tone).toBe(tone);
+    }
+    expect(parse('').tone).toBe('auto');
+    expect(parse('tone=sepia').tone).toBe('auto');
+    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'aces' })).toBe('tone=aces');
+    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'neutral' })).toBe('tone=neutral');
+    expect(write('debug=1&tone=aces', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
   });
 
   it('keeps the mood pass on unless a parameter turns a part off, and omits the defaults', () => {
@@ -130,13 +142,20 @@ describe('look URL parameters', () => {
 
   it('reads the tone mapper own clip as no override, and writes an override only when it differs', () => {
     // aces derives 2, agx 5 (BLOOM_CLIP_BY_TONE): spelling out the value in effect is just noise.
-    expect(parse('bloomclip=2').bloomClip).toBeNull();
+    expect(parse('tone=aces&bloomclip=2').bloomClip).toBeNull();
     expect(parse('tone=agx&bloomclip=5').bloomClip).toBeNull();
     expect(parse('tone=agx&bloomclip=2').bloomClip).toBe(2);
     expect(write('debug=1&bloomclip=3', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
     expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: 3 })).toBe('debug=1&bloomclip=3.0');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: 2 })).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, tone: 'aces', bloomClip: 2 })).toBe('debug=1&tone=aces');
     expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'agx', bloomClip: 2 })).toBe('tone=agx&bloomclip=2.0');
+  });
+
+  it('keeps any bloomclip under auto, whose own clip moves with the time of day', () => {
+    // 1.1 is the Neutral end of auto's range, 2 the ACES end: both are real overrides at some hour.
+    expect(parse('bloomclip=1.1').bloomClip).toBe(1.1);
+    expect(parse('bloomclip=2').bloomClip).toBe(2);
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: 2 })).toBe('debug=1&bloomclip=2.0');
   });
 
   it('reads the flashlight multiplier within 0.1..16 in hundredths, and writes it only when not 1', () => {
@@ -350,7 +369,29 @@ describe('restoring look controls from URL state', () => {
       3,
     ]);
     look.restore(DEFAULT_LOOK_URL_STATE);
-    expect([game.toneMapping, game.toneMappingExposure]).toEqual([ACESFilmicToneMapping, 3]);
+    expect([game.toneMapping, game.toneMappingExposure]).toEqual([CustomToneMapping, 3]);
+  });
+
+  it('shows auto with the sky weight, and follows it for the bloom clip', () => {
+    const mood = new FakeMood();
+    const game = { toneMapping: CustomToneMapping, toneMappingExposure: 3 };
+    const look = new LookControls(game, meshes, mood, {
+      weather: { fogginess: 0.2 },
+      shadows: new FakeShadows(),
+      flashlight: { strength: 1 },
+    });
+    setAutoToneWeight(0.85);
+    expect([look.toneKey, look.toneMappingName]).toEqual(['auto', 'Auto (0.85)']);
+    expect(look.bloomClip).toBeCloseTo(1.1 + 0.9 * 0.85, 12);
+    expect(look.bloomClipIsDefault).toBe(true);
+    setAutoToneWeight(0);
+    expect(look.bloomClip).toBeCloseTo(1.1, 12);
+    // Stepping overrides; stepping back onto the live value (to a tenth) follows it again.
+    look.stepBloomClip(1);
+    expect(mood.bloomClip).toBe(1.6);
+    look.stepBloomClip(-1);
+    expect(mood.bloomClip).toBeNull();
+    setAutoToneWeight(0);
   });
 
   it('steps fogginess by tenths within 0..1', () => {

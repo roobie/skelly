@@ -31,6 +31,12 @@ export interface Sky {
   heightFogColor: Rgb;
   /** Bloom strength: a faint halo by day, a stronger one by night when little else is bright. */
   bloom: number;
+  /**
+   * Weight of ACES Filmic in the `auto` tone mapping, the rest being Neutral: 0 is Neutral, 1 is ACES.
+   * Neutral reads best in bright daylight, ACES at dawn, dusk and night, where it gives the flashlit dark
+   * its depth (render/autoTone.ts). Time of day only: the weather does not move it.
+   */
+  tone: number;
 }
 
 type Look = Omit<Sky, 'light'>;
@@ -49,6 +55,7 @@ const NIGHT: Look = {
   heightFog: 0.01,
   heightFogColor: hex(0x1c_24_30),
   bloom: 0.5,
+  tone: 1,
 };
 
 /** The dead of night: the dusk glow is gone, and there's barely more than shapes. */
@@ -64,6 +71,7 @@ const DEEP_NIGHT: Look = {
   heightFog: 0.012,
   heightFogColor: hex(0x12_18_21),
   bloom: 0.55,
+  tone: 1,
 };
 
 const DAWN: Look = {
@@ -78,6 +86,7 @@ const DAWN: Look = {
   heightFog: 0.014,
   heightFogColor: hex(0xb0_9a_90),
   bloom: 0.2,
+  tone: 0.85,
 };
 
 /** The look before time of day existed; the benchmark still renders with it. */
@@ -93,6 +102,7 @@ const DAY: Look = {
   heightFog: 0.002,
   heightFogColor: hex(0xb4_c6_d4),
   bloom: 0.08,
+  tone: 0,
 };
 
 const DUSK: Look = {
@@ -107,7 +117,13 @@ const DUSK: Look = {
   heightFog: 0.008,
   heightFogColor: hex(0x8a_6e_66),
   bloom: 0.25,
+  tone: 0.85,
 };
+
+// The `tone` weights come from looking at the game (bright day: Neutral; dawn and dusk: ACES or AgX; night with
+// the flashlight: ACES). Full day is 0 and night 1; the low-sun keyframes sit at 0.85, mostly ACES, not quite.
+// The ramps are the keyframe interpolation: 05:00 night (1) falls to 0.85 at 06:30 and to 0 at 08:30, so the
+// blend moves steadily through sunrise with no step; dusk mirrors it, 0 at 17:30 up to 0.85 at 19:30 and 1 at 21:00.
 
 /** Keyframes by hour; the look is interpolated between them and wraps at midnight. */
 const KEYS: readonly (readonly [number, Look])[] = [
@@ -145,6 +161,7 @@ const lookAt = (hour: number): Look => {
         heightFog: mix(a.heightFog, b.heightFog, t),
         heightFogColor: mixRgb(a.heightFogColor, b.heightFogColor, t),
         bloom: mix(a.bloom, b.bloom, t),
+        tone: mix(a.tone, b.tone, t),
       };
     }
   }

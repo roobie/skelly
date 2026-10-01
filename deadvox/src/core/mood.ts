@@ -27,6 +27,12 @@ export const DEFAULT_MOOD: MoodState = {
   bloomClip: null,
 };
 
+/**
+ * The `TONE_MODES` key of the tone mapping that blends Neutral and ACES Filmic by time of day (the sky's `tone`
+ * weight, render/autoTone.ts).
+ */
+export const AUTO_TONE = 'auto';
+
 /** Renderer and block-colour settings that make up the look, apart from the mood pass. `tone` is a render/look.ts key. */
 export interface LookState {
   tone: string;
@@ -44,7 +50,7 @@ export interface LookState {
  * controls and URL record only deviations from it. The benchmark does not apply it: it keeps
  * three.js's own defaults (no tone mapping, exposure 1, colours undecoded) and the mood pass off.
  */
-export const DEFAULT_LOOK: LookState = { tone: 'aces', exposure: 3, srgb: true, patterns: true, vao: true };
+export const DEFAULT_LOOK: LookState = { tone: AUTO_TONE, exposure: 3, srgb: true, patterns: true, vao: true };
 
 /** Which shadows are drawn, and how far from the player the sun's reach. Render-only; the debug controls and URL change it. */
 export interface ShadowState {
@@ -159,8 +165,19 @@ export const BLOOM_CLIP_BY_TONE: Readonly<Record<string, number>> = {
   neutral: 1.1,
 };
 
-/** The derived clip for a `TONE_MODES` key; an unknown key gets the no-curve value. */
-export const bloomClipFor = (tone: string): number => BLOOM_CLIP_BY_TONE[tone] ?? 1;
+/**
+ * The derived clip for a `TONE_MODES` key; an unknown key gets the no-curve value. `auto` is the Neutral and ACES
+ * clips mixed by the same weight as the curves (`autoWeight`, 0 is Neutral, 1 is ACES). It stays at or above
+ * the Neutral clip, so the sky-never-blooms floor of `MIN_BLOOM_CLIP` holds at every weight.
+ */
+export const bloomClipFor = (tone: string, autoWeight = 0): number => {
+  if (tone === AUTO_TONE) {
+    const w = Math.min(1, Math.max(0, autoWeight));
+    const neutral = BLOOM_CLIP_BY_TONE.neutral!;
+    return neutral + (BLOOM_CLIP_BY_TONE.aces! - neutral) * w;
+  }
+  return BLOOM_CLIP_BY_TONE[tone] ?? 1;
+};
 
 export const MIN_BLOOM_CLIP = 1;
 const MAX_BLOOM_CLIP = 8;

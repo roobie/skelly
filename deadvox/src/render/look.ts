@@ -4,12 +4,13 @@
 import {
   ACESFilmicToneMapping,
   AgXToneMapping,
+  CustomToneMapping,
   NeutralToneMapping,
   NoToneMapping,
   type ToneMapping,
   type WebGLRenderer,
 } from 'three';
-import { clampExposure, type LookState } from '../core/mood.ts';
+import { AUTO_TONE, clampExposure, type LookState } from '../core/mood.ts';
 import type { ChunkMeshes } from './chunks.ts';
 
 /** `key` is the `?tone=` URL value (see debug/lookUrl.ts) and `LookState.tone`. */
@@ -18,6 +19,8 @@ export const TONE_MODES: readonly { readonly key: string; readonly name: string;
   { key: 'agx', name: 'AgX', mapping: AgXToneMapping },
   { key: 'aces', name: 'ACES Filmic', mapping: ACESFilmicToneMapping },
   { key: 'neutral', name: 'Neutral', mapping: NeutralToneMapping },
+  // Neutral by day, ACES at night, by the sky's weight (render/autoTone.ts); the game's default.
+  { key: AUTO_TONE, name: 'Auto', mapping: CustomToneMapping },
 ];
 
 /** The `TONE_MODES` key of a renderer tone mapping; an unlisted one reads as 'none'. */

@@ -90,6 +90,12 @@ export const TONE_CURVES: Readonly<Record<string, (x: number) => number>> = {
   neutral: (x) => neutral(x)[1],
 };
 
+/**
+ * The `auto` tone mapping for a grey: three's Neutral and ACES mixed by `weight` (0 is Neutral, 1 is ACES), as
+ * render/autoTone.ts does per channel in GLSL. Exposure is already applied, as for the others.
+ */
+export const autoCurve = (weight: number, x: number): number => neutral(x)[1] + (aces(x)[1] - neutral(x)[1]) * weight;
+
 const srgbEncode = (linear: number): number =>
   linear <= 0.003_130_8 ? 12.92 * linear : 1.055 * linear ** (1 / 2.4) - 0.055;
 

@@ -26,12 +26,27 @@ with no dimming; the test house gained stonework, colour blocks and furniture.
 Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) and
 `DEFAULT_FOGGINESS` in `src/core/weather.ts`:
 
-- ACES Filmic tone mapping, exposure 3.0, sRGB block-colour decode, surface patterns on.
+- `auto` tone mapping, exposure 3.0, sRGB block-colour decode, surface patterns on. Auto blends three's Neutral
+  and ACES Filmic by time of day: by eye, Neutral looks best in bright daylight, ACES (or AgX) at dawn and dusk,
+  and ACES at night, where it gives the dark and the flashlight their depth. The weight (0 is Neutral, 1 is ACES)
+  is the sky keyframes' `tone` field (`src/core/sky.ts`), interpolated like `bloom`: 0 for full day (08:30 to
+  17:30), 0.85 at dawn (06:30) and dusk (19:30), 1 at night (21:00 to 05:00). It ramps linearly between the keyframes,
+  so sunrise has no step, and the weather does not move it. `aces`, `agx`, `neutral` and `none` stay selectable
+  (debug key J cycles through all, `?tone=`).
+  - How it is wired: `src/render/autoTone.ts` replaces the empty `CustomToneMapping` stub in three's
+    `tonemapping_pars_fragment` with `mix(NeutralToneMapping(c), ACESFilmicToneMapping(c), autoToneWeight)`, so each
+    curve (and its own exposure scaling) is three's code and the ends equal the plain options. `auto` is
+    `renderer.toneMapping = CustomToneMapping`; OutputPass picks it up and the weight is a uniform shared with its
+    material (`Mood.setSky` writes it every frame). Plain materials have no such uniform, so with `post=0` the frame is
+    drawn with Neutral below weight 0.5 and ACES above (`screenToneMapping` in `src/render/mood.ts`).
+  - The panel and look dump show `Auto (0.85)`, the current weight.
 - Post-processing on: grade at full strength, film, bloom. Bloom starts where a grey reaches about 0.95 on screen
   for the active tone mapper, not at post-exposure 1: a post-exposure clip of 2.0 for ACES, 5.0 for AgX, 1.1 for
   Neutral and 1.0 with no tone mapping (`BLOOM_CLIP_BY_TONE`, derived in `src/core/mood.ts`), divided by the
-  exposure for the pass's threshold. The clip is never below 1, which keeps the sky from blooming. Debug: Delete /
-  Insert step it (`?bloomclip=`), by default it follows the tone mapper.
+  exposure for the pass's threshold. Under `auto` the clip is the Neutral and ACES values mixed by the same weight
+  (`bloomClipFor(tone, weight)`), 1.1 by day and 2.0 at night. The clip is never below 1, which keeps the sky from
+  blooming. Debug: Delete / Insert step it (`?bloomclip=`), by default it follows the tone mapper; under `auto` an
+  override is always written to the URL, as the value it would follow moves with the time of day.
 - The flashlight beam is 5 cd with a near-field-capped falloff, 1 / (d + 4 m) (`src/render/flashlight.ts` and
   `lightFalloff.ts`, arithmetic in the comment): after exposure about 0.4 on a mid-albedo block at 2 m, 0.15 at
   10 m, and 0.86 on a white block at 1 m. Debug: numpad - / + scale it by 1.25 per press
@@ -83,6 +98,12 @@ look is settled.
   `ShaderChunk.lights_pars_begin` (the distance falloff) once at start-up, for every material. It throws if the
   line is not found and `test/lightFalloff.test.ts` checks that, so an upgrade fails loudly, but it still needs
   a proper solution (like the shadow hook above) before merging. The flashlight is the only punctual light.
+- **The auto tone mapping patches a three.js internal.** `src/render/autoTone.ts` rewrites the `CustomToneMapping` stub
+  of `ShaderChunk.tonemapping_pars_fragment` once at start-up (from the `Mood` constructor). It throws if the stub is
+  not found and `test/autoTone.test.ts` checks that, so an upgrade fails loudly, but it needs a proper solution (like
+  the hooks above) before merging. The ends of the keyframe weights (0 by day, 1 at night) follow the by-eye findings on
+  a real GPU; 0.85 at dawn and dusk and the linear ramps are first guesses, not yet looked at on one (dusk starts easing
+  towards ACES at 17:30, while the sun is still high).
 - **Wide occlusion is tuned by eye on the test house only.** Floor 0.35 and gamma 1 are first
   guesses; revisit them with indoor scenes once skylight (item 5) lands, which will
   overlap with it. The extra quads (up to 47% in the city) are the main cost to watch.

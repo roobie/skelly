@@ -4,6 +4,7 @@
 
 import type { WebGLRenderer } from 'three';
 import {
+  AUTO_TONE,
   bloomClipFor,
   clampBloomClip,
   clampExposure,
@@ -15,6 +16,7 @@ import {
   TORCH_STEP,
 } from '../core/mood.ts';
 import { clampFogginess, type Weather } from '../core/weather.ts';
+import { autoToneUniforms } from '../render/autoTone.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';
 import { applyLook, TONE_MODES } from '../render/look.ts';
@@ -88,7 +90,12 @@ export class LookControls {
 
   /** The clip bloom works from now: the override, else the active tone mapper's derived value. */
   get bloomClip(): number {
-    return this.mood.bloomClip ?? bloomClipFor(this.toneKey);
+    return this.mood.bloomClip ?? this.ownBloomClip();
+  }
+
+  /** The active tone mapper's own clip; under `auto` it moves with the time of day. */
+  private ownBloomClip(): number {
+    return bloomClipFor(this.toneKey, autoToneUniforms.autoToneWeight.value);
   }
 
   /** True while the clip follows the tone mapper (no override). */
@@ -99,7 +106,8 @@ export class LookControls {
   /** Steps the bloom clip by `steps` of 0.5, clamped. Landing on the tone mapper's own value goes back to following it. */
   stepBloomClip(steps: number): void {
     const next = clampBloomClip(this.bloomClip + steps * BLOOM_CLIP_STEP);
-    this.mood.setBloomClip(next === bloomClipFor(this.toneKey) ? null : next);
+    // Under `auto` the own clip is not on a tenth, so compare at the override's precision.
+    this.mood.setBloomClip(next === clampBloomClip(this.ownBloomClip()) ? null : next);
   }
 
   /** The master: off, the frame is drawn straight to the screen with no bloom, grade, film or height fog. */
@@ -159,7 +167,8 @@ export class LookControls {
   }
 
   get toneMappingName(): string {
-    return TONE_MODES[this.mode]!.name;
+    const { key, name } = TONE_MODES[this.mode]!;
+    return key === AUTO_TONE ? `${name} (${autoToneUniforms.autoToneWeight.value.toFixed(2)})` : name;
   }
 
   get exposure(): number {
