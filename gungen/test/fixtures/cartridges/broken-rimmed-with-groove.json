@@ -1,0 +1,11 @@
+{
+  "name": "broken-rimmed-with-groove",
+  "base": "synthetic:rimmed-straight",
+  "set": {
+    "case.head.extractorGroove": {
+      "diameter": { "value": 10, "cite": null, "note": "a rimmed head has no groove" },
+      "width": { "value": 1, "cite": null, "note": "a rimmed head has no groove" }
+    }
+  },
+  "expectParseError": "case.head.extractorGroove"
+}

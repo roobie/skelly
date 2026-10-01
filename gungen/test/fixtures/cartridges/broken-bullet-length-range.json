@@ -1,0 +1,6 @@
+{
+  "name": "broken-bullet-length-range",
+  "base": "7.62x39",
+  "set": { "payload.length.min.value": 30 },
+  "expect": ["lengths"]
+}

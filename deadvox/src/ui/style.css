@@ -892,8 +892,12 @@ body.resting #handling {
 }
 #spawn button:hover,
 #spawn button:focus-visible,
-#spawn button.game-cursor-hover {
+#spawn button.game-cursor-hover,
+#spawn button.selected {
   border-color: var(--accent);
+}
+#spawn button.selected {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 #spawn button span:last-child {
   color: var(--muted);

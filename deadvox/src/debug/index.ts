@@ -10,6 +10,7 @@ import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
+import { equipDebugStartWeapons } from './debugLoadout.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -638,6 +639,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     debugMode: hooks.engine.config.debug,
     newGame: hooks.newGame,
   });
+  equipDebugStartWeapons({
+    inventory: hooks.inventory,
+    debugMode: hooks.engine.config.debug,
+    newGame: hooks.newGame,
+  });
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);
@@ -998,6 +1004,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (spawnMenu.isOpen) {
       if (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement) && !e.repeat) {
         toggleSpawn();
+      } else {
+        spawnMenu.handleKey(e);
       }
       return true;
     }

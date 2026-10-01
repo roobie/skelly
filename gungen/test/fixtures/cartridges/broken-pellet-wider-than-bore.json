@@ -1,0 +1,6 @@
+{
+  "name": "broken-pellet-wider-than-bore",
+  "base": "synthetic:shotshell-buck",
+  "set": { "payload.pelletDiameter.value": 19 },
+  "expect": ["shotshell"]
+}
