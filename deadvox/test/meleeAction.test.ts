@@ -153,6 +153,23 @@ describe('melee pose and contact contract', () => {
       expect(Math.hypot(...ready[side].rotation)).toBeLessThan((45 * Math.PI) / 180);
     }
   });
+
+  it('eases fist-only torso yaw to 30 degrees at contact and back to the unchanged rest pose', () => {
+    for (const side of ['right', 'left'] as const) {
+      const action = actionPose({ profile: 'fists', hand: side });
+      const startPose = meleePoseAndContact(action, 0, false);
+      const contactPose = meleePoseAndContact(action, action.contactAt, false);
+      const restPose = meleePoseAndContact(action, action.cooldown, false);
+      expect(startPose.torsoYaw).toBe(0);
+      expect(contactPose.torsoYaw! * (side === 'right' ? 1 : -1)).toBeCloseTo(Math.PI / 6);
+      expect(restPose.torsoYaw).toBe(0);
+      expect(restPose.right.offset).toEqual([0, 0, 0]);
+      expect(restPose.left.offset).toEqual([0, 0, 0]);
+      for (const pose of [startPose, contactPose, restPose]) {
+        expect(pose.viewOrientation).toEqual({ yaw: action.aimYaw, pitch: action.aimPitch });
+      }
+    }
+  });
 });
 
 describe('player melee action', () => {

@@ -68,6 +68,9 @@ interface MotionResult {
   handCenterAtContact: number;
   pullbackTipScreen: { x: number; y: number };
   followTipScreen: { x: number; y: number };
+  torsoYawAtContactDegrees: number;
+  maxTorsoYawDegrees: number;
+  cameraOrientationChange: number;
   pullToContactRotationDegrees: number;
   minPalmDepth: number;
   palmAreaAtContact: Readonly<Record<'left' | 'right', number>>;
@@ -119,10 +122,18 @@ const measure = async (
   ])].sort((a, b) => a - b);
   const samples: MotionSample[] = [];
   let minPalmDepth = Infinity;
+  let maxTorsoYawRadians = 0;
+  let cameraOrientationChange = 0;
+  let torsoYawAtContactRadians = 0;
   const palmAreaAtContact: Record<'left' | 'right', number> = { left: 0, right: 0 };
   const maxPalmArea: Record<'left' | 'right', number> = { left: 0, right: 0 };
   for (const elapsed of sampleTimes) {
-    held.update(camera, meleePoseAndContact(action, elapsed, false));
+    const pose = meleePoseAndContact(action, elapsed, false);
+    const cameraBefore = camera.quaternion.clone();
+    held.update(camera, pose);
+    cameraOrientationChange = Math.max(cameraOrientationChange, cameraBefore.angleTo(camera.quaternion));
+    maxTorsoYawRadians = Math.max(maxTorsoYawRadians, Math.abs(pose.torsoYaw ?? 0));
+    if (Math.abs(elapsed - contactAt) < 1e-8) torsoYawAtContactRadians = pose.torsoYaw ?? 0;
     internals.view.updateMatrixWorld(true);
     const primaryArm = internals.arms.get(side)!;
     const hand = primaryArm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
@@ -135,10 +146,15 @@ const measure = async (
       const depths = corners.map((point) => -camera.worldToLocal(point.clone()).z);
       minPalmDepth = Math.min(minPalmDepth, ...depths);
       const projected = corners.map((point) => screen(point, camera));
-      const width = Math.max(...projected.map(({ x }) => x)) - Math.min(...projected.map(({ x }) => x));
-      const height = Math.max(...projected.map(({ y }) => y)) - Math.min(...projected.map(({ y }) => y));
-      const area = (width * height) / (1920 * 1080);
-      maxPalmArea[armSide] = Math.max(maxPalmArea[armSide], area);
+      // Palm coverage is limited to pixels inside the actual 1920x1080 viewport.
+      const left = Math.max(0, Math.min(...projected.map(({ x }) => x)));
+      const right = Math.min(1920, Math.max(...projected.map(({ x }) => x)));
+      const top = Math.max(0, Math.min(...projected.map(({ y }) => y)));
+      const bottom = Math.min(1080, Math.max(...projected.map(({ y }) => y)));
+      const area = (Math.max(0, right - left) * Math.max(0, bottom - top)) / (1920 * 1080);
+      if (area > maxPalmArea[armSide]) {
+        maxPalmArea[armSide] = area;
+      }
       if (atContact) palmAreaAtContact[armSide] = area;
     }
     samples.push({
@@ -177,6 +193,9 @@ const measure = async (
     handCenterAtContact: pixelDistance(contact.hand, new Vector3(0, 0, -depth(contact.hand))),
     pullbackTipScreen: screen(pullback.tip, camera),
     followTipScreen: screen(follow.tip, camera),
+    torsoYawAtContactDegrees: torsoYawAtContactRadians * (180 / Math.PI),
+    maxTorsoYawDegrees: maxTorsoYawRadians * (180 / Math.PI),
+    cameraOrientationChange,
     pullToContactRotationDegrees,
     minPalmDepth,
     palmAreaAtContact,
@@ -229,6 +248,9 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
       const result = await measure('fists', undefined, undefined, side);
       expect(result.forward, side).toBeGreaterThanOrEqual(0.3);
       expect(result.handCenterAtContact, side).toBeLessThanOrEqual(120);
+      expect(result.torsoYawAtContactDegrees * (side === 'right' ? 1 : -1), `${side} strike-side yaw`).toBeCloseTo(30);
+      expect(result.maxTorsoYawDegrees, `${side} peak yaw`).toBeLessThanOrEqual(30);
+      expect(result.cameraOrientationChange, `${side} camera yaw/pitch stays locked`).toBeLessThan(1e-8);
     }
   });
 

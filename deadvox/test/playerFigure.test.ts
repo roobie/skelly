@@ -338,6 +338,7 @@ describe('player figure', () => {
         const held = new HeldItems(inventory, undefined, palette);
         const internals = held as unknown as {
           view: Group;
+          torso: Group;
           arms: Map<'left' | 'right', Group>;
           armLengths: Map<Group, readonly [number, number]>;
         };
@@ -375,7 +376,8 @@ describe('player figure', () => {
           expect(endpoints[1]!.end.distanceTo(anchor)).toBeLessThanOrEqual(0.001);
           expect(anchor.distanceTo(endpoints[0]!.start)).toBeLessThanOrEqual(actualLengths[0]! + actualLengths[1]! + 0.0015);
           const shoulderView = internals.view.worldToLocal(endpoints[0]!.start.clone());
-          expect(shoulderView.distanceTo(new Vector3(...FIRST_PERSON_SHOULDER[side]))).toBeLessThanOrEqual(0.0805);
+          const rotatedShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]).applyQuaternion(internals.torso.quaternion);
+          expect(shoulderView.distanceTo(rotatedShoulder)).toBeLessThanOrEqual(0.0805);
           const shoulder = endpoints[0]!.start;
           const elbow = endpoints[0]!.end;
           const wrist = endpoints[1]!.end;
@@ -395,7 +397,7 @@ describe('player figure', () => {
     }
     const fists = new Inventory(registry);
     const fistHeld = new HeldItems(fists, undefined, palette);
-    const fistInternals = fistHeld as unknown as { view: Group; arms: Map<'left' | 'right', Group> };
+    const fistInternals = fistHeld as unknown as { view: Group; torso: Group; arms: Map<'left' | 'right', Group> };
     for (const side of ['left', 'right'] as const) {
       const action = {
         profile: 'fists' as const,
@@ -418,6 +420,14 @@ describe('player figure', () => {
         const center = forearm.getWorldPosition(new Vector3());
         const up = new Vector3(0, 1, 0).applyQuaternion(forearm.getWorldQuaternion(new Quaternion()));
         expect(center.addScaledVector(up, forearm.scale.y / 2).distanceTo(wrist)).toBeLessThanOrEqual(0.001);
+        const sleeve = arm.children[0] as Mesh;
+        const shoulder = sleeve.getWorldPosition(new Vector3()).addScaledVector(
+          new Vector3(0, 1, 0).applyQuaternion(sleeve.getWorldQuaternion(new Quaternion())),
+          -sleeve.scale.y / 2,
+        );
+        const shoulderView = fistInternals.view.worldToLocal(shoulder);
+        const rotatedShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]).applyQuaternion(fistInternals.torso.quaternion);
+        expect(shoulderView.distanceTo(rotatedShoulder)).toBeLessThanOrEqual(0.0805);
       }
     }
   });

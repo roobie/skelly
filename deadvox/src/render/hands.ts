@@ -41,12 +41,15 @@ export const HOLD: Readonly<Record<HandSide | 'both', Vec3>> = {
 
 /** Metres per grid cell for the stand-in box. */
 const CELL = 0.06;
+const TORSO_Y_AXIS = new Vector3(0, 1, 0);
 
 export class HeldItems {
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(75, 1, 0.01, 10);
   /** Turned like the main camera each frame, so the sky's light directions carry over as they are. */
   private readonly view = new Group();
+  /** First-person shoulder frame; unlike the camera, this can twist during an unarmed strike. */
+  private readonly torso = new Group();
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
   private readonly geometry = new BoxGeometry(1, 1, 1);
@@ -74,12 +77,14 @@ export class HeldItems {
     this.inventory = inventory;
     this.models = models;
     this.palette = palette;
+    this.view.add(this.torso);
     this.scene.add(this.view, this.light, this.ambient);
   }
 
   /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */
   update(main: PerspectiveCamera, pose?: MeleePoseFrame, recoil = 0): void {
     this.sync();
+    this.torso.rotation.y = pose?.torsoYaw ?? 0;
     for (const side of ['right', 'left'] as const) {
       const hand = pose?.[side] ?? { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
       const base = this.handBases.get(side);
@@ -106,8 +111,10 @@ export class HeldItems {
       transform.offset[2] += 0.025 * strength;
       this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
       this.poseRotation.multiply(this.recoilRotation);
-      if (arm.parent === this.view) {
+      if (arm.parent === this.torso) {
         const [upperLength, lowerLength] = this.armLengths.get(arm)!;
+        this.handPosition.set(...transform.offset).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
+        transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
         const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
         const wrist = new Vector3(...transform.offset);
         const reach = upperLength + lowerLength + 0.08;
@@ -175,6 +182,7 @@ export class HeldItems {
     }
     this.drawn = version;
     this.view.clear();
+    this.view.add(this.torso);
     this.shown.clear();
     this.arms.clear();
     this.armLengths.clear();
@@ -197,16 +205,20 @@ export class HeldItems {
     }
     const wristWorld = anchor.getWorldPosition(new Vector3());
     const baseShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
+    const shoulderView =
+      arm.parent === this.torso
+        ? this.view.worldToLocal(this.torso.localToWorld(baseShoulder.clone()))
+        : baseShoulder.clone();
     const wristView = this.view.worldToLocal(wristWorld.clone());
     const lengths = this.armLengths.get(arm)!;
     const maxReach = lengths[0] + lengths[1];
-    const shoulderToWrist = wristView.clone().sub(baseShoulder);
+    const shoulderToWrist = wristView.clone().sub(shoulderView);
     const distance = shoulderToWrist.length();
     const lead = Math.min(0.08, Math.max(0, distance - maxReach));
     if (lead > 0) {
-      baseShoulder.addScaledVector(shoulderToWrist.normalize(), lead);
+      shoulderView.addScaledVector(shoulderToWrist.normalize(), lead);
     }
-    const shoulder = arm.worldToLocal(this.view.localToWorld(baseShoulder.clone()));
+    const shoulder = arm.worldToLocal(this.view.localToWorld(shoulderView));
     const wrist = arm.worldToLocal(wristWorld.clone());
     const axis = wrist.clone().sub(shoulder);
     const reach = axis.length();
@@ -223,7 +235,7 @@ export class HeldItems {
     palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
   }
 
-  private addArm(side: HandSide, grip: Vec3, parent: Group = this.view, parentOrigin: Vec3 = [0, 0, 0]): void {
+  private addArm(side: HandSide, grip: Vec3, parent: Group = this.torso, parentOrigin: Vec3 = [0, 0, 0]): void {
     if (this.arms.has(side)) {
       return;
     }

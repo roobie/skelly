@@ -30,6 +30,8 @@ export interface HandPose {
 export interface MeleePoseFrame {
   right: HandPose;
   left: HandPose;
+  /** First-person upper-torso yaw in radians; camera orientation remains aim-locked. */
+  torsoYaw?: number;
   viewOrientation?: { yaw: number; pitch: number };
   /** The same tick-locked ray consumed by the simulation at the contact phase. */
   contactRay?: { origin: Vec3; direction: Vec3 };
@@ -107,9 +109,9 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
       follow = handPose([-sign * 0.18, 0.12, -0.35], [-1.3, sign * 0.02, 0]);
       break;
     case 'fists':
-      pull = handPose([sign * 0.12, 0.04, 0.08], [-0.1, -sign * 0.1, sign * 0.04]);
-      strike = handPose([-sign * 0.2, 0.18, -0.34], [-0.14, sign * 0.05, -sign * 0.04]);
-      follow = handPose([-sign * 0.16, 0.1, -0.24], [-0.05, sign * 0.02, 0]);
+      pull = handPose([sign * 0.12, 0.04, 0.3], [-0.1, -sign * 0.1, sign * 0.04]);
+      strike = handPose([-sign * 0.2, 0.2, -0.04], [-0.14, sign * 0.05, -sign * 0.04]);
+      follow = handPose([-sign * 0.08, 0.05, -0.38], [-0.05, sign * 0.02, 0]);
       break;
     default:
       throw new Error(`Unknown melee profile: ${action.profile}`);
@@ -118,9 +120,19 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
   const support = action.twoHanded ? handPose() : blendHand(handPose(), primary, 0.2);
   const right = action.hand === 'right' ? primary : support;
   const left = action.hand === 'left' ? primary : support;
+  const torsoYaw =
+    action.profile === 'fists'
+      ? cleanZero(
+          sign * (Math.PI / 6) *
+            (elapsed <= contact
+              ? smooth(elapsed / contact)
+              : 1 - smooth((elapsed - contact) / Math.max(0.001, action.cooldown - contact))),
+        )
+      : undefined;
   return {
     right,
     left,
+    ...(torsoYaw === undefined ? {} : { torsoYaw }),
     viewOrientation: { yaw: action.aimYaw, pitch: action.aimPitch },
     ...(elapsed >= action.contactAt && !action.hitResolved
       ? { contactRay: { origin: [...action.origin] as Vec3, direction: [...action.direction] as Vec3 } }
