@@ -123,6 +123,10 @@ which brings the card up. The inventory screen does **not** pause the game. That
 tension is intentional. A "relaxed" setting that pauses inside menus can come
 later as an accessibility option.
 
+The card is an opaque panel docked to the right edge, vertically centred, with no
+dimming, tint or blur over the frozen view, so the middle of the screen stays
+clear for screenshots.
+
 ### Catch-up simulation
 
 When a chunk loads, it is advanced by the time it was unloaded. Each system

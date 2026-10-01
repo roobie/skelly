@@ -162,8 +162,9 @@ body {
   position: fixed;
   inset: 0;
   display: grid;
-  place-items: center;
-  background: rgb(0 0 0 / 55%);
+  /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so
+     the paused frame stays unaltered; the layer itself still takes the click that resumes play. */
+  place-items: center end;
   cursor: pointer;
 }
 #overlay[hidden],
@@ -174,10 +175,12 @@ body {
   max-width: 420px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
+  margin-right: 16px;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--panel);
+  /* Opaque: with no dimming layer behind it the card must stay readable on its own. */
+  background: rgb(18 20 24);
 }
 #overlay h1 {
   margin: 0 0 4px;
