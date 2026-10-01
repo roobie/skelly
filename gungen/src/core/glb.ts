@@ -20,10 +20,11 @@ import type {
   PartPortId,
   SrgbColor,
 } from './design.ts';
+import { type DisplayItem, displayItems } from './display.ts';
 import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { meshForSolid, meshForSolidGroup } from './mesh.ts';
-import type { PartDef, PortDef, Solid } from './schema.ts';
+import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 /** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
@@ -196,41 +197,23 @@ interface PartExport {
   readonly placed: Transform;
 }
 
-interface DisplayItem {
-  readonly id: string;
-  readonly solids: readonly Solid[];
-  readonly merged: boolean;
-}
-
 const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
   a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
 
-/** Mixed-finish merge groups are emitted as their source solids so no finish is silently discarded. */
-const displayItems = (
-  drawn: readonly Solid[],
-  appearanceFor: (solid: Solid) => ReturnType<typeof resolveAppearance>,
-): DisplayItem[] => {
-  const groups = new Map<string, Solid[]>();
-  for (const solid of drawn) {
-    const group = solid.display?.mergeGroup;
-    if (group) {
-      groups.set(group, [...(groups.get(group) ?? []), solid]);
+/** Keep g27's finish boundary when using the shared g24 display groups. */
+const splitMixedAppearance = (
+  items: DisplayItem[],
+  appearanceFor: (solid: DisplayItem['solids'][number]) => ReturnType<typeof resolveAppearance>,
+): DisplayItem[] =>
+  items.flatMap((item) => {
+    if (!item.merged) {
+      return [item];
     }
-  }
-  const items: DisplayItem[] = drawn
-    .filter((solid) => !solid.display?.mergeGroup)
-    .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
-  for (const [id, solids] of groups) {
-    const first = appearanceFor(solids[0]!);
-    if (solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))) {
-      items.push({ id, solids, merged: true });
-    } else {
-      items.push(...solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false })));
-    }
-  }
-  return items;
-};
-
+    const first = appearanceFor(item.solids[0]!);
+    return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+      ? [item]
+      : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+  });
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
@@ -307,7 +290,7 @@ export const exportGlb: ExportGlb = (input) => {
   };
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
-  const appearanceFor = (part: PartExport, solid: Solid) =>
+  const appearanceFor = (part: PartExport, solid: DisplayItem['solids'][number]) =>
     resolveAppearance(palette, part.def.family, solid.id, {
       context: appearanceContext,
       overrides: {
@@ -317,9 +300,12 @@ export const exportGlb: ExportGlb = (input) => {
         ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
       },
     });
-  const primitiveFor = (part: PartExport, item: DisplayItem): Json => {
+  const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
     const solid = item.solids[0]!;
     const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
+    if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+      return undefined;
+    }
     const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
     const { min, max } = bounds(positions);
     const position = bin.add(
@@ -354,8 +340,11 @@ export const exportGlb: ExportGlb = (input) => {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = displayItems(drawn, (solid) => appearanceFor(part, solid)).map((item) =>
-      primitiveFor(part, item),
+    const primitives = splitMixedAppearance(displayItems(drawn), (solid) => appearanceFor(part, solid)).flatMap(
+      (item) => {
+        const primitive = primitiveFor(part, item);
+        return primitive ? [primitive] : [];
+      },
     );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };

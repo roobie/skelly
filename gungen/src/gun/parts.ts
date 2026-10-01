@@ -24,7 +24,7 @@ import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
-import { buildReceiverSection } from './receiverSection.ts';
+import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
 const size: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
 const choice = (...values: string[]): ParamSpec => ({ values, default: values[0]! });
@@ -36,13 +36,29 @@ const Y: Vec3 = [0, 1, 0];
 const NEG_Y: Vec3 = [0, -1, 0];
 
 const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
-const akChargingHandleSolid = (): Solid => solid('charging-handle', [-3, -0.5, -1.75], [-1.5, 0.5, -1.25]);
-const boxXBounds = (component: Solid): readonly [number, number] => {
+const AK_CHARGING_HANDLE_BASE = {
+  min: [-1.75, -0.5, -1.75] as Vec3,
+  max: [-0.25, 0.5, -1.25] as Vec3,
+};
+const akChargingHandleSolid = (): Solid => {
+  const envelope = BOLT_CARRIER_ENVELOPES.ak;
+  const offset: Vec3 = [
+    envelope.x[0] - AK_CHARGING_HANDLE_BASE.min[0],
+    envelope.y[0] - AK_CHARGING_HANDLE_BASE.min[1],
+    0,
+  ];
+  return solid(
+    'charging-handle',
+    AK_CHARGING_HANDLE_BASE.min.map((value, axis) => value + offset[axis]!) as unknown as Vec3,
+    AK_CHARGING_HANDLE_BASE.max.map((value, axis) => value + offset[axis]!) as unknown as Vec3,
+  );
+};
+const boxBounds = (component: Solid, axis: 0 | 1): readonly [number, number] => {
   if (component.kind !== 'box') {
     throw new Error('Charging handle must remain a box solid.');
   }
   const { center, half } = component.box;
-  return [center[0] - half[0], center[0] + half[0]];
+  return [center[axis] - half[axis], center[axis] + half[axis]];
 };
 const extrudedPolygon = (
   id: string,
@@ -61,7 +77,7 @@ const keepOut = (id: string, min: Vec3, max: Vec3, allowPort?: string): KeepOut 
   ...(allowPort ? { allowPort } : {}),
 });
 const akChargingHandleKeepOut = (): KeepOut => {
-  const [minX, maxX] = boxXBounds(akChargingHandleSolid());
+  const [minX, maxX] = boxBounds(akChargingHandleSolid(), 0);
   return keepOut('charging-handle', [minX, -0.5, -2.25], [maxX, 0.5, -1.75], 'mount');
 };
 
@@ -250,6 +266,7 @@ const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
 const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
   standard: { length: 6.5, restX: -7 },
+  ak: { length: 6.5, restX: -5.75 },
   pump: { length: 5.5, restX: -7 },
   long: { length: 8, restX: -4.5 },
   bolt: { length: 7, restX: -6 },
@@ -345,59 +362,53 @@ const REVOLVER_CYLINDER_RADIUS = 3;
 const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
 export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
+export const EJECTION_PORT_MARGIN_U = 0.25;
+const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 export const BOLT_CARRIER_ENVELOPES = {
-  ar: { x: [-1.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
-  ak: { x: [-1.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
-  pump: { x: [-2.75, 2.75], y: [-0.75, 0.75], z: [-0.75, 0.75] },
+  ar: { x: [-2.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
+  ak: { x: [-4.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
+  pump: { x: [-3.25, 3], y: [-0.75, 0.75], z: [-0.75, 0.75] },
   smg: { x: [-1.5, 1.5], y: [-0.5, 0.5], z: [-0.75, 0.75] },
   barrett: { x: [-3, 3], y: [-0.75, 0.75], z: [-1.25, 1.25] },
   bolt: { x: [-2.5, 2.5], y: [-0.5, 0.25], z: [-0.75, 0.75] },
 } as const;
 type BoltCarrierPattern = keyof typeof BOLT_CARRIER_ENVELOPES;
 export const EJECTION_PORT_RULES = {
-  ar: { faceMarginU: 0.5, reason: 'A modest opening increase for a smooth, visible AR carrier.' },
-  ak: {
-    faceMarginU: 1,
-    faceMarginYU: 0.75,
-    forwardOffsetU: 0.5,
-    lengthRule: 'travel-plus-handle-clearance',
-    reason: 'A forward-shifted stamped-receiver opening that contains the handle across full carrier travel.',
-  },
-  pump: {
-    faceMarginU: 0.25,
-    cartridge: { lengthU: 6.25, endClearanceU: 0.25 },
-    reason: 'A 12-gauge shell-length minimum with end clearance, backed by a long pump action.',
-  },
-  smg: { faceMarginU: 0.5, reason: 'A modest opening increase around the compact SMG carrier.' },
-  barrett: { faceMarginU: 0.5, reason: 'A modest opening increase for the heavy Barrett-style carrier.' },
-  bolt: { faceMarginU: 0.5, reason: 'A modest opening increase around the bolt-action carrier.' },
+  marginU: EJECTION_PORT_MARGIN_U,
+  pumpShellMinimum: { lengthU: 6.25, endClearanceU: EJECTION_PORT_MARGIN_U },
 } as const;
 
-const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY: number, travelLengthU: number) => {
+const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY: number) => {
   const envelope = BOLT_CARRIER_ENVELOPES[pattern];
-  const rule = EJECTION_PORT_RULES[pattern];
-  const { faceMarginU } = rule;
-  const cartridge = 'cartridge' in rule ? rule.cartridge : undefined;
-  const forwardOffsetU = 'forwardOffsetU' in rule ? rule.forwardOffsetU : 0;
-  const faceMarginYU = 'faceMarginYU' in rule ? rule.faceMarginYU : faceMarginU;
-  let xMin = restX + envelope.x[0] - faceMarginU + forwardOffsetU;
-  let xMax = restX + envelope.x[1] + faceMarginU + forwardOffsetU;
-  if ('lengthRule' in rule) {
-    const [handleMinX, handleMaxX] = boxXBounds(akChargingHandleSolid());
-    const handleWidthX = handleMaxX - handleMinX;
-    const requiredLength = travelLengthU + handleWidthX + BOLT_CARRIER_RUNNING_CLEARANCE_U;
-    xMin = xMax - Math.ceil((requiredLength - 1e-9) / GRID) * GRID;
-  }
-  const cartridgeMinimum = cartridge ? cartridge.lengthU + 2 * cartridge.endClearanceU : 0;
-  if (xMax - xMin < cartridgeMinimum) {
+  const margin = EJECTION_PORT_MARGIN_U;
+  let xMin = restX - envelope.x[1] - margin;
+  let xMax = restX - envelope.x[0] + margin;
+  const pumpMinimum =
+    pattern === 'pump'
+      ? EJECTION_PORT_RULES.pumpShellMinimum.lengthU + 2 * EJECTION_PORT_RULES.pumpShellMinimum.endClearanceU
+      : 0;
+  if (xMax - xMin < pumpMinimum) {
     const center = (xMin + xMax) / 2;
-    const half = cartridgeMinimum / 2;
-    xMin = Math.floor((center - half) / GRID) * GRID;
-    xMax = Math.ceil((center + half) / GRID) * GRID;
+    xMin = center - pumpMinimum / 2;
+    xMax = center + pumpMinimum / 2;
   }
   return {
     x: [xMin, xMax] as const,
-    y: [carrierY + envelope.y[0] - faceMarginYU, carrierY + envelope.y[1] + faceMarginYU] as const,
+    y: [carrierY + envelope.y[0] - margin, carrierY + envelope.y[1] + margin] as const,
+  };
+};
+
+export const akChargingHandleSlotWindow = (
+  carrierY: number,
+  port: ReturnType<typeof ejectionPortWindow>,
+  travel: number,
+) => {
+  const [handleMinY, handleMaxY] = boxBounds(akChargingHandleSolid(), 1);
+  const margin = BOLT_CARRIER_RUNNING_CLEARANCE_U;
+  return {
+    x: [port.x[0] - travel, port.x[0] + AK_CHARGING_SLOT_MUZZLE_SHIFT_U] as const,
+    sectionAxis: 0 as const,
+    section: [carrierY + handleMinY - margin, carrierY + handleMaxY + margin] as const,
   };
 };
 
@@ -440,6 +451,17 @@ const carrierAxisY = (pattern: BoltCarrierPattern, receiverDrop: number): number
   return y - receiverDrop;
 };
 
+export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: number) => {
+  const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+  return {
+    y: [
+      carrierY + envelope.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+      carrierY + envelope.y[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+    ] as const,
+    z: [envelope.z[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U, envelope.z[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U] as const,
+  };
+};
+
 export const RECEIVER_SECTION = {
   ar: {
     outline: [
@@ -452,7 +474,6 @@ export const RECEIVER_SECTION = {
       [-2.25, 2],
       [-2.5, 1.75],
     ] as const,
-    cavity: { y: [-0.6, 1.1], z: [-1.35, 1.35] } as const,
     faces: {
       top: { y: 2.5, halfWidth: 1.75 },
       portSide: 2,
@@ -474,7 +495,6 @@ export const RECEIVER_SECTION = {
       [1, 2],
       [-2.5, 2],
     ] as const,
-    cavity: { y: [-1.35, 1.35], z: [-1.35, 1.35] } as const,
     faces: {
       top: { y: 2.5, halfWidth: 1.25 },
       portSide: 2,
@@ -496,9 +516,8 @@ export const RECEIVER_SECTION = {
       [1, 2],
       [-2.5, 2],
     ] as const,
-    cavity: { y: [0.15, 1.85], z: [-0.85, 0.85] } as const,
     faces: {
-      top: { y: 2.5, halfWidth: 1.75 },
+      top: { y: 2.5, halfWidth: 1.25 },
       portSide: 2.25,
       handleSides: [-2.25, 2.25],
       front: 0,
@@ -507,6 +526,9 @@ export const RECEIVER_SECTION = {
     } as const,
   },
 } as const;
+
+const isSectionedReceiver = (section: string): section is 'ar' | 'pump' | 'ak' =>
+  section === 'ar' || section === 'pump' || section === 'ak';
 
 const receiverShellSolids = ({
   section,
@@ -518,6 +540,7 @@ const receiverShellSolids = ({
   carrierPattern,
   carrierY,
   portWindow,
+  portSlots,
 }: {
   section: string;
   feed: string;
@@ -528,9 +551,11 @@ const receiverShellSolids = ({
   carrierPattern: BoltCarrierPattern;
   carrierY: number;
   portWindow: ReturnType<typeof ejectionPortWindow>;
+  portSlots?: readonly SectionWindow[];
 }): Solid[] => {
   const [xMin, xMax] = [-16, 0] as const;
-  if (section === 'ar' || section === 'pump' || section === 'ak') {
+  const cavity = carrierCavityBounds(carrierPattern, carrierY);
+  if (isSectionedReceiver(section)) {
     const data = RECEIVER_SECTION[section];
     const clipPlanes =
       'clip' in data && data.clip.length > 0
@@ -544,8 +569,9 @@ const receiverShellSolids = ({
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax],
       wall: 0.5,
-      cavity: { y: [data.cavity.y[0] - receiverDrop, data.cavity.y[1] - receiverDrop], z: data.cavity.z },
+      cavity,
       port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
+      ...(portSlots ? { portSlots } : {}),
       ...(clipPlanes ? { clip: clipPlanes } : {}),
       ...(feed === 'box'
         ? {
@@ -555,18 +581,11 @@ const receiverShellSolids = ({
     });
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
-  const envelope = BOLT_CARRIER_ENVELOPES[carrierPattern];
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
   const lowerY = receiverBottom + wall;
   const upperY = receiverTop - wall;
-  const innerY: readonly [number, number] = [
-    carrierY + envelope.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-    carrierY + envelope.y[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
-  ];
-  const innerZ: readonly [number, number] = [
-    envelope.z[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-    envelope.z[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
-  ];
+  const innerY = cavity.y;
+  const innerZ = cavity.z;
   const broadInnerZ: readonly [number, number] = [-RECEIVER_FRONT_HALF_WIDTH + wall, RECEIVER_FRONT_HALF_WIDTH - wall];
   const solids: Solid[] = [
     solid(
@@ -635,6 +654,11 @@ const receiverShellSolids = ({
       ),
     );
   }
+  const clamp = (value: number, bounds: readonly [number, number]) => Math.max(bounds[0], Math.min(bounds[1], value));
+  const portX0 = clamp(portWindow.x[0], innerX);
+  const portX1 = clamp(portWindow.x[1], innerX);
+  const portY0 = clamp(portWindow.y[0], [lowerY, upperY]);
+  const portY1 = clamp(portWindow.y[1], [lowerY, upperY]);
   if (feed === 'top') {
     const portX: readonly [number, number] = [-9, -4];
     solids.push(
@@ -652,19 +676,35 @@ const receiverShellSolids = ({
       solid('receiver-shell-top-front', [portX[1], innerY[1], innerZ[0]], [innerX[1], receiverTop, innerZ[1]]),
     );
   } else {
-    solids.push(
-      solid(
-        'receiver-shell-top',
-        [innerX[0], innerY[1], -RECEIVER_FRONT_HALF_WIDTH],
-        [innerX[1], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
-      ),
+    addBox(
+      'receiver-shell-top-far',
+      [innerX[0], innerY[1], -RECEIVER_FRONT_HALF_WIDTH],
+      [innerX[1], receiverTop, broadInnerZ[0]],
+    );
+    addBox('receiver-shell-top', [innerX[0], innerY[1], broadInnerZ[0]], [innerX[1], receiverTop, broadInnerZ[1]]);
+    addBox(
+      'receiver-shell-top-near-rear',
+      [innerX[0], innerY[1], broadInnerZ[1]],
+      [portX0, receiverTop, RECEIVER_FRONT_HALF_WIDTH],
+    );
+    addBox(
+      'receiver-shell-top-near-front',
+      [portX1, innerY[1], broadInnerZ[1]],
+      [innerX[1], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
+    );
+    const roofPortY0 = clamp(portWindow.y[0], [innerY[1], receiverTop]);
+    const roofPortY1 = clamp(portWindow.y[1], [innerY[1], receiverTop]);
+    addBox(
+      'receiver-shell-top-near-window-lower',
+      [portX0, innerY[1], broadInnerZ[1]],
+      [portX1, roofPortY0, RECEIVER_FRONT_HALF_WIDTH],
+    );
+    addBox(
+      'receiver-shell-top-near-window-upper',
+      [portX0, roofPortY1, broadInnerZ[1]],
+      [portX1, receiverTop, RECEIVER_FRONT_HALF_WIDTH],
     );
   }
-  const clamp = (value: number, bounds: readonly [number, number]) => Math.max(bounds[0], Math.min(bounds[1], value));
-  const portX0 = clamp(portWindow.x[0], innerX);
-  const portX1 = clamp(portWindow.x[1], innerX);
-  const portY0 = clamp(portWindow.y[0], [lowerY, upperY]);
-  const portY1 = clamp(portWindow.y[1], [lowerY, upperY]);
   solids.push(
     solid(
       'receiver-shell-side-near-rear-lower',
@@ -757,7 +797,10 @@ interface ReceiverContext {
 }
 
 const receiverTravelClass = (params: Readonly<Record<string, string>>): BoltTravelClass => {
-  if (params.section === 'ak' || params.section === 'ar') {
+  if (params.section === 'ak') {
+    return 'ak';
+  }
+  if (params.section === 'ar') {
     return 'standard';
   }
   if (params.action === 'pump' || params.section === 'pump') {
@@ -1008,7 +1051,7 @@ export const receiver: PartFamily = {
       receiverBottom,
       receiverTop,
       carrierPattern,
-      portWindow: ejectionPortWindow(carrierPattern, travel.restX, carrierY, travel.length),
+      portWindow: ejectionPortWindow(carrierPattern, travel.restX, carrierY),
       travel,
       carrierY,
     };
@@ -1043,8 +1086,8 @@ export const akReceiver: PartFamily = {
     });
     const carrierPattern: BoltCarrierPattern = 'ak';
     const carrierY = carrierAxisY(carrierPattern, 0);
-    const travel = BOLT_TRAVEL.standard;
-    const portWindow = ejectionPortWindow(carrierPattern, travel.restX, carrierY, travel.length);
+    const travel = BOLT_TRAVEL.ak;
+    const portWindow = ejectionPortWindow(carrierPattern, travel.restX, carrierY);
     return {
       ...base,
       solids: [
@@ -1058,6 +1101,7 @@ export const akReceiver: PartFamily = {
           carrierPattern,
           carrierY,
           portWindow,
+          portSlots: [akChargingHandleSlotWindow(carrierY, portWindow, travel.length)],
         }),
       ],
       // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.
@@ -1112,9 +1156,10 @@ export const boltCarrier: PartFamily = {
     const snap = (n: number) => Math.round(n / GRID) * GRID;
     const block = (id: string, min: Vec3, max: Vec3): Solid =>
       solid(id, [snap(min[0]), snap(min[1]), snap(min[2])], [snap(max[0]), snap(max[1]), snap(max[2])]);
-    const bodyX: readonly [number, number] = pattern === 'pump' ? envelope.x : [-1.5, 1.5];
+    const bodyX: readonly [number, number] =
+      pattern === 'ar' || pattern === 'pump' || pattern === 'ak' ? envelope.x : [-1.5, 1.5];
     const solids: Solid[] = [
-      block('carrier-body', [bodyX[0], envelope.y[0], envelope.z[0]], [bodyX[1], envelope.y[1], envelope.z[1]]),
+      solid('carrier-body', [bodyX[0], envelope.y[0], envelope.z[0]], [bodyX[1], envelope.y[1], envelope.z[1]]),
     ];
     if (pattern === 'ar') {
       solids.push(
@@ -1122,7 +1167,7 @@ export const boltCarrier: PartFamily = {
         block('gas-key', [-0.75, 0.5, -0.4], [1.1, 1, 0.4]),
       );
     } else if (pattern === 'ak') {
-      solids.push(block('piston', [-6, 0.2, -0.35], [-1.5, 0.6, 0.35]), akChargingHandleSolid());
+      solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]), akChargingHandleSolid());
     } else if (pattern === 'pump') {
       solids.push(
         block('action-bar-left', [-6, -0.4, -2.5], [-1.25, -0.15, -2]),
@@ -1140,7 +1185,10 @@ export const boltCarrier: PartFamily = {
       family: 'bolt-carrier',
       solids,
       ports: [{ id: 'mount', mount: 'bolt-carrier', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
-      keepOuts: pattern === 'ak' ? [akChargingHandleKeepOut()] : [],
+      keepOuts: [
+        ...(pattern === 'ak' ? [akChargingHandleKeepOut()] : []),
+        ...(pattern === 'bolt' ? [keepOut('bolt-handle', [1, -1, -2.5], [8, -0.25, -2])] : []),
+      ],
       axes: [],
       motion: {
         kind: 'linear',

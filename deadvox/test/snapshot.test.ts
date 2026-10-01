@@ -703,8 +703,8 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 2,
-  generators: { worldgen: 'worldgen-v1' },
+  schemaVersion: 3,
+  generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 const formatWorldOptions = { blockSize: 0.5, site: 'hamlet' as const, storeys: 1 };

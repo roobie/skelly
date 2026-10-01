@@ -46,6 +46,7 @@ describe('bench plan', () => {
       seed: 1,
       time: '23:30',
       actors: 'detailed',
+      post: false,
     });
     expect(
       shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1&actors=detailed')),
@@ -55,6 +56,7 @@ describe('bench plan', () => {
       seed: 77,
       time: '21:15',
       actors: 'detailed',
+      post: false,
     });
     expect(parseShamblerCounts('1,500')).toEqual([1, 500]);
     expect(parseShamblerSeed('-2147483648')).toBe(-2_147_483_648);

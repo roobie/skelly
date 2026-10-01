@@ -18,7 +18,7 @@ import type { Solid } from '../src/core/schema.ts';
 
 const CONVEX_ERROR = /convex/i;
 const SELF_INTERSECT_ERROR = /self-intersect/i;
-const AREA_ERROR = /area/i;
+const AREA_ERROR = /area|collinear/i;
 const WINDING_ERROR = /counter-clockwise/i;
 const EXTRUSION_ERROR = /extrusion/i;
 const CLIP_ERROR = /clip plane/i;

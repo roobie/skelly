@@ -29,6 +29,10 @@ export const simSecondsPerHour = (clock: ClockSettings): number => SECONDS_PER_H
 export const gameHours = (clock: ClockSettings, simSeconds: number): number =>
   (simSeconds * clock.ratio) / SECONDS_PER_HOUR;
 
+/** The simulation time `hours` game hours after `from` (a debug time skip's end). */
+export const skipTarget = (clock: ClockSettings, from: number, hours: number): number =>
+  from + hours * simSecondsPerHour(clock);
+
 /** Hour of the day in [0, 24). */
 export const hourOfDay = (calendar: number): number =>
   (((calendar % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY) / SECONDS_PER_HOUR;

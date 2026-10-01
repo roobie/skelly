@@ -10,8 +10,8 @@
 // X/Y extrusion axes are then mapped through right-handed coordinate cycles.
 
 import { GRID } from './conventions.ts';
-import { clippedExtrudedPolygonPolyhedron } from './geometry.ts';
-import { cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
+import { clippedExtrudedPolygonPolyhedron, localSolidBounds } from './geometry.ts';
+import { add, cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
 import type { Box, Solid, Vec2 } from './schema.ts';
 
 export interface TriangleMesh {
@@ -63,16 +63,62 @@ class MeshBuilder {
   private readonly normals: number[] = [];
   private readonly indices: number[] = [];
 
-  /** Adds a planar convex polygon (>= 3 points, already wound so its cross product points outward), fan-triangulated. */
+  /** Adds a planar convex polygon (>= 3 points, already wound so its cross product points outward). */
   face(points: readonly Vec3[]): void {
-    const normal = normalize(cross(sub(points[1]!, points[0]!), sub(points[2]!, points[0]!)));
-    const base = this.positions.length / 3;
-    for (const pt of points) {
-      this.positions.push(pt[0], pt[1], pt[2]);
-      this.normals.push(normal[0], normal[1], normal[2]);
+    const normal = normalize(this.areaVector(points));
+    const base = this.appendFaceVertices(points, normal);
+    if (this.fanHasDegenerateTriangle(points, normal)) {
+      this.appendCentroidFan(points, normal, base);
+    } else {
+      this.appendFaceFan(points.length, base);
     }
-    for (let i = 1; i < points.length - 1; i++) {
+  }
+
+  private areaVector(points: readonly Vec3[]): Vec3 {
+    let areaVector: Vec3 = [0, 0, 0];
+    for (let i = 0; i < points.length; i++) {
+      areaVector = add(areaVector, cross(points[i]!, points[(i + 1) % points.length]!));
+    }
+    return areaVector;
+  }
+
+  private appendFaceVertices(points: readonly Vec3[], normal: Vec3): number {
+    const base = this.positions.length / 3;
+    for (const point of points) {
+      this.positions.push(...point);
+      this.normals.push(...normal);
+    }
+    return base;
+  }
+
+  private fanHasDegenerateTriangle(points: readonly Vec3[], normal: Vec3): boolean {
+    return points
+      .slice(1, -1)
+      .some(
+        (point, index) =>
+          Math.abs(dot(cross(sub(point, points[0]!), sub(points[index + 2]!, points[0]!)), normal)) <= 1e-12,
+      );
+  }
+
+  private appendFaceFan(count: number, base: number): void {
+    for (let i = 1; i < count - 1; i++) {
       this.indices.push(base, base + i, base + i + 1);
+    }
+  }
+
+  private appendCentroidFan(points: readonly Vec3[], normal: Vec3, base: number): void {
+    const center: Vec3 = [0, 1, 2].map(
+      (axis) => points.reduce((sum, point) => sum + point[axis]!, 0) / points.length,
+    ) as unknown as Vec3;
+    const centerIndex = this.positions.length / 3;
+    this.positions.push(...center);
+    this.normals.push(...normal);
+    for (let i = 0; i < points.length; i++) {
+      const next = (i + 1) % points.length;
+      const area = dot(cross(sub(points[i]!, center), sub(points[next]!, center)), normal);
+      if (Math.abs(area) > 1e-12) {
+        this.indices.push(centerIndex, area > 0 ? base + i : base + next, area > 0 ? base + next : base + i);
+      }
     }
   }
 
@@ -267,6 +313,8 @@ interface MeshGroupBuffers {
   readonly positions: number[];
   readonly normals: number[];
   readonly indices: number[];
+  readonly vertexByPositionNormal: Map<string, number>;
+  readonly triangleKeys: Set<string>;
 }
 
 const trianglePoints = (mesh: TriangleMesh, triangle: number): [Vec3, Vec3, Vec3] =>
@@ -496,58 +544,126 @@ const polygonBoundaryWithTJunctions = (polygon: readonly Vec3[], vertices: reado
 };
 
 const appendFlatTriangle = (points: readonly Vec3[], normal: Vec3, output: MeshGroupBuffers): void => {
-  const base = output.positions.length / 3;
-  for (const point of points) {
-    output.positions.push(...weldPoint(point));
-    output.normals.push(...normal);
+  const triangleKey = points
+    .map((point) => weldKey(weldPoint(point)))
+    .sort()
+    .join('|');
+  if (output.triangleKeys.has(triangleKey)) {
+    return;
   }
-  output.indices.push(base, base + 1, base + 2);
+  output.triangleKeys.add(triangleKey);
+  for (const point of points) {
+    const welded = weldPoint(point);
+    const key = `${weldKey(welded)}|${weldKey(normal)}`;
+    let index = output.vertexByPositionNormal.get(key);
+    if (index === undefined) {
+      index = output.positions.length / 3;
+      output.vertexByPositionNormal.set(key, index);
+      output.positions.push(...welded);
+      output.normals.push(...normal);
+    }
+    output.indices.push(index);
+  }
+};
+
+const triangleArea = (a: Vec3, b: Vec3, c: Vec3, normal: Vec3): number => dot(cross(sub(b, a), sub(c, a)), normal);
+
+const convexEarAt = (points: readonly Vec3[], index: number, normal: Vec3): boolean => {
+  const previous = points[(index + points.length - 1) % points.length]!;
+  const current = points[index]!;
+  const next = points[(index + 1) % points.length]!;
+  if (triangleArea(previous, current, next, normal) <= GROUP_WELD_TOLERANCE_U ** 2) {
+    return false;
+  }
+  if (points.length !== 4) {
+    return true;
+  }
+  const final = [1, 2, 3].map((offset) => points[(index + offset) % points.length]!);
+  return triangleArea(final[0]!, final[1]!, final[2]!, normal) > GROUP_WELD_TOLERANCE_U ** 2;
+};
+
+const removeCollinearBoundaryVertices = (boundary: readonly Vec3[], normal: Vec3): Vec3[] => {
+  const points = [...boundary];
+  let removed = true;
+  while (removed && points.length > 3) {
+    const index = points.findIndex((current, i) => {
+      const previous = points[(i + points.length - 1) % points.length]!;
+      const next = points[(i + 1) % points.length]!;
+      const chord = sub(next, previous);
+      const collinearTolerance = GROUP_WELD_TOLERANCE_U * Math.hypot(chord[0], chord[1], chord[2]);
+      return (
+        Math.abs(triangleArea(previous, current, next, normal)) <= collinearTolerance &&
+        dot(sub(current, previous), sub(next, current)) > 0
+      );
+    });
+    removed = index >= 0;
+    if (removed) {
+      points.splice(index, 1);
+    }
+  }
+  return points;
 };
 
 const triangulateConvexBoundary = (boundary: readonly Vec3[], normal: Vec3): [Vec3, Vec3, Vec3][] => {
-  const remaining = [...boundary];
+  const remaining = removeCollinearBoundaryVertices(boundary, normal);
   const triangles: [Vec3, Vec3, Vec3][] = [];
   while (remaining.length > 3) {
-    let ear = -1;
-    for (let i = 0; i < remaining.length; i++) {
-      const previous = remaining[(i + remaining.length - 1) % remaining.length]!;
-      const current = remaining[i]!;
-      const next = remaining[(i + 1) % remaining.length]!;
-      const turn = dot(cross(sub(current, previous), sub(next, current)), normal);
-      if (turn > GROUP_WELD_TOLERANCE_U ** 2) {
-        ear = i;
-        triangles.push([previous, current, next]);
-        break;
-      }
-    }
+    const ear = remaining.findIndex((_, index) => convexEarAt(remaining, index, normal));
     if (ear < 0) {
       return [];
     }
+    triangles.push([
+      remaining[(ear + remaining.length - 1) % remaining.length]!,
+      remaining[ear]!,
+      remaining[(ear + 1) % remaining.length]!,
+    ]);
     remaining.splice(ear, 1);
   }
-  if (remaining.length === 3) {
+  if (triangleArea(remaining[0]!, remaining[1]!, remaining[2]!, normal) > GROUP_WELD_TOLERANCE_U ** 2) {
     triangles.push([remaining[0]!, remaining[1]!, remaining[2]!]);
   }
   return triangles;
 };
 
 const appendSurfacePolygon = (surface: SurfacePolygon, vertices: readonly Vec3[], output: MeshGroupBuffers): void => {
-  const boundary = polygonBoundaryWithTJunctions(surface.points, vertices);
+  const boundary = cleanPolygon(polygonBoundaryWithTJunctions(surface.points, vertices).map(weldPoint));
   const triangles = triangulateConvexBoundary(boundary, surface.normal);
   for (const triangle of triangles) {
     appendFlatTriangle(triangle, surface.normal, output);
   }
 };
 
+interface SolidMeshContext {
+  readonly halfSpaces: readonly HalfSpace[][];
+  readonly vertices: readonly (readonly Vec3[])[];
+  readonly bounds: readonly Bounds3[];
+}
+
 const subtractFaceByOtherPieces = (
   face: SurfacePolygon,
   ownerIndex: number,
-  allHalfSpaces: readonly HalfSpace[][],
+  context: SolidMeshContext,
 ): SurfacePolygon[] => {
+  const { halfSpaces, vertices, bounds } = context;
+  const faceBounds = boundsOfPoints(face.points);
   let fragments: Vec3[][] = [cleanPolygon(face.points)];
-  for (let other = 0; other < allHalfSpaces.length && fragments.length > 0; other++) {
-    if (other !== ownerIndex) {
-      fragments = fragments.flatMap((fragment) => subtractConvexPiece(fragment, allHalfSpaces[other]!));
+  const faceOffset = dot(face.normal, face.points[0]!);
+  for (let other = 0; other < halfSpaces.length && fragments.length > 0; other++) {
+    if (
+      other === ownerIndex ||
+      !boundsOverlap(faceBounds, bounds[other]!) ||
+      liesStrictlyOnOneSide(face, vertices[other]!)
+    ) {
+      continue;
+    }
+    const ownsCoplanarPatch =
+      other > ownerIndex &&
+      halfSpaces[other]!.some(
+        (plane) =>
+          dot(face.normal, plane.normal) > 1 - 1e-8 && Math.abs(faceOffset - plane.offset) <= GROUP_WELD_TOLERANCE_U,
+      );
+    if (!ownsCoplanarPatch) {
+      fragments = fragments.flatMap((fragment) => subtractConvexPiece(fragment, halfSpaces[other]!));
     }
   }
   return fragments
@@ -555,10 +671,132 @@ const subtractFaceByOtherPieces = (
     .map((points) => ({ points, normal: face.normal }));
 };
 
-const boundarySurfaces = (meshes: readonly TriangleMesh[], halfSpaces: readonly HalfSpace[][]): SurfacePolygon[] =>
-  meshes.flatMap((mesh, ownerIndex) =>
-    facesFromMesh(mesh).flatMap((face) => subtractFaceByOtherPieces(face, ownerIndex, halfSpaces)),
+interface Bounds3 {
+  readonly min: Vec3;
+  readonly max: Vec3;
+}
+
+const boundsOfPoints = (points: readonly Vec3[]): Bounds3 => ({
+  min: [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis]!))) as unknown as Vec3,
+  max: [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis]!))) as unknown as Vec3,
+});
+
+const boundsOverlap = (a: Bounds3, b: Bounds3): boolean =>
+  [0, 1, 2].every(
+    (axis) =>
+      a.min[axis]! <= b.max[axis]! + GROUP_WELD_TOLERANCE_U && a.max[axis]! >= b.min[axis]! - GROUP_WELD_TOLERANCE_U,
   );
+
+const liesStrictlyOnOneSide = (face: SurfacePolygon, vertices: readonly Vec3[]): boolean => {
+  const faceOffset = dot(face.normal, face.points[0]!);
+  let minimum = Number.POSITIVE_INFINITY;
+  let maximum = Number.NEGATIVE_INFINITY;
+  for (const point of vertices) {
+    const distance = dot(face.normal, point) - faceOffset;
+    minimum = Math.min(minimum, distance);
+    maximum = Math.max(maximum, distance);
+    if (minimum <= GROUP_WELD_TOLERANCE_U && maximum >= -GROUP_WELD_TOLERANCE_U) {
+      return false;
+    }
+  }
+  return minimum > GROUP_WELD_TOLERANCE_U || maximum < -GROUP_WELD_TOLERANCE_U;
+};
+
+const meshVertices = (mesh: TriangleMesh): Vec3[] =>
+  Array.from({ length: mesh.positions.length / 3 }, (_, index) => [
+    mesh.positions[index * 3]!,
+    mesh.positions[index * 3 + 1]!,
+    mesh.positions[index * 3 + 2]!,
+  ]);
+
+const boundarySurfaces = (meshes: readonly TriangleMesh[], halfSpaces: readonly HalfSpace[][]): SurfacePolygon[] => {
+  const vertices = meshes.map(meshVertices);
+  const context: SolidMeshContext = { halfSpaces, vertices, bounds: vertices.map(boundsOfPoints) };
+  return meshes.flatMap((mesh, ownerIndex) =>
+    facesFromMesh(mesh).flatMap((face) => subtractFaceByOtherPieces(face, ownerIndex, context)),
+  );
+};
+
+const addGroupVertex = (output: MeshGroupBuffers, point: Vec3, normal: Vec3): number => {
+  const welded = weldPoint(point);
+  const key = `${weldKey(welded)}|${weldKey(normal)}`;
+  let index = output.vertexByPositionNormal.get(key);
+  if (index === undefined) {
+    index = output.positions.length / 3;
+    output.vertexByPositionNormal.set(key, index);
+    output.positions.push(...welded);
+    output.normals.push(...normal);
+  }
+  return index;
+};
+
+const appendDistinctTriangle = (
+  output: MeshGroupBuffers,
+  emittedFaces: Set<string>,
+  points: readonly Vec3[],
+  normal: Vec3,
+): void => {
+  const key = points
+    .map((point) => weldKey(weldPoint(point)))
+    .sort()
+    .join('|');
+  if (emittedFaces.has(key)) {
+    return;
+  }
+  emittedFaces.add(key);
+  output.indices.push(...points.map((point) => addGroupVertex(output, point, normal)));
+};
+
+interface TJunctionRepairContext {
+  readonly vertices: readonly Vec3[];
+  readonly output: MeshGroupBuffers;
+  readonly emittedFaces: Set<string>;
+}
+
+const repairTriangle = (points: readonly Vec3[], normal: Vec3, context: TJunctionRepairContext): void => {
+  const { vertices, output, emittedFaces } = context;
+  const boundary = points.flatMap((a, edge) => [a, ...pointsOnEdge(a, points[(edge + 1) % 3]!, vertices)]);
+  if (boundary.length === 3) {
+    appendDistinctTriangle(output, emittedFaces, points, normal);
+    return;
+  }
+  const center: Vec3 = [0, 1, 2].map(
+    (axis) => (points[0]![axis]! + points[1]![axis]! + points[2]![axis]!) / 3,
+  ) as unknown as Vec3;
+  for (let edge = 0; edge < boundary.length; edge++) {
+    const a = boundary[edge]!;
+    const b = boundary[(edge + 1) % boundary.length]!;
+    const area = dot(cross(sub(a, center), sub(b, center)), normal);
+    if (Math.abs(area) > GROUP_WELD_TOLERANCE_U ** 2) {
+      appendDistinctTriangle(output, emittedFaces, [center, area > 0 ? a : b, area > 0 ? b : a], normal);
+    }
+  }
+};
+
+const repairTJunctions = (output: MeshGroupBuffers): void => {
+  const candidateVertices = new Map<string, Vec3>();
+  for (let index = 0; index < output.positions.length; index += 3) {
+    const point: Vec3 = [output.positions[index]!, output.positions[index + 1]!, output.positions[index + 2]!];
+    candidateVertices.set(weldKey(point), point);
+  }
+  const vertices = [...candidateVertices.values()];
+  const originalIndices = [...output.indices];
+  output.indices.length = 0;
+  const emittedFaces = new Set<string>();
+  for (let triangle = 0; triangle < originalIndices.length; triangle += 3) {
+    const indices = originalIndices.slice(triangle, triangle + 3);
+    const points = indices.map(
+      (index) =>
+        [output.positions[index * 3]!, output.positions[index * 3 + 1]!, output.positions[index * 3 + 2]!] as const,
+    );
+    const normal: Vec3 = [
+      output.normals[indices[0]! * 3]!,
+      output.normals[indices[0]! * 3 + 1]!,
+      output.normals[indices[0]! * 3 + 2]!,
+    ];
+    repairTriangle(points, normal, { vertices, output, emittedFaces });
+  }
+};
 
 const surfaceVertices = (surfaces: readonly SurfacePolygon[]): Vec3[] => {
   const vertices = new Map<string, Vec3>();
@@ -572,18 +810,33 @@ const surfaceVertices = (surfaces: readonly SurfacePolygon[]): Vec3[] => {
 };
 
 /**
- * Merge un-beveled section pieces, Boolean-subtract internal faces, weld within 1e-5u,
- * and split T-junction edges. Collision continues to use the original convex pieces.
+ * Merge convex pieces in one local frame with disjoint interiors, subtract internal
+ * faces, weld within 1e-5u, and split T-junction edges. Each piece extent must be at
+ * least 10 weld tolerances; pieces may share faces or edges. The result is one closed
+ * shell per connected component. Collision continues to use the original convex pieces.
  */
 export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
+  for (const solid of solids) {
+    const [minimum, maximum] = localSolidBounds(solid);
+    if (minimum.some((value, axis) => maximum[axis]! - value < 10 * GROUP_WELD_TOLERANCE_U)) {
+      throw new Error(`Solid "${solid.id}" is thinner than the mesh-group weld contract.`);
+    }
+  }
   const meshes = solids.map((solid) => meshForSolid(solid, 0));
   const halfSpaces = meshes.map(polygonHalfSpaces);
   const surfaces = boundarySurfaces(meshes, halfSpaces);
   const vertices = surfaceVertices(surfaces);
-  const output: MeshGroupBuffers = { positions: [], normals: [], indices: [] };
+  const output: MeshGroupBuffers = {
+    positions: [],
+    normals: [],
+    indices: [],
+    vertexByPositionNormal: new Map(),
+    triangleKeys: new Set(),
+  };
   for (const surface of surfaces) {
     appendSurfacePolygon(surface, vertices, output);
   }
+  repairTJunctions(output);
   return {
     positions: new Float32Array(output.positions),
     normals: new Float32Array(output.normals),

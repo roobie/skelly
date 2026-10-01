@@ -31,7 +31,14 @@ import type { SoundPickerState } from '../core/soundPicker.ts';
 import type { World } from '../core/world.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
-import { type PlayerMovement, type VocalNoise, type Zombie, ZombieSystem } from '../core/zombies.ts';
+import {
+  type HitImpulse,
+  type MeleeResult,
+  type PlayerMovement,
+  type VocalNoise,
+  type Zombie,
+  ZombieSystem,
+} from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import {
@@ -124,9 +131,13 @@ export interface SessionOptions {
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
-    onSever?: (id: EntityId, zombie: Zombie, part: string) => void;
+    onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+    /** A zombie became incapacitated but remains in the store and may be revived later. */
+    onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
     onDeath?: (id: EntityId, zombie: Zombie) => void;
+    /** The actual result of the player's last swing, for debug-only presentation. */
+    onMeleeResult?: (result: MeleeResult) => void;
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
@@ -318,7 +329,9 @@ export const createSession = (options: SessionOptions) => {
       ];
       inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
     },
-    onSever: (id, zombie, part) => options.zombieEffects?.onSever?.(id, zombie, part),
+    onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
+    onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
+    ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
     onDeath: (id, zombie) => {
       const table = zombie.type.loot;
       if (table) {
@@ -501,9 +514,12 @@ export const createSession = (options: SessionOptions) => {
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),
     nameOf,
-    /** One real-time frame: advances the simulation (through rest, if any) and the player's own sounds. */
-    frame: (dt: number): void => {
-      rest.frame(dt);
+    /**
+     * One real-time frame: advances the simulation (through rest, if any) and the player's own
+     * sounds. `until` caps the simulation time reached, for the debug time skip.
+     */
+    frame: (dt: number, until?: number): void => {
+      rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);

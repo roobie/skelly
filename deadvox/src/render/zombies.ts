@@ -3,6 +3,8 @@ import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type ZombieRegion } from '../core/zombieRegions.ts';
 import type { Zombie } from '../core/zombies.ts';
+import { withHeightFog } from './heightFog.ts';
+import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';
 
 type Part = FigurePart;
@@ -37,12 +39,12 @@ export class ZombieMeshes {
     this.blockSize = blockSize;
     for (const part of FIGURE_PARTS) {
       const flesh = part === 'body' || part === 'head';
-      const material = new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e });
+      const material = withHeightFog(new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e }), 'zombie');
       const mesh = new InstancedMesh(new BoxGeometry(1, 1, 1), material, capacity);
       mesh.count = 0;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       this.meshes.set(part, mesh);
-      this.group.add(mesh);
+      this.group.add(castsAndReceives(mesh));
     }
   }
 
@@ -117,9 +119,11 @@ export class ZombieMeshes {
     mesh.boundingSphere = null;
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1): void {
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, freezeLiving = false): void {
     const blend = Math.max(0, Math.min(1, alpha));
-    const zombies = [...store.entries()].map(([id, zombie]) => this.renderPose(id, zombie, blend, realDt));
+    const zombies = [...store.entries()].map(([id, zombie]) =>
+      this.renderPose(id, zombie, blend, freezeLiving ? 0 : realDt),
+    );
     this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
     for (const part of PARTS) {
       this.syncPart(part, zombies);

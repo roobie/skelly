@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import { displayItems as selectDisplayItems } from '../src/core/display.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/core/exportFrame.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
 import { applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, type Vec3 } from '../src/core/math.ts';
@@ -15,7 +16,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
-import { variant } from './helpers.ts';
+import { expectWatertightMesh, variant } from './helpers.ts';
 
 const design = (name: string): Assembly => {
   const result = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8'));
@@ -38,22 +39,6 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantNa
 const near = (a: readonly number[], b: readonly number[], digits = 6): void => {
   // biome-ignore lint/suspicious/noMisplacedAssertion: a small comparison helper called from tests
   expect(a).toEqual(b.map((x) => expect.closeTo(x, digits)));
-};
-
-const invalidEdgeCount = (positions: ArrayLike<number>, indices: ArrayLike<number>, unitsPerFileUnit = 1): number => {
-  const key = (index: number) =>
-    [0, 1, 2]
-      .map((axis) => (Math.round((positions[index * 3 + axis]! / unitsPerFileUnit) * 1e5) / 1e5).toFixed(5))
-      .join(',');
-  const edges = new Map<string, number>();
-  for (let triangle = 0; triangle < indices.length; triangle += 3) {
-    const vertices = [indices[triangle]!, indices[triangle + 1]!, indices[triangle + 2]!].map(key);
-    for (let edge = 0; edge < 3; edge++) {
-      const edgeKey = [vertices[edge]!, vertices[(edge + 1) % 3]!].sort().join('|');
-      edges.set(edgeKey, (edges.get(edgeKey) ?? 0) + 1);
-    }
-  }
-  return [...edges.values()].filter((count) => count !== 2).length;
 };
 
 const glbIndices = (glb: ReadGlb, accessorIndex: number): Uint32Array => {
@@ -233,26 +218,15 @@ describe('glb export: meshes', () => {
     const def = ar.resolved.defs.get(id)!;
     return def.displaySolids ?? def.solids;
   };
-  const displayItems = (id: string) => {
-    const solids = drawn(id);
-    const groups = new Map<string, typeof solids>();
-    for (const solid of solids) {
-      const group = solid.display?.mergeGroup;
-      if (group) {
-        groups.set(group, [...(groups.get(group) ?? []), solid]);
-      }
-    }
-    return [
-      ...solids
-        .filter((solid) => !solid.display?.mergeGroup)
-        .map((solid) => ({ id: solid.id, solids: [solid], mesh: meshForSolid(solid) })),
-      ...[...groups].map(([group, members]) => ({ id: group, solids: members, mesh: meshForSolidGroup(members) })),
-    ];
-  };
+  const displayItems = (id: string) =>
+    selectDisplayItems(drawn(id)).map((item) => ({
+      ...item,
+      mesh: item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!),
+    }));
 
   it('exports the merged AR receiver as the same closed, manifold mesh', () => {
     const receiverMesh = displayItems('receiver').find(({ id }) => id === 'receiver-ar')!.mesh;
-    expect(invalidEdgeCount(receiverMesh.positions, receiverMesh.indices)).toBe(0);
+    expectWatertightMesh(receiverMesh, 'AR source receiver');
     const receiverNode = json.nodes.find((node) => node.extras?.part === 'receiver')!;
     const primitive = json.meshes[receiverNode.mesh!]!.primitives.find(
       (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === 'receiver-ar',
@@ -266,7 +240,15 @@ describe('glb export: meshes', () => {
       Array.from(receiverMesh.positions, (value) => value * S),
       7,
     );
-    expect(invalidEdgeCount(positions, indices, S)).toBe(0);
+    expectWatertightMesh(
+      {
+        positions: Float32Array.from(positions, (value) => value / S),
+        normals: ar.read.floats(primitive.attributes.NORMAL),
+        indices,
+        triangleCount: indices.length / 3,
+      },
+      'AR exported receiver',
+    );
   });
 
   it('exports AK and pump receiver primitives with the same closed merged meshes', () => {
@@ -279,7 +261,7 @@ describe('glb export: meshes', () => {
       const def = model.resolved.defs.get('receiver')!;
       const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
       const expectedMesh = meshForSolidGroup(solids);
-      expect(invalidEdgeCount(expectedMesh.positions, expectedMesh.indices), `${designName}: source topology`).toBe(0);
+      expectWatertightMesh(expectedMesh, `${designName}: source topology`);
       const node = model.read.json.nodes.find((entry) => entry.extras?.part === 'receiver')!;
       const primitive = model.read.json.meshes[node.mesh!]!.primitives.find(
         (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === group,
@@ -292,7 +274,15 @@ describe('glb export: meshes', () => {
         Array.from(expectedMesh.positions, (value) => value * S),
         7,
       );
-      expect(invalidEdgeCount(positions, indices, S), `${designName}: exported topology`).toBe(0);
+      expectWatertightMesh(
+        {
+          positions: Float32Array.from(positions, (value) => value / S),
+          normals: model.read.floats(primitive.attributes.NORMAL),
+          indices,
+          triangleCount: indices.length / 3,
+        },
+        `${designName}: exported topology`,
+      );
     }
   });
 

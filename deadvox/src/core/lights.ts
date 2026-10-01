@@ -72,6 +72,12 @@ export const drainLight = (registry: Registry, light: Item, hours: number): numb
   return lasts;
 };
 
+/** The left-hand item if it has an instant use (today only a light's on/off), which Mouse 5 triggers. */
+export const offHandUse = (registry: Registry, inventory: Inventory): Item | undefined => {
+  const item = inventory.hands.left;
+  return item && defOf(registry, item.type).light ? item : undefined;
+};
+
 /** Whether a battery fits a light. */
 export const fitsLight = (registry: Registry, light: Item, battery: Item): boolean =>
   powerOf(registry, light)?.battery === battery.type;

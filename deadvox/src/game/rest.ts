@@ -95,9 +95,12 @@ export class RestController {
     return this.start(kind);
   }
 
-  /** Advances one real frame. Ends the action on its own once fatigue reaches 0. */
-  frame(realDt: number): void {
-    this.sim.frame(realDt);
+  /**
+   * Advances one real frame, stopping at simulation time `until` if given (the debug time
+   * skip). Ends the action on its own once fatigue reaches 0.
+   */
+  frame(realDt: number, until?: number): void {
+    this.sim.frame(realDt, until);
     if (this.action && this.sim.compression.interruption === undefined && this.sim.needs.fatigue <= 0) {
       this.action = undefined;
       this.sim.compression.stop();

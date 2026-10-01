@@ -15,6 +15,9 @@ assembling and constraining 3D structure.
 | [`deadvox/`](deadvox/PROJECT.md) | scaffold: streamed voxel terrain, meshing worker, walking, block editing, content JSON, HTML inventory | A singleplayer, browser-based voxel survival game in the spirit of DayZ with Cataclysm: DDA-style depth. |
 | [`mobgen/`](mobgen/PROJECT.md) | milestone 1 in progress | A procedural generator of mobile actors (zombies, NPCs) for deadvox, built from voxels small enough for a head of about 50. |
 
+How work moves from spec to merge, what "done" means per subproject, and the working rules:
+[`docs/PROCESS.md`](docs/PROCESS.md).
+
 ## Pillars
 
 ### Maximum static analysis, strict formatting

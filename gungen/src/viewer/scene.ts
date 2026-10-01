@@ -22,6 +22,7 @@ import {
 import { resolveAppearance } from '../core/appearance.ts';
 import { MAIN_AXIS } from '../core/conventions.ts';
 import type { AppearanceContext } from '../core/design.ts';
+import { displayItems } from '../core/display.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
@@ -117,24 +118,15 @@ export function buildLayers(
           ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
         },
       });
-    const groups = new Map<string, Solid[]>();
-    for (const solid of drawn) {
-      const group = solid.display?.mergeGroup;
-      if (group) {
-        groups.set(group, [...(groups.get(group) ?? []), solid]);
+    const rendered = displayItems(drawn).flatMap((item) => {
+      if (!item.merged) {
+        return [item];
       }
-    }
-    const rendered: { id: string; solids: Solid[]; merged: boolean }[] = drawn
-      .filter((solid) => !solid.display?.mergeGroup)
-      .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
-    for (const [id, solids] of groups) {
-      const first = appearanceFor(solids[0]!);
-      if (solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))) {
-        rendered.push({ id, solids, merged: true });
-      } else {
-        rendered.push(...solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false })));
-      }
-    }
+      const first = appearanceFor(item.solids[0]!);
+      return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+        ? [item]
+        : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+    });
     for (const item of rendered) {
       const s = item.solids[0]!;
       const appearance = appearanceFor(s);

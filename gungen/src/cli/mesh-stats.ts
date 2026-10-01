@@ -7,8 +7,9 @@
 // per side). "After" is the new chamfered mesh (src/core/mesh.ts).
 
 import { parseArgs } from 'node:util';
+import { displayItems } from '../core/display.ts';
 import { generate } from '../core/generate.ts';
-import { meshForSolid } from '../core/mesh.ts';
+import { meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { resolve } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import { gunDomain } from '../gun/domain.ts';
@@ -36,9 +37,13 @@ for (const t of TEMPLATES) {
     let triAfter = 0;
     for (const part of resolved.placed.keys()) {
       const def = resolved.defs.get(part)!;
-      for (const s of def.displaySolids ?? def.solids) {
-        triBefore += unbeveledTriangleCount(s);
-        triAfter += meshForSolid(s).triangleCount;
+      const drawn = def.displaySolids ?? def.solids;
+      for (const solid of drawn) {
+        triBefore += unbeveledTriangleCount(solid);
+      }
+      for (const item of displayItems(drawn)) {
+        const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!);
+        triAfter += mesh.triangleCount;
       }
     }
     before.push(triBefore);

@@ -24,6 +24,7 @@ import {
   type RunResult,
   saveRecord,
 } from './plan.ts';
+import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
 import { frameStats, mean, sampleStats } from './stats.ts';
 
 export interface BenchRun {
@@ -35,6 +36,8 @@ export interface BenchRun {
   storeys: number;
   /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
   time?: string;
+  /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
+  post: boolean;
 }
 
 /** Seconds per phase. Quick mode is for checking the benchmark itself, not for results. */
@@ -56,6 +59,7 @@ export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
     plan,
     index: Number.isInteger(index) && index >= 0 && index < plan.length ? index : 0,
     quick: params.has('quick'),
+    post: benchPostFromUrl(params),
     ...siteFromUrl(params, 'testHouse'),
     ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
@@ -93,11 +97,11 @@ const nextUrl = (run: BenchRun, seed: number): string => {
   const quick = run.quick ? '&quick' : '';
   const site = run.site === 'city' ? `&site=city&storeys=${run.storeys}` : '';
   const time = run.time === undefined ? '' : `&time=${run.time}`;
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${quick}`;
+  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${postUrlPart(run.post)}${quick}`;
 };
 
 export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats): void => {
-  const { config, streamer, renderer, scene, camera, world } = engine;
+  const { config, streamer, renderer, camera, world } = engine;
   const s = config.scale.blockSize;
   const durations = run.quick ? DURATIONS.quick : DURATIONS.full;
   const hud = document.getElementById('hud')!;
@@ -108,6 +112,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   }
   const gl = renderer.getContext();
   const pixel = new Uint8Array(4);
+  const draw = benchDraw(engine, run.post, run.time === undefined ? 12 : hourOfDay(parseTimeOfDay(run.time)!));
 
   const record: BenchRecord | undefined =
     run.index === 0
@@ -116,6 +121,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
           quick: run.quick,
           site: run.site === 'city' ? `city, up to ${run.storeys} storeys` : 'test house',
           time: run.time ?? '12:00',
+          ...(run.post ? { post: true } : {}),
           env: environment(engine),
           runs: [],
         }
@@ -268,7 +274,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
   /** Renders and waits for the GPU to draw the frame, timing both. */
   const timedRender = () => {
     const renderStart = performance.now();
-    renderer.render(scene, camera);
+    draw();
     // Reading a pixel waits for the GPU to finish the frame (gl.finish() needn't, in
     // browsers that run WebGL in another process). The stall is why this phase's frame
     // times aren't recorded.
@@ -291,7 +297,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
     if (measured === 'render') {
       timedRender();
     } else {
-      renderer.render(scene, camera);
+      draw();
     }
     if (recorded && measured !== 'load' && measured !== 'settle' && measured !== 'render') {
       work[measured].push(performance.now() - start);

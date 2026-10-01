@@ -88,7 +88,7 @@ describe('AK-pattern archetype', () => {
     expect(section.every((solid) => solid.kind === 'extruded-polygon' && solid.clip?.length === 1)).toBe(true);
   });
 
-  it('keeps the forward-shifted port clear of the dust-cover roof and rear-sight interface', () => {
+  it('sizes the forward AK port below the dust-cover roof and rear-sight interface', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'M' });
     const port = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
     const portXMax = port.box.center[0] + port.box.half[0];
@@ -96,12 +96,12 @@ describe('AK-pattern archetype', () => {
     const roofY = Math.max(...RECEIVER_SECTION.ak.outline.map(([y]) => y));
     const rearSight = receiver.ports.find(({ id }) => id === 'rear-sight')!;
 
-    expect(port.box.center[0] - port.box.half[0]).toBe(-12.25);
-    expect(portXMax).toBe(-4);
-    expect(portYMax).toBe(2);
-    expect(roofY - portYMax).toBe(0.5);
+    expect(port.box.center[0] - port.box.half[0]).toBe(-7.5);
+    expect(portXMax).toBe(-1);
+    expect(portYMax).toBe(1.5);
+    expect(roofY - portYMax).toBe(1);
     expect(rearSight.pos).toEqual([-2, 2.5, 0]);
-    expect(rearSight.pos[0] - portXMax).toBe(2);
+    expect(rearSight.pos[1]).toBeGreaterThan(portYMax);
   });
 
   it('uses an angled AK section while preserving its stock and sight interfaces', () => {
@@ -115,8 +115,8 @@ describe('AK-pattern archetype', () => {
     expect(RECEIVER_SECTION.ak.outline.length).toBeGreaterThanOrEqual(8);
     expect(RECEIVER_SECTION.ak.outline[2]![0]).toBeGreaterThan(RECEIVER_SECTION.ak.outline[1]![0]);
     expect(validateExtrudedPolygon(section.profile, section.z, section.axis, section.clip)).toBeUndefined();
-    expect(receiver.solids.some(({ id }) => id.includes('near-side-before-window'))).toBe(true);
-    expect(receiver.solids.some(({ id }) => id === 'receiver-ak-near-side-after-window')).toBe(true);
+    expect(receiver.solids.some(({ id }) => id.startsWith('receiver-ak-near-side-span-0-region-'))).toBe(true);
+    expect(receiver.solids.some(({ id }) => id.startsWith('receiver-ak-near-side-span-'))).toBe(true);
 
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
     const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;

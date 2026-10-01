@@ -123,6 +123,10 @@ which brings the card up. The inventory screen does **not** pause the game. That
 tension is intentional. A "relaxed" setting that pauses inside menus can come
 later as an accessibility option.
 
+The card is an opaque panel docked to the right edge, vertically centred, with no
+dimming, tint or blur over the frozen view, so the middle of the screen stays
+clear for screenshots.
+
 ### Catch-up simulation
 
 When a chunk loads, it is advanced by the time it was unloaded. Each system
@@ -386,9 +390,11 @@ plain box in your hands. Files are small, and follow
 
 ## Combat and noise
 
-- **Melee.** Weapons have damage, reach and speed, plus stamina cost and
-  damage type (blunt, cut, pierce). Hit detection is a swept sphere cast from
-  the camera against entities.
+- **Melee.** Weapons have damage, reach beyond the player's hand, and speed,
+  plus stamina cost and damage type (blunt, cut, pierce). The swing reaches the
+  player's 1.2 m effective eye-to-hand reach (including the lean into a swing)
+  plus the weapon's reach; hit detection tests
+  posed shambler body-region boxes along the aim ray.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
@@ -573,6 +579,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
 
 ## Rendering
+
+The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** flat colour per block, with small per-block variation, ambient
   occlusion and fog. Textures only if colour alone can't carry the look. The

@@ -759,6 +759,10 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -771,7 +775,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "handguard.rail",
+        "from": "receiver.rail",
         "slot": 1,
         "to": "sight.base",
       },
@@ -783,6 +787,12 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "S",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "barrett",
         },
       },
       "grip": {
@@ -848,6 +858,10 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -857,7 +871,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       },
       {
         "from": "handguard.rail",
-        "slot": 7,
+        "slot": 4,
         "to": "sight.base",
       },
     ],
@@ -868,6 +882,12 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "M",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "barrett",
         },
       },
       "grip": {
@@ -926,6 +946,10 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -935,7 +959,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 2,
+        "slot": 6,
         "to": "sight.base",
       },
     ],
@@ -946,6 +970,12 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "S",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "barrett",
         },
       },
       "grip": {
@@ -1021,18 +1051,28 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "handguard.rail",
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
+        "from": "receiver.rail",
         "slot": 6,
         "to": "sight.base",
       },
     ],
-    "description": "Generated from the "bolt-rifle" template with seed 101.",
-    "name": "bolt-rifle-101",
+    "description": "Generated from the "bolt-rifle" template with seed 100.",
+    "name": "bolt-rifle-100",
     "parts": {
       "barrel": {
         "family": "barrel",
         "params": {
           "length": "L",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "handguard": {
@@ -1067,7 +1107,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       "stock": {
         "family": "stock",
         "params": {
-          "length": "L",
+          "length": "M",
           "style": "thumbhole",
         },
       },
@@ -1101,8 +1141,12 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.rail",
-        "slot": 6,
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
+        "from": "handguard.rail",
+        "slot": 13,
         "to": "sight.base",
       },
     ],
@@ -1113,6 +1157,12 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "L",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "handguard": {
@@ -1180,6 +1230,10 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "from": "receiver.stock",
         "to": "stock.front",
       },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
     ],
     "description": "Generated from the "bolt-rifle" template with seed 300.",
     "name": "bolt-rifle-300",
@@ -1188,6 +1242,12 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "L",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "handguard": {
@@ -1258,8 +1318,12 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 0,
         "to": "sight.base",
       },
     ],
@@ -1270,6 +1334,12 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "M",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "grip": {
@@ -1346,8 +1416,12 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 4,
         "to": "sight.base",
       },
     ],
@@ -1358,6 +1432,12 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "L",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "grip": {
@@ -1430,8 +1510,12 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 3,
+        "slot": 2,
         "to": "sight.base",
       },
     ],
@@ -1442,6 +1526,12 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "M",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "grip": {
@@ -1512,8 +1602,12 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 0,
         "to": "sight.base",
       },
     ],
@@ -1525,6 +1619,12 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "heavy",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "handguard": {
@@ -1592,8 +1692,12 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 5,
+        "slot": 6,
         "to": "sight.base",
       },
     ],
@@ -1605,6 +1709,12 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "heavy",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "handguard": {
@@ -1668,8 +1778,12 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 0,
+        "slot": 4,
         "to": "sight.base",
       },
     ],
@@ -1681,6 +1795,12 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
         "params": {
           "length": "L",
           "profile": "heavy",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "bolt",
         },
       },
       "lower": {
@@ -1733,6 +1853,10 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "to": "barrel.rear",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -1742,7 +1866,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 1,
         "to": "sight.base",
       },
     ],
@@ -1753,6 +1877,12 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "S",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "barrett",
         },
       },
       "grip": {
@@ -1798,6 +1928,10 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "to": "barrel.rear",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -1807,7 +1941,7 @@ exports[`templates > bullpup > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 5,
         "to": "sight.base",
       },
     ],
@@ -1818,6 +1952,12 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "S",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "barrett",
         },
       },
       "grip": {
@@ -1863,6 +2003,10 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "to": "barrel.rear",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.handguard",
         "to": "handguard.rear",
       },
@@ -1879,8 +2023,8 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "to": "magazine.top",
       },
       {
-        "from": "handguard.rail",
-        "slot": 0,
+        "from": "receiver.rail",
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1891,6 +2035,12 @@ exports[`templates > bullpup > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "L",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "barrett",
         },
       },
       "grip": {
@@ -2591,8 +2741,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 0,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -2603,6 +2757,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "S",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "smg",
         },
       },
       "grip": {
@@ -2678,6 +2838,10 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "magazine.top",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
         "slot": 6,
         "to": "sight.base",
@@ -2690,6 +2854,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "S",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "smg",
         },
       },
       "grip": {
@@ -2762,8 +2932,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
         "from": "receiver.rail",
-        "slot": 2,
+        "slot": 6,
         "to": "sight.base",
       },
     ],
@@ -2774,6 +2948,12 @@ exports[`templates > smg > known-good seeds 1`] = `
         "family": "barrel",
         "params": {
           "length": "M",
+        },
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": {
+          "pattern": "smg",
         },
       },
       "grip": {

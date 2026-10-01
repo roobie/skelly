@@ -17,6 +17,7 @@ export const battleRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: ['M', 'L'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     {
@@ -44,6 +45,7 @@ export const battleRifle: Template = {
       chance: 0.7,
       when: { part: 'handguard', param: 'mount', equals: 'clamped' },
     },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
@@ -217,6 +219,7 @@ export const smg: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'S' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'smg' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.7 },
@@ -238,6 +241,7 @@ export const smg: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };
@@ -248,6 +252,7 @@ export const boltRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
     {
       id: 'lower',
@@ -277,6 +282,7 @@ export const boltRifle: Template = {
     },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     // Over the receiver, a sight can block the loading port; ahead of it, it can't.
     { from: ['receiver.rail', 'handguard.rail'], to: 'sight.base', slot: 'any' },
   ],
@@ -289,6 +295,7 @@ export const boltRifleBox: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'box', bore: ['M', 'L'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     // Free-floating, so its length is set rather than read from the barrel.
@@ -305,6 +312,7 @@ export const boltRifleBox: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };
@@ -410,6 +418,7 @@ export const bullpup: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'M' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
     { id: 'lower', family: 'lower', params: { layout: 'bullpup' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.3 },
@@ -420,6 +429,7 @@ export const bullpup: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
     { from: 'lower.grip', to: 'grip.top' },

@@ -540,17 +540,22 @@ Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
 
 - The shambler's single health pool becomes body regions: head, torso, arms and
   legs, each with its own health.
-- A melee hit damages the region it lands on. Today the hit test only checks the
-  aim ray against one point per shambler, at 0.55 of its height
-  (`src/core/zombies.ts:1025`), so it has to learn which region the ray
-  reaches first.
-- A non-head region at zero is severed: its rigid part is hidden and a matching
+- A melee hit damages the region it lands on. The hit test raycasts oriented
+  boxes built from the spawned figure's posed voxels, so the first region hit is
+  the one the ray actually reaches on that saved figure.
+- A destroyed arm or leg is severed: its rigid part is hidden and a matching
   inventory pile item drops. The existing `shambler_hurt` sound plays on hit;
-  there is no separate severing asset yet. Severing the torso does not cascade
-  to other regions or kill the shambler; its other regions remain active in
-  place. Behaviour otherwise stays unchanged. With both legs gone, it stays
-  where it is (no walking or crawling), but remains alive and can still attack.
-- A shambler dies only when its head is destroyed.
+  there is no separate severing asset yet. With both legs gone, it stays where it
+  is (no walking or crawling), but remains alive and can still attack.
+- A destroyed torso does not cascade to other regions or drop a torso item. With
+  its head still intact, the shambler becomes incapacitated: it falls and lies inert
+  but stays in the world and save so a later mechanism can revive it. It makes no
+  noise, does no AI, movement or attacks, and does not block sleep.
+- A shambler dies when its head is destroyed.
+- **BR ruling (2026-09-29):** destroyed torso means permanent-for-now incapacitation,
+  not death; a head kill is the only death path. Incapacitated shamblers remain
+  simulation entities, gravity-bound and saved, and their detailed figures fall once
+  and lie still without sinking or corpse-cap eviction.
 - Region state is simulation state: it's in the save snapshot and the source
   fingerprint.
 
@@ -872,6 +877,12 @@ was 1674 × 972 pixels at pixel ratio 1.2.
 
 **Feel test:** 0.5 m blocks feel far better than 1 m: doorways, furniture and
 interiors read at a human scale, and stairs are walked instead of jumped.
+
+**0.25 m look (2026-10-01):** `BLOCK_SIZE` set to 0.25 with nothing else
+changed, and the test house walked by eye (the hamlet only builds at 0.5 m).
+It didn't feel better than 0.5 m. Nothing was benchmarked; it would have cost
+about 8× the chunks at the same view radius and a redraw of the building
+templates.
 
 The decision is final: 0.5 m blocks, a 96 m default view distance, and a view
 distance setting (64, 96 or 128 m) for other hardware.

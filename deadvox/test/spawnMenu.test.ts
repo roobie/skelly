@@ -1,8 +1,12 @@
+import { NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
+import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+import { FakeMood } from './fakeMood.ts';
+import { FakeShadows } from './fakeShadows.ts';
 
 const { registry } = buildRegistry([
   {
@@ -71,6 +75,19 @@ describe('spawnMenuViewModel', () => {
     const hooks = { sim, compress: () => undefined } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
+      look: new LookControls(
+        { toneMapping: NoToneMapping, toneMappingExposure: 1 },
+        {
+          linearColorsOn: false,
+          setLinearColors: () => undefined,
+          patternsOn: true,
+          setPatterns: () => undefined,
+          occlusionOn: true,
+          setOcclusion: () => undefined,
+        },
+        new FakeMood(),
+        { weather: { fogginess: 0.2 }, shadows: new FakeShadows(), flashlight: { strength: 1 } },
+      ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,
       toggleSpawn: () => menu.open(),
@@ -80,6 +97,12 @@ describe('spawnMenuViewModel', () => {
       toggleDanger: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
+      isAimEnabled: () => true,
+      toggleAim: () => undefined,
+      isFrozen: () => false,
+      toggleFrozen: () => undefined,
+      isGameFrozen: () => false,
+      toggleGameFrozen: () => undefined,
     });
 
     expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);
