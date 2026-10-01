@@ -435,8 +435,9 @@ The validator then judges it like any hand-written fixture.
   is deterministic. It uses a seeded RNG (`src/core/random.ts`, mulberry32),
   never `Math.random`. `generateValid` tries seed, seed + 1, … until a build
   passes. The generator never checks feasibility itself.
-- **CLI:** `npm run generate` prints one assembly (`--valid` skips to the next
-  valid seed; `--out` writes a file). `npm run stats` reports the §9 metrics.
+- **CLI:** `npm run generate` prints one assembly with explicit appearance
+  context metadata (`--valid` skips to the next valid seed; `--out` writes a file).
+  `npm run stats` reports the §9 metrics.
 - **Viewer:** a Generate panel with a template picker, a seed field, previous
   and next buttons, "skip to the next valid seed", and "Save JSON" to keep a
   generated build as a fixture.
@@ -755,11 +756,12 @@ palette as arguments.
     applies only when there is no grip. Equal-rank `hold` anchors are
     ambiguous, and the design cannot be published. `SelectGunAnchors` applies
     this policy before the core exporter receives `SelectedAnchors`.
-- **Palette.** One table of family colours and special colours keyed by solid
-  id, shared by viewer and export. A solid-id special colour wins over its
-  part-family colour; if the family is unknown, use the palette's
-  `fallbackColor` (the current viewer grey, `#888888`). `fallbackColor` is
-  explicit so the exporter cannot invent its own fallback.
+- **Appearance.** The viewer and exporter share `src/core/appearance.ts`'s
+  domain-agnostic resolver. Callers pass a variant explicitly; assembly display
+  names are never parsed as archetypes. Precedence is solid material, part
+  material, design finish, variant finish, then role material. Missing palette
+  material ids remain absent from metadata rather than being fabricated. Legacy
+  family/special/fallback colours still support generic domains.
 - **Export metadata** (frozen here for lane B), per port: stable id
   `<part>.<port>`, mount, gender, optional size, and the full assembly-space
   mating frame (position, normal, up). Rails carry one count/pitch record for
@@ -820,11 +822,14 @@ Decisions where the plan left representation open:
   `AnchorSelectionError` for a missing or ambiguous hold. The core exporter
   accepts only that selection; it never chooses gun anchors. `hold`,
   `support`, and `muzzle` are gun-only names.
-- Palette RGB channels are normalized sRGB triples; `specialColors` is keyed
-  by solid id and wins over `familyColors`, then `fallbackColor` handles an
-  unknown family (`#888888` for the current viewer). Export converts sRGB to
+- Palette RGB channels are normalized sRGB triples; legacy `specialColors` is
+  keyed by solid id and wins over `familyColors`, then `fallbackColor` handles
+  an unknown family (`#888888` for the current viewer). Export converts sRGB to
   linear space. Types cannot bound finite color channels to `[0,1]`; palette
-  construction and export validate them. Port metadata ids are
+  construction and export validate them. Solids may declare optional `material`
+  and `slot` overrides; design format 1 may declare an optional `finish` map,
+  shape-checked generically and material/slot-checked by the gun loader. Export
+  and viewer callers pass the design template explicitly. Port metadata ids are
   `<part>.<port>`; frames are in gungen assembly coordinates and units, and a
   rail carries one count/pitch record. `PartPortId` cannot exclude empty
   components or embedded dots, so export validates both ids. The exporter
@@ -933,6 +938,12 @@ and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
 bit-identically for every role that had one. Six roles that used to render as
 the `#888888` fallback now have colours (below).
 
+**Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Explicit solid material/slot wins, then part-owned material/slot, design finish, variant finish, and role default. Archetype finishes cover every slot; design or part may override. Finish maps survive load, editor save/reopen, viewer rendering, and shipped export. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. Magazines default to the metal slot; the AK's darkened blued-steel magazine reads black, while AR magazines resolve to anodized aluminium. Pump shotguns have no box magazine; their tube magazine is metal. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
+
+Deferred: generator finish variation; patterned finishes (UVs/textures); per-instance tint (deadvox); splitting slots (e.g. upper/lower metal); material opacity (an optional opacity field with opaque default remains unimplemented).
+- AK-74-style magazines match the furniture (e.g. plum or brown polymer). Later as a magazine variant or attachment bringing its own material, not a slot change (BR, 2026-10-01).
+- Polymer magazines, including semi-transparent/smoked ones (HK G28 and many modern rifles). Needs material opacity (glTF `alphaMode: BLEND`, a base-colour alpha), and ideally modelled rounds inside so transparency shows the ammo count. Arrives with magazine variants and attachments (BR, 2026-10-01).
+
 **Naming decision (BR, 2026-09-29).** A part has two names:
 
 - the registry key, the key in `FAMILIES` (e.g. `ak-receiver`, `frame`). It
@@ -940,10 +951,10 @@ the `#888888` fallback now have colours (below).
 - the role, `PartDef.family` (e.g. `receiver`), which says what the part does.
 
 Rules and port compatibility use the role. Anchors, prefabs and params use the
-registry key, because they depend on the recipe. The palette uses the role, so
-an AK receiver is coloured like any receiver. `PartFamily.name` is only used
-for labels. The doc comments on `PrefabCatalogueEntry.family`,
-`GunAnchorDeclarations` and `Palette.familyColors` say the same.
+registry key, because they depend on the recipe. Since the 2026-09-30 material
+ruling, the role selects the default slot and shade; the archetype finish picks
+the material, so an AK and AR receiver may differ. `PartFamily.name` is only
+used for labels. `familyColors` remains the role-only geometry-check palette.
 
 **Palette colours (BR accepted, 2026-09-29):** `frame` #4b4a45, `slide`
 #868d97, `cylinder` #4a5566, `front-sight` #363d47, `gas-block` #2f3238,
@@ -1359,7 +1370,7 @@ npm run test:sweeps    # the generator seed sweeps too; CI runs them
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json
-npm run generate -- --template battle-rifle --seed 42  # print a generated assembly
+npm run generate -- --template battle-rifle --seed 42  # assembly + appearance context
 npm run generate -- --template battle-rifle --seed 42 --valid # skip to the next valid seed
 npm run stats          # generator metrics over 1000 seeds per template
 npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>

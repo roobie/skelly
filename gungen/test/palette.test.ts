@@ -39,22 +39,26 @@ const fixtureAssemblies = (): Assembly[] => loadFixtures().filter((f) => f.name.
 // every fixture, broken-* ones included (none exists to break a colour), plus every published design.
 const corpusAssemblies = (): Assembly[] => loadCorpus(() => true).map(({ assembly }) => assembly);
 
-/** Every (role, solid id) pair rendered by the given assemblies. */
-const renderedSolids = (assemblies: Assembly[]): { family: string; id: string }[] =>
+/** Every role, solid id, and optional explicit solid material rendered by the given assemblies. */
+const renderedSolids = (assemblies: Assembly[]): { family: string; id: string; material?: string }[] =>
   assemblies.flatMap((a) =>
     [...resolve(a, gunDomain).defs.values()].flatMap((def) =>
-      (def.displaySolids ?? def.solids).map((s) => ({ family: def.family, id: s.id })),
+      (def.displaySolids ?? def.solids).map((s) => ({
+        family: def.family,
+        id: s.id,
+        ...(s.material ? { material: s.material } : {}),
+      })),
     ),
   );
 
 describe('palette migration', () => {
   const oldColored = (assemblies: Assembly[]) =>
-    renderedSolids(assemblies).filter(
-      (x) => x.id !== 'cap-lug' && (x.family in OLD_FAMILY_COLORS || x.id === 'floorplate'),
-    );
-  const mismatches = (solids: { family: string; id: string }[]) =>
+    renderedSolids(assemblies).filter((x) => !x.material && x.id !== 'cap-lug' && x.family in OLD_FAMILY_COLORS);
+  const mismatches = (solids: ReturnType<typeof renderedSolids>) =>
     solids
-      .filter(({ family, id }) => srgbToHex(solidColor(GUN_PALETTE, family, id)) !== oldColor(family, id))
+      .filter(
+        ({ family, id, material }) => srgbToHex(solidColor(GUN_PALETTE, family, id, material)) !== oldColor(family, id),
+      )
       .map(({ family, id }) => `${family}/${id}`);
 
   it('reproduces the old FAMILY_COLORS lookup bit-identically for every archetype solid of a role that had a colour', () => {
@@ -71,13 +75,15 @@ describe('palette migration', () => {
 });
 
 describe('palette coverage', () => {
-  it('colours the tapered-stock recoil pad near-black by solid id', () => {
-    expect(srgbToHex(solidColor(GUN_PALETTE, 'stock', 'butt-pad'))).toBe(BUTT_PAD_COLOR);
+  it('colours the tapered-stock recoil pad by its explicit rubber material', () => {
+    expect(srgbToHex(solidColor(GUN_PALETTE, 'stock', 'butt-pad', 'rubber-black'))).toBe(
+      srgbToHex(GUN_PALETTE.materials!['rubber-black']!),
+    );
   });
 
-  it('colours the pump tube cap the same dark gray as the barrel', () => {
-    const capLugColor = srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'cap-lug'));
-    expect(capLugColor).toBe(srgbToHex(solidColor(GUN_PALETTE, 'barrel', 'tube')));
+  it('colours the pump tube cap from its explicit blued-steel material', () => {
+    const capLugColor = srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'cap-lug', 'steel-blued'));
+    expect(capLugColor).toBe(srgbToHex(GUN_PALETTE.materials!['steel-blued']!));
     expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'tube')));
     expect(capLugColor).not.toBe(srgbToHex(solidColor(GUN_PALETTE, 'tube-magazine', 'support-band')));
   });

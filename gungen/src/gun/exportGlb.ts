@@ -1,4 +1,10 @@
-import type { AnchorSelectionError, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
+import type {
+  AnchorSelectionError,
+  AppearanceContext,
+  GlbAssetIdentity,
+  GlbExportError,
+  GlbExportResult,
+} from '../core/design.ts';
 import { exportGlb } from '../core/glb.ts';
 import { resolve } from '../core/resolve.ts';
 import type { Assembly } from '../core/schema.ts';
@@ -16,7 +22,11 @@ export type GunExportResult =
  * the gun palette. A structurally broken assembly is reported by the writer; a missing or ambiguous `hold`
  * comes back as the anchor selection error.
  */
-export const exportGunGlb = (assembly: Assembly, asset: GlbAssetIdentity): GunExportResult => {
+export const exportGunGlb = (
+  assembly: Assembly,
+  asset: GlbAssetIdentity,
+  appearance: AppearanceContext,
+): GunExportResult => {
   const resolved = resolve(assembly, gunDomain);
   // Anchor selection needs placed parts; a broken assembly gets the writer's own structure report first.
   if (resolved.issues.length > 0 || resolved.placed.size < Object.keys(assembly.parts).length) {
@@ -24,6 +34,7 @@ export const exportGunGlb = (assembly: Assembly, asset: GlbAssetIdentity): GunEx
       resolved,
       anchors: { hold: { position: [0, 0, 0], forward: [1, 0, 0], up: [0, 1, 0] }, others: {} },
       palette: GUN_PALETTE,
+      appearance,
       asset,
     });
     if (!probe.ok) {
@@ -34,5 +45,5 @@ export const exportGunGlb = (assembly: Assembly, asset: GlbAssetIdentity): GunEx
   if ('code' in anchors) {
     return { ok: false, error: anchors };
   }
-  return exportGlb({ resolved, anchors, palette: GUN_PALETTE, asset });
+  return exportGlb({ resolved, anchors, palette: GUN_PALETTE, appearance, asset });
 };
