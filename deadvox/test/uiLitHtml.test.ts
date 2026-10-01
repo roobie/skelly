@@ -2,8 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// ADR 0001: screens in these source trees are rendered with lit-html. Inventory remains to be ported.
-const NOT_YET_PORTED = new Set(['src/ui/inventoryScreen.ts']);
+// ADR 0001: every screen in these source trees is rendered with lit-html.
+const NOT_YET_PORTED = new Set<string>();
 const DIRECTORIES = ['src/ui', 'src/debug'];
 
 // Hand-built DOM: creating, attaching or rewriting nodes instead of rendering a template.

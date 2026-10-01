@@ -171,6 +171,9 @@ body {
 #inventory[hidden] {
   display: none;
 }
+#inventory-drag-root {
+  pointer-events: none;
+}
 #overlay .card {
   max-width: 420px;
   max-height: calc(100vh - 32px);
@@ -455,6 +458,26 @@ body {
 }
 .inv-preview.drop-no,
 .inv-slot.drop-no {
+  background: rgb(224 135 110 / 22%);
+  border: 1px dashed #e0876e;
+}
+.inv-grid.drop-ok::after,
+.inv-grid.drop-no::after {
+  content: "";
+  position: absolute;
+  left: var(--preview-left);
+  top: var(--preview-top);
+  width: var(--preview-width);
+  height: var(--preview-height);
+  box-sizing: border-box;
+  pointer-events: none;
+  border-radius: 3px;
+}
+.inv-grid.drop-ok::after {
+  background: rgb(224 176 74 / 22%);
+  border: 1px dashed var(--accent);
+}
+.inv-grid.drop-no::after {
   background: rgb(224 135 110 / 22%);
   border: 1px dashed #e0876e;
 }
