@@ -25,11 +25,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame } from '../core/meleePose.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import {
-  FIRST_PERSON_SHOULDER,
-  createFirstPersonArm,
-  placeFirstPersonSegment,
-} from './playerFigure.ts';
+import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Where a held item's grip sits, in metres from the eye (x right, y up, −z forward). */
@@ -97,33 +93,14 @@ export class HeldItems {
       }
       const transform = interpolateHandPose(base, hand);
       this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
-      if (pose?.viewOrientation) {
-        this.lockedCamera.setFromEuler(
-          this.poseEuler.set(pose.viewOrientation.pitch, pose.viewOrientation.yaw, 0, 'YXZ'),
-        );
-        this.relativeCamera.copy(main.quaternion).invert().multiply(this.lockedCamera);
-        this.handPosition.set(...transform.offset).applyQuaternion(this.relativeCamera);
-        transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
-        this.poseRotation.premultiply(this.relativeCamera);
-      }
+      this.applyViewPose(main, pose, transform);
       const strength = Math.max(0, Math.min(1, recoil));
       transform.offset[1] += 0.012 * strength;
       transform.offset[2] += 0.025 * strength;
       this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
       this.poseRotation.multiply(this.recoilRotation);
       if (arm.parent === this.torso) {
-        const [upperLength, lowerLength] = this.armLengths.get(arm)!;
-        this.handPosition.set(...transform.offset).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
-        transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
-        const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
-        const wrist = new Vector3(...transform.offset);
-        const reach = upperLength + lowerLength + 0.08;
-        const distance = shoulder.distanceTo(wrist);
-        if (distance > reach) {
-          wrist.sub(shoulder).normalize().multiplyScalar(reach).add(shoulder);
-          transform.offset = [wrist.x, wrist.y, wrist.z];
-        }
-        arm.position.set(...transform.offset);
+        this.placeTorsoArm(side, arm, transform);
         arm.quaternion.copy(this.poseRotation);
       }
       const held = this.heldByHand.get(side);
@@ -139,6 +116,35 @@ export class HeldItems {
       this.updateArmChain(side, arm);
     }
     this.view.updateMatrixWorld(true);
+  }
+
+  private applyViewPose(
+    main: PerspectiveCamera,
+    pose: MeleePoseFrame | undefined,
+    transform: ReturnType<typeof interpolateHandPose>,
+  ): void {
+    if (!pose?.viewOrientation) {
+      return;
+    }
+    this.lockedCamera.setFromEuler(this.poseEuler.set(pose.viewOrientation.pitch, pose.viewOrientation.yaw, 0, 'YXZ'));
+    this.relativeCamera.copy(main.quaternion).invert().multiply(this.lockedCamera);
+    this.handPosition.set(...transform.offset).applyQuaternion(this.relativeCamera);
+    transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
+    this.poseRotation.premultiply(this.relativeCamera);
+  }
+
+  private placeTorsoArm(side: HandSide, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
+    const [upperLength, lowerLength] = this.armLengths.get(arm)!;
+    this.handPosition.set(...transform.offset).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
+    transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
+    const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
+    const wrist = new Vector3(...transform.offset);
+    const reach = upperLength + lowerLength + 0.08;
+    if (shoulder.distanceTo(wrist) > reach) {
+      wrist.sub(shoulder).normalize().multiplyScalar(reach).add(shoulder);
+      transform.offset = [wrist.x, wrist.y, wrist.z];
+    }
+    arm.position.set(...transform.offset);
   }
 
   /** Where a held item's lens is, in world metres; false if it isn't held. Call after `update`. */
@@ -200,7 +206,7 @@ export class HeldItems {
     const forearm = arm.children[1] as Mesh;
     const palm = arm.children[2] as Mesh;
     const anchor = arm.getObjectByName('grip-anchor');
-    if (!sleeve || !forearm || !palm || !anchor) {
+    if (!(sleeve && forearm && palm && anchor)) {
       return;
     }
     const wristWorld = anchor.getWorldPosition(new Vector3());

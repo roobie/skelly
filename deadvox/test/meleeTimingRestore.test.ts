@@ -1,8 +1,8 @@
+import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
-import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { describe, expect, it } from 'vitest';
+import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -21,11 +21,21 @@ const { registry } = buildRegistry(
 );
 const scale = makeScale(0.5);
 const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  if (kind === 'block') return registry.blockIds.has(id);
-  if (kind === 'item') return registry.items.has(id);
-  if (kind === 'furniture') return registry.furniture.has(id);
-  if (kind === 'zombie') return registry.zombies.has(id);
-  if (kind === 'sound') return registry.sounds.has(id);
+  if (kind === 'block') {
+    return registry.blockIds.has(id);
+  }
+  if (kind === 'item') {
+    return registry.items.has(id);
+  }
+  if (kind === 'furniture') {
+    return registry.furniture.has(id);
+  }
+  if (kind === 'zombie') {
+    return registry.zombies.has(id);
+  }
+  if (kind === 'sound') {
+    return registry.sounds.has(id);
+  }
   return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const saveVersion = {
@@ -97,7 +107,9 @@ describe('tick-consumed primary melee input across save and restore', () => {
     source.session.frame(1 / 60);
     expect(source.session.zombies.activeMeleeAction?.elapsed).toBe(0);
     expect('startOffset' in (source.session.zombies.activeMeleeAction ?? {})).toBe(false);
-    for (let i = 0; i < 7; i++) source.session.frame(1 / 60);
+    for (let i = 0; i < 7; i++) {
+      source.session.frame(1 / 60);
+    }
     expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
 
     const snapshot = source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' });

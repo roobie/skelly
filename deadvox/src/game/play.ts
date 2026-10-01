@@ -727,10 +727,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     });
     const action = zombieSystem.activeMeleeAction;
     const elapsed = action
-      ? Math.min(
-          action.cooldown,
-          action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)),
-        )
+      ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready);
     meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);

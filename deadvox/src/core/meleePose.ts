@@ -123,7 +123,8 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
   const torsoYaw =
     action.profile === 'fists'
       ? cleanZero(
-          sign * (Math.PI / 6) *
+          sign *
+            (Math.PI / 6) *
             (elapsed <= contact
               ? smooth(elapsed / contact)
               : 1 - smooth((elapsed - contact) / Math.max(0.001, action.cooldown - contact))),

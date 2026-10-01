@@ -59,7 +59,7 @@ export class Input {
       }
     });
     globalThis.addEventListener('mouseup', (event) => {
-      const button = (event as MouseEvent).button;
+      const { button } = event as MouseEvent;
       if (button === 2) {
         this.rightMouseHeld = false;
       }

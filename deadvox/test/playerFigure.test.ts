@@ -320,6 +320,7 @@ describe('player figure', () => {
     }
   });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validates connected arm geometry across supported weapons and 121 poses.
   it('keeps the first-person arm chain connected through every sampled melee pose', () => {
     const camera = new PerspectiveCamera(75, 16 / 9, 0.01, 128);
     const cases = [
@@ -331,7 +332,9 @@ describe('player figure', () => {
     ];
     for (const { item, profile, twoHanded } of cases) {
       for (const side of ['left', 'right'] as const) {
-        if (side === 'left' && !twoHanded) continue;
+        if (side === 'left' && !twoHanded) {
+          continue;
+        }
         const inventory = new Inventory(registry);
         const weapon = inventory.create(item);
         inventory.add(weapon, { kind: 'hand', side });
@@ -370,13 +373,23 @@ describe('player figure', () => {
           });
           const anchor = arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
           const actualLengths = endpoints.map(({ start, end }) => start.distanceTo(end));
-          expect(Math.abs(actualLengths[0]! - expectedLengths[0]!), `${item}/${side} frame ${step} upper length ${actualLengths[0]} vs ${expectedLengths[0]}; reach ${endpoints[0]!.start.distanceTo(anchor)} / ${expectedLengths[0]! + expectedLengths[1]!}; shoulder ${endpoints[0]!.start.toArray()} wrist ${anchor.toArray()}`).toBeLessThanOrEqual(0.0005);
-          expect(Math.abs(actualLengths[1]! - expectedLengths[1]!), `${item}/${side} frame ${step} lower length`).toBeLessThanOrEqual(0.0005);
+          expect(
+            Math.abs(actualLengths[0]! - expectedLengths[0]!),
+            `${item}/${side} frame ${step} upper length ${actualLengths[0]} vs ${expectedLengths[0]}; reach ${endpoints[0]!.start.distanceTo(anchor)} / ${expectedLengths[0]! + expectedLengths[1]!}; shoulder ${endpoints[0]!.start.toArray()} wrist ${anchor.toArray()}`,
+          ).toBeLessThanOrEqual(0.0005);
+          expect(
+            Math.abs(actualLengths[1]! - expectedLengths[1]!),
+            `${item}/${side} frame ${step} lower length`,
+          ).toBeLessThanOrEqual(0.0005);
           expect(endpoints[0]!.end.distanceTo(endpoints[1]!.start)).toBeLessThanOrEqual(0.001);
           expect(endpoints[1]!.end.distanceTo(anchor)).toBeLessThanOrEqual(0.001);
-          expect(anchor.distanceTo(endpoints[0]!.start)).toBeLessThanOrEqual(actualLengths[0]! + actualLengths[1]! + 0.0015);
+          expect(anchor.distanceTo(endpoints[0]!.start)).toBeLessThanOrEqual(
+            actualLengths[0]! + actualLengths[1]! + 0.0015,
+          );
           const shoulderView = internals.view.worldToLocal(endpoints[0]!.start.clone());
-          const rotatedShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]).applyQuaternion(internals.torso.quaternion);
+          const rotatedShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]).applyQuaternion(
+            internals.torso.quaternion,
+          );
           expect(shoulderView.distanceTo(rotatedShoulder)).toBeLessThanOrEqual(0.0805);
           const shoulder = endpoints[0]!.start;
           const elbow = endpoints[0]!.end;
@@ -421,12 +434,16 @@ describe('player figure', () => {
         const up = new Vector3(0, 1, 0).applyQuaternion(forearm.getWorldQuaternion(new Quaternion()));
         expect(center.addScaledVector(up, forearm.scale.y / 2).distanceTo(wrist)).toBeLessThanOrEqual(0.001);
         const sleeve = arm.children[0] as Mesh;
-        const shoulder = sleeve.getWorldPosition(new Vector3()).addScaledVector(
-          new Vector3(0, 1, 0).applyQuaternion(sleeve.getWorldQuaternion(new Quaternion())),
-          -sleeve.scale.y / 2,
-        );
+        const shoulder = sleeve
+          .getWorldPosition(new Vector3())
+          .addScaledVector(
+            new Vector3(0, 1, 0).applyQuaternion(sleeve.getWorldQuaternion(new Quaternion())),
+            -sleeve.scale.y / 2,
+          );
         const shoulderView = fistInternals.view.worldToLocal(shoulder);
-        const rotatedShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]).applyQuaternion(fistInternals.torso.quaternion);
+        const rotatedShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]).applyQuaternion(
+          fistInternals.torso.quaternion,
+        );
         expect(shoulderView.distanceTo(rotatedShoulder)).toBeLessThanOrEqual(0.0805);
       }
     }

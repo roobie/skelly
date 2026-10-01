@@ -817,6 +817,7 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: integration test couples save round-trip, tick advancement and single-contact restore.
   it('round-trips an active player swing and resolves its one pending hit after restore', async () => {
     const source = createRuntime();
     source.sim.frame(0.049);
@@ -875,7 +876,9 @@ describe('canonical save format', () => {
       };
       for (let tick = 1; tick < 15; tick++) {
         runtime.zombies.tickPlayerAction(1 / 60, held);
-        if (tick % 3 === 0) runtime.zombies.tick(0.05, tick / 20, held);
+        if (tick % 3 === 0) {
+          runtime.zombies.tick(0.05, tick / 20, held);
+        }
         expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
       }
       runtime.zombies.tickPlayerAction(1 / 60, held);
@@ -883,7 +886,9 @@ describe('canonical save format', () => {
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
       for (let tick = 0; tick < 48; tick++) {
         runtime.zombies.tickPlayerAction(1 / 60, held);
-        if (tick % 3 === 2) runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
+        if (tick % 3 === 2) {
+          runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
+        }
       }
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
     }
