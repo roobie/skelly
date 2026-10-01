@@ -3,7 +3,17 @@
 // eye against the game's default look (DEFAULT_LOOK in core/mood.ts), which play has already applied.
 
 import type { WebGLRenderer } from 'three';
-import { clampExposure, clampGrade, type LookState, type MoodState, type ShadowState } from '../core/mood.ts';
+import {
+  bloomClipFor,
+  clampBloomClip,
+  clampExposure,
+  clampGrade,
+  clampTorch,
+  type LookState,
+  type MoodState,
+  type ShadowState,
+  TORCH_STEP,
+} from '../core/mood.ts';
 import { clampFogginess, type Weather } from '../core/weather.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';
@@ -14,6 +24,8 @@ import type { Shadows } from '../render/shadows.ts';
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;
 const FOGGINESS_STEP = 0.1;
+// Coarser than the others: the clip's range is 1 to 8 and the derived values are 1 to 5.
+const BLOOM_CLIP_STEP = 0.5;
 
 type MoodControls = Pick<
   Mood,
@@ -21,12 +33,14 @@ type MoodControls = Pick<
   | 'bloom'
   | 'film'
   | 'grade'
+  | 'bloomClip'
   | 'crackCheck'
   | 'restore'
   | 'setPost'
   | 'setBloom'
   | 'setFilm'
   | 'setGrade'
+  | 'setBloomClip'
   | 'setCrackCheck'
 >;
 
@@ -45,19 +59,21 @@ export class LookControls {
   private readonly mood: MoodControls;
   private readonly weather: Weather;
   private readonly shadows: ShadowControls;
+  private readonly flashlight: { strength: number };
 
   /** Takes the renderer as it is: play has applied the default look, and the tone mode follows it. */
   constructor(
     renderer: LookRenderer,
     meshes: LookMeshes,
     mood: MoodControls,
-    environment: { weather: Weather; shadows: ShadowControls },
+    environment: { weather: Weather; shadows: ShadowControls; flashlight: { strength: number } },
   ) {
     this.renderer = renderer;
     this.meshes = meshes;
     this.mood = mood;
     this.weather = environment.weather;
     this.shadows = environment.shadows;
+    this.flashlight = environment.flashlight;
     this.mode = Math.max(
       0,
       TONE_MODES.findIndex((candidate) => candidate.mapping === renderer.toneMapping),
@@ -66,8 +82,24 @@ export class LookControls {
 
   /** The mood pass as it is now, in the URL's terms. */
   get moodState(): MoodState {
-    const { post, bloom, film, grade } = this.mood;
-    return { post, bloom, film, grade };
+    const { post, bloom, film, grade, bloomClip } = this.mood;
+    return { post, bloom, film, grade, bloomClip };
+  }
+
+  /** The clip bloom works from now: the override, else the active tone mapper's derived value. */
+  get bloomClip(): number {
+    return this.mood.bloomClip ?? bloomClipFor(this.toneKey);
+  }
+
+  /** True while the clip follows the tone mapper (no override). */
+  get bloomClipIsDefault(): boolean {
+    return this.mood.bloomClip === null;
+  }
+
+  /** Steps the bloom clip by `steps` of 0.5, clamped. Landing on the tone mapper's own value goes back to following it. */
+  stepBloomClip(steps: number): void {
+    const next = clampBloomClip(this.bloomClip + steps * BLOOM_CLIP_STEP);
+    this.mood.setBloomClip(next === bloomClipFor(this.toneKey) ? null : next);
   }
 
   /** The master: off, the frame is drawn straight to the screen with no bloom, grade, film or height fog. */
@@ -105,6 +137,16 @@ export class LookControls {
   /** Steps the sun's shadow distance through the allowed list, wrapping. */
   stepShadowDistance(): void {
     this.shadows.stepDistance();
+  }
+
+  /** Multiplier on the flashlight's intensity (1 is the tuned beam). */
+  get torch(): number {
+    return this.flashlight.strength;
+  }
+
+  /** Steps the flashlight strength up (or down) by `TORCH_STEP` per step, clamped. */
+  stepTorch(steps: number): void {
+    this.flashlight.strength = clampTorch(this.torch * TORCH_STEP ** steps);
   }
 
   get fogginess(): number {
@@ -154,15 +196,29 @@ export class LookControls {
 
   /** Applies a state read from the URL; an unknown tone key leaves the mode alone. */
   restore(
-    state: LookState & MoodState & { fogginess: number; shadows: ShadowState; crackCheck: boolean; hotCheck: boolean },
+    state: LookState &
+      MoodState & {
+        fogginess: number;
+        torch: number;
+        shadows: ShadowState;
+        crackCheck: boolean;
+        hotCheck: boolean;
+      },
   ): void {
     applyLook(this.renderer, this.meshes, state);
+    this.flashlight.strength = clampTorch(state.torch);
     const mode = TONE_MODES.findIndex((candidate) => candidate.key === state.tone);
     if (mode >= 0) {
       this.mode = mode;
     }
     this.weather.fogginess = clampFogginess(state.fogginess);
-    this.mood.restore({ post: state.post, bloom: state.bloom, film: state.film, grade: state.grade });
+    this.mood.restore({
+      post: state.post,
+      bloom: state.bloom,
+      film: state.film,
+      grade: state.grade,
+      bloomClip: state.bloomClip,
+    });
     this.shadows.restore(state.shadows);
     this.mood.setCrackCheck(state.crackCheck);
     setHotCheck(state.hotCheck);

@@ -26,8 +26,12 @@ export interface LookDumpInput {
   wideOcclusion: boolean;
   /** The mood pass: post master, bloom, film (vignette and grain), grade strength. */
   mood: MoodState;
+  /** The bloom clip in effect (the override, or the tone mapper's derived value), as a post-exposure value. */
+  bloomClip: number;
   /** The weather's fogginess: 0 clear, 1 thick fog. */
   fogginess: number;
+  /** Flashlight intensity multiplier. */
+  torch: number;
   /** Sun and flashlight shadows, and the sun's shadow distance. */
   shadows: ShadowState;
   /** The readout's last numbers, so a screenshot's cost comes with it: smoothed fps, frame interval and CPU work. */
@@ -65,9 +69,11 @@ export const lookDump = (input: LookDumpInput) => ({
     wideOcclusion: input.wideOcclusion,
     postProcessing: input.mood.post,
     bloom: input.mood.bloom,
+    bloomClip: round(input.bloomClip, 2),
     film: input.mood.film,
     gradeStrength: round(input.mood.grade, 2),
     fogginess: round(input.fogginess, 2),
+    flashlightStrength: round(input.torch, 2),
     shadows: {
       sun: input.shadows.sun,
       flashlight: input.shadows.torch,

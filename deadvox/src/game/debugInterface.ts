@@ -14,6 +14,8 @@ export interface DebugHooks {
   readonly engine: Engine;
   /** The weather play renders with; the debug look controls set its fogginess. */
   readonly weather: Weather;
+  /** The held light's beam; the debug look controls set its strength multiplier. */
+  readonly flashlight: { strength: number };
   readonly body: Body;
   readonly inventory: Inventory;
   readonly newGame: boolean;

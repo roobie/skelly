@@ -279,6 +279,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
+    flashlight,
     body,
     inventory,
     newGame: session.restoredLook === undefined,

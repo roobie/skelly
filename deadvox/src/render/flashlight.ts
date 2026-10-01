@@ -6,12 +6,28 @@
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { Sky } from '../core/sky.ts';
 import type { HeldItems } from './hands.ts';
 
-/** Candela; with a decay of 1.5 this lights a wall 10 m away well at night. */
-const INTENSITY = 40;
-const DECAY = 1.5;
+/**
+ * Candela, for the default look (exposure 3, core/mood.ts). three.js (0.186, lights_pars_begin and
+ * lights_lambert_pars_fragment) shades a Lambert surface at distance d from a spot light with a cut-off
+ * distance R (the item's `radius`, 20 m) as
+ *   radiance = I * cos(angle of incidence) / d^DECAY * (1 - (d / R)^4)^2 * albedo / pi
+ * (no extra pi on the intensity: it is candela), and OutputPass multiplies that by the exposure. For a
+ * block of albedo 0.5 facing the beam's centre, I = 3.5, DECAY = 1, exposure 3:
+ *   d = 2 m    3.5 / 2  * 1.000 * 0.5 / pi * 3 = 0.84
+ *   d = 2.5 m  3.5 / 2.5 * 1.000 * ...         = 0.67
+ *   d = 3 m    3.5 / 3  * 1.000 * ...          = 0.56
+ *   d = 10 m   3.5 / 10 * 0.879 * ...          = 0.15
+ * against white at 1: clearly lit up close without clipping (ACES' shoulder skews a bright warm colour
+ * towards orange from about 2), and a wall 10 m away still shows. The earlier 40 cd with a decay of 1.5
+ * gave 6.8 at 2 m. A decay of 1 rather than the physical 2 keeps the far wall from vanishing: at 2
+ * (I = 9 for the same 0.67 at 2.5 m) the 10 m wall would be 0.04.
+ */
+export const FLASHLIGHT_INTENSITY = 3.5;
+export const FLASHLIGHT_DECAY = 1;
 const PENUMBRA = 0.35;
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
@@ -42,15 +58,15 @@ const SHADOW_NORMAL_BIAS = 0.03;
 const SHADOW_RADIUS = 2;
 /** The lens sits just ahead of the eye, so the map starts close in. */
 const SHADOW_NEAR = 0.1;
-/** Candela below which the beam is too faint (full daylight) to be worth a shadow map. */
-const MIN_SHADOW_INTENSITY = 0.5;
+/** Candela below which the beam is too faint (full daylight) to be worth a shadow map; about 1.3% of the night intensity. */
+const MIN_SHADOW_INTENSITY = 0.05;
 
 /** Whether the beam draws a shadow map: shadows allowed, and a beam that is on and bright enough to show. */
 export const flashlightCastsShadow = (allowed: boolean, intensity: number): boolean =>
   allowed && intensity > MIN_SHADOW_INTENSITY;
 
 export class Flashlight {
-  readonly light = new SpotLight(0xff_f1_d8, 0, 20, Math.PI / 12, PENUMBRA, DECAY);
+  readonly light = new SpotLight(0xff_f1_d8, 0, 20, Math.PI / 12, PENUMBRA, FLASHLIGHT_DECAY);
   private readonly at = new Vector3();
   private readonly ahead = new Vector3();
 
@@ -66,6 +82,9 @@ export class Flashlight {
 
   /** `flashlightDaylightScale` of the sky being drawn; set it each frame before `update`. */
   daylightScale = 1;
+
+  /** Multiplier on the beam's intensity, 1 by default; the debug controls change it to tune the beam by eye. */
+  strength = DEFAULT_TORCH;
 
   /**
    * Whether the beam may cast shadows (the setting; set it each frame before `update`). A light only
@@ -83,7 +102,7 @@ export class Flashlight {
       this.light.castShadow = false;
       return;
     }
-    this.light.intensity = INTENSITY * this.daylightScale;
+    this.light.intensity = FLASHLIGHT_INTENSITY * this.daylightScale * this.strength;
     this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
     this.light.angle = MathUtils.degToRad((def.beam ?? 120) / 2);

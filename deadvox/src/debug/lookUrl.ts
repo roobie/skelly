@@ -11,8 +11,11 @@
 //   freeze=1                    whole game frozen (M), so a reload resumes frozen; omitted when off
 //   post=0                       whole mood pass off (Q): no bloom, grade, film or height fog; omitted when on
 //   bloom=0                      bloom off (');  omitted when on
+//   bloomclip=<1..8>             bloom clip, the post-exposure value where bloom starts, in tenths (Delete Insert);
+//                                omitted for the tone mapper's own value (BLOOM_CLIP_BY_TONE), which it follows
 //   film=0                       vignette and grain off (\); omitted when on
 //   grade=<0..1>                 colour grade strength in tenths ([ ]); omitted for 1; 0 is no grade
+//   torch=<0.1..16>              flashlight intensity multiplier in hundredths (numpad - +); omitted for 1
 //   fog=<0..1>                   fogginess in tenths (L /); omitted for 0.2; 0 is clear, 1 thick fog
 //   sunshadow=0                  sun shadows off (0); omitted when on, which is the default
 //   torchshadow=0                flashlight shadows off (Home); omitted when on, which is the default
@@ -23,13 +26,17 @@
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
 import {
+  bloomClipFor,
+  clampBloomClip,
   clampExposure,
   clampGrade,
   clampShadowDistance,
+  clampTorch,
   DEFAULT_GRADE,
   DEFAULT_LOOK,
   DEFAULT_MOOD,
   DEFAULT_SHADOWS,
+  DEFAULT_TORCH,
   type LookState,
   type MoodState,
   type ShadowState,
@@ -39,6 +46,8 @@ import { TONE_MODES } from '../render/look.ts';
 
 export interface LookUrlState extends LookState, MoodState {
   fogginess: number;
+  /** Flashlight intensity multiplier. */
+  torch: number;
   shadows: ShadowState;
   /** The debug game freeze (M). */
   freeze: boolean;
@@ -52,6 +61,7 @@ export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
   ...DEFAULT_LOOK,
   ...DEFAULT_MOOD,
   fogginess: DEFAULT_FOGGINESS,
+  torch: DEFAULT_TORCH,
   shadows: DEFAULT_SHADOWS,
   freeze: false,
   crackCheck: false,
@@ -67,9 +77,11 @@ const LOOK_PARAMS = [
   'freeze',
   'post',
   'bloom',
+  'bloomclip',
   'film',
   'grade',
   'fog',
+  'torch',
   'sunshadow',
   'torchshadow',
   'shadowdist',
@@ -89,13 +101,19 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
   const grade = numberParam(params, 'grade');
   const fogginess = numberParam(params, 'fog');
   const shadowDistance = numberParam(params, 'shadowdist');
+  const bloomClip = numberParam(params, 'bloomclip');
+  const toneKey = TONE_MODES.some((mode) => mode.key === tone) ? tone : DEFAULT_LOOK.tone;
+  const clip = Number.isFinite(bloomClip) ? clampBloomClip(bloomClip) : null;
   return {
     post: params.get('post') !== '0',
     bloom: params.get('bloom') !== '0',
     film: params.get('film') !== '0',
     grade: Number.isFinite(grade) ? clampGrade(grade) : DEFAULT_GRADE,
+    // The tone mapper's own value is not an override: it keeps following the tone mapper.
+    bloomClip: clip === bloomClipFor(toneKey) ? null : clip,
     fogginess: Number.isFinite(fogginess) ? clampFogginess(fogginess) : DEFAULT_FOGGINESS,
-    tone: TONE_MODES.some((mode) => mode.key === tone) ? tone : DEFAULT_LOOK.tone,
+    torch: clampTorch(numberParam(params, 'torch')),
+    tone: toneKey,
     exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_LOOK.exposure,
     srgb: params.get('srgb') !== '0',
     patterns: params.get('patterns') !== '0',
@@ -109,6 +127,25 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
     crackCheck: params.get('crackcheck') === '1',
     hotCheck: params.get('hotcheck') === '1',
   };
+};
+
+/** The mood pass's non-default settings. A bloom clip equal to the tone mapper's own is the default and left out. */
+const writeMoodParams = (next: URLSearchParams, state: LookUrlState): void => {
+  if (!state.post) {
+    next.set('post', '0');
+  }
+  if (!state.bloom) {
+    next.set('bloom', '0');
+  }
+  if (state.bloomClip !== null && state.bloomClip !== bloomClipFor(state.tone)) {
+    next.set('bloomclip', state.bloomClip.toFixed(1));
+  }
+  if (!state.film) {
+    next.set('film', '0');
+  }
+  if (state.grade !== DEFAULT_GRADE) {
+    next.set('grade', state.grade.toFixed(1));
+  }
 };
 
 /** A copy of `params` with the look parameters replaced by `state`'s non-default ones. */
@@ -135,20 +172,12 @@ export const writeLookParams = (params: URLSearchParams, state: LookUrlState): U
   if (state.freeze) {
     next.set('freeze', '1');
   }
-  if (!state.post) {
-    next.set('post', '0');
-  }
-  if (!state.bloom) {
-    next.set('bloom', '0');
-  }
-  if (!state.film) {
-    next.set('film', '0');
-  }
-  if (state.grade !== DEFAULT_GRADE) {
-    next.set('grade', state.grade.toFixed(1));
-  }
+  writeMoodParams(next, state);
   if (state.fogginess !== DEFAULT_FOGGINESS) {
     next.set('fog', state.fogginess.toFixed(1));
+  }
+  if (state.torch !== DEFAULT_TORCH) {
+    next.set('torch', String(state.torch));
   }
   if (!state.shadows.sun) {
     next.set('sunshadow', '0');

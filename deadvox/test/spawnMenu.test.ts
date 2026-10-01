@@ -86,7 +86,7 @@ describe('spawnMenuViewModel', () => {
           setOcclusion: () => undefined,
         },
         new FakeMood(),
-        { weather: { fogginess: 0.2 }, shadows: new FakeShadows() },
+        { weather: { fogginess: 0.2 }, shadows: new FakeShadows(), flashlight: { strength: 1 } },
       ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,

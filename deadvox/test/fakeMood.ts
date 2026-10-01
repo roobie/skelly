@@ -6,6 +6,7 @@ export class FakeMood {
   bloom = true;
   film = true;
   grade = 1;
+  bloomClip: number | null = null;
   crackCheck = false;
 
   setCrackCheck(on: boolean): void {
@@ -30,5 +31,9 @@ export class FakeMood {
 
   setGrade(strength: number): void {
     this.grade = strength;
+  }
+
+  setBloomClip(clip: number | null): void {
+    this.bloomClip = clip;
   }
 }

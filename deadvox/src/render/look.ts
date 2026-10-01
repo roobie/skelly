@@ -20,6 +20,10 @@ export const TONE_MODES: readonly { readonly key: string; readonly name: string;
   { key: 'neutral', name: 'Neutral', mapping: NeutralToneMapping },
 ];
 
+/** The `TONE_MODES` key of a renderer tone mapping; an unlisted one reads as 'none'. */
+export const toneKeyOf = (mapping: ToneMapping): string =>
+  TONE_MODES.find((candidate) => candidate.mapping === mapping)?.key ?? 'none';
+
 export const applyLook = (
   renderer: Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>,
   meshes: Pick<ChunkMeshes, 'setLinearColors' | 'setPatterns' | 'setOcclusion'>,

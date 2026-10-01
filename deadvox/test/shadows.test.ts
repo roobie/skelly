@@ -21,7 +21,7 @@ import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '../src
 import { skyAt, sunDirection, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
-import { flashlightCastsShadow } from '../src/render/flashlight.ts';
+import { FLASHLIGHT_INTENSITY, flashlightCastsShadow } from '../src/render/flashlight.ts';
 import { FrameTimes } from '../src/render/frameTimes.ts';
 import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import {
@@ -90,11 +90,11 @@ describe('shadow settings', () => {
   });
 
   it('draws the flashlight map only for a beam that is allowed, on and bright enough to show', () => {
-    expect(flashlightCastsShadow(true, 40)).toBe(true);
-    expect(flashlightCastsShadow(false, 40)).toBe(false);
+    expect(flashlightCastsShadow(true, FLASHLIGHT_INTENSITY)).toBe(true);
+    expect(flashlightCastsShadow(false, FLASHLIGHT_INTENSITY)).toBe(false);
     expect(flashlightCastsShadow(true, 0)).toBe(false);
-    // Full daylight scales the beam to about 0.1 cd (flashlight.ts), not worth a depth pass.
-    expect(flashlightCastsShadow(true, 0.12)).toBe(false);
+    // Full daylight scales the beam to about 0.01 cd (flashlight.ts), not worth a depth pass.
+    expect(flashlightCastsShadow(true, 0.01)).toBe(false);
   });
 
   it('reads the settings and counts out for the debug readout', () => {

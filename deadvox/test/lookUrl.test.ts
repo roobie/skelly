@@ -37,7 +37,9 @@ describe('look URL parameters', () => {
       bloom: true,
       film: true,
       grade: 1,
+      bloomClip: null,
       fogginess: 0.2,
+      torch: 1,
       shadows: { sun: true, torch: true, distance: 40 },
       crackCheck: false,
       hotCheck: false,
@@ -64,13 +66,15 @@ describe('look URL parameters', () => {
       bloom: false,
       film: false,
       grade: 0.6,
+      bloomClip: 3.5,
       fogginess: 0.7,
+      torch: 1.56,
       shadows: { sun: false, torch: false, distance: 64 },
       crackCheck: true,
       hotCheck: true,
     };
     expect(write('', state)).toBe(
-      'tone=none&exposure=1.4&srgb=0&patterns=0&vao=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7&sunshadow=0&torchshadow=0&shadowdist=64&crackcheck=1&hotcheck=1',
+      'tone=none&exposure=1.4&srgb=0&patterns=0&vao=0&freeze=1&post=0&bloom=0&bloomclip=3.5&film=0&grade=0.6&fog=0.7&torch=1.56&sunshadow=0&torchshadow=0&shadowdist=64&crackcheck=1&hotcheck=1',
     );
     expect(parse(write('', state))).toEqual(state);
   });
@@ -112,6 +116,40 @@ describe('look URL parameters', () => {
     expect(parse('post=1&bloom=off&film=')).toMatchObject({ post: true, bloom: true, film: true });
     expect(write('debug=1&post=0&bloom=0&film=0&grade=0.4', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
     expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloom: false })).toBe('debug=1&bloom=0');
+  });
+
+  it('follows the tone mapper unless bloomclip overrides it, clamping to 1..8 in tenths', () => {
+    expect(parse('').bloomClip).toBeNull();
+    expect(parse('bloomclip=3.5').bloomClip).toBe(3.5);
+    expect(parse('bloomclip=3.26').bloomClip).toBe(3.3);
+    expect(parse('bloomclip=0.2').bloomClip).toBe(1);
+    expect(parse('bloomclip=50').bloomClip).toBe(8);
+    expect(parse('bloomclip=').bloomClip).toBeNull();
+    expect(parse('bloomclip=abc').bloomClip).toBeNull();
+  });
+
+  it('reads the tone mapper own clip as no override, and writes an override only when it differs', () => {
+    // aces derives 2, agx 5 (BLOOM_CLIP_BY_TONE): spelling out the value in effect is just noise.
+    expect(parse('bloomclip=2').bloomClip).toBeNull();
+    expect(parse('tone=agx&bloomclip=5').bloomClip).toBeNull();
+    expect(parse('tone=agx&bloomclip=2').bloomClip).toBe(2);
+    expect(write('debug=1&bloomclip=3', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: 3 })).toBe('debug=1&bloomclip=3.0');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: 2 })).toBe('debug=1');
+    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'agx', bloomClip: 2 })).toBe('tone=agx&bloomclip=2.0');
+  });
+
+  it('reads the flashlight multiplier within 0.1..16 in hundredths, and writes it only when not 1', () => {
+    expect(parse('').torch).toBe(1);
+    expect(parse('torch=2.5').torch).toBe(2.5);
+    expect(parse('torch=1.567').torch).toBe(1.57);
+    expect(parse('torch=0').torch).toBe(0.1);
+    expect(parse('torch=99').torch).toBe(16);
+    expect(parse('torch=').torch).toBe(1);
+    expect(parse('torch=abc').torch).toBe(1);
+    expect(write('debug=1&torch=3', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, torch: 0.64 })).toBe('debug=1&torch=0.64');
+    expect(write('', { ...DEFAULT_LOOK_URL_STATE, torch: 4 })).toBe('torch=4');
   });
 
   it('clamps fogginess to 0..1 in tenths and ignores nonsense', () => {
@@ -206,6 +244,7 @@ describe('restoring look controls from URL state', () => {
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
+      flashlight: { strength: 1 },
     });
     look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0&vao=0'));
     expect([look.toneKey, look.exposure, look.linearColors, look.patterns, look.occlusion]).toEqual([
@@ -220,16 +259,62 @@ describe('restoring look controls from URL state', () => {
   it('takes the parsed mood pass and fogginess', () => {
     const mood = new FakeMood();
     const weather = { fogginess: 0.2 };
-    const look = new LookControls(renderer, meshes, mood, { weather, shadows: new FakeShadows() });
+    const look = new LookControls(renderer, meshes, mood, {
+      weather,
+      shadows: new FakeShadows(),
+      flashlight: { strength: 1 },
+    });
     look.restore(parse('post=0&bloom=0&film=0&grade=0.5&fog=0.6'));
-    expect(look.moodState).toEqual({ post: false, bloom: false, film: false, grade: 0.5 });
+    expect(look.moodState).toEqual({ post: false, bloom: false, film: false, grade: 0.5, bloomClip: null });
     expect(mood.grade).toBe(0.5);
     expect(weather.fogginess).toBe(0.6);
   });
 
+  it('takes the parsed bloom clip and flashlight strength, and steps them', () => {
+    const mood = new FakeMood();
+    const flashlight = { strength: 1 };
+    const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
+    const look = new LookControls(game, meshes, mood, {
+      weather: { fogginess: 0.2 },
+      shadows: new FakeShadows(),
+      flashlight,
+    });
+    look.restore(parse('tone=aces&bloomclip=3&torch=2'));
+    expect([mood.bloomClip, look.bloomClip, look.bloomClipIsDefault, flashlight.strength, look.torch]).toEqual([
+      3,
+      3,
+      false,
+      2,
+      2,
+    ]);
+    look.restore(parse('tone=aces'));
+    expect([mood.bloomClip, look.bloomClip, look.bloomClipIsDefault, flashlight.strength]).toEqual([null, 2, true, 1]);
+    // Stepping from the derived value overrides it; stepping back onto it follows the tone mapper again.
+    look.stepBloomClip(1);
+    expect([mood.bloomClip, look.moodState.bloomClip]).toEqual([2.5, 2.5]);
+    look.stepBloomClip(-1);
+    expect(mood.bloomClip).toBeNull();
+    look.stepBloomClip(-10);
+    expect(mood.bloomClip).toBe(1);
+    look.stepBloomClip(100);
+    expect(mood.bloomClip).toBe(8);
+    look.stepTorch(1);
+    expect(flashlight.strength).toBe(1.25);
+    look.stepTorch(-1);
+    expect(flashlight.strength).toBe(1);
+    look.stepTorch(-100);
+    expect(flashlight.strength).toBe(0.1);
+    look.stepTorch(100);
+    expect(flashlight.strength).toBe(16);
+  });
+
   it('takes the parsed diagnostic checks and toggles them', () => {
     const mood = new FakeMood();
-    const look = new LookControls(renderer, meshes, mood, { weather: { fogginess: 0.2 }, shadows: new FakeShadows() });
+    const look = new LookControls(renderer, meshes, mood, {
+      weather: { fogginess: 0.2 },
+      shadows: new FakeShadows(),
+      flashlight: { strength: 1 },
+    });
     look.restore(parse('crackcheck=1&hotcheck=1'));
     expect([look.crackCheck, mood.crackCheck, look.hotCheck, hotCheckUniform.value]).toEqual([true, true, true, 1]);
     look.toggleCrackCheck();
@@ -241,7 +326,11 @@ describe('restoring look controls from URL state', () => {
 
   it('takes the parsed shadow settings', () => {
     const shadows = new FakeShadows();
-    const look = new LookControls(renderer, meshes, new FakeMood(), { weather: { fogginess: 0.2 }, shadows });
+    const look = new LookControls(renderer, meshes, new FakeMood(), {
+      weather: { fogginess: 0.2 },
+      shadows,
+      flashlight: { strength: 1 },
+    });
     look.restore(parse('sunshadow=0&shadowdist=64'));
     expect(look.shadowState).toEqual({ sun: false, torch: true, distance: 64 });
     expect(shadows.settings).toEqual({ sun: false, torch: true, distance: 64 });
@@ -252,6 +341,7 @@ describe('restoring look controls from URL state', () => {
     const look = new LookControls(game, meshes, new FakeMood(), {
       weather: { fogginess: 0.2 },
       shadows: new FakeShadows(),
+      flashlight: { strength: 1 },
     });
     expect([look.toneKey, look.toneMappingName, game.toneMapping, game.toneMappingExposure]).toEqual([
       'aces',
@@ -265,7 +355,11 @@ describe('restoring look controls from URL state', () => {
 
   it('steps fogginess by tenths within 0..1', () => {
     const weather = { fogginess: 0.2 };
-    const look = new LookControls(renderer, meshes, new FakeMood(), { weather, shadows: new FakeShadows() });
+    const look = new LookControls(renderer, meshes, new FakeMood(), {
+      weather,
+      shadows: new FakeShadows(),
+      flashlight: { strength: 1 },
+    });
     look.stepFogginess(1);
     expect(weather.fogginess).toBe(0.3);
     look.stepFogginess(-20);

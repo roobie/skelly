@@ -14,10 +14,18 @@ export interface MoodState {
   film: boolean;
   /** Colour grade strength in [0, 1]. */
   grade: number;
+  /** Bloom clip override (post-exposure value, see `BLOOM_CLIP_BY_TONE`); null follows the active tone mapper. */
+  bloomClip: number | null;
 }
 
 /** Play's mood pass. The height-fog mist is not here: it follows the weather's fogginess (core/weather.ts). */
-export const DEFAULT_MOOD: MoodState = { post: true, bloom: true, film: true, grade: DEFAULT_GRADE };
+export const DEFAULT_MOOD: MoodState = {
+  post: true,
+  bloom: true,
+  film: true,
+  grade: DEFAULT_GRADE,
+  bloomClip: null,
+};
 
 /** Renderer and block-colour settings that make up the look, apart from the mood pass. `tone` is a render/look.ts key. */
 export interface LookState {
@@ -65,6 +73,18 @@ export const clampShadowDistance = (value: number): number =>
 /** The next of `SHADOW_DISTANCES` above `current`, wrapping to the first. */
 export const nextShadowDistance = (current: number): number =>
   SHADOW_DISTANCES.find((distance) => distance > current) ?? SHADOW_DISTANCES[0]!;
+
+/** Multiplier on the flashlight's intensity (render/flashlight.ts); the debug controls and URL change it. */
+export const DEFAULT_TORCH = 1;
+
+const MIN_TORCH = 0.1;
+const MAX_TORCH = 16;
+/** One key press multiplies or divides the torch strength by this: the useful range spans a factor of ten or more. */
+export const TORCH_STEP = 1.25;
+
+/** Clamped to the allowed range and rounded to a hundredth, so repeated steps by `TORCH_STEP` come back to where they started. */
+export const clampTorch = (value: number): number =>
+  Number.isFinite(value) ? Math.min(MAX_TORCH, Math.max(MIN_TORCH, Math.round(value * 100) / 100)) : DEFAULT_TORCH;
 
 const MIN_EXPOSURE = 0.2;
 const MAX_EXPOSURE = 3.0;
@@ -115,20 +135,51 @@ export const GRAIN = 0.035;
 export const BLOOM_RADIUS = 0.6;
 
 /**
- * Scene-linear value (after exposure) that counts as "about to clip" on screen. Bloom runs on the
- * linear HDR frame before OutputPass applies exposure and tone mapping, so a fixed threshold
- * means a different on-screen brightness at every exposure. 1.0 here is where ACES Filmic, whose
- * input is further divided by 0.6, already shows about 0.88 (sRGB) for a grey.
+ * Scene-linear value after exposure (what OutputPass feeds the tone mapper) at which a grey reaches
+ * about 0.95 on screen (sRGB-encoded), per `TONE_MODES` key: bloom should start where the picture is
+ * about to clip, not where it is merely bright. Bloom runs on the linear HDR frame before OutputPass
+ * applies exposure and tone mapping, so a fixed threshold would mean a different on-screen
+ * brightness at every exposure; `bloomThreshold` divides the exposure out.
+ *
+ * Derived by porting three's GLSL tone-map functions (tonemapping_pars_fragment, the ones OutputPass
+ * runs) for a grey input, applying the sRGB OETF, and solving display(x) = 0.95 by bisection (the
+ * port is test/toneCurves.ts, which also checks these):
+ *   aces     x = 2.039 (ACES Filmic, with three's 1/0.6 input scale; x = 1 already shows 0.888)
+ *   agx      x = 5.024 (a long shoulder: x = 1 shows only 0.792)
+ *   neutral  x = 1.084
+ * rounded to a tenth, the step of the debug key. `none` applies no curve, so the frame clips at 1.
+ *
+ * Never below 1 (`MIN_BLOOM_CLIP`): the sky is scaled to land at or under 1 after exposure
+ * (`targetColorScale`) and must never count as bright.
  */
-export const BLOOM_CLIP = 1.0;
+export const BLOOM_CLIP_BY_TONE: Readonly<Record<string, number>> = {
+  none: 1,
+  aces: 2,
+  agx: 5,
+  neutral: 1.1,
+};
 
-/** The bloom pass's luminance threshold in pre-exposure linear light, for the renderer's exposure. */
-export const bloomThreshold = (exposure: number): number => BLOOM_CLIP / Math.max(exposure, 1e-3);
+/** The derived clip for a `TONE_MODES` key; an unknown key gets the no-curve value. */
+export const bloomClipFor = (tone: string): number => BLOOM_CLIP_BY_TONE[tone] ?? 1;
+
+export const MIN_BLOOM_CLIP = 1;
+const MAX_BLOOM_CLIP = 8;
+
+/** Clamped to the allowed range and rounded to a tenth, so repeated steps don't accumulate float error. */
+export const clampBloomClip = (value: number): number =>
+  Math.min(MAX_BLOOM_CLIP, Math.max(MIN_BLOOM_CLIP, Math.round(value * 10) / 10));
+
+/**
+ * The bloom pass's luminance threshold in pre-exposure linear light, for the renderer's exposure and a
+ * clip (post-exposure value, see `BLOOM_CLIP_BY_TONE`).
+ */
+export const bloomThreshold = (exposure: number, clip: number): number => clip / Math.max(exposure, 1e-3);
 
 /**
  * Factor for colours that are cleared or fogged into the post chain's linear target but are not
  * lights: OutputPass multiplies the whole frame by the exposure, so scaling them by 1 / exposure
  * lets them reach the screen as they would without post. It also keeps them at or below
- * `bloomThreshold` (a sky colour is at most 1), so the sky never counts as bright.
+ * `bloomThreshold` for any clip of at least `MIN_BLOOM_CLIP` (a sky colour is at most 1), so the sky
+ * never counts as bright.
  */
 export const targetColorScale = (exposure: number): number => 1 / Math.max(exposure, 1e-3);

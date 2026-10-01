@@ -9,7 +9,7 @@
 // per-material tone mapping while rendering to a target, so nothing is applied twice. The
 // grade runs after it, in display space, and writes to the screen without a colour-space
 // conversion (a ShaderMaterial gets none unless it asks).
-// Bloom therefore works in pre-exposure linear light: its threshold is BLOOM_CLIP / exposure
+// Bloom therefore works in pre-exposure linear light: its threshold is the tone mapper's clip / exposure
 // (core/mood.ts), set each frame, so it follows what OutputPass will push towards white.
 
 import {
@@ -34,7 +34,9 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {
   BLOOM_RADIUS,
+  bloomClipFor,
   bloomThreshold,
+  clampBloomClip,
   clampGrade,
   GRAIN,
   gradeParams,
@@ -45,6 +47,7 @@ import {
 import type { Sky } from '../core/sky.ts';
 import { DrawPass } from './drawPass.ts';
 import { heightFogUniforms } from './heightFog.ts';
+import { toneKeyOf } from './look.ts';
 
 /** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
 const MSAA_SAMPLES = 4;
@@ -106,7 +109,7 @@ export class Mood {
   private readonly scene: Scene;
   private readonly camera: PerspectiveCamera;
   // Everything off until the game turns it on, so the benchmark renders as it always did.
-  private state: MoodState = { post: false, bloom: false, film: false, grade: 0 };
+  private state: MoodState = { post: false, bloom: false, film: false, grade: 0, bloomClip: null };
   private width = 1;
   private height = 1;
   private frame = 0;
@@ -141,10 +144,28 @@ export class Mood {
     return this.state.grade;
   }
 
+  /** The bloom clip override; null while it follows the active tone mapper. */
+  get bloomClip(): number | null {
+    return this.state.bloomClip;
+  }
+
   /** Takes a whole state, as read from the defaults or the URL. */
   restore(state: MoodState): void {
-    this.state = { ...state, grade: clampGrade(state.grade) };
+    this.state = {
+      ...state,
+      grade: clampGrade(state.grade),
+      bloomClip: state.bloomClip === null ? null : clampBloomClip(state.bloomClip),
+    };
     this.sync();
+  }
+
+  /** The clip bloom uses now: the override, or the active tone mapper's derived value. */
+  effectiveBloomClip(): number {
+    return this.state.bloomClip ?? bloomClipFor(toneKeyOf(this.renderer.toneMapping));
+  }
+
+  setBloomClip(clip: number | null): void {
+    this.restore({ ...this.state, bloomClip: clip });
   }
 
   setPost(on: boolean): void {
@@ -228,9 +249,10 @@ export class Mood {
     this.frame = (this.frame + 1) % 4096;
     this.gradePass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
     // Bloom sees the linear frame before OutputPass applies exposure, so its threshold follows the
-    // exposure (the debug controls change it at any time) to keep selecting what will be near white.
+    // exposure and the tone mapper (the debug controls change both at any time) to keep selecting
+    // what will be near white.
     const exposure = this.renderer.toneMappingExposure;
-    this.bloomPass!.threshold = bloomThreshold(exposure);
+    this.bloomPass!.threshold = bloomThreshold(exposure, this.effectiveBloomClip());
     // The clear colour, the distance fog and the mist all land in the linear target and then get
     // the exposure from OutputPass, which would push a bright sky past the bloom threshold and
     // brighten it against the no-post frame. Scaled by 1 / exposure for this frame, they come out
@@ -352,7 +374,7 @@ export class Mood {
       new Vector2(this.width, this.height),
       0,
       BLOOM_RADIUS,
-      bloomThreshold(this.renderer.toneMappingExposure),
+      bloomThreshold(this.renderer.toneMappingExposure, this.effectiveBloomClip()),
     );
     composer.addPass(this.bloomPass);
     composer.addPass(new OutputPass());

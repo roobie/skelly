@@ -140,7 +140,7 @@ const panelTemplate = ({
       ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
       · brightness = kind: ${HOT_KINDS.join('; ')}.</p>
       <div id="debug-sound-log-root"></div>
-      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, [ ] grade. Fog: L / fogginess − +. Shadows: 0 sun, Home flashlight, PageUp distance.</p>
+      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, Del/Ins bloom clip, \\ film, [ ] grade. Flashlight: numpad − + strength. Fog: L / fogginess − +. Shadows: 0 sun, Home flashlight, PageUp distance.</p>
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
@@ -290,6 +290,37 @@ export const createDebugActions = ({
     run: () => look.togglePost(),
   },
   { code: 'Quote', key: "'", label: 'Bloom', state: () => look.moodState.bloom, run: () => look.toggleBloom() },
+  // Bloom starts where the picture reaches this post-exposure value (core/mood.ts BLOOM_CLIP_BY_TONE); higher blooms less.
+  // Insert / Delete are the navigation-cluster keys nothing binds (CONTROLS.md); arrows would steal inventory navigation.
+  {
+    code: 'Delete',
+    key: 'Del',
+    label: 'Bloom clip −',
+    detail: () => bloomClipDetail(look),
+    run: () => look.stepBloomClip(-1),
+  },
+  {
+    code: 'Insert',
+    key: 'Ins',
+    label: 'Bloom clip +',
+    detail: () => bloomClipDetail(look),
+    run: () => look.stepBloomClip(1),
+  },
+  // The flashlight's intensity multiplier, in steps of x1.25. The numpad's own - and + are free in play and debug.
+  {
+    code: 'NumpadSubtract',
+    key: 'Num -',
+    label: 'Flashlight strength −',
+    detail: () => `×${look.torch}`,
+    run: () => look.stepTorch(-1),
+  },
+  {
+    code: 'NumpadAdd',
+    key: 'Num +',
+    label: 'Flashlight strength +',
+    detail: () => `×${look.torch}`,
+    run: () => look.stepTorch(1),
+  },
   {
     code: 'Backslash',
     key: '\\',
@@ -382,6 +413,10 @@ export const createDebugActions = ({
   },
 ];
 
+/** The effective bloom clip, marked while it follows the tone mapper rather than an override. */
+const bloomClipDetail = (look: LookControls): string =>
+  `${look.bloomClip.toFixed(1)}${look.bloomClipIsDefault ? ' (tone mapper)' : ''}`;
+
 /** A debug key the browser shouldn't also act on: '/' and "'" open Firefox's quick find when nothing is focused. */
 const keepFromBrowser = (e: KeyboardEvent): void => {
   if (!(e.ctrlKey || e.metaKey || e.altKey)) {
@@ -466,6 +501,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
     weather: hooks.weather,
     shadows,
+    flashlight: hooks.flashlight,
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
@@ -493,6 +529,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     vao: look.occlusion,
     freeze: gameFrozen,
     fogginess: look.fogginess,
+    torch: look.torch,
     shadows: look.shadowState,
     crackCheck: look.crackCheck,
     hotCheck: look.hotCheck,
@@ -653,7 +690,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       surfacePatterns: look.patterns,
       wideOcclusion: look.occlusion,
       mood: look.moodState,
+      bloomClip: look.bloomClip,
       fogginess: look.fogginess,
+      torch: look.torch,
       shadows: look.shadowState,
       performance: { fps: readout.fps, frame: readout.frame, work: readout.work },
       gameTime: formatClock(hooks.sim.calendar),

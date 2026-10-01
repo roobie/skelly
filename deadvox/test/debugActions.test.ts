@@ -36,6 +36,10 @@ describe('debug action table', () => {
       ['9', 'Wide ambient occlusion'],
       ['Q', 'Mood post-processing (all)'],
       ["'", 'Bloom'],
+      ['Del', 'Bloom clip −'],
+      ['Ins', 'Bloom clip +'],
+      ['Num -', 'Flashlight strength −'],
+      ['Num +', 'Flashlight strength +'],
       ['\\', 'Film (vignette, grain)'],
       ['0', 'Sun shadows'],
       ['Home', 'Flashlight shadows'],
@@ -123,6 +127,41 @@ describe('debug action table', () => {
     expect(mood.grade).toBe(1);
   });
 
+  it('steps the bloom clip from the tone mapper value in halves, within 1..8, and shows where it comes from', () => {
+    const { actions, mood } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    // The fake renderer starts with no tone mapping, whose clip is 1.
+    expect(byCode('Insert').detail?.()).toBe('1.0 (tone mapper)');
+    dispatchDebugAction(actions, 'Insert');
+    expect(mood.bloomClip).toBe(1.5);
+    expect(byCode('Delete').detail?.()).toBe('1.5');
+    dispatchDebugAction(actions, 'Delete');
+    expect(mood.bloomClip).toBeNull();
+    for (let i = 0; i < 40; i++) {
+      dispatchDebugAction(actions, 'Insert');
+    }
+    expect(mood.bloomClip).toBe(8);
+    for (let i = 0; i < 40; i++) {
+      dispatchDebugAction(actions, 'Delete');
+    }
+    expect(mood.bloomClip).toBeNull();
+    dispatchDebugAction(actions, 'Insert', true);
+    expect(mood.bloomClip).toBeNull();
+  });
+
+  it('steps the flashlight strength by a quarter and shows the multiplier', () => {
+    const { actions, flashlight } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    expect(byCode('NumpadAdd').detail?.()).toBe('×1');
+    dispatchDebugAction(actions, 'NumpadAdd');
+    dispatchDebugAction(actions, 'NumpadAdd');
+    expect(flashlight.strength).toBe(1.56);
+    expect(byCode('NumpadSubtract').detail?.()).toBe('×1.56');
+    dispatchDebugAction(actions, 'NumpadSubtract');
+    dispatchDebugAction(actions, 'NumpadSubtract');
+    expect(flashlight.strength).toBe(1);
+  });
+
   it('toggles the sun and flashlight shadows and steps the sun shadow distance through 24, 40, 64', () => {
     const { actions, shadows } = makeActions();
     const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
@@ -199,6 +238,7 @@ const makeActions = (
   mood: FakeMood;
   weather: Weather;
   shadows: FakeShadows;
+  flashlight: { strength: number };
 } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
   const clock = { calendar: 19.5 * 3600 };
@@ -209,6 +249,7 @@ const makeActions = (
   const mood = new FakeMood();
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const shadows = new FakeShadows();
+  const flashlight = { strength: 1 };
   const look = new LookControls(
     renderer,
     {
@@ -232,7 +273,7 @@ const makeActions = (
       },
     },
     mood,
-    { weather, shadows },
+    { weather, shadows, flashlight },
   );
   const sim = {
     godMode: false,
@@ -307,5 +348,5 @@ const makeActions = (
       gameFrozen = !gameFrozen;
     },
   });
-  return { actions, spawnCounts, skips, renderer, clock, mood, weather, shadows };
+  return { actions, spawnCounts, skips, renderer, clock, mood, weather, shadows, flashlight };
 };
