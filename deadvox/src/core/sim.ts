@@ -2,7 +2,7 @@
 // systems registered on it. Pure, so scenario tests run it headless.
 
 import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
-import { Compression } from './compression.ts';
+import { Compression, type CompressionLimits } from './compression.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
@@ -60,6 +60,8 @@ export class Simulation {
   dead: { cause: string; time: number } | undefined;
   /** Debug-only control is owned by the game; damage sources still run normally. */
   godMode = false;
+  /** Debug-only: compression ignores `unsafe` (a hostile nearby), as in the debug time skip. Interrupt events still stop it. */
+  ignoreUnsafe = false;
   private readonly interrupts: EventReader<Timed<SimEvent>>;
   private pendingInterrupt: string | undefined;
   private readonly unsafe: () => string | undefined;
@@ -131,6 +133,7 @@ export class Simulation {
     }
     this.paused = true;
     this.godMode = false;
+    this.ignoreUnsafe = false;
   }
 
   /** Simulation seconds since the start. */
@@ -199,8 +202,12 @@ export class Simulation {
   }
 
   /** Starts compression for a long action. Refused, with the reason, when it isn't safe. */
-  compress(): { ok: true } | { ok: false; reason: string } {
-    return this.compression.start(this.unsafe());
+  compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
+    return this.compression.start(this.unsafeReason(), limits);
+  }
+
+  private unsafeReason(): string | undefined {
+    return this.ignoreUnsafe ? undefined : this.unsafe();
   }
 
   /**
@@ -216,7 +223,8 @@ export class Simulation {
     // Events emitted between frames (input, debug keys) count too.
     this.checkInterruptions();
     const { c } = this.compression;
-    const dt = until === undefined ? realDt * c : Math.min(realDt * c, Math.max(0, until - this.time));
+    const wanted = Math.min(realDt * c, this.compression.limits.maxSimPerFrame);
+    const dt = until === undefined ? wanted : Math.min(wanted, Math.max(0, until - this.time));
     return this.scheduler.advance(dt, c, () => this.dead !== undefined || this.checkInterruptions());
   }
 
@@ -232,7 +240,7 @@ export class Simulation {
     if (!(compression.active || compression.c > 1)) {
       return false;
     }
-    const reason = emitted?.reason ?? this.unsafe();
+    const reason = emitted?.reason ?? this.unsafeReason();
     if (reason === undefined) {
       return false;
     }

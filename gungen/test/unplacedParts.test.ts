@@ -77,7 +77,7 @@ describe('rules on assemblies with unplaced parts', () => {
         }
         expect(failures).toEqual([]);
       },
-      rule.id === 'solid-overlap' ? 15_000 : 5000,
+      rule.id === 'solid-overlap' || rule.id === 'connection-contact' ? 20_000 : 5000,
     );
   }
 

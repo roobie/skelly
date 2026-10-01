@@ -56,16 +56,24 @@ export type SiteName = 'hamlet' | 'testHouse' | 'city';
 
 const MAX_STOREYS = 20;
 
-/** `?site=city` and `?storeys=N` build the stress-test city; `fallback` is the site otherwise. */
+/**
+ * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
+ * `fallback` is the site otherwise.
+ */
 export const siteFromUrl = (params: URLSearchParams, fallback: SiteName): { site: SiteName; storeys: number } => {
   const storeys = Number(params.get('storeys') ?? 1);
+  const requested = params.get('site');
   return {
-    site: params.get('site') === 'city' ? 'city' : fallback,
+    site: requested === 'city' || requested === 'testHouse' ? requested : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,
   };
 };
 
-/** Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults. */
+/**
+ * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
+ * With `?debug=1` the debug tools also read and write the look parameters (`?tone=`, `?exposure=`,
+ * `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
+ */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(

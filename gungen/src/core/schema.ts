@@ -39,6 +39,8 @@ export interface PortDef {
 export interface SolidDisplayHints {
   readonly bevel?: boolean;
   readonly outline?: boolean;
+  /** Solids in one group are rendered/exported as one receiver display mesh. */
+  readonly mergeGroup?: string;
 }
 
 export interface BoxSolid {
@@ -50,6 +52,12 @@ export interface BoxSolid {
 
 export type Vec2 = readonly [number, number];
 
+export interface ClipPlane {
+  readonly normal: Vec3;
+  /** Keeps the half-space where dot(normal, point) <= offset. */
+  readonly offset: number;
+}
+
 export interface ExtrudedPolygonSolid {
   readonly id: string;
   readonly kind: 'extruded-polygon';
@@ -59,6 +67,8 @@ export interface ExtrudedPolygonSolid {
   readonly axis?: ExtrusionAxis;
   /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
+  /** Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset. */
+  readonly clip?: readonly ClipPlane[];
   readonly display?: SolidDisplayHints;
 }
 
@@ -89,6 +99,16 @@ export interface Axis {
   readonly dir: Vec3;
 }
 
+export interface PartMotion {
+  readonly kind: 'linear';
+  /** Local unit direction of travel, from rest toward rearmost. */
+  readonly axis: Vec3;
+  readonly rest: Vec3;
+  readonly rearmost: Vec3;
+  /** Internal source resolved from a connected part's named keep-out. */
+  readonly sourceKeepOut?: { readonly port: string; readonly id: string };
+}
+
 export interface PartDef {
   readonly family: string;
   readonly ports: readonly PortDef[];
@@ -97,6 +117,8 @@ export interface PartDef {
   readonly displaySolids?: readonly Solid[];
   readonly keepOuts: readonly KeepOut[];
   readonly axes: readonly Axis[];
+  /** Optional animation path, serialized to this part's glTF node extras. */
+  readonly motion?: PartMotion;
   /** Free-form labels that domain rules can look for. */
   readonly tags?: readonly string[];
 }

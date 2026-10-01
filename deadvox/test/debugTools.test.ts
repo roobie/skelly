@@ -10,7 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
-import { equipDebugStartWeapon, formatMeleeResult } from '../src/debug/index.ts';
+import { equipDebugStartLight, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
@@ -68,14 +68,8 @@ describe('debug starting equipment', () => {
     ).toBe('torso 15 damage (15→0) · incapacitated');
     expect(formatMeleeResult({ damage: 0, outcome: 'nothing' })).toBe('nothing · no region hit');
   });
-  it('attaches a bat to a fresh debug game and swings with its damage, reach, and 10 N·s impulse', () => {
-    const inventory = new Inventory(registry);
-    startingLoadout(inventory);
-    equipDebugStartWeapon({ inventory, debugMode: true, newGame: true });
-    const bat = inventory.hands.right;
-    expect(bat?.type).toBe('baseball_bat');
-
-    const weapon = registry.items.get(bat!.type)!.weapon!.melee!;
+  it('a baseball bat swings with its damage, reach, and 10 N·s impulse', () => {
+    const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
     expect(weapon).toMatchObject({ damage: 15, reach: 0.8, impulse: 10 });
     let launchImpulse: number | undefined;
     const system = new ZombieSystem({
@@ -122,23 +116,33 @@ describe('debug starting equipment', () => {
     expect(launchImpulse).toBe(10);
   });
 
+  it('puts a switched-off flashlight in the left hand of a fresh debug game, leaving the right free', () => {
+    const inventory = new Inventory(registry);
+    startingLoadout(inventory);
+    equipDebugStartLight({ inventory, debugMode: true, newGame: true });
+    const light = inventory.hands.left;
+    expect(light?.type).toBe('flashlight');
+    expect(light?.on).toBeFalsy();
+    expect(inventory.hands.right).toBeUndefined();
+  });
+
   it('does not replace occupied hands or add equipment to a restored or non-debug game', () => {
     const inventory = new Inventory(registry);
-    const flashlight = inventory.create('flashlight');
-    expect(inventory.add(flashlight, { kind: 'hand', side: 'right' })).toBe(true);
-    equipDebugStartWeapon({ inventory, debugMode: true, newGame: true });
-    expect(inventory.hands.right).toBe(flashlight);
+    const bat = inventory.create('baseball_bat');
+    expect(inventory.add(bat, { kind: 'hand', side: 'right' })).toBe(true);
+    equipDebugStartLight({ inventory, debugMode: true, newGame: true });
+    expect(inventory.hands.right).toBe(bat);
     expect(inventory.hands.left).toBeUndefined();
 
     const restored = new Inventory(registry);
-    const savedBat = restored.create('baseball_bat');
-    expect(restored.add(savedBat, { kind: 'hand', side: 'right' })).toBe(true);
-    equipDebugStartWeapon({ inventory: restored, debugMode: true, newGame: false });
-    expect(restored.hands.right).toBe(savedBat);
+    const savedLight = restored.create('flashlight');
+    expect(restored.add(savedLight, { kind: 'hand', side: 'right' })).toBe(true);
+    equipDebugStartLight({ inventory: restored, debugMode: true, newGame: false });
+    expect(restored.hands.right).toBe(savedLight);
     expect(restored.hands.left).toBeUndefined();
 
     const nonDebug = new Inventory(registry);
-    equipDebugStartWeapon({ inventory: nonDebug, debugMode: false, newGame: true });
+    equipDebugStartLight({ inventory: nonDebug, debugMode: false, newGame: true });
     expect(nonDebug.hands).toEqual({});
   });
 

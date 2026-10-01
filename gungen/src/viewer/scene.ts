@@ -20,11 +20,12 @@ import {
   Vector3,
 } from 'three';
 import { MAIN_AXIS } from '../core/conventions.ts';
+import { displayItems } from '../core/display.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
-import { meshForSolid } from '../core/mesh.ts';
+import { meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
@@ -53,14 +54,15 @@ const placeBox = (obj: Object3D, obb: Obb) => {
 };
 
 /** Converts a core TriangleMesh (positions/normals/indices only) to a three.js BufferGeometry. */
-const meshGeometry = (solid: Solid, bevel?: number) => {
-  const mesh = meshForSolid(solid, bevel);
+const triangleGeometry = (mesh: ReturnType<typeof meshForSolid>) => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
   geometry.setIndex(new BufferAttribute(mesh.indices, 1));
   return geometry;
 };
+
+const meshGeometry = (solid: Solid, bevel?: number) => triangleGeometry(meshForSolid(solid, bevel));
 
 /** Keep-outs stay plain boxes/extrusions; only rendered solids are beveled. */
 const solidGeometry = (solid: Solid) => {
@@ -96,10 +98,13 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       .join(', ');
     const failing = hl.parts.has(part);
 
-    for (const s of def.displaySolids ?? def.solids) {
+    const drawn = def.displaySolids ?? def.solids;
+    for (const item of displayItems(drawn)) {
+      const s = item.solids[0]!;
       const color = failing ? FAIL : srgbToHex(solidColor(GUN_PALETTE, def.family, s.id));
+      const geometry = item.merged ? triangleGeometry(meshForSolidGroup(item.solids)) : meshGeometry(s);
       const mesh = new Mesh(
-        meshGeometry(s),
+        geometry,
         new MeshStandardMaterial({
           color,
           flatShading: true,
@@ -110,8 +115,8 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       // The solid's own box.center/profile is already baked into its mesh's positions.
       mesh.matrixAutoUpdate = false;
       mesh.matrix.copy(matrixOf(t.r, t.t));
-      mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
-      if (s.display?.outline !== false) {
+      mesh.userData = { label: `${part} (${def.family}) · solid ${item.id}${params ? ` · ${params}` : ''}` };
+      if (item.merged || s.display?.outline !== false) {
         const edges = new LineSegments(
           new EdgesGeometry(mesh.geometry),
           new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),

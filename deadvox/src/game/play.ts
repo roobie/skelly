@@ -5,16 +5,22 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { formatClock, hourOfDay, SECONDS_PER_DAY } from '../core/clock.ts';
+import { formatClock, hourOfDay, SECONDS_PER_DAY, skipTarget } from '../core/clock.ts';
+import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
-import { chargeShare } from '../core/lights.ts';
-import { skyAt } from '../core/sky.ts';
+import { chargeShare, offHandUse } from '../core/lights.ts';
+import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
+import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
+import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
-import { Flashlight } from '../render/flashlight.ts';
+import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
+import { FrameTimes } from '../render/frameTimes.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
+import { applyLook } from '../render/look.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
@@ -65,6 +71,8 @@ import { playerStartFromWorld } from './worldSetup.ts';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
+/** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
+const SKIP_SLACK = 1e-6;
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
@@ -75,7 +83,15 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const playerStart = playerStartFromWorld(engine, scale);
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
+  let cameraRoll = 0;
   let debugTools: DebugRuntime | undefined;
+  // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
+  applyLook(renderer, meshes, DEFAULT_LOOK);
+  engine.mood.restore(DEFAULT_MOOD);
+  engine.shadows.restore(DEFAULT_SHADOWS);
+  // The weather the sky is rendered in. No weather system yet (DESIGN.md, Slice 4): it will set
+  // `fogginess` (and later more) here; until then only the debug controls change it.
+  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
 
   const audio = new GameAudio({
     registry,
@@ -148,7 +164,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let playerGaitPhase = 0;
   startingLoadout(inventory);
   // Furniture, with the loot rolled for it, arrives with its column.
-  streamer.onColumn = (cx, cz) => session.onColumn(cx, cz, engine.site);
+  streamer.onColumn = (cx, cz) => {
+    session.onColumn(cx, cz, engine.site);
+    for (const { spec, loot } of engine.furnitureIn(cx, cz)) {
+      inventory.furnish(spec, loot);
+    }
+  };
   const models = new ModelLibrary(registry, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
@@ -159,6 +180,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
+  engine.shadows.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   const damageEvents = sim.events.reader();
   const damageFeedback = new DamageFeedback();
@@ -352,16 +374,20 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
   debugTools = debugModule?.attachDebugTools({
     engine,
+    weather,
+    flashlight,
     body,
     inventory,
     newGame: session.restoredLook === undefined,
     sim,
     input,
+    roll: () => cameraRoll,
     zombies: () => zombieSystem,
     feet,
     showNotice,
     spawnItem,
     compress: () => compress(),
+    skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {
       const timeOfDay = hour * 3600 + minute * 60;
       const day = Math.max(
@@ -448,6 +474,40 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const result = sim.compress();
     if (!result.ok) {
       showNotice(`Can't rest: ${result.reason}`);
+    }
+  };
+
+  /** Debug time skip: the simulation time it runs to, while one is running. */
+  let skipUntil: number | undefined;
+  /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
+  const endSkip = (): void => {
+    skipUntil = undefined;
+    sim.ignoreUnsafe = false;
+    compression.stop();
+    compression.snap();
+  };
+
+  /**
+   * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
+   * stepping as rest (needs, scheduler and shamblers all run), ignoring danger. Another call
+   * during a skip pushes the target out. It replaces a rest/sleep in progress.
+   */
+  const skipGameHours = (hours: number): void => {
+    rest.stop();
+    queue.cancel();
+    skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
+    sim.ignoreUnsafe = true;
+    sim.compress(SKIP_COMPRESSION);
+  };
+
+  /** Ends the skip when it arrives, is interrupted, the player dies or the debug T key stops compression. */
+  const updateSkip = (until: number): void => {
+    const { interruption } = compression;
+    if (interruption !== undefined) {
+      showNotice(`Time skip stopped: ${interruption}`);
+    }
+    if (interruption !== undefined || sim.dead || !compression.active || until - sim.time <= SKIP_SLACK) {
+      endSkip();
     }
   };
 
@@ -676,6 +736,36 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
   };
 
+  // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
+  // Listened on the document (capture) in case the pointer-lock target isn't the canvas; the mouse and pointer
+  // events can both arrive for one press, so the forward press is deduped.
+  const swallowSideButton = (e: MouseEvent) => {
+    if (e.button === 3 || e.button === 4) {
+      e.preventDefault();
+    }
+  };
+  for (const type of ['pointerdown', 'mousedown', 'mouseup', 'auxclick']) {
+    document.addEventListener(type, (e) => swallowSideButton(e as MouseEvent), true);
+  }
+
+  const forwardPress = new PressDedupe();
+  const onForwardPress = (e: MouseEvent) => {
+    if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
+      return;
+    }
+    if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
+      return;
+    }
+    // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
+    const item = offHandUse(registry, inventory);
+    const reason = item && survival.use(item);
+    if (reason) {
+      showNotice(reason);
+    }
+  };
+  document.addEventListener('pointerdown', onForwardPress, true);
+  document.addEventListener('mousedown', onForwardPress, true);
+
   renderer.domElement.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || compression.locksInput) {
       return;
@@ -692,6 +782,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let last = performance.now();
   let lastDebugUpdate = 0;
   let fps = 0;
+  // Debug readout: frame intervals and CPU work alongside simulation, rendering and mesh timings.
+  const frameInterval = new FrameTimes();
+  const frameWork = new FrameTimes();
   let simulationMs = 0;
   let renderMs = 0;
   let meshingQueueMs = 0;
@@ -763,6 +856,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       }
     }
     const feedback = damageFeedback.step(dt);
+    cameraRoll = feedback.roll;
     camera.rotation.copy(cameraRotation(input.pitch, input.yaw, feedback.roll));
     $('damage').style.opacity = String(feedback.vignetteOpacity);
   };
@@ -774,6 +868,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     lastDebugUpdate = now;
     debugTools.update({
       fps,
+      frame: frameInterval.summary(),
+      work: frameWork.summary(),
       seed: config.seed,
       radius: config.radiusM,
       movement: input.walking ? 'walking' : 'jogging',
@@ -869,8 +965,40 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     renderHandling(handlingBox, queue);
   };
 
+  /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
+  const stepFrozenNoclip = (dt: number, frozenAndPlaying: boolean): void => {
+    if (!(frozenAndPlaying && debugTools?.noclip && input.locked && !input.menuPointer)) {
+      return;
+    }
+    debugTools.stepNoclip({
+      body,
+      scale,
+      yaw: input.yaw,
+      pitch: input.pitch,
+      intent: input.intent(),
+      descend: input.held.has('KeyR'),
+      dt,
+    });
+  };
+
+  /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
+  const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
+    // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
+    const gameFrozen = debugTools?.frozen ?? false;
+    sim.paused = menuPaused || gameFrozen;
+    session.frame(dt, skipUntil);
+    // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
+    if (skipUntil !== undefined) {
+      updateSkip(skipUntil);
+    }
+    stepFrozenNoclip(dt, gameFrozen && !menuPaused);
+    return gameFrozen;
+  };
+
   const frame = (now: number) => {
+    const workStart = performance.now();
     const dt = Math.min(0.1, (now - last) / 1000);
+    frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
@@ -878,20 +1006,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
-    sim.paused = menuState.paused;
-    mark = performance.now();
-    session.frame(dt);
+    const gameFrozen = stepSimulation(dt, menuState.paused);
+    const hour = hourOfDay(sim.calendar);
+    const sky = skyInWeather(skyAt(hour), weather);
+    applySky(engine.sky, sky);
+    engine.mood.setSky(sky);
     simulationMs = performance.now() - mark;
     updatePlaytestMetrics(dt, now);
-    applySky(engine.sky, skyAt(hourOfDay(displayCalendar())));
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
     zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
-    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && zombieSystem.isFrozen);
+    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen));
     if (debugTools) {
       const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
       debugTools.updateAim(aim);
+      debugTools.updateLookedAt(eye(), lookDir(), input.locked);
     }
     updateDebugReadout(now);
     mark = performance.now();
@@ -936,10 +1066,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     renderHandlingFrame();
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     held.update(camera);
+    flashlight.daylightScale = flashlightDaylightScale(sky);
+    flashlight.shadowsAllowed = engine.shadows.torchOn;
     flashlight.update(registry, survival.lit, held, camera);
-    renderer.render(scene, camera);
-    held.render(renderer, camera, engine.sky);
-    renderMs = performance.now() - mark;
+    engine.shadows.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
+    const renderStart = performance.now();
+    engine.mood.render(() => held.render(renderer, camera, engine.sky));
+    renderMs = performance.now() - renderStart;
+    frameWork.record(now, performance.now() - workStart);
     finishFrame();
   };
 
@@ -967,5 +1101,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       requestAnimationFrame(frame);
     }
   };
+  // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
+  // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
+  engine.shadows
+    .warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget])
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   requestAnimationFrame(frame);
 };

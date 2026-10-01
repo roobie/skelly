@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import { displayItems as selectDisplayItems } from '../src/core/display.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/core/exportFrame.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
 import { applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, type Vec3 } from '../src/core/math.ts';
-import { meshForSolid } from '../src/core/mesh.ts';
+import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
@@ -14,8 +15,8 @@ import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, solidColor } from '../src/gun/palette.ts';
-import { readGlb } from './glbReader.ts';
-import { variant } from './helpers.ts';
+import { type ReadGlb, readGlb } from './glbReader.ts';
+import { expectWatertightMesh, variant } from './helpers.ts';
 
 const design = (name: string): Assembly => {
   const result = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8'));
@@ -39,6 +40,15 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET) => {
 const near = (a: readonly number[], b: readonly number[], digits = 6): void => {
   // biome-ignore lint/suspicious/noMisplacedAssertion: a small comparison helper called from tests
   expect(a).toEqual(b.map((x) => expect.closeTo(x, digits)));
+};
+
+const glbIndices = (glb: ReadGlb, accessorIndex: number): Uint32Array => {
+  const accessor = glb.json.accessors[accessorIndex]!;
+  const bufferView = glb.json.bufferViews[accessor.bufferView]!;
+  const view = new DataView(glb.bin.buffer, glb.bin.byteOffset, glb.bin.byteLength);
+  return Uint32Array.from({ length: accessor.count }, (_, index) =>
+    view.getUint32(bufferView.byteOffset + index * 4, true),
+  );
 };
 
 interface PortExtras {
@@ -100,6 +110,13 @@ describe('glb export: nodes', () => {
     expect(ar.read.json.asset.version).toBe('2.0');
     expect(ar.read.json.scenes).toHaveLength(1);
     expect(ar.read.json.nodes[ar.read.json.scenes[0]!.nodes[0]!]?.name).toBe(ASSET.id);
+  });
+
+  it('emits the BCG as its own node with linear travel extras and keeps port metadata children', () => {
+    const node = ar.read.json.nodes.find((entry) => entry.extras?.part === 'bolt-carrier')!;
+    expect(node.name).toBe(partNodeName('bolt-carrier', 'bolt-carrier'));
+    expect(node.extras?.motion).toEqual({ kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0], rearmost: [6.5, 0, 0] });
+    expect((node.children ?? []).some((index) => ar.read.json.nodes[index]!.name === 'bolt-carrier.mount')).toBe(true);
   });
 
   it('names one node per part by part id and registry-key family', () => {
@@ -200,12 +217,84 @@ describe('glb export: meshes', () => {
     const def = ar.resolved.defs.get(id)!;
     return def.displaySolids ?? def.solids;
   };
+  const displayItems = (id: string) =>
+    selectDisplayItems(drawn(id)).map((item) => ({
+      ...item,
+      mesh: item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!),
+    }));
 
-  it('draws the solids the viewer draws (displaySolids, else solids), one primitive each', () => {
+  it('exports the merged AR receiver as the same closed, manifold mesh', () => {
+    const receiverMesh = displayItems('receiver').find(({ id }) => id === 'receiver-ar')!.mesh;
+    expectWatertightMesh(receiverMesh, 'AR source receiver');
+    const receiverNode = json.nodes.find((node) => node.extras?.part === 'receiver')!;
+    const primitive = json.meshes[receiverNode.mesh!]!.primitives.find(
+      (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === 'receiver-ar',
+    )!;
+    const positions = ar.read.floats(primitive.attributes.POSITION);
+    const indices = glbIndices(ar.read, primitive.indices);
+    expect(positions.length).toBe(receiverMesh.positions.length);
+    expect(indices).toEqual(receiverMesh.indices);
+    near(
+      Array.from(positions),
+      Array.from(receiverMesh.positions, (value) => value * S),
+      7,
+    );
+    expectWatertightMesh(
+      {
+        positions: Float32Array.from(positions, (value) => value / S),
+        normals: ar.read.floats(primitive.attributes.NORMAL),
+        indices,
+        triangleCount: indices.length / 3,
+      },
+      'AR exported receiver',
+    );
+  });
+
+  it('exports AK and pump receiver primitives with the same closed merged meshes', () => {
+    const samples = [
+      { designName: 'archetype-ak', group: 'receiver-ak' },
+      { designName: 'archetype-pump-shotgun', group: 'receiver-pump' },
+    ];
+    for (const { designName, group } of samples) {
+      const model = exported(design(designName));
+      const def = model.resolved.defs.get('receiver')!;
+      const solids = (def.displaySolids ?? def.solids).filter((solid) => solid.display?.mergeGroup === group);
+      const expectedMesh = meshForSolidGroup(solids);
+      expectWatertightMesh(expectedMesh, `${designName}: source topology`);
+      const node = model.read.json.nodes.find((entry) => entry.extras?.part === 'receiver')!;
+      const primitive = model.read.json.meshes[node.mesh!]!.primitives.find(
+        (entry) => (entry.extras as Record<string, unknown> | undefined)?.mergeGroup === group,
+      )!;
+      const positions = model.read.floats(primitive.attributes.POSITION);
+      const indices = glbIndices(model.read, primitive.indices);
+      expect(indices).toEqual(expectedMesh.indices);
+      near(
+        Array.from(positions),
+        Array.from(expectedMesh.positions, (value) => value * S),
+        7,
+      );
+      expectWatertightMesh(
+        {
+          positions: Float32Array.from(positions, (value) => value / S),
+          normals: model.read.floats(primitive.attributes.NORMAL),
+          indices,
+          triangleCount: indices.length / 3,
+        },
+        `${designName}: exported topology`,
+      );
+    }
+  });
+
+  it('draws normal solids individually and section shells as one merged primitive', () => {
     for (const id of Object.keys(ar.resolved.assembly.parts)) {
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       const prims = json.meshes[node.mesh!]!.primitives;
-      expect(prims.map((p) => p.extras?.solid)).toEqual(drawn(id).map((s) => s.id));
+      expect(
+        prims.map((p) => {
+          const extras = p.extras as Record<string, unknown> | undefined;
+          return extras?.solid ?? extras?.mergeGroup;
+        }),
+      ).toEqual(displayItems(id).map(({ id: itemId }) => itemId));
     }
   });
 
@@ -213,8 +302,7 @@ describe('glb export: meshes', () => {
     for (const id of Object.keys(ar.resolved.assembly.parts)) {
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       const prims = json.meshes[node.mesh!]!.primitives;
-      drawn(id).forEach((solid, i) => {
-        const mesh = meshForSolid(solid);
+      displayItems(id).forEach(({ mesh }, i) => {
         const lo = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
         const hi = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
         for (let v = 0; v < mesh.positions.length; v += 3) {
@@ -257,7 +345,13 @@ describe('glb export: meshes', () => {
       const role = ar.resolved.defs.get(id)!.family;
       const node = json.nodes.find((n) => n.extras?.part === id)!;
       for (const prim of json.meshes[node.mesh!]!.primitives) {
-        const srgb = solidColor(GUN_PALETTE, role, prim.extras!.solid!);
+        const extras = prim.extras as Record<string, unknown> | undefined;
+        const groupedSolids = extras?.solids as string[] | undefined;
+        const solidId = (extras?.solid as string | undefined) ?? groupedSolids?.[0];
+        if (!solidId) {
+          throw new Error(`No source solid for ${id} primitive ${prim.indices}.`);
+        }
+        const srgb = solidColor(GUN_PALETTE, role, solidId);
         const factor = json.materials[prim.material]!.pbrMetallicRoughness.baseColorFactor;
         near(factor.slice(0, 3), srgb.map(srgbToLinear));
         expect(factor[3]).toBe(1);

@@ -1,10 +1,17 @@
 // Milestone 1.0's test scene: a small two-room house next to spawn, defined in
 // metres so it can be compared at different block sizes. Its rooms have a front door,
 // windows, a kitchen counter, a table, a bed, and full-block stairs up to a roof
-// terrace. The ground around it is levelled.
+// terrace. The ground around it is levelled. Stonework for looking at stone: a plinth
+// under the walls, an outside chimney, a low garden wall with a gate gap, and a flagstone path.
+// Colour variety for telling materials apart: painted siding on the north wall and a
+// small shed with a galvanized roof, a mossy cobblestone wall cap, dressed stone on the
+// chimney and doorstep, and a little hazard yellow on the gate posts. Furniture (a crate, a
+// kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
 
+import type { EntitySpec } from '../core/blockEntities.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { MetreBox } from '../core/structure.ts';
+import { type Facing, pieceSize } from '../core/templates.ts';
 
 export interface HouseBlocks {
   brick: number;
@@ -15,6 +22,13 @@ export interface HouseBlocks {
   roof: number;
   dirt: number;
   grass: number;
+  stone: number;
+  sidingRed: number;
+  sidingBlue: number;
+  galvanized: number;
+  cobblestone: number;
+  dressedStone: number;
+  hazard: number;
 }
 
 /** Storey height in metres. */
@@ -38,6 +52,8 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([-10, -8, -3], [13, 0, 10], b.dirt),
     box([-10, -0.5, -3], [13, 0, 10], b.grass),
     box([-10, 0, -3], [13, 16, 10], air),
+    // Flagstone path from the spawn area to the front door, flush with the ground.
+    box([-8, -0.5, 3], [0, 0, 4], b.stone),
     // Floor (kitchen tiled), outer walls, interior wall, roof.
     box([0, -0.5, 0], [10, 0, 7], b.planks),
     box([0.5, -0.5, 0.5], [5, 0, 6.5], b.tiles),
@@ -47,14 +63,41 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([9.5, 0, 0], [10, STOREY, 7], b.brick),
     box([5, 0, 0.5], [5.5, STOREY, 6.5], b.plaster),
     box([0, STOREY, 0], [10, STOREY + 0.5, 7], b.roof),
-    // Openings: front door (west), interior doorway, windows, roof hatch over the stairs.
+    // Stone plinth: the bottom half metre of the outer walls. Before the openings, so the door still cuts through.
+    box([0, 0, 0], [10, 0.5, 0.5], b.stone),
+    box([0, 0, 6.5], [10, 0.5, 7], b.stone),
+    box([0, 0, 0], [0.5, 0.5, 7], b.stone),
+    box([9.5, 0, 0], [10, 0.5, 7], b.stone),
+    // Siding clads the north wall outside, above the plinth: red over the kitchen, blue-grey over the bedroom.
+    box([0, 0.5, -0.5], [5, STOREY, 0], b.sidingRed),
+    box([5, 0.5, -0.5], [10, STOREY, 0], b.sidingBlue),
+    // Openings: front door (west), interior doorway, windows (the north one also through the siding), roof hatch over the stairs.
     box([0, 0, 3], [0.5, 2, 4], air),
     box([5, 0, 3], [5.5, 2, 4], air),
-    box([2, 1, 0], [3, 2, 0.5], air),
+    box([2, 1, -0.5], [3, 2, 0.5], air),
     box([2, 1, 6.5], [3, 2, 7], air),
     box([7, 1, 6.5], [8, 2, 7], air),
     box([9.5, 1, 3], [10, 2, 4], air),
     box([6, STOREY, 0.5], [9, STOREY + 0.5, 1.5], air),
+    // Outside: a stone chimney against the east wall, and a dry-stone garden wall along the south side with a 1 m gate gap.
+    box([10, 0, 5], [11, STOREY + 1.5, 6.5], b.stone),
+    box([-6, 0, 8.5], [2, 1, 9], b.stone),
+    box([3, 0, 8.5], [10, 1, 9], b.stone),
+    // The wall's top half metre is mossy cobblestone; the gate posts' tops are hazard yellow, and the chimney has a dressed-stone cap.
+    box([-6, 0.5, 8.5], [2, 1, 9], b.cobblestone),
+    box([3, 0.5, 8.5], [10, 1, 9], b.cobblestone),
+    box([1.5, 0.5, 8.5], [2, 1, 9], b.hazard),
+    box([3, 0.5, 8.5], [3.5, 1, 9], b.hazard),
+    box([9.5, STOREY + 1.5, 4.5], [11.5, STOREY + 2, 7], b.dressedStone),
+    // A dressed-stone doorstep, flush with the path.
+    box([-1, -0.5, 2.5], [0, 0, 4.5], b.dressedStone),
+    // A shed north-west of the path: siding walls, a doorway facing south, a galvanized roof overhanging its walls.
+    box([-9, 0, -3], [-6, 2.5, -2.5], b.sidingBlue),
+    box([-9, 0, -1], [-6, 2.5, -0.5], b.sidingBlue),
+    box([-9, 0, -3], [-8.5, 2.5, -0.5], b.sidingBlue),
+    box([-6.5, 0, -3], [-6, 2.5, -0.5], b.sidingBlue),
+    box([-8, 0, -1], [-7, 2, -0.5], air),
+    box([-9.5, 2.5, -3], [-5.5, 3, 0], b.galvanized),
     // Kitchen: counter along the north wall, table. Bedroom: bed.
     box([1, 0, 0.5], [4, 0.9, 1.1], b.tiles),
     box([2.5, 0, 4.5], [4, 0.75, 5.5], b.planks),
@@ -68,6 +111,31 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
   }
   return boxes;
 };
+
+/** The house's furniture: each piece's lowest corner in metres from the lot origin, and which way its front faces. */
+const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing }[] = [
+  // Outside, on the grass beside the path.
+  { type: 'crate', at: [-2, 0, 4.5], facing: 'n' },
+  // Kitchen: a fridge in the south-west corner, a cupboard against the south wall.
+  { type: 'fridge', at: [1, 0, 5.5], facing: 'n' },
+  { type: 'kitchen_cupboard', at: [3, 0, 6], facing: 'n' },
+  // Bedroom: a wardrobe against the east wall, clear of the window and the stairs.
+  { type: 'wardrobe', at: [9, 0, 1.5], facing: 'w' },
+];
+
+/**
+ * The house's furniture as entity specs in blocks, for a lot origin in metres. Furniture sizes are
+ * in blocks and authored for the hamlet's 0.5 m blocks, and the positions are whole blocks only
+ * there, so the caller places furniture at that block size only.
+ * @param sizeOf a furniture type's size in blocks, before turning
+ */
+export const testHouseFurniture = (origin: Vec3, blockSize: number, sizeOf: (type: string) => Vec3): EntitySpec[] =>
+  HOUSE_FURNITURE.map(({ type, at, facing }) => ({
+    type,
+    pos: [0, 1, 2].map((axis) => Math.round((origin[axis]! + at[axis]!) / blockSize)) as Vec3,
+    size: pieceSize(sizeOf(type), facing),
+    facing,
+  }));
 
 /** Where to put the house relative to the world origin, and where the player starts (metres). */
 export const HOUSE_OFFSET: readonly [number, number] = [4, -4];

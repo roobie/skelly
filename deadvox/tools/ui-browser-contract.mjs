@@ -46,7 +46,8 @@ const chrome = spawn(
     `--remote-debugging-port=${cdpPort}`,
     `--user-data-dir=${profile}`,
     '--window-size=1280,900',
-    `http://127.0.0.1:${port}/?debug=1`,
+    // The contract tests UI, not the look: without a GPU the post chain and shadows make each frame several times slower.
+    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
   ],
   { stdio: 'ignore' },
 );
