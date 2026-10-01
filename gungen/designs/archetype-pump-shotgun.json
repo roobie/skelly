@@ -11,8 +11,13 @@
         "params": {
           "action": "pump",
           "feed": "tube",
-          "bore": "L"
+          "bore": "L",
+          "section": "pump"
         }
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": { "pattern": "pump" }
       },
       "lower": {
         "family": "lower",
@@ -48,6 +53,10 @@
       {
         "from": "receiver.barrel",
         "to": "barrel.rear"
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount"
       },
       {
         "from": "receiver.tube",

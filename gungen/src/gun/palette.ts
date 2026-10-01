@@ -36,6 +36,7 @@ const BARREL_GRAY = 0x5d_63_6b;
 
 const FAMILY_HEX: Record<string, number> = {
   receiver: 0x8d_93_9c,
+  'bolt-carrier': 0x6d_73_7c,
   lower: 0x6f_75_7e,
   barrel: BARREL_GRAY,
   'tube-magazine': 0x4d_53_5b,

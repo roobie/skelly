@@ -17,6 +17,7 @@ export const battleRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: ['M', 'L'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     {
@@ -44,6 +45,7 @@ export const battleRifle: Template = {
       chance: 0.7,
       when: { part: 'handguard', param: 'mount', equals: 'clamped' },
     },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
@@ -60,8 +62,16 @@ export const ar: Template = {
     {
       id: 'receiver',
       family: 'receiver',
-      params: { action: 'auto', feed: 'box', bore: ['S', 'M'], chargingHandle: 'rear-top', rail: 'full' },
+      params: {
+        action: 'auto',
+        feed: 'box',
+        bore: ['S', 'M'],
+        chargingHandle: 'rear-top',
+        rail: 'full',
+        section: 'ar',
+      },
     },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
     { id: 'lower', family: 'lower', params: { layout: 'ar' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     {
@@ -75,7 +85,7 @@ export const ar: Template = {
     },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-curved' } },
-    { id: 'stock', family: 'stock', params: { length: 'M', style: 'straight' } },
+    { id: 'stock', family: 'stock', params: { length: 'M', style: 'm4' } },
     {
       id: 'front-sight',
       family: 'front-sight',
@@ -93,6 +103,7 @@ export const ar: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
     { from: 'lower.grip', to: 'grip.top' },
@@ -132,6 +143,7 @@ export const ak: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ak' } },
     { id: 'lower', family: 'lower', params: { layout: 'ak' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard', params: { layout: ['ak', 'standard'], clearance: ['M', 'L'] } },
@@ -139,13 +151,14 @@ export const ak: Template = {
     { id: 'gas-block', family: 'gas-block' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] } },
-    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'dropped' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'ak-dropped' } },
     { id: 'rear-sight', family: 'ak-rear-sight' },
     { id: 'front-sight', family: 'front-sight', params: { style: 'ak' } },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
     { from: 'lower.grip', to: 'grip.top' },
@@ -206,6 +219,7 @@ export const smg: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'S' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'smg' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.7 },
@@ -227,6 +241,7 @@ export const smg: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };
@@ -237,6 +252,7 @@ export const boltRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
     {
       id: 'lower',
@@ -266,6 +282,7 @@ export const boltRifle: Template = {
     },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     // Over the receiver, a sight can block the loading port; ahead of it, it can't.
     { from: ['receiver.rail', 'handguard.rail'], to: 'sight.base', slot: 'any' },
   ],
@@ -278,6 +295,7 @@ export const boltRifleBox: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'box', bore: ['M', 'L'] } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     // Free-floating, so its length is set rather than read from the barrel.
@@ -294,6 +312,7 @@ export const boltRifleBox: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };
@@ -325,7 +344,8 @@ export const pumpShotgun: Template = {
   description: 'Pump shotgun with either a stock-grip or separate-pistol-grip lower.',
   root: 'receiver',
   slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'pump', feed: 'tube', bore: 'L' } },
+    { id: 'receiver', family: 'receiver', params: { action: 'pump', feed: 'tube', bore: 'L', section: 'pump' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'pump' } },
     {
       id: 'lower',
       family: 'lower',
@@ -367,6 +387,7 @@ export const pumpShotgun: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.tube', to: 'tube.rear' },
     { from: 'tube.cap', to: 'barrel.lug' },
     {
@@ -397,6 +418,7 @@ export const bullpup: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'M' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
     { id: 'lower', family: 'lower', params: { layout: 'bullpup' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.3 },
@@ -407,6 +429,7 @@ export const bullpup: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },
     { from: 'lower.grip', to: 'grip.top' },

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { applyPoint, extrusionPoint, type Transform, type Vec3 } from '../src/core/math.ts';
+import { worldSolid } from '../src/core/geometry.ts';
+import { applyPoint, extrusionPoint, IDENTITY, type Transform, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, PortDef, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -25,7 +26,10 @@ const solidVertices = (solid: Solid): Vec3[] => {
       ),
     );
   }
-  return solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
+  const polyhedron = worldSolid(IDENTITY, solid);
+  return 'vertices' in polyhedron
+    ? [...polyhedron.vertices]
+    : solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
 };
 
 const facePointsAtX = (solids: readonly Solid[], x: number, transform: Transform): readonly Vec3[] =>
@@ -34,11 +38,6 @@ const facePointsAtX = (solids: readonly Solid[], x: number, transform: Transform
       .filter(([pointX]) => Math.abs(pointX - x) < 1e-8)
       .map((point) => applyPoint(transform, point)),
   );
-
-const yRange = (points: readonly Vec3[]): readonly [number, number] => {
-  const ys = points.map(([, y]) => y);
-  return [Math.min(...ys), Math.max(...ys)];
-};
 
 const stockM = generate(ak, gunDomain, 2);
 const stockL = generate(ak, gunDomain, 0);
@@ -49,8 +48,8 @@ const samples: { assembly: Assembly; label: string; stockLength: 'M' | 'L' }[] =
   { assembly: stockL, label: 'AK template seed 0 (L stock)', stockLength: 'L' },
 ];
 
-describe('AK dropped-stock alignment', () => {
-  it('aligns the stock mating face to the receiver rear face', () => {
+describe('AK stock mating alignment', () => {
+  it('exposes the new rear-face stock step for visual review', () => {
     for (const { assembly, label, stockLength } of samples) {
       const resolved = resolve(assembly, gunDomain);
       const receiver = resolved.defs.get('receiver')!;
@@ -59,22 +58,22 @@ describe('AK dropped-stock alignment', () => {
       const stockTransform = resolved.placed.get('stock')!;
       const receiverPort = receiver.ports.find(({ id }) => id === 'stock') as PortDef;
       const stockPort = stock.ports.find(({ id }) => id === 'front') as PortDef;
+      expect(receiverPort.pos[1], `${label}: lower uncut rear mating face`).toBe(0.5);
+      expect(stockPort.pos, `${label}: AK stock port`).toEqual([0, -2, 0]);
+      expect(applyPoint(receiverTransform, receiverPort.pos), `${label}: receiver interface`).toEqual(
+        applyPoint(stockTransform, stockPort.pos),
+      );
       const receiverFace = facePointsAtX(receiver.solids, receiverPort.pos[0], receiverTransform);
       const stockFace = facePointsAtX(stock.solids, stockPort.pos[0], stockTransform);
       expect(receiverFace.length, `${label}: receiver rear face vertices`).toBeGreaterThan(0);
       expect(stockFace.length, `${label}: stock mating face vertices`).toBeGreaterThan(0);
-      const [receiverMinY, receiverMaxY] = yRange(receiverFace);
-      const [stockMinY, stockMaxY] = yRange(stockFace);
-      const receiverHeight = receiverMaxY - receiverMinY;
-      const stockHeight = stockMaxY - stockMinY;
-      const centerOffset = (stockMinY + stockMaxY - receiverMinY - receiverMaxY) / 2;
-      const topOffset = stockMaxY - receiverMaxY;
-      const context = `${label}: receiver Y=[${receiverMinY}, ${receiverMaxY}], stock Y=[${stockMinY}, ${stockMaxY}], center offset=${centerOffset}, top offset=${topOffset}`;
-
-      expect(assembly.parts.stock?.params?.style, `${label}: dropped stock`).toBe('dropped');
+      const receiverTop = Math.max(...receiverFace.map(([, y]) => y));
+      const stockTop = Math.max(...stockFace.map(([, y]) => y));
+      // The rear bevel leaves the stock face flush with the lower receiver wall.
+      expect(receiverTop, `${label}: receiver rear face meets stock`).toBeCloseTo(stockTop, 6);
+      expect(receiverTop - stockTop, `${label}: receiver-to-stock top step`).toBeCloseTo(0, 6);
+      expect(assembly.parts.stock?.params?.style, `${label}: AK-specific stock`).toBe('ak-dropped');
       expect(assembly.parts.stock?.params?.length, `${label}: stock length`).toBe(stockLength);
-      expect(receiverHeight, `${label}: receiver rear face taller than stock mating face`).toBeGreaterThan(stockHeight);
-      expect(Math.abs(topOffset), context).toBeLessThanOrEqual(1e-6);
     }
   });
 });

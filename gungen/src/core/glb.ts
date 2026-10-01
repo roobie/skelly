@@ -19,9 +19,10 @@ import type {
   PartPortId,
   SrgbColor,
 } from './design.ts';
+import { type DisplayItem, displayItems } from './display.ts';
 import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
-import { meshForSolid } from './mesh.ts';
+import { meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
@@ -272,35 +273,43 @@ export const exportGlb: ExportGlb = (input) => {
   const meshes: Json[] = [];
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
+  const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
+    const solid = item.solids[0]!;
+    const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
+    if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+      return undefined;
+    }
+    const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
+    const { min, max } = bounds(positions);
+    const position = bin.add(
+      positions,
+      { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
+      ARRAY_BUFFER,
+    );
+    const normal = bin.add(
+      mesh.normals,
+      { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
+      ARRAY_BUFFER,
+    );
+    const indices = bin.add(
+      mesh.indices,
+      { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
+      ELEMENT_ARRAY_BUFFER,
+    );
+    return {
+      attributes: { POSITION: position, NORMAL: normal },
+      indices,
+      material: materialFor(colorOf(palette, part.def.family, solid.id)),
+      mode: 4,
+      extras: item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id },
+    };
+  };
 
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = drawn.map((solid) => {
-      const mesh = meshForSolid(solid);
-      const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
-      const { min, max } = bounds(positions);
-      const position = bin.add(
-        positions,
-        { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
-        ARRAY_BUFFER,
-      );
-      const normal = bin.add(
-        mesh.normals,
-        { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
-        ARRAY_BUFFER,
-      );
-      const indices = bin.add(
-        mesh.indices,
-        { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
-        ELEMENT_ARRAY_BUFFER,
-      );
-      return {
-        attributes: { POSITION: position, NORMAL: normal },
-        indices,
-        material: materialFor(colorOf(palette, part.def.family, solid.id)),
-        mode: 4,
-        extras: { solid: solid.id },
-      };
+    const primitives = displayItems(drawn).flatMap((item) => {
+      const primitive = primitiveFor(part, item);
+      return primitive ? [primitive] : [];
     });
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
@@ -313,7 +322,13 @@ export const exportGlb: ExportGlb = (input) => {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
     }
-    node.extras = { part: part.id, family: part.family, role: part.def.family, solids: drawn.map((s) => s.id) };
+    node.extras = {
+      part: part.id,
+      family: part.family,
+      role: part.def.family,
+      solids: drawn.map((s) => s.id),
+      ...(part.def.motion ? { motion: part.def.motion } : {}),
+    };
 
     const children: number[] = [];
     const nodeIndex = nodes.length;

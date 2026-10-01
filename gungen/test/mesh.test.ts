@@ -1,13 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+
 import { generate } from '../src/core/generate.ts';
-import { BEVEL, meshForSolid, type TriangleMesh } from '../src/core/mesh.ts';
+import { validateExtrudedPolygon } from '../src/core/geometry.ts';
+import { BEVEL, meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
-import { loadCorpus } from './helpers.ts';
+import { expectWatertightMesh, loadCorpus } from './helpers.ts';
+
+const THIN_SOLID_ERROR = /thinner than the mesh-group weld contract/;
 
 // A stated per-assembly triangle budget (PROJECT.md §7). `npm run mesh-stats`
 // over 1000 seeds/template puts the largest single build (ak) at 2312
@@ -112,6 +116,17 @@ describe('meshForSolid', () => {
     expect(inwardNormals(meshForSolid(prism), [cx, cy, cz])).toEqual([]);
   });
 
+  it('rejects profiles with collinear consecutive vertices before meshing', () => {
+    const profile = [
+      [0, 0],
+      [2, 0],
+      [4, 0],
+      [4, 2],
+      [0, 2],
+    ] as const;
+    expect(validateExtrudedPolygon(profile, [0, 1])).toBe('profile must not contain collinear consecutive vertices');
+  });
+
   it('clamps the bevel so a thin solid cannot invert', () => {
     const thin: BoxSolid = { id: 't', kind: 'box', box: { center: [0, 0, 0], half: [0.01, 5, 5] } };
     const mesh = meshForSolid(thin, BEVEL);
@@ -173,40 +188,7 @@ const regularPolygon = (n: number, r: number): Vec2[] =>
     return [r * Math.cos(a), r * Math.sin(a)] as Vec2;
   });
 
-/**
- * Welds a mesh's vertices by exact position (fixed to 5 decimals) and reports
- * any undirected edge not shared by exactly two triangles, plus the welded
- * Euler characteristic V - E + F (2 for a closed, genus-0 mesh — a sphere-like
- * solid with no holes). A gap or T-junction along an edge lets the background
- * show through it in the viewer, which is exactly what this test catches.
- */
-const weldedTopology = (mesh: TriangleMesh): { badEdges: string[]; vertices: number; edges: number; faces: number } => {
-  const idOf = new Map<string, number>();
-  const vertexId = (v: number): number => {
-    const k = [0, 1, 2].map((axis) => mesh.positions[v * 3 + axis]!.toFixed(5)).join(',');
-    const existing = idOf.get(k);
-    if (existing !== undefined) {
-      return existing;
-    }
-    const id = idOf.size;
-    idOf.set(k, id);
-    return id;
-  };
-  const edgeUse = new Map<string, number>();
-  for (let t = 0; t < mesh.triangleCount; t++) {
-    const verts = [0, 1, 2].map((k) => vertexId(mesh.indices[t * 3 + k]!));
-    for (let e = 0; e < 3; e++) {
-      const a = verts[e]!;
-      const b = verts[(e + 1) % 3]!;
-      const k = a < b ? `${a}|${b}` : `${b}|${a}`;
-      edgeUse.set(k, (edgeUse.get(k) ?? 0) + 1);
-    }
-  }
-  const badEdges = [...edgeUse.entries()].filter(([, count]) => count !== 2).map(([k, count]) => `${k}:${count}`);
-  return { badEdges, vertices: idOf.size, edges: edgeUse.size, faces: mesh.triangleCount };
-};
-
-describe('watertightness (welded by exact position)', () => {
+describe('watertightness (welded at 1e-5u)', () => {
   const profiles: Record<string, Solid> = {
     box,
     triangle: {
@@ -225,11 +207,72 @@ describe('watertightness (welded by exact position)', () => {
 
   for (const [name, solid] of Object.entries(profiles)) {
     it(`has no gaps or T-junctions for a ${name} profile`, () => {
-      const { badEdges, vertices, edges, faces } = weldedTopology(meshForSolid(solid));
-      expect(badEdges).toEqual([]);
-      expect(vertices - edges + faces).toBe(2);
+      expectWatertightMesh(meshForSolid(solid), name);
     });
   }
+
+  it('renders a clipped prism with its new cap and preserves watertight topology', () => {
+    const clipped: ExtrudedPolygonSolid = {
+      id: 'clipped-box',
+      kind: 'extruded-polygon',
+      profile: [
+        [0, 0],
+        [2, 0],
+        [2, 2],
+        [0, 2],
+      ],
+      z: [0, 2],
+      clip: [{ normal: [1, 1, 0], offset: 2 }],
+    };
+    const mesh = meshForSolid(clipped);
+    expect(mesh.triangleCount).toBe(8);
+    expectWatertightMesh(mesh, 'clipped prism');
+  });
+
+  it('culls nested pieces from exterior faces and preserves closed union boundaries', () => {
+    const nested = meshForSolidGroup([
+      { id: 'outer', kind: 'box', box: { center: [0, 0, 0], half: [2, 2, 2] } },
+      { id: 'inner', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
+    ]);
+    expect(nested.triangleCount).toBe(12);
+    expectWatertightMesh(nested, 'nested boxes');
+  });
+
+  it('merges coincident, overlapping, and T-junction box groups into closed boundaries', () => {
+    const coincident = meshForSolidGroup([
+      { id: 'a', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
+      { id: 'b', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
+    ]);
+    expect(coincident.triangleCount).toBe(12);
+    expectWatertightMesh(coincident, 'coincident boxes');
+    for (const [label, solids] of [
+      [
+        'overlap',
+        [
+          { id: 'a', kind: 'box' as const, box: { center: [0, 0, 0] as const, half: [1, 1, 1] as const } },
+          { id: 'b', kind: 'box' as const, box: { center: [1, 0, 0] as const, half: [1, 1, 1] as const } },
+        ],
+      ],
+      [
+        'T-junction',
+        [
+          { id: 'main', kind: 'box' as const, box: { center: [1, 1, 1] as const, half: [1, 1, 1] as const } },
+          {
+            id: 'neighbor',
+            kind: 'box' as const,
+            box: { center: [-0.5, 0.75, 1] as const, half: [0.5, 0.25, 1] as const },
+          },
+        ],
+      ],
+    ] as const) {
+      expectWatertightMesh(meshForSolidGroup(solids), label);
+    }
+  });
+
+  it('rejects union pieces thinner than ten weld tolerances', () => {
+    const thin: BoxSolid = { id: 'thin', kind: 'box', box: { center: [0, 0, 0], half: [2.5e-6, 1, 1] } };
+    expect(() => meshForSolidGroup([thin])).toThrow(THIN_SOLID_ERROR);
+  });
 
   it('is watertight for every solid (including displaySolids) of every template at a few seeds', () => {
     for (const t of TEMPLATES) {
@@ -239,9 +282,7 @@ describe('watertightness (welded by exact position)', () => {
           const def = resolved.defs.get(part)!;
           for (const s of def.displaySolids ?? def.solids) {
             const label = `${t.name} seed ${seed} part ${part} solid ${s.id}`;
-            const { badEdges, vertices, edges, faces } = weldedTopology(meshForSolid(s));
-            expect(badEdges, label).toEqual([]);
-            expect(vertices - edges + faces, label).toBe(2);
+            expectWatertightMesh(meshForSolid(s), label);
           }
         }
       }
