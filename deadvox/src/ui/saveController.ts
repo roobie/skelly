@@ -20,6 +20,7 @@ import { computeMenuState } from './menuState.ts';
 
 const SCHEDULER_IDS = new Set(['needs', 'lights', 'zombies', 'player', 'handling']);
 const CONTINUE_KEY = 'deadvox.continue-namespace';
+const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 
 const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
   switch (kind) {
@@ -168,8 +169,17 @@ export class SaveController {
     await this.inspectCurrentNamespace();
     await this.inspectOtherNamespaces(namespaces);
     this.statusText = [this.statusText, this.storageSummary()].filter(Boolean).join(' ');
+    const refusal = sessionStorage.getItem(`${RESTORE_REFUSAL_KEY}:${this.namespace}`);
+    if (refusal) {
+      this.protectedCurrent = true;
+      this.candidate = undefined;
+      this.restoreWorldOptions = undefined;
+      this.restored = undefined;
+      this.failure = refusal;
+      this.statusText = refusal;
+    }
     const requested = sessionStorage.getItem(CONTINUE_KEY);
-    this.requestedContinue = requested === this.namespace;
+    this.requestedContinue = !refusal && requested === this.namespace;
     if (requested !== null && !this.requestedContinue) {
       sessionStorage.removeItem(CONTINUE_KEY);
     }
@@ -287,6 +297,26 @@ export class SaveController {
 
   get isRestored(): boolean {
     return this.requestedContinue && this.restored !== undefined;
+  }
+
+  /** Protects a decoded save when lazy chunk-diff restoration finds a different generated base. */
+  refuseRestore(error: unknown): boolean {
+    if (!(this.isRestored && this.namespace)) {
+      return false;
+    }
+    const refusal = `Saved world unreadable and left untouched: ${errorMessage(error)}`;
+    this.protectedCurrent = true;
+    this.entered = false;
+    this.requestedContinue = false;
+    this.candidate = undefined;
+    this.restored = undefined;
+    this.failure = refusal;
+    this.statusText = refusal;
+    sessionStorage.removeItem(CONTINUE_KEY);
+    sessionStorage.setItem(`${RESTORE_REFUSAL_KEY}:${this.namespace}`, refusal);
+    this.render();
+    location.reload();
+    return true;
   }
 
   get titleNewWorldLabel(): string {

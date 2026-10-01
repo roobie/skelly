@@ -60,6 +60,13 @@ export interface StartPlayOptions {
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
+  if (options.saveController) {
+    streamer.onGenerationError = (error) => {
+      if (!options.saveController?.refuseRestore(error)) {
+        throw error;
+      }
+    };
+  }
   const { scale } = config;
   const s = scale.blockSize;
   const eyeHeight = PLAYER.eye / s;

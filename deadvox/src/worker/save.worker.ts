@@ -192,8 +192,24 @@ const listNamespaces = (): Promise<string[]> => {
 
 const readSlots = async (namespace: string): Promise<SlotPair> => {
   if (backend === 'opfs') {
-    const [a, b] = await Promise.all([readOpfsSlot(namespace, 'a'), readOpfsSlot(namespace, 'b')]);
-    return { a, b };
+    const results = await Promise.allSettled([readOpfsSlot(namespace, 'a'), readOpfsSlot(namespace, 'b')]);
+    const lockFailure = results.find(
+      (result): result is PromiseRejectedResult =>
+        result.status === 'rejected' &&
+        result.reason instanceof DOMException &&
+        result.reason.name === 'NoModificationAllowedError',
+    );
+    if (lockFailure) {
+      throw new Error('LOCKED: OPFS save slot is open in another context; retry the read');
+    }
+    const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (failure) {
+      throw failure.reason;
+    }
+    return {
+      a: (results[0] as PromiseFulfilledResult<ArrayBuffer | null>).value,
+      b: (results[1] as PromiseFulfilledResult<ArrayBuffer | null>).value,
+    };
   }
   return readIdbSlots(namespace);
 };

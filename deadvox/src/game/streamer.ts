@@ -60,11 +60,14 @@ export class Streamer {
   private readonly inFlight = new Set<string>();
   private readonly workers: Worker[] = [];
   private readonly maxInFlight: number;
+  private generationFailed = false;
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
   onColumn: (cx: number, cz: number) => void = () => undefined;
+  /** Handles a deterministic generation failure such as an unreadable restored chunk diff. */
+  onGenerationError: ((error: unknown) => void) | undefined;
 
   constructor(opts: StreamerOptions) {
     this.opts = opts;
@@ -130,13 +133,16 @@ export class Streamer {
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   update(x: number, z: number): void {
+    if (this.generationFailed) {
+      return;
+    }
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
     const { radius } = this.opts;
 
     let budget = COLUMNS_PER_FRAME;
     for (const [dx, dz] of this.offsets) {
-      if (budget === 0) {
+      if (this.generationFailed || budget === 0) {
         break;
       }
       if (this.generate(pcx + dx, pcz + dz)) {
@@ -144,6 +150,9 @@ export class Streamer {
       }
     }
 
+    if (this.generationFailed) {
+      return;
+    }
     for (const [dx, dz] of this.offsets) {
       if (this.inFlight.size >= this.maxInFlight) {
         break;
@@ -214,26 +223,38 @@ export class Streamer {
 
   /** Generates a column if it doesn't exist yet. Returns true if it did work. */
   private generate(cx: number, cz: number): boolean {
+    if (this.generationFailed) {
+      return false;
+    }
     const col = `${cx},${cz}`;
     if (this.generated.has(col)) {
       return false;
     }
     const { world, seed, terrain, scale, structures, surface, stamp, stats } = this.opts;
     const start = performance.now();
-    const column = generateColumn({ seed, blocks: terrain, scale, surface, stamp }, cx, cz, structures);
-    stats?.genMs.push(performance.now() - start);
-    for (const chunk of column) {
-      if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {
-        continue; // already edited; keep it
+    try {
+      const column = generateColumn({ seed, blocks: terrain, scale, surface, stamp }, cx, cz, structures);
+      stats?.genMs.push(performance.now() - start);
+      for (const chunk of column) {
+        if (world.getChunk(chunk.cx, chunk.cy, chunk.cz)) {
+          continue; // already edited; keep it
+        }
+        world.addChunk(chunk);
+        if (!chunk.isEmpty()) {
+          this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
+        }
       }
-      world.addChunk(chunk);
-      if (!chunk.isEmpty()) {
-        this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
+      this.generated.add(col);
+      this.onColumn(cx, cz);
+      return true;
+    } catch (error) {
+      this.generationFailed = true;
+      if (!this.onGenerationError) {
+        throw error;
       }
+      this.onGenerationError(error);
+      return true;
     }
-    this.generated.add(col);
-    this.onColumn(cx, cz);
-    return true;
   }
 
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
