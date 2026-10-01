@@ -70,7 +70,7 @@ export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
   hotCheck: false,
 };
 
-const LOOK_PARAMS = [
+export const LOOK_PARAMS = [
   'tone',
   'exposure',
   'srgb',

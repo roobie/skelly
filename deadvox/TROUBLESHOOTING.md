@@ -7,13 +7,61 @@ How to look at the game and narrow down a problem. Lessons from past problems ar
 
 `?debug=1` turns on the debug panel (Backquote) and debug keys. With it, the look and
 camera settings live in the URL and update as you change them, so a reload or a pasted
-link reproduces what you saw:
+link reproduces what you saw. Only deviations from the defaults are written; values and
+their ranges are in `src/debug/lookUrl.ts` and `src/debug/camUrl.ts`.
+
+The panel is split into the groups below, each a header that shows its keys and collapses
+on a click (remembered per browser). The wheel scrolls the panel, locked or not. The table
+is generated from the action table in `src/debug/index.ts` and `src/debug/groups.ts`; a
+test fails when it drifts.
+
+<!-- debug-keys:start -->
+| Group | Key | Control | URL parameter |
+| --- | --- | --- | --- |
+| Tools | `B` | Build tools | — |
+| Tools | `G` | Spawn item menu | — |
+| Tools | `P` | Noclip | — |
+| Survival | `H` | God mode | — |
+| Survival | `T` | Compress / rest | — |
+| Survival | `N` | Emit noise | — |
+| Survival | `U` | Danger test | — |
+| Survival | `K` | Take 25 damage | — |
+| Shamblers | `V` | Spawn shamblers | — |
+| Shamblers | `Y` | Melee aim boxes | — |
+| Shamblers | `O` | Freeze shamblers | — |
+| Time | `M` | Freeze game | `freeze=1` |
+| Time | `,` | Skip +23 h (−1 h tomorrow) | — |
+| Time | `.` | Skip +1 h | — |
+| Look | `J` | Tone mapping | `tone=auto/neutral/aces/agx/none` |
+| Look | `-` | Exposure − | `exposure=0.2..3` |
+| Look | `=` | Exposure + | `exposure=0.2..3` |
+| Look | `I` | sRGB block colours | `srgb=0` |
+| Look | `;` | Surface patterns | `patterns=0` |
+| Post-processing | `Q` | Mood post-processing (all) | `post=0` |
+| Post-processing | `'` | Bloom | `bloom=0` |
+| Post-processing | `Del` | Bloom clip − | `bloomclip=1..8` |
+| Post-processing | `Ins` | Bloom clip + | `bloomclip=1..8` |
+| Post-processing | `\` | Film (vignette, grain) | `film=0` |
+| Post-processing | `[` | Grade − | `grade=0..1` |
+| Post-processing | `]` | Grade + | `grade=0..1` |
+| Lighting | `9` | Wide ambient occlusion | `vao=0` |
+| Lighting | `Num -` | Flashlight strength − | `torch=0.1..16` |
+| Lighting | `Num +` | Flashlight strength + | `torch=0.1..16` |
+| Lighting | `0` | Sun shadows | `sunshadow=0` |
+| Lighting | `Home` | Flashlight shadows | `torchshadow=0` |
+| Lighting | `PgUp` | Sun shadow distance | `shadowdist=16..96` |
+| Atmosphere | `L` | Fogginess − | `fog=0..1` |
+| Atmosphere | `/` | Fogginess + | `fog=0..1` |
+| Diagnostics | `End` | Crack check (magenta background) | `crackcheck=1` |
+| Diagnostics | `PgDn` | Hot-pixel check (coloured) | `hotcheck=1` |
+| Diagnostics | — | Mouse readout (bottom left, always on) | — |
+| Share | — | Camera pose, kept in the address bar | `cam=x,y,z,yaw,pitch,roll` |
+| Share | — | Dump look settings (JSON), a button | — |
+<!-- debug-keys:end -->
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture).
-- Look and diagnostics: see `src/debug/lookUrl.ts` and `camUrl.ts` for the full list
-  (`post=0`, `bloom=0`, `bloomclip=…`, `torch=…`, `patterns=0`, `vao=0`, `sunshadow=0`, `fog=…`, `freeze=1`, …).
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.

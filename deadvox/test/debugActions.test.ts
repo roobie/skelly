@@ -1,12 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
-import { actionsByGroup } from '../src/debug/groups.ts';
+import { actionsByGroup, DEBUG_GROUPS, debugKeyTable, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
+import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
+
+/** The generated key table in TROUBLESHOOTING.md, between its two markers. */
+const DOC_TABLE = /<!-- debug-keys:start -->\n([\s\S]*?)\n<!-- debug-keys:end -->/;
 
 interface FakeRenderer {
   toneMapping: ToneMapping;
@@ -246,6 +251,23 @@ describe('debug panel groups', () => {
     ]);
     const grouped = actionsByGroup(actions).flatMap(({ actions: inGroup }) => inGroup);
     expect(grouped).toHaveLength(actions.length);
+  });
+
+  it('lists each URL parameter of the look once in the catalogue, and none the look does not read', () => {
+    const { actions } = makeActions();
+    const catalogued = new Set([
+      ...actions.flatMap((action) => (action.param ? [paramName(action.param)] : [])),
+      ...DEBUG_GROUPS.flatMap((def) =>
+        (def.notes ?? []).flatMap((note) => (note.param ? [paramName(note.param)] : [])),
+      ),
+    ]);
+    expect([...catalogued].sort()).toEqual([...LOOK_PARAMS, 'cam'].sort());
+  });
+
+  it('is what the table in TROUBLESHOOTING.md says', () => {
+    const { actions } = makeActions();
+    const doc = readFileSync('TROUBLESHOOTING.md', 'utf8');
+    expect(DOC_TABLE.exec(doc)?.[1]).toBe(debugKeyTable(actions));
   });
 });
 
