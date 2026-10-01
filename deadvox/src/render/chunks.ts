@@ -17,7 +17,9 @@ import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
 // Per-block brightness variation stands in for textures. It's computed in the
 // fragment shader from the block each fragment belongs to, so the mesher can merge
 // faces of the same block type into large quads.
-const CELL_VARYING = 'varying vec3 vCell;';
+// Varyings that feed per-fragment shading are `centroid`: under MSAA a pixel centre outside the
+// triangle is otherwise extrapolated. (three's GLSL3 prefix maps `varying` to out/in.)
+const CELL_VARYING = 'centroid varying vec3 vCell;';
 const CELL_HASH = `
 float cellHash(vec3 c) {
   c = mod(c, 4096.0);
@@ -35,7 +37,14 @@ vec3 srgbToLinear(vec3 c) {
 // Per-quad surface pattern: its id (constant per quad, so interpolation only needs rounding),
 // the fragment's world position in metres and the face normal (object space is axis-aligned and
 // the group only scales, so it is the world normal too).
-const PATTERN_VARYING = 'varying float vPattern;\nvarying vec3 vWorld;\nvarying vec3 vFaceN;';
+// The id is `flat` (provoking vertex; never interpolated, so it can't extrapolate).
+const PATTERN_VARYING = 'flat varying float vPattern;\ncentroid varying vec3 vWorld;\ncentroid varying vec3 vFaceN;';
+
+// three declares vColor in these chunks as a plain `varying vec4`; same guard as theirs, centroid added.
+const COLOR_PARS_GUARD_VERTEX =
+  '#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA ) || defined( USE_INSTANCING_COLOR ) || defined( USE_BATCHING_COLOR )';
+const COLOR_PARS_GUARD_FRAGMENT = '#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )';
+const centroidColorPars = (guard: string): string => `${guard}\ncentroid varying vec4 vColor;\n#endif`;
 
 /**
  * Lambert with vertex colours, plus the per-block variation or, on patterned blocks, the surface
@@ -54,6 +63,7 @@ const chunkMaterial = (
     shader.uniforms.uPatterns = patterns;
     patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
+      .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
       .replace(
         '#include <common>',
         `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\n${CELL_VARYING}\n${PATTERN_VARYING}`,
@@ -68,6 +78,7 @@ vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
 vFaceN = normalize(normal);`,
       );
     shader.fragmentShader = shader.fragmentShader
+      .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
         `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
@@ -78,9 +89,10 @@ vFaceN = normalize(normal);`,
         // shading replaces the per-block hash (its cell jitter would otherwise cut across joints);
         // with patterns off every block gets the hash, as before. The derivatives are taken here, in
         // uniform control flow, whatever the block.
-        // The clamp comes right after the vertex colour: at a silhouette edge MSAA shades the pixel centre
-        // even when it lies outside the triangle, so the (AO-scaled) colour varying is extrapolated and can
-        // leave 0..1, which the sRGB decode and the lighting turn into negative or over-bright light.
+        // The clamp comes right after the vertex colour. MSAA shades edge pixels at the pixel centre even
+        // outside the triangle, extrapolating the (AO-scaled) colour out of 0..1 (negative or over-bright
+        // light after the sRGB decode and lighting). Centroid varyings fix the cause; the clamp is a cheap
+        // guard for drivers without proper centroid.
         `#include <color_fragment>
 diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);
 if (uLinearColors > 0.5) diffuseColor.rgb = srgbToLinear(diffuseColor.rgb);
