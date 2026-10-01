@@ -435,6 +435,17 @@ const carrierAxisY = (pattern: BoltCarrierPattern, receiverDrop: number): number
   return y - receiverDrop;
 };
 
+export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: number) => {
+  const envelope = BOLT_CARRIER_ENVELOPES[pattern];
+  return {
+    y: [
+      carrierY + envelope.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+      carrierY + envelope.y[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+    ] as const,
+    z: [envelope.z[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U, envelope.z[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U] as const,
+  };
+};
+
 export const RECEIVER_SECTION = {
   ar: {
     outline: [
@@ -447,7 +458,6 @@ export const RECEIVER_SECTION = {
       [-2.25, 2],
       [-2.5, 1.75],
     ] as const,
-    cavity: { y: [-0.6, 1.1], z: [-1.35, 1.35] } as const,
     faces: {
       top: { y: 2.5, halfWidth: 1.75 },
       portSide: 2,
@@ -469,7 +479,6 @@ export const RECEIVER_SECTION = {
       [1, 2],
       [-2.5, 2],
     ] as const,
-    cavity: { y: [-1.35, 1.35], z: [-1.35, 1.35] } as const,
     faces: {
       top: { y: 2.5, halfWidth: 1.25 },
       portSide: 2,
@@ -491,7 +500,6 @@ export const RECEIVER_SECTION = {
       [1, 2],
       [-2.5, 2],
     ] as const,
-    cavity: { y: [0.15, 1.85], z: [-0.85, 0.85] } as const,
     faces: {
       top: { y: 2.5, halfWidth: 1.25 },
       portSide: 2.25,
@@ -530,6 +538,7 @@ const receiverShellSolids = ({
   portSlots?: readonly SectionWindow[];
 }): Solid[] => {
   const [xMin, xMax] = [-16, 0] as const;
+  const cavity = carrierCavityBounds(carrierPattern, carrierY);
   if (isSectionedReceiver(section)) {
     const data = RECEIVER_SECTION[section];
     const clipPlanes =
@@ -544,7 +553,7 @@ const receiverShellSolids = ({
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax],
       wall: 0.5,
-      cavity: { y: [data.cavity.y[0] - receiverDrop, data.cavity.y[1] - receiverDrop], z: data.cavity.z },
+      cavity,
       port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
       ...(portSlots ? { portSlots } : {}),
       ...(clipPlanes ? { clip: clipPlanes } : {}),
@@ -556,18 +565,11 @@ const receiverShellSolids = ({
     });
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
-  const envelope = BOLT_CARRIER_ENVELOPES[carrierPattern];
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
   const lowerY = receiverBottom + wall;
   const upperY = receiverTop - wall;
-  const innerY: readonly [number, number] = [
-    carrierY + envelope.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-    carrierY + envelope.y[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
-  ];
-  const innerZ: readonly [number, number] = [
-    envelope.z[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-    envelope.z[1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
-  ];
+  const innerY = cavity.y;
+  const innerZ = cavity.z;
   const broadInnerZ: readonly [number, number] = [-RECEIVER_FRONT_HALF_WIDTH + wall, RECEIVER_FRONT_HALF_WIDTH - wall];
   const solids: Solid[] = [
     solid(
