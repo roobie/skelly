@@ -31,12 +31,12 @@ const handleAndTravel = (def: ReturnType<typeof receiver>, handleId: string) => 
 describe('visible action details', () => {
   it('keeps the ejection aperture and moves the carrier out of the receiver', () => {
     const apertures = [
-      { def: receiver('auto', 'rear-top'), halfLength: 2, halfHeight: 1.25 },
-      { def: receiver('pump'), halfLength: 3.5, halfHeight: 1 },
+      { def: receiver('auto', 'rear-top'), halfLength: 1.75, halfHeight: 1 },
+      { def: receiver('pump'), halfLength: 3.375, halfHeight: 1 },
       {
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
-        halfLength: 4.125,
-        halfHeight: 2,
+        halfLength: 1.75,
+        halfHeight: 1.5,
       },
     ];
     for (const { def, halfLength, halfHeight } of apertures) {
@@ -79,8 +79,8 @@ describe('visible action details', () => {
       expect(limits(top.box)[1]![1] - limits(top.box)[1]![0]).toBeCloseTo(1.4, 8);
       expect(limits(nearSide.box)[2]![1] - limits(nearSide.box)[2]![0]).toBeCloseTo(0.65, 8);
     }
-    const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(
-      ({ id }) => id === 'receiver-ak-near-side-before-window',
+    const akSide = FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }).solids.find(({ id }) =>
+      id.startsWith('receiver-ak-near-side-span-0-region-'),
     );
     expect(akSide?.kind).toBe('extruded-polygon');
     if (akSide?.kind === 'extruded-polygon') {

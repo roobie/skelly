@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { meshForSolidGroup } from '../src/core/mesh.ts';
-import type { Vec2 } from '../src/core/schema.ts';
+import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { IDENTITY } from '../src/core/math.ts';
+import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
+import type { Solid, Vec2 } from '../src/core/schema.ts';
 import { FAMILIES, PUMP_REAR_SLOPE, RECEIVER_SECTION } from '../src/gun/parts.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
+import { expectWatertightMesh } from './helpers.ts';
 
 const CONVEX_ERROR = /convex polygon/;
 const COUNTER_CLOCKWISE_ERROR = /counter-clockwise convex polygon/;
 const DEGENERATE_ERROR = /non-degenerate/;
 const WALL_THICKNESS_ERROR = /at least 0.75u wall thickness/;
+const SELF_INTERSECT_ERROR = /self-intersect/;
 
 const square: readonly Vec2[] = [
   [-3, -2],
@@ -25,30 +29,10 @@ const section = (outline = square) =>
     port: { x: [-3, -2], sectionAxis: 0, section: [0, 1] },
   });
 
-const vertexKey = (mesh: ReturnType<typeof meshForSolidGroup>, index: number): string => {
-  const point = [mesh.positions[index * 3]!, mesh.positions[index * 3 + 1]!, mesh.positions[index * 3 + 2]!];
-  return point.map((value) => value.toFixed(6)).join(',');
-};
-
-const topology = (mesh: ReturnType<typeof meshForSolidGroup>) => {
-  const edges = new Map<string, number>();
-  const faces = new Map<string, number>();
-  for (let i = 0; i < mesh.indices.length; i += 3) {
-    const vertices = [mesh.indices[i]!, mesh.indices[i + 1]!, mesh.indices[i + 2]!].map((index) =>
-      vertexKey(mesh, index),
-    );
-    const face = [...vertices].sort().join('|');
-    faces.set(face, (faces.get(face) ?? 0) + 1);
-    for (let edge = 0; edge < 3; edge++) {
-      const ends = [vertices[edge]!, vertices[(edge + 1) % 3]!].sort();
-      const key = ends.join('|');
-      edges.set(key, (edges.get(key) ?? 0) + 1);
-    }
-  }
-  return {
-    openEdges: [...edges.entries()].filter(([, count]) => count !== 2),
-    duplicateFaces: [...faces.values()].filter((count) => count > 1).length,
-  };
+const probeIsCovered = (solids: readonly Solid[], center: readonly [number, number, number]): boolean => {
+  const probe: Solid = { id: 'port-probe', kind: 'box', box: { center, half: [0.01, 0.01, 0.01] } };
+  const probeWorld = worldSolid(IDENTITY, probe);
+  return solids.some((solid) => penetrationWorld(worldSolid(IDENTITY, solid), probeWorld) > 0);
 };
 
 const cavityWallThickness = (
@@ -104,6 +88,16 @@ describe('receiver section builder', () => {
       ]),
     ).toThrow(CONVEX_ERROR);
     expect(() => assertConvexSection([...square].reverse())).toThrow(COUNTER_CLOCKWISE_ERROR);
+    const circle = Array.from(
+      { length: 5 },
+      (_, index) => [Math.cos((2 * Math.PI * index) / 5) * 10, Math.sin((2 * Math.PI * index) / 5) * 10] as Vec2,
+    );
+    expect(() =>
+      assertConvexSection(
+        [0, 2, 4, 1, 3].map((index) => circle[index]!),
+        'star',
+      ),
+    ).toThrow(SELF_INTERSECT_ERROR);
     expect(() =>
       assertConvexSection([
         [-1, 0],
@@ -135,8 +129,7 @@ describe('receiver section builder', () => {
     const ids = solids.map(({ id }) => id);
     expect(ids.some((id) => id.startsWith('test-receiver-rear-adapter'))).toBe(true);
     expect(ids.some((id) => id.startsWith('test-receiver-front-adapter'))).toBe(true);
-    expect(ids).toContain('test-receiver-near-side-window-low');
-    expect(ids).toContain('test-receiver-near-side-window-high');
+    expect(ids.some((id) => id.startsWith('test-receiver-near-side-span-'))).toBe(true);
     expect(solids.every((solid) => solid.kind === 'extruded-polygon' && solid.axis === 'x')).toBe(true);
     expect(solids.find(({ id }) => id === 'test-receiver-far-side')?.kind).toBe('extruded-polygon');
   });
@@ -149,11 +142,8 @@ describe('receiver section builder', () => {
       wall: 0.5,
       cavity: { y: [-2, 2], z: [-1.5, 1.5] },
     });
-    expect(solids.length).toBeGreaterThan(10);
-    const mesh = meshForSolidGroup(solids);
-    const counts = topology(mesh);
-    expect(counts.openEdges).toHaveLength(0);
-    expect(counts.duplicateFaces).toBe(0);
+    expect(solids.length).toBeGreaterThanOrEqual(10);
+    expectWatertightMesh(meshForSolidGroup(solids), 'closed section');
   });
 
   it('pins the pump top-rear taper to a 4u run over 1.5u rise', () => {
@@ -201,6 +191,9 @@ describe('receiver section builder', () => {
         expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
       }
       expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
+      expectWatertightMesh(receiverMesh, id);
+      const triangleBudget = id === 'receiver-ar' ? 300 : 450;
+      expect(receiverMesh.triangleCount, `${id} triangle budget`).toBeLessThanOrEqual(triangleBudget);
       expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(true);
       expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(true);
       const rearAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-rear-adapter`));
@@ -214,20 +207,58 @@ describe('receiver section builder', () => {
       expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
       expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(0);
     }
-    const familyTopology = receivers.map(({ id, def }) => {
-      const receiverMesh = meshForSolidGroup(def.solids.filter((solid) => solid.display?.mergeGroup === id));
-      const counts = topology(receiverMesh);
-      return {
-        id,
-        openEdges: counts.openEdges.length,
-        duplicateFaces: counts.duplicateFaces,
-      };
+  });
+
+  it('cuts near and far port windows through every intersected side and corner band', () => {
+    const port = { x: [-3, -2] as const, sectionAxis: 0 as const, section: [-1, 1] as const };
+    const solids = buildReceiverSection({
+      id: 'two-sided-port',
+      outline: [
+        [-3, -2],
+        [3, -2],
+        [3, 2],
+        [-3, 2],
+      ],
+      x: [-8, 0],
+      wall: 0.5,
+      cavity: { y: [-2, 2], z: [-1.5, 1.5] },
+      port,
+      farPort: port,
     });
-    expect(familyTopology).toEqual([
-      { id: 'receiver-ar', openEdges: 0, duplicateFaces: 0 },
-      { id: 'receiver-ak', openEdges: 0, duplicateFaces: 0 },
-      { id: 'receiver-pump', openEdges: 0, duplicateFaces: 0 },
-    ]);
+    expect(probeIsCovered(solids, [-2.5, 0, 1.75])).toBe(false);
+    expect(probeIsCovered(solids, [-2.5, 0, -1.75])).toBe(false);
+    expectWatertightMesh(meshForSolidGroup(solids), 'two-sided port');
+  });
+
+  it('leaves each declared family ejection opening empty in collision solids', () => {
+    const samples = [
+      {
+        label: 'AR',
+        def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' }),
+        point: [-7, 1.1, 1.8] as const,
+      },
+      {
+        label: 'AK',
+        def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
+        point: [-5.75, 1.4, 1.75] as const,
+      },
+      {
+        label: 'SMG',
+        def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'S', section: 'standard', rail: 'none' }),
+        point: [-7, 1.9, 1.8] as const,
+      },
+    ];
+    for (const { label, def, point } of samples) {
+      expect(probeIsCovered(def.solids, point), `${label} aperture`).toBe(false);
+      const group = def.solids.filter((solid) => solid.display?.mergeGroup?.startsWith('receiver-'));
+      if (group.length > 0) {
+        expectWatertightMesh(meshForSolidGroup(group), `${label} exported receiver mesh`);
+      } else {
+        for (const solid of def.solids) {
+          expectWatertightMesh(meshForSolid(solid), `${label} ${solid.id} mesh`);
+        }
+      }
+    }
   });
 
   it('requires the declared wall thickness around the entire cavity', () => {

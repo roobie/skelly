@@ -94,12 +94,12 @@ const polygonAreaVector = (points: readonly Vec3[]): Vec3 => {
   return area;
 };
 
-const samePoint = (a: Vec3, b: Vec3): boolean => length(sub(a, b)) <= 1e-8;
+const samePoint = (a: Vec3, b: Vec3, tolerance = 1e-8): boolean => length(sub(a, b)) <= tolerance;
 
-const uniquePoints = (points: readonly Vec3[]): Vec3[] => {
+const uniquePoints = (points: readonly Vec3[], tolerance = 1e-8): Vec3[] => {
   const unique: Vec3[] = [];
   for (const point of points) {
-    if (!unique.some((candidate) => samePoint(candidate, point))) {
+    if (!unique.some((candidate) => samePoint(candidate, point, tolerance))) {
       unique.push(point);
     }
   }
@@ -119,20 +119,25 @@ const polyhedronVolume = (polyhedron: ConvexPolyhedron): number => {
   return Math.abs(sixVolume / 6);
 };
 
-const clipFace = (
-  face: readonly number[],
-  polyhedron: ConvexPolyhedron,
-  distance: (point: Vec3) => number,
-  intersections: Vec3[],
-): Vec3[] | undefined => {
+interface ClipFaceContext {
+  readonly polyhedron: ConvexPolyhedron;
+  readonly distance: (point: Vec3) => number;
+  readonly intersections: Vec3[];
+  readonly distanceTolerance: number;
+  readonly pointTolerance: number;
+  readonly areaTolerance: number;
+}
+
+const clipFace = (face: readonly number[], context: ClipFaceContext): Vec3[] | undefined => {
+  const { polyhedron, distance, intersections, distanceTolerance, pointTolerance, areaTolerance } = context;
   const clipped: Vec3[] = [];
   for (let i = 0; i < face.length; i++) {
     const a = polyhedron.vertices[face[i]!]!;
     const b = polyhedron.vertices[face[(i + 1) % face.length]!]!;
     const distanceA = distance(a);
     const distanceB = distance(b);
-    const insideA = distanceA <= 1e-9;
-    const insideB = distanceB <= 1e-9;
+    const insideA = distanceA <= distanceTolerance;
+    const insideB = distanceB <= distanceTolerance;
     if (insideA !== insideB) {
       const ratio = distanceA / (distanceA - distanceB);
       const intersection: Vec3 = [
@@ -148,13 +153,18 @@ const clipFace = (
     }
   }
   const clean = clipped.filter(
-    (point, index) => !samePoint(point, clipped[(index + clipped.length - 1) % clipped.length]!),
+    (point, index) => !samePoint(point, clipped[(index + clipped.length - 1) % clipped.length]!, pointTolerance),
   );
-  return clean.length >= 3 && length(polygonAreaVector(clean)) > 1e-9 ? clean : undefined;
+  return clean.length >= 3 && length(polygonAreaVector(clean)) > areaTolerance ? clean : undefined;
 };
 
-const clipCap = (points: readonly Vec3[], plane: ClipPlane): Vec3[] | undefined => {
-  const capPoints = uniquePoints(points);
+const clipCap = (
+  points: readonly Vec3[],
+  plane: ClipPlane,
+  pointTolerance: number,
+  areaTolerance: number,
+): Vec3[] | undefined => {
+  const capPoints = uniquePoints(points, pointTolerance);
   if (capPoints.length < 3) {
     return undefined;
   }
@@ -173,14 +183,18 @@ const clipCap = (points: readonly Vec3[], plane: ClipPlane): Vec3[] | undefined 
       Math.atan2(dot(deltaB, bitangent), dot(deltaB, tangent))
     );
   });
-  return length(polygonAreaVector(cap)) > 1e-9 ? cap : undefined;
+  return length(polygonAreaVector(cap)) > areaTolerance ? cap : undefined;
 };
 
-const polyhedronFromFaces = (faces: readonly (readonly Vec3[])[]): ConvexPolyhedron | undefined => {
+const polyhedronFromFaces = (
+  faces: readonly (readonly Vec3[])[],
+  pointTolerance: number,
+  volumeTolerance: number,
+): ConvexPolyhedron | undefined => {
   const vertices: Vec3[] = [];
   const indices = faces.map((face) =>
     face.map((point) => {
-      let index = vertices.findIndex((candidate) => samePoint(candidate, point));
+      let index = vertices.findIndex((candidate) => samePoint(candidate, point, pointTolerance));
       if (index < 0) {
         index = vertices.length;
         vertices.push(point);
@@ -189,27 +203,67 @@ const polyhedronFromFaces = (faces: readonly (readonly Vec3[])[]): ConvexPolyhed
     }),
   );
   const result = { vertices, faces: indices };
-  return vertices.length >= 4 && indices.length >= 4 && polyhedronVolume(result) > 1e-9 ? result : undefined;
+  if (vertices.length < 4 || indices.length < 4 || polyhedronVolume(result) <= volumeTolerance) {
+    return undefined;
+  }
+  const directedEdges = new Map<string, number>();
+  for (const face of indices) {
+    for (let edge = 0; edge < face.length; edge++) {
+      const from = face[edge]!;
+      const to = face[(edge + 1) % face.length]!;
+      const key = `${from}>${to}`;
+      directedEdges.set(key, (directedEdges.get(key) ?? 0) + 1);
+    }
+  }
+  return [...directedEdges].every(([edge, count]) => {
+    const [from, to] = edge.split('>');
+    return count === (directedEdges.get(`${to}>${from}`) ?? 0);
+  })
+    ? result
+    : undefined;
 };
 
 /** Intersect a convex polyhedron with one kept half-space, adding an outward-facing cap. */
 export const clipConvexPolyhedron = (polyhedron: ConvexPolyhedron, plane: ClipPlane): ConvexPolyhedron | undefined => {
+  const bounds = ([0, 1, 2] as const).map((axis) => {
+    const coordinates = polyhedron.vertices.map((point) => point[axis]);
+    return [Math.min(...coordinates), Math.max(...coordinates)] as const;
+  });
+  const extent = Math.max(...bounds.map(([min, max]) => max - min));
+  const coordinateScale = Math.max(1, ...bounds.flatMap(([min, max]) => [Math.abs(min), Math.abs(max)]));
+  const pointTolerance = Math.max(extent * 1e-10, Number.EPSILON * coordinateScale * 8);
+  const distanceTolerance = pointTolerance * length(plane.normal);
+  const areaTolerance = Math.max(extent * extent * 1e-12, pointTolerance * pointTolerance);
+  const volumeTolerance = Math.max(extent * extent * extent * 1e-12, pointTolerance ** 3);
   const distance = (point: Vec3): number => dot(plane.normal, point) - plane.offset;
   const signed = polyhedron.vertices.map(distance);
-  if (signed.every((value) => value <= 1e-9)) {
+  if (signed.every((value) => value <= distanceTolerance)) {
     return polyhedron;
   }
-  if (signed.every((value) => value > 1e-9)) {
+  if (signed.every((value) => value > distanceTolerance)) {
+    return undefined;
+  }
+  if (!signed.some((value) => value < -distanceTolerance)) {
     return undefined;
   }
 
   const intersections: Vec3[] = [];
   const faces = polyhedron.faces.flatMap((face) => {
-    const clipped = clipFace(face, polyhedron, distance, intersections);
+    const clipped = clipFace(face, {
+      polyhedron,
+      distance,
+      intersections,
+      distanceTolerance,
+      pointTolerance,
+      areaTolerance,
+    });
     return clipped ? [clipped] : [];
   });
-  const cap = clipCap(intersections, plane);
-  return polyhedronFromFaces(cap ? [...faces, cap] : faces);
+  const cap = clipCap(intersections, plane, pointTolerance, areaTolerance);
+  if (!cap) {
+    return polyhedron;
+  }
+  return polyhedronFromFaces([...faces, cap], pointTolerance, volumeTolerance) ?? polyhedron;
 };
 
 const extrudedPolygonLocalPolyhedron = (solid: ExtrudedPolygonSolid): ConvexPolyhedron => {
@@ -640,13 +694,14 @@ const validateProfileConvexity = (profile: readonly Vec2[]): string | undefined 
     const c = profile[(i + 2) % profile.length]!;
     twiceArea += a[0] * b[1] - b[0] * a[1];
     const turn = orient(a, b, c);
-    if (Math.abs(turn) > 1e-10) {
-      const sign = Math.sign(turn);
-      if (turnSign !== 0 && sign !== turnSign) {
-        return 'profile must be convex';
-      }
-      turnSign = sign;
+    if (Math.abs(turn) <= 1e-10) {
+      return 'profile must not contain collinear consecutive vertices';
     }
+    const sign = Math.sign(turn);
+    if (turnSign !== 0 && sign !== turnSign) {
+      return 'profile must be convex';
+    }
+    turnSign = sign;
   }
   if (Math.abs(twiceArea) <= 1e-10 || turnSign === 0) {
     return 'profile has zero area';

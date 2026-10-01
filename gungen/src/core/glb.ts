@@ -19,10 +19,11 @@ import type {
   PartPortId,
   SrgbColor,
 } from './design.ts';
+import { type DisplayItem, displayItems } from './display.ts';
 import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { meshForSolid, meshForSolidGroup } from './mesh.ts';
-import type { PartDef, PortDef, Solid } from './schema.ts';
+import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
 
@@ -201,29 +202,6 @@ interface PartExport {
   readonly placed: Transform;
 }
 
-interface DisplayItem {
-  readonly id: string;
-  readonly solids: readonly Solid[];
-  readonly merged: boolean;
-}
-
-const displayItems = (drawn: readonly Solid[]): DisplayItem[] => {
-  const groups = new Map<string, Solid[]>();
-  for (const solid of drawn) {
-    const group = solid.display?.mergeGroup;
-    if (group) {
-      groups.set(group, [...(groups.get(group) ?? []), solid]);
-    }
-  }
-  const items: DisplayItem[] = drawn
-    .filter((solid) => !solid.display?.mergeGroup)
-    .map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
-  for (const [id, solids] of groups) {
-    items.push({ id, solids, merged: true });
-  }
-  return items;
-};
-
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
@@ -295,9 +273,12 @@ export const exportGlb: ExportGlb = (input) => {
   const meshes: Json[] = [];
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
-  const primitiveFor = (part: PartExport, item: DisplayItem): Json => {
+  const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
     const solid = item.solids[0]!;
     const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
+    if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+      return undefined;
+    }
     const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
     const { min, max } = bounds(positions);
     const position = bin.add(
@@ -326,7 +307,10 @@ export const exportGlb: ExportGlb = (input) => {
 
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = displayItems(drawn).map((item) => primitiveFor(part, item));
+    const primitives = displayItems(drawn).flatMap((item) => {
+      const primitive = primitiveFor(part, item);
+      return primitive ? [primitive] : [];
+    });
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);

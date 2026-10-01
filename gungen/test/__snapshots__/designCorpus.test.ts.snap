@@ -2398,194 +2398,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -1.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -1.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -1.5,
-        -1.35,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ak-bottom-after-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        1.35,
-      ],
-      [
-        0,
-        -2.5,
-        -1.35,
-      ],
-      [
-        0,
-        -2.5,
-        1.35,
-      ],
-      [
-        0,
-        -1.35,
-        -1.35,
-      ],
-      [
-        0,
-        -1.35,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ak-bottom-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -16,
-        -2.5,
-        1.35,
-      ],
-      [
-        -16,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -16,
-        -1.35,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -1.35,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ak-bottom-before-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -1.35,
-        1.35,
-      ],
-      [
-        -7,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -7,
-        -2.5,
-        1.35,
-      ],
-      [
-        -7,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -7,
-        -1.35,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ak-bottom-before-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -2.5,
         -2,
@@ -2606,22 +2418,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -2.5,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -2.5,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -1.35,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -1.35,
         -1.35,
       ],
@@ -2633,26 +2445,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -2.5,
-        -2,
-      ],
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -1.35,
-        -2,
-      ],
-      [
-        -15.5,
-        -1.35,
-        -1.35,
-      ],
-      [
         -0.5,
         -2.5,
         -2,
@@ -2669,6 +2461,26 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        -1.35,
+        -1.35,
+      ],
+      [
+        0,
+        -2.5,
+        -2,
+      ],
+      [
+        0,
+        -2.5,
+        -1.35,
+      ],
+      [
+        0,
+        -1.35,
+        -2,
+      ],
+      [
+        0,
         -1.35,
         -1.35,
       ],
@@ -2680,53 +2492,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
-        -2.5,
-        -2,
-      ],
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        -2,
-      ],
-      [
-        -0.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        0,
-        -2.5,
-        -2,
-      ],
-      [
-        0,
-        -2.5,
-        -1.35,
-      ],
-      [
-        0,
-        -1.35,
-        -2,
-      ],
-      [
-        0,
-        -1.35,
-        -1.35,
-      ],
-    ],
-    "id": "receiver-ak-bottom-far-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -2.5,
         1.35,
@@ -2747,49 +2512,96 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -15.5,
+        -7.5,
         -2.5,
         1.35,
       ],
       [
-        -15.5,
+        -7.5,
         -2.5,
         2,
       ],
       [
-        -15.5,
+        -7.5,
         -1.35,
         1.35,
       ],
       [
-        -15.5,
+        -7.5,
         -1.35,
         2,
       ],
     ],
-    "id": "receiver-ak-bottom-near",
+    "id": "receiver-ak-bottom-near-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
+        -7.5,
         -2.5,
         1.35,
       ],
       [
-        -15.5,
+        -7.5,
         -2.5,
         2,
       ],
       [
-        -15.5,
+        -7.5,
+        -1.5,
+        1.35,
+      ],
+      [
+        -7.5,
+        -1.5,
+        2,
+      ],
+      [
+        -4,
+        -2.5,
+        1.35,
+      ],
+      [
+        -4,
+        -2.5,
+        2,
+      ],
+      [
+        -4,
+        -1.5,
+        1.35,
+      ],
+      [
+        -4,
+        -1.5,
+        2,
+      ],
+    ],
+    "id": "receiver-ak-bottom-near-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4,
+        -2.5,
+        1.35,
+      ],
+      [
+        -4,
+        -2.5,
+        2,
+      ],
+      [
+        -4,
         -1.35,
         1.35,
       ],
       [
-        -15.5,
+        -4,
         -1.35,
         2,
       ],
@@ -2814,7 +2626,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-ak-bottom-near-span-1",
+    "id": "receiver-ak-bottom-near-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -2861,16 +2673,36 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-ak-bottom-near-span-2",
+    "id": "receiver-ak-bottom-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
+        -16,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -16,
+        -2.5,
+        1.35,
+      ],
+      [
+        -16,
+        -1.35,
+        -1.35,
+      ],
+      [
+        -16,
+        -1.35,
+        1.35,
+      ],
+      [
         -7,
         -2.5,
-        1.25,
+        -1.35,
       ],
       [
         -7,
@@ -2880,35 +2712,15 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -1.35,
-        1.25,
+        -1.35,
       ],
       [
         -7,
-        -1.35,
-        1.35,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.25,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -1.5,
-        -1.35,
-        1.25,
-      ],
-      [
-        -1.5,
         -1.35,
         1.35,
       ],
     ],
-    "id": "receiver-ak-bottom-window-high",
+    "id": "receiver-ak-bottom-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -2955,7 +2767,148 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.25,
       ],
     ],
-    "id": "receiver-ak-bottom-window-low",
+    "id": "receiver-ak-bottom-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -7,
+        -2.5,
+        1.25,
+      ],
+      [
+        -7,
+        -2.5,
+        1.35,
+      ],
+      [
+        -7,
+        -1.35,
+        1.25,
+      ],
+      [
+        -7,
+        -1.35,
+        1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.25,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -1.35,
+        1.25,
+      ],
+      [
+        -1.5,
+        -1.35,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ak-bottom-span-1-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -1.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -1.35,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ak-bottom-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
+        1.35,
+      ],
+      [
+        0,
+        -2.5,
+        -1.35,
+      ],
+      [
+        0,
+        -2.5,
+        1.35,
+      ],
+      [
+        0,
+        -1.35,
+        -1.35,
+      ],
+      [
+        0,
+        -1.35,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ak-bottom-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -2992,27 +2945,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -1.35,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -1.35,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         1.35,
         -1.9125,
       ],
       [
-        -15.5,
+        -0.5,
         1.35,
         -1.35,
       ],
@@ -3024,31 +2977,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -1.35,
-        -2,
-      ],
-      [
-        -15.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1,
-        -2,
-      ],
-      [
-        -15.5,
-        1.35,
-        -1.9125,
-      ],
-      [
-        -15.5,
-        1.35,
-        -1.35,
-      ],
-      [
         -0.5,
         -1.35,
         -2,
@@ -3070,68 +2998,36 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        1.35,
+        -1.35,
+      ],
+      [
+        0,
+        -1.35,
+        -2,
+      ],
+      [
+        0,
+        -1.35,
+        -1.35,
+      ],
+      [
+        0,
+        1,
+        -2,
+      ],
+      [
+        0,
+        1.35,
+        -1.9125,
+      ],
+      [
+        0,
         1.35,
         -1.35,
       ],
     ],
     "id": "receiver-ak-far-side-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -1.35,
-        -2,
-      ],
-      [
-        -0.5,
-        -1.35,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1,
-        -2,
-      ],
-      [
-        -0.5,
-        1.35,
-        -1.9125,
-      ],
-      [
-        -0.5,
-        1.35,
-        -1.35,
-      ],
-      [
-        0,
-        -1.35,
-        -2,
-      ],
-      [
-        0,
-        -1.35,
-        -1.35,
-      ],
-      [
-        0,
-        1,
-        -2,
-      ],
-      [
-        0,
-        1.35,
-        -1.9125,
-      ],
-      [
-        0,
-        1.35,
-        -1.35,
-      ],
-    ],
-    "id": "receiver-ak-far-side-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -3185,120 +3081,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
-        -1.35,
-        1.35,
-      ],
-      [
-        -4,
-        -1.35,
-        2,
-      ],
-      [
-        -4,
-        1,
-        2,
-      ],
-      [
-        -4,
-        1.35,
-        1.35,
-      ],
-      [
-        -4,
-        1.35,
-        1.9125,
-      ],
-      [
-        -0.5,
-        -1.35,
-        1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        2,
-      ],
-      [
-        -0.5,
-        1,
-        2,
-      ],
-      [
-        -0.5,
-        1.35,
-        1.35,
-      ],
-      [
-        -0.5,
-        1.35,
-        1.9125,
-      ],
-    ],
-    "id": "receiver-ak-near-side-after-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -1.35,
-        1.35,
-      ],
-      [
-        -0.5,
-        -1.35,
-        2,
-      ],
-      [
-        -0.5,
-        1,
-        2,
-      ],
-      [
-        -0.5,
-        1.35,
-        1.35,
-      ],
-      [
-        -0.5,
-        1.35,
-        1.9125,
-      ],
-      [
-        0,
-        -1.35,
-        1.35,
-      ],
-      [
-        0,
-        -1.35,
-        2,
-      ],
-      [
-        0,
-        1,
-        2,
-      ],
-      [
-        0,
-        1.35,
-        1.35,
-      ],
-      [
-        0,
-        1.35,
-        1.9125,
-      ],
-    ],
-    "id": "receiver-ak-near-side-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -1.35,
         1.35,
@@ -3329,89 +3111,250 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.9125,
       ],
       [
-        -15.5,
+        -14,
         -1.35,
         1.35,
       ],
       [
-        -15.5,
+        -14,
         -1.35,
         2,
       ],
       [
-        -15.5,
+        -14,
         1,
         2,
       ],
       [
-        -15.5,
+        -14,
         1.35,
         1.35,
       ],
       [
-        -15.5,
+        -14,
         1.35,
         1.9125,
       ],
     ],
-    "id": "receiver-ak-near-side-before-window",
+    "id": "receiver-ak-near-side-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
+        -14,
         -1.35,
         1.35,
       ],
       [
-        -15.5,
+        -14,
         -1.35,
         2,
       ],
       [
-        -15.5,
+        -14,
+        -0.6,
+        1.35,
+      ],
+      [
+        -14,
+        -0.6,
+        2,
+      ],
+      [
+        -7.5,
+        -1.35,
+        1.35,
+      ],
+      [
+        -7.5,
+        -1.35,
+        2,
+      ],
+      [
+        -7.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -7.5,
+        -0.6,
+        2,
+      ],
+    ],
+    "id": "receiver-ak-near-side-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -14,
+        0.6,
+        1.35,
+      ],
+      [
+        -14,
+        0.6,
+        2,
+      ],
+      [
+        -14,
         1,
         2,
       ],
       [
-        -15.5,
+        -14,
         1.35,
         1.35,
       ],
       [
-        -15.5,
+        -14,
         1.35,
         1.9125,
       ],
       [
-        -12.25,
-        -1.35,
+        -7.5,
+        0.6,
         1.35,
       ],
       [
-        -12.25,
-        -1.35,
+        -7.5,
+        0.6,
         2,
       ],
       [
-        -12.25,
+        -7.5,
         1,
         2,
       ],
       [
-        -12.25,
+        -7.5,
         1.35,
         1.35,
       ],
       [
-        -12.25,
+        -7.5,
         1.35,
         1.9125,
       ],
     ],
-    "id": "receiver-ak-near-side-before-window-span-1",
+    "id": "receiver-ak-near-side-span-1-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4,
+        -1.35,
+        1.35,
+      ],
+      [
+        -4,
+        -1.35,
+        2,
+      ],
+      [
+        -4,
+        1,
+        2,
+      ],
+      [
+        -4,
+        1.35,
+        1.35,
+      ],
+      [
+        -4,
+        1.35,
+        1.9125,
+      ],
+      [
+        -0.5,
+        -1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
+        2,
+      ],
+      [
+        -0.5,
+        1,
+        2,
+      ],
+      [
+        -0.5,
+        1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        1.35,
+        1.9125,
+      ],
+    ],
+    "id": "receiver-ak-near-side-span-4-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        -1.35,
+        2,
+      ],
+      [
+        -0.5,
+        1,
+        2,
+      ],
+      [
+        -0.5,
+        1.35,
+        1.35,
+      ],
+      [
+        -0.5,
+        1.35,
+        1.9125,
+      ],
+      [
+        0,
+        -1.35,
+        1.35,
+      ],
+      [
+        0,
+        -1.35,
+        2,
+      ],
+      [
+        0,
+        1,
+        2,
+      ],
+      [
+        0,
+        1.35,
+        1.35,
+      ],
+      [
+        0,
+        1.35,
+        1.9125,
+      ],
+    ],
+    "id": "receiver-ak-near-side-span-4-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -3485,24 +3428,54 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
       [
-        -15.5,
+        -14.133333,
+        2.4,
+        -1.35,
+      ],
+      [
+        -14.133333,
+        2.4,
+        1.35,
+      ],
+      [
+        -14,
+        2.5,
+        -1.25,
+      ],
+      [
+        -14,
+        2.5,
+        1.25,
+      ],
+      [
+        -0.5,
         1.35,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.35,
         1.35,
       ],
       [
-        -15.5,
-        1.375,
+        -0.5,
+        2.4,
         -1.35,
       ],
       [
-        -15.5,
-        1.375,
+        -0.5,
+        2.4,
         1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.25,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.25,
       ],
     ],
     "id": "receiver-ak-top",
@@ -3522,53 +3495,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
-        1.35,
-        -1.9125,
-      ],
-      [
-        -15.5,
-        1.35,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.375,
-        -1.90625,
-      ],
-      [
-        -15.5,
-        1.375,
-        -1.35,
-      ],
-    ],
-    "id": "receiver-ak-top-far",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        1.35,
-        -1.9125,
-      ],
-      [
-        -15.5,
-        1.35,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.375,
-        -1.90625,
-      ],
-      [
-        -15.5,
-        1.375,
-        -1.35,
-      ],
-      [
         -14.666667,
         2,
         -1.75,
@@ -3595,6 +3521,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        2.4,
+        -1.35,
+      ],
+    ],
+    "id": "receiver-ak-top-far",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        1.35,
+        -1.9125,
+      ],
+      [
+        -0.5,
+        1.35,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2,
+        -1.75,
+      ],
+      [
+        -0.5,
+        2.4,
+        -1.35,
+      ],
+      [
+        0,
+        1.35,
+        -1.9125,
+      ],
+      [
+        0,
+        1.35,
+        -1.35,
+      ],
+      [
+        0,
+        2,
+        -1.75,
+      ],
+      [
+        0,
         2.4,
         -1.35,
       ],
@@ -3606,53 +3579,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
-        1.35,
-        -1.9125,
-      ],
-      [
-        -0.5,
-        1.35,
-        -1.35,
-      ],
-      [
-        -0.5,
-        2,
-        -1.75,
-      ],
-      [
-        -0.5,
-        2.4,
-        -1.35,
-      ],
-      [
-        0,
-        1.35,
-        -1.9125,
-      ],
-      [
-        0,
-        1.35,
-        -1.35,
-      ],
-      [
-        0,
-        2,
-        -1.75,
-      ],
-      [
-        0,
-        2.4,
-        -1.35,
-      ],
-    ],
-    "id": "receiver-ak-top-far-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -15.533333,
         1.35,
         1.35,
@@ -3661,53 +3587,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -15.533333,
         1.35,
         1.9125,
-      ],
-      [
-        -15.5,
-        1.35,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.35,
-        1.9125,
-      ],
-      [
-        -15.5,
-        1.375,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.375,
-        1.90625,
-      ],
-    ],
-    "id": "receiver-ak-top-near",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        1.35,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.35,
-        1.9125,
-      ],
-      [
-        -15.5,
-        1.375,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.375,
-        1.90625,
       ],
       [
         -14.666667,
@@ -3720,6 +3599,100 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
       [
+        -7.5,
+        1.35,
+        1.35,
+      ],
+      [
+        -7.5,
+        1.35,
+        1.9125,
+      ],
+      [
+        -7.5,
+        2,
+        1.75,
+      ],
+      [
+        -7.5,
+        2.4,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ak-top-near-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -7.5,
+        1.5,
+        1.35,
+      ],
+      [
+        -7.5,
+        1.5,
+        1.875,
+      ],
+      [
+        -7.5,
+        2,
+        1.75,
+      ],
+      [
+        -7.5,
+        2.4,
+        1.35,
+      ],
+      [
+        -4,
+        1.5,
+        1.35,
+      ],
+      [
+        -4,
+        1.5,
+        1.875,
+      ],
+      [
+        -4,
+        2,
+        1.75,
+      ],
+      [
+        -4,
+        2.4,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ak-top-near-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4,
+        1.35,
+        1.35,
+      ],
+      [
+        -4,
+        1.35,
+        1.9125,
+      ],
+      [
+        -4,
+        2,
+        1.75,
+      ],
+      [
+        -4,
+        2.4,
+        1.35,
+      ],
+      [
         -0.5,
         1.35,
         1.35,
@@ -3740,7 +3713,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
     ],
-    "id": "receiver-ak-top-near-span-1",
+    "id": "receiver-ak-top-near-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -3787,151 +3760,74 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
     ],
-    "id": "receiver-ak-top-near-span-2",
+    "id": "receiver-ak-top-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
+        -0.5,
         1.35,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.35,
         1.35,
       ],
       [
-        -15.5,
-        1.375,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.375,
-        1.35,
-      ],
-      [
-        -14.133333,
+        -0.5,
         2.4,
         -1.35,
       ],
       [
-        -14.133333,
+        -0.5,
         2.4,
         1.35,
       ],
       [
-        -14,
+        -0.5,
         2.5,
         -1.25,
       ],
       [
-        -14,
+        -0.5,
         2.5,
         1.25,
       ],
       [
-        -0.5,
+        0,
         1.35,
         -1.35,
       ],
       [
-        -0.5,
+        0,
         1.35,
         1.35,
       ],
       [
-        -0.5,
+        0,
         2.4,
         -1.35,
       ],
       [
-        -0.5,
+        0,
         2.4,
         1.35,
       ],
       [
-        -0.5,
+        0,
         2.5,
         -1.25,
       ],
       [
-        -0.5,
+        0,
         2.5,
         1.25,
       ],
     ],
     "id": "receiver-ak-top-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        1.35,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.35,
-        1.35,
-      ],
-      [
-        -0.5,
-        2.4,
-        -1.35,
-      ],
-      [
-        -0.5,
-        2.4,
-        1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.25,
-      ],
-      [
-        -0.5,
-        2.5,
-        1.25,
-      ],
-      [
-        0,
-        1.35,
-        -1.35,
-      ],
-      [
-        0,
-        1.35,
-        1.35,
-      ],
-      [
-        0,
-        2.4,
-        -1.35,
-      ],
-      [
-        0,
-        2.4,
-        1.35,
-      ],
-      [
-        0,
-        2.5,
-        -1.25,
-      ],
-      [
-        0,
-        2.5,
-        1.25,
-      ],
-    ],
-    "id": "receiver-ak-top-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -6155,194 +6051,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -1.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -1.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -1.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-after-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        0,
-        -2.5,
-        -1.35,
-      ],
-      [
-        0,
-        -2.5,
-        1.35,
-      ],
-      [
-        0,
-        -0.6,
-        -1.35,
-      ],
-      [
-        0,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -16,
-        -2.5,
-        1.35,
-      ],
-      [
-        -16,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -16,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-before-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -7,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -7,
-        -2.5,
-        1.35,
-      ],
-      [
-        -7,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -7,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-before-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -2.5,
         -1.75,
@@ -6368,27 +6076,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -2.5,
         -1.75,
       ],
       [
-        -15.5,
+        -0.5,
         -2.5,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -2.25,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -1.35,
       ],
@@ -6400,31 +6108,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -2.5,
-        -1.75,
-      ],
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.25,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
         -0.5,
         -2.5,
         -1.75,
@@ -6446,6 +6129,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        0,
+        -2.5,
+        -1.75,
+      ],
+      [
+        0,
+        -2.5,
+        -1.35,
+      ],
+      [
+        0,
+        -2.25,
+        -2,
+      ],
+      [
+        0,
+        -0.6,
+        -2,
+      ],
+      [
+        0,
         -0.6,
         -1.35,
       ],
@@ -6457,57 +6165,228 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
+        -16,
         -2.5,
-        -1.75,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         -2.5,
-        -1.35,
+        1.75,
       ],
       [
-        -0.5,
+        -16,
         -2.25,
-        -2,
+        2,
       ],
       [
-        -0.5,
+        -16,
         -0.6,
-        -2,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         -0.6,
-        -1.35,
+        2,
       ],
       [
-        0,
+        -8.75,
         -2.5,
-        -1.75,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         -2.5,
-        -1.35,
+        1.75,
       ],
       [
-        0,
+        -8.75,
         -2.25,
-        -2,
+        2,
       ],
       [
-        0,
+        -8.75,
         -0.6,
-        -2,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         -0.6,
-        -1.35,
+        2,
       ],
     ],
-    "id": "receiver-ar-bottom-far-span-2",
+    "id": "receiver-ar-bottom-near-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -8.75,
+        -2.5,
+        1.35,
+      ],
+      [
+        -8.75,
+        -2.5,
+        1.75,
+      ],
+      [
+        -8.75,
+        -2.25,
+        2,
+      ],
+      [
+        -8.75,
+        -0.75,
+        1.35,
+      ],
+      [
+        -8.75,
+        -0.75,
+        2,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.35,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.75,
+      ],
+      [
+        -5.25,
+        -2.25,
+        2,
+      ],
+      [
+        -5.25,
+        -0.75,
+        1.35,
+      ],
+      [
+        -5.25,
+        -0.75,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-bottom-near-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.25,
+        -2.5,
+        1.35,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.75,
+      ],
+      [
+        -5.25,
+        -2.25,
+        2,
+      ],
+      [
+        -5.25,
+        -0.6,
+        1.35,
+      ],
+      [
+        -5.25,
+        -0.6,
+        2,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.75,
+      ],
+      [
+        -0.5,
+        -2.25,
+        2,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-bottom-near-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.75,
+      ],
+      [
+        -0.5,
+        -2.25,
+        2,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        2,
+      ],
+      [
+        0,
+        -2.5,
+        1.35,
+      ],
+      [
+        0,
+        -2.5,
+        1.75,
+      ],
+      [
+        0,
+        -2.25,
+        2,
+      ],
+      [
+        0,
+        -0.6,
+        1.35,
+      ],
+      [
+        0,
+        -0.6,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-bottom-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -6516,178 +6395,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        1.35,
+        -1.35,
       ],
       [
         -16,
         -2.5,
-        1.75,
-      ],
-      [
-        -16,
-        -2.25,
-        2,
-      ],
-      [
-        -16,
-        -0.6,
         1.35,
       ],
       [
         -16,
         -0.6,
-        2,
+        -1.35,
       ],
       [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -15.5,
-        -2.25,
-        2,
-      ],
-      [
-        -15.5,
+        -16,
         -0.6,
         1.35,
       ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-bottom-near",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -15.5,
-        -2.25,
-        2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -0.5,
-        -2.25,
-        2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-bottom-near-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -0.5,
-        -2.25,
-        2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        2,
-      ],
-      [
-        0,
-        -2.5,
-        1.35,
-      ],
-      [
-        0,
-        -2.5,
-        1.75,
-      ],
-      [
-        0,
-        -2.25,
-        2,
-      ],
-      [
-        0,
-        -0.6,
-        1.35,
-      ],
-      [
-        0,
-        -0.6,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-bottom-near-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
       [
         -7,
         -2.5,
-        1.25,
+        -1.35,
       ],
       [
         -7,
@@ -6697,35 +6425,15 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -0.6,
-        1.25,
+        -1.35,
       ],
       [
         -7,
         -0.6,
         1.35,
       ],
-      [
-        -1.5,
-        -2.5,
-        1.25,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -1.5,
-        -0.6,
-        1.25,
-      ],
-      [
-        -1.5,
-        -0.6,
-        1.35,
-      ],
     ],
-    "id": "receiver-ar-bottom-window-high",
+    "id": "receiver-ar-bottom-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -6772,7 +6480,148 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.25,
       ],
     ],
-    "id": "receiver-ar-bottom-window-low",
+    "id": "receiver-ar-bottom-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -7,
+        -2.5,
+        1.25,
+      ],
+      [
+        -7,
+        -2.5,
+        1.35,
+      ],
+      [
+        -7,
+        -0.6,
+        1.25,
+      ],
+      [
+        -7,
+        -0.6,
+        1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.25,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -0.6,
+        1.25,
+      ],
+      [
+        -1.5,
+        -0.6,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-bottom-span-1-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -1.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-bottom-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        0,
+        -2.5,
+        -1.35,
+      ],
+      [
+        0,
+        -2.5,
+        1.35,
+      ],
+      [
+        0,
+        -0.6,
+        -1.35,
+      ],
+      [
+        0,
+        -0.6,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-bottom-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -6799,22 +6648,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -1.35,
       ],
@@ -6826,26 +6675,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -0.6,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        -2,
-      ],
-      [
-        -15.5,
-        1.1,
-        -1.35,
-      ],
-      [
         -0.5,
         -0.6,
         -2,
@@ -6862,58 +6691,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        1.1,
+        -1.35,
+      ],
+      [
+        0,
+        -0.6,
+        -2,
+      ],
+      [
+        0,
+        -0.6,
+        -1.35,
+      ],
+      [
+        0,
+        1.1,
+        -2,
+      ],
+      [
+        0,
         1.1,
         -1.35,
       ],
     ],
     "id": "receiver-ar-far-side-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -0.6,
-        -2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        -2,
-      ],
-      [
-        -0.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        0,
-        -0.6,
-        -2,
-      ],
-      [
-        0,
-        -0.6,
-        -1.35,
-      ],
-      [
-        0,
-        1.1,
-        -2,
-      ],
-      [
-        0,
-        1.1,
-        -1.35,
-      ],
-    ],
-    "id": "receiver-ar-far-side-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -6967,22 +6769,69 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -16,
         -0.6,
         1.35,
       ],
       [
-        -5,
+        -16,
         -0.6,
         2,
       ],
       [
-        -5,
+        -16,
         1.1,
         1.35,
       ],
       [
-        -5,
+        -16,
+        1.1,
+        2,
+      ],
+      [
+        -8.75,
+        -0.6,
+        1.35,
+      ],
+      [
+        -8.75,
+        -0.6,
+        2,
+      ],
+      [
+        -8.75,
+        1.1,
+        1.35,
+      ],
+      [
+        -8.75,
+        1.1,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-near-side-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.25,
+        -0.6,
+        1.35,
+      ],
+      [
+        -5.25,
+        -0.6,
+        2,
+      ],
+      [
+        -5.25,
+        1.1,
+        1.35,
+      ],
+      [
+        -5.25,
         1.1,
         2,
       ],
@@ -7007,7 +6856,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-ar-near-side-after-window",
+    "id": "receiver-ar-near-side-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -7054,101 +6903,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-ar-near-side-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        -0.6,
-        1.35,
-      ],
-      [
-        -16,
-        -0.6,
-        2,
-      ],
-      [
-        -16,
-        1.1,
-        1.35,
-      ],
-      [
-        -16,
-        1.1,
-        2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-      [
-        -15.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-near-side-before-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-      [
-        -15.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        2,
-      ],
-      [
-        -9,
-        -0.6,
-        1.35,
-      ],
-      [
-        -9,
-        -0.6,
-        2,
-      ],
-      [
-        -9,
-        1.1,
-        1.35,
-      ],
-      [
-        -9,
-        1.1,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-near-side-before-window-span-1",
+    "id": "receiver-ar-near-side-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -7222,22 +6977,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         1.35,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         1.35,
       ],
@@ -7274,27 +7029,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.5,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         -1.75,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         -1.35,
       ],
@@ -7306,31 +7061,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        1.1,
-        -2,
-      ],
-      [
-        -15.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.5,
-        -2,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.75,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.35,
-      ],
-      [
         -0.5,
         1.1,
         -2,
@@ -7352,6 +7082,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        2.5,
+        -1.35,
+      ],
+      [
+        0,
+        1.1,
+        -2,
+      ],
+      [
+        0,
+        1.1,
+        -1.35,
+      ],
+      [
+        0,
+        1.5,
+        -2,
+      ],
+      [
+        0,
+        2.5,
+        -1.75,
+      ],
+      [
+        0,
         2.5,
         -1.35,
       ],
@@ -7363,141 +7118,141 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
+        -16,
         1.1,
-        -2,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         1.1,
-        -1.35,
+        2,
       ],
       [
-        -0.5,
+        -16,
         1.5,
-        -2,
+        2,
       ],
       [
-        -0.5,
+        -16,
         2.5,
-        -1.75,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         2.5,
-        -1.35,
+        1.75,
       ],
       [
-        0,
+        -8.75,
         1.1,
-        -2,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         1.1,
-        -1.35,
+        2,
       ],
       [
-        0,
+        -8.75,
         1.5,
-        -2,
+        2,
       ],
       [
-        0,
+        -8.75,
         2.5,
-        -1.75,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         2.5,
-        -1.35,
+        1.75,
       ],
     ],
-    "id": "receiver-ar-top-far-span-2",
+    "id": "receiver-ar-top-near-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -16,
-        1.1,
+        -8.75,
+        1.25,
         1.35,
       ],
       [
-        -16,
-        1.1,
+        -8.75,
+        1.25,
         2,
       ],
       [
-        -16,
+        -8.75,
         1.5,
         2,
       ],
       [
-        -16,
+        -8.75,
         2.5,
         1.35,
       ],
       [
-        -16,
+        -8.75,
         2.5,
         1.75,
       ],
       [
-        -15.5,
-        1.1,
+        -5.25,
+        1.25,
         1.35,
       ],
       [
-        -15.5,
-        1.1,
+        -5.25,
+        1.25,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         1.5,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.35,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.75,
       ],
     ],
-    "id": "receiver-ar-top-near",
+    "id": "receiver-ar-top-near-span-1-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
+        -5.25,
         1.1,
         1.35,
       ],
       [
-        -15.5,
+        -5.25,
         1.1,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         1.5,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.35,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.75,
       ],
@@ -7527,7 +7282,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.75,
       ],
     ],
-    "id": "receiver-ar-top-near-span-1",
+    "id": "receiver-ar-top-near-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -7584,33 +7339,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.75,
       ],
     ],
-    "id": "receiver-ar-top-near-span-2",
+    "id": "receiver-ar-top-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        2.5,
-        1.35,
-      ],
-      [
         -0.5,
         1.1,
         -1.35,
@@ -7627,58 +7362,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        2.5,
+        1.35,
+      ],
+      [
+        0,
+        1.1,
+        -1.35,
+      ],
+      [
+        0,
+        1.1,
+        1.35,
+      ],
+      [
+        0,
+        2.5,
+        -1.35,
+      ],
+      [
+        0,
         2.5,
         1.35,
       ],
     ],
     "id": "receiver-ar-top-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        1.35,
-      ],
-      [
-        0,
-        1.1,
-        -1.35,
-      ],
-      [
-        0,
-        1.1,
-        1.35,
-      ],
-      [
-        0,
-        2.5,
-        -1.35,
-      ],
-      [
-        0,
-        2.5,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-top-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -9472,194 +9180,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -1.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -1.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -1.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-after-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        0,
-        -2.5,
-        -1.35,
-      ],
-      [
-        0,
-        -2.5,
-        1.35,
-      ],
-      [
-        0,
-        -0.6,
-        -1.35,
-      ],
-      [
-        0,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -16,
-        -2.5,
-        1.35,
-      ],
-      [
-        -16,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -16,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-before-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -7,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -7,
-        -2.5,
-        1.35,
-      ],
-      [
-        -7,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -7,
-        -0.6,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-bottom-before-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -2.5,
         -1.75,
@@ -9685,27 +9205,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -2.5,
         -1.75,
       ],
       [
-        -15.5,
+        -0.5,
         -2.5,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -2.25,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -1.35,
       ],
@@ -9717,31 +9237,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -2.5,
-        -1.75,
-      ],
-      [
-        -15.5,
-        -2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        -2.25,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
         -0.5,
         -2.5,
         -1.75,
@@ -9763,6 +9258,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        0,
+        -2.5,
+        -1.75,
+      ],
+      [
+        0,
+        -2.5,
+        -1.35,
+      ],
+      [
+        0,
+        -2.25,
+        -2,
+      ],
+      [
+        0,
+        -0.6,
+        -2,
+      ],
+      [
+        0,
         -0.6,
         -1.35,
       ],
@@ -9774,57 +9294,228 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
+        -16,
         -2.5,
-        -1.75,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         -2.5,
-        -1.35,
+        1.75,
       ],
       [
-        -0.5,
+        -16,
         -2.25,
-        -2,
+        2,
       ],
       [
-        -0.5,
+        -16,
         -0.6,
-        -2,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         -0.6,
-        -1.35,
+        2,
       ],
       [
-        0,
+        -8.75,
         -2.5,
-        -1.75,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         -2.5,
-        -1.35,
+        1.75,
       ],
       [
-        0,
+        -8.75,
         -2.25,
-        -2,
+        2,
       ],
       [
-        0,
+        -8.75,
         -0.6,
-        -2,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         -0.6,
-        -1.35,
+        2,
       ],
     ],
-    "id": "receiver-ar-bottom-far-span-2",
+    "id": "receiver-ar-bottom-near-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -8.75,
+        -2.5,
+        1.35,
+      ],
+      [
+        -8.75,
+        -2.5,
+        1.75,
+      ],
+      [
+        -8.75,
+        -2.25,
+        2,
+      ],
+      [
+        -8.75,
+        -0.75,
+        1.35,
+      ],
+      [
+        -8.75,
+        -0.75,
+        2,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.35,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.75,
+      ],
+      [
+        -5.25,
+        -2.25,
+        2,
+      ],
+      [
+        -5.25,
+        -0.75,
+        1.35,
+      ],
+      [
+        -5.25,
+        -0.75,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-bottom-near-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.25,
+        -2.5,
+        1.35,
+      ],
+      [
+        -5.25,
+        -2.5,
+        1.75,
+      ],
+      [
+        -5.25,
+        -2.25,
+        2,
+      ],
+      [
+        -5.25,
+        -0.6,
+        1.35,
+      ],
+      [
+        -5.25,
+        -0.6,
+        2,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.75,
+      ],
+      [
+        -0.5,
+        -2.25,
+        2,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-bottom-near-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.75,
+      ],
+      [
+        -0.5,
+        -2.25,
+        2,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        2,
+      ],
+      [
+        0,
+        -2.5,
+        1.35,
+      ],
+      [
+        0,
+        -2.5,
+        1.75,
+      ],
+      [
+        0,
+        -2.25,
+        2,
+      ],
+      [
+        0,
+        -0.6,
+        1.35,
+      ],
+      [
+        0,
+        -0.6,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-bottom-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -9833,178 +9524,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         -2.5,
-        1.35,
+        -1.35,
       ],
       [
         -16,
         -2.5,
-        1.75,
-      ],
-      [
-        -16,
-        -2.25,
-        2,
-      ],
-      [
-        -16,
-        -0.6,
         1.35,
       ],
       [
         -16,
         -0.6,
-        2,
+        -1.35,
       ],
       [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -15.5,
-        -2.25,
-        2,
-      ],
-      [
-        -15.5,
+        -16,
         -0.6,
         1.35,
       ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-bottom-near",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -15.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -15.5,
-        -2.25,
-        2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -0.5,
-        -2.25,
-        2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-bottom-near-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        -2.5,
-        1.75,
-      ],
-      [
-        -0.5,
-        -2.25,
-        2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
-        2,
-      ],
-      [
-        0,
-        -2.5,
-        1.35,
-      ],
-      [
-        0,
-        -2.5,
-        1.75,
-      ],
-      [
-        0,
-        -2.25,
-        2,
-      ],
-      [
-        0,
-        -0.6,
-        1.35,
-      ],
-      [
-        0,
-        -0.6,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-bottom-near-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
       [
         -7,
         -2.5,
-        1.25,
+        -1.35,
       ],
       [
         -7,
@@ -10014,35 +9554,15 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -7,
         -0.6,
-        1.25,
+        -1.35,
       ],
       [
         -7,
         -0.6,
         1.35,
       ],
-      [
-        -1.5,
-        -2.5,
-        1.25,
-      ],
-      [
-        -1.5,
-        -2.5,
-        1.35,
-      ],
-      [
-        -1.5,
-        -0.6,
-        1.25,
-      ],
-      [
-        -1.5,
-        -0.6,
-        1.35,
-      ],
     ],
-    "id": "receiver-ar-bottom-window-high",
+    "id": "receiver-ar-bottom-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -10089,7 +9609,148 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.25,
       ],
     ],
-    "id": "receiver-ar-bottom-window-low",
+    "id": "receiver-ar-bottom-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -7,
+        -2.5,
+        1.25,
+      ],
+      [
+        -7,
+        -2.5,
+        1.35,
+      ],
+      [
+        -7,
+        -0.6,
+        1.25,
+      ],
+      [
+        -7,
+        -0.6,
+        1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.25,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -0.6,
+        1.25,
+      ],
+      [
+        -1.5,
+        -0.6,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-bottom-span-1-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -1.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -1.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        -1.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-bottom-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        -1.35,
+      ],
+      [
+        -0.5,
+        -0.6,
+        1.35,
+      ],
+      [
+        0,
+        -2.5,
+        -1.35,
+      ],
+      [
+        0,
+        -2.5,
+        1.35,
+      ],
+      [
+        0,
+        -0.6,
+        -1.35,
+      ],
+      [
+        0,
+        -0.6,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-bottom-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -10116,22 +9777,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.6,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -1.35,
       ],
@@ -10143,26 +9804,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -0.6,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        -2,
-      ],
-      [
-        -15.5,
-        1.1,
-        -1.35,
-      ],
-      [
         -0.5,
         -0.6,
         -2,
@@ -10179,58 +9820,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        1.1,
+        -1.35,
+      ],
+      [
+        0,
+        -0.6,
+        -2,
+      ],
+      [
+        0,
+        -0.6,
+        -1.35,
+      ],
+      [
+        0,
+        1.1,
+        -2,
+      ],
+      [
+        0,
         1.1,
         -1.35,
       ],
     ],
     "id": "receiver-ar-far-side-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -0.6,
-        -2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        -2,
-      ],
-      [
-        -0.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        0,
-        -0.6,
-        -2,
-      ],
-      [
-        0,
-        -0.6,
-        -1.35,
-      ],
-      [
-        0,
-        1.1,
-        -2,
-      ],
-      [
-        0,
-        1.1,
-        -1.35,
-      ],
-    ],
-    "id": "receiver-ar-far-side-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -10284,22 +9898,69 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -16,
         -0.6,
         1.35,
       ],
       [
-        -5,
+        -16,
         -0.6,
         2,
       ],
       [
-        -5,
+        -16,
         1.1,
         1.35,
       ],
       [
-        -5,
+        -16,
+        1.1,
+        2,
+      ],
+      [
+        -8.75,
+        -0.6,
+        1.35,
+      ],
+      [
+        -8.75,
+        -0.6,
+        2,
+      ],
+      [
+        -8.75,
+        1.1,
+        1.35,
+      ],
+      [
+        -8.75,
+        1.1,
+        2,
+      ],
+    ],
+    "id": "receiver-ar-near-side-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.25,
+        -0.6,
+        1.35,
+      ],
+      [
+        -5.25,
+        -0.6,
+        2,
+      ],
+      [
+        -5.25,
+        1.1,
+        1.35,
+      ],
+      [
+        -5.25,
         1.1,
         2,
       ],
@@ -10324,7 +9985,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-ar-near-side-after-window",
+    "id": "receiver-ar-near-side-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -10371,101 +10032,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-ar-near-side-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        -0.6,
-        1.35,
-      ],
-      [
-        -16,
-        -0.6,
-        2,
-      ],
-      [
-        -16,
-        1.1,
-        1.35,
-      ],
-      [
-        -16,
-        1.1,
-        2,
-      ],
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-      [
-        -15.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-near-side-before-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -15.5,
-        -0.6,
-        2,
-      ],
-      [
-        -15.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        2,
-      ],
-      [
-        -9,
-        -0.6,
-        1.35,
-      ],
-      [
-        -9,
-        -0.6,
-        2,
-      ],
-      [
-        -9,
-        1.1,
-        1.35,
-      ],
-      [
-        -9,
-        1.1,
-        2,
-      ],
-    ],
-    "id": "receiver-ar-near-side-before-window-span-1",
+    "id": "receiver-ar-near-side-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -10539,22 +10106,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         1.35,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         1.35,
       ],
@@ -10591,27 +10158,27 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         1.1,
         -1.35,
       ],
       [
-        -15.5,
+        -0.5,
         1.5,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         -1.75,
       ],
       [
-        -15.5,
+        -0.5,
         2.5,
         -1.35,
       ],
@@ -10623,31 +10190,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        1.1,
-        -2,
-      ],
-      [
-        -15.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.5,
-        -2,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.75,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.35,
-      ],
-      [
         -0.5,
         1.1,
         -2,
@@ -10669,6 +10211,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        2.5,
+        -1.35,
+      ],
+      [
+        0,
+        1.1,
+        -2,
+      ],
+      [
+        0,
+        1.1,
+        -1.35,
+      ],
+      [
+        0,
+        1.5,
+        -2,
+      ],
+      [
+        0,
+        2.5,
+        -1.75,
+      ],
+      [
+        0,
         2.5,
         -1.35,
       ],
@@ -10680,141 +10247,141 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
+        -16,
         1.1,
-        -2,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         1.1,
-        -1.35,
+        2,
       ],
       [
-        -0.5,
+        -16,
         1.5,
-        -2,
+        2,
       ],
       [
-        -0.5,
+        -16,
         2.5,
-        -1.75,
+        1.35,
       ],
       [
-        -0.5,
+        -16,
         2.5,
-        -1.35,
+        1.75,
       ],
       [
-        0,
+        -8.75,
         1.1,
-        -2,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         1.1,
-        -1.35,
+        2,
       ],
       [
-        0,
+        -8.75,
         1.5,
-        -2,
+        2,
       ],
       [
-        0,
+        -8.75,
         2.5,
-        -1.75,
+        1.35,
       ],
       [
-        0,
+        -8.75,
         2.5,
-        -1.35,
+        1.75,
       ],
     ],
-    "id": "receiver-ar-top-far-span-2",
+    "id": "receiver-ar-top-near-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -16,
-        1.1,
+        -8.75,
+        1.25,
         1.35,
       ],
       [
-        -16,
-        1.1,
+        -8.75,
+        1.25,
         2,
       ],
       [
-        -16,
+        -8.75,
         1.5,
         2,
       ],
       [
-        -16,
+        -8.75,
         2.5,
         1.35,
       ],
       [
-        -16,
+        -8.75,
         2.5,
         1.75,
       ],
       [
-        -15.5,
-        1.1,
+        -5.25,
+        1.25,
         1.35,
       ],
       [
-        -15.5,
-        1.1,
+        -5.25,
+        1.25,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         1.5,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.35,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.75,
       ],
     ],
-    "id": "receiver-ar-top-near",
+    "id": "receiver-ar-top-near-span-1-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
+        -5.25,
         1.1,
         1.35,
       ],
       [
-        -15.5,
+        -5.25,
         1.1,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         1.5,
         2,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.35,
       ],
       [
-        -15.5,
+        -5.25,
         2.5,
         1.75,
       ],
@@ -10844,7 +10411,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.75,
       ],
     ],
-    "id": "receiver-ar-top-near-span-1",
+    "id": "receiver-ar-top-near-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -10901,33 +10468,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.75,
       ],
     ],
-    "id": "receiver-ar-top-near-span-2",
+    "id": "receiver-ar-top-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -15.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -15.5,
-        2.5,
-        -1.35,
-      ],
-      [
-        -15.5,
-        2.5,
-        1.35,
-      ],
-      [
         -0.5,
         1.1,
         -1.35,
@@ -10944,58 +10491,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        2.5,
+        1.35,
+      ],
+      [
+        0,
+        1.1,
+        -1.35,
+      ],
+      [
+        0,
+        1.1,
+        1.35,
+      ],
+      [
+        0,
+        2.5,
+        -1.35,
+      ],
+      [
+        0,
         2.5,
         1.35,
       ],
     ],
     "id": "receiver-ar-top-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        1.35,
-      ],
-      [
-        0,
-        1.1,
-        -1.35,
-      ],
-      [
-        0,
-        1.1,
-        1.35,
-      ],
-      [
-        0,
-        2.5,
-        -1.35,
-      ],
-      [
-        0,
-        2.5,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-top-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -11365,6 +10885,147 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "id": "tube",
     "kind": "extruded-polygon",
     "partId": "barrel",
+  },
+  {
+    "geometry": [
+      [
+        -9.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -9.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -9.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -9.5,
+        1.5,
+        0.75,
+      ],
+      [
+        -4.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -4.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -4.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -4.5,
+        1.5,
+        0.75,
+      ],
+    ],
+    "id": "bolt-cylinder",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -8,
+        0.25,
+        2,
+      ],
+      [
+        -8,
+        0.25,
+        2.5,
+      ],
+      [
+        -8,
+        0.75,
+        2,
+      ],
+      [
+        -8,
+        0.75,
+        2.5,
+      ],
+      [
+        -6.5,
+        0.25,
+        2,
+      ],
+      [
+        -6.5,
+        0.25,
+        2.5,
+      ],
+      [
+        -6.5,
+        0.75,
+        2,
+      ],
+      [
+        -6.5,
+        0.75,
+        2.5,
+      ],
+    ],
+    "id": "bolt-handle",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -8.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -8.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -8.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -8.5,
+        1.5,
+        0.75,
+      ],
+      [
+        -5.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -5.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -5.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -5.5,
+        1.5,
+        0.75,
+      ],
+    ],
+    "id": "carrier-body",
+    "kind": "box",
+    "partId": "bolt-carrier",
   },
   {
     "geometry": [
@@ -12027,53 +11688,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -12,
-        -0.5,
-        2,
-      ],
-      [
-        -12,
-        -0.5,
-        3.5,
-      ],
-      [
-        -12,
-        1,
-        2,
-      ],
-      [
-        -12,
-        1,
-        3.5,
-      ],
-      [
-        -10.5,
-        -0.5,
-        2,
-      ],
-      [
-        -10.5,
-        -0.5,
-        3.5,
-      ],
-      [
-        -10.5,
-        1,
-        2,
-      ],
-      [
-        -10.5,
-        1,
-        3.5,
-      ],
-    ],
-    "id": "bolt-handle",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -1.25,
         -2.5,
         -2,
@@ -12497,22 +12111,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
+        -4.25,
         0.65,
         0.85,
       ],
       [
-        -4,
+        -4.25,
         0.65,
         2,
       ],
       [
-        -4,
+        -4.25,
         1.6,
         0.85,
       ],
       [
-        -4,
+        -4.25,
         1.6,
         2,
       ],
@@ -12544,22 +12158,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
+        -4.25,
         -2,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         -2,
         2,
       ],
       [
-        -4,
+        -4.25,
         0.65,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         0.65,
         2,
       ],
@@ -12591,22 +12205,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
+        -4.25,
         1.6,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         1.6,
         2,
       ],
       [
-        -4,
+        -4.25,
         2,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         2,
         2,
       ],
@@ -12638,43 +12252,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -10,
+        -9.75,
         -2,
         1.5,
       ],
       [
-        -10,
-        -2,
-        2,
-      ],
-      [
-        -10,
-        0.25,
-        1.5,
-      ],
-      [
-        -10,
-        0.25,
-        2,
-      ],
-      [
-        -4,
-        -2,
-        1.5,
-      ],
-      [
-        -4,
+        -9.75,
         -2,
         2,
       ],
       [
-        -4,
-        0.25,
+        -9.75,
+        0.5,
         1.5,
       ],
       [
-        -4,
-        0.25,
+        -9.75,
+        0.5,
+        2,
+      ],
+      [
+        -4.25,
+        -2,
+        1.5,
+      ],
+      [
+        -4.25,
+        -2,
+        2,
+      ],
+      [
+        -4.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -4.25,
+        0.5,
         2,
       ],
     ],
@@ -12705,22 +12319,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         0.85,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         2,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         0.85,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         2,
       ],
@@ -12752,22 +12366,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -10,
+        -9.75,
         -2,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         -2,
         2,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         2,
       ],
@@ -12799,27 +12413,121 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         2,
       ],
       [
-        -10,
+        -9.75,
         2,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         2,
         2,
       ],
     ],
     "id": "receiver-shell-side-near-rear-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9.75,
+        1.75,
+        1.5,
+      ],
+      [
+        -9.75,
+        1.75,
+        2,
+      ],
+      [
+        -9.75,
+        2,
+        1.5,
+      ],
+      [
+        -9.75,
+        2,
+        2,
+      ],
+      [
+        -4.25,
+        1.75,
+        1.5,
+      ],
+      [
+        -4.25,
+        1.75,
+        2,
+      ],
+      [
+        -4.25,
+        2,
+        1.5,
+      ],
+      [
+        -4.25,
+        2,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-side-near-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.6,
+        -1.5,
+      ],
+      [
+        -15.5,
+        1.6,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -0.5,
+        1.6,
+        -1.5,
+      ],
+      [
+        -0.5,
+        1.6,
+        1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.5,
+      ],
+    ],
+    "id": "receiver-shell-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -12833,7 +12541,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         1.6,
-        2,
+        -1.5,
       ],
       [
         -15.5,
@@ -12843,12 +12551,59 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        2,
+        -1.5,
       ],
       [
         -0.5,
         1.6,
         -2,
+      ],
+      [
+        -0.5,
+        1.6,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -2,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+    ],
+    "id": "receiver-shell-top-far",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4.25,
+        1.6,
+        1.5,
+      ],
+      [
+        -4.25,
+        1.6,
+        2,
+      ],
+      [
+        -4.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -4.25,
+        2.5,
+        2,
+      ],
+      [
+        -0.5,
+        1.6,
+        1.5,
       ],
       [
         -0.5,
@@ -12858,7 +12613,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -2,
+        1.5,
       ],
       [
         -0.5,
@@ -12866,7 +12621,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-shell-top",
+    "id": "receiver-shell-top-near-front",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.6,
+        1.5,
+      ],
+      [
+        -15.5,
+        1.6,
+        2,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        2,
+      ],
+      [
+        -9.75,
+        1.6,
+        1.5,
+      ],
+      [
+        -9.75,
+        1.6,
+        2,
+      ],
+      [
+        -9.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -9.75,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-rear",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9.75,
+        1.75,
+        1.5,
+      ],
+      [
+        -9.75,
+        1.75,
+        2,
+      ],
+      [
+        -9.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -9.75,
+        2.5,
+        2,
+      ],
+      [
+        -4.25,
+        1.75,
+        1.5,
+      ],
+      [
+        -4.25,
+        1.75,
+        2,
+      ],
+      [
+        -4.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -4.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-window-upper",
     "kind": "box",
     "partId": "receiver",
   },
@@ -13243,6 +13092,100 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "id": "tube",
     "kind": "extruded-polygon",
     "partId": "barrel",
+  },
+  {
+    "geometry": [
+      [
+        -8.5,
+        0.25,
+        -1.25,
+      ],
+      [
+        -8.5,
+        0.25,
+        1.25,
+      ],
+      [
+        -8.5,
+        1.75,
+        -1.25,
+      ],
+      [
+        -8.5,
+        1.75,
+        1.25,
+      ],
+      [
+        -5.5,
+        0.25,
+        -1.25,
+      ],
+      [
+        -5.5,
+        0.25,
+        1.25,
+      ],
+      [
+        -5.5,
+        1.75,
+        -1.25,
+      ],
+      [
+        -5.5,
+        1.75,
+        1.25,
+      ],
+    ],
+    "id": "carrier-body",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -10,
+        0.25,
+        -1.25,
+      ],
+      [
+        -10,
+        0.25,
+        1.25,
+      ],
+      [
+        -10,
+        1.75,
+        -1.25,
+      ],
+      [
+        -10,
+        1.75,
+        1.25,
+      ],
+      [
+        -4,
+        0.25,
+        -1.25,
+      ],
+      [
+        -4,
+        0.25,
+        1.25,
+      ],
+      [
+        -4,
+        1.75,
+        -1.25,
+      ],
+      [
+        -4,
+        1.75,
+        1.25,
+      ],
+    ],
+    "id": "heavy-carrier",
+    "kind": "box",
+    "partId": "bolt-carrier",
   },
   {
     "geometry": [
@@ -14339,42 +14282,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         -1.35,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         -1.35,
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -1.35,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -1.35,
       ],
     ],
@@ -14396,12 +14339,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         -1.5,
       ],
       [
@@ -14416,12 +14359,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -1.5,
       ],
     ],
@@ -14433,12 +14376,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         -1.5,
       ],
       [
@@ -14453,12 +14396,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -1.5,
       ],
       [
@@ -14479,43 +14422,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
-        -0.6,
+        -3.75,
+        0.15,
         1.35,
       ],
       [
-        -5,
-        -0.6,
+        -3.75,
+        0.15,
         2,
       ],
       [
-        -5,
-        1.1,
+        -3.75,
+        1.85,
         1.35,
       ],
       [
-        -5,
-        1.1,
-        2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
+        -3.75,
+        1.85,
         2,
       ],
       [
         -0.5,
-        1.1,
+        0.15,
         1.35,
       ],
       [
         -0.5,
-        1.1,
+        0.15,
+        2,
+      ],
+      [
+        -0.5,
+        1.85,
+        1.35,
+      ],
+      [
+        -0.5,
+        1.85,
         2,
       ],
     ],
@@ -14526,43 +14469,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -3.75,
         -2,
         1.5,
       ],
       [
-        -5,
-        -2,
-        2,
-      ],
-      [
-        -5,
-        -0.6,
-        1.5,
-      ],
-      [
-        -5,
-        -0.6,
-        2,
-      ],
-      [
-        -0.5,
-        -2,
-        1.5,
-      ],
-      [
-        -0.5,
+        -3.75,
         -2,
         2,
       ],
       [
+        -3.75,
+        0.15,
+        1.5,
+      ],
+      [
+        -3.75,
+        0.15,
+        2,
+      ],
+      [
         -0.5,
-        -0.6,
+        -2,
         1.5,
       ],
       [
         -0.5,
-        -0.6,
+        -2,
+        2,
+      ],
+      [
+        -0.5,
+        0.15,
+        1.5,
+      ],
+      [
+        -0.5,
+        0.15,
         2,
       ],
     ],
@@ -14573,33 +14516,33 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
-        1.1,
+        -3.75,
+        1.85,
         1.5,
       ],
       [
-        -5,
-        1.1,
+        -3.75,
+        1.85,
         2,
       ],
       [
-        -5,
+        -3.75,
         2,
         1.5,
       ],
       [
-        -5,
+        -3.75,
         2,
         2,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         1.5,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         2,
       ],
       [
@@ -14620,43 +14563,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -10.25,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -10.25,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -10.25,
+        0,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -10.25,
+        0,
+        2,
+      ],
+      [
+        -3.75,
+        -2,
+        1.5,
+      ],
+      [
+        -3.75,
+        -2,
+        2,
+      ],
+      [
+        -3.75,
+        0,
+        1.5,
+      ],
+      [
+        -3.75,
+        0,
         2,
       ],
     ],
@@ -14668,42 +14611,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.6,
+        0.15,
         1.35,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         2,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         1.35,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         2,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         1.35,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         2,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         1.35,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         2,
       ],
     ],
@@ -14725,32 +14668,32 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         1.5,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         2,
       ],
       [
-        -9,
+        -10.25,
         -2,
         1.5,
       ],
       [
-        -9,
+        -10.25,
         -2,
         2,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         1.5,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         2,
       ],
     ],
@@ -14762,12 +14705,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.1,
+        1.85,
         1.5,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         2,
       ],
       [
@@ -14781,22 +14724,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         1.5,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         2,
       ],
       [
-        -9,
+        -10.25,
         2,
         1.5,
       ],
       [
-        -9,
+        -10.25,
         2,
         2,
       ],
@@ -14808,47 +14751,47 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
-        1.5,
+        -15.5,
+        1.85,
+        -1.5,
+      ],
+      [
+        -15.5,
+        1.85,
         1.5,
       ],
       [
-        -9,
-        1.5,
-        2,
+        -15.5,
+        2.5,
+        -1.5,
       ],
       [
-        -9,
-        2,
-        1.5,
-      ],
-      [
-        -9,
-        2,
-        2,
-      ],
-      [
-        -5,
-        1.5,
+        -15.5,
+        2.5,
         1.5,
       ],
       [
-        -5,
-        1.5,
-        2,
+        -0.5,
+        1.85,
+        -1.5,
       ],
       [
-        -5,
-        2,
+        -0.5,
+        1.85,
         1.5,
       ],
       [
-        -5,
-        2,
-        2,
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.5,
       ],
     ],
-    "id": "receiver-shell-side-near-upper",
+    "id": "receiver-shell-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -14856,13 +14799,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        1.1,
-        2,
+        1.85,
+        -1.5,
       ],
       [
         -15.5,
@@ -14871,23 +14814,70 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        1.85,
+        -2,
+      ],
+      [
+        -0.5,
+        1.85,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -2,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+    ],
+    "id": "receiver-shell-top-far",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.75,
+        1.85,
+        1.5,
+      ],
+      [
+        -3.75,
+        1.85,
+        2,
+      ],
+      [
+        -3.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -3.75,
         2.5,
         2,
       ],
       [
         -0.5,
-        1.1,
-        -2,
+        1.85,
+        1.5,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         2,
       ],
       [
         -0.5,
         2.5,
-        -2,
+        1.5,
       ],
       [
         -0.5,
@@ -14895,7 +14885,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-shell-top",
+    "id": "receiver-shell-top-near-front",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -15.5,
+        1.85,
+        2,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        2,
+      ],
+      [
+        -10.25,
+        1.85,
+        1.5,
+      ],
+      [
+        -10.25,
+        1.85,
+        2,
+      ],
+      [
+        -10.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -10.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-rear",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -10.25,
+        2,
+        1.5,
+      ],
+      [
+        -10.25,
+        2,
+        2,
+      ],
+      [
+        -10.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -10.25,
+        2.5,
+        2,
+      ],
+      [
+        -3.75,
+        2,
+        1.5,
+      ],
+      [
+        -3.75,
+        2,
+        2,
+      ],
+      [
+        -3.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -3.75,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-window-upper",
     "kind": "box",
     "partId": "receiver",
   },
@@ -15131,6 +15215,147 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "id": "tube",
     "kind": "extruded-polygon",
     "partId": "barrel",
+  },
+  {
+    "geometry": [
+      [
+        -8.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -8.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -8.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -8.5,
+        1.5,
+        0.75,
+      ],
+      [
+        -3.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -3.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -3.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -3.5,
+        1.5,
+        0.75,
+      ],
+    ],
+    "id": "bolt-cylinder",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -7,
+        0.25,
+        2,
+      ],
+      [
+        -7,
+        0.25,
+        2.5,
+      ],
+      [
+        -7,
+        0.75,
+        2,
+      ],
+      [
+        -7,
+        0.75,
+        2.5,
+      ],
+      [
+        -5.5,
+        0.25,
+        2,
+      ],
+      [
+        -5.5,
+        0.25,
+        2.5,
+      ],
+      [
+        -5.5,
+        0.75,
+        2,
+      ],
+      [
+        -5.5,
+        0.75,
+        2.5,
+      ],
+    ],
+    "id": "bolt-handle",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -7.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -7.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -7.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -7.5,
+        1.5,
+        0.75,
+      ],
+      [
+        -4.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -4.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -4.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -4.5,
+        1.5,
+        0.75,
+      ],
+    ],
+    "id": "carrier-body",
+    "kind": "box",
+    "partId": "bolt-carrier",
   },
   {
     "geometry": [
@@ -15981,53 +16206,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -12,
-        -0.5,
-        2,
-      ],
-      [
-        -12,
-        -0.5,
-        3.5,
-      ],
-      [
-        -12,
-        1,
-        2,
-      ],
-      [
-        -12,
-        1,
-        3.5,
-      ],
-      [
-        -10.5,
-        -0.5,
-        2,
-      ],
-      [
-        -10.5,
-        -0.5,
-        3.5,
-      ],
-      [
-        -10.5,
-        1,
-        2,
-      ],
-      [
-        -10.5,
-        1,
-        3.5,
-      ],
-    ],
-    "id": "bolt-handle",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -15.5,
         -2.5,
         -2,
@@ -16310,22 +16488,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -3,
+        -3.25,
         0.65,
         0.85,
       ],
       [
-        -3,
+        -3.25,
         0.65,
         2,
       ],
       [
-        -3,
+        -3.25,
         1.6,
         0.85,
       ],
       [
-        -3,
+        -3.25,
         1.6,
         2,
       ],
@@ -16357,22 +16535,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -3,
+        -3.25,
         -2,
         1.5,
       ],
       [
-        -3,
+        -3.25,
         -2,
         2,
       ],
       [
-        -3,
+        -3.25,
         0.65,
         1.5,
       ],
       [
-        -3,
+        -3.25,
         0.65,
         2,
       ],
@@ -16404,22 +16582,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -3,
+        -3.25,
         1.6,
         1.5,
       ],
       [
-        -3,
+        -3.25,
         1.6,
         2,
       ],
       [
-        -3,
+        -3.25,
         2,
         1.5,
       ],
       [
-        -3,
+        -3.25,
         2,
         2,
       ],
@@ -16451,43 +16629,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        0.25,
-        1.5,
-      ],
-      [
-        -9,
-        0.25,
-        2,
-      ],
-      [
-        -3,
-        -2,
-        1.5,
-      ],
-      [
-        -3,
+        -8.75,
         -2,
         2,
       ],
       [
-        -3,
-        0.25,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -3,
-        0.25,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -3.25,
+        -2,
+        1.5,
+      ],
+      [
+        -3.25,
+        -2,
+        2,
+      ],
+      [
+        -3.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -3.25,
+        0.5,
         2,
       ],
     ],
@@ -16518,22 +16696,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         0.85,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         2,
       ],
       [
-        -9,
+        -8.75,
         1.6,
         0.85,
       ],
       [
-        -9,
+        -8.75,
         1.6,
         2,
       ],
@@ -16565,22 +16743,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         2,
       ],
@@ -16612,27 +16790,74 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         1.6,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         1.6,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
     ],
     "id": "receiver-shell-side-near-rear-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -8.75,
+        1.75,
+        1.5,
+      ],
+      [
+        -8.75,
+        1.75,
+        2,
+      ],
+      [
+        -8.75,
+        2,
+        1.5,
+      ],
+      [
+        -8.75,
+        2,
+        2,
+      ],
+      [
+        -3.25,
+        1.75,
+        1.5,
+      ],
+      [
+        -3.25,
+        1.75,
+        2,
+      ],
+      [
+        -3.25,
+        2,
+        1.5,
+      ],
+      [
+        -3.25,
+        2,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-side-near-upper",
     "kind": "box",
     "partId": "receiver",
   },
@@ -17107,6 +17332,147 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -9.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -9.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -9.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -9.5,
+        1.5,
+        0.75,
+      ],
+      [
+        -4.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -4.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -4.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -4.5,
+        1.5,
+        0.75,
+      ],
+    ],
+    "id": "bolt-cylinder",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -8,
+        0.25,
+        2,
+      ],
+      [
+        -8,
+        0.25,
+        2.5,
+      ],
+      [
+        -8,
+        0.75,
+        2,
+      ],
+      [
+        -8,
+        0.75,
+        2.5,
+      ],
+      [
+        -6.5,
+        0.25,
+        2,
+      ],
+      [
+        -6.5,
+        0.25,
+        2.5,
+      ],
+      [
+        -6.5,
+        0.75,
+        2,
+      ],
+      [
+        -6.5,
+        0.75,
+        2.5,
+      ],
+    ],
+    "id": "bolt-handle",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -8.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -8.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -8.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -8.5,
+        1.5,
+        0.75,
+      ],
+      [
+        -5.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -5.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -5.5,
+        1.5,
+        -0.75,
+      ],
+      [
+        -5.5,
+        1.5,
+        0.75,
+      ],
+    ],
+    "id": "carrier-body",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
         -16.803229,
         -11.620455,
         -1.25,
@@ -17822,53 +18188,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -12,
-        -0.5,
-        2,
-      ],
-      [
-        -12,
-        -0.5,
-        3.5,
-      ],
-      [
-        -12,
-        1,
-        2,
-      ],
-      [
-        -12,
-        1,
-        3.5,
-      ],
-      [
-        -10.5,
-        -0.5,
-        2,
-      ],
-      [
-        -10.5,
-        -0.5,
-        3.5,
-      ],
-      [
-        -10.5,
-        1,
-        2,
-      ],
-      [
-        -10.5,
-        1,
-        3.5,
-      ],
-    ],
-    "id": "bolt-handle",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -1.25,
         -2.5,
         -2,
@@ -18292,22 +18611,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
+        -4.25,
         0.65,
         0.85,
       ],
       [
-        -4,
+        -4.25,
         0.65,
         2,
       ],
       [
-        -4,
+        -4.25,
         1.6,
         0.85,
       ],
       [
-        -4,
+        -4.25,
         1.6,
         2,
       ],
@@ -18339,22 +18658,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
+        -4.25,
         -2,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         -2,
         2,
       ],
       [
-        -4,
+        -4.25,
         0.65,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         0.65,
         2,
       ],
@@ -18386,22 +18705,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
+        -4.25,
         1.6,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         1.6,
         2,
       ],
       [
-        -4,
+        -4.25,
         2,
         1.5,
       ],
       [
-        -4,
+        -4.25,
         2,
         2,
       ],
@@ -18433,43 +18752,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -10,
+        -9.75,
         -2,
         1.5,
       ],
       [
-        -10,
-        -2,
-        2,
-      ],
-      [
-        -10,
-        0.25,
-        1.5,
-      ],
-      [
-        -10,
-        0.25,
-        2,
-      ],
-      [
-        -4,
-        -2,
-        1.5,
-      ],
-      [
-        -4,
+        -9.75,
         -2,
         2,
       ],
       [
-        -4,
-        0.25,
+        -9.75,
+        0.5,
         1.5,
       ],
       [
-        -4,
-        0.25,
+        -9.75,
+        0.5,
+        2,
+      ],
+      [
+        -4.25,
+        -2,
+        1.5,
+      ],
+      [
+        -4.25,
+        -2,
+        2,
+      ],
+      [
+        -4.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -4.25,
+        0.5,
         2,
       ],
     ],
@@ -18500,22 +18819,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         0.85,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         2,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         0.85,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         2,
       ],
@@ -18547,22 +18866,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -10,
+        -9.75,
         -2,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         -2,
         2,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         0.65,
         2,
       ],
@@ -18594,27 +18913,121 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         1.6,
         2,
       ],
       [
-        -10,
+        -9.75,
         2,
         1.5,
       ],
       [
-        -10,
+        -9.75,
         2,
         2,
       ],
     ],
     "id": "receiver-shell-side-near-rear-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9.75,
+        1.75,
+        1.5,
+      ],
+      [
+        -9.75,
+        1.75,
+        2,
+      ],
+      [
+        -9.75,
+        2,
+        1.5,
+      ],
+      [
+        -9.75,
+        2,
+        2,
+      ],
+      [
+        -4.25,
+        1.75,
+        1.5,
+      ],
+      [
+        -4.25,
+        1.75,
+        2,
+      ],
+      [
+        -4.25,
+        2,
+        1.5,
+      ],
+      [
+        -4.25,
+        2,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-side-near-upper",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.6,
+        -1.5,
+      ],
+      [
+        -15.5,
+        1.6,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -0.5,
+        1.6,
+        -1.5,
+      ],
+      [
+        -0.5,
+        1.6,
+        1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.5,
+      ],
+    ],
+    "id": "receiver-shell-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -18628,7 +19041,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         1.6,
-        2,
+        -1.5,
       ],
       [
         -15.5,
@@ -18638,12 +19051,59 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        2,
+        -1.5,
       ],
       [
         -0.5,
         1.6,
         -2,
+      ],
+      [
+        -0.5,
+        1.6,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -2,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+    ],
+    "id": "receiver-shell-top-far",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -4.25,
+        1.6,
+        1.5,
+      ],
+      [
+        -4.25,
+        1.6,
+        2,
+      ],
+      [
+        -4.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -4.25,
+        2.5,
+        2,
+      ],
+      [
+        -0.5,
+        1.6,
+        1.5,
       ],
       [
         -0.5,
@@ -18653,7 +19113,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -2,
+        1.5,
       ],
       [
         -0.5,
@@ -18661,7 +19121,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-shell-top",
+    "id": "receiver-shell-top-near-front",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.6,
+        1.5,
+      ],
+      [
+        -15.5,
+        1.6,
+        2,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        2,
+      ],
+      [
+        -9.75,
+        1.6,
+        1.5,
+      ],
+      [
+        -9.75,
+        1.6,
+        2,
+      ],
+      [
+        -9.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -9.75,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-rear",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -9.75,
+        1.75,
+        1.5,
+      ],
+      [
+        -9.75,
+        1.75,
+        2,
+      ],
+      [
+        -9.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -9.75,
+        2.5,
+        2,
+      ],
+      [
+        -4.25,
+        1.75,
+        1.5,
+      ],
+      [
+        -4.25,
+        1.75,
+        2,
+      ],
+      [
+        -4.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -4.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-window-upper",
     "kind": "box",
     "partId": "receiver",
   },
@@ -18944,6 +19498,100 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "id": "tube",
     "kind": "extruded-polygon",
     "partId": "barrel",
+  },
+  {
+    "geometry": [
+      [
+        -8.5,
+        0.25,
+        -1.25,
+      ],
+      [
+        -8.5,
+        0.25,
+        1.25,
+      ],
+      [
+        -8.5,
+        1.75,
+        -1.25,
+      ],
+      [
+        -8.5,
+        1.75,
+        1.25,
+      ],
+      [
+        -5.5,
+        0.25,
+        -1.25,
+      ],
+      [
+        -5.5,
+        0.25,
+        1.25,
+      ],
+      [
+        -5.5,
+        1.75,
+        -1.25,
+      ],
+      [
+        -5.5,
+        1.75,
+        1.25,
+      ],
+    ],
+    "id": "carrier-body",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
+        -10,
+        0.25,
+        -1.25,
+      ],
+      [
+        -10,
+        0.25,
+        1.25,
+      ],
+      [
+        -10,
+        1.75,
+        -1.25,
+      ],
+      [
+        -10,
+        1.75,
+        1.25,
+      ],
+      [
+        -4,
+        0.25,
+        -1.25,
+      ],
+      [
+        -4,
+        0.25,
+        1.25,
+      ],
+      [
+        -4,
+        1.75,
+        -1.25,
+      ],
+      [
+        -4,
+        1.75,
+        1.25,
+      ],
+    ],
+    "id": "heavy-carrier",
+    "kind": "box",
+    "partId": "bolt-carrier",
   },
   {
     "geometry": [
@@ -19711,42 +20359,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         -1.35,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         -1.35,
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -1.35,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -1.35,
       ],
     ],
@@ -19768,12 +20416,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         -1.5,
       ],
       [
@@ -19788,12 +20436,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -2,
       ],
       [
         -0.5,
-        -0.6,
+        0.15,
         -1.5,
       ],
     ],
@@ -19805,12 +20453,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         -1.5,
       ],
       [
@@ -19825,12 +20473,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         -1.5,
       ],
       [
@@ -19851,43 +20499,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
-        -0.6,
+        -3.75,
+        0.15,
         1.35,
       ],
       [
-        -5,
-        -0.6,
+        -3.75,
+        0.15,
         2,
       ],
       [
-        -5,
-        1.1,
+        -3.75,
+        1.85,
         1.35,
       ],
       [
-        -5,
-        1.1,
-        2,
-      ],
-      [
-        -0.5,
-        -0.6,
-        1.35,
-      ],
-      [
-        -0.5,
-        -0.6,
+        -3.75,
+        1.85,
         2,
       ],
       [
         -0.5,
-        1.1,
+        0.15,
         1.35,
       ],
       [
         -0.5,
-        1.1,
+        0.15,
+        2,
+      ],
+      [
+        -0.5,
+        1.85,
+        1.35,
+      ],
+      [
+        -0.5,
+        1.85,
         2,
       ],
     ],
@@ -19898,43 +20546,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -3.75,
         -2,
         1.5,
       ],
       [
-        -5,
-        -2,
-        2,
-      ],
-      [
-        -5,
-        -0.6,
-        1.5,
-      ],
-      [
-        -5,
-        -0.6,
-        2,
-      ],
-      [
-        -0.5,
-        -2,
-        1.5,
-      ],
-      [
-        -0.5,
+        -3.75,
         -2,
         2,
       ],
       [
+        -3.75,
+        0.15,
+        1.5,
+      ],
+      [
+        -3.75,
+        0.15,
+        2,
+      ],
+      [
         -0.5,
-        -0.6,
+        -2,
         1.5,
       ],
       [
         -0.5,
-        -0.6,
+        -2,
+        2,
+      ],
+      [
+        -0.5,
+        0.15,
+        1.5,
+      ],
+      [
+        -0.5,
+        0.15,
         2,
       ],
     ],
@@ -19945,33 +20593,33 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
-        1.1,
+        -3.75,
+        1.85,
         1.5,
       ],
       [
-        -5,
-        1.1,
+        -3.75,
+        1.85,
         2,
       ],
       [
-        -5,
+        -3.75,
         2,
         1.5,
       ],
       [
-        -5,
+        -3.75,
         2,
         2,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         1.5,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         2,
       ],
       [
@@ -19992,43 +20640,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -10.25,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        -1,
-        1.5,
-      ],
-      [
-        -9,
-        -1,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -10.25,
         -2,
         2,
       ],
       [
-        -5,
-        -1,
+        -10.25,
+        0,
         1.5,
       ],
       [
-        -5,
-        -1,
+        -10.25,
+        0,
+        2,
+      ],
+      [
+        -3.75,
+        -2,
+        1.5,
+      ],
+      [
+        -3.75,
+        -2,
+        2,
+      ],
+      [
+        -3.75,
+        0,
+        1.5,
+      ],
+      [
+        -3.75,
+        0,
         2,
       ],
     ],
@@ -20040,42 +20688,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        -0.6,
+        0.15,
         1.35,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         2,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         1.35,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         2,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         1.35,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         2,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         1.35,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         2,
       ],
     ],
@@ -20097,32 +20745,32 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         1.5,
       ],
       [
         -15.5,
-        -0.6,
+        0.15,
         2,
       ],
       [
-        -9,
+        -10.25,
         -2,
         1.5,
       ],
       [
-        -9,
+        -10.25,
         -2,
         2,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         1.5,
       ],
       [
-        -9,
-        -0.6,
+        -10.25,
+        0.15,
         2,
       ],
     ],
@@ -20134,12 +20782,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.1,
+        1.85,
         1.5,
       ],
       [
         -15.5,
-        1.1,
+        1.85,
         2,
       ],
       [
@@ -20153,22 +20801,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         1.5,
       ],
       [
-        -9,
-        1.1,
+        -10.25,
+        1.85,
         2,
       ],
       [
-        -9,
+        -10.25,
         2,
         1.5,
       ],
       [
-        -9,
+        -10.25,
         2,
         2,
       ],
@@ -20180,47 +20828,47 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
-        1.5,
+        -15.5,
+        1.85,
+        -1.5,
+      ],
+      [
+        -15.5,
+        1.85,
         1.5,
       ],
       [
-        -9,
-        1.5,
-        2,
+        -15.5,
+        2.5,
+        -1.5,
       ],
       [
-        -9,
-        2,
-        1.5,
-      ],
-      [
-        -9,
-        2,
-        2,
-      ],
-      [
-        -5,
-        1.5,
+        -15.5,
+        2.5,
         1.5,
       ],
       [
-        -5,
-        1.5,
-        2,
+        -0.5,
+        1.85,
+        -1.5,
       ],
       [
-        -5,
-        2,
+        -0.5,
+        1.85,
         1.5,
       ],
       [
-        -5,
-        2,
-        2,
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.5,
       ],
     ],
-    "id": "receiver-shell-side-near-upper",
+    "id": "receiver-shell-top",
     "kind": "box",
     "partId": "receiver",
   },
@@ -20228,13 +20876,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -15.5,
-        1.1,
+        1.85,
         -2,
       ],
       [
         -15.5,
-        1.1,
-        2,
+        1.85,
+        -1.5,
       ],
       [
         -15.5,
@@ -20243,23 +20891,70 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -15.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        1.85,
+        -2,
+      ],
+      [
+        -0.5,
+        1.85,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -2,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+    ],
+    "id": "receiver-shell-top-far",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.75,
+        1.85,
+        1.5,
+      ],
+      [
+        -3.75,
+        1.85,
+        2,
+      ],
+      [
+        -3.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -3.75,
         2.5,
         2,
       ],
       [
         -0.5,
-        1.1,
-        -2,
+        1.85,
+        1.5,
       ],
       [
         -0.5,
-        1.1,
+        1.85,
         2,
       ],
       [
         -0.5,
         2.5,
-        -2,
+        1.5,
       ],
       [
         -0.5,
@@ -20267,7 +20962,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-shell-top",
+    "id": "receiver-shell-top-near-front",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -15.5,
+        1.85,
+        2,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        2,
+      ],
+      [
+        -10.25,
+        1.85,
+        1.5,
+      ],
+      [
+        -10.25,
+        1.85,
+        2,
+      ],
+      [
+        -10.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -10.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-rear",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -10.25,
+        2,
+        1.5,
+      ],
+      [
+        -10.25,
+        2,
+        2,
+      ],
+      [
+        -10.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -10.25,
+        2.5,
+        2,
+      ],
+      [
+        -3.75,
+        2,
+        1.5,
+      ],
+      [
+        -3.75,
+        2,
+        2,
+      ],
+      [
+        -3.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -3.75,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-window-upper",
     "kind": "box",
     "partId": "receiver",
   },
@@ -21680,42 +22469,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9.75,
+        -10,
         -0.75,
         -0.75,
       ],
       [
-        -9.75,
+        -10,
         -0.75,
         0.75,
       ],
       [
-        -9.75,
+        -10,
         0.75,
         -0.75,
       ],
       [
-        -9.75,
+        -10,
         0.75,
         0.75,
       ],
       [
-        -4.25,
+        -3.75,
         -0.75,
         -0.75,
       ],
       [
-        -4.25,
+        -3.75,
         -0.75,
         0.75,
       ],
       [
-        -4.25,
+        -3.75,
         0.75,
         -0.75,
       ],
       [
-        -4.25,
+        -3.75,
         0.75,
         0.75,
       ],
@@ -22123,22 +22912,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         0.85,
       ],
       [
-        -15.5,
+        -0.5,
         -3.5,
         -0.85,
       ],
       [
-        -15.5,
+        -0.5,
         -3.5,
         0.85,
       ],
       [
-        -15.5,
+        -0.5,
         -0.85,
         -0.85,
       ],
       [
-        -15.5,
+        -0.5,
         -0.85,
         0.85,
       ],
@@ -22170,22 +22959,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -0.85,
       ],
       [
-        -15.5,
+        -0.5,
         -3.5,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -3.5,
         -0.85,
       ],
       [
-        -15.5,
+        -0.5,
         -0.85,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.85,
         -0.85,
       ],
@@ -22197,26 +22986,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -3.5,
-        -2,
-      ],
-      [
-        -15.5,
-        -3.5,
-        -0.85,
-      ],
-      [
-        -15.5,
-        -0.85,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.85,
-        -0.85,
-      ],
-      [
         -0.5,
         -3.5,
         -2,
@@ -22233,6 +23002,26 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        -0.85,
+        -0.85,
+      ],
+      [
+        0,
+        -3.5,
+        -2,
+      ],
+      [
+        0,
+        -3.5,
+        -0.85,
+      ],
+      [
+        0,
+        -0.85,
+        -2,
+      ],
+      [
+        0,
         -0.85,
         -0.85,
       ],
@@ -22244,53 +23033,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
-        -3.5,
-        -2,
-      ],
-      [
-        -0.5,
-        -3.5,
-        -0.85,
-      ],
-      [
-        -0.5,
-        -0.85,
-        -2,
-      ],
-      [
-        -0.5,
-        -0.85,
-        -0.85,
-      ],
-      [
-        0,
-        -3.5,
-        -2,
-      ],
-      [
-        0,
-        -3.5,
-        -0.85,
-      ],
-      [
-        0,
-        -0.85,
-        -2,
-      ],
-      [
-        0,
-        -0.85,
-        -0.85,
-      ],
-    ],
-    "id": "receiver-pump-bottom-far-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -3.5,
         0.85,
@@ -22311,49 +23053,96 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -15.5,
+        -10.25,
         -3.5,
         0.85,
       ],
       [
-        -15.5,
+        -10.25,
         -3.5,
         2,
       ],
       [
-        -15.5,
+        -10.25,
         -0.85,
         0.85,
       ],
       [
-        -15.5,
+        -10.25,
         -0.85,
         2,
       ],
     ],
-    "id": "receiver-pump-bottom-near",
+    "id": "receiver-pump-bottom-near-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
+        -10.25,
         -3.5,
         0.85,
       ],
       [
-        -15.5,
+        -10.25,
         -3.5,
         2,
       ],
       [
-        -15.5,
+        -10.25,
+        -1,
+        0.85,
+      ],
+      [
+        -10.25,
+        -1,
+        2,
+      ],
+      [
+        -3.5,
+        -3.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        -3.5,
+        2,
+      ],
+      [
+        -3.5,
+        -1,
+        0.85,
+      ],
+      [
+        -3.5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -3.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        -3.5,
+        2,
+      ],
+      [
+        -3.5,
         -0.85,
         0.85,
       ],
       [
-        -15.5,
+        -3.5,
         -0.85,
         2,
       ],
@@ -22378,7 +23167,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-pump-bottom-near-span-1",
+    "id": "receiver-pump-bottom-near-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -22425,33 +23214,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-pump-bottom-near-span-2",
+    "id": "receiver-pump-bottom-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -15.5,
-        -3.5,
-        -0.85,
-      ],
-      [
-        -15.5,
-        -3.5,
-        0.85,
-      ],
-      [
-        -15.5,
-        -0.85,
-        -0.85,
-      ],
-      [
-        -15.5,
-        -0.85,
-        0.85,
-      ],
-      [
         -0.5,
         -3.5,
         -0.85,
@@ -22468,6 +23237,26 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        0,
+        -3.5,
+        -0.85,
+      ],
+      [
+        0,
+        -3.5,
+        0.85,
+      ],
+      [
+        0,
+        -0.85,
+        -0.85,
+      ],
+      [
+        0,
         -0.85,
         0.85,
       ],
@@ -22479,53 +23268,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
-        -3.5,
-        -0.85,
-      ],
-      [
-        -0.5,
-        -3.5,
-        0.85,
-      ],
-      [
-        -0.5,
-        -0.85,
-        -0.85,
-      ],
-      [
-        -0.5,
-        -0.85,
-        0.85,
-      ],
-      [
-        0,
-        -3.5,
-        -0.85,
-      ],
-      [
-        0,
-        -3.5,
-        0.85,
-      ],
-      [
-        0,
-        -0.85,
-        -0.85,
-      ],
-      [
-        0,
-        -0.85,
-        0.85,
-      ],
-    ],
-    "id": "receiver-pump-bottom-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -0.85,
         -2,
@@ -22546,28 +23288,38 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -0.85,
       ],
       [
-        -15.5,
+        -13.733333,
+        0.85,
+        -1.7875,
+      ],
+      [
+        -13.733333,
+        0.85,
+        -0.85,
+      ],
+      [
+        -0.5,
         -0.85,
         -2,
       ],
       [
-        -15.5,
+        -0.5,
         -0.85,
         -0.85,
       ],
       [
-        -15.5,
+        -0.5,
         0,
         -2,
       ],
       [
-        -15.5,
-        0.1875,
-        -1.953125,
+        -0.5,
+        0.85,
+        -1.7875,
       ],
       [
-        -15.5,
-        0.1875,
+        -0.5,
+        0.85,
         -0.85,
       ],
     ],
@@ -22578,41 +23330,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -15.5,
-        -0.85,
-        -2,
-      ],
-      [
-        -15.5,
-        -0.85,
-        -0.85,
-      ],
-      [
-        -15.5,
-        0,
-        -2,
-      ],
-      [
-        -15.5,
-        0.1875,
-        -1.953125,
-      ],
-      [
-        -15.5,
-        0.1875,
-        -0.85,
-      ],
-      [
-        -13.733333,
-        0.85,
-        -1.7875,
-      ],
-      [
-        -13.733333,
-        0.85,
-        -0.85,
-      ],
-      [
         -0.5,
         -0.85,
         -2,
@@ -22634,68 +23351,36 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        0.85,
+        -0.85,
+      ],
+      [
+        0,
+        -0.85,
+        -2,
+      ],
+      [
+        0,
+        -0.85,
+        -0.85,
+      ],
+      [
+        0,
+        0,
+        -2,
+      ],
+      [
+        0,
+        0.85,
+        -1.7875,
+      ],
+      [
+        0,
         0.85,
         -0.85,
       ],
     ],
     "id": "receiver-pump-far-side-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -0.85,
-        -2,
-      ],
-      [
-        -0.5,
-        -0.85,
-        -0.85,
-      ],
-      [
-        -0.5,
-        0,
-        -2,
-      ],
-      [
-        -0.5,
-        0.85,
-        -1.7875,
-      ],
-      [
-        -0.5,
-        0.85,
-        -0.85,
-      ],
-      [
-        0,
-        -0.85,
-        -2,
-      ],
-      [
-        0,
-        -0.85,
-        -0.85,
-      ],
-      [
-        0,
-        0,
-        -2,
-      ],
-      [
-        0,
-        0.85,
-        -1.7875,
-      ],
-      [
-        0,
-        0.85,
-        -0.85,
-      ],
-    ],
-    "id": "receiver-pump-far-side-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -22749,120 +23434,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -3.5,
-        -0.85,
-        0.85,
-      ],
-      [
-        -3.5,
-        -0.85,
-        2,
-      ],
-      [
-        -3.5,
-        0,
-        2,
-      ],
-      [
-        -3.5,
-        0.85,
-        0.85,
-      ],
-      [
-        -3.5,
-        0.85,
-        1.7875,
-      ],
-      [
-        -0.5,
-        -0.85,
-        0.85,
-      ],
-      [
-        -0.5,
-        -0.85,
-        2,
-      ],
-      [
-        -0.5,
-        0,
-        2,
-      ],
-      [
-        -0.5,
-        0.85,
-        0.85,
-      ],
-      [
-        -0.5,
-        0.85,
-        1.7875,
-      ],
-    ],
-    "id": "receiver-pump-near-side-after-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -0.85,
-        0.85,
-      ],
-      [
-        -0.5,
-        -0.85,
-        2,
-      ],
-      [
-        -0.5,
-        0,
-        2,
-      ],
-      [
-        -0.5,
-        0.85,
-        0.85,
-      ],
-      [
-        -0.5,
-        0.85,
-        1.7875,
-      ],
-      [
-        0,
-        -0.85,
-        0.85,
-      ],
-      [
-        0,
-        -0.85,
-        2,
-      ],
-      [
-        0,
-        0,
-        2,
-      ],
-      [
-        0,
-        0.85,
-        0.85,
-      ],
-      [
-        0,
-        0.85,
-        1.7875,
-      ],
-    ],
-    "id": "receiver-pump-near-side-after-window-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -16,
         -0.85,
         0.85,
@@ -22881,63 +23452,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         -16,
         0,
         2,
-      ],
-      [
-        -15.5,
-        -0.85,
-        0.85,
-      ],
-      [
-        -15.5,
-        -0.85,
-        2,
-      ],
-      [
-        -15.5,
-        0,
-        2,
-      ],
-      [
-        -15.5,
-        0.1875,
-        0.85,
-      ],
-      [
-        -15.5,
-        0.1875,
-        1.953125,
-      ],
-    ],
-    "id": "receiver-pump-near-side-before-window",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -15.5,
-        -0.85,
-        0.85,
-      ],
-      [
-        -15.5,
-        -0.85,
-        2,
-      ],
-      [
-        -15.5,
-        0,
-        2,
-      ],
-      [
-        -15.5,
-        0.1875,
-        0.85,
-      ],
-      [
-        -15.5,
-        0.1875,
-        1.953125,
       ],
       [
         -13.733333,
@@ -22950,32 +23464,146 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.7875,
       ],
       [
-        -10.5,
+        -10.25,
         -0.85,
         0.85,
       ],
       [
-        -10.5,
+        -10.25,
         -0.85,
         2,
       ],
       [
-        -10.5,
+        -10.25,
         0,
         2,
       ],
       [
-        -10.5,
+        -10.25,
         0.85,
         0.85,
       ],
       [
-        -10.5,
+        -10.25,
         0.85,
         1.7875,
       ],
     ],
-    "id": "receiver-pump-near-side-before-window-span-1",
+    "id": "receiver-pump-near-side-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -0.85,
+        2,
+      ],
+      [
+        -3.5,
+        0,
+        2,
+      ],
+      [
+        -3.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        0.85,
+        1.7875,
+      ],
+      [
+        -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -0.85,
+        2,
+      ],
+      [
+        -0.5,
+        0,
+        2,
+      ],
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
+      ],
+    ],
+    "id": "receiver-pump-near-side-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -0.85,
+        2,
+      ],
+      [
+        -0.5,
+        0,
+        2,
+      ],
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
+      ],
+      [
+        0,
+        -0.85,
+        0.85,
+      ],
+      [
+        0,
+        -0.85,
+        2,
+      ],
+      [
+        0,
+        0,
+        2,
+      ],
+      [
+        0,
+        0.85,
+        0.85,
+      ],
+      [
+        0,
+        0.85,
+        1.7875,
+      ],
+    ],
+    "id": "receiver-pump-near-side-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -23031,6 +23659,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -13.733333,
         0.85,
+        -0.85,
+      ],
+      [
+        -13.733333,
+        0.85,
+        0.85,
+      ],
+      [
+        -12,
+        1.5,
+        -0.85,
+      ],
+      [
+        -12,
+        1.5,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        -0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        1.5,
+        -0.85,
+      ],
+      [
+        -0.5,
+        1.5,
+        0.85,
+      ],
+    ],
+    "id": "receiver-pump-top",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -13.733333,
+        0.85,
         -1.7875,
       ],
       [
@@ -23075,6 +23750,63 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        1.5,
+        -0.85,
+      ],
+    ],
+    "id": "receiver-pump-top-far",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        0.85,
+        -1.7875,
+      ],
+      [
+        -0.5,
+        0.85,
+        -0.85,
+      ],
+      [
+        -0.5,
+        1,
+        -1.75,
+      ],
+      [
+        -0.5,
+        1.5,
+        -1.25,
+      ],
+      [
+        -0.5,
+        1.5,
+        -0.85,
+      ],
+      [
+        0,
+        0.85,
+        -1.7875,
+      ],
+      [
+        0,
+        0.85,
+        -0.85,
+      ],
+      [
+        0,
+        1,
+        -1.75,
+      ],
+      [
+        0,
+        1.5,
+        -1.25,
+      ],
+      [
+        0,
         1.5,
         -0.85,
       ],
@@ -23086,63 +23818,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -0.5,
-        0.85,
-        -1.7875,
-      ],
-      [
-        -0.5,
-        0.85,
-        -0.85,
-      ],
-      [
-        -0.5,
-        1,
-        -1.75,
-      ],
-      [
-        -0.5,
-        1.5,
-        -1.25,
-      ],
-      [
-        -0.5,
-        1.5,
-        -0.85,
-      ],
-      [
-        0,
-        0.85,
-        -1.7875,
-      ],
-      [
-        0,
-        0.85,
-        -0.85,
-      ],
-      [
-        0,
-        1,
-        -1.75,
-      ],
-      [
-        0,
-        1.5,
-        -1.25,
-      ],
-      [
-        0,
-        1.5,
-        -0.85,
-      ],
-    ],
-    "id": "receiver-pump-top-far-span-2",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -13.733333,
         0.85,
         0.85,
@@ -23168,6 +23843,110 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.25,
       ],
       [
+        -10.25,
+        0.85,
+        0.85,
+      ],
+      [
+        -10.25,
+        0.85,
+        1.7875,
+      ],
+      [
+        -10.25,
+        1,
+        1.75,
+      ],
+      [
+        -10.25,
+        1.5,
+        0.85,
+      ],
+      [
+        -10.25,
+        1.5,
+        1.25,
+      ],
+    ],
+    "id": "receiver-pump-top-near-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -10.25,
+        1,
+        0.85,
+      ],
+      [
+        -10.25,
+        1,
+        1.75,
+      ],
+      [
+        -10.25,
+        1.5,
+        0.85,
+      ],
+      [
+        -10.25,
+        1.5,
+        1.25,
+      ],
+      [
+        -3.5,
+        1,
+        0.85,
+      ],
+      [
+        -3.5,
+        1,
+        1.75,
+      ],
+      [
+        -3.5,
+        1.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        1.5,
+        1.25,
+      ],
+    ],
+    "id": "receiver-pump-top-near-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        0.85,
+        1.7875,
+      ],
+      [
+        -3.5,
+        1,
+        1.75,
+      ],
+      [
+        -3.5,
+        1.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        1.5,
+        1.25,
+      ],
+      [
         -0.5,
         0.85,
         0.85,
@@ -23193,7 +23972,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.25,
       ],
     ],
-    "id": "receiver-pump-top-near-span-1",
+    "id": "receiver-pump-top-near-span-2-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -23250,33 +24029,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.25,
       ],
     ],
-    "id": "receiver-pump-top-near-span-2",
+    "id": "receiver-pump-top-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
   {
     "geometry": [
       [
-        -13.733333,
-        0.85,
-        -0.85,
-      ],
-      [
-        -13.733333,
-        0.85,
-        0.85,
-      ],
-      [
-        -12,
-        1.5,
-        -0.85,
-      ],
-      [
-        -12,
-        1.5,
-        0.85,
-      ],
-      [
         -0.5,
         0.85,
         -0.85,
@@ -23293,58 +24052,31 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
+        1.5,
+        0.85,
+      ],
+      [
+        0,
+        0.85,
+        -0.85,
+      ],
+      [
+        0,
+        0.85,
+        0.85,
+      ],
+      [
+        0,
+        1.5,
+        -0.85,
+      ],
+      [
+        0,
         1.5,
         0.85,
       ],
     ],
     "id": "receiver-pump-top-span-1",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        0.85,
-        -0.85,
-      ],
-      [
-        -0.5,
-        0.85,
-        0.85,
-      ],
-      [
-        -0.5,
-        1.5,
-        -0.85,
-      ],
-      [
-        -0.5,
-        1.5,
-        0.85,
-      ],
-      [
-        0,
-        0.85,
-        -0.85,
-      ],
-      [
-        0,
-        0.85,
-        0.85,
-      ],
-      [
-        0,
-        1.5,
-        -0.85,
-      ],
-      [
-        0,
-        1.5,
-        0.85,
-      ],
-    ],
-    "id": "receiver-pump-top-span-2",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -24796,6 +25528,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -8.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -8.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -8.5,
+        1.75,
+        -0.75,
+      ],
+      [
+        -8.5,
+        1.75,
+        0.75,
+      ],
+      [
+        -5.5,
+        0.75,
+        -0.75,
+      ],
+      [
+        -5.5,
+        0.75,
+        0.75,
+      ],
+      [
+        -5.5,
+        1.75,
+        -0.75,
+      ],
+      [
+        -5.5,
+        1.75,
+        0.75,
+      ],
+    ],
+    "id": "carrier-body",
+    "kind": "box",
+    "partId": "bolt-carrier",
+  },
+  {
+    "geometry": [
+      [
         -17.053229,
         -11.620455,
         -1.25,
@@ -26028,22 +26807,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         0.65,
         0.85,
       ],
       [
-        -5,
+        -5.25,
         0.65,
         2,
       ],
       [
-        -5,
+        -5.25,
         1.85,
         0.85,
       ],
       [
-        -5,
+        -5.25,
         1.85,
         2,
       ],
@@ -26075,22 +26854,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         -2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         -2,
         2,
       ],
       [
-        -5,
+        -5.25,
         0.65,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         0.65,
         2,
       ],
@@ -26122,22 +26901,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5,
+        -5.25,
         1.85,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         1.85,
         2,
       ],
       [
-        -5,
+        -5.25,
         2,
         1.5,
       ],
       [
-        -5,
+        -5.25,
         2,
         2,
       ],
@@ -26169,43 +26948,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
-        -2,
-        2,
-      ],
-      [
-        -9,
-        0.25,
-        1.5,
-      ],
-      [
-        -9,
-        0.25,
-        2,
-      ],
-      [
-        -5,
-        -2,
-        1.5,
-      ],
-      [
-        -5,
+        -8.75,
         -2,
         2,
       ],
       [
-        -5,
-        0.25,
+        -8.75,
+        0.5,
         1.5,
       ],
       [
-        -5,
-        0.25,
+        -8.75,
+        0.5,
+        2,
+      ],
+      [
+        -5.25,
+        -2,
+        1.5,
+      ],
+      [
+        -5.25,
+        -2,
+        2,
+      ],
+      [
+        -5.25,
+        0.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        0.5,
         2,
       ],
     ],
@@ -26236,22 +27015,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         0.85,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         2,
       ],
       [
-        -9,
+        -8.75,
         1.85,
         0.85,
       ],
       [
-        -9,
+        -8.75,
         1.85,
         2,
       ],
@@ -26283,22 +27062,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         -2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         -2,
         2,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         0.65,
         2,
       ],
@@ -26330,22 +27109,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -9,
+        -8.75,
         1.85,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         1.85,
         2,
       ],
       [
-        -9,
+        -8.75,
         2,
         1.5,
       ],
       [
-        -9,
+        -8.75,
         2,
         2,
       ],
@@ -26359,12 +27138,59 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         1.85,
+        -1.5,
+      ],
+      [
+        -15.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -0.5,
+        1.85,
+        -1.5,
+      ],
+      [
+        -0.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.5,
+      ],
+    ],
+    "id": "receiver-shell-top",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.85,
         -2,
       ],
       [
         -15.5,
         1.85,
-        2,
+        -1.5,
       ],
       [
         -15.5,
@@ -26374,12 +27200,59 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -15.5,
         2.5,
-        2,
+        -1.5,
       ],
       [
         -0.5,
         1.85,
         -2,
+      ],
+      [
+        -0.5,
+        1.85,
+        -1.5,
+      ],
+      [
+        -0.5,
+        2.5,
+        -2,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.5,
+      ],
+    ],
+    "id": "receiver-shell-top-far",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.25,
+        1.85,
+        1.5,
+      ],
+      [
+        -5.25,
+        1.85,
+        2,
+      ],
+      [
+        -5.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        2.5,
+        2,
+      ],
+      [
+        -0.5,
+        1.85,
+        1.5,
       ],
       [
         -0.5,
@@ -26389,7 +27262,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.5,
         2.5,
-        -2,
+        1.5,
       ],
       [
         -0.5,
@@ -26397,7 +27270,101 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-shell-top",
+    "id": "receiver-shell-top-near-front",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -15.5,
+        1.85,
+        1.5,
+      ],
+      [
+        -15.5,
+        1.85,
+        2,
+      ],
+      [
+        -15.5,
+        2.5,
+        1.5,
+      ],
+      [
+        -15.5,
+        2.5,
+        2,
+      ],
+      [
+        -8.75,
+        1.85,
+        1.5,
+      ],
+      [
+        -8.75,
+        1.85,
+        2,
+      ],
+      [
+        -8.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -8.75,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-rear",
+    "kind": "box",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -8.75,
+        2,
+        1.5,
+      ],
+      [
+        -8.75,
+        2,
+        2,
+      ],
+      [
+        -8.75,
+        2.5,
+        1.5,
+      ],
+      [
+        -8.75,
+        2.5,
+        2,
+      ],
+      [
+        -5.25,
+        2,
+        1.5,
+      ],
+      [
+        -5.25,
+        2,
+        2,
+      ],
+      [
+        -5.25,
+        2.5,
+        1.5,
+      ],
+      [
+        -5.25,
+        2.5,
+        2,
+      ],
+    ],
+    "id": "receiver-shell-top-near-window-upper",
     "kind": "box",
     "partId": "receiver",
   },

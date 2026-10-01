@@ -14,6 +14,7 @@
           "bore": "M"
         }
       },
+      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
       "lower": {
         "family": "lower",
         "params": {
@@ -60,6 +61,10 @@
       {
         "from": "receiver.barrel",
         "to": "barrel.rear"
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount"
       },
       {
         "from": "receiver.handguard",

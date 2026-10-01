@@ -5,8 +5,10 @@ import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Box, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {
+  akChargingHandleSlotWindow,
   BOLT_CARRIER_ENVELOPES,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
+  EJECTION_PORT_MARGIN_U,
   EJECTION_PORT_RULES,
   FAMILIES,
   RECEIVER_SECTION,
@@ -46,8 +48,8 @@ const travelCases = [
     mm: 74.75,
     cavityY: [-0.6, 1.1],
     cavityZ: [-1.35, 1.35],
-    portWidthU: 4,
-    portHeightU: 2.5,
+    portWidthU: 3.5,
+    portHeightU: 2,
   },
   {
     pattern: 'ak',
@@ -59,8 +61,8 @@ const travelCases = [
     mm: 74.75,
     cavityY: [-1.35, 1.35],
     cavityZ: [-1.35, 1.35],
-    portWidthU: 8.25,
-    portHeightU: 4,
+    portWidthU: 3.5,
+    portHeightU: 3,
   },
   {
     pattern: 'pump',
@@ -72,7 +74,7 @@ const travelCases = [
     mm: 63.25,
     cavityY: [-0.85, 0.85],
     cavityZ: [-0.85, 0.85],
-    portWidthU: 7,
+    portWidthU: 6.75,
     portHeightU: 2,
   },
   {
@@ -85,8 +87,8 @@ const travelCases = [
     mm: 34.5,
     cavityY: [0.65, 1.85],
     cavityZ: [-0.85, 0.85],
-    portWidthU: 4,
-    portHeightU: 2,
+    portWidthU: 3.5,
+    portHeightU: 1.5,
   },
   {
     pattern: 'barrett',
@@ -98,8 +100,8 @@ const travelCases = [
     mm: 92,
     cavityY: [0.15, 1.85],
     cavityZ: [-1.35, 1.35],
-    portWidthU: 7,
-    portHeightU: 2.5,
+    portWidthU: 6.5,
+    portHeightU: 2,
   },
   {
     pattern: 'bolt',
@@ -111,8 +113,8 @@ const travelCases = [
     mm: 80.5,
     cavityY: [0.65, 1.6],
     cavityZ: [-0.85, 0.85],
-    portWidthU: 6,
-    portHeightU: 1.75,
+    portWidthU: 5.5,
+    portHeightU: 1.25,
   },
 ] as const;
 
@@ -249,7 +251,6 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
   const receiver = resolved.defs.get('receiver')!;
   const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
   const envelope = BOLT_CARRIER_ENVELOPES[entry.pattern];
-  const rule = EJECTION_PORT_RULES[entry.pattern];
   const bounds = [0, 1, 2].map((axis) => [
     ejection.box.center[axis]! - ejection.box.half[axis]!,
     ejection.box.center[axis]! + ejection.box.half[axis]!,
@@ -257,29 +258,23 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
   const receiverPort = receiver.ports.find(({ id }) => id === 'bolt-carrier')!;
   const portX = bounds[0]!;
   const portY = bounds[1]!;
-  const forwardOffsetU = 'forwardOffsetU' in rule ? rule.forwardOffsetU : 0;
-  const faceMarginYU = 'faceMarginYU' in rule ? rule.faceMarginYU : rule.faceMarginU;
-  let expectedXMin = receiverPort.pos[0] + envelope.x[0] - rule.faceMarginU + forwardOffsetU;
-  let expectedXMax = receiverPort.pos[0] + envelope.x[1] + rule.faceMarginU + forwardOffsetU;
-  const cartridge = 'cartridge' in rule ? rule.cartridge : undefined;
-  const cartridgeMinimum = cartridge ? cartridge.lengthU + 2 * cartridge.endClearanceU : 0;
-  if ('lengthRule' in rule) {
-    const handle = resolved.defs.get('bolt-carrier')!.solids.find(({ id }) => id === 'charging-handle')!;
-    const handleX = limits(corners(handle))[0]!;
-    const handleWidthX = handleX[1]! - handleX[0]!;
-    const requiredLength = entry.travel + handleWidthX + BOLT_CARRIER_RUNNING_CLEARANCE_U;
-    const roundedLength = Math.ceil((requiredLength - 1e-9) / 0.25) * 0.25;
-    expectedXMin = expectedXMax - roundedLength;
+  const margin = EJECTION_PORT_MARGIN_U;
+  let expectedXMin = receiverPort.pos[0] - envelope.x[1] - margin;
+  let expectedXMax = receiverPort.pos[0] - envelope.x[0] + margin;
+  if (entry.pattern === 'ak') {
+    expectedXMax = -4;
+    expectedXMin = expectedXMax - (envelope.x[1] - envelope.x[0] + 2 * margin);
   }
-  if (expectedXMax - expectedXMin < cartridgeMinimum) {
+  const pumpMinimum =
+    entry.pattern === 'pump'
+      ? EJECTION_PORT_RULES.pumpShellMinimum.lengthU + 2 * EJECTION_PORT_RULES.pumpShellMinimum.endClearanceU
+      : 0;
+  if (expectedXMax - expectedXMin < pumpMinimum) {
     const center = (expectedXMin + expectedXMax) / 2;
-    expectedXMin = Math.floor((center - cartridgeMinimum / 2) / 0.25) * 0.25;
-    expectedXMax = Math.ceil((center + cartridgeMinimum / 2) / 0.25) * 0.25;
+    expectedXMin = center - pumpMinimum / 2;
+    expectedXMax = center + pumpMinimum / 2;
   }
-  const expectedY = [
-    receiverPort.pos[1] + envelope.y[0] - faceMarginYU,
-    receiverPort.pos[1] + envelope.y[1] + faceMarginYU,
-  ];
+  const expectedY = [receiverPort.pos[1] + envelope.y[0] - margin, receiverPort.pos[1] + envelope.y[1] + margin];
   const outline = entry.section === 'standard' ? undefined : RECEIVER_SECTION[entry.section].outline;
   const rearDrop = entry.section === 'pump' ? 1 : 0;
   const wallY = outline
@@ -356,7 +351,7 @@ describe('procedural bolt carrier', () => {
     }
   });
 
-  it('derives the AK port length from full travel, handle width, and clearance', () => {
+  it('sizes the AK carrier-face port and narrow handle slot from the rest position', () => {
     const entry = travelCases.find(({ pattern }) => pattern === 'ak')!;
     const resolved = resolve(assemblyFor(entry), gunDomain);
     const receiver = resolved.defs.get('receiver')!;
@@ -371,16 +366,20 @@ describe('procedural bolt carrier', () => {
     const portMin = port.actualX![0]!;
     const portMax = port.actualX![1]!;
 
-    expect([portMin, portMax]).toEqual([-12.25, -4]);
+    expect([portMin, portMax]).toEqual([-7.5, -4]);
     expect(portMax).toBeCloseTo(-4, 8);
-    expect(handleBounds[0]![1]).toBeCloseTo(portMax, 6);
-    expect(handleBounds[0]![0]!).toBeGreaterThan(portMin);
-    expect(rearHandleBounds[0]![0]! - portMin).toBeCloseTo(0.25, 8);
+    expect(handleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - 1e-6);
+    expect(handleBounds[0]![1]!).toBeLessThanOrEqual(portMax + 1e-6);
+    const slot = akChargingHandleSlotWindow(0, { x: [portMin, portMax], y: [-1.5, 1.5] }, entry.travel);
+    expect(slot.section[1] - slot.section[0]).toBe(1 + 2 * BOLT_CARRIER_RUNNING_CLEARANCE_U);
+    expect(slot.x).toEqual([portMin - entry.travel, portMin + 0.25]);
+    expect(port.width).toBe(3.5);
+    expect(port.width * 11.5).toBeCloseTo(40.25, 8);
+    expect(port.height).toBe(3);
+    expect(port.height * 11.5).toBeCloseTo(34.5, 8);
+    expect(rearHandleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - entry.travel - 1e-6);
     expect(rearHandleBounds[0]![1]!).toBeLessThan(portMax);
-    expect(port.width).toBe(8.25);
-    expect(port.width * 11.5).toBeCloseTo(94.875, 8);
-    expect(port.height * 11.5).toBe(46);
-    expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(4.125);
+    expect(receiver.keepOuts.find(({ id }) => id === 'ejection')?.box.half[0]).toBe(1.75);
   });
 
   it('grows the AK carrier to a 2.5u × 2.5u cross-section with 0.1u clearance', () => {
@@ -398,12 +397,9 @@ describe('procedural bolt carrier', () => {
     expect(body.box.half).toEqual([1.5, 1.25, 1.25]);
   });
 
-  it('uses named family port rules, cartridge minimums, and unchanged pistol apertures', () => {
-    expect(
-      Object.fromEntries(Object.entries(EJECTION_PORT_RULES).map(([family, { faceMarginU }]) => [family, faceMarginU])),
-    ).toEqual({ ar: 0.5, ak: 1, pump: 0.25, smg: 0.5, barrett: 0.5, bolt: 0.5 });
-    expect(EJECTION_PORT_RULES.pump.cartridge).toEqual({ lengthU: 6.25, endClearanceU: 0.25 });
-    expect(Object.values(EJECTION_PORT_RULES).every(({ reason }) => reason.length > 20)).toBe(true);
+  it('uses one carrier-face margin, a pump shell minimum, and unchanged pistol apertures', () => {
+    expect(EJECTION_PORT_MARGIN_U).toBe(0.25);
+    expect(EJECTION_PORT_RULES.pumpShellMinimum).toEqual({ lengthU: 6.25, endClearanceU: 0.25 });
 
     const slide = FAMILIES.slide!.build({ bore: 'M', length: 'M' });
     const portPoints = slide.solids.filter(({ id }) => id.startsWith('ejection-port-')).flatMap(corners);
@@ -421,7 +417,7 @@ describe('procedural bolt carrier', () => {
     const pumpBody = pump.solids.find(({ id }) => id === 'carrier-body');
     expect(pumpBody?.kind).toBe('box');
     if (pumpBody?.kind === 'box') {
-      expect(pumpBody.box.half).toEqual([2.75, 0.75, 0.75]);
+      expect(pumpBody.box.half).toEqual([3.125, 0.75, 0.75]);
     }
     expect(build('smg').solids.map(({ id }) => id)).toContain('carrier-body');
     expect(build('barrett').solids.map(({ id }) => id)).toContain('heavy-carrier');
