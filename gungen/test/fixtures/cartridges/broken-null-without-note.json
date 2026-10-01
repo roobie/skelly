@@ -1,0 +1,6 @@
+{
+  "name": "broken-null-without-note",
+  "base": "7.62x39",
+  "unset": ["case.primer.diameter.note"],
+  "expect": ["sourced-values"]
+}

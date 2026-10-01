@@ -1,0 +1,6 @@
+{
+  "name": "broken-slug-wider-than-hull",
+  "base": "synthetic:shotshell-slug",
+  "set": { "payload.diameter.value": 21 },
+  "expect": ["shotshell"]
+}

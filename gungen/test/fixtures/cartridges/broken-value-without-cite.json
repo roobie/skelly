@@ -1,0 +1,6 @@
+{
+  "name": "broken-value-without-cite",
+  "base": "7.62x39",
+  "set": { "case.length.cite": null },
+  "expect": ["sourced-values"]
+}
