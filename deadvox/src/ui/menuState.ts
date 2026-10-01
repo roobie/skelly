@@ -37,6 +37,8 @@ export interface MenuStateInput {
   /** Resume intent is applied only while the pointer is locked, whether newly acquired or already held. */
   resumeRequested?: boolean;
   titleNewWorldLabel?: string;
+  /** Keeps the title screen modal until the player explicitly enters a world. */
+  titleActive?: boolean;
   saveMenu?: SaveMenuInput;
 }
 
@@ -53,8 +55,23 @@ export interface MenuState {
   saveMenu?: SaveMenuState;
 }
 
-/** Derives menu, overlay, pointer-cursor and pause presentation without reading game state. */
-export const computeMenuState = (input: MenuStateInput): MenuState => {
+const saveState = (input: MenuStateInput): Pick<MenuState, 'saveMenu'> =>
+  input.saveMenu ? { saveMenu: computeSaveMenuState(input.saveMenu) } : {};
+
+const titleMenuState = (input: MenuStateInput): MenuState => ({
+  started: false,
+  mainMenuOpen: true,
+  inventoryOpen: false,
+  debugMenuOpen: false,
+  closeOtherMenus: false,
+  menuPointer: true,
+  overlayHidden: false,
+  paused: true,
+  goLabel: input.titleNewWorldLabel ?? 'Click to play',
+  ...saveState(input),
+});
+
+const activeMenuState = (input: MenuStateInput): MenuState => {
   const started = input.started || input.pointerLocked;
   const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
   const resumed = Boolean(input.pointerLocked && input.resumeRequested && !input.dead);
@@ -79,6 +96,10 @@ export const computeMenuState = (input: MenuStateInput): MenuState => {
     overlayHidden,
     paused: !overlayHidden,
     goLabel: started ? 'Paused. Click to continue' : (input.titleNewWorldLabel ?? 'Click to play'),
-    ...(input.saveMenu ? { saveMenu: computeSaveMenuState(input.saveMenu) } : {}),
+    ...saveState(input),
   };
 };
+
+/** Derives menu, overlay, pointer-cursor and pause presentation without reading game state. */
+export const computeMenuState = (input: MenuStateInput): MenuState =>
+  input.titleActive && !input.started ? titleMenuState(input) : activeMenuState(input);

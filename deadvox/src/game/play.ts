@@ -157,6 +157,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       () => session.snapshot(snapshotIds),
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys },
+      sim.clock,
     );
   } else if (!options.restore) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
@@ -320,6 +321,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       pointerLockChanged,
       resumeRequested,
       ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
+      titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
     if (pointerLockChanged || state.closeOtherMenus) {
@@ -331,7 +333,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     input.menuPointer = state.menuPointer;
     overlay.hidden = state.overlayHidden;
-    $('go').textContent = state.goLabel;
+    if (options.saveController) {
+      options.saveController.setGoLabel(state.goLabel);
+    } else {
+      $('go').textContent = state.goLabel;
+    }
     return state;
   };
   const resume = () => {
@@ -494,6 +500,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return true;
   };
 
+  const handleTitleKey = (event: KeyboardEvent): boolean => {
+    if (!options.saveController || options.saveController.isEntered) {
+      return false;
+    }
+    if (event.code === 'Tab' || event.code === KEY_BINDINGS.mainMenu.code) {
+      event.preventDefault();
+    }
+    return true;
+  };
+
   const handleMenuKey = (e: KeyboardEvent): boolean => {
     if (debugTools?.handleKey(e)) {
       syncMenuState();
@@ -512,7 +528,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return true;
   };
 
-  globalThis.addEventListener('keydown', (e) => {
+  const handleGameplayKey = (e: KeyboardEvent): void => {
     if (handleMainMenuKey(e)) {
       return;
     }
@@ -533,6 +549,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       return;
     }
     playKeys(e.code);
+  };
+
+  globalThis.addEventListener('keydown', (event) => {
+    if (!handleTitleKey(event)) {
+      handleGameplayKey(event);
+    }
   });
   globalThis.addEventListener(
     'wheel',

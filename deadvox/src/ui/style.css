@@ -158,6 +158,29 @@ body {
   display: none;
 }
 
+#save-recovery {
+  position: fixed;
+  z-index: 20;
+  left: 12px;
+  bottom: 12px;
+  max-width: min(680px, calc(100vw - 24px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d47b62;
+  border-radius: 6px;
+  background: rgb(24 18 18 / 94%);
+  box-shadow: 0 2px 12px #0008;
+}
+#save-recovery[hidden] {
+  display: none;
+}
+#save-recovery-message {
+  flex: 1;
+  white-space: normal;
+}
+
 #overlay {
   position: fixed;
   inset: 0;

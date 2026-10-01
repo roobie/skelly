@@ -66,6 +66,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',
   'src/game/saveStorage.ts',
+  'src/game/saveStorageLockError.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
   'src/worker/save.worker.ts',
