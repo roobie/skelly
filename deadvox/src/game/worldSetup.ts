@@ -1,16 +1,10 @@
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldSolid } from '../core/collision.ts';
-import {
-  blockColors,
-  blockId,
-  blockPatterns,
-  buildRegistry,
-  type ContentSource,
-  type Registry,
-} from '../core/content.ts';
+import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
+import { blockPatterns } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { FurnitureSpawn, Site } from '../core/site.ts';
 import { type BlockBox, rasterize } from '../core/structure.ts';

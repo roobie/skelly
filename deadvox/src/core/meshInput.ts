@@ -1,10 +1,16 @@
 // What the mesher reads from the world: block arrays copied out of the chunks around one chunk. Presentation
 // only (the simulation never meshes), so the save fingerprint excludes it (tools/simulationFingerprint.ts).
 
+import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { OCCLUSION_RADIUS, WIDE } from './occlusion.ts';
+import { BLOCK_PATTERNS } from './schema.ts';
 import { Shell } from './shell.ts';
 import type { World } from './world.ts';
+
+/** Surface pattern id (index into BLOCK_PATTERNS) per runtime block id, for the mesher. */
+export const blockPatterns = (registry: Registry): Uint8Array =>
+  Uint8Array.from(registry.blocks, (b) => BLOCK_PATTERNS.indexOf(b.pattern ?? 'none'));
 
 /** Side of the padded block array handed to the mesher: the chunk plus a 1-block border. */
 export const PADDED = CHUNK + 2;

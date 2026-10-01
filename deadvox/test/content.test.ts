@@ -1,13 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  blockColors,
-  blockPatterns,
-  buildRegistry,
-  requiredSoundIssues,
-  validateContent,
-} from '../src/core/content.ts';
+import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { blockPatterns } from '../src/core/meshInput.ts';
 import { BLOCK_PATTERNS } from '../src/core/schema.ts';
 
 const BASE = 'src/content/base';
