@@ -1,0 +1,63 @@
+// Debug look settings as URL query parameters, so a look survives a reload and can be shared.
+// Only the debug tools read or write these (`?debug=1`); every other parameter is left alone.
+//
+//   tone=none|agx|aces|neutral   tone mapping (J); omitted for none
+//   exposure=<0.2..3.0>          exposure in tenths (- =); omitted for 1; out of range is clamped
+//   srgb=1                       block colours decoded from sRGB (I); omitted when off
+//
+// Unparseable values fall back to the default. The debug time-of-day override is not persisted.
+
+import { clampExposure, DEFAULT_EXPOSURE, TONE_MODES } from './look.ts';
+
+export interface LookUrlState {
+  /** A `TONE_MODES` key. */
+  tone: string;
+  exposure: number;
+  srgb: boolean;
+}
+
+export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
+  tone: TONE_MODES[0]!.key,
+  exposure: DEFAULT_EXPOSURE,
+  srgb: false,
+};
+
+const LOOK_PARAMS = ['tone', 'exposure', 'srgb'] as const;
+
+export const parseLookParams = (params: URLSearchParams): LookUrlState => {
+  const tone = params.get('tone') ?? '';
+  const text = params.get('exposure');
+  // Number('') is 0, so a blank is rejected before it can clamp to the minimum.
+  const exposure = text === null || text.trim() === '' ? Number.NaN : Number(text);
+  return {
+    tone: TONE_MODES.some((mode) => mode.key === tone) ? tone : DEFAULT_LOOK_URL_STATE.tone,
+    exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_EXPOSURE,
+    srgb: params.get('srgb') === '1',
+  };
+};
+
+/** A copy of `params` with the look parameters replaced by `state`'s non-default ones. */
+export const writeLookParams = (params: URLSearchParams, state: LookUrlState): URLSearchParams => {
+  const next = new URLSearchParams(params);
+  for (const name of LOOK_PARAMS) {
+    next.delete(name);
+  }
+  if (state.tone !== DEFAULT_LOOK_URL_STATE.tone) {
+    next.set('tone', state.tone);
+  }
+  if (state.exposure !== DEFAULT_EXPOSURE) {
+    next.set('exposure', state.exposure.toFixed(1));
+  }
+  if (state.srgb) {
+    next.set('srgb', '1');
+  }
+  return next;
+};
+
+/** `href` with the look parameters set from `state`; other parameters, path and hash are kept. */
+export const lookUrl = (href: string, state: LookUrlState): string => {
+  const url = new URL(href);
+  // ':' is legal in a query, and a kept `time=20:30` reads better than `time=20%3A30`.
+  url.search = writeLookParams(url.searchParams, state).toString().replace(/%3A/g, ':');
+  return url.toString();
+};

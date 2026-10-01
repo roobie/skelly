@@ -10,6 +10,7 @@ import { BuildMode } from './build.ts';
 import { LookControls } from './look.ts';
 import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
+import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
@@ -335,6 +336,20 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let spawnStatus = '';
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes);
   const time = new TimeOfDayControls(() => hourOfDay(hooks.sim.calendar));
+  const initialLook = parseLookParams(new URLSearchParams(location.search));
+  look.restore(initialLook);
+  const lookState = (): LookUrlState => ({
+    tone: look.toneKey,
+    exposure: look.exposure,
+    srgb: look.linearColors,
+  });
+  /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
+  function syncLookUrl(): void {
+    const next = lookUrl(location.href, lookState());
+    if (next !== location.href) {
+      history.replaceState(history.state, '', next);
+    }
+  }
   const actions = createDebugActions({
     hooks,
     look,
@@ -390,6 +405,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       state: viewState(action),
       run: () => {
         action.run();
+        syncLookUrl();
         shellKey = '';
         drawShell();
       },
@@ -453,6 +469,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       yawRad: hooks.input.yaw,
       pitchRad: hooks.input.pitch,
       buildRevision: buildRevision(),
+      url: lookUrl(location.href, lookState()),
       now,
     });
     // Blob link rendered by the panel template, clicked, then dropped again.
@@ -504,6 +521,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return panelOpen;
     }
     if (!e.repeat) {
+      syncLookUrl();
       shellKey = '';
       drawShell();
     }

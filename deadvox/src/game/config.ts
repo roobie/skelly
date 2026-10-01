@@ -69,7 +69,11 @@ export const siteFromUrl = (params: URLSearchParams, fallback: SiteName): { site
   };
 };
 
-/** Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults. */
+/**
+ * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
+ * With `?debug=1` the debug tools also read and write the look parameters (`?tone=`, `?exposure=`,
+ * `?srgb=`), documented in src/debug/lookUrl.ts.
+ */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(

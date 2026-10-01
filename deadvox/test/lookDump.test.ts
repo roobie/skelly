@@ -17,11 +17,13 @@ describe('look settings dump', () => {
       yawRad: -1.5708,
       pitchRad: 0.1234,
       buildRevision: 'abc123-dirty',
+      url: 'http://localhost:5173/?debug=1&tone=aces',
       now: new Date('2026-10-01T12:34:56.000Z'),
     });
     expect(dump).toEqual({
       timestamp: '2026-10-01T12:34:56.000Z',
       buildRevision: 'abc123-dirty',
+      url: 'http://localhost:5173/?debug=1&tone=aces',
       look: { toneMapping: 'ACES Filmic', exposure: 3, srgbBlockColours: true, timeOfDay: '12:00', timeFrozen: true },
       world: { site: 'testHouse', seed: 7, viewRadiusM: 120, blockSizeM: 0.5 },
       player: { positionM: [1.23, 2, -3.46], yawRad: -1.571, pitchRad: 0.123 },

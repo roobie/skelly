@@ -30,6 +30,8 @@ export interface LookDumpInput {
   yawRad: number;
   pitchRad: number;
   buildRevision: string;
+  /** The page URL with the look parameters set, which reproduces this look when opened. */
+  url: string;
   now: Date;
 }
 
@@ -39,6 +41,7 @@ const round = (value: number, places: number): number => Number(value.toFixed(pl
 export const lookDump = (input: LookDumpInput) => ({
   timestamp: input.now.toISOString(),
   buildRevision: input.buildRevision,
+  url: input.url,
   look: {
     toneMapping: input.toneMapping,
     exposure: round(input.exposure, 2),
