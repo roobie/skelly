@@ -17,6 +17,9 @@ describe('debug action table', () => {
       ['V', 'Spawn shamblers'],
       ['Y', 'Melee aim boxes'],
       ['O', 'Freeze shamblers'],
+      ['Q', 'Reveal zombies'],
+      ['F4', 'Measure snapshot (50×)'],
+      ['button', 'Export metrics'],
     ]);
   });
 
@@ -46,7 +49,7 @@ describe('debug action table', () => {
     const godMode = actions.find((candidate) => candidate.code === 'KeyH')!;
     expect(dispatchDebugAction(actions, 'KeyH', true)).toBe(true);
     expect(godMode.state?.()).toBe(false);
-    expect(dispatchDebugAction(actions, 'KeyQ')).toBe(false);
+    expect(dispatchDebugAction(actions, 'KeyZ')).toBe(false);
   });
 });
 

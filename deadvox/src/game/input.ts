@@ -10,14 +10,88 @@ export const KEY_BINDINGS = {
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
 } as const;
 
+export const CONTROL_CODES = {
+  forward: 'KeyW',
+  back: 'KeyS',
+  left: 'KeyA',
+  right: 'KeyD',
+  sprintLeft: 'ShiftLeft',
+  sprintRight: 'ShiftRight',
+  walkToggle: 'KeyZ',
+  jump: 'Space',
+  interact: 'KeyF',
+  rest: 'KeyR',
+  sleep: 'KeyL',
+  inventory: 'Tab',
+  cancel: 'KeyX',
+  quickbar: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'],
+  search: 'KeyS',
+  rotate: 'KeyR',
+  hands: 'KeyH',
+  wear: 'KeyW',
+  drop: 'KeyD',
+  bestPocket: 'KeyE',
+  takeAll: 'KeyA',
+  use: 'KeyU',
+  menu: KEY_BINDINGS.mainMenu.code,
+  previous: 'ArrowUp',
+  next: 'ArrowDown',
+  continue: 'KeyC',
+  spawnMenu: 'KeyG',
+} as const;
+
+/** One binding table feeds both routing helpers and the player-facing help card. */
+export const PLAYER_CONTROL_BINDINGS = [
+  {
+    keys: 'WASD',
+    codes: [CONTROL_CODES.forward, CONTROL_CODES.left, CONTROL_CODES.back, CONTROL_CODES.right],
+    action: 'Move',
+  },
+  { keys: 'Shift', codes: [CONTROL_CODES.sprintLeft, CONTROL_CODES.sprintRight], action: 'Sprint' },
+  { keys: 'Z', codes: [CONTROL_CODES.walkToggle], action: 'Walk / jog' },
+  { keys: 'Space', codes: [CONTROL_CODES.jump], action: 'Jump' },
+  { keys: 'Mouse', codes: ['mousemove'], action: 'Look' },
+  { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
+  {
+    keys: 'R',
+    codes: [CONTROL_CODES.rest, CONTROL_CODES.rotate],
+    action: 'Rest in play; rotate while dragging in inventory',
+  },
+  { keys: 'L', codes: [CONTROL_CODES.sleep], action: 'Sleep; better on a bed; press again to stop' },
+  { keys: 'Tab', codes: [CONTROL_CODES.inventory], action: 'Open / close inventory' },
+  { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: take into hands; again to use' },
+  { keys: 'C', codes: [CONTROL_CODES.continue], action: 'Continue after an interruption' },
+  { keys: 'X', codes: [CONTROL_CODES.cancel], action: 'Cancel handling; stop after an interruption' },
+  { keys: 'E', codes: [CONTROL_CODES.bestPocket], action: 'Move to your best pocket', context: 'inventory' },
+  { keys: 'H', codes: [CONTROL_CODES.hands], action: 'Move to hands', context: 'inventory' },
+  { keys: 'W', codes: [CONTROL_CODES.wear], action: 'Wear or remove', context: 'inventory' },
+  { keys: 'D', codes: [CONTROL_CODES.drop], action: 'Drop', context: 'inventory' },
+  { keys: 'A', codes: [CONTROL_CODES.takeAll], action: 'Take all like this', context: 'inventory' },
+  { keys: 'S', codes: [CONTROL_CODES.search], action: 'Search next container', context: 'inventory' },
+  { keys: 'U', codes: [CONTROL_CODES.use], action: 'Use selected item', context: 'inventory' },
+  {
+    keys: '↑ / ↓ / ← / →',
+    codes: [CONTROL_CODES.previous, CONTROL_CODES.next, 'ArrowLeft', 'ArrowRight'],
+    action: 'Select previous / next item',
+    context: 'inventory',
+  },
+  { keys: KEY_BINDINGS.mainMenu.label, codes: [CONTROL_CODES.menu], action: 'Main menu, HUD and audio settings' },
+  { keys: 'Escape', codes: ['Escape'], action: 'Release the mouse (browser control)' },
+] as const;
+
+export const quickbarSlotForKey = (code: string): number | undefined => {
+  const index = CONTROL_CODES.quickbar.indexOf(code as (typeof CONTROL_CODES.quickbar)[number]);
+  return index < 0 ? undefined : index;
+};
+
 export const isMenuOpeningKey = (code: string, debug: boolean, menuOpen: boolean): boolean =>
-  code === 'KeyG' && debug && !menuOpen;
+  code === CONTROL_CODES.spawnMenu && debug && !menuOpen;
 
 export const worldActionForKey = (code: string): 'interact' | 'cancel' | undefined => {
-  if (code === 'KeyF') {
+  if (code === CONTROL_CODES.interact) {
     return 'interact';
   }
-  if (code === 'KeyX') {
+  if (code === CONTROL_CODES.cancel) {
     return 'cancel';
   }
   return undefined;
@@ -46,10 +120,10 @@ export class Input {
   constructor(target: HTMLElement) {
     this.target = target;
     globalThis.addEventListener('keydown', (e) => {
-      if (e.code === 'Tab') {
+      if (e.code === CONTROL_CODES.inventory) {
         e.preventDefault();
       }
-      if (e.code === 'KeyZ' && !e.repeat) {
+      if (e.code === CONTROL_CODES.walkToggle && !e.repeat) {
         this.walking = !this.walking;
       }
       this.held.add(e.code);
@@ -97,10 +171,10 @@ export class Input {
   intent(): MoveIntent {
     const on = (code: string) => (this.held.has(code) ? 1 : 0);
     return {
-      forward: on('KeyW') - on('KeyS'),
-      right: on('KeyD') - on('KeyA'),
-      jump: this.held.has('Space'),
-      sprint: this.held.has('ShiftLeft') || this.held.has('ShiftRight'),
+      forward: on(CONTROL_CODES.forward) - on(CONTROL_CODES.back),
+      right: on(CONTROL_CODES.right) - on(CONTROL_CODES.left),
+      jump: this.held.has(CONTROL_CODES.jump),
+      sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
     };
   }

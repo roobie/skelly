@@ -100,12 +100,16 @@ describe('simulation source fingerprint', () => {
         'src/game/saveStorage.ts',
         'src/game/saveStorageRecord.ts',
         'src/game/saveStorageProtocol.ts',
+        'src/game/controls.ts',
+        'src/game/playtestTools.ts',
         'src/worker/save.worker.ts',
       ]),
     );
     expect(graph.excludedImports).toEqual([
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },

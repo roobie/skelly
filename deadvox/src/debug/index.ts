@@ -26,11 +26,18 @@ interface ActionView {
 
 const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
   <span>${readout.fps.toFixed(0)} fps</span>
-  <span>seed ${readout.seed}</span>
-  <span>radius ${readout.radius} m · ${readout.movement}</span>
+  <span>frame ${readout.simulationMs.toFixed(2)} ms sim · ${readout.renderMs.toFixed(2)} ms render · ${readout.meshingQueueMs.toFixed(2)} ms mesh queue</span>
+  <span>seed ${readout.seed} · radius ${readout.radius} m · ${readout.movement}</span>
   <span>position ${readout.position.map((v) => v.toFixed(1)).join(', ')}</span>
-  <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes</span>
+  <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes · entities ${readout.entities}</span>
+  <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
+  <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
   <span>shamblers ${readout.zombies}</span>
+  ${readout.revealedZombies.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedZombies.join(' · ')}</span>` : nothing}
+`;
+
+const f3OverlayTemplate = (readout: DebugReadout, visible: boolean): TemplateResult => html`
+  <aside id="f3-debug-overlay" ?hidden=${!visible} aria-label="Performance debug overlay">${readoutTemplate(readout)}</aside>
 `;
 
 const aimReadoutTemplate = (text: string): TemplateResult => html`${text || nothing}`;
@@ -67,6 +74,8 @@ const panelTemplate = ({
   spawnStatus,
   lastHitText,
   setShamblerCount,
+  setTimeOfDay,
+  snapshotStatus,
   toggleOpen,
 }: {
   open: boolean;
@@ -76,6 +85,8 @@ const panelTemplate = ({
   spawnStatus: string;
   lastHitText: string;
   setShamblerCount: (count: number) => void;
+  setTimeOfDay: (hour: number, minute: number) => void;
+  snapshotStatus: string;
   toggleOpen: () => void;
 }): TemplateResult => html`
   <div id="debug-ui-root">
@@ -83,6 +94,26 @@ const panelTemplate = ({
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
+    <label>Set time <input id="debug-time" type="time" value="19:30" /> <button id="set-debug-time" type="button" @click=${(
+      event: Event,
+    ) => {
+      const root = (event.currentTarget as HTMLElement).parentElement;
+      const value = root?.querySelector<HTMLInputElement>('#debug-time')?.value ?? '';
+      const [hour, minute] = value.split(':').map(Number);
+      if (
+        hour !== undefined &&
+        minute !== undefined &&
+        Number.isInteger(hour) &&
+        Number.isInteger(minute) &&
+        hour >= 0 &&
+        hour < 24 &&
+        minute >= 0 &&
+        minute < 60
+      ) {
+        setTimeOfDay(hour, minute);
+      }
+    }}>Apply</button></label>
+    <p>F3 toggles the performance overlay. ${snapshotStatus}</p>
     <div id="debug-readout" class="debug-readout"></div>
     <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
       <span>Shambler count</span>
@@ -106,11 +137,23 @@ const panelTemplate = ({
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
+    <div id="f3-overlay-root"></div>
   </div>
 `;
 
 const emptyReadout: DebugReadout = {
   fps: 0,
+  simulationMs: 0,
+  renderMs: 0,
+  meshingQueueMs: 0,
+  entities: 0,
+  memoryBytes: 0,
+  clock: '19:30',
+  compression: 1,
+  snapshotLastMs: 0,
+  snapshotP95Ms: 0,
+  snapshotCount: 0,
+  revealedZombies: [],
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -137,6 +180,9 @@ interface ActionContext {
   toggleAim: () => void;
   isFrozen: () => boolean;
   toggleFrozen: () => void;
+  isRevealing?: () => boolean;
+  toggleReveal?: () => void;
+  setSnapshotStatus?: (text: string) => void;
 }
 
 export const createDebugActions = ({
@@ -154,6 +200,9 @@ export const createDebugActions = ({
   toggleAim,
   isFrozen,
   toggleFrozen,
+  isRevealing,
+  toggleReveal,
+  setSnapshotStatus,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
@@ -191,6 +240,25 @@ export const createDebugActions = ({
   { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
   { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', state: isAimEnabled, run: toggleAim },
   { code: 'KeyO', key: 'O', label: 'Freeze shamblers', state: isFrozen, run: toggleFrozen },
+  {
+    code: 'KeyQ',
+    key: 'Q',
+    label: 'Reveal zombies',
+    state: isRevealing ?? (() => false),
+    run: toggleReveal ?? (() => undefined),
+  },
+  {
+    code: 'F4',
+    key: 'F4',
+    label: 'Measure snapshot (50×)',
+    run: () => {
+      const result = hooks.measureSnapshot();
+      setSnapshotStatus?.(
+        `Snapshot ${result.samples}×: p50 ${result.p50Ms.toFixed(3)} ms, p95 ${result.p95Ms.toFixed(3)} ms; state ${result.stateUnchanged ? 'unchanged' : 'CHANGED'}`,
+      );
+    },
+  },
+  { code: '', key: 'button', label: 'Export metrics', run: hooks.exportMetrics },
 ];
 
 export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
@@ -240,6 +308,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const aimOverlay = new DebugAimOverlay(hooks.engine.scene, hooks.engine.config.scale.blockSize);
   let aimReadout: HTMLElement | null = null;
   let panelOpen = false;
+  let f3Open = false;
+  let revealZombies = false;
+  let snapshotStatus = '';
   let aimEnabled = true;
   let lastHitText = '';
   let lastHitUntil = 0;
@@ -280,6 +351,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       const zombies = hooks.zombies();
       zombies?.setFrozen(!zombies.isFrozen);
     },
+    isRevealing: () => revealZombies,
+    toggleReveal: () => {
+      revealZombies = !revealZombies;
+      hooks.revealZombies(revealZombies);
+    },
+    setSnapshotStatus: (text) => {
+      snapshotStatus = text;
+      shellKey = '';
+      drawShell();
+    },
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
       const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
@@ -311,6 +392,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const views = actionViews();
     const key = JSON.stringify([
       panelOpen,
+      f3Open,
+      revealZombies,
+      snapshotStatus,
       spawnMenu.isOpen,
       shamblerCount,
       spawnStatus,
@@ -327,6 +411,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           spawnStatus,
           lastHitText: performance.now() < lastHitUntil ? lastHitText : '',
           setShamblerCount: changeShamblerCount,
+          setTimeOfDay: hooks.setTimeOfDay,
+          snapshotStatus,
           toggleOpen: togglePanel,
         }),
         host,
@@ -342,6 +428,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');
     if (soundRoot) {
       render(soundLogTemplate(readout), soundRoot);
+    }
+    const f3Root = host.querySelector<HTMLElement>('#f3-overlay-root');
+    if (f3Root) {
+      render(f3OverlayTemplate(readout, f3Open), f3Root);
     }
   }
   function changeShamblerCount(count: number): void {
@@ -363,11 +453,25 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     drawShell();
   }
+  const toggleOnShortcut = (e: KeyboardEvent, code: string, run: () => void): boolean => {
+    if (e.code !== code) {
+      return false;
+    }
+    if (!e.repeat) {
+      run();
+    }
+    return true;
+  };
   function handleKey(e: KeyboardEvent): boolean {
-    if (e.code === 'Backquote') {
-      if (!e.repeat) {
-        togglePanel();
-      }
+    if (
+      toggleOnShortcut(e, 'F3', () => {
+        f3Open = !f3Open;
+        drawShell();
+      })
+    ) {
+      return true;
+    }
+    if (toggleOnShortcut(e, 'Backquote', togglePanel)) {
       return true;
     }
     if (spawnMenu.isOpen) {
@@ -424,6 +528,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     get spawnOpen() {
       return spawnMenu.isOpen;
+    },
+    get revealZombies() {
+      return revealZombies;
     },
     dangerReason: () => (danger ? 'Something is close' : undefined),
     handleKey,

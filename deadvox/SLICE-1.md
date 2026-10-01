@@ -654,6 +654,25 @@ sound event with its position.
 **Done when:** a playtester can play a full session and send back the metrics
 file and their notes.
 
+**Status:** delivered as a playtest build. F3 reports simulation/render/meshing-queue
+frame costs, chunk/entity/memory counts, clock/compression, and snapshot last/p95
+cost; the debug panel can set the game clock, reveal zombie positions, measure 50
+pure snapshots on demand, and export versioned metrics JSON. Metrics persist in
+localStorage per seed and are never sent automatically. The controls card is
+rendered from the input binding declarations, and Send feedback opens the
+playtest issue template.
+
+**Beyond the plan:** snapshot p50/p95 is available immediately on demand, rather
+than requiring an autosave; the measurement hashes the session snapshot before
+and after and does not write storage. Debug time travel resets scheduler cursors
+without simulating skipped time. The reference-laptop snapshot p95 target (≤1 ms)
+is shown for evaluation, not enforced.
+
+**Carried forward:** run a full playtest on the reference laptop, confirm the
+snapshot p95 target against a long/heavy session, and submit the exported metrics
+JSON with player notes. That human playtest is not claimed by the implementation
+checks.
+
 ## Data format sketches
 
 The real definitions are the Valibot schemas in `src/core/schema.ts`, and the

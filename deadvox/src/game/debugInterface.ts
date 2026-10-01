@@ -20,6 +20,10 @@ export interface DebugHooks {
   readonly showNotice: (text: string) => void;
   readonly spawnItem: (type: string) => string;
   readonly compress: () => void;
+  readonly setTimeOfDay: (hour: number, minute: number) => void;
+  readonly revealZombies: (enabled: boolean) => void;
+  readonly measureSnapshot: () => { samples: number; p50Ms: number; p95Ms: number; stateUnchanged: boolean };
+  readonly exportMetrics: () => void;
 }
 
 export interface DebugNoclipStep {
@@ -43,6 +47,17 @@ export interface DebugReadout {
   readonly holes: number;
   readonly zombies: number;
   readonly sounds: readonly HeardSound[];
+  readonly simulationMs: number;
+  readonly renderMs: number;
+  readonly meshingQueueMs: number;
+  readonly entities: number;
+  readonly memoryBytes: number;
+  readonly clock: string;
+  readonly compression: number;
+  readonly snapshotLastMs: number;
+  readonly snapshotP95Ms: number;
+  readonly snapshotCount: number;
+  readonly revealedZombies: readonly string[];
 }
 
 export interface DebugRuntime {
@@ -53,6 +68,7 @@ export interface DebugRuntime {
   readonly buildOn: boolean;
   readonly noclip: boolean;
   readonly spawnOpen: boolean;
+  readonly revealZombies: boolean;
   dangerReason: () => string | undefined;
   handleKey: (e: KeyboardEvent) => boolean;
   closeMenus: () => void;

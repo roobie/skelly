@@ -68,6 +68,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/saveStorage.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
+  'src/game/controls.ts',
+  'src/game/playtestTools.ts',
   'src/worker/save.worker.ts',
   'src/ui/audioOptions.ts',
   'src/ui/credits.ts',
