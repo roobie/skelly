@@ -1,5 +1,9 @@
 # Notes for coding agents
 
+Keep this file short: only what every agent needs on every task. Topic detail goes in
+the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), with a
+one-line cue under "Further docs" below.
+
 ## Worktrees
 
 Put git worktrees in `.claude/worktrees/<name>` inside this repo, not beside
