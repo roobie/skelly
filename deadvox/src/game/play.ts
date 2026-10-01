@@ -6,6 +6,7 @@ import assetManifest from '../content/base/assets/manifest.json' with { type: 'j
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { formatClock, hourOfDay, skipTarget } from '../core/clock.ts';
+import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
@@ -371,7 +372,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     queue.cancel();
     skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
     sim.ignoreUnsafe = true;
-    sim.compress();
+    sim.compress(SKIP_COMPRESSION);
   };
 
   /** Ends the skip when it arrives, is interrupted, the player dies or the debug T key stops compression. */

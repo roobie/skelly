@@ -7,7 +7,7 @@ import {
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
-import { COMPRESSION } from '../src/core/compression.ts';
+import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { Simulation } from '../src/core/sim.ts';
 
@@ -220,6 +220,63 @@ describe('Simulation', () => {
       runUntil(skipped, skipTarget(skipped.clock, skipped.time, 1));
       expect(skipped.calendar).toBeCloseTo(plain.calendar, 6);
       expect(skipped.scheduler.tickCounts().get('needs')!).toBeLessThan(plain.scheduler.tickCounts().get('needs')!);
+    });
+
+    it('reaches +23 h in a few real seconds with bounded per-frame work, landing exactly on target', () => {
+      const sim = new Simulation({ seed: 1 });
+      let ticks = 0;
+      sim.scheduler.register({
+        id: 'physics',
+        rate: 60,
+        tick: () => {
+          ticks += 1;
+        },
+      });
+      sim.scheduler.register({
+        id: 'zombies',
+        rate: 20,
+        tick: () => {
+          ticks += 1;
+        },
+      });
+      sim.ignoreUnsafe = true;
+      expect(sim.compress(SKIP_COMPRESSION).ok).toBe(true);
+      const until = skipTarget(sim.clock, sim.time, 23);
+      let frames = 0;
+      let worstFrameTicks = 0;
+      while (sim.time < until - 1e-6 && frames < 600) {
+        // Keeps the needs from turning critical, which would interrupt the skip.
+        Object.assign(sim.needs, SPAWN_NEEDS);
+        const before = ticks;
+        sim.frame(FRAME, until);
+        worstFrameTicks = Math.max(worstFrameTicks, ticks - before);
+        frames += 1;
+      }
+      expect(sim.compression.interruption).toBeUndefined();
+      expect(sim.time).toBeCloseTo(until, 6);
+      expect(frames).toBeLessThanOrEqual(5 * 60);
+      expect(sim.compression.c).toBeLessThanOrEqual(SKIP_COMPRESSION.cap);
+      // 80 ticks per simulation second at most, and no frame exceeds the per-frame bound.
+      expect(worstFrameTicks).toBeLessThanOrEqual(SKIP_COMPRESSION.maxSimPerFrame * 80 + 2);
+    });
+
+    it('reaches +1 h in under a second', () => {
+      const sim = new Simulation({ seed: 1 });
+      sim.ignoreUnsafe = true;
+      sim.compress(SKIP_COMPRESSION);
+      expect(runUntil(sim, skipTarget(sim.clock, sim.time, 1))).toBeLessThan(1);
+    });
+
+    it('keeps the normal cap for a later start without the skip limits', () => {
+      const sim = new Simulation({ seed: 1 });
+      sim.compress(SKIP_COMPRESSION);
+      runUntil(sim, 200);
+      expect(sim.compression.c).toBeGreaterThan(COMPRESSION.cap);
+      sim.compression.stop();
+      sim.compression.snap();
+      sim.compress();
+      runUntil(sim, sim.time + 100);
+      expect(sim.compression.c).toBe(COMPRESSION.cap);
     });
 
     it('still stops at a real interruption, and refuses danger again once ignoreUnsafe is off', () => {
