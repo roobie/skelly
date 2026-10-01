@@ -1,5 +1,9 @@
 # Notes for coding agents
 
+Keep this file short: only what every agent needs on every task. Topic detail goes in
+the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), with a
+one-line cue under "Further docs" below.
+
 ## Worktrees
 
 Put git worktrees in `.claude/worktrees/<name>` inside this repo, not beside
@@ -26,6 +30,11 @@ npm ci --prefix deadvox/tools/lit-check   # for deadvox's lint:lit
 ```
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
+
+## Further docs
+
+- Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
+- Lessons from past problems: `deadvox/LESSONS.md`.
 
 ## Before pushing
 

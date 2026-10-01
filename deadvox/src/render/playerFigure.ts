@@ -18,6 +18,8 @@ import { defOf } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { PLAYER_ARM_BOXES } from './figure.ts';
+import { withHeightFog } from './heightFog.ts';
+import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
 export const PLAYER_BODY_REAR_OFFSET = 0.19;
@@ -164,13 +166,14 @@ export class PlayerMeshes {
     for (const part of PLAYER_ARM_PARTS) {
       const mesh = new InstancedMesh(
         new BoxGeometry(1, 1, 1),
-        new MeshLambertMaterial({ color: palette[PLAYER_COLORS[part]] }),
+        withHeightFog(new MeshLambertMaterial({ color: palette[PLAYER_COLORS[part]] }), 'player'),
         1,
       );
       mesh.count = 0;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      mesh.layers.set(PLAYER_FIGURE_LAYER);
       this.meshes.set(part, mesh);
-      this.group.add(mesh);
+      this.group.add(castsAndReceives(mesh));
     }
   }
 

@@ -110,6 +110,7 @@ below).
 | Mouse | look | aim | drawn cursor | look | look |
 | Left click, tap | use the main-hand item's instant use (light on/off). A weapon: nothing, and the hand shifts its grip as a cue | strike / shoot | click under the drawn cursor | nothing | nothing |
 | Left click, hold | long use of the main-hand item (eat, drink, bandage, read); releasing early cancels, nothing applied | — | drag | keep holding | — |
+| Mouse 5 (side forward button) | use the left-hand item's instant use (light on/off); nothing if the left hand is empty or has none | same | — | — | — |
 | Right mouse, hold | ready the main-hand weapon; with nothing to ready, nothing | stays ready | — | — | — |
 | Middle click | — | toggle hip / sights | — | — | — |
 | Shift | sprint | toggle hip / sights | — | — | — |
@@ -144,6 +145,11 @@ Notes on the proposal:
   Under the ruled ready stance that changes.
 
 ## The two hands (issue #27, open)
+
+**Adopted for now (BR, 2026-10-01): option B, an off-hand control, with Mouse 5
+(the side forward button) as the off-hand use.** Mouse 4 (side back) is left
+unbound; both side buttons are browser history keys, so the game cancels their
+default. Customisable key binds are planned later, which will let the control move.
 
 deadvox has a left and a right hand (`HOLD.left` / `HOLD.right` in
 `src/render/hands.ts`); DayZ, the reference for "left click uses", has one active

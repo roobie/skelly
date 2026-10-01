@@ -6,12 +6,14 @@ import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
 import { type Inventory, PILE_GRID } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import { pileLayout } from '../core/pileLayout.ts';
+import { withHeightFog } from './heightFog.ts';
 import type { ModelLibrary } from './models.ts';
+import { castsAndReceives } from './shadowFlags.ts';
 
 export class PileMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
-  private readonly material = new MeshLambertMaterial({ color: 0x5a_50_46 });
+  private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';
@@ -38,7 +40,7 @@ export class PileMeshes {
         if (model) {
           model.position.set(...piled.at);
           model.rotation.y = piled.yaw;
-          this.group.add(model);
+          this.group.add(castsAndReceives(model));
         }
       }
       if (layout.bundle.length === 0) {
@@ -52,7 +54,7 @@ export class PileMeshes {
       const mesh = new Mesh(this.geometry, this.material);
       mesh.scale.set(s * 0.7, height, s * 0.7);
       mesh.position.set((pile.pos[0] + 0.5) * s, pile.pos[1] * s + height / 2, (pile.pos[2] + 0.5) * s);
-      this.group.add(mesh);
+      this.group.add(castsAndReceives(mesh));
     }
   }
 }

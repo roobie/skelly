@@ -3,7 +3,7 @@
 
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
-import { BEDROCK, paddedIndex } from '../src/core/world.ts';
+import { BEDROCK, paddedIndex } from '../src/core/meshInput.ts';
 
 /** "x,y,z,axis,sign" for the unit face of block (x, y, z) facing that way. */
 const faceId = (block: readonly number[], axis: number, sign: number) => `${block.join(',')},${axis},${sign}`;

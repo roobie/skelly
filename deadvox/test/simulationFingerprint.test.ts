@@ -104,11 +104,16 @@ describe('simulation source fingerprint', () => {
       ]),
     );
     expect(graph.excludedImports).toEqual([
+      { importer: 'src/game/play.ts', excluded: 'src/core/mood.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/look.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/mobActors.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/models.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/piles.ts' },
@@ -126,6 +131,8 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
+      { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
+      { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
   });
 

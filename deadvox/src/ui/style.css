@@ -162,8 +162,9 @@ body {
   position: fixed;
   inset: 0;
   display: grid;
-  place-items: center;
-  background: rgb(0 0 0 / 55%);
+  /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so
+     the paused frame stays unaltered; the layer itself still takes the click that resumes play. */
+  place-items: center end;
   cursor: pointer;
 }
 #overlay[hidden],
@@ -177,10 +178,12 @@ body {
   max-width: 420px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
+  margin-right: 16px;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--panel);
+  /* Opaque: with no dimming layer behind it the card must stay readable on its own. */
+  background: rgb(18 20 24);
 }
 #overlay h1 {
   margin: 0 0 4px;
@@ -998,6 +1001,13 @@ body.bench #quickbar {
   cursor: pointer;
   pointer-events: auto;
 }
+#debug-ui-root .debug-marker.debug-frozen {
+  right: auto;
+  left: 10px;
+  color: var(--accent);
+  cursor: default;
+  pointer-events: none;
+}
 #debug-ui-root .debug-panel {
   position: fixed;
   top: 36px;
@@ -1051,8 +1061,53 @@ body.bench #quickbar {
   cursor: default;
 }
 #debug-ui-root .debug-panel .debug-actions button:hover,
-#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover {
+#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover,
+#debug-ui-root .debug-panel .debug-group-header:hover,
+#debug-ui-root .debug-panel .debug-group-header.game-cursor-hover {
   border-color: var(--accent);
+}
+/* A group: a full-width header button (title left, keys right) over its buttons. */
+#debug-ui-root .debug-panel .debug-group {
+  margin-top: 6px;
+}
+#debug-ui-root .debug-panel .debug-group-header {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 35%);
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+  text-align: left;
+  cursor: pointer;
+}
+#debug-ui-root .debug-panel .debug-group-header::before {
+  content: "▾";
+  flex: none;
+  color: var(--muted);
+}
+#debug-ui-root .debug-panel .debug-group-header[aria-expanded="false"]::before {
+  content: "▸";
+}
+#debug-ui-root .debug-panel .debug-group-header strong {
+  flex: none;
+  margin-right: auto;
+}
+#debug-ui-root .debug-panel .debug-group-keys {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#debug-ui-root .debug-panel .debug-group-body {
+  padding-top: 6px;
 }
 #debug-ui-root .debug-panel p {
   margin: 6px 0 0;

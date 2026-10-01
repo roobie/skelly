@@ -123,6 +123,10 @@ which brings the card up. The inventory screen does **not** pause the game. That
 tension is intentional. A "relaxed" setting that pauses inside menus can come
 later as an accessibility option.
 
+The card is an opaque panel docked to the right edge, vertically centred, with no
+dimming, tint or blur over the frozen view, so the middle of the screen stays
+clear for screenshots.
+
 ### Catch-up simulation
 
 When a chunk loads, it is advanced by the time it was unloaded. Each system
@@ -575,6 +579,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
 
 ## Rendering
+
+The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** flat colour per block, with small per-block variation, ambient
   occlusion and fog. Textures only if colour alone can't carry the look. The

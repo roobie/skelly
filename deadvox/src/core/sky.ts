@@ -22,6 +22,21 @@ export interface Sky {
   /** Fog start and end as fractions of the view radius. */
   fogNear: number;
   fogFar: number;
+  /**
+   * Height-fog density per metre of view path at the mist's base height; the mist thins with altitude.
+   * This is the keyframe's value at the default fogginess; core/weather.ts scales it.
+   */
+  heightFog: number;
+  /** Colour of the height mist: sky-like by day, warmed by the low sun at dawn and dusk, a pale cool at night. */
+  heightFogColor: Rgb;
+  /** Bloom strength: a faint halo by day, a stronger one by night when little else is bright. */
+  bloom: number;
+  /**
+   * Weight of ACES Filmic in the `auto` tone mapping, the rest being Neutral: 0 is Neutral, 1 is ACES.
+   * Neutral reads best in bright daylight, ACES at dawn, dusk and night, where it gives the flashlit dark
+   * its depth (render/autoTone.ts). Time of day only: the weather does not move it.
+   */
+  tone: number;
 }
 
 type Look = Omit<Sky, 'light'>;
@@ -37,6 +52,10 @@ const NIGHT: Look = {
   ambientIntensity: 0.22,
   fogNear: 0.1,
   fogFar: 0.5,
+  heightFog: 0.01,
+  heightFogColor: hex(0x1c_24_30),
+  bloom: 0.5,
+  tone: 1,
 };
 
 /** The dead of night: the dusk glow is gone, and there's barely more than shapes. */
@@ -49,6 +68,10 @@ const DEEP_NIGHT: Look = {
   ambientIntensity: 0.1,
   fogNear: 0.05,
   fogFar: 0.35,
+  heightFog: 0.012,
+  heightFogColor: hex(0x12_18_21),
+  bloom: 0.55,
+  tone: 1,
 };
 
 const DAWN: Look = {
@@ -60,6 +83,10 @@ const DAWN: Look = {
   ambientIntensity: 0.8,
   fogNear: 0.3,
   fogFar: 0.8,
+  heightFog: 0.014,
+  heightFogColor: hex(0xb0_9a_90),
+  bloom: 0.2,
+  tone: 0.85,
 };
 
 /** The look before time of day existed; the benchmark still renders with it. */
@@ -72,6 +99,10 @@ const DAY: Look = {
   ambientIntensity: 1.3,
   fogNear: 0.6,
   fogFar: 0.95,
+  heightFog: 0.002,
+  heightFogColor: hex(0xb4_c6_d4),
+  bloom: 0.08,
+  tone: 0,
 };
 
 const DUSK: Look = {
@@ -83,7 +114,16 @@ const DUSK: Look = {
   ambientIntensity: 0.7,
   fogNear: 0.3,
   fogFar: 0.8,
+  heightFog: 0.008,
+  heightFogColor: hex(0x8a_6e_66),
+  bloom: 0.25,
+  tone: 0.85,
 };
+
+// The `tone` weights come from looking at the game (bright day: Neutral; dawn and dusk: ACES or AgX; night with
+// the flashlight: ACES). Full day is 0 and night 1; the low-sun keyframes sit at 0.85, mostly ACES, not quite.
+// The ramps are the keyframe interpolation: 05:00 night (1) falls to 0.85 at 06:30 and to 0 at 08:30, so the
+// blend moves steadily through sunrise with no step; dusk mirrors it, 0 at 17:30 up to 0.85 at 19:30 and 1 at 21:00.
 
 /** Keyframes by hour; the look is interpolated between them and wraps at midnight. */
 const KEYS: readonly (readonly [number, Look])[] = [
@@ -118,6 +158,10 @@ const lookAt = (hour: number): Look => {
         ambientIntensity: mix(a.ambientIntensity, b.ambientIntensity, t),
         fogNear: mix(a.fogNear, b.fogNear, t),
         fogFar: mix(a.fogFar, b.fogFar, t),
+        heightFog: mix(a.heightFog, b.heightFog, t),
+        heightFogColor: mixRgb(a.heightFogColor, b.heightFogColor, t),
+        bloom: mix(a.bloom, b.bloom, t),
+        tone: mix(a.tone, b.tone, t),
       };
     }
   }
@@ -151,6 +195,25 @@ export const skyAt = (hour: number): Sky => {
   const len = Math.hypot(dir[0], y, dir[2]);
   return { ...lookAt(hour), light: [dir[0] / len, y / len, dir[2] / len] };
 };
+
+/** Sun elevation (the sine of its angle above the horizon) at which its shadows are at full strength: the lighting clamp's `MIN_LIGHT_Y`, where the light is the sun's real direction. */
+const FULL_SHADOW_ELEVATION = MIN_LIGHT_Y;
+/** Light intensity range over which shadows fade in: below it only a moon-like glimmer, above it a real sun. */
+const SHADOW_INTENSITY_FADE: readonly [number, number] = [0.25, 0.6];
+
+const smoothstep = (from: number, to: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - from) / (to - from)));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * How strongly the sun's shadows show, in [0, 1]: 0 at night (where `skyAt`'s light is a stand-in
+ * for a moon, which casts none) and below the horizon, rising smoothly as the sun climbs, and
+ * dimmed with the light itself (so overcast weather fades them). `sunElevation` is
+ * `sunDirection(hour)[1]`, which goes negative at night, unlike the lighting's own direction.
+ */
+export const sunShadowStrength = (sunElevation: number, lightIntensity: number): number =>
+  smoothstep(0, FULL_SHADOW_ELEVATION, sunElevation) * smoothstep(...SHADOW_INTENSITY_FADE, lightIntensity);
 
 /** The daytime look, for the benchmark. */
 export const DAY_SKY: Sky = skyAt(12);
