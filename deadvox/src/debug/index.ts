@@ -179,7 +179,7 @@ const panelTemplate = ({
         <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
       </div>
       <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
-      <button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>${revealZombies ? 'Hide' : 'Reveal'} zombies</button>
+      <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
       <label>Set time <input id="debug-time" type="time" value="19:30" /> <button id="set-debug-time" type="button" @click=${(
@@ -188,11 +188,22 @@ const panelTemplate = ({
         const root = (event.currentTarget as HTMLElement).parentElement;
         const value = root?.querySelector<HTMLInputElement>('#debug-time')?.value ?? '';
         const [hour, minute] = value.split(':').map(Number);
-        if (hour !== undefined && minute !== undefined && Number.isInteger(hour) && Number.isInteger(minute) && hour >= 0 && hour < 24 && minute >= 0 && minute < 60) setTimeOfDay(hour, minute);
+        if (
+          hour !== undefined &&
+          minute !== undefined &&
+          Number.isInteger(hour) &&
+          Number.isInteger(minute) &&
+          hour >= 0 &&
+          hour < 24 &&
+          minute >= 0 &&
+          minute < 60
+        ) {
+          setTimeOfDay(hour, minute);
+        }
       }}>Apply</button></label>
     `,
     diagnostics: html`
-      <button id="measure-snapshot" type="button" @click=${measureSnapshot}>Measure snapshot (50×)</button>
+      <div class="debug-actions"><button id="measure-snapshot" type="button" @click=${measureSnapshot}>Measure snapshot (50×)</button></div>
       <p class="debug-hot-legend">Hot-pixel check (PgDn) colour = material:
         ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
         · brightness = kind: ${HOT_KINDS.join('; ')}.</p>

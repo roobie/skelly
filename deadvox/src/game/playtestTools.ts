@@ -9,6 +9,9 @@ export interface DeathMetric {
   readonly survivedSeconds: number;
 }
 
+export const METRICS_HISTORY_LIMIT = 512;
+export const POCKET_KEY_LIMIT = 128;
+
 export interface SessionMetricsV1 {
   readonly schemaVersion: 1;
   readonly seed: number;
@@ -30,11 +33,13 @@ export class SessionMetrics {
   constructor(seed: number, initial?: SessionMetricsV1 | null) {
     this.seed = seed;
     if (initial?.schemaVersion === 1 && initial.seed === seed) {
-      this.containersLooted.push(...initial.containersLooted.map((entry) => ({ ...entry })));
-      this.deaths.push(...initial.deaths.map((entry) => ({ ...entry })));
+      this.containersLooted.push(
+        ...initial.containersLooted.slice(-METRICS_HISTORY_LIMIT).map((entry) => ({ ...entry })),
+      );
+      this.deaths.push(...initial.deaths.slice(-METRICS_HISTORY_LIMIT).map((entry) => ({ ...entry })));
       this.compressedSeconds = Math.max(0, initial.compressedSeconds);
       this.interruptions = Math.max(0, Math.floor(initial.interruptions));
-      Object.assign(this.pocketUses, initial.pocketUses);
+      Object.assign(this.pocketUses, Object.fromEntries(Object.entries(initial.pocketUses).slice(-POCKET_KEY_LIMIT)));
     }
   }
 
@@ -46,10 +51,19 @@ export class SessionMetrics {
       return;
     }
     this.containersLooted.push({ container, handlingSeconds, uiSeconds });
+    if (this.containersLooted.length > METRICS_HISTORY_LIMIT) {
+      this.containersLooted.splice(0, this.containersLooted.length - METRICS_HISTORY_LIMIT);
+    }
   }
 
   recordDeath(cause: string, survivedSeconds: number): void {
-    this.deaths.push({ cause, survivedSeconds: Math.max(0, survivedSeconds) });
+    if (!(cause && Number.isFinite(survivedSeconds)) || survivedSeconds < 0) {
+      return;
+    }
+    this.deaths.push({ cause, survivedSeconds });
+    if (this.deaths.length > METRICS_HISTORY_LIMIT) {
+      this.deaths.splice(0, this.deaths.length - METRICS_HISTORY_LIMIT);
+    }
   }
 
   frame(realSeconds: number, compressed: boolean, interrupted: boolean): void {
@@ -63,6 +77,9 @@ export class SessionMetrics {
 
   recordPocketUse(name: string): void {
     if (name) {
+      if (!(name in this.pocketUses) && Object.keys(this.pocketUses).length >= POCKET_KEY_LIMIT) {
+        return;
+      }
       this.pocketUses[name] = (this.pocketUses[name] ?? 0) + 1;
     }
   }
@@ -93,21 +110,68 @@ export const loadMetrics = (seed: number, storage: Pick<Storage, 'getItem'>): Se
   }
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'schemaVersion' in parsed &&
-      parsed.schemaVersion === 1 &&
-      'seed' in parsed &&
-      parsed.seed === seed
-    ) {
-      return parsed as SessionMetricsV1;
+    if (typeof parsed === 'object' && parsed !== null && isMetricsV1(parsed, seed)) {
+      return normalizeMetrics(parsed);
     }
   } catch {
     // A corrupt local metrics file should never prevent play.
   }
   return undefined;
 };
+
+const finiteNonNegative = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0;
+
+const isMetricsV1 = (input: unknown, seed: number): input is SessionMetricsV1 => {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return false;
+  }
+  const value = input as Record<string, unknown>;
+  return (
+    value.schemaVersion === 1 &&
+    value.seed === seed &&
+    Number.isSafeInteger(seed) &&
+    seed >= 0 &&
+    Array.isArray(value.containersLooted) &&
+    value.containersLooted.every(
+      (entry) =>
+        typeof entry === 'object' &&
+        entry !== null &&
+        'container' in entry &&
+        typeof entry.container === 'string' &&
+        entry.container.length > 0 &&
+        'handlingSeconds' in entry &&
+        finiteNonNegative(entry.handlingSeconds) &&
+        'uiSeconds' in entry &&
+        finiteNonNegative(entry.uiSeconds),
+    ) &&
+    Array.isArray(value.deaths) &&
+    value.deaths.every(
+      (entry) =>
+        typeof entry === 'object' &&
+        entry !== null &&
+        'cause' in entry &&
+        typeof entry.cause === 'string' &&
+        entry.cause.length > 0 &&
+        'survivedSeconds' in entry &&
+        finiteNonNegative(entry.survivedSeconds),
+    ) &&
+    finiteNonNegative(value.compressedSeconds) &&
+    Number.isSafeInteger(value.interruptions) &&
+    (value.interruptions as number) >= 0 &&
+    typeof value.pocketUses === 'object' &&
+    value.pocketUses !== null &&
+    !Array.isArray(value.pocketUses) &&
+    Object.values(value.pocketUses).every((count) => Number.isSafeInteger(count) && (count as number) >= 0)
+  );
+};
+
+const normalizeMetrics = (value: SessionMetricsV1): SessionMetricsV1 => ({
+  ...value,
+  containersLooted: value.containersLooted.slice(-METRICS_HISTORY_LIMIT),
+  deaths: value.deaths.slice(-METRICS_HISTORY_LIMIT),
+  pocketUses: Object.fromEntries(Object.entries(value.pocketUses).slice(-POCKET_KEY_LIMIT)),
+});
 
 export const metricsExportJson = (metrics: SessionMetrics): string => `${JSON.stringify(metrics.toJSON(), null, 2)}\n`;
 

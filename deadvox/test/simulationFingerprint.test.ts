@@ -14,6 +14,8 @@ import {
 
 const root = '/fixture/deadvox';
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
+const pocketLabel = ` pocket ${['$', '{job.target.pocket + 1}'].join('')}`;
+const compartmentLabel = ` compartment ${['$', '{job.target.pocket + 1}'].join('')}`;
 
 type Sources = Map<string, string>;
 
@@ -92,6 +94,7 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
+    expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
@@ -102,6 +105,7 @@ describe('simulation source fingerprint', () => {
         'src/game/saveStorageProtocol.ts',
         'src/game/controls.ts',
         'src/game/playtestTools.ts',
+        'src/game/playtestObserver.ts',
         'src/worker/save.worker.ts',
       ]),
     );
@@ -112,6 +116,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/playtestObserver.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
@@ -138,6 +143,36 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
       { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
+  });
+
+  it('keeps metrics-only observer label mutations outside the actual fingerprint', async () => {
+    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
+    const viteResolve = config.createResolver();
+    const hashWith = (edited: boolean) =>
+      fingerprintSimulationSources(
+        SIMULATION_ENTRIES,
+        projectRoot,
+        {
+          resolve(specifier, importer) {
+            if (specifier.startsWith('@mobgen/')) {
+              return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+            }
+            return Promise.resolve(viteResolve(specifier, importer));
+          },
+          async readFile(path) {
+            const source = await readFile(path, 'utf8');
+            return edited && path.endsWith('/src/game/playtestObserver.ts')
+              ? source.replaceAll(pocketLabel, compartmentLabel)
+              : source;
+          },
+        },
+        { exclude: SIMULATION_EXCLUSIONS },
+      );
+    const observerPath = resolve(projectRoot, 'src/game/playtestObserver.ts');
+    const observerSource = await readFile(observerPath, 'utf8');
+    const relabeled = observerSource.replaceAll(pocketLabel, compartmentLabel);
+    expect(relabeled).not.toBe(observerSource);
+    expect(await hashWith(true)).toBe(await hashWith(false));
   });
 
   it('classifies every core and game source module', async () => {

@@ -1,14 +1,51 @@
 import { html, render } from 'lit-html';
 import { PLAYER_CONTROL_BINDINGS } from './input.ts';
 
-export const controlsCardRows = () => {
-  const inventory = PLAYER_CONTROL_BINDINGS.filter(
-    (binding) => 'context' in binding && binding.context === 'inventory',
-  );
+const labelForCode = (code: string): string => {
+  if (code === 'mousemove') {
+    return 'Mouse';
+  }
+  if (code === 'Space') {
+    return 'Space';
+  }
+  if (code.startsWith('Key')) {
+    return code.slice(3);
+  }
+  if (code.startsWith('Digit')) {
+    return code.slice(5);
+  }
+  if (code.startsWith('Shift')) {
+    return 'Shift';
+  }
+  switch (code) {
+    case 'ArrowUp':
+      return '↑';
+    case 'ArrowDown':
+      return '↓';
+    case 'ArrowLeft':
+      return '←';
+    case 'ArrowRight':
+      return '→';
+    default:
+      return code;
+  }
+};
+
+export const controlsCardRows = (
+  bindings: readonly {
+    readonly codes: readonly string[];
+    readonly action: string;
+    readonly context?: string;
+  }[] = PLAYER_CONTROL_BINDINGS,
+) => {
+  const rows = bindings.map((binding) => ({
+    keys: [...new Set(binding.codes.map(labelForCode))].join(' / '),
+    action: binding.action,
+    inventory: 'context' in binding && binding.context === 'inventory',
+  }));
+  const inventory = rows.filter((binding) => binding.inventory);
   return [
-    ...PLAYER_CONTROL_BINDINGS.filter((binding) => !('context' in binding && binding.context === 'inventory')).map(
-      ({ keys, action }) => ({ keys, action }),
-    ),
+    ...rows.filter((binding) => !binding.inventory).map(({ keys, action }) => ({ keys, action })),
     {
       keys: inventory.map(({ keys }) => keys).join(' · '),
       action: inventory.map(({ keys, action }) => `${keys}: ${action}`).join(' · '),

@@ -49,6 +49,21 @@ describe('playtest metrics', () => {
     expect(metricsStorageKey(12)).toContain(':v1:12');
     expect(loadMetrics(13, storage)).toBeUndefined();
   });
+
+  it('rejects malformed versioned metrics and bounds retained history on load', () => {
+    const stored = new Map<string, string>([[metricsStorageKey(73), '{"schemaVersion":1,"seed":73}']]);
+    const storage = { getItem: (key: string) => stored.get(key) ?? null };
+    expect(loadMetrics(73, storage)).toBeUndefined();
+
+    const large = new SessionMetrics(74);
+    for (let i = 0; i < 600; i++) {
+      large.recordContainerLoot(`container-${i}`, 1, 2);
+      large.recordDeath('shambler', i);
+    }
+    const payload = large.toJSON();
+    expect(payload.containersLooted).toHaveLength(512);
+    expect(payload.deaths).toHaveLength(512);
+  });
 });
 
 describe('snapshot measurement', () => {
@@ -108,12 +123,16 @@ describe('debug time control', () => {
 describe('controls card', () => {
   it('is rendered from the actual input binding declarations', () => {
     const rows = controlsCardRows();
-    const inventoryBindings = PLAYER_CONTROL_BINDINGS.filter(
-      (binding) => 'context' in binding && binding.context === 'inventory',
-    );
     expect(rows.map(({ keys }) => keys)).toContain('F9');
     expect(rows.map(({ keys }) => keys)).toContain('Tab');
-    expect(rows.at(-1)?.keys).toBe(inventoryBindings.map(({ keys }) => keys).join(' · '));
     expect(rows.at(-1)?.action).toContain('E: Move to your best pocket');
+  });
+
+  it('derives the card label from the same remapped key code used by dispatch', () => {
+    const remapped = PLAYER_CONTROL_BINDINGS.map((binding) =>
+      binding.action === 'Interact with a door or furniture' ? { ...binding, codes: ['KeyJ'] as const } : binding,
+    );
+    const rows = controlsCardRows(remapped);
+    expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
   });
 });

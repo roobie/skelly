@@ -497,6 +497,9 @@ try {
     ),
     /Spawn 1 shamblers \(V\)/,
   );
+  await evaluate(
+    `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
+  );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
   assert.equal(await evaluate("localStorage.getItem('deadvox.shambler-spawn-count')"), '2');
