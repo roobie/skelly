@@ -8,11 +8,13 @@ import {
   akChargingHandleSlotWindow,
   BOLT_CARRIER_ENVELOPES,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
+  carrierCavityBounds,
   EJECTION_PORT_MARGIN_U,
   EJECTION_PORT_RULES,
   FAMILIES,
   RECEIVER_SECTION,
 } from '../src/gun/parts.ts';
+import { buildReceiverSection } from '../src/gun/receiverSection.ts';
 import { loadCorpus } from './helpers.ts';
 
 const corners = (solid: Solid): Vec3[] => {
@@ -197,6 +199,20 @@ const receiverSectionHasMaterialAt = (solids: readonly Solid[], x: number, y: nu
     box: { center: [x, y, z], half: [0.01, 0.01, 0.01] },
   });
   return solids.some((solid) => penetrationWorld(worldSolid(IDENTITY, solid), probe) > 0);
+};
+
+const akSlotWitness = (entry: TravelCase, resolved: ReturnType<typeof resolve>) => {
+  const receiver = resolved.defs.get('receiver')!;
+  const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!.box;
+  const [centerX, centerY] = ejection.center;
+  const [halfX, halfY] = ejection.half;
+  const port = {
+    x: [centerX - halfX, centerX + halfX] as const,
+    y: [centerY - halfY, centerY + halfY] as const,
+  };
+  const [, carrierY] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
+  const slot = akChargingHandleSlotWindow(carrierY, port, entry.travel);
+  return [(slot.x[0] + Math.min(slot.x[1], port.x[0])) / 2, (slot.section[0] + slot.section[1]) / 2, 1.6] as const;
 };
 
 const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof resolve>): boolean => {
@@ -472,14 +488,48 @@ describe('procedural bolt carrier', () => {
     }
   });
 
-  it('keeps the AK charging-slot window exclusive to the AK receiver section', () => {
+  it('keeps material where an AK charging slot would cut every non-AK receiver', () => {
     for (const entry of travelCases.filter(({ pattern }) => pattern !== 'ak')) {
-      const receiver = resolve(assemblyFor(entry), gunDomain).defs.get('receiver')!;
-      expect(
-        receiver.solids.some(({ display }) => display?.mergeGroup === 'receiver-ak'),
-        entry.pattern,
-      ).toBe(false);
+      const resolved = resolve(assemblyFor(entry), gunDomain);
+      const receiver = resolved.defs.get('receiver')!;
+      const witness = akSlotWitness(entry, resolved);
+      expect(receiverSectionHasMaterialAt(receiver.solids, ...witness), entry.pattern).toBe(true);
     }
+  });
+
+  it('fails the non-AK material guard when an AK-style slot is injected into the AR shell', () => {
+    const entry = travelCases.find(({ pattern }) => pattern === 'ar')!;
+    const resolved = resolve(assemblyFor(entry), gunDomain);
+    const receiver = resolved.defs.get('receiver')!;
+    const ejection = receiver.keepOuts.find(({ id }) => id === 'ejection')!.box;
+    const [centerX, centerY] = ejection.center;
+    const [halfX, halfY] = ejection.half;
+    const port = {
+      x: [centerX - halfX, centerX + halfX] as const,
+      y: [centerY - halfY, centerY + halfY] as const,
+    };
+    const [, carrierY] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
+    const witness = akSlotWitness(entry, resolved);
+    const faultySection = buildReceiverSection({
+      id: 'receiver-ar',
+      outline: RECEIVER_SECTION.ar.outline,
+      x: [-16, 0],
+      wall: 0.5,
+      cavity: carrierCavityBounds('ar', carrierY),
+      port: { x: port.x, sectionAxis: 0, section: port.y },
+      portSlots: [akChargingHandleSlotWindow(carrierY, port, entry.travel)],
+    });
+    const mutatedSolids = [
+      ...receiver.solids.filter(({ display }) => display?.mergeGroup !== 'receiver-ar'),
+      ...faultySection,
+    ];
+    const materialGuard = (solids: readonly Solid[]) => {
+      expect(receiverSectionHasMaterialAt(solids, ...witness)).toBe(true);
+    };
+
+    materialGuard(receiver.solids);
+    expect(() => materialGuard(mutatedSolids)).toThrow();
+    expect(mutatedSolids.every(({ display }) => display?.mergeGroup !== 'receiver-ak')).toBe(true);
   });
 
   it('extends the AR carrier 4/3 forward and derives its port from the unchanged rear face', () => {
