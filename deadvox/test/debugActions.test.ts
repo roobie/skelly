@@ -1,6 +1,7 @@
 import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
+import { actionsByGroup } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
@@ -225,6 +226,26 @@ describe('debug action table', () => {
     expect(dispatchDebugAction(actions, 'KeyH', true)).toBe(true);
     expect(godMode.state?.()).toBe(false);
     expect(dispatchDebugAction(actions, 'F12')).toBe(false);
+  });
+});
+
+describe('debug panel groups', () => {
+  it('puts every action in one group, in the order of the panel', () => {
+    const { actions } = makeActions();
+    expect(actionsByGroup(actions).map(({ def, actions: inGroup }) => [def.id, inGroup.map((a) => a.key)])).toEqual([
+      ['tools', ['B', 'G', 'P']],
+      ['survival', ['H', 'T', 'N', 'U', 'K']],
+      ['shamblers', ['V', 'Y', 'O']],
+      ['time', ['M', ',', '.']],
+      ['look', ['J', '-', '=', 'I', ';']],
+      ['post', ['Q', "'", 'Del', 'Ins', '\\', '[', ']']],
+      ['lighting', ['9', 'Num -', 'Num +', '0', 'Home', 'PgUp']],
+      ['atmosphere', ['L', '/']],
+      ['diagnostics', ['End', 'PgDn']],
+      ['share', []],
+    ]);
+    const grouped = actionsByGroup(actions).flatMap(({ actions: inGroup }) => inGroup);
+    expect(grouped).toHaveLength(actions.length);
   });
 });
 

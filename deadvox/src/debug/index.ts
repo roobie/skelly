@@ -9,6 +9,14 @@ import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
+import {
+  actionsByGroup,
+  type GroupedAction,
+  type GroupId,
+  keysAtAGlance,
+  readClosedGroups,
+  writeClosedGroups,
+} from './groups.ts';
 import { LookControls } from './look.ts';
 import { buildRevision, lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
@@ -20,10 +28,8 @@ import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { scrollPanelByWheel } from './wheel.ts';
 
-export interface Action {
+export interface Action extends GroupedAction {
   readonly code: string;
-  readonly key: string;
-  readonly label: string;
   readonly state?: () => boolean;
   /** Current value, appended to the label in the panel. */
   readonly detail?: () => string;
@@ -35,6 +41,16 @@ interface ActionView {
   readonly label: string;
   readonly state: string;
   readonly run: () => void;
+}
+
+interface GroupView {
+  readonly id: GroupId;
+  readonly title: string;
+  /** The group's keys, or its hint, for the header. */
+  readonly keys: string;
+  readonly open: boolean;
+  readonly actions: readonly ActionView[];
+  readonly toggle: () => void;
 }
 
 const ms = (value: number): string => (Number.isFinite(value) ? value.toFixed(1) : '–');
@@ -83,9 +99,33 @@ const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
   </section>
 `;
 
+const actionButton = (action: ActionView): TemplateResult => html`
+  <button type="button" @click=${action.run}>
+    ${action.label} (${action.key})${action.state ? ` · ${action.state}` : ''}
+  </button>
+`;
+
+/** A collapsible group: the header shows the keys, so a closed group still says what it holds. */
+const groupTemplate = (group: GroupView, extra: TemplateResult | typeof nothing): TemplateResult => html`
+  <section class="debug-group" data-group=${group.id}>
+    <button type="button" class="debug-group-header" aria-expanded=${group.open ? 'true' : 'false'} @click=${group.toggle}>
+      <strong>${group.title}</strong><span class="debug-group-keys">${group.keys}</span>
+    </button>
+    ${
+      group.open
+        ? html`
+      <div class="debug-group-body">
+        ${group.actions.length > 0 ? html`<div class="debug-actions">${group.actions.map(actionButton)}</div>` : nothing}
+        ${extra}
+      </div>`
+        : nothing
+    }
+  </section>
+`;
+
 const panelTemplate = ({
   open,
-  actions,
+  groups,
   gameFrozen,
   spawnOpen,
   shamblerCount,
@@ -97,7 +137,7 @@ const panelTemplate = ({
   download,
 }: {
   open: boolean;
-  actions: readonly ActionView[];
+  groups: readonly GroupView[];
   gameFrozen: boolean;
   spawnOpen: boolean;
   shamblerCount: number;
@@ -108,7 +148,26 @@ const panelTemplate = ({
   dumpLook: () => void;
   /** A file to save: the link below is clicked once while this is set. */
   download: { url: string; name: string } | undefined;
-}): TemplateResult => html`
+}): TemplateResult => {
+  // What a group shows besides its action buttons; only these three have anything.
+  const extras: Partial<Record<GroupId, TemplateResult>> = {
+    shamblers: html`
+      <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
+        <span>Shambler count</span>
+        <button type="button" aria-label="Decrease shambler count" ?disabled=${shamblerCount <= 1} @click=${() => setShamblerCount(shamblerCount - 1)}>−</button>
+        <output aria-label="Current shambler spawn count" aria-live="polite">${shamblerCount}</output>
+        <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
+      </div>
+      <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
+    `,
+    diagnostics: html`
+      <p class="debug-hot-legend">Hot-pixel check (PgDn) colour = material:
+        ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
+        · brightness = kind: ${HOT_KINDS.join('; ')}.</p>
+    `,
+    share: html`<div class="debug-actions"><button type="button" @click=${dumpLook}>Dump look settings (JSON)</button></div>`,
+  };
+  return html`
   <div id="debug-ui-root">
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · M</div>
@@ -118,35 +177,17 @@ const panelTemplate = ({
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <div id="debug-readout" class="debug-readout"></div>
-    <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
-      <span>Shambler count</span>
-      <button type="button" aria-label="Decrease shambler count" ?disabled=${shamblerCount <= 1} @click=${() => setShamblerCount(shamblerCount - 1)}>−</button>
-      <output aria-label="Current shambler spawn count" aria-live="polite">${shamblerCount}</output>
-      <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
-    </div>
-    <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
-    <div class="debug-actions">
-      ${actions.map(
-        (action) => html`
-        <button type="button" @click=${action.run}>
-          ${action.label} (${action.key})${action.state ? ` · ${action.state}` : ''}
-        </button>
-      `,
-      )}
-      <button type="button" @click=${dumpLook}>Dump look settings (JSON)</button>
-      <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
-    </div>
-    <p class="debug-hot-legend">Hot-pixel check (PgDn) colour = material:
-      ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
-      · brightness = kind: ${HOT_KINDS.join('; ')}.</p>
-      <div id="debug-sound-log-root"></div>
-      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, Del/Ins bloom clip, \\ film, [ ] grade. Flashlight: numpad − + strength. Fog: L / fogginess − +. Shadows: 0 sun, Home flashlight, PageUp distance.</p>
+    ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
+    <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
+    <div id="debug-sound-log-root"></div>
+    <p>Keys are listed in each group's header. Noclip: Space rises, R descends. While building (B): 1–9 select blocks, the wheel cycles them. Panel: Backquote. The wheel scrolls this panel.</p>
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
   </div>
 `;
+};
 
 const emptyReadout: DebugReadout = {
   fps: 0,
@@ -202,22 +243,24 @@ export const createDebugActions = ({
   toggleGameFrozen,
   look,
 }: ActionContext): Action[] => [
-  { code: 'KeyB', key: 'B', label: 'Build tools', state: () => build.on, run: () => build.toggle() },
-  { code: 'KeyG', key: 'G', label: 'Spawn item menu', state: () => spawnMenu.isOpen, run: toggleSpawn },
+  { code: 'KeyB', key: 'B', label: 'Build tools', group: 'tools', state: () => build.on, run: () => build.toggle() },
+  { code: 'KeyG', key: 'G', label: 'Spawn item menu', group: 'tools', state: () => spawnMenu.isOpen, run: toggleSpawn },
   {
     code: 'KeyH',
     key: 'H',
     label: 'God mode',
+    group: 'survival',
     state: () => hooks.sim.godMode,
     run: () => {
       hooks.sim.godMode = !hooks.sim.godMode;
     },
   },
-  { code: 'KeyP', key: 'P', label: 'Noclip', state: isNoclip, run: toggleNoclip },
+  { code: 'KeyP', key: 'P', label: 'Noclip', group: 'tools', state: isNoclip, run: toggleNoclip },
   {
     code: 'KeyT',
     key: 'T',
     label: 'Compress / rest',
+    group: 'survival',
     state: () => hooks.sim.compression.active,
     run: () => {
       if (hooks.sim.compression.active) {
@@ -231,18 +274,35 @@ export const createDebugActions = ({
     code: 'KeyN',
     key: 'N',
     label: 'Emit noise',
+    group: 'survival',
     run: () => hooks.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' }),
   },
-  { code: 'KeyU', key: 'U', label: 'Danger test', state: isDanger, run: toggleDanger },
-  { code: 'KeyK', key: 'K', label: 'Take 25 damage', run: () => hooks.sim.hurt(25, 'a debug key') },
-  { code: 'KeyV', key: 'V', label: 'Spawn shamblers', run: () => spawnShambler(shamblerCount()) },
-  { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', state: isAimEnabled, run: toggleAim },
-  { code: 'KeyO', key: 'O', label: 'Freeze shamblers', state: isFrozen, run: toggleFrozen },
-  { code: 'KeyM', key: 'M', label: 'Freeze game', state: isGameFrozen, run: toggleGameFrozen },
+  { code: 'KeyU', key: 'U', label: 'Danger test', group: 'survival', state: isDanger, run: toggleDanger },
+  {
+    code: 'KeyK',
+    key: 'K',
+    label: 'Take 25 damage',
+    group: 'survival',
+    run: () => hooks.sim.hurt(25, 'a debug key'),
+  },
+  { code: 'KeyV', key: 'V', label: 'Spawn shamblers', group: 'shamblers', run: () => spawnShambler(shamblerCount()) },
+  { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', group: 'shamblers', state: isAimEnabled, run: toggleAim },
+  { code: 'KeyO', key: 'O', label: 'Freeze shamblers', group: 'shamblers', state: isFrozen, run: toggleFrozen },
+  {
+    code: 'KeyM',
+    key: 'M',
+    label: 'Freeze game',
+    group: 'time',
+    param: 'freeze=1',
+    state: isGameFrozen,
+    run: toggleGameFrozen,
+  },
   {
     code: 'KeyJ',
     key: 'J',
     label: 'Tone mapping',
+    group: 'look',
+    param: 'tone=auto/neutral/aces/agx/none',
     detail: () => look.toneMappingName,
     run: () => look.cycleToneMapping(),
   },
@@ -250,6 +310,8 @@ export const createDebugActions = ({
     code: 'Minus',
     key: '-',
     label: 'Exposure −',
+    group: 'look',
+    param: 'exposure=0.2..3',
     detail: () => look.exposure.toFixed(1),
     run: () => look.stepExposure(-1),
   },
@@ -257,6 +319,8 @@ export const createDebugActions = ({
     code: 'Equal',
     key: '=',
     label: 'Exposure +',
+    group: 'look',
+    param: 'exposure=0.2..3',
     detail: () => look.exposure.toFixed(1),
     run: () => look.stepExposure(1),
   },
@@ -264,6 +328,8 @@ export const createDebugActions = ({
     code: 'KeyI',
     key: 'I',
     label: 'sRGB block colours',
+    group: 'look',
+    param: 'srgb=0',
     state: () => look.linearColors,
     run: () => look.toggleLinearColors(),
   },
@@ -271,6 +337,8 @@ export const createDebugActions = ({
     code: 'Semicolon',
     key: ';',
     label: 'Surface patterns',
+    group: 'look',
+    param: 'patterns=0',
     state: () => look.patterns,
     run: () => look.togglePatterns(),
   },
@@ -279,6 +347,8 @@ export const createDebugActions = ({
     code: 'Digit9',
     key: '9',
     label: 'Wide ambient occlusion',
+    group: 'lighting',
+    param: 'vao=0',
     state: () => look.occlusion,
     run: () => look.toggleOcclusion(),
   },
@@ -287,16 +357,28 @@ export const createDebugActions = ({
     code: 'KeyQ',
     key: 'Q',
     label: 'Mood post-processing (all)',
+    group: 'post',
+    param: 'post=0',
     state: () => look.moodState.post,
     run: () => look.togglePost(),
   },
-  { code: 'Quote', key: "'", label: 'Bloom', state: () => look.moodState.bloom, run: () => look.toggleBloom() },
+  {
+    code: 'Quote',
+    key: "'",
+    label: 'Bloom',
+    group: 'post',
+    param: 'bloom=0',
+    state: () => look.moodState.bloom,
+    run: () => look.toggleBloom(),
+  },
   // Bloom starts where the picture reaches this post-exposure value (core/mood.ts BLOOM_CLIP_BY_TONE); higher blooms less.
   // Insert / Delete are the navigation-cluster keys nothing binds (CONTROLS.md); arrows would steal inventory navigation.
   {
     code: 'Delete',
     key: 'Del',
     label: 'Bloom clip −',
+    group: 'post',
+    param: 'bloomclip=1..8',
     detail: () => bloomClipDetail(look),
     run: () => look.stepBloomClip(-1),
   },
@@ -304,6 +386,8 @@ export const createDebugActions = ({
     code: 'Insert',
     key: 'Ins',
     label: 'Bloom clip +',
+    group: 'post',
+    param: 'bloomclip=1..8',
     detail: () => bloomClipDetail(look),
     run: () => look.stepBloomClip(1),
   },
@@ -312,6 +396,8 @@ export const createDebugActions = ({
     code: 'NumpadSubtract',
     key: 'Num -',
     label: 'Flashlight strength −',
+    group: 'lighting',
+    param: 'torch=0.1..16',
     detail: () => `×${look.torch}`,
     run: () => look.stepTorch(-1),
   },
@@ -319,6 +405,8 @@ export const createDebugActions = ({
     code: 'NumpadAdd',
     key: 'Num +',
     label: 'Flashlight strength +',
+    group: 'lighting',
+    param: 'torch=0.1..16',
     detail: () => `×${look.torch}`,
     run: () => look.stepTorch(1),
   },
@@ -326,6 +414,8 @@ export const createDebugActions = ({
     code: 'Backslash',
     key: '\\',
     label: 'Film (vignette, grain)',
+    group: 'post',
+    param: 'film=0',
     state: () => look.moodState.film,
     run: () => look.toggleFilm(),
   },
@@ -335,6 +425,8 @@ export const createDebugActions = ({
     code: 'Digit0',
     key: '0',
     label: 'Sun shadows',
+    group: 'lighting',
+    param: 'sunshadow=0',
     state: () => look.shadowState.sun,
     run: () => look.toggleSunShadows(),
   },
@@ -342,6 +434,8 @@ export const createDebugActions = ({
     code: 'Home',
     key: 'Home',
     label: 'Flashlight shadows',
+    group: 'lighting',
+    param: 'torchshadow=0',
     state: () => look.shadowState.torch,
     run: () => look.toggleTorchShadows(),
   },
@@ -349,6 +443,8 @@ export const createDebugActions = ({
     code: 'PageUp',
     key: 'PgUp',
     label: 'Sun shadow distance',
+    group: 'lighting',
+    param: 'shadowdist=16..96',
     detail: () => `${look.shadowState.distance} m`,
     run: () => look.stepShadowDistance(),
   },
@@ -358,6 +454,8 @@ export const createDebugActions = ({
     code: 'End',
     key: 'End',
     label: 'Crack check (magenta background)',
+    group: 'diagnostics',
+    param: 'crackcheck=1',
     state: () => look.crackCheck,
     run: () => look.toggleCrackCheck(),
   },
@@ -365,6 +463,8 @@ export const createDebugActions = ({
     code: 'PageDown',
     key: 'PgDn',
     label: 'Hot-pixel check (coloured)',
+    group: 'diagnostics',
+    param: 'hotcheck=1',
     state: () => look.hotCheck,
     run: () => look.toggleHotCheck(),
   },
@@ -373,6 +473,8 @@ export const createDebugActions = ({
     code: 'KeyL',
     key: 'L',
     label: 'Fogginess −',
+    group: 'atmosphere',
+    param: 'fog=0..1',
     detail: () => look.fogginess.toFixed(1),
     run: () => look.stepFogginess(-1),
   },
@@ -380,6 +482,8 @@ export const createDebugActions = ({
     code: 'Slash',
     key: '/',
     label: 'Fogginess +',
+    group: 'atmosphere',
+    param: 'fog=0..1',
     detail: () => look.fogginess.toFixed(1),
     run: () => look.stepFogginess(1),
   },
@@ -387,6 +491,8 @@ export const createDebugActions = ({
     code: 'BracketLeft',
     key: '[',
     label: 'Grade −',
+    group: 'post',
+    param: 'grade=0..1',
     detail: () => look.moodState.grade.toFixed(1),
     run: () => look.stepGrade(-1),
   },
@@ -394,6 +500,8 @@ export const createDebugActions = ({
     code: 'BracketRight',
     key: ']',
     label: 'Grade +',
+    group: 'post',
+    param: 'grade=0..1',
     detail: () => look.moodState.grade.toFixed(1),
     run: () => look.stepGrade(1),
   },
@@ -402,6 +510,7 @@ export const createDebugActions = ({
     code: 'Comma',
     key: ',',
     label: 'Skip +23 h (−1 h tomorrow)',
+    group: 'time',
     detail: () => formatClock(hooks.sim.calendar),
     run: () => hooks.skipGameHours(SKIP_LONG_HOURS),
   },
@@ -409,6 +518,7 @@ export const createDebugActions = ({
     code: 'Period',
     key: '.',
     label: 'Skip +1 h',
+    group: 'time',
     detail: () => formatClock(hooks.sim.calendar),
     run: () => hooks.skipGameHours(SKIP_SHORT_HOURS),
   },
@@ -498,6 +608,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
+  /** Groups the operator collapsed; remembered per browser. */
+  const closedGroups = readClosedGroups();
   const { shadows } = hooks.engine;
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
     weather: hooks.weather,
@@ -646,21 +758,42 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       },
     }));
   }
+  function toggleGroup(id: GroupId): void {
+    if (!closedGroups.delete(id)) {
+      closedGroups.add(id);
+    }
+    writeClosedGroups(closedGroups);
+    shellKey = '';
+    drawShell();
+  }
+  /** The panel's groups, built from the action table: the views are in table order, so are the groups' buttons. */
+  function groupViews(): GroupView[] {
+    const all = actionViews();
+    const views = new Map(actions.map((action, i) => [action, all[i]!] as const));
+    return actionsByGroup(actions).map(({ def, actions: inGroup }) => ({
+      id: def.id,
+      title: def.title,
+      keys: keysAtAGlance(def, inGroup),
+      open: !closedGroups.has(def.id),
+      actions: inGroup.map((action) => views.get(action)!),
+      toggle: () => toggleGroup(def.id),
+    }));
+  }
   function drawShell(): void {
-    const views = actionViews();
+    const groups = groupViews();
     const key = JSON.stringify([
       panelOpen,
       spawnMenu.isOpen,
       shamblerCount,
       spawnStatus,
-      views.map((view) => [view.label, view.state]),
+      groups.map((group) => [group.id, group.open, group.actions.map((view) => [view.label, view.state])]),
     ]);
     if (key !== shellKey) {
       shellKey = key;
       render(
         panelTemplate({
           open: panelOpen,
-          actions: views,
+          groups,
           gameFrozen,
           spawnOpen: spawnMenu.isOpen,
           shamblerCount,

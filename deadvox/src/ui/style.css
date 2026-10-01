@@ -1061,8 +1061,53 @@ body.bench #quickbar {
   cursor: default;
 }
 #debug-ui-root .debug-panel .debug-actions button:hover,
-#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover {
+#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover,
+#debug-ui-root .debug-panel .debug-group-header:hover,
+#debug-ui-root .debug-panel .debug-group-header.game-cursor-hover {
   border-color: var(--accent);
+}
+/* A group: a full-width header button (title left, keys right) over its buttons. */
+#debug-ui-root .debug-panel .debug-group {
+  margin-top: 6px;
+}
+#debug-ui-root .debug-panel .debug-group-header {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 35%);
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+  text-align: left;
+  cursor: pointer;
+}
+#debug-ui-root .debug-panel .debug-group-header::before {
+  content: "▾";
+  flex: none;
+  color: var(--muted);
+}
+#debug-ui-root .debug-panel .debug-group-header[aria-expanded="false"]::before {
+  content: "▸";
+}
+#debug-ui-root .debug-panel .debug-group-header strong {
+  flex: none;
+  margin-right: auto;
+}
+#debug-ui-root .debug-panel .debug-group-keys {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#debug-ui-root .debug-panel .debug-group-body {
+  padding-top: 6px;
 }
 #debug-ui-root .debug-panel p {
   margin: 6px 0 0;
