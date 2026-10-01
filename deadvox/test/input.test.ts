@@ -89,6 +89,16 @@ describe('menu input', () => {
       targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
       windowListeners.get('blur')?.(new Event('blur'));
       expect(input.rightMouseHeld).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(true);
+      expect(input.intent().primaryAction).toBe(true);
+      input.consumePrimaryAction();
+      expect(input.intent().primaryAction).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(false);
+      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(true);
     } finally {
       if (original) {
         Object.defineProperty(globalThis, 'addEventListener', original);

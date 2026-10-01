@@ -10,7 +10,7 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare } from '../core/lights.ts';
-import { MELEE_START_OFFSET_MAX_SECONDS, meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
+import { meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
 import { skyAt } from '../core/sky.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { Flashlight } from '../render/flashlight.ts';
@@ -63,6 +63,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
+  let performPrimaryAction = (): void => undefined;
 
   const audio = new GameAudio({
     registry,
@@ -93,6 +94,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     controls: {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
+      consumePrimaryAction: () => input.consumePrimaryAction(),
+      primaryAction: () => performPrimaryAction(),
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
@@ -160,9 +163,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   // doesn't care which one it has. Declared after createSession, whose zombie hooks (above) reach it
   // through a closure that only ever runs later, during play.
   //
-  // zombieDied ordering: a melee kill's `swing()` runs from a `mousedown` listener (below), not from the
-  // fixed-rate scheduler tick, so it can land before or after this frame's `zombieMeshes.sync()` call in
-  // either order. The session's onDeath hook calls zombieDied synchronously, in the very same call that
+  // zombieDied ordering: a melee kill starts from the player-tick primary-action callback below and can
+  // land before or after this frame's `zombieMeshes.sync()` call in either order. The session's onDeath hook calls zombieDied synchronously, in the very same call that
   // removes the zombie from zombieStore — MobActorMeshes' own zombieDied moves that id out of its
   // live-tracking map *before* returning, so whichever order sync() and a death happen to fall in this
   // frame, sync()'s own prune pass never mistakes a just-died zombie for a plain vanish (see
@@ -598,22 +600,18 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       hands: handUids(),
       aimYaw: input.yaw,
       aimPitch: input.pitch,
-      startOffset: Math.min(MELEE_START_OFFSET_MAX_SECONDS, Math.max(0, sim.time - session.lastZombieStep)),
     });
     if (result === 'too-tired') {
       showNotice('You are too tired to swing');
     }
   };
 
+  performPrimaryAction = swing;
   renderer.domElement.addEventListener('mousedown', (e) => {
-    if (!input.locked || input.menuPointer || compression.locksInput) {
+    if (!input.locked || input.menuPointer || compression.locksInput || !debugTools?.buildOn) {
       return;
     }
-    if (debugTools?.buildOn) {
-      debugTools.click(e.button, eye(), lookDir());
-    } else if (e.button === 0) {
-      swing();
-    }
+    debugTools.click(e.button, eye(), lookDir());
   });
 
   // ---- loop ----
@@ -731,7 +729,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const elapsed = action
       ? Math.min(
           action.cooldown,
-          action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastZombieStep - action.startOffset)),
+          action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)),
         )
       : 0;
     const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready);

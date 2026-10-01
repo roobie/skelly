@@ -4,7 +4,6 @@ import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import {
-  MELEE_START_OFFSET_MAX_SECONDS,
   type MeleeActionPose,
   type MeleeHand,
   type MeleeProfile,
@@ -37,7 +36,6 @@ export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, i
 
 export interface MeleeActionState extends MeleeActionPose {
   elapsed: number;
-  startOffset: number;
   hands: { right: number | null; left: number | null };
   weapon: MeleeWeapon;
 }
@@ -68,7 +66,6 @@ export interface BeginMeleeSwing {
   hands: { right: number | null; left: number | null };
   aimYaw?: number;
   aimPitch?: number;
-  startOffset?: number;
 }
 
 export interface ZombieAim {
@@ -762,10 +759,6 @@ export class ZombieSystem {
       !Number.isFinite(action.aimPitch) ||
       !Number.isFinite(action.elapsed) ||
       action.elapsed < 0 ||
-      !Number.isFinite(action.startOffset) ||
-      action.startOffset < 0 ||
-      action.startOffset > MELEE_START_OFFSET_MAX_SECONDS + 1e-9 ||
-      (action.elapsed > 0 && action.startOffset > 0) ||
       action.elapsed >= action.cooldown ||
       typeof action.hitResolved !== 'boolean' ||
       (action.hitResolved && action.elapsed < action.contactAt) ||
@@ -796,10 +789,8 @@ export class ZombieSystem {
       this.meleeAction = null;
       return;
     }
-    // Click may land anywhere inside a 20 Hz step; credit only the part after that click.
-    const elapsed = Math.min(action.cooldown, action.elapsed + Math.max(0, dt - action.startOffset));
-    action.startOffset = 0;
-    if (!action.hitResolved && elapsed >= action.contactAt) {
+    const elapsed = Math.min(action.cooldown, action.elapsed + dt);
+    if (!action.hitResolved && elapsed + 1e-9 >= action.contactAt) {
       const contact = meleePoseAndContact(action, action.contactAt, false).contactRay;
       if (contact) {
         this.resolveMeleeNow(contact.origin, contact.direction, action.weapon);
@@ -1043,7 +1034,7 @@ export class ZombieSystem {
 
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
-  tick(dt: number, time = 0, hands?: { right: number | null; left: number | null }): void {
+  tick(dt: number, time = 0, _hands?: { right: number | null; left: number | null }): void {
     if (dt <= 0) {
       return;
     }
@@ -1060,9 +1051,6 @@ export class ZombieSystem {
         zombie.body.vel[2] = 0;
         stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
       }
-      // Freeze only shambler timers; the player's own melee cooldown continues to elapse.
-      this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
-      this.tickMeleeAction(dt, hands);
       return;
     }
     const player = this.options.player();
@@ -1437,6 +1425,13 @@ export class ZombieSystem {
         this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode);
       }
     }
+  }
+
+  /** Advances player attack timing once per player physics tick, independently of shambler AI cadence. */
+  tickPlayerAction(dt: number, hands: { right: number | null; left: number | null }): void {
+    if (dt <= 0) {
+      return;
+    }
     this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
     this.tickMeleeAction(dt, hands);
   }
@@ -1517,18 +1512,10 @@ export class ZombieSystem {
     };
   }
 
-  /** Starts a click-aimed attack; the contact ray resolves after its bounded wind-up. */
+  /** Starts an attack from the player's sampled tick aim; contact resolves after its bounded wind-up. */
   beginMeleeSwing(start: BeginMeleeSwing): boolean {
     const { weapon, profile } = start;
-    const startOffset = start.startOffset ?? 0;
-    if (
-      this.playerAttackWait > 0 ||
-      this.meleeAction !== null ||
-      weapon.cooldown <= 0 ||
-      !Number.isFinite(startOffset) ||
-      startOffset < 0 ||
-      startOffset > MELEE_START_OFFSET_MAX_SECONDS + 1e-9
-    ) {
+    if (this.playerAttackWait > 0 || this.meleeAction !== null || weapon.cooldown <= 0) {
       return false;
     }
     const hand = profile === 'fists' ? this.nextFistHand : (start.hand ?? 'right');
@@ -1546,7 +1533,6 @@ export class ZombieSystem {
       aimYaw: start.aimYaw ?? Math.atan2(-direction[0], -direction[2]),
       aimPitch: start.aimPitch ?? Math.asin(Math.max(-1, Math.min(1, direction[1]))),
       elapsed: 0,
-      startOffset,
       hitResolved: false,
       origin: copy(start.origin),
       direction,

@@ -6,9 +6,6 @@ export type MeleeHand = 'right' | 'left';
 /** Contact is quick for heavy weapons too; recovery still fills the item's full cooldown. */
 export const MELEE_WINDUP_FRACTION = 0.4;
 export const MELEE_WINDUP_CAP_SECONDS = 0.25;
-/** Maximum click offset inside one 20 Hz zombie simulation step. */
-export const MELEE_START_OFFSET_MAX_SECONDS = 0.05;
-
 export const meleeContactTime = (cooldown: number): number =>
   Math.min(MELEE_WINDUP_FRACTION * cooldown, MELEE_WINDUP_CAP_SECONDS);
 
@@ -34,7 +31,7 @@ export interface MeleePoseFrame {
   right: HandPose;
   left: HandPose;
   viewOrientation?: { yaw: number; pitch: number };
-  /** The same click-locked ray consumed by the simulation at the contact phase. */
+  /** The same tick-locked ray consumed by the simulation at the contact phase. */
   contactRay?: { origin: Vec3; direction: Vec3 };
 }
 
@@ -95,19 +92,19 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
   let follow: HandPose;
   switch (action.profile) {
     case 'blunt':
-      pull = handPose([sign * 0.48, 0.12, 0.04], [-0.2, -sign * 1.25, sign * 0.2]);
-      strike = handPose([-sign * 0.2, 0.18, -0.1], [-1.5, sign * 0.55, -sign * 0.08]);
-      follow = handPose([-sign * 0.5, 0.04, -0.08], [-1.2, sign * 1.2, -sign * 0.18]);
+      pull = handPose([sign * 0.34, 0.08, 0.02], [-0.2, -sign * 1.25, sign * 0.2]);
+      strike = handPose([sign * 0.04, 0.08, 0], [-1.5, sign * 0.55, -sign * 0.08]);
+      follow = handPose([sign * 0.12, 0.04, 0], [-1.2, sign * 1.2, -sign * 0.18]);
       break;
     case 'cut':
-      pull = handPose([sign * 0.32, 0.48, 0.04], [-sign * 0.35, sign * 0.6, -sign * 0.15]);
-      strike = handPose([-sign * 0.2, -0.12, -0.14], [sign * 0.45, -sign * 0.55, sign * 0.25]);
-      follow = handPose([-sign * 0.52, -0.5, -0.12], [sign * 0.55, -sign * 0.9, sign * 0.35]);
+      pull = handPose([sign * 0.1, 0.15, 0.14], [0.9, sign * 0.6, -sign * 0.15]);
+      strike = handPose([sign * 0.03, -0.16, -0.18], [1.5, -sign * 0.55, sign * 0.25]);
+      follow = handPose([-sign * 0.3, -0.2, -0.08], [2.2, -sign * 0.9, sign * 0.35]);
       break;
     case 'pierce':
-      pull = handPose([sign * 0.1, 0.08, 0.16], [-1.1, -sign * 0.1, 0]);
-      strike = handPose([-sign * 0.2, 0.2, -0.42], [-1.5, sign * 0.02, 0]);
-      follow = handPose([-sign * 0.18, 0.12, -0.3], [-1.3, sign * 0.02, 0]);
+      pull = handPose([sign * 0.1, 0.08, 0.15], [-1.1, -sign * 0.1, 0]);
+      strike = handPose([-sign * 0.2, 0.2, -0.51], [-1.5, sign * 0.02, 0]);
+      follow = handPose([-sign * 0.18, 0.12, -0.35], [-1.3, sign * 0.02, 0]);
       break;
     case 'fists':
       pull = handPose([sign * 0.12, 0.04, 0.08], [-0.1, -sign * 0.1, sign * 0.04]);

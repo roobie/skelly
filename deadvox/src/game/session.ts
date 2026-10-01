@@ -64,7 +64,7 @@ const ZOMBIE_RATE = 20;
 const HANDLING_RATE = 20;
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
-export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false };
+export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, primaryAction: false };
 
 /** The item a severed shambler region leaves behind. */
 export const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
@@ -80,6 +80,10 @@ export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
+  /** Clears edge-triggered intent after the player tick samples it. */
+  consumePrimaryAction?: () => void;
+  /** Runs the primary action on the player-tick boundary, with that tick's aim/state. */
+  primaryAction?: () => void;
   /** Radians; 0 looks down -z. */
   yaw: () => number;
   pitch: () => number;
@@ -355,6 +359,7 @@ export const createSession = (options: SessionOptions) => {
     },
   });
   let lastZombieStep = 0;
+  let lastPlayerStep = 0;
   sim.scheduler.register({
     id: 'zombies',
     rate: ZOMBIE_RATE,
@@ -371,11 +376,17 @@ export const createSession = (options: SessionOptions) => {
     id: 'player',
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
+      lastPlayerStep = time;
+      const moving = controls.active() && !compression.locksInput;
+      const intent = moving ? controls.intent() : IDLE;
+      controls.consumePrimaryAction?.();
+      zombieSystem.tickPlayerAction(dt, heldItemUids());
+      if (moving && intent.primaryAction) {
+        controls.primaryAction?.();
+      }
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }
-      const moving = controls.active() && !compression.locksInput;
-      const intent = moving ? controls.intent() : IDLE;
       const handling = queue.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
       sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
@@ -465,7 +476,9 @@ export const createSession = (options: SessionOptions) => {
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
-    lastZombieStep = sim.scheduler.snapshotState().systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
+    const schedulerState = sim.scheduler.snapshotState();
+    lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
+    lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
     rest.restoreState(restored.character.rest);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
     quickbar.restoreState(restored.character.quickbar, inventory);
@@ -496,6 +509,9 @@ export const createSession = (options: SessionOptions) => {
     /** Time of the last shambler step, for render interpolation. */
     get lastZombieStep() {
       return lastZombieStep;
+    },
+    get lastPlayerStep() {
+      return lastPlayerStep;
     },
     get sprinting() {
       return sprinting;

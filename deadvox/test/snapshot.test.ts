@@ -857,7 +857,6 @@ describe('canonical save format', () => {
         hand: 'right',
         twoHanded: false,
         hands,
-        startOffset: source.sim.time - source.session.lastZombieStep,
       }),
     ).toBe('started');
     const initialHealth = zombie.regions.head;
@@ -868,21 +867,23 @@ describe('canonical save format', () => {
     const loaded = createRuntime(decoded.snapshot);
     loaded.zombies.setFrozen(true);
     expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0);
-    expect(loaded.zombies.activeMeleeAction?.startOffset).toBeCloseTo(0.049);
 
     for (const runtime of [source, loaded]) {
       const held = {
         right: runtime.inventory.hands.right?.uid ?? null,
         left: runtime.inventory.hands.left?.uid ?? null,
       };
-      for (let tick = 1; tick <= 5; tick++) {
-        runtime.zombies.tick(0.05, tick * 0.05, held);
+      for (let tick = 1; tick < 15; tick++) {
+        runtime.zombies.tickPlayerAction(1 / 60, held);
+        if (tick % 3 === 0) runtime.zombies.tick(0.05, tick / 20, held);
         expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
       }
-      runtime.zombies.tick(0.05, 0.3, held);
+      runtime.zombies.tickPlayerAction(1 / 60, held);
+      runtime.zombies.tick(0.05, 0.25, held);
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
-      for (let tick = 0; tick < 16; tick++) {
-        runtime.zombies.tick(0.05, 0.3 + (tick + 1) * 0.05, held);
+      for (let tick = 0; tick < 48; tick++) {
+        runtime.zombies.tickPlayerAction(1 / 60, held);
+        if (tick % 3 === 2) runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
       }
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
     }

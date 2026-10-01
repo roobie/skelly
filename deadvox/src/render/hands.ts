@@ -25,7 +25,11 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame } from '../core/meleePose.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import { createFirstPersonArm } from './playerFigure.ts';
+import {
+  FIRST_PERSON_SHOULDER,
+  createFirstPersonArm,
+  placeFirstPersonSegment,
+} from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Where a held item's grip sits, in metres from the eye (x right, y up, −z forward). */
@@ -53,6 +57,7 @@ export class HeldItems {
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
   private readonly arms = new Map<HandSide, Group>();
+  private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
   private readonly heldByHand = new Map<HandSide, Object3D>();
   private readonly relativeCamera = new Quaternion();
@@ -82,7 +87,7 @@ export class HeldItems {
         continue;
       }
       const arm = this.arms.get(side);
-      if (!arm || arm.parent !== this.view) {
+      if (!arm) {
         continue;
       }
       const transform = interpolateHandPose(base, hand);
@@ -101,8 +106,19 @@ export class HeldItems {
       transform.offset[2] += 0.025 * strength;
       this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
       this.poseRotation.multiply(this.recoilRotation);
-      arm.position.set(...transform.offset);
-      arm.quaternion.copy(this.poseRotation);
+      if (arm.parent === this.view) {
+        const [upperLength, lowerLength] = this.armLengths.get(arm)!;
+        const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
+        const wrist = new Vector3(...transform.offset);
+        const reach = upperLength + lowerLength + 0.08;
+        const distance = shoulder.distanceTo(wrist);
+        if (distance > reach) {
+          wrist.sub(shoulder).normalize().multiplyScalar(reach).add(shoulder);
+          transform.offset = [wrist.x, wrist.y, wrist.z];
+        }
+        arm.position.set(...transform.offset);
+        arm.quaternion.copy(this.poseRotation);
+      }
       const held = this.heldByHand.get(side);
       if (held) {
         held.position.set(...transform.offset);
@@ -111,6 +127,10 @@ export class HeldItems {
     }
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(main.quaternion);
+    this.view.updateMatrixWorld(true);
+    for (const [side, arm] of this.arms) {
+      this.updateArmChain(side, arm);
+    }
     this.view.updateMatrixWorld(true);
   }
 
@@ -157,6 +177,7 @@ export class HeldItems {
     this.view.clear();
     this.shown.clear();
     this.arms.clear();
+    this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
     const { hands } = this.inventory;
@@ -164,6 +185,42 @@ export class HeldItems {
     this.syncHand('left', hands.left);
     this.syncFistHand('right');
     this.syncFistHand('left');
+  }
+
+  private updateArmChain(side: HandSide, arm: Group): void {
+    const sleeve = arm.children[0] as Mesh;
+    const forearm = arm.children[1] as Mesh;
+    const palm = arm.children[2] as Mesh;
+    const anchor = arm.getObjectByName('grip-anchor');
+    if (!sleeve || !forearm || !palm || !anchor) {
+      return;
+    }
+    const wristWorld = anchor.getWorldPosition(new Vector3());
+    const baseShoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
+    const wristView = this.view.worldToLocal(wristWorld.clone());
+    const lengths = this.armLengths.get(arm)!;
+    const maxReach = lengths[0] + lengths[1];
+    const shoulderToWrist = wristView.clone().sub(baseShoulder);
+    const distance = shoulderToWrist.length();
+    const lead = Math.min(0.08, Math.max(0, distance - maxReach));
+    if (lead > 0) {
+      baseShoulder.addScaledVector(shoulderToWrist.normalize(), lead);
+    }
+    const shoulder = arm.worldToLocal(this.view.localToWorld(baseShoulder.clone()));
+    const wrist = arm.worldToLocal(wristWorld.clone());
+    const axis = wrist.clone().sub(shoulder);
+    const reach = axis.length();
+    const [upperLength, lowerLength] = lengths;
+    const along = (upperLength * upperLength - lowerLength * lowerLength + reach * reach) / (2 * reach);
+    const bendHeight = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
+    axis.normalize();
+    const bend = new Vector3(side === 'right' ? 1 : -1, 0, 0);
+    bend.addScaledVector(axis, -bend.dot(axis)).normalize();
+    const elbow = shoulder.clone().addScaledVector(axis, along).addScaledVector(bend, bendHeight);
+    placeFirstPersonSegment(sleeve, shoulder, elbow, { width: sleeve.scale.x, depth: sleeve.scale.z });
+    placeFirstPersonSegment(forearm, elbow, wrist, { width: forearm.scale.x, depth: forearm.scale.z });
+    palm.position.copy(wrist);
+    palm.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), wrist.clone().sub(elbow).normalize());
   }
 
   private addArm(side: HandSide, grip: Vec3, parent: Group = this.view, parentOrigin: Vec3 = [0, 0, 0]): void {
@@ -178,6 +235,7 @@ export class HeldItems {
     const localGrip: Vec3 = [grip[0] - parentOrigin[0], grip[1] - parentOrigin[1], grip[2] - parentOrigin[2]];
     arm.position.set(...localGrip);
     this.arms.set(side, arm);
+    this.armLengths.set(arm, [(arm.children[0] as Mesh).scale.y, (arm.children[1] as Mesh).scale.y]);
     this.handBases.set(side, localGrip);
     parent.add(arm);
   }

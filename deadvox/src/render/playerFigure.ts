@@ -65,7 +65,7 @@ const PLAYER_COLORS: Readonly<Record<PlayerArmPart, keyof FigureDef['palette']>>
   rightFoot: 'trousers',
 };
 
-const SHIRT_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
+export const FIRST_PERSON_SHOULDER: Readonly<Record<HandSide, Vec3>> = {
   right: [0.3, -0.55, 0.05],
   left: [-0.3, -0.55, 0.05],
 };
@@ -103,7 +103,7 @@ const hiddenWorldArms = (inventory?: Inventory): Record<HandSide, boolean> => {
   return hidden;
 };
 
-const placeSegment = (
+export const placeFirstPersonSegment = (
   mesh: Mesh,
   start: Vector3,
   end: Vector3,
@@ -123,14 +123,14 @@ export const createFirstPersonArm = (palette: FigureDef['palette'], side: HandSi
   const shirt = new MeshLambertMaterial({ color: palette.shirt });
   const skin = new MeshLambertMaterial({ color: palette.skin });
   const geometry = new BoxGeometry(1, 1, 1);
-  const shoulder = new Vector3(...SHIRT_SHOULDER[side]);
+  const shoulder = new Vector3(...FIRST_PERSON_SHOULDER[side]);
   const wrist = new Vector3(...grip);
   const elbow = shoulder.clone().lerp(wrist, 0.56);
   const sleeve = new Mesh(geometry, shirt);
-  placeSegment(sleeve, shoulder, elbow, { width: 0.12, depth: 0.12 });
+  placeFirstPersonSegment(sleeve, shoulder, elbow, { width: 0.12, depth: 0.12 });
   arm.add(sleeve);
   const forearm = new Mesh(geometry, skin);
-  placeSegment(forearm, elbow, wrist, { width: 0.09, depth: 0.09 });
+  placeFirstPersonSegment(forearm, elbow, wrist, { width: 0.09, depth: 0.09 });
   arm.add(forearm);
   const palm = new Mesh(new BoxGeometry(0.09, 0.08, 0.09), skin);
   palm.position.copy(wrist);

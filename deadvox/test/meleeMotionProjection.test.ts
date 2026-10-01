@@ -1,48 +1,43 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import {
   Box3,
-  BoxGeometry,
-  Mesh,
-  MeshLambertMaterial,
-  type Object3D,
+  LoadingManager,
   PerspectiveCamera,
   Quaternion,
+  Texture,
   Vector3,
 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { type MeleeProfile, meleePoseAndContact } from '../src/core/meleePose.ts';
+import { FISTS_MELEE } from '../src/core/zombies.ts';
+import { type MeleeProfile, meleeContactTime, meleePoseAndContact } from '../src/core/meleePose.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
+  Object.keys(import.meta.glob('../src/content/base/*.json', { eager: true })).map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(file.replace('../', ''), 'utf8')) as unknown,
+  })),
 );
 const { palette } = registry.figures.get('player')!;
-
-const modelLibrary = (overrides: Readonly<Record<string, string>> = {}): ModelLibrary => {
-  const prepared = new Map<string, Object3D>();
-  for (const def of registry.models.values()) {
-    const gripX = def.grip?.at[0] ?? 0;
-    const tipX = def.anchors?.strike?.[0] ?? gripX + 0.35;
-    const minX = Math.min(gripX, tipX);
-    const maxX = Math.max(gripX, tipX);
-    const mesh = new Mesh(new BoxGeometry(Math.max(0.03, maxX - minX), 0.06, 0.06), new MeshLambertMaterial());
-    mesh.position.x = (minX + maxX) / 2;
-    prepared.set(def.id, prepareModel(def, mesh).held);
-  }
-  return {
-    version: 0,
-    held: (id: string) => prepared.get(overrides[id] ?? id)?.clone(),
-  } as unknown as ModelLibrary;
-};
-
+Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
+const gltfLoader = new GLTFLoader(new LoadingManager());
+gltfLoader.register(() => ({ name: 'audit-textures', loadTexture: () => Promise.resolve(new Texture()) }));
+const realHeldModels = new Map<string, import('three').Object3D>();
+for (const id of ['baseball_bat', 'steel_pipe', 'kitchen_knife']) {
+  const def = registry.models.get(id)!;
+  const bytes = readFileSync(`${BASE}/${def.file}`);
+  const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '');
+  realHeldModels.set(id, prepareModel(def, gltf.scene).held);
+}
+const library: ModelLibrary = {
+  version: 0,
+  held: (id: string) => realHeldModels.get(id)?.clone(),
+} as unknown as ModelLibrary;
 const screen = (point: Vector3, camera: PerspectiveCamera): { x: number; y: number } => {
   const ndc = point.clone().project(camera);
   return { x: ((ndc.x + 1) * 1920) / 2, y: ((1 - ndc.y) * 1080) / 2 };
@@ -57,87 +52,113 @@ interface HeldInternals {
   arms: Map<'left' | 'right', import('three').Group>;
   heldByHand: Map<'left' | 'right', import('three').Object3D>;
 }
-
 interface MotionSample {
   tip: Vector3;
   hand: Vector3;
   elapsed: number;
+  orientation?: Quaternion;
+}
+interface MotionResult {
+  horizontal: number;
+  diagonal: number;
+  forward: number;
+  projectedLengthAtPullback: number;
+  projectedLengthAtContact: number;
+  tipCenterAtContact: number;
+  handCenterAtContact: number;
+  pullbackTipScreen: { x: number; y: number };
+  followTipScreen: { x: number; y: number };
+  pullToContactRotationDegrees: number;
   minPalmDepth: number;
-  palmArea: number;
-  itemOrientation?: Quaternion;
+  palmAreaAtContact: Readonly<Record<'left' | 'right', number>>;
+  maxPalmArea: Readonly<Record<'left' | 'right', number>>;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: samples a full rendered-hand trajectory for per-frame safety and profile extents.
-const measure = (profile: MeleeProfile, itemId: string | undefined, modelOverride?: string) => {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: measures real loaded models and every rendered palm across one full action.
+const measure = async (
+  profile: MeleeProfile,
+  itemId: string | undefined,
+  modelOverride: string | undefined,
+  side: 'right' | 'left',
+): Promise<MotionResult> => {
   const inventory = new Inventory(registry);
   const item = itemId ? inventory.create(itemId) : undefined;
-  if (item) {
-    inventory.add(item, { kind: 'hand', side: 'right' });
-  }
-  const modelId = item ? registry.items.get(item.type)?.model : undefined;
-  const modelOverrides = modelId && modelOverride ? { [modelId]: modelOverride } : {};
-  const held = new HeldItems(inventory, modelLibrary(modelOverrides), palette);
+  if (item) inventory.add(item, { kind: 'hand', side });
+  const def = item ? registry.items.get(item.type)! : undefined;
+  const modelId = def?.model;
+  const models: ModelLibrary = modelId && modelOverride
+    ? { ...library, held: (id: string) => realHeldModels.get(id === modelId ? modelOverride : id)?.clone() } as ModelLibrary
+    : library;
+  const held = new HeldItems(inventory, models, palette);
   const internals = held as unknown as HeldInternals;
   const camera = new PerspectiveCamera(75, 16 / 9, 0.01, 128);
   camera.rotation.order = 'YXZ';
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
-  const def = item ? registry.items.get(item.type)! : undefined;
+  const cooldown = def?.weapon?.melee?.cooldown ?? FISTS_MELEE.cooldown;
+  const contactAt = meleeContactTime(cooldown);
+  const pullTime = contactAt * 0.32;
+  const followTime = contactAt + (cooldown - contactAt) * 0.22;
   const action = {
     profile,
-    hand: 'right' as const,
+    hand: side,
     twoHanded: def?.twoHanded ?? false,
-    cooldown: 1.2,
-    contactAt: 0.25,
+    cooldown,
+    contactAt,
     aimYaw: 0,
     aimPitch: 0,
     origin: [0, 0, 0] as [number, number, number],
     direction: [0, 0, -1] as [number, number, number],
     hitResolved: false,
   };
+  const sampleTimes = [...new Set([
+    ...Array.from({ length: 121 }, (_, step) => (cooldown * step) / 120),
+    pullTime,
+    contactAt,
+    followTime,
+  ])].sort((a, b) => a - b);
   const samples: MotionSample[] = [];
-  for (let step = 0; step <= 120; step++) {
-    const elapsed = (action.cooldown * step) / 120;
+  let minPalmDepth = Infinity;
+  const palmAreaAtContact: Record<'left' | 'right', number> = { left: 0, right: 0 };
+  const maxPalmArea: Record<'left' | 'right', number> = { left: 0, right: 0 };
+  for (const elapsed of sampleTimes) {
     held.update(camera, meleePoseAndContact(action, elapsed, false));
     internals.view.updateMatrixWorld(true);
-    const arm = internals.arms.get('right')!;
-    const hand = arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
-    const palm = arm.children[2]!;
-    const palmCorners = boxCorners(new Box3().setFromObject(palm));
-    const palmDepths = palmCorners.map((point) => -camera.worldToLocal(point.clone()).z);
-    const palmPixels = palmCorners.map((point) => screen(point, camera));
-    const palmWidth = Math.max(...palmPixels.map(({ x }) => x)) - Math.min(...palmPixels.map(({ x }) => x));
-    const palmHeight = Math.max(...palmPixels.map(({ y }) => y)) - Math.min(...palmPixels.map(({ y }) => y));
-    let tip: Vector3;
-    if (item) {
-      tip = new Vector3();
-      if (!held.lensOf(item, camera, tip)) {
-        throw new Error(`Held item ${item.type} did not expose its tip/lens`);
-      }
-    } else {
-      tip = hand.clone();
+    const primaryArm = internals.arms.get(side)!;
+    const hand = primaryArm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
+    const tip = item ? new Vector3() : hand.clone();
+    if (item && !held.lensOf(item, camera, tip)) throw new Error(`Held ${item.type} did not expose its real GLB lens`);
+    const atContact = Math.abs(elapsed - contactAt) < 1e-8;
+    for (const [armSide, arm] of internals.arms) {
+      const palm = arm.children[2]!;
+      const corners = boxCorners(new Box3().setFromObject(palm));
+      const depths = corners.map((point) => -camera.worldToLocal(point.clone()).z);
+      minPalmDepth = Math.min(minPalmDepth, ...depths);
+      const projected = corners.map((point) => screen(point, camera));
+      const width = Math.max(...projected.map(({ x }) => x)) - Math.min(...projected.map(({ x }) => x));
+      const height = Math.max(...projected.map(({ y }) => y)) - Math.min(...projected.map(({ y }) => y));
+      const area = (width * height) / (1920 * 1080);
+      maxPalmArea[armSide] = Math.max(maxPalmArea[armSide], area);
+      if (atContact) palmAreaAtContact[armSide] = area;
     }
-    const itemGroup = internals.heldByHand.get('right');
     samples.push({
       tip,
       hand,
       elapsed,
-      minPalmDepth: Math.min(...palmDepths),
-      palmArea: (palmWidth * palmHeight) / (1920 * 1080),
-      ...(itemGroup ? { itemOrientation: itemGroup.getWorldQuaternion(new Quaternion()) } : {}),
+      ...(internals.heldByHand.get(side)
+        ? { orientation: internals.heldByHand.get(side)!.getWorldQuaternion(new Quaternion()) }
+        : {}),
     });
   }
   const pixels = samples.map(({ tip }) => screen(tip, camera));
   const xs = pixels.map(({ x }) => x);
   let diagonal = 0;
   for (const from of pixels) {
-    for (const to of pixels) {
-      diagonal = Math.max(diagonal, Math.hypot(to.x - from.x, to.y - from.y));
-    }
+    for (const to of pixels) diagonal = Math.max(diagonal, Math.hypot(to.x - from.x, to.y - from.y));
   }
-  const contact = samples.find(({ elapsed }) => Math.abs(elapsed - action.contactAt) < 1e-8)!;
-  const pullback = samples.find(({ elapsed }) => Math.abs(elapsed - 0.08) < 1e-8)!;
-  const follow = samples.find(({ elapsed }) => Math.abs(elapsed - 0.46) < 1e-8)!;
+  const contact = samples.find(({ elapsed }) => Math.abs(elapsed - contactAt) < 1e-8)!;
+  const pullback = samples.find(({ elapsed }) => Math.abs(elapsed - pullTime) < 1e-8)!;
+  const follow = samples.find(({ elapsed }) => Math.abs(elapsed - followTime) < 1e-8)!;
   const depth = (point: Vector3) => -camera.worldToLocal(point.clone()).z;
   const pixelDistance = (a: Vector3, b: Vector3) => {
     const first = screen(a, camera);
@@ -145,9 +166,7 @@ const measure = (profile: MeleeProfile, itemId: string | undefined, modelOverrid
     return Math.hypot(first.x - second.x, first.y - second.y);
   };
   const pullToContactRotationDegrees =
-    pullback.itemOrientation && contact.itemOrientation
-      ? pullback.itemOrientation.angleTo(contact.itemOrientation) * (180 / Math.PI)
-      : 0;
+    pullback.orientation && contact.orientation ? pullback.orientation.angleTo(contact.orientation) * (180 / Math.PI) : 0;
   return {
     horizontal: Math.max(...xs) - Math.min(...xs),
     diagonal,
@@ -158,59 +177,79 @@ const measure = (profile: MeleeProfile, itemId: string | undefined, modelOverrid
     handCenterAtContact: pixelDistance(contact.hand, new Vector3(0, 0, -depth(contact.hand))),
     pullbackTipScreen: screen(pullback.tip, camera),
     followTipScreen: screen(follow.tip, camera),
-    minPalmDepth: Math.min(...samples.map(({ minPalmDepth }) => minPalmDepth)),
-    palmAreaAtContact: contact.palmArea,
     pullToContactRotationDegrees,
+    minPalmDepth,
+    palmAreaAtContact,
+    maxPalmArea,
   };
 };
 
-describe('melee screen-space motion through HeldItems and the 75-degree first-person camera at 1920x1080', () => {
-  it('sweeps blunt tips at least 45% of the viewport width and rotates the weapon through 90 degrees', () => {
-    for (const item of ['baseball_bat', 'steel_pipe']) {
-      const result = measure('blunt', item);
-      expect(result.horizontal).toBeGreaterThanOrEqual(860);
-      expect(result.pullToContactRotationDegrees).toBeGreaterThanOrEqual(90);
-      expect(result.tipCenterAtContact).toBeLessThanOrEqual(350);
+describe('melee screen-space motion through HeldItems, real GLBs and the 75-degree camera at 1920x1080', () => {
+  it('sweeps blunt tips at least 45% of the viewport width and rotates weapons through 90 degrees', async () => {
+    for (const side of ['right', 'left'] as const) {
+      for (const item of ['baseball_bat', 'steel_pipe']) {
+        const result = await measure('blunt', item, undefined, side);
+        expect(result.horizontal, `${item}/${side}`).toBeGreaterThanOrEqual(860);
+        expect(result.pullToContactRotationDegrees, `${item}/${side}`).toBeGreaterThanOrEqual(90);
+        expect(result.tipCenterAtContact, `${item}/${side}`).toBeLessThanOrEqual(350);
+      }
     }
   });
 
-  it('slashes cut tips at least 35% of the viewport diagonal from upper weapon side to lower opposite side', () => {
-    for (const item of ['kitchen_knife', 'machete']) {
-      const result = measure('cut', 'kitchen_knife', item === 'kitchen_knife' ? undefined : item);
-      expect(result.diagonal).toBeGreaterThanOrEqual(Math.hypot(1920, 1080) * 0.35);
-      expect(result.tipCenterAtContact).toBeLessThanOrEqual(350);
-      expect(result.pullbackTipScreen.x).toBeGreaterThan(960);
-      expect(result.pullbackTipScreen.y).toBeLessThan(540);
-      expect(result.followTipScreen.x).toBeLessThan(960);
-      expect(result.followTipScreen.y).toBeGreaterThan(540);
+  it('slashes the real knife diagonally with forward push and centred contact in both hands', async () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = await measure('cut', 'kitchen_knife', undefined, side);
+      expect(result.diagonal, `kitchen_knife/${side}`).toBeGreaterThanOrEqual(Math.hypot(1920, 1080) * 0.35);
+      expect(result.forward, `kitchen_knife/${side}, 893d0ca baseline -0.08089 m`).toBeGreaterThanOrEqual(0.069);
+      expect(result.tipCenterAtContact, `kitchen_knife/${side}`).toBeLessThanOrEqual(350);
+      expect(
+        side === 'right' ? result.pullbackTipScreen.x > 960 : result.pullbackTipScreen.x < 960,
+        `kitchen_knife/${side} upper-side start`,
+      ).toBe(true);
+      expect(result.pullbackTipScreen.y, `kitchen_knife/${side} start`).toBeLessThan(540);
+      expect(
+        side === 'right' ? result.followTipScreen.x < 960 : result.followTipScreen.x > 960,
+        `kitchen_knife/${side} lower-opposite finish`,
+      ).toBe(true);
+      expect(result.followTipScreen.y, `kitchen_knife/${side} finish`).toBeGreaterThan(540);
     }
   });
 
-  it('thrusts pierce tips forward by 0.35 m and visibly shrinks them toward screen centre', () => {
-    for (const modelOverride of [undefined, 'kabar']) {
-      const result = measure('pierce', 'steel_pipe', modelOverride);
-      expect(result.forward).toBeGreaterThanOrEqual(0.35);
-      expect(result.projectedLengthAtContact).toBeLessThan(result.projectedLengthAtPullback * 0.8);
-      expect(result.tipCenterAtContact).toBeLessThanOrEqual(300);
+  it('thrusts the real steel pipe forward by 0.35 m and visibly shrinks it in either hand', async () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = await measure('pierce', 'steel_pipe', undefined, side);
+      expect(result.forward, side).toBeGreaterThanOrEqual(0.35);
+      expect(result.projectedLengthAtContact, side).toBeLessThan(result.projectedLengthAtPullback * 0.8);
+      expect(result.tipCenterAtContact, side).toBeLessThanOrEqual(300);
     }
   });
 
-  it('jabs fists forward by 0.3 m and ends at screen centre', () => {
-    const result = measure('fists', undefined);
-    expect(result.forward).toBeGreaterThanOrEqual(0.3);
-    expect(result.handCenterAtContact).toBeLessThanOrEqual(120);
+  it('jabs both fists forward by 0.3 m and ends at screen centre', async () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = await measure('fists', undefined, undefined, side);
+      expect(result.forward, side).toBeGreaterThanOrEqual(0.3);
+      expect(result.handCenterAtContact, side).toBeLessThanOrEqual(120);
+    }
   });
 
-  it('keeps every palm beyond the near plane and below 40% of the view at contact', () => {
-    for (const [profile, item, modelOverride] of [
+  it('keeps both rendered palms beyond the near plane and below 40% of the view at contact', async () => {
+    const profiles = [
       ['blunt', 'baseball_bat', undefined],
-      ['cut', 'kitchen_knife', 'machete'],
-      ['pierce', 'steel_pipe', 'kabar'],
+      ['cut', 'kitchen_knife', undefined],
+      ['pierce', 'steel_pipe', undefined],
       ['fists', undefined, undefined],
-    ] as const) {
-      const result = measure(profile, item, modelOverride);
-      expect(result.minPalmDepth, `${profile} hand must stay in front of the near plane`).toBeGreaterThan(0.01);
-      expect(result.palmAreaAtContact, `${profile} hand coverage at contact`).toBeLessThanOrEqual(0.4);
+    ] as const;
+    for (const [profile, item, model] of profiles) {
+      for (const side of ['right', 'left'] as const) {
+        const result = await measure(profile, item, model, side);
+        expect(result.minPalmDepth, `${profile}/${side} both hands`).toBeGreaterThan(0.01);
+        for (const [armSide, area] of Object.entries(result.maxPalmArea)) {
+          expect(area, `${profile}/${side} ${armSide} palm coverage over 121 frames`).toBeLessThanOrEqual(0.4);
+        }
+        for (const [armSide, area] of Object.entries(result.palmAreaAtContact)) {
+          expect(area, `${profile}/${side} ${armSide} palm coverage at contact`).toBeLessThanOrEqual(0.4);
+        }
+      }
     }
   });
 });

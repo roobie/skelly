@@ -6,7 +6,6 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { Scheduler } from '../src/core/scheduler.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
@@ -92,7 +91,10 @@ const advance = (
   system: ZombieSystem,
   time: number,
   hands: { right: number | null; left: number | null } = { right: 11, left: null },
-) => system.tick(time, 0, hands);
+) => {
+  system.tickPlayerAction(time, hands);
+  system.tick(time, 0);
+};
 
 const actionPose = (overrides: Partial<MeleeActionState> = {}): MeleeActionState => ({
   profile: 'blunt',
@@ -103,7 +105,6 @@ const actionPose = (overrides: Partial<MeleeActionState> = {}): MeleeActionState
   aimYaw: 0.7,
   aimPitch: -0.3,
   elapsed: 0,
-  startOffset: 0,
   hitResolved: false,
   origin: [1, 2, 3],
   direction: [0, 0, -1],
@@ -142,81 +143,19 @@ describe('melee pose and contact contract', () => {
     expect(shouldEnterMeleeReady({ ...input, inputLocked: true })).toBe(false);
   });
 
-  it('shows a ready pose only when the right-mouse state is active', () => {
+  it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {
     expect(readyMeleePose(false).right.offset).toEqual([0, 0, 0]);
     expect(readyMeleePose(false).left.offset).toEqual([0, 0, 0]);
-    expect(readyMeleePose(true).right.offset).not.toEqual([0, 0, 0]);
-    expect(readyMeleePose(true).left.offset).not.toEqual([0, 0, 0]);
+    const ready = readyMeleePose(true);
+    for (const side of ['right', 'left'] as const) {
+      expect(ready[side].offset).not.toEqual([0, 0, 0]);
+      expect(Math.hypot(...ready[side].offset)).toBeLessThan(0.1);
+      expect(Math.hypot(...ready[side].rotation)).toBeLessThan((45 * Math.PI) / 180);
+    }
   });
 });
 
 describe('player melee action', () => {
-  it('anchors contact to click time between scheduler ticks and preserves that phase through restore', () => {
-    let currentTickTime = 0;
-    const contactTimes: number[] = [];
-    const timedSystem = () =>
-      new ZombieSystem({
-        player: () => blockedPlayer,
-        isSolid: FLOOR,
-        blockSize: BLOCK_SIZE,
-        physics: physicsFor(SCALE),
-        jumpSpeed: PLAYER.jump,
-        hour: () => 12,
-        hurtPlayer: () => undefined,
-        onMeleeResult: () => contactTimes.push(currentTickTime),
-      });
-    const system = timedSystem();
-    system.setFrozen(true);
-    let lastStep = 0;
-    const scheduler = new Scheduler();
-    scheduler.register({
-      id: 'zombies',
-      rate: 20,
-      tick: (dt, time) => {
-        currentTickTime = time;
-        system.tick(dt, time, { right: null, left: null });
-        lastStep = time;
-      },
-    });
-    scheduler.advance(0.049);
-    const clickTime = scheduler.time;
-    expect(
-      system.beginMeleeSwing({
-        origin: [0, 2, 0],
-        direction: [0, 0, -1],
-        weapon: FISTS_MELEE,
-        profile: 'fists',
-        twoHanded: false,
-        hands: { right: null, left: null },
-        startOffset: clickTime - lastStep,
-      }),
-    ).toBe(true);
-
-    scheduler.advance(0.2); // reaches 0.249 s; only 0.200 s has elapsed since the click.
-    expect(contactTimes).toEqual([]);
-    const zombieState = system.snapshotState();
-    const schedulerState = scheduler.snapshotState();
-    const restored = timedSystem();
-    restored.restoreState(zombieState, (type) => (type === SHAMBLER.id ? SHAMBLER : undefined));
-    restored.setFrozen(true);
-    const resumed = new Scheduler();
-    resumed.register({
-      id: 'zombies',
-      rate: 20,
-      tick: (dt, time) => {
-        currentTickTime = time;
-        restored.tick(dt, time, { right: null, left: null });
-      },
-    });
-    resumed.restoreState(schedulerState);
-    expect(restored.activeMeleeAction?.elapsed).toBe(zombieState.meleeAction?.elapsed);
-    resumed.advance(0.05); // 0.25 absolute time: still 0.201 s after the click.
-    expect(contactTimes).toEqual([]);
-    resumed.advance(0.001); // first zombie tick at or after click + 0.25 s.
-    expect(contactTimes).toEqual([0.3]);
-    expect(contactTimes[0]! - clickTime).toBeGreaterThanOrEqual(0.25);
-  });
-
   it('does no damage before contact, then resolves exactly once at the bounded contact tick using click-time aim', () => {
     const results: string[] = [];
     const system = makeSystem(FLOOR, results);

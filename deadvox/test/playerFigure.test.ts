@@ -22,6 +22,7 @@ import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems, HOLD } from '../src/render/hands.ts';
 import {
   createFirstPersonArm,
+  FIRST_PERSON_SHOULDER,
   PLAYER_ARM_PARTS,
   PLAYER_BODY_REAR_OFFSET,
   PlayerMeshes,
@@ -316,6 +317,108 @@ describe('player figure', () => {
       }
     } finally {
       model.hold = originalHold;
+    }
+  });
+
+  it('keeps the first-person arm chain connected through every sampled melee pose', () => {
+    const camera = new PerspectiveCamera(75, 16 / 9, 0.01, 128);
+    const cases = [
+      { item: 'baseball_bat', profile: 'blunt' as const, twoHanded: true },
+      { item: 'steel_pipe', profile: 'blunt' as const, twoHanded: false },
+      { item: 'kitchen_knife', profile: 'cut' as const, twoHanded: false },
+      { item: 'kitchen_knife', profile: 'cut' as const, twoHanded: false },
+      { item: 'steel_pipe', profile: 'pierce' as const, twoHanded: false },
+    ];
+    for (const { item, profile, twoHanded } of cases) {
+      for (const side of ['left', 'right'] as const) {
+        if (side === 'left' && !twoHanded) continue;
+        const inventory = new Inventory(registry);
+        const weapon = inventory.create(item);
+        inventory.add(weapon, { kind: 'hand', side });
+        const held = new HeldItems(inventory, undefined, palette);
+        const internals = held as unknown as {
+          view: Group;
+          arms: Map<'left' | 'right', Group>;
+          armLengths: Map<Group, readonly [number, number]>;
+        };
+        held.update(camera);
+        const arm = internals.arms.get(side)!;
+        const expectedLengths = internals.armLengths.get(arm)!;
+        const action = {
+          profile,
+          hand: side,
+          twoHanded,
+          cooldown: 1.2,
+          contactAt: 0.25,
+          aimYaw: 0,
+          aimPitch: 0,
+          origin: [0, 0, 0] as [number, number, number],
+          direction: [0, 0, -1] as [number, number, number],
+          hitResolved: false,
+        };
+        for (let step = 0; step <= 120; step++) {
+          const elapsed = (action.cooldown * step) / 120;
+          held.update(camera, meleePoseAndContact(action, elapsed, false));
+          internals.view.updateMatrixWorld(true);
+          const segments = arm.children.slice(0, 2) as Mesh[];
+          const endpoints = segments.map((segment) => {
+            const center = segment.getWorldPosition(new Vector3());
+            const up = new Vector3(0, 1, 0).applyQuaternion(segment.getWorldQuaternion(new Quaternion()));
+            const half = segment.scale.y / 2;
+            return { start: center.clone().addScaledVector(up, -half), end: center.addScaledVector(up, half) };
+          });
+          const anchor = arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
+          const actualLengths = endpoints.map(({ start, end }) => start.distanceTo(end));
+          expect(Math.abs(actualLengths[0]! - expectedLengths[0]!), `${item}/${side} frame ${step} upper length ${actualLengths[0]} vs ${expectedLengths[0]}; reach ${endpoints[0]!.start.distanceTo(anchor)} / ${expectedLengths[0]! + expectedLengths[1]!}; shoulder ${endpoints[0]!.start.toArray()} wrist ${anchor.toArray()}`).toBeLessThanOrEqual(0.0005);
+          expect(Math.abs(actualLengths[1]! - expectedLengths[1]!), `${item}/${side} frame ${step} lower length`).toBeLessThanOrEqual(0.0005);
+          expect(endpoints[0]!.end.distanceTo(endpoints[1]!.start)).toBeLessThanOrEqual(0.001);
+          expect(endpoints[1]!.end.distanceTo(anchor)).toBeLessThanOrEqual(0.001);
+          expect(anchor.distanceTo(endpoints[0]!.start)).toBeLessThanOrEqual(actualLengths[0]! + actualLengths[1]! + 0.0015);
+          const shoulderView = internals.view.worldToLocal(endpoints[0]!.start.clone());
+          expect(shoulderView.distanceTo(new Vector3(...FIRST_PERSON_SHOULDER[side]))).toBeLessThanOrEqual(0.0805);
+          const shoulder = endpoints[0]!.start;
+          const elbow = endpoints[0]!.end;
+          const wrist = endpoints[1]!.end;
+          const axis = wrist.clone().sub(shoulder).normalize();
+          const sideBend = new Vector3(side === 'right' ? 1 : -1, 0, 0);
+          sideBend.addScaledVector(axis, -sideBend.dot(axis));
+          if (sideBend.lengthSq() > 1e-8) {
+            sideBend.normalize();
+            const along = elbow.clone().sub(shoulder).dot(axis);
+            const elbowBend = elbow.clone().sub(shoulder).addScaledVector(axis, -along);
+            if (elbowBend.lengthSq() > 1e-8) {
+              expect(elbowBend.dot(sideBend)).toBeGreaterThan(0);
+            }
+          }
+        }
+      }
+    }
+    const fists = new Inventory(registry);
+    const fistHeld = new HeldItems(fists, undefined, palette);
+    const fistInternals = fistHeld as unknown as { view: Group; arms: Map<'left' | 'right', Group> };
+    for (const side of ['left', 'right'] as const) {
+      const action = {
+        profile: 'fists' as const,
+        hand: side,
+        twoHanded: false,
+        cooldown: 1.2,
+        contactAt: 0.25,
+        aimYaw: 0,
+        aimPitch: 0,
+        origin: [0, 0, 0] as [number, number, number],
+        direction: [0, 0, -1] as [number, number, number],
+        hitResolved: false,
+      };
+      for (let step = 0; step <= 120; step++) {
+        fistHeld.update(camera, meleePoseAndContact(action, (action.cooldown * step) / 120, false));
+        fistInternals.view.updateMatrixWorld(true);
+        const arm = fistInternals.arms.get(side)!;
+        const wrist = arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
+        const forearm = arm.children[1] as Mesh;
+        const center = forearm.getWorldPosition(new Vector3());
+        const up = new Vector3(0, 1, 0).applyQuaternion(forearm.getWorldQuaternion(new Quaternion()));
+        expect(center.addScaledVector(up, forearm.scale.y / 2).distanceTo(wrist)).toBeLessThanOrEqual(0.001);
+      }
     }
   });
 

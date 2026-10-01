@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
@@ -19,21 +21,11 @@ const { registry } = buildRegistry(
 );
 const scale = makeScale(0.5);
 const contentLookup = (kind: SaveContentKind, id: string): boolean => {
-  if (kind === 'block') {
-    return registry.blockIds.has(id);
-  }
-  if (kind === 'item') {
-    return registry.items.has(id);
-  }
-  if (kind === 'furniture') {
-    return registry.furniture.has(id);
-  }
-  if (kind === 'zombie') {
-    return registry.zombies.has(id);
-  }
-  if (kind === 'sound') {
-    return registry.sounds.has(id);
-  }
+  if (kind === 'block') return registry.blockIds.has(id);
+  if (kind === 'item') return registry.items.has(id);
+  if (kind === 'furniture') return registry.furniture.has(id);
+  if (kind === 'zombie') return registry.zombies.has(id);
+  if (kind === 'sound') return registry.sounds.has(id);
   return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const saveVersion = {
@@ -47,6 +39,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
   const audio = new SoundPicker(13, registry.sounds);
   const contacts: number[] = [];
   let session: ReturnType<typeof createSession>;
+  let primaryAction = false;
   session = createSession({
     registry,
     world: new World(),
@@ -57,8 +50,21 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
     spawn: [0, 4, 0],
     ready: () => false,
     controls: {
-      active: () => false,
-      intent: () => IDLE,
+      active: () => true,
+      intent: () => ({ ...IDLE, primaryAction }),
+      consumePrimaryAction: () => {
+        primaryAction = false;
+      },
+      primaryAction: () => {
+        startPlayerMelee(session.zombies, session.sim.needs, {
+          origin: [0, 2, 0],
+          direction: [0, 0, -1],
+          weapon: FISTS_MELEE,
+          profile: 'fists',
+          twoHanded: false,
+          hands: { right: null, left: null },
+        });
+      },
       yaw: () => 0,
       pitch: () => 0,
       walking: () => false,
@@ -75,14 +81,26 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
   });
   session.zombies.setFrozen(true);
   session.sim.paused = false;
-  return { session, contacts };
+  return {
+    session,
+    contacts,
+    click() {
+      primaryAction = true;
+    },
+  };
 };
 
-describe('melee click timing after session restore', () => {
-  it('preserves the sub-tick origin and contacts on the first eligible tick', async () => {
+describe('tick-consumed primary melee input across save and restore', () => {
+  it('starts on the next player tick and contacts exactly fifteen 60 Hz ticks later, with or without restore', async () => {
     const source = makeSession();
-    source.session.frame(0.049);
-    const snapshot = source.session.snapshot({ worldId: 'melee-time', characterId: 'character' });
+    source.click();
+    source.session.frame(1 / 60);
+    expect(source.session.zombies.activeMeleeAction?.elapsed).toBe(0);
+    expect('startOffset' in (source.session.zombies.activeMeleeAction ?? {})).toBe(false);
+    for (let i = 0; i < 7; i++) source.session.frame(1 / 60);
+    expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
+
+    const snapshot = source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' });
     const bytes = await encodeSave(snapshot, {
       generation: 1,
       version: saveVersion,
@@ -90,33 +108,29 @@ describe('melee click timing after session restore', () => {
     });
     const decoded = await decodeSave(bytes, { version: saveVersion, contentLookup });
     const restored = makeSession(decoded.snapshot);
+    expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
 
-    for (const run of [source, restored]) {
-      const { session, contacts } = run;
-      const clickTime = session.sim.time;
-      const cursor = session.sim.scheduler.snapshotState().systems.find(({ id }) => id === 'zombies')!;
-      expect(cursor.done).toBe(0);
-      const startOffset = Math.min(0.05, Math.max(0, clickTime - session.lastZombieStep));
-      expect(
-        startPlayerMelee(session.zombies, session.sim.needs, {
-          origin: [0, 2, 0],
-          direction: [0, 0, -1],
-          weapon: FISTS_MELEE,
-          profile: 'fists',
-          twoHanded: false,
-          hands: { right: null, left: null },
-          startOffset,
-        }),
-      ).toBe('started');
-
-      for (let i = 0; i < 250; i++) {
-        session.frame(0.001);
-      }
-      expect(contacts).toEqual([]);
-      expect(session.sim.time - clickTime).toBeCloseTo(0.25, 9);
-      session.frame(0.001);
-      expect(contacts).toEqual([0.3]);
-      expect(contacts[0]! - clickTime).toBeCloseTo(0.251, 9);
+    for (let tick = 8; tick <= 14; tick++) {
+      source.session.frame(1 / 60);
+      restored.session.frame(1 / 60);
+      expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
+      expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
+      expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
+      expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
     }
+    source.session.frame(1 / 60);
+    restored.session.frame(1 / 60);
+    expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
+    expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
+    expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
+    expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
+    const hash = (run: ReturnType<typeof makeSession>) =>
+      createHash('sha256')
+        .update(canonicalJson(run.session.snapshot({ worldId: 'tick-melee', characterId: 'character' })))
+        .digest('hex');
+    expect(restored.session.snapshot({ worldId: 'tick-melee', characterId: 'character' })).toEqual(
+      source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' }),
+    );
+    expect(hash(restored)).toBe(hash(source));
   });
 });
