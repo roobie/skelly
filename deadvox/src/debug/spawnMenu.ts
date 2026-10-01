@@ -4,6 +4,7 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
+import { installSearchInputKeyboardBoundary } from './searchInputKeyboard.ts';
 
 const WHITESPACE = /\s+/;
 
@@ -92,6 +93,7 @@ export class SpawnMenu {
     this.registry = registry;
     this.spawn = spawn;
     this.drawTemplate = drawTemplate;
+    installSearchInputKeyboardBoundary((target) => this.opened && target === this.root?.querySelector('input'));
   }
 
   get isOpen(): boolean {

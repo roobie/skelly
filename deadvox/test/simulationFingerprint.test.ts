@@ -66,25 +66,26 @@ async function sourceFilesUnder(directory: string): Promise<string[]> {
   return [...direct, ...nested.flat()].sort();
 }
 
-async function actualSimulationGraph() {
+async function actualSimulationHost(): Promise<SimulationModuleGraphHost> {
   const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
   const viteResolve = config.createResolver();
-  return collectSimulationSourceGraph(
-    SIMULATION_ENTRIES,
-    projectRoot,
-    {
-      resolve(specifier, importer) {
-        if (specifier.startsWith('@mobgen/')) {
-          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-        }
-        return Promise.resolve(viteResolve(specifier, importer));
-      },
-      readFile(path) {
-        return readFile(path, 'utf8');
-      },
+  return {
+    resolve(specifier, importer) {
+      if (specifier.startsWith('@mobgen/')) {
+        return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+      }
+      return Promise.resolve(viteResolve(specifier, importer));
     },
-    { exclude: SIMULATION_EXCLUSIONS },
-  );
+    readFile(path) {
+      return readFile(path, 'utf8');
+    },
+  };
+}
+
+async function actualSimulationGraph() {
+  return collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, await actualSimulationHost(), {
+    exclude: SIMULATION_EXCLUSIONS,
+  });
 }
 
 describe('simulation source fingerprint', () => {
@@ -134,6 +135,17 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
       { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
+  });
+
+  it('keeps debug search input policy out of the main simulation identity', async () => {
+    const fingerprint = await fingerprintSimulationSources(
+      SIMULATION_ENTRIES,
+      projectRoot,
+      await actualSimulationHost(),
+      { exclude: SIMULATION_EXCLUSIONS },
+    );
+    // 06b5912 main baseline; update only alongside an intentional simulation change.
+    expect(fingerprint).toBe('dfb31720563605866d051d9a1a54b785cea17e8812a3e9ba30d4a2848e6dfbba');
   });
 
   it('classifies every core and game source module', async () => {
