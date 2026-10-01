@@ -45,8 +45,28 @@ vec2 surfaceUV(vec3 w, vec3 n) {
 }
 
 // 1 on a line of half-width hw, falling off over one pixel footprint; d is the distance to the line in metres.
+// The half-width of the edge ramp is floored: smoothstep with equal edges (fw == 0) is undefined in GLSL.
 float lineMask(float d, float hw, float fw) {
-  return 1.0 - smoothstep(hw - 0.5 * fw, hw + 0.5 * fw, d);
+  float w = max(0.5 * fw, 1e-6);
+  return 1.0 - smoothstep(hw - w, hw + w, d);
+}
+
+// A pixel footprint made safe: NaN, negative and absurd values become "very far" (pattern fades to 1),
+// and zero is floored so nothing divides by it.
+float safeFootprint(float fw) {
+  return (fw >= 0.0 && fw < 1e4) ? max(fw, 1e-5) : 1e4;
+}
+
+// 1 while a feature of the given period (metres) is well resolved, 0 once a period spans under ~3 pixels
+// (fw / period > 0.35); always within [0, 1].
+float featureFade(float fw, float period) {
+  return 1.0 - smoothstep(0.1, 0.35, fw / period);
+}
+
+// The pattern multiplier is bounded and NaN-free: out-of-range values survive the HDR target and turn
+// into white blobs after tone mapping and the MSAA resolve.
+float safeShade(float s) {
+  return isnan(s) ? 1.0 : clamp(s, 0.6, 1.25);
 }
 
 // Blocks of size.xy metres in rows, each row shifted by stagger of a block on alternate rows.
@@ -84,7 +104,9 @@ vec3 voronoi(vec2 p) {
 }
 
 // A pattern's shade. fw is the larger pixel footprint, fwv the footprint per axis, in metres.
-float patternShade(float pat, vec2 uv, float fw, vec2 fwv, float seed) {
+float patternShade(float pat, vec2 uv, float fwRaw, vec2 fwvRaw, float seed) {
+  float fw = safeFootprint(fwRaw);
+  vec2 fwv = vec2(safeFootprint(fwvRaw.x), safeFootprint(fwvRaw.y));
   float shade = 1.0;
   float fadeSize = 1000.0; // smallest feature, metres: the deviation from 1 fades as fw approaches it
   if (pat == PAT_BRICK) {
@@ -140,11 +162,12 @@ float patternShade(float pat, vec2 uv, float fw, vec2 fwv, float seed) {
     fadeSize = 0.1;
   } else if (pat == PAT_NOISE) {
     // Three octaves of value noise, each easing to its mean once the pixel footprint outgrows it.
-    float n = 0.5 * mix(0.5, vnoise(uv / 0.9), 1.0 - smoothstep(0.15, 0.5, fw / 0.9))
-      + 0.3 * mix(0.5, vnoise(uv / 0.37 + 11.0), 1.0 - smoothstep(0.15, 0.5, fw / 0.37))
-      + 0.2 * mix(0.5, vnoise(uv / 0.15 + 23.0), 1.0 - smoothstep(0.15, 0.5, fw / 0.15));
+    // Each octave's mean is 0.5 (uniform lattice hash), so a faded octave leaves no brightness shift.
+    float n = 0.5 * mix(0.5, vnoise(uv / 0.9), featureFade(fw, 0.9))
+      + 0.3 * mix(0.5, vnoise(uv / 0.37 + 11.0), featureFade(fw, 0.37))
+      + 0.2 * mix(0.5, vnoise(uv / 0.15 + 23.0), featureFade(fw, 0.15));
     shade = 0.91 + 0.16 * n;
   }
-  return 1.0 + (shade - 1.0) * (1.0 - smoothstep(0.2, 0.6, fw / fadeSize));
+  return safeShade(1.0 + (shade - 1.0) * (1.0 - smoothstep(0.2, 0.6, fw / fadeSize)));
 }
 `;

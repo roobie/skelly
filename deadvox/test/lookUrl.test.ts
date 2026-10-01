@@ -9,6 +9,7 @@ import {
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
 import { FakeMood } from './fakeMood.ts';
+import { FakeShadows } from './fakeShadows.ts';
 
 const parse = (query: string) => parseLookParams(new URLSearchParams(query));
 const write = (query: string, state: LookUrlState) => writeLookParams(new URLSearchParams(query), state).toString();
@@ -35,6 +36,7 @@ describe('look URL parameters', () => {
       film: true,
       grade: 1,
       fogginess: 0.2,
+      shadows: { sun: true, torch: true, distance: 40 },
     });
   });
 
@@ -50,11 +52,34 @@ describe('look URL parameters', () => {
       film: false,
       grade: 0.6,
       fogginess: 0.7,
+      shadows: { sun: false, torch: false, distance: 64 },
     };
     expect(write('', state)).toBe(
-      'tone=none&exposure=1.4&srgb=0&patterns=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7',
+      'tone=none&exposure=1.4&srgb=0&patterns=0&freeze=1&post=0&bloom=0&film=0&grade=0.6&fog=0.7&sunshadow=0&torchshadow=0&shadowdist=64',
     );
     expect(parse(write('', state))).toEqual(state);
+  });
+
+  it('keeps both shadows on unless sunshadow=0 / torchshadow=0, and omits the defaults', () => {
+    expect(parse('sunshadow=0').shadows).toEqual({ sun: false, torch: true, distance: 40 });
+    expect(parse('torchshadow=0').shadows).toEqual({ sun: true, torch: false, distance: 40 });
+    expect(parse('sunshadow=1&torchshadow=off').shadows).toEqual(DEFAULT_LOOK_URL_STATE.shadows);
+    expect(write('debug=1&sunshadow=0&torchshadow=0&shadowdist=64', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    const state = (shadows: LookUrlState['shadows']): LookUrlState => ({ ...DEFAULT_LOOK_URL_STATE, shadows });
+    expect(write('debug=1', state({ sun: false, torch: true, distance: 40 }))).toBe('debug=1&sunshadow=0');
+    expect(write('debug=1', state({ sun: true, torch: false, distance: 40 }))).toBe('debug=1&torchshadow=0');
+  });
+
+  it('clamps the shadow distance to whole metres within 16..96 and ignores nonsense', () => {
+    expect(parse('shadowdist=24').shadows.distance).toBe(24);
+    expect(parse('shadowdist=33.6').shadows.distance).toBe(34);
+    expect(parse('shadowdist=1').shadows.distance).toBe(16);
+    expect(parse('shadowdist=500').shadows.distance).toBe(96);
+    expect(parse('shadowdist=').shadows.distance).toBe(40);
+    expect(parse('shadowdist=abc').shadows.distance).toBe(40);
+    expect(write('', { ...DEFAULT_LOOK_URL_STATE, shadows: { sun: true, torch: true, distance: 24 } })).toBe(
+      'shadowdist=24',
+    );
   });
 
   it('records only deviations from the defaults', () => {
@@ -151,7 +176,10 @@ describe('restoring look controls from URL state', () => {
   };
 
   it('takes the parsed tone, exposure, colour decode and patterns', () => {
-    const look = new LookControls(renderer, meshes, new FakeMood(), { fogginess: 0.2 });
+    const look = new LookControls(renderer, meshes, new FakeMood(), {
+      weather: { fogginess: 0.2 },
+      shadows: new FakeShadows(),
+    });
     look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0'));
     expect([look.toneKey, look.exposure, look.linearColors, look.patterns]).toEqual(['neutral', 2.5, true, false]);
   });
@@ -159,16 +187,27 @@ describe('restoring look controls from URL state', () => {
   it('takes the parsed mood pass and fogginess', () => {
     const mood = new FakeMood();
     const weather = { fogginess: 0.2 };
-    const look = new LookControls(renderer, meshes, mood, weather);
+    const look = new LookControls(renderer, meshes, mood, { weather, shadows: new FakeShadows() });
     look.restore(parse('post=0&bloom=0&film=0&grade=0.5&fog=0.6'));
     expect(look.moodState).toEqual({ post: false, bloom: false, film: false, grade: 0.5 });
     expect(mood.grade).toBe(0.5);
     expect(weather.fogginess).toBe(0.6);
   });
 
+  it('takes the parsed shadow settings', () => {
+    const shadows = new FakeShadows();
+    const look = new LookControls(renderer, meshes, new FakeMood(), { weather: { fogginess: 0.2 }, shadows });
+    look.restore(parse('sunshadow=0&shadowdist=64'));
+    expect(look.shadowState).toEqual({ sun: false, torch: true, distance: 64 });
+    expect(shadows.settings).toEqual({ sun: false, torch: true, distance: 64 });
+  });
+
   it('follows the renderer it finds, so the game default look survives attaching the controls', () => {
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
-    const look = new LookControls(game, meshes, new FakeMood(), { fogginess: 0.2 });
+    const look = new LookControls(game, meshes, new FakeMood(), {
+      weather: { fogginess: 0.2 },
+      shadows: new FakeShadows(),
+    });
     expect([look.toneKey, look.toneMappingName, game.toneMapping, game.toneMappingExposure]).toEqual([
       'aces',
       'ACES Filmic',
@@ -181,7 +220,7 @@ describe('restoring look controls from URL state', () => {
 
   it('steps fogginess by tenths within 0..1', () => {
     const weather = { fogginess: 0.2 };
-    const look = new LookControls(renderer, meshes, new FakeMood(), weather);
+    const look = new LookControls(renderer, meshes, new FakeMood(), { weather, shadows: new FakeShadows() });
     look.stepFogginess(1);
     expect(weather.fogginess).toBe(0.3);
     look.stepFogginess(-20);

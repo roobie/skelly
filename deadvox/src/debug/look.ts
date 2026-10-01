@@ -3,11 +3,12 @@
 // eye against the game's default look (DEFAULT_LOOK in core/mood.ts), which play has already applied.
 
 import type { WebGLRenderer } from 'three';
-import { clampExposure, clampGrade, type LookState, type MoodState } from '../core/mood.ts';
+import { clampExposure, clampGrade, type LookState, type MoodState, type ShadowState } from '../core/mood.ts';
 import { clampFogginess, type Weather } from '../core/weather.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { applyLook, TONE_MODES } from '../render/look.ts';
 import type { Mood } from '../render/mood.ts';
+import type { Shadows } from '../render/shadows.ts';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;
@@ -18,6 +19,8 @@ type MoodControls = Pick<
   'post' | 'bloom' | 'film' | 'grade' | 'restore' | 'setPost' | 'setBloom' | 'setFilm' | 'setGrade'
 >;
 
+type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setSun' | 'setTorch' | 'stepDistance'>;
+
 type LookRenderer = Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>;
 type LookMeshes = Pick<ChunkMeshes, 'linearColorsOn' | 'setLinearColors' | 'patternsOn' | 'setPatterns'>;
 
@@ -27,13 +30,20 @@ export class LookControls {
   private readonly meshes: LookMeshes;
   private readonly mood: MoodControls;
   private readonly weather: Weather;
+  private readonly shadows: ShadowControls;
 
   /** Takes the renderer as it is: play has applied the default look, and the tone mode follows it. */
-  constructor(renderer: LookRenderer, meshes: LookMeshes, mood: MoodControls, weather: Weather) {
+  constructor(
+    renderer: LookRenderer,
+    meshes: LookMeshes,
+    mood: MoodControls,
+    environment: { weather: Weather; shadows: ShadowControls },
+  ) {
     this.renderer = renderer;
     this.meshes = meshes;
     this.mood = mood;
-    this.weather = weather;
+    this.weather = environment.weather;
+    this.shadows = environment.shadows;
     this.mode = Math.max(
       0,
       TONE_MODES.findIndex((candidate) => candidate.mapping === renderer.toneMapping),
@@ -62,6 +72,25 @@ export class LookControls {
   /** Steps the grade strength by `steps` tenths, clamped to [0, 1]. */
   stepGrade(steps: number): void {
     this.mood.setGrade(clampGrade(this.mood.grade + steps * GRADE_STEP));
+  }
+
+  /** The shadow settings as they are now, in the URL's terms. */
+  get shadowState(): ShadowState {
+    return this.shadows.settings;
+  }
+
+  /** Switching either light's shadows rebuilds the shader programs once (they differ by whether a light casts), so expect a hitch. */
+  toggleSunShadows(): void {
+    this.shadows.setSun(!this.shadows.settings.sun);
+  }
+
+  toggleTorchShadows(): void {
+    this.shadows.setTorch(!this.shadows.settings.torch);
+  }
+
+  /** Steps the sun's shadow distance through the allowed list, wrapping. */
+  stepShadowDistance(): void {
+    this.shadows.stepDistance();
   }
 
   get fogginess(): number {
@@ -105,7 +134,7 @@ export class LookControls {
   }
 
   /** Applies a state read from the URL; an unknown tone key leaves the mode alone. */
-  restore(state: LookState & MoodState & { fogginess: number }): void {
+  restore(state: LookState & MoodState & { fogginess: number; shadows: ShadowState }): void {
     applyLook(this.renderer, this.meshes, state);
     const mode = TONE_MODES.findIndex((candidate) => candidate.key === state.tone);
     if (mode >= 0) {
@@ -113,6 +142,7 @@ export class LookControls {
     }
     this.weather.fogginess = clampFogginess(state.fogginess);
     this.mood.restore({ post: state.post, bloom: state.bloom, film: state.film, grade: state.grade });
+    this.shadows.restore(state.shadows);
   }
 
   toggleLinearColors(): void {

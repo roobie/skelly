@@ -2,6 +2,7 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
+import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -33,8 +34,19 @@ interface ActionView {
   readonly run: () => void;
 }
 
-const readoutTemplate = (readout: DebugReadout): TemplateResult => html`
-  <span>${readout.fps.toFixed(0)} fps</span>
+const ms = (value: number): string => (Number.isFinite(value) ? value.toFixed(1) : '–');
+
+/** One line of the readout: the shadow settings, and what the sun's fade and the casters look like right now. */
+export const shadowReadoutText = (
+  state: ShadowState,
+  sunStrength: number,
+  casters: { sun: number; torch: number },
+): string =>
+  `shadows: sun ${state.sun ? `ON ×${sunStrength.toFixed(2)}` : 'OFF'} · flashlight ${state.torch ? 'ON' : 'OFF'} · ${state.distance} m · chunk casters ${casters.sun} / ${casters.torch}`;
+
+const readoutTemplate = (readout: DebugReadout, shadowText: string): TemplateResult => html`
+  <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
+  <span>${shadowText}</span>
   <span>seed ${readout.seed}</span>
   <span>radius ${readout.radius} m · ${readout.movement}</span>
   <span>position ${readout.position.map((v) => v.toFixed(1)).join(', ')}</span>
@@ -123,7 +135,7 @@ const panelTemplate = ({
       <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     </div>
       <div id="debug-sound-log-root"></div>
-      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, [ ] grade. Fog: L / fogginess − +.</p>
+      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, [ ] grade. Fog: L / fogginess − +. Shadows: 0 sun, Home flashlight, PageUp distance.</p>
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
@@ -132,6 +144,8 @@ const panelTemplate = ({
 
 const emptyReadout: DebugReadout = {
   fps: 0,
+  frame: { p50: Number.NaN, p95: Number.NaN },
+  work: { p50: Number.NaN, p95: Number.NaN },
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -270,6 +284,29 @@ export const createDebugActions = ({
     state: () => look.moodState.film,
     run: () => look.toggleFilm(),
   },
+  // Shadows (render/shadows.ts). Every letter is taken or planned (CONTROLS.md), so these use 0 and the navigation
+  // cluster, which nothing else binds. Toggling a light's shadows rebuilds shader programs once: expect a hitch.
+  {
+    code: 'Digit0',
+    key: '0',
+    label: 'Sun shadows',
+    state: () => look.shadowState.sun,
+    run: () => look.toggleSunShadows(),
+  },
+  {
+    code: 'Home',
+    key: 'Home',
+    label: 'Flashlight shadows',
+    state: () => look.shadowState.torch,
+    run: () => look.toggleTorchShadows(),
+  },
+  {
+    code: 'PageUp',
+    key: 'PgUp',
+    label: 'Sun shadow distance',
+    detail: () => `${look.shadowState.distance} m`,
+    run: () => look.stepShadowDistance(),
+  },
   // Fogginess is weather, not mood; a weather system will drive it. 0 is clear (no height fog either).
   {
     code: 'KeyL',
@@ -396,7 +433,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
-  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, hooks.weather);
+  const { shadows } = hooks.engine;
+  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
+    weather: hooks.weather,
+    shadows,
+  });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
   /** The whole simulation is stopped (M); play.ts reads it each frame and combines it with the pause menu. */
@@ -408,6 +449,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     patterns: look.patterns,
     freeze: gameFrozen,
     fogginess: look.fogginess,
+    shadows: look.shadowState,
     ...look.moodState,
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
@@ -519,7 +561,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
-      render(readoutTemplate(readout), root);
+      render(readoutTemplate(readout, shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)), root);
     }
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');
     if (soundRoot) {
@@ -537,6 +579,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       surfacePatterns: look.patterns,
       mood: look.moodState,
       fogginess: look.fogginess,
+      shadows: look.shadowState,
+      performance: { fps: readout.fps, frame: readout.frame, work: readout.work },
       gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,

@@ -98,6 +98,7 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
+  MeshDepthMaterial,
   MeshLambertMaterial,
   NearestFilter,
   RGBAFormat,
@@ -118,6 +119,7 @@ import { type PosedShambler, posedShambler, zombiePoseInputFor } from '../core/z
 
 import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { castsAndReceives } from './shadowFlags.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`zombieDied` are optional: ZombieMeshes has none of them (see
@@ -445,9 +447,24 @@ export class MobActorMeshes implements ZombieRenderer {
       );
     };
 
+    // The shadow pass draws with a depth material, which would leave every actor in its bind pose: this
+    // one fetches the same bone matrices (the gore varying it declares is simply unused).
+    const depthMaterial = new MeshDepthMaterial();
+    depthMaterial.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-depth';
+    depthMaterial.onBeforeCompile = (shader) => {
+      shader.uniforms.crowdBoneTexture = { value: texture };
+      shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };
+      shader.vertexShader = `${CROWD_VERTEX_DECLARATIONS}\n${shader.vertexShader}`.replace(
+        '#include <begin_vertex>',
+        CROWD_BEGIN_VERTEX,
+      );
+    };
+
     this.variants = built.map((v, variantIndex) => {
       const geometry = buildVariantGeometry(v.realized);
       const mesh = new InstancedMesh(geometry, this.material, capacity);
+      mesh.customDepthMaterial = depthMaterial;
+      castsAndReceives(mesh);
       mesh.count = 0;
       mesh.frustumCulled = false; // see this module's header comment — same reasoning as mobgen's crowd mode
       const instanceArray = mesh.instanceMatrix.array as Float32Array;

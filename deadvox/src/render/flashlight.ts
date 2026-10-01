@@ -32,26 +32,59 @@ export const flashlightDaylightScale = (sky: Pick<Sky, 'lightIntensity' | 'ambie
   return 1 / (1 + (brightness / HALF_BRIGHTNESS) ** FADE_SHARPNESS);
 };
 
+/** Shadow map side in texels; the beam's range and angle bound what it has to cover. */
+const SHADOW_MAP_SIZE = 512;
+/** Shadow-map depth is perspective, so this is a small fraction of the depth range (about 5 cm at 10 m). */
+const SHADOW_BIAS = -0.0001;
+/** Metres along the surface normal; a fraction of a 0.5 m block. */
+const SHADOW_NORMAL_BIAS = 0.03;
+/** Blur radius in shadow-map texels (PCF taps). */
+const SHADOW_RADIUS = 2;
+/** The lens sits just ahead of the eye, so the map starts close in. */
+const SHADOW_NEAR = 0.1;
+/** Candela below which the beam is too faint (full daylight) to be worth a shadow map. */
+const MIN_SHADOW_INTENSITY = 0.5;
+
+/** Whether the beam draws a shadow map: shadows allowed, and a beam that is on and bright enough to show. */
+export const flashlightCastsShadow = (allowed: boolean, intensity: number): boolean =>
+  allowed && intensity > MIN_SHADOW_INTENSITY;
+
 export class Flashlight {
-  private readonly light = new SpotLight(0xff_f1_d8, 0, 20, Math.PI / 12, PENUMBRA, DECAY);
+  readonly light = new SpotLight(0xff_f1_d8, 0, 20, Math.PI / 12, PENUMBRA, DECAY);
   private readonly at = new Vector3();
   private readonly ahead = new Vector3();
 
   constructor(scene: Scene) {
+    const { shadow } = this.light;
+    shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    shadow.camera.near = SHADOW_NEAR;
+    shadow.bias = SHADOW_BIAS;
+    shadow.normalBias = SHADOW_NORMAL_BIAS;
+    shadow.radius = SHADOW_RADIUS;
     scene.add(this.light, this.light.target);
   }
 
   /** `flashlightDaylightScale` of the sky being drawn; set it each frame before `update`. */
   daylightScale = 1;
 
+  /**
+   * Whether the beam may cast shadows (the setting; set it each frame before `update`). A light only
+   * draws a map while it is on and bright enough, and the light's `castShadow` follows that, so an off
+   * torch costs no depth pass and no shadow lookups; each of the two states is a shader variant that
+   * `Shadows.warmUp` compiles, so switching between them doesn't stall.
+   */
+  shadowsAllowed = false;
+
   /** Points the beam of the light that's on, or turns it off. Call after `held.update`. */
   update(registry: Registry, lit: Item | undefined, held: HeldItems, camera: PerspectiveCamera): void {
     const def = lit && defOf(registry, lit.type).light;
     if (!(lit?.on && def && held.lensOf(lit, camera, this.at))) {
       this.light.intensity = 0;
+      this.light.castShadow = false;
       return;
     }
     this.light.intensity = INTENSITY * this.daylightScale;
+    this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
     this.light.angle = MathUtils.degToRad((def.beam ?? 120) / 2);
     this.light.position.copy(this.at);

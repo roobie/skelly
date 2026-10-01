@@ -4,10 +4,12 @@
 // hamlet near spawn; the benchmark's has milestone 1.0's test house. Either can have
 // the stress-test city instead (`?site=city`).
 
-import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { DAY_SKY } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
+import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
+import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import type { GameConfig } from './config.ts';
 import type { StreamerStats } from './streamer.ts';
@@ -22,6 +24,8 @@ export interface Engine extends WorldSetup {
   sky: SkyTargets;
   /** Bloom, grade, film and height fog. Everything starts off; play turns it on (benchmarks never do). */
   mood: Mood;
+  /** Sun and flashlight shadows. Everything starts off; play turns it on (benchmarks never do). */
+  shadows: Shadows;
 }
 
 export const createEngine = (config: GameConfig, view: HTMLElement, stats?: StreamerStats): Engine => {
@@ -34,8 +38,13 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   // The far plane is set by the sky: it ends where the fog does.
   const camera = new PerspectiveCamera(75, 1, 0.05, radiusM);
   camera.rotation.order = 'YXZ';
+  camera.layers.enable(PLAYER_FIGURE_LAYER);
   const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM };
-  scene.add(sky.ambient, sky.light);
+  // The sun sits in a rig so shadows can move its box with the player without touching the light's
+  // direction (its position within the rig, which the hands' light copies, stays a unit vector).
+  const sunRig = new Group();
+  sunRig.add(sky.light, sky.light.target);
+  scene.add(sky.ambient, sunRig);
   applySky(sky, DAY_SKY);
 
   const meshes = new ChunkMeshes(scale.blockSize);
@@ -45,6 +54,7 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   scene.onBeforeRender = (_renderer, _scene, cam) => meshes.cull(cam);
 
   const mood = new Mood(renderer, scene, camera);
+  const shadows = new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes);
 
   const resize = () => {
     renderer.setSize(view.clientWidth, view.clientHeight);
@@ -63,5 +73,6 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     meshes,
     sky,
     mood,
+    shadows,
   };
 };

@@ -107,6 +107,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/look.ts' },

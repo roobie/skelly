@@ -13,23 +13,30 @@
 //   film=0                       vignette and grain off (\); omitted when on
 //   grade=<0..1>                 colour grade strength in tenths ([ ]); omitted for 1; 0 is no grade
 //   fog=<0..1>                   fogginess in tenths (L /); omitted for 0.2; 0 is clear, 1 thick fog
+//   sunshadow=0                  sun shadows off (0); omitted when on, which is the default
+//   torchshadow=0                flashlight shadows off (Home); omitted when on, which is the default
+//   shadowdist=<16..96>          the sun's shadow distance in metres (PageUp steps 24, 40, 64); omitted for 40
 //
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
 import {
   clampExposure,
   clampGrade,
+  clampShadowDistance,
   DEFAULT_GRADE,
   DEFAULT_LOOK,
   DEFAULT_MOOD,
+  DEFAULT_SHADOWS,
   type LookState,
   type MoodState,
+  type ShadowState,
 } from '../core/mood.ts';
 import { clampFogginess, DEFAULT_FOGGINESS } from '../core/weather.ts';
 import { TONE_MODES } from '../render/look.ts';
 
 export interface LookUrlState extends LookState, MoodState {
   fogginess: number;
+  shadows: ShadowState;
   /** The debug game freeze (M). */
   freeze: boolean;
 }
@@ -38,6 +45,7 @@ export const DEFAULT_LOOK_URL_STATE: LookUrlState = {
   ...DEFAULT_LOOK,
   ...DEFAULT_MOOD,
   fogginess: DEFAULT_FOGGINESS,
+  shadows: DEFAULT_SHADOWS,
   freeze: false,
 };
 
@@ -52,6 +60,9 @@ const LOOK_PARAMS = [
   'film',
   'grade',
   'fog',
+  'sunshadow',
+  'torchshadow',
+  'shadowdist',
 ] as const;
 
 /** A number parameter, NaN when absent, blank or unparseable (Number('') is 0, which would pass as a value). */
@@ -65,6 +76,7 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
   const exposure = numberParam(params, 'exposure');
   const grade = numberParam(params, 'grade');
   const fogginess = numberParam(params, 'fog');
+  const shadowDistance = numberParam(params, 'shadowdist');
   return {
     post: params.get('post') !== '0',
     bloom: params.get('bloom') !== '0',
@@ -75,6 +87,11 @@ export const parseLookParams = (params: URLSearchParams): LookUrlState => {
     exposure: Number.isFinite(exposure) ? clampExposure(exposure) : DEFAULT_LOOK.exposure,
     srgb: params.get('srgb') !== '0',
     patterns: params.get('patterns') !== '0',
+    shadows: {
+      sun: params.get('sunshadow') !== '0',
+      torch: params.get('torchshadow') !== '0',
+      distance: clampShadowDistance(shadowDistance),
+    },
     freeze: params.get('freeze') === '1',
   };
 };
@@ -114,6 +131,15 @@ export const writeLookParams = (params: URLSearchParams, state: LookUrlState): U
   }
   if (state.fogginess !== DEFAULT_FOGGINESS) {
     next.set('fog', state.fogginess.toFixed(1));
+  }
+  if (!state.shadows.sun) {
+    next.set('sunshadow', '0');
+  }
+  if (!state.shadows.torch) {
+    next.set('torchshadow', '0');
+  }
+  if (state.shadows.distance !== DEFAULT_SHADOWS.distance) {
+    next.set('shadowdist', String(state.shadows.distance));
   }
   return next;
 };

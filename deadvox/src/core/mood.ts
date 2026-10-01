@@ -36,6 +36,34 @@ export interface LookState {
  */
 export const DEFAULT_LOOK: LookState = { tone: 'aces', exposure: 3, srgb: true, patterns: true };
 
+/** Which shadows are drawn, and how far from the player the sun's reach. Render-only; the debug controls and URL change it. */
+export interface ShadowState {
+  /** The sun's shadows (fading out towards dusk, none at night). */
+  sun: boolean;
+  /** The flashlight beam's shadows, while it is on. */
+  torch: boolean;
+  /** Metres from the player that the sun's shadow map covers (its half-width). */
+  distance: number;
+}
+
+/** The sun's shadow distances the debug key steps through, in metres. */
+export const SHADOW_DISTANCES: readonly number[] = [24, 40, 64];
+
+export const DEFAULT_SHADOWS: ShadowState = { sun: true, torch: true, distance: 40 };
+
+const MIN_SHADOW_DISTANCE = 16;
+const MAX_SHADOW_DISTANCE = 96;
+
+/** A whole number of metres within the allowed range; anything else (NaN) is the default. */
+export const clampShadowDistance = (value: number): number =>
+  Number.isFinite(value)
+    ? Math.min(MAX_SHADOW_DISTANCE, Math.max(MIN_SHADOW_DISTANCE, Math.round(value)))
+    : DEFAULT_SHADOWS.distance;
+
+/** The next of `SHADOW_DISTANCES` above `current`, wrapping to the first. */
+export const nextShadowDistance = (current: number): number =>
+  SHADOW_DISTANCES.find((distance) => distance > current) ?? SHADOW_DISTANCES[0]!;
+
 const MIN_EXPOSURE = 0.2;
 const MAX_EXPOSURE = 3.0;
 

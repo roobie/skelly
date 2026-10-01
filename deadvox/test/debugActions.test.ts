@@ -5,6 +5,7 @@ import { type Action, createDebugActions, dispatchDebugAction } from '../src/deb
 import { LookControls } from '../src/debug/look.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { FakeMood } from './fakeMood.ts';
+import { FakeShadows } from './fakeShadows.ts';
 
 interface FakeRenderer {
   toneMapping: ToneMapping;
@@ -35,6 +36,9 @@ describe('debug action table', () => {
       ['Q', 'Mood post-processing (all)'],
       ["'", 'Bloom'],
       ['\\', 'Film (vignette, grain)'],
+      ['0', 'Sun shadows'],
+      ['Home', 'Flashlight shadows'],
+      ['PgUp', 'Sun shadow distance'],
       ['L', 'Fogginess −'],
       ['/', 'Fogginess +'],
       ['[', 'Grade −'],
@@ -108,6 +112,25 @@ describe('debug action table', () => {
     expect(mood.grade).toBe(1);
   });
 
+  it('toggles the sun and flashlight shadows and steps the sun shadow distance through 24, 40, 64', () => {
+    const { actions, shadows } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([true, true]);
+    dispatchDebugAction(actions, 'Digit0');
+    expect([shadows.settings.sun, shadows.settings.torch]).toEqual([false, true]);
+    dispatchDebugAction(actions, 'Home');
+    expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([false, false]);
+    expect(byCode('PageUp').detail?.()).toBe('40 m');
+    const seen: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      dispatchDebugAction(actions, 'PageUp');
+      seen.push(shadows.settings.distance);
+    }
+    expect(seen).toEqual([64, 24, 40, 64]);
+    dispatchDebugAction(actions, 'PageUp', true);
+    expect(shadows.settings.distance).toBe(64);
+  });
+
   it('steps the weather fogginess by tenths, which clamps to 0..1', () => {
     const { actions, weather } = makeActions();
     const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
@@ -164,6 +187,7 @@ const makeActions = (
   clock: { calendar: number };
   mood: FakeMood;
   weather: Weather;
+  shadows: FakeShadows;
 } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
   const clock = { calendar: 19.5 * 3600 };
@@ -172,6 +196,7 @@ const makeActions = (
   let patterns = true;
   const mood = new FakeMood();
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
+  const shadows = new FakeShadows();
   const look = new LookControls(
     renderer,
     {
@@ -189,7 +214,7 @@ const makeActions = (
       },
     },
     mood,
-    weather,
+    { weather, shadows },
   );
   const sim = {
     godMode: false,
@@ -264,5 +289,5 @@ const makeActions = (
       gameFrozen = !gameFrozen;
     },
   });
-  return { actions, spawnCounts, skips, renderer, clock, mood, weather };
+  return { actions, spawnCounts, skips, renderer, clock, mood, weather, shadows };
 };

@@ -5,6 +5,7 @@
 import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
 import { type BlockEntities, type BlockEntity, doorPanel } from '../core/blockEntities.ts';
 import { withHeightFog } from './heightFog.ts';
+import { castsAndReceives } from './shadowFlags.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
@@ -30,7 +31,7 @@ export class FurnitureMeshes {
     for (const entity of entities.all) {
       const def = entities.defOf(entity);
       const material = this.material(def.color);
-      this.group.add(def.door ? this.door(entity, material) : this.box(entity, material));
+      this.group.add(castsAndReceives(def.door ? this.door(entity, material) : this.box(entity, material)));
     }
   }
 

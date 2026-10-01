@@ -11,12 +11,13 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { DEFAULT_LOOK, DEFAULT_MOOD } from '../core/mood.ts';
+import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
-import { skyAt } from '../core/sky.ts';
+import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
 import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
+import { FrameTimes } from '../render/frameTimes.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { applyLook } from '../render/look.ts';
@@ -71,6 +72,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
   applyLook(renderer, meshes, DEFAULT_LOOK);
   engine.mood.restore(DEFAULT_MOOD);
+  engine.shadows.restore(DEFAULT_SHADOWS);
   // The weather the sky is rendered in. No weather system yet (DESIGN.md, Slice 4): it will set
   // `fogginess` (and later more) here; until then only the debug controls change it.
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
@@ -162,6 +164,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
+  engine.shadows.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   const damageEvents = sim.events.reader();
   const damageFeedback = new DamageFeedback();
@@ -667,6 +670,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   let last = performance.now();
   let lastDebugUpdate = 0;
   let fps = 0;
+  // Debug readout: the time between frames, and the time the frame callback itself took (what the
+  // CPU spent submitting; the interval is pinned to the refresh period while the GPU keeps up).
+  const frameInterval = new FrameTimes();
+  const frameWork = new FrameTimes();
 
   const clockText = (): string => {
     const speed = compression.c > 1.05 ? `   ×${compression.c.toFixed(0)}` : '';
@@ -743,6 +750,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     lastDebugUpdate = now;
     debugTools.update({
       fps,
+      frame: frameInterval.summary(),
+      work: frameWork.summary(),
       seed: config.seed,
       radius: config.radiusM,
       movement: input.walking ? 'walking' : 'jogging',
@@ -794,14 +803,17 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
 
   const frame = (now: number) => {
+    const workStart = performance.now();
     const dt = Math.min(0.1, (now - last) / 1000);
+    frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
     streamer.update(body.pos[0], body.pos[2]);
     const gameFrozen = stepSimulation(dt, menuState.paused);
-    const sky = skyInWeather(skyAt(hourOfDay(sim.calendar)), weather);
+    const hour = hourOfDay(sim.calendar);
+    const sky = skyInWeather(skyAt(hour), weather);
     applySky(engine.sky, sky);
     engine.mood.setSky(sky);
     piles.sync(inventory);
@@ -857,8 +869,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     held.update(camera);
     flashlight.daylightScale = flashlightDaylightScale(sky);
+    flashlight.shadowsAllowed = engine.shadows.torchOn;
     flashlight.update(registry, survival.lit, held, camera);
+    engine.shadows.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     engine.mood.render(() => held.render(renderer, camera, engine.sky));
+    frameWork.record(now, performance.now() - workStart);
     finishFrame();
   };
 
@@ -886,8 +901,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
-  engine.mood
-    .warmUp([{ scene, camera }, held.warmUpTarget])
+  engine.shadows
+    .warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget])
     .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   requestAnimationFrame(frame);
 };

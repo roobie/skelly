@@ -4,6 +4,7 @@ import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type ZombieRegion } from '../core/zombieRegions.ts';
 import type { Zombie } from '../core/zombies.ts';
 import { withHeightFog } from './heightFog.ts';
+import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';
 
 type Part = FigurePart;
@@ -43,7 +44,7 @@ export class ZombieMeshes {
       mesh.count = 0;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       this.meshes.set(part, mesh);
-      this.group.add(mesh);
+      this.group.add(castsAndReceives(mesh));
     }
   }
 

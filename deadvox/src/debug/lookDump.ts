@@ -2,7 +2,8 @@
 // and on what build it was seen, as a JSON file the operator can keep next to a screenshot.
 
 import type { Vec3 } from '../core/coords.ts';
-import type { MoodState } from '../core/mood.ts';
+import type { MoodState, ShadowState } from '../core/mood.ts';
+import type { FrameSummary } from '../render/frameTimes.ts';
 
 // `vite.config.ts` supplies it; outside a Vite build (tests) it isn't defined.
 declare const __DEADVOX_BUILD_REVISION__: string;
@@ -24,6 +25,10 @@ export interface LookDumpInput {
   mood: MoodState;
   /** The weather's fogginess: 0 clear, 1 thick fog. */
   fogginess: number;
+  /** Sun and flashlight shadows, and the sun's shadow distance. */
+  shadows: ShadowState;
+  /** The readout's last numbers, so a screenshot's cost comes with it: smoothed fps, frame interval and CPU work. */
+  performance: { fps: number; frame: FrameSummary; work: FrameSummary };
   /** The game clock, "Day N, HH:MM". */
   gameTime: string;
   site: string;
@@ -57,7 +62,17 @@ export const lookDump = (input: LookDumpInput) => ({
     film: input.mood.film,
     gradeStrength: round(input.mood.grade, 2),
     fogginess: round(input.fogginess, 2),
+    shadows: {
+      sun: input.shadows.sun,
+      flashlight: input.shadows.torch,
+      distanceM: input.shadows.distance,
+    },
     gameTime: input.gameTime,
+  },
+  performance: {
+    fps: round(input.performance.fps, 0),
+    frameMs: { p50: round(input.performance.frame.p50, 1), p95: round(input.performance.frame.p95, 1) },
+    cpuMs: { p50: round(input.performance.work.p50, 1), p95: round(input.performance.work.p95, 1) },
   },
   world: {
     site: input.site,

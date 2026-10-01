@@ -5,6 +5,7 @@ import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
+import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
@@ -43,6 +44,10 @@ export interface DebugNoclipStep {
 
 export interface DebugReadout {
   readonly fps: number;
+  /** Time between frames, median and 95th percentile over the last couple of seconds. */
+  readonly frame: FrameSummary;
+  /** Time the frame callback itself took (CPU submit), same window. */
+  readonly work: FrameSummary;
   readonly seed: number;
   readonly radius: number;
   readonly movement: string;

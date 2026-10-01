@@ -179,5 +179,24 @@ export const skyAt = (hour: number): Sky => {
   return { ...lookAt(hour), light: [dir[0] / len, y / len, dir[2] / len] };
 };
 
+/** Sun elevation (the sine of its angle above the horizon) at which its shadows are at full strength: the lighting clamp's `MIN_LIGHT_Y`, where the light is the sun's real direction. */
+const FULL_SHADOW_ELEVATION = MIN_LIGHT_Y;
+/** Light intensity range over which shadows fade in: below it only a moon-like glimmer, above it a real sun. */
+const SHADOW_INTENSITY_FADE: readonly [number, number] = [0.25, 0.6];
+
+const smoothstep = (from: number, to: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - from) / (to - from)));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * How strongly the sun's shadows show, in [0, 1]: 0 at night (where `skyAt`'s light is a stand-in
+ * for a moon, which casts none) and below the horizon, rising smoothly as the sun climbs, and
+ * dimmed with the light itself (so overcast weather fades them). `sunElevation` is
+ * `sunDirection(hour)[1]`, which goes negative at night, unlike the lighting's own direction.
+ */
+export const sunShadowStrength = (sunElevation: number, lightIntensity: number): number =>
+  smoothstep(0, FULL_SHADOW_ELEVATION, sunElevation) * smoothstep(...SHADOW_INTENSITY_FADE, lightIntensity);
+
 /** The daytime look, for the benchmark. */
 export const DAY_SKY: Sky = skyAt(12);

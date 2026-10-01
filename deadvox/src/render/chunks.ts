@@ -62,7 +62,7 @@ const chunkMaterial = (
         '#include <begin_vertex>',
         // Half a block inside the face, in world block coordinates.
         `#include <begin_vertex>
-vCell = (modelMatrix * vec4(position - normal * 0.5, 1.0)).xyz / uBlockSize;
+vCell = (modelMatrix * vec4(position - normalize(normal) * 0.5, 1.0)).xyz / uBlockSize;
 vPattern = pattern;
 vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
 vFaceN = normalize(normal);`,
@@ -108,6 +108,7 @@ export class ChunkMeshes {
   private readonly patterns = { value: 1 };
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
+  private changes = 0;
 
   /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number) {
@@ -118,7 +119,13 @@ export class ChunkMeshes {
     // on a mesh before any chunk exists, so `renderer.compile` can build the game's heaviest shader early.
     const warmUp = new Mesh(new BufferGeometry(), this.material);
     warmUp.visible = false;
+    warmUp.receiveShadow = true;
     this.group.add(warmUp);
+  }
+
+  /** Bumps whenever a chunk mesh is added, replaced or removed, so a cached shadow map knows it is stale. */
+  get version(): number {
+    return this.changes;
   }
 
   /** Whether block colours are decoded from sRGB to linear before lighting. Off unless the game or debug controls turn it on. */
@@ -169,6 +176,7 @@ export class ChunkMeshes {
     mesh.matrixAutoUpdate = false;
     mesh.updateMatrix();
     mesh.frustumCulled = false; // `cull` does it, with the box
+    mesh.receiveShadow = true; // every chunk receives; `selectShadowCasters` picks the ones that cast
     // The group only scales, so a box in blocks becomes metres by the block size.
     const box = geometry.boundingBox!.clone().translate(mesh.position);
     box.min.multiplyScalar(this.blockSize);
@@ -176,6 +184,24 @@ export class ChunkMeshes {
     this.meshes.set(key, mesh);
     this.boxes.set(mesh, box);
     this.group.add(mesh);
+    this.changes += 1;
+  }
+
+  /**
+   * Makes the meshes whose tight box passes `casts` the shadow casters, and shows exactly those: the
+   * shadow pass skips hidden meshes, so a chunk behind the camera can still shade what is in front of it.
+   * The render's main pass is already queued when this runs (from the shadow hook), and `cull` sets
+   * visibility afresh before the next one. Returns how many cast.
+   */
+  selectShadowCasters(casts: (box: Box3) => boolean): number {
+    let count = 0;
+    for (const [mesh, box] of this.boxes) {
+      const on = casts(box);
+      mesh.castShadow = on;
+      mesh.visible = on;
+      count += on ? 1 : 0;
+    }
+    return count;
   }
 
   /** Shows only the meshes whose box meets the camera's frustum. The camera's matrices must be current. */
@@ -196,5 +222,6 @@ export class ChunkMeshes {
     mesh.geometry.dispose();
     this.meshes.delete(key);
     this.boxes.delete(mesh);
+    this.changes += 1;
   }
 }
