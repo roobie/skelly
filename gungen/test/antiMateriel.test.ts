@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
+import { distanceWorld, localSolidBounds, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { PartDef, PartFamily, Solid } from '../src/core/schema.ts';
 import { SHROUD_HALF_HEIGHT, SHROUD_HALF_WIDTH, SHROUD_LENGTH } from '../src/gun/antiMateriel/barrelShroud.ts';
@@ -14,9 +14,10 @@ import {
   HEAVY_MAGAZINE_SLANT_DEGREES,
 } from '../src/gun/antiMateriel/heavyMagazine.ts';
 import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts';
+import { STAND_IN_SCOPE_ENVELOPE } from '../src/gun/antiMateriel/scopeEnvelope.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { EJECTION_PORT_MARGIN_U, FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
-import { variant } from './helpers.ts';
+import { loadFixture, variant } from './helpers.ts';
 
 const family = (key: string): PartFamily => FAMILIES[key]!;
 const solidById = (def: PartDef, id: string): Solid => {
@@ -263,18 +264,32 @@ describe('bipod', () => {
 });
 
 describe('carry handle', () => {
-  it('stands its posts outside the line of sight and keeps its bar above it', () => {
+  it('stands wholly to the left of the line of sight, overhanging the receiver wall by more than a post', () => {
     const sightline = family('sight')
       .build({})
       .keepOuts.find(({ id }) => id === 'sightline')!;
     const [, , sightHalfWidth] = sightline.box.half;
-    const sightTop = sightline.box.center[1] + sightline.box.half[1];
     const handle = family('carry-handle').build({});
-    for (const post of handle.solids.filter(({ id }) => id.startsWith('post-'))) {
-      const { min, max } = bounds(post);
-      expect(Math.min(Math.abs(min[2]), Math.abs(max[2]))).toBeGreaterThan(sightHalfWidth);
+    for (const solid of handle.solids) {
+      expect(bounds(solid).max[2], solid.id).toBeLessThan(-sightHalfWidth);
     }
-    expect(bounds(solidById(handle, 'grip-bar')).min[1]).toBeGreaterThanOrEqual(sightTop);
+    const outerEdge = Math.min(...handle.solids.map((solid) => bounds(solid).min[2]));
+    expect(outerEdge).toBeLessThan(-(SHROUD_HALF_WIDTH + 2));
+  });
+
+  it('clears a full-size scope mounted where the sight is, by at least 0.25u (stand-in envelope)', () => {
+    const resolved = resolve(loadFixture('archetype-anti-materiel'), gunDomain);
+    const sight = resolved.placed.get('sight')!;
+    const handle = resolved.placed.get('handle')!;
+    const handleDef = resolved.defs.get('handle')!;
+    const room = handleDef.keepOuts.find(({ id }) => id === 'hand-room')!;
+    const handleVolumes: Solid[] = [...handleDef.solids, { id: room.id, kind: 'box', box: room.box }];
+    for (const part of STAND_IN_SCOPE_ENVELOPE) {
+      for (const volume of handleVolumes) {
+        const gap = distanceWorld(worldSolid(sight, part), worldSolid(handle, volume));
+        expect(gap, `${part.id} to ${volume.id}`).toBeGreaterThanOrEqual(0.25 - 1e-9);
+      }
+    }
   });
 
   it('leaves its hand room empty of its own posts and bar', () => {

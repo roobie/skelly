@@ -467,9 +467,10 @@ export const antiMateriel: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
-    // The sight's two slots (x = -14, -12) stay clear of the handle's hand room (slot 8, x = -6); the sight sits behind it.
+    // The sight sits on the receiver rail (slots x = -14, -12). The carry handle stands to the left on the shroud rail's
+    // first slot (x = 2), clear of a full-size scope mounted where the sight is.
     { from: 'receiver.rail', to: 'sight.base', slot: [4, 5] },
-    { from: 'receiver.rail', to: 'handle.base', slot: 8 },
+    { from: 'shroud.rail', to: 'handle.base', slot: 0 },
     { from: 'shroud.bipod', to: 'bipod.base' },
     { from: 'stock.monopod', to: 'monopod.base' },
   ],

@@ -8,18 +8,6 @@ const ARCHETYPE = 'archetype-anti-materiel';
 const failures = (assembly: Assembly) => validate(assembly, gunDomain).issues;
 const failedRules = (assembly: Assembly) => [...new Set(failures(assembly).map(({ rule }) => rule))].sort();
 
-describe('carry handle and optic', () => {
-  it('keeps the optic out of the hand room under the carry handle', () => {
-    const assembly = variant(ARCHETYPE, (draft) => {
-      draft.connections.find((connection) => connection.to === 'sight.base')!.slot = 7;
-    });
-    const issues = failures(assembly);
-    expect(issues.map(({ rule }) => rule)).toEqual(['keep-out']);
-    expect(issues[0]!.keepOut).toEqual({ part: 'handle', id: 'hand-room' });
-    expect(issues[0]!.parts).toContain('sight');
-  });
-});
-
 describe('shroud-fit', () => {
   it('fails a barrel that fills the cavity, naming the recoil room', () => {
     const issues = failures(loadFixture('broken-shroud-fit'));

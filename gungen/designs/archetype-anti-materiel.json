@@ -30,7 +30,7 @@
       { "from": "lower.magazine", "to": "magazine.top" },
       { "from": "receiver.stock", "to": "stock.front" },
       { "from": "receiver.rail", "slot": 5, "to": "sight.base" },
-      { "from": "receiver.rail", "slot": 8, "to": "handle.base" },
+      { "from": "shroud.rail", "slot": 0, "to": "handle.base" },
       { "from": "shroud.bipod", "to": "bipod.base" },
       { "from": "stock.monopod", "to": "monopod.base" }
     ]

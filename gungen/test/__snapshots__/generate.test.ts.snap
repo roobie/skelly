@@ -443,8 +443,8 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "to": "sight.base",
       },
       {
-        "from": "receiver.rail",
-        "slot": 8,
+        "from": "shroud.rail",
+        "slot": 0,
         "to": "handle.base",
       },
       {
@@ -670,8 +670,8 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.rail",
-        "slot": 8,
+        "from": "shroud.rail",
+        "slot": 0,
         "to": "handle.base",
       },
       {

@@ -38,7 +38,7 @@ through these single-line registrations:
 | `muzzle-brake` | `muzzle-brake` | `length` M/L (9/11u); `bore` and `profile` (standard, heavy) follow the barrel | Threads on the barrel's `muzzle` port. Octagonal core and collar, and four swept wing chambers (two per side) split by a 0.5u vent slot. In plan it is an arrowhead: widest at the barrel, narrowing to the nose. A pistol or revolver barrel is refused as a `structure` issue |
 | `barrel-shroud` | `barrel-shroud` | `length` S/M/L (16/22/28u) | A stamped-box upper the barrel recoils inside: receiver front-face height and width, 0.5u walls, a front bulkhead that guides the barrel. Extends the top rail and carries the bipod port |
 | `bipod` | `bipod` | `legs` S/M/L (12/18/20u reach), `pose` folded/deployed | Mounts under the shroud; carries a `leg-sweep` keep-out |
-| `carry-handle` | `carry-handle` | none | Four posts and a grip bar on the receiver rail; carries a `hand-room` keep-out |
+| `carry-handle` | `carry-handle` | none | A low shelf on the shroud rail reaching out to the left past the receiver's side wall, four posts and a grip bar on its outer part; carries a `hand-room` keep-out. Left (-Z) is fixed, not a param |
 | `recoil-stock` | `stock` | `length` M/L (16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
 | `monopod` | `monopod` | `pose` folded/deployed | Mounts under the butt |
 | `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action") |
@@ -80,9 +80,9 @@ The core `keep-out` rule does the rest, with no new code:
 - **Bipod clears the magazine.** The legs fold back under the shroud. A short
   shroud with long legs puts the `leg-sweep` volume (and the folded legs) into
   the lower's `magazine-path`. Tested in `test/antiMaterielRules.test.ts`.
-- **Optic sees past the handle.** The handle's posts stand outside the `sightline`
-  tube and its bar is above it. An optic placed inside the handle's `hand-room`
-  fails.
+- **Optic sees past the handle.** The handle stands to the left of the rail, wholly outside the `sightline`
+  tube and clear of a full-size scope's envelope (see "Carry handle and scope envelope"). Nothing on the
+  rail can reach the handle's `hand-room`, which only the keep-out rule would guard.
 - **Brake sits on the muzzle port.** `port-compat` (`muzzle` mount) and the
   barrel's `muzzle` keep-out, which only the part on that port may enter.
 
@@ -205,7 +205,51 @@ face bounds are what size the port; the margin `HEAVY_EJECTION_PORT_MARGIN_U` re
 `EJECTION_PORT_MARGIN_U` (it cannot be imported without a cycle) and a test pins the copy.
 
 The rail has 11 slots (the shared receiver's 7) at x = -22 ... -2, the front 22u of the receiver. The sight
-is on slot 5 and the carry handle on slot 8 (x = -12 and -6) as before.
+is on slot 5 (x = -12) as before; the carry handle is on the shroud's rail (next section).
+
+## Carry handle and scope envelope
+
+The handle was centred over the rail, which a real scope (a long tube, a large objective bell, tall rings)
+would run through. It now stands to the **left** (-Z; gungen's +Z is right) and is larger. The side is fixed,
+not a param; the other side would be a mirror of its z values.
+
+| | Before | Now |
+| --- | --- | --- |
+| Mounted on | receiver rail, slot 8 (x = -6) | shroud rail, slot 0 (x = 2) |
+| Position across the rail | centred, posts z = 1.25 to 1.75 | centre line z = -5, posts z = -3.5 to -3.0 (inner) and -7.0 to -6.5 (outer): 5u beyond the receiver's wall |
+| Length | 8u | 10u |
+| Height (shelf or rail face to the bar's top) | 3.25u | 4.5u (posts to 3.25u, bar 1.25u thick, from 1u) |
+| Hand room (length x width x height) | 6 x 2.5 x 2.25u | 7.5 x 3 x 2.5u |
+
+A 0.75u shelf on the rail passes under a scope's objective bell and carries the posts, so the posts and bar
+need no support over the receiver. It sits on the shroud's rail because the scope's rings take the receiver
+rail behind it.
+
+**Scope envelope: a stand-in until the attachments work lands.** The scope vocabulary (optics, mounts) is the
+next gungen iteration and is not built here; `src/gun/antiMateriel/scopeEnvelope.ts` holds the space of a
+full-size, high-magnification scope as three boxes, only so the handle can be sized against it. The design
+keeps the small `sight` as a placeholder. Dimensions come from Leupold's product page for the Mark 4HD 6-24x52
+(leupold.com/mark-4hd-6-24x52-m5c3-side-focus-ffp-illum-pr2-mil, "Dimensions", read 2026-10-01) and its Mark 4
+34mm High ring (leupold.com/mark-4-34mm-aluminum-high-matte, read 2026-10-01):
+
+| | Source | in | mm | u |
+| --- | --- | ---: | ---: | ---: |
+| Total length | A | 14.6 | 371 | 32.2 |
+| Total mounting space | B | 6.3 | 160 | 13.9 |
+| Eyepiece length | E | 3.3 | 84 | 7.3 |
+| Objective length | F | 5.1 | 130 | 11.3 |
+| Objective diameter | G | 2.4 | 61 | 5.3 (radius 2.65, boxed at 2.75) |
+| Eyepiece diameter | H | 1.8 | 46 | 4.0 (radius 2.0) |
+| Main tube | K | 1.34 | 34 | 3.0 (radius 1.5) |
+| Ring height | High ring, "Ring Height (in)" | 1.06 | 27 | 2.3 |
+
+The ring height is read as the distance from the rail to the bottom of the tube, which puts the tube axis
+3.75u above the rail face (2.34 + 1.48, rounded to the grid) and the objective bell's underside 1.0u above it;
+the other reading (axis at the ring height) would put the 2.4 in bell below the rail, so it cannot be right
+for a 52 mm scope. That reading is an assumption about Leupold's figure. The envelope is placed with the
+middle of its mounting space on the sight's slot (x = -12): eyepiece to the rear, objective ahead to x = 6.2.
+Rings and the scope's own turrets are not boxed. `test/antiMateriel.test.ts` asserts the handle's solids and
+its hand room stay at least 0.25u from every box.
 
 **Not modelled.** The feed opening in the receiver floor (the shared `standard` section has none
 either), feed lips, and the magazine's follower and rounds.
