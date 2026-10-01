@@ -16,17 +16,23 @@ import type { HeldItems } from './hands.ts';
  * distance R (the item's `radius`, 20 m) as
  *   radiance = I * cos(angle of incidence) / d^DECAY * (1 - (d / R)^4)^2 * albedo / pi
  * (no extra pi on the intensity: it is candela), and OutputPass multiplies that by the exposure. For a
- * block of albedo 0.5 facing the beam's centre, I = 3.5, DECAY = 1, exposure 3:
- *   d = 2 m    3.5 / 2  * 1.000 * 0.5 / pi * 3 = 0.84
- *   d = 2.5 m  3.5 / 2.5 * 1.000 * ...         = 0.67
- *   d = 3 m    3.5 / 3  * 1.000 * ...          = 0.56
- *   d = 10 m   3.5 / 10 * 0.879 * ...          = 0.15
- * against white at 1: clearly lit up close without clipping (ACES' shoulder skews a bright warm colour
- * towards orange from about 2), and a wall 10 m away still shows. The earlier 40 cd with a decay of 1.5
- * gave 6.8 at 2 m. A decay of 1 rather than the physical 2 keeps the far wall from vanishing: at 2
- * (I = 9 for the same 0.67 at 2.5 m) the 10 m wall would be 0.04.
+ * block facing the beam's centre, I = 1.4, DECAY = 1, exposure 3:
+ *   albedo 0.5
+ *   d = 2 m    1.4 / 2  * 1.000 * 0.5 / pi * 3 = 0.33
+ *   d = 2.5 m  1.4 / 2.5 * 1.000 * ...         = 0.27
+ *   d = 3 m    1.4 / 3  * 1.000 * ...          = 0.22
+ *   d = 10 m   1.4 / 10 * 0.879 * ...          = 0.06
+ *   albedo 0.9 (a white block)
+ *   d = 1 m    1.4 / 1  * 1.000 * 0.9 / pi * 3 = 1.20
+ *   d = 2 m    1.4 / 2  * 1.000 * ...          = 0.60
+ * against white at 1: close white surfaces stay under the bloom clip and the ACES shoulder (which skews
+ * a bright warm colour towards orange from about 2). Set by eye on 2026-10-01: the first value, 3.5 cd,
+ * was too bright on close white surfaces, and torch=0.41 on top of it (1.44 cd) looked right. The
+ * earlier 40 cd with a decay of 1.5 gave 6.8 at 2 m for albedo 0.5. A decay of 1 rather than the
+ * physical 2 keeps the far wall from vanishing: at 2 (I = 3.5 for the same 0.27 at 2.5 m) the 10 m
+ * wall would be 0.02.
  */
-export const FLASHLIGHT_INTENSITY = 3.5;
+export const FLASHLIGHT_INTENSITY = 1.4;
 export const FLASHLIGHT_DECAY = 1;
 const PENUMBRA = 0.35;
 
@@ -58,8 +64,8 @@ const SHADOW_NORMAL_BIAS = 0.03;
 const SHADOW_RADIUS = 2;
 /** The lens sits just ahead of the eye, so the map starts close in. */
 const SHADOW_NEAR = 0.1;
-/** Candela below which the beam is too faint (full daylight) to be worth a shadow map; about 1.3% of the night intensity. */
-const MIN_SHADOW_INTENSITY = 0.05;
+/** Candela below which the beam is too faint (full daylight) to be worth a shadow map; about 1.4% of the night intensity. */
+const MIN_SHADOW_INTENSITY = 0.02;
 
 /** Whether the beam draws a shadow map: shadows allowed, and a beam that is on and bright enough to show. */
 export const flashlightCastsShadow = (allowed: boolean, intensity: number): boolean =>

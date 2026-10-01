@@ -93,8 +93,8 @@ describe('shadow settings', () => {
     expect(flashlightCastsShadow(true, FLASHLIGHT_INTENSITY)).toBe(true);
     expect(flashlightCastsShadow(false, FLASHLIGHT_INTENSITY)).toBe(false);
     expect(flashlightCastsShadow(true, 0)).toBe(false);
-    // Full daylight scales the beam to about 0.01 cd (flashlight.ts), not worth a depth pass.
-    expect(flashlightCastsShadow(true, 0.01)).toBe(false);
+    // Full daylight scales the beam to about 0.004 cd (flashlight.ts), not worth a depth pass.
+    expect(flashlightCastsShadow(true, 0.004)).toBe(false);
   });
 
   it('reads the settings and counts out for the debug readout', () => {

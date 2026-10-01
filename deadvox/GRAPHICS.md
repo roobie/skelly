@@ -32,8 +32,9 @@ Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) an
   Neutral and 1.0 with no tone mapping (`BLOOM_CLIP_BY_TONE`, derived in `src/core/mood.ts`), divided by the
   exposure for the pass's threshold. The clip is never below 1, which keeps the sky from blooming. Debug: Delete /
   Insert step it (`?bloomclip=`), by default it follows the tone mapper.
-- The flashlight beam is 3.5 cd with a decay of 1 (`src/render/flashlight.ts`, arithmetic in the comment): about 0.7
-  after exposure on a mid-albedo block at 2 to 3 m, 0.15 at 10 m. Debug: numpad - / + scale it by 1.25 per press
+- The flashlight beam is 1.4 cd with a decay of 1, set by eye (`src/render/flashlight.ts`, arithmetic in the
+  comment): about 0.3 to 0.2 after exposure on a mid-albedo block at 2 to 3 m, 0.06 at 10 m, 1.2 on a white block
+  at 1 m. Debug: numpad - / + scale it by 1.25 per press
   (`?torch=`, 1 by default).
 - Fogginess 0.2. It is render-only for now; the Slice 4 weather system will drive it, and
   then it becomes saved simulation state (see [ADR 0002](docs/decisions/0002-saves.md)).
