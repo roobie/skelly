@@ -11,13 +11,15 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { DEFAULT_MOOD } from '../core/mood.ts';
+import { DEFAULT_LOOK, DEFAULT_MOOD } from '../core/mood.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt } from '../core/sky.ts';
+import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE } from '../core/zombies.ts';
 import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
+import { applyLook } from '../render/look.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
@@ -66,8 +68,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
-  // The mood pass is on in play by default; debug tools may then restore a look from the URL.
+  // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
+  applyLook(renderer, meshes, DEFAULT_LOOK);
   engine.mood.restore(DEFAULT_MOOD);
+  // The weather the sky is rendered in. No weather system yet (DESIGN.md, Slice 4): it will set
+  // `fogginess` (and later more) here; until then only the debug controls change it.
+  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
 
   const audio = new GameAudio({
     registry,
@@ -268,6 +274,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   };
   debugTools = debugModule?.attachDebugTools({
     engine,
+    weather,
     body,
     inventory,
     newGame: session.restoredLook === undefined,
@@ -794,7 +801,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const menuState = syncMenuState();
     streamer.update(body.pos[0], body.pos[2]);
     const gameFrozen = stepSimulation(dt, menuState.paused);
-    const sky = skyAt(hourOfDay(sim.calendar));
+    const sky = skyInWeather(skyAt(hourOfDay(sim.calendar)), weather);
     applySky(engine.sky, sky);
     engine.mood.setSky(sky);
     piles.sync(inventory);
@@ -877,5 +884,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       requestAnimationFrame(frame);
     }
   };
+  // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
+  // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
+  engine.mood
+    .warmUp([{ scene, camera }, held.warmUpTarget])
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   requestAnimationFrame(frame);
 };

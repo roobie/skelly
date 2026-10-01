@@ -1,4 +1,4 @@
-// Records the current look (tone mapping, exposure, colour decode, mood pass, game time) with where
+// Records the current look (tone mapping, exposure, colour decode, mood pass, fogginess, game time) with where
 // and on what build it was seen, as a JSON file the operator can keep next to a screenshot.
 
 import type { Vec3 } from '../core/coords.ts';
@@ -20,8 +20,10 @@ export interface LookDumpInput {
   exposure: number;
   srgbBlockColours: boolean;
   surfacePatterns: boolean;
-  /** The mood pass: post master, bloom, film (vignette and grain), grade strength, height fog. */
+  /** The mood pass: post master, bloom, film (vignette and grain), grade strength. */
   mood: MoodState;
+  /** The weather's fogginess: 0 clear, 1 thick fog. */
+  fogginess: number;
   /** The game clock, "Day N, HH:MM". */
   gameTime: string;
   site: string;
@@ -54,7 +56,7 @@ export const lookDump = (input: LookDumpInput) => ({
     bloom: input.mood.bloom,
     film: input.mood.film,
     gradeStrength: round(input.mood.grade, 2),
-    heightFog: input.mood.heightFog,
+    fogginess: round(input.fogginess, 2),
     gameTime: input.gameTime,
   },
   world: {

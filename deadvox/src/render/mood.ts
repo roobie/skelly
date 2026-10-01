@@ -9,11 +9,18 @@
 // per-material tone mapping while rendering to a target, so nothing is applied twice. The
 // grade runs after it, in display space, and writes to the screen without a colour-space
 // conversion (a ShaderMaterial gets none unless it asks).
+// Bloom therefore works in pre-exposure linear light: its threshold is BLOOM_CLIP / exposure
+// (core/mood.ts), set each frame, so it follows what OutputPass will push towards white.
 
 import {
+  type Camera,
   HalfFloatType,
+  type Material,
+  Mesh,
+  type Object3D,
   type PerspectiveCamera,
-  type Scene,
+  PlaneGeometry,
+  Scene,
   SRGBColorSpace,
   Vector2,
   type WebGLRenderer,
@@ -26,7 +33,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {
   BLOOM_RADIUS,
-  BLOOM_THRESHOLD,
+  bloomThreshold,
   clampGrade,
   GRAIN,
   gradeParams,
@@ -97,7 +104,7 @@ export class Mood {
   private readonly scene: Scene;
   private readonly camera: PerspectiveCamera;
   // Everything off until the game turns it on, so the benchmark renders as it always did.
-  private state: MoodState = { post: false, bloom: false, film: false, grade: 0, heightFog: false };
+  private state: MoodState = { post: false, bloom: false, film: false, grade: 0 };
   private width = 1;
   private height = 1;
   private frame = 0;
@@ -130,10 +137,6 @@ export class Mood {
     return this.state.grade;
   }
 
-  get heightFog(): boolean {
-    return this.state.heightFog;
-  }
-
   /** Takes a whole state, as read from the defaults or the URL. */
   restore(state: MoodState): void {
     this.state = { ...state, grade: clampGrade(state.grade) };
@@ -156,11 +159,10 @@ export class Mood {
     this.restore({ ...this.state, grade: strength });
   }
 
-  setHeightFog(on: boolean): void {
-    this.restore({ ...this.state, heightFog: on });
-  }
-
-  /** Takes the sky's bloom strength and mist; cheap enough to call every frame. */
+  /**
+   * Takes the sky's bloom strength and mist (the sky as weather has shaped it, core/weather.ts);
+   * cheap enough to call every frame.
+   */
   setSky(sky: Sky): void {
     // sRGB in, working (linear) colour out: the mist is mixed in while the scene is still linear.
     const [r, g, b] = sky.heightFogColor;
@@ -194,13 +196,73 @@ export class Mood {
     // A new seed each frame animates the grain; any irrational-ish step will do.
     this.frame = (this.frame + 1) % 4096;
     this.gradePass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
+    // Bloom sees the linear frame before OutputPass applies exposure, so its threshold follows the
+    // exposure (the debug controls change it at any time) to keep selecting what will be near white.
+    this.bloomPass!.threshold = bloomThreshold(this.renderer.toneMappingExposure);
     composer.render(0);
+  }
+
+  /**
+   * Starts compiling the shaders the first frames would otherwise stall on, in the state they will
+   * draw in: the passes' own, and every material already in `scenes` (each with its own lights,
+   * fog and camera), compiled for the post chain's linear target (three.js picks the output colour
+   * space and tone mapping per program from the render target, so a screen compile would be a
+   * different, useless program). With KHR_parallel_shader_compile the driver builds them off the
+   * main thread. Resolves when they are ready to draw.
+   */
+  warmUp(scenes: readonly { scene: Scene; camera: Camera }[]): Promise<unknown> {
+    const { renderer } = this;
+    const compiling: Promise<unknown>[] = [];
+    const compile = (into: WebGLRenderTarget | null, root: Object3D, view: Camera): void => {
+      const previous = renderer.getRenderTarget();
+      renderer.setRenderTarget(into);
+      try {
+        compiling.push(renderer.compileAsync(root, view));
+      } finally {
+        renderer.setRenderTarget(previous);
+      }
+    };
+    if (!this.state.post) {
+      for (const { scene, camera } of scenes) {
+        compile(null, scene, camera);
+      }
+      return Promise.all(compiling);
+    }
+    const composer = this.ensureComposer();
+    const target = composer.readBuffer;
+    for (const { scene, camera } of scenes) {
+      compile(target, scene, camera);
+    }
+    // The full-screen passes' materials draw from a quad of their own; a stand-in scene makes
+    // three.js build them. The grade draws to the screen (it is the last pass), the bloom into targets.
+    const quad = new PlaneGeometry(2, 2);
+    const stand = (materials: readonly Material[]): Scene => {
+      const holder = new Scene();
+      for (const material of materials) {
+        holder.add(new Mesh(quad, material));
+      }
+      return holder;
+    };
+    const bloom = this.bloomPass!;
+    compile(
+      target,
+      stand([
+        bloom.materialHighPassFilter,
+        ...bloom.separableBlurMaterials,
+        bloom.compositeMaterial,
+        bloom.blendMaterial,
+      ]),
+      this.camera,
+    );
+    compile(null, stand([this.gradePass!.material]), this.camera);
+    // OutputPass builds its defines from the renderer when it first renders, so it compiles then.
+    return Promise.all(compiling).finally(() => quad.dispose());
   }
 
   /** The values the passes and shaders read, from the state and the sky. */
   private sync(): void {
-    const { post, bloom, film, grade, heightFog } = this.state;
-    heightFogUniforms.uHeightFog.value.x = post && heightFog ? this.skyMist : 0;
+    const { post, bloom, film, grade } = this.state;
+    heightFogUniforms.uHeightFog.value.x = post ? this.skyMist : 0;
     if (!this.composer) {
       return;
     }
@@ -234,7 +296,12 @@ export class Mood {
     composer.addPass(new RenderPass(this.scene, this.camera));
     composer.addPass(this.drawPass);
     // UnrealBloomPass runs its blur chain from half of this resolution down.
-    this.bloomPass = new UnrealBloomPass(new Vector2(this.width, this.height), 0, BLOOM_RADIUS, BLOOM_THRESHOLD);
+    this.bloomPass = new UnrealBloomPass(
+      new Vector2(this.width, this.height),
+      0,
+      BLOOM_RADIUS,
+      bloomThreshold(this.renderer.toneMappingExposure),
+    );
     composer.addPass(this.bloomPass);
     composer.addPass(new OutputPass());
     this.gradePass = new ShaderPass(GRADE_SHADER);

@@ -61,6 +61,9 @@ export const SIMULATION_EXCLUSIONS = [
   'src/render',
   'src/debug',
   'src/core/sky.ts',
+  'src/core/mood.ts',
+  // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
+  'src/core/weather.ts',
   'src/core/mesher.ts',
   'src/core/pileLayout.ts',
   'src/game/damageFeedback.ts',

@@ -1,5 +1,6 @@
 import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
@@ -34,7 +35,8 @@ describe('debug action table', () => {
       ['Q', 'Mood post-processing (all)'],
       ["'", 'Bloom'],
       ['\\', 'Film (vignette, grain)'],
-      ['/', 'Height fog'],
+      ['L', 'Fogginess −'],
+      ['/', 'Fogginess +'],
       ['[', 'Grade −'],
       [']', 'Grade +'],
       [',', 'Skip +23 h (−1 h tomorrow)'],
@@ -86,12 +88,12 @@ describe('debug action table', () => {
   it('toggles the mood effects and steps the grade, which clamps to 0..1', () => {
     const { actions, mood } = makeActions();
     const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    for (const code of ['KeyQ', 'Quote', 'Backslash', 'Slash']) {
+    for (const code of ['KeyQ', 'Quote', 'Backslash']) {
       expect(byCode(code).state?.()).toBe(true);
       dispatchDebugAction(actions, code);
       expect(byCode(code).state?.()).toBe(false);
     }
-    expect([mood.post, mood.bloom, mood.film, mood.heightFog]).toEqual([false, false, false, false]);
+    expect([mood.post, mood.bloom, mood.film]).toEqual([false, false, false]);
     expect(byCode('BracketLeft').detail?.()).toBe('1.0');
     dispatchDebugAction(actions, 'BracketLeft');
     dispatchDebugAction(actions, 'BracketLeft');
@@ -104,6 +106,22 @@ describe('debug action table', () => {
       dispatchDebugAction(actions, 'BracketRight');
     }
     expect(mood.grade).toBe(1);
+  });
+
+  it('steps the weather fogginess by tenths, which clamps to 0..1', () => {
+    const { actions, weather } = makeActions();
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    expect(byCode('Slash').detail?.()).toBe('0.2');
+    dispatchDebugAction(actions, 'Slash');
+    expect(byCode('KeyL').detail?.()).toBe('0.3');
+    for (let i = 0; i < 20; i++) {
+      dispatchDebugAction(actions, 'Slash');
+    }
+    expect(weather.fogginess).toBe(1);
+    for (let i = 0; i < 20; i++) {
+      dispatchDebugAction(actions, 'KeyL');
+    }
+    expect(weather.fogginess).toBe(0);
   });
 
   it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO', 'KeyM'])(
@@ -145,6 +163,7 @@ const makeActions = (
   renderer: FakeRenderer;
   clock: { calendar: number };
   mood: FakeMood;
+  weather: Weather;
 } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
   const clock = { calendar: 19.5 * 3600 };
@@ -152,6 +171,7 @@ const makeActions = (
   let linear = false;
   let patterns = true;
   const mood = new FakeMood();
+  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const look = new LookControls(
     renderer,
     {
@@ -169,6 +189,7 @@ const makeActions = (
       },
     },
     mood,
+    weather,
   );
   const sim = {
     godMode: false,
@@ -243,5 +264,5 @@ const makeActions = (
       gameFrozen = !gameFrozen;
     },
   });
-  return { actions, spawnCounts, skips, renderer, clock, mood };
+  return { actions, spawnCounts, skips, renderer, clock, mood, weather };
 };

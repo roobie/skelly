@@ -6,7 +6,6 @@ export class FakeMood {
   bloom = true;
   film = true;
   grade = 1;
-  heightFog = true;
 
   restore(state: MoodState): void {
     Object.assign(this, state);
@@ -26,9 +25,5 @@ export class FakeMood {
 
   setGrade(strength: number): void {
     this.grade = strength;
-  }
-
-  setHeightFog(on: boolean): void {
-    this.heightFog = on;
   }
 }

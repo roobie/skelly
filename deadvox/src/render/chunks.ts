@@ -114,9 +114,14 @@ export class ChunkMeshes {
     this.material = chunkMaterial(blockSize, this.linearColors, this.patterns);
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
+    // Never drawn and not in `boxes`, so `cull` leaves it hidden. It only puts the chunk material
+    // on a mesh before any chunk exists, so `renderer.compile` can build the game's heaviest shader early.
+    const warmUp = new Mesh(new BufferGeometry(), this.material);
+    warmUp.visible = false;
+    this.group.add(warmUp);
   }
 
-  /** Whether block colours are decoded from sRGB to linear before lighting. Off by default. */
+  /** Whether block colours are decoded from sRGB to linear before lighting. Off unless the game or debug controls turn it on. */
   get linearColorsOn(): boolean {
     return this.linearColors.value > 0.5;
   }

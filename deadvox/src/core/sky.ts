@@ -22,7 +22,10 @@ export interface Sky {
   /** Fog start and end as fractions of the view radius. */
   fogNear: number;
   fogFar: number;
-  /** Height-fog density per metre of view path at the mist's base height; the mist thins with altitude. */
+  /**
+   * Height-fog density per metre of view path at the mist's base height; the mist thins with altitude.
+   * This is the keyframe's value at the default fogginess; core/weather.ts scales it.
+   */
   heightFog: number;
   /** Colour of the height mist: sky-like by day, warmed by the low sun at dawn and dusk, a pale cool at night. */
   heightFogColor: Rgb;

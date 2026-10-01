@@ -123,7 +123,7 @@ const panelTemplate = ({
       <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     </div>
       <div id="debug-sound-log-root"></div>
-      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, / height fog, [ ] grade.</p>
+      <p>Noclip: P (Space rises, R descends). While building, 1–9 select blocks; wheel cycles. Panel: Backquote. Mood: Q all on/off, ' bloom, \\ film, [ ] grade. Fog: L / fogginess − +.</p>
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
@@ -270,12 +270,20 @@ export const createDebugActions = ({
     state: () => look.moodState.film,
     run: () => look.toggleFilm(),
   },
+  // Fogginess is weather, not mood; a weather system will drive it. 0 is clear (no height fog either).
+  {
+    code: 'KeyL',
+    key: 'L',
+    label: 'Fogginess −',
+    detail: () => look.fogginess.toFixed(1),
+    run: () => look.stepFogginess(-1),
+  },
   {
     code: 'Slash',
     key: '/',
-    label: 'Height fog',
-    state: () => look.moodState.heightFog,
-    run: () => look.toggleHeightFog(),
+    label: 'Fogginess +',
+    detail: () => look.fogginess.toFixed(1),
+    run: () => look.stepFogginess(1),
   },
   {
     code: 'BracketLeft',
@@ -388,7 +396,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
-  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood);
+  const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, hooks.weather);
   const initialLook = parseLookParams(new URLSearchParams(location.search));
   look.restore(initialLook);
   /** The whole simulation is stopped (M); play.ts reads it each frame and combines it with the pause menu. */
@@ -399,6 +407,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     srgb: look.linearColors,
     patterns: look.patterns,
     freeze: gameFrozen,
+    fogginess: look.fogginess,
     ...look.moodState,
   });
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
@@ -527,6 +536,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       srgbBlockColours: look.linearColors,
       surfacePatterns: look.patterns,
       mood: look.moodState,
+      fogginess: look.fogginess,
       gameTime: formatClock(hooks.sim.calendar),
       site: config.site,
       seed: config.seed,

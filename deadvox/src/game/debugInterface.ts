@@ -3,6 +3,7 @@ import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
+import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
@@ -10,6 +11,8 @@ import type { MoveIntent } from './player.ts';
 
 export interface DebugHooks {
   readonly engine: Engine;
+  /** The weather play renders with; the debug look controls set its fogginess. */
+  readonly weather: Weather;
   readonly body: Body;
   readonly inventory: Inventory;
   readonly newGame: boolean;

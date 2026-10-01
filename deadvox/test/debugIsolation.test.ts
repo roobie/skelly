@@ -54,6 +54,7 @@ describe('debug isolation', () => {
       'J',
       'I',
       'Q',
+      'L',
     ]);
     expect(rows.map((row) => row[2])).toEqual(rows.map((row) => row[1]));
     expect(rows.find((row) => row[1] === 'P')?.[3]).toBe('Noclip');

@@ -14,10 +14,34 @@ export interface MoodState {
   film: boolean;
   /** Colour grade strength in [0, 1]. */
   grade: number;
-  heightFog: boolean;
 }
 
-export const DEFAULT_MOOD: MoodState = { post: true, bloom: true, film: true, grade: DEFAULT_GRADE, heightFog: true };
+/** Play's mood pass. The height-fog mist is not here: it follows the weather's fogginess (core/weather.ts). */
+export const DEFAULT_MOOD: MoodState = { post: true, bloom: true, film: true, grade: DEFAULT_GRADE };
+
+/** Renderer and block-colour settings that make up the look, apart from the mood pass. `tone` is a render/look.ts key. */
+export interface LookState {
+  tone: string;
+  exposure: number;
+  /** Block colours decoded from sRGB before lighting. */
+  srgb: boolean;
+  /** Procedural surface patterns on blocks. */
+  patterns: boolean;
+}
+
+/**
+ * The game's look. Play applies it at start-up (game/play.ts) with no URL parameters; the debug
+ * controls and URL record only deviations from it. The benchmark does not apply it: it keeps
+ * three.js's own defaults (no tone mapping, exposure 1, colours undecoded) and the mood pass off.
+ */
+export const DEFAULT_LOOK: LookState = { tone: 'aces', exposure: 3, srgb: true, patterns: true };
+
+const MIN_EXPOSURE = 0.2;
+const MAX_EXPOSURE = 3.0;
+
+/** Clamped to the allowed range and rounded to a tenth, so repeated steps don't accumulate float error. */
+export const clampExposure = (value: number): number =>
+  Math.min(MAX_EXPOSURE, Math.max(MIN_EXPOSURE, Math.round(value * 10) / 10));
 
 /** Clamped to [0, 1] and rounded to a tenth, so repeated steps don't accumulate float error. */
 export const clampGrade = (value: number): number => Math.min(1, Math.max(0, Math.round(value * 10) / 10));
@@ -58,5 +82,15 @@ export const VIGNETTE = 0.3;
 export const GRAIN = 0.035;
 
 /** Bloom: only HDR values above the threshold glow; the sky sets the strength. */
-export const BLOOM_THRESHOLD = 1.0;
 export const BLOOM_RADIUS = 0.6;
+
+/**
+ * Scene-linear value (after exposure) that counts as "about to clip" on screen. Bloom runs on the
+ * linear HDR frame before OutputPass applies exposure and tone mapping, so a fixed threshold
+ * means a different on-screen brightness at every exposure. 1.0 here is where ACES Filmic, whose
+ * input is further divided by 0.6, already shows about 0.88 (sRGB) for a grey.
+ */
+export const BLOOM_CLIP = 1.0;
+
+/** The bloom pass's luminance threshold in pre-exposure linear light, for the renderer's exposure. */
+export const bloomThreshold = (exposure: number): number => BLOOM_CLIP / Math.max(exposure, 1e-3);

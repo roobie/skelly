@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { clampGrade, DEFAULT_GRADE, DEFAULT_MOOD, GRAIN, gradeParams, VIGNETTE } from '../src/core/mood.ts';
+import {
+  BLOOM_CLIP,
+  bloomThreshold,
+  clampExposure,
+  clampGrade,
+  DEFAULT_GRADE,
+  DEFAULT_LOOK,
+  DEFAULT_MOOD,
+  GRAIN,
+  gradeParams,
+  VIGNETTE,
+} from '../src/core/mood.ts';
+import { TONE_MODES } from '../src/render/look.ts';
 
-// The shaders (grade pass, height fog) can't be unit-tested here: there is no WebGL in the test
-// environment. These cover the numbers they are fed.
+// The shaders (grade pass, height fog, bloom) and shader warm-up can't be unit-tested here: there is
+// no WebGL in the test environment. These cover the numbers they are fed.
 describe('colour grade parameters', () => {
   it('is the identity at strength 0', () => {
     const none = gradeParams(0);
@@ -50,6 +62,35 @@ describe('grade strength steps', () => {
   });
 
   it('defaults to everything on at full strength', () => {
-    expect(DEFAULT_MOOD).toEqual({ post: true, bloom: true, film: true, grade: 1, heightFog: true });
+    expect(DEFAULT_MOOD).toEqual({ post: true, bloom: true, film: true, grade: 1 });
+  });
+});
+
+describe('the default look', () => {
+  it('is the operator-chosen one', () => {
+    expect(DEFAULT_LOOK).toEqual({ tone: 'aces', exposure: 3, srgb: true, patterns: true });
+    expect(TONE_MODES.map((mode) => mode.key)).toContain(DEFAULT_LOOK.tone);
+  });
+
+  it('keeps exposure in range, in tenths', () => {
+    expect(clampExposure(DEFAULT_LOOK.exposure)).toBe(DEFAULT_LOOK.exposure);
+    expect(clampExposure(9)).toBe(3);
+    expect(clampExposure(0)).toBe(0.2);
+    expect(clampExposure(1.26)).toBe(1.3);
+  });
+});
+
+describe('bloom threshold', () => {
+  it('is the clip value divided by exposure, so the same on-screen brightness blooms at any exposure', () => {
+    expect(bloomThreshold(1)).toBe(BLOOM_CLIP);
+    expect(bloomThreshold(3)).toBeCloseTo(BLOOM_CLIP / 3, 12);
+    for (const exposure of [0.2, 0.7, 1.5, 3]) {
+      expect(bloomThreshold(exposure) * exposure).toBeCloseTo(BLOOM_CLIP, 12);
+    }
+  });
+
+  it('falls as exposure rises and stays finite at zero', () => {
+    expect(bloomThreshold(3)).toBeLessThan(bloomThreshold(1));
+    expect(Number.isFinite(bloomThreshold(0))).toBe(true);
   });
 });

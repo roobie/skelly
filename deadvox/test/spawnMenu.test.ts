@@ -78,6 +78,7 @@ describe('spawnMenuViewModel', () => {
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
         { linearColorsOn: false, setLinearColors: () => undefined, patternsOn: true, setPatterns: () => undefined },
         new FakeMood(),
+        { fogginess: 0.2 },
       ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,
