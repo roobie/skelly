@@ -251,6 +251,6 @@ describe('playtest observer snapshot oracle', () => {
       1,
     );
     expect(result.stateUnchanged).toBe(false);
-    expect(runtime.sim.needs.health).toBe(99);
+    expect(runtime.sim.needs.health).toBeLessThan(99);
   });
 });

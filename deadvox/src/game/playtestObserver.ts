@@ -4,6 +4,7 @@ import type { Inventory, Location } from '../core/inventory.ts';
 import {
   measureSnapshots,
   type SessionMetrics,
+  SNAPSHOT_BATCH_TARGET_MS,
   type SnapshotHistory,
   type SnapshotMeasurement,
 } from './playtestTools.ts';
@@ -249,12 +250,23 @@ export class PlaytestObserver {
   ): SnapshotMeasurement {
     try {
       const result = measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
+      history.clear();
       for (const duration of result.durationsMs) {
         history.add(duration);
       }
       return result;
     } catch {
-      return { samples: 0, p50Ms: 0, p95Ms: 0, durationsMs: [], stateUnchanged: false };
+      return {
+        samples: 0,
+        batchSize: 0,
+        timerResolutionMs: null,
+        targetBatchMs: SNAPSHOT_BATCH_TARGET_MS,
+        calibrationBatchMs: 0,
+        p50Ms: 0,
+        p95Ms: 0,
+        durationsMs: [],
+        stateUnchanged: false,
+      };
     }
   }
 

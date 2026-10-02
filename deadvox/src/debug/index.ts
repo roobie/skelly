@@ -147,6 +147,7 @@ const panelTemplate = ({
   revealZombies,
   toggleReveal,
   measureSnapshot,
+  copySnapshotResult,
   exportMetrics,
   toggleOpen,
   dumpLook,
@@ -165,6 +166,7 @@ const panelTemplate = ({
   revealZombies: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
+  copySnapshotResult: () => void;
   exportMetrics: () => void;
   toggleOpen: () => void;
   dumpLook: () => void;
@@ -221,7 +223,11 @@ const panelTemplate = ({
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
-    <p>F4 toggles the performance overlay. ${snapshotStatus}</p>
+    <p>F4 toggles the performance overlay.</p>
+    <div class="debug-snapshot-result-row">
+      <p id="snapshot-measurement-result" class="debug-snapshot-result" aria-live="polite" tabindex="0">${snapshotStatus || 'No snapshot measurement yet.'}</p>
+      <button id="copy-snapshot-result" type="button" ?disabled=${snapshotStatus === ''} @click=${copySnapshotResult}>Copy</button>
+    </div>
     <div id="debug-readout" class="debug-readout"></div>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
@@ -615,6 +621,23 @@ export const formatMeleeResult = (result: MeleeResult): string => {
   return `${result.region} ${result.damage} damage (${result.healthBefore}→${result.healthAfter}) · ${outcome}`;
 };
 
+export const copyTextOrSelect = async (
+  text: string,
+  clipboard: { writeText: (value: string) => Promise<void> } | undefined,
+  selectFallback: () => void,
+): Promise<boolean> => {
+  try {
+    if (!clipboard) {
+      throw new Error('Clipboard API unavailable');
+    }
+    await clipboard.writeText(text);
+    return true;
+  } catch {
+    selectFallback();
+    return false;
+  }
+};
+
 const DEBUG_START_LIGHT = 'flashlight';
 
 /** A fresh debug game starts with a switched-off flashlight in the left hand, which leaves the right free. */
@@ -880,9 +903,22 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           measureSnapshot: () => {
             const result = hooks.measureSnapshot();
-            snapshotStatus = `Snapshot ${result.samples}×: p50 ${result.p50Ms.toFixed(3)} ms, p95 ${result.p95Ms.toFixed(3)} ms; state ${result.stateUnchanged ? 'unchanged' : 'CHANGED'}`;
+            snapshotStatus = `Snapshot: ${result.samples} batches × ${result.batchSize} captures/batch (${result.samples * result.batchSize} captures); calibration ${result.calibrationBatchMs.toFixed(3)} ms; timer ${result.timerResolutionMs === null ? 'unknown' : `${result.timerResolutionMs.toFixed(3)} ms`}; p50 ${result.p50Ms.toFixed(3)} ms/capture, p95 ${result.p95Ms.toFixed(3)} ms/capture; state ${result.stateUnchanged ? 'unchanged' : 'CHANGED'}`;
             shellKey = '';
             drawShell();
+          },
+          copySnapshotResult: async () => {
+            const resultLine = host.querySelector<HTMLElement>('#snapshot-measurement-result');
+            if (!resultLine || snapshotStatus === '') {
+              return;
+            }
+            const text = snapshotStatus;
+            await copyTextOrSelect(text, globalThis.navigator.clipboard, () => {
+              resultLine.focus();
+              const selection = globalThis.getSelection();
+              selection?.removeAllRanges();
+              selection?.selectAllChildren(resultLine);
+            });
           },
           exportMetrics: hooks.exportMetrics,
           toggleOpen: togglePanel,

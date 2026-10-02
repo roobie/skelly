@@ -1093,6 +1093,39 @@ body.bench #quickbar {
   justify-content: space-between;
   align-items: center;
 }
+#debug-ui-root .debug-snapshot-result-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0;
+}
+#debug-ui-root .debug-snapshot-result {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font:
+    11px / 1.5 ui-monospace,
+    monospace;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#debug-ui-root #copy-snapshot-result {
+  flex: none;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 22%);
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+  cursor: pointer;
+}
+#debug-ui-root #copy-snapshot-result:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 #debug-ui-root .debug-panel .debug-readout span,
 #debug-ui-root .debug-panel .debug-shambler-count button,
 #debug-ui-root .debug-panel .debug-shambler-count output,

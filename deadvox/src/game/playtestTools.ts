@@ -176,9 +176,16 @@ const normalizeMetrics = (value: SessionMetricsV1): SessionMetricsV1 => ({
 export const metricsExportJson = (metrics: SessionMetrics): string => `${JSON.stringify(metrics.toJSON(), null, 2)}\n`;
 
 export interface SnapshotMeasurement {
+  /** Number of timed batches; each batch contains `batchSize` snapshot captures. */
   readonly samples: number;
+  readonly batchSize: number;
+  /** Smallest positive increment observed while probing the injected monotonic clock. */
+  readonly timerResolutionMs: number | null;
+  readonly targetBatchMs: number;
+  readonly calibrationBatchMs: number;
   readonly p50Ms: number;
   readonly p95Ms: number;
+  /** Per-capture average for each timed batch. */
   readonly durationsMs: readonly number[];
   readonly stateUnchanged: boolean;
 }
@@ -265,7 +272,29 @@ export const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<objec
   return equalProperties(a, b, seen);
 };
 
-/** A side-effect-free timed call to a pure snapshot producer. Compares live state without serialization. */
+/** Each sample must span many clock ticks so coarse browser timers still resolve per-capture cost. */
+export const SNAPSHOT_BATCH_TARGET_MS = 20;
+const MAX_SNAPSHOT_BATCH_SIZE = 65_536;
+const MAX_TIMER_PROBE_READS = 100_000;
+const MIN_TIMER_PROBE_TICKS = 8;
+
+const detectTimerResolution = (now: () => number): number | null => {
+  let previous = now();
+  let minimum = Number.POSITIVE_INFINITY;
+  let ticks = 0;
+  for (let reads = 0; reads < MAX_TIMER_PROBE_READS && ticks < MIN_TIMER_PROBE_TICKS; reads++) {
+    const current = now();
+    const delta = current - previous;
+    if (delta > 0) {
+      minimum = Math.min(minimum, delta);
+      previous = current;
+      ticks += 1;
+    }
+  }
+  return Number.isFinite(minimum) ? minimum : null;
+};
+
+/** Times batches of pure snapshot captures and compares live state without serialization. */
 export const measureSnapshots = (
   snapshot: () => unknown,
   liveState: () => unknown,
@@ -276,15 +305,37 @@ export const measureSnapshots = (
     throw new Error(`Invalid snapshot repetitions: ${repeats}`);
   }
   const before = liveState();
+  const timerResolutionMs = detectTimerResolution(now);
+  const targetBatchMs = Math.max(SNAPSHOT_BATCH_TARGET_MS, (timerResolutionMs ?? 1) * 20);
+  const timeBatch = (captureCount: number): number => {
+    const start = now();
+    for (let i = 0; i < captureCount; i++) {
+      snapshot();
+    }
+    return Math.max(0, now() - start);
+  };
+
+  let batchSize = 1;
+  let calibrationBatchMs = timeBatch(batchSize);
+  while (calibrationBatchMs < targetBatchMs && batchSize < MAX_SNAPSHOT_BATCH_SIZE) {
+    batchSize = Math.min(batchSize * 2, MAX_SNAPSHOT_BATCH_SIZE);
+    calibrationBatchMs = timeBatch(batchSize);
+  }
+  if (calibrationBatchMs < targetBatchMs) {
+    throw new Error(`Snapshot clock did not span ${targetBatchMs} ms within ${MAX_SNAPSHOT_BATCH_SIZE} captures`);
+  }
+
   const samples: number[] = [];
   for (let i = 0; i < repeats; i++) {
-    const start = now();
-    snapshot();
-    samples.push(Math.max(0, now() - start));
+    samples.push(timeBatch(batchSize) / batchSize);
   }
   const after = liveState();
   return {
     samples: repeats,
+    batchSize,
+    timerResolutionMs,
+    targetBatchMs,
+    calibrationBatchMs,
     p50Ms: percentile(samples, 0.5),
     p95Ms: percentile(samples, 0.95),
     durationsMs: samples,
@@ -295,6 +346,7 @@ export const measureSnapshots = (
 /** Stores the latest autosave/on-demand snapshot costs for the session readout. */
 export interface SnapshotHistory {
   add: (durationMs: number, at?: number) => void;
+  clear: () => void;
   readonly lastMs: number | undefined;
   readonly p95Ms: number;
   readonly count: number;
@@ -312,6 +364,9 @@ export const createSnapshotHistory = (limit = 512): SnapshotHistory => {
       if (entries.length > maximum) {
         entries.splice(0, entries.length - maximum);
       }
+    },
+    clear() {
+      entries.length = 0;
     },
     get lastMs() {
       return entries.at(-1)?.durationMs;

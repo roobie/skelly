@@ -68,52 +68,97 @@ describe('playtest metrics', () => {
 describe('snapshot measurement', () => {
   it('measures repeated pure snapshots and verifies the state hash is unchanged', () => {
     const state = { time: 5, entities: [1, 2] };
-    let tick = 0;
+    let elapsedMs = 0;
     const result = measureSnapshots(
-      () => structuredClone(state),
+      () => {
+        elapsedMs += 0.5;
+        return structuredClone(state);
+      },
       () => JSON.stringify(state),
       20,
       () => {
-        const current = tick;
-        tick += 1;
-        return current;
+        elapsedMs += 0.01;
+        return Math.floor(elapsedMs);
       },
     );
     expect(result.samples).toBe(20);
-    expect(result.p50Ms).toBe(1);
-    expect(result.p95Ms).toBe(1);
+    expect(result.batchSize).toBeGreaterThan(1);
+    expect(result.timerResolutionMs).toBe(1);
+    expect(result.p50Ms).toBeCloseTo(0.5, 1);
+    expect(result.p95Ms).toBeCloseTo(0.5, 1);
+    expect(result.calibrationBatchMs).toBeGreaterThanOrEqual(result.targetBatchMs);
     expect(result.stateUnchanged).toBe(true);
     const history = createSnapshotHistory(4);
     for (const duration of result.durationsMs) {
       history.add(duration);
     }
-    expect(history.lastMs).toBe(1);
+    expect(history.lastMs).toBe(result.durationsMs.at(-1));
     expect(history.count).toBe(4);
+    history.clear();
+    expect(history.count).toBe(0);
+    expect(history.lastMs).toBeUndefined();
   });
 
   it('detects a snapshot producer that mutates state', () => {
     let state = 0;
+    let elapsedMs = 0;
     const result = measureSnapshots(
       () => {
         state += 1;
+        elapsedMs += 0.5;
         return state;
       },
       () => state,
       1,
-      () => 0,
+      () => {
+        elapsedMs += 0.01;
+        return Math.floor(elapsedMs);
+      },
     );
     expect(result.stateUnchanged).toBe(false);
   });
 
+  it('averages batches accurately with a 1 ms timer and checks every capture for state changes', () => {
+    let elapsedMs = 0;
+    let state = 0;
+    let captures = 0;
+    const result = measureSnapshots(
+      () => {
+        captures += 1;
+        if (captures === 1) {
+          state += 1;
+        }
+        elapsedMs += 0.25;
+      },
+      () => state,
+      50,
+      () => {
+        elapsedMs += 0.02;
+        return Math.floor(elapsedMs);
+      },
+    );
+    expect(result.timerResolutionMs).toBe(1);
+    expect(result.batchSize).toBeGreaterThan(1);
+    expect(Math.abs(result.p50Ms - 0.25)).toBeLessThan(0.01);
+    expect(Math.abs(result.p95Ms - 0.25)).toBeLessThan(0.01);
+    expect(result.stateUnchanged).toBe(false);
+    expect(captures).toBeGreaterThan(result.samples * result.batchSize);
+  });
+
   it('compares exact numeric values without JSON normalization', () => {
     const state = { value: 0 };
+    let elapsedMs = 0;
     const result = measureSnapshots(
       () => {
         state.value = -0;
+        elapsedMs += 0.5;
       },
       () => ({ ...state }),
       1,
-      () => 0,
+      () => {
+        elapsedMs += 0.01;
+        return Math.floor(elapsedMs);
+      },
     );
     expect(result.stateUnchanged).toBe(false);
   });

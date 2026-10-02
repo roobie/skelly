@@ -227,8 +227,17 @@ try {
     `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Measure snapshot'))?.click()`,
   );
   await waitFor(
-    () => evaluate("document.querySelector('.debug-panel').textContent.includes('Snapshot 50×')"),
-    'on-demand snapshot measurement',
+    () =>
+      evaluate("document.querySelector('#snapshot-measurement-result').textContent.includes('Snapshot: 50 batches ×')"),
+    'on-demand batched snapshot measurement',
+  );
+  const snapshotResult = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
+  assert.match(snapshotResult, /captures\/batch.*timer .* ms.*p50 .* ms\/capture.*p95 .* ms\/capture/);
+  assert.equal(await evaluate("document.querySelector('#copy-snapshot-result').textContent.trim()"), 'Copy');
+  assert.equal(
+    await evaluate("getComputedStyle(document.querySelector('#snapshot-measurement-result')).userSelect"),
+    'text',
+    'snapshot result line is selectable',
   );
   await evaluate(
     `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Export metrics'))?.click()`,
