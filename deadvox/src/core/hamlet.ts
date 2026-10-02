@@ -8,6 +8,7 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
+import { HamletRange } from './range.ts';
 import type { Scale } from './scale.ts';
 import {
   type FurnitureSpawn,
@@ -92,6 +93,7 @@ export class Hamlet implements Site {
   readonly lots: readonly Lot[];
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
+  readonly range: HamletRange;
   /** Where the player starts: feet in metres, and a yaw that looks down the road. */
   readonly spawn: { pos: Vec3; yaw: number };
   readonly seed: number;
@@ -128,7 +130,7 @@ export class Hamlet implements Site {
         floor,
       };
     });
-    this.bounds = grow(
+    const hamletBounds = grow(
       {
         x0: Math.min(this.road.x0, ...this.lots.map((l) => l.rect.x0)),
         z0: Math.min(this.road.z0, ...this.lots.map((l) => l.rect.z0)),
@@ -137,6 +139,13 @@ export class Hamlet implements Site {
       },
       HAMLET.blend,
     );
+    this.range = new HamletRange(seed, registry, scale, hamletBounds);
+    this.bounds = {
+      x0: Math.min(hamletBounds.x0, this.range.blendBounds.x0),
+      z0: Math.min(hamletBounds.z0, this.range.blendBounds.z0),
+      x1: Math.max(hamletBounds.x1, this.range.blendBounds.x1),
+      z1: Math.max(hamletBounds.z1, this.range.blendBounds.z1),
+    };
     const sx = this.road.x0 + 2;
     const roadTop = this.roadHeights[2]!;
     this.spawn = {
@@ -154,7 +163,7 @@ export class Hamlet implements Site {
   get surface(): Surface {
     return {
       height: (x, z, natural) => this.height(x, z, natural),
-      top: (x, z) => (rectDistance(this.road, x, z) === 0 ? this.asphalt : undefined),
+      top: (x, z) => (rectDistance(this.road, x, z) === 0 ? this.asphalt : this.range.top(x, z)),
     };
   }
 
@@ -177,6 +186,7 @@ export class Hamlet implements Site {
         stampPlacement(chunk, lot.placement);
       }
     }
+    this.range.stamp(chunk);
   }
 
   /**
@@ -184,7 +194,10 @@ export class Hamlet implements Site {
    * from a stream of its own, keyed by where it is.
    */
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    return this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz]));
+    return [
+      ...this.lots.flatMap((lot) => furnitureOf(this, lot.placement, [cx, cz])),
+      ...this.range.furnitureIn(cx, cz),
+    ];
   }
 
   zombiesIn(cx: number, cz: number): ZombieSpawn[] {
@@ -302,7 +315,7 @@ export class Hamlet implements Site {
   }
 
   /**
-   * Blends the natural ground toward the road's and lots' heights. Each pulls with a
+   * Blends the natural ground toward the road, range and lot floors. Each pulls with a
    * weight that falls from 1 at its edge to 0 `blend` blocks out; lots and the road
    * are at least that far apart, so each stays flat.
    */
@@ -312,15 +325,16 @@ export class Hamlet implements Site {
     }
     let weights = 0;
     let pull = 0;
-    const add = (rect: Rect, target: number) => {
+    const add = (rect: Rect, target: number, blend = HAMLET.blend) => {
       const d = rectDistance(rect, x, z);
-      if (d < HAMLET.blend) {
-        const w = smoothstep(1 - d / HAMLET.blend);
+      if (d < blend) {
+        const w = smoothstep(1 - d / blend);
         weights += w;
         pull += w * (target - natural);
       }
     };
     add(this.road, this.roadHeightAt(x));
+    add(this.range.rect, this.range.floor, this.range.blend);
     for (const lot of this.lots) {
       add(lot.rect, lot.floor);
     }
