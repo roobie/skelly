@@ -6,7 +6,7 @@
 //     -> one node per part, named `<part id>:<registry key>`, placed by its resolved transform, carrying one
 //        mesh with one primitive per drawn solid (the solids the viewer draws: `displaySolids ?? solids`)
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
-// Vertices are in the part's local frame times `METRES_PER_UNIT`; the node transform supplies the placement.
+// Vertices are in the part's local frame times the domain's `units.metresPerUnit`; the node transform supplies the placement.
 
 import { resolveAppearance } from './appearance.ts';
 import type {
@@ -21,7 +21,7 @@ import type {
   SrgbColor,
 } from './design.ts';
 import { type DisplayItem, displayItems } from './display.ts';
-import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
+import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef } from './schema.ts';
@@ -83,9 +83,13 @@ const round6 = (x: number): number => {
   return r === 0 ? 0 : r;
 };
 
-const toMetres = (v: Vec3): Vec3 => [v[0] * METRES_PER_UNIT, v[1] * METRES_PER_UNIT, v[2] * METRES_PER_UNIT];
-const modelPoint = (v: Vec3): Vec3 => {
-  const p = toMetres(toFileAxes(v));
+const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
+  v[0] * metresPerUnit,
+  v[1] * metresPerUnit,
+  v[2] * metresPerUnit,
+];
+const modelPoint = (v: Vec3, metresPerUnit: number): Vec3 => {
+  const p = toMetres(toFileAxes(v), metresPerUnit);
   return [round6(p[0]), round6(p[1]), round6(p[2])];
 };
 
@@ -255,6 +259,7 @@ export const exportGlb: ExportGlb = (input) => {
     return fail(error);
   }
   const { resolved, anchors, palette, asset } = input;
+  const { metresPerUnit } = resolved.domain.units;
 
   const parts: PartExport[] = Object.keys(resolved.assembly.parts)
     .sort()
@@ -306,7 +311,7 @@ export const exportGlb: ExportGlb = (input) => {
     if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
       return undefined;
     }
-    const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
+    const positions = mesh.positions.map((x) => x * metresPerUnit);
     const { min, max } = bounds(positions);
     const position = bin.add(
       positions,
@@ -352,7 +357,7 @@ export const exportGlb: ExportGlb = (input) => {
     if (!isIdentity(part.placed.r)) {
       node.rotation = rotation;
     }
-    node.translation = toMetres(part.placed.t);
+    node.translation = toMetres(part.placed.t, metresPerUnit);
     if (primitives.length > 0) {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
@@ -380,7 +385,7 @@ export const exportGlb: ExportGlb = (input) => {
     for (const port of part.def.ports) {
       const portNode: Json = {
         name: `${part.id}.${port.id}`,
-        translation: toMetres(port.pos),
+        translation: toMetres(port.pos, metresPerUnit),
         extras: { port: portMetadata(part.id, port, part.placed) },
       };
       const frame = portFrameMatrix(port);
@@ -403,7 +408,7 @@ export const exportGlb: ExportGlb = (input) => {
     gungen: {
       assembly: resolved.assembly.name,
       unit: 'u',
-      metresPerUnit: METRES_PER_UNIT,
+      metresPerUnit,
       portFrameUnit: 'u',
       materialCount: materials.length,
     },
@@ -426,12 +431,12 @@ export const exportGlb: ExportGlb = (input) => {
 
   const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
     name,
-    modelPoint(frame.position),
+    modelPoint(frame.position, metresPerUnit),
   ]);
   const modelEntry: DeadvoxModelEntry = {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
-    grip: { at: modelPoint(anchors.hold.position), turn: gripTurn() },
+    grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
     ...(others.length > 0 ? { anchors: Object.fromEntries(others) } : {}),
   };
   return { ok: true, glb: glbFile(json, bin.bytes()), modelEntry };
