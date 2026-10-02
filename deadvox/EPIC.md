@@ -207,6 +207,22 @@ See [SLICE-1.md](SLICE-1.md). It covers:
   save migration.
 - Content filled up to the minimums.
 
+### Sound polish — BR 2026-10-01
+
+**Re-listen — BR 2026-10-02:** BR approved the current d13-selected recordings presented for re-listen. Prior explicit placeholders and rejected/deferred work below remain open (including a better fist hit, a hard-landing-specific sound, a distinct stuck-door cue, and the rejected mud/stone footsteps).
+
+- Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood still need recordings. Implement after d7's deferred surface-hit result.
+- Split item-drop sounds by pile surface; the wood clips currently play on every surface because piles expose no surface classification.
+- Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
+- Wood tap or knock: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/wood_tap--thwack-02.wav` is in the mail scratch and intentionally not in the repo.
+- New sources for `footstep_mud` and `shambler_step_mud` (all current variants rejected).
+- More `footstep_leaves` variants (BR rejected `footstep-leaves-02.ogg`: it sounds like linoleum).
+- New sources for `footstep_stone` and `shambler_step_stone`; park the current gravel-sounding clips for a future gravel surface.
+- More `door_open` variants; only `door-open-03.ogg` is currently accepted.
+- A distinct stuck-door sound; `door_close` and `door_blocked_close` temporarily share `door_blocked_close-01.ogg`.
+- A better fist-hit source (the current placeholder is retained).
+- A blunt hit on a wall, a hard landing, and more swing variants.
+
 ## Later, after the game is more playable
 
 **Shambler polish — not scheduled; take up once the game is more playable.** BR's

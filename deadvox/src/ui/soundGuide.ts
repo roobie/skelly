@@ -26,12 +26,18 @@ const TRIGGER_ENTRIES = [
   ['footstep_wood', { trigger: 'Walk, jog, or sprint over planks.' }],
   ['footstep_leaves', { trigger: 'Walk, jog, or sprint over fabric or carpet.' }],
   ['door_open', { trigger: 'Press F while looking at a closed, reachable door.' }],
-  ['door_close', { trigger: 'Press F while looking at an open, reachable door.' }],
+  [
+    'door_close',
+    {
+      trigger: 'Press F while looking at an open, reachable door.',
+      note: 'Temporary BR-approved stand-in; shares its recording with door_blocked_close.',
+    },
+  ],
   [
     'door_blocked_close',
     {
       trigger: 'Press F to close a door while something blocks it.',
-      note: 'Stand-in: reuses the door_close recordings at a lower configured gain.',
+      note: 'Temporary stand-in: shares the door-close recording; a distinct stuck-door sound is future work.',
     },
   ],
   ['player_strain', { trigger: 'Press Space while grounded to jump.' }],
@@ -134,11 +140,70 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ['melee_swing', { trigger: 'Click the primary mouse button to swing while able to attack.' }],
-  ['melee_hit', { trigger: 'Land a melee swing on a shambler.' }],
+  ['melee_hit', { trigger: 'Land a weapon melee swing on a shambler.' }],
+  [
+    'melee_hit_fist',
+    {
+      trigger: 'Land a fist swing on a shambler.',
+      note: 'Stand-in recording until a better fist-hit source is found.',
+    },
+  ],
+  ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
+  ['pouch_take', { trigger: 'Take an item out of a pocket on a worn item.' }],
 ] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];
 
 export const SOUND_TRIGGER_GUIDE = Object.fromEntries(TRIGGER_ENTRIES) as Record<SoundEventId, SoundTriggerGuide>;
 const ORDER = TRIGGER_ENTRIES.map(([id]) => id);
+
+/** BR's listening verdicts, joined into the existing guide note shown on /sounds.html. */
+const BR_STATUS_NOTES = new Map<SoundEventId, string>([
+  ['player_hurt_light', 'Approved by BR (2026-10-02).'],
+  ['player_hurt_heavy', 'Approved by BR (2026-10-02).'],
+  ['player_strain', 'Approved by BR (2026-10-02).'],
+  [
+    'player_landing_hard',
+    'Placeholder: BR approved the current generic jump/landing recording (2026-10-02); a hard-landing-specific sound remains future work.',
+  ],
+  ['footstep_grass', 'Approved by BR (2026-10-02).'],
+  ['footstep_mud', 'To replace: BR rejected the current mud footsteps.'],
+  ['footstep_sand', 'Approved by BR (2026-10-02); currently shares its grass/sand recording set with footstep_grass.'],
+  ['footstep_stone', 'To replace as stone: BR heard gravel; keep current clips for a future gravel surface.'],
+  ['footstep_wood', 'Approved by BR (2026-10-02) after re-leveling; current variants retained.'],
+  [
+    'footstep_leaves',
+    'Approved by BR (2026-10-02) with one variant; leaves-02 was rejected as linoleum and remains unreferenced.',
+  ],
+  [
+    'shambler_step_grass',
+    'Approved by BR (2026-10-02); current clips remain MVP stand-ins for bespoke shambler foley.',
+  ],
+  ['shambler_step_mud', 'To replace: BR rejected the current mud footsteps.'],
+  ['shambler_step_sand', 'Approved by BR (2026-10-02); current clips remain MVP stand-ins for bespoke shambler foley.'],
+  ['shambler_step_stone', 'To replace as stone: BR heard gravel; keep current clips for a future gravel surface.'],
+  ['shambler_step_wood', 'Approved by BR (2026-10-02) after re-leveling; current clips remain MVP stand-ins.'],
+  [
+    'shambler_step_leaves',
+    'Approved by BR (2026-10-02) with one variant; leaves-02 was rejected as linoleum and remains unreferenced.',
+  ],
+  ['melee_swing', 'Approved by BR (2026-10-02); more swing variants remain future work.'],
+  ['melee_hit', 'Approved by BR (2026-10-02).'],
+  [
+    'melee_hit_fist',
+    'Placeholder: BR approved this stand-in (2026-10-02); replace when a better fist-hit source is found.',
+  ],
+  ['item_drop_wood', 'Approved by BR (2026-10-02) on wood; splitting by pile surface remains future work.'],
+  ['pouch_take', 'Approved by BR (2026-10-02).'],
+  ['shambler_idle', 'Approved by BR (2026-10-02).'],
+  ['shambler_alert', 'Approved by BR (2026-10-02).'],
+  ['shambler_attack', 'Approved by BR (2026-10-02).'],
+  ['shambler_hurt', 'Approved by BR (2026-10-02).'],
+  ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
+  ['door_close', 'Approved by BR (2026-10-02).'],
+  [
+    'door_blocked_close',
+    'Placeholder: shares door_close’s recording, approved by BR (2026-10-02); a distinct stuck-door sound is future work.',
+  ],
+]);
 
 export interface SoundVariantGuide {
   readonly file: string;
@@ -183,7 +248,7 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
         gainJitter: sound.gainJitter,
         minIntervalSeconds: sound.minIntervalSeconds,
         noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
-        note: trigger.note ?? null,
+        note: [BR_STATUS_NOTES.get(id), trigger.note].filter((note) => note !== undefined).join(' '),
         variants: sound.variants.map((file) => {
           const source = byFile.get(file);
           return {

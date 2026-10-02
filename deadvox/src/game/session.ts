@@ -16,8 +16,8 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue, type TickResult } from '../core/handling.ts';
-import { Inventory } from '../core/inventory.ts';
+import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
+import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, stepBody } from '../core/physics.ts';
@@ -107,6 +107,9 @@ export interface SessionAudio {
   ) => boolean;
   snapshotState: () => Readonly<SoundPickerState>;
   restoreState: (state: SoundPickerState) => void;
+  /** Presentation-only cues for inventory handling; never affect noise or simulation state. */
+  onMoveStart?: (move: MoveStart, ownerLocation: Location | undefined, chest: Vec3, time: number) => void;
+  onMoveComplete?: (move: MoveStart, time: number) => void;
 }
 
 /** The part of the debug tools that changes what the simulation does. */
@@ -191,7 +194,6 @@ export const createSession = (options: SessionOptions) => {
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities)
     : new Inventory(registry, undefined, options.entities);
   const { entities } = inventory;
-  const queue = new HandlingQueue(inventory);
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
   const zombieStore = new MapEntityStore<Zombie>();
@@ -253,6 +255,17 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  const queue = new HandlingQueue(
+    inventory,
+    (move) =>
+      options.audio.onMoveStart?.(
+        move,
+        move.from.kind === 'pocket' ? inventory.locate(move.from.owner) : undefined,
+        chest(),
+        sim.time,
+      ),
+    (move) => options.audio.onMoveComplete?.(move, sim.time),
+  );
 
   const survival = new Survival(sim, inventory, queue, {
     feet: () => ({ kind: 'pile', pos: feet() }),

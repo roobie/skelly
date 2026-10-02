@@ -302,6 +302,30 @@ describe('player melee action', () => {
     expect(wallSystem.snapshotState().playerAttackWait).toBeCloseTo(0.55);
   });
 
+  it.each([
+    { profile: 'fists' as const, expected: 'melee_hit_fist', weapon: FISTS_MELEE, hands: { right: null, left: null } },
+    { profile: 'blunt' as const, expected: 'melee_hit', weapon: BASE_WEAPON, hands: { right: 11, left: null } },
+  ])('preserves $profile hit sound through live ticks and restored actions', ({ profile, expected, weapon, hands }) => {
+    const originalSounds: string[] = [];
+    const original = makeSystem(FLOOR, [], originalSounds);
+    const { id, zombie } = makeTarget(original);
+    const ray = headRay(zombie, id);
+    expect(original.beginMeleeSwing({ ...ray, weapon, profile, twoHanded: false, hands })).toBe(true);
+    for (let tick = 0; tick < 4; tick++) {
+      advance(original, 0.05, hands);
+    }
+
+    const restoredSounds: string[] = [];
+    const restored = makeSystem(FLOOR, [], restoredSounds);
+    restored.restoreState(original.snapshotState(), (type) => (type === SHAMBLER.id ? SHAMBLER : undefined));
+    restored.setFrozen(true);
+    advance(original, 0.05, hands);
+    advance(restored, 0.05, hands);
+    for (const sounds of [originalSounds, restoredSounds]) {
+      expect(sounds.filter((event) => event === 'melee_hit' || event === 'melee_hit_fist')).toEqual([expected]);
+    }
+  });
+
   it('saves the remaining phase, hits once after restore, alternates fists, and cancels when hands change', () => {
     const originalResults: string[] = [];
     const original = makeSystem(FLOOR, originalResults);
