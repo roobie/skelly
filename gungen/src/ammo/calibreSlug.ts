@@ -10,7 +10,20 @@ export const calibreSlug = (id: string): string => {
   if (!CALIBRE_ID_PATTERN.test(id)) {
     throw new Error(`invalid cartridge id for a model slug: ${JSON.stringify(id)}`);
   }
-  return id.replace(/[.-]/g, '_');
+  return [...id]
+    .map((character) => {
+      if (character === '.') {
+        return '_d_';
+      }
+      if (character === '-') {
+        return '_h_';
+      }
+      if (character === '_') {
+        return '_u_';
+      }
+      return character;
+    })
+    .join('');
 };
 
 export type CartridgeModelKind = 'round' | 'case';

@@ -12,13 +12,14 @@ import {
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { roundProfiles } from '../ammo/roundProfile.ts';
-import { meshForRevolved } from '../core/revolve.ts';
-import type { Vec2 } from '../core/schema.ts';
+import { meshForSolid } from '../core/mesh.ts';
+import type { RevolvedSolid, Vec2 } from '../core/schema.ts';
 import { UNITS_PER_MM } from '../gun/magazineGeometry.ts';
 
 export const DEFAULT_ROUND_FACETS = 24;
 const ROUND_CREASE_DEGREES = 12;
 export type CaseFinish = 'steel' | 'brass';
+export const caseFinishFromQuery = (value: string | null): CaseFinish => (value === 'steel' ? 'steel' : 'brass');
 
 export interface AmmoMeshes {
   readonly loose: Group;
@@ -63,16 +64,14 @@ const finishMaterials = (finish: CaseFinish, env: Texture) => {
 };
 
 const revolvedGeometry = (profile: readonly Vec2[], facets: number): BufferGeometry => {
-  const mesh = meshForRevolved(
-    {
-      id: 'cartridge-component',
-      kind: 'revolved',
-      axis: 'x',
-      profile: profile.map(([axial, radius]): Vec2 => [axial * UNITS_PER_MM, radius * UNITS_PER_MM]),
-      creaseDegrees: ROUND_CREASE_DEGREES,
-    },
-    facets,
-  );
+  const solid: RevolvedSolid = {
+    id: 'cartridge-component',
+    kind: 'revolved',
+    axis: 'x',
+    profile: profile.map(([axial, radius]): Vec2 => [axial * UNITS_PER_MM, radius * UNITS_PER_MM]),
+    creaseDegrees: ROUND_CREASE_DEGREES,
+  };
+  const mesh = meshForSolid(solid, 0, facets);
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));

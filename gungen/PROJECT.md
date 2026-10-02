@@ -940,10 +940,13 @@ the geometry declares them, whether or not a cartridge is assigned.
   dimensions are explicitly marked as visual-profile proxy estimates, not a
   chamber-interchangeability claim. Bullet length remains unsourced; only the
   rendered generic bullet uses the named seating-depth assumption in
-  `src/ammo/roundProfile.ts`. Their model ids/files use the single deterministic
-  calibre slug function in `src/ammo/calibreSlug.ts` (e.g. `round_7_62x39`,
-  `round-7_62x39.glb`); a test proves it is injective over the registered
-  cartridge ids. Gungen's internal revolve profiles remain in millimetres.
+  `src/ammo/roundProfile.ts`. Cartridge GLBs carry `case`, `bullet`, and `primer`
+  finish slots, defaulting to brass, copper, and brass; an appearance override
+  such as `{ finish: { case: 'steel' } }` selects the steel-case variant.
+  Their model ids/files use the injective separator-escaped slug function in
+  `src/ammo/calibreSlug.ts` (e.g. `round_7_d_62x39`,
+  `round-7_d_62x39.glb`); a test checks every registered id and all accepted
+  separator forms. Gungen's internal revolve profiles remain in millimetres.
 
 #### 3.0b (implemented)
 

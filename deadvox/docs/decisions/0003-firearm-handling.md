@@ -67,7 +67,7 @@ This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and De
   - `holdOpen`: whether the carrier stays back on an empty magazine;
   - `rpm`.
 - **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, tilt }]`, from the top round down). `at` is the round centre in metres in magazine-model coordinates; `tilt` is degrees about +z (nose-up positive). Left/right stagger is encoded by the sign of `at[2]`, not a separate field, so deadvox can draw remaining rounds by instancing the round model.
-- **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109). In model ids and filenames `<calibre>` means the deterministic slug of the cartridge id (e.g. `round_7_62x39`); the entry's `calibre` remains the exact source id (`7.62x39`).
+- **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109). In model ids and filenames `<calibre>` means the deterministic slug of the cartridge id (e.g. `round_7_d_62x39`); the entry's `calibre` remains the exact source id (`7.62x39`).
 
 The exact field names and units are settled in the gungen work items (g34, g35) and recorded in `gungen/PROJECT.md` next to the 3.0a contracts; this ADR fixes what the contract must carry.
 

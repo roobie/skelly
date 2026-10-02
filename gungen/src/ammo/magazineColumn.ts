@@ -20,6 +20,8 @@ export interface ColumnRound {
   readonly angle: number;
   /** Lateral offset of the round's axis from the magazine centre plane. */
   readonly z: number;
+  /** Distance from the feed face along the centreline; used to check actual body sections. */
+  readonly distance: number;
 }
 
 export interface Column {
@@ -90,6 +92,7 @@ export const layoutColumn = (input: ColumnInput): Column => {
     return {
       position: at,
       angle: Math.atan2(tangent[0], -tangent[1]),
+      distance: first + index * pitch,
       z: index % 2 === 0 ? lateralOffset : -lateralOffset,
     };
   });

@@ -1,6 +1,7 @@
 import validator from 'gltf-validator';
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
+import { srgbToLinear } from '../src/core/glb.ts';
 import { exportCartridgeModels } from '../src/gun/cartridgeExport.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
@@ -13,6 +14,45 @@ const glbJson = (bytes: Uint8Array): Record<string, unknown> => {
 };
 
 describe('standalone cartridge GLBs', () => {
+  it('routes case, bullet, and primer finish overrides to their GLB materials', () => {
+    const result = exportCartridgeModels(cartridge, {
+      finish: { case: 'steel', bullet: 'lead', primer: 'brass' },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    const defaults = exportCartridgeModels(cartridge);
+    expect(defaults.ok).toBe(true);
+    if (!defaults.ok) {
+      return;
+    }
+    expect(defaults.models.round.glb).not.toEqual(result.models.round.glb);
+    const defaultGltf = glbJson(defaults.models.round.glb);
+    const defaultPrimitives = (defaultGltf.meshes as { primitives: { extras: Record<string, string> }[] }[])[0]!
+      .primitives;
+    const defaultBySolid = new Map(defaultPrimitives.map(({ extras }) => [extras.solid!, extras]));
+    expect(defaultBySolid.get('case')).toMatchObject({ slot: 'case', material: 'brass' });
+    expect(defaultBySolid.get('bullet')).toMatchObject({ slot: 'bullet', material: 'copper' });
+    expect(defaultBySolid.get('primer')).toMatchObject({ slot: 'primer', material: 'brass' });
+
+    const gltf = glbJson(result.models.round.glb);
+    const primitiveMaterials = (
+      gltf.meshes as { primitives: { material: number; extras: Record<string, string> }[] }[]
+    )[0]!.primitives;
+    const bySolid = new Map(primitiveMaterials.map(({ material, extras }) => [extras.solid!, { material, extras }]));
+
+    expect(bySolid.get('case')?.extras).toMatchObject({ slot: 'case', material: 'steel' });
+    expect(bySolid.get('bullet')?.extras).toMatchObject({ slot: 'bullet', material: 'lead' });
+    expect(bySolid.get('primer')?.extras).toMatchObject({ slot: 'primer', material: 'brass' });
+    const bulletMaterial = (gltf.materials as { pbrMetallicRoughness: { baseColorFactor: number[] } }[])[
+      bySolid.get('bullet')!.material
+    ]!;
+    expect(bulletMaterial.pbrMetallicRoughness.baseColorFactor.slice(0, 3)).toEqual(
+      [0.38, 0.4, 0.42].map(srgbToLinear),
+    );
+  });
+
   it('exports real-scale round and fired-case entries using the source calibre id', async () => {
     const result = exportCartridgeModels(cartridge);
     expect(result.ok).toBe(true);
@@ -21,14 +61,14 @@ describe('standalone cartridge GLBs', () => {
     }
     const { round, case: firedCase } = result.models;
     expect(round.modelEntry).toMatchObject({
-      id: 'round_7_62x39',
-      file: 'assets/models/round-7_62x39.glb',
+      id: 'round_7_d_62x39',
+      file: 'assets/models/round-7_d_62x39.glb',
       calibre: '7.62x39',
     });
     expect(round.modelEntry.grip).toBeUndefined();
     expect(firedCase.modelEntry).toMatchObject({
-      id: 'case_7_62x39',
-      file: 'assets/models/case-7_62x39.glb',
+      id: 'case_7_d_62x39',
+      file: 'assets/models/case-7_d_62x39.glb',
       calibre: '7.62x39',
     });
 

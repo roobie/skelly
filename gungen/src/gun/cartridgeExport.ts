@@ -28,10 +28,18 @@ type SingleCartridgeExportResult =
 const EMPTY_PORTS: PartDef['ports'] = [];
 const EMPTY_KEEPOUTS: PartDef['keepOuts'] = [];
 const EMPTY_AXES: PartDef['axes'] = [];
+const DEFAULT_CARTRIDGE_FINISH = { case: 'brass', bullet: 'copper', primer: 'brass' } as const;
+
 const AMMO_PALETTE: Palette = {
   familyColors: { 'cartridge-model': [0.62, 0.56, 0.43] },
   specialColors: { case: [0.69, 0.51, 0.29], bullet: [0.7, 0.34, 0.19], primer: [0.49, 0.4, 0.23] },
   fallbackColor: [0.62, 0.56, 0.43],
+  materials: {
+    brass: [0.69, 0.51, 0.29],
+    copper: [0.7, 0.34, 0.19],
+    lead: [0.38, 0.4, 0.42],
+    steel: [0.29, 0.32, 0.31],
+  },
 };
 const MM_DOMAIN: Domain['units'] = { metresPerUnit: 0.001, grid: 0.001, bevel: 0 };
 
@@ -65,12 +73,16 @@ const makeModelExport = (
     connections: [],
   };
   const resolved = resolve(assembly, domain);
+  const effectiveAppearance: AppearanceContext = {
+    ...appearance,
+    finish: { ...DEFAULT_CARTRIDGE_FINISH, ...appearance?.finish },
+  };
   const result = exportGlb({
     resolved,
     palette: AMMO_PALETTE,
     revolveFacets: 96,
     asset,
-    ...(appearance ? { appearance } : {}),
+    appearance: effectiveAppearance,
   });
   if (!result.ok) {
     return result;
@@ -88,11 +100,12 @@ const makeModelExport = (
   };
 };
 
-const revolved = (id: string, profile: RevolvedSolid['profile']): RevolvedSolid => ({
+const revolved = (id: string, profile: RevolvedSolid['profile'], slot: string): RevolvedSolid => ({
   id,
   kind: 'revolved',
   axis: 'x',
   profile,
+  slot,
 });
 
 /** Export loaded-round and fired-case GLBs at their real millimetre-derived dimensions. */
@@ -104,7 +117,11 @@ export const exportCartridgeModels = (
   const round = makeModelExport(
     cartridge,
     cartridgeModelAsset('round', cartridge.id),
-    [revolved('case', profiles.loadedCase), revolved('primer', profiles.primer), revolved('bullet', profiles.bullet)],
+    [
+      revolved('case', profiles.loadedCase, 'case'),
+      revolved('primer', profiles.primer, 'primer'),
+      revolved('bullet', profiles.bullet, 'bullet'),
+    ],
     appearance,
   );
   if (!round.ok) {
@@ -113,7 +130,7 @@ export const exportCartridgeModels = (
   const firedCase = makeModelExport(
     cartridge,
     cartridgeModelAsset('case', cartridge.id),
-    [revolved('case', profiles.firedCase), revolved('primer', profiles.primer)],
+    [revolved('case', profiles.firedCase, 'case'), revolved('primer', profiles.primer, 'primer')],
     appearance,
   );
   if (!firedCase.ok) {

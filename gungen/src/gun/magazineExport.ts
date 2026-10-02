@@ -44,7 +44,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
   if (!def) {
     throw new Error('resolved magazine has no part definition');
   }
-  const { column } = magazineRoundColumn(def.displaySolids ?? def.solids, input.cartridge, input.params);
+  const { column } = magazineRoundColumn(def.displaySolids ?? def.solids, input.cartridge, input.params, def.solids);
   return {
     ok: true,
     glb: output.glb,

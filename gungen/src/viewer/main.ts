@@ -29,7 +29,7 @@ import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
-import { type AmmoMeshes, ammoEnvironment, buildAmmoMeshes, type CaseFinish } from './ammoLayer.ts';
+import { type AmmoMeshes, ammoEnvironment, buildAmmoMeshes, caseFinishFromQuery } from './ammoLayer.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import {
   availablePrefabs,
@@ -202,7 +202,7 @@ const sun = new DirectionalLight(0xff_ff_ff, 2.2);
 sun.position.set(20, 40, 30);
 scene.add(sun);
 const ammoCartridge = cartridges.find((cartridge) => cartridge.id === initialQuery.get('ammo'));
-const caseFinish: CaseFinish = initialQuery.get('ammoCase') === 'brass' ? 'brass' : 'steel';
+const caseFinish = caseFinishFromQuery(initialQuery.get('ammoCase'));
 const ammoEnv = ammoCartridge ? ammoEnvironment(renderer) : undefined;
 const ammoMeshes: AmmoMeshes | undefined =
   ammoCartridge && ammoEnv ? buildAmmoMeshes(ammoCartridge, caseFinish, ammoEnv, revolveFacets) : undefined;

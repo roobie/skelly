@@ -3,7 +3,7 @@ import { validateContent } from '../src/core/content.ts';
 
 const source = 'models.json';
 const validate = (model: unknown) => validateContent({ source, data: { models: [model] } });
-const base = { id: 'round_7_62x39', file: 'assets/models/round-7_62x39.glb' };
+const base = { id: 'round_7_d_62x39', file: 'assets/models/round-7_d_62x39.glb' };
 const magazine = {
   id: 'magazine_ak_30',
   file: 'assets/models/magazine-ak-30.glb',

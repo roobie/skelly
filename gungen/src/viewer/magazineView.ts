@@ -54,7 +54,7 @@ export const buildDetachedMagazine = (
   const params = Object.fromEntries(
     Object.entries(report.resolved.params.get(id) ?? {}).map(([key, param]) => [key, param.value]),
   );
-  const { column } = magazineRoundColumn(def.displaySolids ?? def.solids, cartridge, params);
+  const { column } = magazineRoundColumn(def.displaySolids ?? def.solids, cartridge, params, def.solids);
   const world = new Matrix4().makeTranslation(0, 0, DETACH_OFFSET_Z_U).multiply(matrixOf(placement));
 
   const shell = new Group();
