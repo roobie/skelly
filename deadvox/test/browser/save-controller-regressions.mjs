@@ -69,13 +69,9 @@ try {
         return { generation: writes, slot: 'a', backend: 'indexeddb' };
       };
       const bindAtCurrentTime = () =>
-        controller.bindSession(
-          controller.snapshot,
-          () => time,
-          controller.worldOptions,
-          undefined,
-          (durationMs) => measuredDurations.push(durationMs),
-        );
+        controller.bindSession(controller.snapshot, () => time, controller.worldOptions, {
+          recordSnapshotDuration: (durationMs) => measuredDurations.push(durationMs),
+        });
       bindAtCurrentTime();
       const samples = [];
       for (time of [899.999, 900, 1800]) {

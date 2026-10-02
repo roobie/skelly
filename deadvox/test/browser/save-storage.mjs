@@ -139,8 +139,19 @@ try {
   }
   let page = await context.newPage();
   const pageErrors = [];
+  const optionalTelemetryRequests = new Set([
+    'https://scripts.simpleanalyticscdn.com/latest.js',
+    'https://queue.simpleanalyticscdn.com/append',
+  ]);
+  const recordRequestFailure = (request) => {
+    const url = new URL(request.url());
+    url.search = '';
+    if (!optionalTelemetryRequests.has(url.href)) {
+      pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`);
+    }
+  };
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('requestfailed', (request) => pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`));
+  page.on('requestfailed', recordRequestFailure);
   if (!autosaveOnly) {
     await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
@@ -338,7 +349,7 @@ try {
   await page.close();
   page = await context.newPage();
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('requestfailed', (request) => pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`));
+  page.on('requestfailed', recordRequestFailure);
   const probePage = autosaveOnly ? page : await context.newPage();
   if (!autosaveOnly) {
     await probePage.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
@@ -565,9 +576,7 @@ try {
       await page.close();
       page = await context.newPage();
       page.on('pageerror', (error) => pageErrors.push(error.message));
-      page.on('requestfailed', (request) =>
-        pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`),
-      );
+      page.on('requestfailed', recordRequestFailure);
     }
     autosaveResults.push(await testTitleAndAutosave(backend));
   }

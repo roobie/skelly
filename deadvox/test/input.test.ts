@@ -78,7 +78,7 @@ describe('menu input', () => {
     });
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
-      value: { addEventListener: () => undefined, pointerLockElement: null },
+      value: { addEventListener: () => undefined, pointerLockElement: target },
     });
     try {
       const input = new Input(target);
@@ -89,6 +89,11 @@ describe('menu input', () => {
       targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
       windowListeners.get('blur')?.(new Event('blur'));
       expect(input.rightMouseHeld).toBe(false);
+      input.menuPointer = true;
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(false);
+      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
+      input.menuPointer = false;
       targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
       expect(input.intent().primaryAction).toBe(true);
       expect(input.intent().primaryAction).toBe(true);

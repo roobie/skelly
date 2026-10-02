@@ -352,14 +352,13 @@ export class SaveController {
     snapshot: () => Readonly<SaveSnapshot>,
     simTime: () => number,
     worldOptions: SaveWorldOptions,
-    clock: ClockSettings = defaultClock,
-    recordSnapshotDuration?: (durationMs: number) => void,
+    options: { clock?: ClockSettings; recordSnapshotDuration?: (durationMs: number) => void } = {},
   ): { worldId: string; characterId: string } {
     this.snapshot = snapshot;
     this.simTime = simTime;
     this.worldOptions = worldOptions;
-    this.recordSnapshotDuration = recordSnapshotDuration;
-    const interval = saveCheckpointInterval(clock);
+    this.recordSnapshotDuration = options.recordSnapshotDuration;
+    const interval = saveCheckpointInterval(options.clock ?? defaultClock);
     this.checkpointInterval = interval;
     this.nextAutosaveAt = (Math.floor(simTime() / interval) + 1) * interval;
     return { worldId: this.worldId, characterId: this.characterId };

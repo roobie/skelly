@@ -133,7 +133,7 @@ export class Input {
       if (mouse.button === 2) {
         this.rightMouseHeld = true;
       }
-      if (mouse.button === 0 && !this.primaryActionDown) {
+      if (mouse.button === 0 && !this.primaryActionDown && this.locked && !this.menuPointer) {
         this.primaryActionPressed = true;
         this.primaryActionDown = true;
       }

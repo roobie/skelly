@@ -13,8 +13,8 @@ import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import { meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
-import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
@@ -208,8 +208,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       captureSnapshot,
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys },
-      sim.clock,
-      (durationMs) => snapshotHistory.add(durationMs),
+      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   } else if (!options.restore) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
@@ -395,7 +394,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     flashlight,
     body,
     inventory,
-    newGame: session.restoredLook === undefined,
+    newGame: options.restore === undefined,
     sim,
     input,
     roll: () => cameraRoll,
