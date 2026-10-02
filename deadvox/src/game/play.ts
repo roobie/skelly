@@ -410,7 +410,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     link.click();
     URL.revokeObjectURL(url);
   };
-  const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session, snapshotHistory);
+  const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session);
   const openInventoryScreen = (): void => {
     screen.open();
   };

@@ -74,14 +74,12 @@ try {
   await page.goto(
     `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
-  // The title's save discovery is asynchronous; a visible #go is not yet an actionable New world.
+  // Title-ready precedes main's dynamic debug import and startPlay. Its debug mount and
+  // game canvas are the later signal: startPlay installs the click handler in that same task.
   await page.waitForFunction(() =>
-    (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+    Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view canvas')),
   );
   await page.locator('#go').click();
-  if (!(await page.evaluate(() => document.querySelector('#overlay')?.hidden))) {
-    await page.locator('#go').click();
-  }
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
   } catch (error) {
