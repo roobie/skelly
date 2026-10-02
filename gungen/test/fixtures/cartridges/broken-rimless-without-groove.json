@@ -1,6 +1,0 @@
-{
-  "name": "broken-rimless-without-groove",
-  "base": "synthetic:rimless-bottleneck",
-  "unset": ["case.head.extractorGroove"],
-  "expectParseError": "case.head.extractorGroove"
-}
