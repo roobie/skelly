@@ -183,9 +183,19 @@ describe('simulation source fingerprint', () => {
       exclude: SIMULATION_EXCLUSIONS,
     });
     expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
+    expect(graph.sources.has('src/debug/axisGizmo.ts')).toBe(false);
     expect(graph.sources.has('src/game/controls.ts')).toBe(false);
     expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
     expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
+
+    const debugPresentation = await mutateSimulationSource(
+      host,
+      'src/debug/axisGizmo.ts',
+      'Yaw zero looks north (-Z); positive yaw turns west, matching aimDirection.',
+      'Yaw zero looks north (-Z); positive yaw turns west, matching aimDirection. Debug only.',
+    );
+    expect(debugPresentation.reads).toBe(0);
+    expect(debugPresentation.value).toBe(original);
 
     const hint = await mutateSimulationSource(
       host,

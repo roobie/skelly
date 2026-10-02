@@ -8,6 +8,7 @@ import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRunti
 import { KEY_BINDINGS } from '../game/input.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
+import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
 import { equipDebugStartWeapons } from './debugLoadout.ts';
@@ -71,7 +72,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>${shadowText}</span>
   <span>seed ${readout.seed}</span>
   <span>radius ${readout.radius} m · ${readout.movement}</span>
-  <span>position ${readout.position.map((v) => v.toFixed(1)).join(', ')}</span>
+  <span>position ${formatPosition(readout.position)}</span>
   <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes · entities ${readout.entities}</span>
   <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
@@ -79,9 +80,54 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   ${readout.revealedZombies.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedZombies.join(' · ')}</span>` : nothing}
 `;
 
-const f3OverlayTemplate = (readout: DebugReadout, visible: boolean): TemplateResult => html`
-  <aside id="f3-debug-overlay" ?hidden=${!visible} aria-label="Performance debug overlay">${readoutTemplate(readout)}</aside>
+const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
+  <aside id="f3-debug-overlay" ?hidden=${!visible} aria-label="Performance debug overlay">
+    ${readoutTemplate(readout)}
+    <span>facing ${formatFacing(yaw, pitch)}</span>
+  </aside>
 `;
+
+const axisGizmoTemplate = (visible: boolean): TemplateResult => html`
+  <canvas id="debug-axis-gizmo" width="144" height="144" ?hidden=${!visible} role="img" aria-label="World axes: positive X red, Y green, Z blue"></canvas>
+`;
+
+function paintAxisGizmo(canvas: HTMLCanvasElement, quaternion: readonly [number, number, number, number]): void {
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return;
+  }
+  context.setTransform(2, 0, 0, 2, 0, 0);
+  context.clearRect(0, 0, 72, 72);
+  context.beginPath();
+  context.arc(36, 36, 31, 0, Math.PI * 2);
+  context.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  context.fill();
+  context.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+  context.lineWidth = 1;
+  context.stroke();
+  for (const axis of projectPositiveAxes(quaternion)) {
+    const x = 36 + axis.x * 25;
+    const y = 36 + axis.y * 25;
+    context.beginPath();
+    context.moveTo(36, 36);
+    context.lineTo(x, y);
+    context.strokeStyle = axis.color;
+    context.lineWidth = 3;
+    context.stroke();
+    context.beginPath();
+    context.arc(x, y, 3, 0, Math.PI * 2);
+    context.fillStyle = axis.color;
+    context.fill();
+    context.font = 'bold 11px ui-monospace, monospace';
+    context.textAlign = axis.x >= 0 ? 'left' : 'right';
+    context.textBaseline = 'middle';
+    context.fillText(`+${axis.label}`, x + (axis.x >= 0 ? 4 : -4), y + (axis.y >= 0 ? 7 : -6));
+  }
+  context.beginPath();
+  context.arc(36, 36, 3, 0, Math.PI * 2);
+  context.fillStyle = '#eee';
+  context.fill();
+}
 
 const aimReadoutTemplate = (text: string): TemplateResult => html`${text || nothing}`;
 
@@ -151,6 +197,10 @@ const panelTemplate = ({
   toggleOpen,
   dumpLook,
   download,
+  axesVisible,
+  toggleAxes,
+  copyViewLink,
+  copyStatus,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -170,6 +220,10 @@ const panelTemplate = ({
   dumpLook: () => void;
   /** A file to save: the link below is clicked once while this is set. */
   download: { url: string; name: string } | undefined;
+  axesVisible: boolean;
+  toggleAxes: () => void;
+  copyViewLink: () => void;
+  copyStatus: string;
 }): TemplateResult => {
   // What a group shows besides its action buttons; only these three have anything.
   const extras: Partial<Record<GroupId, TemplateResult>> = {
@@ -222,6 +276,8 @@ const panelTemplate = ({
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
     <p>F4 toggles the performance overlay. ${snapshotStatus}</p>
+    <label class="debug-axis-toggle"><input type="checkbox" .checked=${axesVisible} @change=${toggleAxes} /> Show axis gizmo</label>
+    <div class="debug-readout"><button id="copy-view-link" type="button" @click=${copyViewLink}>Copy view link</button><span aria-live="polite">${copyStatus}</span></div>
     <div id="debug-readout" class="debug-readout"></div>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
@@ -229,6 +285,7 @@ const panelTemplate = ({
     <div id="debug-sound-log-root"></div>
     <p>Keys are listed in each group's header. Noclip: Space rises, R descends. While building (B): 1–9 select blocks, the wheel cycles them. Panel: Backquote. The wheel scrolls this panel.</p>
     </section>
+    <div id="debug-axis-gizmo-root"></div>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
     <div id="f3-overlay-root"></div>
@@ -661,6 +718,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let zombieAimShown = false;
   let panelOpen = false;
   let f3Open = false;
+  let axesVisible = true;
+  let copyStatus = '';
+  let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
+  let axisAnimation: number | undefined;
   let revealZombies = false;
   let snapshotStatus = '';
   let aimEnabled = true;
@@ -845,6 +906,35 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       toggle: () => toggleGroup(def.id),
     }));
   }
+  function updateAxisGizmo(): void {
+    axisAnimation = undefined;
+    if (!axesVisible) {
+      return;
+    }
+    const camera = hooks.engine.camera.quaternion;
+    cameraQuaternion = [camera.x, camera.y, camera.z, camera.w];
+    const canvas = host.querySelector<HTMLCanvasElement>('#debug-axis-gizmo');
+    if (canvas && !canvas.hidden) {
+      paintAxisGizmo(canvas, cameraQuaternion);
+    }
+    axisAnimation = requestAnimationFrame(updateAxisGizmo);
+  }
+  function drawAxisGizmo(): void {
+    const root = host.querySelector<HTMLElement>('#debug-axis-gizmo-root');
+    if (root) {
+      render(axisGizmoTemplate(axesVisible), root);
+      const canvas = root.querySelector<HTMLCanvasElement>('#debug-axis-gizmo');
+      if (canvas && axesVisible) {
+        paintAxisGizmo(canvas, cameraQuaternion);
+      }
+    }
+    if (axesVisible && axisAnimation === undefined) {
+      axisAnimation = requestAnimationFrame(updateAxisGizmo);
+    } else if (!axesVisible && axisAnimation !== undefined) {
+      cancelAnimationFrame(axisAnimation);
+      axisAnimation = undefined;
+    }
+  }
   function drawShell(): void {
     const groups = groupViews();
     const key = JSON.stringify([
@@ -855,6 +945,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnMenu.isOpen,
       shamblerCount,
       spawnStatus,
+      axesVisible,
+      copyStatus,
       groups.map((group) => [group.id, group.open, group.actions.map((view) => [view.label, view.state])]),
     ]);
     if (key !== shellKey) {
@@ -888,6 +980,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           toggleOpen: togglePanel,
           dumpLook,
           download,
+          axesVisible,
+          toggleAxes: () => {
+            axesVisible = !axesVisible;
+            shellKey = '';
+            drawShell();
+          },
+          copyViewLink,
+          copyStatus,
         }),
         host,
       );
@@ -904,14 +1004,26 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (root) {
       render(readoutTemplate(readout, shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)), root);
     }
+    drawAxisGizmo();
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');
     if (soundRoot) {
       render(soundLogTemplate(readout), soundRoot);
     }
     const f3Root = host.querySelector<HTMLElement>('#f3-overlay-root');
     if (f3Root) {
-      render(f3OverlayTemplate(readout, f3Open), f3Root);
+      render(f3OverlayTemplate(readout, f3Open, hooks.input.yaw, hooks.input.pitch), f3Root);
     }
+  }
+  async function copyViewLink(): Promise<void> {
+    syncCamUrl(true);
+    try {
+      await navigator.clipboard.writeText(location.href);
+      copyStatus = 'View link copied';
+    } catch {
+      copyStatus = 'Clipboard unavailable';
+    }
+    shellKey = '';
+    drawShell();
   }
   function dumpLook(): void {
     const { config } = hooks.engine;
