@@ -188,9 +188,9 @@ extrusion kinds cannot describe.
   The bevel and `display.mergeGroup` do not apply; the viewer draws it
   smooth-shaded and without an edge outline.
 - Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
-  the turned profile with a fixed 16 facets, whatever the level of detail. It
+  the turned profile with a fixed 8 facets, whatever the level of detail. It
   ignores grooves and hollows, and its facets are inscribed, so it is at most
-  1.9% smaller than the true radius. Because the hull is solid, a part seated
+  7.6% of the radius smaller than the true solid. Because the hull is solid, a part seated
   inside a hollow revolved part overlaps it; the ammunition domain has to deal
   with that.
 - Validation: `src/core/revolve.ts#revolvedProfileError` reports a bad profile
