@@ -2,7 +2,7 @@ import type { AppearanceContext, GlbAssetIdentity } from '../core/design.ts';
 import { parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly } from '../core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
-import { type DeadvoxModelEntry, exportGunGlb } from '../gun/exportGlb.ts';
+import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
 
 /** Canonical fixture identities supply appearance independently from their mechanical templates. */
 const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = {
@@ -56,7 +56,7 @@ export type ExportFileResult =
   | {
       readonly ok: true;
       readonly glb: Uint8Array;
-      readonly modelEntry: DeadvoxModelEntry;
+      readonly modelEntry: GunDeadvoxModelEntry;
       readonly warnings: readonly string[];
     }
   | { readonly ok: false; readonly message: string };
@@ -101,12 +101,16 @@ const readAssembly = (
 };
 
 /** Turns a design or fixture file's text into the `.glb` bytes and the deadvox model entry. */
-export const exportFileText = (text: string, asset: GlbAssetIdentity): ExportFileResult => {
+export const exportFileText = (
+  text: string,
+  asset: GlbAssetIdentity,
+  metadata: GunExportMetadata = {},
+): ExportFileResult => {
   const read = readAssembly(text);
   if ('message' in read) {
     return { ok: false, message: read.message };
   }
-  const result = exportGunGlb(read.assembly, asset, read.appearance);
+  const result = exportGunGlb(read.assembly, asset, read.appearance, metadata);
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };
   }
