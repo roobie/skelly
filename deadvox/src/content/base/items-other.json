@@ -67,6 +67,15 @@
       "description": "Water-stained. Someone underlined things."
     },
     {
+      "id": "spent_case_7_62x39",
+      "name": "Spent 7.62×39 case",
+      "category": "material",
+      "weight": 6,
+      "size": [1, 1],
+      "stack": 10000,
+      "description": "A spent case from debug firearm handling."
+    },
+    {
       "id": "shambler_torso",
       "name": "Severed shambler torso",
       "category": "misc",
