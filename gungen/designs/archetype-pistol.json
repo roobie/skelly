@@ -31,7 +31,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "mini-reflex" }
       }
     },
     "connections": [
@@ -54,7 +55,7 @@
       {
         "from": "slide.rail",
         "to": "sight.base",
-        "slot": 0
+        "slot": 1
       }
     ]
   },

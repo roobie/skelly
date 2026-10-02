@@ -11,7 +11,7 @@
     "handguard": { "family": "handguard", "params": {} },
     "magazine": { "family": "magazine", "params": { "length": "S" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } },
-    "sight": { "family": "sight" }
+    "sight": { "family": "sight", "params": { "type": "lpvo-1-6x" } }
   },
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },
@@ -21,6 +21,6 @@
     { "from": "handguard.front", "to": "barrel.clamp" },
     { "from": "lower.magazine", "to": "magazine.top" },
     { "from": "receiver.stock", "to": "stock.front" },
-    { "from": "handguard.rail", "slot": 0, "to": "sight.base" }
+    { "from": "handguard.rail", "slot": 3, "to": "sight.base" }
   ]
 }

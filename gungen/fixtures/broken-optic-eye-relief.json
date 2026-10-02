@@ -1,7 +1,7 @@
 {
-  "name": "archetype-battle-rifle",
-  "description": "FAL/FNC-like battle rifle, conventional layout: magazine ahead of the pistol grip, straight stock, handguard clamped to the barrel.",
-  "expect": [],
+  "name": "broken-optic-eye-relief",
+  "description": "A long optic is fitted to the battle-rifle rail without a stock cheek datum.",
+  "expect": ["optic-eye-relief"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
@@ -11,8 +11,7 @@
     "handguard": { "family": "handguard", "params": {} },
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "M" } },
-    "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },
-    "sight": { "family": "sight", "params": { "type": "fixed-prism-4x" } }
+    "sight": { "family": "sight", "params": { "type": "high-mag-5-25x" } }
   },
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },
@@ -22,7 +21,6 @@
     { "from": "handguard.front", "to": "barrel.clamp" },
     { "from": "lower.grip", "to": "grip.top" },
     { "from": "lower.magazine", "to": "magazine.top" },
-    { "from": "receiver.stock", "to": "stock.front" },
-    { "from": "receiver.rail", "slot": 2, "to": "sight.base" }
+    { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
   ]
 }

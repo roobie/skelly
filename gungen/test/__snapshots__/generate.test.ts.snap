@@ -435,7 +435,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 0,
+        "slot": 1,
         "to": "sight.base",
       },
       {
@@ -502,6 +502,9 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "mini-reflex",
+        },
       },
       "stock": {
         "family": "stock",
@@ -544,8 +547,8 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.rail",
-        "slot": 0,
+        "from": "handguard.rail",
+        "slot": 2,
         "to": "sight.base",
       },
       {
@@ -612,6 +615,9 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "lpvo-1-6x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -658,8 +664,8 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "receiver.rail",
-        "slot": 0,
+        "from": "handguard.rail",
+        "slot": 2,
         "to": "sight.base",
       },
       {
@@ -728,6 +734,9 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "lpvo-1-6x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -832,6 +841,9 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "tube-dot",
+        },
       },
       "stock": {
         "family": "stock",
@@ -868,11 +880,6 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       {
         "from": "lower.magazine",
         "to": "magazine.top",
-      },
-      {
-        "from": "handguard.rail",
-        "slot": 4,
-        "to": "sight.base",
       },
     ],
     "description": "Generated from the "battle-rifle" template with seed 200.",
@@ -925,9 +932,6 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
           "feed": "box",
         },
       },
-      "sight": {
-        "family": "sight",
-      },
     },
     "root": "receiver",
   },
@@ -956,11 +960,6 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       {
         "from": "lower.magazine",
         "to": "magazine.top",
-      },
-      {
-        "from": "receiver.rail",
-        "slot": 6,
-        "to": "sight.base",
       },
     ],
     "description": "Generated from the "battle-rifle" template with seed 300.",
@@ -1013,9 +1012,6 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
           "feed": "box",
         },
       },
-      "sight": {
-        "family": "sight",
-      },
     },
     "root": "receiver",
   },
@@ -1055,8 +1051,8 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
-        "from": "receiver.rail",
-        "slot": 6,
+        "from": "handguard.rail",
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1103,6 +1099,9 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "fixed-prism-4x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1129,10 +1128,6 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
-        "from": "handguard.front",
-        "to": "barrel.clamp",
-      },
-      {
         "from": "lower.magazine",
         "to": "magazine.top",
       },
@@ -1146,7 +1141,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       },
       {
         "from": "handguard.rail",
-        "slot": 13,
+        "slot": 5,
         "to": "sight.base",
       },
     ],
@@ -1193,6 +1188,9 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "digital-thermal",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1323,7 +1321,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 0,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1378,6 +1376,9 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "high-mag-5-25x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1421,7 +1422,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1476,6 +1477,9 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "digital-thermal",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1515,7 +1519,7 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 2,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1563,6 +1567,9 @@ exports[`templates > bolt-rifle-box > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "high-mag-5-25x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1607,7 +1614,7 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 0,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1658,6 +1665,9 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "high-mag-5-25x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1697,7 +1707,7 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1748,6 +1758,9 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "high-mag-5-25x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1783,7 +1796,7 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 2,
         "to": "sight.base",
       },
     ],
@@ -1826,6 +1839,9 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "lpvo-1-6x",
+        },
       },
       "stock": {
         "family": "stock",
@@ -1960,7 +1976,7 @@ exports[`templates > pistol > known-good seeds 1`] = `
       },
       {
         "from": "slide.rail",
-        "slot": 0,
+        "slot": 1,
         "to": "sight.base",
       },
     ],
@@ -1990,6 +2006,9 @@ exports[`templates > pistol > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "mini-reflex",
+        },
       },
       "slide": {
         "family": "slide",
@@ -2502,7 +2521,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 3,
+        "slot": 1,
         "to": "sight.base",
       },
     ],
@@ -2556,6 +2575,9 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "tube-dot",
+        },
       },
       "stock": {
         "family": "stock",
@@ -2582,10 +2604,6 @@ exports[`templates > smg > known-good seeds 1`] = `
         "to": "handguard.rear",
       },
       {
-        "from": "handguard.front",
-        "to": "barrel.clamp",
-      },
-      {
         "from": "lower.grip",
         "to": "grip.top",
       },
@@ -2599,7 +2617,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 2,
         "to": "sight.base",
       },
     ],
@@ -2653,6 +2671,9 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "holographic",
+        },
       },
     },
     "root": "receiver",
@@ -2693,7 +2714,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 6,
+        "slot": 1,
         "to": "sight.base",
       },
     ],
@@ -2747,6 +2768,9 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "mini-reflex",
+        },
       },
       "stock": {
         "family": "stock",

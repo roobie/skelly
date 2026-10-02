@@ -3,10 +3,12 @@
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Vec3 } from '../core/math.ts';
-import { applyDir, applyPoint, dot as dotProduct, sub } from '../core/math.ts';
+import { add, applyDir, applyPoint, dot as dotProduct, length, scale, sub } from '../core/math.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
+import { getOptic } from './optics.ts';
+import { mountCanAccept } from './mounts.ts';
 
 /**
  * Rules judge only what they can place. A part with no path to the root (or a
@@ -16,6 +18,10 @@ import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS,
  */
 const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
   [...r.defs].filter(([part, def]) => r.placed.has(part) && (family === undefined || def.family === family));
+
+/** Iron sights also use the visual family role `sight`; only the `sight` registry key is a catalog optic. */
+const placedOptics = (r: Resolved): [string, PartDef][] =>
+  placedParts(r, 'sight').filter(([part]) => r.assembly.parts[part]?.family === 'sight');
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const thumbholeGripMatch: Rule = {
@@ -500,6 +506,80 @@ const magazineAxisError = (
         : `${lower.part} declares ${wellStyle}, but ${magazine.part} uses ${magStyle}; the well must follow the magazine axis.`,
     parts: [lower.part, magazine.part],
   };
+};
+
+export const opticMountFit: Rule = {
+  id: 'optic-mount-fit',
+  title: 'Optic footprint fits its generic mount interface',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [sight] of placedOptics(r)) {
+      const optic = getOptic(r.params.get(sight)?.type?.value);
+      const connection = r.connections.find((candidate) =>
+        [candidate.from, candidate.to].some((end) => end.part === sight && end.port.id === 'base'),
+      );
+      if (!connection) {
+        continue;
+      }
+      const host = connection.from.part === sight ? connection.to : connection.from;
+      const port = host.port;
+      const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
+      const slot = connection.conn.slot ?? 0;
+      if (!mountCanAccept(port, optic.mount, slot)) {
+        issues.push({
+          rule: 'optic-mount-fit',
+          message: `${sight} (${optic.id}) needs ${optic.mount.kind} with ${optic.mount.contactLengthU}u contact length, ${optic.mount.contactWidthU}u width, and ${optic.mount.minimumSlots} slots; ${host.part}.${port.id} offers ${port.mount} with ${span}u span at slot ${slot}.`,
+          parts: [sight, host.part],
+        });
+      }
+    }
+    return issues;
+  },
+};
+
+export const opticEyeRelief: Rule = {
+  id: 'optic-eye-relief',
+  title: 'Long optics have a stock cheek datum at eye relief',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [sight] of placedOptics(r)) {
+      const optic = getOptic(r.params.get(sight)?.type?.value);
+      if (optic.eyeReliefU === undefined) {
+        continue;
+      }
+      const stock = placedParts(r, 'stock').find(([part, def]) =>
+        def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part),
+      );
+      const sightTransform = r.placed.get(sight)!;
+      if (!stock) {
+        issues.push({
+          rule: 'optic-eye-relief',
+          message: `${sight} (${optic.id}) needs a stock with a named cheek datum.`,
+          parts: [sight],
+        });
+        continue;
+      }
+      const [stockPart, stockDef] = stock;
+      const cheek = stockDef.axes.find((axis) => axis.kind === 'cheek')!;
+      const eye = applyPoint(sightTransform, [optic.ocularX - optic.eyeReliefU, optic.opticalAxisY, 0]);
+      const stockTransform = r.placed.get(stockPart)!;
+      const cheekStart = applyPoint(stockTransform, cheek.origin);
+      const cheekDirection = applyDir(stockTransform, cheek.dir);
+      const eyeOffset = sub(eye, cheekStart);
+      const alongCheek = dotProduct(eyeOffset, cheekDirection);
+      const nearestCheekPoint = add(cheekStart, scale(cheekDirection, alongCheek));
+      const eyeDatumError = length(sub(eye, nearestCheekPoint));
+      const tolerance = optic.eyeDatumToleranceU ?? 4;
+      if (eyeDatumError > tolerance) {
+        issues.push({
+          rule: 'optic-eye-relief',
+          message: `${sight} (${optic.id}) eye point is ${eyeDatumError.toFixed(2)}u from ${stockPart}'s cheek datum; maximum is ${tolerance}u.`,
+          parts: [sight, stockPart],
+        });
+      }
+    }
+    return issues;
+  },
 };
 
 export const magazineWellAxis: Rule = {

@@ -60,7 +60,8 @@
       "family": "rail-front-sight"
     },
     "sight": {
-      "family": "sight"
+      "family": "sight",
+      "params": { "type": "tube-dot" }
     }
   },
   "connections": [
@@ -92,7 +93,7 @@
     {
       "from": "receiver.rail",
       "to": "sight.base",
-      "slot": 0
+      "slot": 1
     },
     {
       "from": "handguard.rail",

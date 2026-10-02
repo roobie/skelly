@@ -7,6 +7,8 @@ import {
   freeFloatClearance,
   handguardFit,
   magazineWellAxis,
+  opticEyeRelief,
+  opticMountFit,
   pistolBarrelCrown,
   thumbholeGripMatch,
   triggerGuard,
@@ -31,5 +33,7 @@ export const gunDomain: Domain = {
     handguardFit,
     freeFloatClearance,
     magazineWellAxis,
+    opticMountFit,
+    opticEyeRelief,
   ],
 };
