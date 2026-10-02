@@ -103,7 +103,7 @@ const caseBase = (outline: readonly Vec2[]): Vec2[] => [
 const loadedCaseProfile = (outline: readonly Vec2[], mouth: number): Vec2[] => [...caseBase(outline), [mouth, 0]];
 
 const firedCaseProfile = (outline: readonly Vec2[], mouth: number): Vec2[] => {
-  const mouthRadius = outline.at(-1)![1];
+  const [, mouthRadius] = outline.at(-1)!;
   const inner: Vec2[] = outline
     .filter(([z]) => z > FIRED_FLOOR_MM)
     .map(([z, r]): Vec2 => [z, Math.max(r - CASE_WALL_MM, 0)])
@@ -143,12 +143,13 @@ const bulletProfile = (cartridge: MetallicCartridge): Vec2[] => {
 const primerProfile = (): Vec2[] => {
   const chamfer = 0.2;
   const faceZ = PRIMER_RECESS_MM;
+  // Face first: the material lies behind it (toward higher z), so its back is the last, +z-facing, segment.
   return [
-    [PRIMER_POCKET_DEPTH_MM, 0],
-    [PRIMER_POCKET_DEPTH_MM, primerRadius],
-    [faceZ + chamfer, primerRadius],
-    [faceZ, primerRadius - chamfer],
     [faceZ, 0],
+    [faceZ, primerRadius - chamfer],
+    [faceZ + chamfer, primerRadius],
+    [PRIMER_POCKET_DEPTH_MM, primerRadius],
+    [PRIMER_POCKET_DEPTH_MM, 0],
   ];
 };
 

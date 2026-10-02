@@ -25,11 +25,23 @@ describe('7.62x39 round profiles', () => {
     expect(round.firedCase.at(-1)![1]).toBe(0);
   });
 
-  it('revolve into meshes at the facet count the viewer uses', () => {
-    for (const profile of [round.loadedCase, round.firedCase, round.bullet, round.primer]) {
-      const mesh = meshForRevolved({ id: 'p', kind: 'revolved', profile, facets: 24 });
-      expect(mesh.triangleCount).toBeGreaterThan(0);
-      expect(mesh.positions.every(Number.isFinite)).toBe(true);
+  it('are traversed material-on-the-left, so each closed solid has positive enclosed volume', () => {
+    // A profile run the wrong way round flips every normal and is culled away in the viewer; its
+    // signed volume (sum of tetrahedra to the origin) comes out negative.
+    for (const [name, profile] of Object.entries(round)) {
+      const mesh = meshForRevolved({ id: name, kind: 'revolved', profile, facets: 24 });
+      let volume = 0;
+      for (let t = 0; t < mesh.triangleCount; t++) {
+        const [a, b, c] = [0, 1, 2].map((k) => mesh.indices[t * 3 + k]! * 3);
+        const p = (i: number) => [mesh.positions[i]!, mesh.positions[i + 1]!, mesh.positions[i + 2]!] as const;
+        const [pa, pb, pc] = [p(a!), p(b!), p(c!)];
+        volume +=
+          (pa[0] * (pb[1] * pc[2] - pb[2] * pc[1]) -
+            pa[1] * (pb[0] * pc[2] - pb[2] * pc[0]) +
+            pa[2] * (pb[0] * pc[1] - pb[1] * pc[0])) /
+          6;
+      }
+      expect(volume, name).toBeGreaterThan(0);
     }
   });
 });

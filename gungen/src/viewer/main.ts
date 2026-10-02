@@ -15,8 +15,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
+import { worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
@@ -25,6 +27,13 @@ import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import {
+  type AmmoMeshes,
+  ammoEnvironment,
+  buildAmmoMeshes,
+  type CaseFinish,
+  DEFAULT_ROUND_FACETS,
+} from './ammoLayer.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import {
   availablePrefabs,
@@ -72,6 +81,18 @@ const fixtures = Object.entries(
     return parsed.assembly;
   })
   .sort((a, b) => a.name.localeCompare(b.name));
+
+// Spike: ?ammo=<cartridge id> draws a loose round and a fired case at true scale beside the gun
+// (&ammoCase=brass for a brass case, &facets=<n> for the revolve facet count).
+const cartridges = Object.entries(
+  import.meta.glob<string>('../../cartridges/*.json', { eager: true, import: 'default', query: '?raw' }),
+).flatMap(([path, text]) => {
+  const parsed = parseCartridgeJson(text);
+  if (!parsed.ok) {
+    throw new Error(`${path}: ${formatCartridgeParseError(parsed.error)}`);
+  }
+  return parsed.cartridge.kind === 'metallic' ? [parsed.cartridge] : [];
+});
 
 const DESIGN_EXTENSION = /\.json$/;
 const designs = Object.entries(
@@ -141,6 +162,12 @@ const syncUrl = () => {
   if (colorMode === 'role') {
     params.set('colors', 'role');
   }
+  for (const key of ['ammo', 'ammoCase', 'facets']) {
+    const value = initialQuery.get(key);
+    if (value !== null) {
+      params.set(key, value);
+    }
+  }
   params.set(
     'camera',
     serializeCameraState({
@@ -164,6 +191,21 @@ scene.add(new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6));
 const sun = new DirectionalLight(0xff_ff_ff, 2.2);
 sun.position.set(20, 40, 30);
 scene.add(sun);
+const ammoCartridge = cartridges.find((c) => c.id === initialQuery.get('ammo'));
+const caseFinish: CaseFinish = initialQuery.get('ammoCase') === 'brass' ? 'brass' : 'steel';
+const ammoMeshes: AmmoMeshes | undefined = ammoCartridge
+  ? buildAmmoMeshes(
+      ammoCartridge,
+      caseFinish,
+      ammoEnvironment(renderer),
+      Number(initialQuery.get('facets')) || DEFAULT_ROUND_FACETS,
+    )
+  : undefined;
+if (ammoMeshes) {
+  scene.add(ammoMeshes.loose, ammoMeshes.fired);
+}
+/** Half the vertical distance between the loose round and the fired case, in gun units. */
+const AMMO_ROW_GAP_U = 1.5;
 const grid = new GridHelper(120, 60, 0x3a_3f_46, 0x26_2a_30);
 grid.position.y = -16;
 scene.add(grid);
@@ -312,10 +354,29 @@ const redraw = () => {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
+  placeAmmo(report);
   if (!framed) {
     frame(layers.solids);
     framed = true;
   }
+};
+
+/**
+ * Lays a loose round and a fired case side by side, parallel to the bore, centred on the gun's ejection
+ * port and just outside it on the ejection side, so the port, the round and the case compare at one scale.
+ */
+const placeAmmo = (shown: Report) => {
+  if (!ammoMeshes) {
+    return;
+  }
+  const [ejection] = [...shown.resolved.placed].flatMap(([part, t]) =>
+    (shown.resolved.defs.get(part)?.keepOuts ?? [])
+      .filter((ko) => ko.kind === 'ejection')
+      .map((ko) => worldBox(t, ko.box)),
+  );
+  const [cx, cy, cz] = ejection?.center ?? [0, 0, 6];
+  ammoMeshes.loose.position.set(cx - ammoMeshes.lengthUnits / 2, cy + AMMO_ROW_GAP_U, cz);
+  ammoMeshes.fired.position.set(cx - ammoMeshes.caseLengthUnits / 2, cy - AMMO_ROW_GAP_U, cz);
 };
 
 const frame = (group: Object3D) => {
