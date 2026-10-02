@@ -22,7 +22,7 @@ const gltfLoader = new GLTFLoader(new LoadingManager());
 gltfLoader.register(() => ({ name: 'audit-textures', loadTexture: () => Promise.resolve(new Texture()) }));
 const realHeldModels = new Map<string, import('three').Object3D>();
 await Promise.all(
-  ['baseball_bat', 'steel_pipe', 'kitchen_knife'].map(async (id) => {
+  ['baseball_bat', 'steel_pipe', 'kitchen_knife', 'machete', 'kabar'].map(async (id) => {
     const def = registry.models.get(id)!;
     const bytes = readFileSync(`${BASE}/${def.file}`);
     const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '');
@@ -70,6 +70,7 @@ interface MotionResult {
   minPalmDepth: number;
   palmAreaAtContact: Readonly<Record<'left' | 'right', number>>;
   maxPalmArea: Readonly<Record<'left' | 'right', number>>;
+  tipStaysInViewport: boolean;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: measures real loaded models and every rendered palm across one full action.
@@ -172,6 +173,7 @@ function measure(
   }
   const pixels = samples.map(({ tip }) => screen(tip, camera));
   const xs = pixels.map(({ x }) => x);
+  const tipStaysInViewport = pixels.every(({ x, y }) => x >= 0 && x <= 1920 && y >= 0 && y <= 1080);
   let diagonal = 0;
   for (const from of pixels) {
     for (const to of pixels) {
@@ -208,6 +210,7 @@ function measure(
     minPalmDepth,
     palmAreaAtContact,
     maxPalmArea,
+    tipStaysInViewport,
   };
 }
 
@@ -242,6 +245,25 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
     }
   });
 
+  it('slashes the real machete through the viewport with centred contact in either hand', () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = measure('cut', 'machete', undefined, side);
+      expect(result.diagonal, side).toBeGreaterThanOrEqual(Math.hypot(1920, 1080) * 0.35);
+      expect(result.forward, side).toBeGreaterThanOrEqual(0.069);
+      expect(result.tipCenterAtContact, side).toBeLessThanOrEqual(350);
+      expect(result.tipStaysInViewport, side).toBe(true);
+    }
+  });
+
+  it('slashes the real Kabar with centred contact inside the viewport in either hand', () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = measure('cut', 'kabar', undefined, side);
+      expect(result.forward, side).toBeGreaterThanOrEqual(0.069);
+      expect(result.tipCenterAtContact, side).toBeLessThanOrEqual(350);
+      expect(result.tipStaysInViewport, side).toBe(true);
+    }
+  });
+
   it('thrusts the real steel pipe forward by 0.35 m and visibly shrinks it in either hand', () => {
     for (const side of ['right', 'left'] as const) {
       const result = measure('pierce', 'steel_pipe', undefined, side);
@@ -266,6 +288,8 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
     const profiles = [
       ['blunt', 'baseball_bat', undefined],
       ['cut', 'kitchen_knife', undefined],
+      ['cut', 'machete', undefined],
+      ['cut', 'kabar', undefined],
       ['pierce', 'steel_pipe', undefined],
       ['fists', undefined, undefined],
     ] as const;
