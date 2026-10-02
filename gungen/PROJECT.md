@@ -162,6 +162,40 @@ logic, and put everything gun-specific in data. The same core should later
 drive other skelly domains, such as rigging, where a joint is just a port that
 can rotate.
 
+**Units per domain.** A domain declares `units` (`src/core/schema.ts#DomainUnits`):
+metres per unit, the snap grid and the bevel, all in its own u. The gun domain
+declares today's values in `src/gun/units.ts#GUN_UNITS`: 1u = 11.5mm, a 0.25u
+grid and a 0.125u bevel (about 1.4mm). The core reads them from
+`resolved.domain.units`: the glb export scales by `metresPerUnit`, the
+connection-contact rule allows a gap of one `grid` step, and meshes are
+chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). The shared frame
+between domains is metres; an assembly belongs to one domain, so a scene that
+shows two domains is two assemblies placed in metres, with no rule checks
+between them. The tolerances in `conventions.ts` other than the contact gap are
+still the gun's numbers in u.
+
+**Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
+third kind of solid: a profile of (axial, radial) points turned about an axis
+(`axis`, local Z when omitted, with the same axes as an extrusion). It exists
+for round parts with real detail, such as cartridges, which the box and
+extrusion kinds cannot describe.
+
+- Mesh: `src/core/revolve.ts#meshForRevolved`. Normals are smooth around the
+  circumference and hard where the profile bends past `creaseDegrees` (40 by
+  default). The facet count is a level of detail chosen when the mesh is built,
+  not a field of the solid: `meshForSolid` takes it (default 6), the viewer
+  takes `?facets=N` (24 for close-ups) and the glb export takes `revolveFacets`.
+  The bevel and `display.mergeGroup` do not apply; the viewer draws it
+  smooth-shaded and without an edge outline.
+- Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
+  the turned profile with a fixed 16 facets, whatever the level of detail. It
+  ignores grooves and hollows, and its facets are inscribed, so it is at most
+  1.9% smaller than the true radius. Because the hull is solid, a part seated
+  inside a hollow revolved part overlaps it; the ammunition domain has to deal
+  with that.
+- Validation: `src/core/revolve.ts#revolvedProfileError` reports a bad profile
+  as a structure issue when the assembly resolves.
+
 ## Milestone 1: validator and debug viewer
 
 **Goal:** take a hand-written assembly file, place its parts, check it against
@@ -179,8 +213,9 @@ the generator later has something independent to be tested against (§9).
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
 - **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
-  refined by convex extruded-polygon profiles), box and convex extruded-polygon
-  solids, parts, part families, domains, and the JSON assembly format.
+  refined by convex extruded-polygon profiles), box, convex extruded-polygon
+  and revolved solids (§10), parts, part families, domains, and the JSON
+  assembly format.
 - **Placement** (`src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.
@@ -191,7 +226,7 @@ the generator later has something independent to be tested against (§9).
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
-  | `connection-contact` | Solids on connected parts touch or are within 0.25u (one grid step) |
+  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain (0.25u for guns) |
   | `keep-out` | No solid is inside another part's keep-out volume, except parts attached at an allowed port or from an explicitly allowed family |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
@@ -1103,8 +1138,9 @@ deadvox holds a model with +x forward and +y up
   its own copy of the special, role, fallback lookup, since core can't import
   `src/gun/palette.ts#solidColor`; a test checks the two agree.
 - Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm, from the STANAG top depth
-  of 5.5u = 63 mm). Vertices are `mesh.ts` positions times that; normals are
-  unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
+  of 5.5u = 63 mm) is the gun domain's value; the writer scales by the
+  resolved domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions
+  times that; normals are unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
   export uses 11.5 mm.
 - Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is
   right-handed Y-up; deadvox's held model is +x forward, +y up. So the file

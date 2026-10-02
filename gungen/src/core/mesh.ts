@@ -22,6 +22,7 @@ export interface TriangleMesh {
   readonly triangleCount: number;
 }
 
+// The gun domain's chamfer size (`GUN_UNITS.bevel`); a domain declares its own in `Domain.units.bevel`.
 // Chamfer size: half a grid step (PROJECT.md §4). A quarter grid step (the
 // first value tried here) was too fine to read as a bevel at gungen's scale
 // (5.5u ≈ 63mm, so 1u ≈ 11.5mm: a quarter step is under 1mm); half a step

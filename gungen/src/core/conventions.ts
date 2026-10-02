@@ -20,6 +20,7 @@ export const RIGHT: Vec3 = [0, 0, 1];
 export const MAIN_AXIS = { origin: [0, 0, 0] as Vec3, dir: FORWARD };
 
 /**
+ * The gun domain's grid (`GUN_UNITS.grid`); other domains declare their own in `Domain.units`.
  * Lengths are in u, an abstract unit. It only sets proportions: 1 u is roughly
  * a centimetre, so models look right, but it is not a measurement.
  * Authored positions and extents sit on this grid.
