@@ -218,7 +218,7 @@ use, not a measured specification. The handle is on the rifle's right (+Z) side:
 the carrier's mating frame reverses local Z, so the AK-style local -Z paddle is on receiver +Z. Its stem is
 joined into the carrier body and passes through a 0.25u-clearance slot in the near-side wall. The slot opens
 into the ejection aperture (x -14.25 to -1.25, y 0 to 2); it extends the aperture rearward to x -18.0
-and down to y -0.25, leaving a 0.25u upper lip and 0.25u clearance around the stem through the full 15.5u
+over y 0 to 1.75, leaving a 0.25u upper lip and 0.25u clearance around the stem through the full 15.5u
 carrier travel. The outer shell remains intact
 elsewhere. `test/antiMateriel.test.ts` checks the stem/body contact, scaled profile, actual wall opening and
 material beside it, 33 positions along travel, and a displaced-handle canary.
