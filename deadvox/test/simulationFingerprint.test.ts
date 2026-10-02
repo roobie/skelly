@@ -135,6 +135,7 @@ describe('simulation source fingerprint', () => {
         'src/game/playtestTools.ts',
         'src/game/playtestObserver.ts',
         'src/worker/save.worker.ts',
+        'src/ui/saveController.ts',
       ]),
     );
     expect(graph.excludedImports).toEqual([
@@ -203,6 +204,15 @@ describe('simulation source fingerprint', () => {
     );
     expect(helpCopy.reads).toBe(0);
     expect(helpCopy.value).toBe(original);
+
+    const inventoryHelpCopy = await mutateSimulationSource(
+      host,
+      'src/game/controls.ts',
+      'Open / close inventory',
+      'Toggle inventory screen',
+    );
+    expect(inventoryHelpCopy.reads).toBe(0);
+    expect(inventoryHelpCopy.value).toBe(original);
 
     const offHandRenderPolicy = await mutateSimulationSource(
       host,

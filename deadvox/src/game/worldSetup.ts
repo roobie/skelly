@@ -95,7 +95,7 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
     : new Hamlet(config.seed, registry, config.scale);
 };
 
-const loadContent = (): { registry: Registry; contentErrors: string } => {
+export const loadContent = (): { registry: Registry; contentErrors: string } => {
   // Base content is bundled. Mods would be appended to this list (from URLs or local files).
   const files = import.meta.glob<unknown>('../content/base/*.json', { eager: true, import: 'default' });
   const sources: ContentSource[] = Object.entries(files)

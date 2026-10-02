@@ -2,6 +2,8 @@
 // biome-ignore-all lint/correctness/noNodejsModules: opt-in browser contract launches Vite and Playwright
 // biome-ignore-all lint/performance/noAwaitInLoops: backend and crash-stage matrix is deliberately sequential
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract uses Node assertions
+// biome-ignore-all lint/style/noProcessEnv: environment selects a browser-contract subset
+// biome-ignore-all lint/complexity/useSimplifiedLogicExpression: readable browser status checks
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -11,22 +13,47 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import { build, createServer, preview } from 'vite';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
 const browserName = process.argv[2] ?? 'chromium';
+const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
+const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
+const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
+if (!['continue', 'replacement'].includes(autosaveScenario)) {
+  throw new Error(`Unsupported autosave scenario ${autosaveScenario}`);
+}
+if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosaveBackend)) {
+  throw new Error(`Unsupported save backend ${requestedAutosaveBackend}`);
+}
 if (!['chromium', 'firefox'].includes(browserName)) {
   throw new Error(`Expected browser name chromium or firefox, got ${browserName}`);
 }
 const { chromium, firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-const vite = await createServer({
-  configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
-  root: projectRoot,
-  logLevel: 'error',
-  server: { host: '127.0.0.1', port: 0 },
-});
+const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
+let vite;
+let previewServer;
+const startWebServer = async () => {
+  if (autosaveOnly) {
+    await build({ configFile: viteConfig, root: projectRoot, logLevel: 'error' });
+    previewServer = await preview({
+      configFile: viteConfig,
+      root: projectRoot,
+      preview: { host: '127.0.0.1', port: 0 },
+    });
+    return previewServer.httpServer.address();
+  }
+  vite = await createServer({
+    configFile: viteConfig,
+    root: projectRoot,
+    logLevel: 'error',
+    server: { host: '127.0.0.1', port: 0 },
+  });
+  await vite.listen();
+  return vite.httpServer.address();
+};
 const freePort = async () =>
   new Promise((resolve, reject) => {
     const server = createNetServer();
@@ -70,17 +97,17 @@ let chromeProcess;
 let chromeExitPromise;
 let profile;
 try {
-  await withTimeout('Vite startup', vite.listen());
-  const address = vite.httpServer.address();
+  const address = await withTimeout('Vite startup', startWebServer());
   assert(address && typeof address !== 'string');
-  const testUrl = `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
+  const testUrl = autosaveOnly
+    ? `http://127.0.0.1:${address.port}/?save-test=1`
+    : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
   let context;
   if (browserName === 'chromium') {
     const cdpPort = await freePort();
     profile = await mkdtemp(join(tmpdir(), 'deadvox-save-storage-'));
     const startupError = { error: undefined };
     chromeProcess = spawn(
-      // biome-ignore lint/style/noProcessEnv: matches tools/ui-browser-contract.mjs's CHROME_BIN override.
       process.env.CHROME_BIN ?? 'google-chrome',
       [
         '--headless=new',
@@ -93,7 +120,7 @@ try {
         `--remote-debugging-port=${cdpPort}`,
         `--user-data-dir=${profile}`,
         '--window-size=1280,900',
-        testUrl,
+        autosaveOnly ? 'about:blank' : testUrl,
       ],
       { stdio: 'ignore' },
     );
@@ -110,141 +137,459 @@ try {
     browser = await withTimeout('Playwright Firefox launch', firefox.launch({ headless: false }));
     context = await browser.newContext();
   }
-  const page = await context.newPage();
+  let page = await context.newPage();
   const pageErrors = [];
+  const optionalTelemetryRequests = new Set([
+    'https://scripts.simpleanalyticscdn.com/latest.js',
+    'https://queue.simpleanalyticscdn.com/append',
+  ]);
+  const recordRequestFailure = (request) => {
+    const url = new URL(request.url());
+    url.search = '';
+    if (!optionalTelemetryRequests.has(url.href)) {
+      pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`);
+    }
+  };
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.goto(`http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`, {
-    timeout: STAGE_TIMEOUT_MS,
-  });
-  await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
+  page.on('requestfailed', recordRequestFailure);
+  if (!autosaveOnly) {
+    await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
+  }
 
-  const contract = await withTimeout(
-    'overall browser storage contract',
-    page.evaluate(async (stageTimeoutMs) => {
-      // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
-      const { SaveStorage } = await import('/src/game/saveStorage.ts');
-      const encoder = new TextEncoder();
-      const decoder = new TextDecoder();
-      const stage = async (label, task) => {
-        let timer;
-        const timeout = new Promise((_, reject) => {
-          timer = globalThis.setTimeout(
-            () => reject(new Error(`${label} timed out after ${stageTimeoutMs} ms`)),
-            stageTimeoutMs,
+  const runStorageContract = () =>
+    withTimeout(
+      'overall browser storage contract',
+      page.evaluate(async (stageTimeoutMs) => {
+        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
+        const { SaveStorage } = await import('/src/game/saveStorage.ts');
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+        const stage = async (label, task) => {
+          let timer;
+          const timeout = new Promise((_, reject) => {
+            timer = globalThis.setTimeout(
+              () => reject(new Error(`${label} timed out after ${stageTimeoutMs} ms`)),
+              stageTimeoutMs,
+            );
+          });
+          try {
+            return await Promise.race([task, timeout]);
+          } finally {
+            globalThis.clearTimeout(timer);
+          }
+        };
+        const namespaceFor = async (label) => {
+          const digest = await crypto.subtle.digest('SHA-256', encoder.encode(label));
+          return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+        };
+        const create = (backend, extra = {}) => new SaveStorage({ backend, requestTimeoutMs: 15_000, ...extra });
+        const saveValue = (storage, namespace, value) =>
+          storage.save(namespace, async (generation) => encoder.encode(`${generation}:${value}`));
+        const testRoundTrip = async (backend) => {
+          const storage = create(backend);
+          const status = await stage(`${backend} capability status`, storage.status());
+          if (status.backend !== backend) {
+            throw new Error(`Forced ${backend} selected ${status.backend}`);
+          }
+          const namespace = await namespaceFor(`round-trip:${backend}`);
+          await stage(`${backend} first generation write`, saveValue(storage, namespace, 'first'));
+          await stage(`${backend} second generation write`, saveValue(storage, namespace, 'second'));
+          const loaded = await stage(`${backend} read newest generation`, storage.load(namespace));
+          if (loaded?.generation !== 2 || decoder.decode(loaded?.payload ?? new Uint8Array()) !== '2:second') {
+            throw new Error(`${backend} did not load its newest complete record`);
+          }
+          const result = { backend, quotaSupported: status.quota.supported, persistent: status.persistent };
+          storage.close();
+          return result;
+        };
+        const testTwoTabs = async (backend) => {
+          const namespace = await namespaceFor(`two-tabs:${backend}`);
+          const left = create(backend);
+          const right = create(backend);
+          await stage(`${backend} two-tab capability probes`, Promise.all([left.status(), right.status()]));
+          const results = await stage(
+            `${backend} two-tab concurrent commits`,
+            Promise.all([saveValue(left, namespace, 'tab-left'), saveValue(right, namespace, 'tab-right')]),
           );
-        });
-        try {
-          return await Promise.race([task, timeout]);
-        } finally {
-          globalThis.clearTimeout(timer);
+          const loaded = await stage(`${backend} two-tab final read`, left.load(namespace));
+          const generations = results.map(({ generation }) => generation).sort((a, b) => a - b);
+          if (generations[0] !== 1 || generations[1] !== 2 || loaded?.generation !== 2) {
+            throw new Error(`${backend} two-tab writes were not serialized: ${generations.join(',')}`);
+          }
+          left.close();
+          right.close();
+          return { backend, generations };
+        };
+        const testReadWaitsForOpenWriter = async () => {
+          const namespace = await namespaceFor('open-opfs-writer-read');
+          const seed = create('opfs');
+          const writer = create('opfs');
+          const reader = create('opfs');
+          await stage(
+            'OPFS open-writer capability probes',
+            Promise.all([seed.status(), writer.status(), reader.status()]),
+          );
+          await stage('OPFS seed valid generation', saveValue(seed, namespace, 'old'));
+          let releasePayload;
+          let markEncodingStarted;
+          const encodingStarted = new Promise((resolve) => {
+            markEncodingStarted = resolve;
+          });
+          const payloadGate = new Promise((resolve) => {
+            releasePayload = resolve;
+          });
+          try {
+            const write = writer.save(namespace, async (generation) => {
+              markEncodingStarted();
+              await payloadGate;
+              return encoder.encode(`${generation}:new`);
+            });
+            await stage('OPFS writer holds exclusive lock', encodingStarted);
+            const read = reader.load(namespace);
+            const readFinishedEarly = await Promise.race([
+              read.then(
+                () => true,
+                () => true,
+              ),
+              new Promise((resolve) => globalThis.setTimeout(() => resolve(false), 100)),
+            ]);
+            if (readFinishedEarly) {
+              throw new Error('OPFS read did not wait for the open writer');
+            }
+            releasePayload();
+            await stage('OPFS writer commits after gate opens', write);
+            const loaded = await stage('OPFS read sees a complete generation', read);
+            if (loaded?.generation !== 2 || decoder.decode(loaded.payload) !== '2:new') {
+              throw new Error('OPFS reader did not get the valid generation after the writer committed');
+            }
+            return { backend: 'opfs', generation: loaded.generation };
+          } finally {
+            releasePayload();
+            seed.close();
+            writer.close();
+            reader.close();
+          }
+        };
+        const testCrashStage = async (backend, crashAt) => {
+          const namespace = await namespaceFor(`crash:${backend}:${crashAt}`);
+          const seedStorage = create(backend);
+          await stage(`${backend}/${crashAt} seed probe`, seedStorage.status());
+          await stage(`${backend}/${crashAt} seed old generation`, saveValue(seedStorage, namespace, 'old'));
+          seedStorage.close();
+
+          const crashedStorage = create(backend, { testCrashAt: crashAt, requestTimeoutMs: 2000 });
+          await stage(`${backend}/${crashAt} crash probe`, crashedStorage.status());
+          let writeFailed = false;
+          try {
+            await stage(`${backend}/${crashAt} injected write`, saveValue(crashedStorage, namespace, 'new'));
+          } catch {
+            writeFailed = true;
+          }
+          crashedStorage.close();
+          if (!writeFailed) {
+            throw new Error(`${backend} crash injection at ${crashAt} reported success`);
+          }
+
+          const reader = create(backend);
+          await stage(`${backend}/${crashAt} recovery probe`, reader.status());
+          const loaded = await stage(`${backend}/${crashAt} recovery read`, reader.load(namespace));
+          const payload = loaded ? decoder.decode(loaded.payload) : '';
+          if (!(loaded && ['1:old', '2:new'].includes(payload))) {
+            throw new Error(`${backend} crash at ${crashAt} left no whole generation (${payload})`);
+          }
+          reader.close();
+          return { backend, stage: crashAt, loadedGeneration: loaded.generation, payload };
+        };
+
+        const autoStorage = create('auto');
+        const autoStatus = await stage('automatic backend feature detection', autoStorage.status());
+        if (!['opfs', 'indexeddb'].includes(autoStatus.backend)) {
+          throw new Error(`Feature detection selected unsupported backend ${autoStatus.backend}`);
         }
-      };
-      const namespaceFor = async (label) => {
-        const digest = await crypto.subtle.digest('SHA-256', encoder.encode(label));
-        return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-      };
-      const create = (backend, extra = {}) => new SaveStorage({ backend, requestTimeoutMs: 15_000, ...extra });
-      const saveValue = (storage, namespace, value) =>
-        storage.save(namespace, async (generation) => encoder.encode(`${generation}:${value}`));
-      const testRoundTrip = async (backend) => {
-        const storage = create(backend);
-        const status = await stage(`${backend} capability status`, storage.status());
-        if (status.backend !== backend) {
-          throw new Error(`Forced ${backend} selected ${status.backend}`);
+        autoStorage.close();
+        const backends = autoStatus.backend === 'opfs' ? ['opfs', 'indexeddb'] : ['indexeddb'];
+        const backendResults = [];
+        const concurrentBackendResults = [];
+        const crashResults = [];
+        const openWriterReadResults = [];
+        for (const backend of backends) {
+          backendResults.push(await testRoundTrip(backend));
+          concurrentBackendResults.push(await testTwoTabs(backend));
+          if (backend === 'opfs') {
+            openWriterReadResults.push(await testReadWaitsForOpenWriter());
+          }
+          const crashStages =
+            backend === 'opfs'
+              ? ['before-truncate', 'after-truncate', 'after-partial-write', 'after-write', 'after-flush']
+              : ['before-transaction', 'after-read', 'after-put', 'after-commit'];
+          for (const crashAt of crashStages) {
+            crashResults.push(await testCrashStage(backend, crashAt));
+          }
         }
-        const namespace = await namespaceFor(`round-trip:${backend}`);
-        await stage(`${backend} first generation write`, saveValue(storage, namespace, 'first'));
-        await stage(`${backend} second generation write`, saveValue(storage, namespace, 'second'));
-        const loaded = await stage(`${backend} read newest generation`, storage.load(namespace));
-        if (loaded?.generation !== 2 || decoder.decode(loaded?.payload ?? new Uint8Array()) !== '2:second') {
-          throw new Error(`${backend} did not load its newest complete record`);
-        }
-        const result = { backend, quotaSupported: status.quota.supported, persistent: status.persistent };
-        storage.close();
-        return result;
-      };
-      const testTwoTabs = async (backend) => {
-        const namespace = await namespaceFor(`two-tabs:${backend}`);
-        const left = create(backend);
-        const right = create(backend);
-        await stage(`${backend} two-tab capability probes`, Promise.all([left.status(), right.status()]));
-        const results = await stage(
-          `${backend} two-tab concurrent commits`,
-          Promise.all([saveValue(left, namespace, 'tab-left'), saveValue(right, namespace, 'tab-right')]),
+        return {
+          autoBackend: autoStatus.backend,
+          backendResults,
+          concurrentBackendResults,
+          crashResults,
+          openWriterReadResults,
+        };
+      }, STAGE_TIMEOUT_MS),
+      OVERALL_TIMEOUT_MS,
+    );
+  const contract = autosaveOnly
+    ? {
+        autoBackend: requestedAutosaveBackend ?? 'indexeddb',
+        backendResults: [],
+        concurrentBackendResults: [],
+        crashResults: [],
+      }
+    : await runStorageContract();
+
+  await page.close();
+  page = await context.newPage();
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('requestfailed', recordRequestFailure);
+  const probePage = autosaveOnly ? page : await context.newPage();
+  if (!autosaveOnly) {
+    await probePage.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
+  }
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
+  const testTitleAndAutosave = async (backend) => {
+    const appUrl = `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}${autosaveOnly ? '&save-test=1' : ''}`;
+    if (!autosaveOnly) {
+      await probePage.evaluate(async (preferredBackend) => {
+        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
+        const { SaveStorage } = await import('/src/game/saveStorage.ts');
+        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
+        const { currentSaveVersionIdentity } = await import('/src/core/saveFormat.ts');
+        const storage = new SaveStorage({ backend: preferredBackend });
+        const identity = await currentSaveVersionIdentity();
+        globalThis.__d5SaveTest = { storage, namespace: identity.digest };
+      }, backend);
+    }
+    let lastReadFailure = '';
+    const readGeneration = async () => {
+      try {
+        return await probePage.evaluate(
+          async () => (await globalThis.__d5SaveTest.storage.load(globalThis.__d5SaveTest.namespace))?.generation,
         );
-        const loaded = await stage(`${backend} two-tab final read`, left.load(namespace));
-        const generations = results.map(({ generation }) => generation).sort((a, b) => a - b);
-        if (generations[0] !== 1 || generations[1] !== 2 || loaded?.generation !== 2) {
-          throw new Error(`${backend} two-tab writes were not serialized: ${generations.join(',')}`);
-        }
-        left.close();
-        right.close();
-        return { backend, generations };
-      };
-      const testCrashStage = async (backend, crashAt) => {
-        const namespace = await namespaceFor(`crash:${backend}:${crashAt}`);
-        const seedStorage = create(backend);
-        await stage(`${backend}/${crashAt} seed probe`, seedStorage.status());
-        await stage(`${backend}/${crashAt} seed old generation`, saveValue(seedStorage, namespace, 'old'));
-        seedStorage.close();
-
-        const crashedStorage = create(backend, { testCrashAt: crashAt, requestTimeoutMs: 2000 });
-        await stage(`${backend}/${crashAt} crash probe`, crashedStorage.status());
-        let writeFailed = false;
-        try {
-          await stage(`${backend}/${crashAt} injected write`, saveValue(crashedStorage, namespace, 'new'));
-        } catch {
-          writeFailed = true;
-        }
-        crashedStorage.close();
-        if (!writeFailed) {
-          throw new Error(`${backend} crash injection at ${crashAt} reported success`);
-        }
-
-        const reader = create(backend);
-        await stage(`${backend}/${crashAt} recovery probe`, reader.status());
-        const loaded = await stage(`${backend}/${crashAt} recovery read`, reader.load(namespace));
-        const payload = loaded ? decoder.decode(loaded.payload) : '';
-        if (!(loaded && ['1:old', '2:new'].includes(payload))) {
-          throw new Error(`${backend} crash at ${crashAt} left no whole generation (${payload})`);
-        }
-        reader.close();
-        return { backend, stage: crashAt, loadedGeneration: loaded.generation, payload };
-      };
-
-      const autoStorage = create('auto');
-      const autoStatus = await stage('automatic backend feature detection', autoStorage.status());
-      if (!['opfs', 'indexeddb'].includes(autoStatus.backend)) {
-        throw new Error(`Feature detection selected unsupported backend ${autoStatus.backend}`);
+      } catch (error) {
+        lastReadFailure = String(error);
+        // OPFS readers can transiently conflict with an in-flight writer handle.
       }
-      autoStorage.close();
-      const backends = autoStatus.backend === 'opfs' ? ['opfs', 'indexeddb'] : ['indexeddb'];
-      const backendResults = [];
-      const concurrentBackendResults = [];
-      const crashResults = [];
-      for (const backend of backends) {
-        backendResults.push(await testRoundTrip(backend));
-        concurrentBackendResults.push(await testTwoTabs(backend));
-        const crashStages =
-          backend === 'opfs'
-            ? ['before-truncate', 'after-truncate', 'after-partial-write', 'after-write', 'after-flush']
-            : ['before-transaction', 'after-read', 'after-put', 'after-commit'];
-        for (const crashAt of crashStages) {
-          crashResults.push(await testCrashStage(backend, crashAt));
-        }
-      }
-      return { autoBackend: autoStatus.backend, backendResults, concurrentBackendResults, crashResults };
-    }, STAGE_TIMEOUT_MS),
-    OVERALL_TIMEOUT_MS,
-  );
+    };
+    const waitForGeneration = (previous, trigger = 'checkpoint') =>
+      withTimeout(
+        `wait for ${backend} generation`,
+        (async () => {
+          const deadline = Date.now() + STAGE_TIMEOUT_MS;
+          while (Date.now() < deadline) {
+            const generation = await readGeneration();
+            if (generation !== undefined && (previous === undefined || generation > previous)) {
+              return generation;
+            }
+            await delay(100);
+          }
+          const status = await page.locator('#save-status').textContent();
+          throw new Error(
+            `${backend} ${trigger} generation did not advance; status=${status}; lastRead=${lastReadFailure}`,
+          );
+        })(),
+      );
+    await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+    if (autosaveOnly) {
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest !== undefined, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      await page.evaluate(() => {
+        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        globalThis.__d5SaveTest = { storage, namespace };
+      });
+    }
+    try {
+      await page.waitForFunction(
+        () => {
+          const status = document.querySelector('#save-status')?.textContent ?? '';
+          return status.includes('Title screen ready');
+        },
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+    } catch (error) {
+      const status = await page.locator('#save-status').textContent();
+      throw new Error(`${backend} startup stalled with status ${status}; errors: ${pageErrors.join('; ')}`, {
+        cause: error,
+      });
+    }
+    await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+    const initialStatus = await page.locator('#save-status').textContent();
+    if (!initialStatus?.includes('No saved world found')) {
+      throw new Error(`${backend} title startup reported: ${initialStatus}`);
+    }
+    await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    const periodicGeneration = await waitForGeneration(undefined, 'periodic');
+    await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
+    const sleepGeneration = await waitForGeneration(periodicGeneration, 'before-sleep');
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    const visibilityGeneration = await waitForGeneration(sleepGeneration, 'visibilitychange');
+    await page.evaluate(() => globalThis.dispatchEvent(new Event('pagehide')));
+    const firstGeneration = await waitForGeneration(visibilityGeneration, 'pagehide');
+    await delay(1000);
 
-  const expectedBackends = contract.autoBackend === 'opfs' ? 2 : 1;
-  assert.equal(contract.backendResults.length, expectedBackends);
-  assert.equal(contract.concurrentBackendResults.length, expectedBackends);
-  assert.equal(contract.crashResults.length, contract.autoBackend === 'opfs' ? 9 : 4);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+    try {
+      await page.waitForFunction(
+        () => {
+          const status = document.querySelector('#save-status')?.textContent ?? '';
+          return status.includes('Title screen ready');
+        },
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+    } catch (error) {
+      const status = await page.locator('#save-status').textContent();
+      throw new Error(`${backend} refresh stayed at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
+    }
+    await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+    if (autosaveOnly) {
+      await page.evaluate(() => {
+        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        globalThis.__d5SaveTest = { storage, namespace };
+      });
+    }
+    await delay(500);
+    const restoreMenu = await page.evaluate(() => ({
+      status: document.querySelector('#save-status')?.textContent,
+      disabled: document.querySelector('#continue')?.disabled,
+    }));
+    if (restoreMenu.disabled !== false) {
+      throw new Error(`${backend} saved generation was not Continue-compatible: ${restoreMenu.status}`);
+    }
+    const beforeContinue = await readGeneration();
+    if (beforeContinue < firstGeneration) {
+      throw new Error(`${backend} refreshed save regressed its generation`);
+    }
+    await page.evaluate(() => globalThis.dispatchEvent(new Event('pagehide')));
+    await delay(200);
+    if ((await readGeneration()) !== beforeContinue) {
+      throw new Error(`${backend} title-screen pagehide wrote before Continue or New world was selected`);
+    }
+    if (autosaveScenario === 'continue') {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+        page.click('#continue', { timeout: STAGE_TIMEOUT_MS }),
+      ]);
+      try {
+        await page.waitForFunction(
+          () => (document.querySelector('#save-status')?.textContent ?? '').includes('Saved world continued'),
+          undefined,
+          { timeout: STAGE_TIMEOUT_MS },
+        );
+      } catch (error) {
+        const status = await page.locator('#save-status').textContent();
+        throw new Error(`${backend} Continue stalled at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
+      }
+      await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+      const restoredMenu = await page.evaluate(() => ({
+        status: document.querySelector('#save-status')?.textContent,
+        pointerLocked: document.pointerLockElement !== null,
+        overlayHidden: document.querySelector('#overlay')?.hidden,
+      }));
+      if (restoredMenu.pointerLocked || restoredMenu.overlayHidden) {
+        throw new Error(`${backend} Continue did not start paused: ${JSON.stringify(restoredMenu)}`);
+      }
+      return { backend, continued: true, paused: true, generation: beforeContinue };
+    }
+
+    await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => document.querySelector('#save-confirmation')?.hidden === false, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
+    await page.click('#save-replace-cancel', { timeout: STAGE_TIMEOUT_MS });
+    if ((await page.evaluate(() => document.querySelector('#save-confirmation')?.hidden)) !== true) {
+      throw new Error(`${backend} replacement cancellation did not dismiss confirmation`);
+    }
+    await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.click('#save-replace-confirm', { timeout: STAGE_TIMEOUT_MS });
+    if ((await readGeneration()) !== beforeContinue) {
+      throw new Error(`${backend} replaced the prior A/B generation before a new snapshot`);
+    }
+    await page.evaluate(() => {
+      const { storage } = globalThis.deadvoxSaveTest;
+      const save = storage.save.bind(storage);
+      storage.save = () => {
+        storage.save = save;
+        throw new Error('injected browser test write failure');
+      };
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForFunction(
+      () => (document.querySelector('#save-status')?.textContent ?? '').includes('injected browser test write failure'),
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    if ((await readGeneration()) !== beforeContinue) {
+      throw new Error(`${backend} failed replacement write damaged the previous generation`);
+    }
+    await page.evaluate(() => {
+      globalThis.deadvoxSaveTest.controller.entered = false;
+    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(
+      () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest !== undefined, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
+    await page.evaluate(() => {
+      const { storage, namespace } = globalThis.deadvoxSaveTest;
+      globalThis.__d5SaveTest = { storage, namespace };
+    });
+    const failureRecovery = await page.evaluate(() => ({
+      continueDisabled: document.querySelector('#continue')?.disabled,
+      status: document.querySelector('#save-status')?.textContent,
+    }));
+    if (failureRecovery.continueDisabled !== false || (await readGeneration()) !== beforeContinue) {
+      throw new Error(`${backend} failed write hid the previous valid Continue generation: ${failureRecovery.status}`);
+    }
+    await probePage.evaluate(() => globalThis.__d5SaveTest.storage.close());
+    return { backend, replacementConfirmed: true, failedWriteRetainedContinue: true };
+  };
+  const autosaveResults = [];
+  let appBackends = [];
+  if (autosaveOnly && requestedAutosaveBackend) {
+    appBackends = [requestedAutosaveBackend];
+  } else if (autosaveOnly) {
+    appBackends = contract.autoBackend === 'opfs' ? ['opfs'] : ['indexeddb'];
+  }
+  for (const [index, backend] of appBackends.entries()) {
+    if (index > 0) {
+      await page.close();
+      page = await context.newPage();
+      page.on('pageerror', (error) => pageErrors.push(error.message));
+      page.on('requestfailed', recordRequestFailure);
+    }
+    autosaveResults.push(await testTitleAndAutosave(backend));
+  }
+
+  if (!autosaveOnly) {
+    const expectedBackends = contract.autoBackend === 'opfs' ? 2 : 1;
+    assert.equal(contract.backendResults.length, expectedBackends);
+    assert.equal(contract.concurrentBackendResults.length, expectedBackends);
+    assert.equal(contract.crashResults.length, contract.autoBackend === 'opfs' ? 9 : 4);
+  }
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, and ${contract.crashResults.length} kill stages passed\n`,
+    `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
   );
 } finally {
   await withTimeout('browser shutdown', browser?.close() ?? Promise.resolve(), 5000).catch((error) => {
@@ -259,7 +604,18 @@ try {
   if (profile) {
     await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
-  await withTimeout('Vite shutdown', vite.close(), 5000).catch((error) => {
-    process.stderr.write(`Cleanup warning: ${String(error)}\n`);
-  });
+  if (vite) {
+    await withTimeout('Vite shutdown', vite.close(), 5000).catch((error) => {
+      process.stderr.write(`Cleanup warning: ${String(error)}\n`);
+    });
+  }
+  if (previewServer) {
+    await withTimeout(
+      'Vite preview shutdown',
+      new Promise((resolve, reject) => previewServer.httpServer.close((error) => (error ? reject(error) : resolve()))),
+      5000,
+    ).catch((error) => {
+      process.stderr.write(`Cleanup warning: ${String(error)}\n`);
+    });
+  }
 }

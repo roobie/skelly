@@ -75,6 +75,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',
   'src/game/saveStorage.ts',
+  'src/game/saveStorageLockError.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
   'src/game/controls.ts',
@@ -93,6 +94,7 @@ export const SIMULATION_EXCLUSIONS = [
   // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
   'src/ui/primaryActionHint.ts',
   'src/ui/rest.ts',
+  'src/ui/saveController.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
