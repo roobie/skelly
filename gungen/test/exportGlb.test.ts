@@ -12,6 +12,7 @@ import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
+import { ejectionPoint } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
@@ -420,7 +421,7 @@ describe('glb export: deadvox model entry', () => {
   it('emits muzzle and support anchors in metres when the design has them', () => {
     const out = exported(design('archetype-ar'));
     const selected = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['magwell', 'muzzle', 'support']);
+    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['ejection', 'magwell', 'muzzle', 'support']);
     near(
       out.modelEntry.anchors!.muzzle!,
       selected.others.muzzle!.position.map((x) => x * S),
@@ -431,6 +432,56 @@ describe('glb export: deadvox model entry', () => {
       selected.others.support!.position.map((x) => x * S),
       6,
     );
+    near(
+      out.modelEntry.anchors!.ejection!,
+      ejectionPoint(out.resolved)!.map((x) => x * S),
+      6,
+    );
+  });
+
+  it('exports action nodes, estimated cycles, ejection metadata, and leaves GLB bytes unchanged', () => {
+    for (const [name, expectedAction] of [
+      ['archetype-ak', 'ak'],
+      ['archetype-ar', 'ar'],
+    ] as const) {
+      const assembly = design(name);
+      const out = exported(assembly);
+      const action = out.modelEntry.action!;
+      const carrier = out.resolved.defs.get('bolt-carrier')!;
+      const motion = carrier.motion!;
+      expect(action.rpm).toBe(expectedAction === 'ak' ? 600 : 800);
+      expect(action.holdOpen).toBe(expectedAction === 'ar');
+      expect(action.fire.durationSeconds).toBeCloseTo(60 / action.rpm, 9);
+      expect(action.hand.durationSeconds).toBeGreaterThan(action.fire.durationSeconds);
+      expect(action.fire.rearwardSeconds).toBeGreaterThan(0);
+      expect(action.fire.dwellSeconds).toBeGreaterThan(0);
+      expect(action.fire.forwardSeconds).toBeGreaterThan(0);
+      expect(action.hand.rearwardSeconds).toBeGreaterThan(0);
+      expect(action.hand.dwellSeconds).toBeGreaterThan(0);
+      expect(action.hand.forwardSeconds).toBeGreaterThan(0);
+      expect(action.ejectAt).toBeGreaterThan(0);
+      expect(action.ejectAt).toBeLessThan(1);
+      expect(Object.keys(action.parts)).toEqual(['carrier']);
+      for (const part of Object.values(action.parts)) {
+        const node = out.read.json.nodes.find(({ name: nodeName }) => nodeName === part.node)!;
+        expect(node.mesh).toBeDefined();
+        expect(Math.hypot(...part.axis)).toBeCloseTo(1, 12);
+        expect(part.strokeMetres).toBeCloseTo(6.5 * S, 6);
+      }
+      expect(Math.hypot(...action.ejectDirection)).toBeCloseTo(1, 12);
+      expect(out.modelEntry).not.toHaveProperty('ejectDirection');
+      expect(out.modelEntry.anchors?.ejection).toBeDefined();
+      expect(motion.axis).toEqual([1, 0, 0]);
+
+      const core = exportGlb({
+        resolved: out.resolved,
+        palette: GUN_PALETTE,
+        appearance: { variant: 'ar' },
+        asset: ASSET,
+      });
+      expect(core.ok).toBe(true);
+      expect(Buffer.from(out.glb).equals(Buffer.from(core.ok ? core.glb : []))).toBe(true);
+    }
   });
 
   it('emits the structural magwell anchor with or without assigned calibre metadata', () => {

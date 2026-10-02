@@ -63,13 +63,18 @@ const nextUrl = (run: ShamblerBenchRun): string => {
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
 
 export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void => {
-  const { renderer, camera, scene, streamer, config } = engine;
+  const { camera, scene, streamer, config } = engine;
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
   const startTime = parseTimeOfDay(run.time)!;
   applySky(engine.sky, skyAt(hourOfDay(startTime)));
-  const drawFrame = benchDraw(engine, run.post, hourOfDay(startTime));
+  let sceneDraws = 0;
+  let sceneTriangles = 0;
+  const drawFrame = benchDraw(engine, run.post, hourOfDay(startTime), (stats) => {
+    sceneDraws = stats.calls;
+    sceneTriangles = stats.triangles;
+  });
   streamer.onColumn = (cx, cz) => {
     for (const { spec } of engine.site?.furnitureIn(cx, cz) ?? []) {
       engine.entities.add(spec);
@@ -303,7 +308,8 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
       // The population is fixed for the whole run, so one snapshot per measured frame is representative
       // (unlike run.ts's `look`/`jog`/`sprint`, which fly through a changing, streaming world) — see
       // report.ts's own draws/triangles column.
-      ({ calls: draws, triangles } = renderer.info.render);
+      draws = sceneDraws;
+      triangles = sceneTriangles;
     }
     showHud(elapsed);
   };

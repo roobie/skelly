@@ -8,6 +8,7 @@ import { type Resolved, resolve } from '../src/core/resolve.ts';
 import type { Assembly, PartDef, Solid } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, type GunAnchorDeclarations, selectGunAnchors } from '../src/gun/anchors.ts';
+import { ejectionPoint } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadCorpus, loadFixture, loadFixtures } from './helpers.ts';
@@ -243,12 +244,14 @@ describe('anchor data', () => {
       expect(Object.keys(gunDomain.families)).toContain(key);
     }
     expect(Object.keys(GUN_ANCHORS).sort()).toEqual([
+      'ak-receiver',
       'barrel',
       'forend',
       'frame',
       'grip',
       'handguard',
       'lower',
+      'receiver',
       'revolver-barrel',
       'revolver-grip',
       'stock',
@@ -304,6 +307,14 @@ describe('anchor data', () => {
       for (const f of Object.values(r.others)) {
         expect(frameDefects(f)).toEqual([]);
       }
+    }
+  });
+
+  it('selects the ejection anchor at the receiver port on AK and AR fixtures', () => {
+    for (const name of ['archetype-ak', 'archetype-ar']) {
+      const resolved = resolve(loadFixture(name), gunDomain);
+      const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
+      expect('code' in anchors ? anchors : anchors.others.ejection?.position).toEqual(ejectionPoint(resolved));
     }
   });
 

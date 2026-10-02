@@ -70,6 +70,7 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 ## Working rules
 
 - **Heavy runs:** serialize full suites, browser suites and builds with `flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 …` on a shared host; single-file tests, typecheck and lint stay unlocked. Why: agent-kit `skills/agent-mail/RESOURCES.md`.
+- **Vitest pools:** all three projects share `testPool.ts` (40% available CPUs, file isolation). Don't raise a test timeout to mask pool contention; measured trade-offs and the two-core CI proof are in `docs/test-pool.md`.
 - **Bound every run:** wrap long shell runs in `timeout 300` (300 seconds). Vitest timeouts are
   in milliseconds; a harness's own tool timeout may be in seconds or milliseconds, so check its
   schema. A browser script bounds each stage as well as the whole run. Mixing the units once
