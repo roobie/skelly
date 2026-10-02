@@ -89,7 +89,7 @@ describe('motion-derived cycle geometry', () => {
       const sweep = sweepMovingPart(resolved, 'bolt-carrier', cycle.strokeUnits + 2.5);
       expect(sweep.declared).toBeCloseTo(cycle.strokeUnits, 9);
       expect(sweep.clear).toBeGreaterThanOrEqual(sweep.declared);
-      expect(sweep.clashes[0]?.at).toBeGreaterThanOrEqual(sweep.declared);
+      expect(sweep.clashes.every(({ at }) => at >= sweep.declared)).toBe(true);
       expect(motion.end[0]).toBeGreaterThan(motion.start[0]);
     }
   });

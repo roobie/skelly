@@ -664,7 +664,7 @@ const receiverShellSolids = ({
             offset: plane.offset - plane.normal[1] * receiverDrop,
           }))
         : undefined;
-    return buildReceiverSection({
+    const sectionSolids = buildReceiverSection({
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax],
@@ -679,6 +679,9 @@ const receiverShellSolids = ({
           }
         : {}),
     });
+    return section === 'ar'
+      ? sectionSolids.filter(({ id }) => !['receiver-ar-rear-adapter', 'receiver-ar-front-adapter'].includes(id))
+      : sectionSolids;
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
@@ -928,6 +931,10 @@ const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[
 // ---- receiver ----
 
 type BoltTravelClass = keyof typeof BOLT_TRAVEL;
+interface BoltTravel {
+  readonly length: number;
+  readonly restX: number;
+}
 interface ReceiverContext {
   readonly params: Readonly<Record<string, string>>;
   readonly bore: SizeClass;
@@ -939,7 +946,7 @@ interface ReceiverContext {
   readonly receiverBottom: number;
   readonly receiverTop: number;
   readonly portWindow: ReturnType<typeof ejectionPortWindow>;
-  readonly travel: (typeof BOLT_TRAVEL)[BoltTravelClass];
+  readonly travel: BoltTravel;
   readonly carrierPattern: BoltCarrierPattern;
   readonly carrierY: number;
 }
@@ -1257,7 +1264,11 @@ export const receiver: PartFamily = {
       throw new Error(`receiver ${params.section}: top flat is too narrow for its rail.`);
     }
     const carrierPattern = carrierPatternFor(params);
-    const travel = BOLT_TRAVEL[receiverTravelClass(params)];
+    const baseTravel = BOLT_TRAVEL[receiverTravelClass(params)];
+    const travel: BoltTravel =
+      params.section === 'ar'
+        ? { ...baseTravel, restX: (sectionData?.faces.front ?? 0) + BOLT_CARRIER_ENVELOPES.ar.x[0] }
+        : baseTravel;
     const carrierY = carrierAxisY(carrierPattern, receiverDrop);
     const context: ReceiverContext = {
       params,
@@ -1737,8 +1748,9 @@ export const boltCarrier: PartFamily = {
     ];
     if (pattern === 'ar') {
       solids.push(
-        block('bolt-head', [0.75, -0.4, -1.25 * boreScale], [1.5, 0.4, 1.25 * boreScale]),
+        block('bolt-head', [-2.5, -0.4, -1.25 * boreScale], [-1.5, 0.4, 1.25 * boreScale]),
         block('gas-key', [-0.75, 0.5, -0.4], [1.1, 1, 0.4]),
+        octagonalPrism('carrier-tail', 0.5, [1.5, 13.5]),
       );
     } else if (pattern === 'ak') {
       solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]));
@@ -2197,6 +2209,26 @@ const octagonalPrism = (id: string, flatRadius: number, along: readonly [number,
   axis: 'x',
   z: along,
 });
+
+const octagonalTubeWalls = (
+  id: string,
+  outerFlatRadius: number,
+  innerFlatRadius: number,
+  along: readonly [number, number],
+): Solid[] => {
+  const outer = octagonalProfile(outerFlatRadius);
+  const inner = octagonalProfile(innerFlatRadius);
+  return outer.map((point, index) => {
+    const next = (index + 1) % outer.length;
+    return {
+      id: `${id}-wall-${index}`,
+      kind: 'extruded-polygon',
+      profile: [point, outer[next]!, inner[next]!, inner[index]!] as const,
+      axis: 'x',
+      z: along,
+    };
+  });
+};
 
 /** Eight-sided extrusion inscribed in its rectangular bounds, with 45-degree corner chamfers. */
 const octagonalRectanglePrism = (
@@ -3270,6 +3302,7 @@ export const magazine: PartFamily = {
  */
 export const M4_STOCK_GEOMETRY = {
   bufferTubeAcrossFlats: 2.5,
+  bufferTubeBoreAcrossFlats: 1.5,
   frontDepth: 3,
   rearDepth: 7.5,
   depthDifference: 4.5,
@@ -3287,24 +3320,64 @@ const m4StockSolids = (len: number): Solid[] => {
   const bottomIntercept = frontBottom - bottomSlope * frontX;
   const sideSlope = (frontHalfWidth - rearHalfWidth) / taperLength;
   const sideIntercept = frontHalfWidth - sideSlope * frontX;
-  const body: Solid = {
-    id: 'm4-stock-body',
-    kind: 'extruded-polygon',
-    profile: [
-      [rearBottom, -rearHalfWidth],
-      [top, -rearHalfWidth],
-      [top, rearHalfWidth],
-      [rearBottom, rearHalfWidth],
-    ],
-    axis: 'x',
-    z: [-len, frontX],
-    clip: [
-      { normal: [bottomSlope, -1, 0], offset: -bottomIntercept },
-      { normal: [-sideSlope, 0, 1], offset: sideIntercept },
-      { normal: [-sideSlope, 0, -1], offset: sideIntercept },
-    ],
-    display: { bevel: false },
-  };
+  const bodyClip = [
+    { normal: [bottomSlope, -1, 0], offset: -bottomIntercept },
+    { normal: [-sideSlope, 0, 1], offset: sideIntercept },
+    { normal: [-sideSlope, 0, -1], offset: sideIntercept },
+  ] as const;
+  const bore = M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats / 2;
+  const bodySolids: Solid[] = [
+    {
+      id: 'm4-stock-body-bottom',
+      kind: 'extruded-polygon',
+      profile: [
+        [rearBottom, -rearHalfWidth],
+        [-bore, -rearHalfWidth],
+        [-bore, rearHalfWidth],
+        [rearBottom, rearHalfWidth],
+      ],
+      axis: 'x',
+      z: [-len, frontX],
+      clip: bodyClip,
+      display: { bevel: false },
+    },
+    {
+      id: 'm4-stock-body-top',
+      kind: 'extruded-polygon',
+      profile: [
+        [bore, -rearHalfWidth],
+        [top, -rearHalfWidth],
+        [top, rearHalfWidth],
+        [bore, rearHalfWidth],
+      ],
+      axis: 'x',
+      z: [-len, frontX],
+      clip: bodyClip,
+      display: { bevel: false },
+    },
+    ...([-1, 1] as const).map((side) => ({
+      id: `m4-stock-body-side-${side < 0 ? 'far' : 'near'}`,
+      kind: 'extruded-polygon' as const,
+      profile:
+        side < 0
+          ? ([
+              [-bore, -bore],
+              [-bore, -rearHalfWidth],
+              [bore, -rearHalfWidth],
+              [bore, -bore],
+            ] as const)
+          : ([
+              [-bore, bore],
+              [bore, bore],
+              [bore, rearHalfWidth],
+              [-bore, rearHalfWidth],
+            ] as const),
+      axis: 'x' as const,
+      z: [-len, frontX] as const,
+      clip: bodyClip,
+      display: { bevel: false },
+    })),
+  ];
   const buttplate: Solid = {
     id: 'buttplate',
     kind: 'extruded-polygon',
@@ -3318,8 +3391,13 @@ const m4StockSolids = (len: number): Solid[] => {
     z: [-len - 1, -len],
   };
   return [
-    octagonalPrism('buffer-tube', M4_STOCK_GEOMETRY.bufferTubeAcrossFlats / 2, [-len, 0]),
-    body,
+    ...octagonalTubeWalls(
+      'buffer-tube',
+      M4_STOCK_GEOMETRY.bufferTubeAcrossFlats / 2,
+      M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats / 2,
+      [-len, 0],
+    ),
+    ...bodySolids,
     buttplate,
     solid('latch-rib', [-6, -2.75, -0.25], [-3, -1.25, 0.25]),
   ];

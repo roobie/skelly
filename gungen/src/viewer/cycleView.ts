@@ -1,6 +1,14 @@
 // Presentation-only action-cycle controls. Timelines and motion profiles stay in the gun domain module.
 
-import { ArrowHelper, type Group, type Mesh, type MeshStandardMaterial, type Object3D, Vector3 } from 'three';
+import {
+  ArrowHelper,
+  type Group,
+  type Material,
+  type Mesh,
+  type MeshStandardMaterial,
+  type Object3D,
+  Vector3,
+} from 'three';
 import { applyDir } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
 import { type CycleTimeline, cycleMotion, ejectionPoint, sweepMovingPart } from '../gun/cycle.ts';
@@ -9,6 +17,11 @@ const SPEEDS = [1, 0.25, 0.1, 0.02] as const;
 const XRAY_OPACITY = 0.2;
 const STEP_SECONDS = 0.01;
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const disposeMaterials = (materials: Material | Material[]): void => {
+  for (const material of Array.isArray(materials) ? materials : [materials]) {
+    material.dispose();
+  }
+};
 
 interface Mover {
   readonly meshes: readonly { readonly mesh: Mesh; readonly base: readonly number[] }[];
@@ -47,6 +60,16 @@ export const createCycleView = (): CycleView => {
   let timeline: CycleTimeline | undefined;
   let movers: Mover[] = [];
   let faded: Mesh[] = [];
+  const canonicalPoses = new WeakMap<Mesh, readonly number[]>();
+  const basePose = (mesh: Mesh): readonly number[] => {
+    const existing = canonicalPoses.get(mesh);
+    if (existing) {
+      return existing;
+    }
+    const base = mesh.matrix.toArray();
+    canonicalPoses.set(mesh, base);
+    return base;
+  };
   let boundSolids: Group | undefined;
   let boundResolved: Resolved | undefined;
   let ejectionArrow: ArrowHelper | undefined;
@@ -120,9 +143,9 @@ export const createCycleView = (): CycleView => {
     }
     ejectionArrow.parent?.remove(ejectionArrow);
     ejectionArrow.line.geometry.dispose();
-    ejectionArrow.line.material.dispose();
+    disposeMaterials(ejectionArrow.line.material);
     ejectionArrow.cone.geometry.dispose();
-    ejectionArrow.cone.material.dispose();
+    disposeMaterials(ejectionArrow.cone.material);
     ejectionArrow = undefined;
   };
 
@@ -182,7 +205,7 @@ export const createCycleView = (): CycleView => {
     ({ strokeUnits } = cycle);
     const worldAxis = applyDir(placed, def.motion.axis);
     movers.push({
-      meshes: meshesOf(solids, 'bolt-carrier').map((mesh) => ({ mesh, base: mesh.matrix.toArray() })),
+      meshes: meshesOf(solids, 'bolt-carrier').map((mesh) => ({ mesh, base: basePose(mesh) })),
       world: [worldAxis[0] * strokeUnits, worldAxis[1] * strokeUnits, worldAxis[2] * strokeUnits],
     });
 

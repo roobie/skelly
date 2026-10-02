@@ -17,7 +17,7 @@ import {
   RECEIVER_SECTION,
 } from '../src/gun/parts.ts';
 import { buildReceiverSection } from '../src/gun/receiverSection.ts';
-import { loadCorpus } from './helpers.ts';
+import { loadCorpus, loadFixture } from './helpers.ts';
 
 const corners = (solid: Solid): Vec3[] => {
   if (solid.kind === 'box') {
@@ -187,7 +187,7 @@ const coreFitsCavity = (entry: TravelCase, resolved: ReturnType<typeof resolve>)
   const transform = resolved.placed.get('bolt-carrier')!;
   const motion = carrier.motion!;
   const bounds = limits(receiver.solids.flatMap(corners));
-  const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - 0.5];
+  const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - (entry.pattern === 'ar' ? 0 : 0.5)];
   const pathCenter = path.box.center;
 
   const pathFits =
@@ -272,10 +272,11 @@ const allCarrierSolidsStayWithinReceiverLength = (resolved: ReturnType<typeof re
   const transform = resolved.placed.get('bolt-carrier')!;
   const motion = carrier.motion!;
   const bounds = limits(receiver.solids.flatMap(corners));
-  const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - 0.5];
+  const isAr = resolved.params.get('bolt-carrier')?.pattern?.value === 'ar';
+  const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - (isAr ? 0 : 0.5)];
 
   return carrier.solids
-    .filter(({ id }) => !HANDLE_ID_REGEX.test(id))
+    .filter(({ id }) => !HANDLE_ID_REGEX.test(id) && id !== 'carrier-tail')
     .flatMap((solid) =>
       corners(solid).flatMap((corner) => [
         applyPoint(transform, corner),
@@ -845,30 +846,53 @@ describe('procedural bolt carrier', () => {
     expect(mutatedSolids.every(({ display }) => display?.mergeGroup !== 'receiver-ak')).toBe(true);
   });
 
-  it('extends the AR carrier 4/3 forward and derives its port from the unchanged rear face', () => {
+  it('meets the AR bolt face to the breech and clears the hollow buffer tube through full travel', () => {
     const entry = travelCases.find(({ pattern }) => pattern === 'ar')!;
-    const resolved = resolve(assemblyFor(entry), gunDomain);
+    const resolved = resolve(loadFixture('archetype-ar'), gunDomain);
     const receiver = resolved.defs.get('receiver')!;
     const carrier = resolved.defs.get('bolt-carrier')!;
+    const stock = resolved.defs.get('stock')!;
+    const receiverTransform = resolved.placed.get('receiver')!;
     const transform = resolved.placed.get('bolt-carrier')!;
-    const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
-    const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
-    const port = portMeasurements(entry, resolved);
+    const stockTransform = resolved.placed.get('stock')!;
+    const boltHead = carrier.solids.find(({ id }) => id === 'bolt-head')!;
+    const tail = carrier.solids.find(({ id }) => id === 'carrier-tail')!;
     const [travel] = carrier.motion!.end;
-    const [barrelMountX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
+    const [breechX] = applyPoint(receiverTransform, receiver.ports.find(({ id }) => id === 'barrel')!.pos);
+    const [boltFace] = applyPoint(transform, [BOLT_CARRIER_ENVELOPES.ar.x[0], 0, 0]);
+    const [receiverRearX] = applyPoint(receiverTransform, receiver.ports.find(({ id }) => id === 'stock')!.pos);
+    const [tubeMouthX] = applyPoint(stockTransform, [0, 0, 0]);
+    const [tailAtBatteryX] = applyPoint(transform, [13.5, 0, 0]);
+    const rearTransform = compose(transform, translation([travel, 0, 0]));
+    const [tailAtFullStrokeX] = applyPoint(rearTransform, [13.5, 0, 0]);
+    const tubeWalls = stock.solids.filter(({ id }) => id.startsWith('buffer-tube-wall-'));
+    const port = portMeasurements(entry, resolved);
+    const boltFaceBounds = worldBounds(corners(boltHead).map((point) => applyPoint(transform, point)));
 
-    expect(BOLT_CARRIER_ENVELOPES.ar.x).toEqual([-2.5, 1.5]);
-    expect(bodyBounds[0]).toEqual([-8.5, -4.5]);
-    expect(bodyBounds[0]![1]! - bodyBounds[0]![0]!).toBe(4);
-    expect(4 / 3).toBeGreaterThanOrEqual(1.25);
-    expect(4 / 3).toBeLessThanOrEqual(1.35);
-    expect(bodyBounds[0]![0]).toBe(-8.5);
-    expect([port.actualX![0], port.actualX![1]]).toEqual([-8.75, -4.25]);
-    expect(port.width).toBe(4.5);
-    expect(port.actualY).toEqual([-0.75, 1.25]);
-    expect(barrelMountX - bodyBounds[0]![1]!).toBeCloseTo(4.5, 8);
+    expect(boltFaceBounds[0]![1]).toBeCloseTo(breechX, 8);
+    expect(boltFace).toBeCloseTo(breechX, 8);
+    expect(breechX).toBe(0);
+    expect(tailAtBatteryX).toBeCloseTo(receiverRearX, 8);
+    expect(tubeMouthX).toBeCloseTo(receiverRearX, 8);
+    expect(tailAtFullStrokeX).toBeCloseTo(tubeMouthX - travel, 8);
+    expect(tailAtFullStrokeX).toBeLessThan(tubeMouthX);
     expect(travel).toBe(6.5);
+    expect(tubeWalls).toHaveLength(8);
+    expect(BOLT_CARRIER_ENVELOPES.ar.x).toEqual([-2.5, 1.5]);
+    expect(port.actualX).toEqual([-4.25, 0.25]);
+    expect(port.actualY).toEqual([-0.75, 1.25]);
+    expect(receiver.solids.some(({ id }) => id === 'receiver-ar-rear-adapter')).toBe(false);
     expect(noCarrierReceiverIntersectionsOverTravel(resolved)).toBe(true);
+    for (let sample = 0; sample <= 26; sample++) {
+      const progress = (travel * sample) / 26;
+      const moving = compose(transform, translation([progress, 0, 0]));
+      for (const wall of tubeWalls) {
+        expect(
+          penetrationWorld(worldSolid(moving, tail), worldSolid(stockTransform, wall)),
+          `tube wall at ${progress}`,
+        ).toBeLessThanOrEqual(1e-6);
+      }
+    }
   });
 
   it('grows the AK carrier to a 2.5u × 2.5u cross-section with 0.1u clearance', () => {
@@ -900,7 +924,7 @@ describe('procedural bolt carrier', () => {
 
   it('makes each family style produce the expected procedural features', () => {
     const build = (pattern: string) => FAMILIES['bolt-carrier']!.build({ pattern, bore: 'L', action: 'auto' });
-    expect(build('ar').solids.map(({ id }) => id)).toEqual(['carrier-body', 'bolt-head', 'gas-key']);
+    expect(build('ar').solids.map(({ id }) => id)).toEqual(['carrier-body', 'bolt-head', 'gas-key', 'carrier-tail']);
     expect(build('ak').solids.map(({ id }) => id)).toContain('piston');
     const pump = build('pump');
     expect(pump.solids.map(({ id }) => id)).toContain('action-bar-left');
