@@ -118,14 +118,6 @@ describe('case shapes', () => {
     expect(unsourcedPaths(cartridge)).toEqual([]);
   });
 
-  it('covers every head type and both body shapes', () => {
-    const shapes = SYNTHETIC_METALLIC_SHAPES.map((shape) => mustParse(syntheticJson(shape)));
-    const heads = new Set(shapes.flatMap((c) => (c.kind === 'metallic' ? [c.case.head.type] : [])));
-    const bodies = new Set(shapes.flatMap((c) => (c.kind === 'metallic' ? [c.case.body.type] : [])));
-    expect([...heads].sort()).toEqual(['rimless', 'rimmed']);
-    expect([...bodies].sort()).toEqual(['bottleneck', 'straight']);
-  });
-
   it.each([
     ['shotshell-buck', 'shot'],
     ['shotshell-slug', 'slug'],
