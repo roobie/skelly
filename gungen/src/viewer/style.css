@@ -29,7 +29,8 @@ body {
 #panel {
   width: 340px;
   flex: none;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   padding: 16px;
   background: var(--panel);
   border-right: 1px solid var(--line);
@@ -254,10 +255,11 @@ button:hover {
   right: 0;
   bottom: 0;
   max-height: 32vh;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: auto;
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  align-items: start;
   gap: 8px;
   padding: 10px;
   background: rgba(31, 34, 39, 0.92);
@@ -267,20 +269,16 @@ button:hover {
   display: none;
 }
 .param-reset {
-  flex: none;
-  align-self: center;
+  justify-self: start;
 }
 .param-note {
-  flex: none;
-  align-self: center;
-  max-width: 260px;
+  grid-column: 1 / -1;
   margin: 0;
   color: var(--fail);
   font-size: 12px;
 }
 .param-part {
-  flex: none;
-  width: 230px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 8px 10px;
