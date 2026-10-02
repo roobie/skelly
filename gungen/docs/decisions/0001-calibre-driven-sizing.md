@@ -33,18 +33,26 @@ The cartridge is a design parameter, chosen first. Everything below follows from
 
 ### 2. The cartridge picks a discrete frame
 
-Real platforms come in a few frame sizes, and a cartridge goes in the smallest frame that fits it: .300 BLK runs in an AR-15, 6.5 Creedmoor in an AR-10. So gungen models **frames as data, per family**, not a continuous scale:
+Real platforms come in a few frame sizes, and a cartridge goes in the smallest frame that fits it: .300 BLK runs in an AR-15, 6.5 Creedmoor in an AR-10. So gungen models **frames as data, per family**, not a continuous scale.
 
-- A frame declares the largest cartridge it takes (maximum overall length and maximum case head diameter) and the action dimensions that follow: carrier or bolt length and travel, receiver length and height, ejection port length, magwell length and width, barrel extension and chamber diameter.
-- The cartridge's frame is **derived** (the smallest of the family's frames that fits), never a separate setting, so frame and cartridge can't disagree. A cartridge that fits no frame of the family is a validation error naming the largest frame and the cartridge's measures.
+A frame is an **action and receiver envelope with its interfaces**, not a cartridge:
+
+- It declares the largest cartridge it takes (maximum overall length and maximum case head diameter) and the envelope that follows: carrier or bolt length and travel, receiver length and height, ejection port length, the magwell opening, and the outer envelope of the barrel extension and breech.
+- **Frame fit is a dimensional eligibility rule** (the cartridge fits the envelope), not a claim that real ammunition, bolts or chambers interchange: a .300 BLK and a 5.56 AR share the small frame but not their chamber or bore.
+- A family's frames are **ordered by an explicit rank**, so "smallest" and "largest" are never ambiguous, even if two envelopes are incomparable dimension by dimension.
+- The cartridge's frame is **derived** (the lowest-ranked frame of the family that fits), never a separate setting, so frame and cartridge can't disagree. A cartridge that fits no frame of the family is a validation error naming the largest frame and the cartridge's measures. A family with one frame either fits or refuses.
+
+Inside the frame's envelope, the **cartridge itself** drives the cartridge-specific geometry: the chamber, bore and inner barrel extension, and the round and column geometry (g34's round profile and magazine column).
 
 ### 3. What follows the cartridge, what defaults from it, what stays human-sized
 
 | Kind | Parts | Rule |
 | --- | --- | --- |
-| **Derived** from the frame | action (carrier/bolt, travel), receiver length and height, ejection port, magwell, magazine (from g34's round profile and column), barrel extension and chamber | Fixed by the cartridge's frame; not user parameters. |
+| **Derived** from the frame | action (carrier/bolt, travel), receiver length and height, ejection port, magwell opening, outer barrel-extension/breech envelope | Fixed by the cartridge's frame; not user parameters. |
+| **Derived** from the cartridge | chamber, bore, inner barrel extension, round and column geometry | Fixed by the cartridge, within the frame's envelope. |
+| **Chosen** within the frame | magazine capacity, size and profile (from the cartridge's column, fitting the magwell) | A separate, adjustable choice: one frame takes several magazines. |
 | **Defaults from** the calibre | barrel length and profile (heavier for bigger cartridges), handguard length (follows the barrel), muzzle device size, optic ring height (from the receiver height) | Defaults scale with the frame, but stay adjustable. A handguard may be shorter than the barrel or absent (e.g. a bipod rifle with a free-floating barrel). |
-| **Fixed** to the human | grip, trigger, trigger guard, safety, charging handle, stock and cheek rest, sling points | Never follow the calibre. This is much of why a 417 still reads as an AR. |
+| **Fixed** to the human | the hand- and body-contact dimensions of the grip, trigger, trigger guard, safety, charging-handle paddle or knob, stock and cheek rest, and sling loops | These sizes never follow the calibre; much of why a 417 still reads as an AR. Their **attachment, reach and placement** do follow the frame: a charging handle's shaft must reach the bigger carrier, and a sling point sits where the bigger platform puts it. |
 
 ### 4. The template keeps the family look
 
@@ -58,9 +66,9 @@ The first implementation is the AR family with three frames:
 | --- | --- | --- |
 | small (AR-15) | 5.56×45 | M4, HK416 |
 | large (AR-10) | 7.62×51 | SR-25, HK417 |
-| magnum | .338 Lapua Magnum | AR-pattern .338 LM DMRs |
+| magnum | .338 Lapua Magnum | proprietary AR-pattern rifles, e.g. the side-charging Noreen Bad News .338 LM; there is no standardised magnum AR frame |
 
-Each needs sourced cartridge data (5.56×45 comes with g34; 7.62×51 and .338 LM are new) and frame dimensions with a source or a stated estimate, the same standard as `cartridges/`.
+Each needs sourced cartridge data and frame dimensions with a source or a stated estimate, the same standard as `cartridges/`. **Prerequisite:** the g34 spec asks for sourced 5.56×45 data, but it hasn't arrived yet (only `cartridges/7.62x39.json` exists); the pilot is gated on it, and 7.62×51 and .338 LM are new. Missing data is never invented.
 
 ## Rulings (2026-10-02)
 
@@ -72,9 +80,16 @@ Each needs sourced cartridge data (5.56×45 comes with g34; 7.62×51 and .338 LM
 
 - **Ordering:** after g34 (round profiles and magazine columns from cartridge data), because magwells and magazines come from those. g35's cycle travel should then come from the frame's action length instead of a per-gun number.
 - **Deadvox:** gets `calibre` in the export (ADR 0003, g34), so a 7.62 AR differs in game data as well as in looks.
-- **Existing designs:** the curated AR designs map to the small frame and must export byte-identically (the same A/B as g29's 52 exports). The anti-materiel rifle's bespoke cartridge sizing becomes one family's frame data when convenient; until then it stays as it is.
+- **Existing designs and export compatibility:** the curated AR designs take the small frame through their default cartridge (5.56×45). The boundary:
+  - The unenriched (legacy) export path keeps byte-identical GLBs and model entries, tested on full bytes as in g29's 52-export A/B.
+  - An enriched export (with `calibre`, as g34's CLI does with an explicit opt-in) may add only the documented optional fields. Its GLBs and existing field values stay identical.
+  - No existing consumer is opted into new metadata silently.
+- **The anti-materiel rifle:** its bespoke cartridge sizing becomes one family's frame data when convenient; until then it stays as it is.
 - **Bands retire gradually:** magazine bands remain for families without frames; a family moves off them when it gets frames.
-- **Tests (#120):** a covering array over family × frame × cartridge × the adjustable defaults, with fail-before canaries for "cartridge too long for its frame" and "derived dimension edited by hand"; full products behind `GUNGEN_SWEEPS`.
+- **Tests (#120):**
+  - The frame is a derived outcome, not a generation axis. So the covering array spans family × cartridge × the adjustable choices (magazine, barrel, handguard), and the frame selector gets its own targeted cases: an exact-boundary fit, the first cartridge that needs the next frame, no fit, a single-frame family, and incomparable envelopes resolved by rank.
+  - Fail-before canaries for "cartridge too long for its frame" and "derived dimension edited by hand".
+  - Full products behind `GUNGEN_SWEEPS`.
 
 ## Open questions
 
