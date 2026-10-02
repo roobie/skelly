@@ -64,6 +64,10 @@ export interface GunExportMetadata {
   readonly cartridge?: MetallicCartridge;
 }
 
+interface GunModelEntryOptions extends GunExportMetadata {
+  readonly handling?: GunActionExport;
+}
+
 export type GunAssetIdentity = GlbAssetIdentity;
 
 export type GunExportResult =
@@ -137,10 +141,10 @@ export const createGunModelEntry = (
   asset: GunAssetIdentity,
   anchors: SelectedAnchors,
   metresPerUnit: number,
-  metadata: GunExportMetadata = {},
-  handling?: GunActionExport,
+  options: GunModelEntryOptions = {},
 ): GunDeadvoxModelEntry => {
-  const calibre = metadata.cartridge?.id;
+  const { handling } = options;
+  const calibre = options.cartridge?.id;
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
@@ -191,14 +195,12 @@ export const exportGunGlb = (
   if (!result.ok) {
     return result;
   }
+  const handling = buildActionExport(resolved, anchors.others.ejection?.position);
   return {
     ...result,
-    modelEntry: createGunModelEntry(
-      asset,
-      anchors,
-      resolved.domain.units.metresPerUnit,
-      metadata,
-      buildActionExport(resolved, anchors.others.ejection?.position),
-    ),
+    modelEntry: createGunModelEntry(asset, anchors, resolved.domain.units.metresPerUnit, {
+      ...metadata,
+      ...(handling ? { handling } : {}),
+    }),
   };
 };
