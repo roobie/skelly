@@ -88,6 +88,8 @@ export interface ExtrudedPolygonSolid extends SolidFinish {
 export interface RevolvedSolid extends SolidFinish {
   readonly id: string;
   readonly kind: 'revolved';
+  /** Translation of the revolution axis in the part frame; omitted means [0, 0, 0]. */
+  readonly origin?: Vec3;
   /**
    * (axial, radial) points with radial >= 0. Traversed so the material lies to the left of travel: a
    * closed solid runs from the axis out along its base, along the outside, and back to the axis; a

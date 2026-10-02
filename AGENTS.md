@@ -4,6 +4,31 @@ Keep this file short: only what every agent needs on every task. Topic detail go
 the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), with a
 one-line cue under "Further docs" below.
 
+## Project stage: pre-pre-alpha, no backwards compatibility
+
+We owe no backwards compatibility (BR, 2026-10-02). Change formats, exports and
+contracts freely when that makes the code simpler; don't add legacy paths, opt-in
+flags, compat shims or migrations to keep old output or old data working, and
+don't require byte-identical exports. What must still work: gungen exports a model
+that deadvox validates and loads. Migration, especially of save games, starts
+mattering at v1.0 beta.
+
+## Work item IDs
+
+Every coordinated work item (agent mail `X-Item`, branch, PR) has an ID:
+
+- **Feature:** `<subproject><number>`, one feature that becomes one PR on one branch.
+  Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs. Numbers
+  count up per subproject. New work always gets a new number, even when it grows
+  out of another feature. PR titles end with it, e.g. "(g26)".
+- **Round:** each dispatched piece of work on a feature is a round, and the round
+  is the mail item: `g26-1`, `g26-2`, … The first round is always `-1`; BR's
+  feedback, review fixes or a main merge start the next one.
+- **Review:** `cr-` plus the exact round reviewed: `cr-g26-1`, `cr-g26-2`. Fixes
+  after a review are the next round, so each review has one target.
+
+IDs from before 2026-10-02 used letter suffixes (`g25b`, `g29c`) and keep them.
+
 ## Worktrees
 
 Put git worktrees in `.claude/worktrees/<name>` inside this repo, not beside

@@ -1,56 +1,45 @@
 {
   "name": "broken-revolver-misaligned-cylinder",
-  "description": "A rotated revolver chamber is not collinear with the bore.",
+  "description": "Chamber index 1 puts the selected chamber axis off the bore line.",
   "expect": ["axis-alignment"],
-  "root": "receiver",
+  "root": "frame",
   "parts": {
-    "receiver": {
-      "family": "receiver",
+    "frame": {
+      "family": "revolver-frame",
       "params": {
-        "action": "revolver",
-        "feed": "cylinder",
-        "bore": "M"
-      }
-    },
-    "lower": {
-      "family": "lower",
-      "params": {
-        "layout": "trigger"
+        "bore": "M",
+        "frameSize": "M",
+        "butt": "round"
       }
     },
     "barrel": {
-      "family": "barrel",
+      "family": "revolver-barrel",
       "params": {
-        "length": "S",
-        "profile": "revolver"
+        "length": "M",
+        "style": "classic"
       }
     },
     "cylinder": {
-      "family": "cylinder",
+      "family": "revolver-cylinder",
       "params": {
-        "chambers": "eight",
-        "chamber": "misaligned"
+        "chamberCount": "6",
+        "chamberIndex": "1"
       }
     },
     "grip": {
-      "family": "grip",
+      "family": "revolver-grip",
       "params": {
-        "length": "L",
-        "well": "none"
+        "length": "M"
       }
     }
   },
   "connections": [
     {
-      "from": "receiver.lower",
-      "to": "lower.top"
+      "from": "frame.barrel",
+      "to": "barrel.frame"
     },
     {
-      "from": "receiver.barrel",
-      "to": "barrel.rear"
-    },
-    {
-      "from": "receiver.cylinder",
+      "from": "frame.cylinder",
       "to": "cylinder.frame"
     },
     {
@@ -58,8 +47,8 @@
       "to": "cylinder.barrel"
     },
     {
-      "from": "lower.grip",
-      "to": "grip.top"
+      "from": "frame.grip-frame",
+      "to": "grip.frame-joint"
     }
   ]
 }

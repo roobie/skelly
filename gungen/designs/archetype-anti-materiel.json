@@ -15,7 +15,7 @@
       "grip": { "family": "grip", "params": { "length": "M" } },
       "magazine": { "family": "heavy-magazine" },
       "stock": { "family": "recoil-stock", "params": { "length": "L" } },
-      "sight": { "family": "sight" },
+      "sight": { "family": "sight", "params": { "type": "high-mag-5-25x" } },
       "trunnion": { "family": "handle-trunnion", "params": { "pose": "stowed" } },
       "strut": { "family": "handle-strut" },
       "bar": { "family": "handle-bar" },

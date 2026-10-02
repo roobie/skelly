@@ -54,6 +54,28 @@ const bounds = (positions: Float32Array): [number[], number[]] => {
 };
 
 describe('revolved solid collision', () => {
+  it('translates mesh and collision together about a non-zero origin, not the part origin', () => {
+    const origin = [7, 11, -5] as const;
+    const base = grooved('y');
+    const shifted = { ...base, origin };
+    const mesh = meshForSolid(shifted, 0, 24);
+    const unshifted = meshForSolid(base, 0, 24);
+    const [min, max] = bounds(mesh.positions);
+    const [baseMin, baseMax] = bounds(unshifted.positions);
+    const [hullMin, hullMax] = localSolidBounds(shifted);
+    for (const axis of [0, 1, 2] as const) {
+      expect(min[axis]).toBeCloseTo(baseMin[axis]! + origin[axis], 5);
+      expect(max[axis]).toBeCloseTo(baseMax[axis]! + origin[axis], 5);
+      expect(hullMin[axis]).toBeCloseTo(min[axis]!, 5);
+      expect(hullMax[axis]).toBeCloseTo(max[axis]!, 5);
+    }
+    expect(mesh.normals).toEqual(unshifted.normals);
+    const atOrigin: Solid = { id: 'probe', kind: 'box', box: { center: [7, 12.5, -5], half: [0.5, 0.5, 0.5] } };
+    expect(penetrationWorld(worldSolid(IDENTITY, shifted), worldSolid(IDENTITY, atOrigin))).toBeGreaterThan(0);
+    // Negative control: forgetting the translation leaves the same probe clear of the old hull.
+    expect(distanceWorld(worldSolid(IDENTITY, base), worldSolid(IDENTITY, atOrigin))).toBeGreaterThan(5);
+    expect(meshForSolid({ ...base, origin: [0, 0, 0] }, 0, 24)).toEqual(unshifted);
+  });
   // The hull stands in for the solid, so what matters is that it lands where the drawn solid does on each axis.
   it.each(AXES)('measures distance to the hull and ignores a groove, turned about %s', (axis) => {
     const solid = grooved(axis);

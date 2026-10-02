@@ -7,6 +7,10 @@
 // receiver, and a clamped handguard or tube magazine follows the barrel.
 
 import type { Template } from '../core/template.ts';
+import type { OpticTypeId } from './optics.ts';
+
+const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): readonly OpticTypeId[] =>
+  weights.flatMap(([type, weight]) => Array.from({ length: weight }, () => type));
 
 const SML = ['S', 'M', 'L'] as const;
 const BATTLE_MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
@@ -33,7 +37,22 @@ export const battleRifle: Template = {
     { id: 'grip', family: 'grip', params: { length: SML } },
     { id: 'magazine', family: 'magazine', params: { length: SML, orientation: BATTLE_MAGAZINE_ORIENTATIONS } },
     { id: 'stock', family: 'stock', params: { length: SML, style: 'straight' }, chance: 0.9 },
-    { id: 'sight', family: 'sight', chance: 0.9 },
+    {
+      id: 'sight',
+      family: 'sight',
+      params: {
+        type: sightMix(
+          ['mini-reflex', 3],
+          ['tube-dot', 3],
+          ['holographic', 2],
+          ['fixed-prism-4x', 5],
+          ['lpvo-1-6x', 5],
+          ['high-mag-5-25x', 2],
+        ),
+      },
+      chance: 0.9,
+      when: { part: 'stock', param: 'style', equals: 'straight' },
+    },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
@@ -49,7 +68,8 @@ export const battleRifle: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
-    { from: ['receiver.rail', 'handguard.rail'], to: 'sight.base', slot: 'any' },
+    // A shared station keeps swaps mounted on the receiver without rewiring.
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -98,7 +118,20 @@ export const ar: Template = {
       chance: 0.8,
       when: { part: 'handguard', param: 'mount', equals: 'free-float' },
     },
-    { id: 'sight', family: 'sight', chance: 0.7 },
+    {
+      id: 'sight',
+      family: 'sight',
+      params: {
+        type: sightMix(
+          ['mini-reflex', 5],
+          ['tube-dot', 4],
+          ['holographic', 3],
+          ['fixed-prism-4x', 3],
+          ['lpvo-1-6x', 5],
+        ),
+      },
+      chance: 0.7,
+    },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
@@ -109,7 +142,7 @@ export const ar: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
-    { from: 'receiver.rail', slot: 0, to: 'sight.base' },
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
     {
       from: 'barrel.front-sight',
       to: 'front-sight.base',
@@ -182,34 +215,36 @@ export const pistol: Template = {
     { id: 'slide', family: 'slide' },
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'], profile: 'pistol' } },
     { id: 'magazine', family: 'magazine', params: { length: 'S', profile: 'pistol' } },
-    { id: 'sight', family: 'sight', chance: 0.65 },
+    { id: 'sight', family: 'sight', params: { type: 'mini-reflex' }, chance: 0.65 },
   ],
   connections: [
     { from: 'frame.slide', to: 'slide.frame' },
     { from: 'slide.barrel', to: 'barrel.rear' },
     { from: 'frame.barrel', to: 'barrel.frame' },
     { from: 'frame.magazine', to: 'magazine.top' },
-    { from: 'slide.rail', slot: 0, to: 'sight.base' },
+    { from: 'slide.rail', slot: 1, to: 'sight.base' },
   ],
 };
 
 export const revolver: Template = {
   name: 'revolver',
-  description: 'Revolver: aligned cylinder chambers, frame window, and exposed barrel.',
-  root: 'receiver',
+  description: 'Photo-led K/L-frame revolver with an aligned six-chamber cylinder and raked grip.',
+  root: 'frame',
   slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'revolver', feed: 'cylinder', bore: ['S', 'M'] } },
-    { id: 'lower', family: 'lower', params: { layout: 'trigger' } },
-    { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'], profile: 'revolver' } },
-    { id: 'cylinder', family: 'cylinder', params: { chambers: ['six', 'eight'], chamber: 'aligned' } },
-    { id: 'grip', family: 'grip', params: { length: SML, well: 'none' } },
+    {
+      id: 'frame',
+      family: 'revolver-frame',
+      params: { bore: ['S', 'M'], frameSize: SML, butt: ['round', 'square'] },
+    },
+    { id: 'barrel', family: 'revolver-barrel', params: { length: SML, style: ['classic', 'vented'] } },
+    { id: 'cylinder', family: 'revolver-cylinder', params: { chamberCount: '6', chamberIndex: '0' } },
+    { id: 'grip', family: 'revolver-grip', params: { length: SML } },
   ],
   connections: [
-    { from: 'receiver.lower', to: 'lower.top' },
-    { from: 'receiver.barrel', to: 'barrel.rear' },
-    { from: 'receiver.cylinder', to: 'cylinder.frame' },
+    { from: 'frame.barrel', to: 'barrel.frame' },
+    { from: 'frame.cylinder', to: 'cylinder.frame' },
     { from: 'barrel.cylinder', to: 'cylinder.barrel' },
-    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'frame.grip-frame', to: 'grip.frame-joint' },
   ],
 };
 
@@ -228,7 +263,12 @@ export const smg: Template = {
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'], profile: 'smg' } },
     { id: 'stock', family: 'stock', params: { length: ['S', 'M'], style: 'straight' }, chance: 0.6 },
-    { id: 'sight', family: 'sight', chance: 0.8 },
+    {
+      id: 'sight',
+      family: 'sight',
+      params: { type: sightMix(['mini-reflex', 5], ['tube-dot', 3], ['holographic', 2]) },
+      chance: 0.8,
+    },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
@@ -246,7 +286,7 @@ export const smg: Template = {
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'handguard.smg-handle', to: 'smg-handle.mount' },
     { from: 'barrel.front-sight', to: 'front-sight.base' },
-    { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -274,7 +314,14 @@ export const boltRifle: Template = {
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.9 },
     { id: 'magazine', family: 'magazine', params: { length: 'S' } },
-    { id: 'sight', family: 'sight', chance: 0.8 },
+    {
+      id: 'sight',
+      family: 'sight',
+      params: {
+        type: sightMix(['fixed-prism-4x', 4], ['lpvo-1-6x', 10], ['high-mag-5-25x', 22], ['digital-thermal', 4]),
+      },
+      chance: 0.8,
+    },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
@@ -291,8 +338,8 @@ export const boltRifle: Template = {
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'bolt-carrier.handle', to: 'bolt-handle-arm.base' },
     { from: 'bolt-handle-arm.tip', to: 'bolt-handle-knob.base' },
-    // Over the receiver, a sight can block the loading port; ahead of it, it can't.
-    { from: ['receiver.rail', 'handguard.rail'], to: 'sight.base', slot: 'any' },
+    // Paired bases sit fore and aft of the loading opening; the scope bridges it.
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -313,7 +360,12 @@ export const boltRifleBox: Template = {
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
     { id: 'magazine', family: 'magazine', params: { length: ['5-round', '10-round'] } },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'sporting' } },
-    { id: 'sight', family: 'sight', chance: 0.9 },
+    {
+      id: 'sight',
+      family: 'sight',
+      params: { type: sightMix(['lpvo-1-6x', 2], ['high-mag-5-25x', 7], ['digital-thermal', 1]) },
+      chance: 0.9,
+    },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
@@ -325,7 +377,7 @@ export const boltRifleBox: Template = {
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'bolt-carrier.handle', to: 'bolt-handle-arm.base' },
     { from: 'bolt-handle-arm.tip', to: 'bolt-handle-knob.base' },
-    { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -348,6 +400,17 @@ export const boltRifleThumbhole: Template = {
     })
     .map((slot) =>
       slot.id === 'barrel' ? { ...slot, params: { ...slot.params, profile: 'heavy', length: 'L' } } : slot,
+    )
+    .map((slot) =>
+      slot.id === 'sight'
+        ? {
+            ...slot,
+            params: {
+              ...slot.params,
+              type: sightMix(['lpvo-1-6x', 3], ['high-mag-5-25x', 14], ['digital-thermal', 3]),
+            },
+          }
+        : slot,
     ),
   connections: boltRifleBox.connections.filter((connection) => connection.from !== 'lower.grip'),
 };
@@ -395,7 +458,12 @@ export const pumpShotgun: Template = {
       params: { length: SML, style: 'straight' },
       when: { part: 'lower', param: 'layout', equals: 'trigger' },
     },
-    { id: 'sight', family: 'sight', chance: 0.3 },
+    {
+      id: 'sight',
+      family: 'sight',
+      params: { type: sightMix(['mini-reflex', 9], ['tube-dot', 7], ['holographic', 4]) },
+      chance: 0.3,
+    },
   ],
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
@@ -421,7 +489,7 @@ export const pumpShotgun: Template = {
       when: { part: 'lower', param: 'layout', equals: 'trigger' },
     },
     { from: 'lower.grip', to: 'grip.top', when: { part: 'lower', param: 'layout', equals: 'trigger' } },
-    { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -469,7 +537,7 @@ export const antiMateriel: Template = {
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
     { id: 'magazine', family: 'heavy-magazine' },
     { id: 'stock', family: 'recoil-stock', params: { length: ['M', 'L'] } },
-    { id: 'sight', family: 'sight', chance: 0.9 },
+    { id: 'sight', family: 'sight', params: { type: 'high-mag-5-25x' }, chance: 0.9 },
     // The handle's three parts come together or not at all, so they are always present (a slot has no way to
     // depend on another slot's chance, and a strut without its trunnion would leave required ports empty).
     // Only the trunnion carries the pose; the strut and bar inherit it.
