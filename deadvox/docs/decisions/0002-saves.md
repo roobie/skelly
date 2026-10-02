@@ -409,7 +409,19 @@ individual-capture tail. The F4 measurement now reports an individual
 per-capture p95 and max separately; with observed timer resolution `r`, an
 observed duration `k` gives a strict upper bound `< k + r`. Its state guard
 compares endpoints only and reports net state equality, not per-capture purity.
-BR should rerun in Firefox and Chromium.
+
+On 2026-10-02 at about 19:32–19:33 BR reran build `80644d1` on the reference
+laptop:
+
+```text
+Firefox: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.273 ms/capture, p95 0.445 ms/capture; individual tail n=6400: observed p95 1.000 ms, max 2.000 ms; at observed r=1.000 ms, true p95 <2.000 ms and max <3.000 ms; calibration 32.000 ms; net state unchanged across measurement
+Chromium: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.184 ms/capture, p95 0.266 ms/capture; individual tail n=6400: observed p95 0.200 ms, max 0.500 ms; at observed r=0.100 ms, true p95 <0.300 ms and max <0.600 ms; calibration 32.800 ms; net state unchanged across measurement
+```
+
+Chromium's individual-capture bound (true p95 <0.3 ms, max <0.6 ms) shows the
+≤1 ms per-frame p95 target is met on the reference laptop. Firefox's 1 ms timer
+only bounds its p95 at <2 ms, consistent with that result but not conclusive on
+its own.
 
 ### Continue, New world, and implementation plan
 

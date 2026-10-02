@@ -621,8 +621,20 @@ per-frame snapshot target. The new F4 measurement reports individual capture
 p95 and max with timer-quantization upper bounds; at observed timer resolution
 `r`, a reading `k` gives a strict upper bound `< k + r`. The state check compares
 measurement endpoints only: “net state unchanged” does not assert that every
-capture is individually pure. BR should rerun the measurement in Firefox and
-Chromium with the individual-tail output.
+capture is individually pure.
+
+**Reference-laptop rerun:** BR measured build `80644d1` on 2026-10-02 at about
+19:32–19:33:
+
+```text
+Firefox: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.273 ms/capture, p95 0.445 ms/capture; individual tail n=6400: observed p95 1.000 ms, max 2.000 ms; at observed r=1.000 ms, true p95 <2.000 ms and max <3.000 ms; calibration 32.000 ms; net state unchanged across measurement
+Chromium: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.184 ms/capture, p95 0.266 ms/capture; individual tail n=6400: observed p95 0.200 ms, max 0.500 ms; at observed r=0.100 ms, true p95 <0.300 ms and max <0.600 ms; calibration 32.800 ms; net state unchanged across measurement
+```
+
+Chromium's individual-capture bound (true p95 <0.3 ms, max <0.6 ms) shows the
+≤1 ms per-frame p95 target is met on the reference laptop. Firefox's 1 ms timer
+only bounds its p95 at <2 ms, consistent with that result but not conclusive on
+its own.
 
 **Delivered beyond the plan:** the hamlet scenario compares a SHA-256 state hash
 across save/reload, and CI checks a ten-game-hour save against tightened size
@@ -723,13 +735,14 @@ capture p95/max are available immediately, rather than requiring an autosave.
 The displayed upper bounds account for the observed timer resolution; “net state
 unchanged” compares endpoints and does not certify each capture. Debug time
 travel resets scheduler cursors without simulating skipped time. The reference-
-laptop ≤1 ms per-frame snapshot p95 target is not demonstrated by BR's 0.219 ms
-batch-mean result and remains to be confirmed with the individual-tail result.
+laptop ≤1 ms per-frame snapshot p95 target was not demonstrated by BR's 0.219 ms
+batch-mean result; the Chromium individual-capture bound in §1.9 now shows the
+target is met on the reference laptop, while Firefox's timer bound is inconclusive.
 
-**Carried forward:** rerun the individual-tail measurement on the reference
-laptop in Firefox and Chromium, then confirm the snapshot p95 target against a
-long/heavy session and submit the exported metrics JSON with player notes. That
-human playtest is not claimed by the implementation checks.
+**Carried forward:** the reference-laptop Firefox/Chromium rerun is recorded in
+§1.9. Confirm the snapshot p95 target against a long/heavy session and submit
+the exported metrics JSON with player notes. That human playtest is not claimed
+by the implementation checks.
 
 ## Data format sketches
 
