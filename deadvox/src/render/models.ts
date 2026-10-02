@@ -3,7 +3,17 @@
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
-import { Box3, Group, MathUtils, Matrix4, Mesh, type BufferGeometry, type Material, Object3D, Vector3 } from 'three';
+import {
+  Box3,
+  type BufferGeometry,
+  Group,
+  type Material,
+  MathUtils,
+  type Matrix4,
+  Mesh,
+  Object3D,
+  Vector3,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 

@@ -20,13 +20,12 @@ interface CasePose {
 interface CasePlan {
   readonly key: string;
   readonly modelId: string | undefined;
-  readonly poses: CasePose[];
-  readonly sources: string[];
+  readonly pilePos: Pile['pos'];
+  readonly sources: { readonly itemType: string; readonly count: number }[];
 }
 
 interface CaseVisual {
   readonly meshes: InstancedMesh[];
-  readonly fallback: boolean;
   planKey: string | undefined;
 }
 
@@ -126,19 +125,11 @@ export class PileMeshes {
       const key = `${pileKey}\u001f${modelId ?? ''}`;
       let plan = plans.get(key);
       if (!plan) {
-        plan = { key, modelId, poses: [], sources: [] };
+        plan = { key, modelId, pilePos: pile.pos, sources: [] };
         plans.set(key, plan);
       }
-      const scatter = spentCaseScatter({
-        worldSeed: this.seed,
-        pilePos: pile.pos,
-        count: visibleCount,
-        blockSize: this.blockSize,
-        key: itemType,
-      });
-      plan.poses.push(...scatter);
-      plan.sources.push(`${itemType}:${scatter.length}`);
-      shownCases += scatter.length;
+      plan.sources.push({ itemType, count: visibleCount });
+      shownCases += visibleCount;
     }
   }
 
@@ -151,18 +142,26 @@ export class PileMeshes {
     if (!visual) {
       visual = {
         meshes: this.createCaseMeshes(parts, fallback),
-        fallback,
         planKey: undefined,
       };
       this.caseVisuals.set(visualKey, visual);
     }
-    const planKey = plan.sources.join('|');
+    const planKey = plan.sources.map(({ itemType, count }) => `${itemType}:${count}`).join('|');
     if (visual.planKey !== planKey) {
-      this.updateCaseMatrices(visual.meshes, plan.poses, parts, fallback);
+      const poses = plan.sources.flatMap(({ itemType, count }) =>
+        spentCaseScatter({
+          worldSeed: this.seed,
+          pilePos: plan.pilePos,
+          count,
+          blockSize: this.blockSize,
+          key: itemType,
+        }),
+      );
+      this.updateCaseMatrices(visual.meshes, poses, parts, fallback);
       visual.planKey = planKey;
     }
     for (const mesh of visual.meshes) {
-      mesh.visible = plan.poses.length > 0;
+      mesh.visible = mesh.count > 0;
       this.group.add(castsAndReceives(mesh));
     }
   }
@@ -182,7 +181,7 @@ export class PileMeshes {
   ): void {
     const transform = new Object3D();
     const matrix = new Matrix4();
-    meshes.forEach((mesh, partIndex) => {
+    for (const [partIndex, mesh] of meshes.entries()) {
       mesh.count = poses.length;
       for (let index = 0; index < poses.length; index++) {
         const pose = poses[index]!;
@@ -200,7 +199,7 @@ export class PileMeshes {
       if (poses.length > 0) {
         mesh.computeBoundingSphere();
       }
-    });
+    }
   }
 
   private releaseCaseVisual(visual: CaseVisual): void {

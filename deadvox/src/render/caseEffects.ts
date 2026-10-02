@@ -119,7 +119,7 @@ export class CaseEffects {
 
   private upgradeVisual(particle: Particle): void {
     for (const key of particle.fallbackModels) {
-      if (!key || !this.models?.has(key)) {
+      if (!(key && this.models?.has(key))) {
         continue;
       }
       const model = resolveCaseModel(this.models, key);
@@ -131,6 +131,7 @@ export class CaseEffects {
         fallback.visible = false;
         this.mesh.remove(fallback);
       }
+      model.visible = particle.active && particle.caseModelId === key;
       particle.visuals.set(key, model);
       particle.fallbackModels.delete(key);
       this.mesh.add(model);
@@ -196,7 +197,7 @@ export class CaseEffects {
         }
         continue;
       }
-      if (!particle.visual || !particle.visuals.has(particle.caseModelId ?? '')) {
+      if (!(particle.visual && particle.visuals.has(particle.caseModelId ?? ''))) {
         this.installVisual(particle);
       }
       particle.visual!.visible = true;
