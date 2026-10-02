@@ -3,16 +3,16 @@ id: deadvox::retro-slice-1
 description: Retrospective for deadvox Slice 1 (the loot run), what was planned against what shipped, what worked, what hurt, and proposed changes for Slice 2
 tags: [deadvox, retrospective, slice-1, process]
 created: 2026-10-02
-status: draft
+status: final
 ---
 
-# Slice 1 retrospective (draft)
+# Slice 1 retrospective
 
 [[THIS is_grounded_by: ../SLICE-1.md]]
 [[THIS is_grounded_by: ../EPIC.md]]
 [[THIS is_grounded_by: ../../../docs/PROCESS.md]]
 
-**Status:** draft for issue #149. The lead wrote it from git history, PR bodies,
+**Status:** final (BR accepted, 2026-10-03), for issue #149. The lead wrote it from git history, PR bodies,
 SLICE-1.md "Results", the ADRs, the lead's memory notes and session transcripts.
 Judgements the lead inferred rather than found stated are marked "(lead's inference)".
 BR's closing remarks (#149, 2026-10-02) are in "BR's view" below. The general reviewer
