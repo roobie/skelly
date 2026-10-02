@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { penetrationWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
 import { IDENTITY } from '../src/core/math.ts';
+import type { TriangleMesh } from '../src/core/mesh.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
-import type { Solid, Vec2 } from '../src/core/schema.ts';
-import { carrierCavityBounds, FAMILIES, PUMP_REAR_SLOPE, RECEIVER_SECTION } from '../src/gun/parts.ts';
+import type { PartDef, Solid, Vec2 } from '../src/core/schema.ts';
+import {
+  BOLT_CARRIER_ENVELOPES,
+  BOLT_CARRIER_RUNNING_CLEARANCE_U,
+  carrierCavityBounds,
+  FAMILIES,
+  PUMP_REAR_SLOPE,
+  RECEIVER_SECTION,
+} from '../src/gun/parts.ts';
+import { PUMP_ACTION_TRAVEL_U } from '../src/gun/pumpShell.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
 import { expectWatertightMesh } from './helpers.ts';
 
@@ -54,6 +63,61 @@ const cavityWallThickness = (
       }),
     ),
   );
+};
+
+const meshHasSurfaceAt = (mesh: TriangleMesh, point: readonly [number, number, number]): boolean => {
+  const dot = (a: readonly number[], b: readonly number[]) => a.reduce((sum, value, axis) => sum + value * b[axis]!, 0);
+  const sub = (a: readonly number[], b: readonly number[]) => a.map((value, axis) => value - b[axis]!);
+  const cross = (a: readonly number[], b: readonly number[]) => [
+    a[1]! * b[2]! - a[2]! * b[1]!,
+    a[2]! * b[0]! - a[0]! * b[2]!,
+    a[0]! * b[1]! - a[1]! * b[0]!,
+  ];
+  for (let offset = 0; offset < mesh.indices.length; offset += 3) {
+    const triangle = [0, 1, 2].map((corner) => {
+      const index = mesh.indices[offset + corner]! * 3;
+      return [mesh.positions[index]!, mesh.positions[index + 1]!, mesh.positions[index + 2]!];
+    });
+    const [a, b, c] = triangle as [number[], number[], number[]];
+    const ab = sub(b, a);
+    const ac = sub(c, a);
+    const ap = sub(point, a);
+    const normal = cross(ab, ac);
+    const normalLength = Math.sqrt(dot(normal, normal));
+    if (normalLength === 0 || Math.abs(dot(ap, normal)) / normalLength > 1e-4) {
+      continue;
+    }
+    const d00 = dot(ab, ab);
+    const d01 = dot(ab, ac);
+    const d11 = dot(ac, ac);
+    const d20 = dot(ap, ab);
+    const d21 = dot(ap, ac);
+    const denominator = d00 * d11 - d01 * d01;
+    const v = (d11 * d20 - d01 * d21) / denominator;
+    const w = (d00 * d21 - d01 * d20) / denominator;
+    const u = 1 - v - w;
+    if (u >= -1e-4 && v >= -1e-4 && w >= -1e-4) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const pumpRearSlopeClosedAtRestAndOpen = (mesh: TriangleMesh, receiver: PartDef): boolean => {
+  const carrier = receiver.ports.find(({ id }) => id === 'bolt-carrier')!;
+  const carrierRearUpper = carrier.pos[1] + BOLT_CARRIER_ENVELOPES.pump.y[1];
+  const receiverDrop = 1 - carrier.pos[1];
+  const { normal, offset } = PUMP_REAR_SLOPE.clip;
+  const slopeOffset = offset - normal[1] * receiverDrop;
+  const rearSurfaceX = (slopeOffset - normal[1] * carrierRearUpper) / normal[0];
+  if (!meshHasSurfaceAt(mesh, [rearSurfaceX, carrierRearUpper, 0])) {
+    return false;
+  }
+  const rearBoundaryX = Math.max(-16, rearSurfaceX);
+  return [0, PUMP_ACTION_TRAVEL_U].every((travel) => {
+    const carrierRearX = carrier.pos[0] - travel - BOLT_CARRIER_ENVELOPES.pump.x[1];
+    return carrierRearX > rearBoundaryX + BOLT_CARRIER_RUNNING_CLEARANCE_U;
+  });
 };
 
 const faceContainsPoint = (mesh: ReturnType<typeof meshForSolidGroup>, x: number, y: number, z: number): boolean => {
@@ -209,14 +273,14 @@ describe('receiver section builder', () => {
     expectWatertightMesh(meshForSolidGroup(solids), 'closed section');
   });
 
-  it('pins the pump top-rear taper to a 4u run over 1.5u rise', () => {
+  it('moves the pump rear slope while preserving its 4u / 1.5u angle', () => {
     const bottomY = 1;
     const topY = 2.5;
     const { normal, offset } = PUMP_REAR_SLOPE.clip;
     const rearXAt = (y: number) => (offset - normal[1] * y) / normal[0];
     const run = Math.abs(rearXAt(topY) - rearXAt(bottomY));
     const rise = topY - bottomY;
-    expect(run).toBe(PUMP_REAR_SLOPE.run);
+    expect(run).toBeCloseTo(PUMP_REAR_SLOPE.run, 12);
     expect(rise).toBe(PUMP_REAR_SLOPE.rise);
     expect(PUMP_REAR_SLOPE.angleDegrees).toBeCloseTo((Math.atan(rise / run) * 180) / Math.PI, 12);
     expect(rearXAt(bottomY)).toBe(-16);
@@ -235,11 +299,6 @@ describe('receiver section builder', () => {
         cavity: carrierCavityBounds('ak', 0),
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
       },
-      {
-        id: 'receiver-pump',
-        cavity: carrierCavityBounds('pump', 0),
-        def: FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', section: 'pump', rail: 'none' }),
-      },
     ];
     for (const { id, cavity, def } of receivers) {
       const sectionSolids = def.solids.filter((solid) => solid.display?.mergeGroup === id);
@@ -247,12 +306,9 @@ describe('receiver section builder', () => {
       const receiverMesh = meshForSolidGroup(sectionSolids);
       const cavityCenterY = (cavity.y[0] + cavity.y[1]) / 2;
       const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
-      if (id === 'receiver-pump') {
-        expect(faceContainsPoint(receiverMesh, -16, -1, 0), `${id} rear stock interface`).toBe(true);
-      } else {
-        expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
-      }
-      expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
+      expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
+      const frontFaceX = 0;
+      expect(faceContainsPoint(receiverMesh, frontFaceX, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
       expectWatertightMesh(receiverMesh, id);
       const triangleBudget = id === 'receiver-ar' ? 300 : 450;
       expect(receiverMesh.triangleCount, `${id} triangle budget`).toBeLessThanOrEqual(triangleBudget);
@@ -267,8 +323,24 @@ describe('receiver section builder', () => {
         expect(frontAdapter.z).toEqual([-0.5, 0]);
       }
       expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
-      expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(0);
+      expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(frontFaceX);
     }
+  });
+
+  it('closes the pump rear slope through the full action stroke without moving stock or trigger contacts', () => {
+    const def = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', section: 'pump', rail: 'none' });
+    const solids = def.solids.filter((solid) => solid.display?.mergeGroup === 'receiver-pump');
+    const mesh = meshForSolidGroup(solids);
+    const stock = def.ports.find(({ id }) => id === 'stock')!;
+    const trigger = def.ports.find(({ id }) => id === 'lower')!;
+
+    expect(faceContainsPoint(mesh, -16, -1, 0), 'stock contact stays fixed').toBe(true);
+    expect(stock.pos).toEqual([-16, -1, 0]);
+    expect(trigger.pos[0]).toBe(0);
+    expect(pumpRearSlopeClosedAtRestAndOpen(mesh, def)).toBe(true);
+    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(1.5);
+    expect(def.ports.find(({ id }) => id === 'tube')?.pos[0]).toBe(1.5);
+    expectWatertightMesh(mesh, 'receiver-pump');
   });
 
   it('cuts near and far port windows through every intersected side and corner band', () => {

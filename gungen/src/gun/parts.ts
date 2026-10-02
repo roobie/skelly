@@ -160,6 +160,8 @@ const OCTAGONAL_RECTANGLE_CHAMFER = 0.125;
 const TUBE_BARREL_CLEARANCE = 0.5;
 const TUBE_RECEIVER_CLEARANCE = 0.25;
 const PUMP_RECEIVER_DROP = 1;
+// Keep stock/trigger datums fixed while moving the pump action forward clear of the rear slope.
+const PUMP_RECEIVER_FORWARD_EXTENSION_U = 1.5;
 const PUMP_FOREND_MOUNT_X = 8;
 const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
 const PUMP_FOREND_WALL = 0.25;
@@ -337,8 +339,8 @@ const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
   standard: { length: 6.5, restX: -7 },
   ak: { length: 6.5, restX: -5.75 },
-  // The carrier/port move 0.5u forward; travel is the grid-rounded clearance length of the loaded shell.
-  pump: { length: PUMP_ACTION_TRAVEL_U, restX: -6.5 },
+  // Grow the pump receiver forward with the carrier; travel stays the shell-derived 5.5u.
+  pump: { length: PUMP_ACTION_TRAVEL_U, restX: -6.5 + PUMP_RECEIVER_FORWARD_EXTENSION_U },
   long: { length: 8, restX: -4.5 },
   bolt: { length: 7, restX: -6 },
 } as const;
@@ -349,7 +351,8 @@ const PUMP_FOREND_TUBE_CLEARANCE = 0.05;
 const pumpActionBarOuterY = (): number =>
   TUBE_HALF_HEIGHT + PUMP_FOREND_TUBE_CLEARANCE + PUMP_FOREND_WALL - PUMP_ACTION_BAR_OUTER_CLEARANCE;
 const pumpActionBarSolids = (bore: SizeClass): Solid[] => {
-  const carrierRestX = BOLT_TRAVEL.pump.restX;
+  // Keep the bar tied to the translated forend while the carrier datum moves forward.
+  const carrierRestX = BOLT_TRAVEL.pump.restX - PUMP_RECEIVER_FORWARD_EXTENSION_U;
   const tubeY = -tubeDropForBore(bore);
   const halfThickness = PUMP_ACTION_BAR_THICKNESS / 2;
   const barTopY = tubeY + pumpActionBarOuterY();
@@ -376,7 +379,7 @@ const pumpActionBarSlot = (bore: SizeClass): SectionPocket => {
   const clearance = PUMP_ACTION_BAR_CLEARANCE;
   const halfThickness = PUMP_ACTION_BAR_THICKNESS / 2;
   return {
-    x: [-BOLT_TRAVEL.pump.length - PUMP_ACTION_BAR_THICKNESS / 2 - clearance, 0],
+    x: [-BOLT_TRAVEL.pump.length - PUMP_ACTION_BAR_THICKNESS / 2 - clearance, PUMP_RECEIVER_FORWARD_EXTENSION_U],
     y: [barTopY - PUMP_ACTION_BAR_THICKNESS - clearance, barTopY + clearance],
     z: [-halfThickness - clearance, halfThickness + clearance],
   };
@@ -659,7 +662,7 @@ export const RECEIVER_SECTION = {
       top: { y: 2.5, halfWidth: 1.25 },
       portSide: 2.25,
       handleSides: [-2.25, 2.25],
-      front: 0,
+      front: PUMP_RECEIVER_FORWARD_EXTENSION_U,
       rear: -16,
       bottom: -2.5,
     } as const,
@@ -680,6 +683,7 @@ const receiverShellSolids = ({
   carrierY,
   portWindow,
   portSlots,
+  frontFaceX,
   internalPockets = [],
   farPortWindow,
 }: {
@@ -693,10 +697,11 @@ const receiverShellSolids = ({
   carrierY: number;
   portWindow: ReturnType<typeof ejectionPortWindow>;
   portSlots?: readonly SectionWindow[];
+  frontFaceX: number;
   internalPockets?: readonly SectionPocket[];
   farPortWindow?: { readonly x: readonly [number, number]; readonly y: readonly [number, number] };
 }): Solid[] => {
-  const [xMin, xMax] = [-16, 0] as const;
+  const [xMin, xMax] = [-16, frontFaceX] as const;
   const cavity = carrierCavityBounds(carrierPattern, carrierY);
   if (isSectionedReceiver(section)) {
     const data = RECEIVER_SECTION[section];
@@ -707,7 +712,7 @@ const receiverShellSolids = ({
             offset: plane.offset - plane.normal[1] * receiverDrop,
           }))
         : undefined;
-    return buildReceiverSection({
+    const sectionSolids = buildReceiverSection({
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax],
@@ -724,6 +729,31 @@ const receiverShellSolids = ({
           }
         : {}),
     });
+    if (section !== 'pump' || carrierPattern !== 'pump') {
+      return sectionSolids;
+    }
+    // Close the cut receiver cross-section behind the carrier, following the original rear slope.
+    const slope = PUMP_REAR_SLOPE.clip;
+    const [slopeNormalX, slopeNormalY] = slope.normal;
+    const slopeOffset = slope.offset - slopeNormalY * receiverDrop;
+    const cavityRearX = xMin + 0.5;
+    const [cavityStartY, endY] = cavity.y;
+    const startY = Math.max(cavityStartY, (slopeOffset - slopeNormalX * cavityRearX) / slopeNormalY);
+    const slopeXAt = (y: number) => (slopeOffset - slopeNormalY * y) / slopeNormalX;
+    if (startY >= endY || slopeXAt(endY) <= cavityRearX) {
+      return sectionSolids;
+    }
+    const closure = extrudedPolygon(
+      'receiver-pump-rear-slope-closure',
+      [
+        [cavityRearX, startY],
+        [slopeXAt(endY), endY],
+        [cavityRearX, endY],
+      ],
+      cavity.z,
+    );
+    sectionSolids.push({ ...closure, display: { mergeGroup: 'receiver-pump' } });
+    return sectionSolids;
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
@@ -1064,7 +1094,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       id: 'tube',
       mount: 'tube',
       gender: 'female',
-      pos: [0, -tubeDropForBore(bore), 0],
+      pos: [frontFaceX, -tubeDropForBore(bore), 0],
       normal: X,
       up: Y,
       required: true,
@@ -1213,6 +1243,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     portWindow,
     travel,
     tubeFed,
+    frontFaceX,
   } = context;
   const handleStyleKey = carrierHandleStyleFor(params);
   const movingHandle = carrierHandleSolids(handleStyleKey, carrierPattern);
@@ -1241,6 +1272,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     carrierPattern,
     carrierY,
     portWindow,
+    frontFaceX,
     ...(params.section === 'pump' && tubeFed && carrierPattern === 'pump'
       ? { internalPockets: [pumpActionBarSlot(bore)] }
       : {}),
@@ -1368,6 +1400,7 @@ export const akReceiver: PartFamily = {
           carrierPattern,
           carrierY,
           portWindow,
+          frontFaceX: 0,
           portSlots: [akChargingHandleSlotWindow(carrierY, portWindow, travel.length)],
         }),
       ],
