@@ -151,6 +151,9 @@ const WeaponSchema = strictObject({
   }),
 });
 
+// Capability marker for firearms: ranged mechanics are not implemented yet, but action selection is data-driven.
+const FirearmSchema = strictObject({});
+
 const LightSchema = strictObject({
   /** Metres it lights up. */
   radius: Positive,
@@ -184,6 +187,7 @@ export const ItemSchema = strictObject({
   food: optional(FoodSchema),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
+  firearm: optional(FirearmSchema),
   light: optional(LightSchema),
   battery: optional(BatterySchema),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */

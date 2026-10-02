@@ -11,7 +11,6 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
@@ -23,6 +22,7 @@ import { FrameTimes } from '../render/frameTimes.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { applyLook } from '../render/look.ts';
+import { renderMeleePose } from '../render/meleePose.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
@@ -39,6 +39,7 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
+import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
@@ -67,6 +68,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
+import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
 import type { RestKind } from './rest.ts';
 import { createSession, LOOT_REACH } from './session.ts';
 import { toHands } from './targets.ts';
@@ -101,7 +103,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   input.yaw = playerStart.yaw;
   let cameraRoll = 0;
   let debugTools: DebugRuntime | undefined;
-  let performPrimaryAction = (): void => undefined;
+  let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
   // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
   applyLook(renderer, meshes, DEFAULT_LOOK);
   engine.mood.restore(DEFAULT_MOOD);
@@ -142,10 +144,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
       consumePrimaryAction: () => input.consumePrimaryAction(),
+      consumeLeftHandAction: () => input.consumeLeftHandAction(),
       primaryAction: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         if (!debugTools?.buildOn) {
-          performPrimaryAction();
+          performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
+        }
+      },
+      leftHandAction: () => {
+        if (!debugTools?.buildOn) {
+          performPrimaryAction(ACTION_HAND_BINDINGS.leftHandKey);
         }
       },
       yaw: () => input.yaw,
@@ -764,14 +772,17 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
   });
-  const meleeSelection = (): {
+  const meleeSelection = (
+    preferredHand?: 'right' | 'left',
+  ): {
     weapon: MeleeWeapon;
     profile: 'blunt' | 'cut' | 'pierce' | 'fists';
     hand?: 'right' | 'left';
     twoHanded: boolean;
     item?: (typeof inventory.hands)['right'];
   } => {
-    for (const hand of ['right', 'left'] as const) {
+    const handOrder: readonly ('right' | 'left')[] = preferredHand ? [preferredHand] : ['right', 'left'];
+    for (const hand of handOrder) {
       const item = inventory.hands[hand];
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
       if (item && weapon) {
@@ -784,12 +795,17 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         };
       }
     }
-    return { weapon: FISTS_MELEE, profile: 'fists', twoHanded: false };
+    return {
+      weapon: FISTS_MELEE,
+      profile: 'fists',
+      ...(preferredHand === undefined ? {} : { hand: preferredHand }),
+      twoHanded: false,
+    };
   };
   const meleeWeapon = () => meleeSelection().weapon;
 
-  const swing = () => {
-    const selected = meleeSelection();
+  const swing = (preferredHand?: 'right' | 'left') => {
+    const selected = meleeSelection(preferredHand);
     const result = startPlayerMelee(zombieSystem, sim.needs, {
       origin: eye(),
       direction: lookDir(),
@@ -806,7 +822,36 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  performPrimaryAction = swing;
+  performPrimaryAction = (hand: 'right' | 'left') => {
+    const action = selectPrimaryAction(registry, inventory.hands, hand);
+    switch (action.kind) {
+      case 'melee':
+        swing(action.hand);
+        return;
+      case 'light': {
+        const reason = survival.use(action.item);
+        if (reason) {
+          showNotice(reason);
+        }
+        return;
+      }
+      case 'firearm':
+        showNotice('Firearms are not usable yet');
+        return;
+      case 'fists':
+        swing(action.hand);
+        return;
+      case 'noop':
+        return;
+      case 'none':
+        showNotice(primaryActionHint(registry, action.item));
+        return;
+      default: {
+        const unhandled: never = action;
+        throw new Error(`Unhandled primary action ${String(unhandled)}`);
+      }
+    }
+  };
   // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
   // Listened on the document (capture) in case the pointer-lock target isn't the canvas; the mouse and pointer
   // events can both arrive for one press, so the forward press is deduped.
@@ -996,7 +1041,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
-    const pose = action ? meleePoseAndContact(action, elapsed, false) : readyMeleePose(ready);
+    const pose = renderMeleePose(action, elapsed, ready);
     meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
     const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
     held.update(camera, pose, recoil);

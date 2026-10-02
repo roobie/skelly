@@ -4,6 +4,7 @@ import { boxFromMinMax } from '../src/core/geometry.ts';
 import { parseAssemblyOrThrow } from '../src/core/parseAssembly.ts';
 import type { Domain, PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 
 const sourceFamily: PartFamily = {
   name: 'test-source',
@@ -38,6 +39,7 @@ const testDomain: Domain = {
   name: 'connection-contact-test',
   families: { 'test-source': sourceFamily, 'test-target': targetFamily },
   axisRules: [],
+  units: GUN_UNITS,
 };
 
 describe('connection-contact', () => {

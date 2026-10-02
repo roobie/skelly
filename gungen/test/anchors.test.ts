@@ -39,6 +39,9 @@ const insideSolid = (s: Solid, p: Vec3): boolean => {
   if (s.kind === 'box') {
     return [0, 1, 2].every((i) => Math.abs(p[i]! - s.box.center[i]!) <= s.box.half[i]! + EPS);
   }
+  if (s.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   const axis = s.axis ?? 'z';
   const extrusionAxis = { x: 0, y: 1, z: 2 }[axis];
   const profileAxes = { x: [1, 2], y: [2, 0], z: [0, 1] } as const;

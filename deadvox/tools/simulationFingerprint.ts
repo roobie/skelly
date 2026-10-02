@@ -91,6 +91,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/inventoryScreen.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
+  // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
+  'src/ui/primaryActionHint.ts',
   'src/ui/rest.ts',
   'src/ui/saveController.ts',
 ] as const;

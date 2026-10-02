@@ -21,6 +21,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems, HOLD } from '../src/render/hands.ts';
+import { renderMeleePose } from '../src/render/meleePose.ts';
 import {
   createFirstPersonArm,
   FIRST_PERSON_SHOULDER,
@@ -391,6 +392,51 @@ describe('player figure', () => {
     const actualItem = internals.heldByHand.get('right')!.getWorldQuaternion(new Quaternion());
     expect(actualArm.angleTo(expected) * (180 / Math.PI)).toBeLessThan(0.1);
     expect(actualItem.angleTo(expected) * (180 / Math.PI)).toBeLessThan(0.1);
+  });
+
+  it('keeps a left-hand flashlight attached and in its hold pose during a right-fist torso-yaw strike', () => {
+    const inventory = new Inventory(registry);
+    const flashlight = inventory.create('flashlight');
+    expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
+    const held = new HeldItems(inventory, undefined, palette);
+    const internals = held as unknown as {
+      view: Group;
+      arms: Map<'left' | 'right', Group>;
+      heldByHand: Map<'left' | 'right', Group>;
+    };
+    const camera = new PerspectiveCamera();
+    const action = {
+      profile: 'fists' as const,
+      hand: 'right' as const,
+      twoHanded: false,
+      hands: { right: null, left: flashlight.uid },
+      cooldown: 0.8,
+      contactAt: 0.25,
+      aimYaw: 0,
+      aimPitch: 0,
+      origin: [0, 0, 0] as [number, number, number],
+      direction: [0, 0, -1] as [number, number, number],
+      hitResolved: false,
+    };
+    let maxTorsoYaw = 0;
+    for (let step = 0; step <= 120; step++) {
+      const elapsed = (action.cooldown * step) / 120;
+      const pose = renderMeleePose(action, elapsed, false);
+      maxTorsoYaw = Math.max(maxTorsoYaw, Math.abs(pose.torsoYaw ?? 0));
+      expect(pose.left.offset).toEqual([0, 0, 0]);
+      expect(pose.left.rotation).toEqual([0, 0, 0]);
+      held.update(camera, pose);
+      internals.view.updateMatrixWorld(true);
+      const arm = internals.arms.get('left')!;
+      const item = internals.heldByHand.get('left')!;
+      const hand = arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
+      const grip = item.getWorldPosition(new Vector3());
+      const handOrientation = arm.getWorldQuaternion(new Quaternion());
+      const itemOrientation = item.getWorldQuaternion(new Quaternion());
+      expect(grip.distanceTo(hand), `frame ${step} grip/hand gap`).toBeLessThanOrEqual(0.001);
+      expect(itemOrientation.angleTo(handOrientation), `frame ${step} item/hand rotation`).toBeLessThan(1e-6);
+    }
+    expect(maxTorsoYaw).toBeCloseTo(Math.PI / 6);
   });
 
   it('keeps two-handed support grips attached to weapon-local grip for both sides and hold orientations', () => {
