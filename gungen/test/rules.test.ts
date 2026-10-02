@@ -187,7 +187,15 @@ describe('rules', () => {
     expect(rulesFailed(loadFixture('archetype-bolt-rifle'))).toEqual([]);
   });
 
-  it('feed-match: cylinder-fed revolver needs no magazine well', () => {
+  it('revolver alignment rules run on the curated design and retain generic axis-alignment', () => {
+    const revolverRuleIds = [
+      'revolver-top-chamber-bore',
+      'revolver-cylinder-axis',
+      'revolver-cylinder-gap',
+      'revolver-topstrap-span',
+      'revolver-grip-joint',
+    ];
+    expect(gunDomain.rules?.map(({ id }) => id)).toEqual(expect.arrayContaining(revolverRuleIds));
     expect(rulesFailed(loadFixture('archetype-revolver'))).toEqual([]);
     const { issues } = validate(loadFixture('broken-revolver-misaligned-cylinder'), gunDomain);
     expect(issues.map((issue) => issue.rule)).toContain('axis-alignment');

@@ -10,9 +10,17 @@ import { add, extrusionPoint, type Vec3 } from '../core/math.ts';
 import type { PartDef, RevolvedSolid, Solid } from '../core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { FIRING_GRIP } from './parts.ts';
+import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
 
 const X: Vec3 = [1, 0, 0];
 const Y: Vec3 = [0, 1, 0];
+const revolverGripAxes = (): Pick<AnchorFrame, 'forward' | 'up'> => {
+  const rake = (REVOLVER_GRIP_RAKE_DEGREES * Math.PI) / 180;
+  return {
+    forward: [Math.cos(rake), -Math.sin(rake), 0],
+    up: [Math.sin(rake), Math.cos(rake), 0],
+  };
+};
 
 const findSolid = (part: PartDef, ...ids: string[]): Solid | undefined =>
   ids.map((id) => part.solids.find((s) => s.id === id)).find((s) => s !== undefined);
@@ -91,6 +99,16 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
   grip: {
     holdRank: 'grip',
     anchors: gripHold(['body-upper', 'body'], () => ({ forward: X, up: Y })),
+  },
+  'revolver-grip': {
+    holdRank: 'grip',
+    anchors: gripHold(['grip-core'], revolverGripAxes),
+  },
+  'revolver-barrel': {
+    anchors: (_params, part) => {
+      const muzzle = part.ports.find((port) => port.id === 'muzzle');
+      return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
+    },
   },
   // Integrated pistol grip: the grip was rotated into the frame's coordinates; its magazine port carries
   // that rotation (grip local -Y is the port normal, grip local X is the port up).

@@ -3,56 +3,45 @@
   "template": "revolver",
   "assembly": {
     "name": "archetype-revolver",
-    "description": "Cylinder-fed revolver with a six/eight-sided cylinder prism.",
-    "root": "receiver",
+    "description": "Curated K/L-frame revolver with an aligned six-chamber cylinder.",
+    "root": "frame",
     "parts": {
-      "receiver": {
-        "family": "receiver",
+      "frame": {
+        "family": "revolver-frame",
         "params": {
-          "action": "revolver",
-          "feed": "cylinder",
-          "bore": "M"
-        }
-      },
-      "lower": {
-        "family": "lower",
-        "params": {
-          "layout": "trigger"
+          "bore": "M",
+          "frameSize": "M",
+          "butt": "round"
         }
       },
       "barrel": {
-        "family": "barrel",
+        "family": "revolver-barrel",
         "params": {
-          "length": "S",
-          "profile": "revolver"
+          "length": "M",
+          "style": "classic"
         }
       },
       "cylinder": {
-        "family": "cylinder",
+        "family": "revolver-cylinder",
         "params": {
-          "chambers": "eight",
-          "chamber": "aligned"
+          "chamberCount": "6",
+          "chamberIndex": "0"
         }
       },
       "grip": {
-        "family": "grip",
+        "family": "revolver-grip",
         "params": {
-          "length": "L",
-          "well": "none"
+          "length": "M"
         }
       }
     },
     "connections": [
       {
-        "from": "receiver.lower",
-        "to": "lower.top"
+        "from": "frame.barrel",
+        "to": "barrel.frame"
       },
       {
-        "from": "receiver.barrel",
-        "to": "barrel.rear"
-      },
-      {
-        "from": "receiver.cylinder",
+        "from": "frame.cylinder",
         "to": "cylinder.frame"
       },
       {
@@ -60,8 +49,8 @@
         "to": "cylinder.barrel"
       },
       {
-        "from": "lower.grip",
-        "to": "grip.top"
+        "from": "frame.grip-frame",
+        "to": "grip.frame-joint"
       }
     ]
   },

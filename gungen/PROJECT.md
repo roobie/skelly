@@ -168,10 +168,12 @@ declares today's values in `src/gun/units.ts#GUN_UNITS`: 1u = 11.5mm, a 0.25u
 grid and a 0.125u bevel (about 1.4mm). The core reads them from
 `resolved.domain.units`: the glb export scales by `metresPerUnit`, the
 connection-contact rule allows a gap of one `grid` step, and meshes are
-chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). The shared frame
-between domains is metres; an assembly belongs to one domain, so a scene that
-shows two domains is two assemblies placed in metres, with no rule checks
-between them. The tolerances in `conventions.ts` other than the contact gap are
+chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). That contact tolerance
+is not permission to model a visible gap: the revolver's frame/grip/trigger-guard
+junction is a zero-gap shared-solid contract checked by `revolver-grip-joint`.
+The shared frame between domains is metres; an assembly belongs to one domain,
+so a scene that shows two domains is two assemblies placed in metres, with no
+rule checks between them. The tolerances in `conventions.ts` other than the contact gap are
 still the gun's numbers in u.
 
 **Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
