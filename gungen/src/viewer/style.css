@@ -263,6 +263,30 @@ button:hover {
   background: rgba(31, 34, 39, 0.92);
   border-top: 1px solid var(--line);
 }
+#cycle-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 10px;
+  background: rgba(31, 34, 39, 0.92);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+#cycle-bar[hidden] {
+  display: none;
+}
+#cycle-scrub {
+  flex: 1 1 240px;
+  min-width: 160px;
+}
+#cycle-readout {
+  font-variant-numeric: tabular-nums;
+}
 #param-panel:empty {
   display: none;
 }

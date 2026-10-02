@@ -67,6 +67,15 @@
       <p id="hover"></p>
     </aside>
     <main id="view">
+      <section id="cycle-bar" aria-label="Cocking cycle" hidden>
+        <button id="cycle-play" type="button">Pause</button>
+        <input id="cycle-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Cycle time" />
+        <select id="cycle-speed" aria-label="Playback speed"></select>
+        <label><input id="cycle-xray" type="checkbox" /> X-ray receiver</label>
+        <span id="cycle-readout"></span>
+        <span class="hint">Space pause · , . step 10 ms (shift 50 ms)</span>
+        <span id="cycle-notes" class="hint"></span>
+      </section>
       <section id="param-panel" aria-label="Parameters"></section>
     </main>
     <script type="module" src="./src/viewer/main.ts"></script>

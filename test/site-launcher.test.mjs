@@ -14,6 +14,10 @@ const intentionallyUnofferedGungenParams = {
     'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
   facets:
     'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
+  cycle:
+    'Spike-only (gungen/src/viewer/cycleView.ts): `cycle=1` animates the bolt carrier group being cocked by hand. A debug view of motion data, not a model choice, so the launcher does not offer it.',
+  cycleAt:
+    'Spike-only: holds the cocking cycle at a time in seconds, for screenshots. Only meaningful with `cycle=1`, so the launcher does not offer it.',
 };
 
 const paramsReadBy = (sources) => {

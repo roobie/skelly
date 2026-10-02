@@ -27,6 +27,7 @@ import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
+import { createCycleView } from './cycleView.ts';
 import {
   availablePrefabs,
   choosePrefab,
@@ -108,6 +109,13 @@ const revolveFacets =
   Number.isInteger(requestedFacets) && requestedFacets >= MIN_REVOLVE_FACETS && requestedFacets <= MAX_REVOLVE_FACETS
     ? requestedFacets
     : DEFAULT_REVOLVE_FACETS;
+// SPIKE: `?cycle=1` animates the parts that declare a motion (the AK bolt carrier group); `?cycleAt=<seconds>`
+// holds the cycle at that time, for screenshots and inspection.
+const cycleRequested = initialQuery.get('cycle') === '1';
+const cycleAtParam = initialQuery.get('cycleAt');
+const cycleView = cycleRequested
+  ? createCycleView(cycleAtParam === null ? undefined : Number(cycleAtParam) || 0)
+  : undefined;
 roleColors.addEventListener('change', () => {
   colorMode = roleColors.checked ? 'role' : 'finish';
   syncUrl();
@@ -150,6 +158,9 @@ const syncUrl = () => {
   }
   if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
     params.set('facets', String(revolveFacets));
+  }
+  if (cycleRequested) {
+    params.set('cycle', '1');
   }
   params.set(
     'camera',
@@ -332,6 +343,7 @@ const redraw = () => {
     frame(layers.solids);
     framed = true;
   }
+  cycleView?.bind(layers.solids, report.resolved);
 };
 
 const frame = (group: Object3D) => {
@@ -1193,6 +1205,7 @@ renderer.setAnimationLoop((frameMs) => {
   const elapsedSeconds = Math.min((frameMs - previousFrameMs) / 1000, 0.1);
   previousFrameMs = frameMs;
   panFromKeys(elapsedSeconds);
+  cycleView?.frame(elapsedSeconds);
   controls.update();
   renderer.render(scene, camera);
 });
