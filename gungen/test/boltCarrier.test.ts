@@ -1,3 +1,4 @@
+// biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Geometry contract tests intentionally assert linked dimensions, motion paths, and clearances together.
 import { describe, expect, it } from 'vitest';
 import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
@@ -537,7 +538,7 @@ describe('procedural bolt carrier', () => {
     const handleSolids = receiver.solids.filter(({ id }) => handleIds.includes(id));
     const pivot = handleSolids.find(({ id }) => id === 'fal-handle-pivot')!;
     const pivotBounds = worldBounds(corners(pivot).map((point) => applyPoint(receiverTransform, point)));
-    const carrierPortX = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos[0];
+    const [carrierPortX] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
     const carrierFrontX = carrierPortX - BOLT_CARRIER_ENVELOPES.barrett.x[0];
     const knob = handleSolids.find(({ id }) => id === 'fal-handle-knob')!;
     const knobBounds = worldBounds(corners(knob).map((point) => applyPoint(receiverTransform, point)));
@@ -548,7 +549,9 @@ describe('procedural bolt carrier', () => {
     expect(Math.abs((pivotBounds[0]![0]! + pivotBounds[0]![1]!) / 2 - carrierFrontX)).toBeLessThanOrEqual(0.5);
     expect(knobBounds[2]![1]!).toBeLessThan(0);
     expect(sweep).toBeDefined();
-    expect(sweep.box.center[0] - sweep.box.half[0]).toBeLessThanOrEqual(pivotBounds[0]![0]! - carrier.motion!.rearmost[0]);
+    expect(sweep.box.center[0] - sweep.box.half[0]).toBeLessThanOrEqual(
+      pivotBounds[0]![0]! - carrier.motion!.rearmost[0],
+    );
     expect(sweep.box.center[0] + sweep.box.half[0]).toBeGreaterThanOrEqual(pivotBounds[0]![1]!);
     expect(receiver.keepOuts.find(({ id }) => id === 'ejection')!.box.center[2]).toBeGreaterThan(0);
     for (const handle of handleSolids) {
@@ -558,10 +561,14 @@ describe('procedural bolt carrier', () => {
       }
     }
     for (const solid of handguard.solids) {
-      expect(penetrationWorld(worldSolid(receiverTransform, pivot), worldSolid(handguardTransform, solid)), solid.id).toBeLessThanOrEqual(0);
+      expect(
+        penetrationWorld(worldSolid(receiverTransform, pivot), worldSolid(handguardTransform, solid)),
+        solid.id,
+      ).toBeLessThanOrEqual(0);
     }
   });
 
+  // biome-ignore format: Keep the comprehensive per-design geometry contract in its current layout.
   it.each([
     { label: 'design archetype-bolt-rifle.json', profile: 'standard', radial: 5.59, diameter: 1.75, outstand: 3.5 },
     { label: 'design archetype-bolt-rifle-box.json', profile: 'standard', radial: 5.59, diameter: 1.75, outstand: 3.5 },

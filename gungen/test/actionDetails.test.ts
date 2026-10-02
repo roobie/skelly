@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Box, Solid } from '../src/core/schema.ts';
 import { applyPoint, invert } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
+import type { Box, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
@@ -138,7 +138,7 @@ describe('visible action details', () => {
   });
 
   it('rejects a rail feature that physically occupies the AR T-grip', () => {
-    const assembly = loadDesigns().find(({ label }) => label.includes('archetype-ar.json'))!.assembly;
+    const { assembly } = loadDesigns().find(({ label }) => label.includes('archetype-ar.json'))!;
     const resolved = resolve(assembly, gunDomain);
     const point = [-17.75, 3.25, 1.75] as const;
     const local = applyPoint(invert(resolved.placed.get('sight')!), point);
@@ -161,10 +161,11 @@ describe('visible action details', () => {
         },
       },
     };
-    const report = validate(assembly, domain);
+    const { issues } = validate(assembly, domain);
     expect(
-      report.issues.some(
-        ({ rule, keepOut }) => rule === 'keep-out' && keepOut?.part === 'receiver' && HAND_CLEARANCE_ISSUE.test(keepOut.id),
+      issues.some(
+        ({ rule, keepOut }) =>
+          rule === 'keep-out' && keepOut?.part === 'receiver' && HAND_CLEARANCE_ISSUE.test(keepOut.id),
       ),
     ).toBe(true);
   });

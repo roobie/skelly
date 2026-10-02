@@ -339,9 +339,7 @@ export const boltRifleThumbhole: Template = {
     .map((slot) => (slot.id === 'receiver' ? { ...slot, params: { ...slot.params, bore: 'M' } } : slot))
     .map((slot) => (slot.id === 'lower' ? { ...slot, params: { ...slot.params, layout: 'thumbhole' } } : slot))
     .map((slot) => (slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'thumbhole' } } : slot))
-    .map((slot) =>
-      slot.id === 'bolt-carrier' ? { ...slot, params: { ...slot.params, handleProfile: 'awm' } } : slot,
-    )
+    .map((slot) => (slot.id === 'bolt-carrier' ? { ...slot, params: { ...slot.params, handleProfile: 'awm' } } : slot))
     .map((slot) => {
       if (slot.id !== 'handguard') {
         return slot;

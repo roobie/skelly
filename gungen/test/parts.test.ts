@@ -334,11 +334,7 @@ describe('part library', () => {
 
   // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
   // ports, unique port ids and positive box sizes. No rules or geometry checks run.
-  const definePartChecks = (
-    family: PartFamily,
-    cases: Record<string, string>[],
-    batchSize = 1,
-  ): void => {
+  const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
     let gridStep = GRID;
     if (family.name === 'forend') {
       gridStep = GRID / 5;

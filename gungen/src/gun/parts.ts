@@ -1,3 +1,4 @@
+// biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Geometry assembly branches encode firearm configuration and keep aperture construction visible.
 // Part library: parametric families built from boxes and convex extrusions. All numbers are in u
 // (see conventions.ts) and set proportions, not real-world dimensions
 // (PROJECT.md, non-goals).
@@ -798,8 +799,16 @@ const receiverShellSolids = ({
     const y0 = clamp(rearPortWindow.y[0], [receiverBottom, receiverTop]);
     const y1 = clamp(rearPortWindow.y[1], [receiverBottom, receiverTop]);
     const z0 = clamp(rearPortWindow.z[0], [-RECEIVER_FRONT_HALF_WIDTH, RECEIVER_FRONT_HALF_WIDTH]);
-    addBox('receiver-shell-rear-lower', [xMin, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH], [innerX[0], y0, RECEIVER_FRONT_HALF_WIDTH]);
-    addBox('receiver-shell-rear-upper', [xMin, y1, -RECEIVER_FRONT_HALF_WIDTH], [innerX[0], receiverTop, RECEIVER_FRONT_HALF_WIDTH]);
+    addBox(
+      'receiver-shell-rear-lower',
+      [xMin, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH],
+      [innerX[0], y0, RECEIVER_FRONT_HALF_WIDTH],
+    );
+    addBox(
+      'receiver-shell-rear-upper',
+      [xMin, y1, -RECEIVER_FRONT_HALF_WIDTH],
+      [innerX[0], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
+    );
     addBox('receiver-shell-rear-window-near', [xMin, y0, -RECEIVER_FRONT_HALF_WIDTH], [innerX[0], y1, z0]);
   }
   if (farPortWindow) {
@@ -807,9 +816,21 @@ const receiverShellSolids = ({
     const x1 = clamp(farPortWindow.x[1], innerX);
     const y0 = clamp(farPortWindow.y[0], [lowerY, upperY]);
     const y1 = clamp(farPortWindow.y[1], [lowerY, upperY]);
-    const addFarWindowPanels = (yBounds: readonly [number, number], zBounds: readonly [number, number], suffix: string) => {
-      addBox(`receiver-shell-side-far-${suffix}-rear`, [innerX[0], yBounds[0], zBounds[0]], [x0, yBounds[1], zBounds[1]]);
-      addBox(`receiver-shell-side-far-${suffix}-front`, [x1, yBounds[0], zBounds[0]], [innerX[1], yBounds[1], zBounds[1]]);
+    const addFarWindowPanels = (
+      yBounds: readonly [number, number],
+      zBounds: readonly [number, number],
+      suffix: string,
+    ) => {
+      addBox(
+        `receiver-shell-side-far-${suffix}-rear`,
+        [innerX[0], yBounds[0], zBounds[0]],
+        [x0, yBounds[1], zBounds[1]],
+      );
+      addBox(
+        `receiver-shell-side-far-${suffix}-front`,
+        [x1, yBounds[0], zBounds[0]],
+        [innerX[1], yBounds[1], zBounds[1]],
+      );
       addBox(`receiver-shell-side-far-${suffix}-lower`, [x0, yBounds[0], zBounds[0]], [x1, y0, zBounds[1]]);
       addBox(`receiver-shell-side-far-${suffix}-upper`, [x0, y1, zBounds[0]], [x1, yBounds[1], zBounds[1]]);
     };
@@ -918,7 +939,11 @@ const receiverShellSolids = ({
 const arRearTHandle = (inside = false): Solid[] => {
   const receiverTop = RECEIVER_SECTION.ar.faces.top.y;
   return [
-    metalSolid('charging-handle', [-18, receiverTop + 0.5, inside ? 1 : 1.5], [-16, receiverTop + 1, inside ? 1.75 : 2]),
+    metalSolid(
+      'charging-handle',
+      [-18, receiverTop + 0.5, inside ? 1 : 1.5],
+      [-16, receiverTop + 1, inside ? 1.75 : 2],
+    ),
     metalSolid('ar-handle-crossbar', [-18, receiverTop + 0.5, -2], [-17.5, receiverTop + 1, 2]),
     metalSolid('ar-handle-latch', [-16.5, receiverTop, -0.5], [-16, receiverTop + 0.5, 0.5]),
   ];
@@ -1191,7 +1216,10 @@ const receiverKeepOuts = (context: ReceiverContext): KeepOut[] => {
     const style = carrierHandleStyleFor(params);
     const bounds =
       style === 'bolt'
-        ? boltActionHandleBounds(BOLT_CARRIER_ENVELOPES.bolt, (params.boltHandleProfile ?? 'standard') as BoltHandleProfile)
+        ? boltActionHandleBounds(
+            BOLT_CARRIER_ENVELOPES.bolt,
+            (params.boltHandleProfile ?? 'standard') as BoltHandleProfile,
+          )
         : undefined;
     if (bounds) {
       const [minimum, maximum] = bounds;
@@ -1252,12 +1280,15 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
   const handleStyleKey = carrierHandleStyleFor(params);
   const movingHandle = carrierHandleSolids(handleStyleKey, carrierPattern);
   const receiverHandles = receiverActionDetails(params);
-  const handleBounds =
-    params.action === 'bolt' && carrierPattern === 'bolt'
-      ? boltActionHandleBounds(BOLT_CARRIER_ENVELOPES.bolt, (params.boltHandleProfile ?? 'standard') as BoltHandleProfile)
-      : movingHandle.length > 0
-        ? solidsBounds(movingHandle)
-        : undefined;
+  let handleBounds: readonly [Vec3, Vec3] | undefined;
+  if (params.action === 'bolt' && carrierPattern === 'bolt') {
+    handleBounds = boltActionHandleBounds(
+      BOLT_CARRIER_ENVELOPES.bolt,
+      (params.boltHandleProfile ?? 'standard') as BoltHandleProfile,
+    );
+  } else if (movingHandle.length > 0) {
+    handleBounds = solidsBounds(movingHandle);
+  }
   const handleRearReach = handleBounds?.[1][0] ?? 0;
   const shellPortWindow =
     params.action === 'bolt' && carrierPattern === 'bolt' && handleBounds
@@ -1275,7 +1306,8 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
           ] as const,
         }
       : portWindow;
-  const falBounds = handleStyleKey === 'battle' && receiverHandles.length > 0 ? solidsBounds(receiverHandles) : undefined;
+  const falBounds =
+    handleStyleKey === 'battle' && receiverHandles.length > 0 ? solidsBounds(receiverHandles) : undefined;
   const farPortWindow = falBounds
     ? {
         x: [
@@ -1499,7 +1531,11 @@ const relativeToEnvelope = (solids: readonly Solid[], source: CarrierEnvelope, t
 };
 
 const dot3 = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const cross3 = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const cross3 = (a: Vec3, b: Vec3): Vec3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
 const normalize3 = (value: Vec3): Vec3 => {
   const magnitude = Math.hypot(...value);
   return value.map((component) => component / magnitude) as unknown as Vec3;
@@ -1522,11 +1558,7 @@ const BOLT_HANDLE_KNOB_UP: Vec3 = [
   dot3(BOLT_HANDLE_ARM_UP, Y),
   dot3(BOLT_HANDLE_ARM_SIDE, Y),
 ];
-const BOLT_HANDLE_MOTION_AXIS: Vec3 = [
-  BOLT_HANDLE_ARM_AXIS[0],
-  BOLT_HANDLE_ARM_UP[0],
-  BOLT_HANDLE_ARM_SIDE[0],
-];
+const BOLT_HANDLE_MOTION_AXIS: Vec3 = [BOLT_HANDLE_ARM_AXIS[0], BOLT_HANDLE_ARM_UP[0], BOLT_HANDLE_ARM_SIDE[0]];
 const BOLT_HANDLE_KNOB_MOTION_AXIS: Vec3 = [
   dot3(BOLT_HANDLE_KNOB_AXIS, BOLT_HANDLE_MOTION_AXIS),
   dot3(BOLT_HANDLE_KNOB_UP, BOLT_HANDLE_MOTION_AXIS),
@@ -1538,10 +1570,16 @@ const boltActionHandleBounds = (
   profile: BoltHandleProfile = 'standard',
 ): readonly [Vec3, Vec3] => {
   const root = boltHandleRoot(envelope);
-  const tip = root.map((value, axis) => value + BOLT_HANDLE_ARM_AXIS[axis]! * BOLT_HANDLE_PROFILES[profile].armLength) as unknown as Vec3;
+  const tip = root.map(
+    (value, axis) => value + BOLT_HANDLE_ARM_AXIS[axis]! * BOLT_HANDLE_PROFILES[profile].armLength,
+  ) as unknown as Vec3;
   const knobRadius = 1.25;
-  const minimum = root.map((value, axis) => Math.floor((Math.min(value, tip[axis]!) - knobRadius) / GRID) * GRID) as unknown as Vec3;
-  const maximum = root.map((value, axis) => Math.ceil((Math.max(value, tip[axis]!) + knobRadius) / GRID) * GRID) as unknown as Vec3;
+  const minimum = root.map(
+    (value, axis) => Math.floor((Math.min(value, tip[axis]!) - knobRadius) / GRID) * GRID,
+  ) as unknown as Vec3;
+  const maximum = root.map(
+    (value, axis) => Math.ceil((Math.max(value, tip[axis]!) + knobRadius) / GRID) * GRID,
+  ) as unknown as Vec3;
   return [minimum, maximum];
 };
 const convexHull = (points: readonly (readonly [number, number])[]): readonly Vec2[] => {
@@ -1561,18 +1599,22 @@ const convexHull = (points: readonly (readonly [number, number])[]): readonly Ve
   const upper = half([...sorted].reverse());
   return [...lower.slice(0, -1), ...upper.slice(0, -1)];
 };
-const boltHandleSweep = (solid: Solid, axis: Vec3, travel: number): KeepOut => {
-  if (solid.kind !== 'extruded-polygon') {
-    throw new Error(`bolt handle sweep requires a prism: ${solid.id}`);
+const boltHandleSweep = (prism: Solid, axis: Vec3, travel: number): KeepOut => {
+  if (prism.kind !== 'extruded-polygon') {
+    throw new Error(`bolt handle sweep requires a prism: ${prism.id}`);
   }
-  const points = solid.profile.flatMap((profilePoint) =>
-    solid.z.flatMap((along) => {
-      const vertex: Vec3 = solid.axis === 'x' ? [along, profilePoint[0], profilePoint[1]] : [profilePoint[0], profilePoint[1], along];
+  const points = prism.profile.flatMap((profilePoint) =>
+    prism.z.flatMap((along) => {
+      const vertex: Vec3 =
+        prism.axis === 'x' ? [along, profilePoint[0], profilePoint[1]] : [profilePoint[0], profilePoint[1], along];
       return [vertex, vertex.map((value, i) => value + axis[i]! * travel) as unknown as Vec3];
     }),
   );
   const profile = convexHull(points.map(([x, y]) => [x, y] as const));
-  const zBounds = [Math.min(...points.map((point) => point[2])), Math.max(...points.map((point) => point[2]))] as const;
+  const zBounds = [
+    Math.min(...points.map((corner) => corner[2])),
+    Math.max(...points.map((corner) => corner[2])),
+  ] as const;
   const minimum: Vec3 = [Math.min(...profile.map(([x]) => x)), Math.min(...profile.map(([, y]) => y)), zBounds[0]];
   const maximum: Vec3 = [Math.max(...profile.map(([x]) => x)), Math.max(...profile.map(([, y]) => y)), zBounds[1]];
   const snappedMinimum = minimum.map((value) => Math.floor((value - 0.25) / GRID) * GRID) as unknown as Vec3;
@@ -1600,7 +1642,9 @@ const boltHandleArm: PartFamily = {
   params: boltHandleParams,
   build(params) {
     const profile = BOLT_HANDLE_PROFILES[(params.handleProfile ?? 'standard') as BoltHandleProfile];
-    const solids = [{ ...octagonalPrism('bolt-handle-arm', 0.375, [-0.25, profile.armLength - 0.25]), slot: 'metal' as const }];
+    const solids = [
+      { ...octagonalPrism('bolt-handle-arm', 0.375, [-0.25, profile.armLength - 0.25]), slot: 'metal' as const },
+    ];
     const travel = carrierTravelLength(params);
     return {
       family: 'bolt-handle',
@@ -1635,13 +1679,23 @@ const boltHandleKnob: PartFamily = {
   params: boltHandleParams,
   build(params) {
     const profile = BOLT_HANDLE_PROFILES[(params.handleProfile ?? 'standard') as BoltHandleProfile];
-    const solids = [{ ...octagonalPrism('bolt-handle-knob', profile.knobFlatRadius, [-0.5, 0.5]), slot: 'metal' as const }];
+    const solids = [
+      { ...octagonalPrism('bolt-handle-knob', profile.knobFlatRadius, [-0.5, 0.5]), slot: 'metal' as const },
+    ];
     const travel = carrierTravelLength(params);
     return {
       family: 'bolt-handle',
       solids,
       ports: [
-        { id: 'base', mount: 'bolt-handle-knob', gender: 'female', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
+        {
+          id: 'base',
+          mount: 'bolt-handle-knob',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: NEG_X,
+          up: Y,
+          required: true,
+        },
       ],
       keepOuts: [boltHandleSweep(solids[0]!, BOLT_HANDLE_KNOB_MOTION_AXIS, travel)],
       axes: [],
@@ -1853,19 +1907,27 @@ export const boltCarrier: PartFamily = {
       ports: [
         { id: 'mount', mount: 'bolt-carrier', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true },
         ...(boltHandleEnabled
-          ? [{ id: 'handle', mount: 'bolt-handle', gender: 'male' as const, pos: handleRoot, normal: BOLT_HANDLE_ARM_AXIS, up: BOLT_HANDLE_ARM_UP, required: true }]
+          ? [
+              {
+                id: 'handle',
+                mount: 'bolt-handle',
+                gender: 'male' as const,
+                pos: handleRoot,
+                normal: BOLT_HANDLE_ARM_AXIS,
+                up: BOLT_HANDLE_ARM_UP,
+                required: true,
+              },
+            ]
           : []),
       ],
       keepOuts: [
         ...carrierHandleKeepOuts(handleStyle, handles, carrierTravelLength(params)),
         ...(boltHandleEnabled
           ? [
-              keepOut(
-                'bolt-handle-travel',
-                [0, -0.25, -0.25],
-                [carrierTravelLength(params), 0.25, 0.25],
-                { allowPort: 'handle', allowFamilies: ['receiver'] },
-              ),
+              keepOut('bolt-handle-travel', [0, -0.25, -0.25], [carrierTravelLength(params), 0.25, 0.25], {
+                allowPort: 'handle',
+                allowFamilies: ['receiver'],
+              }),
             ]
           : []),
       ],
@@ -1908,7 +1970,6 @@ export const lower: PartFamily = {
       from: [{ port: 'magazine', param: 'profile' }],
     },
   },
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: lower layouts have distinct well, contact, and grip contracts that share placement data.
   build(params): PartDef {
     const orientation = orientationParts(params.magazineOrientation ?? 'straight');
     const layout = params.layout ?? 'conventional';
@@ -2692,7 +2753,6 @@ export const handguard: PartFamily = {
     fit: { values: ['receiver', 'oversized', 'too-tight'], default: 'receiver', fault: ['oversized', 'too-tight'] },
     mount: choice('clamped', 'free-float'),
   },
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mounting controls both clamp geometry and the exposed front port.
   build(params): PartDef {
     const lengthClass = cls(params, 'length');
     let len: number;
