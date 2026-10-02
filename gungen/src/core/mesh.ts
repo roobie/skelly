@@ -12,7 +12,8 @@
 import { GRID } from './conventions.ts';
 import { clippedExtrudedPolygonPolyhedron, localSolidBounds } from './geometry.ts';
 import { add, cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
-import type { Box, Solid, Vec2 } from './schema.ts';
+import { DEFAULT_REVOLVE_FACETS, meshForRevolved } from './revolve.ts';
+import type { Box, DomainUnits, Solid, Vec2 } from './schema.ts';
 
 export interface TriangleMesh {
   readonly positions: Float32Array;
@@ -21,6 +22,7 @@ export interface TriangleMesh {
   readonly triangleCount: number;
 }
 
+// The gun domain's chamfer size (`GUN_UNITS.bevel`); a domain declares its own in `Domain.units.bevel`.
 // Chamfer size: half a grid step (PROJECT.md §4). A quarter grid step (the
 // first value tried here) was too fine to read as a bevel at gungen's scale
 // (5.5u ≈ 63mm, so 1u ≈ 11.5mm: a quarter step is under 1mm); half a step
@@ -272,11 +274,23 @@ const orientExtrusion = (mesh: TriangleMesh, axis: ExtrusionAxis | undefined): T
   return { ...mesh, positions: mapTriples(mesh.positions), normals: mapTriples(mesh.normals) };
 };
 
-/** A flat-shaded display mesh for one solid, in its own local frame. */
+/** The bevel a solid is drawn with in a domain: the domain's, unless the solid opts out. */
+export const displayBevel = (solid: Solid, units: DomainUnits): number =>
+  solid.display?.bevel === false ? 0 : units.bevel;
+
+/**
+ * A display mesh for one solid, in its own local frame: flat-shaded for boxes and extrusions, smooth
+ * around the circumference for a revolved solid. `bevel` applies to boxes and extrusions only, and
+ * `revolveFacets` (a level of detail) to revolved solids only.
+ */
 export const meshForSolid = (
   solid: Solid,
   bevel: number = solid.display?.bevel === false ? 0 : BEVEL,
+  revolveFacets: number = DEFAULT_REVOLVE_FACETS,
 ): TriangleMesh => {
+  if (solid.kind === 'revolved') {
+    return orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
+  }
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);
@@ -817,6 +831,9 @@ const surfaceVertices = (surfaces: readonly SurfacePolygon[]): Vec3[] => {
  */
 export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
   for (const solid of solids) {
+    if (solid.kind === 'revolved') {
+      throw new Error(`Solid "${solid.id}" is revolved; mesh groups merge only boxes and convex extrusions.`);
+    }
     const [minimum, maximum] = localSolidBounds(solid);
     if (minimum.some((value, axis) => maximum[axis]! - value < 10 * GROUP_WELD_TOLERANCE_U)) {
       throw new Error(`Solid "${solid.id}" is thinner than the mesh-group weld contract.`);
