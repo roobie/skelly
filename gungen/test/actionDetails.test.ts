@@ -114,8 +114,10 @@ describe('visible action details', () => {
     }
   });
 
-  it('keeps rebuilt revolver geometry out of the generic receiver family', () => {
-    const generic = FAMILIES.receiver!.build({ action: 'revolver', feed: 'box', bore: 'S' });
+  it('keeps generic receiver choices separate from dedicated revolver families', () => {
+    const generic = receiver('auto');
+    expect(FAMILIES.receiver!.params.action?.values).toEqual(['auto', 'bolt', 'pump']);
+    expect(FAMILIES.receiver!.params.feed?.values).toEqual(['box', 'top', 'tube']);
     expect(generic.solids.some(({ id }) => id === 'top-strap')).toBe(false);
     expect(generic.solids.some(({ id }) => id.startsWith('cylinder-side'))).toBe(false);
     expect(generic.keepOuts.some(({ id }) => id === 'cylinder-swing')).toBe(false);

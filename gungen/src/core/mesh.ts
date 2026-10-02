@@ -299,9 +299,7 @@ const translateMesh = (mesh: TriangleMesh, origin: Vec3 | undefined): TriangleMe
   }
   for (let index = 0; index < mesh.positions.length; index++) {
     const offset = origin[index % 3]!;
-    if (offset !== 0) {
-      mesh.positions[index] = mesh.positions[index]! + offset;
-    }
+    mesh.positions[index] = mesh.positions[index]! + offset;
   }
   return mesh;
 };
