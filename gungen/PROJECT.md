@@ -931,11 +931,15 @@ the geometry declares them, whether or not a cartridge is assigned.
   5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
   profiles report the dimension-derived fit.
 - Round and case cartridge entries carry the same `calibre` and use real-size
-  millimetre source dimensions converted to metres for their GLBs. Their model
-  ids/files use the single deterministic calibre slug function in
-  `src/ammo/calibreSlug.ts` (e.g. `round_7_62x39`, `round-7_62x39.glb`); a test
-  proves it is injective over the registered cartridge ids. Gungen's internal
-  revolve profiles remain in millimetres.
+  millimetre source dimensions converted to metres for their GLBs. `5.56x45.json`
+  cites NATO AOP-4172; where its reference drawing is ambiguous, C.I.P. .223 Rem
+  dimensions are explicitly marked as visual-profile proxy estimates, not a
+  chamber-interchangeability claim. Bullet length remains unsourced; only the
+  rendered generic bullet uses the named seating-depth assumption in
+  `src/ammo/roundProfile.ts`. Their model ids/files use the single deterministic
+  calibre slug function in `src/ammo/calibreSlug.ts` (e.g. `round_7_62x39`,
+  `round-7_62x39.glb`); a test proves it is injective over the registered
+  cartridge ids. Gungen's internal revolve profiles remain in millimetres.
 
 #### 3.0b (implemented)
 

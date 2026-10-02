@@ -19,8 +19,10 @@ export const PRIMER_CLEARANCE_MM = 0.05;
 export const CASE_WALL_MM = 0.4;
 /** Modelling assumption: inside floor depth of the open fired case. */
 export const FIRED_FLOOR_MM = 3;
-/** Modelling assumption: tangent- ogive length in calibres; the source data gives no projectile profile. */
+/** Modelling assumption: tangent-ogive length in calibres; source data gives no projectile profile. */
 export const OGIVE_LENGTH_CALIBRES = 1.2;
+/** Modelling assumption used only when source bullet length is null: seated depth in calibres. */
+export const ASSUMED_BULLET_SEATING_DEPTH_CALIBRES = 1.5;
 /** Number of linear segments used to represent the ogive. */
 export const OGIVE_SEGMENTS = 8;
 
@@ -138,7 +140,10 @@ const ogive = (start: number, tip: number, radius: number): ProfilePoint[] => {
 const bulletProfile = (cartridge: MetallicCartridge): ProfilePoint[] => {
   const radius = required(cartridge.payload.diameter, 'bullet diameter') / 2;
   const tip = required(cartridge.overallLength.typical, 'typical overall length');
-  const base = tip - required(cartridge.payload.length.min, 'minimum bullet length');
+  const caseLength = required(cartridge.case.length, 'case length');
+  const sourcedLength = cartridge.payload.length.min.value;
+  const bulletLength = sourcedLength ?? tip - caseLength + ASSUMED_BULLET_SEATING_DEPTH_CALIBRES * radius * 2;
+  const base = tip - bulletLength;
   const ogiveStart = tip - OGIVE_LENGTH_CALIBRES * radius * 2;
   return [[base, 0], [base, radius], [ogiveStart, radius], ...ogive(ogiveStart, tip, radius), [tip, 0]];
 };

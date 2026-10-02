@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
-import { CASE_WALL_MM, roundProfiles } from '../src/ammo/roundProfile.ts';
+import { ASSUMED_BULLET_SEATING_DEPTH_CALIBRES, CASE_WALL_MM, roundProfiles } from '../src/ammo/roundProfile.ts';
 import { meshForRevolved } from '../src/core/revolve.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
 const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
+const natoCartridge = loadCartridgeFile('5.56x45.json') as MetallicCartridge;
 const profiles = roundProfiles(cartridge);
 const maximum = (profile: readonly (readonly [number, number])[], axis: 0 | 1): number =>
   Math.max(...profile.map((point) => point[axis]));
@@ -23,6 +24,17 @@ const signedVolume = (positions: Float32Array, indices: Uint32Array): number => 
   }
   return volume;
 };
+
+describe('5.56x45 round profile estimate', () => {
+  it('keeps bullet length unsourced and uses the named seating-depth assumption only for the model', () => {
+    expect(natoCartridge.payload.length.min.value).toBeNull();
+    const profile = roundProfiles(natoCartridge);
+    const assumedBase =
+      natoCartridge.case.length.value! - ASSUMED_BULLET_SEATING_DEPTH_CALIBRES * natoCartridge.payload.diameter.value!;
+    expect(maximum(profile.bullet, 0)).toBeCloseTo(natoCartridge.overallLength.typical.value!, 6);
+    expect(Math.min(...profile.bullet.map(([axial]) => axial))).toBeCloseTo(assumedBase, 6);
+  });
+});
 
 describe('7.62x39 round profiles', () => {
   it('take cartridge lengths and principal diameters from sourced measurements', () => {

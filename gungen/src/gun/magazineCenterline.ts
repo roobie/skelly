@@ -12,15 +12,20 @@ export interface MagazineCenterline {
 const midpoint = (a: Vec2, b: Vec2): Vec2 => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 const SECTOR_ID = /^curve-(?:display|sector)-(\d+)$/;
 const DISPLAY_SECTOR_ID = /^curve-display-\d+$/;
+const DISPLAY_BOTTOM_ID = 'curve-display-straight-bottom';
 
 /** Read a generated magazine's centreline from its own upper body and curve sectors. */
 export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline | undefined => {
   const upper = solids.find((solid) => solid.id === 'upper-body');
   if (upper?.kind === 'extruded-polygon') {
-    const display = solids.filter((solid) => DISPLAY_SECTOR_ID.test(solid.id));
+    const display = solids.filter((solid) => DISPLAY_SECTOR_ID.test(solid.id) || solid.id === DISPLAY_BOTTOM_ID);
     const sectors = (display.length > 0 ? display : solids.filter((solid) => SECTOR_ID.test(solid.id)))
       .flatMap((solid) => (solid.kind === 'extruded-polygon' ? [solid] : []))
-      .sort((a, b) => Number(SECTOR_ID.exec(a.id)![1]) - Number(SECTOR_ID.exec(b.id)![1]));
+      .sort((a, b) => {
+        const aIndex = Number(SECTOR_ID.exec(a.id)?.[1] ?? Number.MAX_SAFE_INTEGER);
+        const bIndex = Number(SECTOR_ID.exec(b.id)?.[1] ?? Number.MAX_SAFE_INTEGER);
+        return aIndex - bIndex;
+      });
     // Upper body is [top-back, top-front, face-front, face-back]; sectors start at the next rear/front pair.
     const points = [
       midpoint(upper.profile[2]!, upper.profile[3]!),

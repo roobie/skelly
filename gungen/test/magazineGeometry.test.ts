@@ -8,6 +8,7 @@ import { magazine } from '../src/gun/parts.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
 const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
+const natoCartridge = loadCartridgeFile('5.56x45.json') as MetallicCartridge;
 
 describe('generated magazine round columns', () => {
   it.each([
@@ -63,6 +64,27 @@ describe('generated magazine round columns', () => {
     expect(result.modelEntry.rounds).toHaveLength(result.modelEntry.capacity!);
     expect(result.modelEntry.rounds?.[0]?.at[2]).toBeGreaterThan(0);
     expect(result.modelEntry.rounds?.[1]?.at[2]).toBeLessThan(0);
+  });
+
+  it('fits and exports 30 source-profile 5.56 rounds in a STANAG L magazine', () => {
+    const params = { length: 'L', profile: 'stanag-curved' };
+    const part = magazine.build(params);
+    const { column } = magazineRoundColumn(part.displaySolids ?? part.solids, natoCartridge, params);
+    expect(column.capacity).toBe(30);
+    expect(column.rounds).toHaveLength(30);
+    expect(column.rounds.every(({ position, z }) => position.every(Number.isFinite) && Number.isFinite(z))).toBe(true);
+    const result = exportMagazineGlb({
+      asset: { id: 'magazine_stanag_30', file: 'assets/models/magazine-stanag-30.glb' },
+      params,
+      cartridge: natoCartridge,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.modelEntry.calibre).toBe('5.56x45');
+    expect(result.modelEntry.capacity).toBe(30);
+    expect(result.modelEntry.rounds).toHaveLength(30);
   });
 
   it('rejects unrecognized magazine geometry', () => {
