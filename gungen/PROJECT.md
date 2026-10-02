@@ -35,8 +35,9 @@ cartridges only. Calibre is a gameplay identity, because ammo must match the
 gun, not a brand, and a standard (C.I.P., SAAMI) fixes a cartridge's dimensions
 rather than a designer choosing them. Guns keep size classes. Every cartridge
 dimension carries its source, and a value that can't be sourced stays empty.
-Tracked in roobie/skelly#109: data first, then geometry, viewer and export. The
-data format is described in `cartridges/README.md`.
+Tracked in roobie/skelly#109: data first, then cartridge solids, viewer and export.
+The pump-action clearance model may consume a cited loaded-shell length without
+adding shell geometry. The data format is described in `cartridges/README.md`.
 
 ## Decisions
 
@@ -1303,8 +1304,17 @@ not part of the export's acceptance:
   and its bounds are the bolt-carrier face bounds plus 0.25u on every side; the
   port and ejection keep-out derive from one clearance definition. Pump receiver
   ports follow the lowered carrier face. The far wall closes the cavity, with
-  the carrier face above the magazine path. Revolver receivers have no ejection
-  keep-out and remain solid; the pistol frame/slide are separate parts.
+  the carrier face above the magazine path. For the pump shotgun, Federal PFC154 00
+  is the representative shell; SAAMI's longer rolled-closed length (62.23 mm =
+  5.411u at 11.5 mm/u) sizes a 5.5u (63.25 mm) grid-rounded action stroke. The
+  port minimum is loaded length plus 0.25u end clearance at both ends (5.911u);
+  the carrier-derived aperture is 6.75u wide. Moving its rest anchor from -7u
+  to -6.5u shifts the carrier and port forward by 0.5u. The stock contact stays
+  at [-16, -1, 0], and the trigger/guard geometry is unchanged. The 62.23 mm
+  figure is a conservative standard envelope, not a claim about Federal's
+  unspecified crimp. See `cartridges/12-gauge-00-buck.json` and
+  `test/boltCarrier.test.ts`. Revolver receivers have no ejection keep-out and
+  remain solid; the pistol frame/slide are separate parts.
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
 - **Deferred (BR, 2026-09-30):** revolute `PartMotion` for lifting the bolt handle

@@ -92,6 +92,7 @@ export function buildLayers(
   colorMode: 'finish' | 'role' = 'finish',
   appearanceContext: AppearanceContext = {},
   revolveFacets?: number,
+  partOffsets: ReadonlyMap<string, Vec3> = new Map(),
 ): Layers {
   const { resolved } = report;
   const hl = highlights(focus);
@@ -102,7 +103,11 @@ export function buildLayers(
     axes: new Group(),
   };
 
-  for (const [part, t] of resolved.placed) {
+  for (const [part, placed] of resolved.placed) {
+    const offset = partOffsets.get(part);
+    const t: Transform = offset
+      ? { r: placed.r, t: [placed.t[0] + offset[0], placed.t[1] + offset[1], placed.t[2] + offset[2]] }
+      : placed;
     const def = resolved.defs.get(part)!;
     // e.g. "length M ← barrel.length, inner M"
     const params = Object.entries(resolved.params.get(part) ?? {})

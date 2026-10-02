@@ -29,6 +29,7 @@ import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
+import { PUMP_ACTION_TRAVEL_U, PUMP_SHELL_LOADED_LENGTH_U } from './pumpShell.ts';
 import { buildReceiverSection, type SectionPocket, type SectionWindow } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
 
@@ -336,7 +337,8 @@ const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
   standard: { length: 6.5, restX: -7 },
   ak: { length: 6.5, restX: -5.75 },
-  pump: { length: 5.5, restX: -7 },
+  // The carrier/port move 0.5u forward; travel is the grid-rounded clearance length of the loaded shell.
+  pump: { length: PUMP_ACTION_TRAVEL_U, restX: -6.5 },
   long: { length: 8, restX: -4.5 },
   bolt: { length: 7, restX: -6 },
 } as const;
@@ -500,7 +502,7 @@ export const CARRIER_HANDLE_STYLES = {
 } as const;
 export const EJECTION_PORT_RULES = {
   marginU: EJECTION_PORT_MARGIN_U,
-  pumpShellMinimum: { lengthU: 6.25, endClearanceU: EJECTION_PORT_MARGIN_U },
+  pumpShellMinimum: { lengthU: PUMP_SHELL_LOADED_LENGTH_U, endClearanceU: EJECTION_PORT_MARGIN_U },
 } as const;
 
 const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY: number) => {

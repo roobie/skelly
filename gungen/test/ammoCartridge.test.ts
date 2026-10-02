@@ -110,6 +110,32 @@ describe('7.62x39', () => {
   });
 });
 
+describe('12 gauge 00 buck', () => {
+  const cartridge = loadCartridgeFile('12-gauge-00-buck.json');
+
+  it('pins the cited standard shell dimensions and Federal representative payload', () => {
+    expect(cartridge.kind).toBe('shotshell');
+    if (cartridge.kind !== 'shotshell' || cartridge.payload.type !== 'shot') {
+      throw new Error('expected a shotshell with a shot payload');
+    }
+    expect(cartridge.primarySource).toBe('saami');
+    expect(cartridge.sources.saami?.reliability).toBe('standard');
+    expect(cartridge.gauge.value).toBe(12);
+    expect(cartridge.head.rimDiameter.value).toBe(22.5);
+    expect(cartridge.head.rimDiameter.tolerance).toEqual({ minus: 0.53 });
+    expect(cartridge.head.rimThickness.value).toBe(1.463);
+    expect(cartridge.head.rimThickness.tolerance).toEqual({ minus: 0.356 });
+    expect(cartridge.length.nominal.value).toBe(70.1);
+    expect(cartridge.length.loaded.value).toBe(62.23);
+    expect(cartridge.closure.value).toBeNull();
+    expect(cartridge.payload.name.value).toBe('00 Buck');
+    expect(cartridge.payload.pelletCount.value).toBe(9);
+    expect(cartridge.payload.pelletDiameter.value).toBe(8.38);
+    expect(cartridge.payload.pelletCount.cite?.source).toBe('federal');
+    expect(cartridge.payload.pelletDiameter.cite?.source).toBe('saami');
+  });
+});
+
 describe('case shapes', () => {
   it.each(SYNTHETIC_METALLIC_SHAPES)('synthetic %s is valid and fully sourced', (shape) => {
     const cartridge = mustParse(syntheticJson(shape));

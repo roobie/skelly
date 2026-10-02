@@ -21,6 +21,7 @@ import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
 import { worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
+import type { Vec3 } from '../core/math.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '../core/revolve.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
@@ -170,6 +171,7 @@ const syncUrl = () => {
   const ammo = initialQuery.get('ammo');
   const ammoCase = initialQuery.get('ammoCase');
   const mag = initialQuery.get('mag');
+  const pose = initialQuery.get('pose');
   if (ammo) {
     params.set('ammo', ammo);
   }
@@ -178,6 +180,9 @@ const syncUrl = () => {
   }
   if (mag) {
     params.set('mag', mag);
+  }
+  if (pose === 'action-open') {
+    params.set('pose', pose);
   }
   if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
     params.set('facets', String(revolveFacets));
@@ -345,6 +350,22 @@ let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefine
 let pendingCamera: CameraState | undefined;
 let detachedMagazine: Group | undefined;
 
+const pumpActionOpenOffsets = (shown: Report): ReadonlyMap<string, Vec3> => {
+  if (initialQuery.get('pose') !== 'action-open') {
+    return new Map();
+  }
+  const carrier = shown.resolved.defs.get('bolt-carrier');
+  if (!(shown.resolved.placed.has('forend') && carrier?.motion)) {
+    return new Map();
+  }
+  const [x, y, z] = carrier.motion.end;
+  const rearward: Vec3 = [-x, -y, -z];
+  return new Map([
+    ['bolt-carrier', rearward],
+    ['forend', rearward],
+  ]);
+};
+
 const redraw = () => {
   if (!report) {
     return;
@@ -365,6 +386,7 @@ const redraw = () => {
       ...(editorState?.finish ? { finish: editorState.finish } : {}),
     },
     revolveFacets,
+    pumpActionOpenOffsets(report),
   );
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
@@ -529,7 +551,14 @@ const renderPanel = (assembly: Assembly) => {
     verdict = `<span class="fail">FAIL</span> <span class="note">(${report.issues.length} issue${report.issues.length === 1 ? '' : 's'})</span>`;
   }
   const note = expectationNote(expected, failed);
-  status.innerHTML = verdict + note;
+  const actionOpen =
+    initialQuery.get('pose') === 'action-open' &&
+    report.resolved.placed.has('forend') &&
+    report.resolved.defs.get('bolt-carrier')?.motion !== undefined;
+  const poseNote = actionOpen
+    ? '<span class="note"> · view-only full-rearward pump pose; validation and export remain at rest</span>'
+    : '';
+  status.innerHTML = verdict + note + poseNote;
 
   issueList.replaceChildren(
     ...report.issues.map((issue, index) => {
@@ -1330,7 +1359,8 @@ saveButton.addEventListener('click', () => {
 });
 
 // ?fixture=<name> opens a fixture; ?design=<name> loads a curated design;
-// ?template=<name>&seed=<n> generates one. Each can add &set=<part.param:value,...> to override params, or
+// ?template=<name>&seed=<n> generates one. `&pose=action-open` is a pump-only, view-only full rearward pose.
+// Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
 pendingCamera = parseCameraState(query.get('camera'));

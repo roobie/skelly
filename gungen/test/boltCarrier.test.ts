@@ -16,6 +16,7 @@ import {
   FAMILIES,
   RECEIVER_SECTION,
 } from '../src/gun/parts.ts';
+import { PUMP_ACTION_TRAVEL_U, PUMP_SHELL_LOADED_LENGTH_U } from '../src/gun/pumpShell.ts';
 import { buildReceiverSection } from '../src/gun/receiverSection.ts';
 import { loadCorpus } from './helpers.ts';
 
@@ -776,19 +777,22 @@ describe('procedural bolt carrier', () => {
     expect(carrier.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
   });
 
-  it('keeps the AK and carrier/ejection-port anchors unchanged', () => {
-    const unchanged = [
+  it('pins carrier and ejection-port anchors, including the forward-shifted pump action', () => {
+    const expectedAnchors = [
       { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
-      { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, -3.5], portY: [-1, 1] },
+      { pattern: 'pump', restX: -6.5, carrierX: [-3.25, 3], portX: [-9.75, -3], portY: [-1, 1] },
       { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
       { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25], portY: [0.5, 1.75] },
     ] as const;
 
-    for (const expected of unchanged) {
+    for (const expected of expectedAnchors) {
       const entry = travelCases.find(({ pattern }) => pattern === expected.pattern)!;
       const resolved = resolve(assemblyFor(entry), gunDomain);
       const port = portMeasurements(entry, resolved);
+      if (expected.pattern === 'pump') {
+        expect(resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'stock')!.pos).toEqual([-16, -1, 0]);
+      }
       expect(BOLT_CARRIER_ENVELOPES[expected.pattern].x, expected.pattern).toEqual(expected.carrierX);
       expect(
         resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'bolt-carrier')!.pos[0],
@@ -885,9 +889,24 @@ describe('procedural bolt carrier', () => {
     expect(body.box.half).toEqual([3, 1.25, 1.25]);
   });
 
-  it('uses one carrier-face margin, a pump shell minimum, and unchanged pistol apertures', () => {
+  it('derives pump travel and port clearance from the sourced loaded shell length', () => {
+    const entry = travelCases.find(({ pattern }) => pattern === 'pump')!;
+    const resolved = resolve(assemblyFor(entry), gunDomain);
+    const port = portMeasurements(entry, resolved);
+    expect(PUMP_SHELL_LOADED_LENGTH_U).toBeCloseTo(62.23 / 11.5, 12);
+    expect(PUMP_ACTION_TRAVEL_U).toBe(5.5);
+    expect(entry.travel).toBe(PUMP_ACTION_TRAVEL_U);
+    expect(entry.travel).toBeGreaterThanOrEqual(PUMP_SHELL_LOADED_LENGTH_U);
     expect(EJECTION_PORT_MARGIN_U).toBe(0.25);
-    expect(EJECTION_PORT_RULES.pumpShellMinimum).toEqual({ lengthU: 6.25, endClearanceU: 0.25 });
+    expect(EJECTION_PORT_RULES.pumpShellMinimum).toEqual({
+      lengthU: PUMP_SHELL_LOADED_LENGTH_U,
+      endClearanceU: EJECTION_PORT_MARGIN_U,
+    });
+    expect(port.width).toBeGreaterThanOrEqual(PUMP_SHELL_LOADED_LENGTH_U + 2 * EJECTION_PORT_MARGIN_U);
+  });
+
+  it('uses one carrier-face margin and leaves pistol apertures unchanged', () => {
+    expect(EJECTION_PORT_MARGIN_U).toBe(0.25);
 
     const slide = FAMILIES.slide!.build({ bore: 'M', length: 'M' });
     const portPoints = slide.solids.filter(({ id }) => id.startsWith('ejection-port-')).flatMap(corners);
