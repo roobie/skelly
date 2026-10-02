@@ -7,8 +7,10 @@ const SCALE = 1.15;
 const MILLIMETRES_PER_U = 11.5;
 const GRID_U = 0.25;
 const PROFILE_GRID_U = 0.125;
+const NOMINAL_FRAME_HEIGHT_U = 9;
 const TOLERANCE = 1e-6;
-const CONTACT_GAP_U = 0.25;
+const TRIGGER_GUARD_ID = /^trigger-guard-[0-9]$/;
+const TRIGGER_ID = /^curved-trigger-[0-9]$/;
 
 const photoControl = (sourceRow: string, pickedU: number) => ({ sourceRow, pickedU });
 const dimension = (sourceRow: string, referenceMm: number, pickedU?: number) => {
@@ -35,7 +37,7 @@ export const REVOLVER_PROPORTIONS = {
   frameWidth: dimension('686-class top photo estimate: 35 mm', 35, 3.5),
   topstrapWidth: photoControl('686 photo-derived narrow roof width; BR-approved 1.75u across frames', 1.75),
   frameHeightEstimate: dimension('686-class side photo preliminary rough estimate, superseded by BR correction', 80, 8),
-  frameHeight: photoControl('BR-approved correction from the 686 photo, 2026-10-02', 9),
+  frameHeight: photoControl('BR-approved correction from the 686 photo, 2026-10-02', NOMINAL_FRAME_HEIGHT_U),
   frameHeightS: photoControl('686-class S-frame side-profile variant control', 8.75),
   frameHeightL: photoControl('686-class L-frame side-profile variant control', 9.25),
   frameWidthS: photoControl('686-class S-frame top-profile variant control', 3),
@@ -86,8 +88,6 @@ export const REVOLVER_PROPORTIONS = {
   ejectorChannelHalfWidth: photoControl('686-class open ejector-rod channel half-width', 0.25),
   guardHalfDepth: photoControl('686 photo-derived joined trigger-bow half-depth', 0.375),
   gripCoreDepthRatio: photoControl('686-class grip-core fraction of total wood depth', 2 / 3),
-  rearWebJointExtension: photoControl('BR correction: web projection from the grip datum into the guard side', 0.75),
-  rearWebGripInset: photoControl('BR correction: maximum rear-web overlap into grip front strap', 0.25),
 } as const;
 
 const C = REVOLVER_PROPORTIONS;
@@ -197,6 +197,49 @@ const octagonRadius = (radius: number, centre: readonly [number, number] = [0, 0
 const frameSide = (frameSize: string) => frameVariants[frameSize as keyof typeof frameVariants] ?? frameVariants.M;
 const gripLengthFor = (lengthName: string): number =>
   gripEnvelopeLengths[lengthName as keyof typeof gripEnvelopeLengths] ?? gripEnvelopeLengths.M;
+
+interface GripStation {
+  readonly depth: number;
+  readonly width: number;
+  readonly centreOffset: number;
+  readonly left: Vec2;
+  readonly right: Vec2;
+}
+
+const gripStations = (
+  lengthName: string,
+): {
+  readonly joint: GripStation;
+  readonly neck: GripStation;
+  readonly waistTop: GripStation;
+  readonly waistBottom: GripStation;
+  readonly butt: GripStation;
+} => {
+  const fullLength = gripLengthFor(lengthName);
+  const freeLength = fullLength - C.gripFrameOverlap.pickedU;
+  const scale = freeLength / C.gripButtDepthM.pickedU;
+  const rake = (GRIP_RAKE_DEGREES * Math.PI) / 180;
+  const station = (nominalDepth: number, width: number, centreOffset: number): GripStation => {
+    const depth = roundTo(nominalDepth * scale, PROFILE_GRID_U);
+    const roundedAxisX = -roundTo(depth * Math.tan(rake), PROFILE_GRID_U);
+    const axisX = roundedAxisX === 0 ? 0 : roundedAxisX;
+    const centre = axisX + centreOffset;
+    const stationY = depth === 0 ? 0 : -depth;
+    const left: Vec2 = [centre - width / 2, stationY];
+    const right: Vec2 = [centre + width / 2, stationY];
+    return { depth, width, centreOffset, left, right };
+  };
+  const joint = station(0, C.gripJointWidth.pickedU, 0);
+  const neck = station(C.gripNeckDepth.pickedU, C.gripNeckWidth.pickedU, C.gripNeckCentreOffset.pickedU);
+  const waistTop = station(C.gripNeckDepth.pickedU, C.gripWaistWidth.pickedU, C.gripWaistTopCentreOffset.pickedU);
+  const waistBottom = station(
+    C.gripWaistBottomDepth.pickedU,
+    C.gripWaistWidth.pickedU,
+    C.gripWaistBottomCentreOffset.pickedU,
+  );
+  const butt = station(C.gripButtDepthM.pickedU, C.gripButtWidth.pickedU, C.gripButtCentreOffset.pickedU);
+  return { joint, neck, waistTop, waistBottom, butt };
+};
 const barrelLengthFor = (lengthName: string): number =>
   barrelLengths[lengthName as keyof typeof barrelLengths] ?? barrelLengths.M;
 const guardOuter: Profile = [
@@ -224,7 +267,9 @@ const guardInner: Profile = [
   [-1, -6.25],
 ];
 const guardVariantProfile = (profile: Profile, frameHeight: number): Profile => {
-  const lowerDelta = -(frameHeight - C.frameHeight.pickedU);
+  const guardBottomY = topstrapTopY - frameHeight;
+  const nominalGuardBottomY = topstrapTopY - NOMINAL_FRAME_HEIGHT_U;
+  const lowerDelta = guardBottomY - nominalGuardBottomY;
   return profile.map(([x, y]) => [x, y <= -6.25 ? y + lowerDelta : y] as const);
 };
 
@@ -256,7 +301,9 @@ const triggerProfiles: readonly Profile[] = [
 ];
 
 const triggerVariantProfile = (profile: Profile, frameHeight: number): Profile => {
-  const lowerDelta = -(frameHeight - C.frameHeight.pickedU);
+  const guardBottomY = topstrapTopY - frameHeight;
+  const nominalGuardBottomY = topstrapTopY - NOMINAL_FRAME_HEIGHT_U;
+  const lowerDelta = guardBottomY - nominalGuardBottomY;
   return profile.map(([x, y]) => [x, y <= -6.25 ? y + lowerDelta : y] as const);
 };
 
@@ -373,29 +420,17 @@ const triggerSolids = (frameHeight: number): Solid[] =>
     ),
   );
 
-const rearWebSolids = (jointY: number, frameHeight: number): Solid[] => {
+const rearFrameBridgeSolid = (jointY: number, frameHeight: number, gripLength: string): Solid => {
   const guard = guardVariantProfile(guardOuter, frameHeight);
-  const rake = (GRIP_RAKE_DEGREES * Math.PI) / 180;
-  const neckDepth = C.gripNeckDepth.pickedU;
-  const neckAxisX = -roundTo(neckDepth * Math.tan(rake), PROFILE_GRID_U);
-  const neckFrontX = frameJointX + neckAxisX + C.gripNeckCentreOffset.pickedU + C.gripNeckWidth.pickedU / 2;
+  const gripFront = gripStations(gripLength).neck.right;
   const profile: Profile = [
-    [frameJointX + C.rearWebJointExtension.pickedU, jointY],
-    guard[3]!,
+    [floorRearX, -3.75],
+    [frameJointX + C.gripJointWidth.pickedU / 2, jointY],
+    [frameJointX + gripFront[0], jointY + gripFront[1]],
     guard[4]!,
-    [neckFrontX - C.rearWebGripInset.pickedU, jointY - neckDepth],
+    guard[3]!,
   ];
-  return [polySolid('rear-grip-web', profile, [-1.25, 1.25], 'z', 'revolver-frame')];
-};
-
-const rearGripSeatSolid = (jointY: number): Solid => {
-  const webJoint: Vec2 = [frameJointX + C.rearWebJointExtension.pickedU, jointY];
-  const frameJoint: Vec2 = [frameJointX + C.gripJointWidth.pickedU / 2, jointY];
-  const guardJoint = guardOuter[3]!;
-  const upperRear: Vec2 = [floorRearX, -3.75];
-  const profile =
-    jointY < guardJoint[1] ? [webJoint, frameJoint, guardJoint, upperRear] : [webJoint, guardJoint, upperRear];
-  return polySolid('rear-grip-seat', ccw(profile), [-1.25, 1.25], 'z', 'revolver-frame-grip-seat');
+  return polySolid('rear-frame-bridge', ccw(profile), [-1.25, 1.25], 'z', 'revolver-frame');
 };
 
 export const revolverFrame: PartFamily = {
@@ -403,6 +438,7 @@ export const revolverFrame: PartFamily = {
   params: {
     bore: chamberSize,
     frameSize: choice('S', 'M', 'L'),
+    gripLength: { ...size, from: [{ port: 'grip-frame', param: 'length' }] },
     butt: choice('round', 'square'),
   },
   build(params): PartDef {
@@ -540,8 +576,7 @@ export const revolverFrame: PartFamily = {
       ...rearSightSolids(),
       ...hammerSolids(),
       ...triggerSolids(frame.height),
-      ...rearWebSolids(jointY, frame.height),
-      rearGripSeatSolid(jointY),
+      rearFrameBridgeSolid(jointY, frame.height, params.gripLength ?? 'M'),
     ];
     const barrelPort: PortDef = {
       id: 'barrel',
@@ -969,49 +1004,6 @@ export const revolverBarrel: PartFamily = {
   },
 };
 
-interface GripStation {
-  readonly depth: number;
-  readonly width: number;
-  readonly centreOffset: number;
-  readonly left: Vec2;
-  readonly right: Vec2;
-}
-
-const gripStations = (
-  lengthName: string,
-): {
-  readonly joint: GripStation;
-  readonly neck: GripStation;
-  readonly waistTop: GripStation;
-  readonly waistBottom: GripStation;
-  readonly butt: GripStation;
-} => {
-  const fullLength = gripLengthFor(lengthName);
-  const freeLength = fullLength - C.gripFrameOverlap.pickedU;
-  const scale = freeLength / C.gripButtDepthM.pickedU;
-  const rake = (GRIP_RAKE_DEGREES * Math.PI) / 180;
-  const station = (nominalDepth: number, width: number, centreOffset: number): GripStation => {
-    const depth = roundTo(nominalDepth * scale, PROFILE_GRID_U);
-    const roundedAxisX = -roundTo(depth * Math.tan(rake), PROFILE_GRID_U);
-    const axisX = roundedAxisX === 0 ? 0 : roundedAxisX;
-    const centre = axisX + centreOffset;
-    const stationY = depth === 0 ? 0 : -depth;
-    const left: Vec2 = [centre - width / 2, stationY];
-    const right: Vec2 = [centre + width / 2, stationY];
-    return { depth, width, centreOffset, left, right };
-  };
-  const joint = station(0, C.gripJointWidth.pickedU, 0);
-  const neck = station(C.gripNeckDepth.pickedU, C.gripNeckWidth.pickedU, C.gripNeckCentreOffset.pickedU);
-  const waistTop = station(C.gripNeckDepth.pickedU, C.gripWaistWidth.pickedU, C.gripWaistTopCentreOffset.pickedU);
-  const waistBottom = station(
-    C.gripWaistBottomDepth.pickedU,
-    C.gripWaistWidth.pickedU,
-    C.gripWaistBottomCentreOffset.pickedU,
-  );
-  const butt = station(C.gripButtDepthM.pickedU, C.gripButtWidth.pickedU, C.gripButtCentreOffset.pickedU);
-  return { joint, neck, waistTop, waistBottom, butt };
-};
-
 const gripBandProfiles = (lengthName: string, buttStyle: string) => {
   const { joint, neck, waistTop, waistBottom, butt } = gripStations(lengthName);
   const neckProfile: Profile = [joint.left, joint.right, neck.right, neck.left];
@@ -1283,11 +1275,12 @@ const gripCoreContactsFrame = (resolved: Resolved, frameRef: ConnectedPort, grip
     return false;
   }
 
-  const inToleranceDistances = solidVertices(resolved, gripRef.part, gripCore)
-    .map((point) => Math.abs(dot(frameNormal, sub(point, frameOrigin))))
-    .filter((distance) => distance <= CONTACT_GAP_U + TOLERANCE);
-  const coreGap = inToleranceDistances.length > 0 ? Math.max(...inToleranceDistances) : Number.POSITIVE_INFINITY;
-  return coreGap <= CONTACT_GAP_U && convexIntersectionArea(frameFace, gripFace) > TOLERANCE;
+  const coreGap = Math.min(
+    ...solidVertices(resolved, gripRef.part, gripCore).map((point) =>
+      Math.abs(dot(frameNormal, sub(point, frameOrigin))),
+    ),
+  );
+  return coreGap <= TOLERANCE && convexIntersectionArea(frameFace, gripFace) > TOLERANCE;
 };
 
 const sideFootprint = (resolved: Resolved, part: string, solid: Solid): Vec2[] | undefined => {
@@ -1304,27 +1297,12 @@ const sideFootprint = (resolved: Resolved, part: string, solid: Solid): Vec2[] |
   });
 };
 
-const sideFootprintsOverlap = (
-  resolved: Resolved,
-  a: { part: string; solid: Solid },
-  b: { part: string; solid: Solid },
-): boolean => {
-  const aFace = sideFootprint(resolved, a.part, a.solid);
-  const bFace = sideFootprint(resolved, b.part, b.solid);
-  return aFace !== undefined && bFace !== undefined && convexIntersectionArea(aFace, bFace) > TOLERANCE;
-};
-
 interface SideBoundary {
   readonly start: Vec2;
   readonly end: Vec2;
 }
 
-interface SideContactRequirement {
-  readonly minimumLength: number;
-  readonly allowance: number;
-}
-
-const sharedSideBoundaryLength = (a: SideBoundary, b: SideBoundary, allowance: number): number => {
+const sharedSideBoundaryLength = (a: SideBoundary, b: SideBoundary): number => {
   const aDelta: Vec2 = [a.end[0] - a.start[0], a.end[1] - a.start[1]];
   const bDelta: Vec2 = [b.end[0] - b.start[0], b.end[1] - b.start[1]];
   const aLength = Math.hypot(...aDelta);
@@ -1338,8 +1316,8 @@ const sharedSideBoundaryLength = (a: SideBoundary, b: SideBoundary, allowance: n
   const endOffset: Vec2 = [b.end[0] - a.start[0], b.end[1] - a.start[1]];
   if (
     Math.abs(cross2(direction, bDirection)) > TOLERANCE ||
-    Math.abs(cross2(direction, startOffset)) > allowance ||
-    Math.abs(cross2(direction, endOffset)) > allowance
+    Math.abs(cross2(direction, startOffset)) > TOLERANCE ||
+    Math.abs(cross2(direction, endOffset)) > TOLERANCE
   ) {
     return 0;
   }
@@ -1348,12 +1326,21 @@ const sharedSideBoundaryLength = (a: SideBoundary, b: SideBoundary, allowance: n
   return Math.max(0, Math.min(aLength, Math.max(start, end)) - Math.max(0, Math.min(start, end)));
 };
 
-const sideFootprintsShareEdge = (
+const sideSolidsShareEdge = (
   resolved: Resolved,
   a: { part: string; solid: Solid },
   b: { part: string; solid: Solid },
-  requirement: SideContactRequirement,
+  minimumLength: number,
 ): boolean => {
+  const aPoints = solidVertices(resolved, a.part, a.solid);
+  const bPoints = solidVertices(resolved, b.part, b.solid);
+  const aMinZ = Math.min(...aPoints.map((point) => point[2]));
+  const aMaxZ = Math.max(...aPoints.map((point) => point[2]));
+  const bMinZ = Math.min(...bPoints.map((point) => point[2]));
+  const bMaxZ = Math.max(...bPoints.map((point) => point[2]));
+  if (Math.min(aMaxZ, bMaxZ) - Math.max(aMinZ, bMinZ) <= TOLERANCE) {
+    return false;
+  }
   const aFace = sideFootprint(resolved, a.part, a.solid);
   const bFace = sideFootprint(resolved, b.part, b.solid);
   if (!(aFace && bFace)) {
@@ -1362,78 +1349,43 @@ const sideFootprintsShareEdge = (
   const edges = (face: readonly Vec2[]): SideBoundary[] =>
     face.map((start, index) => ({ start, end: face[(index + 1) % face.length]! }));
   return edges(aFace).some((aEdge) =>
-    edges(bFace).some(
-      (bEdge) => sharedSideBoundaryLength(aEdge, bEdge, requirement.allowance) >= requirement.minimumLength - TOLERANCE,
-    ),
+    edges(bFace).some((bEdge) => sharedSideBoundaryLength(aEdge, bEdge) >= minimumLength - TOLERANCE),
   );
 };
 
-const rearWebClosesSideNotch = (resolved: Resolved, frameRef: ConnectedPort, gripRef: ConnectedPort): boolean => {
+const rearFrameBridgeClosesSilhouette = (
+  resolved: Resolved,
+  frameRef: ConnectedPort,
+  gripRef: ConnectedPort,
+): boolean => {
   const frameDef = resolved.defs.get(frameRef.part)!;
   const gripDef = resolved.defs.get(gripRef.part)!;
-  const rearWeb = frameDef.solids.find(({ id }) => id === 'rear-grip-web');
-  const rearSeat = frameDef.solids.find(({ id }) => id === 'rear-grip-seat');
+  const bridge = frameDef.solids.find(({ id }) => id === 'rear-frame-bridge');
   const rearJoint = frameDef.solids.find(({ id }) => id === 'rear-joint');
   const rearGuard = frameDef.solids.find(({ id }) => id === 'trigger-guard-3');
   const gripCore = gripDef.solids.find(({ id }) => id === 'grip-core-neck');
-  if (!(rearWeb && rearSeat && rearJoint && rearGuard && gripCore)) {
-    return false;
-  }
-  const seatFrame = sideFootprintsOverlap(
-    resolved,
-    { part: frameRef.part, solid: rearSeat },
-    { part: frameRef.part, solid: rearJoint },
-  );
-  const seatWeb =
-    sideFootprintsOverlap(
-      resolved,
-      { part: frameRef.part, solid: rearSeat },
-      { part: frameRef.part, solid: rearWeb },
-    ) ||
-    sideFootprintsShareEdge(
-      resolved,
-      { part: frameRef.part, solid: rearSeat },
-      { part: frameRef.part, solid: rearWeb },
-      { minimumLength: 0.5, allowance: CONTACT_GAP_U },
-    );
-  const webGuard = sideFootprintsShareEdge(
-    resolved,
-    { part: frameRef.part, solid: rearWeb },
-    { part: frameRef.part, solid: rearGuard },
-    { minimumLength: 1, allowance: CONTACT_GAP_U },
-  );
-  const webGrip = sideFootprintsOverlap(
-    resolved,
-    { part: frameRef.part, solid: rearWeb },
-    { part: gripRef.part, solid: gripCore },
-  );
-  return seatFrame && seatWeb && webGuard && webGrip;
-};
-
-const rearWebContactsGrip = (resolved: Resolved, frameRef: ConnectedPort, gripRef: ConnectedPort): boolean => {
-  const frameDef = resolved.defs.get(frameRef.part)!;
-  const gripDef = resolved.defs.get(gripRef.part)!;
-  const rearWeb = frameDef.solids.find(({ id }) => id === 'rear-grip-web');
-  const gripCore = gripDef.solids.find(({ id }) => id === 'grip-core-neck');
-  if (!(rearWeb && gripCore)) {
-    return false;
-  }
-
-  const webBounds = boundsOfPoints(solidVertices(resolved, frameRef.part, rearWeb));
-  for (const z of [webBounds.min[2]!, webBounds.max[2]!]) {
-    const projection: FaceProjection = {
-      origin: [0, 0, z],
-      normal: [0, 0, 1],
-      tangentU: [1, 0, 0],
-      tangentV: [0, 1, 0],
-    };
-    const webFace = facePolygon(resolved, frameRef.part, rearWeb, projection);
-    const coreFace = facePolygon(resolved, gripRef.part, gripCore, projection);
-    if (!(webFace && coreFace) || convexIntersectionArea(webFace, coreFace) <= TOLERANCE) {
-      return false;
-    }
-  }
-  return true;
+  const joints = [
+    bridge &&
+      rearJoint &&
+      sideSolidsShareEdge(
+        resolved,
+        { part: frameRef.part, solid: bridge },
+        { part: frameRef.part, solid: rearJoint },
+        1,
+      ),
+    bridge &&
+      rearGuard &&
+      sideSolidsShareEdge(
+        resolved,
+        { part: frameRef.part, solid: bridge },
+        { part: frameRef.part, solid: rearGuard },
+        1,
+      ),
+    bridge &&
+      gripCore &&
+      sideSolidsShareEdge(resolved, { part: frameRef.part, solid: bridge }, { part: gripRef.part, solid: gripCore }, 1),
+  ];
+  return Boolean(bridge && rearJoint && rearGuard && gripCore && joints.every(Boolean));
 };
 
 const gripPanelMeetsRearSupport = (
@@ -1447,7 +1399,7 @@ const gripPanelMeetsRearSupport = (
   const panelZMin = Math.min(...panelPoints.map((point) => point[2]));
   const panelZMax = Math.max(...panelPoints.map((point) => point[2]));
   const panelInnerZ = near ? panelZMin : panelZMax;
-  if (Math.abs(panelInnerZ - frameSideZ) > CONTACT_GAP_U || Math.abs(panelInnerZ - frameSideZ) > TOLERANCE) {
+  if (Math.abs(panelInnerZ - frameSideZ) > TOLERANCE) {
     return false;
   }
 
@@ -1636,20 +1588,66 @@ export const revolverAlignment = {
     const frameRef =
       resolved.defs.get(connection.from.part)?.family === 'revolver-frame' ? connection.from : connection.to;
     const gripRef = frameRef === connection.from ? connection.to : connection.from;
-    return (
-      gripCoreContactsFrame(resolved, frameRef, gripRef) &&
-      rearWebClosesSideNotch(resolved, frameRef, gripRef) &&
-      rearWebContactsGrip(resolved, frameRef, gripRef) &&
-      gripPanelsContactFrame(resolved, frameRef, gripRef)
-    );
+    const checks = [
+      gripCoreContactsFrame(resolved, frameRef, gripRef),
+      rearFrameBridgeClosesSilhouette(resolved, frameRef, gripRef),
+      gripPanelsContactFrame(resolved, frameRef, gripRef),
+    ];
+    return checks.every(Boolean);
   },
   triggerBow(resolved: Parameters<NonNullable<Rule['check']>>[0]): boolean {
     const frame = revolverParts(resolved).find(([, def]) => def.family === 'revolver-frame')?.[0];
     if (!frame) {
       return true;
     }
-    const solids = resolved.defs.get(frame)!.solids.filter(({ id }) => id.startsWith('trigger-guard-'));
-    return solids.length === 10 && solids.every((solid) => solid.kind === 'extruded-polygon');
+    const frameDef = resolved.defs.get(frame)!;
+    const guards = frameDef.solids
+      .filter(({ id }) => TRIGGER_GUARD_ID.test(id))
+      .sort((a, b) => Number(a.id.slice('trigger-guard-'.length)) - Number(b.id.slice('trigger-guard-'.length)));
+    const triggers = frameDef.solids.filter(({ id }) => TRIGGER_ID.test(id));
+    if (
+      guards.length !== 10 ||
+      guards.some((solid, index) => solid.id !== `trigger-guard-${index}` || solid.kind !== 'extruded-polygon') ||
+      triggers.length !== 4 ||
+      triggers.some((solid) => solid.kind !== 'extruded-polygon')
+    ) {
+      return false;
+    }
+    for (let index = 0; index < guards.length; index += 1) {
+      const guard = guards[index]!;
+      const next = guards[(index + 1) % guards.length]!;
+      if (guard.kind !== 'extruded-polygon' || next.kind !== 'extruded-polygon') {
+        return false;
+      }
+      if (!sideSolidsShareEdge(resolved, { part: frame, solid: guard }, { part: frame, solid: next }, 0.1)) {
+        return false;
+      }
+    }
+
+    const transform = resolved.placed.get(frame)!;
+    const innerLoop = guards.map((solid) => {
+      if (solid.kind !== 'extruded-polygon') {
+        return [Number.NaN, Number.NaN] as Vec2;
+      }
+      const [x, y] = solid.profile[3]!;
+      const point = applyPoint(transform, [x, y, 0]);
+      return [point[0], point[1]] as Vec2;
+    });
+    const ccwInnerLoop = ccw2(innerLoop);
+    const loopTopY = Math.max(...innerLoop.map((point) => point[1]));
+    const triggerInsideLoop = (point: Vec2): boolean =>
+      ccwInnerLoop.every((start, index) => {
+        const end = ccwInnerLoop[(index + 1) % ccwInnerLoop.length]!;
+        return cross2(sub2(end, start), sub2(point, start)) >= -TOLERANCE;
+      });
+    return triggers.every((trigger) => {
+      if (trigger.kind !== 'extruded-polygon') {
+        return false;
+      }
+      const profile = sideFootprint(resolved, frame, trigger);
+      const contained = Boolean(profile?.every((point) => point[1] > loopTopY + TOLERANCE || triggerInsideLoop(point)));
+      return contained;
+    });
   },
 };
 

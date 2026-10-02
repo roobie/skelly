@@ -7,8 +7,10 @@ import type { Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { revolverAlignment } from '../src/gun/revolver.ts';
+import { REVOLVER_PROPORTIONS, revolverAlignment } from '../src/gun/revolver.ts';
+import { tWiseCases } from './coveringArray.ts';
 import { expectWatertightMesh, loadFixture, variant } from './helpers.ts';
+import { runSweeps, sweepGroup } from './sweeps.ts';
 
 const shiftPart = (resolved: Resolved, part: string, delta: readonly [number, number, number]): Resolved => {
   const placed = new Map(resolved.placed);
@@ -29,24 +31,41 @@ interface RevolverVariant {
   gripLength: 'S' | 'M' | 'L';
 }
 
-const revolverVariants: RevolverVariant[] = (['S', 'M', 'L'] as const).flatMap((frameSize) =>
-  (['round', 'square'] as const).flatMap((butt) =>
-    (['S', 'M'] as const).flatMap((bore) =>
-      (['S', 'M', 'L'] as const).flatMap((barrelLength) =>
-        (['classic', 'vented'] as const).flatMap((style) =>
-          (['S', 'M', 'L'] as const).map((gripLength) => ({
-            frameSize,
-            butt,
-            bore,
-            barrelLength,
-            style,
-            gripLength,
-          })),
+/**
+ * The default run covers every pair of variant values; explicit guard canaries below target the detached-segment fault.
+ * The full 216-case product runs only in the gated sweep.
+ */
+const revolverParams = {
+  frameSize: { values: ['S', 'M', 'L'] },
+  butt: { values: ['round', 'square'] },
+  bore: { values: ['S', 'M'] },
+  barrelLength: { values: ['S', 'M', 'L'] },
+  style: { values: ['classic', 'vented'] },
+  gripLength: { values: ['S', 'M', 'L'] },
+};
+const defaultRevolverVariants = tWiseCases(revolverParams, 2) as unknown as RevolverVariant[];
+
+const REVOLVER_COMBINATION_COUNT = 216;
+const revolverVariants: RevolverVariant[] = runSweeps
+  ? (['S', 'M', 'L'] as const).flatMap((frameSize) =>
+      (['round', 'square'] as const).flatMap((butt) =>
+        (['S', 'M'] as const).flatMap((bore) =>
+          (['S', 'M', 'L'] as const).flatMap((barrelLength) =>
+            (['classic', 'vented'] as const).flatMap((style) =>
+              (['S', 'M', 'L'] as const).map((gripLength) => ({
+                frameSize,
+                butt,
+                bore,
+                barrelLength,
+                style,
+                gripLength,
+              })),
+            ),
+          ),
         ),
       ),
-    ),
-  ),
-);
+    )
+  : [];
 
 const variantAssembly = (combination: RevolverVariant) => {
   const { frameSize, butt, bore, barrelLength, style, gripLength } = combination;
@@ -185,33 +204,26 @@ describe('revolver alignment rules', () => {
     expect(revolverAlignment.gripJoint(resolved())).toBe(true);
   });
 
-  it('rejects a displaced lower-rear seat that opens the side silhouette', () => {
-    const source = FAMILIES['revolver-frame']!;
-    const domain = {
-      ...gunDomain,
-      families: {
-        ...FAMILIES,
-        'revolver-frame': {
-          ...source,
-          build(params: Parameters<typeof source.build>[0]) {
-            const def = source.build(params);
-            return {
-              ...def,
-              solids: def.solids.map((solid) =>
-                solid.id === 'rear-grip-seat' && solid.kind === 'extruded-polygon'
-                  ? { ...solid, profile: solid.profile.map(([x, y]) => [x, y - 0.5] as const) }
-                  : solid,
-              ),
-            };
-          },
-        },
-      },
+  it('derives the physical guard bottom from each selected frame height', () => {
+    const frameFamily = FAMILIES['revolver-frame']!;
+    const frameHeights = {
+      S: REVOLVER_PROPORTIONS.frameHeightS.pickedU,
+      M: REVOLVER_PROPORTIONS.frameHeight.pickedU,
+      L: REVOLVER_PROPORTIONS.frameHeightL.pickedU,
     };
-    const report = validate(loadFixture('archetype-revolver'), domain);
-    expect(report.issues.some((issue) => issue.rule === 'revolver-grip-joint')).toBe(true);
+    const strapTopY = REVOLVER_PROPORTIONS.topstrapBottomY.pickedU + REVOLVER_PROPORTIONS.topstrapThickness.pickedU;
+    for (const frameSize of ['S', 'M', 'L'] as const) {
+      const frame = frameFamily.build({ frameSize, gripLength: 'M', bore: 'M', butt: 'round' });
+      const guard = frame.solids.filter(
+        (solid): solid is Extract<Solid, { kind: 'extruded-polygon' }> =>
+          solid.id.startsWith('trigger-guard-') && solid.kind === 'extruded-polygon',
+      );
+      const actualBottom = Math.min(...guard.flatMap((solid) => solid.profile.map(([, y]) => y)));
+      expect(actualBottom).toBeCloseTo(strapTopY - frameHeights[frameSize], 6);
+    }
   });
 
-  it('rejects a missing physical bridge between the rear frame web and grip front strap', () => {
+  it('rejects even a sub-grid gap at the frame, guard, or grip bridge', () => {
     const source = FAMILIES['revolver-frame']!;
     const domain = {
       ...gunDomain,
@@ -224,8 +236,8 @@ describe('revolver alignment rules', () => {
             return {
               ...def,
               solids: def.solids.map((solid) =>
-                solid.id === 'rear-grip-web' && solid.kind === 'extruded-polygon'
-                  ? { ...solid, profile: solid.profile.map(([x, y]) => [x + 2, y] as const) }
+                solid.id === 'rear-frame-bridge' && solid.kind === 'extruded-polygon'
+                  ? { ...solid, profile: solid.profile.map(([x, y]) => [x + 0.125, y] as const) }
                   : solid,
               ),
             };
@@ -245,16 +257,52 @@ describe('revolver alignment rules', () => {
     expect(revolverAlignment.triggerBow({ ...base, defs })).toBe(false);
   });
 
+  it('rejects a displaced trigger-bow segment with all IDs and ports intact', () => {
+    const source = FAMILIES['revolver-frame']!;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...FAMILIES,
+        'revolver-frame': {
+          ...source,
+          build(params: Parameters<typeof source.build>[0]) {
+            const def = source.build(params);
+            return {
+              ...def,
+              solids: def.solids.map((solid) =>
+                solid.id === 'trigger-guard-9' && solid.kind === 'extruded-polygon'
+                  ? { ...solid, profile: solid.profile.map(([x, y]) => [x + 10, y] as const) }
+                  : solid,
+              ),
+            };
+          },
+        },
+      },
+    };
+    const report = validate(loadFixture('archetype-revolver'), domain);
+    expect(report.issues.some((issue) => issue.rule === 'revolver-trigger-bow')).toBe(true);
+  });
+
   it('rejects a grip disconnected from the frame interface', () => {
     expect(revolverAlignment.gripJoint(shiftPart(resolved(), 'grip', [0.1, 0, 0]))).toBe(false);
   });
 
-  it('validates every legitimate 216-case frame/grip/barrel/bore/style combination', { timeout: 20_000 }, () => {
-    for (const combination of revolverVariants) {
+  it('validates a fixed pairwise covering set of frame, grip, barrel, bore, butt, and style', () => {
+    for (const combination of defaultRevolverVariants) {
       const report = validate(variantAssembly(combination), gunDomain);
       expect(report.issues, JSON.stringify(combination)).toEqual([]);
     }
-    expect(revolverVariants).toHaveLength(216);
+    expect(defaultRevolverVariants.length).toBeLessThan(REVOLVER_COMBINATION_COUNT);
+  });
+
+  sweepGroup('revolver full assembly product', () => {
+    it('validates all 216 legitimate frame/grip/barrel/bore/style combinations', { timeout: 20_000 }, () => {
+      for (const combination of revolverVariants) {
+        const report = validate(variantAssembly(combination), gunDomain);
+        expect(report.issues, JSON.stringify(combination)).toEqual([]);
+      }
+      expect(revolverVariants).toHaveLength(REVOLVER_COMBINATION_COUNT);
+    });
   });
 
   it('keeps every distinct revolver display group watertight across its geometry variants', () => {

@@ -216,18 +216,18 @@ describe('part library', () => {
     expect(barrel.ports.find((port) => port.id === 'frame')?.required).toBe(true);
   });
 
-  it('builds a sectioned revolver frame with a continuous rear web, named interfaces, and keep-outs', () => {
-    const frame = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', butt: 'round' });
+  it('builds a sectioned revolver frame with one continuous rear bridge, named interfaces, and keep-outs', () => {
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', gripLength: 'M', butt: 'round' });
     expect(frame.family).toBe('revolver-frame');
     expect(frame.solids.map((part) => part.id)).toContain('topstrap');
     expect(frame.solids.map((part) => part.id)).toContain('rear-joint');
-    expect(frame.solids.map((part) => part.id)).toContain('rear-grip-web');
+    expect(frame.solids.map((part) => part.id)).toContain('rear-frame-bridge');
     expect(frame.ports.map((port) => port.id)).toEqual(['barrel', 'cylinder', 'grip-frame', 'hammer', 'trigger-guard']);
     expect(frame.keepOuts.map((volume) => volume.id)).toEqual(['cylinder-swing', 'cylinder-gap', 'hammer-travel']);
   });
 
   it('joins the grip port to the rear-joint lower face below the cylinder window', () => {
-    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', gripLength: 'M', butt: 'round' });
     const block = frame.solids.find((solid) => solid.id === 'rear-joint')!;
     const gripPort = frame.ports.find((port) => port.id === 'grip-frame')!;
     const [min, max] = localSolidBounds(block);
@@ -240,7 +240,7 @@ describe('part library', () => {
   it('extends the revolver cylinder and topstrap to a 5.00u window with the original gap', () => {
     const cylinder = FAMILIES['revolver-cylinder']!.build({ chamberCount: '6', chamberIndex: '0' });
     const drum = cylinder.solids.find((solid) => solid.id === 'drum')!;
-    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', gripLength: 'M', butt: 'round' });
     const topstrap = frame.solids.find((solid) => solid.id === 'topstrap')!;
     expect(drum.kind).toBe('extruded-polygon');
     if (drum.kind === 'extruded-polygon') {

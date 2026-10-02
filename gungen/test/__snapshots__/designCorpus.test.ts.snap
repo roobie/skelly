@@ -26807,13 +26807,33 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -8,
+        -7.75,
+        -6.75,
+        -1.25,
+      ],
+      [
+        -7.75,
+        -6.75,
+        1.25,
+      ],
+      [
+        -7.25,
         -5.25,
         -1.25,
       ],
       [
-        -8,
+        -7.25,
         -5.25,
+        1.25,
+      ],
+      [
+        -5.5,
+        -6.5,
+        -1.25,
+      ],
+      [
+        -5.5,
+        -6.5,
         1.25,
       ],
       [
@@ -26837,54 +26857,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.25,
       ],
     ],
-    "id": "rear-grip-seat",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -8,
-        -6.75,
-        -1.25,
-      ],
-      [
-        -8,
-        -6.75,
-        1.25,
-      ],
-      [
-        -8,
-        -5.25,
-        -1.25,
-      ],
-      [
-        -8,
-        -5.25,
-        1.25,
-      ],
-      [
-        -5.5,
-        -6.5,
-        -1.25,
-      ],
-      [
-        -5.5,
-        -6.5,
-        1.25,
-      ],
-      [
-        -5.25,
-        -5.25,
-        -1.25,
-      ],
-      [
-        -5.25,
-        -5.25,
-        1.25,
-      ],
-    ],
-    "id": "rear-grip-web",
+    "id": "rear-frame-bridge",
     "kind": "extruded-polygon",
     "partId": "frame",
   },
