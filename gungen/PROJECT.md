@@ -396,6 +396,7 @@ archetype:
 | --- | --- | --- |
 | `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
 | `broken-bolt-sight-outside-rail-support` | `optic-mount-fit` | A compact optic is attached at an unsupported receiver-rail end slot |
+| `broken-bolt-sight-over-loading-port` | `keep-out`, `optic-mount-fit` | A compact foot roofs the loading footprint and lacks physical support; a type-only LPVO swap restores paired feet |
 | `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
 
 ### Known gaps

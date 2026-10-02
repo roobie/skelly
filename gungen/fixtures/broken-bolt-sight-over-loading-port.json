@@ -1,0 +1,30 @@
+{
+  "name": "broken-bolt-sight-over-loading-port",
+  "description": "A compact optic's physical foot roofs the top-loading opening: it lacks receiver support and obstructs the loading footprint. Replacing only its type with lpvo-1-6x restores the valid paired-foot baseline.",
+  "expect": ["keep-out", "optic-mount-fit"],
+  "root": "receiver",
+  "parts": {
+    "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "top", "bore": "M" } },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "bolt" } },
+    "bolt-handle-arm": { "family": "bolt-handle-arm" },
+    "bolt-handle-knob": { "family": "bolt-handle-knob" },
+    "lower": { "family": "lower", "params": { "layout": "conventional" } },
+    "barrel": { "family": "barrel", "params": { "length": "L" } },
+    "handguard": { "family": "handguard", "params": {} },
+    "magazine": { "family": "magazine", "params": { "length": "S" } },
+    "stock": { "family": "stock", "params": { "length": "M", "style": "sporting" } },
+    "sight": { "family": "sight", "params": { "type": "mini-reflex" } }
+  },
+  "connections": [
+    { "from": "receiver.lower", "to": "lower.top" },
+    { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
+    { "from": "bolt-carrier.handle", "to": "bolt-handle-arm.base" },
+    { "from": "bolt-handle-arm.tip", "to": "bolt-handle-knob.base" },
+    { "from": "receiver.handguard", "to": "handguard.rear" },
+    { "from": "handguard.front", "to": "barrel.clamp" },
+    { "from": "lower.magazine", "to": "magazine.top" },
+    { "from": "receiver.stock", "to": "stock.front" },
+    { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
+  ]
+}

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { localSolidBounds, obbPolyhedron, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { distanceWorld, localSolidBounds, obbPolyhedron, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, IDENTITY, invert, type Transform } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { PartDef } from '../src/core/schema.ts';
@@ -404,6 +404,27 @@ describe('curated optic mounts', () => {
     }
   });
 
+  it('uses two prism feet touching its round ends only on top-loaded hosts, without moving its body', () => {
+    const assembly = fitOptic(boltRifle, 0, 'fixed-prism-4x');
+    const report = validate(assembly, gunDomain);
+    expect(report.issues).toEqual([]);
+    const top = report.resolved.defs.get('sight')!;
+    const closed = FAMILIES.sight!.build({ type: 'fixed-prism-4x', mountFeed: 'box' });
+    expect(closed.solids.some(({ id }) => id === 'mount-bridge')).toBe(true);
+    expect(top.solids.some(({ id }) => id === 'mount-bridge')).toBe(false);
+    expect(top.axes).toEqual(closed.axes);
+    const body = (def: PartDef) => def.solids.filter(({ id }) => !id.endsWith('foot') && id !== 'mount-bridge');
+    expect(body(top)).toEqual(body(closed));
+    const feet = top.solids.filter(({ id }) => id.endsWith('foot'));
+    expect(feet).toHaveLength(2);
+    for (const foot of feet) {
+      const endId = foot.id.startsWith('rear') ? 'ocular-bell' : 'objective-bell';
+      const end = top.solids.find(({ id }) => id === endId)!;
+      expect(distanceWorld(worldSolid(IDENTITY, foot), worldSolid(IDENTITY, end))).toBeLessThanOrEqual(1e-6);
+    }
+    expectContactOnPhysicalRail(assembly, 'fixed-prism-4x');
+  });
+
   it('leaves the top-loading opening empty at the receiver top, between the two scope bases', () => {
     const receiver = FAMILIES.receiver!.build({ action: 'bolt', feed: 'top', bore: 'M' });
     const opening = worldSolid(IDENTITY, {
@@ -418,6 +439,46 @@ describe('curated optic mounts', () => {
 });
 
 describe('optic incompatibility validation', () => {
+  it.each(['base-above-mouth', 'ring-above-mouth', 'body-through-mouth'] as const)(
+    'rejects actual %s geometry inside the loading footprint after a green nominal control',
+    (fault) => {
+      const assembly = fitOptic(boltRifle, 0, 'high-mag-5-25x');
+      expect(validate(assembly, gunDomain).issues).toEqual([]);
+      const original = FAMILIES.sight!;
+      let consumed = false;
+      const domain = {
+        ...gunDomain,
+        families: {
+          ...gunDomain.families,
+          sight: {
+            ...original,
+            build(params: Readonly<Record<string, string>>) {
+              consumed = true;
+              const def = original.build(params);
+              const blocker = {
+                id: {
+                  'body-through-mouth': 'tube-with-flared-bells',
+                  'ring-above-mouth': 'rear-ring-band',
+                  'base-above-mouth': 'loading-base',
+                }[fault],
+                kind: 'box' as const,
+                box: {
+                  center: [1.5, fault === 'body-through-mouth' ? -0.25 : 0.75, 0] as const,
+                  half: [2.4, 0.2, 0.5] as const,
+                },
+              };
+              return { ...def, solids: [...def.solids.filter(({ id }) => id !== blocker.id), blocker] };
+            },
+          },
+        },
+      };
+      const report = validate(assembly, domain);
+      expect(consumed).toBe(true);
+      expect(report.issues.some(({ rule }) => rule === 'keep-out')).toBe(true);
+      expect(report.resolved.defs.get('sight')!.ports).toEqual(resolve(assembly, gunDomain).defs.get('sight')!.ports);
+    },
+  );
+
   it.each(['floating', 'missing-one', 'missing-all'] as const)(
     'rejects actual sight.build %s feet with unchanged catalog, ports and axes',
     (fault) => {

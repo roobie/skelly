@@ -1109,10 +1109,14 @@ const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, kee
 };
 
 const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void => {
-  const { params, receiverDrop, receiverBottom } = context;
+  const { params, receiverDrop, receiverBottom, receiverTop } = context;
   switch (params.feed) {
     case 'top':
-      keepOuts.push({ ...keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]), allowFamilies: ['sight'] });
+      // The roof-mouth is closed to every family. Above it, opticLoadingClearance permits only bodies.
+      keepOuts.push(
+        keepOut('loading-mouth', [-9, receiverTop - 0.5, -1.5], [-4, receiverTop, 1.5]),
+        keepOut('loading-port', [-9, receiverTop, -1.5], [-4, 9, 1.5], { allowFamilies: ['sight'] }),
+      );
       break;
     case 'tube':
       keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
@@ -3671,12 +3675,38 @@ export const sight: PartFamily = {
       default: 'standard',
       from: [{ port: 'base', param: 'section' }],
     },
+    mountFeed: {
+      values: ['box', 'top', 'tube', 'cylinder'],
+      default: 'box',
+      from: [{ port: 'base', param: 'feed' }],
+    },
   },
   build(params): PartDef {
     const optic = getOptic(params.type, params.mountSection);
+    // Separate prism feet reach the round ends without putting a bridge across a top-loading mouth.
+    const solids =
+      params.mountFeed === 'top' && optic.id === 'fixed-prism-4x'
+        ? optic.solids
+            .filter(({ id }) => id !== 'mount-bridge')
+            .map((component) =>
+              component.kind === 'box' && component.id.endsWith('foot')
+                ? {
+                    ...component,
+                    box: {
+                      center: [
+                        component.box.center[0],
+                        component.box.center[1] + 0.25,
+                        component.box.center[2],
+                      ] as const,
+                      half: [component.box.half[0], component.box.half[1] + 0.25, component.box.half[2]] as const,
+                    },
+                  }
+                : component,
+            )
+        : optic.solids;
     return {
       family: 'sight',
-      solids: optic.solids,
+      solids,
       ports: [
         { id: 'base', mount: optic.mount.kind, gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],

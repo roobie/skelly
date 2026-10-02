@@ -586,6 +586,55 @@ export const opticMountFit: Rule = {
   },
 };
 
+const OPTIC_SUPPORT_ID = /foot|mount|ring-band|base|bridge/;
+
+const loadingBodyIds = (r: Resolved, part: string): ReadonlySet<string> => {
+  if (r.assembly.parts[part]?.family !== 'sight') {
+    return new Set();
+  }
+  const params = r.params.get(part);
+  return new Set(
+    getOptic(params?.type?.value, params?.mountSection?.value)
+      .solids.filter(({ id }) => !OPTIC_SUPPORT_ID.test(id))
+      .map(({ id }) => id),
+  );
+};
+
+/** Refines the upper core keep-out allowance: real supports never bridge the opening; only bodies may.
+ * The cartridge's angled loading path past those bodies is explicitly deferred to the tubular receiver.
+ */
+export const opticLoadingClearance: Rule = {
+  id: 'keep-out',
+  title: 'Only optic bodies may bridge above the loading mouth',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [owner, def] of placedParts(r, 'receiver')) {
+      const opening = def.keepOuts.find(
+        ({ id, allowFamilies }) => id === 'loading-port' && allowFamilies?.includes('sight'),
+      );
+      if (!opening) {
+        continue;
+      }
+      const volume = worldSolid(r.placed.get(owner)!, { id: opening.id, kind: 'box', box: opening.box });
+      for (const [part, sightDef] of placedParts(r, 'sight')) {
+        const bodies = loadingBodyIds(r, part);
+        const intrudes = sightDef.solids.some(
+          (solid) => !bodies.has(solid.id) && penetrationWorld(volume, worldSolid(r.placed.get(part)!, solid)) > 1e-6,
+        );
+        if (intrudes) {
+          issues.push({
+            rule: 'keep-out',
+            message: `${part}'s foot, base, ring, bridge or unclassified solid crosses the loading opening of ${owner}; only optic bodies may bridge above it.`,
+            parts: [part, owner],
+            keepOut: { part: owner, id: opening.id },
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
 export const opticEyeRelief: Rule = {
   id: 'optic-eye-relief',
   title: 'Long optics have a stock cheek datum at eye relief',
