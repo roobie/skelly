@@ -45,10 +45,38 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
   });
 
 describe('debug firearm handling', () => {
+  it('slugs calibre punctuation injectively for spent-case item IDs', () => {
+    expect(spentCaseItemId('5.56x45')).toBe('spent_case_5_d_56x45');
+    expect(spentCaseItemId('5_56x45')).toBe('spent_case_5_u_56x45');
+    expect(spentCaseItemId('5-56x45')).toBe('spent_case_5_h_56x45');
+    expect(new Set(['5.56x45', '5_56x45', '5-56x45'].map(spentCaseItemId)).size).toBe(3);
+  });
+
+  it('consumes g34 calibre and case/round exports while retaining the missing ejection stand-in', () => {
+    const rifleModel = registry.models.get('rifle_assault');
+    expect(rifleModel).toMatchObject({
+      calibre: '5.56x45',
+      anchors: { magwell: [-0.048_875, -0.046, 0] },
+    });
+    expect(rifleModel?.anchors?.ejection).toBeUndefined();
+    expect(registry.models.get('round_5_d_56x45')?.file).toBe('assets/models/round-5_d_56x45.glb');
+    expect(registry.models.get('case_5_d_56x45')?.file).toBe('assets/models/case-5_d_56x45.glb');
+    expect(registry.items.get(caseType)?.model).toBe('case_5_d_56x45');
+  });
+
   it('does not fire outside debug mode', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const { version } = inventory;
-    expect(firearmHandlingFor(rifle)).toBe(FIREARM_HANDLING_STAND_IN);
+    expect(firearmHandlingFor(rifle, inventory.registry)).toMatchObject({
+      calibre: '5.56x45',
+      caseModelId: 'case_5_d_56x45',
+      ejection: FIREARM_HANDLING_STAND_IN.ejection,
+      cycle: FIREARM_HANDLING_STAND_IN.cycle,
+      rpm: FIREARM_HANDLING_STAND_IN.rpm,
+    });
+    expect(firearmHandlingFor(inventory.create('debug_shotgun_pump'), inventory.registry)).toBe(
+      FIREARM_HANDLING_STAND_IN,
+    );
     const result = debugFirearmShot({
       debugMode: false,
       inventory,
@@ -77,7 +105,10 @@ describe('debug firearm handling', () => {
     expect(inventory.add(nearestCases, { kind: 'pile', pos: [2, 1, 0] })).toBe(true);
     expect(inventory.add(fartherCases, { kind: 'pile', pos: [45, 1, 0] })).toBe(true);
 
-    expect(shot(inventory, rifle)?.speed).toBe(FIREARM_HANDLING_STAND_IN.ejection.speed);
+    expect(shot(inventory, rifle)).toMatchObject({
+      speed: FIREARM_HANDLING_STAND_IN.ejection.speed,
+      caseModelId: 'case_5_d_56x45',
+    });
     expect(inventory.pileAt([0, 1, 0])?.items.find(({ item }) => item.type === 'nails')?.item.count).toBe(2);
     expect(inventory.pileAt([2, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(6);
     expect(inventory.pileAt([45, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(11);

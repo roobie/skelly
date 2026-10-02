@@ -1,8 +1,10 @@
 // Capped, render-only flying spent cases. Their impacts never alter simulation piles.
 
-import { BoxGeometry, InstancedMesh, MeshStandardMaterial, Object3D, Vector3 } from 'three';
+import { Group, type Object3D, Vector3 } from 'three';
 import { Rng } from '../core/random.ts';
 import type { FirearmShotEffect } from '../game/firearmHandling.ts';
+import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
+import type { ModelLibrary } from './models.ts';
 
 export const FLYING_CASE_CAP = 32;
 const GRAVITY = 9.81;
@@ -16,13 +18,17 @@ interface Particle {
   velocity: Vector3;
   rotation: Vector3;
   spin: Vector3;
+  caseModelId: string | undefined;
+  visual: Object3D | undefined;
+  usingFallback: boolean;
 }
 
 const normalize = (v: Vector3): Vector3 => (v.lengthSq() > 0 ? v.normalize() : new Vector3(0, 0, -1));
 
 export class CaseEffects {
-  readonly mesh: InstancedMesh;
+  readonly mesh = new Group();
   private readonly blockSize: number;
+  private readonly models: ModelLibrary | undefined;
   private readonly particles: Particle[] = Array.from({ length: FLYING_CASE_CAP }, () => ({
     active: false,
     age: 0,
@@ -31,20 +37,14 @@ export class CaseEffects {
     velocity: new Vector3(),
     rotation: new Vector3(),
     spin: new Vector3(),
+    caseModelId: undefined,
+    visual: undefined,
+    usingFallback: false,
   }));
-  private readonly transform = new Object3D();
 
-  constructor(blockSize: number) {
+  constructor(blockSize: number, models?: ModelLibrary) {
     this.blockSize = blockSize;
-    this.mesh = new InstancedMesh(
-      new BoxGeometry(0.038, 0.009, 0.012),
-      new MeshStandardMaterial({ color: 0xb4_87_45, metalness: 0.72, roughness: 0.38 }),
-      FLYING_CASE_CAP,
-    );
-    this.mesh.count = 0;
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-    this.mesh.frustumCulled = false;
+    this.models = models;
   }
 
   get activeCount(): number {
@@ -72,6 +72,8 @@ export class CaseEffects {
     particle.velocity.copy(direction).multiplyScalar(effect.speed * rng.range(0.8, 1.2));
     particle.rotation.set(rng.range(0, Math.PI), rng.range(0, Math.PI), rng.range(0, Math.PI));
     particle.spin.set(rng.range(-24, 24), rng.range(-24, 24), rng.range(-24, 24));
+    particle.caseModelId = effect.caseModelId;
+    this.installVisual(particle);
     this.draw();
     return true;
   }
@@ -84,6 +86,7 @@ export class CaseEffects {
       if (!particle.active) {
         continue;
       }
+      this.upgradeVisual(particle);
       particle.age += dt;
       for (let substep = 0; substep < steps; substep++) {
         this.advance(particle, step, isSolid);
@@ -93,6 +96,28 @@ export class CaseEffects {
       }
     }
     this.draw();
+  }
+
+  private installVisual(particle: Particle): void {
+    const model = resolveCaseModel(this.models, particle.caseModelId);
+    particle.visual = model ?? placeholderCaseMesh();
+    particle.usingFallback = model === undefined;
+    this.mesh.add(particle.visual);
+  }
+
+  private upgradeVisual(particle: Particle): void {
+    if (!particle.usingFallback || particle.caseModelId === undefined || !this.models?.has(particle.caseModelId)) {
+      return;
+    }
+    if (particle.visual) {
+      this.mesh.remove(particle.visual);
+    }
+    const model = resolveCaseModel(this.models, particle.caseModelId);
+    particle.visual = model;
+    particle.usingFallback = particle.visual === undefined;
+    if (particle.visual) {
+      this.mesh.add(particle.visual);
+    }
   }
 
   private advance(particle: Particle, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
@@ -134,31 +159,23 @@ export class CaseEffects {
   }
 
   dispose(): void {
-    const { geometry, material } = this.mesh;
-    geometry.dispose();
-    if (Array.isArray(material)) {
-      for (const entry of material) {
-        entry.dispose();
-      }
-    } else {
-      material.dispose();
-    }
+    this.mesh.clear();
   }
 
   private draw(): void {
-    let index = 0;
     for (const particle of this.particles) {
       if (!particle.active) {
+        if (particle.visual) {
+          this.mesh.remove(particle.visual);
+          particle.visual = undefined;
+        }
         continue;
       }
-      this.transform.position.copy(particle.position);
-      this.transform.rotation.set(particle.rotation.x, particle.rotation.y, particle.rotation.z);
-      this.transform.updateMatrix();
-      this.mesh.setMatrixAt(index, this.transform.matrix);
-      index += 1;
+      if (!particle.visual) {
+        this.installVisual(particle);
+      }
+      particle.visual!.position.copy(particle.position);
+      particle.visual!.rotation.set(particle.rotation.x, particle.rotation.y, particle.rotation.z);
     }
-    this.mesh.count = index;
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.mesh.computeBoundingSphere();
   }
 }

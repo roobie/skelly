@@ -1,13 +1,16 @@
 // Deterministic firearm handling in the simulation. g34/g35 export data replaces this
 // one stand-in; transient case motion is returned as an event and never enters save state.
 
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import { defOf, type Item } from '../core/items.ts';
 import { Rng } from '../core/random.ts';
 
 export interface FirearmHandlingData {
   readonly calibre: string;
+  /** Gungen's case GLB for this calibre, when exported. */
+  readonly caseModelId?: string;
   /** Model-local metres: +x forward, +y up, +z to the shooter's right. */
   readonly ejection: {
     readonly at: Vec3;
@@ -18,25 +21,54 @@ export interface FirearmHandlingData {
   readonly rpm: number;
 }
 
-/** Placeholder values for the AK/M4 handling pass, all replaced together by g34/g35 exports. */
+/** Remaining handling stand-ins; g34 supplies calibre and case models, while g35 will add ejection/cycle data. */
 export const FIREARM_HANDLING_STAND_IN: FirearmHandlingData = {
-  calibre: '7.62x39',
+  calibre: '5.56x45',
   ejection: { at: [0.12, 0.06, 0.14], direction: [0.08, 0.22, 1], speed: 3.5 },
   cycle: { rear: 0.035, dwell: 0.015, forward: 0.05 },
   rpm: 600,
 };
 
-/** Gungen-generated entries will be keyed by Deadvox firearm item ID when those fields are exported. */
-export const GUNGEN_FIREARM_HANDLING_EXPORTS: Readonly<Partial<Record<string, FirearmHandlingData>>> = {};
+/** One seam joins the held model's g34 metadata to its exported case GLB, with explicit stand-in fallback. */
+export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandlingData => {
+  const itemModelId = defOf(registry, item.type).model;
+  const gunModel = itemModelId === undefined ? undefined : registry.models.get(itemModelId);
+  if (gunModel?.calibre === undefined) {
+    return FIREARM_HANDLING_STAND_IN;
+  }
+  const [caseModelId] = [...registry.models.values()]
+    .filter((model) => model.calibre === gunModel.calibre && model.id.startsWith('case_'))
+    .map((model) => model.id)
+    .sort();
+  return {
+    ...FIREARM_HANDLING_STAND_IN,
+    calibre: gunModel.calibre,
+    ...(caseModelId === undefined ? {} : { caseModelId }),
+  };
+};
 
-/** Export seam: use an exported model profile where available, otherwise the fingerprinted stand-in. */
-export const firearmHandlingFor = (item: Item): FirearmHandlingData =>
-  GUNGEN_FIREARM_HANDLING_EXPORTS[item.type] ?? FIREARM_HANDLING_STAND_IN;
+const calibreSlug = (calibre: string): string =>
+  [...calibre]
+    .map((character) => {
+      switch (character) {
+        case '.':
+          return '_d_';
+        case '-':
+          return '_h_';
+        case '_':
+          return '_u_';
+        default:
+          return character;
+      }
+    })
+    .join('');
 
-export const spentCaseItemId = (calibre: string): string => `spent_case_${calibre.replaceAll('.', '_')}`;
+/** Collision-free item slug, matching gungen/ammo/calibreSlug.ts. */
+export const spentCaseItemId = (calibre: string): string => `spent_case_${calibreSlug(calibre)}`;
 
 export interface FirearmShotEffect {
   readonly origin: Vec3;
+  readonly caseModelId?: string;
   readonly direction: Vec3;
   readonly speed: number;
   readonly seed: number;
@@ -68,7 +100,7 @@ export const debugFirearmShot = (input: DebugFirearmShotInput): FirearmShotEffec
   if (!input.debugMode) {
     return undefined;
   }
-  const data = firearmHandlingFor(input.item);
+  const data = firearmHandlingFor(input.item, input.inventory.registry);
   const right: Vec3 = [Math.cos(input.yaw), 0, -Math.sin(input.yaw)];
   const forward = unit(input.aim);
   const up = unit([
@@ -110,5 +142,11 @@ export const debugFirearmShot = (input: DebugFirearmShotInput): FirearmShotEffec
 
   const shotKey = `${input.item.uid}:${input.simTime}:${input.feet.join(',')}`;
   const rng = Rng.stream(input.seed, `firearm-case:${shotKey}`);
-  return { origin, direction, speed: data.ejection.speed, seed: Math.floor(rng.next() * 4_294_967_296) >>> 0 };
+  return {
+    origin,
+    direction,
+    speed: data.ejection.speed,
+    seed: Math.floor(rng.next() * 4_294_967_296) >>> 0,
+    ...(data.caseModelId === undefined ? {} : { caseModelId: data.caseModelId }),
+  };
 };

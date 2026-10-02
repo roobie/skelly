@@ -31,6 +31,7 @@ const { registry, issues } = buildRegistry([
     read(`${BASE}/${f}`),
   ),
   read(`${BASE}/models-melee.json`),
+  read(`${BASE}/models-firearms.json`),
   read('test/fixtures/packs/lamp/lamp.json'),
 ]);
 
