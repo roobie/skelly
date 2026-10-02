@@ -242,7 +242,16 @@ describe('anchor data', () => {
     for (const key of Object.keys(GUN_ANCHORS)) {
       expect(Object.keys(gunDomain.families)).toContain(key);
     }
-    expect(Object.keys(GUN_ANCHORS).sort()).toEqual(['barrel', 'forend', 'frame', 'grip', 'handguard', 'stock']);
+    expect(Object.keys(GUN_ANCHORS).sort()).toEqual([
+      'barrel',
+      'forend',
+      'frame',
+      'grip',
+      'handguard',
+      'revolver-barrel',
+      'revolver-grip',
+      'stock',
+    ]);
   });
 
   const frameFacts = (assemblies: Assembly[]) => {
@@ -255,6 +264,16 @@ describe('anchor data', () => {
       outside: holds.filter((d) => !d.def.solids.some((s) => insideSolid(s, d.frame.position))).map((d) => d.label),
     };
   };
+
+  it('leans the revolver hold frame with its 22.5-degree grip rake', () => {
+    const declared = localFrames(loadFixture('archetype-revolver')).find(({ name }) => name === 'hold');
+    expect(declared).toBeDefined();
+    expect(declared!.label).toBe('archetype-revolver grip');
+    expect(declared!.frame.up[0]).toBeCloseTo(Math.sin(Math.PI / 8));
+    expect(declared!.frame.up[1]).toBeCloseTo(Math.cos(Math.PI / 8));
+    expect(declared!.frame.forward[0]).toBeCloseTo(Math.cos(Math.PI / 8));
+    expect(declared!.frame.forward[1]).toBeCloseTo(-Math.sin(Math.PI / 8));
+  });
 
   it('archetype frames are unit-length and right-handed; hold frames sit within their part', () => {
     const facts = frameFacts(ARCHETYPES);

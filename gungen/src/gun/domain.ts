@@ -1,6 +1,7 @@
 import type { Domain } from '../core/schema.ts';
 import { ANTI_MATERIEL_RULES } from './antiMateriel/index.ts';
 import { FAMILIES } from './parts.ts';
+import { revolverRules } from './revolver.ts';
 import {
   actionHandleRest,
   feedMatch,
@@ -8,6 +9,9 @@ import {
   freeFloatClearance,
   handguardFit,
   magazineWellAxis,
+  opticEyeRelief,
+  opticLoadingClearance,
+  opticMountFit,
   pistolBarrelCrown,
   thumbholeGripMatch,
   triggerGuard,
@@ -24,6 +28,7 @@ export const gunDomain: Domain = {
     { kind: 'bore', mode: 'collinear' },
     { kind: 'sight', mode: 'parallel' },
     { kind: 'gas-cylinder', mode: 'parallel' },
+    { kind: 'revolver-cylinder', mode: 'parallel' },
   ],
   rules: [
     firingGrip,
@@ -35,6 +40,10 @@ export const gunDomain: Domain = {
     handguardFit,
     freeFloatClearance,
     magazineWellAxis,
+    opticMountFit,
+    opticLoadingClearance,
+    opticEyeRelief,
+    ...revolverRules,
     ...ANTI_MATERIEL_RULES,
   ],
 };

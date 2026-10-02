@@ -43,8 +43,8 @@ through these single-line registrations:
 | `handle-bar` | `carry-handle` | `pose`, inherited from the strut | The grip bar, an octagonal prism along the bore reaching back from the strut, overhanging the left; carries the `hand-room` keep-out. Left (-Z) is fixed, not a param |
 | `recoil-stock` | `stock` | `length` M/L (16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
 | `monopod` | `monopod` | `pose` folded/deployed | Mounts under the butt |
-| `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action") |
-| `heavy-bolt-carrier` | `bolt-carrier` | none | A plain 12.5u block, as long as the ejection port less its margins; moves along the receiver's `bolt-travel` keep-out |
+| `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action"); its right (+Z) wall has a charging-handle slot merged with the ejection opening |
+| `heavy-bolt-carrier` | `bolt-carrier` | none | A 12.5u block with a carrier-owned AK-style stick and clipped paddle; moves along the receiver's `bolt-travel` keep-out |
 | `heavy-lower` | `lower` | none | The shared conventional lower with a 13.5u x 4.5u magazine well; trigger guard and grip keep their distances from the well |
 | `heavy-magazine` | `magazine` | none | 10-round .50 BMG box magazine, 13 x 4 x 10.75u |
 
@@ -210,6 +210,19 @@ the test pins directly.
 The rail has 11 slots (the shared receiver's 7) at x = -22 ... -2, the front 22u of the receiver. The sight
 is on slot 5 (x = -12) as before; the carry handle is bolted to the shroud's left wall (next section).
 
+**Charging handle.** The heavy carrier uses the AK carrier-owned stick-and-paddle form, not the former
+receiver-fixed handle. Its nominal size is 1.4x the shared AK handle, rounded to the 0.25u geometry grid:
+the paddle is 1.5u square and 0.75u thick, and stands 3.25u beyond the 2u receiver side (about 1.44x the
+AK's 2.25u outstand). The stick is 1.25u high. This is a proportion estimate for the 12.5u carrier and gloved
+use, not a measured specification. The handle is on the rifle's right (+Z) side:
+the carrier's mating frame reverses local Z, so the AK-style local -Z paddle is on receiver +Z. Its stem is
+joined into the carrier body and passes through a 0.25u-clearance slot in the near-side wall. The slot opens
+into the ejection aperture (x -14.25 to -1.25, y 0 to 2); it extends the aperture rearward to x -18.0
+over y 0 to 1.75, leaving a 0.25u upper lip and 0.25u clearance around the stem through the full 15.5u
+carrier travel. The outer shell remains intact
+elsewhere. `test/antiMateriel.test.ts` checks the stem/body contact, scaled profile, actual wall opening and
+material beside it, 33 positions along travel, and a displaced-handle canary.
+
 ## Carry handle and scope envelope
 
 The handle was centred over the rail, which a real scope (a long tube, a large objective bell, tall rings)
@@ -296,31 +309,14 @@ rail face and its axis 6u to the left of the shroud wall; it is nowhere near the
 bipod or the ejection port (y 0 to 2, x up to -1.25). The resolved assembly closes exactly: the three new
 connections show 0 u and 0 degrees of mismatch (largest 1e-15 u), against the 0.01u and 0.5 degrees allowed.
 
-**Scope envelope: a stand-in until the attachments work lands.** The scope vocabulary (optics, mounts) is the
-next gungen iteration and is not built here; `src/gun/antiMateriel/scopeEnvelope.ts` holds the space of a
-full-size, high-magnification scope as three boxes, only so the handle can be sized against it. The design
-keeps the small `sight` as a placeholder. Dimensions come from Leupold's product page for the Mark 4HD 6-24x52
-(leupold.com/mark-4hd-6-24x52-m5c3-side-focus-ffp-illum-pr2-mil, "Dimensions", read 2026-10-01) and its Mark 4
-34mm High ring (leupold.com/mark-4-34mm-aluminum-high-matte, read 2026-10-01):
-
-| | Source | in | mm | u |
-| --- | --- | ---: | ---: | ---: |
-| Total length | A | 14.6 | 371 | 32.2 |
-| Total mounting space | B | 6.3 | 160 | 13.9 |
-| Eyepiece length | E | 3.3 | 84 | 7.3 |
-| Objective length | F | 5.1 | 130 | 11.3 |
-| Objective diameter | G | 2.4 | 61 | 5.3 (radius 2.65, boxed at 2.75) |
-| Eyepiece diameter | H | 1.8 | 46 | 4.0 (radius 2.0) |
-| Main tube | K | 1.34 | 34 | 3.0 (radius 1.5) |
-| Ring height | High ring, "Ring Height (in)" | 1.06 | 27 | 2.3 |
-
-The ring height is read as the distance from the rail to the bottom of the tube, which puts the tube axis
-3.75u above the rail face (2.34 + 1.48, rounded to the grid) and the objective bell's underside 1.0u above it;
-the other reading (axis at the ring height) would put the 2.4 in bell below the rail, so it cannot be right
-for a 52 mm scope. That reading is an assumption about Leupold's figure. The envelope is placed with the
-middle of its mounting space on the sight's slot (x = -12): eyepiece to the rear, objective ahead to x = 6.2.
-Rings and the scope's own turrets are not boxed. `test/antiMateriel.test.ts` asserts the handle's solids and
-its hand room stay at least 0.25u from every box.
+**Scope geometry now comes from the optic catalog.** The stand-in envelope has been removed. The curated
+anti-materiel design mounts the catalog's high-magnification optic (`high-mag-5-25x`) on slot 5 of the receiver's
+`rail-top` interface. Its actual body, bells, turrets, mount feet, and sightline are the same geometry used by all
+gungen optic validation; catalog dimensions and source are recorded in `src/gun/optics.ts` (Nightforce ATACR
+5-25×56 class). The receiver rail exposes 11 slots at 2u pitch, enough for the optic's 12u contact span and
+10u ring-center span. `test/antiMateriel.test.ts` checks every catalog solid against the carry-handle solids and
+hand-room keep-outs, requiring at least 0.25u clearance in both handle poses and bipod poses. This remains a
+static exterior envelope; no zoom, reticle, or sensor behavior is simulated.
 
 **Not modelled.** The feed opening in the receiver floor (the shared `standard` section has none
 either), feed lips, and the magazine's follower and rounds.

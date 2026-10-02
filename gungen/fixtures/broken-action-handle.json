@@ -1,6 +1,6 @@
 {
   "name": "broken-action-handle",
-  "description": "AR-pattern receiver with its charging handle incorrectly inside its travel volume.",
+  "description": "AR-pattern receiver with a charging handle inside its travel volume.",
   "expect": ["action-handle-rest"],
   "root": "receiver",
   "parts": {
@@ -31,7 +31,7 @@
     { "from": "lower.grip", "to": "grip.top" },
     { "from": "lower.magazine", "to": "magazine.top" },
     { "from": "receiver.stock", "to": "stock.front" },
-    { "from": "receiver.rail", "to": "sight.base", "slot": 0 },
+    { "from": "receiver.rail", "to": "sight.base", "slot": 3 },
     { "from": "barrel.front-sight", "to": "front-sight.base" }
   ]
 }

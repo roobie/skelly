@@ -9,7 +9,7 @@ import { loadFixture, loadFixtures } from './helpers.ts';
 
 const faultTable = {
   handguard: { fit: ['oversized', 'too-tight'] },
-  cylinder: { chamber: ['misaligned'] },
+  'revolver-cylinder': { chamberIndex: ['1', '2', '3', '4', '5'] },
   lower: { triggerGuard: ['missing'] },
   frame: { triggerGuard: ['missing'] },
 } as const;
