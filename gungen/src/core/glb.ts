@@ -23,7 +23,7 @@ import type {
 import { type DisplayItem, displayItems } from './display.ts';
 import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
-import { meshForSolid, meshForSolidGroup } from './mesh.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
@@ -307,7 +307,9 @@ export const exportGlb: ExportGlb = (input) => {
     });
   const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
     const solid = item.solids[0]!;
-    const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
+    const mesh = item.merged
+      ? meshForSolidGroup(item.solids)
+      : meshForSolid(solid, displayBevel(solid, resolved.domain.units));
     if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
       return undefined;
     }

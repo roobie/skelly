@@ -12,7 +12,7 @@
 import { GRID } from './conventions.ts';
 import { clippedExtrudedPolygonPolyhedron, localSolidBounds } from './geometry.ts';
 import { add, cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
-import type { Box, Solid, Vec2 } from './schema.ts';
+import type { Box, DomainUnits, Solid, Vec2 } from './schema.ts';
 
 export interface TriangleMesh {
   readonly positions: Float32Array;
@@ -271,6 +271,10 @@ const orientExtrusion = (mesh: TriangleMesh, axis: ExtrusionAxis | undefined): T
   };
   return { ...mesh, positions: mapTriples(mesh.positions), normals: mapTriples(mesh.normals) };
 };
+
+/** The bevel a solid is drawn with in a domain: the domain's, unless the solid opts out. */
+export const displayBevel = (solid: Solid, units: DomainUnits): number =>
+  solid.display?.bevel === false ? 0 : units.bevel;
 
 /** A flat-shaded display mesh for one solid, in its own local frame. */
 export const meshForSolid = (

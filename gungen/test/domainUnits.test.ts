@@ -94,6 +94,21 @@ describe('domain units', () => {
     expect(glb.json.nodes[0]!.extras).toMatchObject({ gungen: { metresPerUnit: 0.001 } });
   });
 
+  it('insets the cap of an exported box by the domain bevel', () => {
+    const resolved = resolve(widgetAssembly, widgetDomain(MILLIMETRE_UNITS, widgetDef));
+    const result = exportGlb({ resolved, anchors: ANCHORS, palette: PALETTE, asset: ASSET });
+    if (!result.ok) {
+      throw new Error(JSON.stringify(result.error));
+    }
+    const glb = readGlb(result.glb);
+    const part = glb.json.nodes.find((node) => node.extras?.part === 'widget')!;
+    const positions = glb.floats(glb.json.meshes[part.mesh!]!.primitives[0]!.attributes.POSITION);
+    // Vertices on the top cap (z at its maximum): the cap's widest x is the half-width less the bevel.
+    const top = Math.max(...positions.filter((_, i) => i % 3 === 2));
+    const capX = positions.filter((_, i) => i % 3 === 0 && positions[i + 2] === top).map(Math.abs);
+    expect(Math.max(...capX)).toBeCloseTo((1 - MILLIMETRE_UNITS.bevel) * MILLIMETRE_UNITS.metresPerUnit, 8);
+  });
+
   it('takes the largest gap between connected solids from the domain grid', () => {
     const contactIssues = (units: DomainUnits) =>
       validate(pairAssembly, gappedPair(units, 0.1)).issues.filter((issue) => issue.rule === 'connection-contact');

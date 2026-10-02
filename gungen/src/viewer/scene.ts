@@ -27,7 +27,7 @@ import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
@@ -133,7 +133,9 @@ export function buildLayers(
       const color = failing
         ? FAIL
         : srgbToHex(colorMode === 'role' ? solidColor(GUN_PALETTE, def.family, s.id, s.material) : appearance.color);
-      const geometry = item.merged ? triangleGeometry(meshForSolidGroup(item.solids)) : meshGeometry(s);
+      const geometry = item.merged
+        ? triangleGeometry(meshForSolidGroup(item.solids))
+        : meshGeometry(s, displayBevel(s, resolved.domain.units));
       const mesh = new Mesh(
         geometry,
         new MeshStandardMaterial({
