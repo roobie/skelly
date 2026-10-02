@@ -74,6 +74,8 @@ describe('firearm cycle timelines', () => {
       expect(hand.at(hand.rearwardSeconds)).toBeCloseTo(1, 9);
       expect(hand.at(hand.rearwardSeconds + hand.dwellSeconds / 2)).toBe(1);
       expect(hand.at(hand.rearwardSeconds + hand.dwellSeconds + hand.forwardSeconds)).toBe(0);
+      expect(hand.at(hand.durationSeconds)).toBe(0);
+      expect(hand.at(hand.durationSeconds + hand.rearwardSeconds / 2)).toBeGreaterThan(0);
       expect(hand.durationSeconds).toBeGreaterThan(hand.rearwardSeconds + hand.dwellSeconds + hand.forwardSeconds);
       expect(hand.forwardSeconds * 10).toBeLessThan(hand.rearwardSeconds);
     }

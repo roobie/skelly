@@ -27,6 +27,7 @@ import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
+import { createCycleView } from './cycleView.ts';
 import {
   availablePrefabs,
   choosePrefab,
@@ -302,6 +303,7 @@ let lastDropped: readonly Connection[] = [];
 let editorState: DesignEditorState | undefined;
 let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
 let pendingCamera: CameraState | undefined;
+const cycleView = createCycleView();
 
 const redraw = () => {
   if (!report) {
@@ -328,6 +330,7 @@ const redraw = () => {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
+  cycleView.bind(layers.solids, report.resolved);
   if (!framed) {
     frame(layers.solids);
     framed = true;
@@ -1193,6 +1196,7 @@ renderer.setAnimationLoop((frameMs) => {
   const elapsedSeconds = Math.min((frameMs - previousFrameMs) / 1000, 0.1);
   previousFrameMs = frameMs;
   panFromKeys(elapsedSeconds);
+  cycleView.frame(elapsedSeconds);
   controls.update();
   renderer.render(scene, camera);
 });

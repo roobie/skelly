@@ -161,7 +161,7 @@ export const buildCycleTimeline = (action: GunAction, mode: CycleMode, strokeMet
     holdOpenOnEmpty: profile.holdOpenOnEmpty,
     at: (seconds, empty = false) => {
       const time =
-        mode === 'fire' && !(empty && profile.holdOpenOnEmpty)
+        mode === 'hand' || !(empty && profile.holdOpenOnEmpty)
           ? ((seconds % durationSeconds) + durationSeconds) % durationSeconds
           : Math.max(0, Math.min(seconds, durationSeconds));
       const phase = { time, rearwardSeconds, dwellSeconds, mechanicalSeconds, spring };
