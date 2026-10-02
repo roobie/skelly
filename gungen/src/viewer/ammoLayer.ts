@@ -57,7 +57,7 @@ const finishes = (finish: CaseFinish, env: Texture): Finish => {
         clearcoat: 0.6,
         clearcoatRoughness: 0.25,
       })
-    : new MeshPhysicalMaterial({ color: new Color(0xe0_b0_55), metalness: 1, roughness: 0.28 });
+    : new MeshPhysicalMaterial({ color: new Color(0xcd_9f_4f), metalness: 1, roughness: 0.34 });
   // Gilding-metal (copper-washed) jacket.
   const jacket = new MeshPhysicalMaterial({ color: new Color(0xc9_80_55), metalness: 1, roughness: 0.3 });
   // Slightly darker and duller than the case it sits in.
