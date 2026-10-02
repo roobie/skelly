@@ -74,6 +74,11 @@ try {
   await page.goto(
     `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas')),
+    null,
+    { timeout: 30_000 },
+  );
   await page.locator('#go').click();
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
