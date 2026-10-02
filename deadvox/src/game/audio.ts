@@ -17,6 +17,10 @@ export interface AudioVolumes {
 }
 
 const DEFAULT_VOLUMES: AudioVolumes = { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 };
+const VOICE_CAPS = new Map<SoundEventId, number>([
+  ['gunshot', 4],
+  ['gunshot_pbs1_reference', 4],
+]);
 const clampVolume = (value: number): number => Math.max(0, Math.min(1, value));
 
 const readVolumes = (): AudioVolumes => {
@@ -88,6 +92,7 @@ interface SourceStartOptions {
   positionMetres: Vec3;
   emittedAsNoise: boolean;
   sourceLabel: string | null;
+  releaseVoice: () => void;
 }
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
@@ -105,6 +110,7 @@ export class GameAudio {
   private readonly isSolid: SolidAt;
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
+  private readonly voiceCounts = new Map<SoundEventId, number>();
 
   constructor({ registry, seed, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
@@ -190,8 +196,11 @@ export class GameAudio {
   play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, metadata: SoundPlaybackMeta = {}): boolean {
     const { emittedAsNoise = false, sourceLabel = null } = metadata;
     const sound = this.registry.sounds.get(event);
+    if (!(sound && this.hasVoiceCapacity(event))) {
+      return false;
+    }
     const pick = this.picker.pick(event, simulationTime);
-    if (!(sound && pick)) {
+    if (!pick) {
       return false;
     }
     const origin = this.registry.soundOrigins.get(event);
@@ -203,11 +212,27 @@ export class GameAudio {
     }
     const { context, nodes } = this;
     if (context && nodes && context.state === 'running') {
+      const releaseVoice = this.reserveVoice(event);
+      if (!releaseVoice) {
+        return false;
+      }
       this.loadBuffer(context, pick.file, url).then((buffer) => {
         if (!buffer || this.context !== context || context.state !== 'running') {
+          releaseVoice();
           return;
         }
-        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise, sourceLabel });
+        this.startSource({
+          context,
+          nodes,
+          event,
+          sound,
+          pick,
+          buffer,
+          positionMetres,
+          emittedAsNoise,
+          sourceLabel,
+          releaseVoice,
+        });
       });
     }
     return true;
@@ -229,8 +254,13 @@ export class GameAudio {
     }
     const pick = { file, gain: sound.gain, pitch: 1 };
     const positionMetres = [...this.listenerPosition] as Vec3;
+    const releaseVoice = this.reserveVoice(event);
+    if (!releaseVoice) {
+      return false;
+    }
     this.loadBuffer(context, file, url).then(async (buffer) => {
       if (!buffer || this.context !== context) {
+        releaseVoice();
         return;
       }
       if (context.state !== 'running') {
@@ -251,10 +281,43 @@ export class GameAudio {
           positionMetres,
           emittedAsNoise: false,
           sourceLabel: null,
+          releaseVoice,
         });
+      } else {
+        releaseVoice();
       }
     });
     return true;
+  }
+
+  private hasVoiceCapacity(event: SoundEventId): boolean {
+    const cap = VOICE_CAPS.get(event);
+    return cap === undefined || (this.voiceCounts.get(event) ?? 0) < cap;
+  }
+
+  /** Counts pending decodes as voices too, so a burst cannot queue unbounded sources. */
+  private reserveVoice(event: SoundEventId): (() => void) | undefined {
+    if (!this.hasVoiceCapacity(event)) {
+      return undefined;
+    }
+    const cap = VOICE_CAPS.get(event);
+    if (cap === undefined) {
+      return () => undefined;
+    }
+    this.voiceCounts.set(event, (this.voiceCounts.get(event) ?? 0) + 1);
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+      released = true;
+      const remaining = (this.voiceCounts.get(event) ?? 1) - 1;
+      if (remaining === 0) {
+        this.voiceCounts.delete(event);
+      } else {
+        this.voiceCounts.set(event, remaining);
+      }
+    };
   }
 
   private applyVolumes(): void {
@@ -307,6 +370,7 @@ export class GameAudio {
     positionMetres,
     emittedAsNoise,
     sourceLabel,
+    releaseVoice,
   }: SourceStartOptions): void {
     const source = context.createBufferSource();
     const gain = context.createGain();
@@ -359,6 +423,7 @@ export class GameAudio {
       panner.connect(category);
     }
     source.onended = () => {
+      releaseVoice();
       for (const node of connectedNodes) {
         node.disconnect();
       }

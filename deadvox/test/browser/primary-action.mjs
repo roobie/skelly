@@ -20,7 +20,7 @@ const observationPlugin = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, held, showNotice, getNotice: () => notice, feet, caseEffects } });\n  const originalHeldUpdate = held.update.bind(held);\n  held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
+      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, held, showNotice, getNotice: () => notice, feet, caseEffects, audio } });\n  const originalHeldUpdate = held.update.bind(held);\n  held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
     );
   },
 };
@@ -86,6 +86,9 @@ try {
       body: document.body.innerText,
       overlayHidden: document.querySelector('#overlay')?.hidden,
       canvas: Boolean(document.querySelector('#view canvas')),
+      errors: document.querySelector('#errors')?.textContent,
+      audio: globalThis.primaryActionTest?.audio?.settings,
+      pointerLock: Boolean(document.pointerLockElement),
     }));
     process.stderr.write(`startup errors: ${JSON.stringify(pageErrors)}; state: ${JSON.stringify(startup)}\\n`);
     throw error;
@@ -384,9 +387,13 @@ try {
       before + 1
     );
   }, casesBeforeFirearm);
+  await page.waitForFunction(() =>
+    globalThis.primaryActionTest.audio.heardSounds.some(({ event }) => event === 'gunshot'),
+  );
   const firearmAction = await page.evaluate(() => ({
     rifle: globalThis.primaryActionTest.inventory.hands.right?.type,
     flyingCases: globalThis.primaryActionTest.caseEffects.activeCount,
+    gunshot: globalThis.primaryActionTest.audio.heardSounds.filter(({ event }) => event === 'gunshot').at(-1),
     cases: [...globalThis.primaryActionTest.inventory.piles.values()]
       .flatMap((pile) => pile.items)
       .filter(({ item }) => item.type === 'spent_case_7_62x39')
@@ -395,9 +402,12 @@ try {
   assert.equal(firearmAction.rifle, 'debug_rifle_assault');
   assert.equal(firearmAction.cases, casesBeforeFirearm + 1, 'debug primary action records one persistent case');
   assert.ok(firearmAction.flyingCases > 0, 'debug primary action also spawns a render-only flying case');
+  assert.equal(firearmAction.gunshot?.event, 'gunshot');
+  assert.match(firearmAction.gunshot?.file ?? '', /^assets\/audio\/gunshot-akm-0[12]\.ogg$/);
+  assert.equal(firearmAction.gunshot?.sourceLabel, 'debug_rifle_assault');
   assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
   process.stdout.write(
-    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, and debug firearm cases.\n',
+    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, and positioned AKM shot audio.\n',
   );
 } finally {
   await browser?.close();

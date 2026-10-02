@@ -46,7 +46,7 @@ import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
-import { handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
+import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { mountControlsCard } from './controls.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
@@ -875,6 +875,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         });
         if (effect) {
           caseEffects.spawn(effect);
+          const shot = firearmShotSound(action.item.type);
+          playSessionSound(shot.event, chest(), sim.time, { sourceLabel: shot.sourceLabel });
         } else {
           showNotice('Firearms can only be fired in debug mode');
         }

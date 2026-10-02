@@ -37,6 +37,7 @@ describe('audio listening guide', () => {
       'shambler_step_leaves',
       'melee_swing',
       'melee_hit',
+      'gunshot',
       'item_drop_wood',
       'pouch_take',
       'shambler_idle',
@@ -55,6 +56,9 @@ describe('audio listening guide', () => {
     expect(statusNote('door_blocked_close')).toContain('Placeholder');
     expect(statusNote('door_blocked_close')).toContain('2026-10-02');
     expect(statusNote('door_blocked_close')).toContain('shares door_close');
+    expect(statusNote('gunshot')).toContain('random per-shot variants used for all weapons');
+    expect(statusNote('gunshot_pbs1_reference')).toContain('Reserved PBS-1');
+    expect(statusNote('gunshot_pbs1_reference')).toContain('not used by gameplay');
     expect(statusNote('footstep_mud')).toContain('To replace');
     expect(statusNote('shambler_step_mud')).toContain('To replace');
     expect(statusNote('footstep_stone')).toContain('future gravel surface');
@@ -111,6 +115,22 @@ describe('audio listening guide', () => {
     expect(guide.map(({ id }) => id)).toContain('pouch_take');
     expect(guide.find(({ id }) => id === 'melee_hit_fist')?.note).toContain('Stand-in');
     expect(manifest.sources.flatMap(({ files }) => files)).toContain('assets/audio/melee_hit_fist-01.ogg');
+  });
+
+  it('keeps approved random AKM variants active and PBS-1 alternatives preview-only', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    expect(definitions.get('gunshot')?.variants).toEqual([
+      'assets/audio/gunshot-akm-01.ogg',
+      'assets/audio/gunshot-akm-02.ogg',
+    ]);
+    expect(definitions.get('gunshot_pbs1_reference')?.variants).toEqual([
+      'assets/audio/gunshot-akm-pbs1-01.ogg',
+      'assets/audio/gunshot-akm-pbs1-02.ogg',
+    ]);
+    expect(SOUND_TRIGGER_GUIDE.gunshot_pbs1_reference.trigger).toContain('not used by gameplay');
+    expect(buildSoundGuide(sounds, manifest).find(({ id }) => id === 'gunshot_pbs1_reference')?.note).toContain(
+      'future suppressor',
+    );
   });
 
   it('credits every listed variant from its manifest source', () => {

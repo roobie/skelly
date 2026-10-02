@@ -268,6 +268,26 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "gunshot",
+      "variants": ["assets/audio/gunshot-akm-01.ogg", "assets/audio/gunshot-akm-02.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "gunshot_pbs1_reference",
+      "variants": ["assets/audio/gunshot-akm-pbs1-01.ogg", "assets/audio/gunshot-akm-pbs1-02.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "item_drop_wood",
       "variants": ["assets/audio/item_drop_wood-01.ogg", "assets/audio/item_drop_wood-02.ogg"],
       "gain": 0.55,
