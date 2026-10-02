@@ -6,6 +6,8 @@
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "box", "bore": "M" } },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "bolt" } },
+    "bolt-handle-arm": { "family": "bolt-handle-arm" },
+    "bolt-handle-knob": { "family": "bolt-handle-knob" },
     "lower": { "family": "lower", "params": { "layout": "conventional", "magazineWell": "recessed" } },
     "barrel": { "family": "barrel", "params": { "length": "L" } },
     "handguard": { "family": "handguard", "params": { "length": "L" } },
@@ -18,6 +20,8 @@
     { "from": "receiver.lower", "to": "lower.top" },
     { "from": "receiver.barrel", "to": "barrel.rear" },
     { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
+    { "from": "bolt-carrier.handle", "to": "bolt-handle-arm.base" },
+    { "from": "bolt-handle-arm.tip", "to": "bolt-handle-knob.base" },
     { "from": "receiver.handguard", "to": "handguard.rear" },
     { "from": "lower.grip", "to": "grip.top" },
     { "from": "lower.magazine", "to": "magazine.top" },

@@ -9,6 +9,10 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/index.html');
 const JSON_FILE = /\.json$/;
+const intentionallyUnofferedDeadvoxParams = {
+  'save-backend': 'A storage-backend override used by save-storage browser contracts.',
+  'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
+};
 const intentionallyUnofferedGungenParams = {
   camera:
     'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
@@ -53,7 +57,7 @@ describe('site launchers track the games’ URL parameters', () => {
         'deadvox/src/game/config.ts',
         'deadvox/src/bench/run.ts',
         'deadvox/src/bench/shamblers.ts',
-      ]),
+      ]).filter((name) => !Object.hasOwn(intentionallyUnofferedDeadvoxParams, name)),
     );
   });
 

@@ -21,7 +21,7 @@ export const battleRifle: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: ['M', 'L'] } },
-    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett', handleStyle: 'battle' } },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     {
@@ -253,9 +253,11 @@ export const smg: Template = {
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'S' } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'smg' } },
+    { id: 'smg-handle', family: 'smg-handle' },
     { id: 'lower', family: 'lower', params: { layout: 'conventional' } },
     { id: 'barrel', family: 'barrel', params: { length: ['S', 'M'] } },
-    { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.7 },
+    { id: 'handguard', family: 'handguard', params: { clearance: 'M', handleStyle: 'smg' } },
+    { id: 'front-sight', family: 'front-sight', params: { style: 'ar' } },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: ['M', 'L'], profile: 'smg' } },
     { id: 'stock', family: 'stock', params: { length: ['S', 'M'], style: 'straight' }, chance: 0.6 },
@@ -280,6 +282,8 @@ export const smg: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'handguard.smg-handle', to: 'smg-handle.mount' },
+    { from: 'barrel.front-sight', to: 'front-sight.base' },
     { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
@@ -291,6 +295,8 @@ export const boltRifle: Template = {
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
+    { id: 'bolt-handle-arm', family: 'bolt-handle-arm' },
+    { id: 'bolt-handle-knob', family: 'bolt-handle-knob' },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
     {
       id: 'lower',
@@ -328,6 +334,8 @@ export const boltRifle: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'bolt-carrier.handle', to: 'bolt-handle-arm.base' },
+    { from: 'bolt-handle-arm.tip', to: 'bolt-handle-knob.base' },
     // Paired bases sit fore and aft of the loading opening; the scope bridges it.
     { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
@@ -341,6 +349,8 @@ export const boltRifleBox: Template = {
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'box', bore: ['M', 'L'] } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
+    { id: 'bolt-handle-arm', family: 'bolt-handle-arm' },
+    { id: 'bolt-handle-knob', family: 'bolt-handle-knob' },
     { id: 'lower', family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     // Free-floating, so its length is set rather than read from the barrel.
@@ -363,6 +373,8 @@ export const boltRifleBox: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'bolt-carrier.handle', to: 'bolt-handle-arm.base' },
+    { from: 'bolt-handle-arm.tip', to: 'bolt-handle-knob.base' },
     { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
@@ -377,6 +389,7 @@ export const boltRifleThumbhole: Template = {
     .map((slot) => (slot.id === 'receiver' ? { ...slot, params: { ...slot.params, bore: 'M' } } : slot))
     .map((slot) => (slot.id === 'lower' ? { ...slot, params: { ...slot.params, layout: 'thumbhole' } } : slot))
     .map((slot) => (slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'thumbhole' } } : slot))
+    .map((slot) => (slot.id === 'bolt-carrier' ? { ...slot, params: { ...slot.params, handleProfile: 'awm' } } : slot))
     .map((slot) => {
       if (slot.id !== 'handguard') {
         return slot;
@@ -484,7 +497,7 @@ export const bullpup: Template = {
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'auto', feed: 'box', bore: 'M' } },
-    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett' } },
+    { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'barrett', handleStyle: 'bullpup' } },
     { id: 'lower', family: 'lower', params: { layout: 'bullpup' } },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
     { id: 'handguard', family: 'handguard', params: { clearance: 'M' }, chance: 0.3 },

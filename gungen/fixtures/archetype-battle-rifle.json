@@ -5,7 +5,7 @@
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
-    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett", "handleStyle": "battle" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard", "params": {} },

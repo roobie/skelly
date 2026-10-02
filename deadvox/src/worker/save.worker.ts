@@ -1,3 +1,5 @@
+import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
+import type { SaveSnapshot } from '../core/saveState.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
 
 const DATABASE = 'deadvox-save-slots';
@@ -14,13 +16,17 @@ interface SlotPair {
 }
 interface RequestMessage {
   readonly id: number;
-  readonly operation: 'probe' | 'read' | 'commit';
+  readonly operation: 'probe' | 'list' | 'encode' | 'read' | 'commit';
   readonly preferredBackend?: 'auto' | Backend;
   readonly webLocks?: boolean;
   readonly namespace?: string;
   readonly slot?: SlotName;
   readonly generation?: number;
   readonly payload?: ArrayBuffer;
+  readonly snapshot?: SaveSnapshot;
+  readonly worldOptions?: SaveWorldOptions;
+  readonly version?: SaveVersionComponents;
+  readonly buildRevision?: string;
   readonly expected?: SlotPair;
   readonly crashAt?: string;
 }
@@ -145,10 +151,65 @@ const transactionDone = (tx: IDBTransaction): Promise<void> =>
     tx.onerror = () => reject(tx.error ?? new Error('Save IndexedDB transaction failed'));
   });
 
+const listOpfsNamespaces = async (): Promise<string[]> => {
+  let saves: FileSystemDirectoryHandle;
+  try {
+    const root = await scope.navigator.storage.getDirectory();
+    saves = await root.getDirectoryHandle(ROOT_DIRECTORY);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'NotFoundError') {
+      return [];
+    }
+    throw error;
+  }
+  const namespaces: string[] = [];
+  for await (const handle of saves.values()) {
+    if (handle.kind === 'directory' && NAMESPACE_PATTERN.test(handle.name)) {
+      namespaces.push(handle.name);
+    }
+  }
+  return namespaces.sort();
+};
+
+const listIdbNamespaces = async (): Promise<string[]> => {
+  const db = await openDatabase();
+  const tx = db.transaction(STORE, 'readonly');
+  const request = tx.objectStore(STORE).getAllKeys();
+  const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('Could not list save namespaces'));
+  });
+  await transactionDone(tx);
+  return [...new Set(keys.flatMap((key) => (Array.isArray(key) && typeof key[0] === 'string' ? [key[0]] : [])))].sort();
+};
+
+const listNamespaces = (): Promise<string[]> => {
+  if (backend === 'opfs') {
+    return listOpfsNamespaces();
+  }
+  return listIdbNamespaces();
+};
+
 const readSlots = async (namespace: string): Promise<SlotPair> => {
   if (backend === 'opfs') {
-    const [a, b] = await Promise.all([readOpfsSlot(namespace, 'a'), readOpfsSlot(namespace, 'b')]);
-    return { a, b };
+    const results = await Promise.allSettled([readOpfsSlot(namespace, 'a'), readOpfsSlot(namespace, 'b')]);
+    const lockFailure = results.find(
+      (result): result is PromiseRejectedResult =>
+        result.status === 'rejected' &&
+        result.reason instanceof DOMException &&
+        result.reason.name === 'NoModificationAllowedError',
+    );
+    if (lockFailure) {
+      throw new Error('LOCKED: OPFS save slot is open in another context; retry the read');
+    }
+    const failure = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (failure) {
+      throw failure.reason;
+    }
+    return {
+      a: (results[0] as PromiseFulfilledResult<ArrayBuffer | null>).value,
+      b: (results[1] as PromiseFulfilledResult<ArrayBuffer | null>).value,
+    };
   }
   return readIdbSlots(namespace);
 };
@@ -321,6 +382,21 @@ const writeIdb = async (request: RequestMessage, packed: Uint8Array): Promise<'c
   });
 };
 
+const encodeRequest = (request: RequestMessage): Promise<Uint8Array> => {
+  if (
+    !(request.snapshot && request.worldOptions && request.version && request.buildRevision) ||
+    request.generation === undefined
+  ) {
+    throw new Error('Save snapshot, identity, world options and generation are required');
+  }
+  return encodeSave(request.snapshot, {
+    generation: request.generation,
+    worldOptions: request.worldOptions,
+    version: request.version,
+    buildRevision: request.buildRevision,
+  });
+};
+
 const commitRequest = async (request: RequestMessage): Promise<void> => {
   const { namespace, slot, generation, payload } = request;
   if (namespace === undefined || slot === undefined || generation === undefined || payload === undefined) {
@@ -347,6 +423,14 @@ scope.onmessage = async ({ data }: MessageEvent<RequestMessage>) => {
     if (request.operation === 'probe') {
       backend = await selectBackend(request);
       reply({ id: request.id, result: { backend } });
+    } else if (request.operation === 'list') {
+      if (!backend) {
+        throw new Error('Save storage backend has not been initialized');
+      }
+      reply({ id: request.id, result: await listNamespaces() });
+    } else if (request.operation === 'encode') {
+      const encoded = await encodeRequest(request);
+      reply({ id: request.id, result: encoded }, [encoded.buffer]);
     } else if (request.operation === 'read') {
       if (!backend) {
         throw new Error('Save storage backend has not been initialized');
