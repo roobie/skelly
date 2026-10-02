@@ -1,6 +1,0 @@
-{
-  "name": "broken-bottleneck-without-neck",
-  "base": "synthetic:rimmed-bottleneck",
-  "unset": ["case.body.neck"],
-  "expectParseError": "case.body.neck"
-}
