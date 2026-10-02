@@ -163,7 +163,11 @@ unbound because both side buttons can navigate browser history.
 ## Debug keys
 
 The development profile binds B, G, H, K, N, P, T, U, V and Backquote
-(`src/debug/index.ts`). In play, these letters are free in the shipped game but
+(`src/debug/index.ts`). Debug firearm handling is available only from a
+`?debug=1` session: use G to spawn `debug_rifle_assault`, move it to a hand,
+then use that hand's primary action. It produces no hits, damage, or ammo use;
+each shot records one spent case. The deterministic handling range and table
+sit beside the hamlet. In play, these letters are free in the shipped game but
 taken in the development and playtest builds, which is where the controls get
 tested; a shipped verb on V would collide in every test session. Proposal: debug
 actions stay reachable from the debug panel (Backquote) and keep single-key
