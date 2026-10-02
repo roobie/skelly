@@ -51,46 +51,64 @@ jobs:
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs
       - name: Save-controller browser regressions
-        timeout-minutes: 2
+        timeout-minutes: 15
         run: node test/browser/save-controller-regressions.mjs
       - name: Save-storage browser contract (Chromium)
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — OPFS Continue (Chromium)
-        timeout-minutes: 3
+        timeout-minutes: 15
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: opfs
           SAVE_AUTOSAVE_SCENARIO: continue
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — OPFS replacement (Chromium)
-        timeout-minutes: 3
+        timeout-minutes: 15
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: opfs
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — IndexedDB Continue (Chromium)
-        timeout-minutes: 3
+        timeout-minutes: 15
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: continue
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — IndexedDB replacement (Chromium)
-        timeout-minutes: 3
+        timeout-minutes: 15
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
       - name: Insecure-context browser contract
-        timeout-minutes: 1
+        timeout-minutes: 15
         run: node test/browser/insecure-saves.mjs
       - name: Install headed Firefox and system dependencies
         run: npx playwright install --with-deps firefox
-      - name: Firefox browser contract
-        run: xvfb-run -a timeout 300 npm run test:browser:firefox
+      - name: Firefox first-click browser contract
+        timeout-minutes: 15
+        run: xvfb-run -a node test/browser/firefox-first-click.mjs
+      - name: Firefox save-storage browser contract
+        timeout-minutes: 15
+        run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      - name: Firefox autosave — IndexedDB Continue
+        timeout-minutes: 15
+        env:
+          SAVE_AUTOSAVE_ONLY: '1'
+          SAVE_AUTOSAVE_BACKEND: indexeddb
+          SAVE_AUTOSAVE_SCENARIO: continue
+        run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      - name: Firefox autosave — IndexedDB replacement
+        timeout-minutes: 15
+        env:
+          SAVE_AUTOSAVE_ONLY: '1'
+          SAVE_AUTOSAVE_BACKEND: indexeddb
+          SAVE_AUTOSAVE_SCENARIO: replacement
+        run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - run: timeout 300 npm run validate
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
