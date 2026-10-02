@@ -1,6 +1,6 @@
 {
   "name": "broken-revolver-feed-mismatch",
-  "description": "A revolver action is incompatible with box feed.",
+  "description": "The legacy receiver must not pair revolver action with box feed.",
   "expect": ["feed-match"],
   "root": "receiver",
   "parts": {
@@ -22,14 +22,7 @@
       "family": "barrel",
       "params": {
         "length": "S",
-        "profile": "revolver"
-      }
-    },
-    "cylinder": {
-      "family": "cylinder",
-      "params": {
-        "chambers": "eight",
-        "chamber": "aligned"
+        "profile": "standard"
       }
     },
     "grip": {
@@ -48,14 +41,6 @@
     {
       "from": "receiver.barrel",
       "to": "barrel.rear"
-    },
-    {
-      "from": "receiver.cylinder",
-      "to": "cylinder.frame"
-    },
-    {
-      "from": "barrel.cylinder",
-      "to": "cylinder.barrel"
     },
     {
       "from": "lower.grip",

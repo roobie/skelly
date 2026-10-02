@@ -101,6 +101,13 @@ describe('trigger guards', () => {
       const triggerOwners = [...report.resolved.defs].filter(([, def]) =>
         def.keepOuts.some(({ id }) => id === 'trigger-finger'),
       );
+      if ([...report.resolved.defs.values()].some((def) => def.family === 'revolver-frame')) {
+        // The revolver's open ten-prism bow is validated by its own solid rule, not a box keep-out.
+        expect(triggerOwners).toEqual([]);
+        expect(report.issues.filter(({ rule }) => rule === 'trigger-guard')).toEqual([]);
+        expect(report.issues.filter(({ rule }) => rule === 'revolver-trigger-bow')).toEqual([]);
+        continue;
+      }
       expect(triggerOwners.length, label).toBeGreaterThan(0);
       for (const [part, def] of triggerOwners) {
         const guards = def.solids.filter(({ id }) => id.startsWith('trigger-guard-'));
