@@ -72,6 +72,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/occlusion.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
+  'src/game/audioPresentation.ts',
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',
   'src/game/saveStorage.ts',

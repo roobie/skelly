@@ -19,6 +19,51 @@ describe('audio listening guide', () => {
     );
   });
 
+  it('shows a BR status note for every event, including the specific listening verdicts', () => {
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.every(({ note }) => note !== null && note.length > 0)).toBe(true);
+    const statusNote = (id: string) => guide.find((entry) => entry.id === id)?.note ?? '';
+    for (const id of [
+      'player_hurt_light',
+      'player_hurt_heavy',
+      'player_strain',
+      'footstep_grass',
+      'footstep_sand',
+      'footstep_wood',
+      'footstep_leaves',
+      'shambler_step_grass',
+      'shambler_step_sand',
+      'shambler_step_wood',
+      'shambler_step_leaves',
+      'melee_swing',
+      'melee_hit',
+      'item_drop_wood',
+      'pouch_take',
+      'shambler_idle',
+      'shambler_alert',
+      'shambler_attack',
+      'shambler_hurt',
+      'door_open',
+      'door_close',
+    ]) {
+      expect(statusNote(id)).toContain('Approved by BR (2026-10-02)');
+    }
+    expect(statusNote('player_landing_hard')).toContain('Placeholder');
+    expect(statusNote('player_landing_hard')).toContain('2026-10-02');
+    expect(statusNote('melee_hit_fist')).toContain('Placeholder');
+    expect(statusNote('melee_hit_fist')).toContain('2026-10-02');
+    expect(statusNote('door_blocked_close')).toContain('Placeholder');
+    expect(statusNote('door_blocked_close')).toContain('2026-10-02');
+    expect(statusNote('door_blocked_close')).toContain('shares door_close');
+    expect(statusNote('footstep_mud')).toContain('To replace');
+    expect(statusNote('shambler_step_mud')).toContain('To replace');
+    expect(statusNote('footstep_stone')).toContain('future gravel surface');
+    expect(statusNote('shambler_step_stone')).toContain('future gravel surface');
+    expect(statusNote('footstep_leaves')).toContain('Approved by BR (2026-10-02) with one variant');
+    expect(statusNote('shambler_step_leaves')).toContain('Approved by BR (2026-10-02) with one variant');
+    expect(statusNote('door_open')).toContain('door-open-03 only');
+  });
+
   it('includes each surface-specific shambler step in the generated sheet', () => {
     const ids = ['grass', 'mud', 'sand', 'stone', 'wood', 'leaves'].map((surface) => `shambler_step_${surface}`);
     const guide = buildSoundGuide(sounds, manifest);
@@ -28,6 +73,44 @@ describe('audio listening guide', () => {
     expect(steps.every(({ category, noiseRadiusMetres }) => category === 'world' && noiseRadiusMetres === null)).toBe(
       true,
     );
+  });
+
+  it('lists only BR-approved door close/open variants on the generated listening sheet', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    const close = ['assets/audio/door_blocked_close-01.ogg'];
+    const open = ['assets/audio/door-open-03.ogg'];
+    expect(definitions.get('door_close')?.variants).toEqual(close);
+    expect(definitions.get('door_open')?.variants).toEqual(open);
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.find(({ id }) => id === 'door_close')?.variants.map(({ file }) => file)).toEqual(close);
+    expect(guide.find(({ id }) => id === 'door_open')?.variants.map(({ file }) => file)).toEqual(open);
+    expect(guide.find(({ id }) => id === 'door_close')?.note).toContain('door_blocked_close');
+    expect(guide.find(({ id }) => id === 'door_blocked_close')?.note).toContain('distinct stuck-door sound');
+  });
+
+  it('uses only the BR-approved leaves clip for player and shambler steps', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    const leaves = ['assets/audio/footstep-leaves-01.ogg'];
+    expect(definitions.get('footstep_leaves')?.variants).toEqual(leaves);
+    expect(definitions.get('shambler_step_leaves')?.variants).toEqual(leaves);
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.find(({ id }) => id === 'footstep_leaves')?.variants.map(({ file }) => file)).toEqual(leaves);
+    expect(guide.find(({ id }) => id === 'shambler_step_leaves')?.variants.map(({ file }) => file)).toEqual(leaves);
+  });
+
+  it('uses only the selected generic swing and exposes the new drop and pouch cues without noise emission', () => {
+    const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
+    expect(definitions.get('melee_swing')?.variants).toEqual(['assets/audio/melee_swing-01.ogg']);
+    expect(definitions.get('door_blocked_close')?.variants).toEqual(['assets/audio/door_blocked_close-01.ogg']);
+    for (const id of ['melee_hit_fist', 'item_drop_wood', 'pouch_take']) {
+      expect(definitions.get(id)?.noise.enabled).toBe(false);
+      expect(SOUND_TRIGGER_GUIDE[id as keyof typeof SOUND_TRIGGER_GUIDE]).toBeDefined();
+    }
+    const guide = buildSoundGuide(sounds, manifest);
+    expect(guide.map(({ id }) => id)).toContain('item_drop_wood');
+    expect(guide.map(({ id }) => id)).toContain('pouch_take');
+    expect(guide.find(({ id }) => id === 'melee_hit_fist')?.note).toContain('Stand-in');
+    expect(manifest.sources.flatMap(({ files }) => files)).toContain('assets/audio/melee_hit_fist-01.ogg');
   });
 
   it('credits every listed variant from its manifest source', () => {
