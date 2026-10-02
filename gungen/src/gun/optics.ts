@@ -1,5 +1,5 @@
-import type { KeepOut, Solid, Vec2 } from '../core/schema.ts';
 import type { Vec3 } from '../core/math.ts';
+import type { KeepOut, Solid, Vec2 } from '../core/schema.ts';
 import type { MountRequirement } from './mounts.ts';
 
 /** 1U is 11.5mm; source dimensions are rounded to the model's 0.25u grid. IDs are persisted assembly values. */
@@ -59,13 +59,19 @@ const prism = (id: string, profile: readonly Vec2[], widthU: number): Solid => {
   };
 };
 
-const octagonalTube = (
-  id: string,
-  x: readonly [number, number],
-  centerY: number,
-  halfY: number,
-  halfZ: number,
-): Solid => {
+const octagonalTube = ({
+  id,
+  x,
+  centerY,
+  halfY,
+  halfZ,
+}: {
+  readonly id: string;
+  readonly x: readonly [number, number];
+  readonly centerY: number;
+  readonly halfY: number;
+  readonly halfZ: number;
+}): Solid => {
   const profile: Vec2[] = [
     [-0.65 * halfY, -halfZ],
     [0.65 * halfY, -halfZ],
@@ -76,7 +82,14 @@ const octagonalTube = (
     [-halfY, 0.65 * halfZ],
     [-halfY, -0.65 * halfZ],
   ].map(([y, z]) => [grid(centerY + y!), grid(z!)]);
-  return { id, kind: 'extruded-polygon', axis: 'x', z: x.map(grid) as unknown as readonly [number, number], profile, slot: 'metal' };
+  return {
+    id,
+    kind: 'extruded-polygon',
+    axis: 'x',
+    z: x.map(grid) as unknown as readonly [number, number],
+    profile,
+    slot: 'metal',
+  };
 };
 
 const silhouette = (id: string, profile: readonly Vec2[], widthU: number): Solid => prism(id, profile, widthU);
@@ -98,14 +111,21 @@ const makeEntry = (
   return { ...rest, keepOuts: [sightline(sightlineStartX, entry.opticalAxisY, entry.ironCoWitness)] };
 };
 
-const railMount = (
-  contactLengthU: number,
-  contactWidthU: number,
-  minimumSlots: number,
-  description: string,
-  clearanceU: MountRequirement['clearanceU'],
-  ringSpanU?: number,
-): MountRequirement & { readonly description: string } => ({
+const railMount = ({
+  contactLengthU,
+  contactWidthU,
+  minimumSlots,
+  description,
+  clearanceU,
+  ringSpanU,
+}: {
+  readonly contactLengthU: number;
+  readonly contactWidthU: number;
+  readonly minimumSlots: number;
+  readonly description: string;
+  readonly clearanceU: MountRequirement['clearanceU'];
+  readonly ringSpanU?: number;
+}): MountRequirement & { readonly description: string } => ({
   kind: 'rail-top',
   contactLengthU,
   contactWidthU,
@@ -124,7 +144,13 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://www.trijicon.com/products/details/rm06-c-700672',
     envelopeMm: [46, 25, 31],
     envelopeU: [4, 2.25, 2.75],
-    mount: railMount(3.5, 1.5, 2, 'single compact foot', { forward: 0.25, rearward: 0.25, lateral: 0.25 }),
+    mount: railMount({
+      contactLengthU: 3.5,
+      contactWidthU: 1.5,
+      minimumSlots: 2,
+      description: 'single compact foot',
+      clearanceU: { forward: 0.25, rearward: 0.25, lateral: 0.25 },
+    }),
     opticalAxisY: 1.25,
     ocularX: -1.25,
     ironCoWitness: false,
@@ -143,14 +169,20 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://www.aimpoint.com/products/red-dot-sights/micro-t-2',
     envelopeMm: [68, 41, 41],
     envelopeU: [6, 3.5, 3.5],
-    mount: railMount(4, 1.5, 3, 'low direct foot', { forward: 0.5, rearward: 0.5, lateral: 0.35 }),
+    mount: railMount({
+      contactLengthU: 4,
+      contactWidthU: 1.5,
+      minimumSlots: 3,
+      description: 'low direct foot',
+      clearanceU: { forward: 0.5, rearward: 0.5, lateral: 0.35 },
+    }),
     opticalAxisY: 1.25,
     ocularX: -2.5,
     ironCoWitness: false,
     sightlineStartX: 3,
     solids: [
       box('mount-foot', [-2, 0, -0.8], [2, 0.75, 0.8]),
-      octagonalTube('tube-body', [-2.95, 2.3], 2.3, 1.3, 1.8),
+      octagonalTube({ id: 'tube-body', x: [-2.95, 2.3], centerY: 2.3, halfY: 1.3, halfZ: 1.8 }),
     ],
   }),
   holographic: makeEntry({
@@ -160,7 +192,13 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://www.eotechinc.com/eotech-hws-exps3',
     envelopeMm: [97, 74, 51],
     envelopeU: [8.5, 6.5, 4.5],
-    mount: railMount(5.5, 1.7, 4, 'integral low rail foot', { forward: 0.5, rearward: 0.5, lateral: 0.5 }),
+    mount: railMount({
+      contactLengthU: 5.5,
+      contactWidthU: 1.7,
+      minimumSlots: 4,
+      description: 'integral low rail foot',
+      clearanceU: { forward: 0.5, rearward: 0.5, lateral: 0.5 },
+    }),
     opticalAxisY: 3.0,
     ocularX: -4.2,
     ironCoWitness: false,
@@ -181,7 +219,13 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://www.trijicon.com/products/details/ta31-d-100549',
     envelopeMm: [147, 71, 51],
     envelopeU: [12.75, 6.25, 4.5],
-    mount: railMount(8, 1.75, 5, 'integral prism foot', { forward: 0.75, rearward: 0.75, lateral: 0.5 }),
+    mount: railMount({
+      contactLengthU: 8,
+      contactWidthU: 1.75,
+      minimumSlots: 5,
+      description: 'integral prism foot',
+      clearanceU: { forward: 0.75, rearward: 0.75, lateral: 0.5 },
+    }),
     opticalAxisY: 3.25,
     ocularX: -5.75,
     eyeReliefU: 3.5,
@@ -213,7 +257,14 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://vortexoptics.com/razor-hd-gen-ii-e-1-6x24.html',
     envelopeMm: [257, 80, 65],
     envelopeU: [22.25, 7, 5.75],
-    mount: railMount(8, 1.75, 5, 'paired cantilever rings', { forward: 1, rearward: 1, lateral: 0.75 }, 8),
+    mount: railMount({
+      contactLengthU: 8,
+      contactWidthU: 1.75,
+      minimumSlots: 5,
+      description: 'paired cantilever rings',
+      clearanceU: { forward: 1, rearward: 1, lateral: 0.75 },
+      ringSpanU: 8,
+    }),
     opticalAxisY: 3.75,
     ocularX: -11.25,
     eyeReliefU: 7.5,
@@ -223,9 +274,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     solids: [
       box('rear-ring-foot', [-4.9, 0, -0.875], [-3.1, 2.75, 0.875]),
       box('front-ring-foot', [3.1, 0, -0.875], [4.9, 2.75, 0.875]),
-      octagonalTube('main-tube', [-7.5, 7.2], 3.75, 1.2, 1.2),
-      octagonalTube('ocular-bell', [-11.15, -6.7], 3.75, 1.55, 1.55),
-      octagonalTube('objective-bell', [6.4, 11.15], 3.75, 1.75, 1.75),
+      octagonalTube({ id: 'main-tube', x: [-7.5, 7.2], centerY: 3.75, halfY: 1.2, halfZ: 1.2 }),
+      octagonalTube({ id: 'ocular-bell', x: [-11.15, -6.7], centerY: 3.75, halfY: 1.55, halfZ: 1.55 }),
+      octagonalTube({ id: 'objective-bell', x: [6.4, 11.15], centerY: 3.75, halfY: 1.75, halfZ: 1.75 }),
       box('top-turret', [-1.05, 4.75, -0.8], [1.05, 7, 0.8]),
       box('side-turret', [-1.05, 3.25, 0.9], [1.05, 5.5, 2.05]),
     ],
@@ -237,21 +288,28 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://www.nightforceoptics.com/riflescopes/atacr/atacr-5-25x56-f1/',
     envelopeMm: [363, 86, 75],
     envelopeU: [31.5, 7.5, 6.5],
-    mount: railMount(12, 1.75, 7, 'separated 34 mm rings', { forward: 1.25, rearward: 1.25, lateral: 1 }, 10),
-    opticalAxisY: 2.5,
+    mount: railMount({
+      contactLengthU: 12,
+      contactWidthU: 1.75,
+      minimumSlots: 7,
+      description: 'separated 34 mm rings',
+      clearanceU: { forward: 1.25, rearward: 1.25, lateral: 1 },
+      ringSpanU: 10,
+    }),
+    opticalAxisY: 3.75,
     ocularX: -15.75,
     eyeReliefU: 8,
     eyeDatumToleranceU: 9,
     ironCoWitness: false,
     sightlineStartX: 15.75,
     solids: [
-      box('rear-ring-foot', [-6.1, 0, -0.875], [-4.1, 2.3, 0.875]),
-      box('front-ring-foot', [4.1, 0, -0.875], [6.1, 2.3, 0.875]),
-      octagonalTube('main-tube', [-11.5, 10], 2.55, 1.35, 1.35),
-      octagonalTube('ocular-bell', [-15.8, -10.8], 2.55, 1.65, 1.65),
-      octagonalTube('objective-bell', [9.5, 15.8], 2.55, 2.8, 2.8),
-      box('elevation-turret', [-1.5, 3.8, -1.2], [1.5, 7.5, 1.2]),
-      box('parallax-turret', [-1.5, 2.1, 1.1], [1.5, 4.8, 3.25]),
+      box('rear-ring-foot', [-6.1, 0, -0.875], [-4.1, 2.75, 0.875]),
+      box('front-ring-foot', [4.1, 0, -0.875], [6.1, 2.75, 0.875]),
+      octagonalTube({ id: 'main-tube', x: [-11.5, 10], centerY: 3.75, halfY: 1.35, halfZ: 1.35 }),
+      octagonalTube({ id: 'ocular-bell', x: [-15.8, -10.8], centerY: 3.75, halfY: 1.65, halfZ: 1.65 }),
+      octagonalTube({ id: 'objective-bell', x: [9.5, 15.8], centerY: 3.75, halfY: 2.8, halfZ: 2.8 }),
+      box('elevation-turret', [-1.5, 4.75, -1.2], [1.5, 7.5, 1.2]),
+      box('parallax-turret', [-1.5, 2.75, 1.1], [1.5, 5, 3.25]),
     ],
   }),
   'digital-thermal': makeEntry({
@@ -261,7 +319,14 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     source: 'https://pulsarnv.com/products/thermion-2-xq50-pro',
     envelopeMm: [343, 80, 80],
     envelopeU: [29.75, 7, 7],
-    mount: railMount(10, 1.75, 6, 'dedicated rail mount', { forward: 1.25, rearward: 1.25, lateral: 1 }, 8),
+    mount: railMount({
+      contactLengthU: 10,
+      contactWidthU: 1.75,
+      minimumSlots: 6,
+      description: 'dedicated rail mount',
+      clearanceU: { forward: 1.25, rearward: 1.25, lateral: 1 },
+      ringSpanU: 8,
+    }),
     opticalAxisY: 3,
     ocularX: -15,
     eyeReliefU: 6.5,

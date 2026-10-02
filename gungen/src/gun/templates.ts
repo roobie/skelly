@@ -137,7 +137,15 @@ export const ar: Template = {
     {
       id: 'sight',
       family: 'sight',
-      params: { type: sightMix(['mini-reflex', 5], ['tube-dot', 4], ['holographic', 3], ['fixed-prism-4x', 3], ['lpvo-1-6x', 5]) },
+      params: {
+        type: sightMix(
+          ['mini-reflex', 5],
+          ['tube-dot', 4],
+          ['holographic', 3],
+          ['fixed-prism-4x', 3],
+          ['lpvo-1-6x', 5],
+        ),
+      },
       chance: 0.7,
     },
   ],
@@ -327,7 +335,9 @@ export const boltRifle: Template = {
     {
       id: 'sight',
       family: 'sight',
-      params: { type: sightMix(['fixed-prism-4x', 4], ['lpvo-1-6x', 10], ['high-mag-5-25x', 22], ['digital-thermal', 4]) },
+      params: {
+        type: sightMix(['fixed-prism-4x', 4], ['lpvo-1-6x', 10], ['high-mag-5-25x', 22], ['digital-thermal', 4]),
+      },
       chance: 0.8,
     },
   ],
@@ -413,7 +423,13 @@ export const boltRifleThumbhole: Template = {
     )
     .map((slot) =>
       slot.id === 'sight'
-        ? { ...slot, params: { ...slot.params, type: sightMix(['lpvo-1-6x', 3], ['high-mag-5-25x', 14], ['digital-thermal', 3]) } }
+        ? {
+            ...slot,
+            params: {
+              ...slot.params,
+              type: sightMix(['lpvo-1-6x', 3], ['high-mag-5-25x', 14], ['digital-thermal', 3]),
+            },
+          }
         : slot,
     ),
   connections: boltRifleBox.connections.filter((connection) => connection.from !== 'lower.grip'),
@@ -545,7 +561,7 @@ export const antiMateriel: Template = {
     { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
     { id: 'magazine', family: 'heavy-magazine' },
     { id: 'stock', family: 'recoil-stock', params: { length: ['M', 'L'] } },
-    { id: 'sight', family: 'sight', chance: 0.9 },
+    { id: 'sight', family: 'sight', params: { type: 'high-mag-5-25x' }, chance: 0.9 },
     // The handle's three parts come together or not at all, so they are always present (a slot has no way to
     // depend on another slot's chance, and a strut without its trunnion would leave required ports empty).
     // Only the trunnion carries the pose; the strut and bar inherit it.

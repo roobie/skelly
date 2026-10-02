@@ -6,9 +6,9 @@ import type { Vec3 } from '../core/math.ts';
 import { add, applyDir, applyPoint, dot as dotProduct, length, scale, sub } from '../core/math.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
-import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
-import { getOptic } from './optics.ts';
 import { mountCanAccept } from './mounts.ts';
+import { getOptic } from './optics.ts';
+import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
 
 /**
  * Rules judge only what they can place. A part with no path to the root (or a
@@ -522,7 +522,7 @@ export const opticMountFit: Rule = {
         continue;
       }
       const host = connection.from.part === sight ? connection.to : connection.from;
-      const port = host.port;
+      const { port } = host;
       const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
       const slot = connection.conn.slot ?? 0;
       if (!mountCanAccept(port, optic.mount, slot)) {
@@ -547,8 +547,8 @@ export const opticEyeRelief: Rule = {
       if (optic.eyeReliefU === undefined) {
         continue;
       }
-      const stock = placedParts(r, 'stock').find(([part, def]) =>
-        def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part),
+      const stock = placedParts(r, 'stock').find(
+        ([part, def]) => def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part),
       );
       const sightTransform = r.placed.get(sight)!;
       if (!stock) {

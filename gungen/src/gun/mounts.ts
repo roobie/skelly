@@ -47,6 +47,7 @@ export const mountCanAccept = (port: PortDef, requirement: MountRequirement, slo
       (requirement.ringSpanU === undefined || railSpanU(port) + 1e-9 >= requirement.ringSpanU) &&
       requirement.contactWidthU <= standard.contactWidthU + 1e-9 &&
       slot * port.slots.pitch + 1e-9 >= Math.max(requirement.contactLengthU, requirement.ringSpanU ?? 0) / 2 &&
-      railSpanU(port) - slot * port.slots.pitch + 1e-9 >= Math.max(requirement.contactLengthU, requirement.ringSpanU ?? 0) / 2)
+      railSpanU(port) - slot * port.slots.pitch + 1e-9 >=
+        Math.max(requirement.contactLengthU, requirement.ringSpanU ?? 0) / 2)
   );
 };

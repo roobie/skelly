@@ -515,6 +515,9 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "high-mag-5-25x",
+        },
       },
       "stock": {
         "family": "recoil-stock",
@@ -656,6 +659,9 @@ exports[`templates > anti-materiel > known-good seeds 1`] = `
       },
       "sight": {
         "family": "sight",
+        "params": {
+          "type": "high-mag-5-25x",
+        },
       },
       "stock": {
         "family": "recoil-stock",

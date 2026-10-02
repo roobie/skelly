@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { validate } from '../src/core/validate.ts';
 import type { Template } from '../src/core/template.ts';
+import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
+import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { getOptic, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import {
@@ -17,6 +17,8 @@ import {
   smg,
 } from '../src/gun/templates.ts';
 import type { MutableAssembly } from './helpers.ts';
+
+const HTTPS_URL = /^https:\/\//;
 
 describe('optic catalog', () => {
   it('preserves stable ids as the sight type parameter values', () => {
@@ -33,16 +35,16 @@ describe('optic catalog', () => {
       origin: [0, optic.opticalAxisY, 0],
       dir: [1, 0, 0],
     });
-    expect(optic.source).toMatch(/^https:\/\//);
+    expect(optic.source).toMatch(HTTPS_URL);
     expect(optic.envelopeMm.every((n) => n > 0)).toBe(true);
     expect(optic.envelopeU.every((n) => n > 0)).toBe(true);
   });
 });
 
 describe('generic rail mount fit', () => {
-  const rail = FAMILIES.receiver!
-    .build({ action: 'auto', feed: 'box', bore: 'M', rail: 'full' })
-    .ports.find(({ id }) => id === 'rail')!;
+  const rail = FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', rail: 'full' }).ports.find(
+    ({ id }) => id === 'rail',
+  )!;
   const highMag = getOptic('high-mag-5-25x').mount;
 
   it('requires enough length, slots, matching pitch, and support at the selected slot', () => {
@@ -53,13 +55,26 @@ describe('generic rail mount fit', () => {
     expect(mountCanAccept({ ...rail, slots: { count: 6, pitch: 2 } }, highMag, 2)).toBe(false);
     expect(mountCanAccept({ ...rail, slots: { count: 7, pitch: 1.5 } }, highMag, 3)).toBe(false);
   });
+
+  it('keeps #114’s threaded muzzle interface and supports the high-mag optic on its receiver rail', () => {
+    const muzzle = FAMILIES.barrel!.build({ length: 'L', bore: 'L' }).ports.find(({ id }) => id === 'muzzle')!;
+    const heavyRail = FAMILIES['heavy-receiver']!.build({ action: 'auto', feed: 'box', bore: 'L' }).ports.find(
+      ({ id }) => id === 'rail',
+    )!;
+    expect(MOUNT_KINDS).toContain('muzzle');
+    expect(MOUNT_STANDARDS.muzzle.family).toBe('thread');
+    expect(muzzle.mount).toBe('muzzle');
+    expect(heavyRail.mount).toBe('rail-top');
+    expect(heavyRail.slots).toEqual({ count: 11, pitch: 2 });
+    expect(mountCanAccept(heavyRail, highMag, 5)).toBe(true);
+  });
 });
 
 const opticConnection = (template: Template, type: string) => {
   const candidates = template.connections.filter(
     ({ to, when }) => to === 'sight.base' && (!when || (when.param === 'type' && when.equals === type)),
   );
-  const connection = candidates[0];
+  const [connection] = candidates;
   const slot = connection?.slot;
   if (!connection || typeof slot !== 'number') {
     throw new Error(`${template.name} has no fixed sight mount for ${type}`);
@@ -96,16 +111,20 @@ const FIT_CASES = [
 ] as const;
 
 describe('template optics can be attached, validated, and removed', () => {
-  it.each(FIT_CASES)('$template.name keeps one gun valid with every compatible optic type', ({ template, seed, types }) => {
-    for (const type of types) {
-      const assembly = fitOptic(template, seed, type);
-      expect(validate(assembly, gunDomain).issues, `${template.name} with ${type}`).toEqual([]);
-    }
-    const removed = structuredClone(generate(template, gunDomain, seed)) as MutableAssembly;
-    delete removed.parts.sight;
-    removed.connections = removed.connections.filter(({ to }) => to !== 'sight.base');
-    expect(validate(removed, gunDomain).issues, `${template.name} without its optional optic`).toEqual([]);
-  });
+  it.each(FIT_CASES)(
+    '$template.name keeps one gun valid with every compatible optic type',
+    ({ template, seed, types }) => {
+      for (const type of types) {
+        const assembly = fitOptic(template, seed, type);
+        expect(validate(assembly, gunDomain).issues, `${template.name} with ${type}`).toEqual([]);
+      }
+      const generated = structuredClone(generate(template, gunDomain, seed)) as MutableAssembly;
+      const { sight: _sight, ...remainingParts } = generated.parts;
+      const removed: MutableAssembly = { ...generated, parts: remainingParts };
+      removed.connections = removed.connections.filter(({ to }) => to !== 'sight.base');
+      expect(validate(removed, gunDomain).issues, `${template.name} without its optional optic`).toEqual([]);
+    },
+  );
 });
 
 describe('optic incompatibility validation', () => {
