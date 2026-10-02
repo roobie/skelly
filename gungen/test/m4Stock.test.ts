@@ -28,7 +28,9 @@ const vertices = (solid: Solid) => {
 
 describe('M4-only AR stock', () => {
   it('requires an explicit bevel opt-out for clipped extrusions', () => {
-    const body = FAMILIES.stock!.build({ length: 'M', style: 'm4' }).solids.find(({ id }) => id === 'm4-stock-body');
+    const body = FAMILIES.stock!.build({ length: 'M', style: 'm4' }).solids.find(
+      ({ id }) => id === 'm4-stock-body-top',
+    );
     expect(body?.kind).toBe('extruded-polygon');
     if (body?.kind !== 'extruded-polygon') {
       throw new Error('M4 stock body must be an extruded polygon.');
@@ -41,31 +43,45 @@ describe('M4-only AR stock', () => {
   it('pins the unchanged M/L pull envelopes, 4.5u body wedge, tube wrap, latch, and buttplate', () => {
     for (const length of ['M', 'L'] as const) {
       const stock = FAMILIES.stock!.build({ length, style: 'm4' });
-      const tube = stock.solids.find(({ id }) => id === 'buffer-tube');
-      const body = stock.solids.find(({ id }) => id === 'm4-stock-body');
+      const tubeWalls = stock.solids.filter(({ id }) => id.startsWith('buffer-tube-wall-'));
+      const bodySolids = stock.solids.filter(({ id }) => id.startsWith('m4-stock-body-'));
       const latch = stock.solids.find(({ id }) => id === 'latch-rib');
       const buttplate = stock.solids.find(({ id }) => id === 'buttplate');
       const expectedLength = length === 'M' ? 16 : 22;
-      expect(tube?.kind).toBe('extruded-polygon');
-      expect(body?.kind).toBe('extruded-polygon');
+      expect(tubeWalls).toHaveLength(8);
+      expect(tubeWalls.every((wall) => wall.kind === 'extruded-polygon')).toBe(true);
+      expect(bodySolids).toHaveLength(4);
+      expect(bodySolids.every((solid) => solid.kind === 'extruded-polygon')).toBe(true);
       expect(latch?.kind).toBe('box');
       expect(buttplate?.kind).toBe('extruded-polygon');
       if (
-        tube?.kind !== 'extruded-polygon' ||
-        body?.kind !== 'extruded-polygon' ||
+        tubeWalls.some((wall) => wall.kind !== 'extruded-polygon') ||
+        bodySolids.some((solid) => solid.kind !== 'extruded-polygon') ||
         buttplate?.kind !== 'extruded-polygon'
       ) {
         throw new Error('M4 stock is missing one of its required extruded parts.');
       }
-      expect(tube.profile).toHaveLength(8);
-      expect(tube.profile.every(([y, z]) => Math.abs(y) <= 1.25 && Math.abs(z) <= 1.25)).toBe(true);
+      const tubeProfiles = tubeWalls.flatMap((wall) => (wall.kind === 'extruded-polygon' ? [wall.profile] : []));
+      expect(tubeProfiles.every((profile) => profile.length === 4)).toBe(true);
+      expect(tubeProfiles.flat().every(([y, z]) => Math.abs(y) <= 1.25 && Math.abs(z) <= 1.25)).toBe(true);
       expect(M4_STOCK_GEOMETRY.bufferTubeAcrossFlats).toBe(2.5);
-      expect(tube.z).toEqual([-expectedLength, 0]);
-      expect(body.profile).not.toEqual(tube.profile);
-      expect(body.clip).toHaveLength(3);
-      expect(body.display?.bevel).toBe(false);
-      expect(body.z).toEqual([-expectedLength, -3]);
-      expect(buttplate.profile).not.toEqual(body.profile);
+      expect(M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats).toBe(1.5);
+      expect(
+        tubeWalls.every((wall) => wall.kind === 'extruded-polygon' && wall.z[0] === -expectedLength && wall.z[1] === 0),
+      ).toBe(true);
+      expect(tubeProfiles.flat().some(([y, z]) => Math.max(Math.abs(y), Math.abs(z)) === 0.75)).toBe(true);
+      expect(bodySolids.every((solid) => solid.kind === 'extruded-polygon' && solid.clip?.length === 3)).toBe(true);
+      expect(bodySolids.every((solid) => solid.kind === 'extruded-polygon' && solid.display?.bevel === false)).toBe(
+        true,
+      );
+      expect(
+        bodySolids.every(
+          (solid) => solid.kind === 'extruded-polygon' && solid.z[0] === -expectedLength && solid.z[1] === -3,
+        ),
+      ).toBe(true);
+      expect(bodySolids.some((solid) => solid.kind === 'extruded-polygon' && solid.profile === buttplate.profile)).toBe(
+        false,
+      );
       expect(buttplate.profile.map(([y]) => y)).toEqual(expect.arrayContaining([-6.25, 1.75]));
       expect(buttplate.profile.map(([, z]) => z)).toEqual(expect.arrayContaining([-2.25, 2.25]));
       expect(buttplate.z).toEqual([-expectedLength - 1, -expectedLength]);
@@ -76,7 +92,7 @@ describe('M4-only AR stock', () => {
         expect(latchSolid.box.half).toEqual([1.5, 0.75, 0.25]);
       }
       const boundsAtX = (x: number) => {
-        const points = vertices(body).filter(([pointX]) => Math.abs(pointX - x) < 1e-8);
+        const points = bodySolids.flatMap(vertices).filter(([pointX]) => Math.abs(pointX - x) < 1e-8);
         return {
           y: [Math.min(...points.map(([, y]) => y)), Math.max(...points.map(([, y]) => y))],
           z: [Math.min(...points.map(([, , z]) => z)), Math.max(...points.map(([, , z]) => z))],
@@ -86,9 +102,10 @@ describe('M4-only AR stock', () => {
       const rearBounds = boundsAtX(-expectedLength);
       expect(frontBounds).toEqual({ y: [-1.5, 1.5], z: [-1.5, 1.5] });
       expect(rearBounds).toEqual({ y: [-6, 1.5], z: [-2, 2] });
+      const tubePoints = tubeProfiles.flat();
       const tubeBounds = {
-        y: [Math.min(...tube.profile.map(([y]) => y)), Math.max(...tube.profile.map(([y]) => y))],
-        z: [Math.min(...tube.profile.map(([, z]) => z)), Math.max(...tube.profile.map(([, z]) => z))],
+        y: [Math.min(...tubePoints.map(([y]) => y)), Math.max(...tubePoints.map(([y]) => y))],
+        z: [Math.min(...tubePoints.map(([, z]) => z)), Math.max(...tubePoints.map(([, z]) => z))],
       };
       expect(frontBounds.y[0]! < tubeBounds.y[0]! && frontBounds.y[1]! > tubeBounds.y[1]!).toBe(true);
       expect(frontBounds.z[0]! < tubeBounds.z[0]! && frontBounds.z[1]! > tubeBounds.z[1]!).toBe(true);
@@ -122,13 +139,13 @@ describe('M4-only AR stock', () => {
       expect(applyPoint(receiverTransform, receiverPort.pos), `${label}: receiver interface`).toEqual(
         applyPoint(stockTransform, stockPort.pos),
       );
-      const tube = stock.solids.find(({ id }) => id === 'buffer-tube');
-      expect(tube?.kind, `${label}: buffer tube`).toBe('extruded-polygon');
-      if (tube?.kind !== 'extruded-polygon') {
-        throw new Error('M4 buffer tube must be an octagonal extrusion.');
+      const tubeWalls = stock.solids.filter(({ id }) => id.startsWith('buffer-tube-wall-'));
+      expect(tubeWalls, `${label}: hollow buffer tube`).toHaveLength(8);
+      if (tubeWalls.some((wall) => wall.kind !== 'extruded-polygon')) {
+        throw new Error('M4 buffer-tube walls must be extruded polygons.');
       }
-      const matingFace = vertices(tube).filter(([x]) => x === 0);
-      expect(matingFace.length, `${label}: tube is seated at the adapter face`).toBe(8);
+      const matingFace = tubeWalls.flatMap(vertices).filter(([x]) => x === 0);
+      expect(matingFace.length, `${label}: tube is seated at the adapter face`).toBe(32);
       const matingPoints = matingFace.map((point) => applyPoint(stockTransform, point));
       const receiverPoint = applyPoint(receiverTransform, receiverPort.pos);
       expect(matingPoints.every(([x]) => Math.abs(x - receiverPoint[0]) < 1e-8)).toBe(true);

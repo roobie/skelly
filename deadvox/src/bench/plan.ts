@@ -109,9 +109,9 @@ export interface ShamblerRunResult {
   /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ZombieMeshes'
    * instance-matrix writes for 'boxes'). Absent on records from before this existed. */
   actorSync?: SampleStats;
-  /** renderer.info.render.calls/.triangles from one measured frame — the population is fixed for the
-   * whole run, so any one measured frame is representative (see src/bench/shamblers.ts's own draw()).
-   * Absent on records from before this existed. */
+  /** Scene-pass renderer.info.render.calls/.triangles from one measured frame — the population is fixed
+   * for the whole run, so any one measured frame is representative. Post runs sample before the later
+   * full-screen passes reset the renderer counters. Absent on records from before this existed. */
   draws?: number;
   triangles?: number;
   holesMax: number;
