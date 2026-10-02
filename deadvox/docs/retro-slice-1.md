@@ -113,7 +113,7 @@ the slice's real exit test, still hasn't happened.
   was dropped on 2026-10-02 (#137); plain git since.
 - **Test timeouts under the parallel pool.** At least three tests (the revolver
   watertight test, `revolverRules`, deadvox's melee-reach sweep) passed alone and timed
-  out in the full pool, and each got its own measured timeout raise. r2 (in flight)
+  out in the full pool, and each got its own measured timeout raise. r4 (in flight)
   is meant to fix the cause once.
 - **Host-only browser failures read as "not this branch".** primary-action timed out on
   this host for main and branch alike, so it was filed as a host problem. GitHub CI on
@@ -142,5 +142,5 @@ the slice's real exit test, still hasn't happened.
    draft PR early so the hosted run starts sooner.
 5. **For visual features, a cheap first look before the full round:** a screenshot or a
    rough model for BR to react to, then the engineering round.
-6. **Fix the test pool once (r2)** and remove the per-test timeout raises.
+6. **Fix the test pool once (r4)** and remove the per-test timeout raises.
 7. **Slice exit as a checklist issue** from day one, like #149, not at the end.
