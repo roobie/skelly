@@ -1,0 +1,105 @@
+{
+  "name": "broken-bolt-receiver-closed-port",
+  "description": "Blanked loading aperture blocks the cartridge-derived right-side round path and the complete unlock motion.",
+  "expect": ["cartridge-loading-clearance", "bolt-receiver-motion"],
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "bolt-receiver",
+      "params": {
+        "bore": "M",
+        "loadingPort": "closed"
+      }
+    },
+    "bolt-carrier": {
+      "family": "bolt-carrier",
+      "params": {
+        "pattern": "bolt"
+      }
+    },
+    "bolt-handle-arm": {
+      "family": "bolt-handle-arm"
+    },
+    "bolt-handle-knob": {
+      "family": "bolt-handle-knob"
+    },
+    "lower": {
+      "family": "lower",
+      "params": {
+        "layout": "conventional"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "length": "L"
+      }
+    },
+    "handguard": {
+      "family": "handguard",
+      "params": {}
+    },
+    "magazine": {
+      "family": "magazine",
+      "params": {
+        "length": "S"
+      }
+    },
+    "stock": {
+      "family": "stock",
+      "params": {
+        "length": "M",
+        "style": "sporting"
+      }
+    },
+    "sight": {
+      "family": "sight",
+      "params": {
+        "type": "lpvo-1-6x"
+      }
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.lower",
+      "to": "lower.top"
+    },
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "receiver.bolt-carrier",
+      "to": "bolt-carrier.mount"
+    },
+    {
+      "from": "bolt-carrier.handle",
+      "to": "bolt-handle-arm.base"
+    },
+    {
+      "from": "bolt-handle-arm.tip",
+      "to": "bolt-handle-knob.base"
+    },
+    {
+      "from": "receiver.handguard",
+      "to": "handguard.rear"
+    },
+    {
+      "from": "handguard.front",
+      "to": "barrel.clamp"
+    },
+    {
+      "from": "lower.magazine",
+      "to": "magazine.top"
+    },
+    {
+      "from": "receiver.stock",
+      "to": "stock.front"
+    },
+    {
+      "from": "receiver.rail",
+      "slot": 3,
+      "to": "sight.base"
+    }
+  ]
+}

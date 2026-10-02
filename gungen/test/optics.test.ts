@@ -381,26 +381,23 @@ describe('template optics can be attached, validated, and removed', () => {
 });
 
 describe('curated optic mounts', () => {
-  it('keeps published designs receiver-mounted and valid when only the optic type is swapped', () => {
-    const designs = [
-      ['archetype-battle-rifle', OPTIC_TYPE_IDS.slice(0, 6)],
-      ['archetype-ar', OPTIC_TYPE_IDS.slice(0, 5)],
-      ['archetype-ar-free-float', OPTIC_TYPE_IDS.slice(0, 5)],
-      ['archetype-bolt-rifle', OPTIC_TYPE_IDS.slice(3)],
-      ['archetype-bolt-rifle-box', OPTIC_TYPE_IDS.slice(4)],
-      ['archetype-awm', OPTIC_TYPE_IDS.slice(4)],
-      ['archetype-smg', OPTIC_TYPE_IDS.slice(0, 3)],
-      ['archetype-anti-materiel', ['high-mag-5-25x']],
-    ] as const;
-    for (const [name, types] of designs) {
-      const { assembly } = JSON.parse(readFileSync(new URL(`../designs/${name}.json`, import.meta.url), 'utf8')) as {
-        assembly: MutableAssembly;
-      };
-      for (const type of types) {
-        assembly.parts.sight!.params = { type };
-        expectContactOnPhysicalRail(assembly, type);
-        expect(validate(assembly, gunDomain).issues, `${name} with ${type}`).toEqual([]);
-      }
+  it.each([
+    ['archetype-battle-rifle', OPTIC_TYPE_IDS.slice(0, 6)],
+    ['archetype-ar', OPTIC_TYPE_IDS.slice(0, 5)],
+    ['archetype-ar-free-float', OPTIC_TYPE_IDS.slice(0, 5)],
+    ['archetype-bolt-rifle', OPTIC_TYPE_IDS.slice(3)],
+    ['archetype-bolt-rifle-box', OPTIC_TYPE_IDS.slice(4)],
+    ['archetype-awm', OPTIC_TYPE_IDS.slice(4)],
+    ['archetype-smg', OPTIC_TYPE_IDS.slice(0, 3)],
+    ['archetype-anti-materiel', ['high-mag-5-25x']],
+  ] as const)('keeps %s receiver-mounted and valid when only the optic type is swapped', (name, types) => {
+    const { assembly } = JSON.parse(readFileSync(new URL(`../designs/${name}.json`, import.meta.url), 'utf8')) as {
+      assembly: MutableAssembly;
+    };
+    for (const type of types) {
+      assembly.parts.sight!.params = { type };
+      expectContactOnPhysicalRail(assembly, type);
+      expect(validate(assembly, gunDomain).issues, `${name} with ${type}`).toEqual([]);
     }
   });
 
@@ -443,6 +440,8 @@ describe('optic incompatibility validation', () => {
     'rejects actual %s geometry inside the loading footprint after a green nominal control',
     (fault) => {
       const assembly = fitOptic(boltRifle, 0, 'high-mag-5-25x');
+      // Protect the generic top-feed opening contract independently of the tubular frame's right-side path.
+      assembly.parts.receiver = { family: 'receiver', params: { action: 'bolt', feed: 'top', bore: 'M' } };
       expect(validate(assembly, gunDomain).issues).toEqual([]);
       const original = FAMILIES.sight!;
       let consumed = false;

@@ -73,6 +73,7 @@ const FAMILY_HEX: Record<string, number> = {
 const ROLE_SLOTS: Record<string, string> = {
   receiver: 'metal',
   'ak-receiver': 'metal',
+  'bolt-receiver': 'metal',
   'bolt-carrier': 'metal',
   'bolt-handle': 'metal',
   'bolt-handle-arm': 'metal',
@@ -104,6 +105,7 @@ const ROLE_SLOTS: Record<string, string> = {
 const SHADE: Record<string, number> = {
   receiver: 1,
   'ak-receiver': 0.93,
+  'bolt-receiver': 1,
   'bolt-carrier': 0.78,
   'bolt-handle': 0.78,
   'bolt-handle-arm': 0.78,

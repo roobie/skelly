@@ -292,7 +292,7 @@ export const smg: Template = {
 
 export const boltRifle: Template = {
   name: 'bolt-rifle',
-  description: 'Bolt-action rifle loaded from the top: sporting or thumbhole stock, long handguard.',
+  description: 'Tubular bolt-action rifle with right-side loading: sporting or thumbhole stock, long handguard.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'bolt-receiver', params: { bore: ['M', 'L'] } },

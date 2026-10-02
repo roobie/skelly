@@ -1,6 +1,6 @@
 import { type ConvexPolyhedron, obbPolyhedron, penetrationWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
-import { compose, invert, mulMV, rotX } from '../core/math.ts';
+import { add, compose, IDENTITY, invert, mulMV, rotX } from '../core/math.ts';
 import { rotationSweepClear, translationSweepClear } from '../core/motionSweep.ts';
 import type { Resolved } from '../core/resolve.ts';
 import type { Rule, Solid } from '../core/schema.ts';
@@ -66,6 +66,37 @@ export const boltReceiverMotionClearance: Rule = {
   },
 };
 
+const openActionLoadingIssues = (
+  r: Resolved,
+  owner: string,
+  moving: readonly string[],
+  path: Extract<Solid, { kind: 'box' }>,
+): Issue[] => {
+  const volume = worldSolid(IDENTITY, path);
+  return moving.flatMap((part) => {
+    const obstructs = r.defs.get(part)!.solids.some((solid) => {
+      const start = localPoly(r, owner, part, solid);
+      const opened = {
+        ...start,
+        vertices: start.vertices.map((v) =>
+          add(mulMV(rotX(-BOLT_RECEIVER.liftDegrees), v), [-BOLT_RECEIVER.travel, 0, 0]),
+        ),
+      };
+      return penetrationWorld(volume, opened) > 1e-6;
+    });
+    return obstructs
+      ? [
+          {
+            rule: 'cartridge-loading-clearance',
+            parts: [owner, part],
+            message: `${part} still occupies ${owner}'s round path after full unlock and retraction.`,
+            keepOut: { part: owner, id: path.id },
+          },
+        ]
+      : [];
+  });
+};
+
 export const boltReceiverLoadingClearance: Rule = {
   id: 'cartridge-loading-clearance',
   title: 'The reference round has a clear right-side path through the actual tube and optic solids',
@@ -78,6 +109,7 @@ export const boltReceiverLoadingClearance: Rule = {
       const path = cartridgeLoadingPath();
       const volume = worldSolid(r.placed.get(owner)!, path);
       const moving = movingParts(r, owner);
+      issues.push(...openActionLoadingIssues(r, owner, moving, path));
       for (const [part, def] of r.defs) {
         if (!r.placed.has(part) || moving.includes(part)) {
           continue;

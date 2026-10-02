@@ -571,9 +571,10 @@ describe('procedural bolt carrier', () => {
     }
   });
 
+  // The tubular rifle's unchanged local meshes and complete unlock/pull now live in boltReceiver.test.ts.
+  // These two cases retain the ordinary receiver's straight-pull placement contract.
   // biome-ignore format: Keep the comprehensive per-design geometry contract in its current layout.
   it.each([
-    { label: 'design archetype-bolt-rifle.json', profile: 'standard', radial: 6.08, diameter: 1.75, outstand: 4 },
     { label: 'design archetype-bolt-rifle-box.json', profile: 'standard', radial: 6.08, diameter: 1.75, outstand: 4 },
     { label: 'design archetype-awm.json', profile: 'awm', radial: 6.62, diameter: 2, outstand: 4.5 },
   ])('$profile octagonal bolt handle is correctly sized and travels with the carrier: $label', ({ label, radial, diameter, outstand }) => {
@@ -732,8 +733,8 @@ describe('procedural bolt carrier', () => {
     expect(handleOrigin[0]).toBeLessThanOrEqual(handguardFrontX);
   });
 
-  it('restores the mainline bolt/AWM receiver shell while preserving their carrier-mounted levers', () => {
-    for (const design of ['design archetype-bolt-rifle.json', 'design archetype-awm.json']) {
+  it('keeps boxed bolt/AWM receiver shells intact with their carrier-mounted levers', () => {
+    for (const design of ['design archetype-bolt-rifle-box.json', 'design archetype-awm.json']) {
       const { assembly } = loadCorpus().find(({ label }) => label === design)!;
       const resolved = resolve(assembly, gunDomain);
       const receiver = resolved.defs.get('receiver')!;

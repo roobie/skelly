@@ -1,0 +1,105 @@
+{
+  "name": "broken-bolt-receiver-wrong-handle-frame",
+  "description": "Standard box-frame lever attachment overrides the tubular frame inheritance: locked pose fits, full unlock strikes the scope/deck.",
+  "expect": ["bolt-receiver-motion"],
+  "root": "receiver",
+  "parts": {
+    "receiver": {
+      "family": "bolt-receiver",
+      "params": {
+        "bore": "M"
+      }
+    },
+    "bolt-carrier": {
+      "family": "bolt-carrier",
+      "params": {
+        "pattern": "bolt",
+        "section": "standard"
+      }
+    },
+    "bolt-handle-arm": {
+      "family": "bolt-handle-arm"
+    },
+    "bolt-handle-knob": {
+      "family": "bolt-handle-knob"
+    },
+    "lower": {
+      "family": "lower",
+      "params": {
+        "layout": "conventional"
+      }
+    },
+    "barrel": {
+      "family": "barrel",
+      "params": {
+        "length": "L"
+      }
+    },
+    "handguard": {
+      "family": "handguard",
+      "params": {}
+    },
+    "magazine": {
+      "family": "magazine",
+      "params": {
+        "length": "S"
+      }
+    },
+    "stock": {
+      "family": "stock",
+      "params": {
+        "length": "M",
+        "style": "sporting"
+      }
+    },
+    "sight": {
+      "family": "sight",
+      "params": {
+        "type": "lpvo-1-6x"
+      }
+    }
+  },
+  "connections": [
+    {
+      "from": "receiver.lower",
+      "to": "lower.top"
+    },
+    {
+      "from": "receiver.barrel",
+      "to": "barrel.rear"
+    },
+    {
+      "from": "receiver.bolt-carrier",
+      "to": "bolt-carrier.mount"
+    },
+    {
+      "from": "bolt-carrier.handle",
+      "to": "bolt-handle-arm.base"
+    },
+    {
+      "from": "bolt-handle-arm.tip",
+      "to": "bolt-handle-knob.base"
+    },
+    {
+      "from": "receiver.handguard",
+      "to": "handguard.rear"
+    },
+    {
+      "from": "handguard.front",
+      "to": "barrel.clamp"
+    },
+    {
+      "from": "lower.magazine",
+      "to": "magazine.top"
+    },
+    {
+      "from": "receiver.stock",
+      "to": "stock.front"
+    },
+    {
+      "from": "receiver.rail",
+      "slot": 3,
+      "to": "sight.base"
+    }
+  ]
+}

@@ -95,10 +95,10 @@ const deck = (id: string, x: readonly [number, number]): Solid => ({
   ],
   display: { bevel: false },
 });
-const supports = (): Solid[] => [
+const supports = (bore: string): Solid[] => [
   // Keep the lower's actual contact plane at -2.5u, with a tang and front recoil-lug bearing.
   box('receiver-bottom-bearing', [-16, -2.5, -1], [0, -1.25, 1]),
-  box('receiver-recoil-lug', [-0.5, -2.5, -1.75], [0, -1, 1.75]),
+  box('receiver-recoil-lug', [-0.5, -2.5, bore === 'L' ? -2 : -1.75], [0, -1, bore === 'L' ? 2 : 1.75]),
   box('receiver-rear-tang', [-16, -1.25, -1.5], [-15.5, 0.5, 1.5]),
   // Left-side saddles leave the lifted stem's top/right raceway empty underneath the decks.
   box('receiver-rear-saddle', [-14, 0.5, -1.25], [-13, 2.25, -1]),
@@ -117,6 +117,7 @@ export const makeBoltReceiver = (standard: PartFamily): PartFamily => ({
     carrierPattern: { ...standard.params.carrierPattern!, values: ['bolt'], default: 'bolt' },
     handleStyle: { ...standard.params.handleStyle!, values: ['auto', 'bolt'], default: 'auto' },
     bore: { values: ['M', 'L'], default: 'M' },
+    loadingPort: { values: ['open', 'closed'], default: 'open', fault: ['closed'] },
   },
   build(params) {
     const base = standard.build({
@@ -130,13 +131,35 @@ export const makeBoltReceiver = (standard: PartFamily): PartFamily => ({
     const inner = BOLT_RECEIVER.innerRadius;
     const bridge = wallCells([-16.75, -16], inner, new Set(), 'receiver-rear-bridge');
     const rear = wallCells([-16, -9.75], inner, new Set([0, 1, 2]), 'receiver-rear-wall');
-    const port = wallCells(BOLT_RECEIVER.portX, inner, new Set([0, 1, 2, 3, 4, 5, 6]), 'receiver-port-wall');
+    const port =
+      params.loadingPort === 'closed'
+        ? [
+            ...wallCells([-9.75, -9.25], inner, new Set(), 'receiver-port-rear-blank'),
+            ...wallCells([-9.25, -7.75], inner, new Set([0, 1, 2, 3, 4, 5, 6]), 'receiver-handle-notch'),
+            ...wallCells([-7.75, -3.25], inner, new Set(), 'receiver-port-front-blank'),
+          ]
+        : [
+            ...wallCells(BOLT_RECEIVER.portX, inner, new Set([0, 1, 2, 3, 4, 5, 6]), 'receiver-port-wall'),
+            // Preserve the lower lip except at the localized locked-handle notch.
+            ...wallCells(
+              [-9.75, -9.25],
+              inner,
+              new Set(Array.from({ length: 16 }, (_, i) => i).filter((i) => i !== 6)),
+              'receiver-notch-rear-lip',
+            ),
+            ...wallCells(
+              [-7.75, -3.25],
+              inner,
+              new Set(Array.from({ length: 16 }, (_, i) => i).filter((i) => i !== 6)),
+              'receiver-notch-front-lip',
+            ),
+          ];
     const socketRadius = (params.bore === 'L' ? 1.25 : 1) / Math.cos(Math.PI / 8);
     const front = [
       ...wallCells([-3.25, 0], inner, new Set(), 'receiver-front-ring'),
       ...wallCells([0, 2], socketRadius, new Set(), 'receiver-barrel-socket'),
     ];
-    const hardware = supports();
+    const hardware = supports(params.bore ?? 'M');
     const path = cartridgeLoadingPath();
     const loading: KeepOut = { id: path.id, kind: path.id, box: path.box };
     return {

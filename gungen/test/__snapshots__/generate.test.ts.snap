@@ -1523,11 +1523,9 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         },
       },
       "receiver": {
-        "family": "receiver",
+        "family": "bolt-receiver",
         "params": {
-          "action": "bolt",
           "bore": "M",
-          "feed": "top",
         },
       },
       "sight": {
@@ -1626,11 +1624,9 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         },
       },
       "receiver": {
-        "family": "receiver",
+        "family": "bolt-receiver",
         "params": {
-          "action": "bolt",
           "bore": "M",
-          "feed": "top",
         },
       },
       "sight": {
@@ -1728,11 +1724,9 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         },
       },
       "receiver": {
-        "family": "receiver",
+        "family": "bolt-receiver",
         "params": {
-          "action": "bolt",
           "bore": "L",
-          "feed": "top",
         },
       },
       "stock": {

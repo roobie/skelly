@@ -1,5 +1,5 @@
 // biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Geometry assembly branches encode firearm configuration and keep aperture construction visible.
-// Part library: parametric families built from boxes and convex extrusions. All numbers are in u
+// Part library: parametric families built from boxes, convex extrusions and revolved displays. All numbers are in u
 // (see conventions.ts) and set proportions, not real-world dimensions
 // (PROJECT.md, non-goals).
 //
