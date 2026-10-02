@@ -1624,14 +1624,11 @@ export const revolverAlignment = {
       }
     }
 
-    const transform = resolved.placed.get(frame)!;
     const innerLoop = guards.map((solid) => {
       if (solid.kind !== 'extruded-polygon') {
         return [Number.NaN, Number.NaN] as Vec2;
       }
-      const [x, y] = solid.profile[3]!;
-      const point = applyPoint(transform, [x, y, 0]);
-      return [point[0], point[1]] as Vec2;
+      return solid.profile[3]!;
     });
     const ccwInnerLoop = ccw2(innerLoop);
     const loopTopY = Math.max(...innerLoop.map((point) => point[1]));
@@ -1640,13 +1637,42 @@ export const revolverAlignment = {
         const end = ccwInnerLoop[(index + 1) % ccwInnerLoop.length]!;
         return cross2(sub2(end, start), sub2(point, start)) >= -TOLERANCE;
       });
+    const guardDepthMin = Math.max(
+      ...guards.map((solid) => (solid.kind === 'extruded-polygon' ? solid.z[0] : Number.POSITIVE_INFINITY)),
+    );
+    const guardDepthMax = Math.min(
+      ...guards.map((solid) => (solid.kind === 'extruded-polygon' ? solid.z[1] : Number.NEGATIVE_INFINITY)),
+    );
+    const floor = frameDef.solids.find(({ id }) => id === 'frame-floor');
+    if (!(floor?.kind === 'extruded-polygon' && guardDepthMax > guardDepthMin)) {
+      return false;
+    }
+    const floorBottomY = Math.min(...floor.profile.map(([, y]) => y));
+    const floorBottomEdge = floor.profile.filter(([, y]) => Math.abs(y - floorBottomY) <= TOLERANCE);
+    // Only the trigger's original root vertices may attach outside the bow, on this real frame-floor face.
+    const rootProfile = triggerProfiles[0]!.filter(([, y]) => Math.abs(y - floorBottomY) <= TOLERANCE);
+    if (floorBottomEdge.length < 2 || rootProfile.length < 2) {
+      return false;
+    }
+    const rootMinX = Math.max(Math.min(...floorBottomEdge.map(([x]) => x)), Math.min(...rootProfile.map(([x]) => x)));
+    const rootMaxX = Math.min(Math.max(...floorBottomEdge.map(([x]) => x)), Math.max(...rootProfile.map(([x]) => x)));
     return triggers.every((trigger) => {
-      if (trigger.kind !== 'extruded-polygon') {
+      if (
+        trigger.kind !== 'extruded-polygon' ||
+        trigger.z[0] < guardDepthMin - TOLERANCE ||
+        trigger.z[1] > guardDepthMax + TOLERANCE
+      ) {
         return false;
       }
-      const profile = sideFootprint(resolved, frame, trigger);
-      const contained = Boolean(profile?.every((point) => point[1] > loopTopY + TOLERANCE || triggerInsideLoop(point)));
-      return contained;
+      const rootDepthWithinFloor = trigger.z[0] >= floor.z[0] - TOLERANCE && trigger.z[1] <= floor.z[1] + TOLERANCE;
+      const atFrameFloorRoot = (point: Vec2): boolean =>
+        trigger.id === 'curved-trigger-0' &&
+        rootDepthWithinFloor &&
+        point[1] > loopTopY + TOLERANCE &&
+        Math.abs(point[1] - floorBottomY) <= TOLERANCE &&
+        point[0] >= rootMinX - TOLERANCE &&
+        point[0] <= rootMaxX + TOLERANCE;
+      return trigger.profile.every((point) => triggerInsideLoop(point) || atFrameFloorRoot(point));
     });
   },
 };

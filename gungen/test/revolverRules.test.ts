@@ -12,6 +12,24 @@ import { tWiseCases } from './coveringArray.ts';
 import { expectWatertightMesh, loadFixture, variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';
 
+const validateFrameSolidMutation = (mutate: (solid: Solid) => Solid) => {
+  const source = FAMILIES['revolver-frame']!;
+  const domain = {
+    ...gunDomain,
+    families: {
+      ...FAMILIES,
+      'revolver-frame': {
+        ...source,
+        build(params: Parameters<typeof source.build>[0]) {
+          const def = source.build(params);
+          return { ...def, solids: def.solids.map(mutate) };
+        },
+      },
+    },
+  };
+  return validate(loadFixture('archetype-revolver'), domain);
+};
+
 const shiftPart = (resolved: Resolved, part: string, delta: readonly [number, number, number]): Resolved => {
   const placed = new Map(resolved.placed);
   const transform = placed.get(part)!;
@@ -257,6 +275,26 @@ describe('revolver alignment rules', () => {
     const frame = defs.get('frame')!;
     defs.set('frame', { ...frame, solids: frame.solids.filter((solid) => solid.id !== 'trigger-guard-9') });
     expect(revolverAlignment.triggerBow({ ...base, defs })).toBe(false);
+  });
+
+  it('rejects all trigger solids moved 10u above the bow from a valid baseline', () => {
+    expect(validate(loadFixture('archetype-revolver'), gunDomain).issues).toEqual([]);
+    const report = validateFrameSolidMutation((solid) =>
+      solid.id.startsWith('curved-trigger-') && solid.kind === 'extruded-polygon'
+        ? { ...solid, profile: solid.profile.map(([x, y]) => [x, y + 10] as const) }
+        : solid,
+    );
+    expect(report.issues.some((issue) => issue.rule === 'revolver-trigger-bow')).toBe(true);
+  });
+
+  it('rejects all trigger solids moved 10u outside the bow depth from a valid baseline', () => {
+    expect(validate(loadFixture('archetype-revolver'), gunDomain).issues).toEqual([]);
+    const report = validateFrameSolidMutation((solid) =>
+      solid.id.startsWith('curved-trigger-') && solid.kind === 'extruded-polygon'
+        ? { ...solid, z: [solid.z[0] + 10, solid.z[1] + 10] as const }
+        : solid,
+    );
+    expect(report.issues.some((issue) => issue.rule === 'revolver-trigger-bow')).toBe(true);
   });
 
   it('rejects a displaced trigger-bow segment with all IDs and ports intact', () => {
