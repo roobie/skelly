@@ -3,7 +3,7 @@ import type { AnchorFrame, NamedAnchors, PartAnchorDeclaration, ResolvedAnchors 
 import type { Resolved } from '../core/resolve.ts';
 
 /** Gun-domain names; core treats these as caller-supplied strings. */
-export type GunAnchorName = 'hold' | 'support' | 'muzzle';
+export type GunAnchorName = 'hold' | 'support' | 'muzzle' | 'ejection';
 
 export interface SelectedAnchors {
   readonly hold: AnchorFrame;
@@ -58,7 +58,7 @@ export const GUN_ANCHOR_POLICY: GunAnchorSelectionPolicy = {
   equalRank: 'ambiguous',
 };
 
-const OTHER_ANCHORS = ['support', 'muzzle'] as const satisfies readonly GunAnchorName[];
+const OTHER_ANCHORS = ['support', 'muzzle', 'ejection'] as const satisfies readonly GunAnchorName[];
 
 /**
  * Resolves every declared anchor into assembly space (core), then applies the gun policy. The `hold` comes
