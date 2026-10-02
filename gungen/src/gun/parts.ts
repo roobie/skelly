@@ -161,7 +161,7 @@ const TUBE_BARREL_CLEARANCE = 0.5;
 const TUBE_RECEIVER_CLEARANCE = 0.25;
 const PUMP_RECEIVER_DROP = 1;
 // Keep stock/trigger datums fixed while moving the pump action forward clear of the rear slope.
-const PUMP_RECEIVER_FORWARD_EXTENSION_U = 1.5;
+const PUMP_RECEIVER_FORWARD_EXTENSION_U = 3.5;
 const PUMP_FOREND_MOUNT_X = 8;
 const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
 const PUMP_FOREND_WALL = 0.25;
@@ -701,7 +701,7 @@ const receiverShellSolids = ({
   internalPockets?: readonly SectionPocket[];
   farPortWindow?: { readonly x: readonly [number, number]; readonly y: readonly [number, number] };
 }): Solid[] => {
-  const [xMin, xMax] = [-16, frontFaceX] as const;
+  const [xMin, xMax] = [isSectionedReceiver(section) ? RECEIVER_SECTION[section].faces.rear : -16, frontFaceX] as const;
   const cavity = carrierCavityBounds(carrierPattern, carrierY);
   if (isSectionedReceiver(section)) {
     const data = RECEIVER_SECTION[section];
@@ -712,12 +712,13 @@ const receiverShellSolids = ({
             offset: plane.offset - plane.normal[1] * receiverDrop,
           }))
         : undefined;
-    const sectionSolids = buildReceiverSection({
+    return buildReceiverSection({
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax],
       wall: 0.5,
-      cavity,
+      // End the pump cavity in the full-height section; its own rear wall carries the entire slope.
+      cavity: section === 'pump' ? { ...cavity, x: [xMin + PUMP_REAR_SLOPE.run, xMax - 0.5] } : cavity,
       port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
       ...(farPortWindow ? { farPort: { x: farPortWindow.x, sectionAxis: 0, section: farPortWindow.y } } : {}),
       ...(portSlots ? { portSlots } : {}),
@@ -729,31 +730,6 @@ const receiverShellSolids = ({
           }
         : {}),
     });
-    if (section !== 'pump' || carrierPattern !== 'pump') {
-      return sectionSolids;
-    }
-    // Close the cut receiver cross-section behind the carrier, following the original rear slope.
-    const slope = PUMP_REAR_SLOPE.clip;
-    const [slopeNormalX, slopeNormalY] = slope.normal;
-    const slopeOffset = slope.offset - slopeNormalY * receiverDrop;
-    const cavityRearX = xMin + 0.5;
-    const [cavityStartY, endY] = cavity.y;
-    const startY = Math.max(cavityStartY, (slopeOffset - slopeNormalX * cavityRearX) / slopeNormalY);
-    const slopeXAt = (y: number) => (slopeOffset - slopeNormalY * y) / slopeNormalX;
-    if (startY >= endY || slopeXAt(endY) <= cavityRearX) {
-      return sectionSolids;
-    }
-    const closure = extrudedPolygon(
-      'receiver-pump-rear-slope-closure',
-      [
-        [cavityRearX, startY],
-        [slopeXAt(endY), endY],
-        [cavityRearX, endY],
-      ],
-      cavity.z,
-    );
-    sectionSolids.push({ ...closure, display: { mergeGroup: 'receiver-pump' } });
-    return sectionSolids;
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
@@ -1083,7 +1059,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       mount: 'rail-top',
       gender: 'female',
       // AR scope feet stay on the upper, but the ocular starts ahead of rear charging-handle travel.
-      pos: [params.section === 'ar' ? -12 : -14, receiverTop, 0],
+      pos: [params.section === 'ar' || params.section === 'pump' ? -12 : -14, receiverTop, 0],
       normal: Y,
       up: X,
       slots: { count: 7, pitch: 2 },
@@ -1286,7 +1262,8 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
         solid('receiver-optic-rail-front-base', [-4, receiverTop - 0.5, -1.25], [-2, receiverTop, 1.25]),
       );
     } else {
-      const start = params.section === 'ar' ? -12 : -14;
+      // Keep the pump's flat rail in the full-height section, ahead of its rear slope.
+      const start = params.section === 'ar' || params.section === 'pump' ? -12 : -14;
       opticRail.push(solid('receiver-optic-rail', [start, receiverTop - 0.5, -1.25], [start + 12, receiverTop, 1.25]));
     }
   }

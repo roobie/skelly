@@ -1308,9 +1308,15 @@ not part of the export's acceptance:
   is the representative shell; SAAMI's longer rolled-closed length (62.23 mm =
   5.411u at 11.5 mm/u) sizes a 5.5u (63.25 mm) grid-rounded action stroke. The
   port minimum is loaded length plus 0.25u end clearance at both ends (5.911u);
-  the carrier-derived aperture is 6.75u wide. Moving its rest anchor from -7u
-  to -6.5u shifts the carrier and port forward by 0.5u. The stock contact stays
-  at [-16, -1, 0], and the trigger/guard geometry is unchanged. The 62.23 mm
+  the carrier-derived aperture is 6.75u wide. BR required receiver elongation,
+  not a rear closure patch (2026-10-02). The receiver grows 3.5u forward, moving
+  the carrier rest anchor to -3u and its port, barrel, tube and forend together.
+  At full stroke the carrier rear is -11.5u, 0.5u ahead of the full-height
+  section's -12u rear boundary. The original 4u/1.5u rear slope is unchanged;
+  the axial cavity stops ahead of it so the receiver's own rear wall closes
+  the slope without a wedge. The flat rail also starts at -12u. The stock
+  contact stays at [-16, -1, 0], and the trigger/guard geometry is unchanged,
+  preserving the 5u–7u grip-to-trigger bound. The 62.23 mm
   figure is a conservative standard envelope, not a claim about Federal's
   unspecified crimp. See `cartridges/12-gauge-00-buck.json` and
   `test/boltCarrier.test.ts`. Revolver receivers have no ejection keep-out and

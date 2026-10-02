@@ -781,7 +781,7 @@ describe('procedural bolt carrier', () => {
     const expectedAnchors = [
       { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
-      { pattern: 'pump', restX: -5, carrierX: [-3.25, 3], portX: [-8.25, -1.5], portY: [-1, 1] },
+      { pattern: 'pump', restX: -3, carrierX: [-3.25, 3], portX: [-6.25, 0.5], portY: [-1, 1] },
       { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
       { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25], portY: [0.5, 1.75] },
     ] as const;
@@ -791,6 +791,7 @@ describe('procedural bolt carrier', () => {
       const resolved = resolve(assemblyFor(entry), gunDomain);
       const port = portMeasurements(entry, resolved);
       if (expected.pattern === 'pump') {
+        // Forward growth contains the full stroke without changing the stock-to-trigger distance.
         expect(resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'stock')!.pos).toEqual([-16, -1, 0]);
       }
       expect(BOLT_CARRIER_ENVELOPES[expected.pattern].x, expected.pattern).toEqual(expected.carrierX);
@@ -974,12 +975,11 @@ describe('procedural bolt carrier', () => {
     for (const x of [-5.5, -4, -1, -0.25]) {
       expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY, 1.95), `outer skin x=${x}`).toBe(true);
     }
-    for (const x of [-8, -5, -4]) {
-      expect(receiverSectionHasMaterialAt(receiver.solids, x, 0, 1.95), `unchanged ejection opening x=${x}`).toBe(
-        false,
-      );
+    // The port and its forward skin move 2u with the action; the opening shape is unchanged.
+    for (const x of [-6, -3, -2]) {
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, 0, 1.95), `shifted ejection opening x=${x}`).toBe(false);
     }
-    expect(receiverSectionHasMaterialAt(receiver.solids, -1, 0, 1.95), 'receiver side ahead of the port').toBe(true);
+    expect(receiverSectionHasMaterialAt(receiver.solids, 1, 0, 1.95), 'receiver side ahead of the port').toBe(true);
     for (const x of [-5, -2, -0.25]) {
       expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY + 1.1, 0), `internal slot x=${x}`).toBe(false);
     }

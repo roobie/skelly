@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { penetrationWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
-import { IDENTITY } from '../src/core/math.ts';
+import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
 import type { TriangleMesh } from '../src/core/mesh.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
-import type { PartDef, Solid, Vec2 } from '../src/core/schema.ts';
+import { resolve } from '../src/core/resolve.ts';
+import type { Solid, Vec2 } from '../src/core/schema.ts';
+import { gunDomain } from '../src/gun/domain.ts';
 import {
-  BOLT_CARRIER_ENVELOPES,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
   carrierCavityBounds,
   FAMILIES,
@@ -14,7 +15,7 @@ import {
 } from '../src/gun/parts.ts';
 import { PUMP_ACTION_TRAVEL_U } from '../src/gun/pumpShell.ts';
 import { assertConvexSection, buildReceiverSection } from '../src/gun/receiverSection.ts';
-import { expectWatertightMesh } from './helpers.ts';
+import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
 const CONVEX_ERROR = /convex polygon/;
 const COUNTER_CLOCKWISE_ERROR = /counter-clockwise convex polygon/;
@@ -101,23 +102,6 @@ const meshHasSurfaceAt = (mesh: TriangleMesh, point: readonly [number, number, n
     }
   }
   return false;
-};
-
-const pumpRearSlopeClosedAtRestAndOpen = (mesh: TriangleMesh, receiver: PartDef): boolean => {
-  const carrier = receiver.ports.find(({ id }) => id === 'bolt-carrier')!;
-  const carrierRearUpper = carrier.pos[1] + BOLT_CARRIER_ENVELOPES.pump.y[1];
-  const receiverDrop = 1 - carrier.pos[1];
-  const { normal, offset } = PUMP_REAR_SLOPE.clip;
-  const slopeOffset = offset - normal[1] * receiverDrop;
-  const rearSurfaceX = (slopeOffset - normal[1] * carrierRearUpper) / normal[0];
-  if (!meshHasSurfaceAt(mesh, [rearSurfaceX, carrierRearUpper, 0])) {
-    return false;
-  }
-  const rearBoundaryX = Math.max(-16, rearSurfaceX);
-  return [0, PUMP_ACTION_TRAVEL_U].every((travel) => {
-    const carrierRearX = carrier.pos[0] - travel - BOLT_CARRIER_ENVELOPES.pump.x[1];
-    return carrierRearX > rearBoundaryX + BOLT_CARRIER_RUNNING_CLEARANCE_U;
-  });
 };
 
 const faceContainsPoint = (mesh: ReturnType<typeof meshForSolidGroup>, x: number, y: number, z: number): boolean => {
@@ -327,19 +311,82 @@ describe('receiver section builder', () => {
     }
   });
 
-  it('closes the pump rear slope through the full action stroke without moving stock or trigger contacts', () => {
-    const def = FAMILIES.receiver!.build({ action: 'pump', feed: 'tube', bore: 'L', section: 'pump', rail: 'none' });
+  it('contains the pump action in the full-height shell at rest and full stroke with one continuous unpatched slope', () => {
+    const resolved = resolve(loadFixture('archetype-pump-shotgun'), gunDomain);
+    const def = resolved.defs.get('receiver')!;
+    const carrier = resolved.defs.get('bolt-carrier')!;
     const solids = def.solids.filter((solid) => solid.display?.mergeGroup === 'receiver-pump');
     const mesh = meshForSolidGroup(solids);
     const stock = def.ports.find(({ id }) => id === 'stock')!;
-    const trigger = def.ports.find(({ id }) => id === 'lower')!;
-
-    expect(faceContainsPoint(mesh, -16, -1, 0), 'stock contact stays fixed').toBe(true);
+    const { faces, outline } = RECEIVER_SECTION.pump;
+    const drop = faces.bottom - def.ports.find(({ id }) => id === 'lower')!.pos[1];
+    const { normal, offset } = PUMP_REAR_SLOPE.clip;
+    const slopeOffset = offset - drop;
+    const slopeXAt = (y: number) => (slopeOffset - y) / normal[0];
+    const slopeStartX = slopeXAt(faces.top.y - drop);
+    const points = (solid: Solid): Vec3[] => {
+      const { positions } = meshForSolid(solid, 0);
+      return Array.from({ length: positions.length / 3 }, (_, index) => [
+        positions[index * 3]!,
+        positions[index * 3 + 1]!,
+        positions[index * 3 + 2]!,
+      ]);
+    };
+    const expectInsideShell = ([x, y, z]: Vec3, label: string) => {
+      expect(x, `${label}: rear`).toBeGreaterThanOrEqual(faces.rear - 1e-6);
+      expect(normal[0] * x + y, `${label}: slope`).toBeLessThanOrEqual(slopeOffset + 1e-6);
+      for (let index = 0; index < outline.length; index++) {
+        const a = outline[index]!;
+        const b = outline[(index + 1) % outline.length]!;
+        const inside = (b[0] - a[0]) * (z - a[1]) - (b[1] - a[1]) * (y + drop - a[0]);
+        expect(inside, `${label}: section edge ${index}`).toBeGreaterThanOrEqual(-1e-6);
+      }
+    };
+    const expectActionFits = (travel: number) => {
+      const transform = compose(resolved.placed.get('bolt-carrier')!, translation([travel, 0, 0]));
+      for (const solid of carrier.solids) {
+        const moved = worldSolid(transform, solid);
+        for (const obstacle of def.solids) {
+          expect(
+            penetrationWorld(moved, worldSolid(IDENTITY, obstacle)),
+            `${solid.id} vs ${obstacle.id} at ${travel}u`,
+          ).toBeLessThanOrEqual(1e-6);
+        }
+        // The action bar continues forward into the approved forend, outside the receiver.
+        const internalPoints = points(solid)
+          .map((local) => applyPoint(transform, local))
+          .filter(([x]) => x <= faces.front);
+        for (const point of internalPoints) {
+          expectInsideShell(point, `${solid.id} at ${travel}u`);
+          expect(point[0], `${solid.id}: full-height section at ${travel}u`).toBeGreaterThanOrEqual(
+            slopeStartX + BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          );
+        }
+      }
+    };
+    for (const travel of [0, PUMP_ACTION_TRAVEL_U]) {
+      expectActionFits(travel);
+    }
+    for (const solid of def.solids.filter(({ id }) => id !== 'tube-seat')) {
+      for (const point of points(solid)) {
+        expectInsideShell(point, solid.id);
+      }
+    }
+    expect(
+      solids.every((solid) => solid.kind === 'extruded-polygon' && solid.axis === 'x'),
+      'no added wedge',
+    ).toBe(true);
+    // Cover the entire slope, including its centre where the old cavity broke the surface.
+    for (const y of [0.1, 0.5, 0.9, 1.4]) {
+      for (const z of [-0.8, 0, 0.8]) {
+        expect(meshHasSurfaceAt(mesh, [slopeXAt(y), y, z]), `slope at y=${y}, z=${z}`).toBe(true);
+      }
+    }
+    expect(faceContainsPoint(mesh, faces.rear, -1, 0), 'stock remains on rear face').toBe(true);
     expect(stock.pos).toEqual([-16, -1, 0]);
-    expect(trigger.pos[0]).toBe(0);
-    expect(pumpRearSlopeClosedAtRestAndOpen(mesh, def)).toBe(true);
-    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(1.5);
-    expect(def.ports.find(({ id }) => id === 'tube')?.pos[0]).toBe(1.5);
+    expect(def.ports.find(({ id }) => id === 'lower')?.pos).toEqual([0, -3.5, 0]);
+    expect(def.ports.find(({ id }) => id === 'handguard')?.pos[0]).toBe(3.5);
+    expect(def.ports.find(({ id }) => id === 'tube')?.pos[0]).toBe(3.5);
     expectWatertightMesh(mesh, 'receiver-pump');
   });
 

@@ -21,7 +21,12 @@ export interface ReceiverSectionSpec {
   readonly x: readonly [number, number];
   readonly wall: number;
   readonly clip?: readonly ClipPlane[];
-  readonly cavity: { readonly y: readonly [number, number]; readonly z: readonly [number, number] };
+  readonly cavity: {
+    /** Axial cavity limits, defaulting to a wall-thickness inset at each end. */
+    readonly x?: readonly [number, number];
+    readonly y: readonly [number, number];
+    readonly z: readonly [number, number];
+  };
   readonly port?: SectionWindow;
   readonly portSlots?: readonly SectionWindow[];
   /** Enclosed cross-section channels that preserve the receiver's outer skin. */
@@ -292,7 +297,11 @@ const sectionAdapters = (spec: ReceiverSectionSpec): Solid[] => {
       mergeGroup: spec.id,
       ...(spec.clip ? { clipPlanes: spec.clip } : {}),
     });
-  return [adapter('rear', [spec.x[0], spec.x[0] + spec.wall]), adapter('front', [spec.x[1] - spec.wall, spec.x[1]])];
+  const [rear, front] = spec.cavity.x ?? [spec.x[0] + spec.wall, spec.x[1] - spec.wall];
+  if (rear < spec.x[0] + spec.wall || front > spec.x[1] - spec.wall || rear >= front) {
+    throw new Error(`${spec.id}: axial cavity must leave at least ${spec.wall}u wall thickness at each end.`);
+  }
+  return [adapter('rear', [spec.x[0], rear]), adapter('front', [front, spec.x[1]])];
 };
 
 const sectionBandSolids = (spec: ReceiverSectionSpec, name: string, profile: readonly Vec2[]): Solid[] => {
