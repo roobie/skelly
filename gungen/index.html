@@ -49,6 +49,19 @@
         <p id="save-message" aria-live="polite"></p>
       </fieldset>
       <section id="design-info" aria-live="polite"></section>
+      <fieldset id="cycle-controls" hidden>
+        <legend>Action cycle <span class="estimated">estimated</span></legend>
+        <label class="field">Cycle <select id="cycle-mode"><option value="fire">Gas-driven fire</option><option value="hand">Hand cocking</option></select></label>
+        <div class="row">
+          <button id="cycle-play" type="button">Play</button>
+          <label class="field">Speed <select id="cycle-speed"></select></label>
+        </div>
+        <input id="cycle-scrub" class="cycle-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Cycle time" />
+        <label id="cycle-empty-label"><input id="cycle-empty" type="checkbox" /> Magazine empty (AR bolt catch)</label>
+        <label><input id="cycle-xray" type="checkbox" /> Fade receiver to see carrier</label>
+        <p id="cycle-readout" aria-live="polite"></p>
+        <p id="cycle-notes"></p>
+      </fieldset>
       <p id="description"></p>
       <fieldset>
         <legend>Colours</legend>

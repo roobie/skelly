@@ -153,7 +153,7 @@ export function buildLayers(
       // The solid's own box.center/profile is already baked into its mesh's positions.
       mesh.matrixAutoUpdate = false;
       mesh.matrix.copy(matrixOf(t.r, t.t));
-      mesh.userData = { label: `${part} (${def.family}) · solid ${item.id}${params ? ` · ${params}` : ''}` };
+      mesh.userData = { part, label: `${part} (${def.family}) · solid ${item.id}${params ? ` · ${params}` : ''}` };
       // Edges would trace every facet of a smooth revolved mesh, so it is outlined only on request.
       if (item.merged || (smooth ? s.display?.outline === true : s.display?.outline !== false)) {
         const edges = new LineSegments(

@@ -31,6 +31,7 @@ import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
 import { type AmmoMeshes, ammoEnvironment, buildAmmoMeshes, caseFinishFromQuery } from './ammoLayer.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
+import { createCycleView } from './cycleView.ts';
 import {
   availablePrefabs,
   choosePrefab,
@@ -170,6 +171,15 @@ const syncUrl = () => {
   const ammo = initialQuery.get('ammo');
   const ammoCase = initialQuery.get('ammoCase');
   const mag = initialQuery.get('mag');
+  const viewerQuery = new URLSearchParams(location.search);
+  const cycle = viewerQuery.get('cycle');
+  const cycleSpeed = Number(viewerQuery.get('cycleSpeed'));
+  if (cycle === 'fire' || cycle === 'hand') {
+    params.set('cycle', cycle);
+  }
+  if ([1, 0.25, 0.1, 0.02].includes(cycleSpeed)) {
+    params.set('cycleSpeed', String(cycleSpeed));
+  }
   if (ammo) {
     params.set('ammo', ammo);
   }
@@ -343,6 +353,7 @@ let lastDropped: readonly Connection[] = [];
 let editorState: DesignEditorState | undefined;
 let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
 let pendingCamera: CameraState | undefined;
+const cycleView = createCycleView();
 let detachedMagazine: Group | undefined;
 
 const redraw = () => {
@@ -370,6 +381,7 @@ const redraw = () => {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
+  cycleView.bind(layers.solids, report.resolved);
   if (ammoMeshes) {
     scene.add(ammoMeshes.loose, ammoMeshes.fired);
     placeAmmo(report);
@@ -1330,7 +1342,8 @@ saveButton.addEventListener('click', () => {
 });
 
 // ?fixture=<name> opens a fixture; ?design=<name> loads a curated design;
-// ?template=<name>&seed=<n> generates one. Each can add &set=<part.param:value,...> to override params, or
+// ?template=<name>&seed=<n> generates one. AK/AR views also accept ?cycle=fire|hand&cycleSpeed=0.02.
+// Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
 pendingCamera = parseCameraState(query.get('camera'));
@@ -1392,6 +1405,7 @@ renderer.setAnimationLoop((frameMs) => {
   const elapsedSeconds = Math.min((frameMs - previousFrameMs) / 1000, 0.1);
   previousFrameMs = frameMs;
   panFromKeys(elapsedSeconds);
+  cycleView.frame(elapsedSeconds);
   controls.update();
   renderer.render(scene, camera);
 });

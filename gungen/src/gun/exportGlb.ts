@@ -1,17 +1,46 @@
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
-import { exportGlb } from '../core/glb.ts';
-import type { Vec3 } from '../core/math.ts';
-import { resolve } from '../core/resolve.ts';
+import { exportGlb, partNodeName } from '../core/glb.ts';
+import { applyDir, type Vec3 } from '../core/math.ts';
+import { type Resolved, resolve } from '../core/resolve.ts';
 import type { Assembly } from '../core/schema.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
+import { type CycleTimeline, cycleMotion, ejectionDirection } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { GUN_PALETTE } from './palette.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
+
+export interface ActionPartMetadata {
+  /** Exact glTF node name; the existing part node carries its geometry as a separate mesh. */
+  readonly node: string;
+  /** Unit travel direction in model coordinates. */
+  readonly axis: Vec3;
+  /** Carrier stroke length in metres. */
+  readonly strokeMetres: number;
+}
+
+export interface CycleMetadata {
+  readonly durationSeconds: number;
+  readonly rearwardSeconds: number;
+  readonly dwellSeconds: number;
+  readonly forwardSeconds: number;
+}
+
+export interface GunActionMetadata {
+  readonly parts: Readonly<Record<string, ActionPartMetadata>>;
+  readonly fire: CycleMetadata;
+  readonly hand: CycleMetadata;
+  /** Stroke fraction at which the case leaves. */
+  readonly ejectAt: number;
+  /** Unit ejection direction in model coordinates. */
+  readonly ejectDirection: Vec3;
+  readonly holdOpen: boolean;
+  readonly rpm: number;
+}
 
 export interface DeadvoxModelEntry {
   readonly id: string;
@@ -23,6 +52,7 @@ export interface DeadvoxModelEntry {
   /** Present on magazine entries; one local pose per round slot, top to bottom. */
   readonly capacity?: number;
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
+  readonly action?: GunActionMetadata;
 }
 
 export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
@@ -32,6 +62,10 @@ export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
 export interface GunExportMetadata {
   /** Cartridge loaded by this design; its id becomes the exact Deadvox `calibre` value. */
   readonly cartridge?: MetallicCartridge;
+}
+
+interface GunModelEntryOptions extends GunExportMetadata {
+  readonly handling?: GunActionExport;
 }
 
 export type GunAssetIdentity = GlbAssetIdentity;
@@ -50,13 +84,67 @@ const modelPoint = (point: Vec3, metresPerUnit: number): Vec3 => {
   return [round6(x * metresPerUnit), round6(y * metresPerUnit), round6(z * metresPerUnit)];
 };
 
+interface GunActionExport {
+  readonly ejection: Vec3;
+  readonly action: GunActionMetadata;
+}
+
+const cycleMetadata = (cycle: CycleTimeline): CycleMetadata => ({
+  durationSeconds: cycle.durationSeconds,
+  rearwardSeconds: cycle.rearwardSeconds,
+  dwellSeconds: cycle.dwellSeconds,
+  forwardSeconds: cycle.forwardSeconds,
+});
+
+const buildActionExport = (resolved: Resolved, ejection: Vec3 | undefined): GunActionExport | undefined => {
+  const carrier = resolved.assembly.parts['bolt-carrier'];
+  if (!carrier) {
+    return undefined;
+  }
+  const action = carrier.params?.pattern;
+  if (action !== 'ak' && action !== 'ar') {
+    return undefined;
+  }
+  const motion = resolved.defs.get('bolt-carrier')?.motion;
+  const placed = resolved.placed.get('bolt-carrier');
+  if (!(motion && placed && ejection)) {
+    return undefined;
+  }
+  const cycle = cycleMotion(action, motion, resolved.domain.units.metresPerUnit);
+  const carrierFamily = carrier.family;
+  const axis = toFileAxes(applyDir(placed, motion.axis));
+  const actionPart: ActionPartMetadata = {
+    node: partNodeName('bolt-carrier', carrierFamily),
+    axis,
+    strokeMetres: round6(cycle.strokeMetres),
+  };
+  const parts: Record<string, ActionPartMetadata> = { carrier: actionPart };
+  const { bolt } = resolved.assembly.parts;
+  if (bolt && resolved.placed.has('bolt')) {
+    parts.bolt = { ...actionPart, node: partNodeName('bolt', bolt.family) };
+  }
+  return {
+    ejection,
+    action: {
+      parts,
+      fire: cycleMetadata(cycle.fire),
+      hand: cycleMetadata(cycle.hand),
+      ejectAt: cycle.ejectAt,
+      ejectDirection: ejectionDirection(action),
+      holdOpen: cycle.holdOpenOnEmpty,
+      rpm: cycle.rpm,
+    },
+  };
+};
+
 export const createGunModelEntry = (
   asset: GunAssetIdentity,
   anchors: SelectedAnchors,
   metresPerUnit: number,
-  metadata: GunExportMetadata = {},
+  options: GunModelEntryOptions = {},
 ): GunDeadvoxModelEntry => {
-  const calibre = metadata.cartridge?.id;
+  const { handling } = options;
+  const calibre = options.cartridge?.id;
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
@@ -68,8 +156,16 @@ export const createGunModelEntry = (
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
     grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
-    ...(others.length > 0 ? { anchors: Object.fromEntries(others) } : {}),
+    ...(others.length > 0 || handling
+      ? {
+          anchors: {
+            ...Object.fromEntries(others),
+            ...(handling ? { ejection: modelPoint(handling.ejection, metresPerUnit) } : {}),
+          },
+        }
+      : {}),
     ...(calibre === undefined ? {} : { calibre }),
+    ...(handling ? { action: handling.action } : {}),
   };
 };
 
@@ -99,8 +195,12 @@ export const exportGunGlb = (
   if (!result.ok) {
     return result;
   }
+  const handling = buildActionExport(resolved, anchors.others.ejection?.position);
   return {
     ...result,
-    modelEntry: createGunModelEntry(asset, anchors, resolved.domain.units.metresPerUnit, metadata),
+    modelEntry: createGunModelEntry(asset, anchors, resolved.domain.units.metresPerUnit, {
+      ...metadata,
+      ...(handling ? { handling } : {}),
+    }),
   };
 };
