@@ -153,9 +153,9 @@ npm run validate   # base content; add paths to validate a mod on top
 - An open door doesn't block movement anywhere; its swung panel is only drawn.
 - Shamblers spawn at the hamlet's spawn marks (`hamletZombieSpawns`); the marks
   themselves are air in the templates.
-- The game state can be snapshotted and encoded to the canonical save format,
-  but nothing writes it anywhere yet: there is no storage, autosave or Continue,
-  and edited chunks stay in memory (milestone 1.9).
+- Local save storage, autosave and Continue are implemented (ADR 0002). The
+  remaining saves closure (#143) tracks outstanding proof and acceptance work,
+  not the first implementation of persistence.
 - Pointer lock only works on desktop. There are no touch controls.
 
 ## Design and roadmap
