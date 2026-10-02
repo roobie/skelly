@@ -466,6 +466,8 @@ describe('procedural bolt carrier', () => {
     expect(localStickBounds[0]![0]).toBe(localBodyBounds[0]![0]);
     expect(localStickBounds[1]![0]).toBe(localBodyBounds[1]![0]);
     const rootY = localStickBounds[1]![0]!;
+    expect(localStickBounds[0]![0]).toBeCloseTo(BOLT_CARRIER_ENVELOPES.ak.x[0], 8);
+    expect(rootY).toBeCloseTo(BOLT_CARRIER_ENVELOPES.ak.y[0], 8);
     const lowerThirdTop = localBodyBounds[1]![0]! + (localBodyBounds[1]![1]! - localBodyBounds[1]![0]!) / 3;
     expect(rootY).toBe(localBodyBounds[1]![0]);
     expect(rootY).toBeLessThanOrEqual(lowerThirdTop);
@@ -929,6 +931,30 @@ describe('procedural bolt carrier', () => {
       } finally {
         envelope.y = originalY;
       }
+    }
+  });
+
+  it('anchors the separate bolt handle arm and knob to the carrier envelope front', () => {
+    const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-bolt-rifle.json')!;
+    const envelope = BOLT_CARRIER_ENVELOPES.bolt as unknown as {
+      y: readonly [number, number];
+    };
+    const originalY = envelope.y;
+    const handleOrigins = () => {
+      const resolved = resolve(assembly, gunDomain);
+      return ['bolt-handle-arm', 'bolt-handle-knob'].map((id) => applyPoint(resolved.placed.get(id)!, [0, 0, 0]));
+    };
+    const before = handleOrigins();
+    try {
+      envelope.y = [originalY[0] + 0.25, originalY[1] + 0.25];
+      const after = handleOrigins();
+      for (const index of [0, 1]) {
+        expect(after[index]![0]).toBeCloseTo(before[index]![0]!, 8);
+        expect(after[index]![1] - before[index]![1]!).toBeCloseTo(0.25, 8);
+        expect(after[index]![2]).toBeCloseTo(before[index]![2]!, 8);
+      }
+    } finally {
+      envelope.y = originalY;
     }
   });
 
