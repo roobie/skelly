@@ -82,6 +82,48 @@ try {
     throw error;
   }
 
+  const loadoutMeleeUid = await page.evaluate(() => {
+    const runtime = globalThis.primaryActionTest;
+    const backpack = runtime.inventory.worn.back;
+    const crowbar = backpack?.pockets?.[0]?.find(({ item }) => item.type === 'crowbar')?.item;
+    if (!backpack || !crowbar) {
+      throw new Error('fresh debug loadout is missing its crowbar');
+    }
+    const moved = runtime.inventory.move(crowbar, { kind: 'hand', side: 'right' });
+    if (!moved.ok) {
+      throw new Error(`cannot move the debug-loadout crowbar into the right hand: ${moved.reason}`);
+    }
+    const swings = [];
+    const originalBegin = runtime.session.zombies.beginMeleeSwing;
+    const begin = originalBegin.bind(runtime.session.zombies);
+    runtime.session.zombies.beginMeleeSwing = (start) => {
+      const result = begin(start);
+      const hand = runtime.session.zombies.activeMeleeAction?.hand ?? start.hand;
+      swings.push({ result, profile: start.profile, hand });
+      return result;
+    };
+    globalThis.primaryActionObserved = { swings, originalBegin };
+    return crowbar.uid;
+  });
+  const loadoutBefore = await page.evaluate(() => globalThis.primaryActionTest.session.sim.needs.stamina);
+  await page.mouse.click(640, 450);
+  await page.waitForTimeout(150);
+  const loadoutAction = await page.evaluate((uid) => ({
+    rightHandItem: globalThis.primaryActionTest.inventory.hands.right?.type,
+    rightHandUid: globalThis.primaryActionTest.inventory.hands.right?.uid,
+    stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
+    swings: [...globalThis.primaryActionObserved.swings],
+  }), loadoutMeleeUid);
+  await page.evaluate(() => {
+    const runtime = globalThis.primaryActionTest;
+    runtime.session.zombies.beginMeleeSwing = globalThis.primaryActionObserved.originalBegin;
+  });
+  assert.equal(loadoutAction.rightHandItem, 'crowbar');
+  assert.equal(loadoutAction.rightHandUid, loadoutMeleeUid);
+  assert.deepEqual(loadoutAction.swings[0], { result: true, profile: 'blunt', hand: 'right' });
+  assert.ok(loadoutAction.stamina < loadoutBefore, 'the debug-loadout right-hand melee action spends stamina');
+  await page.waitForTimeout(900);
+
   const flashlightUid = await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
     const flashlight = runtime.inventory.create('flashlight');

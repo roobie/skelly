@@ -57,7 +57,7 @@ export const PLAYER_CONTROL_BINDINGS = [
   {
     keys: KEY_BINDINGS.leftHandAction.label,
     codes: [KEY_BINDINGS.leftHandAction.code],
-    action: 'Left-hand primary action; fists alternate only when both hands are empty',
+    action: 'Left-hand primary action',
   },
   { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
   {
