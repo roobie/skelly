@@ -174,8 +174,22 @@ export interface Rule {
   readonly check: (r: Resolved) => Issue[];
 }
 
+/**
+ * What one length unit (u) means in a domain. Every domain converts to metres, which is the shared frame
+ * for exports and for scenes that mix domains.
+ */
+export interface DomainUnits {
+  /** Metres per u. */
+  readonly metresPerUnit: number;
+  /** Authoring snap step in u. Also the largest gap that still counts as two solids touching at a connection. */
+  readonly grid: number;
+  /** Inset of the chamfer on box and extruded-polygon display meshes, in u. */
+  readonly bevel: number;
+}
+
 export interface Domain {
   readonly name: string;
+  readonly units: DomainUnits;
   readonly families: Readonly<Record<string, PartFamily>>;
   readonly axisRules: readonly AxisRule[];
   /** Domain-specific rules, run after the core rules. */

@@ -12,10 +12,12 @@ import {
   thumbholeGripMatch,
   triggerGuard,
 } from './rules.ts';
+import { GUN_UNITS } from './units.ts';
 
 /** The gun domain. The core's main axis is the bore line. */
 export const gunDomain: Domain = {
   name: 'gun',
+  units: GUN_UNITS,
   families: FAMILIES,
   axisRules: [
     { kind: 'bore', mode: 'collinear' },
