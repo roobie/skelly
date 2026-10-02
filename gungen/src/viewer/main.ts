@@ -806,7 +806,7 @@ const applyPanelChange = (next: Assembly, dropped: readonly Connection[] = [], n
   if (!baseline) {
     return;
   }
-  framed = false;
+  // Keep the camera where the user put it: an edit changes the model, not the view.
   lastDropped = dropped;
   editorState = nextEditorState ?? (editorState ? withEditorAssembly(editorState, next) : undefined);
   uiState.overrides = diffOverrides(baseline, next);
