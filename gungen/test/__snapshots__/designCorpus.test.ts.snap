@@ -23240,178 +23240,47 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -4,
-        -0.2,
-        0.75,
+        -0.05,
+        -2.8,
+        1.35,
       ],
       [
-        -4,
-        -0.2,
-        0.85,
+        -0.05,
+        -2.8,
+        1.45,
       ],
       [
-        -4,
-        0,
-        0.75,
+        -0.05,
+        -2.7,
+        1.35,
       ],
       [
-        -4,
-        0,
-        0.85,
+        -0.05,
+        -2.7,
+        1.45,
       ],
       [
-        -0.5,
-        -0.2,
-        0.75,
+        8,
+        -2.8,
+        1.35,
       ],
       [
-        -0.5,
-        -0.2,
-        0.85,
+        8,
+        -2.8,
+        1.45,
       ],
       [
-        -0.5,
-        0,
-        0.75,
+        8,
+        -2.7,
+        1.35,
       ],
       [
-        -0.5,
-        0,
-        0.85,
+        8,
+        -2.7,
+        1.45,
       ],
     ],
     "id": "action-bar-right",
-    "kind": "extruded-polygon",
-    "partId": "bolt-carrier",
-  },
-  {
-    "geometry": [
-      [
-        7.9,
-        -2.85,
-        1.3,
-      ],
-      [
-        7.9,
-        -2.85,
-        1.4,
-      ],
-      [
-        7.9,
-        0,
-        1.3,
-      ],
-      [
-        7.9,
-        0,
-        1.4,
-      ],
-      [
-        8,
-        -2.85,
-        1.3,
-      ],
-      [
-        8,
-        -2.85,
-        1.4,
-      ],
-      [
-        8,
-        0,
-        1.3,
-      ],
-      [
-        8,
-        0,
-        1.4,
-      ],
-    ],
-    "id": "action-bar-right-forend-mount",
-    "kind": "extruded-polygon",
-    "partId": "bolt-carrier",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -0.2,
-        1.3,
-      ],
-      [
-        -0.5,
-        -0.2,
-        1.4,
-      ],
-      [
-        -0.5,
-        0,
-        1.3,
-      ],
-      [
-        -0.5,
-        0,
-        1.4,
-      ],
-      [
-        8,
-        -0.2,
-        1.3,
-      ],
-      [
-        8,
-        -0.2,
-        1.4,
-      ],
-      [
-        8,
-        0,
-        1.3,
-      ],
-      [
-        8,
-        0,
-        1.4,
-      ],
-    ],
-    "id": "action-bar-right-forward",
-    "kind": "extruded-polygon",
-    "partId": "bolt-carrier",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -0.2,
-        0.85,
-      ],
-      [
-        -0.5,
-        0,
-        0.85,
-      ],
-      [
-        0,
-        -0.2,
-        1.3,
-      ],
-      [
-        0,
-        -0.2,
-        1.4,
-      ],
-      [
-        0,
-        0,
-        1.3,
-      ],
-      [
-        0,
-        0,
-        1.4,
-      ],
-    ],
-    "id": "action-bar-right-front-join",
     "kind": "extruded-polygon",
     "partId": "bolt-carrier",
   },
@@ -24116,7 +23985,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
     ],
-    "id": "receiver-pump-bottom-near-span-0-region-0",
+    "id": "receiver-pump-bottom-near-span-0-region-0-pocket-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -24143,27 +24012,262 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         2,
       ],
       [
-        -0.5,
+        -5.6,
         -3.5,
         0.85,
       ],
       [
-        -0.5,
+        -5.6,
         -3.5,
         2,
       ],
       [
-        -0.5,
+        -5.6,
         -1,
         0.85,
       ],
       [
-        -0.5,
+        -5.6,
         -1,
         2,
       ],
     ],
-    "id": "receiver-pump-bottom-near-span-1-region-0",
+    "id": "receiver-pump-bottom-near-span-1-region-0-pocket-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.6,
+        -3.5,
+        0.85,
+      ],
+      [
+        -5.6,
+        -3.5,
+        2,
+      ],
+      [
+        -5.6,
+        -2.85,
+        0.85,
+      ],
+      [
+        -5.6,
+        -2.85,
+        2,
+      ],
+      [
+        -3.5,
+        -3.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        -3.5,
+        2,
+      ],
+      [
+        -3.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.85,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-1-region-0-pocket-span-1-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.6,
+        -2.65,
+        0.85,
+      ],
+      [
+        -5.6,
+        -2.65,
+        2,
+      ],
+      [
+        -5.6,
+        -1,
+        0.85,
+      ],
+      [
+        -5.6,
+        -1,
+        2,
+      ],
+      [
+        -3.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.65,
+        2,
+      ],
+      [
+        -3.5,
+        -1,
+        0.85,
+      ],
+      [
+        -3.5,
+        -1,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-1-region-0-pocket-span-1-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.6,
+        -2.85,
+        0.85,
+      ],
+      [
+        -5.6,
+        -2.85,
+        1.25,
+      ],
+      [
+        -5.6,
+        -2.65,
+        0.85,
+      ],
+      [
+        -5.6,
+        -2.65,
+        1.25,
+      ],
+      [
+        -3.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.85,
+        1.25,
+      ],
+      [
+        -3.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.65,
+        1.25,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-1-region-0-pocket-span-1-region-2",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -5.6,
+        -2.85,
+        1.45,
+      ],
+      [
+        -5.6,
+        -2.85,
+        2,
+      ],
+      [
+        -5.6,
+        -2.65,
+        1.45,
+      ],
+      [
+        -5.6,
+        -2.65,
+        2,
+      ],
+      [
+        -3.5,
+        -2.85,
+        1.45,
+      ],
+      [
+        -3.5,
+        -2.85,
+        2,
+      ],
+      [
+        -3.5,
+        -2.65,
+        1.45,
+      ],
+      [
+        -3.5,
+        -2.65,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-1-region-0-pocket-span-1-region-3",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -3.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        -3.5,
+        2,
+      ],
+      [
+        -3.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.85,
+        2,
+      ],
+      [
+        -0.5,
+        -3.5,
+        0.85,
+      ],
+      [
+        -0.5,
+        -3.5,
+        2,
+      ],
+      [
+        -0.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.85,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -24181,12 +24285,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -1,
+        -2.85,
         0.85,
       ],
       [
         -0.5,
-        -1,
+        -2.85,
         2,
       ],
       [
@@ -24201,16 +24305,298 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -1,
+        -2.85,
         0.85,
       ],
       [
         0,
-        -1,
+        -2.85,
         2,
       ],
     ],
-    "id": "receiver-pump-bottom-near-span-1-region-0-span-1",
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-0-span-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.65,
+        2,
+      ],
+      [
+        -3.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -0.85,
+        2,
+      ],
+      [
+        -0.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.65,
+        2,
+      ],
+      [
+        -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -0.85,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.65,
+        2,
+      ],
+      [
+        -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -0.85,
+        2,
+      ],
+      [
+        0,
+        -2.65,
+        0.85,
+      ],
+      [
+        0,
+        -2.65,
+        2,
+      ],
+      [
+        0,
+        -0.85,
+        0.85,
+      ],
+      [
+        0,
+        -0.85,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-1-span-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.85,
+        1.25,
+      ],
+      [
+        -3.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -3.5,
+        -2.65,
+        1.25,
+      ],
+      [
+        -0.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.85,
+        1.25,
+      ],
+      [
+        -0.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.65,
+        1.25,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-2",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.85,
+        1.25,
+      ],
+      [
+        -0.5,
+        -2.65,
+        0.85,
+      ],
+      [
+        -0.5,
+        -2.65,
+        1.25,
+      ],
+      [
+        0,
+        -2.85,
+        0.85,
+      ],
+      [
+        0,
+        -2.85,
+        1.25,
+      ],
+      [
+        0,
+        -2.65,
+        0.85,
+      ],
+      [
+        0,
+        -2.65,
+        1.25,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-2-span-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -2.85,
+        1.45,
+      ],
+      [
+        -3.5,
+        -2.85,
+        2,
+      ],
+      [
+        -3.5,
+        -2.65,
+        1.45,
+      ],
+      [
+        -3.5,
+        -2.65,
+        2,
+      ],
+      [
+        -0.5,
+        -2.85,
+        1.45,
+      ],
+      [
+        -0.5,
+        -2.85,
+        2,
+      ],
+      [
+        -0.5,
+        -2.65,
+        1.45,
+      ],
+      [
+        -0.5,
+        -2.65,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-3",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -2.85,
+        1.45,
+      ],
+      [
+        -0.5,
+        -2.85,
+        2,
+      ],
+      [
+        -0.5,
+        -2.65,
+        1.45,
+      ],
+      [
+        -0.5,
+        -2.65,
+        2,
+      ],
+      [
+        0,
+        -2.85,
+        1.45,
+      ],
+      [
+        0,
+        -2.85,
+        2,
+      ],
+      [
+        0,
+        -2.65,
+        1.45,
+      ],
+      [
+        0,
+        -2.65,
+        2,
+      ],
+    ],
+    "id": "receiver-pump-bottom-near-span-2-region-0-pocket-span-0-region-3-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -24486,6 +24872,120 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
     ],
     "id": "receiver-pump-near-side-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -3.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        -0.85,
+        2,
+      ],
+      [
+        -3.5,
+        0,
+        2,
+      ],
+      [
+        -3.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        0.85,
+        1.7875,
+      ],
+      [
+        -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -0.85,
+        2,
+      ],
+      [
+        -0.5,
+        0,
+        2,
+      ],
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
+      ],
+    ],
+    "id": "receiver-pump-near-side-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        -0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        -0.85,
+        2,
+      ],
+      [
+        -0.5,
+        0,
+        2,
+      ],
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
+      ],
+      [
+        0,
+        -0.85,
+        0.85,
+      ],
+      [
+        0,
+        -0.85,
+        2,
+      ],
+      [
+        0,
+        0,
+        2,
+      ],
+      [
+        0,
+        0.85,
+        0.85,
+      ],
+      [
+        0,
+        0.85,
+        1.7875,
+      ],
+    ],
+    "id": "receiver-pump-near-side-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -24777,22 +25277,22 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.25,
       ],
       [
-        -0.5,
+        -3.5,
         1,
         0.85,
       ],
       [
-        -0.5,
+        -3.5,
         1,
         1.75,
       ],
       [
-        -0.5,
+        -3.5,
         1.5,
         0.85,
       ],
       [
-        -0.5,
+        -3.5,
         1.5,
         1.25,
       ],
@@ -24804,9 +25304,71 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -3.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -3.5,
+        0.85,
+        1.7875,
+      ],
+      [
+        -3.5,
+        1,
+        1.75,
+      ],
+      [
+        -3.5,
+        1.5,
+        0.85,
+      ],
+      [
+        -3.5,
+        1.5,
+        1.25,
+      ],
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
+      ],
+      [
         -0.5,
         1,
+        1.75,
+      ],
+      [
+        -0.5,
+        1.5,
         0.85,
+      ],
+      [
+        -0.5,
+        1.5,
+        1.25,
+      ],
+    ],
+    "id": "receiver-pump-top-near-span-2-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -0.5,
+        0.85,
+        0.85,
+      ],
+      [
+        -0.5,
+        0.85,
+        1.7875,
       ],
       [
         -0.5,
@@ -24825,8 +25387,13 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1,
         0.85,
+        0.85,
+      ],
+      [
+        0,
+        0.85,
+        1.7875,
       ],
       [
         0,
@@ -24844,7 +25411,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.25,
       ],
     ],
-    "id": "receiver-pump-top-near-span-1-region-0-span-1",
+    "id": "receiver-pump-top-near-span-2-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },

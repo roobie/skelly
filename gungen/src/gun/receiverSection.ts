@@ -8,6 +8,12 @@ export interface SectionWindow {
   readonly section: readonly [number, number];
 }
 
+export interface SectionPocket {
+  readonly x: readonly [number, number];
+  readonly y: readonly [number, number];
+  readonly z: readonly [number, number];
+}
+
 export interface ReceiverSectionSpec {
   readonly id: string;
   /** Convex profile in (Y,Z), wound counter-clockwise. */
@@ -18,6 +24,8 @@ export interface ReceiverSectionSpec {
   readonly cavity: { readonly y: readonly [number, number]; readonly z: readonly [number, number] };
   readonly port?: SectionWindow;
   readonly portSlots?: readonly SectionWindow[];
+  /** Enclosed cross-section channels that preserve the receiver's outer skin. */
+  readonly internalPockets?: readonly SectionPocket[];
   readonly farPort?: SectionWindow;
   readonly magazineWell?: SectionWindow;
 }
@@ -175,6 +183,51 @@ const subtractSectionWindows = (spec: WindowCutSpec, windows: readonly SectionWi
   });
 };
 
+const subtractPocketProfile = (profile: readonly Vec2[], pocket: SectionPocket): Vec2[][] => {
+  const insideY = clipBand(profile, 0, pocket.y[0], pocket.y[1]);
+  return [
+    clipProfile(profile, 0, pocket.y[0], true),
+    clipProfile(profile, 0, pocket.y[1], false),
+    clipProfile(insideY, 1, pocket.z[0], true),
+    clipProfile(insideY, 1, pocket.z[1], false),
+  ].filter(positive);
+};
+
+const subtractInternalPockets = (solid: Solid, pockets: readonly SectionPocket[]): Solid[] => {
+  if (solid.kind !== 'extruded-polygon' || pockets.length === 0) {
+    return [solid];
+  }
+  const bounds = profileBounds(solid.profile);
+  const intersecting = pockets.filter(
+    ({ y, z }) => y[0] < bounds[0][1] && y[1] > bounds[0][0] && z[0] < bounds[1][1] && z[1] > bounds[1][0],
+  );
+  if (intersecting.length === 0) {
+    return [solid];
+  }
+  const cuts = [
+    ...new Set([
+      solid.z[0],
+      solid.z[1],
+      ...intersecting.flatMap(({ x }) => x).filter((edge) => edge > solid.z[0] && edge < solid.z[1]),
+    ]),
+  ].sort((a, b) => a - b);
+  return cuts.slice(0, -1).flatMap((start, span) => {
+    const end = cuts[span + 1]!;
+    const middle = (start + end) / 2;
+    const active = intersecting.filter(({ x }) => x[0] < middle && x[1] > middle);
+    let profiles = [solid.profile as Vec2[]];
+    for (const pocket of active) {
+      profiles = profiles.flatMap((profile) => subtractPocketProfile(profile, pocket));
+    }
+    return profiles.map((profile, region) => ({
+      ...solid,
+      id: `${solid.id}-pocket-span-${span}-region-${region}`,
+      profile,
+      z: [start, end] as const,
+    }));
+  });
+};
+
 const assertCavityWall = (spec: ReceiverSectionSpec): void => {
   const { y, z } = spec.cavity;
   const corners: readonly Vec2[] = [
@@ -251,24 +304,25 @@ const sectionBandSolids = (spec: ReceiverSectionSpec, name: string, profile: rea
     ...(window ? [window] : []),
     ...(name === 'near-side' || name.endsWith('-near') ? (spec.portSlots ?? []) : []),
   ].filter((candidate) => windowIntersectsProfile(profile, candidate));
-  if (windows.length > 0) {
-    return subtractSectionWindows(
-      {
-        id: `${spec.id}-${name}`,
-        profile,
-        x: spec.x,
-        mergeGroup: spec.id,
-        ...(spec.clip ? { clip: spec.clip } : {}),
-      },
-      windows,
-    );
-  }
-  return [
-    prism(`${spec.id}-${name}`, profile, spec.x, {
-      mergeGroup: spec.id,
-      ...(spec.clip ? { clipPlanes: spec.clip } : {}),
-    }),
-  ];
+  const sectionSolids =
+    windows.length > 0
+      ? subtractSectionWindows(
+          {
+            id: `${spec.id}-${name}`,
+            profile,
+            x: spec.x,
+            mergeGroup: spec.id,
+            ...(spec.clip ? { clip: spec.clip } : {}),
+          },
+          windows,
+        )
+      : [
+          prism(`${spec.id}-${name}`, profile, spec.x, {
+            mergeGroup: spec.id,
+            ...(spec.clip ? { clipPlanes: spec.clip } : {}),
+          }),
+        ];
+  return sectionSolids.flatMap((solid) => subtractInternalPockets(solid, spec.internalPockets ?? []));
 };
 
 /**
@@ -283,7 +337,7 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
   }
   assertCavityWall(spec);
   const result = [
-    ...sectionAdapters(spec),
+    ...sectionAdapters(spec).flatMap((solid) => subtractInternalPockets(solid, spec.internalPockets ?? [])),
     ...sectionBands(spec).flatMap(([name, profile]) => sectionBandSolids(spec, name, profile)),
   ];
   return splitAt(result, [spec.x[1] - spec.wall]).filter(

@@ -27,7 +27,7 @@ import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } fr
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { gunPort } from './portData.ts';
-import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
+import { buildReceiverSection, type SectionPocket, type SectionWindow } from './receiverSection.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
 
@@ -268,7 +268,6 @@ const AR_STOCK_PORT_Y = 0;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
-const RECEIVER_FRONT_X = 0;
 export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
 const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
@@ -280,70 +279,40 @@ const BOLT_TRAVEL = {
 } as const;
 const PUMP_ACTION_BAR_THICKNESS = BOLT_CARRIER_RUNNING_CLEARANCE_U;
 const PUMP_ACTION_BAR_OUTER_CLEARANCE = 0.15;
-const pumpActionBarSolids = (envelope: (typeof BOLT_CARRIER_ENVELOPES)['pump'], bore: SizeClass): Solid[] => {
-  const cavity = carrierCavityBounds('pump', 0);
-  const forendRearX = PUMP_FOREND_MOUNT_X;
+const PUMP_ACTION_BAR_CLEARANCE = 0.05;
+const pumpActionBarOuterZ = (): number => TUBE_HALF_HEIGHT + PUMP_FOREND_WALL - PUMP_ACTION_BAR_OUTER_CLEARANCE;
+const pumpActionBarSolids = (bore: SizeClass): Solid[] => {
   const carrierRestX = BOLT_TRAVEL.pump.restX;
-  const forendTopY = -tubeDropForBore(bore);
-  const [cavityBottomY, cavityTopY] = cavity.y;
-  const [barSideZ] = cavity.z;
-  const [carrierSideZ] = envelope.z;
-  const barCenterY = (cavityBottomY + cavityTopY) / 2 - PUMP_ACTION_BAR_THICKNESS;
-  const barY = [barCenterY - PUMP_ACTION_BAR_THICKNESS, barCenterY + PUMP_ACTION_BAR_THICKNESS] as const;
-  const barOuterZ = TUBE_HALF_HEIGHT + PUMP_FOREND_WALL - PUMP_ACTION_BAR_OUTER_CLEARANCE;
-  const barZ = [barOuterZ - PUMP_ACTION_BAR_THICKNESS, barOuterZ] as const;
-  const barToForeEnd: Solid = {
-    ...extrudedPolygon(
-      'action-bar-right-forward',
-      [
-        [carrierRestX - forendRearX, barY[0]],
-        [carrierRestX + 0.5, barY[0]],
-        [carrierRestX + 0.5, barY[1]],
-        [carrierRestX - forendRearX, barY[1]],
-      ],
-      [-barZ[1], -barZ[0]],
-    ),
-    axis: 'z',
+  const tubeY = -tubeDropForBore(bore);
+  const barOuterZ = pumpActionBarOuterZ();
+  const halfThickness = PUMP_ACTION_BAR_THICKNESS / 2;
+  return [
+    {
+      ...extrudedPolygon(
+        'action-bar-right',
+        [
+          [tubeY - halfThickness, -(barOuterZ + halfThickness)],
+          [tubeY + halfThickness, -(barOuterZ + halfThickness)],
+          [tubeY + halfThickness, -(barOuterZ - halfThickness)],
+          [tubeY - halfThickness, -(barOuterZ - halfThickness)],
+        ],
+        [carrierRestX - PUMP_FOREND_MOUNT_X, carrierRestX + halfThickness],
+      ),
+      axis: 'x',
+    },
+  ];
+};
+
+const pumpActionBarSlot = (bore: SizeClass): SectionPocket => {
+  const tubeY = -tubeDropForBore(bore);
+  const barOuterZ = pumpActionBarOuterZ();
+  const clearance = PUMP_ACTION_BAR_CLEARANCE;
+  const halfThickness = PUMP_ACTION_BAR_THICKNESS / 2;
+  return {
+    x: [-BOLT_TRAVEL.pump.length - PUMP_ACTION_BAR_THICKNESS / 2 - clearance, 0],
+    y: [tubeY - halfThickness - clearance, tubeY + halfThickness + clearance],
+    z: [barOuterZ - PUMP_ACTION_BAR_THICKNESS - clearance, barOuterZ + clearance],
   };
-  const insideReceiver: Solid = {
-    ...extrudedPolygon(
-      'action-bar-right',
-      [
-        [carrierRestX + 0.5, barY[0]],
-        [envelope.x[0] + 0.25, barY[0]],
-        [envelope.x[0] + 0.25, barY[1]],
-        [carrierRestX + 0.5, barY[1]],
-      ],
-      [barSideZ, carrierSideZ],
-    ),
-    axis: 'z',
-  };
-  const frontJoin: Solid = {
-    ...extrudedPolygon(
-      'action-bar-right-front-join',
-      [
-        [-barZ[1], carrierRestX],
-        [-barZ[0], carrierRestX],
-        [barSideZ, carrierRestX + 0.5],
-      ],
-      barY,
-    ),
-    axis: 'y',
-  };
-  const forendMount: Solid = {
-    ...extrudedPolygon(
-      'action-bar-right-forend-mount',
-      [
-        [carrierRestX - forendRearX, forendTopY - PUMP_ACTION_BAR_THICKNESS],
-        [carrierRestX - forendRearX + 0.1, forendTopY - PUMP_ACTION_BAR_THICKNESS],
-        [carrierRestX - forendRearX + 0.1, barY[1]],
-        [carrierRestX - forendRearX, barY[1]],
-      ],
-      [-barZ[1], -barZ[0]],
-    ),
-    axis: 'z',
-  };
-  return [insideReceiver, frontJoin, barToForeEnd, forendMount];
 };
 const RECEIVER_FRONT_HALF_WIDTH = 2;
 const BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
@@ -463,9 +432,6 @@ const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY
     const center = (xMin + xMax) / 2;
     xMin = center - pumpMinimum / 2;
     xMax = center + pumpMinimum / 2;
-  }
-  if (pattern === 'pump') {
-    xMax = Math.max(xMax, RECEIVER_FRONT_X);
   }
   return {
     x: [xMin, xMax] as const,
@@ -616,6 +582,7 @@ const receiverShellSolids = ({
   carrierY,
   portWindow,
   portSlots,
+  internalPockets = [],
 }: {
   section: string;
   feed: string;
@@ -627,6 +594,7 @@ const receiverShellSolids = ({
   carrierY: number;
   portWindow: ReturnType<typeof ejectionPortWindow>;
   portSlots?: readonly SectionWindow[];
+  internalPockets?: readonly SectionPocket[];
 }): Solid[] => {
   const [xMin, xMax] = [-16, 0] as const;
   const cavity = carrierCavityBounds(carrierPattern, carrierY);
@@ -647,6 +615,7 @@ const receiverShellSolids = ({
       cavity,
       port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
       ...(portSlots ? { portSlots } : {}),
+      internalPockets,
       ...(clipPlanes ? { clip: clipPlanes } : {}),
       ...(feed === 'box'
         ? {
@@ -1071,6 +1040,9 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
           carrierPattern,
           carrierY,
           portWindow,
+          ...(params.section === 'pump' && tubeFed && carrierPattern === 'pump'
+            ? { internalPockets: [pumpActionBarSlot(bore)] }
+            : {}),
         });
   return [...shell, ...receiverActionDetails(params), ...receiverTubeSeat(bore, receiverBottom, tubeFed)];
 };
@@ -1245,7 +1217,7 @@ export const boltCarrier: PartFamily = {
     } else if (pattern === 'ak') {
       solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]), akChargingHandleSolid());
     } else if (pattern === 'pump') {
-      solids.push(...pumpActionBarSolids(BOLT_CARRIER_ENVELOPES.pump, (params.bore ?? size.default) as SizeClass));
+      solids.push(...pumpActionBarSolids((params.bore ?? size.default) as SizeClass));
     } else if (pattern === 'barrett') {
       solids.push(block('heavy-carrier', [-3, -0.75, -1.2], [3, 0.75, 1.2]));
     } else if (pattern === 'bolt') {
@@ -2310,8 +2282,8 @@ export const forend: PartFamily = {
       motion: {
         kind: 'linear',
         axis: NEG_X,
-        rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'rear', id: 'forend-travel' },
       },
     };

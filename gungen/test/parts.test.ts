@@ -571,7 +571,7 @@ describe('pump shotgun tube and barrel contact', () => {
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
     expect(tube.keepOuts.find(({ id }) => id === 'forend-travel')?.box.half[0]).toBe(2.75);
-    expect(forend.motion).toMatchObject({ axis: [-1, 0, 0], rearmost: [0, 0, 0] });
+    expect(forend.motion).toMatchObject({ axis: [-1, 0, 0], end: [0, 0, 0] });
   });
 
   it('sizes tube reach as a percentage of the actual barrel and aligns its lug/support ports', () => {

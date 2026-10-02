@@ -32,7 +32,7 @@ describe('visible action details', () => {
   it('keeps the ejection aperture and moves the carrier out of the receiver', () => {
     const apertures = [
       { def: receiver('auto', 'rear-top'), halfLength: 2.25, halfHeight: 1 },
-      { def: receiver('pump'), halfLength: 5.125, halfHeight: 1 },
+      { def: receiver('pump'), halfLength: 3.375, halfHeight: 1 },
       {
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
         halfLength: 3.25,
