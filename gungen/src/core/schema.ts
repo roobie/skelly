@@ -101,7 +101,7 @@ export interface RevolvedSolid extends SolidFinish {
   readonly display?: SolidDisplayHints;
 }
 
-export type Solid = BoxSolid | ExtrudedPolygonSolid;
+export type Solid = BoxSolid | ExtrudedPolygonSolid | RevolvedSolid;
 
 /** Space that must stay empty (PROJECT.md §3). A convex extrusion may refine its broad-phase box. */
 export interface KeepOut {

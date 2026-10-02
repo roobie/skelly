@@ -14,6 +14,7 @@ import {
   type Transform,
   type Vec3,
 } from './math.ts';
+import { revolvedLocalPolyhedron } from './revolve.ts';
 import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
 
 export interface Obb {
@@ -48,7 +49,8 @@ export const localSolidBounds = (solid: Solid): readonly [Vec3, Vec3] => {
       [center[0] + half[0], center[1] + half[1], center[2] + half[2]],
     ];
   }
-  const polyhedron = clippedExtrudedPolygonPolyhedron(solid);
+  const polyhedron =
+    solid.kind === 'revolved' ? revolvedLocalPolyhedron(solid) : clippedExtrudedPolygonPolyhedron(solid);
   if (!polyhedron) {
     throw new Error(`Solid "${solid.id}" clips to an empty or degenerate shape.`);
   }
@@ -298,8 +300,16 @@ const extrudedPolygonPolyhedron = (t: Transform, solid: ExtrudedPolygonSolid): C
   return { ...polyhedron, vertices: polyhedron.vertices.map((point) => applyPoint(t, point)) };
 };
 
-export const worldSolid = (t: Transform, solid: Solid): WorldSolid =>
-  solid.kind === 'box' ? worldBox(t, solid.box) : extrudedPolygonPolyhedron(t, solid);
+export const worldSolid = (t: Transform, solid: Solid): WorldSolid => {
+  if (solid.kind === 'box') {
+    return worldBox(t, solid.box);
+  }
+  if (solid.kind === 'revolved') {
+    const hull = revolvedLocalPolyhedron(solid);
+    return { ...hull, vertices: hull.vertices.map((point) => applyPoint(t, point)) };
+  }
+  return extrudedPolygonPolyhedron(t, solid);
+};
 
 const uniqueDirections = (directions: readonly Vec3[]): Vec3[] => {
   const unique: Vec3[] = [];

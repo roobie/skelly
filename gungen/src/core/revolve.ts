@@ -10,10 +10,18 @@
 // back down to the axis. A hollow part goes out along the outside, across the mouth, and back along the
 // inside. The outward normal of a segment with direction (da, dr) is (-dr, da).
 
+import type { ConvexPolyhedron } from './geometry.ts';
+import { extrusionPoint, type Vec3 } from './math.ts';
 import type { TriangleMesh } from './mesh.ts';
 import type { RevolvedSolid, Vec2 } from './schema.ts';
 
 export const DEFAULT_CREASE_DEGREES = 40;
+/**
+ * Facets of the collision hull, whatever the mesh's level of detail, so validation never depends on how a
+ * solid is drawn. Divisible by four, so the hull reaches the full radius on both transverse axes and its
+ * bounds are exact. Its vertices sit on the circle, so it is at most 1.9% smaller than the true solid.
+ */
+export const REVOLVE_COLLISION_FACETS = 16;
 /** Facets of a mesh when the caller does not choose: enough to read as round beyond arm's length. */
 export const DEFAULT_REVOLVE_FACETS = 6;
 export const MIN_REVOLVE_FACETS = 3;
@@ -135,4 +143,72 @@ export const meshForRevolved = (solid: RevolvedSolid, facets: number): TriangleM
     indices: new Uint32Array(indices),
     triangleCount: indices.length / 3,
   };
+};
+
+const turn = (o: Vec2, a: Vec2, b: Vec2): number => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+
+/**
+ * The upper concave envelope of the profile's radius over its axial range. A solid whose every ring is
+ * a regular polygon in the same phase is convex exactly when its radius is a concave function of the
+ * axial position, so the hull of the turned profile is the turn of this envelope.
+ */
+const upperEnvelope = (profile: readonly Vec2[]): Vec2[] => {
+  const sorted = [...profile].sort((p, q) => p[0] - q[0] || q[1] - p[1]);
+  const tallest = sorted.filter((p, i) => i === 0 || p[0] - sorted[i - 1]![0] > EPSILON);
+  const hull: Vec2[] = [];
+  for (const point of tallest) {
+    while (hull.length >= 2 && turn(hull.at(-2)!, hull.at(-1)!, point) >= 0) {
+      hull.pop();
+    }
+    hull.push(point);
+  }
+  return hull;
+};
+
+/**
+ * The convex hull of the solid in its part frame, used for collision. It ignores grooves and hollows.
+ * It has `REVOLVE_COLLISION_FACETS` facets per ring and does not depend on any mesh level of detail.
+ */
+export const revolvedLocalPolyhedron = (solid: RevolvedSolid): ConvexPolyhedron => {
+  const n = REVOLVE_COLLISION_FACETS;
+  const envelope = upperEnvelope(solid.profile);
+  const vertices: Vec3[] = [];
+  /** First vertex of each envelope point's ring, or the single vertex of one on the axis. */
+  const first = envelope.map(([axial, radius]) => {
+    const start = vertices.length;
+    if (radius <= EPSILON) {
+      vertices.push(extrusionPoint(solid.axis, [0, 0], axial));
+      return start;
+    }
+    for (let j = 0; j < n; j++) {
+      const angle = (2 * Math.PI * j) / n;
+      vertices.push(extrusionPoint(solid.axis, [radius * Math.cos(angle), radius * Math.sin(angle)], axial));
+    }
+    return start;
+  });
+  const onAxis = (i: number): boolean => envelope[i]![1] <= EPSILON;
+  const ringIndices = (i: number): number[] => Array.from({ length: n }, (_, j) => first[i]! + j);
+
+  const faces: number[][] = [];
+  const last = envelope.length - 1;
+  if (!onAxis(0)) {
+    faces.push(ringIndices(0).reverse());
+  }
+  if (!onAxis(last)) {
+    faces.push(ringIndices(last));
+  }
+  for (let i = 0; i < last; i++) {
+    for (let j = 0; j < n; j++) {
+      const k = (j + 1) % n;
+      const [sj, sk, ej, ek] = [first[i]! + j, first[i]! + k, first[i + 1]! + j, first[i + 1]! + k];
+      if (onAxis(i)) {
+        faces.push([first[i]!, ek, ej]);
+      } else if (onAxis(i + 1)) {
+        faces.push([sj, sk, first[i + 1]!]);
+      } else {
+        faces.push([sj, sk, ek, ej]);
+      }
+    }
+  }
+  return { vertices, faces };
 };

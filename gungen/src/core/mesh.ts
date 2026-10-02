@@ -12,6 +12,7 @@
 import { GRID } from './conventions.ts';
 import { clippedExtrudedPolygonPolyhedron, localSolidBounds } from './geometry.ts';
 import { add, cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
+import { DEFAULT_REVOLVE_FACETS, meshForRevolved } from './revolve.ts';
 import type { Box, DomainUnits, Solid, Vec2 } from './schema.ts';
 
 export interface TriangleMesh {
@@ -276,11 +277,19 @@ const orientExtrusion = (mesh: TriangleMesh, axis: ExtrusionAxis | undefined): T
 export const displayBevel = (solid: Solid, units: DomainUnits): number =>
   solid.display?.bevel === false ? 0 : units.bevel;
 
-/** A flat-shaded display mesh for one solid, in its own local frame. */
+/**
+ * A display mesh for one solid, in its own local frame: flat-shaded for boxes and extrusions, smooth
+ * around the circumference for a revolved solid. `bevel` applies to boxes and extrusions only, and
+ * `revolveFacets` (a level of detail) to revolved solids only.
+ */
 export const meshForSolid = (
   solid: Solid,
   bevel: number = solid.display?.bevel === false ? 0 : BEVEL,
+  revolveFacets: number = DEFAULT_REVOLVE_FACETS,
 ): TriangleMesh => {
+  if (solid.kind === 'revolved') {
+    return orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
+  }
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);
@@ -821,6 +830,9 @@ const surfaceVertices = (surfaces: readonly SurfacePolygon[]): Vec3[] => {
  */
 export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
   for (const solid of solids) {
+    if (solid.kind === 'revolved') {
+      throw new Error(`Solid "${solid.id}" is revolved; mesh groups merge only boxes and convex extrusions.`);
+    }
     const [minimum, maximum] = localSolidBounds(solid);
     if (minimum.some((value, axis) => maximum[axis]! - value < 10 * GROUP_WELD_TOLERANCE_U)) {
       throw new Error(`Solid "${solid.id}" is thinner than the mesh-group weld contract.`);

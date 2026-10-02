@@ -22,6 +22,7 @@ import {
   sub,
   type Transform,
 } from './math.ts';
+import { revolvedProfileError } from './revolve.ts';
 import type { Assembly, Connection, Domain, PartDef, PortDef } from './schema.ts';
 
 /** A param's final value and where it came from. */
@@ -274,10 +275,13 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
     const values = Object.fromEntries(Object.entries(resolved).map(([k, v]) => [k, v.value]));
     const def = family.build(values);
     const validSolids = def.solids.filter((solid) => {
-      if (solid.kind !== 'extruded-polygon') {
+      if (solid.kind === 'box') {
         return true;
       }
-      const error = validateExtrudedPolygon(solid.profile, solid.z, solid.axis, solid.clip);
+      const error =
+        solid.kind === 'revolved'
+          ? revolvedProfileError(solid.profile, solid.axis)
+          : validateExtrudedPolygon(solid.profile, solid.z, solid.axis, solid.clip);
       if (!error) {
         return true;
       }
