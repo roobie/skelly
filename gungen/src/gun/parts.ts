@@ -26,6 +26,7 @@ import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
+import { gunPort } from './portData.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
@@ -1288,8 +1289,8 @@ export const boltCarrier: PartFamily = {
       motion: {
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'mount', id: 'bolt-travel' },
       },
     };
@@ -2467,6 +2468,9 @@ const integratedPistolGrip = (gripLength: string): PartDef => {
   const offset: Vec3 = [PISTOL_GRIP_X, 0, 0];
   const local = grip.build({ length: gripLength, well: 'magazine' });
   const solids = local.solids.map((part): Solid => {
+    if (part.kind === 'revolved') {
+      throw new Error('Integrated pistol grips cannot rotate revolved solids in the XY plane.');
+    }
     if (part.kind === 'extruded-polygon' && part.axis && part.axis !== 'z') {
       throw new Error(`Integrated pistol grips cannot rotate ${part.axis}-axis extrusions in the XY plane.`);
     }
@@ -2793,7 +2797,7 @@ export const magazine: PartFamily = {
         ...floorplate,
       ],
       ports: [
-        {
+        gunPort({
           id: 'top',
           mount: 'magazine',
           gender: 'male',
@@ -2802,7 +2806,7 @@ export const magazine: PartFamily = {
           up: X,
           required: true,
           seat: curveProfile?.seat ?? 'well',
-        },
+        }),
       ],
       keepOuts: [],
       axes: [],
@@ -2852,6 +2856,7 @@ const m4StockSolids = (len: number): Solid[] => {
       { normal: [-sideSlope, 0, 1], offset: sideIntercept },
       { normal: [-sideSlope, 0, -1], offset: sideIntercept },
     ],
+    display: { bevel: false },
   };
   const buttplate: Solid = {
     id: 'buttplate',

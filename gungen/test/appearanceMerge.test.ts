@@ -4,6 +4,7 @@ import { exportGlb } from '../src/core/glb.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Solid } from '../src/core/schema.ts';
 import { GUN_PALETTE } from '../src/gun/palette.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
 import { readGlb } from './glbReader.ts';
 
@@ -41,6 +42,7 @@ const domain = {
     },
   },
   axisRules: [],
+  units: GUN_UNITS,
 };
 const resolvedFor = (solids: readonly Solid[]) => {
   const current = assembly();
@@ -71,7 +73,6 @@ const appearancePairs = (solids: readonly Solid[]) => {
   const exported = exportGlb({
     resolved,
     palette: GUN_PALETTE,
-    anchors: { hold: { position: [0, 0, 0], forward: [1, 0, 0], up: [0, 1, 0] }, others: {} },
     asset: { id: 'appearance-merge-contract', file: 'assets/models/appearance-merge-contract.glb' },
   });
   if (!exported.ok) {

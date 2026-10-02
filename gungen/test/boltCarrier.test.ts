@@ -26,6 +26,9 @@ const corners = (solid: Solid): Vec3[] => {
       ),
     );
   }
+  if (solid.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   return solid.profile.flatMap((point) =>
     [solid.z[0], solid.z[1]].map((along) => extrusionPoint(solid.axis, point, along)),
   );
@@ -141,10 +144,10 @@ const travelMeasurements = (resolved: ReturnType<typeof resolve>) => {
   const motion = resolved.defs.get('bolt-carrier')!.motion!;
   const transform = resolved.placed.get('bolt-carrier')!;
   const restOrigin = applyPoint(transform, [0, 0, 0]);
-  const rearOrigin = applyPoint(transform, motion.rearmost);
+  const rearOrigin = applyPoint(transform, motion.end);
   return {
     pathLength: path.box.half[0] * 2,
-    motionLength: motion.rearmost[0],
+    motionLength: motion.end[0],
     restOrigin,
     rearOrigin,
     distance: Math.hypot(...(rearOrigin.map((value, i) => value - restOrigin[i]!) as [number, number, number])),
@@ -170,7 +173,7 @@ const coreFitsCavity = (entry: TravelCase, resolved: ReturnType<typeof resolve>)
   const bodyFits = corners(body)
     .flatMap((corner) => [
       applyPoint(transform, corner),
-      applyPoint(transform, [corner[0] + motion.rearmost[0], corner[1], corner[2]]),
+      applyPoint(transform, [corner[0] + motion.end[0], corner[1], corner[2]]),
     ])
     .every(
       (point) =>
@@ -220,9 +223,9 @@ const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof re
   const carrierTransform = resolved.placed.get('bolt-carrier')!;
   const motion = carrier.motion!;
   const receiverSolids = receiver.solids.map((solid) => worldSolid(receiverTransform, solid));
-  const samples = Math.ceil(motion.rearmost[0] / 0.25);
+  const samples = Math.ceil(motion.end[0] / 0.25);
   for (let sample = 0; sample <= samples; sample++) {
-    const progress = motion.rearmost[0] * (sample / samples);
+    const progress = motion.end[0] * (sample / samples);
     const transform = compose(carrierTransform, translation([progress, 0, 0]));
     for (const solid of carrier.solids.filter(({ id }) => !id.startsWith('action-bar-'))) {
       const moved = worldSolid(transform, solid);
@@ -250,7 +253,7 @@ const allCarrierSolidsStayWithinReceiverLength = (resolved: ReturnType<typeof re
     .flatMap((solid) =>
       corners(solid).flatMap((corner) => [
         applyPoint(transform, corner),
-        applyPoint(transform, [corner[0] + motion.rearmost[0], corner[1], corner[2]]),
+        applyPoint(transform, [corner[0] + motion.end[0], corner[1], corner[2]]),
       ]),
     )
     .every((point) => point[0] >= cavityX[0]! - 1e-6 && point[0] <= cavityX[1]! + 1e-6);
@@ -346,8 +349,8 @@ describe('procedural bolt carrier', () => {
       expect(resolved.defs.get('bolt-carrier')?.motion, label).toMatchObject({
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [expectedPart.travel, 0, 0],
+        start: [0, 0, 0],
+        end: [expectedPart.travel, 0, 0],
       });
     }
   });
@@ -410,7 +413,7 @@ describe('procedural bolt carrier', () => {
     const localHandleBounds = limits(corners(handle));
     const pistonBounds = worldBounds(corners(piston).map((point) => applyPoint(transform, point)));
     const motion = carrier.motion!;
-    const rearTransform = compose(transform, translation(motion.rearmost));
+    const rearTransform = compose(transform, translation(motion.end));
     const rearHandleBounds = worldBounds(corners(handle).map((point) => applyPoint(rearTransform, point)));
     const portMin = port.actualX![0]!;
     const portMax = port.actualX![1]!;
@@ -543,7 +546,7 @@ describe('procedural bolt carrier', () => {
     const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
     const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
     const port = portMeasurements(entry, resolved);
-    const [travel] = carrier.motion!.rearmost;
+    const [travel] = carrier.motion!.end;
     const [barrelMountX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
 
     expect(BOLT_CARRIER_ENVELOPES.ar.x).toEqual([-2.5, 1.5]);

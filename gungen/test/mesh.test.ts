@@ -224,6 +224,7 @@ describe('watertightness (welded at 1e-5u)', () => {
       ],
       z: [0, 2],
       clip: [{ normal: [1, 1, 0], offset: 2 }],
+      display: { bevel: false },
     };
     const mesh = meshForSolid(clipped);
     expect(mesh.triangleCount).toBe(8);

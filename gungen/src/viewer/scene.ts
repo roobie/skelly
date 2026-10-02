@@ -27,7 +27,7 @@ import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
-import { meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
@@ -63,7 +63,8 @@ const triangleGeometry = (mesh: ReturnType<typeof meshForSolid>) => {
   return geometry;
 };
 
-const meshGeometry = (solid: Solid, bevel?: number) => triangleGeometry(meshForSolid(solid, bevel));
+const meshGeometry = (solid: Solid, bevel?: number, revolveFacets?: number) =>
+  triangleGeometry(meshForSolid(solid, bevel, revolveFacets));
 
 /** Keep-outs stay plain boxes/extrusions; only rendered solids are beveled. */
 const solidGeometry = (solid: Solid) => {
@@ -84,11 +85,13 @@ const highlights = (issues: readonly Issue[]) => ({
 });
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
+// biome-ignore lint/complexity/useMaxParams: the existing positional signature plus the revolve level of detail; callers pass the first two or four.
 export function buildLayers(
   report: Report,
   focus: readonly Issue[],
   colorMode: 'finish' | 'role' = 'finish',
   appearanceContext: AppearanceContext = {},
+  revolveFacets?: number,
 ): Layers {
   const { resolved } = report;
   const hl = highlights(focus);
@@ -133,12 +136,16 @@ export function buildLayers(
       const color = failing
         ? FAIL
         : srgbToHex(colorMode === 'role' ? solidColor(GUN_PALETTE, def.family, s.id, s.material) : appearance.color);
-      const geometry = item.merged ? triangleGeometry(meshForSolidGroup(item.solids)) : meshGeometry(s);
+      const geometry = item.merged
+        ? triangleGeometry(meshForSolidGroup(item.solids))
+        : meshGeometry(s, displayBevel(s, resolved.domain.units), revolveFacets);
+      // A revolved solid is smooth-shaded from its own normals; everything else is flat-shaded.
+      const smooth = s.kind === 'revolved';
       const mesh = new Mesh(
         geometry,
         new MeshStandardMaterial({
           color,
-          flatShading: true,
+          flatShading: !smooth,
           roughness: 0.85,
           metalness: 0.05,
         }),
@@ -147,7 +154,8 @@ export function buildLayers(
       mesh.matrixAutoUpdate = false;
       mesh.matrix.copy(matrixOf(t.r, t.t));
       mesh.userData = { label: `${part} (${def.family}) · solid ${item.id}${params ? ` · ${params}` : ''}` };
-      if (item.merged || s.display?.outline !== false) {
+      // Edges would trace every facet of a smooth revolved mesh, so it is outlined only on request.
+      if (item.merged || (smooth ? s.display?.outline === true : s.display?.outline !== false)) {
         const edges = new LineSegments(
           new EdgesGeometry(mesh.geometry),
           new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),

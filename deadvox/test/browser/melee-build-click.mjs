@@ -22,7 +22,7 @@ const observationPlugin = {
     assert(code.includes(marker), 'game loop observation point is present');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { d7Review: { input, session, held, engine, camera, debugTools } });\n${marker}`,
+      `  Object.assign(globalThis, { d7Review: { input, session, held, engine, camera, debugTools, inventory } });\n${marker}`,
     );
   },
 };
@@ -148,6 +148,11 @@ try {
 
   await page.keyboard.press('KeyB');
   await page.waitForTimeout(1100);
+  const meleeAdded = await page.evaluate(() => {
+    const { inventory } = globalThis.d7Review;
+    return inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
+  });
+  assert.equal(meleeAdded, true, 'positive control has a held melee weapon');
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];
     globalThis.d7Observed.combatStaminaBefore = globalThis.d7Review.session.sim.needs.stamina;
@@ -159,7 +164,7 @@ try {
     staminaBefore: globalThis.d7Observed.combatStaminaBefore,
     staminaAfter: globalThis.d7Review.session.sim.needs.stamina,
   }));
-  await test('A native combat click starts one melee action and spends stamina (positive control)', () => {
+  await test('A native combat click with a melee weapon starts one attack and spends stamina (positive control)', () => {
     assert.equal(combat.starts.length, 1);
     assert.equal(combat.starts[0].result, true);
     assert.equal(combat.starts[0].build, false);

@@ -12,6 +12,8 @@ const JSON_FILE = /\.json$/;
 const intentionallyUnofferedGungenParams = {
   camera:
     'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
+  facets:
+    'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
 };
 
 const paramsReadBy = (sources) => {

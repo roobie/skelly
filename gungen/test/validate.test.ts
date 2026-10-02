@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Assembly, Domain, PartDef, Rule } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 
 const emptyPart: PartDef = { family: 'empty', ports: [], solids: [], keepOuts: [], axes: [] };
 const assembly: Assembly = {
@@ -14,6 +15,7 @@ const domain = (rules: readonly Rule[] = []): Domain => ({
   name: 'test',
   families: { empty: { name: 'empty', params: {}, build: () => emptyPart } },
   axisRules: [],
+  units: GUN_UNITS,
   rules,
 });
 

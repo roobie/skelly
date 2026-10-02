@@ -8,7 +8,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import process from 'node:process';
-import type { DeadvoxModelFile } from '../core/design.ts';
+import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { exportFileText } from './exportFile.ts';
 
 const USAGE = 'usage: export <design-or-fixture.json> [--out <dir>] [--entry-out <dir>] [--id <model_id>]';
