@@ -3,6 +3,7 @@ import {
   Color,
   DirectionalLight,
   GridHelper,
+  type Group,
   HemisphereLight,
   MathUtils,
   type Object3D,
@@ -15,8 +16,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
+import { worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '../core/revolve.ts';
@@ -26,6 +29,7 @@ import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import { type AmmoMeshes, ammoEnvironment, buildAmmoMeshes, type CaseFinish } from './ammoLayer.ts';
 import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import {
   availablePrefabs,
@@ -45,6 +49,7 @@ import {
   withEditorStatus,
 } from './designEditor.ts';
 import { buildDesignViewModel } from './designViewModel.ts';
+import { buildDetachedMagazine } from './magazineView.ts';
 import {
   buildPanelModel,
   clearParam,
@@ -80,6 +85,16 @@ const designs = Object.entries(
 )
   .map(([path, text]) => ({ name: path.split('/').at(-1)!.replace(DESIGN_EXTENSION, ''), text }))
   .sort((a, b) => a.name.localeCompare(b.name));
+
+const cartridges = Object.entries(
+  import.meta.glob<string>('../../cartridges/*.json', { eager: true, import: 'default', query: '?raw' }),
+).flatMap(([path, text]) => {
+  const parsed = parseCartridgeJson(text);
+  if (!parsed.ok) {
+    throw new Error(`${path}: ${formatCartridgeParseError(parsed.error)}`);
+  }
+  return parsed.cartridge.kind === 'metallic' ? [parsed.cartridge] : [];
+});
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -148,6 +163,18 @@ const syncUrl = () => {
   if (colorMode === 'role') {
     params.set('colors', 'role');
   }
+  const ammo = initialQuery.get('ammo');
+  const ammoCase = initialQuery.get('ammoCase');
+  const mag = initialQuery.get('mag');
+  if (ammo) {
+    params.set('ammo', ammo);
+  }
+  if (ammoCase) {
+    params.set('ammoCase', ammoCase);
+  }
+  if (mag) {
+    params.set('mag', mag);
+  }
   if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
     params.set('facets', String(revolveFacets));
   }
@@ -174,6 +201,16 @@ scene.add(new HemisphereLight(0xdf_e6_ee, 0x2a_26_22, 1.6));
 const sun = new DirectionalLight(0xff_ff_ff, 2.2);
 sun.position.set(20, 40, 30);
 scene.add(sun);
+const ammoCartridge = cartridges.find((cartridge) => cartridge.id === initialQuery.get('ammo'));
+const caseFinish: CaseFinish = initialQuery.get('ammoCase') === 'brass' ? 'brass' : 'steel';
+const ammoEnv = ammoCartridge ? ammoEnvironment(renderer) : undefined;
+const ammoMeshes: AmmoMeshes | undefined =
+  ammoCartridge && ammoEnv ? buildAmmoMeshes(ammoCartridge, caseFinish, ammoEnv, revolveFacets) : undefined;
+const showMagazine = initialQuery.has('mag');
+const magazineView = initialQuery.get('mag');
+if (ammoMeshes) {
+  scene.add(ammoMeshes.loose, ammoMeshes.fired);
+}
 const grid = new GridHelper(120, 60, 0x3a_3f_46, 0x26_2a_30);
 grid.position.y = -16;
 scene.add(grid);
@@ -302,6 +339,7 @@ let lastDropped: readonly Connection[] = [];
 let editorState: DesignEditorState | undefined;
 let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
 let pendingCamera: CameraState | undefined;
+let detachedMagazine: Group | undefined;
 
 const redraw = () => {
   if (!report) {
@@ -328,10 +366,52 @@ const redraw = () => {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
+  if (ammoMeshes) {
+    scene.add(ammoMeshes.loose, ammoMeshes.fired);
+    placeAmmo(report);
+  }
+  placeDetachedMagazine(report, layers.solids);
   if (!framed) {
     frame(layers.solids);
     framed = true;
   }
+};
+
+const placeAmmo = (shown: Report): void => {
+  if (!ammoMeshes) {
+    return;
+  }
+  const [ejection] = [...shown.resolved.placed].flatMap(([part, transform]) =>
+    (shown.resolved.defs.get(part)?.keepOuts ?? [])
+      .filter((keepOut) => keepOut.kind === 'ejection')
+      .map((keepOut) => worldBox(transform, keepOut.box)),
+  );
+  const [x, y, z] = ejection?.center ?? [0, 0, 6];
+  const gap = 1.5;
+  ammoMeshes.loose.position.set(x - ammoMeshes.lengthUnits / 2, y + gap, z);
+  ammoMeshes.fired.position.set(x - ammoMeshes.caseLengthUnits / 2, y - gap, z);
+};
+
+const placeDetachedMagazine = (shown: Report, solids: Group): void => {
+  if (detachedMagazine) {
+    scene.remove(detachedMagazine);
+    disposeGroup(detachedMagazine);
+    detachedMagazine = undefined;
+  }
+  if (!(showMagazine && ammoCartridge && ammoMeshes)) {
+    delete view.dataset.magazineRounds;
+    delete view.dataset.magazineView;
+    return;
+  }
+  const detached = buildDetachedMagazine(shown, solids, ammoCartridge, ammoMeshes);
+  if (!detached) {
+    delete view.dataset.magazineRounds;
+    return;
+  }
+  detachedMagazine = detached.group;
+  scene.add(detachedMagazine);
+  view.dataset.magazineRounds = String(detached.capacity);
+  view.dataset.magazineView = magazineView ?? '';
 };
 
 const frame = (group: Object3D) => {
@@ -448,6 +528,14 @@ const renderDesignInfo = () => {
 };
 
 const clearRenderedModel = () => {
+  if (detachedMagazine) {
+    scene.remove(detachedMagazine);
+    disposeGroup(detachedMagazine);
+    detachedMagazine = undefined;
+  }
+  if (ammoMeshes) {
+    scene.remove(ammoMeshes.loose, ammoMeshes.fired);
+  }
   if (layers) {
     for (const group of Object.values(layers)) {
       scene.remove(group);

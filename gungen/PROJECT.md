@@ -904,6 +904,32 @@ Decisions where the plan left representation open:
   package adds no parser, anchor values, palette migration, suggester, or
   exporter implementation.
 
+#### Firearm/ammunition export extension (ADR 0003, accepted 2026-10-02)
+
+The firearm metadata extends the 3.0a `DeadvoxModelEntry` additively. Every new
+field is optional; with it absent, existing export JSON and GLB bytes are
+unchanged.
+
+- `calibre?: string` is the exact cartridge-data id (not a display designation;
+  e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
+  rather than its general content `Id` (which deliberately excludes dots).
+- `anchors.magwell?: Point` is the magazine seating point. Like every anchor,
+  `Point` is `[x, y, z]` in metres in the model file's frame (+x forward, +y up,
+  +z right).
+- Magazine entries add `capacity?: number` (positive whole rounds) and
+  `rounds?: { at: Point; tilt: number }[]`, ordered from the top round down.
+  `at` is each round centre in metres in magazine-model coordinates; `tilt` is
+  degrees about +z, nose-up positive. Left/right stagger is the sign of `at[2]`.
+  Geometry determines the fit, capped to the nominal count for labelled
+  5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
+  profiles report the dimension-derived fit.
+- Round and case cartridge entries carry the same `calibre` and use real-size
+  millimetre source dimensions converted to metres for their GLBs. Their model
+  ids/files use the single deterministic calibre slug function in
+  `src/ammo/calibreSlug.ts` (e.g. `round_7_62x39`, `round-7_62x39.glb`); a test
+  proves it is injective over the registered cartridge ids. Gungen's internal
+  revolve profiles remain in millimetres.
+
 #### 3.0b (implemented)
 
 Merged into `gungen/m3-contracts` (2026-09-29). Every 3.0a signature now has

@@ -3,7 +3,7 @@ id: deadvox::adr-0003-firearm-handling
 description: Decision for how gungen exports what a gun needs to be handled and fired, and how deadvox plays the cycle, ejection, spent cases and magazines
 tags: [deadvox, gungen, adr, firearms, ammo, export, feel]
 created: 2026-10-02
-status: proposed
+status: accepted
 ---
 
 # 3. Firearm handling: what gungen exports, what deadvox plays
@@ -12,7 +12,7 @@ status: proposed
 [[THIS is_grounded_by: ../../DESIGN.md]]
 [[THIS is_grounded_by: ../../../gungen/PROJECT.md]]
 
-**Status:** proposed (2026-10-02). BR's rulings so far are recorded under [Rulings](#rulings-2026-10-02).
+**Status:** accepted (2026-10-02). BR's rulings are recorded under [Rulings](#rulings-2026-10-02).
 
 ## Context
 
@@ -58,16 +58,16 @@ This is a survival game and reloading ammunition is part of it, so spent cases a
 
 The existing `DeadvoxModelEntry` fields keep their meaning; everything below is optional, so current entries stay valid. gungen fills them for guns whose design has the data.
 
-- `calibre`: the cartridge id (e.g. `7.62x39`).
-- `anchors` gain named points: `muzzle` (already accepted), `ejection` (where the case leaves) and `magwell` (where the magazine seats).
+- `calibre`: the cartridge id (e.g. `7.62x39`) from gungen's cartridge data.
+- `anchors` gain named points: `muzzle` (already accepted), `ejection` (where the case leaves) and `magwell` (where the magazine seats). Each point is `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right).
 - `action`:
   - `moving`: the moving parts as **separate named nodes** in the GLB (today the export merges solids into one primitive per material, so these must stay separate), each with its motion axis and stroke in metres;
   - `fire` and `hand`: cycle timelines (rear, dwell, forward seconds, or sampled curves);
   - `ejectAt`: the stroke fraction at which the case leaves, and `ejectDirection`: a unit vector in the model frame;
   - `holdOpen`: whether the carrier stays back on an empty magazine;
   - `rpm`.
-- **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, angle, side }]`, from the top round down), so deadvox can draw the remaining rounds by instancing the round model.
-- **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109).
+- **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, tilt }]`, from the top round down). `at` is the round centre in metres in magazine-model coordinates; `tilt` is degrees about +z (nose-up positive). Left/right stagger is encoded by the sign of `at[2]`, not a separate field, so deadvox can draw remaining rounds by instancing the round model.
+- **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109). In model ids and filenames `<calibre>` means the deterministic slug of the cartridge id (e.g. `round_7_62x39`); the entry's `calibre` remains the exact source id (`7.62x39`).
 
 The exact field names and units are settled in the gungen work items (g34, g35) and recorded in `gungen/PROJECT.md` next to the 3.0a contracts; this ADR fixes what the contract must carry.
 

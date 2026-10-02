@@ -242,7 +242,15 @@ describe('anchor data', () => {
     for (const key of Object.keys(GUN_ANCHORS)) {
       expect(Object.keys(gunDomain.families)).toContain(key);
     }
-    expect(Object.keys(GUN_ANCHORS).sort()).toEqual(['barrel', 'forend', 'frame', 'grip', 'handguard', 'stock']);
+    expect(Object.keys(GUN_ANCHORS).sort()).toEqual([
+      'barrel',
+      'forend',
+      'frame',
+      'grip',
+      'handguard',
+      'lower',
+      'stock',
+    ]);
   });
 
   const frameFacts = (assemblies: Assembly[]) => {

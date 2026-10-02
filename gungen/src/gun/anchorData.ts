@@ -96,12 +96,16 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
   // that rotation (grip local -Y is the port normal, grip local X is the port up).
   frame: {
     holdRank: 'grip',
-    anchors: gripHold(['body-upper', 'body'], (part) => {
-      const magazine = part.ports.find((p) => p.id === 'magazine');
-      return magazine
-        ? { forward: magazine.up, up: [-magazine.normal[0], -magazine.normal[1], -magazine.normal[2]] }
-        : { forward: X, up: Y };
-    }),
+    anchors: (params, part) => {
+      const hold = gripHold(['body-upper', 'body'], (framePart) => {
+        const magazine = framePart.ports.find((port) => port.id === 'magazine');
+        return magazine
+          ? { forward: magazine.up, up: [-magazine.normal[0], -magazine.normal[1], -magazine.normal[2]] }
+          : { forward: X, up: Y };
+      })(params, part);
+      const magazine = part.ports.find((port) => port.id === 'magazine');
+      return { ...hold, ...(magazine ? { magwell: frameAt(magazine.pos) } : {}) };
+    },
   },
   // Only a firing-grip stock has a hold: the tapered style uses its grip; others use the wrist.
   stock: {
@@ -115,6 +119,12 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
   },
   handguard: { anchors: (_params, part) => undersideSupport(part, 0.6) },
   forend: { anchors: (_params, part) => undersideSupport(part, 0.5) },
+  lower: {
+    anchors: (_params, part) => {
+      const magazine = part.ports.find((port) => port.id === 'magazine');
+      return magazine ? { magwell: frameAt(magazine.pos) } : {};
+    },
+  },
   barrel: {
     anchors: (_params, part) => {
       const muzzle = part.ports.find((p) => p.id === 'muzzle');
