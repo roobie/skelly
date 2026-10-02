@@ -15,6 +15,6 @@
     { "from": "slide.barrel", "to": "barrel.rear" },
     { "from": "frame.barrel", "to": "barrel.frame" },
     { "from": "frame.magazine", "to": "magazine.top" },
-    { "from": "slide.rail", "slot": 0, "to": "sight.base" }
+    { "from": "slide.rail", "slot": 1, "to": "sight.base" }
   ]
 }

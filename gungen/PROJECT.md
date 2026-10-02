@@ -178,7 +178,10 @@ still the gun's numbers in u.
 
 **Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
 third kind of solid: a profile of (axial, radial) points turned about an axis
-(`axis`, local Z when omitted, with the same axes as an extrusion). It exists
+(`axis`, local Z when omitted, with the same axes as an extrusion). Optional
+`origin: Vec3` translates that axis in the part frame (omitted = `[0, 0, 0]`);
+mesh positions, collision hulls, bounds and anchor points share this translation.
+It exists
 for round parts with real detail, such as cartridges, which the box and
 extrusion kinds cannot describe.
 
@@ -186,7 +189,7 @@ extrusion kinds cannot describe.
   circumference and hard where the profile bends past `creaseDegrees` (40 by
   default). The facet count is a level of detail chosen when the mesh is built,
   not a field of the solid: `meshForSolid` takes it (default 6), the viewer
-  takes `?facets=N` (24 for close-ups) and the glb export takes `revolveFacets`.
+  takes `?facets=N` (default 16, 24 for close-ups) and the glb export takes `revolveFacets`.
   The bevel and `display.mergeGroup` do not apply; the viewer draws it
   smooth-shaded and without an edge outline.
 - Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
@@ -319,14 +322,14 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-ak` | AK-pattern rifle | AK block front sight with open ears, 2.5u behind the muzzle |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
-| `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
+| `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the receiver rail |
 | `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
-The lengths below remain abstract units on the existing grid.
+The lengths below remain abstract units on the existing grid. Optic reference sources and modeled envelopes are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
@@ -394,7 +397,8 @@ archetype:
 | Fixture | Fails | Why |
 | --- | --- | --- |
 | `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
-| `broken-bolt-sight-over-loading-port` | `keep-out` | On a top-loaded action, a sight over the receiver blocks the loading port |
+| `broken-bolt-sight-outside-rail-support` | `optic-mount-fit` | A compact optic is attached at an unsupported receiver-rail end slot |
+| `broken-bolt-sight-over-loading-port` | `keep-out`, `optic-mount-fit` | A compact foot roofs the loading footprint and lacks physical support; a type-only LPVO swap restores paired feet |
 | `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
 
 ### Known gaps

@@ -27,6 +27,7 @@ import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
+import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
@@ -796,15 +797,19 @@ const receiverShellSolids = ({
       solid(
         'receiver-shell-top-side-left',
         [innerX[0], innerY[1], -RECEIVER_FRONT_HALF_WIDTH],
-        [innerX[1], receiverTop, innerZ[0]],
+        [innerX[1], receiverTop, broadInnerZ[0]],
       ),
       solid(
         'receiver-shell-top-side-right',
-        [innerX[0], innerY[1], innerZ[1]],
+        [innerX[0], innerY[1], broadInnerZ[1]],
         [innerX[1], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
       ),
-      solid('receiver-shell-top-rear', [innerX[0], innerY[1], innerZ[0]], [portX[0], receiverTop, innerZ[1]]),
-      solid('receiver-shell-top-front', [portX[1], innerY[1], innerZ[0]], [innerX[1], receiverTop, innerZ[1]]),
+      solid('receiver-shell-top-rear', [innerX[0], innerY[1], broadInnerZ[0]], [portX[0], receiverTop, broadInnerZ[1]]),
+      solid(
+        'receiver-shell-top-front',
+        [portX[1], innerY[1], broadInnerZ[0]],
+        [innerX[1], receiverTop, broadInnerZ[1]],
+      ),
     );
   } else {
     addBox(
@@ -1000,9 +1005,10 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
   if (params.rail !== 'none') {
     ports.push({
       id: 'rail',
-      mount: 'rail',
+      mount: 'rail-top',
       gender: 'female',
-      pos: [-14, receiverTop, 0],
+      // AR scope feet stay on the upper, but the ocular starts ahead of rear charging-handle travel.
+      pos: [params.section === 'ar' ? -12 : -14, receiverTop, 0],
       normal: Y,
       up: X,
       slots: { count: 7, pitch: 2 },
@@ -1082,10 +1088,14 @@ const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, kee
 };
 
 const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void => {
-  const { params, receiverDrop, receiverBottom } = context;
+  const { params, receiverDrop, receiverBottom, receiverTop } = context;
   switch (params.feed) {
     case 'top':
-      keepOuts.push(keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]));
+      // The roof-mouth is closed to every family. Above it, opticLoadingClearance permits only bodies.
+      keepOuts.push(
+        keepOut('loading-mouth', [-9, receiverTop - 0.5, -1.5], [-4, receiverTop, 1.5]),
+        keepOut('loading-port', [-9, receiverTop, -1.5], [-4, 9, 1.5], { allowFamilies: ['sight'] }),
+      );
       break;
     case 'tube':
       keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
@@ -1188,7 +1198,19 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     portWindow,
     ...(farPortWindow ? { farPortWindow } : {}),
   });
-  return [...shell, ...receiverHandles, ...receiverTubeSeat(bore, receiverBottom, tubeFed)];
+  const opticRail: Solid[] = [];
+  if (params.rail !== 'none' && params.action !== 'revolver') {
+    if (params.feed === 'top') {
+      opticRail.push(
+        solid('receiver-optic-rail-rear-base', [-14, receiverTop - 0.5, -1.25], [-9, receiverTop, 1.25]),
+        solid('receiver-optic-rail-front-base', [-4, receiverTop - 0.5, -1.25], [-2, receiverTop, 1.25]),
+      );
+    } else {
+      const start = params.section === 'ar' ? -12 : -14;
+      opticRail.push(solid('receiver-optic-rail', [start, receiverTop - 0.5, -1.25], [start + 12, receiverTop, 1.25]));
+    }
+  }
+  return [...shell, ...receiverHandles, ...receiverTubeSeat(bore, receiverBottom, tubeFed), ...opticRail];
 };
 
 export const receiver: PartFamily = {
@@ -2416,7 +2438,7 @@ export const railFrontSight: PartFamily = {
         solid('base', [-1, 0, -1], [1, 0.5, 1]),
         solid('post', [-GRID, 0.5, -GRID / 2], [GRID, sightAxisY, GRID / 2]),
       ],
-      ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
+      ports: [{ id: 'base', mount: 'rail-top', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X }],
     };
@@ -2623,7 +2645,7 @@ export const handguard: PartFamily = {
         },
         {
           id: 'rail',
-          mount: 'rail',
+          mount: 'rail-top',
           gender: 'female',
           pos: [2, outerY, 0],
           normal: Y,
@@ -3043,7 +3065,7 @@ export const pistolSlide: PartFamily = {
         },
         {
           id: 'rail',
-          mount: 'rail',
+          mount: 'rail-top',
           gender: 'female',
           pos: [-6, 3, 0],
           normal: Y,
@@ -3311,6 +3333,7 @@ export const stock: PartFamily = {
   },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
+    const cheekDatum = { kind: 'cheek', origin: [-10, 2.5, 0] as Vec3, dir: X };
     const port: PortDef = {
       id: 'front',
       mount: 'stock',
@@ -3326,7 +3349,7 @@ export const stock: PartFamily = {
         solids: m4StockSolids(len),
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
       };
     }
     if (params.style === 'thumbhole') {
@@ -3370,7 +3393,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
         tags: [FIRING_GRIP],
       };
     }
@@ -3384,7 +3407,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
         tags: [FIRING_GRIP],
       };
     }
@@ -3456,7 +3479,7 @@ export const stock: PartFamily = {
           ],
           ports: [port],
           keepOuts: [],
-          axes: [],
+          axes: [cheekDatum],
           tags: [FIRING_GRIP],
         };
       }
@@ -3505,7 +3528,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
         tags: [FIRING_GRIP],
       };
     }
@@ -3519,7 +3542,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
       };
     }
     return {
@@ -3527,27 +3550,57 @@ export const stock: PartFamily = {
       solids: [solid('comb', [-len, -1, -1.5], [0, 2.5, 1.5]), solid('butt', [-len - 1, -8, -1.75], [-len, 3, 1.75])],
       ports: [port],
       keepOuts: [],
-      axes: [],
+      axes: [cheekDatum],
     };
   },
 };
 
 export const sight: PartFamily = {
   name: 'sight',
-  params: {},
-  build(): PartDef {
+  params: {
+    type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' },
+    mountSection: {
+      values: ['standard', 'ar', 'pump', 'ak'],
+      default: 'standard',
+      from: [{ port: 'base', param: 'section' }],
+    },
+    mountFeed: {
+      values: ['box', 'top', 'tube', 'cylinder'],
+      default: 'box',
+      from: [{ port: 'base', param: 'feed' }],
+    },
+  },
+  build(params): PartDef {
+    const optic = getOptic(params.type, params.mountSection);
+    // Separate prism feet reach the round ends without putting a bridge across a top-loading mouth.
+    const solids =
+      params.mountFeed === 'top' && optic.id === 'fixed-prism-4x'
+        ? optic.solids
+            .filter(({ id }) => id !== 'mount-bridge')
+            .map((component) =>
+              component.kind === 'box' && component.id.endsWith('foot')
+                ? {
+                    ...component,
+                    box: {
+                      center: [
+                        component.box.center[0],
+                        component.box.center[1] + 0.25,
+                        component.box.center[2],
+                      ] as const,
+                      half: [component.box.half[0], component.box.half[1] + 0.25, component.box.half[2]] as const,
+                    },
+                  }
+                : component,
+            )
+        : optic.solids;
     return {
       family: 'sight',
-      solids: [solid('body', [-2, 0, -1], [2, 1.5, 1])],
-      ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
-      // A thin tube around the line of sight, starting at the sight's front.
-      keepOuts: [
-        {
-          ...keepOut('sightline', [2, 0.25, -0.75], [42, 1.75, 0.75]),
-          allowFamilies: ['front-sight', 'rail-front-sight'],
-        },
+      solids,
+      ports: [
+        { id: 'base', mount: optic.mount.kind, gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
-      axes: [{ kind: 'sight', origin: [0, 1, 0], dir: X }],
+      keepOuts: optic.keepOuts,
+      axes: [{ kind: 'sight', origin: [0, optic.opticalAxisY, 0], dir: X }],
     };
   },
 };

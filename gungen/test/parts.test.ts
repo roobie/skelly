@@ -19,11 +19,13 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  * `handguard` 1,944 each. The array keeps coverage of the built geometry: on a sample of
  * `parts.ts` mutants it killed every mutant the full product killed, where 2-wise missed one.
  * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
- * The full product of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
+ * `sight` is sampled as an array so future optic parameters compose without making its full product
+ * the default; the optic contract tests explicitly cover every stable catalog type. The full product
+ * of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
  * `handleStyle` is deliberately excluded from these unconstrained products: arbitrary combinations
  * create invalid owner/pattern pairings. The compatible style × pattern × owner matrix below tests it.
  */
-const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard'] as const;
+const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard', 'sight'] as const;
 const ARRAY_STRENGTH = 3;
 const withoutHandleStyle = (family: PartFamily) =>
   Object.fromEntries(Object.entries(family.params).filter(([name]) => name !== 'handleStyle'));

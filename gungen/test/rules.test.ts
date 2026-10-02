@@ -69,11 +69,10 @@ describe('rules', () => {
     expect(rulesFailed(loadFixture('archetype-battle-rifle'))).toEqual([]);
   });
 
-  it('keep-out: explicitly allowed front sights may occupy a rear sight line', () => {
+  it('keep-out: explicitly allowed front sights may occupy a sightline volume', () => {
     const ar = loadFixture('archetype-ar');
-    expect(validate(ar, gunDomain).issues.filter(({ rule }) => rule === 'keep-out')).toEqual([]);
     const sight = gunDomain.families.sight!;
-    const domain: Domain = {
+    const withAllowance = (allow: boolean): Domain => ({
       ...gunDomain,
       families: {
         ...gunDomain.families,
@@ -83,17 +82,22 @@ describe('rules', () => {
             const def = sight.build(params);
             return {
               ...def,
-              keepOuts: def.keepOuts.map(({ allowFamilies: _allowed, ...ko }) => ko),
+              keepOuts: def.keepOuts.map(({ allowFamilies: _families, ...ko }) => ({
+                ...ko,
+                box: { ...ko.box, half: [ko.box.half[0], 10, 10] },
+                ...(allow ? { allowFamilies: ['front-sight', 'rail-front-sight'] } : {}),
+              })),
             };
           },
         },
       },
-    };
-    expect(
+    });
+    const hitsFrontSight = (domain: Domain): boolean =>
       validate(ar, domain).issues.some(
         ({ rule, parts }) => rule === 'keep-out' && parts.includes('front-sight') && parts.includes('sight'),
-      ),
-    ).toBe(true);
+      );
+    expect(hitsFrontSight(withAllowance(true))).toBe(false);
+    expect(hitsFrontSight(withAllowance(false))).toBe(true);
   });
 
   it('keep-out: without the allowance, the magazine intrudes', () => {

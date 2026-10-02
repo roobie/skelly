@@ -104,6 +104,7 @@ describe('resolve', () => {
     // Root the assembly at the sight: the receiver is placed from the sight.
     const fromSight = variant('broken-axis-alignment', (a) => {
       a.root = 'sight';
+      a.connections.find((c) => c.to === 'sight.base')!.slot = 3;
     });
     const r1 = resolve(rolled, gunDomain);
     const r2 = resolve(fromSight, gunDomain);
