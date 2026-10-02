@@ -2,7 +2,7 @@
 // live in the freshly-created runtime; a 1.9 snapshot omits pending jobs without
 // mutating the running queue.
 
-import { describeTarget, type Inventory, type Target, type TargetState } from './inventory.ts';
+import { describeTarget, type Inventory, type Location, type Target, type TargetState } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 
 export type JobValue = null | boolean | number | string | JobValue[] | { [key: string]: JobValue };
@@ -70,13 +70,27 @@ export interface TickResult {
   completedMoves: CompletedMove[];
 }
 
+export interface MoveStart {
+  readonly item: Item;
+  readonly from: Location;
+  readonly target: Target;
+}
+
 export class HandlingQueue {
   readonly jobs: Job[] = [];
   private readonly inventory: Inventory;
+  private readonly onMoveStart: ((move: MoveStart) => void) | undefined;
+  private readonly onMoveComplete: ((move: MoveStart) => void) | undefined;
   private readonly handlers = new Map<string, (params: JobParams) => string | undefined>();
 
-  constructor(inventory: Inventory) {
+  constructor(
+    inventory: Inventory,
+    onMoveStart?: (move: MoveStart) => void,
+    onMoveComplete?: (move: MoveStart) => void,
+  ) {
     this.inventory = inventory;
+    this.onMoveStart = onMoveStart;
+    this.onMoveComplete = onMoveComplete;
   }
 
   /** Something is being handled: the player can't sprint and moves at half pace. */
@@ -129,6 +143,9 @@ export class HandlingQueue {
       elapsed: 0,
     };
     this.jobs.push(job);
+    if (this.jobs.length === 1) {
+      this.announceMoveStart(job);
+    }
     return { ok: true, job };
   }
 
@@ -164,8 +181,20 @@ export class HandlingQueue {
       job.elapsed = job.duration;
       this.jobs.shift();
       this.execute(job, result);
+      if (this.jobs[0]?.kind === 'move') {
+        this.announceMoveStart(this.jobs[0]);
+      }
     }
     return result;
+  }
+
+  private announceMoveStart(job: MoveJob): void {
+    const item = this.inventory.itemByUid(job.itemUid);
+    const from = item ? this.inventory.locate(item) : undefined;
+    const target = this.inventory.resolveTarget(job.target);
+    if (item && from && target) {
+      this.onMoveStart?.({ item, from, target });
+    }
   }
 
   private execute(job: Job, result: TickResult): void {
@@ -197,7 +226,11 @@ export class HandlingQueue {
     if (!(item && target)) {
       return "It isn't there any more";
     }
+    const from = this.inventory.locate(item);
     const moved = this.inventory.move(item, target, job.count);
+    if (moved.ok && from) {
+      this.onMoveComplete?.({ item, from, target });
+    }
     return moved.ok ? undefined : moved.reason;
   }
 }

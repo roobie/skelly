@@ -15,6 +15,7 @@ import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
+import type { SoundEventId } from '../core/soundEvents.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
@@ -44,6 +45,7 @@ import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
+import { handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { mountControlsCard } from './controls.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
@@ -123,6 +125,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
   });
   document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+  const playSessionSound = (
+    event: SoundEventId,
+    position: Vec3,
+    time: number,
+    meta: { emittedAsNoise?: boolean; sourceLabel?: string | null },
+  ) => audio.play(event, position.map((v) => v * s) as Vec3, time, meta);
 
   // ---- simulation ----
 
@@ -163,9 +171,21 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
     // The session works in blocks; playback is in metres.
     audio: {
-      play: (event, position, time, meta) => audio.play(event, position.map((v) => v * s) as Vec3, time, meta),
+      play: playSessionSound,
       snapshotState: () => audio.snapshotState(),
       restoreState: (state) => audio.restoreState(state),
+      onMoveStart: (move, ownerLocation, position, time) => {
+        const cue = handlingMoveStartCue(move, ownerLocation, position);
+        if (cue) {
+          playSessionSound(cue.event, cue.position, time, {});
+        }
+      },
+      onMoveComplete: (move, time) => {
+        const cue = handlingMoveCompleteCue(move);
+        if (cue) {
+          playSessionSound(cue.event, cue.position, time, {});
+        }
+      },
     },
     notice: (text) => showNotice(text),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),

@@ -72,7 +72,7 @@ const sheet = html`
             <div><dt>Minimum interval</dt><dd>${event.minIntervalSeconds} s</dd></div>
             <div><dt>Noise radius</dt><dd>${event.noiseRadiusMetres === null ? 'not emitted as noise' : `${event.noiseRadiusMetres} m`}</dd></div>
           </dl>
-          ${event.note ? html`<p class="sound-note"><strong>Note:</strong> ${event.note}</p>` : ''}
+          ${event.note ? html`<p class="sound-note"><strong>BR status:</strong> ${event.note}</p>` : ''}
           <ul class="sound-variants" aria-label=${`${event.id} recordings`}>
             ${event.variants.map(
               (variant) => html`
