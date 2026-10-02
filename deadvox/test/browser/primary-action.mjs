@@ -86,7 +86,7 @@ try {
     const runtime = globalThis.primaryActionTest;
     const backpack = runtime.inventory.worn.back;
     const crowbar = backpack?.pockets?.[0]?.find(({ item }) => item.type === 'crowbar')?.item;
-    if (!backpack || !crowbar) {
+    if (!(backpack && crowbar)) {
       throw new Error('fresh debug loadout is missing its crowbar');
     }
     const moved = runtime.inventory.move(crowbar, { kind: 'hand', side: 'right' });
@@ -108,12 +108,12 @@ try {
   const loadoutBefore = await page.evaluate(() => globalThis.primaryActionTest.session.sim.needs.stamina);
   await page.mouse.click(640, 450);
   await page.waitForTimeout(150);
-  const loadoutAction = await page.evaluate((uid) => ({
+  const loadoutAction = await page.evaluate(() => ({
     rightHandItem: globalThis.primaryActionTest.inventory.hands.right?.type,
     rightHandUid: globalThis.primaryActionTest.inventory.hands.right?.uid,
     stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
     swings: [...globalThis.primaryActionObserved.swings],
-  }), loadoutMeleeUid);
+  }));
   await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
     runtime.session.zombies.beginMeleeSwing = globalThis.primaryActionObserved.originalBegin;
@@ -122,7 +122,7 @@ try {
   assert.equal(loadoutAction.rightHandUid, loadoutMeleeUid);
   assert.deepEqual(loadoutAction.swings[0], { result: true, profile: 'blunt', hand: 'right' });
   assert.ok(loadoutAction.stamina < loadoutBefore, 'the debug-loadout right-hand melee action spends stamina');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1200);
 
   const flashlightUid = await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
