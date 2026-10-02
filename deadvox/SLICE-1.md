@@ -530,8 +530,19 @@ and 300 measured ticks. The ten-shambler test H remains the CI guard.
   damage, or a need becomes critical. The game asks *Continue* or *Stop*.
 - The screen shows the clock spinning, a progress bar, and an edge effect.
 
-**Done when:** a scenario test shows the interruption comes at most one step
-late, and playtests confirm players understand why they were woken.
+**Done when:** a scenario test shows the interruption comes at most one grown
+needs step late.
+
+**Status:** implemented. `test/rest.test.ts` covers fatigue recovery, bed quality,
+safe starts, interruptions from awareness/proximity/damage/critical needs, and
+Continue/Stop behavior; `test/restUi.test.ts` covers the clock, progress, stop
+hint and interruption prompt.
+
+**Beyond the plan:** pressing the same rest/sleep key manually stops the action,
+and the action state is included in save snapshots.
+
+**Carried forward:** confirm players understand why they were woken in the first
+real playtest at the end of Slice 3 (BR, 2026-10-02).
 
 ### 1.8.5 Shambler body regions
 
@@ -563,8 +574,21 @@ Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
 save storage and the golden save (1.9). Our saves refuse any version mismatch,
 so a golden save committed first would have to be remade.
 
-**Done when:** a scenario test severs each limb and kills only through the
-head; save → reload keeps severed limbs; BR approves it in game.
+**Done when:** scenario tests cover limb severing, head-only death, and save →
+reload of severed limbs.
+
+**Status:** implemented and scenario-tested in `test/zombies.test.ts` and
+`test/zombieRegions.test.ts`: posed-figure hit boxes route melee to regions;
+severed limbs drop inventory items; torso destruction incapacitates without
+killing; head destruction kills; region/severing state survives save → reload.
+
+**Beyond the plan:** the severed limbs also use the later rigid-body debris
+physics (#97), rather than only disappearing and dropping an item.
+
+**Carried forward:** BR's in-game approval is part of the first real playtest at
+the end of Slice 3. A dedicated severing sound and a revival mechanism for
+incapacitated shamblers remain future work; torso destruction still uses the
+existing `shambler_hurt` sound and creates no torso item.
 
 ### 1.9 Saves
 
@@ -668,10 +692,11 @@ and after and does not write storage. Debug time travel resets scheduler cursors
 without simulating skipped time. The reference-laptop snapshot p95 target (≤1 ms)
 is shown for evaluation, not enforced.
 
-**Carried forward:** run a full playtest on the reference laptop, confirm the
-snapshot p95 target against a long/heavy session, and submit the exported metrics
-JSON with player notes. That human playtest is not claimed by the implementation
-checks.
+**Carried forward:** the first real playtest is at the end of Slice 3 by BR's
+2026-10-02 ruling, when the base game is in place. It will use this plan's
+questions plus those added by Slices 2 and 3; confirm the snapshot p95 target
+against a long/heavy session and submit the exported metrics JSON with player
+notes. That human playtest is not claimed by the implementation checks.
 
 ## Data format sketches
 
@@ -804,6 +829,9 @@ A zombie type:
 
 ## Playtest plan
 
+**Timing:** first run at the end of Slice 3 (BR, 2026-10-02), when the base game
+is in place; see [EPIC.md](EPIC.md#3-flesh-and-noise).
+
 - **Who:** at least 3 people, including one who doesn't know CDDA or DayZ.
 - **Where:** the Pages build in their own browser, in a 45-minute session.
 - **Script:** "Survive until morning. Loot what you think you need." No other
@@ -816,17 +844,19 @@ A zombie type:
   - where they get stuck
 - **Afterwards:** the 6 playtest questions, plus the most annoying moment and
   the best moment.
-- **Collect:** the metrics JSON and the notes. The findings are written back
-  into this file and into [DESIGN.md](DESIGN.md) and
-  [CHALLENGES.md](CHALLENGES.md) before Slice 2 is planned.
+- **Collect:** the metrics JSON and the notes. After the end-of-Slice-3
+  playtest, write the findings back into this file and into [DESIGN.md](DESIGN.md)
+  and [CHALLENGES.md](CHALLENGES.md) before Slice 4 is planned.
 
 ## Definition of done
 
 - Milestones 1.0–1.11 are merged and deployed, and CI is green: Biome, types,
   tests, content validation, golden save.
-- The frame budget from 1.0 holds in the hamlet at night with every shambler
-  active.
-- The playtest has run and its findings are recorded.
+- **Met (2026-10-02; see Results):** the frame budget from 1.0 holds in the
+  hamlet at night with every shambler active.
+- The playtest has run and its findings are recorded. **Carried to the end of
+  Slice 3 (BR, 2026-10-02):** the base game is not yet in place; the first real
+  playtest will cover the Slice 1 plan plus questions from Slices 2 and 3.
 
 ## Open questions
 
@@ -1139,3 +1169,28 @@ visible, and cuts draw calls by a fifth by day and three quarters at night.
 Occlusion culling is not worth doing now, because the GPU's time doesn't follow
 the chunks drawn. If a later milestone needs GPU headroom, the place to look is
 per-pixel cost: pixel ratio, antialiasing, and the chunk shader.
+
+### Shambler frame budget — 2026-10-02
+
+BR ran the detailed-actor benchmark on the reference laptop at 17:19 UTC:
+Firefox 153, Intel HD Graphics, 8 threads, canvas 1671×972 at pixel ratio 1.2,
+default look with post-processing and shadows, hamlet at 23:30, seed 1.
+
+| Shamblers | Seed | Actors | Frame ms p50 / p95 / >18 ms | Zombie tick CPU ms p50 / p95 | Actor sync CPU ms p50 / p95 | Render-submit ms p50 / p95 | Draws / k tris† | Holes max / fraction | Interrupted |
+| ---: | ---: | --- | --- | --- | --- | --- | --- | --- | --- |
+| 10 | 1 | detailed | 16.4 / 17.2 / 0% | 1.0 / 2.0 | 1.0 / 2.0 | 2.0 / 3.0 | 1 / 0 | 0 / 0% | no |
+| 25 | 1 | detailed | 16.4 / 17.2 / 0% | 2.0 / 3.0 | 2.0 / 3.0 | 2.0 / 3.0 | 1 / 0 | 0 / 0% | no |
+| 50 | 1 | detailed | 16.4 / 17.2 / 0% | 4.0 / 6.0 | 2.0 / 4.0 | 2.0 / 3.0 | 1 / 0 | 0 / 0% | no |
+| 100 | 1 | detailed | 17.0 / 17.2 / 1% | 8.0 / 11.0 | 4.0 / 6.0 | 2.0 / 4.0 | 1 / 0 | 0 / 0% | no |
+
+**Result:** 60 fps holds at every count; at 100, 1% of frames exceed 18 ms.
+Firefox CPU timings are quantized to 1 ms. At 100 shamblers, ZombieSystem and
+actor sync use most of the frame's CPU time, so they are the main headroom
+constraint. Holes were zero and no run was interrupted.
+
+† The reported 1 draw / 0 k triangles at every count was the final full-screen
+post-processing pass, not the scene. `renderer.info` resets on each renderer
+call. The shambler benchmark now snapshots the counters in the mood pass's
+scene-draw callback, before post passes replace them. The 2026-10-02 timing run
+predates that fix, so its actual scene draws and triangles cannot be recovered
+from this record; do not interpret the reported zeros as scene geometry.

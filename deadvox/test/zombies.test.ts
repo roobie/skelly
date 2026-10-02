@@ -277,6 +277,37 @@ const instanceBox = (mesh: import('three').InstancedMesh, index = 0) => {
   return { center, size, points };
 };
 
+describe('melee hit sounds', () => {
+  const emittedFor = (weapon: import('../src/core/zombies.ts').MeleeWeapon): { hit: boolean; events: string[] } => {
+    const emitted: string[] = [];
+    const system = new ZombieSystem({
+      ...senses(() => player([100, 2, 0])),
+      onSound: (event) => emitted.push(event),
+    });
+    const id = system.add({ ...SHAMBLER, dismember: { chance: 0, headOnKillChance: 0 } }, [1, 1, 0], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    zombie.modeTimer = 1000;
+    const ray = regionRay(zombie, 'torso');
+    const hit = system.swing(ray.origin, ray.direction, weapon);
+    return {
+      hit: hit === id,
+      events: emitted.filter((event) => event === 'melee_hit' || event === 'melee_hit_fist'),
+    };
+  };
+
+  it('emits exactly one fist impact and no weapon impact for a fist hit', () => {
+    const result = emittedFor(FISTS_MELEE);
+    expect(result.hit).toBe(true);
+    expect(result.events).toEqual(['melee_hit_fist']);
+  });
+
+  it('emits exactly one weapon impact and no fist impact for a weapon hit', () => {
+    const result = emittedFor({ damage: 12, reach: 0.7, cooldown: 1, impulse: 5, type: 'blunt' });
+    expect(result.hit).toBe(true);
+    expect(result.events).toEqual(['melee_hit']);
+  });
+});
+
 describe('shambler perception', () => {
   it('uses configured day/night/light/cone/ray bounds and jogging/sprinting hearing bounds', () => {
     // biome-ignore lint/complexity/useMaxParams: compact table-driven test inputs vary independent perception dimensions.
