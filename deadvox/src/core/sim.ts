@@ -146,6 +146,18 @@ export class Simulation {
     return calendarAt(this.clock, this.time);
   }
 
+  /** Explicit debug-panel time travel; skipped time is not simulated. */
+  setDebugCalendarTime(calendarSeconds: number): void {
+    const time = (calendarSeconds - this.clock.start) / this.clock.ratio;
+    if (!Number.isFinite(time) || time < this.time) {
+      throw new Error(`Invalid debug calendar time ${calendarSeconds}`);
+    }
+    this.scheduler.seek(time);
+    this.pendingInterrupt = undefined;
+    this.compression.stop();
+    this.compression.snap();
+  }
+
   /** The random stream for a system. */
   rng(systemId: string): Rng {
     return Rng.stream(this.seed, systemId);

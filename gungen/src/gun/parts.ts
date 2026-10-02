@@ -24,8 +24,12 @@ import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
+import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
+import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
+
+export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
 
 const size: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
 const choice = (...values: string[]): ParamSpec => ({ values, default: values[0]! });
@@ -363,7 +367,6 @@ const REVOLVER_CYLINDER_RADIUS = 3;
 const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
 export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
-export const EJECTION_PORT_MARGIN_U = 0.25;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 export const BOLT_CARRIER_ENVELOPES = {
   ar: { x: [-2.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
@@ -1742,7 +1745,7 @@ export const barrel: PartFamily = {
         ...supportLug,
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
-      keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5])],
+      keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
     };
   },
@@ -2971,7 +2974,9 @@ export const sight: PartFamily = {
     return {
       family: 'sight',
       solids: optic.solids,
-      ports: [{ id: 'base', mount: optic.mount.kind, gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
+      ports: [
+        { id: 'base', mount: optic.mount.kind, gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
+      ],
       keepOuts: optic.keepOuts,
       axes: [{ kind: 'sight', origin: [0, optic.opticalAxisY, 0], dir: X }],
     };
@@ -2999,4 +3004,5 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   magazine,
   stock,
   sight,
+  ...ANTI_MATERIEL_FAMILIES,
 };

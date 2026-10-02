@@ -1,0 +1,6 @@
+{
+  "name": "broken-groove-overruns-body-start",
+  "base": "7.62x39",
+  "set": { "case.head.extractorGroove.width.value": 2.5 },
+  "expect": ["positions"]
+}

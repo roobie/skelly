@@ -1,0 +1,6 @@
+{
+  "name": "broken-primary-source",
+  "base": "7.62x39",
+  "set": { "primarySource": "nowhere" },
+  "expect": ["sources"]
+}

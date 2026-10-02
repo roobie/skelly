@@ -1,0 +1,6 @@
+{
+  "name": "broken-shell-longer-loaded",
+  "base": "synthetic:shotshell-buck",
+  "set": { "length.loaded.value": 80 },
+  "expect": ["shotshell"]
+}

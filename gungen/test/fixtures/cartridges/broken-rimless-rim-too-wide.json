@@ -1,0 +1,6 @@
+{
+  "name": "broken-rimless-rim-too-wide",
+  "base": "7.62x39",
+  "set": { "case.rim.diameter.value": 14 },
+  "expect": ["head-type"]
+}

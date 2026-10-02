@@ -1,3 +1,5 @@
+import { KEY_BINDINGS } from '../game/input.ts';
+
 // The debug panel's groups, their open/closed state, and the catalogue of keys and URL parameters.
 //
 // Every debug action in the table in index.ts names its group and, if it reads or writes one, its URL
@@ -46,7 +48,10 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   {
     id: 'diagnostics',
     title: 'Diagnostics',
-    notes: [{ label: 'Mouse readout (bottom left, always on)' }],
+    notes: [
+      { label: 'Mouse readout (bottom left, always on)' },
+      { label: 'Performance overlay', key: KEY_BINDINGS.performanceOverlay.label },
+    ],
   },
   {
     id: 'share',
