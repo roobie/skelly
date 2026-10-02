@@ -63,15 +63,16 @@ closed) and a payload that is either `shot` (name, pellet count, pellet diameter
 `relatedTo` is a directed statement about another cartridge, read as "this cartridge
 (relation) the other one": `same-external-dimensions`, `safe-in-chamber-of`,
 `unsafe-in-chamber-of`. The .38 Special entry says `safe-in-chamber-of` `357-magnum`, and
-the .357 Magnum entry says `unsafe-in-chamber-of` `38-special`; 5.56 NATO is
-`unsafe-in-chamber-of` `223-rem`. Each relation needs a citation.
+the .357 Magnum entry says `unsafe-in-chamber-of` `38-special`. A 5.56 NATO / .223 Rem
+chamber relation is deferred until the `.223 Rem` entry and an authoritative relation source
+are present; never add a dangling or uncited reference. Each relation needs a citation.
 
 Planned cartridges map onto these shapes without a format change:
 
 | Cartridge | Kind | Head | Body | Notes |
 | --- | --- | --- | --- | --- |
 | 7.62×39 | metallic | rimless | bottleneck | this file |
-| .223 Remington, 5.56×45 NATO | metallic | rimless | bottleneck | two files; NATO is a source body, the pair uses the relations above |
+| .223 Remington, 5.56×45 NATO | metallic | rimless | bottleneck | `5.56x45.json` is present; `.223 Rem` source data and cited chamber relation remain pending |
 | .308 Winchester, 7.62×51 NATO | metallic | rimless | bottleneck | same pairing |
 | .338 Lapua Magnum | metallic | rimless | bottleneck | |
 | .50 BMG (12.7×99) | metallic | rimless | bottleneck | no size limit anywhere |
