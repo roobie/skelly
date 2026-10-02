@@ -97,18 +97,12 @@ export const actionHandleRest: Rule = {
         if (handle.kind !== 'box') {
           continue;
         }
-        const handleBounds = handle.box.center.map((center, axis) => [
-          center - handle.box.half[axis]!,
-          center + handle.box.half[axis]!,
-        ]);
-        const travelBounds = travel.box.center.map((center, axis) => [
-          center - travel.box.half[axis]!,
-          center + travel.box.half[axis]!,
-        ]);
-        const overlaps = handleBounds.map(([min, max], axis) => {
-          const [travelMin, travelMax] = travelBounds[axis]!;
-          return Math.min(max!, travelMax!) - Math.max(min!, travelMin!);
-        });
+        const handleBounds = localSolidBounds(handle);
+        const travelBounds = localSolidBounds({ id: travel.id, kind: 'box', box: travel.box });
+        const overlaps = handleBounds[0].map(
+          (min, axis) =>
+            Math.min(handleBounds[1][axis]!, travelBounds[1][axis]!) - Math.max(min!, travelBounds[0][axis]!),
+        );
         const overlap = Math.min(...overlaps);
         if (overlap > 1e-6) {
           issues.push({
@@ -345,10 +339,10 @@ const triggerGuardIds = [
   'trigger-guard-front',
   'trigger-guard-bottom',
 ] as const;
-const boxBounds = (box: Box): { min: Vec3; max: Vec3 } => ({
-  min: [box.center[0] - box.half[0], box.center[1] - box.half[1], box.center[2] - box.half[2]],
-  max: [box.center[0] + box.half[0], box.center[1] + box.half[1], box.center[2] + box.half[2]],
-});
+const solidBounds = (solid: Solid): { min: Vec3; max: Vec3 } => {
+  const [min, max] = localSolidBounds(solid);
+  return { min, max };
+};
 const rangesOverlap = (a: { min: Vec3; max: Vec3 }, b: { min: Vec3; max: Vec3 }): boolean =>
   [0, 1, 2].every((axis) => a.max[axis]! > b.min[axis]! + 1e-8 && b.max[axis]! > a.min[axis]! + 1e-8);
 const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, Solid>): boolean => {
@@ -359,11 +353,11 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
   if (![top, rear, front, bottom].every((solid) => solid?.kind === 'box')) {
     return false;
   }
-  const topBounds = boxBounds((top as Extract<Solid, { kind: 'box' }>).box);
-  const rearBounds = boxBounds((rear as Extract<Solid, { kind: 'box' }>).box);
-  const frontBounds = boxBounds((front as Extract<Solid, { kind: 'box' }>).box);
-  const bottomBounds = boxBounds((bottom as Extract<Solid, { kind: 'box' }>).box);
-  const fingerBounds = boxBounds(fingerBox);
+  const topBounds = solidBounds(top as Extract<Solid, { kind: 'box' }>);
+  const rearBounds = solidBounds(rear as Extract<Solid, { kind: 'box' }>);
+  const frontBounds = solidBounds(front as Extract<Solid, { kind: 'box' }>);
+  const bottomBounds = solidBounds(bottom as Extract<Solid, { kind: 'box' }>);
+  const fingerBounds = solidBounds({ id: 'trigger-guard-finger', kind: 'box', box: fingerBox });
   const close = (a: number, b: number) => Math.abs(a - b) <= 1e-8;
   const rearClearance = fingerBounds.min[0] - rearBounds.max[0];
   const frontClearance = frontBounds.min[0] - fingerBounds.max[0];
@@ -385,7 +379,7 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
     close(frontBounds.max[1], topBounds.max[1]) &&
     zBounds.every((bounds) => close(bounds.min[2], topBounds.min[2]) && close(bounds.max[2], topBounds.max[2])) &&
     [top, rear, front, bottom].every(
-      (solid) => !rangesOverlap(boxBounds((solid as Extract<Solid, { kind: 'box' }>).box), fingerBounds),
+      (solid) => !rangesOverlap(solidBounds(solid as Extract<Solid, { kind: 'box' }>), fingerBounds),
     )
   );
 };
@@ -432,8 +426,8 @@ const triggerGuardContactIssue = (
     break;
   }
   for (const path of def.keepOuts.filter(({ id }) => id !== 'trigger-finger')) {
-    const pathBounds = boxBounds(path.box);
-    if (guardSolids.some((guard) => guard.kind === 'box' && rangesOverlap(boxBounds(guard.box), pathBounds))) {
+    const pathBounds = solidBounds({ id: 'action-handle-path', kind: 'box', box: path.box });
+    if (guardSolids.some((guard) => guard.kind === 'box' && rangesOverlap(solidBounds(guard), pathBounds))) {
       return `${part}'s trigger guard crosses the ${path.id} keep-out.`;
     }
   }

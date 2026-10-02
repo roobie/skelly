@@ -107,18 +107,6 @@ export type PartAnchorDeclarations<Name extends string = string> = Readonly<
 /** Part id -> named frames transformed into resolved assembly coordinates (gungen units). */
 export type ResolvedAnchors<Name extends string = string> = Readonly<Record<string, NamedAnchors<Name>>>;
 
-/** Generic selection passed to exporters after domain-specific precedence has been applied. */
-export interface SelectedAnchors {
-  /** Required winning hold frame, in gungen assembly coordinates and units. */
-  readonly hold: AnchorFrame;
-  /** Other selected named frames, in the same space; this map excludes `hold`. */
-  readonly others: Readonly<Record<string, AnchorFrame>>;
-}
-
-export type AnchorSelectionError =
-  | { readonly code: 'missing-required-anchor'; readonly name: string }
-  | { readonly code: 'ambiguous-anchor'; readonly name: string; readonly candidates: readonly string[] };
-
 /** Contract for the generic core transformation from family-local to assembly-space anchors. */
 export type ResolveAnchors = <Name extends string>(
   resolved: Resolved,
@@ -182,34 +170,14 @@ export interface ExportPortMetadata {
   readonly rail?: RailPortMetadata;
 }
 
-/** Deadvox path shape; the exporter also validates the name against `[a-z0-9_-]+`. */
-export type DeadvoxModelFile = `assets/models/${string}.glb`;
-
-/** Structural mirror of deadvox's model entry, without importing deadvox into core; intentionally omits `hold` and `roll`. */
-export interface DeadvoxModelEntry {
-  readonly id: string;
-  readonly file: DeadvoxModelFile;
-  readonly grip: {
-    /** Position in exported-model metres, after conversion to deadvox axes (+X forward, +Y up). */
-    readonly at: Vec3;
-    /** Euler angles in degrees, in deadvox's x/y/z order; always emitted for gungen firearms. */
-    readonly turn: Vec3;
-  };
-  /** Named anchor positions in exported-model metres, after axis conversion to deadvox axes (+X forward, +Y up). */
-  readonly anchors?: Readonly<Record<string, Vec3>>;
-}
-
 export interface GlbAssetIdentity {
   readonly id: string;
-  /** The file name component is checked against deadvox's `[a-z0-9_-]+` path rule at export time. */
-  readonly file: DeadvoxModelFile;
+  readonly file: string;
 }
 
 /** All domain-specific inputs are supplied explicitly; this type imports no gun module. */
 export interface GlbExportInput {
   readonly resolved: Resolved;
-  /** Domain-selected assembly-space frames; core does not apply gun precedence. */
-  readonly anchors: SelectedAnchors;
   readonly palette: Palette;
   /** Optional domain-agnostic appearance context, supplied by the caller (never inferred from assembly.name). */
   readonly appearance?: AppearanceContext;
@@ -228,7 +196,7 @@ export type GlbExportError =
   | { readonly code: 'invalid-asset-file'; readonly file: string };
 
 export type GlbExportResult =
-  | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: DeadvoxModelEntry }
+  | { readonly ok: true; readonly glb: Uint8Array }
   | { readonly ok: false; readonly error: GlbExportError };
 
 /** Signature only; the writer refuses unresolved/partly placed assemblies and invalid export metadata. */

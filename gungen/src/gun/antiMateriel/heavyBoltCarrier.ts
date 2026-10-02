@@ -47,8 +47,8 @@ export const heavyBoltCarrier: PartFamily = {
       motion: {
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'mount', id: 'bolt-travel' },
       },
     };

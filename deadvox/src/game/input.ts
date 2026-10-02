@@ -9,6 +9,7 @@ export const KEY_BINDINGS = {
   mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
   performanceOverlay: { code: 'F4', label: 'F4', virtualKeyCode: 115 },
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
+  leftHandAction: { code: 'Equal' },
 } as const;
 
 export const CONTROL_CODES = {
@@ -40,50 +41,6 @@ export const CONTROL_CODES = {
   continue: 'KeyC',
   spawnMenu: 'KeyG',
 } as const;
-
-/** One binding table feeds both routing helpers and the player-facing help card. */
-export const PLAYER_CONTROL_BINDINGS = [
-  {
-    keys: 'WASD',
-    codes: [CONTROL_CODES.forward, CONTROL_CODES.left, CONTROL_CODES.back, CONTROL_CODES.right],
-    action: 'Move',
-  },
-  { keys: 'Shift', codes: [CONTROL_CODES.sprintLeft, CONTROL_CODES.sprintRight], action: 'Sprint' },
-  { keys: 'Z', codes: [CONTROL_CODES.walkToggle], action: 'Walk / jog' },
-  { keys: 'Space', codes: [CONTROL_CODES.jump], action: 'Jump' },
-  { keys: 'Mouse', codes: ['mousemove'], action: 'Look' },
-  { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
-  {
-    keys: 'R',
-    codes: [CONTROL_CODES.rest, CONTROL_CODES.rotate],
-    action: 'Rest in play; rotate while dragging in inventory',
-  },
-  { keys: 'L', codes: [CONTROL_CODES.sleep], action: 'Sleep; better on a bed; press again to stop' },
-  { keys: 'Tab', codes: [CONTROL_CODES.inventory], action: 'Open / close inventory' },
-  { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: take into hands; again to use' },
-  { keys: 'C', codes: [CONTROL_CODES.continue], action: 'Continue after an interruption' },
-  { keys: 'X', codes: [CONTROL_CODES.cancel], action: 'Cancel handling; stop after an interruption' },
-  { keys: 'E', codes: [CONTROL_CODES.bestPocket], action: 'Move to your best pocket', context: 'inventory' },
-  { keys: 'H', codes: [CONTROL_CODES.hands], action: 'Move to hands', context: 'inventory' },
-  { keys: 'W', codes: [CONTROL_CODES.wear], action: 'Wear or remove', context: 'inventory' },
-  { keys: 'D', codes: [CONTROL_CODES.drop], action: 'Drop', context: 'inventory' },
-  { keys: 'A', codes: [CONTROL_CODES.takeAll], action: 'Take all like this', context: 'inventory' },
-  { keys: 'S', codes: [CONTROL_CODES.search], action: 'Search next container', context: 'inventory' },
-  { keys: 'U', codes: [CONTROL_CODES.use], action: 'Use selected item', context: 'inventory' },
-  {
-    keys: '↑ / ↓ / ← / →',
-    codes: [CONTROL_CODES.previous, CONTROL_CODES.next, 'ArrowLeft', 'ArrowRight'],
-    action: 'Select previous / next item',
-    context: 'inventory',
-  },
-  { keys: KEY_BINDINGS.mainMenu.label, codes: [CONTROL_CODES.menu], action: 'Main menu, HUD and audio settings' },
-  {
-    keys: KEY_BINDINGS.performanceOverlay.label,
-    codes: [KEY_BINDINGS.performanceOverlay.code],
-    action: 'Toggle performance overlay',
-  },
-  { keys: 'Escape', codes: ['Escape'], action: 'Release the mouse (browser control)' },
-] as const;
 
 export const quickbarSlotForKey = (code: string): number | undefined => {
   const index = CONTROL_CODES.quickbar.indexOf(code as (typeof CONTROL_CODES.quickbar)[number]);
@@ -122,6 +79,8 @@ export class Input {
   rightMouseHeld = false;
   private primaryActionPressed = false;
   private primaryActionDown = false;
+  private leftHandActionPressed = false;
+  private leftHandActionDown = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -133,7 +92,7 @@ export class Input {
       if (mouse.button === 2) {
         this.rightMouseHeld = true;
       }
-      if (mouse.button === 0 && !this.primaryActionDown) {
+      if (mouse.button === 0 && !this.primaryActionDown && this.locked && !this.menuPointer) {
         this.primaryActionPressed = true;
         this.primaryActionDown = true;
       }
@@ -154,14 +113,27 @@ export class Input {
       if (e.code === CONTROL_CODES.walkToggle && !e.repeat) {
         this.walking = !this.walking;
       }
+      if (e.code === KEY_BINDINGS.leftHandAction.code && !this.leftHandActionDown) {
+        this.leftHandActionDown = true;
+        if (this.locked && !this.menuPointer) {
+          this.leftHandActionPressed = true;
+        }
+      }
       this.held.add(e.code);
     });
-    globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
+    globalThis.addEventListener('keyup', (e) => {
+      this.held.delete(e.code);
+      if (e.code === KEY_BINDINGS.leftHandAction.code) {
+        this.leftHandActionDown = false;
+      }
+    });
     globalThis.addEventListener('blur', () => {
       this.held.clear();
       this.rightMouseHeld = false;
       this.primaryActionDown = false;
       this.primaryActionPressed = false;
+      this.leftHandActionDown = false;
+      this.leftHandActionPressed = false;
     });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
@@ -210,11 +182,17 @@ export class Input {
       sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
       primaryAction: this.primaryActionPressed,
+      leftHandAction: this.leftHandActionPressed,
     };
   }
 
   /** Called once after the player tick samples its intent. */
   consumePrimaryAction(): void {
     this.primaryActionPressed = false;
+  }
+
+  /** Called once after the player tick samples the left-hand action. */
+  consumeLeftHandAction(): void {
+    this.leftHandActionPressed = false;
   }
 }

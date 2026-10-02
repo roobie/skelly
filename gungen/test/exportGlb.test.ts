@@ -1,19 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { displayItems as selectDisplayItems } from '../src/core/display.ts';
-import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/core/exportFrame.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
 import { applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, type Vec3 } from '../src/core/math.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
+import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
+import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { expectWatertightMesh, variant } from './helpers.ts';
@@ -448,7 +449,7 @@ describe('glb export: deadvox model entry', () => {
     expect(raked.modelEntry.grip.turn).toEqual(upright.modelEntry.grip.turn);
   });
 
-  it('gives the same turn for an arbitrary hold-frame lean fed to the core exporter', () => {
+  it('gives the same turn for an arbitrary hold-frame lean in the gun model entry', () => {
     const resolved = resolve(design('archetype-ar'), gunDomain);
     const base = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
     const turnFor = (deg: number) => {
@@ -458,11 +459,7 @@ describe('glb export: deadvox model entry', () => {
         hold: { position: base.hold.position, forward: [c, s, 0], up: [-s, c, 0] },
         others: base.others,
       };
-      const r = exportGlb({ resolved, anchors, palette: GUN_PALETTE, asset: ASSET });
-      if (!r.ok) {
-        throw new Error('export failed');
-      }
-      return r.modelEntry.grip.turn;
+      return createGunModelEntry(ASSET, anchors, resolved.domain.units.metresPerUnit).grip.turn;
     };
     expect(turnFor(0)).toEqual(turnFor(18));
     expect(turnFor(-25)).toEqual(turnFor(18));
@@ -478,8 +475,6 @@ describe('glb export: deadvox model entry', () => {
 describe('glb export: errors', () => {
   const ar = design('archetype-ar');
   const resolved = resolve(ar, gunDomain);
-  const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-
   it('returns structure-issues for a structurally broken assembly', () => {
     const broken = variant('archetype-ar', (a) => {
       a.connections.push({ from: 'receiver.nope', to: 'grip.top' });
@@ -499,7 +494,6 @@ describe('glb export: errors', () => {
     placed.delete('grip');
     const result = exportGlb({
       resolved: { ...resolved, placed, issues: [] },
-      anchors,
       palette: GUN_PALETTE,
       asset: ASSET,
     });
@@ -513,7 +507,6 @@ describe('glb export: errors', () => {
     for (const id of ['a.b', '']) {
       const result = exportGlb({
         resolved: { ...resolved, defs: withPort(id) },
-        anchors,
         palette: GUN_PALETTE,
         asset: ASSET,
       });
@@ -528,13 +521,13 @@ describe('glb export: errors', () => {
       [0, 0, -0.1],
     ] as const) {
       const palette: Palette = { ...GUN_PALETTE, familyColors: { ...GUN_PALETTE.familyColors, receiver: bad } };
-      expect(exportGlb({ resolved, anchors, palette, asset: ASSET })).toEqual({
+      expect(exportGlb({ resolved, palette, asset: ASSET })).toEqual({
         ok: false,
         error: { code: 'invalid-palette-color', key: 'family receiver' },
       });
     }
     const special: Palette = { ...GUN_PALETTE, fallbackColor: [0, 0, 2] };
-    expect(exportGlb({ resolved, anchors, palette: special, asset: ASSET })).toEqual({
+    expect(exportGlb({ resolved, palette: special, asset: ASSET })).toEqual({
       ok: false,
       error: { code: 'invalid-palette-color', key: 'fallback' },
     });

@@ -27,6 +27,7 @@ import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } fr
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
+import { gunPort } from './portData.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
@@ -1201,8 +1202,8 @@ export const boltCarrier: PartFamily = {
       motion: {
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'mount', id: 'bolt-travel' },
       },
     };
@@ -2663,7 +2664,7 @@ export const magazine: PartFamily = {
         ...floorplate,
       ],
       ports: [
-        {
+        gunPort({
           id: 'top',
           mount: 'magazine',
           gender: 'male',
@@ -2672,7 +2673,7 @@ export const magazine: PartFamily = {
           up: X,
           required: true,
           seat: curveProfile?.seat ?? 'well',
-        },
+        }),
       ],
       keepOuts: [],
       axes: [],
@@ -2722,6 +2723,7 @@ const m4StockSolids = (len: number): Solid[] => {
       { normal: [-sideSlope, 0, 1], offset: sideIntercept },
       { normal: [-sideSlope, 0, -1], offset: sideIntercept },
     ],
+    display: { bevel: false },
   };
   const buttplate: Solid = {
     id: 'buttplate',

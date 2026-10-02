@@ -6,6 +6,7 @@ import type { Domain, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { AK_REAR_BEVEL, FAMILIES, RECEIVER_SECTION } from '../src/gun/parts.ts';
+import type { GunPortDef } from '../src/gun/portData.ts';
 import { ak } from '../src/gun/templates.ts';
 import { loadFixture, variant as variantOf } from './helpers.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -377,7 +378,7 @@ describe('AK-pattern archetype', () => {
       'trigger-guard-bottom',
     ]);
     expect(lowerPort.pos[1]).toBe(-1.5);
-    expect(topPort.seat).toBe('face');
+    expect((topPort as GunPortDef).seat).toBe('face');
     expect(topPort.pos[1]).toBe(0);
     const upper = magazine.solids[0]!;
     expect(upper.kind).toBe('extruded-polygon');

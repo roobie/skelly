@@ -1518,9 +1518,9 @@ export class ZombieSystem {
     if (this.playerAttackWait > 0 || this.meleeAction !== null || weapon.cooldown <= 0) {
       return false;
     }
-    const hand = profile === 'fists' ? this.nextFistHand : (start.hand ?? 'right');
+    const hand = profile === 'fists' ? (start.hand ?? this.nextFistHand) : (start.hand ?? 'right');
     const direction = unit(start.direction);
-    if (profile === 'fists') {
+    if (profile === 'fists' && start.hand === undefined) {
       this.nextFistHand = hand === 'right' ? 'left' : 'right';
     }
     this.playerAttackWait = weapon.cooldown;

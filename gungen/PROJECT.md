@@ -1118,7 +1118,7 @@ deadvox holds a model with +x forward and +y up
   `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
   asset)` resolves, selects the gun anchors and applies `GUN_PALETTE`; it
   returns the writer's result, or the `AnchorSelectionError` for a missing or
-  ambiguous `hold`. Units and axes are in `src/core/exportFrame.ts`. The frozen
+  ambiguous `hold`. Units and axes are in `src/gun/exportFrame.ts`. The frozen
   types didn't change.
 - CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--entry-out
   <dir>] [--id <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox
@@ -1149,7 +1149,7 @@ deadvox holds a model with +x forward and +y up
 - **Grip orientation (BR ruling, 2026-09-29).** `grip.turn` does not include
   the grip's rake. The hold frame's orientation (which leans with the grip) is
   not used for `turn`. `turn` is only the fixed rotation from the file's axes to
-  deadvox's held axes, from `src/core/exportFrame.ts#gripTurn`: the Euler XYZ
+  deadvox's held axes, from `src/gun/exportFrame.ts#gripTurn`: the Euler XYZ
   angles (degrees, deadvox's order) of the transpose of `FILE_FROM_GUNGEN`.
   Because the file already has +x forward and +y up, every export gets
   `[0, 0, 0]`. deadvox's existing firearms use `[-90, 0, 0]` only because
