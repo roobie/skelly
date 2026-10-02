@@ -1,8 +1,10 @@
 // Capped, render-only flying spent cases. Their impacts never alter simulation piles.
 
-import { BoxGeometry, InstancedMesh, MeshStandardMaterial, Object3D, Vector3 } from 'three';
+import { Group, type Object3D, Vector3 } from 'three';
 import { Rng } from '../core/random.ts';
 import type { FirearmShotEffect } from '../game/firearmHandling.ts';
+import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
+import type { ModelLibrary } from './models.ts';
 
 export const FLYING_CASE_CAP = 32;
 const GRAVITY = 9.81;
@@ -16,13 +18,18 @@ interface Particle {
   velocity: Vector3;
   rotation: Vector3;
   spin: Vector3;
+  caseModelId: string | undefined;
+  visual: Object3D | undefined;
+  readonly visuals: Map<string, Object3D>;
+  readonly fallbackModels: Set<string>;
 }
 
 const normalize = (v: Vector3): Vector3 => (v.lengthSq() > 0 ? v.normalize() : new Vector3(0, 0, -1));
 
 export class CaseEffects {
-  readonly mesh: InstancedMesh;
+  readonly mesh = new Group();
   private readonly blockSize: number;
+  private readonly models: ModelLibrary | undefined;
   private readonly particles: Particle[] = Array.from({ length: FLYING_CASE_CAP }, () => ({
     active: false,
     age: 0,
@@ -31,20 +38,15 @@ export class CaseEffects {
     velocity: new Vector3(),
     rotation: new Vector3(),
     spin: new Vector3(),
+    caseModelId: undefined,
+    visual: undefined,
+    visuals: new Map(),
+    fallbackModels: new Set(),
   }));
-  private readonly transform = new Object3D();
 
-  constructor(blockSize: number) {
+  constructor(blockSize: number, models?: ModelLibrary) {
     this.blockSize = blockSize;
-    this.mesh = new InstancedMesh(
-      new BoxGeometry(0.038, 0.009, 0.012),
-      new MeshStandardMaterial({ color: 0xb4_87_45, metalness: 0.72, roughness: 0.38 }),
-      FLYING_CASE_CAP,
-    );
-    this.mesh.count = 0;
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-    this.mesh.frustumCulled = false;
+    this.models = models;
   }
 
   get activeCount(): number {
@@ -72,6 +74,8 @@ export class CaseEffects {
     particle.velocity.copy(direction).multiplyScalar(effect.speed * rng.range(0.8, 1.2));
     particle.rotation.set(rng.range(0, Math.PI), rng.range(0, Math.PI), rng.range(0, Math.PI));
     particle.spin.set(rng.range(-24, 24), rng.range(-24, 24), rng.range(-24, 24));
+    particle.caseModelId = effect.caseModelId;
+    this.installVisual(particle);
     this.draw();
     return true;
   }
@@ -84,6 +88,7 @@ export class CaseEffects {
       if (!particle.active) {
         continue;
       }
+      this.upgradeVisual(particle);
       particle.age += dt;
       for (let substep = 0; substep < steps; substep++) {
         this.advance(particle, step, isSolid);
@@ -93,6 +98,47 @@ export class CaseEffects {
       }
     }
     this.draw();
+  }
+
+  private installVisual(particle: Particle): void {
+    const key = particle.caseModelId ?? '';
+    let visual = particle.visuals.get(key);
+    if (!visual) {
+      visual = resolveCaseModel(this.models, particle.caseModelId) ?? placeholderCaseMesh();
+      particle.visuals.set(key, visual);
+      if (particle.caseModelId !== undefined && !this.models?.has(particle.caseModelId)) {
+        particle.fallbackModels.add(key);
+      }
+      this.mesh.add(visual);
+    }
+    for (const [modelId, candidate] of particle.visuals) {
+      candidate.visible = modelId === key;
+    }
+    particle.visual = visual;
+  }
+
+  private upgradeVisual(particle: Particle): void {
+    for (const key of particle.fallbackModels) {
+      if (!(key && this.models?.has(key))) {
+        continue;
+      }
+      const model = resolveCaseModel(this.models, key);
+      if (!model) {
+        continue;
+      }
+      const fallback = particle.visuals.get(key);
+      if (fallback) {
+        fallback.visible = false;
+        this.mesh.remove(fallback);
+      }
+      model.visible = particle.active && particle.caseModelId === key;
+      particle.visuals.set(key, model);
+      particle.fallbackModels.delete(key);
+      this.mesh.add(model);
+      if (particle.caseModelId === key) {
+        particle.visual = model;
+      }
+    }
   }
 
   private advance(particle: Particle, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
@@ -134,31 +180,29 @@ export class CaseEffects {
   }
 
   dispose(): void {
-    const { geometry, material } = this.mesh;
-    geometry.dispose();
-    if (Array.isArray(material)) {
-      for (const entry of material) {
-        entry.dispose();
-      }
-    } else {
-      material.dispose();
+    this.mesh.clear();
+    for (const particle of this.particles) {
+      particle.active = false;
+      particle.visual = undefined;
+      particle.visuals.clear();
+      particle.fallbackModels.clear();
     }
   }
 
   private draw(): void {
-    let index = 0;
     for (const particle of this.particles) {
       if (!particle.active) {
+        if (particle.visual) {
+          particle.visual.visible = false;
+        }
         continue;
       }
-      this.transform.position.copy(particle.position);
-      this.transform.rotation.set(particle.rotation.x, particle.rotation.y, particle.rotation.z);
-      this.transform.updateMatrix();
-      this.mesh.setMatrixAt(index, this.transform.matrix);
-      index += 1;
+      if (!(particle.visual && particle.visuals.has(particle.caseModelId ?? ''))) {
+        this.installVisual(particle);
+      }
+      particle.visual!.visible = true;
+      particle.visual!.position.copy(particle.position);
+      particle.visual!.rotation.set(particle.rotation.x, particle.rotation.y, particle.rotation.z);
     }
-    this.mesh.count = index;
-    this.mesh.instanceMatrix.needsUpdate = true;
-    this.mesh.computeBoundingSphere();
   }
 }
