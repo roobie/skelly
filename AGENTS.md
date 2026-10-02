@@ -4,6 +4,15 @@ Keep this file short: only what every agent needs on every task. Topic detail go
 the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), with a
 one-line cue under "Further docs" below.
 
+## Project stage: pre-pre-alpha, no backwards compatibility
+
+We owe no backwards compatibility (BR, 2026-10-02). Change formats, exports and
+contracts freely when that makes the code simpler; don't add legacy paths, opt-in
+flags, compat shims or migrations to keep old output or old data working, and
+don't require byte-identical exports. What must still work: gungen exports a model
+that deadvox validates and loads. Migration, especially of save games, starts
+mattering at v1.0 beta.
+
 ## Worktrees
 
 Put git worktrees in `.claude/worktrees/<name>` inside this repo, not beside
