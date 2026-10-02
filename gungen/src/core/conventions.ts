@@ -41,9 +41,3 @@ export const TOLERANCE = {
   /** Fallback nesting allowance for directly connected parts (u). */
   interface: 0.75,
 } as const;
-
-/** Mount-specific overrides; geometry-fitting interfaces use the smallest allowance they need. */
-export const INTERFACE_TOLERANCE_BY_MOUNT: Readonly<Record<string, number>> = {
-  grip: 0.01,
-  clamp: 0,
-};

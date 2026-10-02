@@ -29,8 +29,6 @@ export interface PortDef {
   readonly normal: Vec3;
   readonly up: Vec3;
   readonly required?: boolean;
-  /** Magazine seating contract: inserted into a well or face-mated to a flat underside. */
-  readonly seat?: 'well' | 'face';
   /** One-to-many ports (e.g. a rail). Slot k sits at pos + up * k * pitch. */
   readonly slots?: { readonly count: number; readonly pitch: number };
 }
@@ -74,7 +72,10 @@ export interface ExtrudedPolygonSolid extends SolidFinish {
   readonly axis?: ExtrusionAxis;
   /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
-  /** Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset. */
+  /**
+   * Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset.
+   * Any clip disables beveling, even if every plane misses the solid; set display.bevel to false explicitly.
+   */
   readonly clip?: readonly ClipPlane[];
   readonly display?: SolidDisplayHints;
 }
@@ -130,10 +131,10 @@ export interface Axis {
 
 export interface PartMotion {
   readonly kind: 'linear';
-  /** Local unit direction of travel, from rest toward rearmost. */
+  /** Local unit direction of travel from the start point to the end point. */
   readonly axis: Vec3;
-  readonly rest: Vec3;
-  readonly rearmost: Vec3;
+  readonly start: Vec3;
+  readonly end: Vec3;
   /** Internal source resolved from a connected part's named keep-out. */
   readonly sourceKeepOut?: { readonly port: string; readonly id: string };
 }
@@ -213,6 +214,8 @@ export interface Domain {
   readonly name: string;
   readonly units: DomainUnits;
   readonly families: Readonly<Record<string, PartFamily>>;
+  /** Mount-specific maximum nesting allowances; unspecified mounts use `TOLERANCE.interface`. */
+  readonly mountAllowances?: Readonly<Record<string, number>>;
   readonly axisRules: readonly AxisRule[];
   /** Domain-specific rules, run after the core rules. */
   readonly rules?: readonly Rule[];
