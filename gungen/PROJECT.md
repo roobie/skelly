@@ -915,6 +915,40 @@ Decisions where the plan left representation open:
   package adds no parser, anchor values, palette migration, suggester, or
   exporter implementation.
 
+#### Firearm/ammunition export extension (ADR 0003, accepted 2026-10-02)
+
+The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
+are optional in the schema; byte-identical output is not a compatibility
+requirement. Exported structural anchors such as `magwell` are present whenever
+the geometry declares them, whether or not a cartridge is assigned.
+
+- `calibre?: string` is the exact cartridge-data id (not a display designation;
+  e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
+  rather than its general content `Id` (which deliberately excludes dots).
+- `anchors.magwell?: Point` is the magazine seating point. Like every anchor,
+  `Point` is `[x, y, z]` in metres in the model file's frame (+x forward, +y up,
+  +z right).
+- Magazine entries add `capacity?: number` (positive whole rounds) and
+  `rounds?: { at: Point; tilt: number }[]`, ordered from the top round down.
+  `at` is each round centre in metres in magazine-model coordinates; `tilt` is
+  degrees about +z, nose-up positive. Left/right stagger is the sign of `at[2]`.
+  Geometry determines the fit, capped to the nominal count for labelled
+  5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
+  profiles report the dimension-derived fit.
+- Round and case cartridge entries carry the same `calibre` and use real-size
+  millimetre source dimensions converted to metres for their GLBs. `5.56x45.json`
+  cites NATO AOP-4172; where its reference drawing is ambiguous, C.I.P. .223 Rem
+  dimensions are explicitly marked as visual-profile proxy estimates, not a
+  chamber-interchangeability claim. Bullet length remains unsourced; only the
+  rendered generic bullet uses the named seating-depth assumption in
+  `src/ammo/roundProfile.ts`. Cartridge GLBs carry `case`, `bullet`, and `primer`
+  finish slots, defaulting to brass, copper, and brass; an appearance override
+  such as `{ finish: { case: 'steel' } }` selects the steel-case variant.
+  Their model ids/files use the injective separator-escaped slug function in
+  `src/ammo/calibreSlug.ts` (e.g. `round_7_d_62x39`,
+  `round-7_d_62x39.glb`); a test checks every registered id and all accepted
+  separator forms. Gungen's internal revolve profiles remain in millimetres.
+
 #### 3.0b (implemented)
 
 Merged into `gungen/m3-contracts` (2026-09-29). Every 3.0a signature now has

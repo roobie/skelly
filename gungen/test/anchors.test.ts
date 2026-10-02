@@ -248,6 +248,7 @@ describe('anchor data', () => {
       'frame',
       'grip',
       'handguard',
+      'lower',
       'revolver-barrel',
       'revolver-grip',
       'stock',

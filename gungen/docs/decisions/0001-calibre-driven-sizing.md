@@ -68,7 +68,7 @@ The first implementation is the AR family with three frames:
 | large (AR-10) | 7.62×51 | SR-25, HK417 |
 | magnum | .338 Lapua Magnum | proprietary AR-pattern rifles, e.g. the side-charging Noreen Bad News .338 LM; there is no standardised magnum AR frame |
 
-Each needs sourced cartridge data and frame dimensions with a source or a stated estimate, the same standard as `cartridges/`. **Prerequisite:** the g34 spec asks for sourced 5.56×45 data, but it hasn't arrived yet (only `cartridges/7.62x39.json` exists); the pilot is gated on it, and 7.62×51 and .338 LM are new. Missing data is never invented.
+Each needs sourced cartridge data and frame dimensions with a source or a stated estimate, the same standard as `cartridges/`. **G34 prerequisite met:** `cartridges/5.56x45.json` cites NATO AOP-4172; its ambiguous external case callouts use cited C.I.P. .223 Rem values only as marked visual-profile proxies, not as chamber-interchangeability data. 7.62×51 and .338 LM remain new; missing dimensions are never invented.
 
 ## Rulings (2026-10-02)
 
