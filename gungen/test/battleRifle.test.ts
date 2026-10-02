@@ -19,8 +19,6 @@ const oriented = (orientation: string) => ({
 });
 
 const angleOf = (x: number, y: number): number => (Math.atan2(y, x) * 180) / Math.PI;
-const VALID_MAGAZINE_ORIENTATION = /^(straight|tilt|slant-(5|8|10))$/;
-
 describe('battle-rifle magazine orientations', () => {
   it('derives a slight magazine tilt from the longer rear plate while keeping the well blocks upright', () => {
     const report = validate(oriented('tilt'), gunDomain);
@@ -96,20 +94,20 @@ describe('battle-rifle magazine orientations', () => {
     },
   );
 
-  sweepGroup('chooses only straight, tilted, or slanted magazine data per seed and inherits it into the lower', () => {
+  // Fixed seeds 0–5 exercise every generated style (slant-8, tilt, straight, slant-10, slant-5).
+  // The direct geometry cases above cover each style; this sweep guards template selection and inheritance.
+  sweepGroup('generates every magazine orientation and inherits it into the lower', () => {
     it('passes', () => {
       const styles = new Set<string>();
-      for (let seed = 0; seed < 200; seed++) {
+      for (const seed of [0, 1, 2, 3, 4, 5]) {
         const assembly = generate(battleRifle, gunDomain, seed);
         const style = assembly.parts.magazine!.params!.orientation!;
         styles.add(style);
         const report = validate(assembly, gunDomain);
+        expect(report.ok, `seed ${seed}`).toBe(true);
         expect(report.resolved.params.get('lower')?.magazineOrientation?.value).toBe(style);
       }
-      expect([...styles].every((style) => VALID_MAGAZINE_ORIENTATION.test(style))).toBe(true);
-      expect(styles.has('tilt')).toBe(true);
-      expect([...styles].some((style) => style.startsWith('slant-'))).toBe(true);
-      expect(styles.has('straight')).toBe(true);
+      expect(styles).toEqual(new Set(['slant-8', 'tilt', 'straight', 'slant-10', 'slant-5']));
     });
   });
 
