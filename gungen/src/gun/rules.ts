@@ -137,9 +137,8 @@ export const firingGrip: Rule = {
 };
 
 /**
- * Box-fed receivers need a lower/grip well; tube-fed and cylinder-fed
- * receivers cannot use a box-magazine well. Revolver action and cylinder feed
- * must be selected together.
+ * Box- and top-fed receivers need a lower/grip well; tube-fed receivers
+ * cannot use a box-magazine well.
  */
 const gripPartOnLower = (connection: ResolvedConnection, lowerPart: string): string | undefined => {
   if (connection.from.part === lowerPart && connection.from.port.id === 'grip') {
@@ -160,21 +159,11 @@ const hasGripMagazineWell = (r: Resolved, lowerPart: string): boolean =>
 const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Issue[] => {
   const receiverParams = r.params.get(receiver.part)!;
   const feed = receiverParams.feed!.value;
-  const action = receiverParams.action!.value;
   const lowerDef = r.defs.get(lower.part)!;
   const hasWell = lowerDef.ports.some((port) => port.mount === 'magazine') || hasGripMagazineWell(r, lower.part);
   const layout = r.params.get(lower.part)?.layout?.value;
   const what = layout ? `${lower.part} (${layout})` : lower.part;
 
-  if ((action === 'revolver') !== (feed === 'cylinder')) {
-    return [
-      {
-        rule: 'feed-match',
-        message: `${receiver.part} uses ${action} action with ${feed} feed; revolvers require cylinder feed and other actions do not use it.`,
-        parts: [receiver.part, lower.part],
-      },
-    ];
-  }
   if ((feed === 'box' || feed === 'top') && !hasWell) {
     return [
       {
@@ -184,7 +173,7 @@ const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Iss
       },
     ];
   }
-  if ((feed === 'tube' || feed === 'cylinder') && hasWell) {
+  if (feed === 'tube' && hasWell) {
     return [
       {
         rule: 'feed-match',
