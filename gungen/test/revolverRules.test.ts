@@ -224,6 +224,7 @@ describe('revolver alignment rules', () => {
   });
 
   it('rejects even a sub-grid gap at the frame, guard, or grip bridge', () => {
+    expect(validate(loadFixture('archetype-revolver'), gunDomain).issues).toEqual([]);
     const source = FAMILIES['revolver-frame']!;
     const domain = {
       ...gunDomain,
@@ -251,6 +252,7 @@ describe('revolver alignment rules', () => {
 
   it('rejects a trigger bow missing one joined prism segment', () => {
     const base = resolved();
+    expect(revolverAlignment.triggerBow(base)).toBe(true);
     const defs = new Map(base.defs);
     const frame = defs.get('frame')!;
     defs.set('frame', { ...frame, solids: frame.solids.filter((solid) => solid.id !== 'trigger-guard-9') });
@@ -258,6 +260,7 @@ describe('revolver alignment rules', () => {
   });
 
   it('rejects a displaced trigger-bow segment with all IDs and ports intact', () => {
+    expect(validate(loadFixture('archetype-revolver'), gunDomain).issues).toEqual([]);
     const source = FAMILIES['revolver-frame']!;
     const domain = {
       ...gunDomain,
