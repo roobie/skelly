@@ -358,7 +358,7 @@ describe('player figure', () => {
     expect(rebuiltArmCount).toBe(2);
   });
 
-  it('keeps the locked click-time world quaternion through simultaneous camera yaw and pitch', () => {
+  it('keeps the click-time aim axis through yaw and pitch without rolling a cut blade', () => {
     const inventory = new Inventory(registry);
     const knife = inventory.create('kitchen_knife');
     inventory.add(knife, { kind: 'hand', side: 'right' });
@@ -389,8 +389,10 @@ describe('player figure', () => {
     expected.multiply(new Quaternion().setFromEuler(new Euler(...pose.right.rotation, 'YXZ')));
     const actualArm = internals.arms.get('right')!.getWorldQuaternion(new Quaternion());
     const actualItem = internals.heldByHand.get('right')!.getWorldQuaternion(new Quaternion());
-    expect(actualArm.angleTo(expected) * (180 / Math.PI)).toBeLessThan(0.1);
-    expect(actualItem.angleTo(expected) * (180 / Math.PI)).toBeLessThan(0.1);
+    const expectedForward = new Vector3(0, 0, -1).applyQuaternion(expected).normalize();
+    const actualForward = new Vector3(0, 0, -1).applyQuaternion(actualItem).normalize();
+    expect(actualForward.angleTo(expectedForward) * (180 / Math.PI)).toBeLessThan(0.1);
+    expect(actualArm.angleTo(actualItem) * (180 / Math.PI)).toBeLessThan(0.1);
   });
 
   it('keeps two-handed support grips attached to weapon-local grip for both sides and hold orientations', () => {
