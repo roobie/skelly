@@ -72,7 +72,10 @@ export interface ExtrudedPolygonSolid extends SolidFinish {
   readonly axis?: ExtrusionAxis;
   /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
-  /** Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset. */
+  /**
+   * Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset.
+   * Any clip disables beveling, even if every plane misses the solid; set display.bevel to false explicitly.
+   */
   readonly clip?: readonly ClipPlane[];
   readonly display?: SolidDisplayHints;
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, cross, IDENTITY, sub } from '../src/core/math.ts';
+import { meshForSolid } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, PortDef, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -10,6 +11,7 @@ import { FAMILIES, M4_STOCK_GEOMETRY } from '../src/gun/parts.ts';
 import { loadFixture } from './helpers.ts';
 
 const ROOT = join(import.meta.dirname, '..');
+const CLIP_BEVEL_ERROR = /set display\.bevel to false/;
 const designAssembly = (name: string): Assembly =>
   (JSON.parse(readFileSync(join(ROOT, 'designs', `${name}.json`), 'utf8')) as { assembly: Assembly }).assembly;
 const stockSamples = [
@@ -25,6 +27,17 @@ const vertices = (solid: Solid) => {
 };
 
 describe('M4-only AR stock', () => {
+  it('requires an explicit bevel opt-out for clipped extrusions', () => {
+    const body = FAMILIES.stock!.build({ length: 'M', style: 'm4' }).solids.find(({ id }) => id === 'm4-stock-body');
+    expect(body?.kind).toBe('extruded-polygon');
+    if (body?.kind !== 'extruded-polygon') {
+      throw new Error('M4 stock body must be an extruded polygon.');
+    }
+    expect(body.display?.bevel).toBe(false);
+    expect(meshForSolid(body).triangleCount).toBeGreaterThan(0);
+    expect(() => meshForSolid({ ...body, display: { bevel: true } })).toThrow(CLIP_BEVEL_ERROR);
+  });
+
   it('pins the unchanged M/L pull envelopes, 4.5u body wedge, tube wrap, latch, and buttplate', () => {
     for (const length of ['M', 'L'] as const) {
       const stock = FAMILIES.stock!.build({ length, style: 'm4' });
@@ -50,6 +63,7 @@ describe('M4-only AR stock', () => {
       expect(tube.z).toEqual([-expectedLength, 0]);
       expect(body.profile).not.toEqual(tube.profile);
       expect(body.clip).toHaveLength(3);
+      expect(body.display?.bevel).toBe(false);
       expect(body.z).toEqual([-expectedLength, -3]);
       expect(buttplate.profile).not.toEqual(body.profile);
       expect(buttplate.profile.map(([y]) => y)).toEqual(expect.arrayContaining([-6.25, 1.75]));

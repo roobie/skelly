@@ -301,6 +301,9 @@ export const meshForSolid = (
   if (solid.kind === 'revolved') {
     return orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
   }
+  if (solid.kind === 'extruded-polygon' && solid.clip?.length && solid.display?.bevel !== false) {
+    throw new Error(`Solid "${solid.id}" has clip planes; set display.bevel to false explicitly.`);
+  }
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);

@@ -2718,6 +2718,7 @@ const m4StockSolids = (len: number): Solid[] => {
       { normal: [-sideSlope, 0, 1], offset: sideIntercept },
       { normal: [-sideSlope, 0, -1], offset: sideIntercept },
     ],
+    display: { bevel: false },
   };
   const buttplate: Solid = {
     id: 'buttplate',
