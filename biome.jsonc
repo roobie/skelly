@@ -104,6 +104,17 @@
       }
     },
     {
+      // Standalone Playwright check scripts (run by hand, not by vitest): they assert, read env and print.
+      "includes": ["**/gungen/test/browser/*.mjs"],
+      "linter": {
+        "rules": {
+          "correctness": { "noProcessGlobal": "off" },
+          "style": { "noProcessEnv": "off" },
+          "suspicious": { "noConsole": "off", "noMisplacedAssertion": "off" }
+        }
+      }
+    },
+    {
       // CLIs talk to the terminal.
       "includes": ["**/src/cli/**"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
