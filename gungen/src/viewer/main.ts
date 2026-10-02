@@ -90,6 +90,7 @@ const designInfo = $<HTMLElement>('design-info');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
 const designWarnings = $<HTMLElement>('design-warnings');
+const noticeEl = $<HTMLElement>('issues-notice');
 const issuesBtn = $<HTMLButtonElement>('issues-btn');
 const issuesOverlay = $<HTMLElement>('issues-overlay');
 const hover = $<HTMLParagraphElement>('hover');
@@ -356,16 +357,42 @@ const frame = (group: Object3D) => {
 /** Design-file issue and error counts, for the issues button. */
 let designCounts = { warnings: 0, errors: 0 };
 
-const setOverlayOpen = (open: boolean) => {
+/**
+ * A failed action (an unreadable upload, no valid seed) that has no model to show: the button goes to an error
+ * state and the message is listed first in the overlay. The last good model stays displayed. The next
+ * successful load() clears it.
+ */
+let notice: { readonly label: string; readonly message: string } | undefined;
+
+const setOverlayOpen = (open: boolean, fromKeyboard = false) => {
+  const wasInside = issuesOverlay.contains(document.activeElement);
   issuesOverlay.hidden = !open;
   issuesBtn.setAttribute('aria-expanded', String(open));
+  if (open && fromKeyboard) {
+    issuesOverlay.focus();
+  } else if (!open && wasInside) {
+    issuesBtn.focus();
+  }
 };
-issuesBtn.addEventListener('click', () => setOverlayOpen(Boolean(issuesOverlay.hidden)));
+// detail is 0 for a keyboard-activated click (Enter or Space on the button).
+issuesBtn.addEventListener('click', (event) => setOverlayOpen(Boolean(issuesOverlay.hidden), event.detail === 0));
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     setOverlayOpen(false);
   }
 });
+
+const showNotice = (label: string, message: string) => {
+  notice = { label, message };
+  noticeEl.textContent = message;
+  updateIssuesButton();
+  setOverlayOpen(true);
+};
+
+const clearNotice = () => {
+  notice = undefined;
+  noticeEl.textContent = '';
+};
 document.addEventListener('pointerdown', (event) => {
   const target = event.target as Node;
   if (!(issuesOverlay.hidden || issuesOverlay.contains(target) || issuesBtn.contains(target))) {
@@ -398,6 +425,10 @@ const updateIssuesButton = () => {
       label = `✖ ${plural(count, 'error')}`;
     }
   }
+  if (notice) {
+    kind = 'fail';
+    label = `✖ ${notice.label}`;
+  }
   issuesBtn.textContent = label;
   issuesBtn.className = kind;
 };
@@ -421,8 +452,17 @@ const renderPanel = (assembly: Assembly) => {
   status.innerHTML = verdict + note;
 
   issueList.replaceChildren(
-    ...report.issues.map((issue) => {
+    ...report.issues.map((issue, index) => {
       const li = document.createElement('li');
+      li.tabIndex = 0;
+      li.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          li.click();
+          // The list is rebuilt on activation; keep the keyboard position.
+          (issueList.children[index] as HTMLElement | undefined)?.focus();
+        }
+      });
       const rule = document.createElement('span');
       rule.className = 'rule';
       rule.textContent = issue.rule;
@@ -527,6 +567,7 @@ const clearRenderedModel = () => {
   description.textContent = '';
   status.textContent = '';
   issueList.replaceChildren();
+  clearNotice();
   updateIssuesButton();
 };
 
@@ -543,6 +584,7 @@ const load = (assembly: Assembly) => {
   }
   report = validate(assembly, gunDomain);
   focused = undefined;
+  clearNotice();
   renderPanel(assembly);
   renderDesignInfo();
   redraw();
@@ -1010,8 +1052,7 @@ fileInput.addEventListener('change', async () => {
     }
     const parsed = parseAssemblyJson(text);
     if (!parsed.ok) {
-      status.innerHTML = '';
-      status.textContent = `Could not read ${file.name}: ${formatParseError(parsed.error)}`;
+      showNotice('Could not read file', `Could not read ${file.name}: ${formatParseError(parsed.error)}`);
       return;
     }
     const { assembly } = parsed;
@@ -1027,8 +1068,7 @@ fileInput.addEventListener('change', async () => {
     syncUrl();
     load(assembly);
   } catch (err) {
-    status.innerHTML = '';
-    status.textContent = `Could not read ${file.name}: ${(err as Error).message}`;
+    showNotice('Could not read file', `Could not read ${file.name}: ${(err as Error).message}`);
   }
 });
 
@@ -1109,7 +1149,7 @@ const runGenerator = (step = 0, preserveOverrides = false) => {
   if (onlyValid.checked) {
     const found = findValidSeed(template, seed, step);
     if (!found) {
-      status.textContent = `No valid ${template.name} within 100 seeds of ${seed}.`;
+      showNotice('No valid seed', `No valid ${template.name} within 100 seeds of ${seed}.`);
       return;
     }
     ({ seed, assembly: generated } = found);
