@@ -14,7 +14,7 @@
           "bore": "M"
         }
       },
-      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
+      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett", "handleStyle": "battle" } },
       "lower": {
         "family": "lower",
         "params": {
@@ -50,7 +50,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "fixed-prism-4x" }
       }
     },
     "connections": [

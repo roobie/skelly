@@ -28,6 +28,16 @@ simulation.
 The output is stylized low-poly models of assemblies. Sizes are expressed as
 size classes (see §4), not measurements.
 
+**Exception: ammunition.** Cartridges are modelled at real dimensions in
+millimetres and named by their real designations (for example 7.62×39mm). That
+amends the real-world-models non-goal and the size-class rule (§4) for
+cartridges only. Calibre is a gameplay identity, because ammo must match the
+gun, not a brand, and a standard (C.I.P., SAAMI) fixes a cartridge's dimensions
+rather than a designer choosing them. Guns keep size classes. Every cartridge
+dimension carries its source, and a value that can't be sourced stays empty.
+Tracked in roobie/skelly#109: data first, then geometry, viewer and export. The
+data format is described in `cartridges/README.md`.
+
 ## Decisions
 
 | Decision | Choice |
@@ -152,6 +162,45 @@ logic, and put everything gun-specific in data. The same core should later
 drive other skelly domains, such as rigging, where a joint is just a port that
 can rotate.
 
+**Units per domain.** A domain declares `units` (`src/core/schema.ts#DomainUnits`):
+metres per unit, the snap grid and the bevel, all in its own u. The gun domain
+declares today's values in `src/gun/units.ts#GUN_UNITS`: 1u = 11.5mm, a 0.25u
+grid and a 0.125u bevel (about 1.4mm). The core reads them from
+`resolved.domain.units`: the glb export scales by `metresPerUnit`, the
+connection-contact rule allows a gap of one `grid` step, and meshes are
+chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). That contact tolerance
+is not permission to model a visible gap: the revolver's frame/grip/trigger-guard
+junction is a zero-gap shared-solid contract checked by `revolver-grip-joint`.
+The shared frame between domains is metres; an assembly belongs to one domain,
+so a scene that shows two domains is two assemblies placed in metres, with no
+rule checks between them. The tolerances in `conventions.ts` other than the contact gap are
+still the gun's numbers in u.
+
+**Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
+third kind of solid: a profile of (axial, radial) points turned about an axis
+(`axis`, local Z when omitted, with the same axes as an extrusion). Optional
+`origin: Vec3` translates that axis in the part frame (omitted = `[0, 0, 0]`);
+mesh positions, collision hulls, bounds and anchor points share this translation.
+It exists
+for round parts with real detail, such as cartridges, which the box and
+extrusion kinds cannot describe.
+
+- Mesh: `src/core/revolve.ts#meshForRevolved`. Normals are smooth around the
+  circumference and hard where the profile bends past `creaseDegrees` (40 by
+  default). The facet count is a level of detail chosen when the mesh is built,
+  not a field of the solid: `meshForSolid` takes it (default 6), the viewer
+  takes `?facets=N` (default 16, 24 for close-ups) and the glb export takes `revolveFacets`.
+  The bevel and `display.mergeGroup` do not apply; the viewer draws it
+  smooth-shaded and without an edge outline.
+- Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
+  the turned profile with a fixed 8 facets, whatever the level of detail. It
+  ignores grooves and hollows, and its facets are inscribed, so it is at most
+  7.6% of the radius smaller than the true solid. Because the hull is solid, a part seated
+  inside a hollow revolved part overlaps it; the ammunition domain has to deal
+  with that.
+- Validation: `src/core/revolve.ts#revolvedProfileError` reports a bad profile
+  as a structure issue when the assembly resolves.
+
 ## Milestone 1: validator and debug viewer
 
 **Goal:** take a hand-written assembly file, place its parts, check it against
@@ -169,8 +218,9 @@ the generator later has something independent to be tested against (§9).
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
 - **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
-  refined by convex extruded-polygon profiles), box and convex extruded-polygon
-  solids, parts, part families, domains, and the JSON assembly format.
+  refined by convex extruded-polygon profiles), box, convex extruded-polygon
+  and revolved solids (§10), parts, part families, domains, and the JSON
+  assembly format.
 - **Placement** (`src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.
@@ -181,7 +231,7 @@ the generator later has something independent to be tested against (§9).
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
-  | `connection-contact` | Solids on connected parts touch or are within 0.25u (one grid step) |
+  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain (0.25u for guns) |
   | `keep-out` | No solid is inside another part's keep-out volume, except parts attached at an allowed port or from an explicitly allowed family |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
@@ -239,19 +289,18 @@ archetype in the viewer.
 - **Receiver split.** The receiver is now only the action body, with two
   params:
   - `action`: `auto` (charging handle), `bolt` (bolt travel out of the back,
-    bolt handle sweep on the right), `pump` (forend-driven) or `revolver`
-    (cylinder frame). Each adds its own keep-out volumes. Pistols use their own
-    frame and slide families, not receiver actions.
+    bolt handle sweep on the right), or `pump` (forend-driven). Each adds its
+    own keep-out volumes. Revolvers and pistols use dedicated families, not
+    receiver actions.
   - `feed`: `box` (magazine through the lower), `top` (loading port above the
-    action), `tube` (tube magazine port underneath), or `cylinder` (revolver;
-    added in Milestone 2.2).
+    action), or `tube` (tube magazine port underneath). Revolvers use a
+    dedicated cylinder family, not the receiver feed path.
 
   The grip and magazine hang from a **lower** under it, whose `layout` param
   sets where they go:
   - `conventional`: magazine ahead of the grip.
   - `bullpup`: grip ahead of the magazine, with the butt built in.
-  - `trigger`: trigger with an optional grip anchor; used by tube-fed, top-fed
-    and revolver designs.
+  - `trigger`: trigger with an optional grip anchor and no magazine well.
 - **New and extended parts:**
   - `tube-magazine`: runs under the barrel, with its cap fixed to the barrel's
     lug. That closes a loop, the same way the handguard clamp does.
@@ -272,14 +321,14 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-ak` | AK-pattern rifle | AK block front sight with open ears, 2.5u behind the muzzle |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
-| `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
+| `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the receiver rail |
 | `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
-| `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
+| `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
-The lengths below remain abstract units on the existing grid.
+The lengths below remain abstract units on the existing grid. Optic reference sources and modeled envelopes are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
@@ -347,7 +396,8 @@ archetype:
 | Fixture | Fails | Why |
 | --- | --- | --- |
 | `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
-| `broken-bolt-sight-over-loading-port` | `keep-out` | On a top-loaded action, a sight over the receiver blocks the loading port |
+| `broken-bolt-sight-outside-rail-support` | `optic-mount-fit` | A compact optic is attached at an unsupported receiver-rail end slot |
+| `broken-bolt-sight-over-loading-port` | `keep-out`, `optic-mount-fit` | A compact foot roofs the loading footprint and lacks physical support; a type-only LPVO swap restores paired feet |
 | `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
 
 ### Known gaps
@@ -556,12 +606,12 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 
 ### Revolvers (second)
 
-- Added cylinder feed and a six- or eight-sided extruded cylinder prism below
-  and parallel to the bore. Its selected chamber axis must be collinear with
-  the bore; a misindexed-cylinder fixture exercises `axis-alignment`.
-  `feed-match` accepts cylinder feed without a magazine well and rejects
-  mismatched revolver-action/feed combinations.
-- Added a revolver receiver/frame with a cylinder window and top strap, built
+- Initially represented the revolver cylinder as a generic receiver feed.
+  That compatibility path has since been removed: the dedicated cylinder
+  family remains below and parallel to the bore, and its selected chamber axis
+  must be collinear with the bore; a misindexed-cylinder fixture exercises
+  `axis-alignment`.
+- Added a dedicated revolver frame with a cylinder window and top strap, built
   from several solids. Frame, cylinder and barrel form a checked loop. Keep-outs
   cover the cylinder gap, swing-out clearance and hammer travel. The frame's
   beavertail grip-safety tang is a static visual part of the backstrap.
@@ -786,6 +836,10 @@ plus a `FIRING_GRIP` stock, plus a test that an ambiguous `hold` is refused.
 The viewer's rendering is unchanged after the palette moves.
 
 #### 3.0a contracts (frozen)
+
+"Frozen" here, and elsewhere in this file, meant fixed so parallel lanes could
+build against each other; it isn't a compatibility promise. Pre-pre-alpha, these
+contracts change whenever that makes the code simpler (AGENTS.md, "Project stage").
 
 Types only; 3.0b supplies parsing and values. The contracts live in
 `src/core/design.ts` (`Design`/`DesignFormat`/`DesignStatus`, `DesignOrigin`,
@@ -1073,7 +1127,7 @@ deadvox holds a model with +x forward and +y up
   `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
   asset)` resolves, selects the gun anchors and applies `GUN_PALETTE`; it
   returns the writer's result, or the `AnchorSelectionError` for a missing or
-  ambiguous `hold`. Units and axes are in `src/core/exportFrame.ts`. The frozen
+  ambiguous `hold`. Units and axes are in `src/gun/exportFrame.ts`. The frozen
   types didn't change.
 - CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--entry-out
   <dir>] [--id <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox
@@ -1093,8 +1147,9 @@ deadvox holds a model with +x forward and +y up
   its own copy of the special, role, fallback lookup, since core can't import
   `src/gun/palette.ts#solidColor`; a test checks the two agree.
 - Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm, from the STANAG top depth
-  of 5.5u = 63 mm). Vertices are `mesh.ts` positions times that; normals are
-  unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
+  of 5.5u = 63 mm) is the gun domain's value; the writer scales by the
+  resolved domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions
+  times that; normals are unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
   export uses 11.5 mm.
 - Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is
   right-handed Y-up; deadvox's held model is +x forward, +y up. So the file
@@ -1103,7 +1158,7 @@ deadvox holds a model with +x forward and +y up
 - **Grip orientation (BR ruling, 2026-09-29).** `grip.turn` does not include
   the grip's rake. The hold frame's orientation (which leans with the grip) is
   not used for `turn`. `turn` is only the fixed rotation from the file's axes to
-  deadvox's held axes, from `src/core/exportFrame.ts#gripTurn`: the Euler XYZ
+  deadvox's held axes, from `src/gun/exportFrame.ts#gripTurn`: the Euler XYZ
   angles (degrees, deadvox's order) of the transpose of `FILE_FROM_GUNGEN`.
   Because the file already has +x forward and +y up, every export gets
   `[0, 0, 0]`. deadvox's existing firearms use `[-90, 0, 0]` only because
@@ -1218,6 +1273,11 @@ not part of the export's acceptance:
   keep-out and remain solid; the pistol frame/slide are separate parts.
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
+- **Deferred (BR, 2026-09-30):** revolute `PartMotion` for lifting the bolt handle
+  and folding the FAL handle. For now both remain deployed and move linearly (or
+  are fixed to the receiver).
+- **Deferred (BR, 2026-09-30):** if automatic shotguns are added, reuse the AK-like
+  stick/paddle charging-handle style. Pump shotguns remain handle-free.
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
   shapes are one surface built from many solids, like the curved STANAG and
   AK magazines' runs of ring sectors. Bevelling and outlining each segment
@@ -1320,11 +1380,15 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   aliased `it.runIf` would trip Biome's `noMisplacedAssertion`. `npm run test:sweeps` runs the whole suite that
   way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
   runs them.
-- **No raising timeouts.** A sweep that is too slow is split into smaller
-  tests (per template, per seed range), never given a longer timeout. The
-  current generator validation chunks are 25 seeds; the slowest AK chunk stays
-  under 1s locally. Some
-  sweeps will be removed, so their cost is not worth accommodating.
+- **Split before raising timeouts.** A sweep that is too slow is split into
+  smaller tests (per template, per seed range) rather than given a longer
+  timeout. A sweep that cannot be split gets a timeout proportional to its
+  work (see "Testing"), never a flat generous one. The current generator
+  validation chunks are 25 seeds. A 2026-10-01 measurement found them
+  unreliable under load: `generate.test.ts` chunks took 5-8 s at load 6-10 on
+  6 cores, and 17 timed out at the 5 s default, so the earlier "under 1 s
+  locally" claim is unverified. Some sweeps will be removed, so their cost is
+  not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
   seed range, and the `known-good seeds` snapshots, which are generator
   output. Tests over `fixtures/`, hand-built assemblies and single fixed
@@ -1371,6 +1435,30 @@ Removal plan, one line per gated sweep:
 Golden designs (3.1) become the regression corpus. Each published design
 gets a snapshot of its resolved solids (already planned), and property tests
 iterate `fixtures/` plus `designs/` instead of seeds.
+
+## Testing
+
+- **Say what a test protects.** Each test, or the comment above a group, states
+  the behaviour it guards. Two tests that catch the same bugs are one too many,
+  and a sweep earns its size only if its extra cases exercise different
+  behaviour.
+- **Exhaustive sweeps go behind `GUNGEN_SWEEPS`.** Use `sweepGroup` from
+  `test/sweeps.ts`; the default `npm test` keeps a representative sample and CI
+  runs everything. Build no cases for a skipped group (`runSweeps ? cases : []`),
+  because a skipped group still registers every case.
+- **Prefer a covering array to a full product in the default run.**
+  `test/coveringArray.ts` generates a fixed-seed t-wise array from a family's
+  `params`. `test/parts.test.ts` lists the array-sampled families in one place,
+  `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
+  explicit case for an interaction the array is known to miss.
+- **Removals need a reason.** The commit says what the removed tests protected
+  and which remaining test or sample still protects it, ideally with a mutation
+  or coverage result as evidence.
+- **Timeouts.** A test that takes about 1 s or more and still has the 5 s
+  default gets its own timeout, about 5x its measured time, with a comment
+  saying why. A sweep is split into smaller tests where it can be; one that
+  cannot (`unplacedParts.test.ts`) gets a timeout proportional to its case
+  count.
 
 ## Running it
 

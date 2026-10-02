@@ -21,6 +21,37 @@ describe('content', () => {
     }
   });
 
+  it('registers the machete and Kabar as cutting melee tools and makes both findable', () => {
+    const { registry } = buildRegistry(base);
+    const machete = registry.items.get('machete')!;
+    const kabar = registry.items.get('kabar')!;
+    expect(machete).toMatchObject({
+      name: 'Machete',
+      category: 'tool',
+      weight: 550,
+      size: [1, 4],
+      model: 'machete',
+      tool: { qualities: { cutting: 2 } },
+      weapon: { melee: { damage: 11, reach: 0.45, cooldown: 0.75, stamina: 5, impulse: 4.5, type: 'cut' } },
+    });
+    expect(kabar).toMatchObject({
+      name: 'Kabar',
+      category: 'tool',
+      weight: 300,
+      size: [1, 3],
+      model: 'kabar',
+      tool: { qualities: { cutting: 2 } },
+      weapon: { melee: { damage: 9, reach: 0.3, cooldown: 0.55, stamina: 3.5, impulse: 4, type: 'cut' } },
+    });
+    for (const id of ['machete', 'kabar']) {
+      expect(registry.loot.get('shed_tools')?.entries).toContainEqual({
+        item: id,
+        weight: 1,
+        condition: [0.4, 1],
+      });
+    }
+  });
+
   it('keeps footstep audio in the body mix without a second hearing-noise path', () => {
     const { registry } = buildRegistry(base);
     for (const id of [

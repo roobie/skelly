@@ -16,7 +16,7 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue, type MoveStart } from '../core/handling.ts';
+import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
@@ -80,10 +80,13 @@ export interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
-  /** Clears edge-triggered intent after the player tick samples it. */
+  /** Clears edge-triggered intents after the player tick samples them. */
   consumePrimaryAction?: () => void;
-  /** Runs the primary action on the player-tick boundary, with that tick's aim/state. */
+  consumeLeftHandAction?: () => void;
+  /** Runs the right-hand action on the player-tick boundary, with that tick's aim/state. */
   primaryAction?: () => void;
+  /** Runs the left-hand action on the player-tick boundary, with that tick's aim/state. */
+  leftHandAction?: () => void;
   /** Radians; 0 looks down -z. */
   yaw: () => number;
   pitch: () => number;
@@ -135,6 +138,8 @@ export interface SessionOptions {
   audio: SessionAudio;
   /** A message that isn't an interruption, such as why a move was refused. */
   notice: (text: string) => void;
+  /** Observational hook for actual handling completion/failure outcomes. */
+  onHandlingOutcomes?: (result: TickResult) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -373,6 +378,17 @@ export const createSession = (options: SessionOptions) => {
   });
   let lastZombieStep = 0;
   let lastPlayerStep = 0;
+  const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
+    if (!moving) {
+      return;
+    }
+    if (intent.primaryAction) {
+      controls.primaryAction?.();
+    }
+    if (intent.leftHandAction) {
+      controls.leftHandAction?.();
+    }
+  };
   sim.scheduler.register({
     id: 'zombies',
     rate: ZOMBIE_RATE,
@@ -393,10 +409,9 @@ export const createSession = (options: SessionOptions) => {
       const moving = controls.active() && !compression.locksInput;
       const intent = moving ? controls.intent() : IDLE;
       controls.consumePrimaryAction?.();
+      controls.consumeLeftHandAction?.();
       zombieSystem.tickPlayerAction(dt, heldItemUids());
-      if (moving && intent.primaryAction) {
-        controls.primaryAction?.();
-      }
+      dispatchPlayerActions(moving, intent);
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }
@@ -445,7 +460,9 @@ export const createSession = (options: SessionOptions) => {
       if (compression.c > 1) {
         return;
       }
-      for (const { job, reason } of queue.tick(dt).failed) {
+      const result = queue.tick(dt);
+      options.onHandlingOutcomes?.(result);
+      for (const { job, reason } of result.failed) {
         options.notice(`${job.label}: ${reason.toLowerCase()}`);
       }
     },
@@ -513,6 +530,8 @@ export const createSession = (options: SessionOptions) => {
     restoredLook,
     /** The player's noise state; saved with the character. */
     playerAudio,
+    worldDiffs: () => world.snapshotDiffs((id) => registry.blocks[id]!.id),
+    audioState: () => audio.snapshotState(),
     feet,
     chest,
     pileDistance,

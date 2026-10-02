@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { exportGlb } from '../src/core/glb.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Domain, PartDef } from '../src/core/schema.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 import { readGlb } from './glbReader.ts';
 
 const ASSET: GlbAssetIdentity = { id: 'widget', file: 'assets/models/widget.glb' };
-const ANCHORS: SelectedAnchors = { hold: { position: [0, 0, 0], forward: [1, 0, 0], up: [0, 1, 0] }, others: {} };
 const box = (id: string) => ({
   id,
   kind: 'box' as const,
@@ -22,13 +22,14 @@ const exportWidget = (def: PartDef, colors: Palette = legacyPalette) => {
     name: 'widget-domain',
     families: { widget: { name: 'widget', params: {}, build: () => def } },
     axisRules: [],
+    units: GUN_UNITS,
   };
   const assembly = { name: 'renamed-widget', root: 'widget', parts: { widget: { family: 'widget' } }, connections: [] };
   const resolved = resolve(assembly, domain);
   if (resolved.issues.length > 0) {
     throw new Error(`widget assembly is invalid: ${JSON.stringify(resolved.issues)}`);
   }
-  const result = exportGlb({ resolved, anchors: ANCHORS, palette: colors, asset: ASSET });
+  const result = exportGlb({ resolved, palette: colors, asset: ASSET });
   if (!result.ok) {
     throw new Error(JSON.stringify(result.error));
   }

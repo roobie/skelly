@@ -3,7 +3,7 @@
   "template": "bolt-rifle",
   "assembly": {
     "name": "archetype-bolt-rifle",
-    "description": "Bolt-action rifle, loaded from the top: dropped (sporting) stock clears the bolt, full-length handguard, sight on the handguard ahead of the loading port.",
+    "description": "Bolt-action rifle, loaded from the top: dropped (sporting) stock clears the bolt, full-length handguard, scope on paired receiver bases bridging the loading port.",
     "root": "receiver",
     "parts": {
       "receiver": {
@@ -15,6 +15,8 @@
         }
       },
       "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "bolt" } },
+      "bolt-handle-arm": { "family": "bolt-handle-arm" },
+      "bolt-handle-knob": { "family": "bolt-handle-knob" },
       "lower": {
         "family": "lower",
         "params": {
@@ -44,7 +46,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "lpvo-1-6x" }
       }
     },
     "connections": [
@@ -59,6 +62,14 @@
       {
         "from": "receiver.bolt-carrier",
         "to": "bolt-carrier.mount"
+      },
+      {
+        "from": "bolt-carrier.handle",
+        "to": "bolt-handle-arm.base"
+      },
+      {
+        "from": "bolt-handle-arm.tip",
+        "to": "bolt-handle-knob.base"
       },
       {
         "from": "receiver.handguard",
@@ -77,9 +88,9 @@
         "to": "stock.front"
       },
       {
-        "from": "handguard.rail",
+        "from": "receiver.rail",
         "to": "sight.base",
-        "slot": 0
+        "slot": 3
       }
     ]
   },

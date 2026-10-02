@@ -23,6 +23,9 @@ const solidVertices = (solid: Solid): Vec3[] => {
       ),
     );
   }
+  if (solid.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   return solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
 };
 

@@ -10,6 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, ZombieSystem } from '../src/core/zombies.ts';
+import { debugWeaponIds, equipDebugStartWeapons } from '../src/debug/debugLoadout.ts';
 import { equipDebugStartLight, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
@@ -144,6 +145,50 @@ describe('debug starting equipment', () => {
     const nonDebug = new Inventory(registry);
     equipDebugStartLight({ inventory: nonDebug, debugMode: false, newGame: true });
     expect(nonDebug.hands).toEqual({});
+  });
+
+  it('equips a real backpack with every content-derived melee weapon in debug games', () => {
+    const extraWeapon = {
+      ...registry.items.get('baseball_bat')!,
+      id: 'debug_test_melee',
+      name: 'Debug test melee',
+      size: [1, 1] as [number, number],
+    };
+    const extendedRegistry = { ...registry, items: new Map(registry.items).set(extraWeapon.id, extraWeapon) };
+    const inventory = new Inventory(extendedRegistry);
+    const expected = debugWeaponIds(extendedRegistry);
+    expect(expected).toContain('debug_test_melee');
+    expect(expected).toContain('machete');
+    expect(expected).toContain('kabar');
+    equipDebugStartWeapons({ inventory, debugMode: true, newGame: true });
+
+    const backpack = inventory.worn.back;
+    expect(backpack?.type).toBe('hiking_backpack');
+    const packedIds = backpack?.pockets?.[0]?.map(({ item }) => item.type).sort();
+    expect(packedIds).toEqual(expected);
+    for (const id of expected) {
+      expect(inventory.locate(backpack!.pockets![0]!.find(({ item }) => item.type === id)!.item)).toMatchObject({
+        kind: 'pocket',
+        owner: backpack,
+      });
+    }
+  });
+
+  it('does not add the weapon backpack to normal, restored, or already-equipped inventories', () => {
+    const normal = new Inventory(registry);
+    equipDebugStartWeapons({ inventory: normal, debugMode: false, newGame: true });
+    expect(normal.worn.back).toBeUndefined();
+
+    const restored = new Inventory(registry);
+    equipDebugStartWeapons({ inventory: restored, debugMode: true, newGame: false });
+    expect(restored.worn.back).toBeUndefined();
+
+    const occupied = new Inventory(registry);
+    const hikingPack = occupied.create('hiking_backpack');
+    expect(occupied.add(hikingPack, { kind: 'worn' })).toBe(true);
+    equipDebugStartWeapons({ inventory: occupied, debugMode: true, newGame: true });
+    expect(occupied.worn.back).toBe(hikingPack);
+    expect(hikingPack.pockets?.flat()).toEqual([]);
   });
 
   it('keeps ordinary starting hands empty', () => {

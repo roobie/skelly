@@ -1,5 +1,11 @@
 import { type ResolvedAppearance, resolveAppearance as resolveCoreAppearance } from '../core/appearance.ts';
 import type { Palette, SrgbColor } from '../core/design.ts';
+import {
+  ANTI_MATERIEL_FAMILY_COLORS,
+  ANTI_MATERIEL_FINISH,
+  ANTI_MATERIEL_ROLE_SLOTS,
+  ANTI_MATERIEL_SHADES,
+} from './antiMateriel/palette.ts';
 
 /** Normalizes a 0xRRGGBB integer to an sRGB triple in [0,1]. */
 export const hexToSrgb = (hex: number): SrgbColor => [
@@ -37,6 +43,10 @@ const fromHex = (table: Record<string, number>): Record<string, SrgbColor> =>
 const FAMILY_HEX: Record<string, number> = {
   receiver: 0x8d_93_9c,
   'bolt-carrier': 0x6d_73_7c,
+  'bolt-handle': 0x6d_73_7c,
+  'bolt-handle-arm': 0x6d_73_7c,
+  'bolt-handle-knob': 0x6d_73_7c,
+  'smg-handle': 0x6d_73_7c,
   lower: 0x6f_75_7e,
   barrel: 0x5d_63_6b,
   'tube-magazine': 0x4d_53_5b,
@@ -49,15 +59,25 @@ const FAMILY_HEX: Record<string, number> = {
   frame: 0x4b_4a_45,
   slide: 0x86_8d_97,
   cylinder: 0x4a_55_66,
+  // Revolver components: light frame, blued drum, metal barrel, and walnut or rubber grip panels.
+  'revolver-frame': 0x8d_93_9c,
+  'revolver-cylinder': 0x4a_55_66,
+  'revolver-barrel': 0x5d_63_6b,
+  'revolver-grip': 0x7d_60_4c,
   'front-sight': 0x36_3d_47,
   'rail-front-sight': 0x36_3d_47,
   'gas-block': 0x2f_32_38,
   'gas-cylinder': 0x54_5a_63,
+  ...ANTI_MATERIEL_FAMILY_COLORS,
 };
 const ROLE_SLOTS: Record<string, string> = {
   receiver: 'metal',
   'ak-receiver': 'metal',
   'bolt-carrier': 'metal',
+  'bolt-handle': 'metal',
+  'bolt-handle-arm': 'metal',
+  'bolt-handle-knob': 'metal',
+  'smg-handle': 'metal',
   lower: 'metal',
   barrel: 'metal',
   'ak-rear-sight': 'metal',
@@ -75,11 +95,20 @@ const ROLE_SLOTS: Record<string, string> = {
   'rail-front-sight': 'metal',
   'gas-block': 'metal',
   'gas-cylinder': 'metal',
+  'revolver-frame': 'metal',
+  'revolver-cylinder': 'metal',
+  'revolver-barrel': 'metal',
+  'revolver-grip': 'furniture',
+  ...ANTI_MATERIEL_ROLE_SLOTS,
 };
 const SHADE: Record<string, number> = {
   receiver: 1,
   'ak-receiver': 0.93,
   'bolt-carrier': 0.78,
+  'bolt-handle': 0.78,
+  'bolt-handle-arm': 0.78,
+  'bolt-handle-knob': 0.78,
+  'smg-handle': 0.78,
   lower: 0.83,
   barrel: 0.67,
   'tube-magazine': 0.72,
@@ -97,6 +126,11 @@ const SHADE: Record<string, number> = {
   'gas-block': 0.55,
   'gas-cylinder': 0.7,
   'ak-rear-sight': 0.65,
+  'revolver-frame': 1,
+  'revolver-cylinder': 0.8,
+  'revolver-barrel': 0.67,
+  'revolver-grip': 0.82,
+  ...ANTI_MATERIEL_SHADES,
 };
 const roles = Object.keys(ROLE_SLOTS);
 const ROLE_MATERIALS = Object.fromEntries(
@@ -144,6 +178,7 @@ const FINISHES: Record<string, Readonly<Record<string, string>>> = {
   'bolt-rifle-thumbhole': finish('wood-walnut', 'steel-parkerized'),
   bullpup: finish('polymer-black', 'steel-parkerized'),
   barrett: { metal: 'steel-parkerized', furniture: 'steel-parkerized', accent: 'steel-parkerized' },
+  'anti-materiel': ANTI_MATERIEL_FINISH,
 };
 
 export const GUN_PALETTE: Palette = createPalette({

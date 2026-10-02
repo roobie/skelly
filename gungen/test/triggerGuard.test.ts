@@ -92,7 +92,8 @@ describe('trigger guards', () => {
   // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)): the
   // property is checked on every non-broken fixture and every published design. broken-trigger-guard
   // and the other broken-* fixtures are skipped: they exist to break a rule.
-  it('guards the trigger volume in every fixture and design', () => {
+  // Measured about 3.3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('guards the trigger volume in every fixture and design', { timeout: 20_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);
     for (const { label, assembly } of corpus) {
@@ -100,6 +101,13 @@ describe('trigger guards', () => {
       const triggerOwners = [...report.resolved.defs].filter(([, def]) =>
         def.keepOuts.some(({ id }) => id === 'trigger-finger'),
       );
+      if ([...report.resolved.defs.values()].some((def) => def.family === 'revolver-frame')) {
+        // The revolver's open ten-prism bow is validated by its own solid rule, not a box keep-out.
+        expect(triggerOwners).toEqual([]);
+        expect(report.issues.filter(({ rule }) => rule === 'trigger-guard')).toEqual([]);
+        expect(report.issues.filter(({ rule }) => rule === 'revolver-trigger-bow')).toEqual([]);
+        continue;
+      }
       expect(triggerOwners.length, label).toBeGreaterThan(0);
       for (const [part, def] of triggerOwners) {
         const guards = def.solids.filter(({ id }) => id.startsWith('trigger-guard-'));

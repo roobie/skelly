@@ -3,9 +3,11 @@
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Vec3 } from '../core/math.ts';
-import { applyDir, applyPoint, dot as dotProduct, sub } from '../core/math.ts';
+import { add, applyDir, applyPoint, dot as dotProduct, IDENTITY, invert, length, scale, sub } from '../core/math.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
+import { mountCanAccept } from './mounts.ts';
+import { getOptic } from './optics.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
 
 /**
@@ -16,6 +18,10 @@ import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS,
  */
 const placedParts = (r: Resolved, family?: string): [string, PartDef][] =>
   [...r.defs].filter(([part, def]) => r.placed.has(part) && (family === undefined || def.family === family));
+
+/** Iron sights also use the visual family role `sight`; only the `sight` registry key is a catalog optic. */
+const placedOptics = (r: Resolved): [string, PartDef][] =>
+  placedParts(r, 'sight').filter(([part]) => r.assembly.parts[part]?.family === 'sight');
 
 /** Something for the firing hand: a pistol grip or a stock with a wrist. */
 export const thumbholeGripMatch: Rule = {
@@ -91,18 +97,12 @@ export const actionHandleRest: Rule = {
         if (handle.kind !== 'box') {
           continue;
         }
-        const handleBounds = handle.box.center.map((center, axis) => [
-          center - handle.box.half[axis]!,
-          center + handle.box.half[axis]!,
-        ]);
-        const travelBounds = travel.box.center.map((center, axis) => [
-          center - travel.box.half[axis]!,
-          center + travel.box.half[axis]!,
-        ]);
-        const overlaps = handleBounds.map(([min, max], axis) => {
-          const [travelMin, travelMax] = travelBounds[axis]!;
-          return Math.min(max!, travelMax!) - Math.max(min!, travelMin!);
-        });
+        const handleBounds = localSolidBounds(handle);
+        const travelBounds = localSolidBounds({ id: travel.id, kind: 'box', box: travel.box });
+        const overlaps = handleBounds[0].map(
+          (min, axis) =>
+            Math.min(handleBounds[1][axis]!, travelBounds[1][axis]!) - Math.max(min!, travelBounds[0][axis]!),
+        );
         const overlap = Math.min(...overlaps);
         if (overlap > 1e-6) {
           issues.push({
@@ -137,9 +137,8 @@ export const firingGrip: Rule = {
 };
 
 /**
- * Box-fed receivers need a lower/grip well; tube-fed and cylinder-fed
- * receivers cannot use a box-magazine well. Revolver action and cylinder feed
- * must be selected together.
+ * Box- and top-fed receivers need a lower/grip well; tube-fed receivers
+ * cannot use a box-magazine well.
  */
 const gripPartOnLower = (connection: ResolvedConnection, lowerPart: string): string | undefined => {
   if (connection.from.part === lowerPart && connection.from.port.id === 'grip') {
@@ -160,21 +159,11 @@ const hasGripMagazineWell = (r: Resolved, lowerPart: string): boolean =>
 const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Issue[] => {
   const receiverParams = r.params.get(receiver.part)!;
   const feed = receiverParams.feed!.value;
-  const action = receiverParams.action!.value;
   const lowerDef = r.defs.get(lower.part)!;
   const hasWell = lowerDef.ports.some((port) => port.mount === 'magazine') || hasGripMagazineWell(r, lower.part);
   const layout = r.params.get(lower.part)?.layout?.value;
   const what = layout ? `${lower.part} (${layout})` : lower.part;
 
-  if ((action === 'revolver') !== (feed === 'cylinder')) {
-    return [
-      {
-        rule: 'feed-match',
-        message: `${receiver.part} uses ${action} action with ${feed} feed; revolvers require cylinder feed and other actions do not use it.`,
-        parts: [receiver.part, lower.part],
-      },
-    ];
-  }
   if ((feed === 'box' || feed === 'top') && !hasWell) {
     return [
       {
@@ -184,7 +173,7 @@ const feedIssuesForLower = (r: Resolved, receiver: PortRef, lower: PortRef): Iss
       },
     ];
   }
-  if ((feed === 'tube' || feed === 'cylinder') && hasWell) {
+  if (feed === 'tube' && hasWell) {
     return [
       {
         rule: 'feed-match',
@@ -339,10 +328,10 @@ const triggerGuardIds = [
   'trigger-guard-front',
   'trigger-guard-bottom',
 ] as const;
-const boxBounds = (box: Box): { min: Vec3; max: Vec3 } => ({
-  min: [box.center[0] - box.half[0], box.center[1] - box.half[1], box.center[2] - box.half[2]],
-  max: [box.center[0] + box.half[0], box.center[1] + box.half[1], box.center[2] + box.half[2]],
-});
+const solidBounds = (solid: Solid): { min: Vec3; max: Vec3 } => {
+  const [min, max] = localSolidBounds(solid);
+  return { min, max };
+};
 const rangesOverlap = (a: { min: Vec3; max: Vec3 }, b: { min: Vec3; max: Vec3 }): boolean =>
   [0, 1, 2].every((axis) => a.max[axis]! > b.min[axis]! + 1e-8 && b.max[axis]! > a.min[axis]! + 1e-8);
 const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, Solid>): boolean => {
@@ -353,11 +342,11 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
   if (![top, rear, front, bottom].every((solid) => solid?.kind === 'box')) {
     return false;
   }
-  const topBounds = boxBounds((top as Extract<Solid, { kind: 'box' }>).box);
-  const rearBounds = boxBounds((rear as Extract<Solid, { kind: 'box' }>).box);
-  const frontBounds = boxBounds((front as Extract<Solid, { kind: 'box' }>).box);
-  const bottomBounds = boxBounds((bottom as Extract<Solid, { kind: 'box' }>).box);
-  const fingerBounds = boxBounds(fingerBox);
+  const topBounds = solidBounds(top as Extract<Solid, { kind: 'box' }>);
+  const rearBounds = solidBounds(rear as Extract<Solid, { kind: 'box' }>);
+  const frontBounds = solidBounds(front as Extract<Solid, { kind: 'box' }>);
+  const bottomBounds = solidBounds(bottom as Extract<Solid, { kind: 'box' }>);
+  const fingerBounds = solidBounds({ id: 'trigger-guard-finger', kind: 'box', box: fingerBox });
   const close = (a: number, b: number) => Math.abs(a - b) <= 1e-8;
   const rearClearance = fingerBounds.min[0] - rearBounds.max[0];
   const frontClearance = frontBounds.min[0] - fingerBounds.max[0];
@@ -379,7 +368,7 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
     close(frontBounds.max[1], topBounds.max[1]) &&
     zBounds.every((bounds) => close(bounds.min[2], topBounds.min[2]) && close(bounds.max[2], topBounds.max[2])) &&
     [top, rear, front, bottom].every(
-      (solid) => !rangesOverlap(boxBounds((solid as Extract<Solid, { kind: 'box' }>).box), fingerBounds),
+      (solid) => !rangesOverlap(solidBounds(solid as Extract<Solid, { kind: 'box' }>), fingerBounds),
     )
   );
 };
@@ -426,8 +415,8 @@ const triggerGuardContactIssue = (
     break;
   }
   for (const path of def.keepOuts.filter(({ id }) => id !== 'trigger-finger')) {
-    const pathBounds = boxBounds(path.box);
-    if (guardSolids.some((guard) => guard.kind === 'box' && rangesOverlap(boxBounds(guard.box), pathBounds))) {
+    const pathBounds = solidBounds({ id: 'action-handle-path', kind: 'box', box: path.box });
+    if (guardSolids.some((guard) => guard.kind === 'box' && rangesOverlap(solidBounds(guard), pathBounds))) {
       return `${part}'s trigger guard crosses the ${path.id} keep-out.`;
     }
   }
@@ -500,6 +489,185 @@ const magazineAxisError = (
         : `${lower.part} declares ${wellStyle}, but ${magazine.part} uses ${magStyle}; the well must follow the magazine axis.`,
     parts: [lower.part, magazine.part],
   };
+};
+
+const opticContactPoints = (solids: readonly Solid[]): readonly Vec3[] =>
+  solids.flatMap((solid) => {
+    if (solid.kind !== 'box' || !solid.id.endsWith('foot')) {
+      return [];
+    }
+    const { center, half } = solid.box;
+    return [-1, 0, 1].flatMap((x) =>
+      [-1, 0, 1].map((z): Vec3 => [center[0] + x * half[0], center[1] - half[1], center[2] + z * half[2]]),
+    );
+  });
+
+/** A named rail is not enough: its contact feet must remain on the action body (or pistol slide). */
+const opticSupportError = (
+  r: Resolved,
+  sight: string,
+  host: PortRef,
+  requiredContactLengthU: number,
+): string | undefined => {
+  const def = r.defs.get(host.part)!;
+  if (!['receiver', 'slide'].includes(def.family) || host.port.id !== 'rail') {
+    return 'requires the receiver top rail (the pistol uses its slide), not a handguard/scout mount';
+  }
+  const hostTransform = r.placed.get(host.part)!;
+  const sightTransform = r.placed.get(sight)!;
+  const toHost = invert(hostTransform);
+  const body = def.solids.filter(
+    ({ id }) => !id.includes('rail') && (def.family === 'slide' || id.startsWith('receiver-')),
+  );
+  const bodyBounds = body.map(localSolidBounds);
+  const minX = Math.min(...bodyBounds.map(([min]) => min[0]));
+  const maxX = Math.max(...bodyBounds.map(([, max]) => max[0]));
+  const surfaces = def.solids.map((solid) => worldSolid(IDENTITY, solid));
+  const contacts = opticContactPoints(r.defs.get(sight)!.solids);
+  if (contacts.length === 0) {
+    return 'missing physical mount feet';
+  }
+  const contactLength = Math.max(...contacts.map(([x]) => x)) - Math.min(...contacts.map(([x]) => x));
+  if (contactLength < requiredContactLengthU - 1e-6) {
+    return 'missing mount foot or physical contact span shorter than the mount requires';
+  }
+  for (const contact of contacts) {
+    const local = applyPoint(toHost, applyPoint(sightTransform, contact));
+    if (local[0] < minX - 1e-6 || local[0] > maxX + 1e-6 || Math.abs(local[1] - host.port.pos[1]) > 1e-6) {
+      return 'mount foot extends beyond the receiver body or is not on its top';
+    }
+    const point = worldSolid(IDENTITY, { id: 'contact-probe', kind: 'box', box: { center: local, half: [0, 0, 0] } });
+    if (!surfaces.some((surface) => distanceWorld(point, surface) <= 1e-6)) {
+      return 'mount foot is not supported by a physical receiver top solid';
+    }
+  }
+  return undefined;
+};
+
+export const opticMountFit: Rule = {
+  id: 'optic-mount-fit',
+  title: 'Optic footprint fits its generic mount interface',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [sight] of placedOptics(r)) {
+      const params = r.params.get(sight);
+      const optic = getOptic(params?.type?.value, params?.mountSection?.value);
+      const connection = r.connections.find((candidate) =>
+        [candidate.from, candidate.to].some((end) => end.part === sight && end.port.id === 'base'),
+      );
+      if (!connection) {
+        continue;
+      }
+      const host = connection.from.part === sight ? connection.to : connection.from;
+      const { port } = host;
+      const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
+      const slot = connection.conn.slot ?? 0;
+      const supportError = opticSupportError(r, sight, host, optic.mount.contactLengthU);
+      if (!mountCanAccept(port, optic.mount, slot) || supportError) {
+        issues.push({
+          rule: 'optic-mount-fit',
+          message: `${sight} (${optic.id}) needs ${optic.mount.kind} with ${optic.mount.contactLengthU}u contact length, ${optic.mount.contactWidthU}u width, and ${optic.mount.minimumSlots} slots; ${host.part}.${port.id} offers ${port.mount} with ${span}u span at slot ${slot}.${supportError ? ` ${supportError}.` : ''}`,
+          parts: [sight, host.part],
+        });
+      }
+    }
+    return issues;
+  },
+};
+
+const OPTIC_SUPPORT_ID = /foot|mount|ring-band|base|bridge/;
+
+const loadingBodyIds = (r: Resolved, part: string): ReadonlySet<string> => {
+  if (r.assembly.parts[part]?.family !== 'sight') {
+    return new Set();
+  }
+  const params = r.params.get(part);
+  return new Set(
+    getOptic(params?.type?.value, params?.mountSection?.value)
+      .solids.filter(({ id }) => !OPTIC_SUPPORT_ID.test(id))
+      .map(({ id }) => id),
+  );
+};
+
+/** Refines the upper core keep-out allowance: real supports never bridge the opening; only bodies may.
+ * The cartridge's angled loading path past those bodies is explicitly deferred to the tubular receiver.
+ */
+export const opticLoadingClearance: Rule = {
+  id: 'keep-out',
+  title: 'Only optic bodies may bridge above the loading mouth',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [owner, def] of placedParts(r, 'receiver')) {
+      const opening = def.keepOuts.find(
+        ({ id, allowFamilies }) => id === 'loading-port' && allowFamilies?.includes('sight'),
+      );
+      if (!opening) {
+        continue;
+      }
+      const volume = worldSolid(r.placed.get(owner)!, { id: opening.id, kind: 'box', box: opening.box });
+      for (const [part, sightDef] of placedParts(r, 'sight')) {
+        const bodies = loadingBodyIds(r, part);
+        const intrudes = sightDef.solids.some(
+          (solid) => !bodies.has(solid.id) && penetrationWorld(volume, worldSolid(r.placed.get(part)!, solid)) > 1e-6,
+        );
+        if (intrudes) {
+          issues.push({
+            rule: 'keep-out',
+            message: `${part}'s foot, base, ring, bridge or unclassified solid crosses the loading opening of ${owner}; only optic bodies may bridge above it.`,
+            parts: [part, owner],
+            keepOut: { part: owner, id: opening.id },
+          });
+        }
+      }
+    }
+    return issues;
+  },
+};
+
+export const opticEyeRelief: Rule = {
+  id: 'optic-eye-relief',
+  title: 'Long optics have a stock cheek datum at eye relief',
+  check(r) {
+    const issues: Issue[] = [];
+    for (const [sight] of placedOptics(r)) {
+      const params = r.params.get(sight);
+      const optic = getOptic(params?.type?.value, params?.mountSection?.value);
+      if (optic.eyeReliefU === undefined) {
+        continue;
+      }
+      const stock = placedParts(r, 'stock').find(
+        ([part, def]) => def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part),
+      );
+      const sightTransform = r.placed.get(sight)!;
+      if (!stock) {
+        issues.push({
+          rule: 'optic-eye-relief',
+          message: `${sight} (${optic.id}) needs a stock with a named cheek datum.`,
+          parts: [sight],
+        });
+        continue;
+      }
+      const [stockPart, stockDef] = stock;
+      const cheek = stockDef.axes.find((axis) => axis.kind === 'cheek')!;
+      const eye = applyPoint(sightTransform, [optic.ocularX - optic.eyeReliefU, optic.opticalAxisY, 0]);
+      const stockTransform = r.placed.get(stockPart)!;
+      const cheekStart = applyPoint(stockTransform, cheek.origin);
+      const cheekDirection = applyDir(stockTransform, cheek.dir);
+      const eyeOffset = sub(eye, cheekStart);
+      const alongCheek = dotProduct(eyeOffset, cheekDirection);
+      const nearestCheekPoint = add(cheekStart, scale(cheekDirection, alongCheek));
+      const eyeDatumError = length(sub(eye, nearestCheekPoint));
+      const tolerance = optic.eyeDatumToleranceU ?? 4;
+      if (eyeDatumError > tolerance) {
+        issues.push({
+          rule: 'optic-eye-relief',
+          message: `${sight} (${optic.id}) eye point is ${eyeDatumError.toFixed(2)}u from ${stockPart}'s cheek datum; maximum is ${tolerance}u.`,
+          parts: [sight, stockPart],
+        });
+      }
+    }
+    return issues;
+  },
 };
 
 export const magazineWellAxis: Rule = {

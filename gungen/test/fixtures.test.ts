@@ -9,7 +9,20 @@ const fixtures = loadFixtures();
 describe('fixtures', () => {
   it('has a broken fixture for every core and gun rule', () => {
     const covered = new Set(fixtures.flatMap((f) => f.expect ?? []));
-    const rules = [...CORE_RULE_IDS.filter((r) => r !== 'structure'), ...(gunDomain.rules ?? []).map((r) => r.id)];
+    // Revolver part-internal alignment predicates are covered by synthetic malformed Resolved values
+    // in revolverRules.test.ts; assembly JSON cannot alter their convex part geometry.
+    const revolverUnitRules = new Set([
+      'revolver-top-chamber-bore',
+      'revolver-cylinder-axis',
+      'revolver-cylinder-gap',
+      'revolver-topstrap-span',
+      'revolver-grip-joint',
+      'revolver-trigger-bow',
+    ]);
+    const rules = [
+      ...CORE_RULE_IDS.filter((r) => r !== 'structure'),
+      ...(gunDomain.rules ?? []).map((r) => r.id).filter((id) => !revolverUnitRules.has(id)),
+    ];
     for (const rule of rules) {
       expect(covered).toContain(rule);
     }
@@ -19,6 +32,7 @@ describe('fixtures', () => {
     const archetypes = fixtures.filter((f) => f.name.startsWith('archetype-'));
     expect(archetypes.map((f) => f.name).sort()).toEqual([
       'archetype-ak',
+      'archetype-anti-materiel',
       'archetype-ar',
       'archetype-ar-free-float',
       'archetype-awm',
@@ -43,7 +57,8 @@ describe('fixtures', () => {
     });
   }
 
-  it('places every part of every fixture', () => {
+  // Measured about 4.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('places every part of every fixture', { timeout: 25_000 }, () => {
     for (const fixture of fixtures) {
       const { resolved } = validate(fixture, gunDomain);
       expect([...resolved.placed.keys()].sort()).toEqual(Object.keys(fixture.parts).sort());

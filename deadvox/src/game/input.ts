@@ -7,17 +7,54 @@ const SENSITIVITY = 0.0022;
 /** UI key bindings and browser-owned keys referenced by the help and browser contract. */
 export const KEY_BINDINGS = {
   mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
+  performanceOverlay: { code: 'F4', label: 'F4', virtualKeyCode: 115 },
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
+  leftHandAction: { code: 'Equal' },
 } as const;
 
+export const CONTROL_CODES = {
+  forward: 'KeyW',
+  back: 'KeyS',
+  left: 'KeyA',
+  right: 'KeyD',
+  sprintLeft: 'ShiftLeft',
+  sprintRight: 'ShiftRight',
+  walkToggle: 'KeyZ',
+  jump: 'Space',
+  interact: 'KeyF',
+  rest: 'KeyR',
+  sleep: 'KeyL',
+  inventory: 'Tab',
+  cancel: 'KeyX',
+  quickbar: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'],
+  search: 'KeyS',
+  rotate: 'KeyR',
+  hands: 'KeyH',
+  wear: 'KeyW',
+  drop: 'KeyD',
+  bestPocket: 'KeyE',
+  takeAll: 'KeyA',
+  use: 'KeyU',
+  menu: KEY_BINDINGS.mainMenu.code,
+  previous: 'ArrowUp',
+  next: 'ArrowDown',
+  continue: 'KeyC',
+  spawnMenu: 'KeyG',
+} as const;
+
+export const quickbarSlotForKey = (code: string): number | undefined => {
+  const index = CONTROL_CODES.quickbar.indexOf(code as (typeof CONTROL_CODES.quickbar)[number]);
+  return index < 0 ? undefined : index;
+};
+
 export const isMenuOpeningKey = (code: string, debug: boolean, menuOpen: boolean): boolean =>
-  code === 'KeyG' && debug && !menuOpen;
+  code === CONTROL_CODES.spawnMenu && debug && !menuOpen;
 
 export const worldActionForKey = (code: string): 'interact' | 'cancel' | undefined => {
-  if (code === 'KeyF') {
+  if (code === CONTROL_CODES.interact) {
     return 'interact';
   }
-  if (code === 'KeyX') {
+  if (code === CONTROL_CODES.cancel) {
     return 'cancel';
   }
   return undefined;
@@ -42,6 +79,8 @@ export class Input {
   rightMouseHeld = false;
   private primaryActionPressed = false;
   private primaryActionDown = false;
+  private leftHandActionPressed = false;
+  private leftHandActionDown = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -53,7 +92,7 @@ export class Input {
       if (mouse.button === 2) {
         this.rightMouseHeld = true;
       }
-      if (mouse.button === 0 && !this.primaryActionDown) {
+      if (mouse.button === 0 && !this.primaryActionDown && this.locked && !this.menuPointer) {
         this.primaryActionPressed = true;
         this.primaryActionDown = true;
       }
@@ -68,20 +107,33 @@ export class Input {
       }
     });
     globalThis.addEventListener('keydown', (e) => {
-      if (e.code === 'Tab') {
+      if (e.code === CONTROL_CODES.inventory) {
         e.preventDefault();
       }
-      if (e.code === 'KeyZ' && !e.repeat) {
+      if (e.code === CONTROL_CODES.walkToggle && !e.repeat) {
         this.walking = !this.walking;
+      }
+      if (e.code === KEY_BINDINGS.leftHandAction.code && !this.leftHandActionDown) {
+        this.leftHandActionDown = true;
+        if (this.locked && !this.menuPointer) {
+          this.leftHandActionPressed = true;
+        }
       }
       this.held.add(e.code);
     });
-    globalThis.addEventListener('keyup', (e) => this.held.delete(e.code));
+    globalThis.addEventListener('keyup', (e) => {
+      this.held.delete(e.code);
+      if (e.code === KEY_BINDINGS.leftHandAction.code) {
+        this.leftHandActionDown = false;
+      }
+    });
     globalThis.addEventListener('blur', () => {
       this.held.clear();
       this.rightMouseHeld = false;
       this.primaryActionDown = false;
       this.primaryActionPressed = false;
+      this.leftHandActionDown = false;
+      this.leftHandActionPressed = false;
     });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
@@ -124,17 +176,23 @@ export class Input {
   intent(): MoveIntent {
     const on = (code: string) => (this.held.has(code) ? 1 : 0);
     return {
-      forward: on('KeyW') - on('KeyS'),
-      right: on('KeyD') - on('KeyA'),
-      jump: this.held.has('Space'),
-      sprint: this.held.has('ShiftLeft') || this.held.has('ShiftRight'),
+      forward: on(CONTROL_CODES.forward) - on(CONTROL_CODES.back),
+      right: on(CONTROL_CODES.right) - on(CONTROL_CODES.left),
+      jump: this.held.has(CONTROL_CODES.jump),
+      sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
       primaryAction: this.primaryActionPressed,
+      leftHandAction: this.leftHandActionPressed,
     };
   }
 
   /** Called once after the player tick samples its intent. */
   consumePrimaryAction(): void {
     this.primaryActionPressed = false;
+  }
+
+  /** Called once after the player tick samples the left-hand action. */
+  consumeLeftHandAction(): void {
+    this.leftHandActionPressed = false;
   }
 }

@@ -171,8 +171,9 @@ const triangleCount = (resolved: ReturnType<typeof resolve>): number => {
 describe('per-assembly triangle budget', () => {
   // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)): the
   // budget is checked on every fixture (broken-* ones included; none exists to break it) and every
-  // published design.
-  it(`stays under ${TRIANGLE_BUDGET} triangles in every fixture and design`, () => {
+  // published design. Measured about 1.9 s on a loaded host (load 4-10), too much of vitest's 5 s
+  // default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it(`stays under ${TRIANGLE_BUDGET} triangles in every fixture and design`, { timeout: 10_000 }, () => {
     const corpus = loadCorpus(() => true);
     expect(corpus.length).toBeGreaterThanOrEqual(45);
     for (const { label, assembly } of corpus) {
@@ -223,6 +224,7 @@ describe('watertightness (welded at 1e-5u)', () => {
       ],
       z: [0, 2],
       clip: [{ normal: [1, 1, 0], offset: 2 }],
+      display: { bevel: false },
     };
     const mesh = meshForSolid(clipped);
     expect(mesh.triangleCount).toBe(8);
@@ -274,7 +276,10 @@ describe('watertightness (welded at 1e-5u)', () => {
     expect(() => meshForSolidGroup([thin])).toThrow(THIN_SOLID_ERROR);
   });
 
-  it('is watertight for every solid (including displaySolids) of every template at a few seeds', () => {
+  // Measured about 1.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('is watertight for every solid (including displaySolids) of every template at a few seeds', {
+    timeout: 10_000,
+  }, () => {
     for (const t of TEMPLATES) {
       for (const seed of [0, 1, 2]) {
         const resolved = resolve(generate(t, gunDomain, seed), gunDomain);

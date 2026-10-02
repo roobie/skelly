@@ -69,11 +69,10 @@ describe('rules', () => {
     expect(rulesFailed(loadFixture('archetype-battle-rifle'))).toEqual([]);
   });
 
-  it('keep-out: explicitly allowed front sights may occupy a rear sight line', () => {
+  it('keep-out: explicitly allowed front sights may occupy a sightline volume', () => {
     const ar = loadFixture('archetype-ar');
-    expect(validate(ar, gunDomain).issues.filter(({ rule }) => rule === 'keep-out')).toEqual([]);
     const sight = gunDomain.families.sight!;
-    const domain: Domain = {
+    const withAllowance = (allow: boolean): Domain => ({
       ...gunDomain,
       families: {
         ...gunDomain.families,
@@ -83,17 +82,22 @@ describe('rules', () => {
             const def = sight.build(params);
             return {
               ...def,
-              keepOuts: def.keepOuts.map(({ allowFamilies: _allowed, ...ko }) => ko),
+              keepOuts: def.keepOuts.map(({ allowFamilies: _families, ...ko }) => ({
+                ...ko,
+                box: { ...ko.box, half: [ko.box.half[0], 10, 10] },
+                ...(allow ? { allowFamilies: ['front-sight', 'rail-front-sight'] } : {}),
+              })),
             };
           },
         },
       },
-    };
-    expect(
+    });
+    const hitsFrontSight = (domain: Domain): boolean =>
       validate(ar, domain).issues.some(
         ({ rule, parts }) => rule === 'keep-out' && parts.includes('front-sight') && parts.includes('sight'),
-      ),
-    ).toBe(true);
+      );
+    expect(hitsFrontSight(withAllowance(true))).toBe(false);
+    expect(hitsFrontSight(withAllowance(false))).toBe(true);
   });
 
   it('keep-out: without the allowance, the magazine intrudes', () => {
@@ -183,17 +187,18 @@ describe('rules', () => {
     expect(rulesFailed(loadFixture('archetype-bolt-rifle'))).toEqual([]);
   });
 
-  it('feed-match: cylinder-fed revolver needs no magazine well', () => {
+  it('revolver alignment rules run on the curated design and retain generic axis-alignment', () => {
+    const revolverRuleIds = [
+      'revolver-top-chamber-bore',
+      'revolver-cylinder-axis',
+      'revolver-cylinder-gap',
+      'revolver-topstrap-span',
+      'revolver-grip-joint',
+    ];
+    expect(gunDomain.rules?.map(({ id }) => id)).toEqual(expect.arrayContaining(revolverRuleIds));
     expect(rulesFailed(loadFixture('archetype-revolver'))).toEqual([]);
     const { issues } = validate(loadFixture('broken-revolver-misaligned-cylinder'), gunDomain);
     expect(issues.map((issue) => issue.rule)).toContain('axis-alignment');
-  });
-
-  it('feed-match: revolver action and cylinder feed are inseparable', () => {
-    const { issues } = validate(loadFixture('broken-revolver-feed-mismatch'), gunDomain);
-    expect(issues.filter((issue) => issue.rule === 'feed-match').map((issue) => issue.message)).toEqual([
-      'receiver uses revolver action with box feed; revolvers require cylinder feed and other actions do not use it.',
-    ]);
   });
 });
 

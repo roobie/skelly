@@ -352,8 +352,36 @@ describe('player melee action', () => {
     expect(originalResults).toHaveLength(1);
     expect(restoredResults).toHaveLength(1);
 
-    const fists = makeSystem();
     const first: MeleeWeapon = FISTS_MELEE;
+    const heldOffhand = makeSystem();
+    expect(
+      heldOffhand.beginMeleeSwing({
+        ...ray,
+        weapon: first,
+        profile: 'fists',
+        hand: 'right',
+        twoHanded: false,
+        hands: { right: null, left: 12 },
+      }),
+    ).toBe(true);
+    expect(heldOffhand.activeMeleeAction?.hand).toBe('right');
+    for (let tick = 0; tick < 16; tick++) {
+      advance(heldOffhand, 0.05, { right: null, left: 12 });
+    }
+    expect(
+      heldOffhand.beginMeleeSwing({
+        ...ray,
+        weapon: first,
+        profile: 'fists',
+        twoHanded: false,
+        hands: { right: null, left: null },
+      }),
+    ).toBe(true);
+    expect(heldOffhand.activeMeleeAction?.hand, 'a right-only jab does not consume the next alternating fist').toBe(
+      'right',
+    );
+
+    const fists = makeSystem();
     expect(
       fists.beginMeleeSwing({
         ...ray,

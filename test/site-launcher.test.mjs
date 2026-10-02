@@ -9,9 +9,15 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/index.html');
 const JSON_FILE = /\.json$/;
+const intentionallyUnofferedDeadvoxParams = {
+  'save-backend': 'A storage-backend override used by save-storage browser contracts.',
+  'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
+};
 const intentionallyUnofferedGungenParams = {
   camera:
     'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
+  facets:
+    'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
 };
 
 const paramsReadBy = (sources) => {
@@ -51,7 +57,7 @@ describe('site launchers track the games’ URL parameters', () => {
         'deadvox/src/game/config.ts',
         'deadvox/src/bench/run.ts',
         'deadvox/src/bench/shamblers.ts',
-      ]),
+      ]).filter((name) => !Object.hasOwn(intentionallyUnofferedDeadvoxParams, name)),
     );
   });
 

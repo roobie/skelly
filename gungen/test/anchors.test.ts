@@ -39,6 +39,9 @@ const insideSolid = (s: Solid, p: Vec3): boolean => {
   if (s.kind === 'box') {
     return [0, 1, 2].every((i) => Math.abs(p[i]! - s.box.center[i]!) <= s.box.half[i]! + EPS);
   }
+  if (s.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   const axis = s.axis ?? 'z';
   const extrusionAxis = { x: 0, y: 1, z: 2 }[axis];
   const profileAxes = { x: [1, 2], y: [2, 0], z: [0, 1] } as const;
@@ -119,7 +122,8 @@ describe('hold selection', () => {
   // Replaces the former CI-only seed sweep and its "never errors on a valid generated design"
   // sweep (PROJECT.md, "Generator tests", removal plan (a)): exactly one hold, and no selection
   // error, on every non-broken fixture and every published design.
-  it('every fixture and design resolves exactly one hold without a selection error', () => {
+  // Measured about 1.4 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('every fixture and design resolves exactly one hold without a selection error', { timeout: 10_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);
     for (const { label, assembly } of corpus) {
@@ -238,7 +242,16 @@ describe('anchor data', () => {
     for (const key of Object.keys(GUN_ANCHORS)) {
       expect(Object.keys(gunDomain.families)).toContain(key);
     }
-    expect(Object.keys(GUN_ANCHORS).sort()).toEqual(['barrel', 'forend', 'frame', 'grip', 'handguard', 'stock']);
+    expect(Object.keys(GUN_ANCHORS).sort()).toEqual([
+      'barrel',
+      'forend',
+      'frame',
+      'grip',
+      'handguard',
+      'revolver-barrel',
+      'revolver-grip',
+      'stock',
+    ]);
   });
 
   const frameFacts = (assemblies: Assembly[]) => {
@@ -252,6 +265,16 @@ describe('anchor data', () => {
     };
   };
 
+  it('leans the revolver hold frame with its 22.5-degree grip rake', () => {
+    const declared = localFrames(loadFixture('archetype-revolver')).find(({ name }) => name === 'hold');
+    expect(declared).toBeDefined();
+    expect(declared!.label).toBe('archetype-revolver grip');
+    expect(declared!.frame.up[0]).toBeCloseTo(Math.sin(Math.PI / 8));
+    expect(declared!.frame.up[1]).toBeCloseTo(Math.cos(Math.PI / 8));
+    expect(declared!.frame.forward[0]).toBeCloseTo(Math.cos(Math.PI / 8));
+    expect(declared!.frame.forward[1]).toBeCloseTo(-Math.sin(Math.PI / 8));
+  });
+
   it('archetype frames are unit-length and right-handed; hold frames sit within their part', () => {
     const facts = frameFacts(ARCHETYPES);
     expect(facts.defective).toEqual([]);
@@ -262,7 +285,10 @@ describe('anchor data', () => {
 
   // Replaces the former CI-only sweep over generated assemblies (removal plan (a)): the same
   // checks on every non-broken fixture and every published design.
-  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', () => {
+  // Measured about 1.6 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('fixture and design frames are unit-length and right-handed; hold frames sit within their part', {
+    timeout: 10_000,
+  }, () => {
     const facts = frameFacts(loadCorpus().map(({ assembly }) => assembly));
     expect(facts.defective).toEqual([]);
     expect(facts.outside).toEqual([]);

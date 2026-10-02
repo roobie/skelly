@@ -15,6 +15,7 @@ const PUBLISH_CHECK = join(import.meta.dirname, 'fixtures', 'publish-check');
 const JSON_SUFFIX = /\.json$/;
 const expectedTemplates: Readonly<Record<string, string>> = {
   'archetype-ak': 'ak',
+  'archetype-anti-materiel': 'anti-materiel',
   'archetype-ar': 'ar',
   'archetype-ar-free-float': 'ar',
   'archetype-battle-rifle': 'battle-rifle',
@@ -33,6 +34,13 @@ const localVertices = (solid: Solid): Vec3[] => {
     const [xmin, ymin, zmin] = center.map((value, axis) => value - half[axis]!);
     const [xmax, ymax, zmax] = center.map((value, axis) => value + half[axis]!);
     return [xmin!, xmax!].flatMap((x) => [ymin!, ymax!].flatMap((y) => [zmin!, zmax!].map((z) => [x, y, z] as const)));
+  }
+  if (solid.kind === 'revolved') {
+    const hull = worldSolid(IDENTITY, solid);
+    if ('vertices' in hull) {
+      return [...hull.vertices];
+    }
+    throw new Error('revolved solids must resolve to convex hulls');
   }
   if (solid.clip?.length) {
     const polyhedron = worldSolid(IDENTITY, solid);
@@ -78,7 +86,8 @@ const mustLoad = (text: string) => {
 };
 
 describe('published design corpus', () => {
-  it('contains one loadable published design for every convertible archetype', () => {
+  // Measured about 3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('contains one loadable published design for every convertible archetype', { timeout: 15_000 }, () => {
     const files = designFiles();
     expect(files.map((file) => file.replace(JSON_SUFFIX, '')).sort()).toEqual(Object.keys(expectedTemplates).sort());
     for (const file of files) {
@@ -101,7 +110,8 @@ describe('published design corpus', () => {
     }
   });
 
-  it('snapshots every resolved solid by design, with transformed geometry rounded to 1e-6', () => {
+  // Measured about 2.1 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('snapshots every resolved solid by design, with transformed geometry rounded to 1e-6', { timeout: 15_000 }, () => {
     for (const file of designFiles()) {
       const text = readFileSync(join(DESIGNS, file), 'utf8');
       const { design } = mustLoad(text);

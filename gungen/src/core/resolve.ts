@@ -8,6 +8,7 @@ import { validateExtrudedPolygon } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import {
   add,
+  applyDir,
   compose,
   cross,
   fromColumns,
@@ -22,7 +23,8 @@ import {
   sub,
   type Transform,
 } from './math.ts';
-import type { Assembly, Connection, Domain, PartDef, PortDef } from './schema.ts';
+import { revolvedProfileError } from './revolve.ts';
+import type { Assembly, Connection, Domain, KeepOut, PartDef, PortDef } from './schema.ts';
 
 /** A param's final value and where it came from. */
 export interface ResolvedParam {
@@ -78,14 +80,16 @@ export const portFrame = (port: PortDef, slot = 0): Transform => ({
   t: add(port.pos, scale(port.up, slot * (port.slots?.pitch ?? 0))),
 });
 
+type PortConnection = Pick<ResolvedConnection, 'conn' | 'from' | 'to'>;
+
 /** The `from` port's frame in the assembly, including slot and roll. */
-const fromSideFrame = (rc: ResolvedConnection, fromPart: Transform): Transform =>
+const fromSideFrame = (rc: PortConnection, fromPart: Transform): Transform =>
   compose(compose(fromPart, portFrame(rc.from.port, rc.conn.slot)), rotation(rotX(rc.conn.roll ?? 0)));
 
-const placeTo = (rc: ResolvedConnection, fromPart: Transform): Transform =>
+const placeTo = (rc: PortConnection, fromPart: Transform): Transform =>
   compose(compose(fromSideFrame(rc, fromPart), FLIP), invert(portFrame(rc.to.port)));
 
-const placeFrom = (rc: ResolvedConnection, toPart: Transform): Transform => {
+const placeFrom = (rc: PortConnection, toPart: Transform): Transform => {
   const fromSide = compose(compose(toPart, portFrame(rc.to.port)), FLIP);
   return compose(
     compose(fromSide, rotation(rotX(-(rc.conn.roll ?? 0)))),
@@ -115,10 +119,17 @@ const resolveMotionSources = (
       continue;
     }
     const { sourceKeepOut: _sourceKeepOut, ...motion } = def.motion!;
+    let axisInOwner = motion.axis;
+    if (connection) {
+      axisInOwner =
+        connection.from.part === owner
+          ? applyDir(placeTo(connection, IDENTITY), motion.axis)
+          : applyDir(placeFrom(connection, IDENTITY), motion.axis);
+    }
     const travel =
-      2 * motion.axis.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
-    const rearmost = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
-    defs.set(id, { ...def, motion: { ...motion, rearmost } });
+      2 * axisInOwner.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
+    const end = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
+    defs.set(id, { ...def, motion: { ...motion, end } });
   }
 };
 
@@ -154,6 +165,11 @@ const splitRef = (ref: string): [string, string] | undefined => {
  * needs the connection list, not placement, so it runs before parts are built.
  * Parts with an unknown family or a bad param are reported and left out.
  */
+const boxKeepOutFallback = (keepOut: KeepOut): KeepOut => {
+  const { profile: _profile, axis: _axis, z: _z, ...boxOnly } = keepOut;
+  return boxOnly;
+};
+
 type ParamTable = Map<string, Record<string, ResolvedParam>>;
 type ReportStructure = (message: string, parts?: string[]) => void;
 
@@ -274,17 +290,45 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
     const values = Object.fromEntries(Object.entries(resolved).map(([k, v]) => [k, v.value]));
     const def = family.build(values);
     const validSolids = def.solids.filter((solid) => {
-      if (solid.kind !== 'extruded-polygon') {
+      if (solid.kind === 'box') {
         return true;
       }
-      const error = validateExtrudedPolygon(solid.profile, solid.z, solid.axis, solid.clip);
+      const error =
+        solid.kind === 'revolved'
+          ? revolvedProfileError(solid.profile, solid.axis, solid.origin)
+          : validateExtrudedPolygon(solid.profile, solid.z, solid.axis, solid.clip);
       if (!error) {
         return true;
       }
       structure(`Part "${id}" solid "${solid.id}" is invalid: ${error}.`, [id]);
       return false;
     });
-    defs.set(id, validSolids.length === def.solids.length ? def : { ...def, solids: validSolids });
+    const validKeepOuts = def.keepOuts.map((keepOut) => {
+      const hasProfile = keepOut.profile !== undefined;
+      const hasZ = keepOut.z !== undefined;
+      if (hasProfile !== hasZ) {
+        structure(`Part "${id}" keep-out "${keepOut.id}" requires both profile and z; falling back to its box.`, [id]);
+        return boxKeepOutFallback(keepOut);
+      }
+      if (hasProfile && hasZ) {
+        const error = validateExtrudedPolygon(keepOut.profile!, keepOut.z!, keepOut.axis);
+        if (error) {
+          structure(
+            `Part "${id}" keep-out "${keepOut.id}" has an invalid profile: ${error}; falling back to its box.`,
+            [id],
+          );
+          return boxKeepOutFallback(keepOut);
+        }
+      }
+      return keepOut;
+    });
+    defs.set(
+      id,
+      validSolids.length === def.solids.length &&
+        validKeepOuts.every((keepOut, index) => keepOut === def.keepOuts[index])
+        ? def
+        : { ...def, solids: validSolids, keepOuts: validKeepOuts },
+    );
   }
 
   // Check each connection refers to real parts and ports.

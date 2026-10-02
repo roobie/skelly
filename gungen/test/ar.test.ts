@@ -3,6 +3,7 @@ import { validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import type { GunPortDef } from '../src/gun/portData.ts';
 import { loadFixture } from './helpers.ts';
 
 describe('AR-pattern parts', () => {
@@ -17,8 +18,8 @@ describe('AR-pattern parts', () => {
     const handle = receiver.keepOuts.find(({ id }) => id === 'charging-handle');
     const rail = receiver.ports.find(({ id }) => id === 'rail');
 
-    expect(handle?.box.center).toEqual([-17, 3.75, 0]);
-    expect(handle?.box.half).toEqual([1, 1.25, 1.5]);
+    expect(handle?.box.center).toEqual([-17, 2.25, 0]);
+    expect(handle?.box.half).toEqual([1, 0.5, 1.5]);
     expect(rail?.slots).toEqual({ count: 7, pitch: 2 });
   });
 
@@ -132,7 +133,7 @@ describe('AR-pattern parts', () => {
     expect(Math.abs(measurements.straight - 0.45)).toBeLessThanOrEqual(0.05);
     expect(Math.abs(measurements.lengthDepth - 2.87)).toBeLessThanOrEqual(0.1);
     expect(Math.abs(measurements.offsetDepth - 0.32)).toBeLessThanOrEqual(0.15);
-    expect(magazine.ports.find(({ id }) => id === 'top')?.seat).toBe('well');
+    expect((magazine.ports.find(({ id }) => id === 'top') as GunPortDef | undefined)?.seat).toBe('well');
     expect(validate(loadFixture('archetype-ar'), gunDomain).ok).toBe(true);
   });
 

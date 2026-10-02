@@ -1,17 +1,15 @@
-// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js, no gun data:
-// anchors and the palette come in as arguments, meshes come from `meshForSolid`.
+// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js or domain data:
+// the palette comes in as an argument, meshes come from `meshForSolid`.
 //
 // Layout of the file:
 //   scene -> root node (named by the asset id)
 //     -> one node per part, named `<part id>:<registry key>`, placed by its resolved transform, carrying one
 //        mesh with one primitive per drawn solid (the solids the viewer draws: `displaySolids ?? solids`)
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
-// Vertices are in the part's local frame times `METRES_PER_UNIT`; the node transform supplies the placement.
+// Vertices are in the part's local frame times the domain's `units.metresPerUnit`; the node transform supplies the placement.
 
 import { resolveAppearance } from './appearance.ts';
 import type {
-  DeadvoxModelEntry,
-  DeadvoxModelFile,
   ExportGlb,
   ExportPortMetadata,
   GlbExportError,
@@ -21,9 +19,10 @@ import type {
   SrgbColor,
 } from './design.ts';
 import { type DisplayItem, displayItems } from './display.ts';
-import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
-import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
-import { meshForSolid, meshForSolidGroup } from './mesh.ts';
+import { boundsOfPoints } from './geometry.ts';
+import { compose, type Mat3, type Transform, type Vec3 } from './math.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
+import { portFrame } from './resolve.ts';
 import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
@@ -78,16 +77,11 @@ const quaternion = (m: Mat3): [number, number, number, number] => {
   return q.map((x) => (x * sign) / l + 0) as [number, number, number, number];
 };
 
-const round6 = (x: number): number => {
-  const r = Math.round(x * 1e6) / 1e6;
-  return r === 0 ? 0 : r;
-};
-
-const toMetres = (v: Vec3): Vec3 => [v[0] * METRES_PER_UNIT, v[1] * METRES_PER_UNIT, v[2] * METRES_PER_UNIT];
-const modelPoint = (v: Vec3): Vec3 => {
-  const p = toMetres(toFileAxes(v));
-  return [round6(p[0]), round6(p[1]), round6(p[2])];
-};
+const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
+  v[0] * metresPerUnit,
+  v[1] * metresPerUnit,
+  v[2] * metresPerUnit,
+];
 
 const isIdentity = (m: Mat3): boolean => m.every((x, i) => Math.abs(x - (i % 4 === 0 ? 1 : 0)) < 1e-12);
 
@@ -129,18 +123,6 @@ class BinaryBuffer {
   }
 }
 
-const bounds = (positions: Float32Array): { min: number[]; max: number[] } => {
-  const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  for (let i = 0; i < positions.length; i += 3) {
-    for (let k = 0; k < 3; k++) {
-      min[k] = Math.min(min[k]!, positions[i + k]!);
-      max[k] = Math.max(max[k]!, positions[i + k]!);
-    }
-  }
-  return { min, max };
-};
-
 const pad4 = (bytes: Uint8Array, fill: number): Uint8Array => {
   const padded = new Uint8Array(Math.ceil(bytes.byteLength / 4) * 4).fill(fill);
   padded.set(bytes);
@@ -172,20 +154,21 @@ const glbFile = (json: unknown, bin: Uint8Array): Uint8Array => {
 
 const validId = (s: string): boolean => s.length > 0 && !s.includes('.');
 
-const portFrameMatrix = (port: PortDef): Mat3 => fromColumns(port.normal, port.up, cross(port.normal, port.up));
-
-const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportPortMetadata => ({
-  id: `${partId}.${port.id}` as PartPortId,
-  mount: port.mount,
-  gender: port.gender,
-  ...(port.size === undefined ? {} : { size: port.size }),
-  frame: {
-    position: applyPoint(placed, port.pos),
-    normal: applyDir(placed, port.normal),
-    up: applyDir(placed, port.up),
-  },
-  ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
-});
+const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportPortMetadata => {
+  const frame = compose(placed, portFrame(port));
+  return {
+    id: `${partId}.${port.id}` as PartPortId,
+    mount: port.mount,
+    gender: port.gender,
+    ...(port.size === undefined ? {} : { size: port.size }),
+    frame: {
+      position: frame.t,
+      normal: [frame.r[0], frame.r[3], frame.r[6]],
+      up: [frame.r[1], frame.r[4], frame.r[7]],
+    },
+    ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
+  };
+};
 
 type Json = Record<string, unknown>;
 
@@ -216,6 +199,17 @@ const splitMixedAppearance = (
   });
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 
+/** Keep the established GLB extras keys while the in-memory motion contract uses neutral endpoints. */
+const motionMetadata = (motion: NonNullable<PartDef['motion']>) => ({
+  kind: motion.kind,
+  axis: motion.axis,
+  // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
+  ['rest']: motion.start,
+  // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
+  ['rearmost']: motion.end,
+  ...(motion.sourceKeepOut === undefined ? {} : { sourceKeepOut: motion.sourceKeepOut }),
+});
+
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
 const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined => {
   const { resolved, palette, asset } = input;
@@ -245,16 +239,17 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
 };
 
 /**
- * Writes a resolved assembly as a `.glb` plus the matching deadvox model entry. Refuses (as an error value,
- * never an exception) an assembly with structure issues or unplaced parts, ids that can't form a stable
- * port id, a palette colour outside sRGB [0,1], and an asset file outside `assets/models/<name>.glb`.
+ * Writes a resolved assembly as a `.glb`. Refuses (as an error value, never an exception) an assembly with
+ * structure issues or unplaced parts, ids that can't form a stable port id, a palette colour outside sRGB [0,1],
+ * and an asset file outside `assets/models/<name>.glb`.
  */
 export const exportGlb: ExportGlb = (input) => {
   const error = refusal(input);
   if (error) {
     return fail(error);
   }
-  const { resolved, anchors, palette, asset } = input;
+  const { resolved, palette, asset } = input;
+  const { metresPerUnit } = resolved.domain.units;
 
   const parts: PartExport[] = Object.keys(resolved.assembly.parts)
     .sort()
@@ -302,12 +297,18 @@ export const exportGlb: ExportGlb = (input) => {
     });
   const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
     const solid = item.solids[0]!;
-    const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(solid);
+    const mesh = item.merged
+      ? meshForSolidGroup(item.solids)
+      : meshForSolid(solid, displayBevel(solid, resolved.domain.units), input.revolveFacets);
     if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
       return undefined;
     }
-    const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
-    const { min, max } = bounds(positions);
+    const positions = mesh.positions.map((x) => x * metresPerUnit);
+    const points = Array.from(
+      { length: positions.length / 3 },
+      (_, index) => [positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!] as Vec3,
+    );
+    const [min, max] = boundsOfPoints(points);
     const position = bin.add(
       positions,
       { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
@@ -352,7 +353,7 @@ export const exportGlb: ExportGlb = (input) => {
     if (!isIdentity(part.placed.r)) {
       node.rotation = rotation;
     }
-    node.translation = toMetres(part.placed.t);
+    node.translation = toMetres(part.placed.t, metresPerUnit);
     if (primitives.length > 0) {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
@@ -371,7 +372,7 @@ export const exportGlb: ExportGlb = (input) => {
       ...(appearance.material === undefined ? {} : { material: appearance.material }),
       ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
       solids: drawn.map((s) => s.id),
-      ...(part.def.motion ? { motion: part.def.motion } : {}),
+      ...(part.def.motion ? { motion: motionMetadata(part.def.motion) } : {}),
     };
 
     const children: number[] = [];
@@ -380,10 +381,10 @@ export const exportGlb: ExportGlb = (input) => {
     for (const port of part.def.ports) {
       const portNode: Json = {
         name: `${part.id}.${port.id}`,
-        translation: toMetres(port.pos),
+        translation: toMetres(port.pos, metresPerUnit),
         extras: { port: portMetadata(part.id, port, part.placed) },
       };
-      const frame = portFrameMatrix(port);
+      const frame = portFrame(port).r;
       if (!isIdentity(frame)) {
         portNode.rotation = quaternion(frame);
       }
@@ -403,7 +404,7 @@ export const exportGlb: ExportGlb = (input) => {
     gungen: {
       assembly: resolved.assembly.name,
       unit: 'u',
-      metresPerUnit: METRES_PER_UNIT,
+      metresPerUnit,
       portFrameUnit: 'u',
       materialCount: materials.length,
     },
@@ -424,15 +425,5 @@ export const exportGlb: ExportGlb = (input) => {
       : {}),
   };
 
-  const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
-    name,
-    modelPoint(frame.position),
-  ]);
-  const modelEntry: DeadvoxModelEntry = {
-    id: asset.id,
-    file: asset.file as DeadvoxModelFile,
-    grip: { at: modelPoint(anchors.hold.position), turn: gripTurn() },
-    ...(others.length > 0 ? { anchors: Object.fromEntries(others) } : {}),
-  };
-  return { ok: true, glb: glbFile(json, bin.bytes()), modelEntry };
+  return { ok: true, glb: glbFile(json, bin.bytes()) };
 };
