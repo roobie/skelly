@@ -7,7 +7,7 @@
     "root": "receiver",
     "parts": {
       "receiver": {
-        "family": "receiver",
+        "family": "bolt-receiver",
         "params": {
           "action": "bolt",
           "feed": "top",

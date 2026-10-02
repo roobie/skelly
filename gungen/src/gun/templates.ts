@@ -295,7 +295,7 @@ export const boltRifle: Template = {
   description: 'Bolt-action rifle loaded from the top: sporting or thumbhole stock, long handguard.',
   root: 'receiver',
   slots: [
-    { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
+    { id: 'receiver', family: 'bolt-receiver', params: { bore: ['M', 'L'] } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
     { id: 'bolt-handle-arm', family: 'bolt-handle-arm' },
     { id: 'bolt-handle-knob', family: 'bolt-handle-knob' },

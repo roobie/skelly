@@ -4,7 +4,7 @@
   "expect": [],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "top", "bore": "M" } },
+    "receiver": { "family": "bolt-receiver", "params": { "bore": "M" } },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "bolt" } },
     "bolt-handle-arm": { "family": "bolt-handle-arm" },
     "bolt-handle-knob": { "family": "bolt-handle-knob" },

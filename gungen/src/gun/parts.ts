@@ -23,9 +23,10 @@
 
 import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
-import type { Vec3 } from '../core/math.ts';
+import { mulMV, rotX, type Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
+import { BOLT_RECEIVER, makeBoltReceiver } from './boltReceiver.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
@@ -1428,10 +1429,10 @@ const BOLT_HANDLE_KNOB_MOTION_AXIS: Vec3 = [
   dot3(BOLT_HANDLE_KNOB_UP, BOLT_HANDLE_MOTION_AXIS),
   dot3(cross3(BOLT_HANDLE_KNOB_AXIS, BOLT_HANDLE_KNOB_UP), BOLT_HANDLE_MOTION_AXIS),
 ];
-const boltHandleRoot = (envelope: CarrierEnvelope): Vec3 => [
+const boltHandleRoot = (envelope: CarrierEnvelope, section?: string): Vec3 => [
   envelope.x[1],
   envelope.y[0],
-  -RECEIVER_FRONT_HALF_WIDTH - 0.5,
+  section === 'bolt-tube' ? -BOLT_RECEIVER.stemZ : -RECEIVER_FRONT_HALF_WIDTH - 0.5,
 ];
 const boltActionHandleBounds = (
   envelope: CarrierEnvelope,
@@ -1502,7 +1503,7 @@ const boltHandleParams = {
   bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
   feed: { ...choice('box', 'top', 'tube', 'cylinder'), from: [{ port: 'base', param: 'feed' }] },
   handleProfile: { ...choice('standard', 'awm'), from: [{ port: 'base', param: 'handleProfile' }] },
-  section: { ...choice('standard', 'ar', 'pump', 'ak'), from: [{ port: 'base', param: 'section' }] },
+  section: { ...choice('standard', 'ar', 'pump', 'ak', 'bolt-tube'), from: [{ port: 'base', param: 'section' }] },
 };
 
 const boltHandleArm: PartFamily = {
@@ -1529,7 +1530,8 @@ const boltHandleArm: PartFamily = {
           required: true,
         },
       ],
-      keepOuts: [boltHandleSweep(solids[0]!, BOLT_HANDLE_MOTION_AXIS, travel)],
+      // The tubular frame validates unlock-then-pull against actual solids, not a closed-pose bounding prism.
+      keepOuts: params.section === 'bolt-tube' ? [] : [boltHandleSweep(solids[0]!, BOLT_HANDLE_MOTION_AXIS, travel)],
       axes: [],
       motion: {
         kind: 'linear',
@@ -1565,7 +1567,8 @@ const boltHandleKnob: PartFamily = {
           required: true,
         },
       ],
-      keepOuts: [boltHandleSweep(solids[0]!, BOLT_HANDLE_KNOB_MOTION_AXIS, travel)],
+      keepOuts:
+        params.section === 'bolt-tube' ? [] : [boltHandleSweep(solids[0]!, BOLT_HANDLE_KNOB_MOTION_AXIS, travel)],
       axes: [],
       motion: {
         kind: 'linear',
@@ -1714,7 +1717,7 @@ export const boltCarrier: PartFamily = {
     pattern: choice('ar', 'ak', 'pump', 'smg', 'barrett', 'bolt'),
     handleStyle: choice('auto', ...Object.keys(CARRIER_HANDLE_STYLES)),
     handleProfile: choice('standard', 'awm'),
-    section: { ...choice('standard', 'ar', 'pump', 'ak'), from: [{ port: 'mount', param: 'section' }] },
+    section: { ...choice('standard', 'ar', 'pump', 'ak', 'bolt-tube'), from: [{ port: 'mount', param: 'section' }] },
     feed: { ...choice('box', 'top', 'tube', 'cylinder'), from: [{ port: 'mount', param: 'feed' }] },
   },
   build(params): PartDef {
@@ -1761,7 +1764,7 @@ export const boltCarrier: PartFamily = {
       boltStyle.owner === 'carrier' &&
       boltStyle.motion === 'linear' &&
       boltStyle.shape === 'down-back-ball';
-    const handleRoot = boltHandleRoot(envelope);
+    const handleRoot = boltHandleRoot(envelope, params.section);
     if (boltHandleEnabled) {
       solids.push(
         metalSolid(
@@ -1783,8 +1786,14 @@ export const boltCarrier: PartFamily = {
                 mount: 'bolt-handle',
                 gender: 'male' as const,
                 pos: handleRoot,
-                normal: BOLT_HANDLE_ARM_AXIS,
-                up: BOLT_HANDLE_ARM_UP,
+                normal:
+                  params.section === 'bolt-tube'
+                    ? mulMV(rotX(-BOLT_RECEIVER.handleRestRotation), BOLT_HANDLE_ARM_AXIS)
+                    : BOLT_HANDLE_ARM_AXIS,
+                up:
+                  params.section === 'bolt-tube'
+                    ? mulMV(rotX(-BOLT_RECEIVER.handleRestRotation), BOLT_HANDLE_ARM_UP)
+                    : BOLT_HANDLE_ARM_UP,
                 required: true,
               },
             ]
@@ -3560,7 +3569,7 @@ export const sight: PartFamily = {
   params: {
     type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' },
     mountSection: {
-      values: ['standard', 'ar', 'pump', 'ak'],
+      values: ['standard', 'ar', 'pump', 'ak', 'bolt-tube'],
       default: 'standard',
       from: [{ port: 'base', param: 'section' }],
     },
@@ -3608,6 +3617,7 @@ export const sight: PartFamily = {
 export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   receiver,
   'ak-receiver': akReceiver,
+  'bolt-receiver': makeBoltReceiver(receiver),
   'bolt-carrier': boltCarrier,
   'bolt-handle-arm': boltHandleArm,
   'bolt-handle-knob': boltHandleKnob,

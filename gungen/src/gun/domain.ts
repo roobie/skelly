@@ -1,5 +1,6 @@
 import type { Domain } from '../core/schema.ts';
 import { ANTI_MATERIEL_RULES } from './antiMateriel/index.ts';
+import { boltReceiverLoadingClearance, boltReceiverMotionClearance } from './boltReceiverRules.ts';
 import { FAMILIES } from './parts.ts';
 import { revolverRules } from './revolver.ts';
 import {
@@ -43,6 +44,8 @@ export const gunDomain: Domain = {
     opticMountFit,
     opticLoadingClearance,
     opticEyeRelief,
+    boltReceiverLoadingClearance,
+    boltReceiverMotionClearance,
     ...revolverRules,
     ...ANTI_MATERIEL_RULES,
   ],
