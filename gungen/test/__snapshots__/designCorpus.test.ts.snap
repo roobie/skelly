@@ -23528,62 +23528,62 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -4.5,
-        -5.25,
+        -4.925,
         -0.35,
       ],
       [
         -4.5,
-        -5.25,
+        -4.925,
         0.35,
       ],
       [
         -4.45,
-        -5.6,
+        -5.275,
         -0.35,
       ],
       [
         -4.45,
-        -5.6,
+        -5.275,
         0.35,
       ],
       [
         -4.3,
-        -5.25,
+        -4.925,
         -0.35,
       ],
       [
         -4.3,
-        -5.25,
+        -4.925,
         0.35,
       ],
       [
         -4.25,
-        -5.9,
+        -5.575,
         -0.35,
       ],
       [
         -4.25,
-        -5.9,
+        -5.575,
         0.35,
       ],
       [
         -4.1,
-        -5.3,
+        -4.975,
         -0.35,
       ],
       [
         -4.1,
-        -5.3,
+        -4.975,
         0.35,
       ],
       [
         -4.05,
-        -5.55,
+        -5.225,
         -0.35,
       ],
       [
         -4.05,
-        -5.55,
+        -5.225,
         0.35,
       ],
     ],
@@ -23746,12 +23746,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
@@ -23766,12 +23766,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         0.5,
       ],
     ],
@@ -23798,12 +23798,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         -1.75,
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
@@ -23823,12 +23823,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         -1.75,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         -0.5,
       ],
     ],
@@ -23855,12 +23855,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         -1.75,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
@@ -23880,12 +23880,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -3.75,
+        -3.5,
         -1.75,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         -0.5,
       ],
     ],
@@ -23912,12 +23912,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         1.75,
       ],
       [
@@ -23937,12 +23937,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         1.75,
       ],
     ],
@@ -23969,12 +23969,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         1.75,
       ],
       [
@@ -23994,12 +23994,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         1.75,
       ],
     ],
@@ -24021,12 +24021,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
@@ -24041,12 +24041,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         0.5,
       ],
     ],
@@ -24057,83 +24057,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5.25,
-        -3.75,
-        -1.75,
-      ],
-      [
-        -5.25,
-        -3.75,
-        -0.5,
-      ],
-      [
-        -5.25,
-        -3.5,
-        -1.75,
-      ],
-      [
-        -5.25,
-        -3.5,
-        -0.5,
-      ],
-      [
-        -0.5,
-        -3.75,
-        -1.75,
-      ],
-      [
-        -0.5,
-        -3.75,
-        -0.5,
-      ],
-      [
-        -0.5,
-        -3.5,
-        -1.75,
-      ],
-      [
-        -0.5,
-        -3.5,
-        -0.5,
-      ],
-    ],
-    "id": "revolver-frame-far-side-span-0-region-0",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -3.75,
-        -1.75,
-      ],
-      [
-        -0.5,
-        -3.75,
-        -0.5,
-      ],
-      [
-        -0.5,
-        -3.5,
-        -1.75,
-      ],
-      [
-        -0.5,
-        -3.5,
-        -0.5,
-      ],
-      [
-        -0.25,
-        -3.75,
-        -1.75,
-      ],
-      [
-        -0.25,
-        -3.75,
-        -0.5,
-      ],
-      [
         -0.25,
         -3.5,
         -1.75,
@@ -24141,80 +24064,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.25,
         -3.5,
-        -0.5,
-      ],
-    ],
-    "id": "revolver-frame-far-side-span-0-region-0-span-1",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -5.25,
-        1,
-        -1.75,
-      ],
-      [
-        -5.25,
-        1,
-        -0.5,
-      ],
-      [
-        -5.25,
-        1.25,
-        -1.75,
-      ],
-      [
-        -5.25,
-        1.25,
-        -0.5,
-      ],
-      [
-        -0.5,
-        1,
-        -1.75,
-      ],
-      [
-        -0.5,
-        1,
-        -0.5,
-      ],
-      [
-        -0.5,
-        1.25,
-        -1.75,
-      ],
-      [
-        -0.5,
-        1.25,
-        -0.5,
-      ],
-    ],
-    "id": "revolver-frame-far-side-span-0-region-1",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        1,
-        -1.75,
-      ],
-      [
-        -0.5,
-        1,
-        -0.5,
-      ],
-      [
-        -0.5,
-        1.25,
-        -1.75,
-      ],
-      [
-        -0.5,
-        1.25,
         -0.5,
       ],
       [
@@ -24225,63 +24074,26 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.25,
         1,
-        -0.5,
-      ],
-      [
-        -0.25,
-        1.25,
-        -1.75,
-      ],
-      [
-        -0.25,
-        1.25,
-        -0.5,
-      ],
-    ],
-    "id": "revolver-frame-far-side-span-0-region-1-span-1",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -0.25,
-        -3.75,
-        -1.75,
-      ],
-      [
-        -0.25,
-        -3.75,
-        -0.5,
-      ],
-      [
-        -0.25,
-        1.25,
-        -1.75,
-      ],
-      [
-        -0.25,
-        1.25,
         -0.5,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         -1.75,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         0,
-        1.25,
+        1,
         -1.75,
       ],
       [
         0,
-        1.25,
+        1,
         -0.5,
       ],
     ],
@@ -24293,42 +24105,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         -0.5,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         -0.5,
-        1.25,
+        1,
         -0.5,
       ],
       [
         -0.5,
-        1.25,
+        1,
         0.5,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         0,
-        1.25,
+        1,
         -0.5,
       ],
       [
         0,
-        1.25,
+        1,
         0.5,
       ],
     ],
@@ -24339,83 +24151,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -5.25,
-        -3.75,
-        0.5,
-      ],
-      [
-        -5.25,
-        -3.75,
-        1.75,
-      ],
-      [
-        -5.25,
-        -3.5,
-        0.5,
-      ],
-      [
-        -5.25,
-        -3.5,
-        1.75,
-      ],
-      [
-        -0.5,
-        -3.75,
-        0.5,
-      ],
-      [
-        -0.5,
-        -3.75,
-        1.75,
-      ],
-      [
-        -0.5,
-        -3.5,
-        0.5,
-      ],
-      [
-        -0.5,
-        -3.5,
-        1.75,
-      ],
-    ],
-    "id": "revolver-frame-near-side-span-0-region-0",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        -3.75,
-        0.5,
-      ],
-      [
-        -0.5,
-        -3.75,
-        1.75,
-      ],
-      [
-        -0.5,
-        -3.5,
-        0.5,
-      ],
-      [
-        -0.5,
-        -3.5,
-        1.75,
-      ],
-      [
-        -0.25,
-        -3.75,
-        0.5,
-      ],
-      [
-        -0.25,
-        -3.75,
-        1.75,
-      ],
-      [
         -0.25,
         -3.5,
         0.5,
@@ -24423,80 +24158,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.25,
         -3.5,
-        1.75,
-      ],
-    ],
-    "id": "revolver-frame-near-side-span-0-region-0-span-1",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -5.25,
-        1,
-        0.5,
-      ],
-      [
-        -5.25,
-        1,
-        1.75,
-      ],
-      [
-        -5.25,
-        1.25,
-        0.5,
-      ],
-      [
-        -5.25,
-        1.25,
-        1.75,
-      ],
-      [
-        -0.5,
-        1,
-        0.5,
-      ],
-      [
-        -0.5,
-        1,
-        1.75,
-      ],
-      [
-        -0.5,
-        1.25,
-        0.5,
-      ],
-      [
-        -0.5,
-        1.25,
-        1.75,
-      ],
-    ],
-    "id": "revolver-frame-near-side-span-0-region-1",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -0.5,
-        1,
-        0.5,
-      ],
-      [
-        -0.5,
-        1,
-        1.75,
-      ],
-      [
-        -0.5,
-        1.25,
-        0.5,
-      ],
-      [
-        -0.5,
-        1.25,
         1.75,
       ],
       [
@@ -24507,63 +24168,26 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -0.25,
         1,
-        1.75,
-      ],
-      [
-        -0.25,
-        1.25,
-        0.5,
-      ],
-      [
-        -0.25,
-        1.25,
-        1.75,
-      ],
-    ],
-    "id": "revolver-frame-near-side-span-0-region-1-span-1",
-    "kind": "extruded-polygon",
-    "partId": "frame",
-  },
-  {
-    "geometry": [
-      [
-        -0.25,
-        -3.75,
-        0.5,
-      ],
-      [
-        -0.25,
-        -3.75,
-        1.75,
-      ],
-      [
-        -0.25,
-        1.25,
-        0.5,
-      ],
-      [
-        -0.25,
-        1.25,
         1.75,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         0,
-        -3.75,
+        -3.5,
         1.75,
       ],
       [
         0,
-        1.25,
+        1,
         0.5,
       ],
       [
         0,
-        1.25,
+        1,
         1.75,
       ],
     ],
@@ -24575,42 +24199,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5.25,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         -5.25,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         -5.25,
-        1.25,
+        1,
         -0.5,
       ],
       [
         -5.25,
-        1.25,
+        1,
         0.5,
       ],
       [
         -4.75,
-        -3.75,
+        -3.5,
         -0.5,
       ],
       [
         -4.75,
-        -3.75,
+        -3.5,
         0.5,
       ],
       [
         -4.75,
-        1.25,
+        1,
         -0.5,
       ],
       [
         -4.75,
-        1.25,
+        1,
         0.5,
       ],
     ],
@@ -24622,12 +24246,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5.25,
-        1.25,
+        1,
         -0.5,
       ],
       [
         -5.25,
-        1.25,
+        1,
         0.5,
       ],
       [
@@ -24642,12 +24266,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1,
         -0.5,
       ],
       [
         -0.5,
-        1.25,
+        1,
         0.5,
       ],
       [
@@ -24669,12 +24293,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5.25,
-        1.25,
+        1,
         -1.75,
       ],
       [
         -5.25,
-        1.25,
+        1,
         -0.5,
       ],
       [
@@ -24694,12 +24318,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1,
         -1.75,
       ],
       [
         -0.5,
-        1.25,
+        1,
         -0.5,
       ],
       [
@@ -24726,12 +24350,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
+        1,
         -1.75,
       ],
       [
         -0.5,
-        1.25,
+        1,
         -0.5,
       ],
       [
@@ -24751,12 +24375,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
+        1,
         -1.75,
       ],
       [
         0,
-        1.25,
+        1,
         -0.5,
       ],
       [
@@ -24783,12 +24407,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -5.25,
-        1.25,
+        1,
         0.5,
       ],
       [
         -5.25,
-        1.25,
+        1,
         1.75,
       ],
       [
@@ -24808,12 +24432,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -0.5,
-        1.25,
+        1,
         0.5,
       ],
       [
         -0.5,
-        1.25,
+        1,
         1.75,
       ],
       [
@@ -24840,12 +24464,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
+        1,
         0.5,
       ],
       [
         -0.5,
-        1.25,
+        1,
         1.75,
       ],
       [
@@ -24865,12 +24489,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
+        1,
         0.5,
       ],
       [
         0,
-        1.25,
+        1,
         1.75,
       ],
       [
@@ -24897,12 +24521,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -0.5,
-        1.25,
+        1,
         -0.5,
       ],
       [
         -0.5,
-        1.25,
+        1,
         0.5,
       ],
       [
@@ -24917,12 +24541,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         0,
-        1.25,
+        1,
         -0.5,
       ],
       [
         0,
-        1.25,
+        1,
         0.5,
       ],
       [
@@ -24991,42 +24615,42 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -6.25,
-        -6.75,
+        -6,
         -0.5,
       ],
       [
         -6.25,
-        -6.75,
+        -6,
         0.5,
       ],
       [
         -6.25,
-        -6.5,
+        -5.75,
         -0.5,
       ],
       [
         -6.25,
-        -6.5,
+        -5.75,
         0.5,
       ],
       [
         -2.75,
-        -6.75,
+        -6,
         -0.5,
       ],
       [
         -2.75,
-        -6.75,
+        -6,
         0.5,
       ],
       [
         -2.75,
-        -6.5,
+        -5.75,
         -0.5,
       ],
       [
         -2.75,
-        -6.5,
+        -5.75,
         0.5,
       ],
     ],
@@ -25038,12 +24662,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -3,
-        -6.75,
+        -6,
         -0.5,
       ],
       [
         -3,
-        -6.75,
+        -6,
         0.5,
       ],
       [
@@ -25058,12 +24682,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -2.75,
-        -6.75,
+        -6,
         -0.5,
       ],
       [
         -2.75,
-        -6.75,
+        -6,
         0.5,
       ],
       [
@@ -25085,12 +24709,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -6.25,
-        -6.75,
+        -6,
         -0.5,
       ],
       [
         -6.25,
-        -6.75,
+        -6,
         0.5,
       ],
       [
@@ -25105,12 +24729,12 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       ],
       [
         -6,
-        -6.75,
+        -6,
         -0.5,
       ],
       [
         -6,
-        -6.75,
+        -6,
         0.5,
       ],
       [

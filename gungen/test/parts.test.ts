@@ -6,6 +6,7 @@ import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
+import { REVOLVER_PROPORTIONS } from '../src/gun/revolver.ts';
 import { fullProduct, tWiseCases } from './coveringArray.ts';
 import { variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';
@@ -284,6 +285,19 @@ describe('part library', () => {
     expect(lower.clip).toHaveLength(2);
     expect(squareLower.clip).toBeUndefined();
     expect(round.solids.filter((solid) => solid.id.startsWith('grip-panel-'))).toHaveLength(4);
+  });
+
+  it('builds named frame height and grip depth into their physical geometry', () => {
+    const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
+    const strap = frame.solids.find((solid) => solid.id === 'topstrap')!;
+    const guardBottom = frame.solids.find((solid) => solid.id === 'trigger-guard-bottom')!;
+    const frameHeight = localSolidBounds(strap)[1][1] - localSolidBounds(guardBottom)[0][1];
+    expect(frameHeight).toBe(REVOLVER_PROPORTIONS.frameHeight.pickedU);
+
+    const grip = FAMILIES['revolver-grip']!.build({ length: 'M', butt: 'round' });
+    const gripBounds = grip.solids.map(localSolidBounds);
+    const gripDepth = Math.max(...gripBounds.map((bounds) => bounds[1][2])) - Math.min(...gripBounds.map((bounds) => bounds[0][2]));
+    expect(gripDepth).toBe(REVOLVER_PROPORTIONS.gripDepth.pickedU);
   });
 
   it('builds a revolver octagonal barrel with its forcing cone, rib, shroud, sight and loop port', () => {

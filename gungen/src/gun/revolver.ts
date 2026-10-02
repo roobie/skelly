@@ -1,11 +1,13 @@
-import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
-import { applyDir, applyPoint, cross, dot, length, sub, type Vec3 } from '../core/math.ts';
+import { boxFromMinMax, localSolidBounds, worldSolid } from '../core/geometry.ts';
+import { applyDir, applyPoint, cross, dot, invert, length, sub, type Vec3 } from '../core/math.ts';
 import type { ClipPlane, KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Rule, Solid } from '../core/schema.ts';
 import { buildReceiverSection, type ReceiverSectionSpec } from './receiverSection.ts';
 
 const SCALE = 1.15;
 const MILLIMETRES_PER_U = 11.5;
 const GRID_U = 0.25;
+
+const designPick = (sourceRow: string, pickedU: number) => ({ sourceRow, gridU: GRID_U, pickedU });
 
 const dimension = (sourceRow: string, referenceMm: number, pickedU?: number) => {
   const scaledMm = referenceMm * SCALE;
@@ -40,17 +42,33 @@ export const REVOLVER_PROPORTIONS = {
   gripLength: dimension('686-class side photo estimate: 105 mm', 105, 10.5),
   gripDepth: dimension('686-class top photo estimate: 38 mm', 38, 3.75),
   cylinderGap: dimension('modeling allowance; nominal 686 gap estimate 0.15 mm', 0.15, 0.25),
+  frameTopHeight: designPick('BR geometry datum: bore centre to topstrap top', 2),
+  rearBlockLength: designPick('BR 2026-10-02 revised side profile: rear-block lower run', 2.25),
+  rearBlockTopSetback: designPick('BR 2026-10-02 revised side profile: upper backstrap setback', 0.75),
+  gripTopWidth: designPick('BR 2026-10-02 revised grip profile: narrow upper face', 1),
+  gripWaistWidth: designPick('BR 2026-10-02 revised grip profile: shared trapezoid transition', 1.4),
+  gripButtWidth: designPick('BR 2026-10-02 revised grip profile: flared butt width', 3),
+  gripFingerSwell: designPick('BR 2026-10-02 revised grip profile: front finger swell', 0.15),
+  gripButtChamfer: designPick('BR 2026-10-02 grip finish: rounded-butt clip', 0.375),
+  gripPortInset: designPick('BR 2026-10-02 rear-block grip interface placement', 1),
+  triggerGuardBackOffset: designPick('BR 2026-10-02 rear-block trigger-guard placement', 0.75),
+  triggerGuardForwardOffset: designPick('BR 2026-10-02 rear-block trigger-guard reach', 2.5),
+  triggerCenterOffset: designPick('BR 2026-10-02 trigger position within guard', 0.25),
+  triggerFingerBackInset: designPick('BR 2026-10-02 finger keep-out position in trigger guard', 2.25),
+  triggerFingerFrontInset: designPick('BR 2026-10-02 finger keep-out position in trigger guard', 1.25),
+  triggerFingerWidth: designPick('BR 2026-10-02 finger keep-out width', 1),
 } as const;
 
 const C = REVOLVER_PROPORTIONS;
 const CYLINDER_RADIUS = C.cylinderDiameter.pickedU / 2;
 const CYLINDER_LENGTH = C.cylinderLength.pickedU;
 const CHAMBER_ORBIT = C.chamberCircleRadius.pickedU;
+const FRAME_TOP_Y = C.frameTopHeight.pickedU;
 const FRAME_FRONT_X = 0;
 const FRAME_REAR_X = FRAME_FRONT_X - C.cylinderGap.pickedU - CYLINDER_LENGTH;
-const REAR_BLOCK_FRONT_X = FRAME_REAR_X - 0.25;
-const REAR_BLOCK_TOP_REAR_X = REAR_BLOCK_FRONT_X - 0.75;
-const REAR_BLOCK_BOTTOM_REAR_X = REAR_BLOCK_FRONT_X - 2.25;
+const REAR_BLOCK_FRONT_X = FRAME_REAR_X - C.cylinderGap.pickedU;
+const REAR_BLOCK_TOP_REAR_X = REAR_BLOCK_FRONT_X - C.rearBlockTopSetback.pickedU;
+const REAR_BLOCK_BOTTOM_REAR_X = REAR_BLOCK_FRONT_X - C.rearBlockLength.pickedU;
 const CYLINDER_REAR_X = FRAME_REAR_X;
 const CYLINDER_FRONT_X = CYLINDER_REAR_X + CYLINDER_LENGTH;
 const CYLINDER_CENTER_X = (CYLINDER_REAR_X + CYLINDER_FRONT_X) / 2;
@@ -66,9 +84,12 @@ const FRAME_SIZE: Readonly<Record<string, { width: number; height: number; bodyB
   L: { width: 4, height: 8.5, bodyBottom: -5 },
 };
 const GRIP_LENGTH = C.gripLength.pickedU;
+const GRIP_DEPTH = C.gripDepth.pickedU;
+const GRIP_CORE_DEPTH = (GRIP_DEPTH * 2) / 3;
+const GRIP_HALF_DEPTH = GRIP_DEPTH / 2;
 const GRIP_RAKE_DEGREES = 22.5;
 export const REVOLVER_GRIP_RAKE_DEGREES = GRIP_RAKE_DEGREES;
-const GRIP_BUTT_CHAMFER = 0.375;
+const GRIP_BUTT_CHAMFER = C.gripButtChamfer.pickedU;
 const CHAMBER_COUNT = 6;
 const TOLERANCE = 1e-6;
 
@@ -118,40 +139,45 @@ const sectionSpec = (frameSize: string): ReceiverSectionSpec => {
   const { width, bodyBottom } = frame;
   const halfWidth = width / 2;
   const halfTopStrap = C.topstrapThickness.pickedU;
+  const windowHalfHeight = CYLINDER_RADIUS + C.cylinderGap.pickedU;
   return {
     id: 'revolver-frame',
     outline: [
-      [bodyBottom + 0.5, -halfWidth],
-      [2 - halfTopStrap, -halfWidth],
-      [2, -halfWidth + 0.5],
-      [2, halfWidth - 0.25],
-      [2 - halfTopStrap, halfWidth],
+      [bodyBottom + halfTopStrap, -halfWidth],
+      [FRAME_TOP_Y - halfTopStrap, -halfWidth],
+      [FRAME_TOP_Y, -halfWidth + halfTopStrap],
+      [FRAME_TOP_Y, halfWidth - C.cylinderGap.pickedU],
+      [FRAME_TOP_Y - halfTopStrap, halfWidth],
       [bodyBottom + 0.5, halfWidth],
-      [bodyBottom, halfWidth - 0.75],
-      [bodyBottom, -halfWidth + 0.75],
+      [bodyBottom, halfWidth - C.rearBlockTopSetback.pickedU],
+      [bodyBottom, -halfWidth + C.rearBlockTopSetback.pickedU],
     ],
     x: [FRAME_REAR_X, FRAME_FRONT_X],
-    wall: 0.5,
-    cavity: { y: [-3.75, 1.25], z: [-0.5, 0.5] },
+    wall: halfTopStrap,
+    cavity: {
+      y: [CYLINDER_CENTER_Y - windowHalfHeight, CYLINDER_CENTER_Y + windowHalfHeight],
+      z: [-halfTopStrap, halfTopStrap],
+    },
     port: {
       x: [CYLINDER_REAR_X, CYLINDER_FRONT_X],
       sectionAxis: 0,
-      section: [-3.5, 1],
+      section: [CYLINDER_CENTER_Y - windowHalfHeight, CYLINDER_CENTER_Y + windowHalfHeight],
     },
     farPort: {
       x: [CYLINDER_REAR_X, CYLINDER_FRONT_X],
       sectionAxis: 0,
-      section: [-3.5, 1],
+      section: [CYLINDER_CENTER_Y - windowHalfHeight, CYLINDER_CENTER_Y + windowHalfHeight],
     },
   };
 };
 
-const triggerGuardSolids = (guardBottom: number, left: number, right: number): Solid[] => {
-  const top = guardBottom + 2.25;
+const triggerGuardSolids = (guardBottom: number, top: number, left: number, right: number): Solid[] => {
   const bottom = guardBottom;
-  const thickness = 0.25;
-  const depth = 0.5;
-  const triggerCenter = right - 1.5;
+  const thickness = C.cylinderGap.pickedU;
+  const depth = C.topstrapThickness.pickedU;
+  const triggerCenter = (left + right) / 2 + C.triggerCenterOffset.pickedU;
+  const triggerHalfHeight = Math.min(0.325, (top - bottom - 2 * thickness) / 2);
+  const triggerCenterY = (top + bottom) / 2;
   const rectangle = (id: string, x: readonly [number, number], y: readonly [number, number]): Solid =>
     boxSolid(id, [x[0], y[0], -depth], [x[1], y[1], depth]);
   return [
@@ -162,12 +188,12 @@ const triggerGuardSolids = (guardBottom: number, left: number, right: number): S
     polySolid(
       'curved-trigger',
       [
-        [triggerCenter - 0.25, guardBottom + 1.5],
-        [triggerCenter - 0.2, guardBottom + 1.15],
-        [triggerCenter, guardBottom + 0.85],
-        [triggerCenter + 0.2, guardBottom + 1.2],
-        [triggerCenter + 0.15, guardBottom + 1.45],
-        [triggerCenter - 0.05, guardBottom + 1.5],
+        [triggerCenter - 0.25, triggerCenterY + triggerHalfHeight],
+        [triggerCenter - 0.2, triggerCenterY + triggerHalfHeight - 0.35],
+        [triggerCenter, triggerCenterY - triggerHalfHeight],
+        [triggerCenter + 0.2, triggerCenterY - triggerHalfHeight + 0.35],
+        [triggerCenter + 0.15, triggerCenterY + triggerHalfHeight - 0.05],
+        [triggerCenter - 0.05, triggerCenterY + triggerHalfHeight],
       ],
       [-0.35, 0.35],
       'z',
@@ -189,8 +215,8 @@ export const revolverFrame: PartFamily = {
     const topstrapThickness = C.topstrapThickness.pickedU;
     const topstrap: Solid = boxSolid(
       'topstrap',
-      [CYLINDER_REAR_X, 2 - topstrapThickness, -strapHalfWidth],
-      [FRAME_FRONT_X, 2, strapHalfWidth],
+      [CYLINDER_REAR_X, FRAME_TOP_Y - topstrapThickness, -strapHalfWidth],
+      [FRAME_FRONT_X, FRAME_TOP_Y, strapHalfWidth],
     );
     const recoilShield = boxSolid('recoil-shield', [FRAME_REAR_X - 0.25, -3.5, -1.25], [FRAME_REAR_X, 1.25, 1.25]);
     const rearBlock: Solid = polySolid(
@@ -198,20 +224,25 @@ export const revolverFrame: PartFamily = {
       [
         [REAR_BLOCK_BOTTOM_REAR_X, frame.bodyBottom],
         [REAR_BLOCK_FRONT_X, frame.bodyBottom],
-        [REAR_BLOCK_FRONT_X, 2],
-        [REAR_BLOCK_TOP_REAR_X, 2],
+        [REAR_BLOCK_FRONT_X, FRAME_TOP_Y],
+        [REAR_BLOCK_TOP_REAR_X, FRAME_TOP_Y],
       ],
       [-strapHalfWidth, strapHalfWidth],
       'z',
       'revolver-frame',
     );
     const barrelBoss = polySolid('barrel-thread-boss', octagon(1.05), [-0.5, FRAME_FRONT_X], 'x', 'revolver-frame');
-    const hammerX = REAR_BLOCK_TOP_REAR_X + 0.25;
-    const hammer = boxSolid('exposed-hammer-spur', [hammerX - 0.25, 2, -0.5], [hammerX + 0.25, 2.75, 0.5]);
-    const triggerBottom = frame.bodyBottom - 2.25;
-    const triggerGuardLeft = REAR_BLOCK_FRONT_X - 0.75;
-    const triggerGuardRight = FRAME_REAR_X + 2.5;
-    const gripX = REAR_BLOCK_FRONT_X - 1;
+    const hammerX = REAR_BLOCK_TOP_REAR_X + C.cylinderGap.pickedU;
+    const hammer = boxSolid(
+      'exposed-hammer-spur',
+      [hammerX - C.cylinderGap.pickedU, FRAME_TOP_Y, -topstrapThickness],
+      [hammerX + C.cylinderGap.pickedU, FRAME_TOP_Y + topstrapThickness * 1.5, topstrapThickness],
+    );
+    const triggerBottom = FRAME_TOP_Y - frame.height;
+    const triggerGuardTop = frame.bodyBottom;
+    const triggerGuardLeft = REAR_BLOCK_FRONT_X - C.triggerGuardBackOffset.pickedU;
+    const triggerGuardRight = FRAME_REAR_X + C.triggerGuardForwardOffset.pickedU;
+    const gripX = REAR_BLOCK_FRONT_X - C.gripPortInset.pickedU;
     const gripY = frame.bodyBottom;
     const ports: PortDef[] = [
       {
@@ -246,7 +277,7 @@ export const revolverFrame: PartFamily = {
         id: 'hammer',
         mount: 'revolver-hammer',
         gender: 'female',
-        pos: [hammerX, 2, 0],
+        pos: [hammerX, FRAME_TOP_Y, 0],
         normal: [0, 1, 0],
         up: [1, 0, 0],
       },
@@ -261,12 +292,28 @@ export const revolverFrame: PartFamily = {
     ];
     return {
       family: 'revolver-frame',
-      solids: [...section, topstrap, recoilShield, rearBlock, barrelBoss, hammer, ...triggerGuardSolids(triggerBottom, triggerGuardLeft, triggerGuardRight)],
+      solids: [...section, topstrap, recoilShield, rearBlock, barrelBoss, hammer, ...triggerGuardSolids(triggerBottom, triggerGuardTop, triggerGuardLeft, triggerGuardRight)],
       ports,
       keepOuts: [
-        keepOut('trigger-finger', [triggerGuardRight - 2.25, triggerBottom + 0.25, -0.5], [triggerGuardRight - 1.25, triggerBottom + 2, 0.5]),
+        keepOut(
+          'trigger-finger',
+          [
+            triggerGuardRight - C.triggerFingerBackInset.pickedU,
+            triggerBottom + C.cylinderGap.pickedU,
+            -C.triggerFingerWidth.pickedU / 2,
+          ],
+          [
+            triggerGuardRight - C.triggerFingerFrontInset.pickedU,
+            triggerGuardTop - C.cylinderGap.pickedU,
+            C.triggerFingerWidth.pickedU / 2,
+          ],
+        ),
         keepOut('cylinder-swing', [CYLINDER_REAR_X, -3.5, -4], [CYLINDER_FRONT_X, 1, -1.5], 'cylinder'),
-        keepOut('hammer-travel', [REAR_BLOCK_TOP_REAR_X - 0.25, 2.25, -0.75], [REAR_BLOCK_FRONT_X, 3.5, 0.75]),
+        keepOut(
+          'hammer-travel',
+          [REAR_BLOCK_TOP_REAR_X - C.cylinderGap.pickedU, FRAME_TOP_Y + C.cylinderGap.pickedU, -1.5 * topstrapThickness],
+          [REAR_BLOCK_FRONT_X, FRAME_TOP_Y + 3 * topstrapThickness, 1.5 * topstrapThickness],
+        ),
         keepOut('cylinder-gap', [CYLINDER_FRONT_X, -0.25, -1], [FRAME_FRONT_X, 0.25, 1]),
       ],
       axes: [],
@@ -491,13 +538,14 @@ const gripProfiles = (lengthU: number) => {
   const rearwardOffset = lengthU * Math.sin(rake);
   const halfReach = verticalReach / 2;
   const middleCenterX = -rearwardOffset / 2;
-  const middleHalfWidth = 0.7;
-  const buttHalfWidth = 1.5;
+  const topHalfWidth = C.gripTopWidth.pickedU / 2;
+  const middleHalfWidth = C.gripWaistWidth.pickedU / 2;
+  const buttHalfWidth = C.gripButtWidth.pickedU / 2;
   const upper = [
-    [-0.5, 0],
+    [-topHalfWidth, 0],
     [middleCenterX - middleHalfWidth, -halfReach],
     [middleCenterX + middleHalfWidth, -halfReach],
-    [0.5, 0],
+    [topHalfWidth, 0],
   ] as const;
   const bottomLeft = -rearwardOffset - buttHalfWidth;
   const bottomRight = -rearwardOffset + buttHalfWidth;
@@ -505,7 +553,10 @@ const gripProfiles = (lengthU: number) => {
     [middleCenterX - middleHalfWidth, -halfReach],
     [bottomLeft, -verticalReach],
     [bottomRight, -verticalReach],
-    [(middleCenterX + middleHalfWidth + bottomRight) / 2 + 0.15, -(halfReach + verticalReach) / 2],
+    [
+      (middleCenterX + middleHalfWidth + bottomRight) / 2 + C.gripFingerSwell.pickedU,
+      -(halfReach + verticalReach) / 2,
+    ],
     [middleCenterX + middleHalfWidth, -halfReach],
   ] as const;
   const roundButtClip: readonly ClipPlane[] = [
@@ -531,14 +582,14 @@ export const revolverGrip: PartFamily = {
     const profiles = gripProfiles(GRIP_LENGTH);
     const buttClip = params.butt === 'square' ? undefined : profiles.roundButtClip;
     const core = [
-      polySolid('grip-core-upper', profiles.upper, [-1.25, 1.25], 'z', 'revolver-grip'),
-      polySolid('grip-core', profiles.lower, [-1.25, 1.25], 'z', 'revolver-grip', buttClip),
+      polySolid('grip-core-upper', profiles.upper, [-GRIP_CORE_DEPTH / 2, GRIP_CORE_DEPTH / 2], 'z', 'revolver-grip'),
+      polySolid('grip-core', profiles.lower, [-GRIP_CORE_DEPTH / 2, GRIP_CORE_DEPTH / 2], 'z', 'revolver-grip', buttClip),
     ];
     const panels = [
-      polySolid('grip-panel-upper-near', profiles.upper, [1.25, 1.875], 'z'),
-      polySolid('grip-panel-lower-near', profiles.lower, [1.25, 1.875], 'z', undefined, buttClip),
-      polySolid('grip-panel-upper-far', profiles.upper, [-1.875, -1.25], 'z'),
-      polySolid('grip-panel-lower-far', profiles.lower, [-1.875, -1.25], 'z', undefined, buttClip),
+      polySolid('grip-panel-upper-near', profiles.upper, [GRIP_CORE_DEPTH / 2, GRIP_HALF_DEPTH], 'z'),
+      polySolid('grip-panel-lower-near', profiles.lower, [GRIP_CORE_DEPTH / 2, GRIP_HALF_DEPTH], 'z', undefined, buttClip),
+      polySolid('grip-panel-upper-far', profiles.upper, [-GRIP_HALF_DEPTH, -GRIP_CORE_DEPTH / 2], 'z'),
+      polySolid('grip-panel-lower-far', profiles.lower, [-GRIP_HALF_DEPTH, -GRIP_CORE_DEPTH / 2], 'z', undefined, buttClip),
     ];
     return {
       family: 'revolver-grip',
@@ -585,6 +636,53 @@ const worldBounds = (
 };
 
 /** Testable exact alignment checks; the primary bore rule remains core axis-alignment. */
+export const worldVertices = (
+  r: Parameters<NonNullable<import('../core/schema.ts').Rule['check']>>[0],
+  part: string,
+  solid: Solid,
+): Vec3[] => {
+  const transform = r.placed.get(part)!;
+  if (solid.kind === 'box') {
+    const { center, half } = solid.box;
+    return [-1, 1].flatMap((x) =>
+      [-1, 1].flatMap((y) =>
+        [-1, 1].map((z) =>
+          applyPoint(transform, [
+            center[0] + half[0] * x,
+            center[1] + half[1] * y,
+            center[2] + half[2] * z,
+          ]),
+        ),
+      ),
+    );
+  }
+  const world = worldSolid(transform, solid);
+  return 'vertices' in world ? [...world.vertices] : [];
+};
+
+const projectedFace = (
+  vertices: readonly Vec3[],
+  origin: Vec3,
+  normal: Vec3,
+  tangentU: Vec3,
+  tangentV: Vec3,
+) => {
+  const points = vertices.filter((point) => Math.abs(dot(normal, sub(point, origin))) <= TOLERANCE);
+  if (points.length < 3) {
+    return undefined;
+  }
+  const u = points.map((point) => dot(tangentU, sub(point, origin)));
+  const v = points.map((point) => dot(tangentV, sub(point, origin)));
+  return {
+    points,
+    u: [Math.min(...u), Math.max(...u)] as const,
+    v: [Math.min(...v), Math.max(...v)] as const,
+  };
+};
+
+const overlapWidth = (a: readonly [number, number], b: readonly [number, number]) =>
+  Math.min(a[1], b[1]) - Math.max(a[0], b[0]);
+
 export const revolverAlignment = {
   topChamberBore(r: Parameters<NonNullable<import('../core/schema.ts').Rule['check']>>[0]): boolean {
     const cylinder = revolverParts(r).find(([, def]) => def.family === 'revolver-cylinder')?.[0];
@@ -649,22 +747,35 @@ export const revolverAlignment = {
   },
   topstrapSpan(r: Parameters<NonNullable<import('../core/schema.ts').Rule['check']>>[0]): boolean {
     const frame = revolverParts(r).find(([, def]) => def.family === 'revolver-frame')?.[0];
-    if (!frame) {
+    const cylinder = revolverParts(r).find(([, def]) => def.family === 'revolver-cylinder')?.[0];
+    if (!(frame && cylinder)) {
       return true;
     }
     const strap = r.defs.get(frame)!.solids.find(({ id }) => id === 'topstrap');
-    if (!strap) {
+    const cylinderDef = r.defs.get(cylinder)!;
+    const cylinderSolids = cylinderDef.displaySolids ?? cylinderDef.solids;
+    if (!strap || cylinderSolids.length === 0) {
       return false;
     }
-    const bounds = localSolidBounds(strap);
-    const width = FRAME_SIZE[r.params.get(frame)?.frameSize?.value ?? 'M']!.width / 2;
+    const inverseFrame = invert(r.placed.get(frame)!);
+    const strapBounds = localSolidBounds(strap);
+    const cylinderPoints = cylinderSolids.flatMap((solid) =>
+      worldVertices(r, cylinder, solid).map((point) => {
+        const frameLocal = applyPoint(inverseFrame, point);
+        return frameLocal;
+      }),
+    );
+    if (cylinderPoints.length === 0) {
+      return false;
+    }
+    const cylinderMinX = Math.min(...cylinderPoints.map((point) => point[0]));
+    const cylinderMinZ = Math.min(...cylinderPoints.map((point) => point[2]));
+    const cylinderMaxZ = Math.max(...cylinderPoints.map((point) => point[2]));
     return (
-      bounds[0][0] >= CYLINDER_REAR_X - TOLERANCE &&
-      bounds[1][0] <= FRAME_FRONT_X + TOLERANCE &&
-      bounds[0][2] >= -width - TOLERANCE &&
-      bounds[1][2] <= width + TOLERANCE &&
-      bounds[0][2] >= -CYLINDER_RADIUS - TOLERANCE &&
-      bounds[1][2] <= CYLINDER_RADIUS + TOLERANCE
+      strapBounds[0][0] >= cylinderMinX - TOLERANCE &&
+      strapBounds[1][0] <= FRAME_FRONT_X + TOLERANCE &&
+      strapBounds[0][2] >= cylinderMinZ - TOLERANCE &&
+      strapBounds[1][2] <= cylinderMaxZ + TOLERANCE
     );
   },
   gripJoint(r: Parameters<NonNullable<import('../core/schema.ts').Rule['check']>>[0]): boolean {
@@ -683,11 +794,65 @@ export const revolverAlignment = {
     if (!(r.placed.has(from.part) && r.placed.has(to.part))) {
       return true;
     }
-    const a = r.placed.get(from.part)!;
-    const b = r.placed.get(to.part)!;
-    const pa = applyPoint(a, from.port.pos);
-    const pb = applyPoint(b, to.port.pos);
-    return length(sub(pa, pb)) <= TOLERANCE;
+    const frame = r.defs.get(from.part)?.family === 'revolver-frame' ? from : to;
+    const grip = frame === from ? to : from;
+    const frameTransform = r.placed.get(frame.part)!;
+    const gripTransform = r.placed.get(grip.part)!;
+    const frameOrigin = applyPoint(frameTransform, frame.port.pos);
+    const gripOrigin = applyPoint(gripTransform, grip.port.pos);
+    if (length(sub(frameOrigin, gripOrigin)) > TOLERANCE) {
+      return false;
+    }
+    const frameNormal = applyDir(frameTransform, frame.port.normal);
+    const gripNormal = applyDir(gripTransform, grip.port.normal);
+    if (dot(frameNormal, gripNormal) > -1 + TOLERANCE) {
+      return false;
+    }
+    const tangentU = applyDir(frameTransform, frame.port.up);
+    const tangentV = cross(frameNormal, tangentU);
+    const frameDef = r.defs.get(frame.part)!;
+    const supportFace = frameDef.solids
+      .map((solid) =>
+        projectedFace(worldVertices(r, frame.part, solid), frameOrigin, frameNormal, tangentU, tangentV),
+      )
+      .find(
+        (face) =>
+          face &&
+          face.u[0] <= TOLERANCE &&
+          face.u[1] >= -TOLERANCE &&
+          face.v[0] <= TOLERANCE &&
+          face.v[1] >= -TOLERANCE,
+      );
+    if (!supportFace) {
+      return false;
+    }
+    const panelFaces = r.defs
+      .get(grip.part)!
+      .solids.filter((solid) => solid.id.startsWith('grip-panel'))
+      .map((solid) =>
+        projectedFace(worldVertices(r, grip.part, solid), gripOrigin, gripNormal, tangentU, tangentV),
+      )
+      .filter((face): face is NonNullable<typeof face> => face !== undefined);
+    if (panelFaces.length < 2) {
+      return false;
+    }
+    const maxGap = Math.max(
+      ...panelFaces.flatMap((face) =>
+        face.points.map((point) => Math.abs(dot(frameNormal, sub(point, frameOrigin)))),
+      ),
+    );
+    const boundariesCoincide = panelFaces.every((face) =>
+      face.points.every((point) => Math.abs(dot(frameNormal, sub(point, frameOrigin))) <= TOLERANCE),
+    );
+    return (
+      maxGap <= 0.25 &&
+      boundariesCoincide &&
+      panelFaces.every(
+        (face) =>
+          overlapWidth(face.u, supportFace.u) > TOLERANCE &&
+          overlapWidth(face.v, supportFace.v) > TOLERANCE,
+      )
+    );
   },
 };
 
