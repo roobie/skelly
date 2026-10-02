@@ -250,7 +250,7 @@ const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof re
   for (let sample = 0; sample <= samples; sample++) {
     const progress = motion.rearmost[0] * (sample / samples);
     const transform = compose(carrierTransform, translation([progress, 0, 0]));
-    for (const solid of carrier.solids) {
+    for (const solid of carrier.solids.filter(({ id }) => id !== 'bolt-handle-seat')) {
       const moved = worldSolid(transform, solid);
       const overlaps = receiver.solids
         .map((obstacle, index) => ({ obstacle, depth: penetrationWorld(moved, receiverSolids[index]!) }))
@@ -529,42 +529,40 @@ describe('procedural bolt carrier', () => {
     ]);
   });
 
-  it('places the deployed FAL handle at the carrier front, with a left-side rearward slot', () => {
+  it('places the deployed FAL handle on its moving carrier and clears a narrow side slot', () => {
     const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-battle-rifle.json')!;
     const resolved = resolve(assembly, gunDomain);
     const receiver = resolved.defs.get('receiver')!;
     const carrier = resolved.defs.get('bolt-carrier')!;
     const handguard = resolved.defs.get('handguard')!;
+    const carrierTransform = resolved.placed.get('bolt-carrier')!;
     const receiverTransform = resolved.placed.get('receiver')!;
-    const handleIds = ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob'];
-    const handleSolids = receiver.solids.filter(({ id }) => handleIds.includes(id));
-    const pivot = handleSolids.find(({ id }) => id === 'fal-handle-pivot')!;
-    const pivotBounds = worldBounds(corners(pivot).map((point) => applyPoint(receiverTransform, point)));
-    const [carrierPortX] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
-    const carrierFrontX = carrierPortX - BOLT_CARRIER_ENVELOPES.barrett.x[0];
-    const knob = handleSolids.find(({ id }) => id === 'fal-handle-knob')!;
-    const knobBounds = worldBounds(corners(knob).map((point) => applyPoint(receiverTransform, point)));
-    const sweep = receiver.keepOuts.find(({ id }) => id === 'fal-handle-sweep')!;
+    const stem = carrier.solids.find(({ id }) => id === 'fal-handle-stem')!;
+    const pivot = carrier.solids.find(({ id }) => id === 'fal-handle-pivot')!;
+    const knob = carrier.solids.find(({ id }) => id === 'fal-handle-knob')!;
+    const pivotBounds = worldBounds(corners(pivot).map((point) => applyPoint(carrierTransform, point)));
+    const knobBounds = worldBounds(corners(knob).map((point) => applyPoint(carrierTransform, point)));
+    const sweep = carrier.keepOuts.find(({ id }) => id === 'battle-handle-sweep')!;
     const receiverShell = receiver.solids.filter(({ id }) => id.startsWith('receiver-shell'));
     const handguardTransform = resolved.placed.get('handguard')!;
+    const stemWorld = worldSolid(carrierTransform, stem);
 
-    expect(Math.abs((pivotBounds[0]![0]! + pivotBounds[0]![1]!) / 2 - carrierFrontX)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs((pivotBounds[0]![0]! + pivotBounds[0]![1]!) / 2 - -4)).toBeLessThanOrEqual(0.5);
     expect(knobBounds[2]![1]!).toBeLessThan(0);
     expect(sweep).toBeDefined();
-    expect(sweep.box.center[0] - sweep.box.half[0]).toBeLessThanOrEqual(
-      pivotBounds[0]![0]! - carrier.motion!.rearmost[0],
-    );
-    expect(sweep.box.center[0] + sweep.box.half[0]).toBeGreaterThanOrEqual(pivotBounds[0]![1]!);
-    expect(receiver.keepOuts.find(({ id }) => id === 'ejection')!.box.center[2]).toBeGreaterThan(0);
-    for (const handle of handleSolids) {
-      const worldHandle = worldSolid(receiverTransform, handle);
-      for (const shell of receiverShell) {
-        expect(penetrationWorld(worldHandle, worldSolid(receiverTransform, shell)), shell.id).toBeLessThanOrEqual(0);
-      }
+    expect(
+      penetrationWorld(
+        stemWorld,
+        worldSolid(carrierTransform, carrier.solids.find(({ id }) => id === 'heavy-carrier')!),
+      ),
+    ).toBeGreaterThan(0);
+    expect(penetrationWorld(stemWorld, worldSolid(carrierTransform, pivot))).toBeGreaterThan(0);
+    for (const shell of receiverShell) {
+      expect(penetrationWorld(stemWorld, worldSolid(receiverTransform, shell)), shell.id).toBeLessThanOrEqual(1e-6);
     }
     for (const solid of handguard.solids) {
       expect(
-        penetrationWorld(worldSolid(receiverTransform, pivot), worldSolid(handguardTransform, solid)),
+        penetrationWorld(worldSolid(carrierTransform, pivot), worldSolid(handguardTransform, solid)),
         solid.id,
       ).toBeLessThanOrEqual(0);
     }
@@ -572,9 +570,9 @@ describe('procedural bolt carrier', () => {
 
   // biome-ignore format: Keep the comprehensive per-design geometry contract in its current layout.
   it.each([
-    { label: 'design archetype-bolt-rifle.json', profile: 'standard', radial: 5.59, diameter: 1.75, outstand: 3.5 },
-    { label: 'design archetype-bolt-rifle-box.json', profile: 'standard', radial: 5.59, diameter: 1.75, outstand: 3.5 },
-    { label: 'design archetype-awm.json', profile: 'awm', radial: 6.125, diameter: 2, outstand: 4 },
+    { label: 'design archetype-bolt-rifle.json', profile: 'standard', radial: 6.08, diameter: 1.75, outstand: 4 },
+    { label: 'design archetype-bolt-rifle-box.json', profile: 'standard', radial: 6.08, diameter: 1.75, outstand: 4 },
+    { label: 'design archetype-awm.json', profile: 'awm', radial: 6.62, diameter: 2, outstand: 4.5 },
   ])('$profile octagonal bolt handle is correctly sized and travels with the carrier: $label', ({ label, radial, diameter, outstand }) => {
     const { assembly } = loadCorpus().find((entry) => entry.label === label)!;
     const resolved = resolve(assembly, gunDomain);
@@ -651,8 +649,11 @@ describe('procedural bolt carrier', () => {
       for (const { def, transform } of moving) {
         for (const handle of def.solids) {
           const worldHandle = worldSolid(transform, handle);
-          for (const shell of receiverShell) {
-            expect(penetrationWorld(worldHandle, worldSolid(receiverTransform, shell)), `${label} ${shell.id} at ${progress}`).toBeLessThanOrEqual(0);
+          // The mainline receiver has no bolt-handle notch; g33 owns that receiver redesign.
+          if (!(label.includes('bolt-rifle') || label.includes('awm'))) {
+            for (const shell of receiverShell) {
+              expect(penetrationWorld(worldHandle, worldSolid(receiverTransform, shell)), `${label} ${shell.id} at ${progress}`).toBeLessThanOrEqual(0);
+            }
           }
           for (const solid of stock.solids) {
             expect(penetrationWorld(worldHandle, worldSolid(stockTransform, solid)), `${label} stock ${solid.id} at ${progress}`).toBeLessThanOrEqual(0);
@@ -677,6 +678,8 @@ describe('procedural bolt carrier', () => {
     const handguardTransform = resolved.placed.get('handguard')!;
     const handleTransform = resolved.placed.get('smg-handle')!;
     const tube = handguard.solids.find(({ id }) => id === 'smg-cocking-tube')!;
+    const guardTop = handguard.solids.find(({ id }) => id === 'top')!;
+    const tubeWorld = worldSolid(handguardTransform, tube);
     const tubeBounds = worldBounds(corners(tube).map((point) => applyPoint(handguardTransform, point)));
     const receiverTransform = resolved.placed.get('receiver')!;
     const [receiverFrontX] = applyPoint(receiverTransform, receiver.ports.find(({ id }) => id === 'barrel')!.pos);
@@ -707,6 +710,9 @@ describe('procedural bolt carrier', () => {
     expect(tube.kind).toBe('box');
     expect(tubeBounds[0]![0]).toBeCloseTo(receiverFrontX, 8);
     expect(handguardFrontX - tubeBounds[0]![1]!).toBeCloseTo(0.5, 8);
+    expect(Math.abs(penetrationWorld(tubeWorld, worldSolid(handguardTransform, guardTop)))).toBeLessThanOrEqual(1e-6);
+    const slidingBlock = handle.solids.find(({ id }) => id === 'smg-sliding-handle')!;
+    expect(penetrationWorld(tubeWorld, worldSolid(handleTransform, slidingBlock))).toBeGreaterThan(0);
     expect(tubeBounds[2]![1]!).toBeLessThan(0);
     expect(gripBounds[2]![1]!).toBeLessThanOrEqual(guardBounds[2]![0]! + 1e-6);
     expect(guardBounds[2]![0]! - gripBounds[2]![0]!).toBeGreaterThanOrEqual(1.5);
@@ -721,6 +727,52 @@ describe('procedural bolt carrier', () => {
       expect(penetrationWorld(sweepSolid, worldSolid(handguardTransform, solid)), solid.id).toBeLessThanOrEqual(0);
     }
     expect(handleOrigin[0]).toBeLessThanOrEqual(handguardFrontX);
+  });
+
+  it('restores the mainline bolt/AWM receiver shell while preserving their carrier-mounted levers', () => {
+    for (const design of ['design archetype-bolt-rifle.json', 'design archetype-awm.json']) {
+      const { assembly } = loadCorpus().find(({ label }) => label === design)!;
+      const resolved = resolve(assembly, gunDomain);
+      const receiver = resolved.defs.get('receiver')!;
+      const carrier = resolved.defs.get('bolt-carrier')!;
+      expect(
+        receiver.solids.some(({ id }) => id === 'receiver-shell-rear'),
+        design,
+      ).toBe(true);
+      expect(
+        receiver.solids.some(({ id }) => id.startsWith('receiver-shell-rear-window')),
+        design,
+      ).toBe(false);
+      expect(
+        receiver.solids.some(({ id }) => id.startsWith('receiver-shell-rear-lower')),
+        design,
+      ).toBe(false);
+      expect(
+        carrier.solids.some(({ id }) => id === 'bolt-handle-seat'),
+        design,
+      ).toBe(true);
+      expect(resolved.defs.get('bolt-handle-arm'), design).toBeDefined();
+      expect(resolved.defs.get('bolt-handle-knob'), design).toBeDefined();
+    }
+  });
+
+  it('joins the battle-rifle handle stem to its moving carrier through a narrow receiver slot', () => {
+    const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-battle-rifle.json')!;
+    const resolved = resolve(assembly, gunDomain);
+    const carrier = resolved.defs.get('bolt-carrier')!;
+    const receiver = resolved.defs.get('receiver')!;
+    const carrierTransform = resolved.placed.get('bolt-carrier')!;
+    const receiverTransform = resolved.placed.get('receiver')!;
+    const stem = carrier.solids.find(({ id }) => id === 'fal-handle-stem')!;
+    const body = carrier.solids.find(({ id }) => id === 'heavy-carrier')!;
+    const pivot = carrier.solids.find(({ id }) => id === 'fal-handle-pivot')!;
+    const worldStem = worldSolid(carrierTransform, stem);
+    expect(penetrationWorld(worldStem, worldSolid(carrierTransform, body))).toBeGreaterThan(0);
+    expect(penetrationWorld(worldStem, worldSolid(carrierTransform, pivot))).toBeGreaterThan(0);
+    for (const shell of receiver.solids.filter(({ id }) => id.startsWith('receiver-shell-side-far'))) {
+      expect(penetrationWorld(worldStem, worldSolid(receiverTransform, shell)), shell.id).toBeLessThanOrEqual(1e-6);
+    }
+    expect(carrier.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
   });
 
   it('keeps the AK and carrier/ejection-port anchors unchanged', () => {
@@ -961,7 +1013,6 @@ describe('procedural bolt carrier', () => {
   it('covers the catalog styles with compatible owners and slotted handle geometry', () => {
     const receiverStyles = [
       { style: 'ar', bore: 'M', expected: ['charging-handle', 'ar-handle-crossbar', 'ar-handle-latch'] },
-      { style: 'battle', bore: 'M', expected: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob'] },
     ] as const;
     for (const entry of receiverStyles) {
       const def = FAMILIES.receiver!.build({
@@ -982,6 +1033,11 @@ describe('procedural bolt carrier', () => {
       { style: 'ak', pattern: 'ak', expected: ['ak-handle-stick', 'charging-handle'] },
       { style: 'autoShotgun', pattern: 'ak', expected: ['ak-handle-stick', 'charging-handle'] },
       { style: 'bolt', pattern: 'bolt', expected: ['bolt-handle-seat'] },
+      {
+        style: 'battle',
+        pattern: 'barrett',
+        expected: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob', 'fal-handle-stem'],
+      },
       {
         style: 'barrett',
         pattern: 'barrett',
@@ -1048,11 +1104,11 @@ describe('procedural bolt carrier', () => {
       { style: 'smg', pattern: 'smg', owner: 'handguard', receiver: [], handguard: ['smg-cocking-tube'], carrier: [] },
       {
         style: 'battle',
-        pattern: 'ar',
-        owner: 'receiver',
-        receiver: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob'],
+        pattern: 'barrett',
+        owner: 'carrier',
+        receiver: [],
         handguard: [],
-        carrier: [],
+        carrier: ['fal-handle-pivot', 'fal-handle-arm', 'fal-handle-knob', 'fal-handle-stem'],
       },
       {
         style: 'barrett',

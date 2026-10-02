@@ -17,7 +17,7 @@ describe('AR-pattern parts', () => {
     const handle = receiver.keepOuts.find(({ id }) => id === 'charging-handle');
     const rail = receiver.ports.find(({ id }) => id === 'rail');
 
-    expect(handle?.box.center).toEqual([-17, 3.25, 0]);
+    expect(handle?.box.center).toEqual([-17, 2.25, 0]);
     expect(handle?.box.half).toEqual([1, 0.5, 1.5]);
     expect(rail?.slots).toEqual({ count: 7, pitch: 2 });
   });

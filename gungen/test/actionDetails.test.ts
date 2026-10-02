@@ -132,7 +132,7 @@ describe('visible action details', () => {
     if (crossbar?.kind === 'box') {
       const [, receiverTop] = receiverDef.ports.find(({ id }) => id === 'rail')!.pos;
       const [, [, crossbarTop]] = limits(crossbar.box);
-      expect(crossbarTop - receiverTop).toBeCloseTo(1, 8);
+      expect(Math.abs(crossbarTop - receiverTop)).toBeLessThanOrEqual(1e-6);
     }
     expect(receiverDef.keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
   });
@@ -140,7 +140,7 @@ describe('visible action details', () => {
   it('rejects a rail feature that physically occupies the AR T-grip', () => {
     const { assembly } = loadDesigns().find(({ label }) => label.includes('archetype-ar.json'))!;
     const resolved = resolve(assembly, gunDomain);
-    const point = [-17.75, 3.25, 1.75] as const;
+    const point = [-17.75, 2.25, 1.75] as const;
     const local = applyPoint(invert(resolved.placed.get('sight')!), point);
     const probe: Solid = {
       id: 'rail-accessory-feature',

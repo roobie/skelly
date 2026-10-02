@@ -483,7 +483,7 @@ export const CARRIER_HANDLE_STYLES = {
     sweep: true,
     segment: 'receiver-connected',
   },
-  battle: { shape: 'fal-folded-out', owner: 'receiver', motion: 'fixed', handClearanceU: 0.25 },
+  battle: { shape: 'fal-folded-out', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   barrett: { shape: 'right-side-crank', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   pump: { shape: 'none', owner: 'none', motion: 'none' },
   pistol: { shape: 'none', owner: 'none', motion: 'none' },
@@ -671,7 +671,6 @@ const receiverShellSolids = ({
   portWindow,
   portSlots,
   farPortWindow,
-  rearPortWindow,
 }: {
   section: string;
   feed: string;
@@ -684,7 +683,6 @@ const receiverShellSolids = ({
   portWindow: ReturnType<typeof ejectionPortWindow>;
   portSlots?: readonly SectionWindow[];
   farPortWindow?: { readonly x: readonly [number, number]; readonly y: readonly [number, number] };
-  rearPortWindow?: { readonly y: readonly [number, number]; readonly z: readonly [number, number] };
 }): Solid[] => {
   const [xMin, xMax] = [-16, 0] as const;
   const cavity = carrierCavityBounds(carrierPattern, carrierY);
@@ -721,15 +719,11 @@ const receiverShellSolids = ({
   const innerZ = cavity.z;
   const broadInnerZ: readonly [number, number] = [-RECEIVER_FRONT_HALF_WIDTH + wall, RECEIVER_FRONT_HALF_WIDTH - wall];
   const solids: Solid[] = [
-    ...(rearPortWindow
-      ? []
-      : [
-          solid(
-            'receiver-shell-rear',
-            [xMin, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH],
-            [innerX[0], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
-          ),
-        ]),
+    solid(
+      'receiver-shell-rear',
+      [xMin, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH],
+      [innerX[0], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
+    ),
     solid(
       'receiver-shell-front',
       [innerX[1], receiverBottom, -RECEIVER_FRONT_HALF_WIDTH],
@@ -798,22 +792,6 @@ const receiverShellSolids = ({
     );
   }
   const clamp = (value: number, bounds: readonly [number, number]) => Math.max(bounds[0], Math.min(bounds[1], value));
-  if (rearPortWindow) {
-    const y0 = clamp(rearPortWindow.y[0], [receiverBottom, receiverTop]);
-    const y1 = clamp(rearPortWindow.y[1], [receiverBottom, receiverTop]);
-    const z0 = clamp(rearPortWindow.z[0], [-RECEIVER_FRONT_HALF_WIDTH, RECEIVER_FRONT_HALF_WIDTH]);
-    addBox(
-      'receiver-shell-rear-lower',
-      [xMin, receiverBottom, -RECEIVER_FRONT_HALF_WIDTH],
-      [innerX[0], y0, RECEIVER_FRONT_HALF_WIDTH],
-    );
-    addBox(
-      'receiver-shell-rear-upper',
-      [xMin, y1, -RECEIVER_FRONT_HALF_WIDTH],
-      [innerX[0], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
-    );
-    addBox('receiver-shell-rear-window-near', [xMin, y0, -RECEIVER_FRONT_HALF_WIDTH], [innerX[0], y1, z0]);
-  }
   if (farPortWindow) {
     const x0 = clamp(farPortWindow.x[0], innerX);
     const x1 = clamp(farPortWindow.x[1], innerX);
@@ -942,27 +920,19 @@ const receiverShellSolids = ({
 const arRearTHandle = (inside = false): Solid[] => {
   const receiverTop = RECEIVER_SECTION.ar.faces.top.y;
   return [
-    metalSolid(
-      'charging-handle',
-      [-18, receiverTop + 0.5, inside ? 1 : 1.5],
-      [-16, receiverTop + 1, inside ? 1.75 : 2],
-    ),
-    metalSolid('ar-handle-crossbar', [-18, receiverTop + 0.5, -2], [-17.5, receiverTop + 1, 2]),
-    metalSolid('ar-handle-latch', [-16.5, receiverTop, -0.5], [-16, receiverTop + 0.5, 0.5]),
+    metalSolid('charging-handle', [-18, receiverTop - 0.5, inside ? 1 : 1.5], [-16, receiverTop, inside ? 1.75 : 2]),
+    metalSolid('ar-handle-crossbar', [-18, receiverTop - 0.5, -2], [-17.5, receiverTop, 2]),
+    metalSolid('ar-handle-latch', [-16.5, receiverTop - 0.5, -0.5], [-16, receiverTop, 0.5]),
   ];
 };
 
-const falChargingHandle = (params: Readonly<Record<string, string>>): Solid[] => {
-  const pattern = carrierPatternFor(params);
-  const envelope = BOLT_CARRIER_ENVELOPES[pattern];
-  const { restX } = BOLT_TRAVEL[receiverTravelClass(params)];
-  const carrierFrontX = restX - envelope.x[0];
-  return [
-    metalSolid('fal-handle-pivot', [carrierFrontX - 0.5, 1.25, -2.75], [carrierFrontX + 0.5, 1.75, -2.15]),
-    metalSolid('fal-handle-arm', [carrierFrontX + 0.25, 1.3, -3.25], [carrierFrontX + 1.5, 1.65, -2.65]),
-    metalSolid('fal-handle-knob', [carrierFrontX + 1.25, 1.1, -3.35], [carrierFrontX + 2, 1.9, -2.55]),
-  ];
-};
+const battleCarrierHandleSolids = (): Solid[] => [
+  metalSolid('fal-handle-pivot', [-3.5, 0, 2.15], [-2.5, 0.5, 2.75]),
+  metalSolid('fal-handle-arm', [-4.5, 0.05, 2.65], [-3.25, 0.4, 3.25]),
+  metalSolid('fal-handle-knob', [-5, -0.15, 2.55], [-4.25, 0.65, 3.35]),
+  // The stem crosses the receiver wall and overlaps both the carrier and outer pivot.
+  metalSolid('fal-handle-stem', [-3.25, 0, 1], [-2.75, 0.5, 2.25]),
+];
 
 const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[] => {
   if (params.action !== 'auto') {
@@ -978,9 +948,6 @@ const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[
   }
   if (style.shape === 'rear-t') {
     return arRearTHandle();
-  }
-  if (style.shape === 'fal-folded-out') {
-    return falChargingHandle(params);
   }
   return [];
 };
@@ -1162,19 +1129,7 @@ const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, kee
         { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
       ),
     );
-    return;
   }
-  const [minimum, maximum] = solidsBounds(solids);
-  const clearance = style.handClearanceU;
-  const travel = BOLT_TRAVEL[receiverTravelClass(params)].length;
-  keepOuts.push(
-    keepOut(
-      'fal-handle-sweep',
-      [minimum[0] - travel - clearance, minimum[1] - clearance, minimum[2] - clearance],
-      [maximum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
-      'bolt-carrier',
-    ),
-  );
 };
 
 const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void => {
@@ -1283,59 +1238,20 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
   const handleStyleKey = carrierHandleStyleFor(params);
   const movingHandle = carrierHandleSolids(handleStyleKey, carrierPattern);
   const receiverHandles = receiverActionDetails(params);
-  let handleBounds: readonly [Vec3, Vec3] | undefined;
-  if (params.action === 'bolt' && carrierPattern === 'bolt') {
-    handleBounds = boltActionHandleBounds(
-      BOLT_CARRIER_ENVELOPES.bolt,
-      (params.boltHandleProfile ?? 'standard') as BoltHandleProfile,
-    );
-  } else if (movingHandle.length > 0) {
-    handleBounds = solidsBounds(movingHandle);
-  }
-  const handleRearReach = handleBounds?.[1][0] ?? 0;
-  const shellPortWindow =
-    params.action === 'bolt' && carrierPattern === 'bolt' && handleBounds
-      ? {
-          x: [
-            Math.min(
-              portWindow.x[0],
-              travel.restX - travel.length - handleRearReach - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-            ),
-            portWindow.x[1],
-          ] as const,
-          y: [
-            Math.min(portWindow.y[0], carrierY + handleBounds[0][1] - BOLT_CARRIER_RUNNING_CLEARANCE_U),
-            Math.max(portWindow.y[1], carrierY + handleBounds[1][1] + BOLT_CARRIER_RUNNING_CLEARANCE_U),
-          ] as const,
-        }
-      : portWindow;
-  const falBounds =
-    handleStyleKey === 'battle' && receiverHandles.length > 0 ? solidsBounds(receiverHandles) : undefined;
-  const farPortWindow = falBounds
+  const falStem = handleStyleKey === 'battle' ? movingHandle.find(({ id }) => id === 'fal-handle-stem') : undefined;
+  const falStemBounds = falStem ? solidBounds(falStem) : undefined;
+  const farPortWindow = falStemBounds
     ? {
         x: [
-          falBounds[0][0] - travel.length - CARRIER_HANDLE_STYLES.battle.handClearanceU,
-          falBounds[1][0] + CARRIER_HANDLE_STYLES.battle.handClearanceU,
+          travel.restX - falStemBounds[1][0] - travel.length - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          travel.restX - falStemBounds[0][0] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
         ] as const,
         y: [
-          falBounds[0][1] - CARRIER_HANDLE_STYLES.battle.handClearanceU,
-          falBounds[1][1] + CARRIER_HANDLE_STYLES.battle.handClearanceU,
+          carrierY + falStemBounds[0][1] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          carrierY + falStemBounds[1][1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
         ] as const,
       }
     : undefined;
-  const rearPortWindow =
-    params.action === 'bolt' && carrierPattern === 'bolt' && handleBounds
-      ? {
-          y: [
-            carrierY + handleBounds[0][1] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-            carrierY + handleBounds[1][1] + BOLT_CARRIER_RUNNING_CLEARANCE_U,
-          ] as const,
-          z: [
-            BOLT_CARRIER_ENVELOPES[carrierPattern].z[1] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
-            RECEIVER_FRONT_HALF_WIDTH,
-          ] as const,
-        }
-      : undefined;
   const shell =
     params.action === 'revolver'
       ? revolverReceiverSolids()
@@ -1348,9 +1264,8 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
           receiverDrop,
           carrierPattern,
           carrierY,
-          portWindow: shellPortWindow,
+          portWindow,
           ...(farPortWindow ? { farPortWindow } : {}),
-          ...(rearPortWindow ? { rearPortWindow } : {}),
         });
   return [...shell, ...receiverHandles, ...receiverTubeSeat(bore, receiverBottom, tubeFed)];
 };
@@ -1567,7 +1482,11 @@ const BOLT_HANDLE_KNOB_MOTION_AXIS: Vec3 = [
   dot3(BOLT_HANDLE_KNOB_UP, BOLT_HANDLE_MOTION_AXIS),
   dot3(cross3(BOLT_HANDLE_KNOB_AXIS, BOLT_HANDLE_KNOB_UP), BOLT_HANDLE_MOTION_AXIS),
 ];
-const boltHandleRoot = (envelope: CarrierEnvelope): Vec3 => [envelope.x[1], envelope.y[0], -RECEIVER_FRONT_HALF_WIDTH];
+const boltHandleRoot = (envelope: CarrierEnvelope): Vec3 => [
+  envelope.x[1],
+  envelope.y[0],
+  -RECEIVER_FRONT_HALF_WIDTH - 0.5,
+];
 const boltActionHandleBounds = (
   envelope: CarrierEnvelope,
   profile: BoltHandleProfile = 'standard',
@@ -1736,6 +1655,8 @@ const carrierHandleSolids = (styleKey: CarrierHandleStyle, pattern: BoltCarrierP
       return [];
     case 'right-side-crank':
       return barrettCrankHandleSolids(envelope);
+    case 'fal-folded-out':
+      return battleCarrierHandleSolids();
     default:
       return [];
   }
@@ -1814,13 +1735,13 @@ const smgSlidingHandle: PartFamily = {
       keepOuts: [
         keepOut(
           'smg-handle-hand',
-          [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
+          [minimum[0] - clearance, Math.max(minimum[1] - clearance, -0.25), minimum[2] - clearance],
           [maximum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
           'mount',
         ),
         keepOut(
           'smg-handle-sweep',
-          [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
+          [minimum[0] - clearance, Math.max(minimum[1] - clearance, -0.25), minimum[2] - clearance],
           [maximum[0] + travel + clearance, maximum[1] + clearance, maximum[2] + clearance],
           'mount',
         ),
@@ -2798,7 +2719,7 @@ export const handguard: PartFamily = {
     const cockingTube =
       tubeEnd === undefined
         ? []
-        : [metalSolid('smg-cocking-tube', [0, outerY + 0.5, -outerZ], [tubeEnd, outerY + 1, -outerZ + 0.5])];
+        : [metalSolid('smg-cocking-tube', [0, outerY, -outerZ], [tubeEnd, outerY + 0.5, -outerZ + 0.5])];
     const clamp = clampRadius
       ? [
           solid(
@@ -2854,7 +2775,7 @@ export const handguard: PartFamily = {
                 id: 'smg-handle',
                 mount: 'smg-handle',
                 gender: 'female' as const,
-                pos: [tubeEnd, outerY + 0.75, -outerZ + 0.25] as Vec3,
+                pos: [tubeEnd, outerY + 0.25, -outerZ + 0.25] as Vec3,
                 normal: X,
                 up: Y,
               },
