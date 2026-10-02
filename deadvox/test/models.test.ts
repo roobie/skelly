@@ -122,18 +122,20 @@ describe('base pack melee', () => {
     return new Vector3(...def.anchors![name]!).applyMatrix4(offset.matrixWorld);
   };
 
-  it('maps the five matching Slice 1 items', () => {
+  it('maps the seven matching Slice 1 items to their melee models', () => {
     expect(
-      ['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe'].map((id) => registry.items.get(id)?.model),
-    ).toEqual(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe']);
+      ['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe', 'machete', 'kabar'].map(
+        (id) => registry.items.get(id)?.model,
+      ),
+    ).toEqual(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe', 'machete', 'kabar']);
   });
 
-  it('assigns the forward pose only to the four stabbing blades', () => {
+  it('assigns forward holds to stabbing blades and the machete slash', () => {
     const forward = models
       .filter((model) => model.hold === 'forward')
       .map((model) => model.id)
       .sort();
-    expect(forward).toEqual(['kabar', 'kitchen_knife', 'pocket_knife', 'tanto']);
+    expect(forward).toEqual(['kabar', 'kitchen_knife', 'machete', 'pocket_knife', 'tanto']);
     expect(models.filter((model) => model.hold !== 'forward').every((model) => model.hold === 'upright')).toBe(true);
   });
 
@@ -230,6 +232,11 @@ describe('base pack melee', () => {
   it('points the machete cutting edge forward', async () => {
     const edge = await heldAnchor('machete', 'edge');
     expect(edge.z * 100).toBeLessThanOrEqual(-3);
+  });
+
+  it('points the Kabar strike tip forward from its held grip', async () => {
+    const strike = await heldAnchor('kabar', 'strike');
+    expect(strike.z * 100).toBeLessThanOrEqual(-20);
   });
 
   it('points the pickaxe point forward', async () => {

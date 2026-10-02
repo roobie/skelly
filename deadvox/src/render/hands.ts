@@ -25,7 +25,7 @@ import type { FigureDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { interpolateHandPose, type MeleePoseFrame } from '../core/meleePose.ts';
+import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
@@ -105,6 +105,7 @@ export class HeldItems {
       const transform = interpolateHandPose(base, hand);
       this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
       this.applyViewPose(main, pose, transform);
+      this.lockCutBladeRoll(side, pose);
       const strength = Math.max(0, Math.min(1, recoil));
       transform.offset[1] += 0.012 * strength;
       transform.offset[2] += 0.025 * strength;
@@ -126,6 +127,23 @@ export class HeldItems {
       this.updateArmChain(side, arm);
     }
     this.view.updateMatrixWorld(true);
+  }
+
+  /** Keep the cutting edge's rest orientation while preserving the target forward axis. */
+  private lockCutBladeRoll(side: HandSide, pose: MeleePoseFrame | undefined): void {
+    const item = this.inventory.hands[side];
+    if (!item || defOf(this.inventory.registry, item.type).weapon?.melee?.type !== 'cut') {
+      return;
+    }
+    const rest = readyMeleePose(true)[side];
+    const restOrientation = new Quaternion().setFromEuler(this.poseEuler.set(...rest.rotation, 'YXZ'));
+    if (pose?.viewOrientation) {
+      restOrientation.premultiply(this.relativeCamera);
+    }
+    const restForward = new Vector3(0, 0, -1).applyQuaternion(restOrientation).normalize();
+    const currentForward = new Vector3(0, 0, -1).applyQuaternion(this.poseRotation).normalize();
+    const swing = new Quaternion().setFromUnitVectors(restForward, currentForward);
+    this.poseRotation.copy(swing.multiply(restOrientation));
   }
 
   private applyViewPose(

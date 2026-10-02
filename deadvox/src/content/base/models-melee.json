@@ -157,8 +157,7 @@
         "strike": [0.2447, 0, 0],
         "edge": [0.2, -0.034, 0]
       },
-      "hold": "upright",
-      "roll": 90
+      "hold": "forward"
     },
     {
       "id": "pickaxe",

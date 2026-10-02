@@ -282,14 +282,18 @@ describe('player melee reach at shambler attack distance', () => {
     });
     const farthestByName = Object.fromEntries(distances.map(({ name, farthest }) => [name, farthest]));
     expect(farthestByName.fists).toBeLessThan(farthestByName.kitchen_knife!);
-    expect(farthestByName.kitchen_knife).toBeLessThan(farthestByName.hammer!);
-    expect(farthestByName.hammer).toBeLessThan(farthestByName.crowbar!);
+    expect(farthestByName.kitchen_knife).toBeLessThan(farthestByName.kabar!);
+    expect(farthestByName.kabar).toBeLessThan(farthestByName.hammer!);
+    expect(farthestByName.hammer).toBeLessThan(farthestByName.machete!);
+    expect(farthestByName.machete).toBeLessThan(farthestByName.crowbar!);
     expect(farthestByName.crowbar).toBe(farthestByName.steel_pipe);
     expect(farthestByName.steel_pipe).toBeLessThan(farthestByName.baseball_bat!);
     expect(distances).toEqual([
       { name: 'fists', farthest: 1.47 },
       { name: 'kitchen_knife', farthest: 1.62 },
+      { name: 'kabar', farthest: 1.63 },
       { name: 'hammer', farthest: 1.73 },
+      { name: 'machete', farthest: 1.78 },
       { name: 'crowbar', farthest: 1.93 },
       { name: 'steel_pipe', farthest: 1.93 },
       { name: 'baseball_bat', farthest: 2.14 },
@@ -300,7 +304,9 @@ describe('player melee reach at shambler attack distance', () => {
     expect(weapons.map(({ name }) => name)).toEqual([
       'fists',
       'kitchen_knife',
+      'kabar',
       'hammer',
+      'machete',
       'crowbar',
       'steel_pipe',
       'baseball_bat',
@@ -308,8 +314,10 @@ describe('player melee reach at shambler attack distance', () => {
     expect(PLAYER_ARM_REACH_M).toBe(1.2);
     const reaches = Object.fromEntries(weapons.map(({ name, reach }) => [name, reach]));
     expect(reaches.fists).toBeCloseTo(0.1);
-    expect(reaches.kitchen_knife).toBeLessThan(reaches.hammer!);
-    expect(reaches.hammer).toBeLessThan(reaches.crowbar!);
+    expect(reaches.kabar).toBeGreaterThan(reaches.kitchen_knife!);
+    expect(reaches.kabar).toBeLessThan(reaches.hammer!);
+    expect(reaches.hammer).toBeLessThan(reaches.machete!);
+    expect(reaches.machete).toBeLessThan(reaches.crowbar!);
     expect(reaches.crowbar).toBe(reaches.steel_pipe);
     expect(reaches.steel_pipe).toBeLessThan(reaches.baseball_bat!);
   });

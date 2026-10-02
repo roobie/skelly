@@ -12,6 +12,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
@@ -40,6 +41,7 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
+import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import { mountControlsCard } from './controls.ts';
@@ -78,8 +80,20 @@ const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
 
-export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
+export interface StartPlayOptions {
+  readonly restore?: Readonly<SaveSnapshot>;
+  readonly saveController?: SaveController;
+}
+
+export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
+  if (options.saveController) {
+    streamer.onGenerationError = (error) => {
+      if (!options.saveController?.refuseRestore(error)) {
+        throw error;
+      }
+    };
+  }
   const { scale } = config;
   const s = scale.blockSize;
   const eyeHeight = PLAYER.eye / s;
@@ -124,6 +138,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
+    ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     controls: {
       active: () => input.locked && !input.menuPointer,
@@ -185,10 +200,33 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     search,
   } = session;
   const { compression } = sim;
+  if (session.restoredLook) {
+    input.yaw = session.restoredLook.yaw;
+    input.pitch = session.restoredLook.pitch;
+    input.walking = session.restoredLook.walk;
+  }
+  let snapshotIds = {
+    worldId: options.restore?.world.id ?? '',
+    characterId: options.restore?.character.id ?? '',
+  };
+  const captureSnapshot = () => session.snapshot(snapshotIds);
+  const snapshotHistory = createSnapshotHistory();
+  if (options.saveController) {
+    snapshotIds = options.saveController.bindSession(
+      captureSnapshot,
+      () => sim.time,
+      { blockSize: s, site: config.site, storeys: config.storeys },
+      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
+    );
+  } else if (!options.restore) {
+    snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
+  }
   const { zombies: zombieSystem, zombieStore } = session;
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
   let playerGaitPhase = 0;
-  startingLoadout(inventory);
+  if (!options.restore) {
+    startingLoadout(inventory);
+  }
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => {
     session.onColumn(cx, cz, engine.site);
@@ -276,6 +314,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
         return;
       }
       queue.cancel();
+      if (kind === 'sleep') {
+        options.saveController?.beforeSleep();
+      }
     }
     const reason = rest.toggle(kind);
     if (reason) {
@@ -325,7 +366,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
   })();
   const metrics = new SessionMetrics(config.seed, storedMetrics);
   playtestObserver = new PlaytestObserver(metrics);
-  const snapshotHistory = createSnapshotHistory();
   const saveMetrics = (): void => {
     try {
       persistMetrics(metrics, localStorage);
@@ -342,10 +382,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     link.click();
     URL.revokeObjectURL(url);
   };
-  const worldId = `debug-world-${config.seed}`;
-  const characterId = `debug-character-${config.seed}`;
-  const measureSnapshot = () =>
-    playtestObserver!.measureSnapshot(() => session.snapshot({ worldId, characterId }), session, snapshotHistory);
+  const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session, snapshotHistory);
   const openInventoryScreen = (): void => {
     screen.open();
   };
@@ -365,7 +402,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     flashlight,
     body,
     inventory,
-    newGame: session.restoredLook === undefined,
+    newGame: options.restore === undefined,
     sim,
     input,
     roll: () => cameraRoll,
@@ -378,6 +415,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     setTimeOfDay: (hour, minute) => {
       const timeOfDay = hour * 3600 + minute * 60;
       sim.setDebugCalendarTime(nextTimeOfDay(sim.calendar, timeOfDay));
+      options.saveController?.rearmAutosaveAfterTimeSeek();
     },
     revealZombies: (enabled) => {
       revealZombies = enabled;
@@ -386,7 +424,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     exportMetrics,
   });
 
-  let started = false;
+  let started = options.restore !== undefined;
   let mainMenuOpen = true;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
@@ -399,6 +437,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       dead: sim.dead !== undefined,
       pointerLockChanged,
       resumeRequested,
+      ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
+      titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
     if (pointerLockChanged || state.closeOtherMenus) {
@@ -410,7 +450,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     }
     input.menuPointer = state.menuPointer;
     overlay.hidden = state.overlayHidden;
-    $('go').textContent = state.goLabel;
+    if (options.saveController) {
+      options.saveController.setGoLabel(state.goLabel);
+    } else {
+      $('go').textContent = state.goLabel;
+    }
     return state;
   };
   const resume = () => {
@@ -427,7 +471,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     if (target?.closest('a')) {
       return;
     }
-    if (target?.closest('#go') || (!input.locked && target === overlay)) {
+    if (target?.closest('#go') || target?.closest('#save-replace-confirm') || (!input.locked && target === overlay)) {
       resume();
     }
   });
@@ -607,6 +651,21 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     return true;
   };
 
+  const handleTitleKey = (event: KeyboardEvent): boolean => {
+    if (!options.saveController || options.saveController.isEntered) {
+      return false;
+    }
+    if (event.code === KEY_BINDINGS.performanceOverlay.code || event.code === 'Backquote') {
+      debugTools?.handleKey(event);
+      syncMenuState();
+      return true;
+    }
+    if (event.code === 'Tab' || event.code === KEY_BINDINGS.mainMenu.code) {
+      event.preventDefault();
+    }
+    return true;
+  };
+
   const handleMenuKey = (e: KeyboardEvent): boolean => {
     if (debugTools?.handleKey(e)) {
       syncMenuState();
@@ -625,7 +684,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     return true;
   };
 
-  globalThis.addEventListener('keydown', (e) => {
+  const handleGameplayKey = (e: KeyboardEvent): void => {
     if (handleMainMenuKey(e)) {
       return;
     }
@@ -646,6 +705,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
       return;
     }
     playKeys(e.code);
+  };
+
+  globalThis.addEventListener('keydown', (event) => {
+    if (!handleTitleKey(event)) {
+      handleGameplayKey(event);
+    }
   });
   globalThis.addEventListener(
     'wheel',
@@ -1038,6 +1103,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     simulationMs = performance.now() - mark;
+    options.saveController?.afterFrame();
     playtestObserver?.afterFrame(
       { realSeconds, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
