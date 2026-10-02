@@ -309,7 +309,7 @@ export const exportGlb: ExportGlb = (input) => {
     const solid = item.solids[0]!;
     const mesh = item.merged
       ? meshForSolidGroup(item.solids)
-      : meshForSolid(solid, displayBevel(solid, resolved.domain.units));
+      : meshForSolid(solid, displayBevel(solid, resolved.domain.units), input.revolveFacets);
     if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
       return undefined;
     }

@@ -140,7 +140,7 @@ describe('revolved solid in an assembly', () => {
       specialColors: {},
       fallbackColor: [0.5, 0.5, 0.5],
     };
-    const result = exportGlb({ resolved, anchors, palette, asset });
+    const result = exportGlb({ resolved, anchors, palette, asset, revolveFacets: 24 });
     if (!result.ok) {
       throw new Error(JSON.stringify(result.error));
     }
@@ -152,6 +152,8 @@ describe('revolved solid in an assembly', () => {
     expect(min![0]).toBeCloseTo(0, 7);
     expect(max![0]).toBeCloseTo(0.003, 7);
     expect(max![1]).toBeCloseTo(0.002, 7);
+    // At the 24 facets asked for a vertex also sits on +Z; the default 6 would stop at 2 sin 60 degrees.
+    expect(max![2]).toBeCloseTo(0.002, 7);
     const normals = glb.floats(primitive.attributes.NORMAL);
     for (let i = 0; i < normals.length; i += 3) {
       expect(Math.hypot(normals[i]!, normals[i + 1]!, normals[i + 2]!)).toBeCloseTo(1, 5);

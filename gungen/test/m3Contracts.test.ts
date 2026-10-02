@@ -275,7 +275,7 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expectTypeOf<Parameters<ExportGlb>>().toEqualTypeOf<[input: GlbExportInput]>();
   expectTypeOf<ReturnType<ExportGlb>>().toEqualTypeOf<GlbExportResult>();
   expectTypeOf<keyof GlbExportInput>().toEqualTypeOf<
-    'resolved' | 'anchors' | 'palette' | 'appearance' | 'finish' | 'asset'
+    'resolved' | 'anchors' | 'palette' | 'appearance' | 'finish' | 'asset' | 'revolveFacets'
   >();
   expectTypeOf<GlbExportInput['anchors']>().toEqualTypeOf<SelectedAnchors>();
   expectTypeOf<Parameters<Suggest>>().toEqualTypeOf<
