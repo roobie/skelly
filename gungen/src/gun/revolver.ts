@@ -86,7 +86,7 @@ export const REVOLVER_PROPORTIONS = {
   ejectorChannelHalfWidth: photoControl('686-class open ejector-rod channel half-width', 0.25),
   guardHalfDepth: photoControl('686 photo-derived joined trigger-bow half-depth', 0.375),
   gripCoreDepthRatio: photoControl('686-class grip-core fraction of total wood depth', 2 / 3),
-  rearWebJointExtension: photoControl('BR correction: rear web seat extension across the lower frame/grip face', 0.75),
+  rearWebJointExtension: photoControl('BR correction: web projection from the grip datum into the guard side', 0.75),
   rearWebGripInset: photoControl('BR correction: maximum rear-web overlap into grip front strap', 0.25),
 } as const;
 
@@ -388,6 +388,16 @@ const rearWebSolids = (jointY: number, frameHeight: number): Solid[] => {
   return [polySolid('rear-grip-web', profile, [-1.25, 1.25], 'z', 'revolver-frame')];
 };
 
+const rearGripSeatSolid = (jointY: number): Solid => {
+  const webJoint: Vec2 = [frameJointX + C.rearWebJointExtension.pickedU, jointY];
+  const frameJoint: Vec2 = [frameJointX + C.gripJointWidth.pickedU / 2, jointY];
+  const guardJoint = guardOuter[3]!;
+  const upperRear: Vec2 = [floorRearX, -3.75];
+  const profile =
+    jointY < guardJoint[1] ? [webJoint, frameJoint, guardJoint, upperRear] : [webJoint, guardJoint, upperRear];
+  return polySolid('rear-grip-seat', ccw(profile), [-1.25, 1.25], 'z', 'revolver-frame-grip-seat');
+};
+
 export const revolverFrame: PartFamily = {
   name: 'revolver-frame',
   params: {
@@ -531,6 +541,7 @@ export const revolverFrame: PartFamily = {
       ...hammerSolids(),
       ...triggerSolids(frame.height),
       ...rearWebSolids(jointY, frame.height),
+      rearGripSeatSolid(jointY),
     ];
     const barrelPort: PortDef = {
       id: 'barrel',
@@ -1279,6 +1290,126 @@ const gripCoreContactsFrame = (resolved: Resolved, frameRef: ConnectedPort, grip
   return coreGap <= CONTACT_GAP_U && convexIntersectionArea(frameFace, gripFace) > TOLERANCE;
 };
 
+const sideFootprint = (resolved: Resolved, part: string, solid: Solid): Vec2[] | undefined => {
+  const points = solidVertices(resolved, part, solid);
+  if (points.length === 0) {
+    return undefined;
+  }
+  const z = Math.max(...points.map((point) => point[2]));
+  return facePolygon(resolved, part, solid, {
+    origin: [0, 0, z],
+    normal: [0, 0, 1],
+    tangentU: [1, 0, 0],
+    tangentV: [0, 1, 0],
+  });
+};
+
+const sideFootprintsOverlap = (
+  resolved: Resolved,
+  a: { part: string; solid: Solid },
+  b: { part: string; solid: Solid },
+): boolean => {
+  const aFace = sideFootprint(resolved, a.part, a.solid);
+  const bFace = sideFootprint(resolved, b.part, b.solid);
+  return aFace !== undefined && bFace !== undefined && convexIntersectionArea(aFace, bFace) > TOLERANCE;
+};
+
+interface SideBoundary {
+  readonly start: Vec2;
+  readonly end: Vec2;
+}
+
+interface SideContactRequirement {
+  readonly minimumLength: number;
+  readonly allowance: number;
+}
+
+const sharedSideBoundaryLength = (a: SideBoundary, b: SideBoundary, allowance: number): number => {
+  const aDelta: Vec2 = [a.end[0] - a.start[0], a.end[1] - a.start[1]];
+  const bDelta: Vec2 = [b.end[0] - b.start[0], b.end[1] - b.start[1]];
+  const aLength = Math.hypot(...aDelta);
+  const bLength = Math.hypot(...bDelta);
+  if (aLength <= TOLERANCE || bLength <= TOLERANCE) {
+    return 0;
+  }
+  const direction: Vec2 = [aDelta[0] / aLength, aDelta[1] / aLength];
+  const bDirection: Vec2 = [bDelta[0] / bLength, bDelta[1] / bLength];
+  const startOffset: Vec2 = [b.start[0] - a.start[0], b.start[1] - a.start[1]];
+  const endOffset: Vec2 = [b.end[0] - a.start[0], b.end[1] - a.start[1]];
+  if (
+    Math.abs(cross2(direction, bDirection)) > TOLERANCE ||
+    Math.abs(cross2(direction, startOffset)) > allowance ||
+    Math.abs(cross2(direction, endOffset)) > allowance
+  ) {
+    return 0;
+  }
+  const start = direction[0] * startOffset[0] + direction[1] * startOffset[1];
+  const end = direction[0] * endOffset[0] + direction[1] * endOffset[1];
+  return Math.max(0, Math.min(aLength, Math.max(start, end)) - Math.max(0, Math.min(start, end)));
+};
+
+const sideFootprintsShareEdge = (
+  resolved: Resolved,
+  a: { part: string; solid: Solid },
+  b: { part: string; solid: Solid },
+  requirement: SideContactRequirement,
+): boolean => {
+  const aFace = sideFootprint(resolved, a.part, a.solid);
+  const bFace = sideFootprint(resolved, b.part, b.solid);
+  if (!(aFace && bFace)) {
+    return false;
+  }
+  const edges = (face: readonly Vec2[]): SideBoundary[] =>
+    face.map((start, index) => ({ start, end: face[(index + 1) % face.length]! }));
+  return edges(aFace).some((aEdge) =>
+    edges(bFace).some(
+      (bEdge) => sharedSideBoundaryLength(aEdge, bEdge, requirement.allowance) >= requirement.minimumLength - TOLERANCE,
+    ),
+  );
+};
+
+const rearWebClosesSideNotch = (resolved: Resolved, frameRef: ConnectedPort, gripRef: ConnectedPort): boolean => {
+  const frameDef = resolved.defs.get(frameRef.part)!;
+  const gripDef = resolved.defs.get(gripRef.part)!;
+  const rearWeb = frameDef.solids.find(({ id }) => id === 'rear-grip-web');
+  const rearSeat = frameDef.solids.find(({ id }) => id === 'rear-grip-seat');
+  const rearJoint = frameDef.solids.find(({ id }) => id === 'rear-joint');
+  const rearGuard = frameDef.solids.find(({ id }) => id === 'trigger-guard-3');
+  const gripCore = gripDef.solids.find(({ id }) => id === 'grip-core-neck');
+  if (!(rearWeb && rearSeat && rearJoint && rearGuard && gripCore)) {
+    return false;
+  }
+  const seatFrame = sideFootprintsOverlap(
+    resolved,
+    { part: frameRef.part, solid: rearSeat },
+    { part: frameRef.part, solid: rearJoint },
+  );
+  const seatWeb =
+    sideFootprintsOverlap(
+      resolved,
+      { part: frameRef.part, solid: rearSeat },
+      { part: frameRef.part, solid: rearWeb },
+    ) ||
+    sideFootprintsShareEdge(
+      resolved,
+      { part: frameRef.part, solid: rearSeat },
+      { part: frameRef.part, solid: rearWeb },
+      { minimumLength: 0.5, allowance: CONTACT_GAP_U },
+    );
+  const webGuard = sideFootprintsShareEdge(
+    resolved,
+    { part: frameRef.part, solid: rearWeb },
+    { part: frameRef.part, solid: rearGuard },
+    { minimumLength: 1, allowance: CONTACT_GAP_U },
+  );
+  const webGrip = sideFootprintsOverlap(
+    resolved,
+    { part: frameRef.part, solid: rearWeb },
+    { part: gripRef.part, solid: gripCore },
+  );
+  return seatFrame && seatWeb && webGuard && webGrip;
+};
+
 const rearWebContactsGrip = (resolved: Resolved, frameRef: ConnectedPort, gripRef: ConnectedPort): boolean => {
   const frameDef = resolved.defs.get(frameRef.part)!;
   const gripDef = resolved.defs.get(gripRef.part)!;
@@ -1507,6 +1638,7 @@ export const revolverAlignment = {
     const gripRef = frameRef === connection.from ? connection.to : connection.from;
     return (
       gripCoreContactsFrame(resolved, frameRef, gripRef) &&
+      rearWebClosesSideNotch(resolved, frameRef, gripRef) &&
       rearWebContactsGrip(resolved, frameRef, gripRef) &&
       gripPanelsContactFrame(resolved, frameRef, gripRef)
     );

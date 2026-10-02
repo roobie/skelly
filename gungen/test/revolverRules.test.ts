@@ -181,6 +181,36 @@ describe('revolver alignment rules', () => {
     expect(report.issues.some((issue) => issue.rule === 'revolver-grip-joint')).toBe(true);
   });
 
+  it('keeps the side silhouette closed across the rear frame, guard, and grip front strap', () => {
+    expect(revolverAlignment.gripJoint(resolved())).toBe(true);
+  });
+
+  it('rejects a displaced lower-rear seat that opens the side silhouette', () => {
+    const source = FAMILIES['revolver-frame']!;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...FAMILIES,
+        'revolver-frame': {
+          ...source,
+          build(params: Parameters<typeof source.build>[0]) {
+            const def = source.build(params);
+            return {
+              ...def,
+              solids: def.solids.map((solid) =>
+                solid.id === 'rear-grip-seat' && solid.kind === 'extruded-polygon'
+                  ? { ...solid, profile: solid.profile.map(([x, y]) => [x, y - 0.5] as const) }
+                  : solid,
+              ),
+            };
+          },
+        },
+      },
+    };
+    const report = validate(loadFixture('archetype-revolver'), domain);
+    expect(report.issues.some((issue) => issue.rule === 'revolver-grip-joint')).toBe(true);
+  });
+
   it('rejects a missing physical bridge between the rear frame web and grip front strap', () => {
     const source = FAMILIES['revolver-frame']!;
     const domain = {

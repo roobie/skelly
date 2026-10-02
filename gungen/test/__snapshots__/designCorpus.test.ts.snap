@@ -26808,6 +26808,43 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
     "geometry": [
       [
         -8,
+        -5.25,
+        -1.25,
+      ],
+      [
+        -8,
+        -5.25,
+        1.25,
+      ],
+      [
+        -5.5,
+        -3.75,
+        -1.25,
+      ],
+      [
+        -5.5,
+        -3.75,
+        1.25,
+      ],
+      [
+        -5.25,
+        -5.25,
+        -1.25,
+      ],
+      [
+        -5.25,
+        -5.25,
+        1.25,
+      ],
+    ],
+    "id": "rear-grip-seat",
+    "kind": "extruded-polygon",
+    "partId": "frame",
+  },
+  {
+    "geometry": [
+      [
+        -8,
         -6.75,
         -1.25,
       ],
