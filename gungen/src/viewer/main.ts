@@ -3,6 +3,7 @@ import {
   Color,
   DirectionalLight,
   GridHelper,
+  type Group,
   HemisphereLight,
   MathUtils,
   type Object3D,
@@ -53,6 +54,7 @@ import {
   withEditorStatus,
 } from './designEditor.ts';
 import { buildDesignViewModel } from './designViewModel.ts';
+import { buildDetachedMagazine, type DetachedMagazine, parseMagazineView } from './magazineRounds.ts';
 import {
   buildPanelModel,
   clearParam,
@@ -162,7 +164,7 @@ const syncUrl = () => {
   if (colorMode === 'role') {
     params.set('colors', 'role');
   }
-  for (const key of ['ammo', 'ammoCase', 'facets']) {
+  for (const key of ['ammo', 'ammoCase', 'facets', 'mag', 'magFacets']) {
     const value = initialQuery.get(key);
     if (value !== null) {
       params.set(key, value);
@@ -193,17 +195,19 @@ sun.position.set(20, 40, 30);
 scene.add(sun);
 const ammoCartridge = cartridges.find((c) => c.id === initialQuery.get('ammo'));
 const caseFinish: CaseFinish = initialQuery.get('ammoCase') === 'brass' ? 'brass' : 'steel';
-const ammoMeshes: AmmoMeshes | undefined = ammoCartridge
-  ? buildAmmoMeshes(
-      ammoCartridge,
-      caseFinish,
-      ammoEnvironment(renderer),
-      Number(initialQuery.get('facets')) || DEFAULT_ROUND_FACETS,
-    )
-  : undefined;
+const ammoEnv = ammoCartridge ? ammoEnvironment(renderer) : undefined;
+const ammoMeshes: AmmoMeshes | undefined =
+  ammoCartridge && ammoEnv
+    ? buildAmmoMeshes(ammoCartridge, caseFinish, ammoEnv, Number(initialQuery.get('facets')) || DEFAULT_ROUND_FACETS)
+    : undefined;
 if (ammoMeshes) {
   scene.add(ammoMeshes.loose, ammoMeshes.fired);
 }
+// Spike: &mag=1|cut|xray also shows the gun's magazine detached and filled with rounds (&magFacets=<n>).
+const magView = parseMagazineView(initialQuery.get('mag'));
+const MAG_FACETS = 6;
+renderer.localClippingEnabled = magView !== undefined;
+let detachedMagazine: DetachedMagazine | undefined;
 /** Half the vertical distance between the loose round and the fired case, in gun units. */
 const AMMO_ROW_GAP_U = 1.5;
 const grid = new GridHelper(120, 60, 0x3a_3f_46, 0x26_2a_30);
@@ -355,9 +359,32 @@ const redraw = () => {
     scene.add(group);
   }
   placeAmmo(report);
+  placeDetachedMagazine(report, layers.solids);
   if (!framed) {
     frame(layers.solids);
     framed = true;
+  }
+};
+
+const placeDetachedMagazine = (shown: Report, solids: Group) => {
+  if (detachedMagazine) {
+    scene.remove(detachedMagazine.group);
+    disposeGroup(detachedMagazine.group);
+    detachedMagazine = undefined;
+  }
+  if (!(magView && ammoCartridge && ammoEnv)) {
+    return;
+  }
+  detachedMagazine = buildDetachedMagazine(shown, solids, ammoCartridge, {
+    view: magView,
+    finish: caseFinish,
+    env: ammoEnv,
+    facets: Number(initialQuery.get('magFacets')) || MAG_FACETS,
+  });
+  if (detachedMagazine) {
+    scene.add(detachedMagazine.group);
+    // Readable from the page (and scripts) without a console: the capacity the geometry allows.
+    view.dataset.magazineRounds = String(detachedMagazine.column.capacity);
   }
 };
 

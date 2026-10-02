@@ -14,6 +14,8 @@ const intentionallyUnofferedGungenParams = {
     'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
   ammo: 'Spike-only (roobie/skelly#109): draws a cartridge beside the gun; not a launcher feature yet.',
   ammoCase: 'Spike-only (roobie/skelly#109): case finish for the ?ammo cartridge.',
+  mag: "Spike-only (roobie/skelly#109): shows the gun's magazine detached and loaded (1, cut or xray); needs ?ammo.",
+  magFacets: 'Spike-only (roobie/skelly#109): revolve facet count for rounds inside the detached magazine.',
   facets: 'Spike-only (roobie/skelly#109): revolve facet count for the ?ammo cartridge.',
 };
 

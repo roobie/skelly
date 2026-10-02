@@ -20,7 +20,7 @@ import { METRES_PER_UNIT } from '../core/exportFrame.ts';
 import { meshForRevolved, scaleProfile } from '../core/revolve.ts';
 import type { Vec2 } from '../core/schema.ts';
 
-const UNITS_PER_MM = 1 / (METRES_PER_UNIT * 1000);
+export const UNITS_PER_MM = 1 / (METRES_PER_UNIT * 1000);
 /** Facets around the axis. A round is about 1 u across, so this is a facet roughly every 0.13 u of rim. */
 export const DEFAULT_ROUND_FACETS = 24;
 
@@ -32,7 +32,7 @@ const ROUND_CREASE_DEGREES = 12;
 
 export type CaseFinish = 'steel' | 'brass';
 
-interface Finish {
+export interface Finish {
   readonly caseMaterial: MeshPhysicalMaterial;
   readonly jacket: MeshPhysicalMaterial;
   readonly primer: MeshPhysicalMaterial;
@@ -46,7 +46,7 @@ export const ammoEnvironment = (renderer: WebGLRenderer): Texture => {
   return texture;
 };
 
-const finishes = (finish: CaseFinish, env: Texture): Finish => {
+export const finishes = (finish: CaseFinish, env: Texture): Finish => {
   const lacquered = finish === 'steel';
   const caseMaterial = lacquered
     ? // Lacquered steel, the 7.62x39 norm: a dark green-grey lacquer over steel, glossy from its clear coat.
@@ -73,7 +73,7 @@ const finishes = (finish: CaseFinish, env: Texture): Finish => {
   return { caseMaterial, jacket, primer };
 };
 
-const revolved = (profile: readonly Vec2[], facets: number, material: MeshPhysicalMaterial): Mesh => {
+export const revolvedGeometry = (profile: readonly Vec2[], facets: number): BufferGeometry => {
   const mesh = meshForRevolved({
     id: 'round',
     kind: 'revolved',
@@ -85,8 +85,11 @@ const revolved = (profile: readonly Vec2[], facets: number, material: MeshPhysic
   geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
   geometry.setIndex(new BufferAttribute(mesh.indices, 1));
-  return new Mesh(geometry, material);
+  return geometry;
 };
+
+const revolved = (profile: readonly Vec2[], facets: number, material: MeshPhysicalMaterial): Mesh =>
+  new Mesh(revolvedGeometry(profile, facets), material);
 
 export interface AmmoMeshes {
   /** A loaded round: case, primer and bullet. */
