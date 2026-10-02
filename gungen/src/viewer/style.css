@@ -29,7 +29,8 @@ body {
 #panel {
   width: 340px;
   flex: none;
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   padding: 16px;
   background: var(--panel);
   border-right: 1px solid var(--line);
@@ -124,22 +125,78 @@ h1 {
 .design-warnings li {
   color: var(--normal);
 }
-.part-warnings {
-  padding-left: 16px;
-  margin: 4px 0 8px;
+.part-badge {
+  flex: none;
   font-size: 10px;
+  font-weight: 400;
+  cursor: help;
 }
-.part-warnings li {
+.part-warnings {
   color: var(--normal);
-  margin: 3px 0;
 }
 .part-prefab {
-  margin: 0 0 8px;
   color: var(--muted);
-  font-size: 10px;
 }
 .part-prefab.stale {
   color: var(--normal);
+}
+#issues-btn {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin: 0 0 12px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#issues-btn.pass {
+  color: var(--pass);
+}
+#issues-btn.warning {
+  color: var(--normal);
+  border-color: var(--normal);
+}
+#issues-btn.fail {
+  color: var(--fail);
+  border-color: var(--fail);
+}
+#issues-btn:disabled {
+  opacity: 0.5;
+}
+/* Fixed-position so opening, closing or refilling it never reflows the side panel or the parameter grid. */
+#issues-overlay {
+  position: fixed;
+  top: 16px;
+  left: 356px;
+  z-index: 10;
+  width: min(440px, calc(100vw - 372px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+#issues-overlay[hidden] {
+  display: none;
+}
+#issues-notice {
+  margin: 0 0 8px;
+  color: var(--fail);
+  font-weight: 600;
+}
+#issues-notice:empty {
+  display: none;
+}
+#issues-overlay:focus,
+#issues li:focus {
+  outline: 1px solid var(--muted);
+}
+#issues-overlay h2 {
+  margin: 8px 0 4px;
+  font-size: 13px;
 }
 #status {
   font-weight: 600;
@@ -254,10 +311,11 @@ button:hover {
   right: 0;
   bottom: 0;
   max-height: 32vh;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: auto;
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  align-items: start;
   gap: 8px;
   padding: 10px;
   background: rgba(31, 34, 39, 0.92);
@@ -266,21 +324,27 @@ button:hover {
 #param-panel:empty {
   display: none;
 }
-.param-reset {
-  flex: none;
-  align-self: center;
+.param-meta {
+  height: 120px;
+  margin: 0;
+  overflow: hidden;
+}
+.param-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .param-note {
-  flex: none;
-  align-self: center;
-  max-width: 260px;
-  margin: 0;
+  height: 48px;
+  margin: 8px 0 0;
+  overflow-y: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.param-note.dropped {
   color: var(--fail);
-  font-size: 12px;
 }
 .param-part {
-  flex: none;
-  width: 230px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 8px 10px;
@@ -291,13 +355,23 @@ button:hover {
   font-weight: 600;
   margin-bottom: 6px;
   display: flex;
-  justify-content: space-between;
+  align-items: baseline;
   gap: 6px;
+  height: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.part-title .part-id {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .param-part.optional .part-title {
   color: var(--normal);
 }
 .part-title .family {
+  margin-left: auto;
+  flex: none;
   color: var(--muted);
   font-weight: 400;
 }
