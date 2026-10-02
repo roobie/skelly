@@ -4,7 +4,7 @@ import { seededRng } from '../src/core/random.ts';
 import type { ParamReference, Template } from '../src/core/template.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { TEMPLATES } from '../src/gun/templates.ts';
+import { SUSPENDED_TEMPLATE_NAMES, SUSPENDED_TEMPLATES, TEMPLATES } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 300;
@@ -83,6 +83,12 @@ describe('generate', () => {
 });
 
 describe('templates', () => {
+  it('keeps bullpup suspended and out of the active generator registry', () => {
+    expect(SUSPENDED_TEMPLATE_NAMES.has('bullpup')).toBe(true);
+    expect(SUSPENDED_TEMPLATES.map(({ name }) => name)).toContain('bullpup');
+    expect(TEMPLATES.map(({ name }) => name)).not.toContain('bullpup');
+  });
+
   for (const t of TEMPLATES) {
     describe(t.name, () => {
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
@@ -134,18 +140,20 @@ describe('templates', () => {
 // Same describe names as above so the snapshot keys stay `templates > <name> > known-good seeds`.
 sweepGroup('templates', () => {
   for (const t of TEMPLATES) {
+    const chunkSize = t.name === 'ar' || t.name === 'ak' ? 10 : CHUNK;
     describe(t.name, () => {
       // Chunked by seed range so each test stays well inside the default timeout; the sweep
-      // runs only in CI (see sweeps.ts) and its timeouts are never raised. The half-valid floor
-      // is an aggregate over all SEEDS seeds, so chunks tally into a memoized count and one final
-      // test asserts it (computing any chunk that has not run, e.g. under `-t`).
+      // runs only in CI (see sweeps.ts) and its timeouts are never raised. An isolated 25-seed
+      // chunk measured 1.285s for AR and 2.175s for AK, so those expensive families use 10-seed
+      // chunks. The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
+      // memoized count and one final test asserts it (computing any chunk that has not run, e.g. under `-t`).
       // Each chunk test also records its valid count, so the final test is normally free.
       const validIn = new Map<number, number>();
       const countValid = (from: number) => {
         let count = validIn.get(from);
         if (count === undefined) {
           count = 0;
-          for (let seed = from; seed < from + CHUNK; seed++) {
+          for (let seed = from; seed < from + chunkSize; seed++) {
             if (validate(generate(t, gunDomain, seed), gunDomain).ok) {
               count += 1;
             }
@@ -154,10 +162,10 @@ sweepGroup('templates', () => {
         }
         return count;
       };
-      for (let from = 0; from < SEEDS; from += CHUNK) {
-        it(`never produces a structurally broken file (seeds ${from}-${from + CHUNK - 1})`, () => {
+      for (let from = 0; from < SEEDS; from += chunkSize) {
+        it(`never produces a structurally broken file (seeds ${from}-${from + chunkSize - 1})`, () => {
           let count = 0;
-          for (let seed = from; seed < from + CHUNK; seed++) {
+          for (let seed = from; seed < from + chunkSize; seed++) {
             const { issues, ok } = validate(generate(t, gunDomain, seed), gunDomain);
             if (ok) {
               count += 1;
@@ -173,7 +181,7 @@ sweepGroup('templates', () => {
 
       it(`is valid at least half the time (${SEEDS} seeds)`, () => {
         let valid = 0;
-        for (let from = 0; from < SEEDS; from += CHUNK) {
+        for (let from = 0; from < SEEDS; from += chunkSize) {
           valid += countValid(from);
         }
         expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);

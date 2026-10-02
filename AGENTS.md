@@ -33,6 +33,25 @@ npm ci --prefix deadvox/tools/lit-check   # for deadvox's lint:lit
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
+## Tests
+
+More tests is not better QA; a test earns its place by catching a bug no other test
+catches. So:
+
+- Each test protects one specific behaviour or constraint, and its name says which. Don't
+  add a near-duplicate case for comfort.
+- Prefer targeted cases and covering arrays (every pair or triple of parameter values)
+  over full cartesian products and long seed loops. Exhaustive sweeps go behind the
+  project's sweep flag (gungen: `GUNGEN_SWEEPS`), and only if something runs that flag.
+- Measure before adding or cutting: coverage classes show which cases exercise the same
+  code; mutation testing (inject small bugs, see which tests catch them) shows which
+  tests actually detect anything. A removal states what the test protected and which
+  remaining test still catches it.
+- Keep the default run fast and deterministic. A slow test gets split, or a timeout
+  proportional to its work, never a flat generous one.
+
+Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
+
 ## Further docs
 
 - Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.

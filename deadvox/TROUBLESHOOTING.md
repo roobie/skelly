@@ -55,9 +55,12 @@ test fails when it drifts.
 | Diagnostics | `End` | Crack check (magenta background) | `crackcheck=1` |
 | Diagnostics | `PgDn` | Hot-pixel check (coloured) | `hotcheck=1` |
 | Diagnostics | — | Mouse readout (bottom left, always on) | — |
+| Diagnostics | `F4` | Performance overlay | — |
 | Share | — | Camera pose, kept in the address bar | `cam=x,y,z,yaw,pitch,roll` |
 | Share | — | Dump look settings (JSON), a button | — |
 <!-- debug-keys:end -->
+
+In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every content item that has a melee weapon definition; normal games and restored saves are unchanged. `G` opens the spawn menu with its search field focused. Type to filter, use Up/Down to move the highlighted selection, Enter to spawn and close, or Tab to dismiss without spawning. Search-field keys do not control the player.
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.

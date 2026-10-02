@@ -16,7 +16,7 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue } from '../core/handling.ts';
+import { HandlingQueue, type TickResult } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
@@ -135,6 +135,8 @@ export interface SessionOptions {
   audio: SessionAudio;
   /** A message that isn't an interruption, such as why a move was refused. */
   notice: (text: string) => void;
+  /** Observational hook for actual handling completion/failure outcomes. */
+  onHandlingOutcomes?: (result: TickResult) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -445,7 +447,9 @@ export const createSession = (options: SessionOptions) => {
       if (compression.c > 1) {
         return;
       }
-      for (const { job, reason } of queue.tick(dt).failed) {
+      const result = queue.tick(dt);
+      options.onHandlingOutcomes?.(result);
+      for (const { job, reason } of result.failed) {
         options.notice(`${job.label}: ${reason.toLowerCase()}`);
       }
     },
@@ -513,6 +517,8 @@ export const createSession = (options: SessionOptions) => {
     restoredLook,
     /** The player's noise state; saved with the character. */
     playerAudio,
+    worldDiffs: () => world.snapshotDiffs((id) => registry.blocks[id]!.id),
+    audioState: () => audio.snapshotState(),
     feet,
     chest,
     pileDistance,

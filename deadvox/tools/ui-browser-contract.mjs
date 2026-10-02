@@ -141,6 +141,7 @@ try {
     await send('Input.dispatchKeyEvent', { type: 'keyUp', code, key, windowsVirtualKeyCode: virtualKey });
     await delay(80);
   };
+  const typeText = async (text) => send('Input.insertText', { text });
   const lastKeyEvent = async (code) =>
     evaluate(`window.__keyEvents.filter((event) => event.code === ${JSON.stringify(code)}).at(-1)`);
 
@@ -151,6 +152,88 @@ try {
   );
   const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
   const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
+  assert.equal(
+    await evaluate(`(() => {
+      const controls = document.querySelector('#controls');
+      const entries = [...controls.querySelectorAll('dt')];
+      const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
+      return entries.length >= 13 && controls.textContent.includes('F9') &&
+        entries.every((key) => key.nextElementSibling?.tagName === 'DD') &&
+        columns.length === 1 && document.querySelector('#overlay .card').getBoundingClientRect().width <= 362;
+    })()`),
+    true,
+    'binding-derived controls stack in one column inside the narrower pause card',
+  );
+  assert.equal(
+    await evaluate(
+      `document.querySelector('#about a[href*=${JSON.stringify('template=playtest-feedback.md')}]')?.href`,
+    ),
+    'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md',
+    'feedback link opens the playtest issue template',
+  );
+  await evaluate(`(() => {
+    window.__metricsBlob = undefined;
+    URL.createObjectURL = (blob) => { window.__metricsBlob = blob; return 'blob:playtest-metrics'; };
+    URL.revokeObjectURL = () => {};
+    HTMLAnchorElement.prototype.click = function() { if (this.download) window.__metricsFilename = this.download; };
+  })()`);
+  await evaluate(`(() => {
+    window.__f4Prevented = false;
+    window.addEventListener('keydown', (event) => {
+      if (event.code === 'F4') window.__f4Prevented = event.defaultPrevented;
+    });
+  })()`);
+  await press('F3', 'F3', 114);
+  assert.equal(
+    await evaluate("document.querySelector('#f3-debug-overlay').hidden"),
+    true,
+    'F3 no longer toggles the performance overlay',
+  );
+  await press('F4', 'F4', 115);
+  await waitFor(() => evaluate("!document.querySelector('#f3-debug-overlay').hidden"), 'F4 overlay opens');
+  assert.match(
+    await evaluate("document.querySelector('#f3-debug-overlay').textContent"),
+    /snapshot .*p95/i,
+    'F4 readout includes snapshot statistics',
+  );
+  assert.equal(await evaluate('window.__f4Prevented'), true, 'F4 prevents the browser default');
+  await press('F4', 'F4', 115);
+  await waitFor(() => evaluate("document.querySelector('#f3-debug-overlay').hidden"), 'F4 overlay closes');
+  await press('Backquote', '`', 192);
+  await evaluate(`(() => {
+    document.querySelector('#debug-time').value = '08:00';
+    document.querySelector('#set-debug-time')?.click();
+    Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Reveal zombies'))?.click();
+  })()`);
+  await waitFor(
+    () => evaluate("document.querySelector('#debug-readout').textContent.includes('Day 2, 08:00')"),
+    'backward debug-time request advances to the next day',
+  );
+  assert.match(
+    await evaluate(
+      "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Reveal zombies')).textContent",
+    ),
+    /ON/,
+    'debug panel reveals zombie positions',
+  );
+  await evaluate(
+    `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Measure snapshot'))?.click()`,
+  );
+  await waitFor(
+    () => evaluate("document.querySelector('.debug-panel').textContent.includes('Snapshot 50×')"),
+    'on-demand snapshot measurement',
+  );
+  await evaluate(
+    `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Export metrics'))?.click()`,
+  );
+  const exportedMetrics = await evaluate('window.__metricsBlob?.text().then((text) => JSON.parse(text))');
+  assert.equal(exportedMetrics.schemaVersion, 1, 'metrics download is valid versioned JSON');
+  assert.match(
+    await evaluate('window.__metricsFilename'),
+    /^deadvox-metrics-seed-\d+\.json$/,
+    'metrics download has a useful filename',
+  );
+  await press('Backquote', '`', 192);
   await evaluate(`(() => {
     const canvas = document.querySelector('canvas');
     let locked = false;
@@ -291,7 +374,9 @@ try {
   await press('Tab', 'Tab', 9);
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'Tab closes inventory');
   assert.equal(
-    await evaluate("document.querySelector('[data-key-binding=mainMenu]').textContent"),
+    await evaluate(
+      "[...document.querySelectorAll('#controls dt')].find((node) => node.textContent === 'F9')?.textContent",
+    ),
     keyBindings.mainMenu.label,
     'help label comes from the key binding table',
   );
@@ -319,6 +404,7 @@ try {
     await evaluate("document.querySelector('#overlay .card').scrollTop > 0"),
     'wheel scrolls the locked main menu',
   );
+  await evaluate("document.querySelector('#audio-volume-world').scrollIntoView({ block: 'center' })");
   await clickAt('#audio-volume-world');
   const savedWorldVolume = Number(await evaluate("document.querySelector('#audio-volume-world').value"));
   assert.notEqual(savedWorldVolume, 0.8, 'F9 menu click changes the world volume slider');
@@ -416,7 +502,15 @@ try {
     'G is not typed into the focused search field',
   );
   await press('KeyG', 'g', 71);
-  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'G closes spawn menu');
+  assert.equal(
+    await evaluate("!document.querySelector('#spawn').hidden"),
+    true,
+    'G does not close the menu while the search field is focused',
+  );
+  await typeText('g');
+  assert.equal(await evaluate("document.querySelector('#spawn input').value"), 'g', 'focused search accepts text');
+  await press('Tab', 'Tab', 9);
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes spawn menu');
   await press('Backquote', '`', 192);
   assert.equal(await evaluate("!document.querySelector('.debug-panel').hidden"), true, 'Backquote opens debug panel');
   assert.equal(
@@ -430,6 +524,9 @@ try {
       "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 1 shamblers')).textContent",
     ),
     /Spawn 1 shamblers \(V\)/,
+  );
+  await evaluate(
+    `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
   );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
@@ -448,13 +545,21 @@ try {
     '2',
     'spawn count remains selected',
   );
+  await evaluate(
+    `document.querySelector('[aria-label="Decrease shambler count"]').scrollIntoView({ block: 'center' })`,
+  );
   await clickAt('[aria-label="Decrease shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
   assert.equal(await evaluate('document.querySelector(\'[aria-label="Decrease shambler count"]\').disabled'), true);
+  await evaluate(
+    `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
+  );
+  await clickAt('[aria-label="Increase shambler count"]');
+  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
   await press('KeyV', 'v', 86);
   assert.match(
     await evaluate("document.querySelector('#shambler-spawn-status').textContent"),
-    /^Placed \d+ of 1$/,
+    /^Placed \d+ of 2$/,
     'V reports the number placed out of the selected count',
   );
   await press('KeyO', 'o', 79);
@@ -464,6 +569,75 @@ try {
     { request: 0, exit: 0 },
     'menu keys leave pointer lock alone',
   );
+
+  // Exercise keyboard input while pointer lock is held; the game's drawn-cursor menu route is active.
+  await press('KeyG', 'g', 71);
+  assert.equal(
+    await evaluate("document.activeElement === document.querySelector('#spawn input')"),
+    true,
+    'G focuses search',
+  );
+  const positionBeforeSearchKey = await evaluate(
+    "document.querySelector('#debug-readout').textContent.match(/position ([0-9.-]+, [0-9.-]+, [0-9.-]+)/)?.[1]",
+  );
+  await press('KeyW', 'w', 87);
+  await delay(150);
+  assert.equal(
+    await evaluate(
+      "document.querySelector('#debug-readout').textContent.match(/position ([0-9.-]+, [0-9.-]+, [0-9.-]+)/)?.[1]",
+    ),
+    positionBeforeSearchKey,
+    'typing W in search does not move the player',
+  );
+  await press('Tab', 'Tab', 9);
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes without spawning');
+
+  await press('KeyG', 'g', 71);
+  await typeText('a');
+  assert.ok(
+    (await evaluate("document.querySelectorAll('#spawn .spawn-list button').length")) > 1,
+    'typed filter narrows results',
+  );
+  const firstSpawnName = await evaluate(
+    "document.querySelector('#spawn .spawn-list button[aria-current=true] span').textContent",
+  );
+  await press('ArrowDown', 'ArrowDown', 40);
+  const selectedSpawnName = await evaluate(
+    "document.querySelector('#spawn .spawn-list button[aria-current=true] span').textContent",
+  );
+  assert.notEqual(selectedSpawnName, firstSpawnName, 'ArrowDown visibly changes the selected item');
+  await press('Enter', 'Enter', 13);
+  assert.equal(
+    await evaluate("document.querySelector('#spawn').hidden"),
+    true,
+    'Enter spawns selection and closes menu',
+  );
+  assert.deepEqual(
+    await evaluate('window.__pointerCalls'),
+    { request: 0, exit: 0 },
+    'keyboard flow leaves pointer lock alone',
+  );
+  await press('Tab', 'Tab', 9);
+  const nearbyAfterEnter = await evaluate(
+    "[...document.querySelectorAll('#inventory .inv-pane:nth-child(2) .inv-item-name')].map((item) => item.textContent)",
+  );
+  assert.ok(nearbyAfterEnter.includes(selectedSpawnName), 'Enter spawned the selected item');
+  await press('Tab', 'Tab', 9);
+
+  await press('KeyG', 'g', 71);
+  await typeText('crowbar');
+  assert.equal(await evaluate("document.querySelectorAll('#spawn .spawn-list button').length"), 1);
+  await press('Tab', 'Tab', 9);
+  assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab dismisses the filtered menu');
+  await press('Tab', 'Tab', 9);
+  assert.deepEqual(
+    await evaluate(
+      "[...document.querySelectorAll('#inventory .inv-pane:nth-child(2) .inv-item-name')].map((item) => item.textContent)",
+    ),
+    nearbyAfterEnter,
+    'Tab dismissed without spawning',
+  );
+  await press('Tab', 'Tab', 9);
 
   await press('KeyG', 'g', 71);
   const spawnNames = await evaluate(`Array.from(document.querySelectorAll('#spawn .spawn-list button'))
@@ -477,7 +651,7 @@ try {
     );
     await clickAt(`#spawn .spawn-list button:nth-child(${index + 1})`);
   }
-  await press('KeyG', 'g', 71);
+  await press('Tab', 'Tab', 9);
   if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
     await clickAt('#go', 'edge');
   }

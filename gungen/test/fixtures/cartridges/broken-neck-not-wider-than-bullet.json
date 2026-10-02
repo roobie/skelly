@@ -1,0 +1,6 @@
+{
+  "name": "broken-neck-not-wider-than-bullet",
+  "base": "7.62x39",
+  "set": { "case.body.neck.diameterAtMouth.value": 7.5 },
+  "expect": ["neck-wall"]
+}

@@ -28,6 +28,16 @@ simulation.
 The output is stylized low-poly models of assemblies. Sizes are expressed as
 size classes (see §4), not measurements.
 
+**Exception: ammunition.** Cartridges are modelled at real dimensions in
+millimetres and named by their real designations (for example 7.62×39mm). That
+amends the real-world-models non-goal and the size-class rule (§4) for
+cartridges only. Calibre is a gameplay identity, because ammo must match the
+gun, not a brand, and a standard (C.I.P., SAAMI) fixes a cartridge's dimensions
+rather than a designer choosing them. Guns keep size classes. Every cartridge
+dimension carries its source, and a value that can't be sourced stays empty.
+Tracked in roobie/skelly#109: data first, then geometry, viewer and export. The
+data format is described in `cartridges/README.md`.
+
 ## Decisions
 
 | Decision | Choice |
@@ -277,7 +287,6 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
-| `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
 The lengths below remain abstract units on the existing grid.
@@ -350,7 +359,6 @@ archetype:
 | `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
 | `broken-bolt-sight-over-loading-port` | `keep-out` | On a top-loaded action, a sight over the receiver blocks the loading port |
 | `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
-| `broken-bullpup-with-stock` | `solid-overlap` | A stock added where the built-in butt already is |
 
 ### Known gaps
 
@@ -367,8 +375,8 @@ archetype:
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
 - **Ergonomics is just "is there a firing grip".** Reach, length of pull and
-  cheek weld (§5) are not checked. For a bullpup, the ejection port sits next
-  to the shooter's face, and nothing checks that yet.
+  cheek weld (§5) are not checked. If the suspended bullpup returns, its ejection
+  port will need a face-clearance check.
 
 ## Milestone 1.2: feed check and params from neighbours
 
@@ -1238,7 +1246,16 @@ not part of the export's acceptance:
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
-  (gungen.2), with the deadvox schema change they need.
+  (gungen.2), with the deadvox schema change they need;
+- **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
+  but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
+  and its curated design and fixtures live byte-identically under `designs/suspended/`
+  and `fixtures/suspended/`. Its launcher options, corpus entries, generated snapshots,
+  and archetype-specific fixture test are out of the active pipeline. To restore it,
+  remove `bullpup` from that one set, move the three JSON files back to their scanned
+  directories, restore launcher/corpus references, and regenerate the scoped snapshots.
+  The default finish, palette, and `exportFile` variant entries remain as harmless dormant
+  data; the family code stays available for restoration.
 
 ### Parallel lanes
 
@@ -1313,11 +1330,15 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   aliased `it.runIf` would trip Biome's `noMisplacedAssertion`. `npm run test:sweeps` runs the whole suite that
   way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
   runs them.
-- **No raising timeouts.** A sweep that is too slow is split into smaller
-  tests (per template, per seed range), never given a longer timeout. The
-  current generator validation chunks are 25 seeds; the slowest AK chunk stays
-  under 1s locally. Some
-  sweeps will be removed, so their cost is not worth accommodating.
+- **Split before raising timeouts.** A sweep that is too slow is split into
+  smaller tests (per template, per seed range) rather than given a longer
+  timeout. A sweep that cannot be split gets a timeout proportional to its
+  work (see "Testing"), never a flat generous one. The current generator
+  validation chunks are 25 seeds. A 2026-10-01 measurement found them
+  unreliable under load: `generate.test.ts` chunks took 5-8 s at load 6-10 on
+  6 cores, and 17 timed out at the 5 s default, so the earlier "under 1 s
+  locally" claim is unverified. Some sweeps will be removed, so their cost is
+  not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
   seed range, and the `known-good seeds` snapshots, which are generator
   output. Tests over `fixtures/`, hand-built assemblies and single fixed
@@ -1364,6 +1385,30 @@ Removal plan, one line per gated sweep:
 Golden designs (3.1) become the regression corpus. Each published design
 gets a snapshot of its resolved solids (already planned), and property tests
 iterate `fixtures/` plus `designs/` instead of seeds.
+
+## Testing
+
+- **Say what a test protects.** Each test, or the comment above a group, states
+  the behaviour it guards. Two tests that catch the same bugs are one too many,
+  and a sweep earns its size only if its extra cases exercise different
+  behaviour.
+- **Exhaustive sweeps go behind `GUNGEN_SWEEPS`.** Use `sweepGroup` from
+  `test/sweeps.ts`; the default `npm test` keeps a representative sample and CI
+  runs everything. Build no cases for a skipped group (`runSweeps ? cases : []`),
+  because a skipped group still registers every case.
+- **Prefer a covering array to a full product in the default run.**
+  `test/coveringArray.ts` generates a fixed-seed t-wise array from a family's
+  `params`. `test/parts.test.ts` lists the array-sampled families in one place,
+  `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
+  explicit case for an interaction the array is known to miss.
+- **Removals need a reason.** The commit says what the removed tests protected
+  and which remaining test or sample still protects it, ideally with a mutation
+  or coverage result as evidence.
+- **Timeouts.** A test that takes about 1 s or more and still has the 5 s
+  default gets its own timeout, about 5x its measured time, with a comment
+  saying why. A sweep is split into smaller tests where it can be; one that
+  cannot (`unplacedParts.test.ts`) gets a timeout proportional to its case
+  count.
 
 ## Running it
 

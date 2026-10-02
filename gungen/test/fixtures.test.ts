@@ -19,13 +19,13 @@ describe('fixtures', () => {
     const archetypes = fixtures.filter((f) => f.name.startsWith('archetype-'));
     expect(archetypes.map((f) => f.name).sort()).toEqual([
       'archetype-ak',
+      'archetype-anti-materiel',
       'archetype-ar',
       'archetype-ar-free-float',
       'archetype-awm',
       'archetype-battle-rifle',
       'archetype-bolt-rifle',
       'archetype-bolt-rifle-box',
-      'archetype-bullpup',
       'archetype-pistol',
       'archetype-pump-shotgun',
       'archetype-revolver',
@@ -44,7 +44,8 @@ describe('fixtures', () => {
     });
   }
 
-  it('places every part of every fixture', () => {
+  // Measured about 4.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('places every part of every fixture', { timeout: 25_000 }, () => {
     for (const fixture of fixtures) {
       const { resolved } = validate(fixture, gunDomain);
       expect([...resolved.placed.keys()].sort()).toEqual(Object.keys(fixture.parts).sort());

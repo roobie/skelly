@@ -1,0 +1,39 @@
+{
+  "name": "archetype-anti-materiel",
+  "description": "Semi-automatic anti-materiel rifle: perforated box shroud over a recoiling barrel, two-chamber arrowhead muzzle brake, folding bipod, diagonal-strut carry handle on the left, wide recoil-pad stock with a rear monopod, 10-round box magazine.",
+  "expect": [],
+  "root": "receiver",
+  "parts": {
+    "receiver": { "family": "heavy-receiver", "params": { "action": "auto", "feed": "box", "bore": "L" } },
+    "bolt-carrier": { "family": "heavy-bolt-carrier" },
+    "lower": { "family": "heavy-lower" },
+    "barrel": { "family": "barrel", "params": { "length": "L" } },
+    "shroud": { "family": "barrel-shroud", "params": { "length": "L" } },
+    "brake": { "family": "muzzle-brake", "params": { "length": "L" } },
+    "grip": { "family": "grip", "params": { "length": "M" } },
+    "magazine": { "family": "heavy-magazine" },
+    "stock": { "family": "recoil-stock", "params": { "length": "L" } },
+    "sight": { "family": "sight" },
+    "trunnion": { "family": "handle-trunnion", "params": { "pose": "stowed" } },
+    "strut": { "family": "handle-strut" },
+    "bar": { "family": "handle-bar" },
+    "bipod": { "family": "bipod", "params": { "legs": "L", "pose": "folded" } },
+    "monopod": { "family": "monopod", "params": { "pose": "folded" } }
+  },
+  "connections": [
+    { "from": "receiver.lower", "to": "lower.top" },
+    { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
+    { "from": "receiver.handguard", "to": "shroud.rear" },
+    { "from": "barrel.muzzle", "to": "brake.base" },
+    { "from": "lower.grip", "to": "grip.top" },
+    { "from": "lower.magazine", "to": "magazine.top" },
+    { "from": "receiver.stock", "to": "stock.front" },
+    { "from": "receiver.rail", "slot": 5, "to": "sight.base" },
+    { "from": "shroud.trunnion", "to": "trunnion.base" },
+    { "from": "trunnion.strut", "to": "strut.base" },
+    { "from": "strut.top", "to": "bar.base" },
+    { "from": "shroud.bipod", "to": "bipod.base" },
+    { "from": "stock.monopod", "to": "monopod.base" }
+  ]
+}

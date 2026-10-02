@@ -3,7 +3,9 @@ import {
   calendarAt,
   defaultClock,
   formatClock,
+  nextTimeOfDay,
   parseTimeOfDay,
+  SECONDS_PER_DAY,
   simSecondsPerHour,
   skipTarget,
 } from '../src/core/clock.ts';
@@ -39,9 +41,37 @@ describe('clock', () => {
     expect(parseTimeOfDay('24:00')).toBeUndefined();
     expect(parseTimeOfDay('noon')).toBeUndefined();
   });
+
+  it('selects the next occurrence, including tomorrow when the requested time is now or earlier', () => {
+    const today = 3 * 24 * 3600;
+    expect(nextTimeOfDay(today + 8 * 3600, 9 * 3600)).toBe(today + 9 * 3600);
+    expect(nextTimeOfDay(today + 8 * 3600, 8 * 3600)).toBe(today + 24 * 3600 + 8 * 3600);
+    expect(nextTimeOfDay(today + 9 * 3600, 8 * 3600)).toBe(today + 24 * 3600 + 8 * 3600);
+  });
 });
 
 describe('Simulation', () => {
+  it('rejects backward debug seeks and keeps existing absolute timestamps in the past', () => {
+    const sim = new Simulation({ seed: 1 });
+    let absoluteStartTime = -1;
+    sim.scheduler.register({
+      id: 'absolute-state',
+      rate: 1,
+      tick: (_dt, time) => {
+        absoluteStartTime = time;
+      },
+    });
+    sim.frame(2);
+    expect(absoluteStartTime).toBe(sim.time);
+    expect(() => sim.setDebugCalendarTime(sim.calendar - 1)).toThrow('Invalid debug calendar time');
+
+    const targetCalendar = sim.calendar + SECONDS_PER_DAY + 3600;
+    sim.setDebugCalendarTime(targetCalendar);
+    expect(sim.calendar).toBe(targetCalendar);
+    expect(absoluteStartTime).toBeLessThanOrEqual(sim.time);
+    expect(sim.scheduler.snapshotState().systems.every((system) => system.done <= sim.time)).toBe(true);
+  });
+
   it('emits damage events with cause and amount for audio and noise consumers', () => {
     const sim = new Simulation({ seed: 1 });
     const events = sim.events.reader();
