@@ -8,6 +8,7 @@ on:
     paths:
       - 'deadvox/**'
       - 'mobgen/src/**'
+      - 'testPool.ts'
       - '!**/*.md'
       - 'deadvox/TROUBLESHOOTING.md'
       - '.github/workflows/deadvox.yml'
@@ -15,6 +16,7 @@ on:
     paths:
       - 'deadvox/**'
       - 'mobgen/src/**'
+      - 'testPool.ts'
       - '!**/*.md'
       - 'deadvox/TROUBLESHOOTING.md'
       - '.github/workflows/deadvox.yml'

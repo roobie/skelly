@@ -4,9 +4,9 @@ name: mobgen
 on:
   push:
     branches: [main]
-    paths: ['mobgen/**', '!**/*.md', '.github/workflows/mobgen.yml']
+    paths: ['mobgen/**', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
   pull_request:
-    paths: ['mobgen/**', '!**/*.md', '.github/workflows/mobgen.yml']
+    paths: ['mobgen/**', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
 
 jobs:
   check:

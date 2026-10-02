@@ -6,6 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defineConfig } from 'vitest/config';
+import { TEST_POOL } from '../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
 import {
@@ -203,6 +204,7 @@ export default defineConfig({
   },
   worker: { format: 'es' },
   test: {
+    ...TEST_POOL,
     include: ['test/**/*.test.ts'],
   },
 });
