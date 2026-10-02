@@ -191,6 +191,11 @@ needs arrives in Slice 3.
    advanced coders.
 5. **Keep "more tests ≠ better"** (BR): every test names what it protects; sweeps go
    behind flags; the default run has a time budget. Merge r4 (#153).
-6. **Check each PR against main before opening it**, and say the merge order when two
+6. **No flaky tests** (BR, 2026-10-03): "we shall not have them. If we can't make them
+   un-flaky, we must disable them from CI and get to the bottom of _why_ they are
+   flakes." A flaky test is fixed or taken out of CI at once. A disabled one gets a
+   tracking issue for its root cause; it's never retried until it passes, and its
+   timeout is never raised to hide it.
+7. **Check each PR against main before opening it**, and say the merge order when two
    open PRs touch the same code.
-7. **Slice exit as a checklist issue** from day one, like #149, not at the end.
+8. **Slice exit as a checklist issue** from day one, like #149, not at the end.
