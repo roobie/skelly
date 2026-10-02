@@ -33,7 +33,7 @@ const issues = (raw: unknown): string[] => {
 };
 
 describe('cartridge files', () => {
-  it('has at least the first cartridge', () => {
+  it('ships at least one cartridge, so the it.each below is never empty and passing vacuously', () => {
     expect(cartridgeFiles()).toContain('7.62x39.json');
   });
 
@@ -129,9 +129,10 @@ describe('case shapes', () => {
     expect(unsourcedPaths(cartridge)).toEqual([]);
   });
 
-  it('needs no absolute size limits: a shape holds from a few mm to a .50 BMG-sized round', () => {
-    // Scale every length of a valid synthetic round; the rules compare, they never cap.
-    for (const factor of [0.4, 1, 2.6]) {
+  it('sets no absolute size limit: the same shape stays valid from a few mm to a .50 BMG-sized round', () => {
+    // Scale every length of a valid synthetic round; the rules compare, they never cap. Factor 1 is
+    // the unscaled shape, which 'synthetic %s is valid and fully sourced' already checks.
+    for (const factor of [0.4, 2.6]) {
       const json = syntheticJson('rimless-bottleneck');
       const scaled = JSON.parse(JSON.stringify(json), (key, value: unknown) =>
         key === 'value' && typeof value === 'number' ? value * factor : value,
