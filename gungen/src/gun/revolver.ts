@@ -759,6 +759,7 @@ export const revolverAlignment = {
     }
     const inverseFrame = invert(r.placed.get(frame)!);
     const strapBounds = localSolidBounds(strap);
+    const frameHalfWidth = FRAME_SIZE[r.params.get(frame)?.frameSize?.value ?? 'M']!.width / 2;
     const cylinderPoints = cylinderSolids.flatMap((solid) =>
       worldVertices(r, cylinder, solid).map((point) => {
         const frameLocal = applyPoint(inverseFrame, point);
@@ -774,6 +775,8 @@ export const revolverAlignment = {
     return (
       strapBounds[0][0] >= cylinderMinX - TOLERANCE &&
       strapBounds[1][0] <= FRAME_FRONT_X + TOLERANCE &&
+      strapBounds[0][2] >= -frameHalfWidth - TOLERANCE &&
+      strapBounds[1][2] <= frameHalfWidth + TOLERANCE &&
       strapBounds[0][2] >= cylinderMinZ - TOLERANCE &&
       strapBounds[1][2] <= cylinderMaxZ + TOLERANCE
     );
