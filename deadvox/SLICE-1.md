@@ -612,7 +612,11 @@ a measurement of `ubuntu-latest` or the i7-1185G7 reference laptop.
 **Status:** the current-build round trip replaces the planned golden fixture,
 as required by strict version refusal. CI checks the ten-hour size and load
 budgets; the 1 ms reference-laptop snapshot p95 is measured in-game under §1.11,
-outside this Node benchmark.
+outside this Node benchmark. On 2026-10-02, BR measured it in Firefox: 50 batches
+of 128 captures (6,400 total), with a detected 1 ms timer and 27 ms calibration;
+p50 was 0.203 ms/capture and p95 was 0.219 ms/capture. These percentiles are of
+the batch means (batch duration divided by 128); state was unchanged. The p95
+meets the target of 1 ms or less.
 
 **Delivered beyond the plan:** the hamlet scenario compares a SHA-256 state hash
 across save/reload, and CI checks a ten-game-hour save against tightened size

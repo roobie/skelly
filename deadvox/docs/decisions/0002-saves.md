@@ -399,7 +399,12 @@ instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 at barriers, never move serialization/disk work onto the frame. The snapshot p95
 is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
 save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
-runner-bound save budgets, not general device targets.
+runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
+the reference-laptop snapshot budget in Firefox: 50 batches of 128 captures
+(6,400 total), detected timer resolution 1 ms, calibration 27 ms, p50 0.203
+ms/capture and p95 0.219 ms/capture, with state unchanged. The p50/p95 are
+percentiles of the per-batch means (batch time divided by 128); the p95 meets
+the target of 1 ms or less.
 
 ### Continue, New world, and implementation plan
 
