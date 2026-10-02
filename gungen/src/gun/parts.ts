@@ -150,7 +150,7 @@ const AK_GAS_BLOCK_CLEARANCE = 0.1;
 const AK_GAS_BLOCK_HALF_LENGTH = 1;
 const akHandguardLength = (length: SizeClass): number => AK_HANDGUARD_LENGTH[length];
 
-/** Tube magazines keep clearance below the barrel for their cap and support hardware. */
+/** Tube magazines keep a shared barrel-support clearance; the forend is slimmed to show its top. */
 const TUBE_HALF_HEIGHT = 1;
 const PUMP_TUBE_CAP_LENGTH = 2.5;
 const PUMP_TUBE_CAP_END_INSET = 0.5;
@@ -161,7 +161,7 @@ const TUBE_RECEIVER_CLEARANCE = 0.25;
 const PUMP_RECEIVER_DROP = 1;
 const PUMP_FOREND_MOUNT_X = 8;
 const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
-const PUMP_FOREND_WALL = 0.5 * 1.1;
+const PUMP_FOREND_WALL = 0.25;
 const PUMP_TUBE_LENGTH_PERCENTAGES = ['50', '75', '100'] as const;
 
 // A box magazine's section: front to back, and side to side. 1.8× the first
@@ -2835,6 +2835,7 @@ export const forend: PartFamily = {
       [-outerRadius, -corner * outerRadius],
       [-outerRadius, corner * outerRadius],
       [-corner * outerRadius, outerRadius],
+      [corner * outerRadius, outerRadius],
       [outerTopY, corner * outerRadius],
       [outerTopY, slitHalfWidth],
       [outerTopY, -slitHalfWidth],
@@ -2846,6 +2847,7 @@ export const forend: PartFamily = {
       [-innerRadius, -corner * innerRadius],
       [-innerRadius, corner * innerRadius],
       [-corner * innerRadius, innerRadius],
+      [corner * innerRadius, innerRadius],
       [innerRadius, corner * innerRadius],
       [innerRadius, slitHalfWidth],
       [innerRadius, -slitHalfWidth],
@@ -2854,16 +2856,18 @@ export const forend: PartFamily = {
       [-corner * innerRadius, -innerRadius],
     ];
     const shellFacets: Solid[] = [];
-    for (let index = 0; index < outer.length - 1; index++) {
-      if (index === 4) {
+    for (let index = 0; index < outer.length; index++) {
+      if (index === 5) {
         continue;
       }
+      const next = (index + 1) % outer.length;
       shellFacets.push({
         id: `shell-${shellFacets.length + 1}`,
         kind: 'extruded-polygon',
-        profile: [outer[index]!, inner[index]!, inner[index + 1]!, outer[index + 1]!],
+        profile: [outer[index]!, inner[index]!, inner[next]!, outer[next]!],
         axis: 'x',
         z: [0, PUMP_FOREND_LENGTH],
+        display: { bevel: false, outline: false, mergeGroup: 'pump-forend-shell' },
       });
     }
     return {

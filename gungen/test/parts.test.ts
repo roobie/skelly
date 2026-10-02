@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { GRID } from '../src/core/conventions.ts';
 import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { cross, dot, length } from '../src/core/math.ts';
-import { meshForSolid } from '../src/core/mesh.ts';
+import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -803,7 +803,9 @@ describe('pump stock raised butt heel', () => {
 describe('pump shotgun tube and barrel contact', () => {
   it('builds a watertight near-complete tubular forend with a narrow top slit', () => {
     const forend = FAMILIES.forend!.build({});
-    expect(forend.solids).toHaveLength(7);
+    expect(forend.solids).toHaveLength(9);
+    expect(forend.solids.every((component) => component.display?.mergeGroup === 'pump-forend-shell')).toBe(true);
+    expectWatertightMesh(meshForSolidGroup(forend.solids), 'merged pump forend shell');
     for (const component of forend.solids) {
       if (component.kind !== 'extruded-polygon' || component.axis !== 'x') {
         throw new Error('pump forend shell facets must be X-axis polygon extrusions');
@@ -813,7 +815,7 @@ describe('pump shotgun tube and barrel contact', () => {
       expectWatertightMesh(meshForSolid(component), `forend ${component.id}`);
     }
     const topSlitFacets = forend.solids.filter(
-      (component) => component.kind === 'extruded-polygon' && component.profile.some(([y, z]) => Math.abs(y - 1.45) < 1e-8 && Math.abs(Math.abs(z) - 0.1) < 1e-8),
+      (component) => component.kind === 'extruded-polygon' && component.profile.some(([y, z]) => Math.abs(y - 1.15) < 1e-8 && Math.abs(Math.abs(z) - 0.1) < 1e-8),
     );
     expect(topSlitFacets).toHaveLength(2);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });

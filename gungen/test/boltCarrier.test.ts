@@ -962,7 +962,7 @@ describe('procedural bolt carrier', () => {
     }
     expect(receiverSectionHasMaterialAt(receiver.solids, -1, 0, 1.95), 'receiver side ahead of the port').toBe(true);
     for (const x of [-5, -2, -0.25]) {
-      expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY + 1.4, 0), `internal slot x=${x}`).toBe(false);
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY + 1.1, 0), `internal slot x=${x}`).toBe(false);
     }
   });
 
