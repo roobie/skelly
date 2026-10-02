@@ -35,7 +35,16 @@
       "licence": "CC0-1.0",
       "download": null,
       "files": ["assets/models/rifle_assault.glb"],
-      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; original project-built geometry, +x forward and +y up"
+      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; cartridge metadata from the sourced 5.56x45 design; original project-built geometry, +x forward and +y up"
+    },
+    {
+      "title": "Gungen 5.56x45 cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/5.56x45.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/round-5_d_56x45.glb", "assets/models/case-5_d_56x45.glb"],
+      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; round includes the projectile and case, case includes the fired case and primer"
     },
     {
       "title": "15 vocal male strain/hurt/pain/jump sounds",

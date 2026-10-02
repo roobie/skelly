@@ -262,8 +262,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   });
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
-  const caseEffects = new CaseEffects(s);
+  const caseEffects = new CaseEffects(s, models);
   scene.add(caseEffects.mesh);
+  globalThis.addEventListener('pagehide', () => {
+    piles.dispose();
+    caseEffects.dispose();
+  });
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const held = new HeldItems(inventory, models, playerPalette);

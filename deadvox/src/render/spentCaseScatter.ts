@@ -11,18 +11,27 @@ export interface SpentCaseInstance {
   readonly rotation: Vec3;
 }
 
+export interface SpentCaseScatterInput {
+  readonly worldSeed: number;
+  readonly pilePos: Vec3;
+  readonly count: number;
+  readonly blockSize: number;
+  readonly key?: string;
+}
+
 /** Stable from world seed, pile anchor and count; after the cap, the layout stays unchanged. */
-export const spentCaseScatter = (
-  worldSeed: number,
-  pilePos: Vec3,
-  count: number,
-  blockSize: number,
-): SpentCaseInstance[] => {
+export const spentCaseScatter = ({
+  worldSeed,
+  pilePos,
+  count,
+  blockSize,
+  key = '',
+}: SpentCaseScatterInput): SpentCaseInstance[] => {
   const shown = Math.min(Math.max(0, Math.floor(count)), SPENT_CASE_SCATTER_CAP);
   if (shown === 0) {
     return [];
   }
-  const rng = Rng.stream(worldSeed, `spent-case-pile:${pilePos.join(',')}`);
+  const rng = Rng.stream(worldSeed, `spent-case-pile:${pilePos.join(',')}:${key}`);
   const phase = rng.range(0, 2 * Math.PI);
   const spread = blockSize * (0.12 + 0.3 * Math.sqrt((shown - 1) / (SPENT_CASE_SCATTER_CAP - 1)));
   const goldenAngle = Math.PI * (3 - Math.sqrt(5));

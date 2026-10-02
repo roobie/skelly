@@ -142,7 +142,7 @@ Recipes are content, checked by the validator like the rest:
   "id": "torch",
   "result": { "item": "torch", "count": 1 },
   "time": 20,
-  "skills": { "survival": 0 },
+  "skills": { "crafting": 0 },
   "qualities": { "cutting": 1 },
   "components": [
     [{ "item": "stick", "count": 1 }, { "item": "branch", "count": 1 }],
@@ -311,19 +311,24 @@ components), appliance state (switches, when the current rate started, settled
 values), known recipes and skill levels. Two consequences for 1.9:
 
 - **Long actions are data.** A long action is saved as its kind and progress
-  (for a craft, that's the work item), never as a closure. `HandlingQueue`'s
-  action jobs hold closures today; that's fine because the handling queue
-  isn't saved (it's seconds long), and a save made mid-handling drops the
-  unfinished jobs.
-- **Settle before saving.** Saving settles every running process to the save
-  time, so a loaded save continues from exact values.
+  (for a craft, that's the work item), never as a closure. Handling jobs are
+  tagged data with their handlers in the runtime; a save snapshot cancels
+  ordinary pending handling jobs in the snapshot copy, without changing the
+  live queue. Slice 2's long actions have their own saved continuation data
+  ([SLICE-2.md](SLICE-2.md), 2.4).
+- **Settle before saving.** Saving projects every running process to the save
+  time in the snapshot copy, so a loaded save continues from exact values. The
+  running process itself isn't changed: taking a snapshot is pure
+  ([ADR 0002](docs/decisions/0002-saves.md)).
 
 ## Testing
 
 - The planner: fixture recipes and reach snapshots, including competing groups,
   preferences, and missing qualities.
-- Long actions: a craft interrupted and resumed ends at the same game time and
-  with the same result as one that ran straight through.
+- Long actions: with a fixed recipe, skill and workstation, a craft interrupted
+  and resumed needs the same accumulated active work, and gives the same result,
+  as one that ran straight through. Time spent stopped moves the world on but
+  not the job.
 - Processes: catch-up in one step equals ticking every second (CHALLENGES.md 11),
   including a rate change in the middle.
 - View models: built from fixtures and compared, without a DOM.
@@ -335,8 +340,8 @@ values), known recipes and skill levels. Two consequences for 1.9:
 2. **1.8, rest and sleep:** build the long action as the general mechanism, with
    rest and sleep as its first users.
 3. **1.9, saves:** long actions and item state as plain data, as above.
-4. **Slice 2:** first, port the inventory screen to lit-html, with its
-   behaviour unchanged, which completes ADR 0001. Then the reach query and `options`, recipes in the schema and the
+4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
+   (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the
    validator, the planner, crafting and disassembly as long actions, the
    crafting panel, and workbenches as block entities with `workstation`.
 5. **Slice 5:** `controls`, `process` and `power` on block entities, settling on

@@ -21,8 +21,20 @@
       },
       "anchors": {
         "support": [0.177675, -0.01725, 0],
-        "muzzle": [0.414, 0, 0]
-      }
+        "muzzle": [0.414, 0, 0],
+        "magwell": [-0.048875, -0.046, 0]
+      },
+      "calibre": "5.56x45"
+    },
+    {
+      "id": "round_5_d_56x45",
+      "file": "assets/models/round-5_d_56x45.glb",
+      "calibre": "5.56x45"
+    },
+    {
+      "id": "case_5_d_56x45",
+      "file": "assets/models/case-5_d_56x45.glb",
+      "calibre": "5.56x45"
     },
     {
       "id": "rifle_battle",
