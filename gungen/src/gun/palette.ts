@@ -1,5 +1,11 @@
 import { type ResolvedAppearance, resolveAppearance as resolveCoreAppearance } from '../core/appearance.ts';
 import type { Palette, SrgbColor } from '../core/design.ts';
+import {
+  ANTI_MATERIEL_FAMILY_COLORS,
+  ANTI_MATERIEL_FINISH,
+  ANTI_MATERIEL_ROLE_SLOTS,
+  ANTI_MATERIEL_SHADES,
+} from './antiMateriel/palette.ts';
 
 /** Normalizes a 0xRRGGBB integer to an sRGB triple in [0,1]. */
 export const hexToSrgb = (hex: number): SrgbColor => [
@@ -58,6 +64,7 @@ const FAMILY_HEX: Record<string, number> = {
   'rail-front-sight': 0x36_3d_47,
   'gas-block': 0x2f_32_38,
   'gas-cylinder': 0x54_5a_63,
+  ...ANTI_MATERIEL_FAMILY_COLORS,
 };
 const ROLE_SLOTS: Record<string, string> = {
   receiver: 'metal',
@@ -84,6 +91,7 @@ const ROLE_SLOTS: Record<string, string> = {
   'revolver-cylinder': 'metal',
   'revolver-barrel': 'metal',
   'revolver-grip': 'furniture',
+  ...ANTI_MATERIEL_ROLE_SLOTS,
 };
 const SHADE: Record<string, number> = {
   receiver: 1,
@@ -110,6 +118,7 @@ const SHADE: Record<string, number> = {
   'revolver-cylinder': 0.8,
   'revolver-barrel': 0.67,
   'revolver-grip': 0.82,
+  ...ANTI_MATERIEL_SHADES,
 };
 const roles = Object.keys(ROLE_SLOTS);
 const ROLE_MATERIALS = Object.fromEntries(
@@ -157,6 +166,7 @@ const FINISHES: Record<string, Readonly<Record<string, string>>> = {
   'bolt-rifle-thumbhole': finish('wood-walnut', 'steel-parkerized'),
   bullpup: finish('polymer-black', 'steel-parkerized'),
   barrett: { metal: 'steel-parkerized', furniture: 'steel-parkerized', accent: 'steel-parkerized' },
+  'anti-materiel': ANTI_MATERIEL_FINISH,
 };
 
 export const GUN_PALETTE: Palette = createPalette({

@@ -11,6 +11,7 @@ import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import type { WearSlot } from '../core/schema.ts';
+import { CONTROL_CODES, quickbarSlotForKey } from '../game/input.ts';
 import { bestPocket, dropTarget, options, toHands } from '../game/targets.ts';
 
 /** Pixels per inventory cell. */
@@ -136,7 +137,6 @@ interface InventoryScreenViewModel {
   readonly details: DetailsViewModel;
 }
 
-const QUICK_DIGIT = /^Digit([1-5])$/;
 const secs = (s: number) => `${s.toFixed(1)} s`;
 const kg = (g: number) => `${(g / 1000).toFixed(2)} kg`;
 
@@ -374,15 +374,15 @@ export class InventoryScreen {
 
   /** Handles a key while the screen is open. Returns true if it was used. */
   onKey(e: KeyboardEvent): boolean {
-    if (this.drag?.moved && e.code === 'KeyR') {
+    if (this.drag?.moved && e.code === CONTROL_CODES.rotate) {
       this.drag.rotated = !this.drag.rotated;
       this.drag.grab = [CELL / 2, CELL / 2];
       this.renderDrag();
       return true;
     }
-    const digit = QUICK_DIGIT.exec(e.code);
+    const digit = quickbarSlotForKey(e.code);
     const item = this.selected;
-    if (e.code === 'KeyX') {
+    if (e.code === CONTROL_CODES.cancel) {
       this.queue.cancel();
       return true;
     }
@@ -390,7 +390,7 @@ export class InventoryScreen {
       this.step(e.code === 'ArrowDown' || e.code === 'ArrowRight' ? 1 : -1);
       return true;
     }
-    if (e.code === 'KeyS') {
+    if (e.code === CONTROL_CODES.search) {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
       this.report(next ? this.hooks.search(next) : 'Nothing here to search');
       return true;
@@ -398,33 +398,33 @@ export class InventoryScreen {
     if (!item) {
       return false;
     }
-    if (digit) {
-      this.hooks.assign(Number(digit[1]) - 1, item);
+    if (digit !== undefined) {
+      this.hooks.assign(digit, item);
       return true;
     }
     switch (e.code) {
-      case 'KeyH':
+      case CONTROL_CODES.hands:
         this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
         return true;
-      case 'KeyW':
+      case CONTROL_CODES.wear:
         this.wearOrTakeOff(item);
         return true;
-      case 'KeyD':
+      case CONTROL_CODES.drop:
         this.tryQueue(item, dropTarget(this.inv, item, this.hooks.feet()).target);
         return true;
-      case 'KeyR':
+      case CONTROL_CODES.rotate:
         this.rotateInPlace(item);
         return true;
       case 'Enter':
-      case 'KeyE': {
+      case CONTROL_CODES.bestPocket: {
         const best = bestPocket(this.inv, item);
         this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
         return true;
       }
-      case 'KeyA':
+      case CONTROL_CODES.takeAll:
         this.takeAllLike(item);
         return true;
-      case 'KeyU':
+      case CONTROL_CODES.use:
         this.report(this.hooks.use(item));
         this.drawn = '';
         return true;

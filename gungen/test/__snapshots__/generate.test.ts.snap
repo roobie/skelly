@@ -401,6 +401,416 @@ exports[`templates > ak > known-good seeds 1`] = `
 ]
 `;
 
+exports[`templates > anti-materiel > known-good seeds 1`] = `
+[
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "shroud.rear",
+      },
+      {
+        "from": "barrel.muzzle",
+        "to": "brake.base",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 4,
+        "to": "sight.base",
+      },
+      {
+        "from": "shroud.trunnion",
+        "to": "trunnion.base",
+      },
+      {
+        "from": "trunnion.strut",
+        "to": "strut.base",
+      },
+      {
+        "from": "strut.top",
+        "to": "bar.base",
+      },
+      {
+        "from": "shroud.bipod",
+        "to": "bipod.base",
+      },
+    ],
+    "description": "Generated from the "anti-materiel" template with seed 100.",
+    "name": "anti-materiel-100",
+    "parts": {
+      "bar": {
+        "family": "handle-bar",
+      },
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "bipod": {
+        "family": "bipod",
+        "params": {
+          "legs": "L",
+          "pose": "folded",
+        },
+      },
+      "bolt-carrier": {
+        "family": "heavy-bolt-carrier",
+      },
+      "brake": {
+        "family": "muzzle-brake",
+        "params": {
+          "length": "L",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+        },
+      },
+      "lower": {
+        "family": "heavy-lower",
+      },
+      "magazine": {
+        "family": "heavy-magazine",
+      },
+      "receiver": {
+        "family": "heavy-receiver",
+        "params": {
+          "action": "auto",
+          "bore": "L",
+          "feed": "box",
+        },
+      },
+      "shroud": {
+        "family": "barrel-shroud",
+        "params": {
+          "length": "M",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "recoil-stock",
+        "params": {
+          "length": "L",
+        },
+      },
+      "strut": {
+        "family": "handle-strut",
+      },
+      "trunnion": {
+        "family": "handle-trunnion",
+        "params": {
+          "pose": "carry",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "shroud.rear",
+      },
+      {
+        "from": "barrel.muzzle",
+        "to": "brake.base",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "receiver.rail",
+        "slot": 4,
+        "to": "sight.base",
+      },
+      {
+        "from": "shroud.trunnion",
+        "to": "trunnion.base",
+      },
+      {
+        "from": "trunnion.strut",
+        "to": "strut.base",
+      },
+      {
+        "from": "strut.top",
+        "to": "bar.base",
+      },
+      {
+        "from": "shroud.bipod",
+        "to": "bipod.base",
+      },
+      {
+        "from": "stock.monopod",
+        "to": "monopod.base",
+      },
+    ],
+    "description": "Generated from the "anti-materiel" template with seed 200.",
+    "name": "anti-materiel-200",
+    "parts": {
+      "bar": {
+        "family": "handle-bar",
+      },
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "M",
+        },
+      },
+      "bipod": {
+        "family": "bipod",
+        "params": {
+          "legs": "M",
+          "pose": "deployed",
+        },
+      },
+      "bolt-carrier": {
+        "family": "heavy-bolt-carrier",
+      },
+      "brake": {
+        "family": "muzzle-brake",
+        "params": {
+          "length": "M",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+        },
+      },
+      "lower": {
+        "family": "heavy-lower",
+      },
+      "magazine": {
+        "family": "heavy-magazine",
+      },
+      "monopod": {
+        "family": "monopod",
+        "params": {
+          "pose": "deployed",
+        },
+      },
+      "receiver": {
+        "family": "heavy-receiver",
+        "params": {
+          "action": "auto",
+          "bore": "L",
+          "feed": "box",
+        },
+      },
+      "shroud": {
+        "family": "barrel-shroud",
+        "params": {
+          "length": "L",
+        },
+      },
+      "sight": {
+        "family": "sight",
+      },
+      "stock": {
+        "family": "recoil-stock",
+        "params": {
+          "length": "L",
+        },
+      },
+      "strut": {
+        "family": "handle-strut",
+      },
+      "trunnion": {
+        "family": "handle-trunnion",
+        "params": {
+          "pose": "stowed",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+  {
+    "connections": [
+      {
+        "from": "receiver.lower",
+        "to": "lower.top",
+      },
+      {
+        "from": "receiver.barrel",
+        "to": "barrel.rear",
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount",
+      },
+      {
+        "from": "receiver.handguard",
+        "to": "shroud.rear",
+      },
+      {
+        "from": "barrel.muzzle",
+        "to": "brake.base",
+      },
+      {
+        "from": "lower.grip",
+        "to": "grip.top",
+      },
+      {
+        "from": "lower.magazine",
+        "to": "magazine.top",
+      },
+      {
+        "from": "receiver.stock",
+        "to": "stock.front",
+      },
+      {
+        "from": "shroud.trunnion",
+        "to": "trunnion.base",
+      },
+      {
+        "from": "trunnion.strut",
+        "to": "strut.base",
+      },
+      {
+        "from": "strut.top",
+        "to": "bar.base",
+      },
+      {
+        "from": "shroud.bipod",
+        "to": "bipod.base",
+      },
+      {
+        "from": "stock.monopod",
+        "to": "monopod.base",
+      },
+    ],
+    "description": "Generated from the "anti-materiel" template with seed 300.",
+    "name": "anti-materiel-300",
+    "parts": {
+      "bar": {
+        "family": "handle-bar",
+      },
+      "barrel": {
+        "family": "barrel",
+        "params": {
+          "length": "L",
+        },
+      },
+      "bipod": {
+        "family": "bipod",
+        "params": {
+          "legs": "M",
+          "pose": "deployed",
+        },
+      },
+      "bolt-carrier": {
+        "family": "heavy-bolt-carrier",
+      },
+      "brake": {
+        "family": "muzzle-brake",
+        "params": {
+          "length": "L",
+        },
+      },
+      "grip": {
+        "family": "grip",
+        "params": {
+          "length": "L",
+        },
+      },
+      "lower": {
+        "family": "heavy-lower",
+      },
+      "magazine": {
+        "family": "heavy-magazine",
+      },
+      "monopod": {
+        "family": "monopod",
+        "params": {
+          "pose": "deployed",
+        },
+      },
+      "receiver": {
+        "family": "heavy-receiver",
+        "params": {
+          "action": "auto",
+          "bore": "L",
+          "feed": "box",
+        },
+      },
+      "shroud": {
+        "family": "barrel-shroud",
+        "params": {
+          "length": "M",
+        },
+      },
+      "stock": {
+        "family": "recoil-stock",
+        "params": {
+          "length": "M",
+        },
+      },
+      "strut": {
+        "family": "handle-strut",
+      },
+      "trunnion": {
+        "family": "handle-trunnion",
+        "params": {
+          "pose": "carry",
+        },
+      },
+    },
+    "root": "receiver",
+  },
+]
+`;
+
 exports[`templates > ar > known-good seeds 1`] = `
 [
   {
@@ -2316,7 +2726,7 @@ exports[`templates > revolver > known-good seeds 1`] = `
       "grip": {
         "family": "revolver-grip",
         "params": {
-          "length": "L",
+          "length": "M",
         },
       },
     },
@@ -2422,7 +2832,7 @@ exports[`templates > revolver > known-good seeds 1`] = `
       "grip": {
         "family": "revolver-grip",
         "params": {
-          "length": "L",
+          "length": "M",
         },
       },
     },

@@ -1,0 +1,6 @@
+{
+  "name": "broken-rimmed-narrow-rim",
+  "base": "synthetic:rimmed-straight",
+  "set": { "case.rim.diameter.value": 10 },
+  "expect": ["head-type"]
+}

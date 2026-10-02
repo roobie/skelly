@@ -1,0 +1,6 @@
+{
+  "name": "broken-shoulder-before-body",
+  "base": "7.62x39",
+  "set": { "case.body.shoulder.startPosition.value": 2 },
+  "expect": ["positions"]
+}

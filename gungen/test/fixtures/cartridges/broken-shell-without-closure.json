@@ -1,0 +1,6 @@
+{
+  "name": "broken-shell-without-closure",
+  "base": "synthetic:shotshell-buck",
+  "unset": ["closure"],
+  "expectParseError": "closure"
+}
