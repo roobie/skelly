@@ -123,8 +123,10 @@ describe('12 gauge 00 buck', () => {
     expect(cartridge.gauge.value).toBe(12);
     expect(cartridge.head.rimDiameter.value).toBe(22.5);
     expect(cartridge.head.rimDiameter.tolerance).toEqual({ minus: 0.53 });
+    expect(cartridge.head.rimDiameter.note).toContain('Maximum cartridge dimension');
     expect(cartridge.head.rimThickness.value).toBe(1.463);
     expect(cartridge.head.rimThickness.tolerance).toEqual({ minus: 0.356 });
+    expect(cartridge.head.rimThickness.note).toContain('Maximum cartridge dimension');
     expect(cartridge.length.nominal.value).toBe(70.1);
     expect(cartridge.length.loaded.value).toBe(62.23);
     expect(cartridge.closure.value).toBeNull();

@@ -82,7 +82,8 @@
         "locator": "printed p. 20 (PDF p. 21), 12 Gauge 2¾-inch Smooth Bore cartridge drawing, rim diameter",
         "verbatim": ".886 - .021 (22.50 - 0.53)"
       },
-      "tolerance": { "minus": 0.53 }
+      "tolerance": { "minus": 0.53 },
+      "note": "Maximum cartridge dimension; SAAMI gives a minus tolerance of 0.53 mm."
     },
     "rimThickness": {
       "value": 1.463,
@@ -91,7 +92,8 @@
         "locator": "printed p. 20 (PDF p. 21), 12 Gauge 2¾-inch Smooth Bore cartridge drawing, rim thickness",
         "verbatim": ".0576 - .0140 (1.463 - 0.356)"
       },
-      "tolerance": { "minus": 0.356 }
+      "tolerance": { "minus": 0.356 },
+      "note": "Maximum cartridge dimension; SAAMI gives a minus tolerance of 0.356 mm."
     },
     "height": {
       "value": 1.83,
