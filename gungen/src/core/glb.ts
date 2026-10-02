@@ -19,8 +19,10 @@ import type {
   SrgbColor,
 } from './design.ts';
 import { type DisplayItem, displayItems } from './display.ts';
-import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
+import { boundsOfPoints } from './geometry.ts';
+import { compose, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
+import { portFrame } from './resolve.ts';
 import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
@@ -121,18 +123,6 @@ class BinaryBuffer {
   }
 }
 
-const bounds = (positions: Float32Array): { min: number[]; max: number[] } => {
-  const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  for (let i = 0; i < positions.length; i += 3) {
-    for (let k = 0; k < 3; k++) {
-      min[k] = Math.min(min[k]!, positions[i + k]!);
-      max[k] = Math.max(max[k]!, positions[i + k]!);
-    }
-  }
-  return { min, max };
-};
-
 const pad4 = (bytes: Uint8Array, fill: number): Uint8Array => {
   const padded = new Uint8Array(Math.ceil(bytes.byteLength / 4) * 4).fill(fill);
   padded.set(bytes);
@@ -164,20 +154,21 @@ const glbFile = (json: unknown, bin: Uint8Array): Uint8Array => {
 
 const validId = (s: string): boolean => s.length > 0 && !s.includes('.');
 
-const portFrameMatrix = (port: PortDef): Mat3 => fromColumns(port.normal, port.up, cross(port.normal, port.up));
-
-const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportPortMetadata => ({
-  id: `${partId}.${port.id}` as PartPortId,
-  mount: port.mount,
-  gender: port.gender,
-  ...(port.size === undefined ? {} : { size: port.size }),
-  frame: {
-    position: applyPoint(placed, port.pos),
-    normal: applyDir(placed, port.normal),
-    up: applyDir(placed, port.up),
-  },
-  ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
-});
+const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportPortMetadata => {
+  const frame = compose(placed, portFrame(port));
+  return {
+    id: `${partId}.${port.id}` as PartPortId,
+    mount: port.mount,
+    gender: port.gender,
+    ...(port.size === undefined ? {} : { size: port.size }),
+    frame: {
+      position: frame.t,
+      normal: [frame.r[0], frame.r[3], frame.r[6]],
+      up: [frame.r[1], frame.r[4], frame.r[7]],
+    },
+    ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
+  };
+};
 
 type Json = Record<string, unknown>;
 
@@ -313,7 +304,11 @@ export const exportGlb: ExportGlb = (input) => {
       return undefined;
     }
     const positions = mesh.positions.map((x) => x * metresPerUnit);
-    const { min, max } = bounds(positions);
+    const points = Array.from(
+      { length: positions.length / 3 },
+      (_, index) => [positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!] as Vec3,
+    );
+    const [min, max] = boundsOfPoints(points);
     const position = bin.add(
       positions,
       { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
@@ -389,7 +384,7 @@ export const exportGlb: ExportGlb = (input) => {
         translation: toMetres(port.pos, metresPerUnit),
         extras: { port: portMetadata(part.id, port, part.placed) },
       };
-      const frame = portFrameMatrix(port);
+      const frame = portFrame(port).r;
       if (!isIdentity(frame)) {
         portNode.rotation = quaternion(frame);
       }
