@@ -21,7 +21,7 @@
 //   forend     tube magazine ↔ sliding forend
 
 import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
-import { boxFromMinMax } from '../core/geometry.ts';
+import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
@@ -267,6 +267,8 @@ const AR_STOCK_PORT_Y = 0;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
 const RECEIVER_FRONT_HALF_HEIGHT = 2.5;
+const RECEIVER_FRONT_X = 0;
+export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
 const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
   standard: { length: 6.5, restX: -7 },
@@ -275,6 +277,73 @@ const BOLT_TRAVEL = {
   long: { length: 8, restX: -4.5 },
   bolt: { length: 7, restX: -6 },
 } as const;
+const PUMP_ACTION_BAR_THICKNESS = BOLT_CARRIER_RUNNING_CLEARANCE_U;
+const PUMP_ACTION_BAR_OUTER_CLEARANCE = 0.15;
+const pumpActionBarSolids = (envelope: (typeof BOLT_CARRIER_ENVELOPES)['pump'], bore: SizeClass): Solid[] => {
+  const cavity = carrierCavityBounds('pump', 0);
+  const forendRearX = PUMP_FOREND_MOUNT_X;
+  const carrierRestX = BOLT_TRAVEL.pump.restX;
+  const forendTopY = -tubeDropForBore(bore);
+  const [cavityBottomY, cavityTopY] = cavity.y;
+  const [barSideZ] = cavity.z;
+  const [carrierSideZ] = envelope.z;
+  const barCenterY = (cavityBottomY + cavityTopY) / 2 - PUMP_ACTION_BAR_THICKNESS;
+  const barY = [barCenterY - PUMP_ACTION_BAR_THICKNESS, barCenterY + PUMP_ACTION_BAR_THICKNESS] as const;
+  const barOuterZ = TUBE_HALF_HEIGHT + PUMP_FOREND_WALL - PUMP_ACTION_BAR_OUTER_CLEARANCE;
+  const barZ = [barOuterZ - PUMP_ACTION_BAR_THICKNESS, barOuterZ] as const;
+  const barToForeEnd: Solid = {
+    ...extrudedPolygon(
+      'action-bar-right-forward',
+      [
+        [carrierRestX - forendRearX, barY[0]],
+        [carrierRestX + 0.5, barY[0]],
+        [carrierRestX + 0.5, barY[1]],
+        [carrierRestX - forendRearX, barY[1]],
+      ],
+      [-barZ[1], -barZ[0]],
+    ),
+    axis: 'z',
+  };
+  const insideReceiver: Solid = {
+    ...extrudedPolygon(
+      'action-bar-right',
+      [
+        [carrierRestX + 0.5, barY[0]],
+        [envelope.x[0] + 0.25, barY[0]],
+        [envelope.x[0] + 0.25, barY[1]],
+        [carrierRestX + 0.5, barY[1]],
+      ],
+      [barSideZ, carrierSideZ],
+    ),
+    axis: 'z',
+  };
+  const frontJoin: Solid = {
+    ...extrudedPolygon(
+      'action-bar-right-front-join',
+      [
+        [-barZ[1], carrierRestX],
+        [-barZ[0], carrierRestX],
+        [barSideZ, carrierRestX + 0.5],
+      ],
+      barY,
+    ),
+    axis: 'y',
+  };
+  const forendMount: Solid = {
+    ...extrudedPolygon(
+      'action-bar-right-forend-mount',
+      [
+        [carrierRestX - forendRearX, forendTopY - PUMP_ACTION_BAR_THICKNESS],
+        [carrierRestX - forendRearX + 0.1, forendTopY - PUMP_ACTION_BAR_THICKNESS],
+        [carrierRestX - forendRearX + 0.1, barY[1]],
+        [carrierRestX - forendRearX, barY[1]],
+      ],
+      [-barZ[1], -barZ[0]],
+    ),
+    axis: 'z',
+  };
+  return [insideReceiver, frontJoin, barToForeEnd, forendMount];
+};
 const RECEIVER_FRONT_HALF_WIDTH = 2;
 const BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const tubeDropForBore = (bore: SizeClass): number => TUBE_HALF_HEIGHT + BARREL_RADIUS[bore] + TUBE_BARREL_CLEARANCE;
@@ -365,7 +434,6 @@ const PISTOL_GRIP_X = -6;
 const REVOLVER_CYLINDER_RADIUS = 3;
 const REVOLVER_CYLINDER_LENGTH = 8;
 const REVOLVER_CYLINDER_CENTER_X = -4.25;
-export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 export const BOLT_CARRIER_ENVELOPES = {
   ar: { x: [-2.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
@@ -394,6 +462,9 @@ const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY
     const center = (xMin + xMax) / 2;
     xMin = center - pumpMinimum / 2;
     xMax = center + pumpMinimum / 2;
+  }
+  if (pattern === 'pump') {
+    xMax = Math.max(xMax, RECEIVER_FRONT_X);
   }
   return {
     x: [xMin, xMax] as const,
@@ -1173,12 +1244,7 @@ export const boltCarrier: PartFamily = {
     } else if (pattern === 'ak') {
       solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]), akChargingHandleSolid());
     } else if (pattern === 'pump') {
-      // The single action bar rides inside the receiver, attached to the carrier's right face.
-      const barY0 = envelope.y[0] + 0.25;
-      const barY1 = envelope.y[0] + 0.5;
-      const barZ0 = envelope.z[1] - 0.25;
-      const barZ1 = envelope.z[1];
-      solids.push(solid('action-bar-right', [envelope.x[0], barY0, barZ0], [envelope.x[1], barY1, barZ1]));
+      solids.push(...pumpActionBarSolids(BOLT_CARRIER_ENVELOPES.pump, (params.bore ?? size.default) as SizeClass));
     } else if (pattern === 'barrett') {
       solids.push(block('heavy-carrier', [-3, -0.75, -1.2], [3, 0.75, 1.2]));
     } else if (pattern === 'bolt') {
@@ -1193,6 +1259,29 @@ export const boltCarrier: PartFamily = {
       ports: [{ id: 'mount', mount: 'bolt-carrier', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
       keepOuts: [
         ...(pattern === 'ak' ? [akChargingHandleKeepOut()] : []),
+        ...(pattern === 'pump'
+          ? (() => {
+              const bounds = solids.map(localSolidBounds);
+              const min: Vec3 = [
+                Math.min(...bounds.map((entry) => entry[0][0])),
+                Math.min(...bounds.map((entry) => entry[0][1])),
+                Math.min(...bounds.map((entry) => entry[0][2])),
+              ];
+              const max: Vec3 = [
+                Math.max(...bounds.map((entry) => entry[1][0])) + BOLT_TRAVEL.pump.length,
+                Math.max(...bounds.map((entry) => entry[1][1])),
+                Math.max(...bounds.map((entry) => entry[1][2])),
+              ];
+              const gridMin = min.map((value) => Math.floor(value / GRID) * GRID) as unknown as Vec3;
+              const gridMax = max.map((value) => Math.ceil(value / GRID) * GRID) as unknown as Vec3;
+              return [
+                {
+                  ...keepOut('action-bar-sweep', gridMin, gridMax, 'mount'),
+                  allowFamilies: ['forend', 'barrel', 'tube-magazine'],
+                },
+              ];
+            })()
+          : []),
         ...(pattern === 'bolt' ? [keepOut('bolt-handle', [1, -1, -2.5], [8, -0.25, -2])] : []),
       ],
       axes: [],
@@ -2154,7 +2243,17 @@ export const tubeMagazine: PartFamily = {
         { id: 'cap', mount: 'lug', gender: 'male', pos: [length, 0, 0], normal: X, up: Y },
         { id: 'forend', mount: 'forend', gender: 'female', pos: [PUMP_FOREND_MOUNT_X, 0, 0], normal: X, up: Y },
       ],
-      keepOuts: [],
+      keepOuts: [
+        {
+          ...keepOut(
+            'forend-travel',
+            [PUMP_FOREND_MOUNT_X - BOLT_TRAVEL.pump.length, -0.25, -1.5],
+            [PUMP_FOREND_MOUNT_X, 0.25, 1.5],
+            'forend',
+          ),
+          allowFamilies: ['bolt-carrier'],
+        },
+      ],
       axes: [],
     };
   },
@@ -2181,20 +2280,39 @@ export const forend: PartFamily = {
       [-0.414, 1],
       [0, 1],
     ] as const;
-    const shellFacets = outer.slice(0, -1).map((outside, index): Solid => ({
-      id: `shell-${index + 1}`,
-      kind: 'extruded-polygon',
-      profile: [outside, inner[index]!, inner[index + 1]!, outer[index + 1]!],
-      axis: 'x',
-      z: [0, PUMP_FOREND_LENGTH],
-    }));
+    const shellFacets = outer.slice(0, -1).map(
+      (outside, index): Solid => ({
+        id: `shell-${index + 1}`,
+        kind: 'extruded-polygon',
+        profile: [outside, inner[index]!, inner[index + 1]!, outer[index + 1]!],
+        axis: 'x',
+        z: [0, PUMP_FOREND_LENGTH],
+      }),
+    );
     return {
       family: 'forend',
       solids: shellFacets,
       ports: [{ id: 'rear', mount: 'forend', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true }],
       // The forend is pulled back along the tube to cycle the action.
-      keepOuts: [keepOut('slide-travel', [-8, -1 - PUMP_FOREND_WALL, -1 - PUMP_FOREND_WALL], [0, 0, 1 + PUMP_FOREND_WALL], 'rear')],
+      keepOuts: [
+        {
+          ...keepOut(
+            'slide-travel',
+            [-BOLT_TRAVEL.pump.length, -1 - PUMP_FOREND_WALL, -1 - PUMP_FOREND_WALL],
+            [0, 0, 1 + PUMP_FOREND_WALL],
+            'rear',
+          ),
+          allowFamilies: ['bolt-carrier'],
+        },
+      ],
       axes: [],
+      motion: {
+        kind: 'linear',
+        axis: NEG_X,
+        rest: [0, 0, 0],
+        rearmost: [0, 0, 0],
+        sourceKeepOut: { port: 'rear', id: 'forend-travel' },
+      },
     };
   },
 };

@@ -66,12 +66,19 @@ const gripHold =
 
 /** Centre of a solid's underside, at `along` (0..1) of its length: where the support hand cups a fore-end. */
 const undersideSupport = (part: PartDef, along: number): GunPartAnchors => {
-  const under = findSolid(part, 'bottom');
-  if (under?.kind !== 'box') {
-    return {};
+  const under = findSolid(part, 'bottom', 'shell-3');
+  if (under?.kind === 'box') {
+    const { center, half } = under.box;
+    return { support: frameAt([center[0] - half[0] + 2 * half[0] * along, center[1], 0]) };
   }
-  const { center, half } = under.box;
-  return { support: frameAt([center[0] - half[0] + 2 * half[0] * along, center[1], 0]) };
+  if (under?.kind === 'extruded-polygon' && under.axis === 'x') {
+    const bottomY = Math.min(...under.profile.map(([y]) => y));
+    const bottomEdge = under.profile.filter(([y]) => Math.abs(y - bottomY) <= 1e-6);
+    const bottomZ = bottomEdge.reduce((sum, [, z]) => sum + z, 0) / bottomEdge.length;
+    const x = under.z[0] + (under.z[1] - under.z[0]) * along;
+    return { support: frameAt(extrusionPoint('x', [bottomY, bottomZ], x)) };
+  }
+  return {};
 };
 
 export const GUN_ANCHORS: GunAnchorDeclarations = {

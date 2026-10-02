@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { GRID } from '../src/core/conventions.ts';
 import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { cross, dot, length } from '../src/core/math.ts';
+import { meshForSolid } from '../src/core/mesh.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
 import { fullProduct, tWiseCases } from './coveringArray.ts';
-import { variant } from './helpers.ts';
+import { expectWatertightMesh, variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';
 
 /**
@@ -543,23 +544,34 @@ describe('pump stock raised butt heel', () => {
 });
 
 describe('pump shotgun tube and barrel contact', () => {
-  it('builds a forward-extending octagonal lower-half shell around the tube', () => {
+  it('builds a watertight octagonal lower-half shell with a clear tube cavity', () => {
     const forend = FAMILIES.forend!.build({});
+    const outer: readonly (readonly [number, number])[] = [
+      [0, -1.55],
+      [-0.6417, -1.55],
+      [-1.55, -0.6417],
+      [-1.55, 0.6417],
+      [-0.6417, 1.55],
+      [0, 1.55],
+    ];
     expect(forend.solids).toHaveLength(5);
-    const points = forend.solids.flatMap((component) => {
+    for (const [index, component] of forend.solids.entries()) {
       if (component.kind !== 'extruded-polygon' || component.axis !== 'x') {
         throw new Error('pump forend shell facets must be X-axis polygon extrusions');
       }
       expect(component.z).toEqual([0, 9.6]);
       expect(component.profile).toHaveLength(4);
-      return component.profile;
-    });
-    expect(Math.min(...points.map(([y]) => y))).toBeCloseTo(-1.55);
-    expect(Math.max(...points.map(([y]) => y))).toBe(0);
-    expect(Math.min(...points.map(([, z]) => z))).toBeCloseTo(-1.55);
-    expect(Math.max(...points.map(([, z]) => z))).toBeCloseTo(1.55);
+      expect(component.profile[0]![0]).toBeCloseTo(outer[index]![0], 8);
+      expect(component.profile[0]![1]).toBeCloseTo(outer[index]![1], 8);
+      expect(component.profile[3]![0]).toBeCloseTo(outer[index + 1]![0], 8);
+      expect(component.profile[3]![1]).toBeCloseTo(outer[index + 1]![1], 8);
+      expectWatertightMesh(meshForSolid(component), `forend ${component.id}`);
+    }
+    expect(forend.solids.reduce((sum, component) => sum + meshForSolid(component).triangleCount, 0)).toBe(220);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
+    expect(tube.keepOuts.find(({ id }) => id === 'forend-travel')?.box.half[0]).toBe(2.75);
+    expect(forend.motion).toMatchObject({ axis: [-1, 0, 0], rearmost: [0, 0, 0] });
   });
 
   it('sizes tube reach as a percentage of the actual barrel and aligns its lug/support ports', () => {

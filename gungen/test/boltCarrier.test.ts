@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
+import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { applyPoint, compose, extrusionPoint, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Box, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -27,9 +27,7 @@ const corners = (solid: Solid): Vec3[] => {
     );
   }
   return solid.profile.flatMap((point) =>
-    [solid.z[0], solid.z[1]].map((along) =>
-      solid.axis === 'x' ? ([along, point[0], point[1]] as const) : ([point[0], point[1], along] as const),
-    ),
+    [solid.z[0], solid.z[1]].map((along) => extrusionPoint(solid.axis, point, along)),
   );
 };
 
@@ -76,7 +74,7 @@ const travelCases = [
     mm: 63.25,
     cavityY: [-0.85, 0.85],
     cavityZ: [-0.85, 0.85],
-    portWidthU: 6.75,
+    portWidthU: 10.25,
     portHeightU: 2,
   },
   {
@@ -226,7 +224,7 @@ const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof re
   for (let sample = 0; sample <= samples; sample++) {
     const progress = motion.rearmost[0] * (sample / samples);
     const transform = compose(carrierTransform, translation([progress, 0, 0]));
-    for (const solid of carrier.solids) {
+    for (const solid of carrier.solids.filter(({ id }) => !id.startsWith('action-bar-'))) {
       const moved = worldSolid(transform, solid);
       const overlaps = receiver.solids
         .map((obstacle, index) => ({ obstacle, depth: penetrationWorld(moved, receiverSolids[index]!) }))
@@ -248,6 +246,7 @@ const allCarrierSolidsStayWithinReceiverLength = (resolved: ReturnType<typeof re
   const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - 0.5];
 
   return carrier.solids
+    .filter(({ id }) => !id.startsWith('action-bar-'))
     .flatMap((solid) =>
       corners(solid).flatMap((corner) => [
         applyPoint(transform, corner),
@@ -298,6 +297,9 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
     const center = (expectedXMin + expectedXMax) / 2;
     expectedXMin = center - pumpMinimum / 2;
     expectedXMax = center + pumpMinimum / 2;
+  }
+  if (entry.pattern === 'pump') {
+    expectedXMax = Math.max(expectedXMax, 0);
   }
   const expectedY = [receiverPort.pos[1] + envelope.y[0] - margin, receiverPort.pos[1] + envelope.y[1] + margin];
   const outline = entry.section === 'standard' ? undefined : RECEIVER_SECTION[entry.section].outline;
@@ -469,7 +471,7 @@ describe('procedural bolt carrier', () => {
     const unchanged = [
       { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
-      { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, -3.5], portY: [-1, 1] },
+      { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, 0], portY: [-1, 1] },
       { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
       { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25], portY: [0.5, 1.75] },
     ] as const;
@@ -585,25 +587,99 @@ describe('procedural bolt carrier', () => {
     expect(portBounds[1]).toEqual([0.5, 2.5]);
   });
 
+  it('keeps one right-side action bar inside the receiver envelope and synchronized with the forend', () => {
+    const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-pump-shotgun.json')!;
+    const resolved = resolve(assembly, gunDomain);
+    const carrier = resolved.defs.get('bolt-carrier')!;
+    const forend = resolved.defs.get('forend')!;
+    const tube = resolved.defs.get('tube')!;
+    const barrel = resolved.defs.get('barrel')!;
+    const receiver = resolved.defs.get('receiver')!;
+    const carrierTransform = resolved.placed.get('bolt-carrier')!;
+    const forendTransform = resolved.placed.get('forend')!;
+    const carrierMotion = carrier.motion!;
+    const forendMotion = forend.motion!;
+    const bars = carrier.solids.filter(({ id }) => id.startsWith('action-bar-right'));
+    expect(bars).toHaveLength(4);
+    expect(carrier.solids.some(({ id }) => id.startsWith('action-bar-left'))).toBe(false);
+    expect(forendMotion.rearmost).toEqual([-carrierMotion.rearmost[0], 0, 0]);
+    const receiverBounds = limits(receiver.solids.flatMap(corners));
+    const receiverSolids = receiver.solids.map((solid) => worldSolid(resolved.placed.get('receiver')!, solid));
+    const carrierBody = carrier.solids.find(({ id }) => id === 'carrier-body')!;
+    const tubeSolids = tube.solids.map((solid) => worldSolid(resolved.placed.get('tube')!, solid));
+    const barrelSolids = barrel.solids.map((solid) => worldSolid(resolved.placed.get('barrel')!, solid));
+    const travelSamples = Array.from(
+      { length: Math.round(carrierMotion.rearmost[0] * 4) + 1 },
+      (_, index) => index / 4,
+    );
+
+    for (const progress of travelSamples) {
+      const carrierAt = compose(carrierTransform, translation([progress, 0, 0]));
+      const progressRatio = progress / carrierMotion.rearmost[0];
+      const forendDelta: Vec3 = [
+        forendMotion.rearmost[0] * progressRatio,
+        forendMotion.rearmost[1] * progressRatio,
+        forendMotion.rearmost[2] * progressRatio,
+      ];
+      const forendAt = compose(forendTransform, translation(forendDelta));
+      const barWorld = bars.map((bar) => worldSolid(carrierAt, bar));
+      const barBounds = limits(bars.flatMap((bar) => corners(bar).map((point) => applyPoint(carrierAt, point))));
+      expect(barBounds[1]![0]!).toBeGreaterThanOrEqual(receiverBounds[1]![0]! - 1e-6);
+      expect(barBounds[1]![1]!).toBeLessThanOrEqual(receiverBounds[1]![1]! + 1e-6);
+      expect(barBounds[2]![0]!).toBeGreaterThan(0);
+      expect(barBounds[2]![0]!).toBeGreaterThanOrEqual(receiverBounds[2]![0]! - 1e-6);
+      expect(barBounds[2]![1]!).toBeLessThanOrEqual(receiverBounds[2]![1]! + 1e-6);
+
+      const movedCarrier = worldSolid(carrierAt, carrierBody);
+      const forendSolids = forend.solids.map((solid) => worldSolid(forendAt, solid));
+      const receiverPenetration = Math.max(
+        ...barWorld.flatMap((bar) => receiverSolids.map((obstacle) => penetrationWorld(bar, obstacle))),
+      );
+      expect(receiverPenetration).toBeLessThanOrEqual(1e-3);
+      expect(Math.min(...barWorld.map((bar) => distanceWorld(movedCarrier, bar)))).toBeLessThanOrEqual(1e-6);
+      expect(
+        Math.min(...barWorld.flatMap((bar) => forendSolids.map((solid) => distanceWorld(bar, solid)))),
+      ).toBeLessThanOrEqual(1e-6);
+      const tubePenetration = Math.max(
+        ...barWorld.flatMap((bar) => tubeSolids.map((solid) => penetrationWorld(bar, solid))),
+      );
+      const barrelPenetration = Math.max(
+        ...barWorld.flatMap((bar) => barrelSolids.map((solid) => penetrationWorld(bar, solid))),
+      );
+      const forendTubePenetration = Math.max(
+        ...forendSolids.flatMap((solid) => tubeSolids.map((obstacle) => penetrationWorld(solid, obstacle))),
+      );
+      const forendBarrelPenetration = Math.max(
+        ...forendSolids.flatMap((solid) => barrelSolids.map((obstacle) => penetrationWorld(solid, obstacle))),
+      );
+      expect(tubePenetration).toBeLessThanOrEqual(1e-6);
+      expect(barrelPenetration).toBeLessThanOrEqual(1e-6);
+      expect(forendTubePenetration).toBeLessThanOrEqual(1e-3);
+      expect(forendBarrelPenetration).toBeLessThanOrEqual(1e-6);
+    }
+  });
+
   it('makes each family style produce the expected procedural features', () => {
     const build = (pattern: string) => FAMILIES['bolt-carrier']!.build({ pattern, bore: 'L', action: 'auto' });
     expect(build('ar').solids.map(({ id }) => id)).toEqual(['carrier-body', 'bolt-head', 'gas-key']);
     expect(build('ak').solids.map(({ id }) => id)).toContain('piston');
     const pump = build('pump');
     expect(pump.solids.map(({ id }) => id)).toContain('action-bar-right');
-    expect(pump.solids.map(({ id }) => id).filter((id) => id.startsWith('action-bar-'))).toEqual(['action-bar-right']);
-    const pumpBar = pump.solids.find(({ id }) => id === 'action-bar-right');
+    const actionBars = pump.solids.filter(({ id }) => id.startsWith('action-bar-'));
+    expect(actionBars.map(({ id }) => id)).toEqual([
+      'action-bar-right',
+      'action-bar-right-front-join',
+      'action-bar-right-forward',
+      'action-bar-right-forend-mount',
+    ]);
+    expect(actionBars.some(({ id }) => id.includes('left'))).toBe(false);
     const pumpBody = pump.solids.find(({ id }) => id === 'carrier-body');
     expect(pumpBody?.kind).toBe('box');
     if (pumpBody?.kind === 'box') {
-      expect(pumpBody.box.half).toEqual([3.125, 0.75, 0.625]);
-      expect(pumpBody.box.center[2]).toBe(-0.125);
+      expect(pumpBody.box.half).toEqual([3.125, 0.75, 0.75]);
+      expect(pumpBody.box.center[2]).toBe(0);
     }
-    if (pumpBar?.kind !== 'box') {
-      throw new Error('pump action bar must be a box');
-    }
-    expect(pumpBar.box.center[2] - pumpBar.box.half[2]).toBe(BOLT_CARRIER_ENVELOPES.pump.z[1] - 0.25);
-    expect(pumpBar.box.center[2] + pumpBar.box.half[2]).toBe(BOLT_CARRIER_ENVELOPES.pump.z[1]);
+    expect(pump.keepOuts.find(({ id }) => id === 'action-bar-sweep')).toBeDefined();
     expect(build('smg').solids.map(({ id }) => id)).toContain('carrier-body');
     expect(build('barrett').solids.map(({ id }) => id)).toContain('heavy-carrier');
     expect(build('bolt').solids.map(({ id }) => id)).toContain('bolt-handle');
