@@ -119,8 +119,10 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 
 ### 2. Craft and mend
 
-- First, the inventory screen moves to lit-html, with its behaviour unchanged. That
-  is the last screen, so it completes [ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md).
+See [SLICE-2.md](SLICE-2.md). The inventory screen's move to lit-html, planned
+as this slice's first step, was done in Slice 1 (#105), which completed
+[ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md). It covers:
+
 - Recipes with tool qualities and groups of alternative components, and crafting
   in compressed time that can be interrupted and resumed.
 - Disassembly and salvage, and repairing items' condition. Weapon mods can be
