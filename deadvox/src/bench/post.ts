@@ -21,12 +21,31 @@ export const postUrlPart = (post: boolean): string => (post ? '&post=1' : '');
  * What a bench calls instead of `renderer.render(scene, camera)` each frame. With `post` it applies the
  * default look once and returns a draw through the mood pass at `hour` (no weather beyond the default
  * fogginess, no held items); without, the plain render. The distance fog and far plane stay the bench's own.
- * Note renderer.info then counts the post passes' draws too.
+ * The optional callback samples scene counters before post-processing overwrites renderer.info.
  */
-export const benchDraw = (engine: Engine, post: boolean, hour: number): (() => void) => {
+export interface BenchSceneRenderStats {
+  readonly calls: number;
+  readonly triangles: number;
+}
+
+/** Renderer counters sampled immediately after the scene pass, before post-processing overwrites them. */
+export const benchDraw = (
+  engine: Engine,
+  post: boolean,
+  hour: number,
+  reportSceneRender?: (stats: BenchSceneRenderStats) => void,
+): (() => void) => {
   const { renderer, scene, camera, mood, shadows } = engine;
+  // renderer.info auto-resets on each WebGLRenderer.render. Mood invokes this from its DrawPass,
+  // immediately after the scene RenderPass; reading after mood.render() would see only the final post pass.
+  const report = (): void => {
+    reportSceneRender?.({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles });
+  };
   if (!post) {
-    return () => renderer.render(scene, camera);
+    return () => {
+      renderer.render(scene, camera);
+      report();
+    };
   }
   applyLook(renderer, engine.meshes, DEFAULT_LOOK);
   mood.restore(DEFAULT_MOOD);
@@ -36,6 +55,6 @@ export const benchDraw = (engine: Engine, post: boolean, hour: number): (() => v
   const sunStrength = sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity);
   return () => {
     shadows.update(sunStrength, camera.position);
-    mood.render(() => undefined);
+    mood.render(report);
   };
 };

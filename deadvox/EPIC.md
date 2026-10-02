@@ -3,10 +3,11 @@
 **Goal:** a playable hybrid of CDDA and DayZ in a voxel package.
 
 This document defines what version 1 is, then breaks the way there into
-slices. Each slice is playable, deployed to GitHub Pages and playtested before
-the next one starts. The systems are described in [DESIGN.md](DESIGN.md), the
-risks in [CHALLENGES.md](CHALLENGES.md), and the first slice in detail in
-[SLICE-1.md](SLICE-1.md).
+slices. Each slice is playable and deployed to GitHub Pages. The first real
+playtest is at the end of Slice 3, before Slice 4 starts (BR, 2026-10-02); later
+slices are playtested before the next one starts. The systems are described in
+[DESIGN.md](DESIGN.md), the risks in [CHALLENGES.md](CHALLENGES.md), and the
+first slice in detail in [SLICE-1.md](SLICE-1.md).
 
 ## What version 1 is
 
@@ -133,6 +134,10 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 - More templates: a hardware store and a garage.
 
 ### 3. Flesh and noise
+
+The first real playtest is at this slice's end (BR, 2026-10-02): use the Slice 1
+playtest plan and include the questions added by Slices 2 and 3. BR's reason for
+the timing is that the base game will be in place by then.
 
 - The body model: parts, wounds, bleeding, infection, fractures, and first aid.
 - Melee depth (weapon types, stamina, knockback) and blocking.
@@ -263,6 +268,7 @@ qualities, the body model, saves, dark nights and sound. They are the game.
 2. **Build:** in PR-sized milestones. Each one is merged and deployed to Pages,
    with CI green (Biome, types, tests, content validation, golden saves).
 3. **Playtest:** at least 3 people follow a short script, and the build logs
-   local metrics.
+   local metrics. The first real playtest is scheduled for the end of Slice 3
+   (BR, 2026-10-02), covering the Slice 1 plan plus questions from Slices 2 and 3.
 4. **Record findings:** update DESIGN.md, CHALLENGES.md and this document. Then
    plan the next slice.
