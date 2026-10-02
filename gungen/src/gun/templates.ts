@@ -257,6 +257,8 @@ export const boltRifle: Template = {
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'top', bore: ['M', 'L'] } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
+    { id: 'bolt-handle-arm', family: 'bolt-handle-arm' },
+    { id: 'bolt-handle-knob', family: 'bolt-handle-knob' },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: ['sporting', 'thumbhole'] } },
     {
       id: 'lower',
@@ -287,6 +289,8 @@ export const boltRifle: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'bolt-carrier.handle', to: 'bolt-handle-arm.base' },
+    { from: 'bolt-handle-arm.tip', to: 'bolt-handle-knob.base' },
     // Over the receiver, a sight can block the loading port; ahead of it, it can't.
     { from: ['receiver.rail', 'handguard.rail'], to: 'sight.base', slot: 'any' },
   ],
@@ -300,6 +304,8 @@ export const boltRifleBox: Template = {
   slots: [
     { id: 'receiver', family: 'receiver', params: { action: 'bolt', feed: 'box', bore: ['M', 'L'] } },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'bolt' } },
+    { id: 'bolt-handle-arm', family: 'bolt-handle-arm' },
+    { id: 'bolt-handle-knob', family: 'bolt-handle-knob' },
     { id: 'lower', family: 'lower', params: { layout: 'conventional', magazineWell: 'recessed' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     // Free-floating, so its length is set rather than read from the barrel.
@@ -317,6 +323,8 @@ export const boltRifleBox: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'bolt-carrier.handle', to: 'bolt-handle-arm.base' },
+    { from: 'bolt-handle-arm.tip', to: 'bolt-handle-knob.base' },
     { from: 'receiver.rail', to: 'sight.base', slot: 'any' },
   ],
 };
@@ -331,6 +339,9 @@ export const boltRifleThumbhole: Template = {
     .map((slot) => (slot.id === 'receiver' ? { ...slot, params: { ...slot.params, bore: 'M' } } : slot))
     .map((slot) => (slot.id === 'lower' ? { ...slot, params: { ...slot.params, layout: 'thumbhole' } } : slot))
     .map((slot) => (slot.id === 'stock' ? { ...slot, params: { ...slot.params, style: 'thumbhole' } } : slot))
+    .map((slot) =>
+      slot.id === 'bolt-carrier' ? { ...slot, params: { ...slot.params, handleProfile: 'awm' } } : slot,
+    )
     .map((slot) => {
       if (slot.id !== 'handguard') {
         return slot;

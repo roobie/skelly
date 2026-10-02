@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Box } from '../src/core/schema.ts';
+import type { Box, Solid } from '../src/core/schema.ts';
+import { applyPoint, invert } from '../src/core/math.ts';
+import { resolve } from '../src/core/resolve.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { loadCorpus, loadFixture } from './helpers.ts';
+import { loadCorpus, loadDesigns, loadFixture } from './helpers.ts';
 
 const limits = (
   box: Box,
@@ -15,6 +17,7 @@ const limits = (
 
 const intervalsOverlap = (a: readonly [number, number], b: readonly [number, number]): boolean =>
   Math.min(a[1], b[1]) > Math.max(a[0], b[0]);
+const HAND_CLEARANCE_ISSUE = /hand|charging/;
 
 const receiver = (action: 'auto' | 'bolt' | 'pump', chargingHandle = 'side') =>
   FAMILIES.receiver!.build({ action, feed: action === 'pump' ? 'tube' : 'box', bore: 'M', chargingHandle });
@@ -128,18 +131,59 @@ describe('visible action details', () => {
     expect(crossbar?.kind).toBe('box');
     if (crossbar?.kind === 'box') {
       const [, receiverTop] = receiverDef.ports.find(({ id }) => id === 'rail')!.pos;
-      expect(Math.abs(limits(crossbar.box)[1]![1] - receiverTop)).toBeLessThanOrEqual(0.1);
+      const [, [, crossbarTop]] = limits(crossbar.box);
+      expect(crossbarTop - receiverTop).toBeCloseTo(1, 8);
     }
     expect(receiverDef.keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
+  });
 
+  it('rejects a rail feature that physically occupies the AR T-grip', () => {
+    const assembly = loadDesigns().find(({ label }) => label.includes('archetype-ar.json'))!.assembly;
+    const resolved = resolve(assembly, gunDomain);
+    const point = [-17.75, 3.25, 1.75] as const;
+    const local = applyPoint(invert(resolved.placed.get('sight')!), point);
+    const probe: Solid = {
+      id: 'rail-accessory-feature',
+      kind: 'box',
+      box: { center: local, half: [0.025, 0.025, 0.025] },
+    };
+    const sight = gunDomain.families.sight!;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        sight: {
+          ...sight,
+          build: (params: Parameters<typeof sight.build>[0]) => {
+            const def = sight.build(params);
+            return { ...def, solids: [...def.solids, probe] };
+          },
+        },
+      },
+    };
+    const report = validate(assembly, domain);
+    expect(
+      report.issues.some(
+        ({ rule, keepOut }) => rule === 'keep-out' && keepOut?.part === 'receiver' && HAND_CLEARANCE_ISSUE.test(keepOut.id),
+      ),
+    ).toBe(true);
+  });
+
+  it('preserves the bolt carrier and handle port contract', () => {
     const bolt = FAMILIES['bolt-carrier']!.build({ pattern: 'bolt', action: 'bolt', bore: 'M', feed: 'top' });
-    const boltHandle = bolt.solids.find(({ id }) => id === 'bolt-handle');
-    const boltTravel = bolt.keepOuts.find(({ id }) => id === 'bolt-handle');
-    expect(boltHandle?.kind).toBe('box');
-    expect(boltTravel).toBeDefined();
-    if (boltHandle?.kind === 'box' && boltTravel) {
-      expect(limits(boltHandle.box)[0]![1]).toBe(limits(boltTravel.box)[0]![0]);
-    }
+    const handlePort = bolt.ports.find(({ id }) => id === 'handle');
+    const arm = FAMILIES['bolt-handle-arm']!.build({
+      action: 'bolt',
+      feed: 'top',
+      bore: 'M',
+      section: 'standard',
+      handleProfile: 'standard',
+    });
+    expect(handlePort?.mount).toBe('bolt-handle');
+    expect(bolt.solids.some(({ id }) => id === 'bolt-handle-seat')).toBe(true);
+    expect(arm.solids[0]?.kind).toBe('extruded-polygon');
+    expect(arm.keepOuts.some(({ id }) => id === 'bolt-handle-sweep')).toBe(true);
+    expect(arm.motion!.sourceKeepOut).toEqual({ port: 'base', id: 'bolt-handle-travel' });
   });
 
   // Measured about 2.8 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.

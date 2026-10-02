@@ -19,7 +19,9 @@
           "bore": "M"
         }
       },
-      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "bolt" } },
+      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "bolt", "handleProfile": "awm" } },
+      "bolt-handle-arm": { "family": "bolt-handle-arm" },
+      "bolt-handle-knob": { "family": "bolt-handle-knob" },
       "lower": {
         "family": "lower",
         "params": {
@@ -71,6 +73,14 @@
       {
         "from": "receiver.bolt-carrier",
         "to": "bolt-carrier.mount"
+      },
+      {
+        "from": "bolt-carrier.handle",
+        "to": "bolt-handle-arm.base"
+      },
+      {
+        "from": "bolt-handle-arm.tip",
+        "to": "bolt-handle-knob.base"
       },
       {
         "from": "receiver.handguard",

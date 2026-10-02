@@ -41,6 +41,7 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
       bore: 'S',
       chargingHandle: 'side',
       boltHandle: 'rest',
+      boltHandleProfile: 'standard',
       rail: 'full',
       magazineWell: 'standard',
     },
@@ -333,44 +334,72 @@ describe('part library', () => {
 
   // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
   // ports, unique port ids and positive box sizes. No rules or geometry checks run.
-  const definePartChecks = (family: PartFamily, cases: Record<string, string>[]): void => {
-    for (const params of cases) {
-      const tag = JSON.stringify(params);
+  const definePartChecks = (
+    family: PartFamily,
+    cases: Record<string, string>[],
+    batchSize = 1,
+  ): void => {
+    let gridStep = GRID;
+    if (family.name === 'forend') {
+      gridStep = GRID / 5;
+    } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
+      gridStep = GRID / 2;
+    }
+    const check = (params: Record<string, string>) => {
+      const def = family.build(params);
+      const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
+        box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
+      // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
+      const numbers = [
+        ...def.solids.flatMap((s) =>
+          s.kind === 'box' &&
+          !s.id.startsWith('trigger-guard-') &&
+          !(family.name === 'magazine' && params.profile === 'smg')
+            ? bounds(s.box)
+            : [],
+        ),
+        ...def.keepOuts.flatMap((k) => bounds(k.box)),
+        ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
+        ...def.axes.flatMap((a) => [...a.origin]),
+      ];
+      return {
+        geometryOnGrid: numbers.every((n) => onGridWithCarrierClearance(n, gridStep, family)),
+        portsOrthonormal: def.ports.every(
+          (p) =>
+            Math.abs(length(p.normal) - 1) < 1e-6 &&
+            Math.abs(length(p.up) - 1) < 1e-6 &&
+            Math.abs(dot(p.normal, p.up)) < 1e-6 &&
+            Math.abs(length(cross(p.normal, p.up)) - 1) < 1e-6,
+        ),
+        uniquePortIds: new Set(def.ports.map((p) => p.id)).size === def.ports.length,
+        positiveBoxSizes: def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0)),
+      };
+    };
+    const expected = {
+      geometryOnGrid: true,
+      portsOrthonormal: true,
+      uniquePortIds: true,
+      positiveBoxSizes: true,
+    };
 
-      let gridStep = GRID;
-      if (family.name === 'forend') {
-        gridStep = GRID / 5;
-      } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
-        gridStep = GRID / 2;
+    if (batchSize === 1) {
+      for (const params of cases) {
+        const tag = JSON.stringify(params);
+        it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+          expect(check(params), tag).toEqual(expected);
+        });
       }
+      return;
+    }
 
-      it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
-        const def = family.build(params);
-        const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
-          box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
-        // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
-        const numbers = [
-          ...def.solids.flatMap((s) =>
-            s.kind === 'box' &&
-            !s.id.startsWith('trigger-guard-') &&
-            !(family.name === 'magazine' && params.profile === 'smg')
-              ? bounds(s.box)
-              : [],
-          ),
-          ...def.keepOuts.flatMap((k) => bounds(k.box)),
-          ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
-          ...def.axes.flatMap((a) => [...a.origin]),
-        ];
-        expect(numbers.filter((n) => !onGridWithCarrierClearance(n, gridStep, family))).toEqual([]);
-        for (const p of def.ports) {
-          expect(length(p.normal)).toBeCloseTo(1);
-          expect(length(p.up)).toBeCloseTo(1);
-          expect(dot(p.normal, p.up)).toBeCloseTo(0);
-          expect(length(cross(p.normal, p.up))).toBeCloseTo(1);
+    for (let start = 0; start < cases.length; start += batchSize) {
+      const batch = cases.slice(start, start + batchSize);
+      // 256 builds take under 1 s on the reference host; 10 s is ~10x measured and bounds the full sweep.
+      it(`cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+        for (const params of batch) {
+          expect(check(params), JSON.stringify(params)).toEqual(expected);
         }
-        expect(new Set(def.ports.map((p) => p.id)).size).toBe(def.ports.length);
-        expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
-      });
+      }, 10_000);
     }
   };
 
@@ -391,7 +420,8 @@ describe('part library', () => {
     for (const [key, family] of Object.entries(FAMILIES).filter(([k]) => isArraySampled(k))) {
       describe(key, () => {
         // A skipped group still registers its cases, so build none in the default run.
-        definePartChecks(family, runSweeps ? fullProduct(family.params) : []);
+        // Batch exhaustive cases to cap Vitest registration memory; failures retain the exact params.
+        definePartChecks(family, runSweeps ? fullProduct(withoutHandleStyle(family)) : [], 256);
       });
     }
   });
