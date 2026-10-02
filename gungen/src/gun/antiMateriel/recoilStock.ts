@@ -56,7 +56,7 @@ export const recoilStock: PartFamily = {
         },
       ],
       keepOuts: [],
-      axes: [],
+      axes: [{ kind: 'cheek', origin: [-15, BODY_TOP + CHEEK_HEIGHT, 0], dir: X }],
     };
   },
 };

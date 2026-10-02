@@ -293,13 +293,26 @@ export const displayBevel = (solid: Solid, units: DomainUnits): number =>
  * around the circumference for a revolved solid. `bevel` applies to boxes and extrusions only, and
  * `revolveFacets` (a level of detail) to revolved solids only.
  */
+const translateMesh = (mesh: TriangleMesh, origin: Vec3 | undefined): TriangleMesh => {
+  if (!origin) {
+    return mesh;
+  }
+  for (let index = 0; index < mesh.positions.length; index++) {
+    const offset = origin[index % 3]!;
+    if (offset !== 0) {
+      mesh.positions[index] = mesh.positions[index]! + offset;
+    }
+  }
+  return mesh;
+};
+
 export const meshForSolid = (
   solid: Solid,
   bevel: number = solid.display?.bevel === false ? 0 : BEVEL,
   revolveFacets: number = DEFAULT_REVOLVE_FACETS,
 ): TriangleMesh => {
   if (solid.kind === 'revolved') {
-    return orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
+    return translateMesh(orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis), solid.origin);
   }
   if (solid.kind === 'extruded-polygon' && solid.clip?.length && solid.display?.bevel !== false) {
     throw new Error(`Solid "${solid.id}" has clip planes; set display.bevel to false explicitly.`);

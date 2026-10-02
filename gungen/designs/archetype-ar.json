@@ -70,7 +70,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "lpvo-1-6x" }
       }
     },
     "connections": [
@@ -109,7 +110,7 @@
       {
         "from": "receiver.rail",
         "to": "sight.base",
-        "slot": 0
+        "slot": 3
       },
       {
         "from": "barrel.front-sight",

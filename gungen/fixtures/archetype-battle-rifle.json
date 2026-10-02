@@ -12,7 +12,7 @@
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "M" } },
     "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },
-    "sight": { "family": "sight" }
+    "sight": { "family": "sight", "params": { "type": "fixed-prism-4x" } }
   },
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },

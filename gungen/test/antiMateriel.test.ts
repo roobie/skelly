@@ -11,10 +11,12 @@ import {
   angleBetween,
   applyDir,
   applyPoint,
+  compose,
   invert,
   length,
   sub,
   type Transform,
+  translation,
   type Vec3,
 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
@@ -36,6 +38,7 @@ import {
   STRUT_UP,
 } from '../src/gun/antiMateriel/carryHandle.ts';
 import { BMG_BASE_DIAMETER_U, BMG_CASE_LENGTH_U, BMG_OVERALL_LENGTH_U } from '../src/gun/antiMateriel/cartridge.ts';
+import { HEAVY_CARRIER_ENVELOPE, HEAVY_HANDLE_SCALE } from '../src/gun/antiMateriel/heavyBoltCarrier.ts';
 import { HEAVY_GRIP_MOUNT_PROFILE, HEAVY_TRIGGER_GUARD } from '../src/gun/antiMateriel/heavyLower.ts';
 import {
   HEAVY_MAGAZINE_DEPTH,
@@ -44,7 +47,6 @@ import {
   HEAVY_MAGAZINE_SLANT_DEGREES,
 } from '../src/gun/antiMateriel/heavyMagazine.ts';
 import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts';
-import { STAND_IN_SCOPE_ENVELOPE } from '../src/gun/antiMateriel/scopeEnvelope.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { EJECTION_PORT_MARGIN_U, FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
@@ -80,10 +82,10 @@ describe('.50 BMG magazine, well and action', () => {
   const receiver = family('heavy-receiver').build({ action: 'auto', feed: 'box', bore: 'L' });
   const extent = (solid: Solid, axis: 0 | 1 | 2) => bounds(solid).max[axis]! - bounds(solid).min[axis]!;
   const carrier = family('heavy-bolt-carrier').build({});
-  const carrierExtent = (axis: 0 | 1 | 2) => ({
-    min: Math.min(...carrier.solids.map((solid) => bounds(solid).min[axis]!)),
-    max: Math.max(...carrier.solids.map((solid) => bounds(solid).max[axis]!)),
-  });
+  const carrierExtent = (axis: 0 | 1 | 2) => {
+    const body = solidById(carrier, 'carrier-body');
+    return { min: bounds(body).min[axis]!, max: bounds(body).max[axis]! };
+  };
   const receiverKeepOutBounds = (id: string) => {
     const { box } = receiver.keepOuts.find((keepOut) => keepOut.id === id)!;
     return {
@@ -174,6 +176,98 @@ describe('.50 BMG magazine, well and action', () => {
     const magazineRearWall = lower.ports.find(({ id }) => id === 'magazine')!.pos[0] - HEAVY_MAGAZINE_DEPTH / 2;
     expect(travel.min[0] + carrierExtent(0).max).toBeLessThan(magazineRearWall);
     expect(travel.min[0] + carrierExtent(0).min).toBeGreaterThanOrEqual(-HEAVY_RECEIVER_LENGTH);
+  });
+});
+
+describe('anti-materiel charging handle', () => {
+  const design = () =>
+    variant('archetype-anti-materiel', (draft) => {
+      draft.parts.trunnion!.params = { pose: 'stowed' };
+    });
+  const resolved = resolve(design(), gunDomain);
+  const carrier = resolved.defs.get('bolt-carrier')!;
+  const receiver = resolved.defs.get('receiver')!;
+  const carrierTransform = resolved.placed.get('bolt-carrier')!;
+  const handleParts = carrier.solids.filter(({ id }) => id === 'heavy-handle-stick' || id === 'charging-handle');
+  const sideShell = receiver.solids.filter(({ id }) => id.startsWith('receiver-shell-side-near-rear'));
+  const receiverShells = receiver.solids.filter(({ id }) => id.startsWith('receiver-shell'));
+  const handleTravel = carrier.keepOuts.find(({ id }) => id === 'charging-handle')!;
+  const handleReceiverGap = (transform: Transform) =>
+    Math.min(
+      ...handleParts.flatMap((handle) =>
+        receiverShells.map((shell) =>
+          distanceWorld(worldSolid(transform, handle), worldSolid(resolved.placed.get('receiver')!, shell)),
+        ),
+      ),
+    );
+  const noReceiverContact = (transform: Transform) => handleReceiverGap(transform) >= 0.25 - 1e-6;
+
+  it('mounts an enlarged AK-style metal stick and clipped paddle on the carrier', () => {
+    const ak = family('bolt-carrier').build({ action: 'bolt', bore: 'M', pattern: 'ak', handleStyle: 'ak' });
+    const akPaddle = solidById(ak, 'charging-handle');
+    const heavyStick = solidById(carrier, 'heavy-handle-stick');
+    const heavyPaddle = solidById(carrier, 'charging-handle');
+    expect(heavyPaddle.kind).toBe('extruded-polygon');
+    expect(heavyPaddle.slot).toBe('metal');
+    expect(heavyPaddle.kind === 'extruded-polygon' && heavyPaddle.clip).toHaveLength(4);
+    expect(HEAVY_HANDLE_SCALE).toBe(1.4);
+    expect(HEAVY_CARRIER_ENVELOPE.x[0]).toBeLessThan(0);
+    for (const axis of [0, 1, 2] as const) {
+      const akSize = bounds(akPaddle).max[axis]! - bounds(akPaddle).min[axis]!;
+      const heavySize = bounds(heavyPaddle).max[axis]! - bounds(heavyPaddle).min[axis]!;
+      expect(heavySize / akSize, `paddle axis ${axis}`).toBeGreaterThanOrEqual(1.3);
+      expect(heavySize / akSize, `paddle axis ${axis}`).toBeLessThanOrEqual(1.5);
+    }
+    expect(
+      penetrationWorld(
+        worldSolid(carrierTransform, heavyStick),
+        worldSolid(carrierTransform, solidById(carrier, 'carrier-body')),
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      distanceWorld(worldSolid(carrierTransform, heavyStick), worldSolid(carrierTransform, heavyPaddle)),
+    ).toBeLessThanOrEqual(1e-6);
+    expect(carrier.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
+  });
+
+  it('cuts a narrow slot through the ejection-port-side receiver wall and preserves the surrounding metal', () => {
+    const slot = receiver.keepOuts.find(({ id }) => id === 'charging-handle')!.box;
+    const [, y, z] = slot.center;
+    const slotMinX = slot.center[0] - slot.half[0]!;
+    const shellContains = (point: Vec3) =>
+      sideShell.some((shell) => {
+        const { min, max } = bounds(shell);
+        return point.every((coordinate, axis) => coordinate > min[axis]! && coordinate < max[axis]!);
+      });
+    expect(shellContains([slotMinX + 1, y, 1.75])).toBe(false);
+    expect(shellContains([slotMinX - 0.5, y, 1.75])).toBe(true);
+    expect(sideShell.map(({ id }) => id)).toEqual([
+      'receiver-shell-side-near-rear-back',
+      'receiver-shell-side-near-rear-lower',
+      'receiver-shell-side-near-rear-upper',
+    ]);
+    expect(z).toBeGreaterThan(2);
+  });
+
+  it('clears the receiver shell through every sampled point of its full bolt travel', () => {
+    const [end] = carrier.motion!.end;
+    for (let sample = 0; sample <= 32; sample++) {
+      const progress = (end * sample) / 32;
+      const transform = compose(carrierTransform, translation([progress, 0, 0]));
+      expect(handleReceiverGap(transform), `travel sample ${sample}/32`).toBeGreaterThanOrEqual(0.25 - 1e-6);
+    }
+  });
+
+  it('fails the displaced-handle canary beyond the rear end of the metal slot', () => {
+    const [travel] = carrier.motion!.end;
+    const displaced = compose(carrierTransform, translation([travel + 1, 0, 0]));
+    expect(noReceiverContact(compose(carrierTransform, translation([travel, 0, 0])))).toBe(true);
+    expect(noReceiverContact(displaced)).toBe(false);
+  });
+
+  it('leaves a matching rest keep-out for the generic action-handle-rest rule', () => {
+    expect(handleTravel.kind).toBe('charging-handle');
+    expect(validate(design(), gunDomain).issues).toEqual([]);
   });
 });
 
@@ -414,7 +508,7 @@ describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
 
   it('stands wholly to the left of the line of sight', () => {
     const sightline = family('sight')
-      .build({})
+      .build({ type: 'high-mag-5-25x' })
       .keepOuts.find(({ id }) => id === 'sightline')!;
     const [, , sightHalfWidth] = sightline.box.half;
     for (const id of ['trunnion', 'strut', 'bar']) {
@@ -424,8 +518,9 @@ describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
     }
   });
 
-  it('clears a full-size scope mounted where the sight is, by at least 0.25u (stand-in envelope)', () => {
+  it('clears the catalog high-magnification scope mounted on the receiver rail by at least 0.25u', () => {
     const sight = placed('sight');
+    const scope = def('sight').solids;
     const volumes = ['trunnion', 'strut', 'bar'].flatMap((id) => {
       const room = def(id).keepOuts.find(({ id: keepOutId }) => keepOutId === 'hand-room');
       const solids: Solid[] = [
@@ -434,7 +529,7 @@ describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
       ];
       return solids.map((solid) => ({ label: `${id} ${solid.id}`, solid, transform: placed(id) }));
     });
-    for (const part of STAND_IN_SCOPE_ENVELOPE) {
+    for (const part of scope) {
       for (const { label, solid, transform } of volumes) {
         const gap = distanceWorld(worldSolid(sight, part), worldSolid(transform, solid));
         expect(gap, `${part.id} to ${label}`).toBeGreaterThanOrEqual(0.25 - 1e-9);

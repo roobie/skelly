@@ -1,26 +1,26 @@
 {
-  "name": "broken-axis-alignment",
-  "description": "Rifle with its sight rolled 90° on the rail, so it looks sideways.",
-  "expect": ["axis-alignment"],
+  "name": "broken-optic-eye-relief",
+  "description": "A long optic is fitted to the battle-rifle rail without a stock cheek datum.",
+  "expect": ["optic-eye-relief"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard", "params": {} },
     "grip": { "family": "grip", "params": { "length": "M" } },
     "magazine": { "family": "magazine", "params": { "length": "M" } },
-    "stock": { "family": "stock", "params": { "length": "M", "style": "straight" } },
-    "sight": { "family": "sight" }
+    "sight": { "family": "sight", "params": { "type": "high-mag-5-25x" } }
   },
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },
     { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     { "from": "receiver.handguard", "to": "handguard.rear" },
     { "from": "handguard.front", "to": "barrel.clamp" },
     { "from": "lower.grip", "to": "grip.top" },
     { "from": "lower.magazine", "to": "magazine.top" },
-    { "from": "receiver.stock", "to": "stock.front" },
-    { "from": "receiver.rail", "slot": 2, "to": "sight.base", "roll": 90 }
+    { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
   ]
 }

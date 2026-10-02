@@ -102,12 +102,12 @@ const roleColors = $<HTMLInputElement>('role-colors');
 const initialQuery = new URLSearchParams(location.search);
 let colorMode: 'finish' | 'role' = initialQuery.get('colors') === 'role' ? 'role' : 'finish';
 roleColors.checked = colorMode === 'role';
-// Level of detail of revolved solids: the default reads as round at a distance; `?facets=24` is for close-ups.
+// Six facets read as chamfered boxes on close optic views; sixteen keeps the silhouette round and low-poly.
 const requestedFacets = Number(initialQuery.get('facets'));
 const revolveFacets =
   Number.isInteger(requestedFacets) && requestedFacets >= MIN_REVOLVE_FACETS && requestedFacets <= MAX_REVOLVE_FACETS
     ? requestedFacets
-    : DEFAULT_REVOLVE_FACETS;
+    : 16;
 roleColors.addEventListener('change', () => {
   colorMode = roleColors.checked ? 'role' : 'finish';
   syncUrl();
