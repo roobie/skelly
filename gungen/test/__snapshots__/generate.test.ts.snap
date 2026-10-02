@@ -963,8 +963,8 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "handguard.rail",
-        "slot": 2,
+        "from": "receiver.rail",
+        "slot": 4,
         "to": "sight.base",
       },
       {
@@ -1080,8 +1080,8 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "stock.front",
       },
       {
-        "from": "handguard.rail",
-        "slot": 2,
+        "from": "receiver.rail",
+        "slot": 4,
         "to": "sight.base",
       },
       {
@@ -1467,8 +1467,8 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
-        "from": "handguard.rail",
-        "slot": 3,
+        "from": "receiver.rail",
+        "slot": 2,
         "to": "sight.base",
       },
     ],
@@ -1556,8 +1556,8 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
         "to": "bolt-carrier.mount",
       },
       {
-        "from": "handguard.rail",
-        "slot": 5,
+        "from": "receiver.rail",
+        "slot": 3,
         "to": "sight.base",
       },
     ],

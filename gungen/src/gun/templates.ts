@@ -163,7 +163,7 @@ export const ar: Template = {
       ['tube-dot', 'receiver.rail', 1],
       ['holographic', 'receiver.rail', 2],
       ['fixed-prism-4x', 'receiver.rail', 3],
-      ['lpvo-1-6x', 'handguard.rail', 2],
+      ['lpvo-1-6x', 'receiver.rail', 4],
     ),
     {
       from: 'barrel.front-sight',
@@ -354,12 +354,12 @@ export const boltRifle: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
-    // Top-loaded scopes use the handguard rail, positioned far enough forward to clear the loading port.
+    // Optics stay on the receiver rail; their mount footprint is checked against its physical top solids.
     ...sightRails(
-      ['fixed-prism-4x', 'handguard.rail', 3],
-      ['lpvo-1-6x', 'handguard.rail', 3],
-      ['high-mag-5-25x', 'handguard.rail', 5],
-      ['digital-thermal', 'handguard.rail', 5],
+      ['fixed-prism-4x', 'receiver.rail', 2],
+      ['lpvo-1-6x', 'receiver.rail', 3],
+      ['high-mag-5-25x', 'receiver.rail', 3],
+      ['digital-thermal', 'receiver.rail', 3],
     ),
   ],
 };
@@ -510,8 +510,8 @@ export const pumpShotgun: Template = {
     },
     { from: 'lower.grip', to: 'grip.top', when: { part: 'lower', param: 'layout', equals: 'trigger' } },
     ...sightRails(
-      ['mini-reflex', 'receiver.rail', 1],
-      ['tube-dot', 'receiver.rail', 1],
+      ['mini-reflex', 'receiver.rail', 2],
+      ['tube-dot', 'receiver.rail', 2],
       ['holographic', 'receiver.rail', 2],
     ),
   ],

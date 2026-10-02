@@ -926,7 +926,7 @@ const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void =>
   const { params, receiverDrop, receiverBottom } = context;
   switch (params.feed) {
     case 'top':
-      keepOuts.push(keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]));
+      keepOuts.push({ ...keepOut('loading-port', [-9, 2.5, -1.5], [-4, 9, 1.5]), allowFamilies: ['sight'] });
       break;
     case 'tube':
       keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
@@ -1001,7 +1001,11 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
           carrierY,
           portWindow,
         });
-  return [...shell, ...receiverActionDetails(params), ...receiverTubeSeat(bore, receiverBottom, tubeFed)];
+  const opticRail =
+    params.rail === 'none' || params.action === 'revolver'
+      ? []
+      : [solid('receiver-optic-rail', [-14, receiverTop - 0.5, -1.25], [-2, receiverTop, 1.25])];
+  return [...shell, ...receiverActionDetails(params), ...receiverTubeSeat(bore, receiverBottom, tubeFed), ...opticRail];
 };
 
 export const receiver: PartFamily = {

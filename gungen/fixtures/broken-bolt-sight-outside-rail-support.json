@@ -1,7 +1,7 @@
 {
-  "name": "broken-bolt-sight-over-loading-port",
-  "description": "Top-loaded bolt-action rifle with the sight over the action, blocking the loading port.",
-  "expect": ["keep-out"],
+  "name": "broken-bolt-sight-outside-rail-support",
+  "description": "Top-loaded bolt-action rifle with the reflex foot beyond the receiver rail's supported slots.",
+  "expect": ["optic-mount-fit"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "top", "bore": "M" } },
@@ -19,6 +19,6 @@
     { "from": "handguard.front", "to": "barrel.clamp" },
     { "from": "lower.magazine", "to": "magazine.top" },
     { "from": "receiver.stock", "to": "stock.front" },
-    { "from": "receiver.rail", "slot": 3, "to": "sight.base" }
+    { "from": "receiver.rail", "slot": 0, "to": "sight.base" }
   ]
 }

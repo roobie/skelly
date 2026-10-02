@@ -59,6 +59,47 @@ const prism = (id: string, profile: readonly Vec2[], widthU: number): Solid => {
   };
 };
 
+const octagonal = ({
+  id,
+  axis,
+  span,
+  center,
+  halfA,
+  halfB,
+}: {
+  readonly id: string;
+  readonly axis: 'x' | 'y' | 'z';
+  readonly span: readonly [number, number];
+  readonly center: Vec3;
+  readonly halfA: number;
+  readonly halfB: number;
+}): Solid => {
+  const corners = [
+    [-0.65, -1],
+    [0.65, -1],
+    [1, -0.65],
+    [1, 0.65],
+    [0.65, 1],
+    [-0.65, 1],
+    [-1, 0.65],
+    [-1, -0.65],
+  ] as const;
+  const project = {
+    x: (a: number, b: number): Vec2 => [grid(center[1] + a * halfA), grid(center[2] + b * halfB)],
+    y: (a: number, b: number): Vec2 => [grid(center[2] + a * halfA), grid(center[0] + b * halfB)],
+    z: (a: number, b: number): Vec2 => [grid(center[0] + a * halfA), grid(center[1] + b * halfB)],
+  };
+  const profile = corners.map(([a, b]) => project[axis](a, b));
+  return {
+    id,
+    kind: 'extruded-polygon',
+    axis,
+    z: span.map(grid) as unknown as readonly [number, number],
+    profile,
+    slot: 'metal',
+  };
+};
+
 const octagonalTube = ({
   id,
   x,
@@ -71,26 +112,7 @@ const octagonalTube = ({
   readonly centerY: number;
   readonly halfY: number;
   readonly halfZ: number;
-}): Solid => {
-  const profile: Vec2[] = [
-    [-0.65 * halfY, -halfZ],
-    [0.65 * halfY, -halfZ],
-    [halfY, -0.65 * halfZ],
-    [halfY, 0.65 * halfZ],
-    [0.65 * halfY, halfZ],
-    [-0.65 * halfY, halfZ],
-    [-halfY, 0.65 * halfZ],
-    [-halfY, -0.65 * halfZ],
-  ].map(([y, z]) => [grid(centerY + y!), grid(z!)]);
-  return {
-    id,
-    kind: 'extruded-polygon',
-    axis: 'x',
-    z: x.map(grid) as unknown as readonly [number, number],
-    profile,
-    slot: 'metal',
-  };
-};
+}): Solid => octagonal({ id, axis: 'x', span: x, center: [0, centerY, 0], halfA: halfY, halfB: halfZ });
 
 const silhouette = (id: string, profile: readonly Vec2[], widthU: number): Solid => prism(id, profile, widthU);
 
@@ -157,9 +179,16 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 1.5,
     solids: [
       box('mount-foot', [-1.75, 0, -0.75], [1.75, 0.45, 0.75]),
-      box('rear-window-post', [-1.55, 0.4, -0.72], [-1.05, 1.75, 0.72]),
-      box('front-window-post', [0.85, 0.4, -0.72], [1.45, 1.72, 0.72]),
-      box('hood-top', [-1.2, 1.7, -0.72], [1.12, 2.2, 0.72]),
+      silhouette(
+        'front-window-prism',
+        [
+          [-1.5, 0.45],
+          [1.5, 0.45],
+          [1.5, 1.8],
+          [-1.1, 2.2],
+        ],
+        2.75,
+      ),
     ],
   }),
   'tube-dot': makeEntry({
@@ -188,10 +217,10 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   holographic: makeEntry({
     id: 'holographic',
     label: 'Holographic (EXPS3 class)',
-    reference: 'EOTECH EXPS3, 3.8 × 2.9 × 2.0 in class',
+    reference: 'EOTECH EXPS3, approximately 3.8 × 2.3 × 2.6 in class',
     source: 'https://www.eotechinc.com/eotech-hws-exps3',
-    envelopeMm: [97, 74, 51],
-    envelopeU: [8.5, 6.5, 4.5],
+    envelopeMm: [95, 56, 65],
+    envelopeU: [8.25, 4.875, 5.75],
     mount: railMount({
       contactLengthU: 5.5,
       contactWidthU: 1.7,
@@ -199,55 +228,55 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
       description: 'integral low rail foot',
       clearanceU: { forward: 0.5, rearward: 0.5, lateral: 0.5 },
     }),
-    opticalAxisY: 3.0,
-    ocularX: -4.2,
+    opticalAxisY: 2.5,
+    ocularX: -4.0,
     ironCoWitness: false,
-    sightlineStartX: 4.2,
+    sightlineStartX: 4.0,
     solids: [
-      box('mount-foot', [-4.2, 0, -0.85], [4.2, 0.65, 0.85]),
-      box('window-left-side', [-4.2, 0.65, -2.2], [4.2, 5.35, -1.45]),
-      box('window-right-side', [-4.2, 0.65, 1.45], [4.2, 5.35, 2.2]),
-      box('window-lower-rail', [-4.2, 0.65, -1.45], [4.2, 1.15, 1.45]),
-      box('window-upper-rail', [-3.5, 5.3, -2.2], [3.5, 6.4, 2.2]),
-      box('control-block', [-3.8, 0.65, -1.4], [-2.7, 2.1, 1.4]),
+      box('mount-foot', [-4.0, 0, -0.85], [4.0, 0.55, 0.85]),
+      box('window-left-side', [-4.0, 0.55, -2.75], [4.0, 4.0, -1.7]),
+      box('window-right-side', [-4.0, 0.55, 1.7], [4.0, 4.0, 2.75]),
+      box('window-lower-rail', [-4.0, 0.55, -1.7], [4.0, 0.95, 1.7]),
+      box('window-upper-rail', [-3.2, 3.9, -2.75], [3.2, 4.85, 2.75]),
+      box('control-block', [-3.7, 0.55, -1.7], [-2.7, 1.8, 1.7]),
     ],
   }),
   'fixed-prism-4x': makeEntry({
     id: 'fixed-prism-4x',
     label: 'Fixed 4× prism (TA31 class)',
-    reference: 'Trijicon ACOG TA31, approximately 147 × 71 × 51 mm',
+    reference: 'Trijicon ACOG TA31 class, including mount, approximately 150 × 45 × 60 mm',
     source: 'https://www.trijicon.com/products/details/ta31-d-100549',
-    envelopeMm: [147, 71, 51],
-    envelopeU: [12.75, 6.25, 4.5],
+    envelopeMm: [150, 45, 60],
+    envelopeU: [13, 4, 5.25],
     mount: railMount({
-      contactLengthU: 8,
+      contactLengthU: 5.5,
       contactWidthU: 1.75,
-      minimumSlots: 5,
+      minimumSlots: 4,
       description: 'integral prism foot',
       clearanceU: { forward: 0.75, rearward: 0.75, lateral: 0.5 },
     }),
-    opticalAxisY: 3.25,
+    opticalAxisY: 2.5,
     ocularX: -5.75,
     eyeReliefU: 3.5,
     eyeDatumToleranceU: 8,
     ironCoWitness: false,
     sightlineStartX: 6.5,
     solids: [
-      box('integral-mount', [-3.3, 0, -0.825], [3.3, 0.7, 0.825]),
+      box('integral-mount', [-2.75, 0, -0.825], [2.75, 0.65, 0.825]),
       silhouette(
         'prism-housing',
         [
-          [-6.4, 0.55],
-          [6.4, 0.55],
-          [6.4, 2.2],
-          [4.8, 5.9],
-          [-4.8, 5.9],
-          [-6.4, 2.2],
+          [-6.5, 0.5],
+          [6.5, 0.5],
+          [6.5, 1.8],
+          [4.8, 3.75],
+          [-4.8, 3.75],
+          [-6.5, 1.8],
         ],
-        4.4,
+        5.25,
       ),
-      box('objective-rim', [4.8, 1.2, -2.15], [6.4, 5.9, 2.15]),
-      box('ocular-rim', [-6.4, 1.0, -2.15], [-4.8, 5.8, 2.15]),
+      octagonalTube({ id: 'objective-rim', x: [4.8, 6.5], centerY: 2.5, halfY: 1.25, halfZ: 2.6 }),
+      octagonalTube({ id: 'ocular-rim', x: [-6.5, -4.8], centerY: 2.5, halfY: 1.25, halfZ: 2.6 }),
     ],
   }),
   'lpvo-1-6x': makeEntry({
@@ -266,19 +295,19 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
       ringSpanU: 8,
     }),
     opticalAxisY: 3.75,
-    ocularX: -11.25,
+    ocularX: -10,
     eyeReliefU: 7.5,
     eyeDatumToleranceU: 8,
     ironCoWitness: false,
     sightlineStartX: 11.25,
     solids: [
-      box('rear-ring-foot', [-4.9, 0, -0.875], [-3.1, 2.75, 0.875]),
-      box('front-ring-foot', [3.1, 0, -0.875], [4.9, 2.75, 0.875]),
+      box('rear-ring-foot', [-4, 0, -0.875], [-3, 2.75, 0.875]),
+      box('front-ring-foot', [3, 0, -0.875], [4, 2.75, 0.875]),
       octagonalTube({ id: 'main-tube', x: [-7.5, 7.2], centerY: 3.75, halfY: 1.2, halfZ: 1.2 }),
-      octagonalTube({ id: 'ocular-bell', x: [-11.15, -6.7], centerY: 3.75, halfY: 1.55, halfZ: 1.55 }),
-      octagonalTube({ id: 'objective-bell', x: [6.4, 11.15], centerY: 3.75, halfY: 1.75, halfZ: 1.75 }),
-      box('top-turret', [-1.05, 4.75, -0.8], [1.05, 7, 0.8]),
-      box('side-turret', [-1.05, 3.25, 0.9], [1.05, 5.5, 2.05]),
+      octagonalTube({ id: 'ocular-bell', x: [-10, -6.7], centerY: 3.75, halfY: 1.4, halfZ: 1.25 }),
+      octagonalTube({ id: 'objective-bell', x: [6.4, 12.25], centerY: 3.75, halfY: 1.75, halfZ: 1.75 }),
+      octagonal({ id: 'top-turret', axis: 'y', span: [4.75, 7], center: [0, 0, 0], halfA: 0.8, halfB: 0.8 }),
+      octagonal({ id: 'side-turret', axis: 'z', span: [0.9, 2.05], center: [0, 4.375, 0], halfA: 1.05, halfB: 1.05 }),
     ],
   }),
   'high-mag-5-25x': makeEntry({
@@ -308,8 +337,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
       octagonalTube({ id: 'main-tube', x: [-11.5, 10], centerY: 3.75, halfY: 1.35, halfZ: 1.35 }),
       octagonalTube({ id: 'ocular-bell', x: [-15.8, -10.8], centerY: 3.75, halfY: 1.65, halfZ: 1.65 }),
       octagonalTube({ id: 'objective-bell', x: [9.5, 15.8], centerY: 3.75, halfY: 2.8, halfZ: 2.8 }),
-      box('elevation-turret', [-1.5, 4.75, -1.2], [1.5, 7.5, 1.2]),
-      box('parallax-turret', [-1.5, 2.75, 1.1], [1.5, 5, 3.25]),
+      octagonal({ id: 'elevation-turret', axis: 'y', span: [4.75, 7.5], center: [0, 0, 0], halfA: 1.2, halfB: 1.2 }),
+      octagonal({ id: 'parallax-turret', axis: 'z', span: [1.1, 3.25], center: [0, 3.875, 0], halfA: 1.5, halfB: 1.5 }),
     ],
   }),
   'digital-thermal': makeEntry({
@@ -335,9 +364,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 15,
     solids: [
       box('mount-base', [-5, 0, -0.875], [5, 1, 0.875]),
-      box('sensor-housing', [-8, 1, -2.8], [8, 5.8, 2.8]),
-      box('objective-housing', [8, 1.4, -3.5], [14.9, 5.5, 3.5]),
-      box('eyepiece-housing', [-14.9, 1.6, -2.6], [-8, 5.2, 2.6]),
+      octagonalTube({ id: 'sensor-housing', x: [-8, 8], centerY: 3.4, halfY: 2.2, halfZ: 2.8 }),
+      octagonalTube({ id: 'objective-housing', x: [8, 14.9], centerY: 3.4, halfY: 2.1, halfZ: 3.5 }),
+      octagonalTube({ id: 'eyepiece-housing', x: [-14.9, -8], centerY: 3.4, halfY: 1.8, halfZ: 2.6 }),
       box('top-control-block', [-2.5, 5.4, -1.4], [2.5, 7, 1.4]),
       box('side-control-block', [-1.8, 2.1, 2.6], [1.8, 4.6, 3.5]),
     ],
