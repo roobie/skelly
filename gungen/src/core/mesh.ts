@@ -299,7 +299,16 @@ export const meshForSolid = (
   revolveFacets: number = DEFAULT_REVOLVE_FACETS,
 ): TriangleMesh => {
   if (solid.kind === 'revolved') {
-    return orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
+    const mesh = orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
+    if (solid.origin) {
+      for (let index = 0; index < mesh.positions.length; index++) {
+        const offset = solid.origin[index % 3]!;
+        if (offset !== 0) {
+          mesh.positions[index] = mesh.positions[index]! + offset;
+        }
+      }
+    }
+    return mesh;
   }
   if (solid.kind === 'extruded-polygon' && solid.clip?.length && solid.display?.bevel !== false) {
     throw new Error(`Solid "${solid.id}" has clip planes; set display.bevel to false explicitly.`);

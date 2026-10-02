@@ -176,7 +176,10 @@ still the gun's numbers in u.
 
 **Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
 third kind of solid: a profile of (axial, radial) points turned about an axis
-(`axis`, local Z when omitted, with the same axes as an extrusion). It exists
+(`axis`, local Z when omitted, with the same axes as an extrusion). Optional
+`origin: Vec3` translates that axis in the part frame (omitted = `[0, 0, 0]`);
+mesh positions, collision hulls, bounds and anchor points share this translation.
+It exists
 for round parts with real detail, such as cartridges, which the box and
 extrusion kinds cannot describe.
 
