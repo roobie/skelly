@@ -79,6 +79,28 @@ export interface ExtrudedPolygonSolid extends SolidFinish {
   readonly display?: SolidDisplayHints;
 }
 
+/**
+ * A profile turned about one axis of the part frame. Collision uses the convex hull of the turned
+ * profile, so grooves and hollows are ignored. The facet count is not part of the solid: it is chosen
+ * when a mesh is built (a level of detail), while collision always uses a fixed ring count.
+ */
+export interface RevolvedSolid extends SolidFinish {
+  readonly id: string;
+  readonly kind: 'revolved';
+  /**
+   * (axial, radial) points with radial >= 0. Traversed so the material lies to the left of travel: a
+   * closed solid runs from the axis out along its base, along the outside, and back to the axis; a
+   * hollow one goes out along the outside, across the mouth and back along the inside.
+   */
+  readonly profile: readonly Vec2[];
+  /** The axis turned about, with the same axial and transverse coordinates as ExtrudedPolygonSolid; omission keeps local Z. */
+  readonly axis?: ExtrusionAxis;
+  /** A profile bend sharper than this keeps a hard edge in the mesh; softer bends are smoothed. Defaults to 40. */
+  readonly creaseDegrees?: number;
+  /** Only `outline` applies: a revolved mesh has no bevel and cannot join a merge group. */
+  readonly display?: SolidDisplayHints;
+}
+
 export type Solid = BoxSolid | ExtrudedPolygonSolid;
 
 /** Space that must stay empty (PROJECT.md §3). A convex extrusion may refine its broad-phase box. */
