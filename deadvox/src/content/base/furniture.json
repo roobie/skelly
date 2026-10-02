@@ -76,6 +76,12 @@
       "loot": "desk"
     },
     {
+      "id": "range_table",
+      "name": "Shooting table",
+      "size": [4, 2, 2],
+      "color": "#786b55"
+    },
+    {
       "id": "shelf",
       "name": "Shelf",
       "size": [2, 4, 1],
