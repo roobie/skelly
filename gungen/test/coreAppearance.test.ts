@@ -3,6 +3,7 @@ import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/des
 import { exportGlb } from '../src/core/glb.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Domain, PartDef } from '../src/core/schema.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 import { readGlb } from './glbReader.ts';
 
 const ASSET: GlbAssetIdentity = { id: 'widget', file: 'assets/models/widget.glb' };
@@ -22,6 +23,7 @@ const exportWidget = (def: PartDef, colors: Palette = legacyPalette) => {
     name: 'widget-domain',
     families: { widget: { name: 'widget', params: {}, build: () => def } },
     axisRules: [],
+    units: GUN_UNITS,
   };
   const assembly = { name: 'renamed-widget', root: 'widget', parts: { widget: { family: 'widget' } }, connections: [] };
   const resolved = resolve(assembly, domain);

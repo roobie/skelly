@@ -12,6 +12,7 @@ import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { ak, ar, battleRifle } from '../src/gun/templates.ts';
+import { GUN_UNITS } from '../src/gun/units.ts';
 import { buildDesignViewModel } from '../src/viewer/designViewModel.ts';
 import {
   applyOverrides,
@@ -242,6 +243,7 @@ const testDomain: Domain = {
     },
   },
   axisRules: [],
+  units: GUN_UNITS,
 };
 const testSeed: Assembly = {
   name: 'post-cap',

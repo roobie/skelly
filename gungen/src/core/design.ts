@@ -216,6 +216,8 @@ export interface GlbExportInput {
   /** Optional design-level slot-to-material overrides, ahead of variant defaults. */
   readonly finish?: Readonly<Record<string, string>>;
   readonly asset: GlbAssetIdentity;
+  /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
+  readonly revolveFacets?: number;
 }
 
 export type GlbExportError =

@@ -19,6 +19,7 @@ import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
+import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '../core/revolve.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
@@ -101,6 +102,12 @@ const roleColors = $<HTMLInputElement>('role-colors');
 const initialQuery = new URLSearchParams(location.search);
 let colorMode: 'finish' | 'role' = initialQuery.get('colors') === 'role' ? 'role' : 'finish';
 roleColors.checked = colorMode === 'role';
+// Level of detail of revolved solids: the default reads as round at a distance; `?facets=24` is for close-ups.
+const requestedFacets = Number(initialQuery.get('facets'));
+const revolveFacets =
+  Number.isInteger(requestedFacets) && requestedFacets >= MIN_REVOLVE_FACETS && requestedFacets <= MAX_REVOLVE_FACETS
+    ? requestedFacets
+    : DEFAULT_REVOLVE_FACETS;
 roleColors.addEventListener('change', () => {
   colorMode = roleColors.checked ? 'role' : 'finish';
   syncUrl();
@@ -140,6 +147,9 @@ const syncUrl = () => {
   }
   if (colorMode === 'role') {
     params.set('colors', 'role');
+  }
+  if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
+    params.set('facets', String(revolveFacets));
   }
   params.set(
     'camera',
@@ -304,10 +314,16 @@ const redraw = () => {
     }
   }
   const contextTemplate = editorState?.template ?? activeTemplate;
-  layers = buildLayers(report, focused ? [focused] : report.issues, colorMode, {
-    ...(contextTemplate ? { variant: contextTemplate.name } : {}),
-    ...(editorState?.finish ? { finish: editorState.finish } : {}),
-  });
+  layers = buildLayers(
+    report,
+    focused ? [focused] : report.issues,
+    colorMode,
+    {
+      ...(contextTemplate ? { variant: contextTemplate.name } : {}),
+      ...(editorState?.finish ? { finish: editorState.finish } : {}),
+    },
+    revolveFacets,
+  );
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);

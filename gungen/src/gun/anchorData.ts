@@ -7,7 +7,7 @@
 
 import type { AnchorFrame } from '../core/design.ts';
 import { extrusionPoint, type Vec3 } from '../core/math.ts';
-import type { PartDef, Solid } from '../core/schema.ts';
+import type { PartDef, RevolvedSolid, Solid } from '../core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
 import { FIRING_GRIP } from './parts.ts';
 import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
@@ -25,10 +25,19 @@ const revolverGripAxes = (): Pick<AnchorFrame, 'forward' | 'up'> => {
 const findSolid = (part: PartDef, ...ids: string[]): Solid | undefined =>
   ids.map((id) => part.solids.find((s) => s.id === id)).find((s) => s !== undefined);
 
-/** A point inside a convex solid: box centre, or the vertex mean of a convex profile at mid-extrusion. */
+/** A revolved solid's interior point: on its axis, midway along it. */
+const axisMidpoint = (s: RevolvedSolid): Vec3 => {
+  const axial = s.profile.map((p) => p[0]);
+  return extrusionPoint(s.axis, [0, 0], (Math.min(...axial) + Math.max(...axial)) / 2);
+};
+
+/** A point inside a convex solid: box centre, the axis midpoint of a revolved one, or the vertex mean of a convex profile at mid-extrusion. */
 const interiorPoint = (s: Solid): Vec3 => {
   if (s.kind === 'box') {
     return s.box.center;
+  }
+  if (s.kind === 'revolved') {
+    return axisMidpoint(s);
   }
   const n = s.profile.length;
   return extrusionPoint(
@@ -42,6 +51,9 @@ const interiorPoint = (s: Solid): Vec3 => {
 const gripHoldPoint = (s: Solid): Vec3 => {
   if (s.kind === 'box') {
     return s.box.center;
+  }
+  if (s.kind === 'revolved') {
+    return axisMidpoint(s);
   }
   const n = s.profile.length;
   const centroid: readonly [number, number] = [

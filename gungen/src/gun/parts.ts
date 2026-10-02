@@ -2216,6 +2216,9 @@ const integratedPistolGrip = (gripLength: string): PartDef => {
   const offset: Vec3 = [PISTOL_GRIP_X, 0, 0];
   const local = grip.build({ length: gripLength, well: 'magazine' });
   const solids = local.solids.map((part): Solid => {
+    if (part.kind === 'revolved') {
+      throw new Error('Integrated pistol grips cannot rotate revolved solids in the XY plane.');
+    }
     if (part.kind === 'extruded-polygon' && part.axis && part.axis !== 'z') {
       throw new Error(`Integrated pistol grips cannot rotate ${part.axis}-axis extrusions in the XY plane.`);
     }

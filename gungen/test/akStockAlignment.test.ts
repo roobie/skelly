@@ -26,6 +26,9 @@ const solidVertices = (solid: Solid): Vec3[] => {
       ),
     );
   }
+  if (solid.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   const polyhedron = worldSolid(IDENTITY, solid);
   return 'vertices' in polyhedron
     ? [...polyhedron.vertices]
