@@ -374,7 +374,7 @@ try {
     inventory.version += 1;
     return [...inventory.piles.values()]
       .flatMap((pile) => pile.items)
-      .filter(({ item }) => item.type === 'spent_case_7_62x39')
+      .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
       .reduce((sum, { item }) => sum + item.count, 0);
   });
   await page.mouse.click(640, 450);
@@ -383,7 +383,7 @@ try {
     return (
       [...inventory.piles.values()]
         .flatMap((pile) => pile.items)
-        .filter(({ item }) => item.type === 'spent_case_7_62x39')
+        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
         .reduce((sum, { item }) => sum + item.count, 0) ===
       before + 1
     );
@@ -397,7 +397,7 @@ try {
     gunshot: globalThis.primaryActionTest.audio.heardSounds.filter(({ event }) => event === 'gunshot').at(-1),
     cases: [...globalThis.primaryActionTest.inventory.piles.values()]
       .flatMap((pile) => pile.items)
-      .filter(({ item }) => item.type === 'spent_case_7_62x39')
+      .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
       .reduce((sum, { item }) => sum + item.count, 0),
   }));
   assert.equal(firearmAction.rifle, 'debug_rifle_assault');

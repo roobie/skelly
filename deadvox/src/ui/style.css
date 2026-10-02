@@ -1094,6 +1094,7 @@ body.bench #quickbar {
   align-items: center;
 }
 #debug-ui-root .debug-panel .debug-readout span,
+#debug-ui-root .debug-panel .debug-readout button,
 #debug-ui-root .debug-panel .debug-shambler-count button,
 #debug-ui-root .debug-panel .debug-shambler-count output,
 #debug-ui-root .debug-panel .debug-actions button,
@@ -1108,6 +1109,7 @@ body.bench #quickbar {
     monospace;
 }
 #debug-ui-root .debug-panel .debug-actions button,
+#debug-ui-root .debug-panel .debug-readout button,
 #debug-ui-root .debug-panel .debug-shambler-count button {
   cursor: pointer;
 }
@@ -1196,6 +1198,30 @@ body.bench #quickbar {
 #debug-ui-root #hotbar,
 #debug-ui-root #spawn {
   pointer-events: auto;
+}
+#debug-ui-root .debug-axis-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: var(--text);
+  font:
+    11px ui-monospace,
+    monospace;
+}
+#debug-ui-root .debug-axis-toggle input {
+  margin: 0;
+}
+#debug-axis-gizmo {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
+}
+#debug-axis-gizmo[hidden] {
+  display: none;
 }
 
 #f3-debug-overlay {

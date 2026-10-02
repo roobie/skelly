@@ -119,8 +119,10 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 
 ### 2. Craft and mend
 
-- First, the inventory screen moves to lit-html, with its behaviour unchanged. That
-  is the last screen, so it completes [ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md).
+See [SLICE-2.md](SLICE-2.md). The inventory screen's move to lit-html, planned
+as this slice's first step, was done in Slice 1 (#105), which completed
+[ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md). It covers:
+
 - Recipes with tool qualities and groups of alternative components, and crafting
   in compressed time that can be interrupted and resumed.
 - Disassembly and salvage, and repairing items' condition. Weapon mods can be
@@ -240,6 +242,12 @@ later notes (2026-09-27):
   materials);
 - “at least three basic attack animations, and animations for taking damage”.
 - “Q and E are reserved for later actions” (nothing is bound to them in the world today).
+
+**Crafting and condition, later (BR, 2026-10-03, from the Slice 2 plan).**
+- Items carried in clothing can be damaged when that clothing is hit.
+- Condition affects how an item performs, not only whether it's ruined.
+- Books may also speed up skill practice, not only teach recipes.
+- Condition may lower salvage yield.
 
 **Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”
 - Fist variations: cross, hook, uppercut (BR).
