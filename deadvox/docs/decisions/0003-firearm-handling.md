@@ -63,7 +63,7 @@ This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and De
 - `action`:
   - `moving`: the moving parts as **separate named nodes** in the GLB (today the export merges solids into one primitive per material, so these must stay separate), each with its motion axis and stroke in metres;
   - `fire` and `hand`: cycle timelines (rear, dwell, forward seconds, or sampled curves);
-  - `ejectAt`: the stroke fraction at which the case leaves, and `ejectDirection`: a unit vector in the model frame;
+  - `ejectAt`: the stroke fraction at which the case leaves, and `ejectDirection`: a unit vector in the model frame; both are fields of `action`;
   - `holdOpen`: whether the carrier stays back on an empty magazine;
   - `rpm`.
 - **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, tilt }]`, from the top round down). `at` is the round centre in metres in magazine-model coordinates; `tilt` is degrees about +z (nose-up positive). Left/right stagger is encoded by the sign of `at[2]`, not a separate field, so deadvox can draw remaining rounds by instancing the round model.

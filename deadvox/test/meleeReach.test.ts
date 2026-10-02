@@ -265,8 +265,7 @@ describe('player melee reach at shambler attack distance', () => {
     expect(zombie.regions.torso).toBe(before.torso);
   });
 
-  // This ~4k-simulation sweep takes about 1.8 s alone and 5.4 s under the full worker pool; allow ~5x solo time.
-  it('measures progressively farther chest reach in the preserved weapon order', { timeout: 10_000 }, () => {
+  it('measures progressively farther chest reach in the preserved weapon order', () => {
     const standing = poses[0]!;
     const seed = 1;
     const distances = weapons.map((weapon) => {

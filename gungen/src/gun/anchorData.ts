@@ -76,6 +76,16 @@ const gripHoldPoint = (s: Solid): Vec3 => {
 
 const frameAt = (position: Vec3, forward: Vec3 = X, up: Vec3 = Y): AnchorFrame => ({ position, forward, up });
 
+const ejectionAnchor = (_params: Readonly<Record<string, string>>, part: PartDef): GunPartAnchors => {
+  const volume = part.keepOuts.find(({ id }) => id === 'ejection');
+  if (!volume) {
+    return {};
+  }
+  return {
+    ejection: frameAt([volume.box.center[0], volume.box.center[1], volume.box.center[2] - volume.box.half[2]]),
+  };
+};
+
 /** The firing hand on a grip's body; `axes` are the grip's own forward and up. */
 const gripHold =
   (bodyIds: readonly string[], axes: (part: PartDef) => Pick<AnchorFrame, 'forward' | 'up'>) =>
@@ -149,4 +159,6 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
       return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
     },
   },
+  receiver: { anchors: ejectionAnchor },
+  'ak-receiver': { anchors: ejectionAnchor },
 };

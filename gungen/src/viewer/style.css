@@ -286,6 +286,26 @@ button:hover {
 #generate-btn {
   flex: 1;
 }
+#cycle-controls .estimated {
+  color: var(--normal);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+#cycle-controls .cycle-scrub {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+}
+#cycle-controls #cycle-readout,
+#cycle-controls #cycle-notes {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+#cycle-controls #cycle-readout {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
 .hint,
 #hover {
   color: var(--muted);

@@ -223,7 +223,7 @@ describe('receiver section builder', () => {
     expect(rearXAt(topY)).toBe(-12);
   });
 
-  it('closes and adapts the AR, AK, and pump receiver sections at both mating ends', () => {
+  it('opens the AR carrier bore while preserving AK/pump adapters and watertight shells', () => {
     const receivers = [
       {
         id: 'receiver-ar',
@@ -247,25 +247,36 @@ describe('receiver section builder', () => {
       const receiverMesh = meshForSolidGroup(sectionSolids);
       const cavityCenterY = (cavity.y[0] + cavity.y[1]) / 2;
       const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
-      if (id === 'receiver-pump') {
-        expect(faceContainsPoint(receiverMesh, -16, -1, 0), `${id} rear stock interface`).toBe(true);
+      if (id === 'receiver-ar') {
+        expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} buffer-tube bore`).toBe(
+          false,
+        );
+        expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} breech bore`).toBe(false);
+        expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(false);
+        expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(false);
       } else {
-        expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
+        if (id === 'receiver-pump') {
+          expect(faceContainsPoint(receiverMesh, -16, -1, 0), `${id} rear stock interface`).toBe(true);
+        } else {
+          expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
+        }
+        expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
+        expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(true);
+        expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(true);
+        const rearAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-rear-adapter`));
+        const frontAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-front-adapter`));
+        expect(rearAdapter?.kind).toBe('extruded-polygon');
+        expect(frontAdapter?.kind).toBe('extruded-polygon');
+        if (rearAdapter?.kind === 'extruded-polygon' && frontAdapter?.kind === 'extruded-polygon') {
+          expect(rearAdapter.z).toEqual([-16, -15.5]);
+          expect(frontAdapter.z).toEqual([-0.5, 0]);
+        }
       }
-      expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
       expectWatertightMesh(receiverMesh, id);
-      const triangleBudget = id === 'receiver-ar' ? 300 : 450;
+      // AR now includes an internal barrel seat; retain the same absolute
+      // 450-triangle ceiling as the other detailed receiver shells.
+      const triangleBudget = 450;
       expect(receiverMesh.triangleCount, `${id} triangle budget`).toBeLessThanOrEqual(triangleBudget);
-      expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(true);
-      expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(true);
-      const rearAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-rear-adapter`));
-      const frontAdapter = sectionSolids.find(({ id: solidId }) => solidId.startsWith(`${id}-front-adapter`));
-      expect(rearAdapter?.kind).toBe('extruded-polygon');
-      expect(frontAdapter?.kind).toBe('extruded-polygon');
-      if (rearAdapter?.kind === 'extruded-polygon' && frontAdapter?.kind === 'extruded-polygon') {
-        expect(rearAdapter.z).toEqual([-16, -15.5]);
-        expect(frontAdapter.z).toEqual([-0.5, 0]);
-      }
       expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
       expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(0);
     }
@@ -297,7 +308,7 @@ describe('receiver section builder', () => {
       {
         label: 'AR',
         def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' }),
-        point: [-7, 1.1, 1.8] as const,
+        point: [-4.25, 0.25, 1.8] as const,
       },
       {
         label: 'AK',

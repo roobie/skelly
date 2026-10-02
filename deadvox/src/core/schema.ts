@@ -224,6 +224,46 @@ const SoundSchema = strictObject({
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
 });
 
+const UnitVector = pipe(
+  Point,
+  check(([x, y, z]) => Math.abs(Math.hypot(x, y, z) - 1) <= 1e-6, 'must be a unit vector'),
+);
+
+const ActionCycleSchema = pipe(
+  strictObject({
+    durationSeconds: Positive,
+    rearwardSeconds: Positive,
+    dwellSeconds: NonNegative,
+    forwardSeconds: Positive,
+  }),
+  check(
+    (cycle) => cycle.rearwardSeconds + cycle.dwellSeconds + cycle.forwardSeconds <= cycle.durationSeconds + 1e-9,
+    'cycle phases must fit within durationSeconds',
+  ),
+);
+
+const ActionPartSchema = strictObject({
+  /** Exact GLB node name, e.g. `bolt-carrier:bolt-carrier`. */
+  node: pipe(string(), nonEmpty('must not be empty')),
+  axis: UnitVector,
+  strokeMetres: Positive,
+});
+
+const ActionSchema = strictObject({
+  parts: pipe(
+    record(Id, ActionPartSchema),
+    check((parts) => Object.keys(parts).length > 0, 'needs at least one moving part'),
+  ),
+  fire: ActionCycleSchema,
+  hand: ActionCycleSchema,
+  ejectAt: Fraction,
+  /** Unit direction vector in the exported model frame. */
+  ejectDirection: UnitVector,
+  holdOpen: vBoolean(),
+  /** Cyclic rate in rounds per minute. */
+  rpm: Positive,
+});
+
 const MagazineRoundSchema = strictObject({
   /** Centre in metres in the magazine model frame (+x forward, +y up, +z right). */
   at: Point,
@@ -254,6 +294,8 @@ const ModelSchema = pipe(
     roll: optional(pipe(number(), minValue(-180), maxValue(180))),
     /** Named points, such as the flashlight's `lens` or a firearm's `magwell`. */
     anchors: optional(record(Id, Point)),
+    /** Optional estimated action cycles and the named moving GLB nodes. */
+    action: optional(ActionSchema),
   }),
   check(
     ({ calibre, capacity, rounds }) =>
