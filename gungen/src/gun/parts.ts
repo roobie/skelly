@@ -1161,8 +1161,9 @@ export const boltCarrier: PartFamily = {
       solid(id, [snap(min[0]), snap(min[1]), snap(min[2])], [snap(max[0]), snap(max[1]), snap(max[2])]);
     const bodyX: readonly [number, number] =
       pattern === 'ar' || pattern === 'pump' || pattern === 'ak' ? envelope.x : [-1.5, 1.5];
+    const bodyZ = envelope.z;
     const solids: Solid[] = [
-      solid('carrier-body', [bodyX[0], envelope.y[0], envelope.z[0]], [bodyX[1], envelope.y[1], envelope.z[1]]),
+      solid('carrier-body', [bodyX[0], envelope.y[0], bodyZ[0]], [bodyX[1], envelope.y[1], bodyZ[1]]),
     ];
     if (pattern === 'ar') {
       solids.push(
@@ -1172,10 +1173,12 @@ export const boltCarrier: PartFamily = {
     } else if (pattern === 'ak') {
       solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]), akChargingHandleSolid());
     } else if (pattern === 'pump') {
-      solids.push(
-        block('action-bar-left', [-6, -0.4, -2.5], [-1.25, -0.15, -2]),
-        block('action-bar-right', [-6, -0.4, 2], [-1.25, -0.15, 2.5]),
-      );
+      // The single action bar rides inside the receiver, attached to the carrier's right face.
+      const barY0 = envelope.y[0] + 0.25;
+      const barY1 = envelope.y[0] + 0.5;
+      const barZ0 = envelope.z[1] - 0.25;
+      const barZ1 = envelope.z[1];
+      solids.push(solid('action-bar-right', [envelope.x[0], barY0, barZ0], [envelope.x[1], barY1, barZ1]));
     } else if (pattern === 'barrett') {
       solids.push(block('heavy-carrier', [-3, -0.75, -1.2], [3, 0.75, 1.2]));
     } else if (pattern === 'bolt') {
@@ -2162,18 +2165,35 @@ export const forend: PartFamily = {
   name: 'forend',
   params: {},
   build(): PartDef {
-    const outerY = 1 + PUMP_FOREND_WALL;
-    const outerZ = 1 + PUMP_FOREND_WALL;
+    const outer = [
+      [0, -1 - PUMP_FOREND_WALL],
+      [-0.414 * (1 + PUMP_FOREND_WALL), -1 - PUMP_FOREND_WALL],
+      [-1 - PUMP_FOREND_WALL, -0.414 * (1 + PUMP_FOREND_WALL)],
+      [-1 - PUMP_FOREND_WALL, 0.414 * (1 + PUMP_FOREND_WALL)],
+      [-0.414 * (1 + PUMP_FOREND_WALL), 1 + PUMP_FOREND_WALL],
+      [0, 1 + PUMP_FOREND_WALL],
+    ] as const;
+    const inner = [
+      [0, -1],
+      [-0.414, -1],
+      [-1, -0.414],
+      [-1, 0.414],
+      [-0.414, 1],
+      [0, 1],
+    ] as const;
+    const shellFacets = outer.slice(0, -1).map((outside, index): Solid => ({
+      id: `shell-${index + 1}`,
+      kind: 'extruded-polygon',
+      profile: [outside, inner[index]!, inner[index + 1]!, outer[index + 1]!],
+      axis: 'x',
+      z: [0, PUMP_FOREND_LENGTH],
+    }));
     return {
       family: 'forend',
-      solids: [
-        solid('bottom', [0, -outerY, -outerZ], [PUMP_FOREND_LENGTH, -1, outerZ]),
-        solid('left', [0, -outerY, -outerZ], [PUMP_FOREND_LENGTH, 1, -1]),
-        solid('right', [0, -outerY, 1], [PUMP_FOREND_LENGTH, 1, outerZ]),
-      ],
+      solids: shellFacets,
       ports: [{ id: 'rear', mount: 'forend', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true }],
       // The forend is pulled back along the tube to cycle the action.
-      keepOuts: [keepOut('slide-travel', [-8, -outerY, -outerZ], [0, 1, outerZ], 'rear')],
+      keepOuts: [keepOut('slide-travel', [-8, -1 - PUMP_FOREND_WALL, -1 - PUMP_FOREND_WALL], [0, 0, 1 + PUMP_FOREND_WALL], 'rear')],
       axes: [],
     };
   },

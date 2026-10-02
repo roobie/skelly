@@ -590,12 +590,20 @@ describe('procedural bolt carrier', () => {
     expect(build('ar').solids.map(({ id }) => id)).toEqual(['carrier-body', 'bolt-head', 'gas-key']);
     expect(build('ak').solids.map(({ id }) => id)).toContain('piston');
     const pump = build('pump');
-    expect(pump.solids.map(({ id }) => id)).toContain('action-bar-left');
+    expect(pump.solids.map(({ id }) => id)).toContain('action-bar-right');
+    expect(pump.solids.map(({ id }) => id).filter((id) => id.startsWith('action-bar-'))).toEqual(['action-bar-right']);
+    const pumpBar = pump.solids.find(({ id }) => id === 'action-bar-right');
     const pumpBody = pump.solids.find(({ id }) => id === 'carrier-body');
     expect(pumpBody?.kind).toBe('box');
     if (pumpBody?.kind === 'box') {
-      expect(pumpBody.box.half).toEqual([3.125, 0.75, 0.75]);
+      expect(pumpBody.box.half).toEqual([3.125, 0.75, 0.625]);
+      expect(pumpBody.box.center[2]).toBe(-0.125);
     }
+    if (pumpBar?.kind !== 'box') {
+      throw new Error('pump action bar must be a box');
+    }
+    expect(pumpBar.box.center[2] - pumpBar.box.half[2]).toBe(BOLT_CARRIER_ENVELOPES.pump.z[1] - 0.25);
+    expect(pumpBar.box.center[2] + pumpBar.box.half[2]).toBe(BOLT_CARRIER_ENVELOPES.pump.z[1]);
     expect(build('smg').solids.map(({ id }) => id)).toContain('carrier-body');
     expect(build('barrett').solids.map(({ id }) => id)).toContain('heavy-carrier');
     expect(build('bolt').solids.map(({ id }) => id)).toContain('bolt-handle');

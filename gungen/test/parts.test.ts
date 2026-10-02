@@ -543,22 +543,21 @@ describe('pump stock raised butt heel', () => {
 });
 
 describe('pump shotgun tube and barrel contact', () => {
-  it('lengthens the forend forward and thickens its walls without moving its mounting station', () => {
+  it('builds a forward-extending octagonal lower-half shell around the tube', () => {
     const forend = FAMILIES.forend!.build({});
-    const bottom = forend.solids.find((solid) => solid.id === 'bottom');
-    const left = forend.solids.find((solid) => solid.id === 'left');
-    const right = forend.solids.find((solid) => solid.id === 'right');
-    if (bottom?.kind !== 'box' || left?.kind !== 'box' || right?.kind !== 'box') {
-      throw new Error('pump forend solids must be boxes');
-    }
-    expect(bottom.box.center[0] - bottom.box.half[0]).toBe(0);
-    expect(bottom.box.center[0] + bottom.box.half[0]).toBeCloseTo(9.6);
-    expect(bottom.box.center[1] - bottom.box.half[1]).toBeCloseTo(-1.55);
-    expect(bottom.box.center[1] + bottom.box.half[1]).toBeCloseTo(-1);
-    expect(left.box.center[2] - left.box.half[2]).toBeCloseTo(-1.55);
-    expect(left.box.center[2] + left.box.half[2]).toBeCloseTo(-1);
-    expect(right.box.center[2] - right.box.half[2]).toBeCloseTo(1);
-    expect(right.box.center[2] + right.box.half[2]).toBeCloseTo(1.55);
+    expect(forend.solids).toHaveLength(5);
+    const points = forend.solids.flatMap((component) => {
+      if (component.kind !== 'extruded-polygon' || component.axis !== 'x') {
+        throw new Error('pump forend shell facets must be X-axis polygon extrusions');
+      }
+      expect(component.z).toEqual([0, 9.6]);
+      expect(component.profile).toHaveLength(4);
+      return component.profile;
+    });
+    expect(Math.min(...points.map(([y]) => y))).toBeCloseTo(-1.55);
+    expect(Math.max(...points.map(([y]) => y))).toBe(0);
+    expect(Math.min(...points.map(([, z]) => z))).toBeCloseTo(-1.55);
+    expect(Math.max(...points.map(([, z]) => z))).toBeCloseTo(1.55);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
   });
