@@ -5,7 +5,7 @@ import { cross, dot, length } from '../src/core/math.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
+import { BOLT_CARRIER_RUNNING_CLEARANCE_U, CARRIER_HANDLE_STYLES, FAMILIES } from '../src/gun/parts.ts';
 import { fullProduct, tWiseCases } from './coveringArray.ts';
 import { variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';
@@ -46,6 +46,47 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
       magazineWell: 'standard',
     },
   ],
+};
+
+const CARRIER_HANDLE_PAIRINGS = [
+  { style: 'ar', pattern: 'ar', owner: 'receiver' },
+  { style: 'ak', pattern: 'ak', owner: 'carrier' },
+  { style: 'autoShotgun', pattern: 'ak', owner: 'carrier' },
+  { style: 'bolt', pattern: 'bolt', owner: 'carrier' },
+  { style: 'smg', pattern: 'smg', owner: 'handguard' },
+  { style: 'battle', pattern: 'barrett', owner: 'carrier' },
+  { style: 'barrett', pattern: 'barrett', owner: 'carrier' },
+  { style: 'pump', pattern: 'pump', owner: 'none' },
+  { style: 'pistol', pattern: 'ar', owner: 'none' },
+  { style: 'bullpup', pattern: 'ar', owner: 'none' },
+  { style: 'none', pattern: 'ar', owner: 'none' },
+] as const;
+
+const compatibleHandleStyleCases = (): Record<string, string>[] => {
+  const carrier = FAMILIES['bolt-carrier']!;
+  const pairings = CARRIER_HANDLE_PAIRINGS.map(({ style }) => style);
+  const cases = tWiseCases(
+    {
+      pairing: { values: pairings },
+      section: carrier.params.section!,
+      bore: carrier.params.bore!,
+      handleProfile: carrier.params.handleProfile!,
+    },
+    3,
+  );
+  return cases.map(({ pairing, ...axes }) => {
+    const compatible = CARRIER_HANDLE_PAIRINGS.find(({ style }) => style === pairing)!;
+    if (CARRIER_HANDLE_STYLES[compatible.style].owner !== compatible.owner) {
+      throw new Error(`${compatible.style}: compatible owner row does not match the style catalog.`);
+    }
+    return {
+      action: 'bolt',
+      feed: 'box',
+      pattern: compatible.pattern,
+      handleStyle: compatible.style,
+      ...axes,
+    };
+  });
 };
 
 const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly string[]).includes(key);
@@ -346,15 +387,20 @@ describe('part library', () => {
       const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
         box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
       // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
+      // Explicit metal handle parts use sub-grid clearances; their ownership, contact and motion have dedicated geometry tests.
+      const explicitCarrierStyle = family.name === 'bolt-carrier' && params.handleStyle !== undefined;
       const numbers = [
         ...def.solids.flatMap((s) =>
           s.kind === 'box' &&
           !s.id.startsWith('trigger-guard-') &&
-          !(family.name === 'magazine' && params.profile === 'smg')
+          !(family.name === 'magazine' && params.profile === 'smg') &&
+          !(explicitCarrierStyle && s.slot === 'metal')
             ? bounds(s.box)
             : [],
         ),
-        ...def.keepOuts.flatMap((k) => bounds(k.box)),
+        ...def.keepOuts.flatMap((k) =>
+          explicitCarrierStyle && k.id.startsWith(`${params.handleStyle}-handle-`) ? [] : bounds(k.box),
+        ),
         ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
         ...def.axes.flatMap((a) => [...a.origin]),
       ];
@@ -407,7 +453,27 @@ describe('part library', () => {
 
   for (const [key, family] of Object.entries(FAMILIES)) {
     describe(key, () => {
-      definePartChecks(family, defaultCases(key, family));
+      const cases = defaultCases(key, family);
+      if (key === 'bolt-carrier') {
+        const compatible = compatibleHandleStyleCases();
+        it('retains every compatible handle-style pairing across all sections', () => {
+          for (const pairing of CARRIER_HANDLE_PAIRINGS) {
+            for (const section of family.params.section!.values) {
+              expect(
+                compatible.some(
+                  (entry) =>
+                    entry.handleStyle === pairing.style &&
+                    entry.pattern === pairing.pattern &&
+                    entry.section === section,
+                ),
+                `${pairing.style}/${pairing.pattern}/${pairing.owner} in ${section}`,
+              ).toBe(true);
+            }
+          }
+        });
+        cases.push(...compatible);
+      }
+      definePartChecks(family, cases);
     });
   }
 
