@@ -1266,6 +1266,11 @@ not part of the export's acceptance:
   keep-out and remain solid; the pistol frame/slide are separate parts.
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
+- **Deferred (BR, 2026-09-30):** revolute `PartMotion` for lifting the bolt handle
+  and folding the FAL handle. For now both remain deployed and move linearly (or
+  are fixed to the receiver).
+- **Deferred (BR, 2026-09-30):** if automatic shotguns are added, reuse the AK-like
+  stick/paddle charging-handle style. Pump shotguns remain handle-free.
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
   shapes are one surface built from many solids, like the curved STANAG and
   AK magazines' runs of ring sectors. Bevelling and outlining each segment

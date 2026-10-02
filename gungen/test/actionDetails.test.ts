@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Box } from '../src/core/schema.ts';
+import { applyPoint, invert } from '../src/core/math.ts';
+import { resolve } from '../src/core/resolve.ts';
+import type { Box, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { loadCorpus, loadFixture } from './helpers.ts';
+import { loadCorpus, loadDesigns, loadFixture } from './helpers.ts';
 
 const limits = (
   box: Box,
@@ -15,6 +17,7 @@ const limits = (
 
 const intervalsOverlap = (a: readonly [number, number], b: readonly [number, number]): boolean =>
   Math.min(a[1], b[1]) > Math.max(a[0], b[0]);
+const HAND_CLEARANCE_ISSUE = /hand|charging/;
 
 const receiver = (action: 'auto' | 'bolt' | 'pump', chargingHandle = 'side') =>
   FAMILIES.receiver!.build({ action, feed: action === 'pump' ? 'tube' : 'box', bore: 'M', chargingHandle });
@@ -70,6 +73,28 @@ describe('visible action details', () => {
     }
   });
 
+  it('models the SMG sliding handle as its own receiver-connected linear part with a matching sweep', () => {
+    const entry = loadCorpus().find(({ label }) => label === 'design archetype-smg.json');
+    expect(entry).toBeDefined();
+    const { resolved } = validate(entry!.assembly, gunDomain);
+    const receiverDef = resolved.defs.get('receiver')!;
+    const handguardDef = resolved.defs.get('handguard')!;
+    const movingDef = resolved.defs.get('smg-handle')!;
+    const tube = handguardDef.solids.find(({ id }) => id === 'smg-cocking-tube');
+    expect(tube?.slot).toBe('metal');
+    expect(
+      receiverDef.solids.some(
+        ({ id }) => id === 'smg-cocking-tube' || id === 'smg-sliding-handle' || id === 'smg-handle-grip',
+      ),
+    ).toBe(false);
+    expect(handguardDef.keepOuts.some(({ id }) => id === 'smg-support-hand')).toBe(true);
+    expect(movingDef.solids.map(({ id }) => id)).toEqual(['smg-sliding-handle', 'smg-handle-grip']);
+    expect(movingDef.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], start: [0, 0, 0], end: [2.5, 0, 0] });
+    const hand = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-hand')!.box;
+    const sweep = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-sweep')!.box;
+    expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0])).toBe(movingDef.motion!.end[0]);
+  });
+
   it('keeps receiver-shell walls at least 0.5u thick around the carrier cavity', () => {
     const generic = receiver('auto');
     const top = generic.solids.find(({ id }) => id === 'receiver-shell-top');
@@ -96,21 +121,71 @@ describe('visible action details', () => {
     expect(generic.keepOuts.some(({ id }) => id === 'cylinder-swing')).toBe(false);
   });
 
-  it('places side, rear-top, and bolt handles at touching, non-overlapping rest faces', () => {
-    const side = handleAndTravel(receiver('auto', 'side'), 'charging-handle');
-    expect(side.handle[0]![0]).toBe(side.travel[0]![1]);
-    expect(intervalsOverlap(side.handle[1]!, side.travel[1]!)).toBe(true);
-    expect(intervalsOverlap(side.handle[2]!, side.travel[2]!)).toBe(true);
-
+  it('places the AR T-handle at the rear rest face and keeps its pull zone clear', () => {
     const rearTop = handleAndTravel(receiver('auto', 'rear-top'), 'charging-handle');
     expect(rearTop.handle[2]![0]).toBe(rearTop.travel[2]![1]);
     expect(intervalsOverlap(rearTop.handle[0]!, rearTop.travel[0]!)).toBe(true);
     expect(intervalsOverlap(rearTop.handle[1]!, rearTop.travel[1]!)).toBe(true);
+    const receiverDef = receiver('auto', 'rear-top');
+    expect(receiverDef.solids.filter(({ id }) => id.startsWith('ar-handle-'))).toHaveLength(2);
+    const crossbar = receiverDef.solids.find(({ id }) => id === 'ar-handle-crossbar');
+    expect(crossbar?.kind).toBe('box');
+    if (crossbar?.kind === 'box') {
+      const [, receiverTop] = receiverDef.ports.find(({ id }) => id === 'rail')!.pos;
+      const [, [, crossbarTop]] = limits(crossbar.box);
+      expect(Math.abs(crossbarTop - receiverTop)).toBeLessThanOrEqual(1e-6);
+    }
+    expect(receiverDef.keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
+  });
 
-    const bolt = handleAndTravel(FAMILIES.receiver!.build({ action: 'bolt', feed: 'box', bore: 'M' }), 'bolt-handle');
-    expect(bolt.handle[0]![0]).toBe(bolt.travel[0]![1]);
-    expect(intervalsOverlap(bolt.handle[1]!, bolt.travel[1]!)).toBe(true);
-    expect(intervalsOverlap(bolt.handle[2]!, bolt.travel[2]!)).toBe(true);
+  it('rejects a rail feature that physically occupies the AR T-grip', () => {
+    const { assembly } = loadDesigns().find(({ label }) => label.includes('archetype-ar.json'))!;
+    const resolved = resolve(assembly, gunDomain);
+    const point = [-17.75, 2.25, 1.75] as const;
+    const local = applyPoint(invert(resolved.placed.get('sight')!), point);
+    const probe: Solid = {
+      id: 'rail-accessory-feature',
+      kind: 'box',
+      box: { center: local, half: [0.025, 0.025, 0.025] },
+    };
+    const sight = gunDomain.families.sight!;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        sight: {
+          ...sight,
+          build: (params: Parameters<typeof sight.build>[0]) => {
+            const def = sight.build(params);
+            return { ...def, solids: [...def.solids, probe] };
+          },
+        },
+      },
+    };
+    const { issues } = validate(assembly, domain);
+    expect(
+      issues.some(
+        ({ rule, keepOut }) =>
+          rule === 'keep-out' && keepOut?.part === 'receiver' && HAND_CLEARANCE_ISSUE.test(keepOut.id),
+      ),
+    ).toBe(true);
+  });
+
+  it('preserves the bolt carrier and handle port contract', () => {
+    const bolt = FAMILIES['bolt-carrier']!.build({ pattern: 'bolt', action: 'bolt', bore: 'M', feed: 'top' });
+    const handlePort = bolt.ports.find(({ id }) => id === 'handle');
+    const arm = FAMILIES['bolt-handle-arm']!.build({
+      action: 'bolt',
+      feed: 'top',
+      bore: 'M',
+      section: 'standard',
+      handleProfile: 'standard',
+    });
+    expect(handlePort?.mount).toBe('bolt-handle');
+    expect(bolt.solids.some(({ id }) => id === 'bolt-handle-seat')).toBe(true);
+    expect(arm.solids[0]?.kind).toBe('extruded-polygon');
+    expect(arm.keepOuts.some(({ id }) => id === 'bolt-handle-sweep')).toBe(true);
+    expect(arm.motion!.sourceKeepOut).toEqual({ port: 'base', id: 'bolt-handle-travel' });
   });
 
   // Measured about 2.8 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
