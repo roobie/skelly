@@ -60,9 +60,10 @@ export const createGunModelEntry = (
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
-  const others = Object.entries(anchors.others)
-    .filter(([name]) => name !== 'magwell' || calibre !== undefined)
-    .map(([name, frame]): [string, Vec3] => [name, modelPoint(frame.position, metresPerUnit)]);
+  const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
+    name,
+    modelPoint(frame.position, metresPerUnit),
+  ]);
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
@@ -74,7 +75,7 @@ export const createGunModelEntry = (
 
 /**
  * Exports a gun assembly: core writes the GLB, then this adapter selects gun anchors and builds the Deadvox entry.
- * The public gun export retains its established model-entry shape and byte/axis conversion.
+ * Structural anchors are emitted independently of optional cartridge metadata.
  */
 export const exportGunGlb = (
   assembly: Assembly,

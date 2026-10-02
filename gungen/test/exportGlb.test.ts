@@ -420,7 +420,7 @@ describe('glb export: deadvox model entry', () => {
   it('emits muzzle and support anchors in metres when the design has them', () => {
     const out = exported(design('archetype-ar'));
     const selected = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['muzzle', 'support']);
+    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['magwell', 'muzzle', 'support']);
     near(
       out.modelEntry.anchors!.muzzle!,
       selected.others.muzzle!.position.map((x) => x * S),
@@ -433,25 +433,21 @@ describe('glb export: deadvox model entry', () => {
     );
   });
 
-  it('adds calibre and the optional magwell without changing legacy export bytes', () => {
+  it('emits the structural magwell anchor with or without assigned calibre metadata', () => {
     const assembly = design('archetype-ak');
     const appearance = { variant: 'ak' };
-    const legacy = exportGunGlb(assembly, ASSET, appearance);
-    const extended = exportGunGlb(assembly, ASSET, appearance, { cartridge: AK_CARTRIDGE });
-    expect(legacy.ok && extended.ok).toBe(true);
-    if (!(legacy.ok && extended.ok)) {
+    const bare = exportGunGlb(assembly, ASSET, appearance);
+    const assigned = exportGunGlb(assembly, ASSET, appearance, { cartridge: AK_CARTRIDGE });
+    expect(bare.ok && assigned.ok).toBe(true);
+    if (!(bare.ok && assigned.ok)) {
       return;
     }
-    expect(extended.glb).toEqual(legacy.glb);
-    expect(legacy.modelEntry).not.toHaveProperty('calibre');
-    expect(legacy.modelEntry.anchors).not.toHaveProperty('magwell');
-    expect(extended.modelEntry.calibre).toBe('7.62x39');
+    expect(bare.modelEntry).not.toHaveProperty('calibre');
+    expect(assigned.modelEntry.calibre).toBe('7.62x39');
     const selected = selectGunAnchors(resolve(assembly, gunDomain), GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    near(
-      extended.modelEntry.anchors!.magwell!,
-      selected.others.magwell!.position.map((x) => x * S),
-      6,
-    );
+    const expected = selected.others.magwell!.position.map((x) => x * S);
+    near(bare.modelEntry.anchors!.magwell!, expected, 6);
+    near(assigned.modelEntry.anchors!.magwell!, expected, 6);
   });
 
   it('emits the fixed axis-mapping turn, not one derived from the grip', () => {

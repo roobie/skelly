@@ -906,9 +906,10 @@ Decisions where the plan left representation open:
 
 #### Firearm/ammunition export extension (ADR 0003, accepted 2026-10-02)
 
-The firearm metadata extends the 3.0a `DeadvoxModelEntry` additively. Every new
-field is optional; with it absent, existing export JSON and GLB bytes are
-unchanged.
+The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
+are optional in the schema; byte-identical output is not a compatibility
+requirement. Exported structural anchors such as `magwell` are present whenever
+the geometry declares them, whether or not a cartridge is assigned.
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
