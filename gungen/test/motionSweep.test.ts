@@ -14,6 +14,9 @@ it('certifies a clear curved path whose enclosing rectangle crosses an obstacle'
 it('preserves internal extrema when an angle datum wraps through multiple turns', () => {
   expect(rotationSweepClear(small([0, 0, 4]), small([0, 0, 4]), [675, 765])).toBe(false);
 });
+it('preserves a negative-phase extremum beyond a normalized full turn', () => {
+  expect(rotationSweepClear(small([0, -4, 1]), small([0, -Math.sqrt(17), 0]), [315, 405])).toBe(false);
+});
 it('rejects translation through an obstacle despite clear end poses', () => {
   expect(translationSweepClear(small([0, 0, 0]), small([2, 0, 0]), [4, 0, 0])).toBe(false);
 });

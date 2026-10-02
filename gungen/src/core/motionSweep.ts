@@ -96,7 +96,9 @@ const rotationProjection = (
     const b = axis[2] * y - axis[1] * z;
     const extrema = Math.atan2(b, a);
     const angles = [low, high];
-    for (let k = -2; k <= 2; k++) {
+    const first = Math.ceil((low - extrema) / Math.PI);
+    const last = Math.floor((high - extrema) / Math.PI);
+    for (let k = first; k <= last; k++) {
       const angle = extrema + k * Math.PI;
       if (angle > low && angle < high) {
         angles.push(angle);
