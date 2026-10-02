@@ -134,12 +134,11 @@ describe('front-sight families', () => {
     const postBounds = localSolidBounds(sight.solids.find(({ id }) => id === 'post')!);
     expect(postBounds[1][1]).toBe(sight.axes.find(({ kind }) => kind === 'sight')!.origin[1]);
     const frontAxis = applyPoint(placed, sight.axes.find(({ kind }) => kind === 'sight')!.origin);
-    const rearSight = report.resolved.defs.get('sight')!;
-    const rearAxis = applyPoint(
-      report.resolved.placed.get('sight')!,
-      rearSight.axes.find(({ kind }) => kind === 'sight')!.origin,
-    );
-    expect(frontAxis[1]).toBeCloseTo(rearAxis[1], 8);
+    // The rail-mounted front iron remains at the fixed AR rail datum; optic type/axis is independent.
+    const receiver = report.resolved.defs.get('receiver')!;
+    const receiverRail = receiver.ports.find(({ id }) => id === 'rail')!;
+    const receiverRailWorld = applyPoint(report.resolved.placed.get('receiver')!, receiverRail.pos);
+    expect(frontAxis[1]).toBeCloseTo(receiverRailWorld[1] + 1, 8);
   });
 
   it('fits the clamped AR handguard against the fixed block and keeps the free-float handguard clear', () => {

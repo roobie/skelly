@@ -11,7 +11,7 @@
 // inside. The outward normal of a segment with direction (da, dr) is (-dr, da).
 
 import type { ConvexPolyhedron } from './geometry.ts';
-import { extrusionPoint, type Vec3 } from './math.ts';
+import { add, extrusionPoint, type Vec3 } from './math.ts';
 import type { TriangleMesh } from './mesh.ts';
 import type { RevolvedSolid, Vec2 } from './schema.ts';
 
@@ -37,7 +37,10 @@ const dropRepeats = (profile: readonly Vec2[]): Vec2[] =>
   profile.filter((p, i) => i === 0 || Math.hypot(p[0] - profile[i - 1]![0], p[1] - profile[i - 1]![1]) > EPSILON);
 
 /** What is wrong with a revolved profile, or undefined when it can be turned. */
-export const revolvedProfileError = (profile: readonly Vec2[], axis?: string): string | undefined => {
+export const revolvedProfileError = (profile: readonly Vec2[], axis?: string, origin?: Vec3): string | undefined => {
+  if (origin !== undefined && !(Array.isArray(origin) && origin.length === 3 && origin.every(Number.isFinite))) {
+    return 'revolve origin must be a finite 3D point';
+  }
   if (axis !== undefined && !['x', 'y', 'z'].includes(axis)) {
     return 'revolve axis must be x, y, or z';
   }
@@ -94,7 +97,7 @@ const endNormal = (own: Vec2, other: Vec2 | undefined, creaseCos: number, onAxis
  * the solid's `axis` (see `meshForSolid`).
  */
 export const meshForRevolved = (solid: RevolvedSolid, facets: number): TriangleMesh => {
-  const error = revolvedProfileError(solid.profile, solid.axis);
+  const error = revolvedProfileError(solid.profile, solid.axis, solid.origin);
   if (error) {
     throw new RangeError(`revolved solid '${solid.id}': ${error}`);
   }
@@ -214,5 +217,5 @@ export const revolvedLocalPolyhedron = (solid: RevolvedSolid): ConvexPolyhedron 
       }
     }
   }
-  return { vertices, faces };
+  return { vertices: solid.origin ? vertices.map((point) => add(point, solid.origin!)) : vertices, faces };
 };

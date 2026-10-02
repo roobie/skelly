@@ -47,7 +47,6 @@ import {
   HEAVY_MAGAZINE_SLANT_DEGREES,
 } from '../src/gun/antiMateriel/heavyMagazine.ts';
 import { HEAVY_RECEIVER_LENGTH } from '../src/gun/antiMateriel/heavyReceiver.ts';
-import { STAND_IN_SCOPE_ENVELOPE } from '../src/gun/antiMateriel/scopeEnvelope.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { EJECTION_PORT_MARGIN_U, FAMILIES, GRIP_MOUNT_PROFILE, TRIGGER_GUARD } from '../src/gun/parts.ts';
 import { variant } from './helpers.ts';
@@ -509,7 +508,7 @@ describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
 
   it('stands wholly to the left of the line of sight', () => {
     const sightline = family('sight')
-      .build({})
+      .build({ type: 'high-mag-5-25x' })
       .keepOuts.find(({ id }) => id === 'sightline')!;
     const [, , sightHalfWidth] = sightline.box.half;
     for (const id of ['trunnion', 'strut', 'bar']) {
@@ -519,8 +518,9 @@ describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
     }
   });
 
-  it('clears a full-size scope mounted where the sight is, by at least 0.25u (stand-in envelope)', () => {
+  it('clears the catalog high-magnification scope mounted on the receiver rail by at least 0.25u', () => {
     const sight = placed('sight');
+    const scope = def('sight').solids;
     const volumes = ['trunnion', 'strut', 'bar'].flatMap((id) => {
       const room = def(id).keepOuts.find(({ id: keepOutId }) => keepOutId === 'hand-room');
       const solids: Solid[] = [
@@ -529,7 +529,7 @@ describe.each(['carry', 'stowed'] as const)('carry handle, %s pose', (pose) => {
       ];
       return solids.map((solid) => ({ label: `${id} ${solid.id}`, solid, transform: placed(id) }));
     });
-    for (const part of STAND_IN_SCOPE_ENVELOPE) {
+    for (const part of scope) {
       for (const { label, solid, transform } of volumes) {
         const gap = distanceWorld(worldSolid(sight, part), worldSolid(transform, solid));
         expect(gap, `${part.id} to ${label}`).toBeGreaterThanOrEqual(0.25 - 1e-9);

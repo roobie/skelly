@@ -33,7 +33,7 @@ describe('octagonal barrel and gas-system geometry', () => {
     const family = FAMILIES.barrel!;
     expect(family.params).not.toHaveProperty('crossSection');
     const boreRadius = { S: 0.75, M: 1, L: 1.25 } as const;
-    for (const profile of ['standard', 'heavy', 'pistol', 'revolver'] as const) {
+    for (const profile of ['standard', 'heavy', 'pistol'] as const) {
       for (const bore of ['S', 'M', 'L'] as const) {
         const definition = family.build({ profile, bore, length: bore });
         const barrel = requireOctagon(definition.solids.find(({ id }) => id === 'tube')!);

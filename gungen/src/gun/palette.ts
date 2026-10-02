@@ -59,6 +59,11 @@ const FAMILY_HEX: Record<string, number> = {
   frame: 0x4b_4a_45,
   slide: 0x86_8d_97,
   cylinder: 0x4a_55_66,
+  // Revolver components: light frame, blued drum, metal barrel, and walnut or rubber grip panels.
+  'revolver-frame': 0x8d_93_9c,
+  'revolver-cylinder': 0x4a_55_66,
+  'revolver-barrel': 0x5d_63_6b,
+  'revolver-grip': 0x7d_60_4c,
   'front-sight': 0x36_3d_47,
   'rail-front-sight': 0x36_3d_47,
   'gas-block': 0x2f_32_38,
@@ -90,6 +95,10 @@ const ROLE_SLOTS: Record<string, string> = {
   'rail-front-sight': 'metal',
   'gas-block': 'metal',
   'gas-cylinder': 'metal',
+  'revolver-frame': 'metal',
+  'revolver-cylinder': 'metal',
+  'revolver-barrel': 'metal',
+  'revolver-grip': 'furniture',
   ...ANTI_MATERIEL_ROLE_SLOTS,
 };
 const SHADE: Record<string, number> = {
@@ -117,6 +126,10 @@ const SHADE: Record<string, number> = {
   'gas-block': 0.55,
   'gas-cylinder': 0.7,
   'ak-rear-sight': 0.65,
+  'revolver-frame': 1,
+  'revolver-cylinder': 0.8,
+  'revolver-barrel': 0.67,
+  'revolver-grip': 0.82,
   ...ANTI_MATERIEL_SHADES,
 };
 const roles = Object.keys(ROLE_SLOTS);
