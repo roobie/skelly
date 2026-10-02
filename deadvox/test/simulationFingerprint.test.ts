@@ -149,6 +149,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/playtestObserver.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/caseEffects.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
@@ -213,6 +214,8 @@ describe('simulation source fingerprint', () => {
       exclude: SIMULATION_EXCLUSIONS,
     });
     expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
+    expect(graph.sources.has('src/game/firearmHandling.ts')).toBe(true);
+    expect(graph.sources.has('src/render/caseEffects.ts')).toBe(false);
     expect(graph.sources.has('src/game/controls.ts')).toBe(false);
     expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
     expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
@@ -252,6 +255,19 @@ describe('simulation source fingerprint', () => {
     );
     expect(offHandRenderPolicy.reads).toBe(0);
     expect(offHandRenderPolicy.value).toBe(original);
+
+    const casePresentation = await mutateSimulationSource(
+      host,
+      'src/render/caseEffects.ts',
+      'const MAX_AGE = 6;',
+      'const MAX_AGE = 7;',
+    );
+    expect(casePresentation.reads).toBe(0);
+    expect(casePresentation.value).toBe(original);
+
+    const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts', 'rpm: 600', 'rpm: 601');
+    expect(firearmHandling.reads).toBe(1);
+    expect(firearmHandling.value).not.toBe(original);
 
     const handPolicy = await mutateSimulationSource(
       host,
