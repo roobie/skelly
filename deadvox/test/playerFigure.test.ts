@@ -21,6 +21,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
 import { HeldItems, HOLD } from '../src/render/hands.ts';
+import { renderMeleePose } from '../src/render/meleePose.ts';
 import {
   createFirstPersonArm,
   FIRST_PERSON_SHOULDER,
@@ -408,7 +409,7 @@ describe('player figure', () => {
       profile: 'fists' as const,
       hand: 'right' as const,
       twoHanded: false,
-      offHandOccupied: true,
+      hands: { right: null, left: flashlight.uid },
       cooldown: 0.8,
       contactAt: 0.25,
       aimYaw: 0,
@@ -420,7 +421,7 @@ describe('player figure', () => {
     let maxTorsoYaw = 0;
     for (let step = 0; step <= 120; step++) {
       const elapsed = (action.cooldown * step) / 120;
-      const pose = meleePoseAndContact(action, elapsed, false);
+      const pose = renderMeleePose(action, elapsed, false);
       maxTorsoYaw = Math.max(maxTorsoYaw, Math.abs(pose.torsoYaw ?? 0));
       expect(pose.left.offset).toEqual([0, 0, 0]);
       expect(pose.left.rotation).toEqual([0, 0, 0]);

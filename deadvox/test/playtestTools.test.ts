@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
-import { controlsCardRows } from '../src/game/controls.ts';
-import { PLAYER_CONTROL_BINDINGS } from '../src/game/input.ts';
+import { controlsCardRows, PLAYER_CONTROL_BINDINGS } from '../src/game/controls.ts';
 import {
   createSnapshotHistory,
   loadMetrics,

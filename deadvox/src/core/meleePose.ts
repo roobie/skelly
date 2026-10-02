@@ -13,8 +13,6 @@ export interface MeleeActionPose {
   profile: MeleeProfile;
   hand: MeleeHand;
   twoHanded: boolean;
-  /** Keep the support arm still when it holds a one-handed item. */
-  offHandOccupied?: boolean;
   cooldown: number;
   contactAt: number;
   aimYaw: number;
@@ -119,7 +117,7 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
       throw new Error(`Unknown melee profile: ${action.profile}`);
   }
   const primary = swingPath(elapsed, { contact, cooldown: action.cooldown }, { pull, strike, follow });
-  const support = action.twoHanded || action.offHandOccupied ? handPose() : blendHand(handPose(), primary, 0.2);
+  const support = action.twoHanded ? handPose() : blendHand(handPose(), primary, 0.2);
   const right = action.hand === 'right' ? primary : support;
   const left = action.hand === 'left' ? primary : support;
   const torsoYaw =

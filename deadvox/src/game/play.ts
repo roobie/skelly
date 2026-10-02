@@ -11,7 +11,6 @@ import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { meleePoseAndContact, readyMeleePose } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
@@ -22,6 +21,7 @@ import { FrameTimes } from '../render/frameTimes.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
 import { applyLook } from '../render/look.ts';
+import { renderMeleePose } from '../render/meleePose.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
@@ -976,10 +976,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule): void => {
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
-    const offHand = action?.hand === 'right' ? 'left' : 'right';
-    const pose = action
-      ? meleePoseAndContact({ ...action, offHandOccupied: action.hands[offHand] !== null }, elapsed, false)
-      : readyMeleePose(ready);
+    const pose = renderMeleePose(action, elapsed, ready);
     meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
     const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
     held.update(camera, pose, recoil);
