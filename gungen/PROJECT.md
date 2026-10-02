@@ -838,6 +838,10 @@ The viewer's rendering is unchanged after the palette moves.
 
 #### 3.0a contracts (frozen)
 
+"Frozen" here, and elsewhere in this file, meant fixed so parallel lanes could
+build against each other; it isn't a compatibility promise. Pre-pre-alpha, these
+contracts change whenever that makes the code simpler (AGENTS.md, "Project stage").
+
 Types only; 3.0b supplies parsing and values. The contracts live in
 `src/core/design.ts` (`Design`/`DesignFormat`/`DesignStatus`, `DesignOrigin`,
 `DesignLocks`, `DesignIssue`, `DesignLoadError`/`DesignLoadResult`,
