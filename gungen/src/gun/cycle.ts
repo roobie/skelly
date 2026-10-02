@@ -1,5 +1,5 @@
 import { penetrationWorld, type WorldSolid, worldSolid } from '../core/geometry.ts';
-import { applyDir, applyPoint, compose, length, scale, sub, translation, type Vec3 } from '../core/math.ts';
+import { applyPoint, compose, length, scale, sub, translation, type Vec3 } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
 import type { PartMotion, Solid } from '../core/schema.ts';
 
@@ -271,11 +271,5 @@ export const ejectionPoint = (resolved: Resolved, receiverId = 'receiver'): Vec3
   return applyPoint(placed, local);
 };
 
-/** Transform an action profile's direction from receiver-local to assembly coordinates. */
-export const ejectionDirection = (resolved: Resolved, action: GunAction): Vec3 => {
-  const receiverId = resolved.defs.has('receiver') ? 'receiver' : 'ak-receiver';
-  const placed = resolved.placed.get(receiverId);
-  return placed
-    ? unit(applyDir(placed, ACTION_CYCLE_PROFILES[action].ejectDirection))
-    : ACTION_CYCLE_PROFILES[action].ejectDirection;
-};
+/** The profile direction is already expressed in the model frame required by the export contract. */
+export const ejectionDirection = (action: GunAction): Vec3 => unit(ACTION_CYCLE_PROFILES[action].ejectDirection);

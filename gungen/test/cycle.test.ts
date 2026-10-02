@@ -99,7 +99,7 @@ describe('motion-derived cycle geometry', () => {
     ] as const satisfies readonly (readonly [string, GunAction])[]) {
       const { resolved } = motionFor(name);
       const point = ejectionPoint(resolved);
-      const direction = ejectionDirection(resolved, action);
+      const direction = ejectionDirection(action);
       expect(point).toBeDefined();
       expect(point?.every(Number.isFinite)).toBe(true);
       expect(Math.hypot(...direction)).toBeCloseTo(1, 12);

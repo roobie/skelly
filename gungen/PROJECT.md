@@ -874,7 +874,7 @@ Decisions where the plan left representation open:
   `SelectedAnchors` (required `hold`, other selected names) or an
   `AnchorSelectionError` for a missing or ambiguous hold. The core exporter
   accepts only that selection; it never chooses gun anchors. `hold`,
-  `support`, and `muzzle` are gun-only names.
+  `support`, `muzzle`, and `ejection` are gun-only names.
 - Palette RGB channels are normalized sRGB triples; legacy `specialColors` is
   keyed by solid id and wins over `familyColors`, then `fallbackColor` handles
   an unknown family (`#888888` for the current viewer). Export converts sRGB to
@@ -891,6 +891,21 @@ Decisions where the plan left representation open:
   to metres and deadvox axes (`+x` forward, `+y` up) before emitting `grip.at`
   and optional anchor positions. `grip.turn` is always emitted; deadvox
   `hold` and `roll` are intentionally omitted.
+- **Firearm action/ejection export (ADR 0003, accepted 2026-10-02).** All
+  additions to `DeadvoxModelEntry` are optional. `anchors.ejection` is a plain
+  `[x, y, z]` point in metres in model coordinates (`+x` forward, `+y` up,
+  `+z` right); `ejectDirection` is a unit `[x, y, z]` vector in the same frame.
+  `action.parts` maps roles such as `carrier` to `{ node, axis, strokeMetres }`:
+  `node` is the exact GLB node name `<part id>:<registry key>`, `axis` is a
+  unit travel vector in model coordinates, and `strokeMetres` is the travel
+  length in metres. `action.fire` and `action.hand` each contain
+  `durationSeconds`, `rearwardSeconds`, `dwellSeconds`, and `forwardSeconds`,
+  all in seconds. `action.ejectAt` is a stroke fraction; `action.holdOpen` is a
+  boolean; `action.rpm` is rounds per minute. The rates are sourced where
+  available; cycle timing, spring behaviour, forces, and masses are estimates
+  for visual tuning, not physical simulation. These fields are emitted only
+  when the design declares a supported AK/AR action. No angles are present in
+  this contract; any angle added later uses degrees, never radians.
 - `Suggest` takes `effectiveLocks`, precomputed by the caller from design
   locks plus only the fixed parameter names of referenced prefabs; core does
   not import or need a gun catalogue, and unrelated prefab params remain

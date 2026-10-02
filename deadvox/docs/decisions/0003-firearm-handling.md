@@ -3,7 +3,7 @@ id: deadvox::adr-0003-firearm-handling
 description: Decision for how gungen exports what a gun needs to be handled and fired, and how deadvox plays the cycle, ejection, spent cases and magazines
 tags: [deadvox, gungen, adr, firearms, ammo, export, feel]
 created: 2026-10-02
-status: proposed
+status: accepted
 ---
 
 # 3. Firearm handling: what gungen exports, what deadvox plays
@@ -12,7 +12,7 @@ status: proposed
 [[THIS is_grounded_by: ../../DESIGN.md]]
 [[THIS is_grounded_by: ../../../gungen/PROJECT.md]]
 
-**Status:** proposed (2026-10-02). BR's rulings so far are recorded under [Rulings](#rulings-2026-10-02).
+**Status:** accepted (2026-10-02).
 
 ## Context
 
