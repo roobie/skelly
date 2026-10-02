@@ -223,7 +223,6 @@ describe('receiver section builder', () => {
     expect(rearXAt(topY)).toBe(-12);
   });
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one linked contract checks the three receiver section families.
   it('opens the AR carrier bore while preserving AK/pump adapters and watertight shells', () => {
     const receivers = [
       {
@@ -274,7 +273,9 @@ describe('receiver section builder', () => {
         }
       }
       expectWatertightMesh(receiverMesh, id);
-      const triangleBudget = id === 'receiver-ar' ? 300 : 450;
+      // AR now includes an internal barrel seat; retain the same absolute
+      // 450-triangle ceiling as the other detailed receiver shells.
+      const triangleBudget = 450;
       expect(receiverMesh.triangleCount, `${id} triangle budget`).toBeLessThanOrEqual(triangleBudget);
       expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
       expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(0);
@@ -307,7 +308,7 @@ describe('receiver section builder', () => {
       {
         label: 'AR',
         def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' }),
-        point: [-2, 0.25, 1.8] as const,
+        point: [-4.25, 0.25, 1.8] as const,
       },
       {
         label: 'AK',

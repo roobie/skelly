@@ -26,10 +26,11 @@ import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
+import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
-import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
+import { buildReceiverSection, type ReceiverSectionSpec, type SectionWindow } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
@@ -429,7 +430,7 @@ const PISTOL_GRIP_X = -6;
 export const BOLT_CARRIER_RUNNING_CLEARANCE_U = 0.1;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 export const BOLT_CARRIER_ENVELOPES = {
-  ar: { x: [-2.5, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
+  ar: { x: [1.5 - AR_ACTION_LAYOUT.carrierFaceLengthU, 1.5], y: [-0.5, 1], z: [-1.25, 1.25] },
   ak: { x: [-4.5, 1.5], y: [-1.25, 1.25], z: [-1.25, 1.25] },
   pump: { x: [-3.25, 3], y: [-0.75, 0.75], z: [-0.75, 0.75] },
   smg: { x: [-1.5, 1.5], y: [-0.5, 0.5], z: [-0.75, 0.75] },
@@ -577,7 +578,7 @@ export const RECEIVER_SECTION = {
       portSide: 2,
       handleSides: [-2, 2],
       front: 0,
-      rear: -16,
+      rear: -AR_ACTION_LAYOUT.receiverLengthU,
       bottom: -2.5,
     } as const,
   },
@@ -640,8 +641,10 @@ const receiverShellSolids = ({
   portWindow,
   portSlots,
   farPortWindow,
+  bore = 'M',
 }: {
   section: string;
+  bore?: SizeClass;
   feed: string;
   magazineWell: string;
   receiverBottom: number;
@@ -653,7 +656,7 @@ const receiverShellSolids = ({
   portSlots?: readonly SectionWindow[];
   farPortWindow?: { readonly x: readonly [number, number]; readonly y: readonly [number, number] };
 }): Solid[] => {
-  const [xMin, xMax] = [-16, 0] as const;
+  const [xMin, xMax] = [section === 'ar' ? RECEIVER_SECTION.ar.faces.rear : -16, 0] as const;
   const cavity = carrierCavityBounds(carrierPattern, carrierY);
   if (isSectionedReceiver(section)) {
     const data = RECEIVER_SECTION[section];
@@ -664,13 +667,13 @@ const receiverShellSolids = ({
             offset: plane.offset - plane.normal[1] * receiverDrop,
           }))
         : undefined;
-    const sectionSolids = buildReceiverSection({
+    const spec: ReceiverSectionSpec = {
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
-      x: [xMin, xMax],
+      x: [xMin, xMax] as const,
       wall: 0.5,
       cavity,
-      port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
+      port: { x: portWindow.x, sectionAxis: 0 as const, section: portWindow.y },
       ...(portSlots ? { portSlots } : {}),
       ...(clipPlanes ? { clip: clipPlanes } : {}),
       ...(feed === 'box'
@@ -678,10 +681,31 @@ const receiverShellSolids = ({
             magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
           }
         : {}),
-    });
-    return section === 'ar'
-      ? sectionSolids.filter(({ id }) => !['receiver-ar-rear-adapter', 'receiver-ar-front-adapter'].includes(id))
-      : sectionSolids;
+    };
+    if (section !== 'ar') {
+      return buildReceiverSection(spec);
+    }
+    // The barrel extension has its own front seat. Do not enlarge the running
+    // cavity behind the breech or cap the carrier's path into the buffer tube.
+    const breechX = xMax - AR_ACTION_LAYOUT.barrelExtensionLengthU;
+    const seatRadius = BARREL_RADIUS[bore] + BOLT_CARRIER_RUNNING_CLEARANCE_U;
+    const spans = [
+      { ...spec, x: [xMin, breechX] as const },
+      {
+        ...spec,
+        id: 'receiver-ar-barrel-seat',
+        x: [breechX, xMax] as const,
+        cavity: {
+          y: [Math.min(cavity.y[0], carrierY - seatRadius), Math.max(cavity.y[1], carrierY + seatRadius)] as const,
+          z: cavity.z,
+        },
+      },
+    ];
+    return spans.flatMap((span) =>
+      buildReceiverSection(span)
+        .filter(({ id }) => !id.includes('-adapter'))
+        .map((piece) => ({ ...piece, display: { ...piece.display, mergeGroup: 'receiver-ar' } })),
+    );
   }
   const wall = PISTOL_SLIDE_WALL_THICKNESS;
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
@@ -981,7 +1005,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       mount: 'barrel',
       gender: 'female',
       size: bore,
-      pos: [frontFaceX, 0, 0],
+      pos: [params.section === 'ar' ? frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU : frontFaceX, 0, 0],
       normal: X,
       up: Y,
       required: true,
@@ -1195,6 +1219,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     : undefined;
   const shell = receiverShellSolids({
     section: params.section ?? 'standard',
+    bore,
     feed: params.feed!,
     magazineWell: params.magazineWell ?? 'standard',
     receiverBottom,
@@ -1267,7 +1292,10 @@ export const receiver: PartFamily = {
     const baseTravel = BOLT_TRAVEL[receiverTravelClass(params)];
     const travel: BoltTravel =
       params.section === 'ar'
-        ? { ...baseTravel, restX: (sectionData?.faces.front ?? 0) + BOLT_CARRIER_ENVELOPES.ar.x[0] }
+        ? {
+            ...baseTravel,
+            restX: frontFaceX - AR_ACTION_LAYOUT.barrelExtensionLengthU + BOLT_CARRIER_ENVELOPES.ar.x[0],
+          }
         : baseTravel;
     const carrierY = carrierAxisY(carrierPattern, receiverDrop);
     const context: ReceiverContext = {
@@ -1750,7 +1778,14 @@ export const boltCarrier: PartFamily = {
       solids.push(
         block('bolt-head', [-2.5, -0.4, -1.25 * boreScale], [-1.5, 0.4, 1.25 * boreScale]),
         block('gas-key', [-0.75, 0.5, -0.4], [1.1, 1, 0.4]),
-        octagonalPrism('carrier-tail', 0.5, [1.5, 13.5]),
+        octagonalPrism('carrier-tail', 0.5, [
+          envelope.x[1],
+          // Rear end meets the buffer mouth in battery, derived from the same
+          // breech/upper layout as the receiver (carrier local +X is rearward).
+          AR_ACTION_LAYOUT.receiverLengthU -
+            (params.section === 'ar' ? AR_ACTION_LAYOUT.barrelExtensionLengthU : 0) +
+            envelope.x[0],
+        ]),
       );
     } else if (pattern === 'ak') {
       solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]));
@@ -2272,6 +2307,7 @@ export const barrel: PartFamily = {
   params: {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
     length: size,
+    section: { ...choice('standard', 'ar', 'pump', 'ak'), from: [{ port: 'rear', param: 'section' }] },
     profile: choice('standard', 'heavy', 'pistol'),
     handguardLayout: {
       values: ['standard', 'ak', 'ar'],
@@ -2308,16 +2344,18 @@ export const barrel: PartFamily = {
         ? [{ id: 'support-lug', mount: 'lug', gender: 'female', pos: [fore, -tubeDrop, 0], normal: NEG_X, up: Y }]
         : [];
     const tube = octagonalPrism('tube', r, [0, len]);
+    const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
+    const extension = breechX < 0 ? [octagonalPrism('barrel-extension', BARREL_RADIUS[bore], [breechX, 0])] : [];
     return {
       family: 'barrel',
-      solids: [tube],
+      solids: [...extension, tube],
       ports: [
         {
           id: 'rear',
           mount: 'barrel',
           gender: 'male',
           size: bore,
-          pos: [0, 0, 0],
+          pos: [breechX, 0, 0],
           normal: NEG_X,
           up: Y,
           required: true,

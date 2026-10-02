@@ -11,7 +11,7 @@ import {
 } from 'three';
 import { applyDir } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
-import { type CycleTimeline, cycleMotion, ejectionPoint, sweepMovingPart } from '../gun/cycle.ts';
+import { type CycleMotion, type CycleTimeline, cycleMotion, ejectionPoint, sweepMovingPart } from '../gun/cycle.ts';
 
 const SPEEDS = [1, 0.25, 0.1, 0.02] as const;
 const XRAY_OPACITY = 0.2;
@@ -176,8 +176,16 @@ export const createCycleView = (): CycleView => {
     solids.add(ejectionArrow);
   };
 
+  const updateSweepNotes = (resolved: Resolved, action: string, cycle: CycleMotion) => {
+    const sweep = sweepMovingPart(resolved, 'bolt-carrier', cycle.strokeUnits + 2.5);
+    const [first] = sweep.clashes;
+    const direction = cycle.ejectDirection.map((value) => value.toFixed(2)).join(', ');
+    notes.textContent = `Estimated ${action.toUpperCase()} cycle; ${sweep.clear >= sweep.declared ? 'full declared stroke clears' : `stroke clearance ${sweep.clear.toFixed(2)} of ${sweep.declared.toFixed(2)} u`}${first ? ` · first overlap ${first.pair} at ${first.at.toFixed(2)} u` : ''} · eject direction [${direction}]`;
+  };
+
   const bind = (solids: Group, resolved: Resolved) => {
     clearEjectionArrow();
+    const geometryChanged = boundResolved !== resolved;
     boundSolids = solids;
     boundResolved = resolved;
     setPlaying(false);
@@ -209,10 +217,11 @@ export const createCycleView = (): CycleView => {
       world: [worldAxis[0] * strokeUnits, worldAxis[1] * strokeUnits, worldAxis[2] * strokeUnits],
     });
 
-    const sweep = sweepMovingPart(resolved, 'bolt-carrier', cycle.strokeUnits + 2.5);
-    const [first] = sweep.clashes;
-    const direction = cycle.ejectDirection.map((value) => value.toFixed(2)).join(', ');
-    notes.textContent = `Estimated ${action.toUpperCase()} cycle; ${sweep.clear >= sweep.declared ? 'full declared stroke clears' : `stroke clearance ${sweep.clear.toFixed(2)} of ${sweep.declared.toFixed(2)} u`}${first ? ` · first overlap ${first.pair} at ${first.at.toFixed(2)} u` : ''} · eject direction [${direction}]`;
+    // Fire/hand switches rebind the same resolved geometry. Its full-stroke
+    // clearance is unchanged, so do the expensive diagnostic only on an edit/load.
+    if (geometryChanged) {
+      updateSweepNotes(resolved, action, cycle);
+    }
     emptyLabel.hidden = !cycle.holdOpenOnEmpty || modeSelect.value === 'hand';
     emptyBox.checked = false;
     panel.hidden = false;

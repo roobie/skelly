@@ -846,6 +846,35 @@ describe('procedural bolt carrier', () => {
     expect(mutatedSolids.every(({ display }) => display?.mergeGroup !== 'receiver-ak')).toBe(true);
   });
 
+  it('encloses the AR ejection opening on all four sides and seats the breech inside the upper', () => {
+    const resolved = resolve(loadFixture('archetype-ar'), gunDomain);
+    const receiver = resolved.defs.get('receiver')!;
+    const shell = receiver.solids.filter(({ display }) => display?.mergeGroup === 'receiver-ar');
+    const bounds = limits(shell.flatMap(corners));
+    const opening = receiver.keepOuts.find(({ id }) => id === 'ejection')!.box;
+    const [x, y] = opening.center;
+    const [hx, hy] = opening.half;
+    const [breechX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
+    // Absolute 0.5u (5.75mm) structural minimum, independent of layout tuning.
+    expect(bounds[0]![1]! - (x + hx), 'front rim thickness').toBeGreaterThanOrEqual(0.5);
+    expect(bounds[0]![1]! - breechX, 'barrel extension inside the upper').toBeGreaterThanOrEqual(0.5);
+    for (const inset of [0.125, 0.375]) {
+      for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
+        const alongX = x - hx + 2 * hx * fraction;
+        const alongY = y - hy + 2 * hy * fraction;
+        for (const [side, px, py] of [
+          ['rear', x - hx - inset, alongY],
+          ['front', x + hx + inset, alongY],
+          ['bottom', alongX, y - hy - inset],
+          ['top', alongX, y + hy + inset],
+        ] as const) {
+          expect(receiverSectionHasMaterialAt(shell, px, py, 1.7), `${side} rim at ${px},${py}`).toBe(true);
+        }
+      }
+    }
+    expect(noCarrierReceiverIntersectionsOverTravel(resolved), 'enclosure through the stroke').toBe(true);
+  });
+
   it('meets the AR bolt face to the breech and clears the hollow buffer tube through full travel', () => {
     const entry = travelCases.find(({ pattern }) => pattern === 'ar')!;
     const resolved = resolve(loadFixture('archetype-ar'), gunDomain);
@@ -862,16 +891,24 @@ describe('procedural bolt carrier', () => {
     const [boltFace] = applyPoint(transform, [BOLT_CARRIER_ENVELOPES.ar.x[0], 0, 0]);
     const [receiverRearX] = applyPoint(receiverTransform, receiver.ports.find(({ id }) => id === 'stock')!.pos);
     const [tubeMouthX] = applyPoint(stockTransform, [0, 0, 0]);
-    const [tailAtBatteryX] = applyPoint(transform, [13.5, 0, 0]);
+    const tailRear = limits(corners(tail))[0]![1]!;
+    const [tailAtBatteryX] = applyPoint(transform, [tailRear, 0, 0]);
     const rearTransform = compose(transform, translation([travel, 0, 0]));
-    const [tailAtFullStrokeX] = applyPoint(rearTransform, [13.5, 0, 0]);
+    const [tailAtFullStrokeX] = applyPoint(rearTransform, [tailRear, 0, 0]);
     const tubeWalls = stock.solids.filter(({ id }) => id.startsWith('buffer-tube-wall-'));
     const port = portMeasurements(entry, resolved);
     const boltFaceBounds = worldBounds(corners(boltHead).map((point) => applyPoint(transform, point)));
 
     expect(boltFaceBounds[0]![1]).toBeCloseTo(breechX, 8);
     expect(boltFace).toBeCloseTo(breechX, 8);
-    expect(breechX).toBe(0);
+    expect(breechX).toBe(-2.25); // ~25mm AR extension, inside the x=0 upper front.
+    const barrel = resolved.defs.get('barrel')!;
+    const barrelTransform = resolved.placed.get('barrel')!;
+    const extension = barrel.solids.find(({ id }) => id === 'barrel-extension')!;
+    const extensionBounds = worldBounds(corners(extension).map((point) => applyPoint(barrelTransform, point)));
+    expect(extensionBounds[0]![0]).toBeCloseTo(breechX, 8);
+    expect(extensionBounds[0]![1]).toBeCloseTo(0, 8);
+    expect(tailRear).toBe(11.25); // 16u upper minus 2.25u extension minus 2.5u bolt-face reach.
     expect(tailAtBatteryX).toBeCloseTo(receiverRearX, 8);
     expect(tubeMouthX).toBeCloseTo(receiverRearX, 8);
     expect(tailAtFullStrokeX).toBeCloseTo(tubeMouthX - travel, 8);
@@ -879,7 +916,7 @@ describe('procedural bolt carrier', () => {
     expect(travel).toBe(6.5);
     expect(tubeWalls).toHaveLength(8);
     expect(BOLT_CARRIER_ENVELOPES.ar.x).toEqual([-2.5, 1.5]);
-    expect(port.actualX).toEqual([-4.25, 0.25]);
+    expect(port.actualX).toEqual([-6.5, -2]);
     expect(port.actualY).toEqual([-0.75, 1.25]);
     expect(receiver.solids.some(({ id }) => id === 'receiver-ar-rear-adapter')).toBe(false);
     expect(noCarrierReceiverIntersectionsOverTravel(resolved)).toBe(true);
