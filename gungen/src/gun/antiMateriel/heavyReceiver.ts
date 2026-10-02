@@ -137,7 +137,7 @@ export const heavyReceiver: PartFamily = {
       { id: 'stock', mount: 'stock', gender: 'female', pos: [rear, 0, 0], normal: NEG_X, up: Y },
       {
         id: 'rail',
-        mount: 'rail',
+        mount: 'rail-top',
         gender: 'female',
         pos: [RAIL_START_X, HALF_HEIGHT, 0],
         normal: Y,

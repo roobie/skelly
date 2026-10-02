@@ -56,7 +56,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "high-mag-5-25x" }
       }
     },
     "connections": [

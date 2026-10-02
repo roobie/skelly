@@ -60,7 +60,7 @@ describe('resolve', () => {
   });
 
   it('offsets slotted connections along the port', () => {
-    expectVec(at(r, 'sight'), [-14 + 3 * 2, 2.5, 0]);
+    expectVec(at(r, 'sight'), [-14 + 2 * 2, 2.5, 0]);
   });
 
   it('mates the grip bevel flush to its lower port', () => {
@@ -121,7 +121,7 @@ describe('resolve', () => {
       ];
     };
     expectVec(inv(r2, [2, 1, 0]), inv(r1, [2, 1, 0]));
-    expectVec(at(r1, 'sight', [2, 0, 0]).map(Math.abs), [8, 2.5, 2]);
+    expectVec(at(r1, 'sight', [2, 0, 0]).map(Math.abs), [10, 2.5, 2]);
   });
 });
 

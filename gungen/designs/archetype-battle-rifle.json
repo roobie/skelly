@@ -50,7 +50,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "fixed-prism-4x" }
       }
     },
     "connections": [
@@ -89,7 +90,7 @@
       {
         "from": "receiver.rail",
         "to": "sight.base",
-        "slot": 3
+        "slot": 2
       }
     ]
   },

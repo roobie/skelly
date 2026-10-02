@@ -26,6 +26,7 @@ import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
+import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
@@ -860,7 +861,7 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
   if (params.rail !== 'none') {
     ports.push({
       id: 'rail',
-      mount: 'rail',
+      mount: 'rail-top',
       gender: 'female',
       pos: [-14, receiverTop, 0],
       normal: Y,
@@ -1844,7 +1845,7 @@ export const railFrontSight: PartFamily = {
         solid('base', [-1, 0, -1], [1, 0.5, 1]),
         solid('post', [-GRID, 0.5, -GRID / 2], [GRID, sightAxisY, GRID / 2]),
       ],
-      ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
+      ports: [{ id: 'base', mount: 'rail-top', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       keepOuts: [],
       axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X }],
     };
@@ -2086,7 +2087,7 @@ export const handguard: PartFamily = {
         },
         {
           id: 'rail',
-          mount: 'rail',
+          mount: 'rail-top',
           gender: 'female',
           pos: [2, outerY, 0],
           normal: Y,
@@ -2479,7 +2480,7 @@ export const pistolSlide: PartFamily = {
         },
         {
           id: 'rail',
-          mount: 'rail',
+          mount: 'rail-top',
           gender: 'female',
           pos: [-6, 3, 0],
           normal: Y,
@@ -2746,6 +2747,7 @@ export const stock: PartFamily = {
   },
   build(params): PartDef {
     const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
+    const cheekDatum = { kind: 'cheek', origin: [-10, 2.5, 0] as Vec3, dir: X };
     const port: PortDef = {
       id: 'front',
       mount: 'stock',
@@ -2761,7 +2763,7 @@ export const stock: PartFamily = {
         solids: m4StockSolids(len),
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
       };
     }
     if (params.style === 'thumbhole') {
@@ -2805,7 +2807,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
         tags: [FIRING_GRIP],
       };
     }
@@ -2819,7 +2821,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
         tags: [FIRING_GRIP],
       };
     }
@@ -2891,7 +2893,7 @@ export const stock: PartFamily = {
           ],
           ports: [port],
           keepOuts: [],
-          axes: [],
+          axes: [cheekDatum],
           tags: [FIRING_GRIP],
         };
       }
@@ -2940,7 +2942,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
         tags: [FIRING_GRIP],
       };
     }
@@ -2954,7 +2956,7 @@ export const stock: PartFamily = {
         ],
         ports: [port],
         keepOuts: [],
-        axes: [],
+        axes: [cheekDatum],
       };
     }
     return {
@@ -2962,27 +2964,24 @@ export const stock: PartFamily = {
       solids: [solid('comb', [-len, -1, -1.5], [0, 2.5, 1.5]), solid('butt', [-len - 1, -8, -1.75], [-len, 3, 1.75])],
       ports: [port],
       keepOuts: [],
-      axes: [],
+      axes: [cheekDatum],
     };
   },
 };
 
 export const sight: PartFamily = {
   name: 'sight',
-  params: {},
-  build(): PartDef {
+  params: { type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' } },
+  build(params): PartDef {
+    const optic = getOptic(params.type);
     return {
       family: 'sight',
-      solids: [solid('body', [-2, 0, -1], [2, 1.5, 1])],
-      ports: [{ id: 'base', mount: 'rail', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
-      // A thin tube around the line of sight, starting at the sight's front.
-      keepOuts: [
-        {
-          ...keepOut('sightline', [2, 0.25, -0.75], [42, 1.75, 0.75]),
-          allowFamilies: ['front-sight', 'rail-front-sight'],
-        },
+      solids: optic.solids,
+      ports: [
+        { id: 'base', mount: optic.mount.kind, gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
-      axes: [{ kind: 'sight', origin: [0, 1, 0], dir: X }],
+      keepOuts: optic.keepOuts,
+      axes: [{ kind: 'sight', origin: [0, optic.opticalAxisY, 0], dir: X }],
     };
   },
 };

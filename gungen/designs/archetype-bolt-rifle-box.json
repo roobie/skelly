@@ -54,7 +54,8 @@
         }
       },
       "sight": {
-        "family": "sight"
+        "family": "sight",
+        "params": { "type": "digital-thermal" }
       }
     },
     "connections": [

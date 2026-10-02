@@ -56,9 +56,6 @@
     },
     "front-sight": {
       "family": "front-sight"
-    },
-    "sight": {
-      "family": "sight"
     }
   },
   "connections": [
@@ -85,11 +82,6 @@
     {
       "from": "receiver.stock",
       "to": "stock.front"
-    },
-    {
-      "from": "receiver.rail",
-      "to": "sight.base",
-      "slot": 0
     },
     {
       "from": "barrel.front-sight",
