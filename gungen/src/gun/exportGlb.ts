@@ -1,3 +1,5 @@
+import { calibreSlug } from '../ammo/calibreSlug.ts';
+import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
 import { exportGlb, partNodeName } from '../core/glb.ts';
 import { applyDir, type Vec3 } from '../core/math.ts';
@@ -34,6 +36,8 @@ export interface GunActionMetadata {
   readonly hand: CycleMetadata;
   /** Stroke fraction at which the case leaves. */
   readonly ejectAt: number;
+  /** Unit ejection direction in model coordinates. */
+  readonly ejectDirection: Vec3;
   readonly holdOpen: boolean;
   readonly rpm: number;
 }
@@ -41,17 +45,29 @@ export interface GunActionMetadata {
 export interface DeadvoxModelEntry {
   readonly id: string;
   readonly file: DeadvoxModelFile;
-  readonly grip: { readonly at: Vec3; readonly turn: Vec3 };
+  readonly grip?: { readonly at: Vec3; readonly turn: Vec3 };
   readonly anchors?: Readonly<Record<string, Vec3>>;
-  /** Optional firing direction in model coordinates. */
-  readonly ejectDirection?: Vec3;
+  /** Exact id from gungen/cartridges/, not a slug or display designation. */
+  readonly calibre?: string;
+  /** Present on magazine entries; one local pose per round slot, top to bottom. */
+  readonly capacity?: number;
+  readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
+}
+
+export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
+  readonly grip: { readonly at: Vec3; readonly turn: Vec3 };
+}
+
+export interface GunExportMetadata {
+  /** Cartridge loaded by this design; its id becomes the exact Deadvox `calibre` value. */
+  readonly cartridge?: MetallicCartridge;
 }
 
 export type GunAssetIdentity = GlbAssetIdentity;
 
 export type GunExportResult =
-  | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: DeadvoxModelEntry }
+  | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: GunDeadvoxModelEntry }
   | { readonly ok: false; readonly error: GlbExportError | AnchorSelectionError };
 
 const round6 = (value: number): number => {
@@ -66,7 +82,6 @@ const modelPoint = (point: Vec3, metresPerUnit: number): Vec3 => {
 
 interface GunActionExport {
   readonly ejection: Vec3;
-  readonly direction: Vec3;
   readonly action: GunActionMetadata;
 }
 
@@ -106,12 +121,12 @@ const buildActionExport = (resolved: Resolved, ejection: Vec3 | undefined): GunA
   }
   return {
     ejection,
-    direction: ejectionDirection(action),
     action: {
       parts,
       fire: cycleMetadata(cycle.fire),
       hand: cycleMetadata(cycle.hand),
       ejectAt: cycle.ejectAt,
+      ejectDirection: ejectionDirection(action),
       holdOpen: cycle.holdOpenOnEmpty,
       rpm: cycle.rpm,
     },
@@ -122,8 +137,13 @@ export const createGunModelEntry = (
   asset: GunAssetIdentity,
   anchors: SelectedAnchors,
   metresPerUnit: number,
+  metadata: GunExportMetadata = {},
   handling?: GunActionExport,
-): DeadvoxModelEntry => {
+): GunDeadvoxModelEntry => {
+  const calibre = metadata.cartridge?.id;
+  if (calibre !== undefined) {
+    calibreSlug(calibre);
+  }
   const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
     name,
     modelPoint(frame.position, metresPerUnit),
@@ -140,18 +160,20 @@ export const createGunModelEntry = (
           },
         }
       : {}),
-    ...(handling ? { ejectDirection: handling.direction, action: handling.action } : {}),
+    ...(calibre === undefined ? {} : { calibre }),
+    ...(handling ? { action: handling.action } : {}),
   };
 };
 
 /**
  * Exports a gun assembly: core writes the GLB, then this adapter selects gun anchors and builds the Deadvox entry.
- * The public gun export retains its established model-entry shape and byte/axis conversion.
+ * Structural anchors are emitted independently of optional cartridge metadata.
  */
 export const exportGunGlb = (
   assembly: Assembly,
   asset: GunAssetIdentity,
   appearance: AppearanceContext,
+  metadata: GunExportMetadata = {},
 ): GunExportResult => {
   const resolved = resolve(assembly, gunDomain);
   // Broken assemblies get the core writer's structure report before anchor selection.
@@ -175,6 +197,7 @@ export const exportGunGlb = (
       asset,
       anchors,
       resolved.domain.units.metresPerUnit,
+      metadata,
       buildActionExport(resolved, anchors.others.ejection?.position),
     ),
   };

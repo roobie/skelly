@@ -329,7 +329,7 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expectTypeOf<Palette['familyColors']>().toEqualTypeOf<Readonly<Record<string, SrgbColor>>>();
   expectTypeOf<keyof PrefabCatalogueEntry>().toEqualTypeOf<'id' | 'version' | 'family' | 'fixedParams'>();
   expectTypeOf<ExportPortMetadata['id']>().toEqualTypeOf<`${string}.${string}`>();
-  expectTypeOf<GunAnchorName>().toEqualTypeOf<'hold' | 'support' | 'muzzle' | 'ejection'>();
+  expectTypeOf<GunAnchorName>().toEqualTypeOf<'hold' | 'support' | 'muzzle' | 'ejection' | 'magwell'>();
   expectTypeOf<Parameters<SelectGunAnchors>>().toEqualTypeOf<
     [resolved: Resolved, declarations: GunAnchorDeclarations, policy: GunAnchorSelectionPolicy]
   >();

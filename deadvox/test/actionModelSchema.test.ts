@@ -13,6 +13,7 @@ const cycle = {
   dwellSeconds: 0.01,
   forwardSeconds: 0.05,
 };
+const ejectDirection = [0.34, 0.2, 0.92].map((value) => value / Math.hypot(0.34, 0.2, 0.92));
 const build = (model: unknown) => buildRegistry([{ source: SOURCE, data: { models: [model] } }]);
 
 describe('optional action model metadata', () => {
@@ -22,13 +23,13 @@ describe('optional action model metadata', () => {
       fire: cycle,
       hand: { durationSeconds: 1.7, rearwardSeconds: 0.65, dwellSeconds: 0.3, forwardSeconds: 0.05 },
       ejectAt: 0.72,
+      ejectDirection,
       holdOpen: false,
       rpm: 600,
     };
     const { registry, issues } = build({
       ...baseModel,
       anchors: { ejection: [-0.05, 0.02, 0.03] },
-      ejectDirection: [0.34, 0.2, 0.92].map((value) => value / Math.hypot(0.34, 0.2, 0.92)),
       action,
     });
     expect(issues).toEqual([]);
@@ -40,7 +41,7 @@ describe('optional action model metadata', () => {
     const { registry, issues } = build(baseModel);
     expect(issues).toEqual([]);
     expect(registry.models.get('lamp')?.action).toBeUndefined();
-    expect(registry.models.get('lamp')?.ejectDirection).toBeUndefined();
+    expect(registry.models.get('lamp')?.anchors?.ejection).toBeUndefined();
   });
 
   it('rejects non-unit direction vectors and cycle phases that exceed the duration', () => {
@@ -49,11 +50,12 @@ describe('optional action model metadata', () => {
       fire: cycle,
       hand: { durationSeconds: 1.7, rearwardSeconds: 0.65, dwellSeconds: 0.3, forwardSeconds: 0.05 },
       ejectAt: 0.72,
+      ejectDirection,
       holdOpen: false,
       rpm: 600,
     };
-    const invalidDirection = build({ ...baseModel, ejectDirection: [0, 0, 2] });
-    expect(invalidDirection.issues.map(({ path }) => path)).toContain('models[0].ejectDirection');
+    const invalidDirection = build({ ...baseModel, action: { ...baseAction, ejectDirection: [0, 0, 2] } });
+    expect(invalidDirection.issues.map(({ path }) => path)).toContain('models[0].action.ejectDirection');
     const invalidCycle = build({ ...baseModel, action: { ...baseAction, fire: { ...cycle, forwardSeconds: 0.2 } } });
     expect(invalidCycle.issues.map(({ path }) => path)).toContain('models[0].action.fire');
   });

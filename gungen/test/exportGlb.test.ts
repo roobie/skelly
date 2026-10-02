@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { displayItems as selectDisplayItems } from '../src/core/display.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
@@ -17,6 +18,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
+import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
 import { expectWatertightMesh, variant } from './helpers.ts';
 
@@ -30,6 +32,7 @@ const design = (name: string): Assembly => {
 
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
+const AK_CARTRIDGE = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
 const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
   const result = exportGunGlb(assembly, asset, { variant: variantName ?? 'ar' });
   if (!result.ok) {
@@ -418,7 +421,7 @@ describe('glb export: deadvox model entry', () => {
   it('emits muzzle and support anchors in metres when the design has them', () => {
     const out = exported(design('archetype-ar'));
     const selected = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['ejection', 'muzzle', 'support']);
+    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['ejection', 'magwell', 'muzzle', 'support']);
     near(
       out.modelEntry.anchors!.muzzle!,
       selected.others.muzzle!.position.map((x) => x * S),
@@ -465,7 +468,8 @@ describe('glb export: deadvox model entry', () => {
         expect(Math.hypot(...part.axis)).toBeCloseTo(1, 12);
         expect(part.strokeMetres).toBeCloseTo(6.5 * S, 6);
       }
-      expect(Math.hypot(...out.modelEntry.ejectDirection!)).toBeCloseTo(1, 12);
+      expect(Math.hypot(...action.ejectDirection)).toBeCloseTo(1, 12);
+      expect(out.modelEntry).not.toHaveProperty('ejectDirection');
       expect(out.modelEntry.anchors?.ejection).toBeDefined();
       expect(motion.axis).toEqual([1, 0, 0]);
 
@@ -478,6 +482,23 @@ describe('glb export: deadvox model entry', () => {
       expect(core.ok).toBe(true);
       expect(Buffer.from(out.glb).equals(Buffer.from(core.ok ? core.glb : []))).toBe(true);
     }
+  });
+
+  it('emits the structural magwell anchor with or without assigned calibre metadata', () => {
+    const assembly = design('archetype-ak');
+    const appearance = { variant: 'ak' };
+    const bare = exportGunGlb(assembly, ASSET, appearance);
+    const assigned = exportGunGlb(assembly, ASSET, appearance, { cartridge: AK_CARTRIDGE });
+    expect(bare.ok && assigned.ok).toBe(true);
+    if (!(bare.ok && assigned.ok)) {
+      return;
+    }
+    expect(bare.modelEntry).not.toHaveProperty('calibre');
+    expect(assigned.modelEntry.calibre).toBe('7.62x39');
+    const selected = selectGunAnchors(resolve(assembly, gunDomain), GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
+    const expected = selected.others.magwell!.position.map((x) => x * S);
+    near(bare.modelEntry.anchors!.magwell!, expected, 6);
+    near(assigned.modelEntry.anchors!.magwell!, expected, 6);
   });
 
   it('emits the fixed axis-mapping turn, not one derived from the grip', () => {

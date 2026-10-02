@@ -12,7 +12,7 @@ status: accepted
 [[THIS is_grounded_by: ../../DESIGN.md]]
 [[THIS is_grounded_by: ../../../gungen/PROJECT.md]]
 
-**Status:** accepted (2026-10-02).
+**Status:** accepted (2026-10-02). BR's rulings are recorded under [Rulings](#rulings-2026-10-02).
 
 ## Context
 
@@ -54,20 +54,20 @@ This is a survival game and reloading ammunition is part of it, so spent cases a
 - **Rendering the pile** uses the count: up to a cap, a scatter of instanced case models laid out deterministically from the pile's seed and count, spreading wider as the count grows. Beyond the cap the scatter stays as is.
 - The **flying case** is presentation only: spawned at the ejection port with the gun's eject direction plus a little random spread and spin, simple bounce physics against blocks, a tink by block material, then it disappears when it settles. It is outside the simulation fingerprint and never saved, from a small capped pool.
 
-### 4. Additions to the gun export (additive)
+### 4. The gungen–Deadvox model contract
 
-The existing `DeadvoxModelEntry` fields keep their meaning; everything below is optional, so current entries stay valid. gungen fills them for guns whose design has the data.
+This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and Deadvox may change their export and model schema together, without legacy paths or migrations. The acceptance gate is that a model exported by gungen is validated by Deadvox and loads in its model runtime. Gungen fills the following data from each design and its selected cartridge.
 
-- `calibre`: the cartridge id (e.g. `7.62x39`).
-- `anchors` gain named points: `muzzle` (already accepted), `ejection` (where the case leaves) and `magwell` (where the magazine seats).
+- `calibre`: the cartridge id (e.g. `7.62x39`) from gungen's cartridge data.
+- `anchors` gain named points: `muzzle` (already accepted), `ejection` (where the case leaves) and `magwell` (where the magazine seats). Each point is `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right).
 - `action`:
   - `moving`: the moving parts as **separate named nodes** in the GLB (today the export merges solids into one primitive per material, so these must stay separate), each with its motion axis and stroke in metres;
   - `fire` and `hand`: cycle timelines (rear, dwell, forward seconds, or sampled curves);
-  - `ejectAt`: the stroke fraction at which the case leaves, and `ejectDirection`: a unit vector in the model frame;
+  - `ejectAt`: the stroke fraction at which the case leaves, and `ejectDirection`: a unit vector in the model frame; both are fields of `action`;
   - `holdOpen`: whether the carrier stays back on an empty magazine;
   - `rpm`.
-- **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, angle, side }]`, from the top round down), so deadvox can draw the remaining rounds by instancing the round model.
-- **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109).
+- **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, tilt }]`, from the top round down). `at` is the round centre in metres in magazine-model coordinates; `tilt` is degrees about +z (nose-up positive). Left/right stagger is encoded by the sign of `at[2]`, not a separate field, so deadvox can draw remaining rounds by instancing the round model.
+- **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109). In model ids and filenames `<calibre>` means the deterministic slug of the cartridge id (e.g. `round_7_d_62x39`); the entry's `calibre` remains the exact source id (`7.62x39`).
 
 The exact field names and units are settled in the gungen work items (g34, g35) and recorded in `gungen/PROJECT.md` next to the 3.0a contracts; this ADR fixes what the contract must carry.
 
@@ -91,7 +91,7 @@ The existing fingerprint rules (`SIMULATION_EXCLUSIONS`) apply: presentation cod
 
 ## Consequences
 
-- gungen's export grows a second contract version (additive). The deadvox model schema gains optional `calibre`, `action` and magazine fields, validated like the rest.
+- No compatibility version, migration, or byte-identity requirement is implied. Gungen export and Deadvox model validation/runtime loading evolve together; an exported model that Deadvox validates and loads is the gate.
 - The GLB export must keep moving parts as separate nodes for guns that declare an action.
 - deadvox needs a small presentation-only physics for flying cases (a few dozen at most), and a pile scatter renderer.
 - Reloading ammunition, ammo economy and damage stay in slice 3; this ADR only makes them possible.
