@@ -222,6 +222,44 @@ const SoundSchema = strictObject({
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
 });
 
+const UnitVector = pipe(
+  Point,
+  check(([x, y, z]) => Math.abs(Math.hypot(x, y, z) - 1) <= 1e-6, 'must be a unit vector'),
+);
+
+const ActionCycleSchema = pipe(
+  strictObject({
+    durationSeconds: Positive,
+    rearwardSeconds: Positive,
+    dwellSeconds: NonNegative,
+    forwardSeconds: Positive,
+  }),
+  check(
+    (cycle) => cycle.rearwardSeconds + cycle.dwellSeconds + cycle.forwardSeconds <= cycle.durationSeconds + 1e-9,
+    'cycle phases must fit within durationSeconds',
+  ),
+);
+
+const ActionPartSchema = strictObject({
+  /** Exact GLB node name, e.g. `bolt-carrier:bolt-carrier`. */
+  node: pipe(string(), nonEmpty('must not be empty')),
+  axis: UnitVector,
+  strokeMetres: Positive,
+});
+
+const ActionSchema = strictObject({
+  parts: pipe(
+    record(Id, ActionPartSchema),
+    check((parts) => Object.keys(parts).length > 0, 'needs at least one moving part'),
+  ),
+  fire: ActionCycleSchema,
+  hand: ActionCycleSchema,
+  ejectAt: Fraction,
+  holdOpen: vBoolean(),
+  /** Cyclic rate in rounds per minute. */
+  rpm: Positive,
+});
+
 const ModelSchema = strictObject({
   id: Id,
   /** The `.glb` file, as a path within the pack. */
@@ -235,8 +273,12 @@ const ModelSchema = strictObject({
   hold: optional(picklist(['forward', 'upright'])),
   /** Degrees to roll around the model's long +x axis before applying the hold pose. */
   roll: optional(pipe(number(), minValue(-180), maxValue(180))),
-  /** Named points, such as the flashlight's `lens`. */
+  /** Named points, such as the flashlight's `lens`; gun points are in metres in model coordinates. */
   anchors: optional(record(Id, Point)),
+  /** Unit vector [x, y, z] in model coordinates, pointing in the case's ejection direction. */
+  ejectDirection: optional(UnitVector),
+  /** Optional estimated action cycles and the named moving GLB nodes. */
+  action: optional(ActionSchema),
 });
 
 // ---- furniture ----
