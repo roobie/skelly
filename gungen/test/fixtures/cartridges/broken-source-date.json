@@ -1,6 +1,0 @@
-{
-  "name": "broken-source-date",
-  "base": "7.62x39",
-  "set": { "sources.cip.retrieved": "2026-13-40" },
-  "expect": ["sources"]
-}

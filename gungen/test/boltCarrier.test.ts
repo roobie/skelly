@@ -28,6 +28,9 @@ const corners = (solid: Solid): Vec3[] => {
       ),
     );
   }
+  if (solid.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   return solid.profile.flatMap((point) =>
     [solid.z[0], solid.z[1]].map((along) =>
       solid.axis === 'x' ? ([along, point[0], point[1]] as const) : ([point[0], point[1], along] as const),

@@ -9,7 +9,7 @@
 import { parseArgs } from 'node:util';
 import { displayItems } from '../core/display.ts';
 import { generate } from '../core/generate.ts';
-import { meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { resolve } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import { gunDomain } from '../gun/domain.ts';
@@ -42,7 +42,9 @@ for (const t of TEMPLATES) {
         triBefore += unbeveledTriangleCount(solid);
       }
       for (const item of displayItems(drawn)) {
-        const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!);
+        const mesh = item.merged
+          ? meshForSolidGroup(item.solids)
+          : meshForSolid(item.solids[0]!, displayBevel(item.solids[0]!, resolved.domain.units));
         triAfter += mesh.triangleCount;
       }
     }

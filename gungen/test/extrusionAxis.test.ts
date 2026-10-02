@@ -139,6 +139,7 @@ describe('extruded polygon axes', () => {
         axes: [],
       });
       const resolved = {
+        domain: gunDomain,
         placed,
         defs: new Map([
           ['a', part('a')],

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
-import { controlsCardRows } from '../src/game/controls.ts';
-import { PLAYER_CONTROL_BINDINGS } from '../src/game/input.ts';
+import { controlsCardRows, PLAYER_CONTROL_BINDINGS } from '../src/game/controls.ts';
 import {
   createSnapshotHistory,
   loadMetrics,
@@ -139,6 +138,8 @@ describe('controls card', () => {
     expect(rows.map(({ keys }) => keys)).toContain('F9');
     expect(rows.map(({ keys }) => keys)).toContain('F4');
     expect(rows.map(({ keys }) => keys)).toContain('Tab');
+    expect(rows.find(({ keys }) => keys === 'Left click')?.action).toContain('Right-hand primary action');
+    expect(rows.find(({ keys }) => keys === '=')?.action).toContain('Left-hand primary action');
     expect(rows.at(-1)?.action).toContain('E: Move to your best pocket');
   });
 

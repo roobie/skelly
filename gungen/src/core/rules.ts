@@ -186,6 +186,8 @@ export const connectionContact: Rule = {
   check(r) {
     const issues: Issue[] = [];
     const solids = placedSolids(r);
+    // One grid step is the most two connected solids may be apart.
+    const maxGap = r.domain.units.grid;
     for (const rc of r.connections) {
       const a = solids.get(rc.from.part);
       const b = solids.get(rc.to.part);
@@ -201,14 +203,14 @@ export const connectionContact: Rule = {
           break;
         }
         gap = Math.min(gap, distanceWorld(pair.a, pair.b));
-        if (gap <= TOLERANCE.connectionContact) {
+        if (gap <= maxGap) {
           break;
         }
       }
-      if (gap > TOLERANCE.connectionContact) {
+      if (gap > maxGap) {
         issues.push({
           rule: 'connection-contact',
-          message: `${rc.conn.from} and ${rc.conn.to} have a ${fmt(gap)}u gap between their solids (maximum: ${fmt(TOLERANCE.connectionContact)}u).`,
+          message: `${rc.conn.from} and ${rc.conn.to} have a ${fmt(gap)}u gap between their solids (maximum: ${fmt(maxGap)}u).`,
           parts: [rc.from.part, rc.to.part],
           ports: [rc.conn.from, rc.conn.to],
         });

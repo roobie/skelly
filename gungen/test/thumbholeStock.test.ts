@@ -25,6 +25,9 @@ const vertices = (solid: Solid): Vec3[] => {
       ),
     );
   }
+  if (solid.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
+  }
   return solid.profile.flatMap(([x, y]) => solid.z.map((z) => [x, y, z] as const));
 };
 
@@ -84,6 +87,9 @@ const gripGuardGap = (assembly: Assembly, gripFamily: 'grip' | 'stock'): number 
 const inside = (solid: Solid, x: number, y: number, z: number): boolean => {
   if (solid.kind === 'box') {
     return [x, y, z].every((value, axis) => Math.abs(value - solid.box.center[axis]!) <= solid.box.half[axis]!);
+  }
+  if (solid.kind === 'revolved') {
+    throw new Error('gun designs have no revolved solids');
   }
   if (z < solid.z[0] || z > solid.z[1]) {
     return false;
