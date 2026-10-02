@@ -42,68 +42,68 @@ jobs:
       - name: Full test suite (includes the save budget fixture once)
         run: timeout 300 npm test -- --maxWorkers=2
       - name: Browser UI contract (Chromium)
-        timeout-minutes: 7
+        timeout-minutes: 9
         run: node tools/ui-browser-contract.mjs
       - name: Melee build-click browser contract
-        timeout-minutes: 2
+        timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
       - name: Primary-action browser contract
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs
       - name: Save-controller browser regressions
-        timeout-minutes: 15
+        timeout-minutes: 4
         run: node test/browser/save-controller-regressions.mjs
       - name: Save-storage browser contract (Chromium)
-        timeout-minutes: 15
+        timeout-minutes: 1
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — OPFS Continue (Chromium)
-        timeout-minutes: 15
+        timeout-minutes: 4
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: opfs
           SAVE_AUTOSAVE_SCENARIO: continue
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — OPFS replacement (Chromium)
-        timeout-minutes: 15
+        timeout-minutes: 8
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: opfs
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — IndexedDB Continue (Chromium)
-        timeout-minutes: 15
+        timeout-minutes: 4
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: continue
         run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — IndexedDB replacement (Chromium)
-        timeout-minutes: 15
+        timeout-minutes: 8
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
       - name: Insecure-context browser contract
-        timeout-minutes: 15
+        timeout-minutes: 1
         run: node test/browser/insecure-saves.mjs
       - name: Install headed Firefox and system dependencies
         run: npx playwright install --with-deps firefox
       - name: Firefox first-click browser contract
-        timeout-minutes: 15
+        timeout-minutes: 2
         run: xvfb-run -a node test/browser/firefox-first-click.mjs
       - name: Firefox save-storage browser contract
-        timeout-minutes: 15
+        timeout-minutes: 2
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox autosave — IndexedDB Continue
-        timeout-minutes: 15
+        timeout-minutes: 1
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: continue
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox autosave — IndexedDB replacement
-        timeout-minutes: 15
+        timeout-minutes: 1
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
