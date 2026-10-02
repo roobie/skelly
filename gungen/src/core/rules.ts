@@ -1,7 +1,7 @@
 // Feasibility rules (PROJECT.md §1). Each rule checks a resolved assembly and
 // returns readable issues; none of them simulates anything.
 
-import { INTERFACE_TOLERANCE_BY_MOUNT, MAIN_AXIS, TOLERANCE } from './conventions.ts';
+import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
 import {
   distanceWorld,
   lowerBoundDistanceWorld,
@@ -122,7 +122,7 @@ const connectionAllowances = (r: Resolved): Map<string, number> => {
   const allowances = new Map<string, number>();
   for (const rc of r.connections) {
     const pair = [rc.from.part, rc.to.part].sort().join('|');
-    const allowance = INTERFACE_TOLERANCE_BY_MOUNT[rc.from.port.mount] ?? TOLERANCE.interface;
+    const allowance = r.domain.mountAllowances?.[rc.from.port.mount] ?? TOLERANCE.interface;
     allowances.set(pair, Math.max(allowances.get(pair) ?? 0, allowance));
   }
   return allowances;

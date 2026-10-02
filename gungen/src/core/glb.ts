@@ -1,5 +1,5 @@
-// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js, no gun data:
-// anchors and the palette come in as arguments, meshes come from `meshForSolid`.
+// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js or domain data:
+// the palette comes in as an argument, meshes come from `meshForSolid`.
 //
 // Layout of the file:
 //   scene -> root node (named by the asset id)
@@ -10,8 +10,6 @@
 
 import { resolveAppearance } from './appearance.ts';
 import type {
-  DeadvoxModelEntry,
-  DeadvoxModelFile,
   ExportGlb,
   ExportPortMetadata,
   GlbExportError,
@@ -21,7 +19,6 @@ import type {
   SrgbColor,
 } from './design.ts';
 import { type DisplayItem, displayItems } from './display.ts';
-import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
 import type { PartDef, PortDef } from './schema.ts';
@@ -78,20 +75,11 @@ const quaternion = (m: Mat3): [number, number, number, number] => {
   return q.map((x) => (x * sign) / l + 0) as [number, number, number, number];
 };
 
-const round6 = (x: number): number => {
-  const r = Math.round(x * 1e6) / 1e6;
-  return r === 0 ? 0 : r;
-};
-
 const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
   v[0] * metresPerUnit,
   v[1] * metresPerUnit,
   v[2] * metresPerUnit,
 ];
-const modelPoint = (v: Vec3, metresPerUnit: number): Vec3 => {
-  const p = toMetres(toFileAxes(v), metresPerUnit);
-  return [round6(p[0]), round6(p[1]), round6(p[2])];
-};
 
 const isIdentity = (m: Mat3): boolean => m.every((x, i) => Math.abs(x - (i % 4 === 0 ? 1 : 0)) < 1e-12);
 
@@ -220,6 +208,17 @@ const splitMixedAppearance = (
   });
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
 
+/** Keep the established GLB extras keys while the in-memory motion contract uses neutral endpoints. */
+const motionMetadata = (motion: NonNullable<PartDef['motion']>) => ({
+  kind: motion.kind,
+  axis: motion.axis,
+  // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
+  ['rest']: motion.start,
+  // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
+  ['rearmost']: motion.end,
+  ...(motion.sourceKeepOut === undefined ? {} : { sourceKeepOut: motion.sourceKeepOut }),
+});
+
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
 const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined => {
   const { resolved, palette, asset } = input;
@@ -249,16 +248,16 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
 };
 
 /**
- * Writes a resolved assembly as a `.glb` plus the matching deadvox model entry. Refuses (as an error value,
- * never an exception) an assembly with structure issues or unplaced parts, ids that can't form a stable
- * port id, a palette colour outside sRGB [0,1], and an asset file outside `assets/models/<name>.glb`.
+ * Writes a resolved assembly as a `.glb`. Refuses (as an error value, never an exception) an assembly with
+ * structure issues or unplaced parts, ids that can't form a stable port id, a palette colour outside sRGB [0,1],
+ * and an asset file outside `assets/models/<name>.glb`.
  */
 export const exportGlb: ExportGlb = (input) => {
   const error = refusal(input);
   if (error) {
     return fail(error);
   }
-  const { resolved, anchors, palette, asset } = input;
+  const { resolved, palette, asset } = input;
   const { metresPerUnit } = resolved.domain.units;
 
   const parts: PartExport[] = Object.keys(resolved.assembly.parts)
@@ -378,7 +377,7 @@ export const exportGlb: ExportGlb = (input) => {
       ...(appearance.material === undefined ? {} : { material: appearance.material }),
       ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
       solids: drawn.map((s) => s.id),
-      ...(part.def.motion ? { motion: part.def.motion } : {}),
+      ...(part.def.motion ? { motion: motionMetadata(part.def.motion) } : {}),
     };
 
     const children: number[] = [];
@@ -431,15 +430,5 @@ export const exportGlb: ExportGlb = (input) => {
       : {}),
   };
 
-  const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
-    name,
-    modelPoint(frame.position, metresPerUnit),
-  ]);
-  const modelEntry: DeadvoxModelEntry = {
-    id: asset.id,
-    file: asset.file as DeadvoxModelFile,
-    grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
-    ...(others.length > 0 ? { anchors: Object.fromEntries(others) } : {}),
-  };
-  return { ok: true, glb: glbFile(json, bin.bytes()), modelEntry };
+  return { ok: true, glb: glbFile(json, bin.bytes()) };
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import { exportGlb } from '../src/core/glb.ts';
 import { type ExtrusionAxis, extrusionPoint, IDENTITY } from '../src/core/math.ts';
@@ -134,13 +134,12 @@ describe('revolved solid in an assembly', () => {
     };
     const resolved = resolve(thing, revolvedDomain([cylinder]));
     const asset: GlbAssetIdentity = { id: 'thing', file: 'assets/models/thing.glb' };
-    const anchors: SelectedAnchors = { hold: { position: [0, 0, 0], forward: [1, 0, 0], up: [0, 1, 0] }, others: {} };
     const palette: Palette = {
       familyColors: { thing: [0.5, 0.5, 0.5] },
       specialColors: {},
       fallbackColor: [0.5, 0.5, 0.5],
     };
-    const result = exportGlb({ resolved, anchors, palette, asset, revolveFacets: 24 });
+    const result = exportGlb({ resolved, palette, asset, revolveFacets: 24 });
     if (!result.ok) {
       throw new Error(JSON.stringify(result.error));
     }

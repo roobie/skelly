@@ -118,8 +118,8 @@ const resolveMotionSources = (
     const { sourceKeepOut: _sourceKeepOut, ...motion } = def.motion!;
     const travel =
       2 * motion.axis.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
-    const rearmost = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
-    defs.set(id, { ...def, motion: { ...motion, rearmost } });
+    const end = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
+    defs.set(id, { ...def, motion: { ...motion, end } });
   }
 };
 

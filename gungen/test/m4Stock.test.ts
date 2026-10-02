@@ -127,11 +127,11 @@ describe('M4-only AR stock', () => {
       expect(receiverPort.pos[1]).toBe(0);
       const carrierTransform = resolved.placed.get('bolt-carrier')!;
       const carrierMotion = resolved.defs.get('bolt-carrier')!.motion!;
-      const carrierAxisPoint = applyPoint(carrierTransform, carrierMotion.rest);
+      const carrierAxisPoint = applyPoint(carrierTransform, carrierMotion.start);
       const carrierAxisTip = applyPoint(carrierTransform, [
-        carrierMotion.rest[0] + carrierMotion.axis[0],
-        carrierMotion.rest[1] + carrierMotion.axis[1],
-        carrierMotion.rest[2] + carrierMotion.axis[2],
+        carrierMotion.start[0] + carrierMotion.axis[0],
+        carrierMotion.start[1] + carrierMotion.axis[1],
+        carrierMotion.start[2] + carrierMotion.axis[2],
       ]);
       const carrierAxis = sub(carrierAxisTip, carrierAxisPoint);
       const tubeAxisPoint = applyPoint(stockTransform, [0, 0, 0]);

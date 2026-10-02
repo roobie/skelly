@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { boxFromMinMax } from '../src/core/geometry.ts';
 import { exportGlb } from '../src/core/glb.ts';
 import { resolve } from '../src/core/resolve.ts';
@@ -30,7 +30,6 @@ const widgetDef: PartDef = {
 };
 
 const ASSET: GlbAssetIdentity = { id: 'widget', file: 'assets/models/widget.glb' };
-const ANCHORS: SelectedAnchors = { hold: { position: [0, 0, 0], forward: [1, 0, 0], up: [0, 1, 0] }, others: {} };
 const PALETTE: Palette = {
   familyColors: { widget: [0.2, 0.3, 0.4] },
   specialColors: {},
@@ -78,7 +77,7 @@ const pairAssembly = {
 describe('domain units', () => {
   it('scales exported positions, node translations and the recorded unit by the domain, not the gun constant', () => {
     const resolved = resolve(widgetAssembly, widgetDomain(MILLIMETRE_UNITS, widgetDef));
-    const result = exportGlb({ resolved, anchors: ANCHORS, palette: PALETTE, asset: ASSET });
+    const result = exportGlb({ resolved, palette: PALETTE, asset: ASSET });
     if (!result.ok) {
       throw new Error(JSON.stringify(result.error));
     }
@@ -96,7 +95,7 @@ describe('domain units', () => {
 
   it('insets the cap of an exported box by the domain bevel', () => {
     const resolved = resolve(widgetAssembly, widgetDomain(MILLIMETRE_UNITS, widgetDef));
-    const result = exportGlb({ resolved, anchors: ANCHORS, palette: PALETTE, asset: ASSET });
+    const result = exportGlb({ resolved, palette: PALETTE, asset: ASSET });
     if (!result.ok) {
       throw new Error(JSON.stringify(result.error));
     }

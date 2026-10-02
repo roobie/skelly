@@ -1,7 +1,6 @@
 import validator from 'gltf-validator';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { SelectedAnchors } from '../src/core/design.ts';
 import { boxFromMinMax, distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import { exportGlb, partNodeName } from '../src/core/glb.ts';
 import { applyDir, type ExtrusionAxis, mulMM, rotX, rotY, rotZ } from '../src/core/math.ts';
@@ -10,8 +9,6 @@ import { type Resolved, resolve } from '../src/core/resolve.ts';
 import { connectionContact, keepOut as keepOutRule } from '../src/core/rules.ts';
 import type { Domain, ExtrudedPolygonSolid, KeepOut, PartDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
-import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
-import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_PALETTE } from '../src/gun/palette.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
@@ -253,10 +250,8 @@ describe('extruded polygon axes', () => {
         disposeGroup(group);
       }
     }
-    const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
     const result = exportGlb({
       resolved,
-      anchors,
       palette: GUN_PALETTE,
       asset: { id: 'axis-test', file: 'assets/models/axis-test.glb' },
     });

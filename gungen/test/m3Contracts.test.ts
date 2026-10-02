@@ -6,7 +6,6 @@ import { init, parse } from 'es-module-lexer';
 import { expect, expectTypeOf, it } from 'vitest';
 import type {
   AnchorFrame,
-  AnchorSelectionError,
   Design,
   DesignIssue,
   DesignLoadResult,
@@ -18,8 +17,6 @@ import type {
   GlbExportResult,
   NonEmptyReadonlyArray,
   Palette,
-  ResolvedAnchors,
-  SelectedAnchors,
   SrgbColor,
   Suggest,
   SuggestionResult,
@@ -28,9 +25,11 @@ import type { Resolved } from '../src/core/resolve.ts';
 import type { Domain, PartInstance } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
 import type {
+  AnchorSelectionError,
   GunAnchorDeclarations,
   GunAnchorName,
   GunAnchorSelectionPolicy,
+  SelectedAnchors,
   SelectGunAnchors,
 } from '../src/gun/anchors.ts';
 import type { PrefabCatalogueEntry } from '../src/gun/prefabs.ts';
@@ -43,6 +42,85 @@ const typeScriptFiles = (directory: string): string[] =>
     }
     return entry.name.endsWith('.ts') ? [path] : [];
   });
+
+const FORBIDDEN_CORE_IDENTIFIERS = new Set([
+  'grip',
+  'clamp',
+  'magazine',
+  'bore',
+  'muzzle',
+  'receiver',
+  'barrel',
+  'stock',
+  'sight',
+  'hold',
+  'rearmost',
+  'deadvox',
+]);
+
+const IDENTIFIER_START = /[A-Za-z_$]/;
+const IDENTIFIER_PART = /[A-Za-z0-9_$]/;
+
+const skipCommentOrString = (source: string, offset: number): number | undefined => {
+  if (source.startsWith('//', offset)) {
+    const end = source.indexOf('\n', offset + 2);
+    return end < 0 ? source.length : end + 1;
+  }
+  if (source.startsWith('/*', offset)) {
+    const end = source.indexOf('*/', offset + 2);
+    return end < 0 ? source.length : end + 2;
+  }
+  const quote = source[offset];
+  if (quote !== "'" && quote !== '"' && quote !== '`') {
+    return undefined;
+  }
+  let next = offset + 1;
+  while (next < source.length) {
+    if (source[next] === '\\') {
+      next += 2;
+    } else if (source[next] === quote) {
+      return next + 1;
+    } else {
+      next += 1;
+    }
+  }
+  return source.length;
+};
+
+const findForbiddenIdentifier = (source: string): string | undefined => {
+  let offset = 0;
+  while (offset < source.length) {
+    const skipped = skipCommentOrString(source, offset);
+    if (skipped !== undefined) {
+      offset = skipped;
+      continue;
+    }
+    if (IDENTIFIER_START.test(source[offset]!)) {
+      const start = offset;
+      offset += 1;
+      while (offset < source.length && IDENTIFIER_PART.test(source[offset]!)) {
+        offset += 1;
+      }
+      const identifier = source.slice(start, offset);
+      if (FORBIDDEN_CORE_IDENTIFIERS.has(identifier.toLowerCase())) {
+        return identifier;
+      }
+      continue;
+    }
+    offset += 1;
+  }
+  return undefined;
+};
+
+const findForbiddenCoreIdentifier = (files: readonly string[]): string | undefined => {
+  for (const file of files) {
+    const identifier = findForbiddenIdentifier(readFileSync(file, 'utf8'));
+    if (identifier) {
+      return `${file}: ${identifier}`;
+    }
+  }
+  return undefined;
+};
 
 const isWithin = (directory: string, path: string): boolean => {
   const relativePath = relative(directory, path);
@@ -205,8 +283,6 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   const incompleteFrame: AnchorFrame = { position: [0, 0, 0] };
   // @ts-expect-error a selected set must include the winning hold frame
   const selectedWithoutHold: SelectedAnchors = { others: { muzzle: frame } };
-  // @ts-expect-error the exporter does not accept unresolved per-part anchor frames
-  const unselectedFramesAsExportInput: GlbExportInput['anchors'] = {} as ResolvedAnchors;
   // @ts-expect-error the exporter accepts its explicit core input, not a gun registry
   const gunRegistryAsExportInput: GlbExportInput = {} as GunAnchorDeclarations;
   // @ts-expect-error an issueful load must downgrade a published file to a draft
@@ -220,7 +296,6 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expectTypeOf(invalidStatus).toMatchTypeOf<Design>();
   expectTypeOf(incompleteFrame).toMatchTypeOf<AnchorFrame>();
   expectTypeOf(selectedWithoutHold).toMatchTypeOf<SelectedAnchors>();
-  expectTypeOf(unselectedFramesAsExportInput).toMatchTypeOf<SelectedAnchors>();
   expectTypeOf(gunRegistryAsExportInput).toMatchTypeOf<GlbExportInput>();
   expectTypeOf(publishedWithIssues).toMatchTypeOf<DesignLoadResult>();
 
@@ -244,6 +319,7 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
     error: { code: 'invalid-json', message: 'not JSON' },
   };
   const selectedAnchors: SelectedAnchors = { hold: frame, others: { support: frame, muzzle: frame } };
+  expectTypeOf(selectedAnchors).toEqualTypeOf<SelectedAnchors>();
   const palette: Palette = {
     familyColors: { receiver: [0.2, 0.2, 0.2] },
     specialColors: { floorplate: [0.1, 0.1, 0.1] },
@@ -252,20 +328,10 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   const resolved = {} as unknown as Resolved;
   const exportInput: GlbExportInput = {
     resolved,
-    anchors: selectedAnchors,
     palette,
     asset: { id: 'ar', file: 'assets/models/ar.glb' },
   };
-  const exportSuccess: GlbExportResult = {
-    ok: true,
-    glb: new Uint8Array(),
-    modelEntry: {
-      id: 'ar',
-      file: 'assets/models/ar.glb',
-      grip: { at: [0, 0, 0], turn: [0, 0, 0] },
-      anchors: { muzzle: [1, 0, 0] },
-    },
-  };
+  const exportSuccess: GlbExportResult = { ok: true, glb: new Uint8Array() };
   const exportFailure: GlbExportResult = { ok: false, error: { code: 'unplaced-parts', partIds: ['sight'] } };
   const effectiveLocks: EffectiveSuggestionLocks = { params: { magazine: ['length'] }, optionalParts: ['sight'] };
   const suggestions: SuggestionResult = { variants: [{ ...validDesign, status: 'draft' }], exhausted: false };
@@ -274,10 +340,10 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expectTypeOf<Design['status']>().toEqualTypeOf<'draft' | 'published'>();
   expectTypeOf<Parameters<ExportGlb>>().toEqualTypeOf<[input: GlbExportInput]>();
   expectTypeOf<ReturnType<ExportGlb>>().toEqualTypeOf<GlbExportResult>();
+  expectTypeOf(exportInput).toMatchTypeOf<GlbExportInput>();
   expectTypeOf<keyof GlbExportInput>().toEqualTypeOf<
-    'resolved' | 'anchors' | 'palette' | 'appearance' | 'finish' | 'asset' | 'revolveFacets'
+    'resolved' | 'palette' | 'appearance' | 'finish' | 'asset' | 'revolveFacets'
   >();
-  expectTypeOf<GlbExportInput['anchors']>().toEqualTypeOf<SelectedAnchors>();
   expectTypeOf<Parameters<Suggest>>().toEqualTypeOf<
     [
       design: Design,
@@ -307,7 +373,6 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expectTypeOf(cleanLoad).toMatchTypeOf<DesignLoadResult>();
   expectTypeOf(draftLoad).toMatchTypeOf<DesignLoadResult>();
   expectTypeOf(failedLoad).toMatchTypeOf<DesignLoadResult>();
-  expectTypeOf(exportInput.anchors).toEqualTypeOf<SelectedAnchors>();
   expectTypeOf(exportSuccess).toMatchTypeOf<GlbExportResult>();
   expectTypeOf(exportFailure).toMatchTypeOf<GlbExportResult>();
   expectTypeOf(effectiveLocks).toMatchTypeOf<EffectiveSuggestionLocks>();
@@ -316,7 +381,11 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   const sourceRoot = fileURLToPath(new URL('../src/', import.meta.url));
   const coreRoot = join(sourceRoot, 'core');
   const gunRoot = join(sourceRoot, 'gun');
-  expect(await findGunImport(typeScriptFiles(coreRoot), sourceRoot, gunRoot)).toBeUndefined();
+  const coreFiles = typeScriptFiles(coreRoot);
+  expect(await findGunImport(coreFiles, sourceRoot, gunRoot)).toBeUndefined();
+  expect(findForbiddenCoreIdentifier(coreFiles)).toBeUndefined();
+  expect(findForbiddenIdentifier('// grip\nconst label = "deadvox"; /* clamp */')).toBeUndefined();
+  expect(findForbiddenIdentifier('const grip = 1;')).toBe('grip');
   const fixtureViolations = await scanImportFixtures();
   expect(fixtureViolations.sideEffect).toContain(fixtureViolations.target);
   expect(fixtureViolations.templateLiteral).toContain(fixtureViolations.target);
