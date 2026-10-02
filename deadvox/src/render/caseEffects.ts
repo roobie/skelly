@@ -20,7 +20,8 @@ interface Particle {
   spin: Vector3;
   caseModelId: string | undefined;
   visual: Object3D | undefined;
-  usingFallback: boolean;
+  readonly visuals: Map<string, Object3D>;
+  readonly fallbackModels: Set<string>;
 }
 
 const normalize = (v: Vector3): Vector3 => (v.lengthSq() > 0 ? v.normalize() : new Vector3(0, 0, -1));
@@ -39,7 +40,8 @@ export class CaseEffects {
     spin: new Vector3(),
     caseModelId: undefined,
     visual: undefined,
-    usingFallback: false,
+    visuals: new Map(),
+    fallbackModels: new Set(),
   }));
 
   constructor(blockSize: number, models?: ModelLibrary) {
@@ -99,24 +101,42 @@ export class CaseEffects {
   }
 
   private installVisual(particle: Particle): void {
-    const model = resolveCaseModel(this.models, particle.caseModelId);
-    particle.visual = model ?? placeholderCaseMesh();
-    particle.usingFallback = model === undefined;
-    this.mesh.add(particle.visual);
+    const key = particle.caseModelId ?? '';
+    let visual = particle.visuals.get(key);
+    if (!visual) {
+      visual = resolveCaseModel(this.models, particle.caseModelId) ?? placeholderCaseMesh();
+      particle.visuals.set(key, visual);
+      if (particle.caseModelId !== undefined && !this.models?.has(particle.caseModelId)) {
+        particle.fallbackModels.add(key);
+      }
+      this.mesh.add(visual);
+    }
+    for (const [modelId, candidate] of particle.visuals) {
+      candidate.visible = modelId === key;
+    }
+    particle.visual = visual;
   }
 
   private upgradeVisual(particle: Particle): void {
-    if (!particle.usingFallback || particle.caseModelId === undefined || !this.models?.has(particle.caseModelId)) {
-      return;
-    }
-    if (particle.visual) {
-      this.mesh.remove(particle.visual);
-    }
-    const model = resolveCaseModel(this.models, particle.caseModelId);
-    particle.visual = model;
-    particle.usingFallback = particle.visual === undefined;
-    if (particle.visual) {
-      this.mesh.add(particle.visual);
+    for (const key of particle.fallbackModels) {
+      if (!key || !this.models?.has(key)) {
+        continue;
+      }
+      const model = resolveCaseModel(this.models, key);
+      if (!model) {
+        continue;
+      }
+      const fallback = particle.visuals.get(key);
+      if (fallback) {
+        fallback.visible = false;
+        this.mesh.remove(fallback);
+      }
+      particle.visuals.set(key, model);
+      particle.fallbackModels.delete(key);
+      this.mesh.add(model);
+      if (particle.caseModelId === key) {
+        particle.visual = model;
+      }
     }
   }
 
@@ -160,20 +180,26 @@ export class CaseEffects {
 
   dispose(): void {
     this.mesh.clear();
+    for (const particle of this.particles) {
+      particle.active = false;
+      particle.visual = undefined;
+      particle.visuals.clear();
+      particle.fallbackModels.clear();
+    }
   }
 
   private draw(): void {
     for (const particle of this.particles) {
       if (!particle.active) {
         if (particle.visual) {
-          this.mesh.remove(particle.visual);
-          particle.visual = undefined;
+          particle.visual.visible = false;
         }
         continue;
       }
-      if (!particle.visual) {
+      if (!particle.visual || !particle.visuals.has(particle.caseModelId ?? '')) {
         this.installVisual(particle);
       }
+      particle.visual!.visible = true;
       particle.visual!.position.copy(particle.position);
       particle.visual!.rotation.set(particle.rotation.x, particle.rotation.y, particle.rotation.z);
     }

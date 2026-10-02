@@ -3,7 +3,7 @@
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
-import { Box3, Group, MathUtils, Object3D, Vector3 } from 'three';
+import { Box3, Group, MathUtils, Matrix4, Mesh, type BufferGeometry, type Material, Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 
@@ -14,8 +14,16 @@ const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
   ).map(([path, url]) => [path.replace('../content/base/', ''), url]),
 );
 
+export interface GroundModelPart {
+  readonly geometry: BufferGeometry;
+  readonly material: Material | Material[];
+  /** Transform from the prepared ground-model root to this mesh. */
+  readonly matrix: Matrix4;
+}
+
 interface Prepared {
   ground: Object3D;
+  groundParts: readonly GroundModelPart[];
   held: Object3D;
 }
 
@@ -54,12 +62,19 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   turned.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
   turned.rotateX(MathUtils.degToRad(def.roll ?? 0));
   const held = new Group().add(turned);
+  ground.updateMatrixWorld(true);
+  const groundParts: GroundModelPart[] = [];
+  ground.traverse((object) => {
+    if (object instanceof Mesh && object.visible) {
+      groundParts.push({ geometry: object.geometry, material: object.material, matrix: object.matrixWorld.clone() });
+    }
+  });
   if (def.hold === 'upright') {
     held.rotation.z = Math.PI / 2;
   } else {
     held.rotation.y = Math.PI / 2;
   }
-  return { ground, held };
+  return { ground, groundParts, held };
 };
 
 export class ModelLibrary {
@@ -94,6 +109,11 @@ export class ModelLibrary {
 
   has(id: string): boolean {
     return this.ready.has(id);
+  }
+
+  /** Shared geometry/material parts and their prepared-ground transforms for instanced rendering. */
+  groundParts(id: string): readonly GroundModelPart[] | undefined {
+    return this.ready.get(id)?.groundParts;
   }
 
   /** A copy lying on the ground: centred over its origin, resting on y = 0, its long side along x. */
