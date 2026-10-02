@@ -80,7 +80,7 @@ describe('7.62x39', () => {
     expect(unsourcedPaths(cartridge)).toEqual(['case.primer.diameter']);
   });
 
-  it('cites C.I.P. for every primary case and bullet dimension and records SAAMI as the alternative', () => {
+  it('cites C.I.P. for every primary case and bullet dimension', () => {
     const { measures } = collectNodes(cartridge);
     const fromElsewhere = ['overallLength.typical', 'payload.length.min', 'payload.length.max'];
     const dimensions = measures.filter(
@@ -90,8 +90,11 @@ describe('7.62x39', () => {
     for (const { path, node } of dimensions) {
       expect(node.cite?.source, path).toBe('cip');
     }
+  });
+
+  it('records SAAMI as the alternative for the rim diameter', () => {
+    const { measures } = collectNodes(cartridge);
     const rimDiameter = measures.find(({ path }) => path === 'case.rim.diameter')?.node;
-    expect(rimDiameter?.cite?.source).toBe('cip');
     expect(rimDiameter?.alternatives?.map((alt) => alt.cite.source)).toEqual(['saami']);
   });
 
@@ -164,25 +167,33 @@ describe('relations between cartridges', () => {
     expect(rem.relatedTo.map((r) => r.relation)).not.toContain('unsafe-in-chamber-of');
   });
 
-  it('refuses a pair declared both safe and unsafe, an unknown cartridge and a self-reference', () => {
-    const both = syntheticNamed('rimmed-straight', 'synthetic-a', [
+  it('refuses a pair declared both safe and unsafe', () => {
+    const a = syntheticNamed('rimmed-straight', 'synthetic-a', [
       { cartridge: 'synthetic-b', relation: 'safe-in-chamber-of' },
       { cartridge: 'synthetic-b', relation: 'unsafe-in-chamber-of' },
     ]);
-    const other = syntheticNamed('rimmed-straight', 'synthetic-b', [
+    const b = syntheticNamed('rimmed-straight', 'synthetic-b');
+    expect(checkRelations([a, b]).map((issue) => `${issue.rule} ${issue.path}: ${issue.message}`)).toEqual([
+      "relations synthetic-a.relatedTo: 'synthetic-a' is declared both safe and unsafe in the chamber of 'synthetic-b'",
+    ]);
+  });
+
+  it('refuses a relation to a cartridge that is not in the set', () => {
+    const a = syntheticNamed('rimmed-straight', 'synthetic-a', [
       { cartridge: 'synthetic-missing', relation: 'same-external-dimensions' },
-      { cartridge: 'synthetic-b', relation: 'same-external-dimensions' },
     ]);
-    const found = checkRelations([both, other]);
-    expect(found.map((issue) => `${issue.rule} ${issue.path}`).sort()).toEqual([
-      'relations synthetic-a.relatedTo',
-      'relations synthetic-b.relatedTo[0]',
-      'relations synthetic-b.relatedTo[1]',
+    expect(checkRelations([a]).map((issue) => `${issue.rule} ${issue.path}: ${issue.message}`)).toEqual([
+      "relations synthetic-a.relatedTo[0]: unknown cartridge 'synthetic-missing'",
     ]);
-    const messages = found.map((issue) => issue.message).join('\n');
-    expect(messages).toContain('both safe and unsafe');
-    expect(messages).toContain("unknown cartridge 'synthetic-missing'");
-    expect(messages).toContain('related to itself');
+  });
+
+  it('refuses a cartridge related to itself', () => {
+    const a = syntheticNamed('rimmed-straight', 'synthetic-a', [
+      { cartridge: 'synthetic-a', relation: 'same-external-dimensions' },
+    ]);
+    expect(checkRelations([a]).map((issue) => `${issue.rule} ${issue.path}: ${issue.message}`)).toEqual([
+      'relations synthetic-a.relatedTo[0]: a cartridge cannot be related to itself',
+    ]);
   });
 });
 
@@ -359,13 +370,19 @@ describe('parse', () => {
     expect(() => parseCartridge(hostile)).toThrow('boom');
   });
 
-  it('refuses an unknown kind and format, and any head type it does not model (belted, rebated, semi-rimmed)', () => {
+  it('refuses an unknown kind', () => {
     expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), kind: 'rimfire' })).toBe(
       "kind: expected one of metallic, shotshell; got 'rimfire'",
     );
+  });
+
+  it('refuses a format version this reader does not understand', () => {
     expect(parseErrorOf({ ...syntheticJson('rimmed-straight'), format: 2 })).toBe(
       'format: unsupported format 2; this reader understands 1',
     );
+  });
+
+  it('refuses any head type it does not model (flanged, belted, rebated, semi-rimmed)', () => {
     for (const type of ['flanged', 'belted', 'rebated', 'semi-rimmed']) {
       expect(parseErrorOf(edited('rimmed-straight', 'case.head.type', type)), type).toBe(
         `case.head.type: expected one of rimless, rimmed; got '${type}'`,
@@ -677,13 +694,16 @@ describe('rules at their edges', () => {
     }
   });
 
-  it('accepts only an http(s) URL for a real source, and any text for a synthetic one', () => {
+  it('accepts only an http(s) URL for a real source', () => {
     for (const url of ['ftp://example.org/x', 'see the library', ' https://example.org', 'xhttps://example.org']) {
       expect(sourceIssues({ reliability: 'standard', url }), url).toEqual(['sources sources.synthetic.url']);
     }
     for (const url of ['http://example.org/x', 'https://example.org/x']) {
       expect(sourceIssues({ reliability: 'standard', url }), url).toEqual([]);
     }
+  });
+
+  it('accepts any text as the URL of a synthetic source', () => {
     expect(sourceIssues({ url: 'none' })).toEqual([]);
   });
 
