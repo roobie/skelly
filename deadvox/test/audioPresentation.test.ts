@@ -6,7 +6,12 @@ describe('firearm audio presentation', () => {
     expect(firearmShotSound('debug_rifle_assault')).toEqual({
       event: 'gunshot',
       sourceLabel: 'debug_rifle_assault',
+      listenerRelative: true,
     });
-    expect(firearmShotSound('future_weapon')).toEqual({ event: 'gunshot', sourceLabel: 'future_weapon' });
+    expect(firearmShotSound('future_weapon', 'actor')).toEqual({
+      event: 'gunshot',
+      sourceLabel: 'future_weapon',
+      listenerRelative: false,
+    });
   });
 });

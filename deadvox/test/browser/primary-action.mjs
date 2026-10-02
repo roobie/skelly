@@ -74,10 +74,11 @@ try {
   await page.goto(
     `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
+  // Save discovery is asynchronous; a visible #go can still ignore a startup click.
+  await page.waitForFunction(() =>
+    (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+  );
   await page.locator('#go').click();
-  if (!(await page.evaluate(() => document.querySelector('#overlay')?.hidden))) {
-    await page.locator('#go').click();
-  }
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
   } catch (error) {
@@ -405,9 +406,11 @@ try {
   assert.equal(firearmAction.gunshot?.event, 'gunshot');
   assert.match(firearmAction.gunshot?.file ?? '', /^assets\/audio\/gunshot-akm-0[12]\.ogg$/);
   assert.equal(firearmAction.gunshot?.sourceLabel, 'debug_rifle_assault');
+  assert.equal(firearmAction.gunshot?.distanceMetres, 0, 'the player gunshot is head-locked, not left at the muzzle');
+  assert.equal(firearmAction.gunshot?.lowpassHz, null, 'the player gunshot bypasses world occlusion');
   assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
   process.stdout.write(
-    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, and positioned AKM shot audio.\n',
+    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, and head-locked AKM shot audio.\n',
   );
 } finally {
   await browser?.close();

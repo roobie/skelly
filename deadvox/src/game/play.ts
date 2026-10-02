@@ -45,7 +45,7 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
-import { GameAudio } from './audio.ts';
+import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
 import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { mountControlsCard } from './controls.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
@@ -127,12 +127,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
   });
   document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
-  const playSessionSound = (
-    event: SoundEventId,
-    position: Vec3,
-    time: number,
-    meta: { emittedAsNoise?: boolean; sourceLabel?: string | null },
-  ) => audio.play(event, position.map((v) => v * s) as Vec3, time, meta);
+  const playSessionSound = (event: SoundEventId, position: Vec3, time: number, meta: SoundPlaybackMeta) =>
+    audio.play(event, position.map((v) => v * s) as Vec3, time, meta);
 
   // ---- simulation ----
 
@@ -876,7 +872,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         if (effect) {
           caseEffects.spawn(effect);
           const shot = firearmShotSound(action.item.type);
-          playSessionSound(shot.event, chest(), sim.time, { sourceLabel: shot.sourceLabel });
+          playSessionSound(shot.event, chest(), sim.time, shot);
         } else {
           showNotice('Firearms can only be fired in debug mode');
         }

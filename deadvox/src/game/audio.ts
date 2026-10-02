@@ -18,9 +18,17 @@ export interface AudioVolumes {
 
 const DEFAULT_VOLUMES: AudioVolumes = { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 };
 const VOICE_CAPS = new Map<SoundEventId, number>([
-  ['gunshot', 4],
-  ['gunshot_pbs1_reference', 4],
+  ['gunshot', 32],
+  ['gunshot_pbs1_reference', 32],
 ]);
+const VOICE_FADE_SECONDS = 0.01;
+
+interface Voice {
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  finish: () => void;
+}
+
 const clampVolume = (value: number): number => Math.max(0, Math.min(1, value));
 
 const readVolumes = (): AudioVolumes => {
@@ -65,6 +73,8 @@ export interface GameAudioOptions {
 }
 
 export interface SoundPlaybackMeta {
+  /** First-person playback bypasses world panning/occlusion, but retains its category volume. */
+  listenerRelative?: boolean;
   emittedAsNoise?: boolean;
   sourceLabel?: string | null;
 }
@@ -92,7 +102,7 @@ interface SourceStartOptions {
   positionMetres: Vec3;
   emittedAsNoise: boolean;
   sourceLabel: string | null;
-  releaseVoice: () => void;
+  listenerRelative: boolean;
 }
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
@@ -110,7 +120,9 @@ export class GameAudio {
   private readonly isSolid: SolidAt;
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
-  private readonly voiceCounts = new Map<SoundEventId, number>();
+  private readonly voices = new Map<SoundEventId, Set<Voice>>();
+  // At most one crossfade tail per capped event, even before WebAudio delivers onended.
+  private readonly retiring = new Map<SoundEventId, Voice>();
 
   constructor({ registry, seed, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
@@ -194,9 +206,9 @@ export class GameAudio {
   }
 
   play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, metadata: SoundPlaybackMeta = {}): boolean {
-    const { emittedAsNoise = false, sourceLabel = null } = metadata;
+    const { emittedAsNoise = false, sourceLabel = null, listenerRelative = false } = metadata;
     const sound = this.registry.sounds.get(event);
-    if (!(sound && this.hasVoiceCapacity(event))) {
+    if (!sound) {
       return false;
     }
     const pick = this.picker.pick(event, simulationTime);
@@ -212,13 +224,8 @@ export class GameAudio {
     }
     const { context, nodes } = this;
     if (context && nodes && context.state === 'running') {
-      const releaseVoice = this.reserveVoice(event);
-      if (!releaseVoice) {
-        return false;
-      }
       this.loadBuffer(context, pick.file, url).then((buffer) => {
         if (!buffer || this.context !== context || context.state !== 'running') {
-          releaseVoice();
           return;
         }
         this.startSource({
@@ -231,7 +238,7 @@ export class GameAudio {
           positionMetres,
           emittedAsNoise,
           sourceLabel,
-          releaseVoice,
+          listenerRelative,
         });
       });
     }
@@ -254,13 +261,8 @@ export class GameAudio {
     }
     const pick = { file, gain: sound.gain, pitch: 1 };
     const positionMetres = [...this.listenerPosition] as Vec3;
-    const releaseVoice = this.reserveVoice(event);
-    if (!releaseVoice) {
-      return false;
-    }
     this.loadBuffer(context, file, url).then(async (buffer) => {
       if (!buffer || this.context !== context) {
-        releaseVoice();
         return;
       }
       if (context.state !== 'running') {
@@ -281,43 +283,33 @@ export class GameAudio {
           positionMetres,
           emittedAsNoise: false,
           sourceLabel: null,
-          releaseVoice,
+          listenerRelative: true,
         });
-      } else {
-        releaseVoice();
       }
     });
     return true;
   }
 
-  private hasVoiceCapacity(event: SoundEventId): boolean {
+  /** Admission happens after decoding: pending loads never consume playback slots. */
+  private stealOldestVoice(event: SoundEventId, context: AudioContext): void {
     const cap = VOICE_CAPS.get(event);
-    return cap === undefined || (this.voiceCounts.get(event) ?? 0) < cap;
-  }
-
-  /** Counts pending decodes as voices too, so a burst cannot queue unbounded sources. */
-  private reserveVoice(event: SoundEventId): (() => void) | undefined {
-    if (!this.hasVoiceCapacity(event)) {
-      return undefined;
+    const active = this.voices.get(event);
+    if (cap === undefined || !active || active.size < cap) {
+      return;
     }
-    const cap = VOICE_CAPS.get(event);
-    if (cap === undefined) {
-      return () => undefined;
+    const oldest = active.values().next().value!;
+    // A cold decode burst can deliver several shots in one render quantum. Bound tails too.
+    const previousTail = this.retiring.get(event);
+    if (previousTail) {
+      previousTail.source.stop();
+      previousTail.finish();
     }
-    this.voiceCounts.set(event, (this.voiceCounts.get(event) ?? 0) + 1);
-    let released = false;
-    return () => {
-      if (released) {
-        return;
-      }
-      released = true;
-      const remaining = (this.voiceCounts.get(event) ?? 1) - 1;
-      if (remaining === 0) {
-        this.voiceCounts.delete(event);
-      } else {
-        this.voiceCounts.set(event, remaining);
-      }
-    };
+    active.delete(oldest);
+    this.retiring.set(event, oldest);
+    const now = context.currentTime;
+    oldest.gain.gain.setValueAtTime(oldest.gain.gain.value, now);
+    oldest.gain.gain.linearRampToValueAtTime(0, now + VOICE_FADE_SECONDS);
+    oldest.source.stop(now + VOICE_FADE_SECONDS);
   }
 
   private applyVolumes(): void {
@@ -370,8 +362,9 @@ export class GameAudio {
     positionMetres,
     emittedAsNoise,
     sourceLabel,
-    releaseVoice,
+    listenerRelative,
   }: SourceStartOptions): void {
+    this.stealOldestVoice(event, context);
     const source = context.createBufferSource();
     const gain = context.createGain();
     source.buffer = buffer;
@@ -383,19 +376,19 @@ export class GameAudio {
     const category = nodes.categories.get(sound.category)!;
     const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
     const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
-    const uiSound = sound.category === 'ui';
-    const occlusion = uiSound
+    const headLocked = listenerRelative || sound.category === 'ui';
+    const occlusion = headLocked
       ? { wallRuns: 0, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
       : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
-    const distanceMetres = uiSound
+    const distanceMetres = headLocked
       ? 0
       : Math.hypot(
           positionMetres[0] - this.listenerPosition[0],
           positionMetres[1] - this.listenerPosition[1],
           positionMetres[2] - this.listenerPosition[2],
         );
-    const distanceGain = uiSound ? 1 : 1 / Math.max(1, Math.min(64, distanceMetres));
-    if (uiSound) {
+    const distanceGain = headLocked ? 1 : 1 / Math.max(1, Math.min(64, distanceMetres));
+    if (headLocked) {
       gain.connect(category);
     } else {
       const filter = context.createBiquadFilter();
@@ -422,12 +415,34 @@ export class GameAudio {
       wallGain.connect(panner);
       panner.connect(category);
     }
-    source.onended = () => {
-      releaseVoice();
-      for (const node of connectedNodes) {
-        node.disconnect();
-      }
+    let finished = false;
+    const voice: Voice = {
+      source,
+      gain,
+      finish: () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        const active = this.voices.get(event);
+        active?.delete(voice);
+        if (active?.size === 0) {
+          this.voices.delete(event);
+        }
+        if (this.retiring.get(event) === voice) {
+          this.retiring.delete(event);
+        }
+        for (const node of connectedNodes) {
+          node.disconnect();
+        }
+      },
     };
+    if (VOICE_CAPS.has(event)) {
+      const active = this.voices.get(event) ?? new Set<Voice>();
+      active.add(voice);
+      this.voices.set(event, active);
+    }
+    source.onended = voice.finish;
     source.start();
     this.recentSounds.push({
       event,
@@ -435,7 +450,7 @@ export class GameAudio {
       sourceLabel,
       distanceMetres,
       wallRuns: occlusion.wallRuns,
-      lowpassHz: uiSound ? null : occlusion.cutoffHz,
+      lowpassHz: headLocked ? null : occlusion.cutoffHz,
       gain: pick.gain * occlusion.gain * this.volumes.master * this.volumes[sound.category] * distanceGain,
       emittedAsNoise,
       noiseRadiusMetres: emittedAsNoise && sound.noise.enabled ? sound.noise.radiusMetres : null,
