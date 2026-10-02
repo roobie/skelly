@@ -1,11 +1,11 @@
 // Presentation-only action-cycle controls. Timelines and motion profiles stay in the gun domain module.
 
-import type { Group, Mesh, MeshStandardMaterial, Object3D } from 'three';
+import { ArrowHelper, type Group, type Mesh, type MeshStandardMaterial, type Object3D, Vector3 } from 'three';
 import { applyDir } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
-import { type CycleTimeline, cycleMotion, sweepMovingPart } from '../gun/cycle.ts';
+import { type CycleTimeline, cycleMotion, ejectionPoint, sweepMovingPart } from '../gun/cycle.ts';
 
-const SPEEDS = [1, 0.25, 0.1, 0.03] as const;
+const SPEEDS = [1, 0.25, 0.1, 0.02] as const;
 const XRAY_OPACITY = 0.2;
 const STEP_SECONDS = 0.01;
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -34,12 +34,22 @@ export const createCycleView = (): CycleView => {
   for (const speed of SPEEDS) {
     speedSelect.add(new Option(speed === 1 ? 'Real time' : `${speed * 100}% speed`, String(speed)));
   }
+  const query = new URLSearchParams(location.search);
+  const requestedMode = query.get('cycle');
+  if (requestedMode === 'fire' || requestedMode === 'hand') {
+    modeSelect.value = requestedMode;
+  }
+  const requestedSpeed = Number(query.get('cycleSpeed'));
+  if (SPEEDS.some((speed) => speed === requestedSpeed)) {
+    speedSelect.value = String(requestedSpeed);
+  }
 
   let timeline: CycleTimeline | undefined;
   let movers: Mover[] = [];
   let faded: Mesh[] = [];
   let boundSolids: Group | undefined;
   let boundResolved: Resolved | undefined;
+  let ejectionArrow: ArrowHelper | undefined;
   let strokeUnits = 0;
   let millimetresPerUnit = 11.5;
   let timeSeconds = 0;
@@ -104,7 +114,47 @@ export const createCycleView = (): CycleView => {
     }
   };
 
+  const clearEjectionArrow = () => {
+    if (!ejectionArrow) {
+      return;
+    }
+    ejectionArrow.parent?.remove(ejectionArrow);
+    ejectionArrow.line.geometry.dispose();
+    ejectionArrow.line.material.dispose();
+    ejectionArrow.cone.geometry.dispose();
+    ejectionArrow.cone.material.dispose();
+    ejectionArrow = undefined;
+  };
+
+  const syncCycleQuery = () => {
+    const params = new URLSearchParams(location.search);
+    params.set('cycle', modeSelect.value);
+    params.set('cycleSpeed', speedSelect.value);
+    const search = params.toString();
+    history.replaceState(null, '', search ? `?${search}` : location.pathname);
+  };
+
+  const drawEjectionArrow = (solids: Group, resolved: Resolved, cycle: CycleTimeline) => {
+    if (cycle.mode !== 'fire') {
+      return;
+    }
+    const point = ejectionPoint(resolved);
+    if (!point) {
+      return;
+    }
+    ejectionArrow = new ArrowHelper(
+      new Vector3(...cycle.ejectDirection),
+      new Vector3(...point),
+      5,
+      0xff_63_47,
+      1.25,
+      0.65,
+    );
+    solids.add(ejectionArrow);
+  };
+
   const bind = (solids: Group, resolved: Resolved) => {
+    clearEjectionArrow();
     boundSolids = solids;
     boundResolved = resolved;
     setPlaying(false);
@@ -127,6 +177,7 @@ export const createCycleView = (): CycleView => {
 
     const cycle = cycleMotion(action, def.motion, resolved.domain.units.metresPerUnit);
     timeline = modeSelect.value === 'hand' ? cycle.hand : cycle.fire;
+    drawEjectionArrow(solids, resolved, timeline);
     millimetresPerUnit = resolved.domain.units.metresPerUnit * 1000;
     ({ strokeUnits } = cycle);
     const worldAxis = applyDir(placed, def.motion.axis);
@@ -153,10 +204,12 @@ export const createCycleView = (): CycleView => {
     playButton.blur();
   });
   modeSelect.addEventListener('change', () => {
+    syncCycleQuery();
     if (boundSolids && boundResolved) {
       bind(boundSolids, boundResolved);
     }
   });
+  speedSelect.addEventListener('change', syncCycleQuery);
   scrub.addEventListener('input', () => {
     setPlaying(false);
     timeSeconds = Number(scrub.value) / 1000;
