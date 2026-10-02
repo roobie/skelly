@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { type MeleeProfile, meleeContactTime, meleePoseAndContact } from '../src/core/meleePose.ts';
+import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
@@ -22,7 +22,7 @@ const gltfLoader = new GLTFLoader(new LoadingManager());
 gltfLoader.register(() => ({ name: 'audit-textures', loadTexture: () => Promise.resolve(new Texture()) }));
 const realHeldModels = new Map<string, import('three').Object3D>();
 await Promise.all(
-  ['baseball_bat', 'steel_pipe', 'kitchen_knife'].map(async (id) => {
+  ['baseball_bat', 'steel_pipe', 'kitchen_knife', 'machete', 'kabar'].map(async (id) => {
     const def = registry.models.get(id)!;
     const bytes = readFileSync(`${BASE}/${def.file}`);
     const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '');
@@ -41,6 +41,16 @@ const boxCorners = (box: Box3): Vector3[] =>
   [box.min.x, box.max.x].flatMap((x) =>
     [box.min.y, box.max.y].flatMap((y) => [box.min.z, box.max.z].map((z) => new Vector3(x, y, z))),
   );
+const weaponRollDegrees = (rest: Quaternion, current: Quaternion): number => {
+  const restLong = new Vector3(1, 0, 0).applyQuaternion(rest).normalize();
+  const currentLong = new Vector3(1, 0, 0).applyQuaternion(current).normalize();
+  const restEdge = new Vector3(0, 1, 0).applyQuaternion(rest).normalize();
+  const currentEdge = new Vector3(0, 1, 0).applyQuaternion(current).normalize();
+  const swing = new Quaternion().setFromUnitVectors(restLong, currentLong);
+  const expectedEdge = restEdge.applyQuaternion(swing);
+  const sin = currentLong.dot(expectedEdge.clone().cross(currentEdge));
+  return Math.abs(Math.atan2(sin, expectedEdge.dot(currentEdge))) * (180 / Math.PI);
+};
 
 interface HeldInternals {
   view: import('three').Group;
@@ -67,9 +77,11 @@ interface MotionResult {
   maxTorsoYawDegrees: number;
   cameraOrientationChange: number;
   pullToContactRotationDegrees: number;
+  maxWeaponRollDegrees: number;
   minPalmDepth: number;
   palmAreaAtContact: Readonly<Record<'left' | 'right', number>>;
   maxPalmArea: Readonly<Record<'left' | 'right', number>>;
+  tipStaysInViewport: boolean;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: measures real loaded models and every rendered palm across one full action.
@@ -118,11 +130,16 @@ function measure(
   const sampleTimes = [
     ...new Set([...Array.from({ length: 121 }, (_, step) => (cooldown * step) / 120), pullTime, contactAt, followTime]),
   ].sort((a, b) => a - b);
+  held.update(camera, readyMeleePose(true));
+  internals.view.updateMatrixWorld(true);
+  const weaponTransform = internals.heldByHand.get(side)?.children[0];
+  const restOrientation = weaponTransform?.getWorldQuaternion(new Quaternion());
   const samples: MotionSample[] = [];
   let minPalmDepth = Number.POSITIVE_INFINITY;
   let maxTorsoYawRadians = 0;
   let cameraOrientationChange = 0;
   let torsoYawAtContactRadians = 0;
+  let maxWeaponRollDegrees = 0;
   const palmAreaAtContact: Record<'left' | 'right', number> = { left: 0, right: 0 };
   const maxPalmArea: Record<'left' | 'right', number> = { left: 0, right: 0 };
   for (const elapsed of sampleTimes) {
@@ -142,6 +159,10 @@ function measure(
       throw new Error(`Held ${item.type} did not expose its real GLB lens`);
     }
     const atContact = Math.abs(elapsed - contactAt) < 1e-8;
+    const orientation = weaponTransform?.getWorldQuaternion(new Quaternion());
+    if (orientation && restOrientation) {
+      maxWeaponRollDegrees = Math.max(maxWeaponRollDegrees, weaponRollDegrees(restOrientation, orientation));
+    }
     for (const [armSide, arm] of internals.arms) {
       const palm = arm.children[2]!;
       const corners = boxCorners(new Box3().setFromObject(palm));
@@ -165,13 +186,12 @@ function measure(
       tip,
       hand,
       elapsed,
-      ...(internals.heldByHand.get(side)
-        ? { orientation: internals.heldByHand.get(side)!.getWorldQuaternion(new Quaternion()) }
-        : {}),
+      ...(orientation ? { orientation } : {}),
     });
   }
   const pixels = samples.map(({ tip }) => screen(tip, camera));
   const xs = pixels.map(({ x }) => x);
+  const tipStaysInViewport = pixels.every(({ x, y }) => x >= 0 && x <= 1920 && y >= 0 && y <= 1080);
   let diagonal = 0;
   for (const from of pixels) {
     for (const to of pixels) {
@@ -205,9 +225,11 @@ function measure(
     maxTorsoYawDegrees: maxTorsoYawRadians * (180 / Math.PI),
     cameraOrientationChange,
     pullToContactRotationDegrees,
+    maxWeaponRollDegrees,
     minPalmDepth,
     palmAreaAtContact,
     maxPalmArea,
+    tipStaysInViewport,
   };
 }
 
@@ -242,6 +264,25 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
     }
   });
 
+  it('slashes the real machete through the viewport with centred contact in either hand', () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = measure('cut', 'machete', undefined, side);
+      expect(result.diagonal, side).toBeGreaterThanOrEqual(Math.hypot(1920, 1080) * 0.35);
+      expect(result.forward, side).toBeGreaterThanOrEqual(0.069);
+      expect(result.tipCenterAtContact, side).toBeLessThanOrEqual(350);
+      expect(result.tipStaysInViewport, side).toBe(true);
+    }
+  });
+
+  it('slashes the real Kabar with centred contact inside the viewport in either hand', () => {
+    for (const side of ['right', 'left'] as const) {
+      const result = measure('cut', 'kabar', undefined, side);
+      expect(result.forward, side).toBeGreaterThanOrEqual(0.069);
+      expect(result.tipCenterAtContact, side).toBeLessThanOrEqual(350);
+      expect(result.tipStaysInViewport, side).toBe(true);
+    }
+  });
+
   it('thrusts the real steel pipe forward by 0.35 m and visibly shrinks it in either hand', () => {
     for (const side of ['right', 'left'] as const) {
       const result = measure('pierce', 'steel_pipe', undefined, side);
@@ -262,10 +303,21 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
     }
   });
 
+  it('keeps the blade edge within 10 degrees of its rest roll through the whole cut in either hand', () => {
+    for (const item of ['machete', 'kabar', 'kitchen_knife']) {
+      for (const side of ['right', 'left'] as const) {
+        const result = measure('cut', item, undefined, side);
+        expect(result.maxWeaponRollDegrees, `${item}/${side}, all 121 frames`).toBeLessThanOrEqual(10);
+      }
+    }
+  });
+
   it('keeps both rendered palms beyond the near plane and below 40% of the view at contact', () => {
     const profiles = [
       ['blunt', 'baseball_bat', undefined],
       ['cut', 'kitchen_knife', undefined],
+      ['cut', 'machete', undefined],
+      ['cut', 'kabar', undefined],
       ['pierce', 'steel_pipe', undefined],
       ['fists', undefined, undefined],
     ] as const;

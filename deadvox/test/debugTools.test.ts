@@ -158,6 +158,8 @@ describe('debug starting equipment', () => {
     const inventory = new Inventory(extendedRegistry);
     const expected = debugWeaponIds(extendedRegistry);
     expect(expected).toContain('debug_test_melee');
+    expect(expected).toContain('machete');
+    expect(expected).toContain('kabar');
     equipDebugStartWeapons({ inventory, debugMode: true, newGame: true });
 
     const backpack = inventory.worn.back;
