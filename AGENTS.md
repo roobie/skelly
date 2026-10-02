@@ -17,15 +17,15 @@ mattering at v1.0 beta.
 
 Every coordinated work item (agent mail `X-Item`, branch, PR) has an ID:
 
-- **Item:** `<subproject><number>`, one unit of work that becomes one PR on one
-  branch. Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs.
-  Numbers count up per subproject. New work always gets a new number, even when it
-  grows out of another item.
-- **Round:** BR's feedback, review fixes or a main merge on the same branch is a new
-  round, written `g26-2`, `g26-3`; round 1 is plain `g26`.
-- **Review:** `cr-` plus the exact round reviewed: `cr-g26`, `cr-g26-2`. Fixes after a
-  review are the next round, so each review has one target.
-- **PR titles** end with the item ID, e.g. "(g26)".
+- **Feature:** `<subproject><number>`, one feature that becomes one PR on one branch.
+  Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs. Numbers
+  count up per subproject. New work always gets a new number, even when it grows
+  out of another feature. PR titles end with it, e.g. "(g26)".
+- **Round:** each dispatched piece of work on a feature is a round, and the round
+  is the mail item: `g26-1`, `g26-2`, … The first round is always `-1`; BR's
+  feedback, review fixes or a main merge start the next one.
+- **Review:** `cr-` plus the exact round reviewed: `cr-g26-1`, `cr-g26-2`. Fixes
+  after a review are the next round, so each review has one target.
 
 IDs from before 2026-10-02 used letter suffixes (`g25b`, `g29c`) and keep them.
 
