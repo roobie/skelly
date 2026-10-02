@@ -130,7 +130,14 @@ try {
       ws.send(JSON.stringify({ id: requestId, method, params }));
     });
   const evaluate = async (expression) => {
-    const result = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    let result;
+    try {
+      result = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    } catch (error) {
+      throw new Error(`CDP evaluate failed: ${String(error)}; expression=${expression.slice(0, 180)}`, {
+        cause: error,
+      });
+    }
     if (result.exceptionDetails) {
       throw new Error(result.exceptionDetails.text);
     }
@@ -288,18 +295,16 @@ try {
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
   })()`);
-  await delay(150);
-  assert.equal(
-    await evaluate(`(() => {
+  const emptyQuickbarReady = () =>
+    evaluate(`(() => {
       const slots = [...document.querySelectorAll('#quickbar .qb-empty')];
       return slots.length === 5 && slots.every((slot) => {
         const text = slot.textContent.toLowerCase();
         return text.includes('empty') && !text.includes('inventory');
       });
-    })()`),
-    true,
-    'rendered empty quickbar slots contain no inventory help text',
-  );
+    })()`);
+  await waitFor(emptyQuickbarReady, 'rendered empty quickbar slots');
+  assert.equal(await emptyQuickbarReady(), true, 'rendered empty quickbar slots contain no inventory help text');
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
   const moveCursorTo = async (position) => {
     await evaluate(`(() => {
@@ -359,7 +364,7 @@ try {
         blend: style.mixBlendMode,
         rootBlend: getComputedStyle(document.querySelector('#game-cursor-root')).mixBlendMode,
       };
-    })()`);
+    })(); undefined`);
     await dispatchPointer('pointerdown', 0, 1);
     await dispatchPointer('pointerup', -1, 0);
     await evaluate(

@@ -10,7 +10,9 @@ import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game
 import { createEngine } from './game/engine.ts';
 import { KEY_BINDINGS } from './game/input.ts';
 import { startPlay } from './game/play.ts';
+import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
+import { SaveController } from './ui/saveController.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
@@ -25,9 +27,40 @@ if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
-  const config = configFromUrl(params);
+  let config = configFromUrl(params);
+  const saveBackend = params.get('save-backend');
+  const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
+  const saveController = new SaveController(backend);
+  const savedWorld = await saveController.prepare();
+  if (params.get('save-test') === '1') {
+    Object.assign(globalThis, {
+      deadvoxSaveTest: {
+        storage: saveController.storage,
+        namespace: saveController.namespace,
+        controller: saveController,
+        triggerPeriodicCheckpoint: () => {
+          (saveController as unknown as { nextAutosaveAt: number }).nextAutosaveAt = 0;
+          saveController.afterFrame();
+        },
+      },
+    });
+  }
+  if (savedWorld) {
+    const resumed = makeConfig(savedWorld.seed, config.radiusM, savedWorld.blockSize);
+    resumed.start = savedWorld.clock.start;
+    resumed.debug = config.debug;
+    resumed.actors = config.actors;
+    resumed.site = savedWorld.site;
+    resumed.storeys = savedWorld.storeys;
+    config = resumed;
+  }
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
-  startPlay(createEngine(config, view), debugModule);
+  const engine = createEngine(config, view);
+  const restored = await saveController.validateContent(engine.registry);
+  startPlay(engine, debugModule, {
+    saveController,
+    ...(saveController.isRestored && restored ? { restore: restored } : {}),
+  });
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(params);
   if (run) {

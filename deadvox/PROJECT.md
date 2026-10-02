@@ -111,6 +111,7 @@ test/          Vitest specs for core, and content and manifest fixtures (fixture
 ```
 npm install
 npm run dev        # http://localhost:5173
+npm run dev:https  # https://<this-machine-lan-ip>:5173 (self-signed, dev-only cert)
 npm test
 npm run validate   # base content; add paths to validate a mod on top
 ```

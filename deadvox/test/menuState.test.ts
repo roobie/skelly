@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeMenuState, type MenuStateInput } from '../src/ui/menuState.ts';
+import { computeMenuState, computeSaveMenuState, type MenuStateInput } from '../src/ui/menuState.ts';
 
 const base: MenuStateInput = {
   started: false,
@@ -315,7 +315,126 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
   },
 ];
 
+describe('title save menu transitions', () => {
+  it.each([
+    {
+      action: 'title' as const,
+      hasCompatibleSave: true,
+      hasSavedData: true,
+      expected: {
+        showTitleControls: true,
+        continueEnabled: true,
+        confirmNewWorld: true,
+        showError: false,
+        continueRequested: false,
+        newWorldRequested: false,
+      },
+    },
+    {
+      action: 'continue' as const,
+      hasCompatibleSave: true,
+      hasSavedData: true,
+      expected: {
+        showTitleControls: false,
+        continueEnabled: false,
+        confirmNewWorld: false,
+        showError: false,
+        continueRequested: true,
+        newWorldRequested: false,
+      },
+    },
+    {
+      action: 'new-world' as const,
+      hasCompatibleSave: false,
+      hasSavedData: false,
+      expected: {
+        showTitleControls: false,
+        continueEnabled: false,
+        confirmNewWorld: false,
+        showError: false,
+        continueRequested: false,
+        newWorldRequested: true,
+      },
+    },
+    {
+      action: 'error' as const,
+      hasCompatibleSave: false,
+      hasSavedData: true,
+      expected: {
+        showTitleControls: false,
+        continueEnabled: false,
+        confirmNewWorld: false,
+        showError: true,
+        continueRequested: false,
+        newWorldRequested: false,
+      },
+    },
+    {
+      action: 'title' as const,
+      hasCompatibleSave: false,
+      hasSavedData: true,
+      storageError: true,
+      expected: {
+        showTitleControls: true,
+        continueEnabled: false,
+        confirmNewWorld: true,
+        showError: true,
+        continueRequested: false,
+        newWorldRequested: false,
+      },
+    },
+  ])('resolves $action with saved-data and error guards', ({ expected, ...input }) => {
+    expect(computeSaveMenuState(input)).toEqual(expected);
+  });
+});
+
+describe('save controls flow through the shared menu state', () => {
+  it('keeps a compatible current-version save continuable while requiring replacement confirmation', () => {
+    const state = computeMenuState({
+      ...base,
+      saveMenu: { action: 'title', hasCompatibleSave: true, hasSavedData: true },
+    });
+    expect(state.saveMenu).toEqual({
+      showTitleControls: true,
+      continueEnabled: true,
+      confirmNewWorld: true,
+      showError: false,
+      continueRequested: false,
+      newWorldRequested: false,
+    });
+  });
+
+  it('routes storage errors through the shared state without enabling Continue', () => {
+    const state = computeMenuState({
+      ...base,
+      saveMenu: { action: 'title', hasCompatibleSave: true, hasSavedData: true, storageError: true },
+    });
+    expect(state.saveMenu?.continueEnabled).toBe(false);
+    expect(state.saveMenu?.showError).toBe(true);
+  });
+});
+
 describe('menu and pause state transitions', () => {
+  it('keeps an unentered title screen visible and paused despite inventory or debug requests', () => {
+    const state = computeMenuState({
+      ...base,
+      inventoryOpen: true,
+      debugMenuOpen: true,
+      titleActive: true,
+      titleNewWorldLabel: 'New world',
+    });
+    expect(state).toMatchObject({
+      started: false,
+      mainMenuOpen: true,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      menuPointer: true,
+      overlayHidden: false,
+      paused: true,
+      goLabel: 'New world',
+    });
+  });
+
   it('external lock dismisses the pause state; a late resume request does not reopen it', () => {
     const visible = computeMenuState({ ...base, started: true, mainMenuOpen: false });
     expect(visible.overlayHidden).toBe(false);

@@ -17,6 +17,11 @@
     <div id="quickbar"></div>
     <div id="handling" hidden></div>
     <div id="prompt" hidden></div>
+    <aside id="save-recovery" hidden aria-live="polite" role="status">
+      <span id="save-recovery-message"></span>
+      <button id="save-retry" type="button">Retry save</button>
+      <button id="save-export-current" type="button">Export current snapshot</button>
+    </aside>
     <div id="rest" hidden></div>
     <section id="inventory" hidden></section>
     <div id="inventory-drag-root"></div>
@@ -28,6 +33,16 @@
           <h1>deadvox</h1>
           <p>Singleplayer voxel survival prototype.</p>
           <dl id="controls"></dl>
+          <p id="save-status" role="status">Checking saved worlds…</p>
+          <button id="continue" type="button" disabled hidden>Continue</button>
+          <button id="save-persist" type="button" hidden>Request persistent storage</button>
+          <button id="save-export" type="button" hidden>Export raw save records</button>
+          <a id="save-download" href="about:blank" aria-label="Download save record" hidden>Download save record</a>
+          <div id="save-confirmation" hidden role="dialog" aria-modal="true" aria-labelledby="save-confirm-title">
+            <p id="save-confirm-title">Replace this saved world? Its newest A/B generation remains until the new world’s first checkpoint commits.</p>
+            <button id="save-replace-confirm" type="button">Replace saved world</button>
+            <button id="save-replace-cancel" type="button">Cancel</button>
+          </div>
           <p class="go" id="go">Click to play</p>
           <div id="hud-options"></div>
           <div id="audio-options"></div>
