@@ -243,6 +243,12 @@ later notes (2026-09-27):
 - “at least three basic attack animations, and animations for taking damage”.
 - “Q and E are reserved for later actions” (nothing is bound to them in the world today).
 
+**Crafting and condition, later (BR, 2026-10-03, from the Slice 2 plan).**
+- Items carried in clothing can be damaged when that clothing is hit.
+- Condition affects how an item performs, not only whether it's ruined.
+- Books may also speed up skill practice, not only teach recipes.
+- Condition may lower salvage yield.
+
 **Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”
 - Fist variations: cross, hook, uppercut (BR).
 - Per-weapon motion overrides where a weapon does not fit its damage-type profile.

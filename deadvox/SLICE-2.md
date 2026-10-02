@@ -125,7 +125,7 @@ not among BR's eleven rulings:
 
 | Item | From | Effect on exit criteria |
 | --- | --- | --- |
-| Shambler body regions and severing (#65), limb debris physics (#97) | 3 | Counts toward Slice 3's body work. Severed parts are items in ordinary piles (`src/game/session.ts:358`); excluding them from the content count is a proposed policy (2.3) |
+| Shambler body regions and severing (#65), limb debris physics (#97) | 3 | Counts toward Slice 3's body work. Severed parts are items in ordinary piles (`src/game/session.ts:358`); BR excluded them from the content count (2.3) |
 | Melee: models (#42), first-person motion and hits at contact (#115), machete and KA-BAR (#130), the primary action (#128) | 3 | These weapons wear in 2.6; Slice 3 still owes melee depth and blocking |
 | Firearm handling ADR 0003 (#133), the debug range with spent-case piles (#148), debug loadout (#124), gungen gun models (#79, #82) | 3 | Debug firearms and spent cases are proposed exclusions from the content count. Firearms don't wear in Slice 2 |
 | Positional sound with wall gain and low-pass (#43, #147) | 3 | Half of Slice 3's positional-sound item; Slice 2 adds the scenario test (2.12) |
@@ -279,8 +279,8 @@ tested.
   That includes the starting torch, repair, and the books that teach recipes.
 - **The count:** at caa0d31 there are 31 loot-reachable item types that aren't
   debug items (43 defined). `baseball_bat`, `fanny_pack`, `hiking_backpack` and
-  `utility_vest` are defined but in no reachable loot. **Proposed policy for BR
-  to confirm:** the ~80 target leaves out debug-only items, spent cases and
+  `utility_vest` are defined but in no reachable loot. **Policy (BR,
+  2026-10-03):** the ~80 target leaves out debug-only items, spent cases and
   severed body parts, even though spent cases and severed parts can be picked
   up.
 
@@ -401,8 +401,7 @@ materials.
 - "Take apart" is an option on any item with a yield or a salvage list.
 - The reachability check (2.3) extends its closure with the declared yield and
   salvage outputs of reachable items, reading the same data the game does.
-- Whether condition lowers the yield is **proposed, BR to decide** (default:
-  no).
+- Condition doesn't lower the yield in Slice 2 (BR, 2026-10-03; it may later).
 
 **Saves:** a disassembly in progress is a work item, as in 2.4.
 **Tests:** the yield at skill 0 and at the top skill matches the declared
@@ -432,9 +431,9 @@ refused out of reach; the bonus shortens work time by its amount.
 
   | Light | Ignite | Douse | Sprint | Stow in a pocket | Drop | Relight |
   | --- | --- | --- | --- | --- | --- | --- |
-  | Torch | needs a lighter or matches in reach | yes, as an action | stays lit | not while lit | see Questions for BR | yes, while it has burn time left |
-  | Candle | needs a lighter or matches in reach | yes (blow out) | goes out | goes out | see Questions for BR | yes, while it has burn time left |
-  | Glowstick | snap once; it can't be reused | no | stays lit | stays lit | see Questions for BR | no |
+  | Torch | needs a lighter or matches in reach | yes, as an action | stays lit | not while lit | goes out | yes, while it has burn time left |
+  | Candle | needs a lighter or matches in reach | yes (blow out) | goes out | goes out | goes out | yes, while it has burn time left |
+  | Glowstick | snap once; it can't be reused | no | stays lit | stays lit | keeps glowing **and lights the area around it** (BR) | no |
 
 - Remaining burn time is kept when a light goes out and is relit, and across
   save and load; nothing resets it. Burning down is closed-form, like
@@ -444,9 +443,15 @@ refused out of reach; the bonus shortens work time by its amount.
 - This changes today's rule that a light is held-only and goes off when put
   away (`src/game/survival.ts`), as the table says.
 - **Rendering:** an all-around point light at the held item. Today only the
-  flashlight's spot light exists (`src/render/flashlight.ts:84`). Rendering a
-  dropped light is a separate BR decision; it doesn't arrive as a side effect of
-  the light pool.
+  flashlight's spot light exists (`src/render/flashlight.ts:84`).
+- **Dropped glowsticks light their surroundings** (BR, 2026-10-03). They draw
+  from the same fixed pool of shadowless point lights as carried lights. The
+  pool is a constant size, with unused slots at zero intensity, so dropping or
+  picking up a light never recompiles shaders. When there are more dropped
+  glowsticks than free slots, the ones nearest the player get the slots, and
+  the rest still glow (emissive) but light nothing. A glowstick's light is a
+  small radius and dim (DESIGN.md's 15 m is the radius you see it from, not the
+  radius it lights). The benchmark workload below includes dropped glowsticks.
 - **The benchmark workload, recorded before the engineering round:** the number
   of carried lights supported at once, and the benchmark's exact count of
   active lights, their settings, the seed, the night time, the shambler count,
@@ -537,21 +542,22 @@ event where the content says it makes noise.
   carried forward.
 - A retrospective is written.
 
-## Questions for BR
+## BR's answers (2026-10-03)
 
-Each has a proposed default that the plan uses unless BR says otherwise.
+1. **Wear when hit:** the outermost clothing over the hit area wears. *Later:*
+   items carried in that clothing can be damaged too.
+2. **Condition and performance:** condition matters only at ruin in Slice 2.
+   *Later:* condition affects how an item performs.
+3. **Books** teach recipes only. *Later:* books may also speed up skill
+   practice.
+4. **Dropped lights:** a torch or candle goes out. A glowstick keeps glowing and
+   lights the area around it, from the light pool (2.9).
+5. **Salvage yield** doesn't depend on condition. *Later:* it may.
+6. **The ~80 item count** leaves out debug items, spent cases and severed
+   parts.
 
-1. **Which worn item wears when you're hit?** Default: the outermost clothing
-   over the hit area, or a random worn item, until Slice 3's body model.
-2. **Does condition change how an item performs before it's ruined?** Default:
-   no; in Slice 2 it matters only at ruin.
-3. **Do books also speed up skill practice?** Default: no; books teach recipes
-   only.
-4. **What does a dropped light do?** Default: a dropped torch or candle goes
-   out; a glowstick keeps glowing but lights nothing.
-5. **Does condition lower salvage yield?** Default: no.
-6. **What does the item count leave out?** Default: debug items, spent cases
-   and severed parts.
+The *Later* notes are recorded in EPIC.md, under "Later, after the game is more
+playable".
 
 ## Results
 
