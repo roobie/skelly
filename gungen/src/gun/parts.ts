@@ -1199,7 +1199,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     ...(farPortWindow ? { farPortWindow } : {}),
   });
   const opticRail: Solid[] = [];
-  if (params.rail !== 'none' && params.action !== 'revolver') {
+  if (params.rail !== 'none') {
     if (params.feed === 'top') {
       opticRail.push(
         solid('receiver-optic-rail-rear-base', [-14, receiverTop - 0.5, -1.25], [-9, receiverTop, 1.25]),
@@ -1216,10 +1216,10 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
 export const receiver: PartFamily = {
   name: 'receiver',
   params: {
-    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. revolver: legacy feed-match tag. */
-    action: choice('auto', 'bolt', 'pump', 'revolver'),
-    /** box: magazine through the lower. top: loaded from above. tube: tube magazine. cylinder: legacy feed-match tag. */
-    feed: choice('box', 'top', 'tube', 'cylinder'),
+    /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. */
+    action: choice('auto', 'bolt', 'pump'),
+    /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
+    feed: choice('box', 'top', 'tube'),
     section: choice('standard', 'ar', 'pump', 'ak'),
     carrierPattern: {
       values: ['auto', ...Object.keys(BOLT_CARRIER_ENVELOPES)],
@@ -1500,7 +1500,7 @@ const boltHandleSweep = (prism: Solid, axis: Vec3, travel: number): KeepOut => {
 const boltHandleParams = {
   action: { ...choice('auto', 'bolt', 'pump'), from: [{ port: 'base', param: 'action' }] },
   bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
-  feed: { ...choice('box', 'top', 'tube', 'cylinder'), from: [{ port: 'base', param: 'feed' }] },
+  feed: { ...choice('box', 'top', 'tube'), from: [{ port: 'base', param: 'feed' }] },
   handleProfile: { ...choice('standard', 'awm'), from: [{ port: 'base', param: 'handleProfile' }] },
   section: { ...choice('standard', 'ar', 'pump', 'ak'), from: [{ port: 'base', param: 'section' }] },
 };
@@ -1715,7 +1715,7 @@ export const boltCarrier: PartFamily = {
     handleStyle: choice('auto', ...Object.keys(CARRIER_HANDLE_STYLES)),
     handleProfile: choice('standard', 'awm'),
     section: { ...choice('standard', 'ar', 'pump', 'ak'), from: [{ port: 'mount', param: 'section' }] },
-    feed: { ...choice('box', 'top', 'tube', 'cylinder'), from: [{ port: 'mount', param: 'feed' }] },
+    feed: { ...choice('box', 'top', 'tube'), from: [{ port: 'mount', param: 'feed' }] },
   },
   build(params): PartDef {
     const pattern = (params.pattern ?? 'ar') as BoltCarrierPattern;
