@@ -346,7 +346,8 @@ describe('revolver alignment rules', () => {
     });
   });
 
-  it('keeps every distinct revolver display group watertight across its geometry variants', () => {
+  // This mesh-heavy case took 5.2 s in the full 76-file run; give it about 5x the measured runtime under workers.
+  it('keeps every distinct revolver display group watertight across its geometry variants', { timeout: 25_000 }, () => {
     const variants: readonly [string, readonly Record<string, string>[]][] = [
       [
         'revolver-frame',

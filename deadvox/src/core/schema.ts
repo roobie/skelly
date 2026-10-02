@@ -25,8 +25,10 @@ import {
 } from 'valibot';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
+const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 
 export const Id = pipe(string(), regex(ID_PATTERN, 'must be lowercase letters, digits and _'));
+const CalibreId = pipe(string(), regex(CALIBRE_ID_PATTERN, 'must be a cartridge-data id'));
 const Name = pipe(string(), nonEmpty('must not be empty'));
 const Color = pipe(string(), regex(/^#[0-9a-fA-F]{6}$/, 'expected "#rrggbb"'));
 const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
@@ -222,22 +224,45 @@ const SoundSchema = strictObject({
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
 });
 
-const ModelSchema = strictObject({
-  id: Id,
-  /** The `.glb` file, as a path within the pack. */
-  file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
-  /**
-   * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
-   * that order). Held, the model's +x points forward and +y up.
-   */
-  grip: optional(strictObject({ at: Point, turn: optional(Point) })),
-  /** Held with its long axis aimed forward or upright, grip at the origin. */
-  hold: optional(picklist(['forward', 'upright'])),
-  /** Degrees to roll around the model's long +x axis before applying the hold pose. */
-  roll: optional(pipe(number(), minValue(-180), maxValue(180))),
-  /** Named points, such as the flashlight's `lens`. */
-  anchors: optional(record(Id, Point)),
+const MagazineRoundSchema = strictObject({
+  /** Centre in metres in the magazine model frame (+x forward, +y up, +z right). */
+  at: Point,
+  /** Degrees about +z; nose-up is positive. */
+  tilt: number(),
 });
+
+const MagazineCapacity = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
+
+const ModelSchema = pipe(
+  strictObject({
+    id: Id,
+    /** The `.glb` file, as a path within the pack. */
+    file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
+    /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
+    calibre: optional(CalibreId),
+    /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
+    capacity: optional(MagazineCapacity),
+    rounds: optional(array(MagazineRoundSchema)),
+    /**
+     * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
+     * that order). Held, the model's +x points forward and +y up.
+     */
+    grip: optional(strictObject({ at: Point, turn: optional(Point) })),
+    /** Held with its long axis aimed forward or upright, grip at the origin. */
+    hold: optional(picklist(['forward', 'upright'])),
+    /** Degrees to roll around the model's long +x axis before applying the hold pose. */
+    roll: optional(pipe(number(), minValue(-180), maxValue(180))),
+    /** Named points, such as the flashlight's `lens` or a firearm's `magwell`. */
+    anchors: optional(record(Id, Point)),
+  }),
+  check(
+    ({ calibre, capacity, rounds }) =>
+      capacity === undefined && rounds === undefined
+        ? true
+        : calibre !== undefined && capacity !== undefined && rounds !== undefined && rounds.length === capacity,
+    'magazine metadata needs calibre, capacity, and one round pose per capacity slot',
+  ),
+);
 
 // ---- furniture ----
 

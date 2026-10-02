@@ -8,14 +8,46 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import process from 'node:process';
+import { calibreSlug } from '../ammo/calibreSlug.ts';
+import type { MetallicCartridge } from '../ammo/cartridge.ts';
+import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { exportFileText } from './exportFile.ts';
 
-const USAGE = 'usage: export <design-or-fixture.json> [--out <dir>] [--entry-out <dir>] [--id <model_id>]';
+const USAGE =
+  'usage: export <design-or-fixture.json> [--out <dir>] [--entry-out <dir>] [--id <model_id>] [--calibre <cartridge_id>]';
 
 const flag = (args: string[], name: string): string | undefined => {
   const at = args.indexOf(name);
   return at >= 0 ? args[at + 1] : undefined;
+};
+
+const readCartridge = (
+  id: string | undefined,
+): { readonly ok: true; readonly cartridge?: MetallicCartridge } | { readonly ok: false; readonly message: string } => {
+  if (id === undefined) {
+    return { ok: true };
+  }
+  try {
+    calibreSlug(id);
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+  let text: string;
+  try {
+    text = readFileSync(join(import.meta.dirname, '../../cartridges', `${id}.json`), 'utf8');
+  } catch {
+    return { ok: false, message: `no cartridge data with id ${JSON.stringify(id)}` };
+  }
+  const parsed = parseCartridgeJson(text);
+  if (!parsed.ok) {
+    return { ok: false, message: formatCartridgeParseError(parsed.error) };
+  }
+  const { cartridge } = parsed;
+  if (cartridge.kind !== 'metallic') {
+    return { ok: false, message: `${JSON.stringify(id)} is not a metallic cartridge` };
+  }
+  return { ok: true, cartridge };
 };
 
 const main = (): number => {
@@ -28,10 +60,19 @@ const main = (): number => {
   const out = flag(args, '--out') ?? '.';
   const entryOut = flag(args, '--entry-out') ?? out;
   const id = flag(args, '--id') ?? basename(input, '.json').replaceAll('-', '_');
-  const result = exportFileText(readFileSync(input, 'utf8'), {
-    id,
-    file: `assets/models/${id}.glb` as DeadvoxModelFile,
-  });
+  const cartridgeResult = readCartridge(flag(args, '--calibre'));
+  if (!cartridgeResult.ok) {
+    console.error(`FAIL --calibre: ${cartridgeResult.message}`);
+    return 2;
+  }
+  const result = exportFileText(
+    readFileSync(input, 'utf8'),
+    {
+      id,
+      file: `assets/models/${id}.glb` as DeadvoxModelFile,
+    },
+    cartridgeResult.cartridge === undefined ? {} : { cartridge: cartridgeResult.cartridge },
+  );
   if (!result.ok) {
     console.error(`FAIL ${input}: ${result.message}`);
     return 1;

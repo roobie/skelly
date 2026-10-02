@@ -97,6 +97,34 @@ describe('export CLI core', () => {
     }
   });
 
+  it('resolves the CLI calibre option to a real cartridge-data entry', () => {
+    const temp = mkdtempSync(join(tmpdir(), 'gungen-export-ammo-'));
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          join(import.meta.dirname, '../src/cli/export.ts'),
+          'designs/archetype-ak.json',
+          '--out',
+          temp,
+          '--id',
+          'ak_test',
+          '--calibre',
+          '7.62x39',
+        ],
+        { cwd: join(import.meta.dirname, '..') },
+      );
+      const entry = JSON.parse(readFileSync(join(temp, 'ak_test.model.json'), 'utf8')) as {
+        calibre: string;
+        anchors: Record<string, number[]>;
+      };
+      expect(entry.calibre).toBe('7.62x39');
+      expect(entry.anchors.magwell).toHaveLength(3);
+    } finally {
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   it('reports malformed input and a bad asset path as messages', () => {
     expect(exportFileText('{nope', ASSET)).toMatchObject({ ok: false });
     const bad = exportFileText(read('designs', 'archetype-ar'), { id: 'x', file: 'assets/models/X.glb' });
