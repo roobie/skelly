@@ -33,9 +33,20 @@ describe('barrel-fitted handguards', () => {
     }
   });
 
+  it('extends AK sides to the top cover around the gas cylinder', () => {
+    const handguard = FAMILIES.handguard!.build({ length: 'M', layout: 'ak' });
+    const top = handguard.solids.find(({ id }) => id === 'top')!;
+    const left = handguard.solids.find(({ id }) => id === 'left')!;
+    const right = handguard.solids.find(({ id }) => id === 'right')!;
+
+    const topBounds = localSolidBounds(top);
+    expect(localSolidBounds(left)[1][1]).toBe(topBounds[0][1]);
+    expect(localSolidBounds(right)[1][1]).toBe(topBounds[0][1]);
+  });
+
   it('uses independent 65% standard reach and the shorter AK gas-port reach', () => {
     const expectedStandard = { S: 17, M: 23.5, L: 30 };
-    const expectedAk = { S: 14, M: 22, L: 30 };
+    const expectedAk = { S: 8, M: 14, L: 22 };
     for (const size of ['S', 'M', 'L'] as const) {
       const reach = (layout: 'standard' | 'ak') => {
         const handguard = FAMILIES.handguard!.build({ length: size, layout, mount: 'free-float' });
@@ -49,7 +60,8 @@ describe('barrel-fitted handguards', () => {
   // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)):
   // the property is checked on every non-broken fixture and every published design.
   // broken-handguard-fit and the other broken-* fixtures are skipped: they exist to break a rule.
-  it('keeps the handguard within its receiver in every fixture and design', () => {
+  // Measured about 3.3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
+  it('keeps the handguard within its receiver in every fixture and design', { timeout: 20_000 }, () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThanOrEqual(22);
     for (const { label, assembly } of corpus) {

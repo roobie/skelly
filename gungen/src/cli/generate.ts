@@ -2,7 +2,7 @@
 //   npm run generate -- --template pump-shotgun --seed 42
 //   npm run generate -- --template battle-rifle --seed 7 --valid  retry until valid
 //   npm run generate -- --template battle-rifle --seed 7 --out a.json
-// Prints the assembly JSON (or writes it with --out) and a summary on stderr.
+// Prints the assembly JSON with explicit appearance metadata (or writes it with --out); summary goes to stderr.
 
 import { writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -52,7 +52,8 @@ if (values.valid) {
   }
 }
 
-const json = `${JSON.stringify(assembly, null, 2)}\n`;
+// Keep the selected finish preset explicit across file boundaries; never encode it in the generated name.
+const json = `${JSON.stringify({ ...assembly, appearance: { variant: template.name } }, null, 2)}\n`;
 if (values.out) {
   writeFileSync(values.out, json);
 } else {

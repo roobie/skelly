@@ -358,3 +358,12 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    time is equal, so leftovers get used up.
 5. **Per-place versions.** Not a decision yet: redrawing on the one inventory
    counter stays until profiling in Slice 5 shows it costs too much.
+6. **Held-item primary action (BR, 2026-09-26, issue #27):** "Left click does
+   the thing with the thing you're holding." Dispatch by item capability, not
+   id. The initial hand mapping (BR, 2026-10-01; open to revision) is left click
+   for the right hand and `=` for the left. A right-hand item uses its action;
+   an empty right hand jabs with the right fist. The `=` action uses the
+   left-hand item and does nothing if that hand is empty. Fists alternate only
+   when both hands are empty; never punch with a hand holding an item. An
+   unsupported item gives a hint. Lights reuse `Survival.use` for the instant
+   toggle.

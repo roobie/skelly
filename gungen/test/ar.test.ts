@@ -3,6 +3,7 @@ import { validateExtrudedPolygon } from '../src/core/geometry.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import type { GunPortDef } from '../src/gun/portData.ts';
 import { loadFixture } from './helpers.ts';
 
 describe('AR-pattern parts', () => {
@@ -132,18 +133,17 @@ describe('AR-pattern parts', () => {
     expect(Math.abs(measurements.straight - 0.45)).toBeLessThanOrEqual(0.05);
     expect(Math.abs(measurements.lengthDepth - 2.87)).toBeLessThanOrEqual(0.1);
     expect(Math.abs(measurements.offsetDepth - 0.32)).toBeLessThanOrEqual(0.15);
-    expect(magazine.ports.find(({ id }) => id === 'top')?.seat).toBe('well');
+    expect((magazine.ports.find(({ id }) => id === 'top') as GunPortDef | undefined)?.seat).toBe('well');
     expect(validate(loadFixture('archetype-ar'), gunDomain).ok).toBe(true);
   });
 
-  it('mounts a front sight block four units from the muzzle', () => {
-    const barrel = FAMILIES.barrel!.build({ bore: 'M', length: 'M', profile: 'standard' });
-    const port = barrel.ports.find(({ id }) => id === 'front-sight');
+  it('places the fixed AR front sight at the barrel gas-port station', () => {
+    const barrel = FAMILIES.barrel!.build({ bore: 'M', length: 'M', profile: 'standard', frontSightStyle: 'ar' });
+    const frontSight = barrel.ports.find(({ id }) => id === 'front-sight');
+    const gasPort = barrel.ports.find(({ id }) => id === 'gas-port');
     const muzzle = barrel.ports.find(({ id }) => id === 'muzzle');
-    const sight = FAMILIES['front-sight']!.build({ bore: 'M' });
 
-    expect(port?.pos).toEqual([32, 0, 0]);
+    expect(frontSight?.pos).toEqual(gasPort?.pos);
     expect(muzzle?.pos[0]).toBe(36);
-    expect(sight.solids.map(({ id }) => id)).toEqual(['block', 'post']);
   });
 });

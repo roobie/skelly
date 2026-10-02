@@ -1,4 +1,6 @@
 import { html, render } from 'lit-html';
+import type { ClockSettings } from '../core/clock.ts';
+import { defaultClock, simSecondsPerHour } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import {
   currentSaveVersionIdentity,
@@ -19,7 +21,11 @@ import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
 import { computeMenuState } from './menuState.ts';
 
 const SCHEDULER_IDS = new Set(['needs', 'lights', 'zombies', 'player', 'handling']);
+const SAVE_CHECKPOINT_GAME_HOURS = 2;
+export const saveCheckpointInterval = (clock: ClockSettings): number =>
+  SAVE_CHECKPOINT_GAME_HOURS * simSecondsPerHour(clock);
 const CONTINUE_KEY = 'deadvox.continue-namespace';
+const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 
 const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
   switch (kind) {
@@ -81,6 +87,7 @@ export class SaveController {
   restoreWorldOptions: SaveWorldIdentity | undefined;
   storageStatus: SaveStorageStatus | undefined;
   private currentRecord: SaveLoadResult | undefined;
+  private savedGeneration = 0;
   private candidate: SaveLoadResult | undefined;
   private oldVersionLabel = '';
   private failure = '';
@@ -94,11 +101,13 @@ export class SaveController {
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
   private worldOptions: SaveWorldOptions | undefined;
+  private recordSnapshotDuration: ((durationMs: number) => void) | undefined;
   private worldId = '';
   private characterId = '';
   private readonly environmentProblem: string | undefined;
-  private nextAutosaveAt = 7200;
+  private nextAutosaveAt = 0;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
+  private checkpointInterval = SAVE_CHECKPOINT_GAME_HOURS * 450;
   private writing = false;
 
   constructor(backend: SaveBackendPreference = 'auto') {
@@ -123,6 +132,8 @@ export class SaveController {
     $('save-persist')?.addEventListener('click', () => this.requestPersistence().catch(() => undefined));
     $('save-export')?.addEventListener('click', () => this.exportCurrentRecords().catch(() => undefined));
     $('save-replace-confirm').addEventListener('click', () => this.confirmNewWorld());
+    $('save-retry').addEventListener('click', () => this.retrySave());
+    $('save-export-current').addEventListener('click', () => this.exportCurrentSnapshot().catch(() => undefined));
     $('save-replace-cancel').addEventListener('click', () => {
       $('save-confirmation').hidden = true;
     });
@@ -168,8 +179,17 @@ export class SaveController {
     await this.inspectCurrentNamespace();
     await this.inspectOtherNamespaces(namespaces);
     this.statusText = [this.statusText, this.storageSummary()].filter(Boolean).join(' ');
+    const refusal = sessionStorage.getItem(`${RESTORE_REFUSAL_KEY}:${this.namespace}`);
+    if (refusal) {
+      this.protectedCurrent = true;
+      this.candidate = undefined;
+      this.restoreWorldOptions = undefined;
+      this.restored = undefined;
+      this.failure = refusal;
+      this.statusText = refusal;
+    }
     const requested = sessionStorage.getItem(CONTINUE_KEY);
-    this.requestedContinue = requested === this.namespace;
+    this.requestedContinue = !refusal && requested === this.namespace;
     if (requested !== null && !this.requestedContinue) {
       sessionStorage.removeItem(CONTINUE_KEY);
     }
@@ -207,6 +227,7 @@ export class SaveController {
       return;
     }
     this.candidate = this.currentRecord;
+    this.savedGeneration = this.currentRecord.generation;
     this.corruptRecords = this.currentRecord.corruptSlots.length > 0;
     try {
       const decoded = await decodeSave(this.currentRecord.payload, { contentLookup: () => true });
@@ -289,6 +310,40 @@ export class SaveController {
     return this.requestedContinue && this.restored !== undefined;
   }
 
+  get isEntered(): boolean {
+    return this.entered;
+  }
+
+  /** The controller is the sole writer of #go; play supplies the derived menu label here. */
+  setGoLabel(label: string): void {
+    render(html`${label}`, $('go'));
+  }
+
+  /** Protects a decoded save when lazy chunk-diff restoration finds a different generated base. */
+  refuseRestore(error: unknown): boolean {
+    if (!(this.isRestored && this.namespace)) {
+      return false;
+    }
+    const refusal = `Saved world unreadable and left untouched: ${errorMessage(error)}`;
+    this.protectedCurrent = true;
+    this.entered = false;
+    this.requestedContinue = false;
+    this.candidate = undefined;
+    this.restored = undefined;
+    this.failure = refusal;
+    this.statusText = refusal;
+    sessionStorage.removeItem(CONTINUE_KEY);
+    sessionStorage.setItem(`${RESTORE_REFUSAL_KEY}:${this.namespace}`, refusal);
+    try {
+      this.render();
+    } catch {
+      // The refusal marker is durable; reload must recover even if title presentation fails.
+    } finally {
+      location.reload();
+    }
+    return true;
+  }
+
   get titleNewWorldLabel(): string {
     return this.protectedCurrent ? 'Saved world needs recovery' : 'New world';
   }
@@ -297,19 +352,31 @@ export class SaveController {
     snapshot: () => Readonly<SaveSnapshot>,
     simTime: () => number,
     worldOptions: SaveWorldOptions,
+    options: { clock?: ClockSettings; recordSnapshotDuration?: (durationMs: number) => void } = {},
   ): { worldId: string; characterId: string } {
     this.snapshot = snapshot;
     this.simTime = simTime;
     this.worldOptions = worldOptions;
-    this.nextAutosaveAt = (Math.floor(simTime() / 7200) + 1) * 7200;
+    this.recordSnapshotDuration = options.recordSnapshotDuration;
+    const interval = saveCheckpointInterval(options.clock ?? defaultClock);
+    this.checkpointInterval = interval;
+    this.nextAutosaveAt = (Math.floor(simTime() / interval) + 1) * interval;
     return { worldId: this.worldId, characterId: this.characterId };
+  }
+
+  /** Move the next checkpoint to the first interval after an explicit forward debug-time seek. */
+  rearmAutosaveAfterTimeSeek(): void {
+    const time = this.simTime?.();
+    if (time !== undefined) {
+      this.nextAutosaveAt = (Math.floor(time / this.checkpointInterval) + 1) * this.checkpointInterval;
+    }
   }
 
   /** Called after each simulation frame; thresholds are in simulated seconds. */
   afterFrame(): void {
     const time = this.simTime?.();
     if (time !== undefined && time >= this.nextAutosaveAt) {
-      this.nextAutosaveAt = (Math.floor(time / 7200) + 1) * 7200;
+      this.nextAutosaveAt = (Math.floor(time / this.checkpointInterval) + 1) * this.checkpointInterval;
       this.capture('two-game-hour checkpoint');
     }
   }
@@ -323,7 +390,10 @@ export class SaveController {
     if (!(this.snapshot && this.namespace && this.entered) || this.protectedCurrent || this.storageUnavailable) {
       return;
     }
-    this.queued = { snapshot: this.snapshot(), reason };
+    const startedAt = performance.now();
+    const snapshot = this.snapshot();
+    this.recordSnapshotDuration?.(performance.now() - startedAt);
+    this.queued = { snapshot, reason };
     if (!this.writing) {
       this.flush().catch(() => undefined);
     }
@@ -345,6 +415,7 @@ export class SaveController {
           buildRevision: this.identityValue!.buildRevision,
         }),
       );
+      this.savedGeneration = result.generation;
       this.statusText = `Saved generation ${result.generation} · ${task.reason}`;
       this.failure = '';
     } catch (error) {
@@ -403,6 +474,48 @@ export class SaveController {
     location.reload();
   }
 
+  private retrySave(): void {
+    if (!(this.entered && this.snapshot) || this.protectedCurrent || this.storageUnavailable) {
+      return;
+    }
+    this.queued = { snapshot: this.snapshot(), reason: 'manual retry' };
+    this.failure = '';
+    if (!this.writing) {
+      this.flush().catch(() => undefined);
+    }
+    this.render();
+  }
+
+  /** Encodes the live snapshot in the save worker and downloads it without attempting a backend write. */
+  private async exportCurrentSnapshot(): Promise<void> {
+    try {
+      if (!(this.snapshot && this.identityValue && this.worldOptions)) {
+        throw new Error('No live world snapshot is available');
+      }
+      const payload = await this.storage.encodeSnapshot(
+        this.snapshot(),
+        Math.max(this.currentRecord?.generation ?? 0, this.savedGeneration) + 1,
+        {
+          worldOptions: this.worldOptions,
+          version: this.identityValue.components,
+          buildRevision: this.identityValue.buildRevision,
+        },
+      );
+      const url = URL.createObjectURL(
+        new Blob([payload.slice().buffer as ArrayBuffer], { type: 'application/octet-stream' }),
+      );
+      const link = $('save-download') as HTMLAnchorElement;
+      link.href = url;
+      link.download = `deadvox-current-${this.namespace}.bin`;
+      link.click();
+      URL.revokeObjectURL(url);
+      this.statusText = 'Current world snapshot exported from the save worker.';
+    } catch (error) {
+      this.statusText = `Could not export current snapshot: ${errorMessage(error)}`;
+    }
+    this.render();
+  }
+
   private async requestPersistence(): Promise<void> {
     try {
       const persistent = await this.storage.requestPersistence();
@@ -454,7 +567,7 @@ export class SaveController {
     const status = $('save-status');
     const button = $('continue') as HTMLButtonElement;
     if (!this.entered) {
-      render(html`${this.titleNewWorldLabel}`, $('go'));
+      this.setGoLabel(this.titleNewWorldLabel);
     }
     const controls = computeMenuState({
       started: false,
@@ -481,6 +594,8 @@ export class SaveController {
     if (exportButton) {
       exportButton.hidden = !(this.protectedCurrent || this.corruptRecords);
     }
+    $('save-recovery').hidden = !(this.entered && this.failure);
+    render(html`${this.failure}`, $('save-recovery-message'));
   }
 }
 

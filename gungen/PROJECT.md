@@ -28,6 +28,16 @@ simulation.
 The output is stylized low-poly models of assemblies. Sizes are expressed as
 size classes (see §4), not measurements.
 
+**Exception: ammunition.** Cartridges are modelled at real dimensions in
+millimetres and named by their real designations (for example 7.62×39mm). That
+amends the real-world-models non-goal and the size-class rule (§4) for
+cartridges only. Calibre is a gameplay identity, because ammo must match the
+gun, not a brand, and a standard (C.I.P., SAAMI) fixes a cartridge's dimensions
+rather than a designer choosing them. Guns keep size classes. Every cartridge
+dimension carries its source, and a value that can't be sourced stays empty.
+Tracked in roobie/skelly#109: data first, then geometry, viewer and export. The
+data format is described in `cartridges/README.md`.
+
 ## Decisions
 
 | Decision | Choice |
@@ -152,6 +162,40 @@ logic, and put everything gun-specific in data. The same core should later
 drive other skelly domains, such as rigging, where a joint is just a port that
 can rotate.
 
+**Units per domain.** A domain declares `units` (`src/core/schema.ts#DomainUnits`):
+metres per unit, the snap grid and the bevel, all in its own u. The gun domain
+declares today's values in `src/gun/units.ts#GUN_UNITS`: 1u = 11.5mm, a 0.25u
+grid and a 0.125u bevel (about 1.4mm). The core reads them from
+`resolved.domain.units`: the glb export scales by `metresPerUnit`, the
+connection-contact rule allows a gap of one `grid` step, and meshes are
+chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). The shared frame
+between domains is metres; an assembly belongs to one domain, so a scene that
+shows two domains is two assemblies placed in metres, with no rule checks
+between them. The tolerances in `conventions.ts` other than the contact gap are
+still the gun's numbers in u.
+
+**Revolved solids.** `RevolvedSolid` (`src/core/schema.ts#RevolvedSolid`) is a
+third kind of solid: a profile of (axial, radial) points turned about an axis
+(`axis`, local Z when omitted, with the same axes as an extrusion). It exists
+for round parts with real detail, such as cartridges, which the box and
+extrusion kinds cannot describe.
+
+- Mesh: `src/core/revolve.ts#meshForRevolved`. Normals are smooth around the
+  circumference and hard where the profile bends past `creaseDegrees` (40 by
+  default). The facet count is a level of detail chosen when the mesh is built,
+  not a field of the solid: `meshForSolid` takes it (default 6), the viewer
+  takes `?facets=N` (24 for close-ups) and the glb export takes `revolveFacets`.
+  The bevel and `display.mergeGroup` do not apply; the viewer draws it
+  smooth-shaded and without an edge outline.
+- Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of
+  the turned profile with a fixed 8 facets, whatever the level of detail. It
+  ignores grooves and hollows, and its facets are inscribed, so it is at most
+  7.6% of the radius smaller than the true solid. Because the hull is solid, a part seated
+  inside a hollow revolved part overlaps it; the ammunition domain has to deal
+  with that.
+- Validation: `src/core/revolve.ts#revolvedProfileError` reports a bad profile
+  as a structure issue when the assembly resolves.
+
 ## Milestone 1: validator and debug viewer
 
 **Goal:** take a hand-written assembly file, place its parts, check it against
@@ -169,8 +213,9 @@ the generator later has something independent to be tested against (§9).
   unit that sets proportions only, on a 0.25u grid. Size classes are S/M/L;
   each part family maps them to u in its own tables.
 - **Schemas** (`src/core/schema.ts`): ports, keep-out volumes (boxes, optionally
-  refined by convex extruded-polygon profiles), box and convex extruded-polygon
-  solids, parts, part families, domains, and the JSON assembly format.
+  refined by convex extruded-polygon profiles), box, convex extruded-polygon
+  and revolved solids (§10), parts, part families, domains, and the JSON
+  assembly format.
 - **Placement** (`src/core/resolve.ts`): walks connections out from the root.
   A connection whose two parts are both already placed closes a loop and is
   checked, not solved. Connections support rail slots and 90° roll.
@@ -181,8 +226,8 @@ the generator later has something independent to be tested against (§9).
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
-  | `connection-contact` | Solids on connected parts touch or are within 0.25u (one grid step) |
-  | `keep-out` | No solid is inside another part's keep-out volume, except the part attached at the port the volume allows |
+  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain (0.25u for guns) |
+  | `keep-out` | No solid is inside another part's keep-out volume, except parts attached at an allowed port or from an explicitly allowed family |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
 
@@ -267,7 +312,9 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 
 | Fixture | Archetype | Built from |
 | --- | --- | --- |
-| `archetype-ar` | AR-pattern service rifle | conventional lower, straight stock, seven-slot flat-top rail, rear-top charging handle, front-sight block |
+| `archetype-ar` | Classic AR-pattern rifle | A2 front-sight block at the gas-port station; the clamped handguard ends at its collar |
+| `archetype-ar-free-float` | Free-floating AR-pattern rifle | No fixed barrel block; detachable front post on the forward handguard rail slot |
+| `archetype-ak` | AK-pattern rifle | AK block front sight with open ears, 2.5u behind the muzzle |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the handguard ahead of the loading port |
@@ -275,7 +322,6 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
-| `archetype-bullpup` | Bullpup | auto/box receiver, bullpup lower (grip ahead of the magazine, butt built in), no separate stock |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
 The lengths below remain abstract units on the existing grid.
@@ -291,19 +337,33 @@ The lengths below remain abstract units on the existing grid.
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
   is not a box-magazine user; other archetypes do not offer this exception.
-- Standard handguards occupy 65% of exposed barrel length; AK handguards occupy
-  80% of the barrel-to-gas-port station. Tilted magazine seating is declared
-  per lower layout: conventional and AR layouts support the standard magazine
-  profile; bullpup, AK, and trigger layouts do not. Unsupported combinations
-  are rejected by `magazine-well-axis`, not surfaced as contact gaps.
+- Every barrel profile uses a regular octagonal X-axis extrusion at the
+  former square's flat-to-flat width; bounds and ports are unchanged. Pump tubes
+  and cap lugs are regular octagonal; the support band is an eight-sided prism
+  clipped to its existing rectangular bounds. The AK gas cylinder is a regular
+  octagon with 0.5u flat-to-flat width, matching its former 0.5u height; its
+  lateral extent narrows from 1u to 0.5u to fit. Its corner setback is 0.14645u
+  at 45° (vertex offset 0.10355u from the centreline). The gas block is now an
+  octagonal barrel collar with a bore-scaled riser: its fore face rakes back as
+  it rises, and its rear vertical face mates the cylinder's full front end face.
+- Standard and free-float AR handguards occupy 65% of exposed barrel length;
+  the fixed AR handguard ends at the rear face of the A2 collar. AK handguards
+  use compact S/M/L bands and their gas block clears the handguard by about 10%
+  of its length. The AR front sight is at the standard gas-port station; its
+  muzzle distances are 6.25/9.25/12u for S/M/L. The AK post is 2.5u behind the
+  muzzle. Tilted magazine seating is declared per lower layout: conventional
+  and AR layouts support the standard magazine profile; bullpup, AK, and trigger
+  layouts do not. Unsupported combinations are rejected by `magazine-well-axis`,
+  not surfaced as contact gaps.
 - `handguard.mount` is `clamped` by default. AR templates choose free-float 75%
   of the time; battle-rifle templates choose free-float 50% of the time when the
   optional handguard is present. AK, SMG, and bolt-rifle templates stay clamped.
   A free-float handguard attaches at the receiver only, has no front clamp port,
   and owns an explicit `length` value initialized from the selected barrel band.
-  It clears the barrel by at least `0.25u` (S/M) or `0.5u` (L) and ends behind
-  both the front sight and muzzle; `free-float-clearance` reports contact or an
-  undersized gap.
+  Standard and free-float AR handguards reach 65% of the barrel; the clamped AR
+  layout instead ends at the rear face of the A2 sight collar. Free-float rails
+  end behind the barrel's front-sight station and muzzle; `free-float-clearance`
+  reports contact or an undersized gap.
 
 | Family/profile | S (u / mm) | M (u / mm) | L (u / mm) | Measurement basis |
 | --- | ---: | ---: | ---: | --- |
@@ -312,14 +372,16 @@ The lengths below remain abstract units on the existing grid.
 | AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
 | AKM curved magazine | 6 / 69 | 10 / 115 | 19.25 / 221 | Pixel-traced body centreline ratio, `br-ref-akm-mag.jpg` |
 | STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
-| Standard handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
-| AK handguard | 14 / 161 | 22 / 253 | 30 / 345 | 80% of the gas-port station (18/28/38u), snapped to the 2u AK grid |
+| Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
+| Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
+| AK handguard | 8 / 92 | 14 / 161 | 22 / 253 | Compact bands; gas block clears its end by 10%, snapped to the grid |
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
 A bore-aware drop keeps a 0.5u gap between the tube and barrel. The forward
-end has an oversized 2.5u-long square barrel-gray cap that encloses the last section of the
-tube; it ends at the selected tube-length station and leaves 0.25u of clearance
+end has an oversized 2.5u-long octagonal barrel-gray cap that encloses the last
+section of the tube; it ends at the selected tube-length station and leaves
+0.25u of clearance
 below the barrel. 75% and 100% variants also use a separate support spacer at
 the 65% station. A local receiver seat supports the lowered tube without moving
 the bore or stock interface.
@@ -332,7 +394,6 @@ archetype:
 | `broken-bolt-straight-stock` | `keep-out` | A straight comb sits in the bolt's travel |
 | `broken-bolt-sight-over-loading-port` | `keep-out` | On a top-loaded action, a sight over the receiver blocks the loading port |
 | `broken-pump-tube-mismatch` | `loop-closure` | The tube magazine's cap misses the barrel lug |
-| `broken-bullpup-with-stock` | `solid-overlap` | A stock added where the built-in butt already is |
 
 ### Known gaps
 
@@ -349,8 +410,8 @@ archetype:
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
 - **Ergonomics is just "is there a firing grip".** Reach, length of pull and
-  cheek weld (§5) are not checked. For a bullpup, the ejection port sits next
-  to the shooter's face, and nothing checks that yet.
+  cheek weld (§5) are not checked. If the suspended bullpup returns, its ejection
+  port will need a face-clearance check.
 
 ## Milestone 1.2: feed check and params from neighbours
 
@@ -417,8 +478,9 @@ The validator then judges it like any hand-written fixture.
   is deterministic. It uses a seeded RNG (`src/core/random.ts`, mulberry32),
   never `Math.random`. `generateValid` tries seed, seed + 1, … until a build
   passes. The generator never checks feasibility itself.
-- **CLI:** `npm run generate` prints one assembly (`--valid` skips to the next
-  valid seed; `--out` writes a file). `npm run stats` reports the §9 metrics.
+- **CLI:** `npm run generate` prints one assembly with explicit appearance
+  context metadata (`--valid` skips to the next valid seed; `--out` writes a file).
+  `npm run stats` reports the §9 metrics.
 - **Viewer:** a Generate panel with a template picker, a seed field, previous
   and next buttons, "skip to the next valid seed", and "Save JSON" to keep a
   generated build as a fixture.
@@ -572,13 +634,16 @@ explicitly named `battle-rifle`.
   receiver underside with four walls; its front wall derives its thickness
   from the well frame's front panel, so the lower extension does not step out
   beyond that panel. It reuses the conventional magazine port and insertion
-  keep-out, leaving the magazine path unchanged. Its receiver
-  has an explicit rear-top charging
-  handle keep-out; the barrel has a sight-block port four units from the
-  muzzle, with a front-sight block/post mounted there. Optional sight uses
-  rail slot 0, avoiding the earlier sightline collision at arbitrary slots.
-- The passing fixture and focused part tests cover the geometry and placement.
-  At 1000 seeds, AR is 100% valid with 16 distinct builds. The
+  keep-out, leaving the magazine path unchanged. The fixed A2 post is at the
+  existing gas-port station; the AR handguard layout reaches the rear of its
+  collar. Free-float builds omit the barrel block and may carry a detachable
+  post on the handguard's forward rail slot. AR gas is not otherwise modelled;
+  the port is only the shared station datum. Front sights are explicitly
+  allowed in the rear sight's sightline volume.
+- The passing fixture and focused part tests cover geometry and placement.
+  Fixed AR stem depth is half its former bore-scaled width; its fixed post and
+  detachable rail post both measure 0.25u in Z. Fixed and AK sights preserve
+  the y=5 axis; the detachable post rises to the rear rail sight axis. The
   remaining optional carry-handle style is not modeled.
 
 ### AK
@@ -590,9 +655,13 @@ explicitly named `battle-rifle`.
   Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
   A leaf rear sight mounts on a receiver sight-block port.
 - The gas cylinder runs from the receiver's gas-cylinder port under the rear
-  handguard to the gas block. The block seats on the barrel at the declared
-  gas-port station; the cylinder axis is checked parallel to the bore. The
-  front sight block uses the barrel's separate port four units from the muzzle.
+  handguard to the gas block. The octagonal collar seats on the barrel at the
+  declared gas-port station; its asymmetric riser meets the gas cylinder's
+  top flat and mates the full front end face at its vertical rear face. Its fore
+  face is slanted back. The
+  cylinder axis is checked parallel to the bore. The AK front sight uses its
+  own style with the post 2.5u behind the muzzle, consistent with the gas-block
+  position.
 - Added an `ak` lower layout with a flat face seat and no magazine-well walls.
   The curved AK magazine has seat kind `face` and zero insertion depth; its
   conservative rock-in keep-out starts at the front hook point. This swept box
@@ -671,6 +740,16 @@ Current limits the plan works within:
 - **Deferred:** runtime mods in deadvox, attachment game properties
   (gungen.2), and any deadvox schema change for attachments. These come after
   the static export round trip works (3.5).
+- **The goal (BR, 2026-10-01):** modular weapons, where the player chooses mods
+  as they find or craft them (deadvox's EPIC, slice 3). So every part a player
+  could swap (optics first, then suppressors and other muzzle devices,
+  foregrips, tactical flashlights and lasers, magazines, stocks) is built as
+  a self-contained part: its own catalog entry, footprint and clearances, a
+  stable id that can become a deadvox item, and attachment only through a mount
+  interface. Compatibility is data (the mounts a part needs, the mount points a
+  gun offers). Every compatible swap resolves and validates, and removing the
+  part leaves a valid gun. A template's probability mix only picks the
+  defaults for a generated gun.
 
 ### Work packages
 
@@ -730,11 +809,12 @@ palette as arguments.
     applies only when there is no grip. Equal-rank `hold` anchors are
     ambiguous, and the design cannot be published. `SelectGunAnchors` applies
     this policy before the core exporter receives `SelectedAnchors`.
-- **Palette.** One table of family colours and special colours keyed by solid
-  id, shared by viewer and export. A solid-id special colour wins over its
-  part-family colour; if the family is unknown, use the palette's
-  `fallbackColor` (the current viewer grey, `#888888`). `fallbackColor` is
-  explicit so the exporter cannot invent its own fallback.
+- **Appearance.** The viewer and exporter share `src/core/appearance.ts`'s
+  domain-agnostic resolver. Callers pass a variant explicitly; assembly display
+  names are never parsed as archetypes. Precedence is solid material, part
+  material, design finish, variant finish, then role material. Missing palette
+  material ids remain absent from metadata rather than being fabricated. Legacy
+  family/special/fallback colours still support generic domains.
 - **Export metadata** (frozen here for lane B), per port: stable id
   `<part>.<port>`, mount, gender, optional size, and the full assembly-space
   mating frame (position, normal, up). Rails carry one count/pitch record for
@@ -795,11 +875,14 @@ Decisions where the plan left representation open:
   `AnchorSelectionError` for a missing or ambiguous hold. The core exporter
   accepts only that selection; it never chooses gun anchors. `hold`,
   `support`, and `muzzle` are gun-only names.
-- Palette RGB channels are normalized sRGB triples; `specialColors` is keyed
-  by solid id and wins over `familyColors`, then `fallbackColor` handles an
-  unknown family (`#888888` for the current viewer). Export converts sRGB to
+- Palette RGB channels are normalized sRGB triples; legacy `specialColors` is
+  keyed by solid id and wins over `familyColors`, then `fallbackColor` handles
+  an unknown family (`#888888` for the current viewer). Export converts sRGB to
   linear space. Types cannot bound finite color channels to `[0,1]`; palette
-  construction and export validate them. Port metadata ids are
+  construction and export validate them. Solids may declare optional `material`
+  and `slot` overrides; design format 1 may declare an optional `finish` map,
+  shape-checked generically and material/slot-checked by the gun loader. Export
+  and viewer callers pass the design template explicitly. Port metadata ids are
   `<part>.<port>`; frames are in gungen assembly coordinates and units, and a
   rail carries one count/pitch record. `PartPortId` cannot exclude empty
   components or embedded dots, so export validates both ids. The exporter
@@ -908,6 +991,12 @@ and `hexToSrgb`/`srgbToHex`. The viewer's old colours are reproduced
 bit-identically for every role that had one. Six roles that used to render as
 the `#888888` fallback now have colours (below).
 
+**Decided (BR, 2026-09-30): materials + slots + role shade + finishes.** The palette is keyed by material ids with sRGB base colours; roles map to `metal`, `furniture`, or `accent` and apply bounded shade multipliers. Explicit solid material/slot wins, then part-owned material/slot, design finish, variant finish, and role default. Archetype finishes cover every slot; design or part may override. Finish maps survive load, editor save/reopen, viewer rendering, and shipped export. Magazine follows furniture because it is a polymer/wood exterior component. The revolver uses stainless metal with walnut grips; battle rifles use parkerized metal with walnut furniture. Magazines default to the metal slot; the AK's darkened blued-steel magazine reads black, while AR magazines resolve to anodized aluminium. Pump shotguns have no box magazine; their tube magazine is metal. The GLB carries material and slot metadata and shares materials by resolved colour. Role-only colours remain a viewer geometry-check mode. See `test/materialFinishes.test.ts`.
+
+Deferred: generator finish variation; patterned finishes (UVs/textures); per-instance tint (deadvox); splitting slots (e.g. upper/lower metal); material opacity (an optional opacity field with opaque default remains unimplemented).
+- AK-74-style magazines match the furniture (e.g. plum or brown polymer). Later as a magazine variant or attachment bringing its own material, not a slot change (BR, 2026-10-01).
+- Polymer magazines, including semi-transparent/smoked ones (HK G28 and many modern rifles). Needs material opacity (glTF `alphaMode: BLEND`, a base-colour alpha), and ideally modelled rounds inside so transparency shows the ammo count. Arrives with magazine variants and attachments (BR, 2026-10-01).
+
 **Naming decision (BR, 2026-09-29).** A part has two names:
 
 - the registry key, the key in `FAMILIES` (e.g. `ak-receiver`, `frame`). It
@@ -915,10 +1004,10 @@ the `#888888` fallback now have colours (below).
 - the role, `PartDef.family` (e.g. `receiver`), which says what the part does.
 
 Rules and port compatibility use the role. Anchors, prefabs and params use the
-registry key, because they depend on the recipe. The palette uses the role, so
-an AK receiver is coloured like any receiver. `PartFamily.name` is only used
-for labels. The doc comments on `PrefabCatalogueEntry.family`,
-`GunAnchorDeclarations` and `Palette.familyColors` say the same.
+registry key, because they depend on the recipe. Since the 2026-09-30 material
+ruling, the role selects the default slot and shade; the archetype finish picks
+the material, so an AK and AR receiver may differ. `PartFamily.name` is only
+used for labels. `familyColors` remains the role-only geometry-check palette.
 
 **Palette colours (BR accepted, 2026-09-29):** `frame` #4b4a45, `slide`
 #868d97, `cylinder` #4a5566, `front-sight` #363d47, `gas-block` #2f3238,
@@ -1029,7 +1118,7 @@ deadvox holds a model with +x forward and +y up
   `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
   asset)` resolves, selects the gun anchors and applies `GUN_PALETTE`; it
   returns the writer's result, or the `AnchorSelectionError` for a missing or
-  ambiguous `hold`. Units and axes are in `src/core/exportFrame.ts`. The frozen
+  ambiguous `hold`. Units and axes are in `src/gun/exportFrame.ts`. The frozen
   types didn't change.
 - CLI: `npm run export:glb -- designs/archetype-ar.json --out <dir> [--entry-out
   <dir>] [--id <model_id>]` writes `<id>.glb` and `<id>.model.json` (the deadvox
@@ -1049,8 +1138,9 @@ deadvox holds a model with +x forward and +y up
   its own copy of the special, role, fallback lookup, since core can't import
   `src/gun/palette.ts#solidColor`; a test checks the two agree.
 - Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm, from the STANAG top depth
-  of 5.5u = 63 mm). Vertices are `mesh.ts` positions times that; normals are
-  unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
+  of 5.5u = 63 mm) is the gun domain's value; the writer scales by the
+  resolved domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions
+  times that; normals are unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
   export uses 11.5 mm.
 - Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is
   right-handed Y-up; deadvox's held model is +x forward, +y up. So the file
@@ -1059,7 +1149,7 @@ deadvox holds a model with +x forward and +y up
 - **Grip orientation (BR ruling, 2026-09-29).** `grip.turn` does not include
   the grip's rake. The hold frame's orientation (which leans with the grip) is
   not used for `turn`. `turn` is only the fixed rotation from the file's axes to
-  deadvox's held axes, from `src/core/exportFrame.ts#gripTurn`: the Euler XYZ
+  deadvox's held axes, from `src/gun/exportFrame.ts#gripTurn`: the Euler XYZ
   angles (degrees, deadvox's order) of the transpose of `FILE_FROM_GUNGEN`.
   Because the file already has +x forward and +y up, every export gets
   `[0, 0, 0]`. deadvox's existing firearms use `[-90, 0, 0]` only because
@@ -1097,13 +1187,16 @@ npm run export:glb -- designs/archetype-ar.json --out ../deadvox/src/content/bas
 ```
 
 The generated sidecar's `grip` and `anchors` are recorded in
-`deadvox/src/content/base/models-firearms.json`. Measured against the replaced
-asset: bounds are 79.35 cm long × 21.46 cm high (new) vs 69.74 cm × 25.30 cm
-(old); grip-to-muzzle distance is 57.91 cm vs 37.03 cm; mesh is 2,080 vs 4,353
-triangles and 174,436 vs 234,384 bytes. The new length is 4.65 cm below the
-provided real AR-15 range of 84–99 cm. The muzzle anchor equals the model's
-forward x bound. `deadvox/test/models.test.ts` verifies zero turn, muzzle at the
-forward end, and forward/upright orientation after the held transform.
+`deadvox/src/content/base/models-firearms.json`. The pre-g23 export measured
+79.35 cm long × 21.46 cm high vs 69.74 cm × 25.30 cm for the replaced asset;
+grip-to-muzzle distance was 57.91 cm vs 37.03 cm, and mesh size was 1,980 vs
+4,353 triangles and 173,360 vs 234,384 bytes. G23 regenerates the same curated
+design with the redesigned front sight; the current GLB is 201,400 bytes, and
+its sidecar retains the grip and muzzle anchors while updating the support
+anchor. The pre-g23 length was 4.65 cm below the provided real AR-15 range of
+84–99 cm. The muzzle anchor equals the model's forward x bound.
+`deadvox/test/models.test.ts` verifies zero turn, muzzle at the forward end, and
+forward/upright orientation after the held transform.
 
 **3.6 Vocabulary** (the re-scoped queue). Trigger guards are complete:
 `test/triggerGuard.test.ts` checks every lower layout, each fixture and published
@@ -1114,27 +1207,31 @@ design are complete (gungen.6). The remaining items are scheduled after 3.5,
 not part of the export's acceptance:
 
 - trigger guards on every archetype (gungen.3, done; evidence above);
-- the octagonal barrel as a barrel profile param (gungen.7). A profile
-  solid extrudes only along local Z (`src/core/schema.ts#ExtrudedPolygonSolid`), and a
-  barrel runs along X. There are two options:
-  - build the barrel along local Z and orient the part through its ports,
-    as the revolver cylinder does (`src/gun/parts.ts#cylinder`); this
-    touches every barrel port;
-  - add an extrusion-axis option to the profile solid, which is a core
-    schema change that lane A owns.
-  Decide which before starting;
+- octagonal-only barrels (gungen.7, implemented): every barrel profile
+  (standard, heavy, pistol, and revolver) is a regular X-axis octagon at the
+  former square section's flat-to-flat width; there is no cross-section param
+  or octagonal-barrel prefab. Pump tube and cap lug are regular octagonal; the
+  support band is an eight-sided prism clipped to its existing rectangular
+  bounds. All keep their existing bounds, ports, and contacts.
+  The AK gas cylinder is a regular octagon sized to its former 0.5u vertical
+  extent, centered on its existing axis; this narrows its width from 1u to
+  0.5u. The 45° corner setback is 0.14645u (vertex offset 0.10355u). The
+  bracket, handguard, receiver, and gas-block contacts remain valid. No separate
+  true-round barrel option is planned.
 - a thumbhole stock family plus an AWM-type design (gungen.6, done): a real
   side-profile opening is built from connected convex extrusions; its grip post
   moves forward under the receiver while the buttplate remains 22u from the
   mount on L (16u M, 10u S). The grip post reaches the AR grip's measured
   world bottom y=-12.5475u (8.5475u below the lower), and the butt drops by the
   same 3.3075u; every size is now 11.0475u high. The 4u-long hole and bottom
-  bar stay at their previous heights. The grip post meets the matching lower
-  directly; its rear face at x=-16u touches the stock's upper bar across the
-  full rear-face height and width. Tests measure both contacts in world space.
-  A rule rejects a thumbhole stock with a non-thumbhole lower or separate grip.
-  `designs/archetype-awm.json` uses the long heavy-barrel profile, detachable
-  box magazine, and optic rail;
+  bar stay at their previous heights. It retains the stock mount and
+  `FIRING_GRIP` hold anchor. The grip post meets the matching lower directly;
+  its rear face at x=-16u touches the stock's upper bar across the full
+  rear-face height and width. Tests measure both contacts in world space. The
+  grip-post-to-trigger-guard gap stays within 0.25u on AWM and the bolt-rifle
+  override. A rule rejects a thumbhole stock with a non-thumbhole lower or
+  separate grip. `designs/archetype-awm.json` uses the long heavy-barrel
+  profile, detachable box magazine, and optic rail;
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
   `tapered` style, and the pump-shotgun opts in with M/L lengths; the other
@@ -1150,21 +1247,23 @@ not part of the export's acceptance:
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
   `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower
   at the wrist from above) would need a new convex solid kind and is not asked for;
-- visible action details (BR, 2026-09-28; deferred): charging handles,
-  ejection ports, bolt handles, "and stuff like that". Receivers already
-  declare keep-outs for ejection, the charging handle (side or rear-top) and
-  bolt travel (`src/gun/parts.ts#receiver`), but draw no solid for any of
-  them. The pistol slide is the only part with a visible ejection port, cut
-  as an opening by building the slide from walls around it
-  (`src/gun/parts.ts#pistolSlide`). The same wall construction can cut a
-  receiver's port, provided the mounting contact is kept
-  (`src/core/rules.ts#connectionContact`). A handle is a small solid at the rest end of
-  its travel keep-out, touching it but not inside it. The keep-out rule
-  exempts the keep-out's own part (`src/core/rules.ts#keepOut`), so it won't catch
-  a built-in handle placed inside its own travel. Targeted rest-position
-  tests and a broken fixture have to catch that. Candidates beyond those three,
-  for BR to choose from: the AR forward assist, magazine and bolt releases,
-  and the safety selector;
+- visible action details (BR, 2026-09-28; three basics done): receivers with
+  ejection keep-outs have a real opening; side/rear-top charging handles and
+  bolt handles touch the rest face of their travel volumes. The domain's
+  `action-handle-rest` rule checks each built-in handle against its own travel
+  because the core keep-out rule excludes its owner; `broken-action-handle`
+  proves the bad placement is rejected without changing that core exemption.
+  `test/actionDetails.test.ts` pins the rest faces and the ejection aperture.
+  BR's hollow-shell follow-up (2026-09-30) gives auto/bolt/pump receivers and
+  the AK receiver 0.5u (5.75mm) top, bottom, side, and end walls, matching the
+  pistol-slide wall thickness. The ejection aperture is only in the near wall
+  and its bounds are the bolt-carrier face bounds plus 0.25u on every side; the
+  port and ejection keep-out derive from one clearance definition. Pump receiver
+  ports follow the lowered carrier face. The far wall closes the cavity, with
+  the carrier face above the magazine path. Revolver receivers have no ejection
+  keep-out and remain solid; the pistol frame/slide are separate parts.
+  Candidates beyond these three, for BR to choose from: the AR forward assist,
+  magazine and bolt releases, and the safety selector;
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
   shapes are one surface built from many solids, like the curved STANAG and
   AK magazines' runs of ring sectors. Bevelling and outlining each segment
@@ -1183,7 +1282,16 @@ not part of the export's acceptance:
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
 - after 3.5: attachments with game properties and port compatibility
-  (gungen.2), with the deadvox schema change they need.
+  (gungen.2), with the deadvox schema change they need;
+- **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
+  but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
+  and its curated design and fixtures live byte-identically under `designs/suspended/`
+  and `fixtures/suspended/`. Its launcher options, corpus entries, generated snapshots,
+  and archetype-specific fixture test are out of the active pipeline. To restore it,
+  remove `bullpup` from that one set, move the three JSON files back to their scanned
+  directories, restore launcher/corpus references, and regenerate the scoped snapshots.
+  The default finish, palette, and `exportFile` variant entries remain as harmless dormant
+  data; the family code stays available for restoration.
 
 ### Parallel lanes
 
@@ -1258,9 +1366,15 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   aliased `it.runIf` would trip Biome's `noMisplacedAssertion`. `npm run test:sweeps` runs the whole suite that
   way. `.github/workflows/gungen.yml` runs `npm test` with `CI` set, so CI
   runs them.
-- **No raising timeouts.** A sweep that is too slow is split into smaller
-  tests (per template, per seed range), never given a longer timeout. Some
-  sweeps will be removed, so their cost is not worth accommodating.
+- **Split before raising timeouts.** A sweep that is too slow is split into
+  smaller tests (per template, per seed range) rather than given a longer
+  timeout. A sweep that cannot be split gets a timeout proportional to its
+  work (see "Testing"), never a flat generous one. The current generator
+  validation chunks are 25 seeds. A 2026-10-01 measurement found them
+  unreliable under load: `generate.test.ts` chunks took 5-8 s at load 6-10 on
+  6 cores, and 17 timed out at the 5 s default, so the earlier "under 1 s
+  locally" claim is unverified. Some sweeps will be removed, so their cost is
+  not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
   seed range, and the `known-good seeds` snapshots, which are generator
   output. Tests over `fixtures/`, hand-built assemblies and single fixed
@@ -1308,6 +1422,30 @@ Golden designs (3.1) become the regression corpus. Each published design
 gets a snapshot of its resolved solids (already planned), and property tests
 iterate `fixtures/` plus `designs/` instead of seeds.
 
+## Testing
+
+- **Say what a test protects.** Each test, or the comment above a group, states
+  the behaviour it guards. Two tests that catch the same bugs are one too many,
+  and a sweep earns its size only if its extra cases exercise different
+  behaviour.
+- **Exhaustive sweeps go behind `GUNGEN_SWEEPS`.** Use `sweepGroup` from
+  `test/sweeps.ts`; the default `npm test` keeps a representative sample and CI
+  runs everything. Build no cases for a skipped group (`runSweeps ? cases : []`),
+  because a skipped group still registers every case.
+- **Prefer a covering array to a full product in the default run.**
+  `test/coveringArray.ts` generates a fixed-seed t-wise array from a family's
+  `params`. `test/parts.test.ts` lists the array-sampled families in one place,
+  `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
+  explicit case for an interaction the array is known to miss.
+- **Removals need a reason.** The commit says what the removed tests protected
+  and which remaining test or sample still protects it, ideally with a mutation
+  or coverage result as evidence.
+- **Timeouts.** A test that takes about 1 s or more and still has the 5 s
+  default gets its own timeout, about 5x its measured time, with a comment
+  saying why. A sweep is split into smaller tests where it can be; one that
+  cannot (`unplacedParts.test.ts`) gets a timeout proportional to its case
+  count.
+
 ## Running it
 
 ```sh
@@ -1318,7 +1456,7 @@ npm run test:sweeps    # the generator seed sweeps too; CI runs them
 npm run typecheck
 npm run validate       # validate all fixtures from the command line
 npm run validate -- path/to/assembly.json
-npm run generate -- --template battle-rifle --seed 42  # print a generated assembly
+npm run generate -- --template battle-rifle --seed 42  # assembly + appearance context
 npm run generate -- --template battle-rifle --seed 42 --valid # skip to the next valid seed
 npm run stats          # generator metrics over 1000 seeds per template
 npm run dev            # the viewer; ?fixture=<name> or ?template=<name>&seed=<n>

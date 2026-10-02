@@ -123,6 +123,10 @@ which brings the card up. The inventory screen does **not** pause the game. That
 tension is intentional. A "relaxed" setting that pauses inside menus can come
 later as an accessibility option.
 
+The card is an opaque panel docked to the right edge, vertically centred, with no
+dimming, tint or blur over the frozen view, so the middle of the screen stays
+clear for screenshots.
+
 ### Catch-up simulation
 
 When a chunk loads, it is advanced by the time it was unloaded. Each system
@@ -281,6 +285,15 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   hands.
 - What you hold shows in first person, what you drop lies on the floor as a
   pile, and furniture holds what its grid shows.
+- **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
+  with the thing you're holding." The initial hand mapping (BR, 2026-10-01; open
+  to revision) is left click = right hand and `=` = left hand. A right-hand item
+  uses its action; if that hand is empty, jab with the right fist. `=` uses the
+  left-hand item's action, or does nothing when empty. Fists alternate only when
+  both hands are empty; never punch with a hand holding an item. Unsupported
+  held items give a hint. Melee keeps its current swing, and a light uses the
+  existing instant-use path. The hand mapping is `ACTION_HAND_BINDINGS`; item
+  capabilities are selected from content data.
 - **Long actions gather what they need.** Crafting, repair, disassembly and
   reading take their items from within reach (your hands, what you wear, and
   piles and furniture within 2 m) at the start. The gathering time is part of
@@ -386,9 +399,18 @@ plain box in your hands. Files are small, and follow
 
 ## Combat and noise
 
-- **Melee.** Weapons have damage, reach and speed, plus stamina cost and
-  damage type (blunt, cut, pierce). Hit detection is a swept sphere cast from
-  the camera against entities.
+- **Melee.** Weapons have damage, reach beyond the player's hand, and speed,
+  plus stamina cost and damage type (blunt, cut, pierce). The swing reaches the
+  player's 1.2 m effective eye-to-hand reach (including the lean into a swing)
+  plus the weapon's reach; hit detection tests posed shambler body-region boxes
+  along the aim ray. A click locks aim and starts a wind-up; the hit resolves at
+  contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
+  cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
+  Active swings are saved and fingerprinted so Continue preserves one pending
+  hit; changing held items cancels that hit without refunding cooldown. Holding
+  right mouse raises a cosmetic ready stance. First-person motions use shared
+  blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
+  items animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
@@ -573,6 +595,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
 
 ## Rendering
+
+The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** flat colour per block, with small per-block variation, ambient
   occlusion and fog. Textures only if colour alone can't carry the look. The

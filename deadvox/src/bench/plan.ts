@@ -126,6 +126,8 @@ export interface BenchRecord {
   site?: string;
   /** Time of day (`&time=HH:MM`); records from before it existed ran at noon. */
   time?: string;
+  /** Drawn through the mood pass with the default look (`&post=1`, bench/post.ts); records from before it existed, and runs without it, drew plain. */
+  post?: boolean;
   env?: Environment;
   runs: RunResult[];
   shamblers?: ShamblerRunResult[];

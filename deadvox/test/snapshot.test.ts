@@ -8,6 +8,7 @@ import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -21,6 +22,11 @@ import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
+import type { MeleeWeapon } from '../src/core/zombies.ts';
+import { startPlayerMelee } from '../src/game/melee.ts';
+import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -33,6 +39,8 @@ const { registry } = buildRegistry(
 const seed = 13;
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
+const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024; // ~17× headroom over the current synthetic fixture; catches meaningful growth.
+const TEN_HOUR_LOAD_BUDGET_MS = 1000; // CI-runner bound for ubuntu-latest, not a general device target.
 const scale = makeScale(0.5);
 const blockId = (id: string): number => {
   const found = registry.blockIds.get(id);
@@ -206,6 +214,7 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   ),
 });
 const inspect = (runtime: Runtime): unknown => {
+  const zombieContinuation = runtime.zombies.snapshotState();
   const scheduler = (
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
@@ -264,7 +273,9 @@ const inspect = (runtime: Runtime): unknown => {
     },
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
-      playerAttackWait: (runtime.zombies as unknown as { playerAttackWait: number }).playerAttackWait,
+      playerAttackWait: zombieContinuation.playerAttackWait,
+      meleeAction: zombieContinuation.meleeAction,
+      nextFistHand: zombieContinuation.nextFistHand,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
         const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
         return [
@@ -328,19 +339,6 @@ const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
     }
     runtime.session.frame(1 / 60);
   }
-};
-
-const sampleSnapshotP95 = (runtime: Runtime): number => {
-  const samples: number[] = [];
-  for (let i = 0; i < 105; i++) {
-    const before = performance.now();
-    capture(runtime);
-    if (i >= 5) {
-      samples.push(performance.now() - before);
-    }
-  }
-  samples.sort((a, b) => a - b);
-  return samples[Math.ceil(samples.length * 0.95) - 1]!;
 };
 
 const editBudgetChunk = (runtime: Runtime, cx: number, cy: number, cz: number): void => {
@@ -811,8 +809,8 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 2,
-  generators: { worldgen: 'worldgen-v1' },
+  schemaVersion: 5,
+  generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 const formatWorldOptions = { blockSize: 0.5, site: 'hamlet' as const, storeys: 1 };
@@ -916,6 +914,83 @@ const assertNumbersObjectIs = (expected: unknown, actual: unknown, path = '$'): 
 };
 
 describe('canonical save format', () => {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: integration test couples save round-trip, tick advancement and single-contact restore.
+  it('round-trips an active player swing and resolves its one pending hit after restore', async () => {
+    const source = createRuntime();
+    source.sim.frame(0.049);
+    expect(source.sim.time).toBeCloseTo(0.049);
+    for (const [id] of [...source.zombies.store.entries()]) {
+      source.zombies.store.remove(id);
+    }
+    const id = source.zombies.add(
+      registry.zombies.get('shambler')!,
+      [source.player.body.pos[0] + 5, source.player.body.pos[1], source.player.body.pos[2]],
+      [0, 0, 1],
+    );
+    const zombie = source.zombies.store.get(id)!;
+    zombie.body.onGround = true;
+    source.zombies.setFrozen(true);
+    const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, scale.blockSize));
+    const { center } = posed.head.find((box) => box.bone === 'head')!;
+    const origin: Vec3 = [
+      source.player.body.pos[0],
+      source.player.body.pos[1] + PLAYER.eye / scale.blockSize,
+      source.player.body.pos[2],
+    ];
+    const delta: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];
+    const length = Math.hypot(...delta);
+    const direction = delta.map((value) => value / length) as Vec3;
+    const weapon: MeleeWeapon = { damage: 1, reach: 4, cooldown: 0.8, stamina: 4, impulse: 4, type: 'blunt' };
+    expect(source.zombies.aimAt(origin, direction, weapon)?.inReach).toBe(true);
+    const hands = {
+      right: source.inventory.hands.right?.uid ?? null,
+      left: source.inventory.hands.left?.uid ?? null,
+    };
+    expect(
+      startPlayerMelee(source.zombies, source.sim.needs, {
+        origin,
+        direction,
+        weapon,
+        profile: 'blunt',
+        hand: 'right',
+        twoHanded: false,
+        hands,
+      }),
+    ).toBe('started');
+    const initialHealth = zombie.regions.head;
+    const snapshot = capture(source);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.world.zombies.meleeAction).toEqual(snapshot.world.zombies.meleeAction);
+    const loaded = createRuntime(decoded.snapshot);
+    loaded.zombies.setFrozen(true);
+    expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0);
+
+    for (const runtime of [source, loaded]) {
+      const held = {
+        right: runtime.inventory.hands.right?.uid ?? null,
+        left: runtime.inventory.hands.left?.uid ?? null,
+      };
+      for (let tick = 1; tick < 15; tick++) {
+        runtime.zombies.tickPlayerAction(1 / 60, held);
+        if (tick % 3 === 0) {
+          runtime.zombies.tick(0.05, tick / 20, held);
+        }
+        expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
+      }
+      runtime.zombies.tickPlayerAction(1 / 60, held);
+      runtime.zombies.tick(0.05, 0.25, held);
+      expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
+      for (let tick = 0; tick < 48; tick++) {
+        runtime.zombies.tickPlayerAction(1 / 60, held);
+        if (tick % 3 === 2) {
+          runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
+        }
+      }
+      expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
+    }
+  });
+
   it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
     const source = createRuntime();
     const id = source.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
@@ -992,7 +1067,6 @@ describe('canonical save format', () => {
 
   it('checks a representative ten-hour hamlet save and records its size and timings', async () => {
     const runtime = createRuntime();
-    const snapshotP95 = sampleSnapshotP95(runtime);
     const worldStats = applyBudgetWorldEdits(runtime);
     const pileStats = applyBudgetPiles(runtime);
     const population = touchBudgetFurnitureAndZombies(runtime);
@@ -1021,7 +1095,7 @@ describe('canonical save format', () => {
     const encodeStarted = performance.now();
     const bytes = await encodeSave(snapshot, { generation: 1, worldOptions: formatWorldOptions });
     const encodeMs = performance.now() - encodeStarted;
-    expect(bytes.byteLength).toBeLessThan(50 * 1024 * 1024);
+    expect(bytes.byteLength).toBeLessThan(TEN_HOUR_SAVE_BUDGET_BYTES);
 
     const decodeStarted = performance.now();
     const decoded = await decodeSave(bytes, { contentLookup });
@@ -1031,9 +1105,9 @@ describe('canonical save format', () => {
     const restoreMs = performance.now() - loadStarted;
     const loadMs = decodeMs + restoreMs;
     expect(capture(loaded)).toEqual(decoded.snapshot);
-    expect(loadMs).toBeLessThan(5000);
+    expect(loadMs).toBeLessThan(TEN_HOUR_LOAD_BUDGET_MS);
     process.stdout.write(
-      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawned=${population.spawned} alive=${population.alive} dead=${population.spawned - population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)} snapshotP95Ms=${snapshotP95.toFixed(3)}\n`,
+      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawned=${population.spawned} alive=${population.alive} dead=${population.spawned - population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );
   }, 30_000);
 

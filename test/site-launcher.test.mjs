@@ -3,16 +3,29 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { TEMPLATES } from '../gungen/src/gun/templates.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const page = read('site/index.html');
 const JSON_FILE = /\.json$/;
+const intentionallyUnofferedDeadvoxParams = {
+  'save-backend': 'A storage-backend override used by save-storage browser contracts.',
+  'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
+};
+const intentionallyUnofferedGungenParams = {
+  camera:
+    'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
+  facets:
+    'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
+};
 
 const paramsReadBy = (sources) => {
   const found = new Set();
   for (const source of sources) {
-    for (const match of read(source).matchAll(/\b(?:params|query)\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    for (const match of read(source).matchAll(
+      /\b(?:params|query|initialQuery)\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
+    )) {
       found.add(match[1]);
     }
   }
@@ -44,19 +57,25 @@ describe('site launchers track the games’ URL parameters', () => {
         'deadvox/src/game/config.ts',
         'deadvox/src/bench/run.ts',
         'deadvox/src/bench/shamblers.ts',
-      ]),
+      ]).filter((name) => !Object.hasOwn(intentionallyUnofferedDeadvoxParams, name)),
     );
   });
 
-  it('offers exactly the parameters gungen reads', () => {
-    assert.deepEqual(paramsOfferedBy('gungen-form'), paramsReadBy(['gungen/src/viewer/main.ts']));
+  it('offers exactly the launcher-editable parameters gungen reads', () => {
+    const gungenParamsRead = paramsReadBy(['gungen/src/viewer/main.ts']);
+    for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
+      assert.ok(gungenParamsRead.includes(name), `${name} is intentionally omitted: ${reason}`);
+    }
+    assert.deepEqual(
+      paramsOfferedBy('gungen-form'),
+      gungenParamsRead.filter((name) => !Object.hasOwn(intentionallyUnofferedGungenParams, name)),
+    );
   });
 
   it('lists the current gungen templates and fixtures', () => {
-    const templateNames = [...read('gungen/src/gun/templates.ts').matchAll(/\bname:\s*'([^']+)'/g)].map(
-      (match) => match[1],
-    );
+    const templateNames = TEMPLATES.map(({ name }) => name);
     assert.deepEqual(optionValues('gungen-template'), templateNames);
+    assert.ok(!templateNames.includes('bullpup'), 'suspended bullpup is not offered by the launcher');
 
     const fixtureNames = readdirSync(join(ROOT, 'gungen/fixtures'))
       .filter((name) => name.endsWith('.json'))

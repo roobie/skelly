@@ -216,6 +216,10 @@ are pinned by `test/simulationFingerprint.test.ts`:
 - `src/core/sky.ts`, imported by `src/game/play.ts`: values only feed rendered
   sky state; no simulation system reads them. Include this source if daylight
   becomes a simulation input.
+- `src/core/mood.ts` and `src/core/weather.ts`, imported by `src/game/play.ts`:
+  the look's defaults, the mood pass's numbers, and the weather's fogginess as it
+  shapes the sky's fog; values only feed rendering. Remove `weather.ts` from the
+  exclusions and save its state as soon as weather affects the simulation.
 - `src/game/damageFeedback.ts`, imported by `src/game/play.ts`: vignette and
   camera-roll animation only. Camera rotation remains visual in this excluded
   module; gameplay targeting uses fingerprinted `src/game/aim.ts` with input
@@ -226,7 +230,16 @@ are pinned by `test/simulationFingerprint.test.ts`:
   render-only edits do not invalidate saves.
 - `src/core/mesher.ts` and `src/core/pileLayout.ts`: render-worker mesh generation
   and pile mesh placement only; neither changes world, inventory, or save state.
-- `src/render/{flashlight,furniture,hands,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
+- `src/core/meshInput.ts`, `src/core/shell.ts` and `src/core/occlusion.ts`: what the
+  mesher reads from the world (the padded and wide block arrays copied out of
+  chunks, the surface-pattern ids) and the wide ambient occlusion's maths. Reached
+  from `world.ts` (which repeats the occlusion radius as `MESH_REACH`, checked
+  equal by a test, so it need not import `occlusion.ts`), `streamer.ts` and
+  `worldSetup.ts`; they only feed meshing.
+- `src/core/sideButton.ts`, imported by `src/game/play.ts`: which pointer events
+  count as the Mouse 5 side button and the de-duplication of one press; what the
+  button does is in the fingerprinted `src/core/lights.ts` and `play.ts`.
+- `src/render/{flashlight,furniture,hands,look,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
   imported by `src/game/play.ts`: mesh construction, draw transforms, and render
   interpolation only. The simulation never reads these objects back.
 - `src/ui/audioOptions.ts`: output volume controls only. The `GameAudio` event
@@ -376,16 +389,17 @@ state.
 The measured reference-laptop budget at 96 m is 16.7 ms/frame; existing main-
 thread work p95 is 3 ms looking, 4 ms jogging and 10 ms sprinting. The benchmark
 has 1,800 loaded render chunks and 19.4 MiB of in-memory chunk data, but neither
-is copied into a save. There is no save implementation measurement yet. For a
+is copied into a save. At decision time there was no save implementation measurement. For a
 hamlet session with a player inventory, five buildings and the current two
-spawn points, the snapshot is estimated below 1 MiB and below 1 ms p95 main-
+spawn points, the snapshot was estimated below 1 MiB and below 1 ms p95 main-
 thread time when only dirty chunks and dynamic state are copied; encoding and
-disk I/O are worker work. This is an estimate, not a result. Keep a hard
+disk I/O are worker work. This estimate was not a result. Keep a hard
 instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 16.7 ms); if measurement misses, reduce the snapshot surface or copy incrementally
-at barriers, never move serialization/disk work onto the frame. CI also checks a
-10-game-hour save is under 50 MiB and validates/loads in under 5 s, matching
-`CHALLENGES.md`'s save targets.
+at barriers, never move serialization/disk work onto the frame. The snapshot p95
+is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
+save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
+runner-bound save budgets, not general device targets.
 
 ### Continue, New world, and implementation plan
 
@@ -427,10 +441,10 @@ generation until the new world's first snapshot commits.
    failed storage write leaves Continue on the previous valid generation.
 5. **Round-trip CI and budget.** Generate a deterministic save with the current
    build in CI and require the same build to read it back exactly; add
-   save-size/load-time checks and a hamlet snapshot-frame benchmark. Done when CI
-   checks the 10-hour <50 MiB and <5 s limits, the 1 ms p95 snapshot bound is
-   demonstrated on the reference laptop, and the current-build round trip
-   passes.
+   save-size/load-time checks. Done when CI checks the 10-hour <5 MiB and <1 s
+   decode/restore limits on `ubuntu-latest` and the current-build round trip
+   passes. The 1 ms p95 snapshot bound is an in-game F4 measurement under
+   SLICE-1 §1.11, not a Node benchmark or CI gate.
 
 ## Consequences
 

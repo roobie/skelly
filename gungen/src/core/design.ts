@@ -35,6 +35,8 @@ export interface Design {
   readonly assembly: Assembly;
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
+  /** Optional slot-to-material finish overrides; absent keeps template defaults. */
+  readonly finish?: Readonly<Record<string, string>>;
   readonly origin?: DesignOrigin;
 }
 
@@ -105,18 +107,6 @@ export type PartAnchorDeclarations<Name extends string = string> = Readonly<
 /** Part id -> named frames transformed into resolved assembly coordinates (gungen units). */
 export type ResolvedAnchors<Name extends string = string> = Readonly<Record<string, NamedAnchors<Name>>>;
 
-/** Generic selection passed to exporters after domain-specific precedence has been applied. */
-export interface SelectedAnchors {
-  /** Required winning hold frame, in gungen assembly coordinates and units. */
-  readonly hold: AnchorFrame;
-  /** Other selected named frames, in the same space; this map excludes `hold`. */
-  readonly others: Readonly<Record<string, AnchorFrame>>;
-}
-
-export type AnchorSelectionError =
-  | { readonly code: 'missing-required-anchor'; readonly name: string }
-  | { readonly code: 'ambiguous-anchor'; readonly name: string; readonly candidates: readonly string[] };
-
 /** Contract for the generic core transformation from family-local to assembly-space anchors. */
 export type ResolveAnchors = <Name extends string>(
   resolved: Resolved,
@@ -130,16 +120,25 @@ export type ResolveAnchors = <Name extends string>(
 export type SrgbColor = readonly [red: number, green: number, blue: number];
 
 /**
- * Special colours are keyed by solid id and win over family colours. Unknown families use `fallbackColor`.
+ * Palette keeps legacy role colours for geometry inspection and optionally supplies material/slot finishing.
+ * A role selects its default slot and shade; colour follows the resolved material.
  */
+export interface AppearanceContext {
+  readonly variant?: string;
+  readonly finish?: Readonly<Record<string, string>>;
+}
+
 export interface Palette {
-  /**
-   * Keyed by the `PartDef.family` role, not the FAMILIES registry key: colour follows what the part does, so an AK
-   * receiver looks like any receiver.
-   */
   readonly familyColors: Readonly<Record<string, SrgbColor>>;
   readonly specialColors: Readonly<Record<string, SrgbColor>>;
   readonly fallbackColor: SrgbColor;
+  readonly materials?: Readonly<Record<string, SrgbColor>>;
+  readonly roleSlots?: Readonly<Record<string, string>>;
+  /** Role-default material ids, used when no special, part, design, or archetype finish applies. */
+  readonly roleMaterials?: Readonly<Record<string, string>>;
+  /** Multipliers, one RGB triple per role, applied to the material's sRGB base colour. */
+  readonly roleShades?: Readonly<Record<string, SrgbColor>>;
+  readonly archetypeFinishes?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
 /**
@@ -171,36 +170,22 @@ export interface ExportPortMetadata {
   readonly rail?: RailPortMetadata;
 }
 
-/** Deadvox path shape; the exporter also validates the name against `[a-z0-9_-]+`. */
-export type DeadvoxModelFile = `assets/models/${string}.glb`;
-
-/** Structural mirror of deadvox's model entry, without importing deadvox into core; intentionally omits `hold` and `roll`. */
-export interface DeadvoxModelEntry {
-  readonly id: string;
-  readonly file: DeadvoxModelFile;
-  readonly grip: {
-    /** Position in exported-model metres, after conversion to deadvox axes (+X forward, +Y up). */
-    readonly at: Vec3;
-    /** Euler angles in degrees, in deadvox's x/y/z order; always emitted for gungen firearms. */
-    readonly turn: Vec3;
-  };
-  /** Named anchor positions in exported-model metres, after axis conversion to deadvox axes (+X forward, +Y up). */
-  readonly anchors?: Readonly<Record<string, Vec3>>;
-}
-
 export interface GlbAssetIdentity {
   readonly id: string;
-  /** The file name component is checked against deadvox's `[a-z0-9_-]+` path rule at export time. */
-  readonly file: DeadvoxModelFile;
+  readonly file: string;
 }
 
 /** All domain-specific inputs are supplied explicitly; this type imports no gun module. */
 export interface GlbExportInput {
   readonly resolved: Resolved;
-  /** Domain-selected assembly-space frames; core does not apply gun precedence. */
-  readonly anchors: SelectedAnchors;
   readonly palette: Palette;
+  /** Optional domain-agnostic appearance context, supplied by the caller (never inferred from assembly.name). */
+  readonly appearance?: AppearanceContext;
+  /** Optional design-level slot-to-material overrides, ahead of variant defaults. */
+  readonly finish?: Readonly<Record<string, string>>;
   readonly asset: GlbAssetIdentity;
+  /** Facets of every revolved solid in the file: a level of detail baked in at export. Defaults to the mesh default. */
+  readonly revolveFacets?: number;
 }
 
 export type GlbExportError =
@@ -211,7 +196,7 @@ export type GlbExportError =
   | { readonly code: 'invalid-asset-file'; readonly file: string };
 
 export type GlbExportResult =
-  | { readonly ok: true; readonly glb: Uint8Array; readonly modelEntry: DeadvoxModelEntry }
+  | { readonly ok: true; readonly glb: Uint8Array }
   | { readonly ok: false; readonly error: GlbExportError };
 
 /** Signature only; the writer refuses unresolved/partly placed assemblies and invalid export metadata. */

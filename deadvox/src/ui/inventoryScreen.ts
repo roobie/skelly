@@ -4,12 +4,14 @@
 // goes through the handling queue, so it takes real seconds while the world keeps
 // running. Furniture shows its contents once it has been searched.
 
+import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
 import type { WearSlot } from '../core/schema.ts';
+import { CONTROL_CODES, quickbarSlotForKey } from '../game/input.ts';
 import { bestPocket, dropTarget, options, toHands } from '../game/targets.ts';
 
 /** Pixels per inventory cell. */
@@ -58,24 +60,260 @@ interface Drag {
   rotated: boolean;
   start: [number, number];
   moved: boolean;
-  ghost?: HTMLElement | undefined;
+  position?: [number, number];
   hover?: { target: Target; ok: boolean; reason: string } | undefined;
 }
 
-const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] => {
-  const node = document.createElement(tag);
-  node.className = className;
-  node.textContent = text;
-  return node;
-};
+interface ItemViewModel {
+  readonly item: Item;
+  readonly uid: string;
+  readonly className: string;
+  readonly title: string;
+  readonly name: string;
+  readonly count?: string | undefined;
+  readonly style?: string | undefined;
+}
 
-const QUICK_DIGIT = /^Digit([1-5])$/;
+interface GridViewModel {
+  readonly target: string;
+  readonly width: number;
+  readonly height: number;
+  readonly items: readonly ItemViewModel[];
+}
+
+interface PocketViewModel {
+  readonly label: string;
+  readonly grid: GridViewModel;
+}
+
+interface SlotViewModel {
+  readonly target: string;
+  readonly label: string;
+  readonly item?: ItemViewModel | undefined;
+  readonly pockets?: readonly PocketViewModel[];
+}
+
+interface PileViewModel {
+  readonly label: string;
+  readonly grids: readonly GridViewModel[];
+  readonly bags: readonly { readonly name: string; readonly pockets: readonly PocketViewModel[] }[];
+}
+
+interface FurnitureViewModel {
+  readonly uid: number;
+  readonly label: string;
+  readonly searching: boolean;
+  readonly searchLabel?: string | undefined;
+  readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
+}
+
+interface OptionViewModel {
+  readonly label: string;
+  readonly button: boolean;
+  readonly time?: string;
+  readonly reason?: string;
+  readonly target?: Target;
+}
+
+interface DetailsViewModel {
+  readonly item?: Item;
+  readonly empty: boolean;
+  readonly category?: string;
+  readonly name?: string;
+  readonly condition?: string;
+  readonly description?: string | undefined;
+  readonly lines: readonly string[];
+  readonly options: readonly OptionViewModel[];
+}
+
+interface InventoryScreenViewModel {
+  readonly weight: string;
+  readonly hands: readonly SlotViewModel[];
+  readonly worn: readonly SlotViewModel[];
+  readonly piles: readonly PileViewModel[];
+  readonly hasFeetPile: boolean;
+  readonly feetTarget: string;
+  readonly furniture: readonly FurnitureViewModel[];
+  readonly details: DetailsViewModel;
+}
+
 const secs = (s: number) => `${s.toFixed(1)} s`;
 const kg = (g: number) => `${(g / 1000).toFixed(2)} kg`;
+
+const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
+  <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? ''}>
+    <span class="inv-item-name">${vm.name}</span>
+    ${vm.count ? html`<span class="inv-item-count">${vm.count}</span>` : nothing}
+  </div>
+`;
+
+const gridTemplate = (vm: GridViewModel): TemplateResult => html`
+  <div class="inv-grid" data-target=${vm.target} style=${`width: ${vm.width}px; height: ${vm.height}px`}>
+    ${vm.items.map(itemTemplate)}
+  </div>
+`;
+
+const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
+  <div class="inv-pocket">
+    <span class="inv-pocket-label">${vm.label}</span>
+    ${gridTemplate(vm.grid)}
+  </div>
+`;
+
+const optionTemplate = (
+  option: OptionViewModel,
+  item: Item,
+  queue: (item: Item, target: Target) => void,
+): TemplateResult =>
+  option.button && option.target
+    ? html`
+        <button class="inv-option" type="button" @click=${() => queue(item, option.target!)}>
+          <span>${option.label}</span><span class="inv-time">${option.time}</span>
+        </button>
+      `
+    : html`
+        <div class="inv-option inv-option-no">
+          <span>${option.label}</span><span class="inv-reason">${option.reason}</span>
+        </div>
+      `;
+
+const detailsTemplate = (vm: DetailsViewModel, queue: (item: Item, target: Target) => void): TemplateResult => {
+  if (vm.empty) {
+    return html`<aside class="inv-details"><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
+  }
+  const item = vm.item!;
+  return html`
+    <aside class="inv-details">
+      <div class="inv-kicker">${vm.category}</div>
+      <h3>${vm.name}</h3>
+      <div class="inv-condition">${vm.condition}</div>
+      ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
+      <div class="inv-kicker">Inspect</div>
+      ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
+      <div class="inv-kicker">Where it can go</div>
+      ${vm.options.map((option) => optionTemplate(option, item, queue))}
+    </aside>
+  `;
+};
+
+const furnitureBodyTemplate = (
+  furniture: FurnitureViewModel,
+  search: (uid: number) => void,
+): TemplateResult | TemplateResult[] => {
+  if (furniture.searching) {
+    return html`<p class="inv-muted">Searching…</p>`;
+  }
+  if (furniture.searchLabel) {
+    return html`<button class="inv-option" type="button" @click=${() => search(furniture.uid)}><span>Search it (S)</span><span class="inv-time">${furniture.searchLabel}</span></button>`;
+  }
+  return furniture.grids.map(
+    (pocket) =>
+      html`${pocket.label ? html`<span class="inv-pocket-label">${pocket.label}</span>` : nothing}${gridTemplate(pocket.grid)}`,
+  );
+};
+
+const inventoryTemplate = (
+  vm: InventoryScreenViewModel,
+  queue: (item: Item, target: Target) => void,
+  search: (uid: number) => void,
+): TemplateResult => html`
+  <header class="inv-head">
+    <h2>Inventory</h2>
+    <span class="inv-weight">Carrying ${vm.weight}</span>
+    <span class="inv-help">Drag items · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
+  </header>
+  <div class="inv-body">
+    <section class="inv-pane">
+      <h3>You</h3>
+      <div class="inv-hands">
+        ${vm.hands.map(
+          (slot) => html`
+            <div class="inv-slot" data-target=${slot.target}>
+              <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
+            </div>
+          `,
+        )}
+      </div>
+      ${vm.worn.map(
+        (slot) => html`
+          <div class="inv-worn">
+            <div class="inv-slot inv-slot-worn" data-target=${slot.target}>
+              <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
+            </div>
+            ${slot.pockets?.length ? html`<div class="inv-pockets">${slot.pockets.map(pocketTemplate)}</div>` : nothing}
+          </div>
+        `,
+      )}
+    </section>
+    <section class="inv-pane">
+      <h3>Around you</h3>
+      ${vm.piles.map(
+        (pile) => html`
+          <div class="inv-pile">
+            <div class="inv-pile-label">${pile.label}</div>
+            ${pile.grids.map(gridTemplate)}
+            ${pile.bags.map(
+              (bag) => html`
+                <div class="inv-bag">
+                  <div class="inv-pile-label">${bag.name}, on the floor</div>
+                  <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
+                </div>
+              `,
+            )}
+          </div>
+        `,
+      )}
+      ${
+        vm.hasFeetPile
+          ? nothing
+          : html`
+            <div class="inv-pile">
+              <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: PILE_GRID.w * CELL, height: PILE_GRID.h * CELL, items: [] })}
+            </div>
+          `
+      }
+      ${vm.furniture.map(
+        (furniture) => html`
+          <div class="inv-pile">
+            <div class="inv-pile-label">${furniture.label}</div>
+            ${furnitureBodyTemplate(furniture, search)}
+          </div>
+        `,
+      )}
+    </section>
+    ${detailsTemplate(vm.details, queue)}
+  </div>
+  <footer class="inv-queue"></footer>
+`;
+
+const queueTemplate = (queue: HandlingQueue): TemplateResult => {
+  const rows = queue.jobs.map((job, i) => ({
+    n: String(i + 1),
+    label: job.label,
+    percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
+    duration: secs(job.duration),
+  }));
+  return html`
+    <div class="inv-queue-title">
+      <strong>Doing next</strong>
+      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · half speed, no sprinting · X cancels` : 'Nothing queued'}</span>
+    </div>
+    ${rows.map(
+      (row) => html`
+        <div class="inv-job">
+          <span class="inv-job-n">${row.n}</span><span class="inv-job-label">${row.label}</span>
+          <span class="inv-bar"><span class="inv-bar-fill" style=${`width: ${row.percent}%`}></span></span>
+          <span class="inv-time">${row.duration}</span>
+        </div>
+      `,
+    )}
+  `;
+};
 
 export class InventoryScreen {
   selected: Item | undefined;
   private readonly root: HTMLElement;
+  private readonly dragRoot: HTMLElement;
   private readonly inv: Inventory;
   private readonly queue: HandlingQueue;
   private readonly hooks: ScreenHooks;
@@ -84,10 +322,10 @@ export class InventoryScreen {
   private order: Item[] = [];
   private drawn = '';
   private drag: Drag | undefined;
-  private queueBox: HTMLElement | undefined;
 
   constructor(root: HTMLElement, inv: Inventory, queue: HandlingQueue, hooks: ScreenHooks) {
     this.root = root;
+    this.dragRoot = root.ownerDocument.querySelector<HTMLElement>('#inventory-drag-root')!;
     this.inv = inv;
     this.queue = queue;
     this.hooks = hooks;
@@ -124,9 +362,9 @@ export class InventoryScreen {
       .join(';');
     const containers = this.hooks
       .containers()
-      .map((e) => e.uid)
+      .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${this.queue.jobs.length}`;
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -136,15 +374,15 @@ export class InventoryScreen {
 
   /** Handles a key while the screen is open. Returns true if it was used. */
   onKey(e: KeyboardEvent): boolean {
-    if (this.drag?.moved && e.code === 'KeyR') {
+    if (this.drag?.moved && e.code === CONTROL_CODES.rotate) {
       this.drag.rotated = !this.drag.rotated;
       this.drag.grab = [CELL / 2, CELL / 2];
-      this.sizeGhost();
+      this.renderDrag();
       return true;
     }
-    const digit = QUICK_DIGIT.exec(e.code);
+    const digit = quickbarSlotForKey(e.code);
     const item = this.selected;
-    if (e.code === 'KeyX') {
+    if (e.code === CONTROL_CODES.cancel) {
       this.queue.cancel();
       return true;
     }
@@ -152,7 +390,7 @@ export class InventoryScreen {
       this.step(e.code === 'ArrowDown' || e.code === 'ArrowRight' ? 1 : -1);
       return true;
     }
-    if (e.code === 'KeyS') {
+    if (e.code === CONTROL_CODES.search) {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
       this.report(next ? this.hooks.search(next) : 'Nothing here to search');
       return true;
@@ -160,33 +398,33 @@ export class InventoryScreen {
     if (!item) {
       return false;
     }
-    if (digit) {
-      this.hooks.assign(Number(digit[1]) - 1, item);
+    if (digit !== undefined) {
+      this.hooks.assign(digit, item);
       return true;
     }
     switch (e.code) {
-      case 'KeyH':
+      case CONTROL_CODES.hands:
         this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
         return true;
-      case 'KeyW':
+      case CONTROL_CODES.wear:
         this.wearOrTakeOff(item);
         return true;
-      case 'KeyD':
+      case CONTROL_CODES.drop:
         this.tryQueue(item, dropTarget(this.inv, item, this.hooks.feet()).target);
         return true;
-      case 'KeyR':
+      case CONTROL_CODES.rotate:
         this.rotateInPlace(item);
         return true;
       case 'Enter':
-      case 'KeyE': {
+      case CONTROL_CODES.bestPocket: {
         const best = bestPocket(this.inv, item);
         this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
         return true;
       }
-      case 'KeyA':
+      case CONTROL_CODES.takeAll:
         this.takeAllLike(item);
         return true;
-      case 'KeyU':
+      case CONTROL_CODES.use:
         this.report(this.hooks.use(item));
         this.drawn = '';
         return true;
@@ -199,7 +437,6 @@ export class InventoryScreen {
 
   private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
     const result = this.queue.enqueue(item, target, count);
-    this.drawn = '';
     return result.ok ? undefined : result.reason;
   }
 
@@ -259,220 +496,164 @@ export class InventoryScreen {
     this.selected = this.order[(at + dir + this.order.length) % this.order.length];
   }
 
-  // ---- drawing ----
+  // ---- view model ----
 
   private render(): void {
     this.byUid.clear();
     this.entityByUid.clear();
     this.order = [];
-    const head = el('header', 'inv-head');
-    head.append(
-      el('h2', '', 'Inventory'),
-      el('span', 'inv-weight', `Carrying ${kg(this.inv.carriedWeight())}`),
-      el(
-        'span',
-        'inv-help',
-        'Drag items · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close',
+    const vm = this.viewModel();
+    render(
+      inventoryTemplate(
+        vm,
+        (item, target) => this.report(this.tryQueue(item, target)),
+        (uid) => {
+          const entity = this.entityByUid.get(uid);
+          if (entity) {
+            this.report(this.hooks.search(entity));
+          }
+        },
       ),
+      this.root,
     );
-    const body = el('div', 'inv-body');
-    body.append(this.youPane(), this.aroundPane(), this.details());
-    this.queueBox = el('footer', 'inv-queue');
-    this.root.replaceChildren(head, body, this.queueBox);
     this.renderQueue();
   }
 
-  private youPane(): HTMLElement {
-    const pane = el('section', 'inv-pane');
-    pane.append(el('h3', '', 'You'));
-    const hands = el('div', 'inv-hands');
-    for (const side of ['right', 'left'] as const) {
-      const slot = el('div', 'inv-slot');
-      slot.dataset.target = `hand:${side}`;
-      slot.append(el('span', 'inv-slot-label', `${side === 'right' ? 'Right' : 'Left'} hand`));
-      const held = this.inv.hands[side];
-      if (held) {
-        slot.append(this.slotItem(held));
-      }
-      hands.append(slot);
-    }
-    pane.append(hands);
+  private viewModel(): InventoryScreenViewModel {
+    const hands = (['right', 'left'] as const).map(
+      (side): SlotViewModel => ({
+        target: `hand:${side}`,
+        label: `${side === 'right' ? 'Right' : 'Left'} hand`,
+        item: this.inv.hands[side] ? this.itemViewModel(this.inv.hands[side]!, 'inv-item inv-item-slot') : undefined,
+      }),
+    );
     const slots = new Set<WearSlot>([...SHOWN_SLOTS, ...(Object.keys(this.inv.worn) as WearSlot[])]);
-    for (const slot of slots) {
-      pane.append(this.wornBlock(slot));
-    }
-    return pane;
-  }
-
-  private wornBlock(slot: WearSlot): HTMLElement {
-    const block = el('div', 'inv-worn');
-    const row = el('div', 'inv-slot inv-slot-worn');
-    row.dataset.target = `worn:${slot}`;
-    row.append(el('span', 'inv-slot-label', SLOT_LABEL[slot]));
-    const item = this.inv.worn[slot];
-    if (item) {
-      row.append(this.slotItem(item));
-    }
-    block.append(row);
-    if (item) {
-      block.append(this.pocketsOf(item));
-    }
-    return block;
-  }
-
-  private pocketsOf(owner: Item): HTMLElement {
-    const wrap = el('div', 'inv-pockets');
-    const specs = defOf(this.inv.registry, owner.type).container?.pockets ?? [];
-    specs.forEach((spec, i) => {
-      const box = el('div', 'inv-pocket');
-      box.append(el('span', 'inv-pocket-label', `${spec.name ?? 'pocket'} · ${secs(spec.handling)}`));
-      box.append(this.grid({ w: spec.grid[0], h: spec.grid[1] }, owner.pockets?.[i] ?? [], `pocket:${owner.uid}:${i}`));
-      wrap.append(box);
+    const worn = [...slots].map((slot): SlotViewModel => {
+      const item = this.inv.worn[slot];
+      return {
+        target: `worn:${slot}`,
+        label: SLOT_LABEL[slot],
+        item: item ? this.itemViewModel(item, 'inv-item inv-item-slot') : undefined,
+        pockets: item ? this.pocketsViewModel(item) : [],
+      };
     });
-    return wrap;
-  }
 
-  private aroundPane(): HTMLElement {
-    const pane = el('section', 'inv-pane');
-    pane.append(el('h3', '', 'Around you'));
-    const piles = this.hooks.nearby();
+    const piles = this.hooks.nearby().map(
+      (pile): PileViewModel => ({
+        label: `On the floor · ${this.hooks.distance(pile).toFixed(1)} m`,
+        grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`)],
+        bags: pile.items
+          .filter(({ item }) => item.pockets)
+          .map(({ item }) => ({ name: this.inv.name(item), pockets: this.pocketsViewModel(item) })),
+      }),
+    );
     const feet = this.hooks.feet();
-    const hasFeet = piles.some((p) => p.pos.join(',') === feet.join(','));
-    for (const pile of piles) {
-      const box = el('div', 'inv-pile');
-      box.append(el('div', 'inv-pile-label', `On the floor · ${this.hooks.distance(pile).toFixed(1)} m`));
-      box.append(this.grid(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`));
-      for (const placed of pile.items) {
-        if (placed.item.pockets) {
-          box.append(this.bagInPile(placed.item));
-        }
-      }
-      pane.append(box);
-    }
-    if (!hasFeet) {
-      const box = el('div', 'inv-pile');
-      box.append(el('div', 'inv-pile-label', 'At your feet'));
-      box.append(this.grid(PILE_GRID, [], `pile:${feet.join(',')}`));
-      pane.append(box);
-    }
-    for (const entity of this.hooks.containers()) {
-      pane.append(this.container(entity));
-    }
-    return pane;
+    const hasFeetPile = this.hooks.nearby().some((pile) => pile.pos.join(',') === feet.join(','));
+    const furniture = this.hooks.containers().map((entity): FurnitureViewModel => {
+      this.entityByUid.set(entity.uid, entity);
+      const def = this.inv.entities.defOf(entity);
+      const searchedGrids = entity.searched
+        ? (def.container?.pockets ?? []).map((spec, i) => ({
+            label:
+              def.container!.pockets.length > 1 || spec.name
+                ? `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handling)}`
+                : undefined,
+            grid: this.gridViewModel(
+              { w: spec.grid[0], h: spec.grid[1] },
+              entity.pockets?.[i] ?? [],
+              `furniture:${entity.uid}:${i}`,
+            ),
+          }))
+        : [];
+      return {
+        uid: entity.uid,
+        label: `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`,
+        searching: !entity.searched && this.hooks.searching(entity),
+        searchLabel: entity.searched || this.hooks.searching(entity) ? undefined : secs(searchTime(def)),
+        grids: searchedGrids,
+      };
+    });
+    return {
+      weight: kg(this.inv.carriedWeight()),
+      hands,
+      worn,
+      piles,
+      hasFeetPile,
+      feetTarget: feet.join(','),
+      furniture,
+      details: this.detailsViewModel(),
+    };
   }
 
-  /** A piece of furniture: its pockets once searched, or a button to search it. */
-  private container(entity: BlockEntity): HTMLElement {
-    this.entityByUid.set(entity.uid, entity);
-    const def = this.inv.entities.defOf(entity);
-    const box = el('div', 'inv-pile');
-    box.append(el('div', 'inv-pile-label', `${def.name} · ${this.hooks.entityDistance(entity).toFixed(1)} m`));
-    if (entity.searched) {
-      def.container?.pockets.forEach((spec, i) => {
-        if (def.container!.pockets.length > 1 || spec.name) {
-          box.append(el('span', 'inv-pocket-label', `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handling)}`));
-        }
-        box.append(
-          this.grid({ w: spec.grid[0], h: spec.grid[1] }, entity.pockets?.[i] ?? [], `furniture:${entity.uid}:${i}`),
-        );
-      });
-      return box;
-    }
-    if (this.hooks.searching(entity)) {
-      box.append(el('p', 'inv-muted', 'Searching…'));
-      return box;
-    }
-    const button = el('button', 'inv-option');
-    button.type = 'button';
-    button.append(el('span', '', 'Search it (S)'), el('span', 'inv-time', secs(searchTime(def))));
-    button.addEventListener('click', () => this.report(this.hooks.search(entity)));
-    box.append(button);
-    return box;
+  private pocketsViewModel(owner: Item): PocketViewModel[] {
+    const specs = defOf(this.inv.registry, owner.type).container?.pockets ?? [];
+    return specs.map((spec, i) => ({
+      label: `${spec.name ?? 'pocket'} · ${secs(spec.handling)}`,
+      grid: this.gridViewModel(
+        { w: spec.grid[0], h: spec.grid[1] },
+        owner.pockets?.[i] ?? [],
+        `pocket:${owner.uid}:${i}`,
+      ),
+    }));
   }
 
-  /** A bag lying on the floor shows its pockets, so it can be looted without picking it up. */
-  private bagInPile(bag: Item): HTMLElement {
-    const box = el('div', 'inv-bag');
-    box.append(el('div', 'inv-pile-label', `${this.inv.name(bag)}, on the floor`));
-    box.append(this.pocketsOf(bag));
-    return box;
+  private gridViewModel(size: GridSize, placed: readonly Placed[], target: string): GridViewModel {
+    return {
+      target,
+      width: size.w * CELL,
+      height: size.h * CELL,
+      items: placed.map(({ item, x, y, rotated }) => {
+        const [w, h] = footprint(defOf(this.inv.registry, item.type), rotated);
+        return this.itemViewModel(item, h > w ? 'inv-item inv-item-tall' : 'inv-item', {
+          left: `${x * CELL + 1}px`,
+          top: `${y * CELL + 1}px`,
+          width: `${w * CELL - 2}px`,
+          height: `${h * CELL - 2}px`,
+        });
+      }),
+    };
   }
 
-  private grid(size: GridSize, placed: readonly Placed[], target: string): HTMLElement {
-    const grid = el('div', 'inv-grid');
-    grid.dataset.target = target;
-    grid.style.width = `${size.w * CELL}px`;
-    grid.style.height = `${size.h * CELL}px`;
-    for (const p of placed) {
-      grid.append(this.gridItem(p));
-    }
-    return grid;
-  }
-
-  private gridItem(p: Placed): HTMLElement {
-    const [w, h] = footprint(defOf(this.inv.registry, p.item.type), p.rotated);
-    const node = this.itemNode(p.item, h > w ? 'inv-item inv-item-tall' : 'inv-item');
-    node.style.left = `${p.x * CELL + 1}px`;
-    node.style.top = `${p.y * CELL + 1}px`;
-    node.style.width = `${w * CELL - 2}px`;
-    node.style.height = `${h * CELL - 2}px`;
-    return node;
-  }
-
-  private slotItem(item: Item): HTMLElement {
-    return this.itemNode(item, 'inv-item inv-item-slot');
-  }
-
-  private itemNode(item: Item, className: string): HTMLElement {
+  private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
-    const node = el('div', `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`);
-    node.dataset.uid = String(item.uid);
-    node.title = `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`;
-    node.append(el('span', 'inv-item-name', def.name));
-    if (item.count > 1) {
-      node.append(el('span', 'inv-item-count', `×${item.count}`));
-    }
     this.byUid.set(item.uid, item);
     this.order.push(item);
-    return node;
+    return {
+      item,
+      uid: String(item.uid),
+      className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
+      title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
+      name: def.name,
+      count: item.count > 1 ? `×${item.count}` : undefined,
+      style: style
+        ? Object.entries(style)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join('; ')
+        : undefined,
+    };
   }
 
-  private details(): HTMLElement {
-    const box = el('aside', 'inv-details');
+  private detailsViewModel(): DetailsViewModel {
     const item = this.selected && this.inv.locate(this.selected) ? this.selected : undefined;
     if (!item) {
-      box.append(el('p', 'inv-muted', 'Pick an item to see what it is and where it can go.'));
-      return box;
+      return { empty: true, lines: [], options: [] };
     }
     const def = defOf(this.inv.registry, item.type);
-    box.append(
-      el('div', 'inv-kicker', def.category),
-      el('h3', '', `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}`),
-      el('div', 'inv-condition', conditionWord(item.condition)),
-    );
-    if (def.description) {
-      box.append(el('p', 'inv-muted', def.description));
-    }
-    box.append(el('div', 'inv-kicker', 'Inspect'));
-    for (const line of this.inspect(item)) {
-      box.append(el('div', 'inv-line', line));
-    }
-    box.append(el('div', 'inv-kicker', 'Where it can go'));
-    for (const option of options(this.inv, item, this.hooks.feet())) {
-      if (option.plan.ok) {
-        const button = el('button', 'inv-option');
-        button.type = 'button';
-        button.append(el('span', '', option.label), el('span', 'inv-time', secs(option.plan.time)));
-        const { target } = option;
-        button.addEventListener('click', () => this.report(this.tryQueue(item, target)));
-        box.append(button);
-      } else {
-        const row = el('div', 'inv-option inv-option-no');
-        row.append(el('span', '', option.label), el('span', 'inv-reason', option.plan.reason.toLowerCase()));
-        box.append(row);
-      }
-    }
-    return box;
+    return {
+      item,
+      empty: false,
+      category: def.category,
+      name: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}`,
+      condition: conditionWord(item.condition),
+      description: def.description,
+      lines: this.inspect(item),
+      options: options(this.inv, item, this.hooks.feet()).map(
+        (option): OptionViewModel =>
+          option.plan.ok
+            ? { label: option.label, button: true, time: secs(option.plan.time), target: option.target }
+            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
+      ),
+    };
   }
 
   private inspect(item: Item): string[] {
@@ -498,7 +679,7 @@ export class InventoryScreen {
     }
     if (def.weapon) {
       const m = def.weapon.melee;
-      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m · ${m.cooldown} s a swing`);
+      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldown} s a swing`);
     }
     if (def.light) {
       lines.push(`Lights ${def.light.radius} m · seen from ${def.light.seenFrom} m`);
@@ -514,36 +695,10 @@ export class InventoryScreen {
   }
 
   private renderQueue(): void {
-    const box = this.queueBox;
-    if (!box) {
-      return;
+    const queueRoot = this.root.querySelector<HTMLElement>('.inv-queue');
+    if (queueRoot) {
+      render(queueTemplate(this.queue), queueRoot);
     }
-    const rows = this.queue.jobs.map((job, i) => {
-      const row = el('div', 'inv-job');
-      const bar = el('span', 'inv-bar');
-      const fill = el('span', 'inv-bar-fill');
-      fill.style.width = `${Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100)}%`;
-      bar.append(fill);
-      row.append(
-        el('span', 'inv-job-n', String(i + 1)),
-        el('span', 'inv-job-label', job.label),
-        bar,
-        el('span', 'inv-time', secs(job.duration)),
-      );
-      return row;
-    });
-    const title = el('div', 'inv-queue-title');
-    title.append(
-      el('strong', '', 'Doing next'),
-      el(
-        'span',
-        'inv-muted',
-        this.queue.busy
-          ? `${secs(this.queue.remaining)} left · half speed, no sprinting · X cancels`
-          : 'Nothing queued',
-      ),
-    );
-    box.replaceChildren(title, ...rows);
   }
 
   // ---- drag and drop ----
@@ -578,20 +733,11 @@ export class InventoryScreen {
     if (!drag.moved && Math.hypot(e.clientX - drag.start[0], e.clientY - drag.start[1]) < 5) {
       return;
     }
-    if (!drag.moved) {
-      drag.moved = true;
-      drag.ghost = el(
-        'div',
-        `inv-ghost cat-${defOf(this.inv.registry, drag.item.type).category}`,
-        this.inv.name(drag.item),
-      );
-      document.body.append(drag.ghost);
-      this.sizeGhost();
-    }
+    drag.moved = true;
     const left = e.clientX - drag.grab[0];
     const top = e.clientY - drag.grab[1];
-    drag.ghost!.style.left = `${left}px`;
-    drag.ghost!.style.top = `${top}px`;
+    drag.position = [left, top];
+    this.renderDrag();
     this.hover(e.clientX, e.clientY, left, top);
   }
 
@@ -613,27 +759,34 @@ export class InventoryScreen {
   }
 
   private endDrag(): void {
-    this.drag?.ghost?.remove();
     this.drag = undefined;
+    render(nothing, this.dragRoot);
     this.clearPreview();
   }
 
-  private sizeGhost(): void {
+  private renderDrag(): void {
     const { drag } = this;
-    if (!drag?.ghost) {
+    if (!(drag?.moved && drag.position)) {
+      render(nothing, this.dragRoot);
       return;
     }
     const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
-    drag.ghost.style.width = `${w * CELL - 2}px`;
-    drag.ghost.style.height = `${h * CELL - 2}px`;
+    render(
+      html`<div
+        class=${`inv-ghost cat-${defOf(this.inv.registry, drag.item.type).category}`}
+        style=${`left: ${drag.position[0]}px; top: ${drag.position[1]}px; width: ${w * CELL - 2}px; height: ${h * CELL - 2}px`}
+        >${this.inv.name(drag.item)}</div
+      >`,
+      this.dragRoot,
+    );
   }
 
   private clearPreview(): void {
-    for (const node of this.root.querySelectorAll('.inv-preview')) {
-      node.remove();
-    }
-    for (const node of this.root.querySelectorAll('.drop-ok, .drop-no')) {
+    for (const node of this.root.querySelectorAll<HTMLElement>('.drop-ok, .drop-no')) {
       node.classList.remove('drop-ok', 'drop-no');
+      for (const property of ['--preview-left', '--preview-top', '--preview-width', '--preview-height']) {
+        node.style.removeProperty(property);
+      }
     }
   }
 
@@ -671,17 +824,14 @@ export class InventoryScreen {
     }
     const { ok, reason } = this.dropCheck(drag.item, spec, target);
     drag.hover = { target, ok, reason };
-    if (!(spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:'))) {
-      zone.classList.add(ok ? 'drop-ok' : 'drop-no');
-      return;
+    zone.classList.add(ok ? 'drop-ok' : 'drop-no');
+    if (spec.startsWith('pocket:') || spec.startsWith('pile:') || spec.startsWith('furniture:')) {
+      const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
+      zone.style.setProperty('--preview-left', `${spot.x * CELL}px`);
+      zone.style.setProperty('--preview-top', `${spot.y * CELL}px`);
+      zone.style.setProperty('--preview-width', `${w * CELL}px`);
+      zone.style.setProperty('--preview-height', `${h * CELL}px`);
     }
-    const [w, h] = footprint(defOf(this.inv.registry, drag.item.type), drag.rotated);
-    const preview = el('div', `inv-preview ${ok ? 'drop-ok' : 'drop-no'}`);
-    preview.style.left = `${spot.x * CELL}px`;
-    preview.style.top = `${spot.y * CELL}px`;
-    preview.style.width = `${w * CELL}px`;
-    preview.style.height = `${h * CELL}px`;
-    zone.append(preview);
   }
 
   private targetFrom(spec: string, at: { x: number; y: number; rotated: boolean }): Target | undefined {

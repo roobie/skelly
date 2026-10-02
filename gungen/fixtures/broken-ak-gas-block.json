@@ -47,14 +47,17 @@
       "family": "stock",
       "params": {
         "length": "L",
-        "style": "dropped"
+        "style": "ak-dropped"
       }
     },
     "rear-sight": {
       "family": "ak-rear-sight"
     },
     "front-sight": {
-      "family": "front-sight"
+      "family": "front-sight",
+      "params": {
+        "style": "ak"
+      }
     }
   },
   "connections": [

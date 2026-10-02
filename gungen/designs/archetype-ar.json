@@ -3,7 +3,7 @@
   "template": "ar",
   "assembly": {
     "name": "archetype-ar",
-    "description": "AR-pattern rifle with a flat-top rail, rear charging handle, and front-sight block.",
+    "description": "Classic AR-pattern rifle with an A2 front-sight block at the gas station.",
     "root": "receiver",
     "parts": {
       "receiver": {
@@ -13,8 +13,13 @@
           "feed": "box",
           "bore": "M",
           "chargingHandle": "rear-top",
-          "rail": "full"
+          "rail": "full",
+          "section": "ar"
         }
+      },
+      "bolt-carrier": {
+        "family": "bolt-carrier",
+        "params": { "pattern": "ar" }
       },
       "lower": {
         "family": "lower",
@@ -29,7 +34,10 @@
         }
       },
       "handguard": {
-        "family": "handguard"
+        "family": "handguard",
+        "params": {
+          "layout": "ar"
+        }
       },
       "grip": {
         "family": "grip",
@@ -52,11 +60,14 @@
         "family": "stock",
         "params": {
           "length": "M",
-          "style": "straight"
+          "style": "m4"
         }
       },
       "front-sight": {
-        "family": "front-sight"
+        "family": "front-sight",
+        "params": {
+          "style": "ar"
+        }
       },
       "sight": {
         "family": "sight"
@@ -70,6 +81,10 @@
       {
         "from": "receiver.barrel",
         "to": "barrel.rear"
+      },
+      {
+        "from": "receiver.bolt-carrier",
+        "to": "bolt-carrier.mount"
       },
       {
         "from": "receiver.handguard",

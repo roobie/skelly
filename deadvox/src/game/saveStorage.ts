@@ -1,5 +1,6 @@
 import type { SaveVersionComponents, SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { SaveStorageLockError } from './saveStorageLockError.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -13,6 +14,8 @@ type SaveBackend = 'opfs' | 'indexeddb';
 export type SaveBackendPreference = 'auto' | SaveBackend;
 type SlotName = 'a' | 'b';
 const SAVE_WRITE_LOCK = 'deadvox-save-storage';
+const SAVE_READ_RETRIES = 3;
+const SAVE_READ_RETRY_MS = 50;
 const PERSISTENCE_STATUS_TIMEOUT_MS = 1000;
 type CrashStage =
   | 'before-truncate'
@@ -99,7 +102,9 @@ export class SaveStorage {
         this.pending.delete(data.id);
         clearTimeout(request.timer);
         if (data.error) {
-          request.reject(new Error(data.error));
+          request.reject(
+            data.error.startsWith('LOCKED:') ? new SaveStorageLockError(data.error) : new Error(data.error),
+          );
         } else {
           request.resolve(data.result);
         }
@@ -194,11 +199,27 @@ export class SaveStorage {
 
   async readRawSlots(namespace: string): Promise<RawSaveSlots> {
     await this.status();
-    const slots = await this.request<SaveSlotPair>({ operation: 'read', namespace });
-    return {
-      a: slots.a === null ? null : new Uint8Array(slots.a),
-      b: slots.b === null ? null : new Uint8Array(slots.b),
-    };
+    return this.readRawSlotsAttempt(namespace, 0);
+  }
+
+  private async readRawSlotsAttempt(namespace: string, attempt: number): Promise<RawSaveSlots> {
+    try {
+      const read = () => this.request<SaveSlotPair>({ operation: 'read', namespace });
+      const slots =
+        typeof navigator.locks?.request === 'function'
+          ? await navigator.locks.request(SAVE_WRITE_LOCK, { mode: 'shared' }, read)
+          : await read();
+      return {
+        a: slots.a === null ? null : new Uint8Array(slots.a),
+        b: slots.b === null ? null : new Uint8Array(slots.b),
+      };
+    } catch (error) {
+      if (!(error instanceof SaveStorageLockError) || attempt + 1 >= SAVE_READ_RETRIES) {
+        throw error;
+      }
+      await new Promise((resolve) => globalThis.setTimeout(resolve, SAVE_READ_RETRY_MS * (attempt + 1)));
+      return this.readRawSlotsAttempt(namespace, attempt + 1);
+    }
   }
 
   async load(namespace: string): Promise<SaveLoadResult | undefined> {

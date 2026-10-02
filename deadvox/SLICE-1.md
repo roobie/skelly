@@ -540,17 +540,22 @@ Pulled forward from Slice 3 by BR on 2026-09-29: the first slice of
 
 - The shambler's single health pool becomes body regions: head, torso, arms and
   legs, each with its own health.
-- A melee hit damages the region it lands on. Today the hit test only checks the
-  aim ray against one point per shambler, at 0.55 of its height
-  (`src/core/zombies.ts:1025`), so it has to learn which region the ray
-  reaches first.
-- A non-head region at zero is severed: its rigid part is hidden and a matching
+- A melee hit damages the region it lands on. The hit test raycasts oriented
+  boxes built from the spawned figure's posed voxels, so the first region hit is
+  the one the ray actually reaches on that saved figure.
+- A destroyed arm or leg is severed: its rigid part is hidden and a matching
   inventory pile item drops. The existing `shambler_hurt` sound plays on hit;
-  there is no separate severing asset yet. Severing the torso does not cascade
-  to other regions or kill the shambler; its other regions remain active in
-  place. Behaviour otherwise stays unchanged. With both legs gone, it stays
-  where it is (no walking or crawling), but remains alive and can still attack.
-- A shambler dies only when its head is destroyed.
+  there is no separate severing asset yet. With both legs gone, it stays where it
+  is (no walking or crawling), but remains alive and can still attack.
+- A destroyed torso does not cascade to other regions or drop a torso item. With
+  its head still intact, the shambler becomes incapacitated: it falls and lies inert
+  but stays in the world and save so a later mechanism can revive it. It makes no
+  noise, does no AI, movement or attacks, and does not block sleep.
+- A shambler dies when its head is destroyed.
+- **BR ruling (2026-09-29):** destroyed torso means permanent-for-now incapacitation,
+  not death; a head kill is the only death path. Incapacitated shamblers remain
+  simulation entities, gravity-bound and saved, and their detailed figures fall once
+  and lie still without sinking or corpse-cap eviction.
 - Region state is simulation state: it's in the save snapshot and the source
   fingerprint.
 
@@ -574,10 +579,10 @@ head; save → reload keeps severed limbs; BR approves it in game.
   strict version refusal: any simulation change would make the fixture unloadable.
 
 **Done when:** the current-build scenario save → reload has an identical state
-hash; CI checks that a 10-game-hour hamlet save is under 50 MiB and loads in
-under 5 s on its `ubuntu-latest` runner (a CI-runner bound, not a general device
-target); and the initial hamlet snapshot-frame benchmark reports p95 at or
-below 1 ms on the reference laptop. CI records this p95 without gating on it.
+hash; CI checks that a 10-game-hour hamlet save is under 5 MiB and loads in
+under 1 s on its `ubuntu-latest` runner (a CI-runner bound, not a general device
+target). The initial hamlet snapshot-frame budget (p95 ≤1 ms) is measured in the
+game via F4 (§1.11), not by the Node benchmark or CI.
 
 **Ten-hour CI budget fixture:** seed 13, no ticks simulated. The default 96 m
 radius (`PROJECT.md`, `game/config.ts`) spans 6 chunks at 16 m per chunk
@@ -596,22 +601,26 @@ and one removed, with all 8 spawn-ledger keys retained (`core/zombieSpawns.ts`).
 These are explicit high-side session assumptions, not measured player telemetry.
 Construction uses the public world-edit, inventory-pile, furniture, and
 column-spawn APIs; `test/snapshot.test.ts` asserts each population count. The
-1 ms p95 samples the ordinary initial hamlet snapshot before this larger budget
-state; the 10-hour state is used for size, encode/decode, and restore budgets.
+10-hour state is used for save size and encode/decode/restore budgets; snapshot
+p95 is measured in-game through F4 under §1.11.
 
-**Status:** CI implementation delivered by ADR 0002 step 5; the reference-laptop
-p95 gate remains outstanding. The current-build round trip replaces
-the planned golden fixture, as required by strict version refusal.
+**Latest local measurement:** on deb39 (Intel Core i7-4790 @ 3.60 GHz, Linux),
+the encoded save was 285,521 bytes; encode 158.3 ms, decode 117.5 ms, runtime
+restore 166.9 ms, and decode-plus-restore 284.4 ms. This is a local result, not
+a measurement of `ubuntu-latest` or the i7-1185G7 reference laptop.
+
+**Status:** the current-build round trip replaces the planned golden fixture,
+as required by strict version refusal. CI checks the ten-hour size and load
+budgets; the 1 ms reference-laptop snapshot p95 is measured in-game under §1.11,
+outside this Node benchmark.
 
 **Delivered beyond the plan:** the hamlet scenario compares a SHA-256 state hash
-across save/reload; CI also checks a ten-game-hour save against the size and
-load-time budgets, and reports snapshot p95 without making CI hardware a gate.
+across save/reload, and CI checks a ten-game-hour save against tightened size
+and load-time budgets.
 
-**Missing, carried forward:** the reference-laptop snapshot p95 still needs its
-measurement on the Intel Core i7-1185G7 / Iris Xe laptop running Firefox on
-Linux. The current diagnostic p95 is 0.310 ms on the test host (Intel Core
-i5-8500, Linux), not the reference laptop; it does not substitute for that
-result. CI's Ubuntu runner number is likewise recorded for diagnostics only.
+**Carried forward:** save migration and old-save compatibility are a version 1
+obligation (ADR 0002, step 8; EPIC “Old saves migrate”). Strict version refusal
+remains until then.
 
 ### 1.10 Sound
 
@@ -672,7 +681,7 @@ sound event with its position.
 
 ### 1.11 Playtest build
 
-- A debug overlay (F3):
+- A debug overlay (F4):
   - frame time broken down into simulation, render and meshing queue
   - chunk, entity and memory counts
   - clock and compression
@@ -687,6 +696,25 @@ sound event with its position.
 
 **Done when:** a playtester can play a full session and send back the metrics
 file and their notes.
+
+**Status:** delivered as a playtest build. F4 reports simulation/render/meshing-queue
+frame costs, chunk/entity/memory counts, clock/compression, and snapshot last/p95
+cost; the debug panel can set the game clock, reveal zombie positions, measure 50
+pure snapshots on demand, and export versioned metrics JSON. Metrics persist in
+localStorage per seed and are never sent automatically. The controls card is
+rendered from the input binding declarations, and Send feedback opens the
+playtest issue template.
+
+**Beyond the plan:** snapshot p50/p95 is available immediately on demand, rather
+than requiring an autosave; the measurement hashes the session snapshot before
+and after and does not write storage. Debug time travel resets scheduler cursors
+without simulating skipped time. The reference-laptop snapshot p95 target (≤1 ms)
+is shown for evaluation, not enforced.
+
+**Carried forward:** run a full playtest on the reference laptop, confirm the
+snapshot p95 target against a long/heavy session, and submit the exported metrics
+JSON with player notes. That human playtest is not claimed by the implementation
+checks.
 
 ## Data format sketches
 
@@ -911,6 +939,12 @@ was 1674 × 972 pixels at pixel ratio 1.2.
 
 **Feel test:** 0.5 m blocks feel far better than 1 m: doorways, furniture and
 interiors read at a human scale, and stairs are walked instead of jumped.
+
+**0.25 m look (2026-10-01):** `BLOCK_SIZE` set to 0.25 with nothing else
+changed, and the test house walked by eye (the hamlet only builds at 0.5 m).
+It didn't feel better than 0.5 m. Nothing was benchmarked; it would have cost
+about 8× the chunks at the same view radius and a redraw of the building
+templates.
 
 The decision is final: 0.5 m blocks, a 96 m default view distance, and a view
 distance setting (64, 96 or 128 m) for other hardware.

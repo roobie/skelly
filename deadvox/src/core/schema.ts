@@ -50,12 +50,34 @@ const Size = tuple([
 
 // ---- blocks ----
 
+/**
+ * Procedural surface patterns, drawn in the chunk shader. The index is the id the mesher
+ * emits and the shader switches on (render/chunks.ts), so append, never reorder.
+ */
+export const BLOCK_PATTERNS = [
+  'none',
+  'brick',
+  'planks',
+  'cobble',
+  'dressed',
+  'rough',
+  'tiles',
+  'siding',
+  'corrugated',
+  'shingles',
+  'noise',
+] as const;
+
+export type BlockPattern = (typeof BLOCK_PATTERNS)[number];
+
 export const BlockSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
   /** Blocks movement. Non-solid blocks still render as cubes for now. */
   solid: vBoolean(),
+  /** Surface pattern; `none` when omitted. */
+  pattern: optional(picklist(BLOCK_PATTERNS)),
 });
 
 // ---- items ----
@@ -118,14 +140,19 @@ const ToolSchema = strictObject({
 const WeaponSchema = strictObject({
   melee: strictObject({
     damage: Positive,
-    /** Metres. */
+    /** Metres beyond the player's hand; the arm's reach is added when swinging. */
     reach: Positive,
     /** Seconds between swings. */
     cooldown: Positive,
     stamina: NonNegative,
+    /** Impulse delivered by a melee hit, in N·s. */
+    impulse: optional(NonNegative),
     type: picklist(['blunt', 'cut', 'pierce']),
   }),
 });
+
+// Capability marker for firearms: ranged mechanics are not implemented yet, but action selection is data-driven.
+const FirearmSchema = strictObject({});
 
 const LightSchema = strictObject({
   /** Metres it lights up. */
@@ -160,6 +187,7 @@ export const ItemSchema = strictObject({
   food: optional(FoodSchema),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
+  firearm: optional(FirearmSchema),
   light: optional(LightSchema),
   battery: optional(BatterySchema),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */

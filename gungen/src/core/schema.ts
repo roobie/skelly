@@ -29,8 +29,6 @@ export interface PortDef {
   readonly normal: Vec3;
   readonly up: Vec3;
   readonly required?: boolean;
-  /** Magazine seating contract: inserted into a well or face-mated to a flat underside. */
-  readonly seat?: 'well' | 'face';
   /** One-to-many ports (e.g. a rail). Slot k sits at pos + up * k * pitch. */
   readonly slots?: { readonly count: number; readonly pitch: number };
 }
@@ -39,9 +37,18 @@ export interface PortDef {
 export interface SolidDisplayHints {
   readonly bevel?: boolean;
   readonly outline?: boolean;
+  /** Solids in one group are rendered/exported as one receiver display mesh. */
+  readonly mergeGroup?: string;
 }
 
-export interface BoxSolid {
+export interface SolidFinish {
+  /** Material id for this solid, taking precedence over its owning part and palette defaults. */
+  readonly material?: string;
+  /** Slot id for this solid; otherwise inherited from its part or role. */
+  readonly slot?: string;
+}
+
+export interface BoxSolid extends SolidFinish {
   readonly id: string;
   readonly kind: 'box';
   readonly box: Box;
@@ -50,7 +57,13 @@ export interface BoxSolid {
 
 export type Vec2 = readonly [number, number];
 
-export interface ExtrudedPolygonSolid {
+export interface ClipPlane {
+  readonly normal: Vec3;
+  /** Keeps the half-space where dot(normal, point) <= offset. */
+  readonly offset: number;
+}
+
+export interface ExtrudedPolygonSolid extends SolidFinish {
   readonly id: string;
   readonly kind: 'extruded-polygon';
   /** Convex CCW profile: X uses (Y,Z), Y uses (Z,X), and Z uses (X,Y), keeping profile × axis right-handed. */
@@ -59,10 +72,37 @@ export interface ExtrudedPolygonSolid {
   readonly axis?: ExtrusionAxis;
   /** Bounds along `axis` (legacy name `z` retained for existing solids). */
   readonly z: readonly [number, number];
+  /**
+   * Optional local-frame half-spaces; each keeps the side dot(normal, p) <= offset.
+   * Any clip disables beveling, even if every plane misses the solid; set display.bevel to false explicitly.
+   */
+  readonly clip?: readonly ClipPlane[];
   readonly display?: SolidDisplayHints;
 }
 
-export type Solid = BoxSolid | ExtrudedPolygonSolid;
+/**
+ * A profile turned about one axis of the part frame. Collision uses the convex hull of the turned
+ * profile, so grooves and hollows are ignored. The facet count is not part of the solid: it is chosen
+ * when a mesh is built (a level of detail), while collision always uses a fixed ring count.
+ */
+export interface RevolvedSolid extends SolidFinish {
+  readonly id: string;
+  readonly kind: 'revolved';
+  /**
+   * (axial, radial) points with radial >= 0. Traversed so the material lies to the left of travel: a
+   * closed solid runs from the axis out along its base, along the outside, and back to the axis; a
+   * hollow one goes out along the outside, across the mouth and back along the inside.
+   */
+  readonly profile: readonly Vec2[];
+  /** The axis turned about, with the same axial and transverse coordinates as ExtrudedPolygonSolid; omission keeps local Z. */
+  readonly axis?: ExtrusionAxis;
+  /** A profile bend sharper than this keeps a hard edge in the mesh; softer bends are smoothed. Defaults to 40. */
+  readonly creaseDegrees?: number;
+  /** Only `outline` applies: a revolved mesh has no bevel and cannot join a merge group. */
+  readonly display?: SolidDisplayHints;
+}
+
+export type Solid = BoxSolid | ExtrudedPolygonSolid | RevolvedSolid;
 
 /** Space that must stay empty (PROJECT.md §3). A convex extrusion may refine its broad-phase box. */
 export interface KeepOut {
@@ -78,6 +118,8 @@ export interface KeepOut {
   readonly z?: readonly [number, number];
   /** The part attached at this port of the owner may occupy the volume. */
   readonly allowPort?: string;
+  /** Parts from these families may occupy the volume (e.g. a front sight in a rear sight's sightline). */
+  readonly allowFamilies?: readonly string[];
 }
 
 /** A named axis on a part, such as a bore or a sight line. */
@@ -87,14 +129,30 @@ export interface Axis {
   readonly dir: Vec3;
 }
 
+export interface PartMotion {
+  readonly kind: 'linear';
+  /** Local unit direction of travel from the start point to the end point. */
+  readonly axis: Vec3;
+  readonly start: Vec3;
+  readonly end: Vec3;
+  /** Internal source resolved from a connected part's named keep-out. */
+  readonly sourceKeepOut?: { readonly port: string; readonly id: string };
+}
+
 export interface PartDef {
   readonly family: string;
+  /** Optional finish override for attachments or aftermarket parts. */
+  readonly material?: string;
+  /** Optional material slot override; otherwise selected from the part role. */
+  readonly slot?: string;
   readonly ports: readonly PortDef[];
   readonly solids: readonly Solid[];
   /** Optional higher-resolution scene tessellation; never used for collision checks. */
   readonly displaySolids?: readonly Solid[];
   readonly keepOuts: readonly KeepOut[];
   readonly axes: readonly Axis[];
+  /** Optional animation path, serialized to this part's glTF node extras. */
+  readonly motion?: PartMotion;
   /** Free-form labels that domain rules can look for. */
   readonly tags?: readonly string[];
 }
@@ -139,9 +197,25 @@ export interface Rule {
   readonly check: (r: Resolved) => Issue[];
 }
 
+/**
+ * What one length unit (u) means in a domain. Every domain converts to metres, which is the shared frame
+ * for exports and for scenes that mix domains.
+ */
+export interface DomainUnits {
+  /** Metres per u. */
+  readonly metresPerUnit: number;
+  /** Authoring snap step in u. Also the largest gap that still counts as two solids touching at a connection. */
+  readonly grid: number;
+  /** Inset of the chamfer on box and extruded-polygon display meshes, in u. */
+  readonly bevel: number;
+}
+
 export interface Domain {
   readonly name: string;
+  readonly units: DomainUnits;
   readonly families: Readonly<Record<string, PartFamily>>;
+  /** Mount-specific maximum nesting allowances; unspecified mounts use `TOLERANCE.interface`. */
+  readonly mountAllowances?: Readonly<Record<string, number>>;
   readonly axisRules: readonly AxisRule[];
   /** Domain-specific rules, run after the core rules. */
   readonly rules?: readonly Rule[];

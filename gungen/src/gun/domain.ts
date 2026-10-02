@@ -1,6 +1,8 @@
 import type { Domain } from '../core/schema.ts';
+import { ANTI_MATERIEL_RULES } from './antiMateriel/index.ts';
 import { FAMILIES } from './parts.ts';
 import {
+  actionHandleRest,
   feedMatch,
   firingGrip,
   freeFloatClearance,
@@ -10,11 +12,14 @@ import {
   thumbholeGripMatch,
   triggerGuard,
 } from './rules.ts';
+import { GUN_UNITS } from './units.ts';
 
 /** The gun domain. The core's main axis is the bore line. */
 export const gunDomain: Domain = {
   name: 'gun',
+  units: GUN_UNITS,
   families: FAMILIES,
+  mountAllowances: { grip: 0.01, clamp: 0 },
   axisRules: [
     { kind: 'bore', mode: 'collinear' },
     { kind: 'sight', mode: 'parallel' },
@@ -22,6 +27,7 @@ export const gunDomain: Domain = {
   ],
   rules: [
     firingGrip,
+    actionHandleRest,
     thumbholeGripMatch,
     feedMatch,
     pistolBarrelCrown,
@@ -29,5 +35,6 @@ export const gunDomain: Domain = {
     handguardFit,
     freeFloatClearance,
     magazineWellAxis,
+    ...ANTI_MATERIEL_RULES,
   ],
 };

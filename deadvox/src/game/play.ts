@@ -5,17 +5,24 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { formatClock, hourOfDay } from '../core/clock.ts';
+import { formatClock, hourOfDay, nextTimeOfDay, skipTarget } from '../core/clock.ts';
+import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
-import { chargeShare } from '../core/lights.ts';
+import { chargeShare, offHandUse } from '../core/lights.ts';
+import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
-import { skyAt } from '../core/sky.ts';
-import { FISTS_MELEE } from '../core/zombies.ts';
-import { Flashlight } from '../render/flashlight.ts';
+import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
+import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
+import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
+import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
+import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
+import { FrameTimes } from '../render/frameTimes.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
 import { HeldItems } from '../render/hands.ts';
+import { applyLook } from '../render/look.ts';
+import { renderMeleePose } from '../render/meleePose.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { ModelLibrary } from '../render/models.ts';
 import { PileMeshes } from '../render/piles.ts';
@@ -32,17 +39,36 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
+import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
+import { mountControlsCard } from './controls.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
-import { Input, isMenuOpeningKey, KEY_BINDINGS, worldActionForKey } from './input.ts';
+import {
+  CONTROL_CODES,
+  Input,
+  isMenuOpeningKey,
+  KEY_BINDINGS,
+  quickbarSlotForKey,
+  worldActionForKey,
+} from './input.ts';
 import { startingLoadout } from './loadout.ts';
+import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PLAYER } from './player.ts';
+import { PlaytestObserver } from './playtestObserver.ts';
+import {
+  createSnapshotHistory,
+  loadMetrics,
+  metricsExportJson,
+  persistMetrics,
+  SessionMetrics,
+} from './playtestTools.ts';
+import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
 import type { RestKind } from './rest.ts';
 import { createSession, LOOT_REACH } from './session.ts';
 import { toHands } from './targets.ts';
@@ -51,7 +77,8 @@ import { playerStartFromWorld } from './worldSetup.ts';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
-const QUICK_KEY = /^Digit([1-5])$/;
+/** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
+const SKIP_SLACK = 1e-6;
 
 export interface StartPlayOptions {
   readonly restore?: Readonly<SaveSnapshot>;
@@ -60,6 +87,13 @@ export interface StartPlayOptions {
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
   const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
+  if (options.saveController) {
+    streamer.onGenerationError = (error) => {
+      if (!options.saveController?.refuseRestore(error)) {
+        throw error;
+      }
+    };
+  }
   const { scale } = config;
   const s = scale.blockSize;
   const eyeHeight = PLAYER.eye / s;
@@ -67,7 +101,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const playerStart = playerStartFromWorld(engine, scale);
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
+  let cameraRoll = 0;
   let debugTools: DebugRuntime | undefined;
+  let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
+  // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
+  applyLook(renderer, meshes, DEFAULT_LOOK);
+  engine.mood.restore(DEFAULT_MOOD);
+  engine.shadows.restore(DEFAULT_SHADOWS);
+  // The weather the sky is rendered in. No weather system yet (DESIGN.md, Slice 4): it will set
+  // `fogginess` (and later more) here; until then only the debug controls change it.
+  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
 
   const audio = new GameAudio({
     registry,
@@ -83,6 +126,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   // ---- simulation ----
 
+  let playtestObserver: PlaytestObserver | undefined;
+  let meleeRecoilStrength = 0;
+  let meleeRecoilTime = 0;
   const session = createSession({
     registry,
     world: engine.world,
@@ -97,10 +143,23 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     controls: {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
+      consumePrimaryAction: () => input.consumePrimaryAction(),
+      consumeLeftHandAction: () => input.consumeLeftHandAction(),
+      primaryAction: () => {
+        // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
+        if (!debugTools?.buildOn) {
+          performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
+        }
+      },
+      leftHandAction: () => {
+        if (!debugTools?.buildOn) {
+          performPrimaryAction(ACTION_HAND_BINDINGS.leftHandKey);
+        }
+      },
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
-      descending: () => input.held.has('KeyR'),
+      descending: () => input.held.has(CONTROL_CODES.rest),
     },
     // The session works in blocks; playback is in metres.
     audio: {
@@ -109,12 +168,19 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       restoreState: (state) => audio.restoreState(state),
     },
     notice: (text) => showNotice(text),
+    onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
     zombieEffects: {
-      onSever: (id, _zombie, part) => zombieMeshes.zombieSevered?.(id, part, [...body.pos]),
+      onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
+      onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
+      ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
+      onMeleeContact: (impulse) => {
+        meleeRecoilStrength = Math.max(0, Math.min(1, impulse / 12));
+        meleeRecoilTime = 0.08;
+      },
     },
   });
   const {
@@ -143,11 +209,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     worldId: options.restore?.world.id ?? '',
     characterId: options.restore?.character.id ?? '',
   };
+  const captureSnapshot = () => session.snapshot(snapshotIds);
+  const snapshotHistory = createSnapshotHistory();
   if (options.saveController) {
     snapshotIds = options.saveController.bindSession(
-      () => session.snapshot(snapshotIds),
+      captureSnapshot,
       () => sim.time,
       { blockSize: s, site: config.site, storeys: config.storeys },
+      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   } else if (!options.restore) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
@@ -159,7 +228,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     startingLoadout(inventory);
   }
   // Furniture, with the loot rolled for it, arrives with its column.
-  streamer.onColumn = (cx, cz) => session.onColumn(cx, cz, engine.site);
+  streamer.onColumn = (cx, cz) => {
+    session.onColumn(cx, cz, engine.site);
+    for (const { spec, loot } of engine.furnitureIn(cx, cz)) {
+      inventory.furnish(spec, loot);
+    }
+  };
   const models = new ModelLibrary(registry, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
@@ -170,6 +244,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
+  engine.shadows.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   const damageEvents = sim.events.reader();
   const damageFeedback = new DamageFeedback();
@@ -178,14 +253,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   // doesn't care which one it has. Declared after createSession, whose zombie hooks (above) reach it
   // through a closure that only ever runs later, during play.
   //
-  // zombieDied ordering: a melee kill's `swing()` runs from a `mousedown` listener (below), not from the
-  // fixed-rate scheduler tick, so it can land before or after this frame's `zombieMeshes.sync()` call in
-  // either order. The session's onDeath hook calls zombieDied synchronously, in the very same call that
+  // zombieDied ordering: a melee kill starts from the player-tick primary-action callback below and can
+  // land before or after this frame's `zombieMeshes.sync()` call in either order. The session's onDeath hook calls zombieDied synchronously, in the very same call that
   // removes the zombie from zombieStore — MobActorMeshes' own zombieDied moves that id out of its
   // live-tracking map *before* returning, so whichever order sync() and a death happen to fall in this
   // frame, sync()'s own prune pass never mistakes a just-died zombie for a plain vanish (see
   // mobActors.ts's own doc comment).
   const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
+  zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
 
   // ---- UI ----
@@ -203,6 +278,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       drawHudOptions();
     });
   drawHudOptions();
+  mountControlsCard($('controls'));
   const prompt = $('prompt');
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
@@ -265,7 +341,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     distance: (pile: Pile) => pileDistance(pile.pos),
     containers: () => entities.containersNear(chest(), LOOT_REACH / s),
     entityDistance,
-    search,
+    search: (entity) => {
+      playtestObserver?.beginSearch(entity, nameOf(entity));
+      return search(entity);
+    },
     searching: session.searching,
     notice: showNotice,
     use: (item) => survival.use(item),
@@ -276,6 +355,41 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
   });
 
+  let revealZombies = false;
+  const storedMetrics = (() => {
+    try {
+      return loadMetrics(config.seed, localStorage);
+    } catch {
+      // Storage can be disabled; metrics start fresh for this run.
+      return null;
+    }
+  })();
+  const metrics = new SessionMetrics(config.seed, storedMetrics);
+  playtestObserver = new PlaytestObserver(metrics);
+  const saveMetrics = (): void => {
+    try {
+      persistMetrics(metrics, localStorage);
+    } catch {
+      /* Storage can be disabled; gameplay remains available. */
+    }
+  };
+  const exportMetrics = (): void => {
+    const blob = new Blob([metricsExportJson(metrics)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `deadvox-metrics-seed-${config.seed}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session, snapshotHistory);
+  const openInventoryScreen = (): void => {
+    screen.open();
+  };
+  const closeInventoryScreen = (): void => {
+    screen.close();
+  };
+
   const spawnItem = (type: string): string => {
     const item = inventory.create(type);
     return inventory.add(item, { kind: 'pile', pos: feet() })
@@ -284,14 +398,30 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
   debugTools = debugModule?.attachDebugTools({
     engine,
+    weather,
+    flashlight,
     body,
+    inventory,
+    newGame: options.restore === undefined,
     sim,
     input,
+    roll: () => cameraRoll,
     zombies: () => zombieSystem,
     feet,
     showNotice,
     spawnItem,
     compress: () => compress(),
+    skipGameHours: (hours) => skipGameHours(hours),
+    setTimeOfDay: (hour, minute) => {
+      const timeOfDay = hour * 3600 + minute * 60;
+      sim.setDebugCalendarTime(nextTimeOfDay(sim.calendar, timeOfDay));
+      options.saveController?.rearmAutosaveAfterTimeSeek();
+    },
+    revealZombies: (enabled) => {
+      revealZombies = enabled;
+    },
+    measureSnapshot,
+    exportMetrics,
   });
 
   let started = options.restore !== undefined;
@@ -308,18 +438,23 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       pointerLockChanged,
       resumeRequested,
       ...(started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel }),
+      titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
     if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
     }
     if (state.closeOtherMenus) {
-      screen.close();
+      closeInventoryScreen();
       debugTools?.closeMenus();
     }
     input.menuPointer = state.menuPointer;
     overlay.hidden = state.overlayHidden;
-    $('go').textContent = state.goLabel;
+    if (options.saveController) {
+      options.saveController.setGoLabel(state.goLabel);
+    } else {
+      $('go').textContent = state.goLabel;
+    }
     return state;
   };
   const resume = () => {
@@ -369,6 +504,40 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
+  /** Debug time skip: the simulation time it runs to, while one is running. */
+  let skipUntil: number | undefined;
+  /** Ends the skip exactly on target: snapping c to 1 keeps the ramp-down from running past it. */
+  const endSkip = (): void => {
+    skipUntil = undefined;
+    sim.ignoreUnsafe = false;
+    compression.stop();
+    compression.snap();
+  };
+
+  /**
+   * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
+   * stepping as rest (needs, scheduler and shamblers all run), ignoring danger. Another call
+   * during a skip pushes the target out. It replaces a rest/sleep in progress.
+   */
+  const skipGameHours = (hours: number): void => {
+    rest.stop();
+    queue.cancel();
+    skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
+    sim.ignoreUnsafe = true;
+    sim.compress(SKIP_COMPRESSION);
+  };
+
+  /** Ends the skip when it arrives, is interrupted, the player dies or the debug T key stops compression. */
+  const updateSkip = (until: number): void => {
+    const { interruption } = compression;
+    if (interruption !== undefined) {
+      showNotice(`Time skip stopped: ${interruption}`);
+    }
+    if (interruption !== undefined || sim.dead || !compression.active || until - sim.time <= SKIP_SLACK) {
+      endSkip();
+    }
+  };
+
   /** Continues: resumes a rest/sleep action, or the debug compression test. */
   const continueAction = (): void => {
     if (rest.action) {
@@ -395,11 +564,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (compression.interruption === undefined) {
       return false;
     }
-    if (code === 'KeyC') {
+    if (code === CONTROL_CODES.continue) {
       continueAction();
       return true;
     }
-    if (code === 'KeyX') {
+    if (code === CONTROL_CODES.cancel) {
       stopAction();
       return true;
     }
@@ -408,9 +577,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const toggleInventory = () => {
     if (screen.isOpen) {
-      screen.close();
+      closeInventoryScreen();
     } else {
-      screen.open();
+      openInventoryScreen();
       mainMenuOpen = false;
     }
     syncMenuState();
@@ -442,8 +611,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   /** Rest and sleep keys, each responsible for its own guard. */
   const restActions = new Map<string, () => void>([
     // R also descends in noclip (debug), but only while starting; stopping an active rest is fine.
-    ['KeyR', () => (rest.action?.kind === 'rest' || !debugTools?.noclip) && toggleRest('rest')],
-    ['KeyL', () => toggleRest('sleep')],
+    [CONTROL_CODES.rest, () => (rest.action?.kind === 'rest' || !debugTools?.noclip) && toggleRest('rest')],
+    [CONTROL_CODES.sleep, () => toggleRest('sleep')],
   ]);
 
   const playKeys = (code: string) => {
@@ -452,7 +621,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       restAction();
       return;
     }
-    const quick = QUICK_KEY.exec(code);
+    const quick = quickbarSlotForKey(code);
     const action = worldActionForKey(code);
     if (action === 'interact' && !compression.locksInput) {
       use();
@@ -461,8 +630,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       if (rest.action) {
         rest.stop(); // X also stops resting/sleeping at once, the same as Stop after an interruption
       }
-    } else if (quick && !compression.locksInput) {
-      quickKey(Number(quick[1]) - 1);
+    } else if (quick !== undefined && !compression.locksInput) {
+      quickKey(quick);
     }
   };
 
@@ -474,10 +643,25 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!(e.repeat || sim.dead)) {
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
-        screen.close();
+        closeInventoryScreen();
         debugTools?.closeMenus();
       }
       syncMenuState();
+    }
+    return true;
+  };
+
+  const handleTitleKey = (event: KeyboardEvent): boolean => {
+    if (!options.saveController || options.saveController.isEntered) {
+      return false;
+    }
+    if (event.code === KEY_BINDINGS.performanceOverlay.code || event.code === 'Backquote') {
+      debugTools?.handleKey(event);
+      syncMenuState();
+      return true;
+    }
+    if (event.code === 'Tab' || event.code === KEY_BINDINGS.mainMenu.code) {
+      event.preventDefault();
     }
     return true;
   };
@@ -487,7 +671,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       syncMenuState();
       return true;
     }
-    if (e.code === 'Tab' && !compression.locksInput) {
+    if (e.code === CONTROL_CODES.inventory && !compression.locksInput) {
       toggleInventory();
       return true;
     }
@@ -500,11 +684,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return true;
   };
 
-  globalThis.addEventListener('keydown', (e) => {
+  const handleGameplayKey = (e: KeyboardEvent): void => {
     if (handleMainMenuKey(e)) {
       return;
     }
-    if (e.code === 'Tab') {
+    if (e.code === CONTROL_CODES.inventory) {
       e.preventDefault();
     }
     // Prevent the opening key from becoming text in a field focused by the menu.
@@ -521,6 +705,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       return;
     }
     playKeys(e.code);
+  };
+
+  globalThis.addEventListener('keydown', (event) => {
+    if (!handleTitleKey(event)) {
+      handleGameplayKey(event);
+    }
   });
   globalThis.addEventListener(
     'wheel',
@@ -569,6 +759,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (entities.defOf(entity).door) {
       toggleDoor(entity);
     } else if (entity.pockets) {
+      playtestObserver?.beginSearch(entity, nameOf(entity));
       search(entity);
       if (!screen.isOpen) {
         toggleInventory();
@@ -577,30 +768,124 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   }
 
   renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
-  const swing = () => {
-    const heldWeapon = [inventory.hands.right, inventory.hands.left]
-      .filter((item) => item !== undefined)
-      .map((item) => registry.items.get(item.type)?.weapon?.melee)
-      .find((attack) => attack !== undefined);
-    const melee = heldWeapon ?? FISTS_MELEE;
-    if (sim.needs.stamina < melee.stamina) {
-      showNotice('You are too tired to swing');
-      return;
+  const handUids = () => ({
+    right: inventory.hands.right?.uid ?? null,
+    left: inventory.hands.left?.uid ?? null,
+  });
+  const meleeSelection = (
+    preferredHand?: 'right' | 'left',
+  ): {
+    weapon: MeleeWeapon;
+    profile: 'blunt' | 'cut' | 'pierce' | 'fists';
+    hand?: 'right' | 'left';
+    twoHanded: boolean;
+    item?: (typeof inventory.hands)['right'];
+  } => {
+    const handOrder: readonly ('right' | 'left')[] = preferredHand ? [preferredHand] : ['right', 'left'];
+    for (const hand of handOrder) {
+      const item = inventory.hands[hand];
+      const weapon = item && registry.items.get(item.type)?.weapon?.melee;
+      if (item && weapon) {
+        return {
+          weapon,
+          profile: weapon.type,
+          hand,
+          twoHanded: registry.items.get(item.type)?.twoHanded ?? false,
+          item,
+        };
+      }
     }
-    if (zombieSystem.swing(eye(), lookDir(), melee) !== undefined) {
-      sim.needs.stamina = Math.max(0, sim.needs.stamina - melee.stamina);
+    return {
+      weapon: FISTS_MELEE,
+      profile: 'fists',
+      ...(preferredHand === undefined ? {} : { hand: preferredHand }),
+      twoHanded: false,
+    };
+  };
+  const meleeWeapon = () => meleeSelection().weapon;
+
+  const swing = (preferredHand?: 'right' | 'left') => {
+    const selected = meleeSelection(preferredHand);
+    const result = startPlayerMelee(zombieSystem, sim.needs, {
+      origin: eye(),
+      direction: lookDir(),
+      weapon: selected.weapon,
+      profile: selected.profile,
+      ...(selected.hand === undefined ? {} : { hand: selected.hand }),
+      twoHanded: selected.twoHanded,
+      hands: handUids(),
+      aimYaw: input.yaw,
+      aimPitch: input.pitch,
+    });
+    if (result === 'too-tired') {
+      showNotice('You are too tired to swing');
     }
   };
 
-  renderer.domElement.addEventListener('mousedown', (e) => {
-    if (!input.locked || input.menuPointer || compression.locksInput) {
+  performPrimaryAction = (hand: 'right' | 'left') => {
+    const action = selectPrimaryAction(registry, inventory.hands, hand);
+    switch (action.kind) {
+      case 'melee':
+        swing(action.hand);
+        return;
+      case 'light': {
+        const reason = survival.use(action.item);
+        if (reason) {
+          showNotice(reason);
+        }
+        return;
+      }
+      case 'firearm':
+        showNotice('Firearms are not usable yet');
+        return;
+      case 'fists':
+        swing(action.hand);
+        return;
+      case 'noop':
+        return;
+      case 'none':
+        showNotice(primaryActionHint(registry, action.item));
+        return;
+      default: {
+        const unhandled: never = action;
+        throw new Error(`Unhandled primary action ${String(unhandled)}`);
+      }
+    }
+  };
+  // Buttons 3 and 4 are the browser's history Back/Forward; swallow every phase of them so a press never navigates away.
+  // Listened on the document (capture) in case the pointer-lock target isn't the canvas; the mouse and pointer
+  // events can both arrive for one press, so the forward press is deduped.
+  const swallowSideButton = (e: MouseEvent) => {
+    if (e.button === 3 || e.button === 4) {
+      e.preventDefault();
+    }
+  };
+  for (const type of ['pointerdown', 'mousedown', 'mouseup', 'auxclick']) {
+    document.addEventListener(type, (e) => swallowSideButton(e as MouseEvent), true);
+  }
+
+  const forwardPress = new PressDedupe();
+  const onForwardPress = (e: MouseEvent) => {
+    if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
       return;
     }
-    if (debugTools?.buildOn) {
-      debugTools.click(e.button, eye(), lookDir());
-    } else if (e.button === 0) {
-      swing();
+    if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
+      return;
     }
+    // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
+    const item = offHandUse(registry, inventory);
+    const reason = item && survival.use(item);
+    if (reason) {
+      showNotice(reason);
+    }
+  };
+  document.addEventListener('pointerdown', onForwardPress, true);
+  document.addEventListener('mousedown', onForwardPress, true);
+  renderer.domElement.addEventListener('mousedown', (e) => {
+    if (!input.locked || input.menuPointer || compression.locksInput || !debugTools?.buildOn) {
+      return;
+    }
+    debugTools.click(e.button, eye(), lookDir());
   });
 
   // ---- loop ----
@@ -608,10 +893,17 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   let last = performance.now();
   let lastDebugUpdate = 0;
   let fps = 0;
+  // Debug readout: frame intervals and CPU work alongside simulation, rendering and mesh timings.
+  const frameInterval = new FrameTimes();
+  const frameWork = new FrameTimes();
+  let simulationMs = 0;
+  let renderMs = 0;
+  let meshingQueueMs = 0;
 
+  const displayCalendar = (): number => sim.calendar;
   const clockText = (): string => {
     const speed = compression.c > 1.05 ? `   ×${compression.c.toFixed(0)}` : '';
-    return `${formatClock(sim.calendar)}${speed}${sim.paused ? '   paused' : ''}`;
+    return `${formatClock(displayCalendar())}${speed}${sim.paused ? '   paused' : ''}`;
   };
 
   const needsText = (): string => {
@@ -673,6 +965,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       }
     }
     const feedback = damageFeedback.step(dt);
+    cameraRoll = feedback.roll;
     camera.rotation.copy(cameraRotation(input.pitch, input.yaw, feedback.roll));
     $('damage').style.opacity = String(feedback.vignetteOpacity);
   };
@@ -684,6 +977,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     lastDebugUpdate = now;
     debugTools.update({
       fps,
+      frame: frameInterval.summary(),
+      work: frameWork.summary(),
       seed: config.seed,
       radius: config.radiusM,
       movement: input.walking ? 'walking' : 'jogging',
@@ -693,6 +988,34 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
       zombies: zombieStore.size,
       sounds: audio.heardSounds,
+      simulationMs,
+      renderMs,
+      meshingQueueMs,
+      entities: zombieStore.size + [...entities.all].length + inventory.piles.size,
+      memoryBytes:
+        [...engine.world.chunks.values()].reduce((sum, chunk) => sum + chunk.bytes, 0) +
+        engine.meshes.group.children.reduce((sum, child) => {
+          const mesh = child as unknown as {
+            geometry?: { attributes?: Record<string, { array?: { byteLength: number } }> };
+          };
+          return (
+            sum +
+            Object.values(mesh.geometry?.attributes ?? {}).reduce(
+              (bytes, attribute) => bytes + (attribute.array?.byteLength ?? 0),
+              0,
+            )
+          );
+        }, 0),
+      clock: formatClock(displayCalendar()),
+      compression: compression.c,
+      snapshotLastMs: snapshotHistory.lastMs ?? 0,
+      snapshotP95Ms: snapshotHistory.p95Ms,
+      snapshotCount: snapshotHistory.count,
+      revealedZombies: revealZombies
+        ? [...zombieStore.entries()]
+            .map(([, { body: zombieBody }]) => zombieBody.pos.map((v) => (v * s).toFixed(1)).join(','))
+            .slice(0, 40)
+        : [],
     });
   };
 
@@ -704,23 +1027,112 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     renderHandling(handlingBox, queue);
   };
 
+  const updateHeldItems = (dt: number): void => {
+    camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
+    const selectedMelee = meleeSelection();
+    const ready = shouldEnterMeleeReady({
+      rightMouseHeld: input.rightMouseHeld && input.locked && !input.menuPointer,
+      meleeWeaponHeld: selectedMelee.item !== undefined,
+      handsEmpty: !(inventory.hands.right || inventory.hands.left),
+      debugBuild: debugTools?.buildOn ?? false,
+      inputLocked: compression.locksInput,
+    });
+    const action = zombieSystem.activeMeleeAction;
+    const elapsed = action
+      ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
+      : 0;
+    const pose = renderMeleePose(action, elapsed, ready);
+    meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
+    const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
+    held.update(camera, pose, recoil);
+    flashlight.update(registry, survival.lit, held, camera);
+  };
+
+  /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
+  const stepFrozenNoclip = (dt: number, frozenAndPlaying: boolean): void => {
+    if (!(frozenAndPlaying && debugTools?.noclip && input.locked && !input.menuPointer)) {
+      return;
+    }
+    debugTools.stepNoclip({
+      body,
+      scale,
+      yaw: input.yaw,
+      pitch: input.pitch,
+      intent: input.intent(),
+      descend: input.held.has('KeyR'),
+      dt,
+    });
+  };
+
+  /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
+  const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
+    // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
+    const gameFrozen = debugTools?.frozen ?? false;
+    sim.paused = menuPaused || gameFrozen;
+    session.frame(dt, skipUntil);
+    // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
+    if (skipUntil !== undefined) {
+      updateSkip(skipUntil);
+    }
+    stepFrozenNoclip(dt, gameFrozen && !menuPaused);
+    return gameFrozen;
+  };
+
+  const updateDebugTargets = () => {
+    if (!debugTools) {
+      return;
+    }
+    const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+    debugTools.updateAim(aim);
+    debugTools.updateLookedAt(eye(), lookDir(), input.locked);
+  };
+
   const frame = (now: number) => {
-    const dt = Math.min(0.1, (now - last) / 1000);
+    const workStart = performance.now();
+    const realSeconds = Math.max(0, (now - last) / 1000);
+    const dt = Math.min(0.1, realSeconds);
+    frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
+    let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
-    sim.paused = menuState.paused;
-    session.frame(dt);
+    meshingQueueMs = performance.now() - mark;
+    playtestObserver?.beforeFrame(queue, inventory);
+    mark = performance.now();
+    const gameFrozen = stepSimulation(dt, menuState.paused);
+    simulationMs = performance.now() - mark;
     options.saveController?.afterFrame();
-    applySky(engine.sky, skyAt(hourOfDay(sim.calendar)));
+    playtestObserver?.afterFrame(
+      { realSeconds, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
+      queue,
+      session,
+    );
+    if (
+      playtestObserver?.frame({
+        realSeconds,
+        paused: sim.paused,
+        visible: document.visibilityState === 'visible',
+        compression: compression.c,
+        interruption: compression.interruption,
+        now,
+      })
+    ) {
+      saveMetrics();
+    }
+    const hour = hourOfDay(sim.calendar);
+    const sky = skyInWeather(skyAt(hour), weather);
+    applySky(engine.sky, sky);
+    engine.mood.setSky(sky);
     piles.sync(inventory);
     furniture.sync(entities);
     const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
     zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
-    zombieMeshes.sync(zombieStore, dt, zombieAlpha);
+    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen));
+    updateDebugTargets();
     updateDebugReadout(now);
+    mark = performance.now();
 
     const cameraOffset = cameraStepOffset.update(
       [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
@@ -760,18 +1172,23 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
     renderHandlingFrame();
-    camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
-    held.update(camera);
-    flashlight.update(registry, survival.lit, held, camera);
-    renderer.render(scene, camera);
-    held.render(renderer, camera, engine.sky);
+    flashlight.daylightScale = flashlightDaylightScale(sky);
+    flashlight.shadowsAllowed = engine.shadows.torchOn;
+    updateHeldItems(dt);
+    engine.shadows.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
+    const renderStart = performance.now();
+    engine.mood.render(() => held.render(renderer, camera, engine.sky));
+    renderMs = performance.now() - renderStart;
+    frameWork.record(now, performance.now() - workStart);
     finishFrame();
   };
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
   const die = ({ cause, time }: { cause: string; time: number }) => {
     input.unlock();
-    screen.close();
+    metrics.recordDeath(cause, time * sim.clock.ratio);
+    saveMetrics();
+    closeInventoryScreen();
     inventoryPanel.hidden = true;
     syncMenuState();
     prompt.hidden = true;
@@ -790,5 +1207,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       requestAnimationFrame(frame);
     }
   };
+  // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
+  // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
+  engine.shadows
+    .warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget])
+    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   requestAnimationFrame(frame);
 };

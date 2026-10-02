@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { NoToneMapping } from 'three';
+import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
+import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+import { FakeMood } from './fakeMood.ts';
+import { FakeShadows } from './fakeShadows.ts';
 
 const { registry } = buildRegistry([
   {
@@ -24,6 +28,17 @@ const { registry } = buildRegistry([
     },
   },
 ]);
+
+const keyEvent = (key: string): KeyboardEvent => {
+  const event: { key: string; defaultPrevented: boolean; preventDefault: () => void } = {
+    key,
+    defaultPrevented: false,
+    preventDefault: () => {
+      event.defaultPrevented = true;
+    },
+  };
+  return event as unknown as KeyboardEvent;
+};
 
 describe('spawnMenuViewModel', () => {
   it('lists every item, category then name, with an empty filter', () => {
@@ -54,7 +69,7 @@ describe('spawnMenuViewModel', () => {
   });
 
   it('leaves the search field empty when the G keydown opens the spawn menu', () => {
-    const field = { value: 'g' };
+    const field = { value: 'g', focus: vi.fn(), blur: vi.fn() };
     const root = { hidden: true, querySelector: () => field } as unknown as HTMLElement;
     const menu = new SpawnMenu(
       registry,
@@ -71,6 +86,19 @@ describe('spawnMenuViewModel', () => {
     const hooks = { sim, compress: () => undefined } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
+      look: new LookControls(
+        { toneMapping: NoToneMapping, toneMappingExposure: 1 },
+        {
+          linearColorsOn: false,
+          setLinearColors: () => undefined,
+          patternsOn: true,
+          setPatterns: () => undefined,
+          occlusionOn: true,
+          setOcclusion: () => undefined,
+        },
+        new FakeMood(),
+        { weather: { fogginess: 0.2 }, shadows: new FakeShadows(), flashlight: { strength: 1 } },
+      ),
       build: { on: false, toggle: () => undefined },
       spawnMenu: menu,
       toggleSpawn: () => menu.open(),
@@ -80,10 +108,45 @@ describe('spawnMenuViewModel', () => {
       toggleDanger: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
+      isAimEnabled: () => true,
+      toggleAim: () => undefined,
+      isFrozen: () => false,
+      toggleFrozen: () => undefined,
+      isGameFrozen: () => false,
+      toggleGameFrozen: () => undefined,
     });
 
     expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);
     expect(menu.isOpen).toBe(true);
     expect(field.value).toBe('');
+    expect(field.focus).toHaveBeenCalledOnce();
+  });
+
+  it('moves a clamped selection with arrows, spawns and closes on Enter, and closes without spawning on Tab', () => {
+    const field = { value: '', focus: vi.fn(), blur: vi.fn() };
+    const root = { hidden: true, querySelector: () => field, querySelectorAll: () => [] } as unknown as HTMLElement;
+    const spawn = vi.fn((id: string) => `${id} spawned`);
+    const menu = new SpawnMenu(registry, spawn, () => undefined);
+    menu.setRoot(root);
+    menu.open();
+    expect(menu.viewModel.selectedIndex).toBe(0);
+    menu.handleKey(keyEvent('ArrowDown'));
+    expect(menu.viewModel.selectedIndex).toBe(1);
+    menu.handleKey(keyEvent('ArrowDown'));
+    menu.handleKey(keyEvent('ArrowDown'));
+    expect(menu.viewModel.selectedIndex).toBe(2);
+    const enter = keyEvent('Enter');
+    menu.handleKey(enter);
+    expect(enter.defaultPrevented).toBe(true);
+    expect(spawn).toHaveBeenCalledWith('flashlight');
+    expect(menu.isOpen).toBe(false);
+    expect(field.blur).toHaveBeenCalledOnce();
+
+    menu.open();
+    const tab = keyEvent('Tab');
+    menu.handleKey(tab);
+    expect(tab.defaultPrevented).toBe(true);
+    expect(menu.isOpen).toBe(false);
+    expect(spawn).toHaveBeenCalledOnce();
   });
 });

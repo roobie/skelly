@@ -139,8 +139,19 @@ try {
   }
   let page = await context.newPage();
   const pageErrors = [];
+  const optionalTelemetryRequests = new Set([
+    'https://scripts.simpleanalyticscdn.com/latest.js',
+    'https://queue.simpleanalyticscdn.com/append',
+  ]);
+  const recordRequestFailure = (request) => {
+    const url = new URL(request.url());
+    url.search = '';
+    if (!optionalTelemetryRequests.has(url.href)) {
+      pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`);
+    }
+  };
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('requestfailed', (request) => pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`));
+  page.on('requestfailed', recordRequestFailure);
   if (!autosaveOnly) {
     await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
@@ -210,6 +221,56 @@ try {
           right.close();
           return { backend, generations };
         };
+        const testReadWaitsForOpenWriter = async () => {
+          const namespace = await namespaceFor('open-opfs-writer-read');
+          const seed = create('opfs');
+          const writer = create('opfs');
+          const reader = create('opfs');
+          await stage(
+            'OPFS open-writer capability probes',
+            Promise.all([seed.status(), writer.status(), reader.status()]),
+          );
+          await stage('OPFS seed valid generation', saveValue(seed, namespace, 'old'));
+          let releasePayload;
+          let markEncodingStarted;
+          const encodingStarted = new Promise((resolve) => {
+            markEncodingStarted = resolve;
+          });
+          const payloadGate = new Promise((resolve) => {
+            releasePayload = resolve;
+          });
+          try {
+            const write = writer.save(namespace, async (generation) => {
+              markEncodingStarted();
+              await payloadGate;
+              return encoder.encode(`${generation}:new`);
+            });
+            await stage('OPFS writer holds exclusive lock', encodingStarted);
+            const read = reader.load(namespace);
+            const readFinishedEarly = await Promise.race([
+              read.then(
+                () => true,
+                () => true,
+              ),
+              new Promise((resolve) => globalThis.setTimeout(() => resolve(false), 100)),
+            ]);
+            if (readFinishedEarly) {
+              throw new Error('OPFS read did not wait for the open writer');
+            }
+            releasePayload();
+            await stage('OPFS writer commits after gate opens', write);
+            const loaded = await stage('OPFS read sees a complete generation', read);
+            if (loaded?.generation !== 2 || decoder.decode(loaded.payload) !== '2:new') {
+              throw new Error('OPFS reader did not get the valid generation after the writer committed');
+            }
+            return { backend: 'opfs', generation: loaded.generation };
+          } finally {
+            releasePayload();
+            seed.close();
+            writer.close();
+            reader.close();
+          }
+        };
         const testCrashStage = async (backend, crashAt) => {
           const namespace = await namespaceFor(`crash:${backend}:${crashAt}`);
           const seedStorage = create(backend);
@@ -251,9 +312,13 @@ try {
         const backendResults = [];
         const concurrentBackendResults = [];
         const crashResults = [];
+        const openWriterReadResults = [];
         for (const backend of backends) {
           backendResults.push(await testRoundTrip(backend));
           concurrentBackendResults.push(await testTwoTabs(backend));
+          if (backend === 'opfs') {
+            openWriterReadResults.push(await testReadWaitsForOpenWriter());
+          }
           const crashStages =
             backend === 'opfs'
               ? ['before-truncate', 'after-truncate', 'after-partial-write', 'after-write', 'after-flush']
@@ -262,7 +327,13 @@ try {
             crashResults.push(await testCrashStage(backend, crashAt));
           }
         }
-        return { autoBackend: autoStatus.backend, backendResults, concurrentBackendResults, crashResults };
+        return {
+          autoBackend: autoStatus.backend,
+          backendResults,
+          concurrentBackendResults,
+          crashResults,
+          openWriterReadResults,
+        };
       }, STAGE_TIMEOUT_MS),
       OVERALL_TIMEOUT_MS,
     );
@@ -278,7 +349,7 @@ try {
   await page.close();
   page = await context.newPage();
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('requestfailed', (request) => pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`));
+  page.on('requestfailed', recordRequestFailure);
   const probePage = autosaveOnly ? page : await context.newPage();
   if (!autosaveOnly) {
     await probePage.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
@@ -505,9 +576,7 @@ try {
       await page.close();
       page = await context.newPage();
       page.on('pageerror', (error) => pageErrors.push(error.message));
-      page.on('requestfailed', (request) =>
-        pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`),
-      );
+      page.on('requestfailed', recordRequestFailure);
     }
     autosaveResults.push(await testTitleAndAutosave(backend));
   }

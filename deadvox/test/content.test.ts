@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { blockPatterns } from '../src/core/meshInput.ts';
+import { BLOCK_PATTERNS } from '../src/core/schema.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -16,6 +18,37 @@ describe('content', () => {
     expect(registry.blocks[0]!.id).toBe('air');
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
+    }
+  });
+
+  it('registers the machete and Kabar as cutting melee tools and makes both findable', () => {
+    const { registry } = buildRegistry(base);
+    const machete = registry.items.get('machete')!;
+    const kabar = registry.items.get('kabar')!;
+    expect(machete).toMatchObject({
+      name: 'Machete',
+      category: 'tool',
+      weight: 550,
+      size: [1, 4],
+      model: 'machete',
+      tool: { qualities: { cutting: 2 } },
+      weapon: { melee: { damage: 11, reach: 0.45, cooldown: 0.75, stamina: 5, impulse: 4.5, type: 'cut' } },
+    });
+    expect(kabar).toMatchObject({
+      name: 'Kabar',
+      category: 'tool',
+      weight: 300,
+      size: [1, 3],
+      model: 'kabar',
+      tool: { qualities: { cutting: 2 } },
+      weapon: { melee: { damage: 9, reach: 0.3, cooldown: 0.55, stamina: 3.5, impulse: 4, type: 'cut' } },
+    });
+    for (const id of ['machete', 'kabar']) {
+      expect(registry.loot.get('shed_tools')?.entries).toContainEqual({
+        item: id,
+        weight: 1,
+        condition: [0.4, 1],
+      });
     }
   });
 
@@ -391,5 +424,45 @@ describe('content', () => {
       { source: 'a', data: { blocks: [{ id: 'r', name: 'R', color: '#ff8001', solid: true }] } },
     ]);
     expect([...blockColors(registry)]).toEqual([0, 0, 0, 255, 128, 1]);
+  });
+
+  it('turns block patterns into ids, none when omitted', () => {
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'a',
+        data: {
+          blocks: [
+            { id: 'b', name: 'B', color: '#ffffff', solid: true, pattern: 'brick' },
+            { id: 'p', name: 'P', color: '#ffffff', solid: true },
+            { id: 'n', name: 'N', color: '#ffffff', solid: true, pattern: 'noise' },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    expect([...blockPatterns(registry)]).toEqual([
+      0,
+      BLOCK_PATTERNS.indexOf('brick'),
+      0,
+      BLOCK_PATTERNS.indexOf('noise'),
+    ]);
+  });
+
+  it('reports an unknown block pattern like any other content error', () => {
+    const issues = validateContent({
+      source: 'a.json',
+      data: { blocks: [{ id: 'x', name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }] },
+    });
+    expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
+  });
+
+  it('gives every base block a known pattern and patterns the stone work', () => {
+    const { registry } = buildRegistry(base);
+    const patternOf = (id: string) => BLOCK_PATTERNS[blockPatterns(registry)[registry.blockIds.get(id)!]!];
+    expect(patternOf('brick')).toBe('brick');
+    expect(patternOf('stone')).toBe('rough');
+    expect(patternOf('dressed_stone')).toBe('dressed');
+    expect(patternOf('cobblestone_mossy')).toBe('cobble');
+    expect(patternOf('hazard_yellow')).toBe('none');
   });
 });

@@ -217,6 +217,7 @@ const makeGungenUrl = () => {
   }
   // The viewer applies overrides in either mode (paramPanel.ts).
   setUnlessDefault(params, 'set', gungenSet.value.trim(), '');
+  setUnlessDefault(params, 'colors', gungenForm.elements.namedItem('colors').value, 'finish');
   return url;
 };
 

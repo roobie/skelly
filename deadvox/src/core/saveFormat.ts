@@ -9,7 +9,7 @@ import type { InventoryState } from './inventory.ts';
 import type { ItemState, PlacedState } from './items.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { ZombieState } from './zombies.ts';
+import type { MeleeActionState, ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -95,7 +95,12 @@ interface WirePayload {
     id: string;
     options: SaveWorldIdentity;
     regions: Record<string, Region>;
-    zombieSystem: { playerAttackWait: number; nextEntityId: number };
+    zombieSystem: {
+      playerAttackWait: number;
+      meleeAction: MeleeActionState | null;
+      nextFistHand: 'right' | 'left';
+      nextEntityId: number;
+    };
     blockEntitiesNextUid: number;
     spawned: string[];
   };
@@ -123,7 +128,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 5;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -140,7 +145,7 @@ function defaultVersion(): SaveVersionComponents {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SCHEMA_VERSION,
-      generators: { worldgen: 'worldgen-v1' },
+      generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
   } catch (error) {
@@ -294,6 +299,8 @@ const player = obj({ body, yaw: finite, pitch: finite, walk: bool });
 const handling = obj({ jobs: arr(anyJson) });
 const zombie = obj({
   type: str({ id: true }),
+  figureSeed: safeInt,
+  incapacitated: bool,
   body,
   facing: vec3,
   home: vec3,
@@ -341,6 +348,9 @@ const zombie = obj({
   attackWindup: finite,
   gaitPhase: finite,
   wanderClock: finite,
+  stanceWeight: opt(finite),
+  stepOffset: opt(finite),
+  hitFlinchTime: opt(nonNegative),
   /** Part names severed so far (mobgen/src/mob/dismember.ts's SEVERABLE_PARTS) — cumulative, never
    * shrinks; see Zombie.severed's own doc comment. */
   severed: arr(str()),
@@ -351,6 +361,30 @@ const playerState = obj({
   pitch: finite,
   walk: bool,
 });
+const meleeAction = nullable(
+  obj({
+    profile: enumeration(['blunt', 'cut', 'pierce', 'fists']),
+    hand: enumeration(['right', 'left']),
+    twoHanded: bool,
+    cooldown: positive,
+    contactAt: positive,
+    aimYaw: finite,
+    aimPitch: finite,
+    elapsed: nonNegative,
+    hitResolved: bool,
+    origin: vec3,
+    direction: vec3,
+    hands: obj({ right: nullable(positiveInt), left: nullable(positiveInt) }),
+    weapon: obj({
+      damage: positive,
+      reach: positive,
+      cooldown: positive,
+      stamina: opt(nonNegative),
+      impulse: opt(nonNegative),
+      type: opt(enumeration(['blunt', 'cut', 'pierce'])),
+    }),
+  }),
+);
 const playerStateInventory = obj({
   ...inventoryCore.fields,
 });
@@ -388,7 +422,12 @@ const wirePayloadSchema = obj({
         piles: arr(obj({ order: nonNegativeInt, pile: pileSchema })),
       }),
     ),
-    zombieSystem: obj({ playerAttackWait: nonNegative, nextEntityId: positiveInt }),
+    zombieSystem: obj({
+      playerAttackWait: nonNegative,
+      meleeAction,
+      nextFistHand: enumeration(['right', 'left']),
+      nextEntityId: positiveInt,
+    }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
   }),
@@ -684,6 +723,8 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       regions: Object.fromEntries(regions),
       zombieSystem: {
         playerAttackWait: snapshot.world.zombies.playerAttackWait,
+        meleeAction: snapshot.world.zombies.meleeAction,
+        nextFistHand: snapshot.world.zombies.nextFistHand,
         nextEntityId: snapshot.world.zombies.nextEntityId,
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
@@ -1066,6 +1107,8 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         }),
         zombies: obj({
           playerAttackWait: nonNegative,
+          meleeAction,
+          nextFistHand: enumeration(['right', 'left']),
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
         }),

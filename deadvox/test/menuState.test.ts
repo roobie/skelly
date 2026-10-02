@@ -415,6 +415,26 @@ describe('save controls flow through the shared menu state', () => {
 });
 
 describe('menu and pause state transitions', () => {
+  it('keeps an unentered title screen visible and paused despite inventory or debug requests', () => {
+    const state = computeMenuState({
+      ...base,
+      inventoryOpen: true,
+      debugMenuOpen: true,
+      titleActive: true,
+      titleNewWorldLabel: 'New world',
+    });
+    expect(state).toMatchObject({
+      started: false,
+      mainMenuOpen: true,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      menuPointer: true,
+      overlayHidden: false,
+      paused: true,
+      goLabel: 'New world',
+    });
+  });
+
   it('external lock dismisses the pause state; a late resume request does not reopen it', () => {
     const visible = computeMenuState({ ...base, started: true, mainMenuOpen: false });
     expect(visible.overlayHidden).toBe(false);

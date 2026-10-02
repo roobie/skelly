@@ -11,9 +11,11 @@
         "feed": "box",
         "bore": "M",
         "chargingHandle": "rear-top",
-        "rail": "full"
+        "rail": "full",
+        "section": "ar"
       }
     },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "ar" } },
     "lower": {
       "family": "lower",
       "params": {
@@ -30,6 +32,7 @@
       "family": "handguard",
       "params": {
         "mount": "free-float",
+        "layout": "ar",
         "length": "M"
       }
     },
@@ -50,11 +53,11 @@
       "family": "stock",
       "params": {
         "length": "M",
-        "style": "straight"
+        "style": "m4"
       }
     },
-    "front-sight": {
-      "family": "front-sight"
+    "rail-front-sight": {
+      "family": "rail-front-sight"
     },
     "sight": {
       "family": "sight"
@@ -69,6 +72,7 @@
       "from": "receiver.barrel",
       "to": "barrel.rear"
     },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     {
       "from": "receiver.handguard",
       "to": "handguard.rear"
@@ -91,8 +95,9 @@
       "slot": 0
     },
     {
-      "from": "barrel.front-sight",
-      "to": "front-sight.base"
+      "from": "handguard.rail",
+      "to": "rail-front-sight.base",
+      "slot": 10
     }
   ]
 }

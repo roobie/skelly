@@ -1,0 +1,6 @@
+{
+  "name": "broken-head-narrower-than-shoulder",
+  "base": "7.62x39",
+  "set": { "case.body.diameterAtShoulderStart.value": 12 },
+  "expect": ["diameters"]
+}

@@ -1,11 +1,23 @@
 name: deadvox
 
+# Markdown-only changes skip this workflow, except TROUBLESHOOTING.md, whose generated key
+# table test/debugActions.test.ts checks against the code. Later patterns override earlier ones.
 on:
   push:
-    branches: [main, 'deadvox/saves-*']
-    paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
+    branches: [main]
+    paths:
+      - 'deadvox/**'
+      - 'mobgen/src/**'
+      - '!**/*.md'
+      - 'deadvox/TROUBLESHOOTING.md'
+      - '.github/workflows/deadvox.yml'
   pull_request:
-    paths: ['deadvox/**', 'mobgen/src/**', '.github/workflows/deadvox.yml']
+    paths:
+      - 'deadvox/**'
+      - 'mobgen/src/**'
+      - '!**/*.md'
+      - 'deadvox/TROUBLESHOOTING.md'
+      - '.github/workflows/deadvox.yml'
   workflow_dispatch: {}
 
 jobs:
@@ -26,15 +38,14 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix tools/lit-check
       - run: timeout 300 npm run lint:lit
-      - run: npm run typecheck
-      - name: Save round-trip and budget benchmark
-        run: timeout 300 npm test -- test/snapshot.test.ts -t 'checks a representative ten-hour hamlet save and records its size and timings' --silent=false
-      - run: timeout 300 npm test
+      - run: timeout 300 npm run typecheck
+      - name: Full test suite (includes the save budget fixture once)
+        run: timeout 300 npm test -- --maxWorkers=2
       - run: timeout 300 npm run test:ui-browser
       - name: Install headed Firefox and system dependencies
         run: npx playwright install --with-deps firefox
       - name: Firefox browser contract
         run: xvfb-run -a timeout 300 npm run test:browser:firefox
-      - run: npm run validate
-      - run: npx vite build
-      - run: node tools/check-favicon.mjs
+      - run: timeout 300 npm run validate
+      - run: timeout 300 npx vite build
+      - run: timeout 300 node tools/check-favicon.mjs

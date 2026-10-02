@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { exportFileText } from '../src/cli/exportFile.ts';
 import type { Design } from '../src/core/design.ts';
 import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/designLoader.ts';
 import { generateValid } from '../src/core/generate.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { GUN_FINISH_SLOTS } from '../src/gun/palette.ts';
 import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
-import { ar } from '../src/gun/templates.ts';
+import { ar, TEMPLATES } from '../src/gun/templates.ts';
+import { editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
 import { loadFixture } from './helpers.ts';
 
 /** A test catalogue; the real content belongs to 3.1. Two revisions of one id coexist. */
@@ -74,9 +78,17 @@ describe('loadDesign: parse and round trip', () => {
       throw new Error('expected a load');
     }
     expect(result.design.assembly).toEqual(baseAssembly);
-    // handguard.mount is chosen by the template; an inherited or default param is never added.
+    // Template-only choices are materialized; inherited and default params are not.
     expect(result.design.assembly.parts.lower?.params).toEqual({ layout: 'ar' });
-    expect(result.design.assembly.parts['front-sight']).toEqual({ family: 'front-sight' });
+    const mount = result.design.assembly.parts.handguard?.params?.mount;
+    if (mount === 'clamped') {
+      expect(result.design.assembly.parts['front-sight']).toEqual({ family: 'front-sight', params: { style: 'ar' } });
+      expect(result.design.assembly.parts['rail-front-sight']).toBeUndefined();
+    } else {
+      expect(result.design.assembly.parts['front-sight']).toBeUndefined();
+      const railSight = result.design.assembly.parts['rail-front-sight'];
+      expect(railSight === undefined || railSight.family === 'rail-front-sight').toBe(true);
+    }
   });
 
   it('omits an absent origin', () => {
@@ -113,6 +125,8 @@ describe('loadDesign: fatal errors', () => {
     ['no status', { ...makeDesign(), status: undefined }, undefined, 'status'],
     ['a malformed assembly', { ...makeDesign(), assembly: { name: 'x' } }, 'published', 'assembly.root'],
     ['bad origin', { ...makeDesign(), origin: { template: 'ar' } }, 'published', 'origin.seed'],
+    ['bad finish values', { ...makeDesign(), finish: { metal: 3 } }, 'published', 'finish.metal'],
+    ['empty finish values', { ...makeDesign(), finish: { metal: '  ' } }, 'published', 'finish.metal'],
     ['no format', { ...makeDesign(), format: undefined }, 'published', 'format'],
   ])('refuses a design with %s as invalid-shape', (_label, value, declared, path) => {
     const result = expectFatal(load(value));
@@ -139,6 +153,40 @@ describe('loadDesign: fatal errors', () => {
   it.each([3, 99])('refuses an unknown version %d of a known prefab id', (version) => {
     const assembly = withPart({ family: 'magazine', prefab: { id: 'test-stanag', version } });
     expect(expectFatal(load(makeDesign({ assembly }))).error.code).toBe('unknown-prefab');
+  });
+});
+
+describe('loadDesign: finish validation', () => {
+  it('loads, saves, and exports overrides for every declared gun finish slot', () => {
+    const finish = Object.fromEntries(GUN_FINISH_SLOTS.map((slot) => [slot, 'polymer-fde']));
+    const loaded = loadGunDesign(JSON.stringify(makeDesign({ finish })));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) {
+      return;
+    }
+    const template = TEMPLATES.find((candidate) => candidate.name === loaded.design.template);
+    const saved = saveDesign(editorStateFromDesign(loaded.design, template), gunDomain);
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) {
+      return;
+    }
+    expect(saved.design.finish).toEqual(finish);
+    const exported = exportFileText(saved.text, {
+      id: 'finish-slot-roundtrip',
+      file: 'assets/models/finish-slot-roundtrip.glb',
+    });
+    expect(exported.ok).toBe(true);
+  });
+
+  it('rejects unknown gun finish slots and materials', () => {
+    for (const finish of [{ unknown: 'polymer-fde' }, { metal: 'not-a-material' }]) {
+      const loaded = loadGunDesign(JSON.stringify(makeDesign({ finish })));
+      expect(loaded.ok).toBe(false);
+      if (!loaded.ok) {
+        expect(loaded.error.code).toBe('invalid-shape');
+        expect(loaded.error.path?.startsWith('finish.')).toBe(true);
+      }
+    }
   });
 });
 
@@ -244,7 +292,8 @@ describe('loadDesign: change policy', () => {
   });
 
   it('a param the template does not list is a designer choice, not a stale one', () => {
-    const assembly = withPart({ family: 'front-sight', params: { style: 'post' } }, 'front-sight');
+    const barrel = baseAssembly.parts.barrel!;
+    const assembly = withPart({ ...barrel, params: { ...barrel.params, profile: 'heavy' } }, 'barrel');
     const result = load(makeDesign({ assembly }));
     expect(result.ok && result.issues.filter((i) => i.code === 'template-choice')).toEqual([]);
   });

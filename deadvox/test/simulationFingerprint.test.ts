@@ -14,6 +14,8 @@ import {
 
 const root = '/fixture/deadvox';
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
+const pocketLabel = ` pocket ${['$', '{job.target.pocket + 1}'].join('')}`;
+const compartmentLabel = ` compartment ${['$', '{job.target.pocket + 1}'].join('')}`;
 
 type Sources = Map<string, string>;
 
@@ -53,6 +55,7 @@ const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
+  'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -65,22 +68,53 @@ async function sourceFilesUnder(directory: string): Promise<string[]> {
   return [...direct, ...nested.flat()].sort();
 }
 
-async function actualSimulationGraph() {
+async function actualSimulationHost(): Promise<SimulationModuleGraphHost> {
   const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
   const viteResolve = config.createResolver();
-  return collectSimulationSourceGraph(
-    SIMULATION_ENTRIES,
-    projectRoot,
-    {
-      resolve(specifier, importer) {
-        return Promise.resolve(viteResolve(specifier, importer));
-      },
-      readFile(path) {
-        return readFile(path, 'utf8');
-      },
+  return {
+    resolve(specifier, importer) {
+      if (specifier.startsWith('@mobgen/')) {
+        return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+      }
+      return Promise.resolve(viteResolve(specifier, importer));
     },
-    { exclude: SIMULATION_EXCLUSIONS },
-  );
+    readFile(path) {
+      return readFile(path, 'utf8');
+    },
+  };
+}
+
+async function actualSimulationGraph() {
+  return collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, await actualSimulationHost(), {
+    exclude: SIMULATION_EXCLUSIONS,
+  });
+}
+
+async function mutateSimulationSource(host: SimulationModuleGraphHost, path: string, before: string, after: string) {
+  const target = resolve(projectRoot, path);
+  const original = await host.readFile(target);
+  if (!original.includes(before)) {
+    throw new Error(`mutation source ${path} does not contain its anchor`);
+  }
+  const mutated = original.replace(before, after);
+  if (mutated === original) {
+    throw new Error(`mutation does not change ${path}`);
+  }
+  let reads = 0;
+  const mutatedHost: SimulationModuleGraphHost = {
+    ...host,
+    readFile(file) {
+      if (file === target) {
+        reads += 1;
+        return Promise.resolve(mutated);
+      }
+      return host.readFile(file);
+    },
+  };
+  const value = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, mutatedHost, {
+    exclude: SIMULATION_EXCLUSIONS,
+  });
+  return { reads, value };
 }
 
 describe('simulation source fingerprint', () => {
@@ -88,22 +122,37 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
+    expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(SIMULATION_EXCLUSIONS).toEqual(
       expect.arrayContaining([
         'src/game/saveStorage.ts',
         'src/game/saveStorageRecord.ts',
         'src/game/saveStorageProtocol.ts',
+        'src/game/controls.ts',
+        'src/game/playtestTools.ts',
+        'src/game/playtestObserver.ts',
         'src/worker/save.worker.ts',
         'src/ui/saveController.ts',
       ]),
     );
     expect(graph.excludedImports).toEqual([
+      { importer: 'src/game/play.ts', excluded: 'src/core/mood.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/playtestObserver.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/look.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/meleePose.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/mobActors.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/models.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/piles.ts' },
@@ -117,10 +166,110 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/primaryActionHint.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
+      { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
+      { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
+  });
+
+  it('excludes presentation copy and pose policy but fingerprints action policy', async () => {
+    const host = await actualSimulationHost();
+    const graph = await actualSimulationGraph();
+    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
+      exclude: SIMULATION_EXCLUSIONS,
+    });
+    expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
+    expect(graph.sources.has('src/game/controls.ts')).toBe(false);
+    expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
+    expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
+
+    const hint = await mutateSimulationSource(
+      host,
+      'src/ui/primaryActionHint.ts',
+      'Nothing to do with ',
+      'No action available for ',
+    );
+    expect(hint.reads).toBe(0);
+    expect(hint.value).toBe(original);
+
+    const helpCopy = await mutateSimulationSource(
+      host,
+      'src/game/controls.ts',
+      'Right-hand primary action; right jab if empty',
+      'Right-hand item action; right jab if empty',
+    );
+    expect(helpCopy.reads).toBe(0);
+    expect(helpCopy.value).toBe(original);
+
+    const inventoryHelpCopy = await mutateSimulationSource(
+      host,
+      'src/game/controls.ts',
+      'Open / close inventory',
+      'Toggle inventory screen',
+    );
+    expect(inventoryHelpCopy.reads).toBe(0);
+    expect(inventoryHelpCopy.value).toBe(original);
+
+    const offHandRenderPolicy = await mutateSimulationSource(
+      host,
+      'src/render/meleePose.ts',
+      'pose[offHand] = { offset: [0, 0, 0], rotation: [0, 0, 0] };',
+      'pose[offHand] = { offset: [0, 0.01, 0], rotation: [0, 0, 0] };',
+    );
+    expect(offHandRenderPolicy.reads).toBe(0);
+    expect(offHandRenderPolicy.value).toBe(original);
+
+    const handPolicy = await mutateSimulationSource(
+      host,
+      'src/game/primaryAction.ts',
+      "primaryClick: 'right'",
+      "primaryClick: 'left'",
+    );
+    expect(handPolicy.reads).toBe(1);
+    expect(handPolicy.value).not.toBe(original);
+
+    const capability = await mutateSimulationSource(
+      host,
+      'src/game/primaryAction.ts',
+      "{ kind: 'light', supports:",
+      "{ kind: 'melee', supports:",
+    );
+    expect(capability.reads).toBe(1);
+    expect(capability.value).not.toBe(original);
+  });
+
+  it('keeps metrics-only observer label mutations outside the actual fingerprint', async () => {
+    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
+    const viteResolve = config.createResolver();
+    const hashWith = (edited: boolean) =>
+      fingerprintSimulationSources(
+        SIMULATION_ENTRIES,
+        projectRoot,
+        {
+          resolve(specifier, importer) {
+            if (specifier.startsWith('@mobgen/')) {
+              return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+            }
+            return Promise.resolve(viteResolve(specifier, importer));
+          },
+          async readFile(path) {
+            const source = await readFile(path, 'utf8');
+            return edited && path.endsWith('/src/game/playtestObserver.ts')
+              ? source.replaceAll(pocketLabel, compartmentLabel)
+              : source;
+          },
+        },
+        { exclude: SIMULATION_EXCLUSIONS },
+      );
+    const observerPath = resolve(projectRoot, 'src/game/playtestObserver.ts');
+    const observerSource = await readFile(observerPath, 'utf8');
+    const relabeled = observerSource.replaceAll(pocketLabel, compartmentLabel);
+    expect(relabeled).not.toBe(observerSource);
+    expect(await hashWith(true)).toBe(await hashWith(false));
   });
 
   it('classifies every core and game source module', async () => {
@@ -139,6 +288,13 @@ describe('simulation source fingerprint', () => {
       (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
     );
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
+  });
+
+  it('fingerprints pure mobgen modules imported by the simulation', async () => {
+    const graph = await actualSimulationGraph();
+    expect(graph.sources.has('mobgen/mob/shamblerFigure.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/core/pose.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
   });
 
   it('includes runtime-resolved source files, not unrelated UI files or type-only imports', async () => {

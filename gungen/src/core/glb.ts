@@ -1,16 +1,15 @@
-// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js, no gun data:
-// anchors and the palette come in as arguments, meshes come from `meshForSolid`.
+// A pure .glb (binary glTF 2.0) writer for placed assemblies (PROJECT.md 3.4). No three.js or domain data:
+// the palette comes in as an argument, meshes come from `meshForSolid`.
 //
 // Layout of the file:
 //   scene -> root node (named by the asset id)
 //     -> one node per part, named `<part id>:<registry key>`, placed by its resolved transform, carrying one
 //        mesh with one primitive per drawn solid (the solids the viewer draws: `displaySolids ?? solids`)
 //        -> one empty child node per port, named `<part>.<port>`, with the port metadata in glTF `extras`
-// Vertices are in the part's local frame times `METRES_PER_UNIT`; the node transform supplies the placement.
+// Vertices are in the part's local frame times the domain's `units.metresPerUnit`; the node transform supplies the placement.
 
+import { resolveAppearance } from './appearance.ts';
 import type {
-  DeadvoxModelEntry,
-  DeadvoxModelFile,
   ExportGlb,
   ExportPortMetadata,
   GlbExportError,
@@ -19,25 +18,19 @@ import type {
   PartPortId,
   SrgbColor,
 } from './design.ts';
-import { gripTurn, METRES_PER_UNIT, toFileAxes } from './exportFrame.ts';
-import { applyDir, applyPoint, cross, fromColumns, type Mat3, type Transform, type Vec3 } from './math.ts';
-import { meshForSolid } from './mesh.ts';
+import { type DisplayItem, displayItems } from './display.ts';
+import { boundsOfPoints } from './geometry.ts';
+import { compose, type Mat3, type Transform, type Vec3 } from './math.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from './mesh.ts';
+import { portFrame } from './resolve.ts';
 import type { PartDef, PortDef } from './schema.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
-
 /** glTF node name of a part: its id and its registry key (`PartInstance.family`), e.g. `barrel:barrel`. */
 export const partNodeName = (id: string, family: string): string => `${id}:${family}`;
 
 /** The standard sRGB electro-optical transfer: one normalized channel to linear light. */
 export const srgbToLinear = (c: number): number => (c <= 0.040_45 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-
-const own = (table: Readonly<Record<string, SrgbColor>>, key: string): SrgbColor | undefined =>
-  Object.hasOwn(table, key) ? table[key] : undefined;
-
-/** Same precedence as the gun palette's `solidColor`: solid id, then role, then the fallback. */
-const colorOf = (palette: Palette, role: string, solidId: string): SrgbColor =>
-  own(palette.specialColors, solidId) ?? own(palette.familyColors, role) ?? palette.fallbackColor;
 
 const validColor = (c: SrgbColor): boolean => c.length === 3 && c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 
@@ -46,6 +39,8 @@ const badPaletteKey = (palette: Palette): string | undefined => {
   const entries: [string, SrgbColor][] = [
     ...Object.entries(palette.familyColors).map(([k, c]): [string, SrgbColor] => [`family ${k}`, c]),
     ...Object.entries(palette.specialColors).map(([k, c]): [string, SrgbColor] => [`special ${k}`, c]),
+    ...Object.entries(palette.materials ?? {}).map(([k, c]): [string, SrgbColor] => [`material ${k}`, c]),
+    ...Object.entries(palette.roleShades ?? {}).map(([k, c]): [string, SrgbColor] => [`shade ${k}`, c]),
     ['fallback', palette.fallbackColor],
   ];
   return entries.find(([, c]) => !validColor(c))?.[0];
@@ -82,16 +77,11 @@ const quaternion = (m: Mat3): [number, number, number, number] => {
   return q.map((x) => (x * sign) / l + 0) as [number, number, number, number];
 };
 
-const round6 = (x: number): number => {
-  const r = Math.round(x * 1e6) / 1e6;
-  return r === 0 ? 0 : r;
-};
-
-const toMetres = (v: Vec3): Vec3 => [v[0] * METRES_PER_UNIT, v[1] * METRES_PER_UNIT, v[2] * METRES_PER_UNIT];
-const modelPoint = (v: Vec3): Vec3 => {
-  const p = toMetres(toFileAxes(v));
-  return [round6(p[0]), round6(p[1]), round6(p[2])];
-};
+const toMetres = (v: Vec3, metresPerUnit: number): Vec3 => [
+  v[0] * metresPerUnit,
+  v[1] * metresPerUnit,
+  v[2] * metresPerUnit,
+];
 
 const isIdentity = (m: Mat3): boolean => m.every((x, i) => Math.abs(x - (i % 4 === 0 ? 1 : 0)) < 1e-12);
 
@@ -133,18 +123,6 @@ class BinaryBuffer {
   }
 }
 
-const bounds = (positions: Float32Array): { min: number[]; max: number[] } => {
-  const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  for (let i = 0; i < positions.length; i += 3) {
-    for (let k = 0; k < 3; k++) {
-      min[k] = Math.min(min[k]!, positions[i + k]!);
-      max[k] = Math.max(max[k]!, positions[i + k]!);
-    }
-  }
-  return { min, max };
-};
-
 const pad4 = (bytes: Uint8Array, fill: number): Uint8Array => {
   const padded = new Uint8Array(Math.ceil(bytes.byteLength / 4) * 4).fill(fill);
   padded.set(bytes);
@@ -176,20 +154,21 @@ const glbFile = (json: unknown, bin: Uint8Array): Uint8Array => {
 
 const validId = (s: string): boolean => s.length > 0 && !s.includes('.');
 
-const portFrameMatrix = (port: PortDef): Mat3 => fromColumns(port.normal, port.up, cross(port.normal, port.up));
-
-const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportPortMetadata => ({
-  id: `${partId}.${port.id}` as PartPortId,
-  mount: port.mount,
-  gender: port.gender,
-  ...(port.size === undefined ? {} : { size: port.size }),
-  frame: {
-    position: applyPoint(placed, port.pos),
-    normal: applyDir(placed, port.normal),
-    up: applyDir(placed, port.up),
-  },
-  ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
-});
+const portMetadata = (partId: string, port: PortDef, placed: Transform): ExportPortMetadata => {
+  const frame = compose(placed, portFrame(port));
+  return {
+    id: `${partId}.${port.id}` as PartPortId,
+    mount: port.mount,
+    gender: port.gender,
+    ...(port.size === undefined ? {} : { size: port.size }),
+    frame: {
+      position: frame.t,
+      normal: [frame.r[0], frame.r[3], frame.r[6]],
+      up: [frame.r[1], frame.r[4], frame.r[7]],
+    },
+    ...(port.slots ? { rail: { count: port.slots.count, pitch: port.slots.pitch } } : {}),
+  };
+};
 
 type Json = Record<string, unknown>;
 
@@ -201,7 +180,35 @@ interface PartExport {
   readonly placed: Transform;
 }
 
+const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
+  a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
+
+/** Keep g27's finish boundary when using the shared g24 display groups. */
+const splitMixedAppearance = (
+  items: DisplayItem[],
+  appearanceFor: (solid: DisplayItem['solids'][number]) => ReturnType<typeof resolveAppearance>,
+): DisplayItem[] =>
+  items.flatMap((item) => {
+    if (!item.merged) {
+      return [item];
+    }
+    const first = appearanceFor(item.solids[0]!);
+    return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+      ? [item]
+      : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+  });
 const fail = (error: GlbExportError): GlbExportResult => ({ ok: false, error });
+
+/** Keep the established GLB extras keys while the in-memory motion contract uses neutral endpoints. */
+const motionMetadata = (motion: NonNullable<PartDef['motion']>) => ({
+  kind: motion.kind,
+  axis: motion.axis,
+  // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
+  ['rest']: motion.start,
+  // biome-ignore lint/complexity/useLiteralKeys: preserve legacy GLB keys without core domain identifiers.
+  ['rearmost']: motion.end,
+  ...(motion.sourceKeepOut === undefined ? {} : { sourceKeepOut: motion.sourceKeepOut }),
+});
 
 /** Checks the input in the order the frozen error variants are listed; the first problem wins. */
 const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined => {
@@ -232,16 +239,17 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
 };
 
 /**
- * Writes a resolved assembly as a `.glb` plus the matching deadvox model entry. Refuses (as an error value,
- * never an exception) an assembly with structure issues or unplaced parts, ids that can't form a stable
- * port id, a palette colour outside sRGB [0,1], and an asset file outside `assets/models/<name>.glb`.
+ * Writes a resolved assembly as a `.glb`. Refuses (as an error value, never an exception) an assembly with
+ * structure issues or unplaced parts, ids that can't form a stable port id, a palette colour outside sRGB [0,1],
+ * and an asset file outside `assets/models/<name>.glb`.
  */
 export const exportGlb: ExportGlb = (input) => {
   const error = refusal(input);
   if (error) {
     return fail(error);
   }
-  const { resolved, anchors, palette, asset } = input;
+  const { resolved, palette, asset } = input;
+  const { metresPerUnit } = resolved.domain.units;
 
   const parts: PartExport[] = Object.keys(resolved.assembly.parts)
     .sort()
@@ -270,50 +278,102 @@ export const exportGlb: ExportGlb = (input) => {
   };
 
   const meshes: Json[] = [];
+  const appearanceFinish = input.finish ?? input.appearance?.finish;
+  const appearanceContext = {
+    ...input.appearance,
+    ...(appearanceFinish === undefined ? {} : { finish: appearanceFinish }),
+  };
   const nodes: Json[] = [{ name: asset.id, children: [] as number[] }];
   const rootChildren = (nodes[0] as { children: number[] }).children;
+  const appearanceFor = (part: PartExport, solid: DisplayItem['solids'][number]) =>
+    resolveAppearance(palette, part.def.family, solid.id, {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+        ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+        ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+      },
+    });
+  const primitiveFor = (part: PartExport, item: DisplayItem): Json | undefined => {
+    const solid = item.solids[0]!;
+    const mesh = item.merged
+      ? meshForSolidGroup(item.solids)
+      : meshForSolid(solid, displayBevel(solid, resolved.domain.units), input.revolveFacets);
+    if (mesh.triangleCount === 0 || mesh.indices.length === 0) {
+      return undefined;
+    }
+    const positions = mesh.positions.map((x) => x * metresPerUnit);
+    const points = Array.from(
+      { length: positions.length / 3 },
+      (_, index) => [positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!] as Vec3,
+    );
+    const [min, max] = boundsOfPoints(points);
+    const position = bin.add(
+      positions,
+      { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
+      ARRAY_BUFFER,
+    );
+    const normal = bin.add(
+      mesh.normals,
+      { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
+      ARRAY_BUFFER,
+    );
+    const indices = bin.add(
+      mesh.indices,
+      { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
+      ELEMENT_ARRAY_BUFFER,
+    );
+    const appearance = appearanceFor(part, solid);
+    return {
+      attributes: { POSITION: position, NORMAL: normal },
+      indices,
+      material: materialFor(appearance.color),
+      mode: 4,
+      extras: {
+        ...(item.merged ? { mergeGroup: item.id, solids: item.solids.map(({ id }) => id) } : { solid: solid.id }),
+        ...(appearance.material === undefined ? {} : { material: appearance.material }),
+        ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
+      },
+    };
+  };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: existing glTF node construction; appearance metadata is conditional by contract.
   const addPart = (part: PartExport): void => {
     const drawn = part.def.displaySolids ?? part.def.solids;
-    const primitives = drawn.map((solid) => {
-      const mesh = meshForSolid(solid);
-      const positions = mesh.positions.map((x) => x * METRES_PER_UNIT);
-      const { min, max } = bounds(positions);
-      const position = bin.add(
-        positions,
-        { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
-        ARRAY_BUFFER,
-      );
-      const normal = bin.add(
-        mesh.normals,
-        { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
-        ARRAY_BUFFER,
-      );
-      const indices = bin.add(
-        mesh.indices,
-        { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
-        ELEMENT_ARRAY_BUFFER,
-      );
-      return {
-        attributes: { POSITION: position, NORMAL: normal },
-        indices,
-        material: materialFor(colorOf(palette, part.def.family, solid.id)),
-        mode: 4,
-        extras: { solid: solid.id },
-      };
-    });
+    const primitives = splitMixedAppearance(displayItems(drawn), (solid) => appearanceFor(part, solid)).flatMap(
+      (item) => {
+        const primitive = primitiveFor(part, item);
+        return primitive ? [primitive] : [];
+      },
+    );
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);
     if (!isIdentity(part.placed.r)) {
       node.rotation = rotation;
     }
-    node.translation = toMetres(part.placed.t);
+    node.translation = toMetres(part.placed.t, metresPerUnit);
     if (primitives.length > 0) {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
     }
-    node.extras = { part: part.id, family: part.family, role: part.def.family, solids: drawn.map((s) => s.id) };
+    const appearance = resolveAppearance(palette, part.def.family, '', {
+      context: appearanceContext,
+      overrides: {
+        ...(part.def.material === undefined ? {} : { partMaterial: part.def.material }),
+        ...(part.def.slot === undefined ? {} : { partSlot: part.def.slot }),
+      },
+    });
+    node.extras = {
+      part: part.id,
+      family: part.family,
+      role: part.def.family,
+      ...(appearance.material === undefined ? {} : { material: appearance.material }),
+      ...(appearance.slot === undefined ? {} : { slot: appearance.slot }),
+      solids: drawn.map((s) => s.id),
+      ...(part.def.motion ? { motion: motionMetadata(part.def.motion) } : {}),
+    };
 
     const children: number[] = [];
     const nodeIndex = nodes.length;
@@ -321,10 +381,10 @@ export const exportGlb: ExportGlb = (input) => {
     for (const port of part.def.ports) {
       const portNode: Json = {
         name: `${part.id}.${port.id}`,
-        translation: toMetres(port.pos),
+        translation: toMetres(port.pos, metresPerUnit),
         extras: { port: portMetadata(part.id, port, part.placed) },
       };
-      const frame = portFrameMatrix(port);
+      const frame = portFrame(port).r;
       if (!isIdentity(frame)) {
         portNode.rotation = quaternion(frame);
       }
@@ -341,7 +401,13 @@ export const exportGlb: ExportGlb = (input) => {
   }
 
   (nodes[0] as Json).extras = {
-    gungen: { assembly: resolved.assembly.name, unit: 'u', metresPerUnit: METRES_PER_UNIT, portFrameUnit: 'u' },
+    gungen: {
+      assembly: resolved.assembly.name,
+      unit: 'u',
+      metresPerUnit,
+      portFrameUnit: 'u',
+      materialCount: materials.length,
+    },
   };
 
   const json: Json = {
@@ -359,15 +425,5 @@ export const exportGlb: ExportGlb = (input) => {
       : {}),
   };
 
-  const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
-    name,
-    modelPoint(frame.position),
-  ]);
-  const modelEntry: DeadvoxModelEntry = {
-    id: asset.id,
-    file: asset.file as DeadvoxModelFile,
-    grip: { at: modelPoint(anchors.hold.position), turn: gripTurn() },
-    ...(others.length > 0 ? { anchors: Object.fromEntries(others) } : {}),
-  };
-  return { ok: true, glb: glbFile(json, bin.bytes()), modelEntry };
+  return { ok: true, glb: glbFile(json, bin.bytes()) };
 };

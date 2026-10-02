@@ -19,12 +19,15 @@ import {
   type Object3D,
   Vector3,
 } from 'three';
+import { resolveAppearance } from '../core/appearance.ts';
 import { MAIN_AXIS } from '../core/conventions.ts';
+import type { AppearanceContext } from '../core/design.ts';
+import { displayItems } from '../core/display.ts';
 import { type Obb, worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Mat3, Transform, Vec3 } from '../core/math.ts';
 import { applyDir, compose } from '../core/math.ts';
-import { meshForSolid } from '../core/mesh.ts';
+import { displayBevel, meshForSolid, meshForSolidGroup } from '../core/mesh.ts';
 import { portFrame } from '../core/resolve.ts';
 import type { Solid } from '../core/schema.ts';
 import type { Report } from '../core/validate.ts';
@@ -34,7 +37,6 @@ const FAIL = 0xe5_53_4b;
 const KEEP_OUT = 0x9d_7c_d8;
 const NORMAL = 0xf0_a2_4a;
 const UP = 0x4a_c1_f0;
-
 export interface Layers {
   readonly solids: Group;
   readonly ports: Group;
@@ -53,14 +55,16 @@ const placeBox = (obj: Object3D, obb: Obb) => {
 };
 
 /** Converts a core TriangleMesh (positions/normals/indices only) to a three.js BufferGeometry. */
-const meshGeometry = (solid: Solid, bevel?: number) => {
-  const mesh = meshForSolid(solid, bevel);
+const triangleGeometry = (mesh: ReturnType<typeof meshForSolid>) => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
   geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
   geometry.setIndex(new BufferAttribute(mesh.indices, 1));
   return geometry;
 };
+
+const meshGeometry = (solid: Solid, bevel?: number, revolveFacets?: number) =>
+  triangleGeometry(meshForSolid(solid, bevel, revolveFacets));
 
 /** Keep-outs stay plain boxes/extrusions; only rendered solids are beveled. */
 const solidGeometry = (solid: Solid) => {
@@ -70,6 +74,9 @@ const solidGeometry = (solid: Solid) => {
   return meshGeometry(solid, 0);
 };
 
+const sameAppearance = (a: ReturnType<typeof resolveAppearance>, b: ReturnType<typeof resolveAppearance>): boolean =>
+  a.material === b.material && a.slot === b.slot && a.color.every((channel, index) => channel === b.color[index]);
+
 /** Which parts, ports and keep-outs the given issues point at. */
 const highlights = (issues: readonly Issue[]) => ({
   parts: new Set(issues.flatMap((i) => i.parts)),
@@ -78,7 +85,14 @@ const highlights = (issues: readonly Issue[]) => ({
 });
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
-export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => {
+// biome-ignore lint/complexity/useMaxParams: the existing positional signature plus the revolve level of detail; callers pass the first two or four.
+export function buildLayers(
+  report: Report,
+  focus: readonly Issue[],
+  colorMode: 'finish' | 'role' = 'finish',
+  appearanceContext: AppearanceContext = {},
+  revolveFacets?: number,
+): Layers {
   const { resolved } = report;
   const hl = highlights(focus);
   const layers: Layers = {
@@ -96,13 +110,42 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       .join(', ');
     const failing = hl.parts.has(part);
 
-    for (const s of def.displaySolids ?? def.solids) {
-      const color = failing ? FAIL : srgbToHex(solidColor(GUN_PALETTE, def.family, s.id));
+    const drawn = def.displaySolids ?? def.solids;
+    const appearanceFor = (solid: Solid) =>
+      resolveAppearance(GUN_PALETTE, def.family, solid.id, {
+        context: appearanceContext,
+        overrides: {
+          ...(def.material === undefined ? {} : { partMaterial: def.material }),
+          ...(def.slot === undefined ? {} : { partSlot: def.slot }),
+          ...(solid.material === undefined ? {} : { solidMaterial: solid.material }),
+          ...(solid.slot === undefined ? {} : { solidSlot: solid.slot }),
+        },
+      });
+    const rendered = displayItems(drawn).flatMap((item) => {
+      if (!item.merged) {
+        return [item];
+      }
+      const first = appearanceFor(item.solids[0]!);
+      return item.solids.slice(1).every((solid) => sameAppearance(first, appearanceFor(solid)))
+        ? [item]
+        : item.solids.map((solid) => ({ id: solid.id, solids: [solid], merged: false }));
+    });
+    for (const item of rendered) {
+      const s = item.solids[0]!;
+      const appearance = appearanceFor(s);
+      const color = failing
+        ? FAIL
+        : srgbToHex(colorMode === 'role' ? solidColor(GUN_PALETTE, def.family, s.id, s.material) : appearance.color);
+      const geometry = item.merged
+        ? triangleGeometry(meshForSolidGroup(item.solids))
+        : meshGeometry(s, displayBevel(s, resolved.domain.units), revolveFacets);
+      // A revolved solid is smooth-shaded from its own normals; everything else is flat-shaded.
+      const smooth = s.kind === 'revolved';
       const mesh = new Mesh(
-        meshGeometry(s),
+        geometry,
         new MeshStandardMaterial({
           color,
-          flatShading: true,
+          flatShading: !smooth,
           roughness: 0.85,
           metalness: 0.05,
         }),
@@ -110,8 +153,9 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
       // The solid's own box.center/profile is already baked into its mesh's positions.
       mesh.matrixAutoUpdate = false;
       mesh.matrix.copy(matrixOf(t.r, t.t));
-      mesh.userData = { label: `${part} (${def.family}) · solid ${s.id}${params ? ` · ${params}` : ''}` };
-      if (s.display?.outline !== false) {
+      mesh.userData = { label: `${part} (${def.family}) · solid ${item.id}${params ? ` · ${params}` : ''}` };
+      // Edges would trace every facet of a smooth revolved mesh, so it is outlined only on request.
+      if (item.merged || (smooth ? s.display?.outline === true : s.display?.outline !== false)) {
         const edges = new LineSegments(
           new EdgesGeometry(mesh.geometry),
           new LineBasicMaterial({ color: 0x00_00_00, transparent: true, opacity: 0.35 }),
@@ -179,7 +223,7 @@ export const buildLayers = (report: Report, focus: readonly Issue[]): Layers => 
     ).computeLineDistances(),
   );
   return layers;
-};
+}
 
 export const disposeGroup = (group: Object3D) => {
   group.traverse((obj) => {

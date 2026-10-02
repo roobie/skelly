@@ -14,7 +14,8 @@ import {
   type Transform,
   type Vec3,
 } from './math.ts';
-import type { Box, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
+import { revolvedLocalPolyhedron } from './revolve.ts';
+import type { Box, ClipPlane, ExtrudedPolygonSolid, Solid, Vec2 } from './schema.ts';
 
 export interface Obb {
   readonly center: Vec3;
@@ -40,6 +41,18 @@ export const worldBox = (t: Transform, box: Box): Obb => ({
 });
 
 /** Exact axis-aligned bounds in a solid's local frame. */
+export const boundsOfPoints = (points: readonly Vec3[]): readonly [Vec3, Vec3] => {
+  const min: [number, number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const max: [number, number, number] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  for (const point of points) {
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis]!, point[axis]!);
+      max[axis] = Math.max(max[axis]!, point[axis]!);
+    }
+  }
+  return [min, max];
+};
+
 export const localSolidBounds = (solid: Solid): readonly [Vec3, Vec3] => {
   if (solid.kind === 'box') {
     const { center, half } = solid.box;
@@ -48,14 +61,12 @@ export const localSolidBounds = (solid: Solid): readonly [Vec3, Vec3] => {
       [center[0] + half[0], center[1] + half[1], center[2] + half[2]],
     ];
   }
-  const vertices = solid.profile.flatMap((point) => [
-    extrusionPoint(solid.axis, point, solid.z[0]),
-    extrusionPoint(solid.axis, point, solid.z[1]),
-  ]);
-  return [
-    ([0, 1, 2] as const).map((axis) => Math.min(...vertices.map((point) => point[axis]))) as unknown as Vec3,
-    ([0, 1, 2] as const).map((axis) => Math.max(...vertices.map((point) => point[axis]))) as unknown as Vec3,
-  ];
+  const polyhedron =
+    solid.kind === 'revolved' ? revolvedLocalPolyhedron(solid) : clippedExtrudedPolygonPolyhedron(solid);
+  if (!polyhedron) {
+    throw new Error(`Solid "${solid.id}" clips to an empty or degenerate shape.`);
+  }
+  return boundsOfPoints(polyhedron.vertices);
 };
 
 export const obbPolyhedron = (box: Obb): ConvexPolyhedron => {
@@ -85,21 +96,300 @@ export const obbPolyhedron = (box: Obb): ConvexPolyhedron => {
   };
 };
 
-const extrudedPolygonPolyhedron = (t: Transform, solid: ExtrudedPolygonSolid): ConvexPolyhedron => {
+export const polygonAreaVector = (points: readonly Vec3[]): Vec3 => {
+  let area: Vec3 = [0, 0, 0];
+  for (let i = 0; i < points.length; i++) {
+    area = add(area, cross(points[i]!, points[(i + 1) % points.length]!));
+  }
+  return area;
+};
+
+export const polygonArea = (points: readonly Vec3[]): number => length(polygonAreaVector(points)) / 2;
+
+const samePoint = (a: Vec3, b: Vec3, tolerance = 1e-8): boolean => length(sub(a, b)) <= tolerance;
+
+export const uniquePoints = (points: readonly Vec3[], tolerance = 1e-8): Vec3[] => {
+  const unique: Vec3[] = [];
+  for (const point of points) {
+    if (!unique.some((candidate) => samePoint(candidate, point, tolerance))) {
+      unique.push(point);
+    }
+  }
+  return unique;
+};
+
+export const cleanPolygon = (points: readonly Vec3[], tolerance = 1e-8): Vec3[] => {
+  const clean: Vec3[] = [];
+  for (const point of points) {
+    const previous = clean.at(-1);
+    if (!previous || length(sub(point, previous)) > tolerance) {
+      clean.push(point);
+    }
+  }
+  if (clean.length > 2 && samePoint(clean[0]!, clean.at(-1)!, tolerance)) {
+    clean.pop();
+  }
+  return clean.length >= 3 && polygonArea(clean) > tolerance * tolerance ? clean : [];
+};
+
+const clipPolygonByDistances = (
+  polygon: readonly Vec3[],
+  distances: readonly number[],
+  keepInside: boolean,
+  tolerance: number,
+): Vec3[] => {
+  const result: Vec3[] = [];
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i]!;
+    const b = polygon[(i + 1) % polygon.length]!;
+    const distanceA = distances[i]!;
+    const distanceB = distances[(i + 1) % polygon.length]!;
+    const insideA = keepInside ? distanceA <= 0 : distanceA >= 0;
+    const insideB = keepInside ? distanceB <= 0 : distanceB >= 0;
+    if (insideA !== insideB) {
+      const ratio = distanceA / (distanceA - distanceB);
+      result.push([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
+    }
+    if (insideB) {
+      result.push(b);
+    }
+  }
+  return cleanPolygon(result, tolerance);
+};
+
+export const clipPolygon = (
+  polygon: readonly Vec3[],
+  plane: ClipPlane,
+  keepInside = true,
+  tolerance = 1e-8,
+): Vec3[] => {
+  if (polygon.length < 3) {
+    return [];
+  }
+  const distances = polygon.map((point) => dot(plane.normal, point) - plane.offset);
+  const minimum = Math.min(...distances);
+  const maximum = Math.max(...distances);
+  if (maximum <= tolerance) {
+    return keepInside ? [...polygon] : [];
+  }
+  if (minimum >= -tolerance) {
+    return keepInside ? [] : [...polygon];
+  }
+  return clipPolygonByDistances(polygon, distances, keepInside, tolerance);
+};
+
+export const signedArea2D = (points: readonly Vec2[]): number => {
+  let areaSum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]!;
+    const b = points[(i + 1) % points.length]!;
+    areaSum += a[0] * b[1] - b[0] * a[1];
+  }
+  return areaSum / 2;
+};
+
+const polyhedronVolume = (polyhedron: ConvexPolyhedron): number => {
+  let sixVolume = 0;
+  for (const face of polyhedron.faces) {
+    for (let i = 1; i < face.length - 1; i++) {
+      sixVolume += dot(
+        polyhedron.vertices[face[0]!]!,
+        cross(polyhedron.vertices[face[i]!]!, polyhedron.vertices[face[i + 1]!]!),
+      );
+    }
+  }
+  return Math.abs(sixVolume / 6);
+};
+
+interface ClipFaceContext {
+  readonly polyhedron: ConvexPolyhedron;
+  readonly distance: (point: Vec3) => number;
+  readonly intersections: Vec3[];
+  readonly distanceTolerance: number;
+  readonly pointTolerance: number;
+  readonly areaTolerance: number;
+}
+
+const clipFace = (face: readonly number[], context: ClipFaceContext): Vec3[] | undefined => {
+  const { polyhedron, distance, intersections, distanceTolerance, pointTolerance, areaTolerance } = context;
+  const clipped: Vec3[] = [];
+  for (let i = 0; i < face.length; i++) {
+    const a = polyhedron.vertices[face[i]!]!;
+    const b = polyhedron.vertices[face[(i + 1) % face.length]!]!;
+    const distanceA = distance(a);
+    const distanceB = distance(b);
+    const insideA = distanceA <= distanceTolerance;
+    const insideB = distanceB <= distanceTolerance;
+    if (insideA !== insideB) {
+      const ratio = distanceA / (distanceA - distanceB);
+      const intersection: Vec3 = [
+        a[0] + (b[0] - a[0]) * ratio,
+        a[1] + (b[1] - a[1]) * ratio,
+        a[2] + (b[2] - a[2]) * ratio,
+      ];
+      clipped.push(intersection);
+      intersections.push(intersection);
+    }
+    if (insideB) {
+      clipped.push(b);
+    }
+  }
+  const clean = clipped.filter(
+    (point, index) => !samePoint(point, clipped[(index + clipped.length - 1) % clipped.length]!, pointTolerance),
+  );
+  return clean.length >= 3 && length(polygonAreaVector(clean)) > areaTolerance ? clean : undefined;
+};
+
+const clipCap = (
+  points: readonly Vec3[],
+  plane: ClipPlane,
+  pointTolerance: number,
+  areaTolerance: number,
+): Vec3[] | undefined => {
+  const capPoints = uniquePoints(points, pointTolerance);
+  if (capPoints.length < 3) {
+    return undefined;
+  }
+  const center = scale(
+    capPoints.reduce((sum, point) => add(sum, point), [0, 0, 0] as Vec3),
+    1 / capPoints.length,
+  );
+  const axis = Math.abs(plane.normal[0]) < 0.8 ? ([1, 0, 0] as const) : ([0, 1, 0] as const);
+  const tangent = scale(cross(axis, plane.normal), 1 / length(cross(axis, plane.normal)));
+  const bitangent = cross(plane.normal, tangent);
+  const cap = [...capPoints].sort((a, b) => {
+    const deltaA = sub(a, center);
+    const deltaB = sub(b, center);
+    return (
+      Math.atan2(dot(deltaA, bitangent), dot(deltaA, tangent)) -
+      Math.atan2(dot(deltaB, bitangent), dot(deltaB, tangent))
+    );
+  });
+  return length(polygonAreaVector(cap)) > areaTolerance ? cap : undefined;
+};
+
+const polyhedronFromFaces = (
+  faces: readonly (readonly Vec3[])[],
+  pointTolerance: number,
+  volumeTolerance: number,
+): ConvexPolyhedron | undefined => {
+  const vertices: Vec3[] = [];
+  const indices = faces.map((face) =>
+    face.map((point) => {
+      let index = vertices.findIndex((candidate) => samePoint(candidate, point, pointTolerance));
+      if (index < 0) {
+        index = vertices.length;
+        vertices.push(point);
+      }
+      return index;
+    }),
+  );
+  const result = { vertices, faces: indices };
+  if (vertices.length < 4 || indices.length < 4 || polyhedronVolume(result) <= volumeTolerance) {
+    return undefined;
+  }
+  const directedEdges = new Map<string, number>();
+  for (const face of indices) {
+    for (let edge = 0; edge < face.length; edge++) {
+      const from = face[edge]!;
+      const to = face[(edge + 1) % face.length]!;
+      const key = `${from}>${to}`;
+      directedEdges.set(key, (directedEdges.get(key) ?? 0) + 1);
+    }
+  }
+  return [...directedEdges].every(([edge, count]) => {
+    const [from, to] = edge.split('>');
+    return count === (directedEdges.get(`${to}>${from}`) ?? 0);
+  })
+    ? result
+    : undefined;
+};
+
+/** Intersect a convex polyhedron with one kept half-space, adding an outward-facing cap. */
+export const clipConvexPolyhedron = (polyhedron: ConvexPolyhedron, plane: ClipPlane): ConvexPolyhedron | undefined => {
+  const bounds = ([0, 1, 2] as const).map((axis) => {
+    const coordinates = polyhedron.vertices.map((point) => point[axis]);
+    return [Math.min(...coordinates), Math.max(...coordinates)] as const;
+  });
+  const extent = Math.max(...bounds.map(([min, max]) => max - min));
+  const coordinateScale = Math.max(1, ...bounds.flatMap(([min, max]) => [Math.abs(min), Math.abs(max)]));
+  const pointTolerance = Math.max(extent * 1e-10, Number.EPSILON * coordinateScale * 8);
+  const distanceTolerance = pointTolerance * length(plane.normal);
+  const areaTolerance = Math.max(extent * extent * 1e-12, pointTolerance * pointTolerance);
+  const volumeTolerance = Math.max(extent * extent * extent * 1e-12, pointTolerance ** 3);
+  const distance = (point: Vec3): number => dot(plane.normal, point) - plane.offset;
+  const signed = polyhedron.vertices.map(distance);
+  if (signed.every((value) => value <= distanceTolerance)) {
+    return polyhedron;
+  }
+  if (signed.every((value) => value > distanceTolerance)) {
+    return undefined;
+  }
+  if (!signed.some((value) => value < -distanceTolerance)) {
+    return undefined;
+  }
+
+  const intersections: Vec3[] = [];
+  const faces = polyhedron.faces.flatMap((face) => {
+    const clipped = clipFace(face, {
+      polyhedron,
+      distance,
+      intersections,
+      distanceTolerance,
+      pointTolerance,
+      areaTolerance,
+    });
+    return clipped ? [clipped] : [];
+  });
+  const cap = clipCap(intersections, plane, pointTolerance, areaTolerance);
+  if (!cap) {
+    return polyhedron;
+  }
+  return polyhedronFromFaces([...faces, cap], pointTolerance, volumeTolerance) ?? polyhedron;
+};
+
+const extrudedPolygonLocalPolyhedron = (solid: ExtrudedPolygonSolid): ConvexPolyhedron => {
   const n = solid.profile.length;
-  const local = [
+  const vertices = [
     ...solid.profile.map((point) => extrusionPoint(solid.axis, point, solid.z[0])),
     ...solid.profile.map((point) => extrusionPoint(solid.axis, point, solid.z[1])),
   ];
-  const vertices = local.map((p) => applyPoint(t, p));
   const bottom = Array.from({ length: n }, (_, i) => n - 1 - i);
   const top = Array.from({ length: n }, (_, i) => n + i);
   const sides = Array.from({ length: n }, (_, i) => [i, (i + 1) % n, ((i + 1) % n) + n, i + n]);
   return { vertices, faces: [bottom, top, ...sides] };
 };
 
-export const worldSolid = (t: Transform, solid: Solid): WorldSolid =>
-  solid.kind === 'box' ? worldBox(t, solid.box) : extrudedPolygonPolyhedron(t, solid);
+/** Build the local convex solid after applying every declared clip plane. */
+export const clippedExtrudedPolygonPolyhedron = (solid: ExtrudedPolygonSolid): ConvexPolyhedron | undefined => {
+  let polyhedron: ConvexPolyhedron | undefined = extrudedPolygonLocalPolyhedron(solid);
+  for (const plane of solid.clip ?? []) {
+    if (!polyhedron) {
+      break;
+    }
+    polyhedron = clipConvexPolyhedron(polyhedron, plane);
+  }
+  return polyhedron;
+};
+
+const extrudedPolygonPolyhedron = (t: Transform, solid: ExtrudedPolygonSolid): ConvexPolyhedron => {
+  const polyhedron = clippedExtrudedPolygonPolyhedron(solid);
+  if (!polyhedron) {
+    throw new Error(`Solid "${solid.id}" clips to an empty or degenerate shape.`);
+  }
+  return { ...polyhedron, vertices: polyhedron.vertices.map((point) => applyPoint(t, point)) };
+};
+
+export const worldSolid = (t: Transform, solid: Solid): WorldSolid => {
+  if (solid.kind === 'box') {
+    return worldBox(t, solid.box);
+  }
+  if (solid.kind === 'revolved') {
+    const hull = revolvedLocalPolyhedron(solid);
+    return { ...hull, vertices: hull.vertices.map((point) => applyPoint(t, point)) };
+  }
+  return extrudedPolygonPolyhedron(t, solid);
+};
 
 const uniqueDirections = (directions: readonly Vec3[]): Vec3[] => {
   const unique: Vec3[] = [];
@@ -399,17 +689,34 @@ const axisAlignedBounds = (box: Obb): readonly [Vec3, Vec3] | undefined => {
 const distanceAabb = (a: readonly [Vec3, Vec3], b: readonly [Vec3, Vec3]): number =>
   Math.hypot(...([0, 1, 2] as const).map((axis) => Math.max(0, a[0][axis] - b[1][axis], b[0][axis] - a[1][axis])));
 
-const worldBounds = (shape: WorldSolid): readonly [Vec3, Vec3] => {
-  const vertices = isPolyhedron(shape) ? shape.vertices : obbPolyhedron(shape).vertices;
-  return [
-    ([0, 1, 2] as const).map((axis) => Math.min(...vertices.map((point) => point[axis]))) as unknown as Vec3,
-    ([0, 1, 2] as const).map((axis) => Math.max(...vertices.map((point) => point[axis]))) as unknown as Vec3,
-  ];
+type WorldBounds = readonly [Vec3, Vec3];
+const aabbCache = new WeakMap<WorldSolid, WorldBounds>();
+const boundsForWorldSolid = (shape: WorldSolid): WorldBounds => {
+  const cached = aabbCache.get(shape);
+  if (cached) {
+    return cached;
+  }
+  let bounds: WorldBounds;
+  if (isPolyhedron(shape)) {
+    bounds = boundsOfPoints(shape.vertices);
+  } else {
+    const { center, r, half } = shape;
+    const radius = [0, 1, 2].map(
+      (axis) =>
+        Math.abs(r[axis * 3]!) * half[0] + Math.abs(r[axis * 3 + 1]!) * half[1] + Math.abs(r[axis * 3 + 2]!) * half[2],
+    ) as unknown as Vec3;
+    bounds = [
+      [center[0] - radius[0], center[1] - radius[1], center[2] - radius[2]],
+      [center[0] + radius[0], center[1] + radius[1], center[2] + radius[2]],
+    ];
+  }
+  aabbCache.set(shape, bounds);
+  return bounds;
 };
 
 /** Cheap AABB lower bound used to cull exact convex-distance checks. */
 export const lowerBoundDistanceWorld = (a: WorldSolid, b: WorldSolid): number =>
-  distanceAabb(worldBounds(a), worldBounds(b));
+  distanceAabb(boundsForWorldSolid(a), boundsForWorldSolid(b));
 
 export const distanceWorld = (a: WorldSolid, b: WorldSolid): number => {
   if (!(isPolyhedron(a) || isPolyhedron(b))) {
@@ -486,33 +793,32 @@ const hasSelfIntersectingEdges = (profile: readonly Vec2[]): boolean => {
 };
 
 const validateProfileConvexity = (profile: readonly Vec2[]): string | undefined => {
-  let twiceArea = 0;
+  const area = signedArea2D(profile);
   let turnSign = 0;
   for (let i = 0; i < profile.length; i++) {
     const a = profile[i]!;
     const b = profile[(i + 1) % profile.length]!;
     const c = profile[(i + 2) % profile.length]!;
-    twiceArea += a[0] * b[1] - b[0] * a[1];
     const turn = orient(a, b, c);
-    if (Math.abs(turn) > 1e-10) {
-      const sign = Math.sign(turn);
-      if (turnSign !== 0 && sign !== turnSign) {
-        return 'profile must be convex';
-      }
-      turnSign = sign;
+    if (Math.abs(turn) <= 1e-10) {
+      return 'profile must not contain collinear consecutive vertices';
     }
+    const sign = Math.sign(turn);
+    if (turnSign !== 0 && sign !== turnSign) {
+      return 'profile must be convex';
+    }
+    turnSign = sign;
   }
-  if (Math.abs(twiceArea) <= 1e-10 || turnSign === 0) {
+  if (Math.abs(area) <= 5e-11 || turnSign === 0) {
     return 'profile has zero area';
   }
-  if (twiceArea < 0) {
+  if (area < 0) {
     return 'profile vertices must be counter-clockwise';
   }
   return undefined;
 };
 
-/** Returns a structural-error explanation, or undefined for a valid extrusion. */
-export const validateExtrudedPolygon = (
+const validateExtrusionBase = (
   profile: readonly Vec2[],
   z: readonly [number, number],
   axis?: ExtrusionAxis,
@@ -537,6 +843,60 @@ export const validateExtrudedPolygon = (
     return 'profile is self-intersecting';
   }
   return validateProfileConvexity(profile);
+};
+
+const clipPlaneError = (plane: ClipPlane, index: number): string | undefined => {
+  if (!(plane && Array.isArray(plane.normal))) {
+    return `clip plane ${index} must have a finite 3D normal and offset`;
+  }
+  if (
+    plane.normal.length !== 3 ||
+    plane.normal.some((component: number) => !Number.isFinite(component)) ||
+    !Number.isFinite(plane.offset)
+  ) {
+    return `clip plane ${index} must have a finite 3D normal and offset`;
+  }
+  return length(plane.normal) <= 1e-9 ? `clip plane ${index} normal must be non-zero` : undefined;
+};
+
+const validateClipPlanes = (
+  profile: readonly Vec2[],
+  z: readonly [number, number],
+  axis: ExtrusionAxis | undefined,
+  clip: readonly ClipPlane[] | undefined,
+): string | undefined => {
+  if (clip !== undefined && !Array.isArray(clip)) {
+    return 'clip planes must be an array';
+  }
+  let clipped: ConvexPolyhedron | undefined = extrudedPolygonLocalPolyhedron({
+    id: 'validation',
+    kind: 'extruded-polygon',
+    profile,
+    z,
+    ...(axis ? { axis } : {}),
+  });
+  for (const [index, plane] of (clip ?? []).entries()) {
+    const error = clipPlaneError(plane, index);
+    if (error) {
+      return error;
+    }
+    clipped = clipped ? clipConvexPolyhedron(clipped, plane) : undefined;
+    if (!clipped) {
+      return `clip plane ${index} removes the entire solid or leaves a degenerate result`;
+    }
+  }
+  return undefined;
+};
+
+/** Returns a structural-error explanation, or undefined for a valid clipped extrusion. */
+export const validateExtrudedPolygon = (
+  profile: readonly Vec2[],
+  z: readonly [number, number],
+  axis?: ExtrusionAxis,
+  clip?: readonly ClipPlane[],
+): string | undefined => {
+  const baseError = validateExtrusionBase(profile, z, axis);
+  return baseError ?? validateClipPlanes(profile, z, axis, clip);
 };
 
 export const boxFromMinMax = (min: Vec3, max: Vec3): Box => ({

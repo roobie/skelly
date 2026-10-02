@@ -1,16 +1,18 @@
 import { resolveAnchors } from '../core/anchors.ts';
-import type {
-  AnchorFrame,
-  AnchorSelectionError,
-  NamedAnchors,
-  PartAnchorDeclaration,
-  ResolvedAnchors,
-  SelectedAnchors,
-} from '../core/design.ts';
+import type { AnchorFrame, NamedAnchors, PartAnchorDeclaration, ResolvedAnchors } from '../core/design.ts';
 import type { Resolved } from '../core/resolve.ts';
 
 /** Gun-domain names; core treats these as caller-supplied strings. */
 export type GunAnchorName = 'hold' | 'support' | 'muzzle';
+
+export interface SelectedAnchors {
+  readonly hold: AnchorFrame;
+  readonly others: Readonly<Record<string, AnchorFrame>>;
+}
+
+export type AnchorSelectionError =
+  | { readonly code: 'missing-required-anchor'; readonly name: string }
+  | { readonly code: 'ambiguous-anchor'; readonly name: string; readonly candidates: readonly string[] };
 
 export type GunPartAnchors = NamedAnchors<GunAnchorName>;
 

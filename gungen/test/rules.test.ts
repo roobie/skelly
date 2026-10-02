@@ -34,7 +34,7 @@ describe('rules', () => {
     const messages = validate(a, gunDomain)
       .issues.filter((i) => i.rule === 'port-compat')
       .map((i) => i.message);
-    expect(messages).toEqual(['receiver.rail[3] is used by both connection #7 and #8.']);
+    expect(messages).toEqual(['receiver.rail[3] is used by both connection #8 and #9.']);
   });
 
   it('axis-alignment: rejects a bore that is parallel but offset', () => {
@@ -67,6 +67,33 @@ describe('rules', () => {
   it('keep-out: the part attached at the allowed port may occupy the volume', () => {
     // The magazine sits in the lower's magazine-path volume.
     expect(rulesFailed(loadFixture('archetype-battle-rifle'))).toEqual([]);
+  });
+
+  it('keep-out: explicitly allowed front sights may occupy a rear sight line', () => {
+    const ar = loadFixture('archetype-ar');
+    expect(validate(ar, gunDomain).issues.filter(({ rule }) => rule === 'keep-out')).toEqual([]);
+    const sight = gunDomain.families.sight!;
+    const domain: Domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        sight: {
+          ...sight,
+          build: (params) => {
+            const def = sight.build(params);
+            return {
+              ...def,
+              keepOuts: def.keepOuts.map(({ allowFamilies: _allowed, ...ko }) => ko),
+            };
+          },
+        },
+      },
+    };
+    expect(
+      validate(ar, domain).issues.some(
+        ({ rule, parts }) => rule === 'keep-out' && parts.includes('front-sight') && parts.includes('sight'),
+      ),
+    ).toBe(true);
   });
 
   it('keep-out: without the allowance, the magazine intrudes', () => {

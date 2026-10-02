@@ -50,7 +50,7 @@
       "family": "stock",
       "params": {
         "length": "L",
-        "style": "dropped"
+        "style": "ak-dropped"
       }
     },
     "rear-sight": {
@@ -59,7 +59,8 @@
     "front-sight": {
       "family": "front-sight",
       "params": {
-        "bore": "L"
+        "bore": "L",
+        "style": "ak"
       }
     }
   },

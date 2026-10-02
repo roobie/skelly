@@ -19,12 +19,14 @@ import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
 import type { Issue } from '../core/issue.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
+import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '../core/revolve.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import { type CameraState, parseCameraState, serializeCameraState } from './cameraState.ts';
 import {
   availablePrefabs,
   choosePrefab,
@@ -96,6 +98,21 @@ const paramPanel = $<HTMLElement>('param-panel');
 const designStatus = $<HTMLSelectElement>('design-status');
 const saveMessage = $<HTMLParagraphElement>('save-message');
 const saveButton = $<HTMLButtonElement>('save');
+const roleColors = $<HTMLInputElement>('role-colors');
+const initialQuery = new URLSearchParams(location.search);
+let colorMode: 'finish' | 'role' = initialQuery.get('colors') === 'role' ? 'role' : 'finish';
+roleColors.checked = colorMode === 'role';
+// Level of detail of revolved solids: the default reads as round at a distance; `?facets=24` is for close-ups.
+const requestedFacets = Number(initialQuery.get('facets'));
+const revolveFacets =
+  Number.isInteger(requestedFacets) && requestedFacets >= MIN_REVOLVE_FACETS && requestedFacets <= MAX_REVOLVE_FACETS
+    ? requestedFacets
+    : DEFAULT_REVOLVE_FACETS;
+roleColors.addEventListener('change', () => {
+  colorMode = roleColors.checked ? 'role' : 'finish';
+  syncUrl();
+  redraw();
+});
 
 const readUiState = (): UiState => {
   try {
@@ -128,6 +145,19 @@ const syncUrl = () => {
   if (hasOverrides(uiState.overrides)) {
     params.set('set', serializeOverrides(uiState.overrides));
   }
+  if (colorMode === 'role') {
+    params.set('colors', 'role');
+  }
+  if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
+    params.set('facets', String(revolveFacets));
+  }
+  params.set(
+    'camera',
+    serializeCameraState({
+      position: [camera.position.x, camera.position.y, camera.position.z],
+      target: [controls.target.x, controls.target.y, controls.target.z],
+    }),
+  );
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 };
@@ -156,15 +186,22 @@ controls.enableDamping = true;
 // Keep the camera's orbit relation intact while applying held arrow keys every frame.
 const PAN_KEYS = new Set(['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']);
 const heldPanKeys = new Set<string>();
+let shiftHeld = false;
 const KEY_PAN_SPEED = 25; // world units per second
+const KEY_TURN_SPEED = Math.PI / 2; // radians per second
 const panDirection = new Vector3();
 const panUp = new Vector3();
+const orbitOffset = new Vector3();
 const isEditingText = (target: EventTarget | null): boolean =>
   target instanceof HTMLInputElement ||
   target instanceof HTMLTextAreaElement ||
   target instanceof HTMLSelectElement ||
   (target instanceof HTMLElement && target.isContentEditable);
 globalThis.addEventListener('keydown', (event) => {
+  if (event.key === 'Shift') {
+    shiftHeld = true;
+    return;
+  }
   if (!PAN_KEYS.has(event.code) || isEditingText(event.target)) {
     return;
   }
@@ -172,19 +209,52 @@ globalThis.addEventListener('keydown', (event) => {
   event.preventDefault();
 });
 globalThis.addEventListener('keyup', (event) => {
+  if (event.key === 'Shift') {
+    shiftHeld = false;
+  }
   heldPanKeys.delete(event.code);
 });
-globalThis.addEventListener('blur', () => heldPanKeys.clear());
+globalThis.addEventListener('blur', () => {
+  heldPanKeys.clear();
+  shiftHeld = false;
+});
+
+let cameraUrlSyncQueued = false;
+controls.addEventListener('change', () => {
+  if (cameraUrlSyncQueued) {
+    return;
+  }
+  cameraUrlSyncQueued = true;
+  requestAnimationFrame(() => {
+    cameraUrlSyncQueued = false;
+    syncUrl();
+  });
+});
 
 const panFromKeys = (seconds: number) => {
   const right = Number(heldPanKeys.has('ArrowRight')) - Number(heldPanKeys.has('ArrowLeft'));
   const up = Number(heldPanKeys.has('ArrowUp')) - Number(heldPanKeys.has('ArrowDown'));
-  if (right === 0 && up === 0) {
+  const turn = shiftHeld ? right : 0;
+  const panRight = shiftHeld ? 0 : right;
+  if (turn !== 0) {
+    orbitOffset
+      .copy(camera.position)
+      .sub(controls.target)
+      .applyAxisAngle(camera.up, -turn * KEY_TURN_SPEED * seconds);
+    camera.position.copy(controls.target).add(orbitOffset);
+    camera.lookAt(controls.target);
+  }
+  if (panRight === 0 && up === 0) {
     return;
   }
   camera.updateMatrixWorld();
-  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(right);
-  panUp.setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(up);
+  panDirection.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(panRight);
+  if (shiftHeld) {
+    panUp.copy(camera.up);
+  } else {
+    camera.getWorldDirection(panUp);
+  }
+  panUp.multiplyScalar(up);
   panDirection
     .add(panUp)
     .normalize()
@@ -231,6 +301,7 @@ let activeTemplate: Template | undefined;
 let lastDropped: readonly Connection[] = [];
 let editorState: DesignEditorState | undefined;
 let activeDesign: { readonly name: string; loaded: DesignLoadResult } | undefined;
+let pendingCamera: CameraState | undefined;
 
 const redraw = () => {
   if (!report) {
@@ -242,7 +313,17 @@ const redraw = () => {
       disposeGroup(g);
     }
   }
-  layers = buildLayers(report, focused ? [focused] : report.issues);
+  const contextTemplate = editorState?.template ?? activeTemplate;
+  layers = buildLayers(
+    report,
+    focused ? [focused] : report.issues,
+    colorMode,
+    {
+      ...(contextTemplate ? { variant: contextTemplate.name } : {}),
+      ...(editorState?.finish ? { finish: editorState.finish } : {}),
+    },
+    revolveFacets,
+  );
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
@@ -400,6 +481,13 @@ const load = (assembly: Assembly) => {
   renderPanel(assembly);
   renderDesignInfo();
   redraw();
+  if (pendingCamera) {
+    const { position, target } = pendingCamera;
+    pendingCamera = undefined;
+    camera.position.set(...position);
+    controls.target.set(...target);
+    controls.update();
+  }
   renderParamPanel();
 };
 
@@ -1046,6 +1134,7 @@ saveButton.addEventListener('click', () => {
 // ?template=<name>&seed=<n> generates one. Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);
+pendingCamera = parseCameraState(query.get('camera'));
 const querySet = query.get('set');
 if (querySet !== null) {
   uiState.overrides = parseOverrides(querySet);

@@ -60,14 +60,27 @@ export const SIMULATION_ENTRIES = [
 export const SIMULATION_EXCLUSIONS = [
   'src/render',
   'src/debug',
+  // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
+  'src/core/sideButton.ts',
   'src/core/sky.ts',
+  'src/core/mood.ts',
+  // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
+  'src/core/weather.ts',
   'src/core/mesher.ts',
+  // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
+  'src/core/meshInput.ts',
+  'src/core/occlusion.ts',
+  'src/core/shell.ts',
   'src/core/pileLayout.ts',
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',
   'src/game/saveStorage.ts',
+  'src/game/saveStorageLockError.ts',
   'src/game/saveStorageRecord.ts',
   'src/game/saveStorageProtocol.ts',
+  'src/game/controls.ts',
+  'src/game/playtestTools.ts',
+  'src/game/playtestObserver.ts',
   'src/worker/save.worker.ts',
   'src/ui/audioOptions.ts',
   'src/ui/credits.ts',
@@ -75,8 +88,11 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/gameCursor.ts',
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
+  'src/ui/inventoryScreen.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
+  // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
+  'src/ui/primaryActionHint.ts',
   'src/ui/rest.ts',
   'src/ui/saveController.ts',
 ] as const;
@@ -191,6 +207,7 @@ function sourcePath(id: string): string | undefined {
 function sourceRelativePath(projectRoot: string, sourceRoot: string, file: string): string | undefined {
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
+    { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
     { root: resolve(projectRoot, 'node_modules'), prefix: 'node_modules/' },
   ];
   for (const { root, prefix } of roots) {
@@ -262,7 +279,9 @@ async function resolveTrackableModule(
   }
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
-    throw new Error(`Runtime dependency ${specifier} resolves outside src/ and node_modules: ${resolvedId}`);
+    throw new Error(
+      `Runtime dependency ${specifier} resolves outside src/, sibling mobgen/src/, and node_modules: ${resolvedId}`,
+    );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;

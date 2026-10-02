@@ -1,0 +1,6 @@
+{
+  "name": "broken-unknown-primer-type",
+  "base": "synthetic:rimless-straight",
+  "set": { "case.primer.options[0].value": "rimfire" },
+  "expectParseError": "case.primer.options[0].value"
+}

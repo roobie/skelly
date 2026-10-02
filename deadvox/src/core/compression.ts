@@ -12,22 +12,46 @@ export const COMPRESSION = {
   rampDown: 0.4,
 } as const;
 
-const K_UP = Math.log(COMPRESSION.cap) / COMPRESSION.rampUp;
+/** A per-start override of the compression limits; only the debug time skip uses it. */
+export interface CompressionLimits {
+  /** Highest compression for this start. */
+  cap: number;
+  /** Real seconds to ramp from 1× to `cap`. */
+  rampUp: number;
+  /** Most simulation seconds one frame may advance, bounding the fixed-step systems' ticks per frame. */
+  maxSimPerFrame: number;
+}
+
+/**
+ * The debug time skip: 2400× (+23 h in about 4.5 s at 60 fps, +1 h in about half a second)
+ * with at most 40 simulation seconds per frame, so the 60 Hz and 20 Hz systems, which don't
+ * grow their steps, run about 3200 ticks per frame at most instead of scaling with `c`.
+ */
+export const SKIP_COMPRESSION: CompressionLimits = { cap: 2400, rampUp: 0.4, maxSimPerFrame: 40 };
+
+const NORMAL_LIMITS: CompressionLimits = {
+  cap: COMPRESSION.cap,
+  rampUp: COMPRESSION.rampUp,
+  maxSimPerFrame: Number.POSITIVE_INFINITY,
+};
 const K_DOWN = Math.log(COMPRESSION.cap) / COMPRESSION.rampDown;
 
 export class Compression {
   /** Current compression; 1 is real time. */
   c = 1;
+  /** Limits of the current start; reset to the normal ones by every `start` without an override. */
+  limits: CompressionLimits = NORMAL_LIMITS;
   /** A long action wants compression. */
   active = false;
   /** Why compression was interrupted; set until the player continues or stops. */
   interruption: string | undefined;
 
   /** Asks for compression. Refused, with the reason, when it isn't safe. */
-  start(unsafe: string | undefined): { ok: true } | { ok: false; reason: string } {
+  start(unsafe: string | undefined, limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     if (unsafe !== undefined) {
       return { ok: false, reason: unsafe };
     }
+    this.limits = limits ?? NORMAL_LIMITS;
     this.interruption = undefined;
     this.active = true;
     return { ok: true };
@@ -53,8 +77,9 @@ export class Compression {
 
   /** Ramps `c` towards its target over `realDt` seconds. */
   update(realDt: number): void {
+    const { cap, rampUp } = this.limits;
     this.c = this.active
-      ? Math.min(COMPRESSION.cap, this.c * Math.exp(K_UP * realDt))
+      ? Math.min(cap, this.c * Math.exp((Math.log(cap) / rampUp) * realDt))
       : Math.max(1, this.c * Math.exp(-K_DOWN * realDt));
   }
 
