@@ -252,7 +252,6 @@
                 <option value="broken-port-compat">broken-port-compat</option>
                 <option value="broken-pump-tube-mismatch">broken-pump-tube-mismatch</option>
                 <option value="broken-required-ports">broken-required-ports</option>
-                <option value="broken-revolver-feed-mismatch">broken-revolver-feed-mismatch</option>
                 <option value="broken-revolver-misaligned-cylinder">broken-revolver-misaligned-cylinder</option>
                 <option value="broken-shroud-fit">broken-shroud-fit</option>
                 <option value="broken-solid-overlap">broken-solid-overlap</option>
@@ -295,6 +294,27 @@
               </select>
             </label>
             <p class="muted">Role colours help check geometry independently of the gun finish.</p>
+          </div>
+          <div class="form-grid">
+            <label>Loose/fired cartridge models
+              <select name="ammo" data-url-param="ammo">
+                <option value="">Hidden</option>
+                <option value="7.62x39">7.62×39mm</option>
+                <option value="5.56x45">5.56×45mm NATO</option>
+              </select>
+            </label>
+            <label>Case finish
+              <select name="ammoCase" data-url-param="ammoCase">
+                <option value="">Brass (default)</option>
+                <option value="steel">Steel case</option>
+              </select>
+            </label>
+            <label>Detached magazine
+              <select name="mag" data-url-param="mag">
+                <option value="">Hidden</option>
+                <option value="1">Show with instanced rounds</option>
+              </select>
+            </label>
           </div>
           <div class="action-row">
             <button class="primary" type="submit">Open viewer</button>

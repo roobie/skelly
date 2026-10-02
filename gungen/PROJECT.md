@@ -289,19 +289,18 @@ archetype in the viewer.
 - **Receiver split.** The receiver is now only the action body, with two
   params:
   - `action`: `auto` (charging handle), `bolt` (bolt travel out of the back,
-    bolt handle sweep on the right), `pump` (forend-driven) or `revolver`
-    (cylinder frame). Each adds its own keep-out volumes. Pistols use their own
-    frame and slide families, not receiver actions.
+    bolt handle sweep on the right), or `pump` (forend-driven). Each adds its
+    own keep-out volumes. Revolvers and pistols use dedicated families, not
+    receiver actions.
   - `feed`: `box` (magazine through the lower), `top` (loading port above the
-    action), `tube` (tube magazine port underneath), or `cylinder` (revolver;
-    added in Milestone 2.2).
+    action), or `tube` (tube magazine port underneath). Revolvers use a
+    dedicated cylinder family, not the receiver feed path.
 
   The grip and magazine hang from a **lower** under it, whose `layout` param
   sets where they go:
   - `conventional`: magazine ahead of the grip.
   - `bullpup`: grip ahead of the magazine, with the butt built in.
-  - `trigger`: trigger with an optional grip anchor; used by tube-fed, top-fed
-    and revolver designs.
+  - `trigger`: trigger with an optional grip anchor and no magazine well.
 - **New and extended parts:**
   - `tube-magazine`: runs under the barrel, with its cap fixed to the barrel's
     lug. That closes a loop, the same way the handguard clamp does.
@@ -326,7 +325,7 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-bolt-rifle-box` | Bolt-action rifle, detachable box magazine | bolt/box receiver, pistol grip, sporting stock, sight over the action |
 | `archetype-pump-shotgun` | Pump-action shotgun | pump/tube receiver at large bore, tube magazine plus forend, trigger-only lower, sporting stock |
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
-| `archetype-revolver` | Revolver | cylinder feed, top-strapped frame, barrel/cylinder loop and separate grip |
+| `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
 Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
 The lengths below remain abstract units on the existing grid. Optic reference sources and modeled envelopes are recorded in `docs/optics.md`.
@@ -607,12 +606,12 @@ magazine with a rifle-style lower or a revolver's cylinder with a magazine.
 
 ### Revolvers (second)
 
-- Added cylinder feed and a six- or eight-sided extruded cylinder prism below
-  and parallel to the bore. Its selected chamber axis must be collinear with
-  the bore; a misindexed-cylinder fixture exercises `axis-alignment`.
-  `feed-match` accepts cylinder feed without a magazine well and rejects
-  mismatched revolver-action/feed combinations.
-- Added a revolver receiver/frame with a cylinder window and top strap, built
+- Initially represented the revolver cylinder as a generic receiver feed.
+  That compatibility path has since been removed: the dedicated cylinder
+  family remains below and parallel to the bore, and its selected chamber axis
+  must be collinear with the bore; a misindexed-cylinder fixture exercises
+  `axis-alignment`.
+- Added a dedicated revolver frame with a cylinder window and top strap, built
   from several solids. Frame, cylinder and barrel form a checked loop. Keep-outs
   cover the cylinder gap, swing-out clearance and hammer travel. The frame's
   beavertail grip-safety tang is a static visual part of the backstrap.
@@ -913,6 +912,40 @@ Decisions where the plan left representation open:
   before `n` variants are found. These signatures are contracts only; this
   package adds no parser, anchor values, palette migration, suggester, or
   exporter implementation.
+
+#### Firearm/ammunition export extension (ADR 0003, accepted 2026-10-02)
+
+The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
+are optional in the schema; byte-identical output is not a compatibility
+requirement. Exported structural anchors such as `magwell` are present whenever
+the geometry declares them, whether or not a cartridge is assigned.
+
+- `calibre?: string` is the exact cartridge-data id (not a display designation;
+  e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
+  rather than its general content `Id` (which deliberately excludes dots).
+- `anchors.magwell?: Point` is the magazine seating point. Like every anchor,
+  `Point` is `[x, y, z]` in metres in the model file's frame (+x forward, +y up,
+  +z right).
+- Magazine entries add `capacity?: number` (positive whole rounds) and
+  `rounds?: { at: Point; tilt: number }[]`, ordered from the top round down.
+  `at` is each round centre in metres in magazine-model coordinates; `tilt` is
+  degrees about +z, nose-up positive. Left/right stagger is the sign of `at[2]`.
+  Geometry determines the fit, capped to the nominal count for labelled
+  5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
+  profiles report the dimension-derived fit.
+- Round and case cartridge entries carry the same `calibre` and use real-size
+  millimetre source dimensions converted to metres for their GLBs. `5.56x45.json`
+  cites NATO AOP-4172; where its reference drawing is ambiguous, C.I.P. .223 Rem
+  dimensions are explicitly marked as visual-profile proxy estimates, not a
+  chamber-interchangeability claim. Bullet length remains unsourced; only the
+  rendered generic bullet uses the named seating-depth assumption in
+  `src/ammo/roundProfile.ts`. Cartridge GLBs carry `case`, `bullet`, and `primer`
+  finish slots, defaulting to brass, copper, and brass; an appearance override
+  such as `{ finish: { case: 'steel' } }` selects the steel-case variant.
+  Their model ids/files use the injective separator-escaped slug function in
+  `src/ammo/calibreSlug.ts` (e.g. `round_7_d_62x39`,
+  `round-7_d_62x39.glb`); a test checks every registered id and all accepted
+  separator forms. Gungen's internal revolve profiles remain in millimetres.
 
 #### 3.0b (implemented)
 
