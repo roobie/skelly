@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { init, parse } from 'es-module-lexer';
+import { LanguageVariant, SyntaxKind } from 'typescript/unstable/ast';
+import { createScanner } from 'typescript/unstable/ast/scanner';
 import { expect, expectTypeOf, it } from 'vitest';
 import type {
   AnchorFrame,
@@ -58,63 +60,25 @@ const FORBIDDEN_CORE_IDENTIFIERS = new Set([
   'deadvox',
 ]);
 
-const IDENTIFIER_START = /[A-Za-z_$]/;
-const IDENTIFIER_PART = /[A-Za-z0-9_$]/;
-
-const skipCommentOrString = (source: string, offset: number): number | undefined => {
-  if (source.startsWith('//', offset)) {
-    const end = source.indexOf('\n', offset + 2);
-    return end < 0 ? source.length : end + 1;
-  }
-  if (source.startsWith('/*', offset)) {
-    const end = source.indexOf('*/', offset + 2);
-    return end < 0 ? source.length : end + 2;
-  }
-  const quote = source[offset];
-  if (quote !== "'" && quote !== '"' && quote !== '`') {
-    return undefined;
-  }
-  let next = offset + 1;
-  while (next < source.length) {
-    if (source[next] === '\\') {
-      next += 2;
-    } else if (source[next] === quote) {
-      return next + 1;
-    } else {
-      next += 1;
-    }
-  }
-  return source.length;
-};
-
 const findForbiddenIdentifier = (source: string): string | undefined => {
-  let offset = 0;
-  while (offset < source.length) {
-    const skipped = skipCommentOrString(source, offset);
-    if (skipped !== undefined) {
-      offset = skipped;
-      continue;
-    }
-    if (IDENTIFIER_START.test(source[offset]!)) {
-      const start = offset;
-      offset += 1;
-      while (offset < source.length && IDENTIFIER_PART.test(source[offset]!)) {
-        offset += 1;
-      }
-      const identifier = source.slice(start, offset);
+  const scanner = createScanner(true, LanguageVariant.Standard, source);
+  for (let token = scanner.scan(); token !== SyntaxKind.EndOfFile; token = scanner.scan()) {
+    if (scanner.isIdentifier()) {
+      const identifier = scanner.getTokenValue();
       if (FORBIDDEN_CORE_IDENTIFIERS.has(identifier.toLowerCase())) {
         return identifier;
       }
-      continue;
     }
-    offset += 1;
   }
   return undefined;
 };
 
-const findForbiddenCoreIdentifier = (files: readonly string[]): string | undefined => {
+const findForbiddenCoreIdentifier = (
+  files: readonly string[],
+  readSource: (file: string) => string = (file) => readFileSync(file, 'utf8'),
+): string | undefined => {
   for (const file of files) {
-    const identifier = findForbiddenIdentifier(readFileSync(file, 'utf8'));
+    const identifier = findForbiddenIdentifier(readSource(file));
     if (identifier) {
       return `${file}: ${identifier}`;
     }
@@ -385,7 +349,31 @@ it('pins the 3.0a contracts, chosen-value storage, and import boundary', async (
   expect(await findGunImport(coreFiles, sourceRoot, gunRoot)).toBeUndefined();
   expect(findForbiddenCoreIdentifier(coreFiles)).toBeUndefined();
   expect(findForbiddenIdentifier('// grip\nconst label = "deadvox"; /* clamp */')).toBeUndefined();
+  expect(findForbiddenIdentifier('const label = `receiver`;')).toBeUndefined();
   expect(findForbiddenIdentifier('const grip = 1;')).toBe('grip');
+  let boundaryCanaryRead = false;
+  const templateCanary = [
+    'export const boundaryCanary = () => `',
+    '$',
+    '{(() => { const receiver = 1; return receiver; })()}',
+    '`;',
+  ].join('');
+  const nestedTemplateCanary = [
+    'const nested = `outer ',
+    '$',
+    '{ /* receiver in comment */ `inner ',
+    '$',
+    '{(() => { const receiver = 1; return receiver; })()}',
+    '` }`;',
+  ].join('');
+  expect(findForbiddenIdentifier(templateCanary)).toBe('receiver');
+  expect(findForbiddenIdentifier(nestedTemplateCanary)).toBe('receiver');
+  const canaryViolation = findForbiddenCoreIdentifier([join(coreRoot, 'math.ts')], (file) => {
+    boundaryCanaryRead = true;
+    return `${readFileSync(file, 'utf8')}\n${templateCanary}`;
+  });
+  expect(boundaryCanaryRead).toBe(true);
+  expect(canaryViolation).toContain('receiver');
   const fixtureViolations = await scanImportFixtures();
   expect(fixtureViolations.sideEffect).toContain(fixtureViolations.target);
   expect(fixtureViolations.templateLiteral).toContain(fixtureViolations.target);
