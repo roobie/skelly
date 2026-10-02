@@ -43,8 +43,8 @@ through these single-line registrations:
 | `handle-bar` | `carry-handle` | `pose`, inherited from the strut | The grip bar, an octagonal prism along the bore reaching back from the strut, overhanging the left; carries the `hand-room` keep-out. Left (-Z) is fixed, not a param |
 | `recoil-stock` | `stock` | `length` M/L (16/22u) | Tall body, cheek rest, wide flat rubber pad; has a `monopod` port |
 | `monopod` | `monopod` | `pose` folded/deployed | Mounts under the butt |
-| `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action") |
-| `heavy-bolt-carrier` | `bolt-carrier` | none | A plain 12.5u block, as long as the ejection port less its margins; moves along the receiver's `bolt-travel` keep-out |
+| `heavy-receiver` | `receiver` | `action` auto, `feed` box, `bore` L/M | The shared receiver's box shell, ports and keep-outs, 30u long instead of 16u, sized for the .50 round and its carrier (see "Magazine and action"); its right (+Z) wall has a charging-handle slot merged with the ejection opening |
+| `heavy-bolt-carrier` | `bolt-carrier` | none | A 12.5u block with a carrier-owned AK-style stick and clipped paddle; moves along the receiver's `bolt-travel` keep-out |
 | `heavy-lower` | `lower` | none | The shared conventional lower with a 13.5u x 4.5u magazine well; trigger guard and grip keep their distances from the well |
 | `heavy-magazine` | `magazine` | none | 10-round .50 BMG box magazine, 13 x 4 x 10.75u |
 
@@ -209,6 +209,19 @@ the test pins directly.
 
 The rail has 11 slots (the shared receiver's 7) at x = -22 ... -2, the front 22u of the receiver. The sight
 is on slot 5 (x = -12) as before; the carry handle is bolted to the shroud's left wall (next section).
+
+**Charging handle.** The heavy carrier uses the AK carrier-owned stick-and-paddle form, not the former
+receiver-fixed handle. Its nominal size is 1.4x the shared AK handle, rounded to the 0.25u geometry grid:
+the paddle is 1.5u square and 0.75u thick, and stands 3.25u beyond the 2u receiver side (about 1.44x the
+AK's 2.25u outstand). The stick is 1.25u high. This is a proportion estimate for the 12.5u carrier and gloved
+use, not a measured specification. The handle is on the rifle's right (+Z) side:
+the carrier's mating frame reverses local Z, so the AK-style local -Z paddle is on receiver +Z. Its stem is
+joined into the carrier body and passes through a 0.25u-clearance slot in the near-side wall. The slot opens
+into the ejection aperture (x -14.25 to -1.25, y 0 to 2); it extends the aperture rearward to x -18.0
+over y 0 to 1.75, leaving a 0.25u upper lip and 0.25u clearance around the stem through the full 15.5u
+carrier travel. The outer shell remains intact
+elsewhere. `test/antiMateriel.test.ts` checks the stem/body contact, scaled profile, actual wall opening and
+material beside it, 33 positions along travel, and a displaced-handle canary.
 
 ## Carry handle and scope envelope
 
