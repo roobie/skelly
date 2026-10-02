@@ -5,7 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { PlaytestObserver } from '../src/game/playtestObserver.ts';
-import { createSnapshotHistory, SessionMetrics } from '../src/game/playtestTools.ts';
+import { SessionMetrics } from '../src/game/playtestTools.ts';
 import type { Session } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -247,10 +247,9 @@ describe('playtest observer snapshot oracle', () => {
         return {};
       },
       runtime,
-      createSnapshotHistory(),
       1,
     );
-    expect(result.stateUnchanged).toBe(false);
+    expect(result.netStateUnchanged).toBe(false);
     expect(runtime.sim.needs.health).toBeLessThan(99);
   });
 });

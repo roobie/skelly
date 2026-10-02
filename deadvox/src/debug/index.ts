@@ -903,7 +903,17 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           measureSnapshot: () => {
             const result = hooks.measureSnapshot();
-            snapshotStatus = `Snapshot: ${result.samples} batches × ${result.batchSize} captures/batch (${result.samples * result.batchSize} captures); calibration ${result.calibrationBatchMs.toFixed(3)} ms; timer ${result.timerResolutionMs === null ? 'unknown' : `${result.timerResolutionMs.toFixed(3)} ms`}; p50 ${result.p50Ms.toFixed(3)} ms/capture, p95 ${result.p95Ms.toFixed(3)} ms/capture; state ${result.stateUnchanged ? 'unchanged' : 'CHANGED'}`;
+            const quantization =
+              result.timerResolutionMs === null ||
+              result.individualCaptureP95UpperBoundMs === null ||
+              result.individualCaptureMaxUpperBoundMs === null
+                ? 'true-time upper bounds unavailable (timer resolution unknown)'
+                : `at observed r=${result.timerResolutionMs.toFixed(3)} ms, true p95 <${result.individualCaptureP95UpperBoundMs.toFixed(3)} ms and max <${result.individualCaptureMaxUpperBoundMs.toFixed(3)} ms`;
+            snapshotStatus =
+              `Snapshot: ${result.batchCount} batches × ${result.batchSize} captures/batch (${result.batchCount * result.batchSize} timed captures); ` +
+              `batch-mean throughput p50 ${result.batchMeanP50Ms.toFixed(3)} ms/capture, p95 ${result.batchMeanP95Ms.toFixed(3)} ms/capture; ` +
+              `individual tail n=${result.individualCaptureCount}: observed p95 ${result.individualCaptureP95Ms.toFixed(3)} ms, max ${result.individualCaptureMaxMs.toFixed(3)} ms; ` +
+              `${quantization}; calibration ${result.calibrationBatchMs.toFixed(3)} ms; net state ${result.netStateUnchanged ? 'unchanged' : 'CHANGED'} across measurement`;
             shellKey = '';
             drawShell();
           },

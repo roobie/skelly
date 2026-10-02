@@ -611,12 +611,18 @@ a measurement of `ubuntu-latest` or the i7-1185G7 reference laptop.
 
 **Status:** the current-build round trip replaces the planned golden fixture,
 as required by strict version refusal. CI checks the ten-hour size and load
-budgets; the 1 ms reference-laptop snapshot p95 is measured in-game under §1.11,
-outside this Node benchmark. On 2026-10-02, BR measured it in Firefox: 50 batches
-of 128 captures (6,400 total), with a detected 1 ms timer and 27 ms calibration;
-p50 was 0.203 ms/capture and p95 was 0.219 ms/capture. These percentiles are of
-the batch means (batch duration divided by 128); state was unchanged. The p95
-meets the target of 1 ms or less.
+budgets; snapshot timing is measured in-game under §1.11, outside this Node
+benchmark. On 2026-10-02, BR measured the batch-mean throughput in Firefox: 50
+batches of 128 captures (6,400 total), with an observed 1 ms timer and 27 ms
+calibration; the batch-mean p50 was 0.203 ms/capture and p95 was 0.219
+ms/capture. These are percentiles of batch duration divided by 128, not the
+individual per-capture p95, so this result does not demonstrate the ≤1 ms
+per-frame snapshot target. The new F4 measurement reports individual capture
+p95 and max with timer-quantization upper bounds; at observed timer resolution
+`r`, a reading `k` gives a strict upper bound `< k + r`. The state check compares
+measurement endpoints only: “net state unchanged” does not assert that every
+capture is individually pure. BR should rerun the measurement in Firefox and
+Chromium with the individual-tail output.
 
 **Delivered beyond the plan:** the hamlet scenario compares a SHA-256 state hash
 across save/reload, and CI checks a ten-game-hour save against tightened size
@@ -702,23 +708,28 @@ sound event with its position.
 file and their notes.
 
 **Status:** delivered as a playtest build. F4 reports simulation/render/meshing-queue
-frame costs, chunk/entity/memory counts, clock/compression, and snapshot last/p95
-cost; the debug panel can set the game clock, reveal zombie positions, measure 50
-pure snapshots on demand, and export versioned metrics JSON. Metrics persist in
+frame costs, chunk/entity/memory counts, clock/compression, and ordinary snapshot
+last/p95 history. The debug panel can set the game clock, reveal zombie positions,
+measure batch-mean snapshot throughput plus a separate individual-capture tail
+sample on demand, and export versioned metrics JSON. The on-demand measurement
+compares live-state endpoints only and does not write storage. Its batch means do
+not replace or merge with ordinary per-capture history. Metrics persist in
 localStorage per seed and are never sent automatically. The controls card is
 rendered from the input binding declarations, and Send feedback opens the
 playtest issue template.
 
-**Beyond the plan:** snapshot p50/p95 is available immediately on demand, rather
-than requiring an autosave; the measurement hashes the session snapshot before
-and after and does not write storage. Debug time travel resets scheduler cursors
-without simulating skipped time. The reference-laptop snapshot p95 target (≤1 ms)
-is shown for evaluation, not enforced.
+**Beyond the plan:** on-demand batch-mean throughput percentiles and individual
+capture p95/max are available immediately, rather than requiring an autosave.
+The displayed upper bounds account for the observed timer resolution; “net state
+unchanged” compares endpoints and does not certify each capture. Debug time
+travel resets scheduler cursors without simulating skipped time. The reference-
+laptop ≤1 ms per-frame snapshot p95 target is not demonstrated by BR's 0.219 ms
+batch-mean result and remains to be confirmed with the individual-tail result.
 
-**Carried forward:** run a full playtest on the reference laptop, confirm the
-snapshot p95 target against a long/heavy session, and submit the exported metrics
-JSON with player notes. That human playtest is not claimed by the implementation
-checks.
+**Carried forward:** rerun the individual-tail measurement on the reference
+laptop in Firefox and Chromium, then confirm the snapshot p95 target against a
+long/heavy session and submit the exported metrics JSON with player notes. That
+human playtest is not claimed by the implementation checks.
 
 ## Data format sketches
 

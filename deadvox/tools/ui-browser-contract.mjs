@@ -232,7 +232,11 @@ try {
     'on-demand batched snapshot measurement',
   );
   const snapshotResult = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
-  assert.match(snapshotResult, /captures\/batch.*timer .* ms.*p50 .* ms\/capture.*p95 .* ms\/capture/);
+  assert.match(
+    snapshotResult,
+    /batch-mean throughput p50 .* ms\/capture, p95 .* ms\/capture; individual tail n=\d+: observed p95 .* ms, max .* ms; at observed r=.* ms, true p95 </,
+  );
+  assert.match(snapshotResult, /net state unchanged across measurement/);
   assert.equal(await evaluate("document.querySelector('#copy-snapshot-result').textContent.trim()"), 'Copy');
   assert.equal(
     await evaluate("getComputedStyle(document.querySelector('#snapshot-measurement-result')).userSelect"),

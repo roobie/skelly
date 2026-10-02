@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
 import { controlsCardRows, PLAYER_CONTROL_BINDINGS } from '../src/game/controls.ts';
 import {
-  createSnapshotHistory,
   loadMetrics,
   measureSnapshots,
   metricsExportJson,
@@ -66,40 +65,40 @@ describe('playtest metrics', () => {
 });
 
 describe('snapshot measurement', () => {
-  it('measures repeated pure snapshots and verifies the state hash is unchanged', () => {
-    const state = { time: 5, entities: [1, 2] };
-    let elapsedMs = 0;
+  it('reports batch-mean throughput separately from individual capture tails at a 1 ms resolution', () => {
+    let clock = 0;
+    let captures = 0;
     const result = measureSnapshots(
       () => {
-        elapsedMs += 0.5;
-        return structuredClone(state);
+        captures += 1;
+        clock += captures % 16 === 0 ? 8 : 0.05;
       },
-      () => JSON.stringify(state),
-      20,
+      () => 0,
+      50,
       () => {
-        elapsedMs += 0.01;
-        return Math.floor(elapsedMs);
+        clock += 0.02;
+        return Math.floor(clock);
       },
     );
-    expect(result.samples).toBe(20);
-    expect(result.batchSize).toBeGreaterThan(1);
+
+    expect(result.batchCount).toBe(50);
+    expect(result.batchSize).toBe(64);
     expect(result.timerResolutionMs).toBe(1);
-    expect(result.p50Ms).toBeCloseTo(0.5, 1);
-    expect(result.p95Ms).toBeCloseTo(0.5, 1);
+    expect(result.batchMeanP50Ms).toBeLessThan(1);
+    expect(result.batchMeanP95Ms).toBeCloseTo(0.546_875, 5);
+    expect(result.batchMeanDurationsMs).toHaveLength(result.batchCount);
     expect(result.calibrationBatchMs).toBeGreaterThanOrEqual(result.targetBatchMs);
-    expect(result.stateUnchanged).toBe(true);
-    const history = createSnapshotHistory(4);
-    for (const duration of result.durationsMs) {
-      history.add(duration);
-    }
-    expect(history.lastMs).toBe(result.durationsMs.at(-1));
-    expect(history.count).toBe(4);
-    history.clear();
-    expect(history.count).toBe(0);
-    expect(history.lastMs).toBeUndefined();
+    expect(result.individualCaptureCount).toBe(result.batchCount * result.batchSize);
+    expect(result.individualCaptureP95Ms).toBeGreaterThanOrEqual(8);
+    expect(result.individualCaptureP95Ms).toBeLessThan(10);
+    expect(result.individualCaptureMaxMs).toBeGreaterThanOrEqual(8);
+    expect(result.individualCaptureMaxMs).toBeLessThan(10);
+    expect(result.individualCaptureP95UpperBoundMs).toBe(result.individualCaptureP95Ms + 1);
+    expect(result.individualCaptureMaxUpperBoundMs).toBe(result.individualCaptureMaxMs + 1);
+    expect(result.netStateUnchanged).toBe(true);
   });
 
-  it('detects a snapshot producer that mutates state', () => {
+  it('reports net endpoint state as changed when captures leave a mutation', () => {
     let state = 0;
     let elapsedMs = 0;
     const result = measureSnapshots(
@@ -115,34 +114,33 @@ describe('snapshot measurement', () => {
         return Math.floor(elapsedMs);
       },
     );
-    expect(result.stateUnchanged).toBe(false);
+    expect(result.netStateUnchanged).toBe(false);
   });
 
-  it('averages batches accurately with a 1 ms timer and checks every capture for state changes', () => {
-    let elapsedMs = 0;
+  it('labels only net equality when a capture mutates and a later capture restores state', () => {
     let state = 0;
     let captures = 0;
+    let elapsedMs = 0;
     const result = measureSnapshots(
       () => {
         captures += 1;
-        if (captures === 1) {
-          state += 1;
+        if (captures === 2) {
+          state = 1;
+        }
+        if (captures === 3) {
+          state = 0;
         }
         elapsedMs += 0.25;
       },
       () => state,
-      50,
+      1,
       () => {
         elapsedMs += 0.02;
         return Math.floor(elapsedMs);
       },
     );
-    expect(result.timerResolutionMs).toBe(1);
-    expect(result.batchSize).toBeGreaterThan(1);
-    expect(Math.abs(result.p50Ms - 0.25)).toBeLessThan(0.01);
-    expect(Math.abs(result.p95Ms - 0.25)).toBeLessThan(0.01);
-    expect(result.stateUnchanged).toBe(false);
-    expect(captures).toBeGreaterThan(result.samples * result.batchSize);
+    expect(result.netStateUnchanged).toBe(true);
+    expect(captures).toBeGreaterThan(3);
   });
 
   it('compares exact numeric values without JSON normalization', () => {
@@ -160,7 +158,7 @@ describe('snapshot measurement', () => {
         return Math.floor(elapsedMs);
       },
     );
-    expect(result.stateUnchanged).toBe(false);
+    expect(result.netStateUnchanged).toBe(false);
   });
 });
 

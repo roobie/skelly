@@ -5,7 +5,6 @@ import {
   measureSnapshots,
   type SessionMetrics,
   SNAPSHOT_BATCH_TARGET_MS,
-  type SnapshotHistory,
   type SnapshotMeasurement,
 } from './playtestTools.ts';
 import type { Session } from './session.ts';
@@ -242,30 +241,25 @@ export class PlaytestObserver {
     }
   }
 
-  measureSnapshot(
-    snapshot: () => unknown,
-    session: Session,
-    history: SnapshotHistory,
-    repeats = 50,
-  ): SnapshotMeasurement {
+  measureSnapshot(snapshot: () => unknown, session: Session, repeats = 50): SnapshotMeasurement {
     try {
-      const result = measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
-      history.clear();
-      for (const duration of result.durationsMs) {
-        history.add(duration);
-      }
-      return result;
+      return measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
     } catch {
       return {
-        samples: 0,
+        batchCount: 0,
         batchSize: 0,
         timerResolutionMs: null,
         targetBatchMs: SNAPSHOT_BATCH_TARGET_MS,
         calibrationBatchMs: 0,
-        p50Ms: 0,
-        p95Ms: 0,
-        durationsMs: [],
-        stateUnchanged: false,
+        batchMeanP50Ms: 0,
+        batchMeanP95Ms: 0,
+        batchMeanDurationsMs: [],
+        individualCaptureCount: 0,
+        individualCaptureP95Ms: 0,
+        individualCaptureMaxMs: 0,
+        individualCaptureP95UpperBoundMs: null,
+        individualCaptureMaxUpperBoundMs: null,
+        netStateUnchanged: false,
       };
     }
   }

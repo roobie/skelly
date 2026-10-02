@@ -177,17 +177,25 @@ export const metricsExportJson = (metrics: SessionMetrics): string => `${JSON.st
 
 export interface SnapshotMeasurement {
   /** Number of timed batches; each batch contains `batchSize` snapshot captures. */
-  readonly samples: number;
+  readonly batchCount: number;
   readonly batchSize: number;
   /** Smallest positive increment observed while probing the injected monotonic clock. */
   readonly timerResolutionMs: number | null;
   readonly targetBatchMs: number;
   readonly calibrationBatchMs: number;
-  readonly p50Ms: number;
-  readonly p95Ms: number;
-  /** Per-capture average for each timed batch. */
-  readonly durationsMs: readonly number[];
-  readonly stateUnchanged: boolean;
+  /** Percentiles of batch durations divided by batch size: a throughput statistic. */
+  readonly batchMeanP50Ms: number;
+  readonly batchMeanP95Ms: number;
+  readonly batchMeanDurationsMs: readonly number[];
+  /** Separately timed per-capture sample used for tail observations. */
+  readonly individualCaptureCount: number;
+  readonly individualCaptureP95Ms: number;
+  readonly individualCaptureMaxMs: number;
+  /** Strict upper bounds under the observed timer resolution; unavailable when unknown. */
+  readonly individualCaptureP95UpperBoundMs: number | null;
+  readonly individualCaptureMaxUpperBoundMs: number | null;
+  /** Compares live-state endpoints; it does not check purity of each individual call. */
+  readonly netStateUnchanged: boolean;
 }
 
 export interface SnapshotHistoryEntry {
@@ -275,6 +283,7 @@ export const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<objec
 /** Each sample must span many clock ticks so coarse browser timers still resolve per-capture cost. */
 export const SNAPSHOT_BATCH_TARGET_MS = 20;
 const MAX_SNAPSHOT_BATCH_SIZE = 65_536;
+const MAX_INDIVIDUAL_CAPTURE_SAMPLES = 8192;
 const MAX_TIMER_PROBE_READS = 100_000;
 const MIN_TIMER_PROBE_TICKS = 8;
 
@@ -294,7 +303,10 @@ const detectTimerResolution = (now: () => number): number | null => {
   return Number.isFinite(minimum) ? minimum : null;
 };
 
-/** Times batches of pure snapshot captures and compares live state without serialization. */
+/**
+ * Batch timings estimate capture throughput with low clock overhead. A separate pass times individual captures for
+ * tail observations; it is not folded into the batch means. The purity check compares live-state endpoints only.
+ */
 export const measureSnapshots = (
   snapshot: () => unknown,
   liveState: () => unknown,
@@ -325,28 +337,48 @@ export const measureSnapshots = (
     throw new Error(`Snapshot clock did not span ${targetBatchMs} ms within ${MAX_SNAPSHOT_BATCH_SIZE} captures`);
   }
 
-  const samples: number[] = [];
+  const batchMeanDurationsMs: number[] = [];
   for (let i = 0; i < repeats; i++) {
-    samples.push(timeBatch(batchSize) / batchSize);
+    batchMeanDurationsMs.push(timeBatch(batchSize) / batchSize);
   }
+
+  const individualCaptureCount = Math.min(repeats * batchSize, MAX_INDIVIDUAL_CAPTURE_SAMPLES);
+  const individualCaptureDurationsMs: number[] = [];
+  for (let i = 0; i < individualCaptureCount; i++) {
+    const start = now();
+    snapshot();
+    individualCaptureDurationsMs.push(Math.max(0, now() - start));
+  }
+  const individualCaptureP95Ms = percentile(individualCaptureDurationsMs, 0.95);
+  const individualCaptureMaxMs = Math.max(...individualCaptureDurationsMs);
   const after = liveState();
+  // The upper bounds are strict: with observed timer resolution r, reading k bounds a duration above by k + r.
+  const individualCaptureP95UpperBoundMs =
+    timerResolutionMs === null ? null : individualCaptureP95Ms + timerResolutionMs;
+  const individualCaptureMaxUpperBoundMs =
+    timerResolutionMs === null ? null : individualCaptureMaxMs + timerResolutionMs;
+
   return {
-    samples: repeats,
+    batchCount: repeats,
     batchSize,
     timerResolutionMs,
     targetBatchMs,
     calibrationBatchMs,
-    p50Ms: percentile(samples, 0.5),
-    p95Ms: percentile(samples, 0.95),
-    durationsMs: samples,
-    stateUnchanged: exactStateEqual(before, after),
+    batchMeanP50Ms: percentile(batchMeanDurationsMs, 0.5),
+    batchMeanP95Ms: percentile(batchMeanDurationsMs, 0.95),
+    batchMeanDurationsMs,
+    individualCaptureCount,
+    individualCaptureP95Ms,
+    individualCaptureMaxMs,
+    individualCaptureP95UpperBoundMs,
+    individualCaptureMaxUpperBoundMs,
+    netStateUnchanged: exactStateEqual(before, after),
   };
 };
 
 /** Stores the latest autosave/on-demand snapshot costs for the session readout. */
 export interface SnapshotHistory {
   add: (durationMs: number, at?: number) => void;
-  clear: () => void;
   readonly lastMs: number | undefined;
   readonly p95Ms: number;
   readonly count: number;
@@ -364,9 +396,6 @@ export const createSnapshotHistory = (limit = 512): SnapshotHistory => {
       if (entries.length > maximum) {
         entries.splice(0, entries.length - maximum);
       }
-    },
-    clear() {
-      entries.length = 0;
     },
     get lastMs() {
       return entries.at(-1)?.durationMs;

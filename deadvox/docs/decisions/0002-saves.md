@@ -400,11 +400,16 @@ at barriers, never move serialization/disk work onto the frame. The snapshot p95
 is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
 save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
 runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
-the reference-laptop snapshot budget in Firefox: 50 batches of 128 captures
-(6,400 total), detected timer resolution 1 ms, calibration 27 ms, p50 0.203
-ms/capture and p95 0.219 ms/capture, with state unchanged. The p50/p95 are
-percentiles of the per-batch means (batch time divided by 128); the p95 meets
-the target of 1 ms or less.
+the reference-laptop batch-mean throughput in Firefox: 50 batches of 128 captures
+(6,400 total), observed timer resolution 1 ms, calibration 27 ms, batch-mean p50
+0.203 ms/capture and p95 0.219 ms/capture. These percentiles are of per-batch
+means (batch time divided by 128), not individual per-capture timings, and do
+not demonstrate the ≤1 ms per-frame snapshot target. That run did not record an
+individual-capture tail. The F4 measurement now reports an individual
+per-capture p95 and max separately; with observed timer resolution `r`, an
+observed duration `k` gives a strict upper bound `< k + r`. Its state guard
+compares endpoints only and reports net state equality, not per-capture purity.
+BR should rerun in Firefox and Chromium.
 
 ### Continue, New world, and implementation plan
 
@@ -448,8 +453,9 @@ generation until the new world's first snapshot commits.
    build in CI and require the same build to read it back exactly; add
    save-size/load-time checks. Done when CI checks the 10-hour <5 MiB and <1 s
    decode/restore limits on `ubuntu-latest` and the current-build round trip
-   passes. The 1 ms p95 snapshot bound is an in-game F4 measurement under
-   SLICE-1 §1.11, not a Node benchmark or CI gate.
+   passes. The ≤1 ms individual per-capture p95 target is assessed in-game via
+   the F4 individual-tail observation under SLICE-1 §1.11, not by batch-mean
+   throughput, the Node benchmark, or a CI gate.
 
 ## Consequences
 
