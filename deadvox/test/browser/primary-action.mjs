@@ -122,11 +122,9 @@ try {
   assert.equal(loadoutAction.rightHandUid, loadoutMeleeUid);
   assert.deepEqual(loadoutAction.swings[0], { result: true, profile: 'blunt', hand: 'right' });
   assert.ok(loadoutAction.stamina < loadoutBefore, 'the debug-loadout right-hand melee action spends stamina');
-  await page.waitForFunction(
-    () => !globalThis.primaryActionTest.session.zombies.activeMeleeAction,
-    null,
-    { timeout: 10_000 },
-  );
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.zombies.activeMeleeAction, null, {
+    timeout: 10_000,
+  });
 
   const flashlightUid = await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
@@ -309,21 +307,17 @@ try {
   const firstFist = await observe(flashlightUid);
   assert.equal(firstFist.swings.length, 1);
   assert.deepEqual(firstFist.swings[0], { result: true, profile: 'fists', hand: 'right' });
-  await page.waitForFunction(
-    () => !globalThis.primaryActionTest.session.zombies.activeMeleeAction,
-    null,
-    { timeout: 10_000 },
-  );
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.zombies.activeMeleeAction, null, {
+    timeout: 10_000,
+  });
   await page.mouse.click(640, 450);
   await page.waitForTimeout(150);
   const secondFist = await observe(flashlightUid);
   assert.equal(secondFist.swings.length, 2);
   assert.deepEqual(secondFist.swings[1], { result: true, profile: 'fists', hand: 'left' });
-  await page.waitForFunction(
-    () => !globalThis.primaryActionTest.session.zombies.activeMeleeAction,
-    null,
-    { timeout: 10_000 },
-  );
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.zombies.activeMeleeAction, null, {
+    timeout: 10_000,
+  });
 
   await page.evaluate(() => {
     const { inventory } = globalThis.primaryActionTest;
