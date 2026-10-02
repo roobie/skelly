@@ -28,6 +28,16 @@ simulation.
 The output is stylized low-poly models of assemblies. Sizes are expressed as
 size classes (see §4), not measurements.
 
+**Exception: ammunition.** Cartridges are modelled at real dimensions in
+millimetres and named by their real designations (for example 7.62×39mm). That
+amends the real-world-models non-goal and the size-class rule (§4) for
+cartridges only. Calibre is a gameplay identity, because ammo must match the
+gun, not a brand, and a standard (C.I.P., SAAMI) fixes a cartridge's dimensions
+rather than a designer choosing them. Guns keep size classes. Every cartridge
+dimension carries its source, and a value that can't be sourced stays empty.
+Tracked in roobie/skelly#109: data first, then geometry, viewer and export. The
+data format is described in `cartridges/README.md`.
+
 ## Decisions
 
 | Decision | Choice |

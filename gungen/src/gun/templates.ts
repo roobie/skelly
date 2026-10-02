@@ -454,6 +454,51 @@ export const bullpup: Template = {
 /** Remove a name here to restore its template to generation, statistics, sweeps, and the viewer. */
 export const SUSPENDED_TEMPLATE_NAMES: ReadonlySet<string> = new Set(['bullpup']);
 
+export const antiMateriel: Template = {
+  name: 'anti-materiel',
+  description:
+    'Semi-automatic anti-materiel rifle: perforated box shroud, two-chamber arrowhead muzzle brake, folding bipod, strut-mounted carry handle, recoil-pad stock with optional monopod.',
+  root: 'receiver',
+  slots: [
+    { id: 'receiver', family: 'heavy-receiver', params: { action: 'auto', feed: 'box', bore: 'L' } },
+    { id: 'bolt-carrier', family: 'heavy-bolt-carrier' },
+    { id: 'lower', family: 'heavy-lower' },
+    { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
+    { id: 'shroud', family: 'barrel-shroud', params: { length: ['M', 'L'] } },
+    { id: 'brake', family: 'muzzle-brake', params: { length: ['M', 'L'] } },
+    { id: 'grip', family: 'grip', params: { length: ['M', 'L'] } },
+    { id: 'magazine', family: 'heavy-magazine' },
+    { id: 'stock', family: 'recoil-stock', params: { length: ['M', 'L'] } },
+    { id: 'sight', family: 'sight', chance: 0.9 },
+    // The handle's three parts come together or not at all, so they are always present (a slot has no way to
+    // depend on another slot's chance, and a strut without its trunnion would leave required ports empty).
+    // Only the trunnion carries the pose; the strut and bar inherit it.
+    { id: 'trunnion', family: 'handle-trunnion', params: { pose: ['carry', 'stowed'] } },
+    { id: 'strut', family: 'handle-strut' },
+    { id: 'bar', family: 'handle-bar' },
+    { id: 'bipod', family: 'bipod', params: { legs: ['M', 'L'], pose: ['folded', 'deployed'] } },
+    { id: 'monopod', family: 'monopod', params: { pose: ['folded', 'deployed'] }, chance: 0.5 },
+  ],
+  connections: [
+    { from: 'receiver.lower', to: 'lower.top' },
+    { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
+    { from: 'receiver.handguard', to: 'shroud.rear' },
+    { from: 'barrel.muzzle', to: 'brake.base' },
+    { from: 'lower.grip', to: 'grip.top' },
+    { from: 'lower.magazine', to: 'magazine.top' },
+    { from: 'receiver.stock', to: 'stock.front' },
+    // The sight sits on the receiver rail (slots x = -14, -12). The carry handle's trunnion bolts to the shroud's left
+    // wall, and its strut and bar stand to the left, clear of a full-size scope mounted where the sight is.
+    { from: 'receiver.rail', to: 'sight.base', slot: [4, 5] },
+    { from: 'shroud.trunnion', to: 'trunnion.base' },
+    { from: 'trunnion.strut', to: 'strut.base' },
+    { from: 'strut.top', to: 'bar.base' },
+    { from: 'shroud.bipod', to: 'bipod.base' },
+    { from: 'stock.monopod', to: 'monopod.base' },
+  ],
+};
+
 const ALL_TEMPLATES: readonly Template[] = [
   battleRifle,
   ar,
@@ -466,6 +511,7 @@ const ALL_TEMPLATES: readonly Template[] = [
   boltRifleThumbhole,
   pumpShotgun,
   bullpup,
+  antiMateriel,
 ];
 
 export const SUSPENDED_TEMPLATES = ALL_TEMPLATES.filter(({ name }) => SUSPENDED_TEMPLATE_NAMES.has(name));

@@ -1,0 +1,6 @@
+{
+  "name": "broken-negative-length",
+  "base": "7.62x39",
+  "set": { "case.rim.thickness.value": -1.5 },
+  "expect": ["units"]
+}

@@ -1,4 +1,5 @@
 import type { Domain } from '../core/schema.ts';
+import { ANTI_MATERIEL_RULES } from './antiMateriel/index.ts';
 import { FAMILIES } from './parts.ts';
 import {
   actionHandleRest,
@@ -31,5 +32,6 @@ export const gunDomain: Domain = {
     handguardFit,
     freeFloatClearance,
     magazineWellAxis,
+    ...ANTI_MATERIEL_RULES,
   ],
 };

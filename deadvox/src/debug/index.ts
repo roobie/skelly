@@ -5,10 +5,12 @@ import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
+import { KEY_BINDINGS } from '../game/input.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
+import { equipDebugStartWeapons } from './debugLoadout.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -63,14 +65,22 @@ export const shadowReadoutText = (
 ): string =>
   `shadows: sun ${state.sun ? `ON ×${sunStrength.toFixed(2)}` : 'OFF'} · flashlight ${state.torch ? 'ON' : 'OFF'} · ${state.distance} m · chunk casters ${casters.sun} / ${casters.torch}`;
 
-const readoutTemplate = (readout: DebugReadout, shadowText: string): TemplateResult => html`
+const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult => html`
   <span>${readout.fps.toFixed(0)} fps · frame ${ms(readout.frame.p50)} / ${ms(readout.frame.p95)} ms (p50 / p95, 2 s) · cpu ${ms(readout.work.p50)} / ${ms(readout.work.p95)} ms</span>
+  <span>simulation ${ms(readout.simulationMs)} ms · render ${ms(readout.renderMs)} ms incl. post passes · mesh queue ${ms(readout.meshingQueueMs)} ms</span>
   <span>${shadowText}</span>
   <span>seed ${readout.seed}</span>
   <span>radius ${readout.radius} m · ${readout.movement}</span>
   <span>position ${readout.position.map((v) => v.toFixed(1)).join(', ')}</span>
-  <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes</span>
+  <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes · entities ${readout.entities}</span>
+  <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
+  <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
   <span>shamblers ${readout.zombies}</span>
+  ${readout.revealedZombies.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedZombies.join(' · ')}</span>` : nothing}
+`;
+
+const f3OverlayTemplate = (readout: DebugReadout, visible: boolean): TemplateResult => html`
+  <aside id="f3-debug-overlay" ?hidden=${!visible} aria-label="Performance debug overlay">${readoutTemplate(readout)}</aside>
 `;
 
 const aimReadoutTemplate = (text: string): TemplateResult => html`${text || nothing}`;
@@ -132,6 +142,12 @@ const panelTemplate = ({
   spawnStatus,
   lastHitText,
   setShamblerCount,
+  setTimeOfDay,
+  snapshotStatus,
+  revealZombies,
+  toggleReveal,
+  measureSnapshot,
+  exportMetrics,
   toggleOpen,
   dumpLook,
   download,
@@ -144,6 +160,12 @@ const panelTemplate = ({
   spawnStatus: string;
   lastHitText: string;
   setShamblerCount: (count: number) => void;
+  setTimeOfDay: (hour: number, minute: number) => void;
+  snapshotStatus: string;
+  revealZombies: boolean;
+  toggleReveal: () => void;
+  measureSnapshot: () => void;
+  exportMetrics: () => void;
   toggleOpen: () => void;
   dumpLook: () => void;
   /** A file to save: the link below is clicked once while this is set. */
@@ -159,13 +181,36 @@ const panelTemplate = ({
         <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
       </div>
       <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
+      <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
+    `,
+    time: html`
+      <label>Set time <input id="debug-time" type="time" value="19:30" /> <button id="set-debug-time" type="button" @click=${(
+        event: Event,
+      ) => {
+        const root = (event.currentTarget as HTMLElement).parentElement;
+        const value = root?.querySelector<HTMLInputElement>('#debug-time')?.value ?? '';
+        const [hour, minute] = value.split(':').map(Number);
+        if (
+          hour !== undefined &&
+          minute !== undefined &&
+          Number.isInteger(hour) &&
+          Number.isInteger(minute) &&
+          hour >= 0 &&
+          hour < 24 &&
+          minute >= 0 &&
+          minute < 60
+        ) {
+          setTimeOfDay(hour, minute);
+        }
+      }}>Apply</button></label>
     `,
     diagnostics: html`
+      <div class="debug-actions"><button id="measure-snapshot" type="button" @click=${measureSnapshot}>Measure snapshot (50×)</button></div>
       <p class="debug-hot-legend">Hot-pixel check (PgDn) colour = material:
         ${Object.values(HOT_CATEGORIES).map((c) => html`<span style="color:${c.css}">${c.label}</span> `)}
         · brightness = kind: ${HOT_KINDS.join('; ')}.</p>
     `,
-    share: html`<div class="debug-actions"><button type="button" @click=${dumpLook}>Dump look settings (JSON)</button></div>`,
+    share: html`<div class="debug-actions"><button type="button" @click=${dumpLook}>Dump look settings (JSON)</button><button id="export-metrics" type="button" @click=${exportMetrics}>Export metrics</button></div>`,
   };
   return html`
   <div id="debug-ui-root">
@@ -176,6 +221,7 @@ const panelTemplate = ({
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
+    <p>F4 toggles the performance overlay. ${snapshotStatus}</p>
     <div id="debug-readout" class="debug-readout"></div>
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
@@ -185,6 +231,7 @@ const panelTemplate = ({
     </section>
     <div id="hotbar" hidden></div>
     <div id="spawn" ?hidden=${!spawnOpen}></div>
+    <div id="f3-overlay-root"></div>
   </div>
 `;
 };
@@ -193,6 +240,17 @@ const emptyReadout: DebugReadout = {
   fps: 0,
   frame: { p50: Number.NaN, p95: Number.NaN },
   work: { p50: Number.NaN, p95: Number.NaN },
+  simulationMs: 0,
+  renderMs: 0,
+  meshingQueueMs: 0,
+  entities: 0,
+  memoryBytes: 0,
+  clock: '19:30',
+  compression: 1,
+  snapshotLastMs: 0,
+  snapshotP95Ms: 0,
+  snapshotCount: 0,
+  revealedZombies: [],
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -581,6 +639,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     debugMode: hooks.engine.config.debug,
     newGame: hooks.newGame,
   });
+  equipDebugStartWeapons({
+    inventory: hooks.inventory,
+    debugMode: hooks.engine.config.debug,
+    newGame: hooks.newGame,
+  });
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);
@@ -597,6 +660,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   /** The aim readout is showing a shambler, which the looked-at readout then yields to. */
   let zombieAimShown = false;
   let panelOpen = false;
+  let f3Open = false;
+  let revealZombies = false;
+  let snapshotStatus = '';
   let aimEnabled = true;
   let lastHitText = '';
   let lastHitUntil = 0;
@@ -783,6 +849,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const groups = groupViews();
     const key = JSON.stringify([
       panelOpen,
+      f3Open,
+      revealZombies,
+      snapshotStatus,
       spawnMenu.isOpen,
       shamblerCount,
       spawnStatus,
@@ -800,6 +869,22 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           spawnStatus,
           lastHitText: performance.now() < lastHitUntil ? lastHitText : '',
           setShamblerCount: changeShamblerCount,
+          setTimeOfDay: hooks.setTimeOfDay,
+          snapshotStatus,
+          revealZombies,
+          toggleReveal: () => {
+            revealZombies = !revealZombies;
+            hooks.revealZombies(revealZombies);
+            shellKey = '';
+            drawShell();
+          },
+          measureSnapshot: () => {
+            const result = hooks.measureSnapshot();
+            snapshotStatus = `Snapshot ${result.samples}×: p50 ${result.p50Ms.toFixed(3)} ms, p95 ${result.p95Ms.toFixed(3)} ms; state ${result.stateUnchanged ? 'unchanged' : 'CHANGED'}`;
+            shellKey = '';
+            drawShell();
+          },
+          exportMetrics: hooks.exportMetrics,
           toggleOpen: togglePanel,
           dumpLook,
           download,
@@ -822,6 +907,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');
     if (soundRoot) {
       render(soundLogTemplate(readout), soundRoot);
+    }
+    const f3Root = host.querySelector<HTMLElement>('#f3-overlay-root');
+    if (f3Root) {
+      render(f3OverlayTemplate(readout, f3Open), f3Root);
     }
   }
   function dumpLook(): void {
@@ -890,16 +979,33 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     drawShell();
   }
+  const toggleOnShortcut = (e: KeyboardEvent, code: string, run: () => void): boolean => {
+    if (e.code !== code) {
+      return false;
+    }
+    if (!e.repeat) {
+      run();
+    }
+    return true;
+  };
   function handleKey(e: KeyboardEvent): boolean {
-    if (e.code === 'Backquote') {
-      if (!e.repeat) {
-        togglePanel();
-      }
+    if (
+      toggleOnShortcut(e, KEY_BINDINGS.performanceOverlay.code, () => {
+        f3Open = !f3Open;
+        drawShell();
+      })
+    ) {
+      e.preventDefault();
+      return true;
+    }
+    if (toggleOnShortcut(e, 'Backquote', togglePanel)) {
       return true;
     }
     if (spawnMenu.isOpen) {
       if (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement) && !e.repeat) {
         toggleSpawn();
+      } else {
+        spawnMenu.handleKey(e);
       }
       return true;
     }
@@ -977,6 +1083,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     get spawnOpen() {
       return spawnMenu.isOpen;
+    },
+    get revealZombies() {
+      return revealZombies;
     },
     dangerReason: () => (danger ? 'Something is close' : undefined),
     handleKey,

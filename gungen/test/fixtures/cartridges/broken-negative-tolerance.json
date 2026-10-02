@@ -1,0 +1,6 @@
+{
+  "name": "broken-negative-tolerance",
+  "base": "7.62x39",
+  "set": { "case.body.shoulder.startPosition.tolerance.minus": -0.2 },
+  "expect": ["units"]
+}

@@ -230,6 +230,7 @@ describe('debug action table', () => {
     const godMode = actions.find((candidate) => candidate.code === 'KeyH')!;
     expect(dispatchDebugAction(actions, 'KeyH', true)).toBe(true);
     expect(godMode.state?.()).toBe(false);
+    expect(dispatchDebugAction(actions, 'KeyZ')).toBe(false);
     expect(dispatchDebugAction(actions, 'F12')).toBe(false);
   });
 });
@@ -264,10 +265,12 @@ describe('debug panel groups', () => {
     expect([...catalogued].sort()).toEqual([...LOOK_PARAMS, 'cam'].sort());
   });
 
-  it('is what the table in TROUBLESHOOTING.md says', () => {
+  it('is what the table in TROUBLESHOOTING.md says, including the performance overlay key', () => {
     const { actions } = makeActions();
+    const table = debugKeyTable(actions);
     const doc = readFileSync('TROUBLESHOOTING.md', 'utf8');
-    expect(DOC_TABLE.exec(doc)?.[1]).toBe(debugKeyTable(actions));
+    expect(table).toContain('| Diagnostics | `F4` | Performance overlay | — |');
+    expect(DOC_TABLE.exec(doc)?.[1]).toBe(table);
   });
 });
 
