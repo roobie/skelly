@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutColumn } from '../src/ammo/magazineColumn.ts';
+import { feedLips, layoutColumn } from '../src/ammo/magazineColumn.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { magazineCenterline } from '../src/gun/magazineCenterline.ts';
 
@@ -33,6 +33,33 @@ describe('staggered double column', () => {
     }
     // The last round's bottom stays above the floor.
     expect(column.rounds.at(-1)!.position[1] - d / 2).toBeGreaterThanOrEqual(-10 + 0.125 - 1e-9);
+  });
+});
+
+describe('feed lips', () => {
+  const d = 0.987;
+  const column = layoutColumn({
+    centerline: straight(10),
+    interiorWidth: 2.25,
+    roundDiameter: d,
+    floor: 0.125,
+    topProud: 0.35 * d,
+  });
+  const [top] = column.rounds;
+  const lips = feedLips(top!, d, 0.125);
+
+  it('leave a gap narrower than a round, so the round cannot leave through it', () => {
+    expect(lips.gap).toBeGreaterThan(0);
+    expect(lips.gap).toBeLessThan(d);
+  });
+
+  it('hold the off-centre top round under one lip, with the round shown only as a strip', () => {
+    // The edge lies inside the round's width on its own side, and the strip left in view is under half a round.
+    expect(lips.innerEdge).toBeGreaterThan(Math.abs(top!.z) - d / 2);
+    expect(lips.innerEdge).toBeLessThan(Math.abs(top!.z));
+    expect(lips.innerEdge - (Math.abs(top!.z) - d / 2)).toBeLessThan(d / 2);
+    // The underside sits above the round's axis, where it can retain the round.
+    expect(lips.underside).toBeGreaterThan(top!.position[1]);
   });
 });
 

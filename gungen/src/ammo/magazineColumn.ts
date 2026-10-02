@@ -66,6 +66,32 @@ const along = (line: readonly Vec2[], lengths: readonly number[], s: number): { 
   return { at: [a[0] + tangent[0] * t, a[1] + tangent[1] * t], tangent };
 };
 
+export interface FeedLips {
+  /** Clear gap between the two lips' inner edges. */
+  readonly gap: number;
+  /** Lateral position of each lip's inner edge (the lips are at +edge and -edge). */
+  readonly innerEdge: number;
+  /** Height of the lips' underside, in the magazine plane's y. */
+  readonly underside: number;
+  /** Sheet thickness. */
+  readonly thickness: number;
+}
+
+/**
+ * Each lip is a sheet bent in from its side wall over the top round. Its inner edge reaches a quarter of
+ * a diameter past the axis of the round it holds, so the lip covers three quarters of that round's width
+ * and the gap between the lips (2c - D/2) stays narrower than a round. The round that sits in the top
+ * position is off-centre because of the stagger, so it is held under one lip and only a strip of it shows
+ * through the gap. The lip's underside rests on the round where the round's surface is under the edge.
+ */
+export const feedLips = (topRound: ColumnRound, roundDiameter: number, thickness: number): FeedLips => {
+  const radius = roundDiameter / 2;
+  const reach = roundDiameter / 4;
+  const innerEdge = Math.max(Math.abs(topRound.z) - reach, 0);
+  const underside = topRound.position[1] + Math.sqrt(radius * radius - reach * reach);
+  return { gap: innerEdge * 2, innerEdge, underside, thickness };
+};
+
 /**
  * Rounds lie across the magazine with their noses forward, so a round's axis is the downward tangent
  * turned a quarter turn toward +x, and consecutive rounds alternate between the two columns.

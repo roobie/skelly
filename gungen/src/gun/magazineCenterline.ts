@@ -11,6 +11,8 @@ export interface MagazineCenterline {
   readonly points: readonly Vec2[];
   /** Width of the body across the plane (the extrusion depth). */
   readonly width: number;
+  /** The rear face of the body, where feed lips start. */
+  readonly rearX: number;
 }
 
 const mid = (a: Vec2, b: Vec2): Vec2 => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
@@ -34,7 +36,7 @@ export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline
       mid(upper.profile[0]!, upper.profile[1]!),
       ...sectors.map((s) => mid(s.profile[0]!, s.profile[1]!)),
     ];
-    return { points, width: upper.z[1] - upper.z[0] };
+    return { points, width: upper.z[1] - upper.z[0], rearX: Math.min(...upper.profile.map(([x]) => x)) };
   }
   const body = solids.find((s) => s.id === 'body');
   if (body?.kind === 'box') {
@@ -45,6 +47,7 @@ export const magazineCenterline = (solids: readonly Solid[]): MagazineCenterline
         [center[0], center[1] - half[1]],
       ],
       width: half[2] * 2,
+      rearX: center[0] - half[0],
     };
   }
   return undefined;

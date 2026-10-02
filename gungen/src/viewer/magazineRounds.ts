@@ -10,28 +10,30 @@
 // are hidden unless the shell is opened up; see `MagazineView`.
 
 import {
+  BoxGeometry,
+  Color,
   DoubleSide,
   Group,
   InstancedMesh,
   type Material,
   Matrix4,
-  type Mesh,
+  Mesh,
   type MeshStandardMaterial,
   Plane,
   type Texture,
   Vector3,
 } from 'three';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
-import { type Column, layoutColumn } from '../ammo/magazineColumn.ts';
-import { roundProfiles } from '../ammo/roundProfile.ts';
+import { type Column, type FeedLips, feedLips, layoutColumn } from '../ammo/magazineColumn.ts';
+import { lipCoverMm, roundProfiles } from '../ammo/roundProfile.ts';
 import type { Report } from '../core/validate.ts';
 import { magazineCenterline } from '../gun/magazineCenterline.ts';
 import { type CaseFinish, finishes, revolvedGeometry, UNITS_PER_MM } from './ammoLayer.ts';
 
 /**
- * lips: the shell stops a little below the feed face, so the top rounds stand proud of the lips, as on
- * a real magazine. cut: half the shell is clipped away, which shows the whole column in section.
- * xray: the shell turns translucent.
+ * All views stop the shell a little below the feed face and bend feed lips over the top round, which
+ * stands proud of them as on a real magazine. lips: nothing else. cut: half the shell is clipped away,
+ * which shows the whole column in section. xray: the shell turns translucent.
  */
 export type MagazineView = 'lips' | 'cut' | 'xray';
 
@@ -46,11 +48,12 @@ export const parseMagazineView = (value: string | null): MagazineView | undefine
 export const MAGAZINE_WALL_U = 0.125;
 /** The top round stands this fraction of its diameter above the feed face, held by the lips. */
 const TOP_PROUD = 0.35;
-/** In the lips view the shell is cut this far below the feed face. */
-const LIP_DROP_U = 0.5;
+/** The shell's top cap, one wall thick, is cut away so the rounds come up through the top; the walls carry the lips. */
+const LIP_DROP_U = MAGAZINE_WALL_U;
 /** Where the detached copy stands: this far to the ejection side of the gun's own magazine. */
 const DETACH_OFFSET_Z_U = 12;
 const XRAY_OPACITY = 0.16;
+const XRAY_LIP_OPACITY = 0.55;
 
 export interface DetachedMagazine {
   readonly group: Group;
@@ -77,6 +80,18 @@ const matrixOf = (t: { readonly r: readonly number[]; readonly t: readonly numbe
     1,
   );
 
+/** The gun's near-black magazine reads as a hole in the scene, so the detached copy is lifted toward this grey. */
+const SHELL_LIFT_COLOR = new Color(0x6a_72_80);
+const SHELL_LIFT = 0.4;
+
+/** A two-sided, lifted copy of a shell material. */
+const shellMaterial = (source: MeshStandardMaterial): MeshStandardMaterial => {
+  const material = source.clone();
+  material.side = DoubleSide;
+  material.color.lerp(SHELL_LIFT_COLOR, SHELL_LIFT);
+  return material;
+};
+
 /** Clone of the gun's magazine meshes, opened up according to `view`. */
 const shellFor = (
   solids: Group,
@@ -93,13 +108,10 @@ const shellFor = (
     }
     // Not recursive: the edge outlines are children, and they would ignore the clipping.
     const copy = mesh.clone(false);
-    const material = (mesh.material as MeshStandardMaterial).clone();
-    material.side = DoubleSide;
-    if (view === 'lips') {
-      material.clippingPlanes = [planes.lip];
-    } else if (view === 'cut') {
-      material.clippingPlanes = [planes.side];
-    } else {
+    const material = shellMaterial(mesh.material as MeshStandardMaterial);
+    // Every view stops the shell at the lips; cut also clips half of it away.
+    material.clippingPlanes = view === 'cut' ? [planes.lip, planes.side] : [planes.lip];
+    if (view === 'xray') {
       material.transparent = true;
       material.opacity = XRAY_OPACITY;
       material.depthWrite = false;
@@ -183,7 +195,71 @@ export const buildDetachedMagazine = (
     rounds.add(mesh);
   }
 
+  const shell = shellFor(solids, id, options.view, planes);
   const group = new Group();
-  group.add(shellFor(solids, id, options.view, planes), rounds);
+  group.add(shell, rounds);
+  const [top] = column.rounds;
+  const sample = shell.children[0] as Mesh | undefined;
+  if (top && sample) {
+    group.add(
+      feedLipMeshes({
+        lips: feedLips(top, diameter, MAGAZINE_WALL_U),
+        halfWidth: line.width / 2,
+        // From the body's rear face, over the straight body of the case, ending before the shoulder.
+        headX: line.rearX,
+        coverX: top.position[0] - length / 2 + lipCoverMm(cartridge) * UNITS_PER_MM - line.rearX,
+        material: lipMaterial(sample.material as MeshStandardMaterial, options.view),
+        world,
+      }),
+    );
+  }
   return { group, column };
+};
+
+/** Opaque like the shell, except in x-ray, where the lips stay readable inside the faded shell. */
+const lipMaterial = (shell: MeshStandardMaterial, view: MagazineView): MeshStandardMaterial => {
+  const material = shell.clone();
+  material.clippingPlanes = null;
+  if (view === 'xray') {
+    material.opacity = XRAY_LIP_OPACITY;
+  }
+  return material;
+};
+
+/**
+ * The two lips as bent sheets: a riser up the side wall from the shell's cut, and a plate bent inward over
+ * the top round at its underside height. They run along the round from its head over the straight body;
+ * the shoulder, neck and bullet stand free.
+ */
+const feedLipMeshes = (input: {
+  readonly lips: FeedLips;
+  readonly halfWidth: number;
+  readonly headX: number;
+  readonly coverX: number;
+  readonly material: MeshStandardMaterial;
+  readonly world: Matrix4;
+}): Group => {
+  const { lips, halfWidth, headX, coverX, material, world } = input;
+  const group = new Group();
+  group.matrixAutoUpdate = false;
+  group.matrix.copy(world);
+  const top = lips.underside + lips.thickness;
+  const midX = headX + coverX / 2;
+  /** A box spanning the lips' length in x and the given y and z ranges. */
+  const box = (y: readonly [number, number], z: readonly [number, number]): Mesh => {
+    const mesh = new Mesh(new BoxGeometry(coverX, y[1] - y[0], z[1] - z[0]), material);
+    mesh.position.set(midX, (y[0] + y[1]) / 2, (z[0] + z[1]) / 2);
+    mesh.userData = { label: 'feed lip' };
+    return mesh;
+  };
+  for (const side of [1, -1]) {
+    const [near, far] = [lips.innerEdge * side, halfWidth * side].sort((a, b) => a - b) as [number, number];
+    // Plate: from the inner edge out to the wall, its underside at the round's surface.
+    group.add(box([lips.underside, top], [near, far]));
+    // Riser: the wall from the shell's cut up to the plate.
+    const wallInner = (halfWidth - lips.thickness) * side;
+    const [wallNear, wallFar] = [wallInner, far].sort((a, b) => a - b) as [number, number];
+    group.add(box([-LIP_DROP_U, top], [wallNear, wallFar]));
+  }
+  return group;
 };

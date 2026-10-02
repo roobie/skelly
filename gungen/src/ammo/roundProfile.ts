@@ -153,6 +153,16 @@ const primerProfile = (): Vec2[] => {
   ];
 };
 
+/**
+ * How much of the case, from the head, a magazine's feed lips cover: the straight body up to the start of
+ * the shoulder. The shoulder, neck and bullet stand free at the front. A straight-walled case has no
+ * shoulder, so its whole length is covered.
+ */
+export const lipCoverMm = (cartridge: MetallicCartridge): number =>
+  cartridge.case.body.type === 'bottleneck'
+    ? required(cartridge.case.body.shoulder.startPosition, 'shoulder start')
+    : required(cartridge.case.length, 'case length');
+
 /** Revolve profiles for a metallic cartridge, in millimetres. */
 export const roundProfiles = (cartridge: MetallicCartridge): RoundProfiles => {
   const outline = caseOutline(cartridge);
