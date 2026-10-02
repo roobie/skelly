@@ -92,6 +92,30 @@ describe('World', () => {
     expect(world.getBlock(1000, -1000, 7)).toBe(0);
   });
 
+  it('keeps restored diffs pending for ungenerated chunks and applies them over the matching base', () => {
+    const world = new World();
+    const saved = { chunks: [{ cx: 0, cy: 0, cz: 0, cells: [{ index: 0, base: 'dirt', id: 'planks' }] }] };
+    const ids = new Map([
+      ['dirt', 1],
+      ['planks', 2],
+    ]);
+    const names = new Map([...ids].map(([name, id]) => [id, name]));
+    const blockId = (name: string) => {
+      const id = ids.get(name);
+      if (id === undefined) {
+        throw new Error(`unknown block ${name}`);
+      }
+      return id;
+    };
+    world.restoreDiffs(saved, blockId);
+    expect(world.getBlock(0, 0, 0)).toBe(0);
+    expect(world.snapshotDiffs((id) => names.get(id) ?? 'unknown')).toEqual(saved);
+
+    world.addChunk(new Chunk(0, 0, 0, 1));
+    expect(world.getBlock(0, 0, 0)).toBe(2);
+    expect(world.snapshotDiffs((id) => names.get(id) ?? 'unknown')).toEqual(saved);
+  });
+
   it('reaches as far as the occlusion radius, which the simulation graph repeats rather than imports', () => {
     expect(MESH_REACH).toBe(OCCLUSION_RADIUS);
   });

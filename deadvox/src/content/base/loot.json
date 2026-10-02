@@ -236,6 +236,16 @@
           "condition": [0.4, 1]
         },
         {
+          "item": "machete",
+          "weight": 1,
+          "condition": [0.4, 1]
+        },
+        {
+          "item": "kabar",
+          "weight": 1,
+          "condition": [0.4, 1]
+        },
+        {
           "item": "steel_pipe",
           "weight": 2
         },

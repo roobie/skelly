@@ -43,6 +43,7 @@ try {
       audioResumeCalls: [],
       lockRequests: [],
       lockChanges: [],
+      lockErrors: [],
     };
     document.addEventListener(
       'pointerdown',
@@ -77,8 +78,10 @@ try {
       const result = requestPointerLock.apply(this, args);
       globalThis.__startGesture.lockRequests.push({
         target: describe(this),
+        userActivationActive: navigator.userActivation?.isActive,
         returnsPromise: Boolean(result) && typeof result.then === 'function',
       });
+      result?.catch((error) => globalThis.__startGesture.lockErrors.push(String(error)));
       return result;
     };
     const NativeAudioContext = globalThis.AudioContext;
@@ -92,7 +95,17 @@ try {
     };
   });
   await page.goto(url);
+  await page.waitForFunction(
+    () => {
+      const status = document.querySelector('#save-status')?.textContent ?? '';
+      return status.includes('Title screen ready');
+    },
+    undefined,
+    { timeout: 30_000 },
+  );
+  await page.bringToFront();
   await page.evaluate(() => {
+    window.focus();
     globalThis.addEventListener('keydown', (event) => {
       if (event.code === 'F10') {
         globalThis.__startGesture.f10DefaultPrevented = event.defaultPrevented;
@@ -100,14 +113,30 @@ try {
     });
   });
   await page.locator('#go').click();
-  await page.waitForFunction(
-    () => {
-      const canvas = document.querySelector('#view canvas');
-      return canvas && document.pointerLockElement === canvas && document.querySelector('#overlay').hidden;
-    },
-    undefined,
-    { timeout: 10_000 },
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const canvas = document.querySelector('#view canvas');
+        return canvas && document.pointerLockElement === canvas && document.querySelector('#overlay').hidden;
+      },
+      undefined,
+      { timeout: 10_000 },
+    );
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => ({
+      errors: document.querySelector('#errors')?.textContent,
+      overlayHidden: document.querySelector('#overlay')?.hidden,
+      canvas: Boolean(document.querySelector('#view canvas')),
+      pointerLock: document.pointerLockElement?.tagName,
+      gesture: globalThis.__startGesture,
+    }));
+    throw new Error(
+      `${String(error)}; pageErrors=${JSON.stringify(pageErrors)}; diagnostics=${JSON.stringify(diagnostics)}`,
+      {
+        cause: error,
+      },
+    );
+  }
   try {
     await page.waitForFunction(
       () => {
