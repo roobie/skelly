@@ -2,7 +2,13 @@ import { boxFromMinMax } from '../../core/geometry.ts';
 import type { KeepOut, PartDef, PartFamily, PortDef, Solid } from '../../core/schema.ts';
 import { EJECTION_PORT_MARGIN_U } from '../ejectionPort.ts';
 import { box, choice, NEG_X, NEG_Y, X, Y } from './common.ts';
-import { HEAVY_CARRIER_ENVELOPE } from './heavyBoltCarrier.ts';
+import {
+  HEAVY_CARRIER_ENVELOPE,
+  HEAVY_HANDLE_OUTSTAND_U,
+  HEAVY_HANDLE_ROOT_DROP_U,
+  HEAVY_HANDLE_STICK_HEIGHT_U,
+  HEAVY_HANDLE_STICK_WIDTH_U,
+} from './heavyBoltCarrier.ts';
 import { HEAVY_LOWER_REAR_X, HEAVY_WELL_CENTER_X } from './heavyLower.ts';
 import { HEAVY_MAGAZINE_DEPTH } from './heavyMagazine.ts';
 
@@ -50,9 +56,19 @@ const RAIL_SLOT_PITCH = 2;
 /** The rail keeps the 11 slots it had when the receiver was shorter, at x = -22 ... -2 (the front 22u). */
 const RAIL_START_X = -22;
 const RAIL_SLOTS = (-2 - RAIL_START_X) / RAIL_SLOT_PITCH + 1;
-
-/** The charging handle rides on the side opposite the ejection port, ahead of the carrier's centre at rest. */
-const HANDLE_X: readonly [number, number] = [CARRIER_REST_X + 1.5, CARRIER_REST_X + 3];
+/** Clearance around the moving handle stick; its swept opening is kept narrow in y and in the receiver side wall. */
+const HANDLE_SLOT_CLEARANCE = 0.25;
+// The mating carrier frame reverses X and Z, so its local rear root sits forward in receiver coordinates.
+const HANDLE_ROOT_X = CARRIER_REST_X - CARRIER_REAR_OFFSET;
+const HANDLE_SLOT_X: readonly [number, number] = [
+  HANDLE_ROOT_X - BOLT_TRAVEL - HEAVY_HANDLE_STICK_WIDTH_U - 0.25 - HANDLE_SLOT_CLEARANCE,
+  HANDLE_ROOT_X + HANDLE_SLOT_CLEARANCE,
+];
+const HANDLE_SLOT_Y: readonly [number, number] = [
+  CARRIER_Y + CARRIER_BOTTOM_OFFSET - HEAVY_HANDLE_ROOT_DROP_U - HANDLE_SLOT_CLEARANCE,
+  CARRIER_Y + CARRIER_BOTTOM_OFFSET - HEAVY_HANDLE_ROOT_DROP_U + HEAVY_HANDLE_STICK_HEIGHT_U + HANDLE_SLOT_CLEARANCE,
+];
+const HANDLE_KEEP_OUT_Z: readonly [number, number] = [HALF_WIDTH, HALF_WIDTH + HEAVY_HANDLE_OUTSTAND_U];
 
 export const heavyReceiver: PartFamily = {
   name: 'heavy-receiver',
@@ -89,8 +105,18 @@ export const heavyReceiver: PartFamily = {
         [0, INNER_HALF_HEIGHT, -INNER_HALF_WIDTH],
       ),
       box(
-        'receiver-shell-side-near-rear',
+        'receiver-shell-side-near-rear-back',
         [rear, -INNER_HALF_HEIGHT, INNER_HALF_WIDTH],
+        [HANDLE_SLOT_X[0], INNER_HALF_HEIGHT, HALF_WIDTH],
+      ),
+      box(
+        'receiver-shell-side-near-rear-lower',
+        [HANDLE_SLOT_X[0], -INNER_HALF_HEIGHT, INNER_HALF_WIDTH],
+        [PORT_REAR_X, HANDLE_SLOT_Y[0], HALF_WIDTH],
+      ),
+      box(
+        'receiver-shell-side-near-rear-upper',
+        [HANDLE_SLOT_X[0], HANDLE_SLOT_Y[1], INNER_HALF_WIDTH],
         [PORT_REAR_X, INNER_HALF_HEIGHT, HALF_WIDTH],
       ),
       box(
@@ -103,7 +129,6 @@ export const heavyReceiver: PartFamily = {
         [PORT_REAR_X, -INNER_HALF_HEIGHT, INNER_HALF_WIDTH],
         [PORT_FRONT_X, PORT_BOTTOM_Y, HALF_WIDTH],
       ),
-      box('charging-handle', [HANDLE_X[0], 0.5, -3.5], [HANDLE_X[1], 1.5, -HALF_WIDTH]),
     ];
     const ports: PortDef[] = [
       {
@@ -161,11 +186,15 @@ export const heavyReceiver: PartFamily = {
         ),
         allowPort: 'bolt-carrier',
       },
-      // The handle's travel: it slides back as far as the bolt does, and rests outside this volume.
+      // The carrier-owned stick and paddle translate through this swept handle clearance and matching side slot.
       {
         id: 'charging-handle',
         kind: 'charging-handle',
-        box: boxFromMinMax([HANDLE_X[0] - BOLT_TRAVEL, 0, -4], [HANDLE_X[0], 2, -HALF_WIDTH]),
+        allowPort: 'bolt-carrier',
+        box: boxFromMinMax(
+          [HANDLE_SLOT_X[0], HANDLE_SLOT_Y[0], HANDLE_KEEP_OUT_Z[0]],
+          [HANDLE_SLOT_X[1], HANDLE_SLOT_Y[1], HANDLE_KEEP_OUT_Z[1]],
+        ),
       },
     ];
     return {
