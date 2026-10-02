@@ -74,7 +74,13 @@ describe('revolved solid collision', () => {
     expect(penetrationWorld(worldSolid(IDENTITY, shifted), worldSolid(IDENTITY, atOrigin))).toBeGreaterThan(0);
     // Negative control: forgetting the translation leaves the same probe clear of the old hull.
     expect(distanceWorld(worldSolid(IDENTITY, base), worldSolid(IDENTITY, atOrigin))).toBeGreaterThan(5);
-    expect(meshForSolid({ ...base, origin: [0, 0, 0] }, 0, 24)).toEqual(unshifted);
+    const atZeroOrigin = meshForSolid({ ...base, origin: [0, 0, 0] }, 0, 24);
+    const normalizeSignedZeros = (positions: Float32Array): Float32Array =>
+      Float32Array.from(positions, (value) => (value === 0 ? 0 : value));
+    expect({ ...atZeroOrigin, positions: normalizeSignedZeros(atZeroOrigin.positions) }).toEqual({
+      ...unshifted,
+      positions: normalizeSignedZeros(unshifted.positions),
+    });
   });
   // The hull stands in for the solid, so what matters is that it lands where the drawn solid does on each axis.
   it.each(AXES)('measures distance to the hull and ignores a groove, turned about %s', (axis) => {
