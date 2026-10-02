@@ -670,15 +670,19 @@ const receiverShellSolids = ({
       solid(
         'receiver-shell-top-side-left',
         [innerX[0], innerY[1], -RECEIVER_FRONT_HALF_WIDTH],
-        [innerX[1], receiverTop, innerZ[0]],
+        [innerX[1], receiverTop, broadInnerZ[0]],
       ),
       solid(
         'receiver-shell-top-side-right',
-        [innerX[0], innerY[1], innerZ[1]],
+        [innerX[0], innerY[1], broadInnerZ[1]],
         [innerX[1], receiverTop, RECEIVER_FRONT_HALF_WIDTH],
       ),
-      solid('receiver-shell-top-rear', [innerX[0], innerY[1], innerZ[0]], [portX[0], receiverTop, innerZ[1]]),
-      solid('receiver-shell-top-front', [portX[1], innerY[1], innerZ[0]], [innerX[1], receiverTop, innerZ[1]]),
+      solid('receiver-shell-top-rear', [innerX[0], innerY[1], broadInnerZ[0]], [portX[0], receiverTop, broadInnerZ[1]]),
+      solid(
+        'receiver-shell-top-front',
+        [portX[1], innerY[1], broadInnerZ[0]],
+        [innerX[1], receiverTop, broadInnerZ[1]],
+      ),
     );
   } else {
     addBox(
@@ -864,7 +868,8 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       id: 'rail',
       mount: 'rail-top',
       gender: 'female',
-      pos: [-14, receiverTop, 0],
+      // AR scope feet stay on the upper, but the ocular starts ahead of rear charging-handle travel.
+      pos: [params.section === 'ar' ? -12 : -14, receiverTop, 0],
       normal: Y,
       up: X,
       slots: { count: 7, pitch: 2 },
@@ -1002,10 +1007,18 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
           carrierY,
           portWindow,
         });
-  const opticRail =
-    params.rail === 'none' || params.action === 'revolver'
-      ? []
-      : [solid('receiver-optic-rail', [-14, receiverTop - 0.5, -1.25], [-2, receiverTop, 1.25])];
+  const opticRail: Solid[] = [];
+  if (params.rail !== 'none' && params.action !== 'revolver') {
+    if (params.feed === 'top') {
+      opticRail.push(
+        solid('receiver-optic-rail-rear-base', [-14, receiverTop - 0.5, -1.25], [-9, receiverTop, 1.25]),
+        solid('receiver-optic-rail-front-base', [-4, receiverTop - 0.5, -1.25], [-2, receiverTop, 1.25]),
+      );
+    } else {
+      const start = params.section === 'ar' ? -12 : -14;
+      opticRail.push(solid('receiver-optic-rail', [start, receiverTop - 0.5, -1.25], [start + 12, receiverTop, 1.25]));
+    }
+  }
   return [...shell, ...receiverActionDetails(params), ...receiverTubeSeat(bore, receiverBottom, tubeFed), ...opticRail];
 };
 
@@ -2977,9 +2990,16 @@ export const stock: PartFamily = {
 
 export const sight: PartFamily = {
   name: 'sight',
-  params: { type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' } },
+  params: {
+    type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' },
+    mountSection: {
+      values: ['standard', 'ar', 'pump', 'ak'],
+      default: 'standard',
+      from: [{ port: 'base', param: 'section' }],
+    },
+  },
   build(params): PartDef {
-    const optic = getOptic(params.type);
+    const optic = getOptic(params.type, params.mountSection);
     return {
       family: 'sight',
       solids: optic.solids,

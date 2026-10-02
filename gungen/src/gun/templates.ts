@@ -6,21 +6,11 @@
 // Params left out are default or inherited: a barrel's bore follows its
 // receiver, and a clamped handguard or tube magazine follows the barrel.
 
-import type { ConnectionTemplate, Template } from '../core/template.ts';
+import type { Template } from '../core/template.ts';
 import type { OpticTypeId } from './optics.ts';
 
 const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): readonly OpticTypeId[] =>
   weights.flatMap(([type, weight]) => Array.from({ length: weight }, () => type));
-
-const sightRails = (
-  ...mounts: readonly (readonly [type: OpticTypeId, from: string, slot: number])[]
-): readonly ConnectionTemplate[] =>
-  mounts.map(([type, from, slot]) => ({
-    from,
-    to: 'sight.base',
-    slot,
-    when: { part: 'sight', param: 'type', equals: type },
-  }));
 
 const SML = ['S', 'M', 'L'] as const;
 const BATTLE_MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
@@ -78,14 +68,8 @@ export const battleRifle: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
-    ...sightRails(
-      ['mini-reflex', 'receiver.rail', 1],
-      ['tube-dot', 'receiver.rail', 1],
-      ['holographic', 'receiver.rail', 2],
-      ['fixed-prism-4x', 'receiver.rail', 2],
-      ['lpvo-1-6x', 'receiver.rail', 2],
-      ['high-mag-5-25x', 'receiver.rail', 3],
-    ),
+    // A shared station keeps swaps mounted on the receiver without rewiring.
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -158,13 +142,7 @@ export const ar: Template = {
     { from: 'lower.grip', to: 'grip.top' },
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
-    ...sightRails(
-      ['mini-reflex', 'receiver.rail', 1],
-      ['tube-dot', 'receiver.rail', 1],
-      ['holographic', 'receiver.rail', 2],
-      ['fixed-prism-4x', 'receiver.rail', 3],
-      ['lpvo-1-6x', 'receiver.rail', 4],
-    ),
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
     {
       from: 'barrel.front-sight',
       to: 'front-sight.base',
@@ -302,11 +280,7 @@ export const smg: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
-    ...sightRails(
-      ['mini-reflex', 'receiver.rail', 1],
-      ['tube-dot', 'receiver.rail', 1],
-      ['holographic', 'receiver.rail', 2],
-    ),
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -354,13 +328,8 @@ export const boltRifle: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
-    // Optics stay on the receiver rail; their mount footprint is checked against its physical top solids.
-    ...sightRails(
-      ['fixed-prism-4x', 'receiver.rail', 2],
-      ['lpvo-1-6x', 'receiver.rail', 3],
-      ['high-mag-5-25x', 'receiver.rail', 3],
-      ['digital-thermal', 'receiver.rail', 3],
-    ),
+    // Paired bases sit fore and aft of the loading opening; the scope bridges it.
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -394,11 +363,7 @@ export const boltRifleBox: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
-    ...sightRails(
-      ['lpvo-1-6x', 'receiver.rail', 2],
-      ['high-mag-5-25x', 'receiver.rail', 3],
-      ['digital-thermal', 'receiver.rail', 3],
-    ),
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 
@@ -509,11 +474,7 @@ export const pumpShotgun: Template = {
       when: { part: 'lower', param: 'layout', equals: 'trigger' },
     },
     { from: 'lower.grip', to: 'grip.top', when: { part: 'lower', param: 'layout', equals: 'trigger' } },
-    ...sightRails(
-      ['mini-reflex', 'receiver.rail', 2],
-      ['tube-dot', 'receiver.rail', 2],
-      ['holographic', 'receiver.rail', 2],
-    ),
+    { from: 'receiver.rail', to: 'sight.base', slot: 3 },
   ],
 };
 

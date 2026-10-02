@@ -851,7 +851,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 3,
         "to": "sight.base",
       },
       {
@@ -964,7 +964,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 3,
         "to": "sight.base",
       },
       {
@@ -1081,7 +1081,7 @@ exports[`templates > ar > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 4,
+        "slot": 3,
         "to": "sight.base",
       },
       {
@@ -1201,7 +1201,7 @@ exports[`templates > battle-rifle > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -1468,7 +1468,7 @@ exports[`templates > bolt-rifle > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 2,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -2212,7 +2212,7 @@ exports[`templates > bolt-rifle-thumbhole > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 2,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -2937,7 +2937,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -3033,7 +3033,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 2,
+        "slot": 3,
         "to": "sight.base",
       },
     ],
@@ -3130,7 +3130,7 @@ exports[`templates > smg > known-good seeds 1`] = `
       },
       {
         "from": "receiver.rail",
-        "slot": 1,
+        "slot": 3,
         "to": "sight.base",
       },
     ],

@@ -3,7 +3,7 @@
   "template": "bolt-rifle",
   "assembly": {
     "name": "archetype-bolt-rifle",
-    "description": "Bolt-action rifle, loaded from the top: dropped (sporting) stock clears the bolt, full-length handguard, sight on the handguard ahead of the loading port.",
+    "description": "Bolt-action rifle, loaded from the top: dropped (sporting) stock clears the bolt, full-length handguard, scope on paired receiver bases bridging the loading port.",
     "root": "receiver",
     "parts": {
       "receiver": {
@@ -78,7 +78,7 @@
         "to": "stock.front"
       },
       {
-        "from": "handguard.rail",
+        "from": "receiver.rail",
         "to": "sight.base",
         "slot": 3
       }

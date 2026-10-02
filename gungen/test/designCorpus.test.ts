@@ -36,7 +36,11 @@ const localVertices = (solid: Solid): Vec3[] => {
     return [xmin!, xmax!].flatMap((x) => [ymin!, ymax!].flatMap((y) => [zmin!, zmax!].map((z) => [x, y, z] as const)));
   }
   if (solid.kind === 'revolved') {
-    throw new Error('gun designs have no revolved solids');
+    const hull = worldSolid(IDENTITY, solid);
+    if ('vertices' in hull) {
+      return [...hull.vertices];
+    }
+    throw new Error('revolved solids must resolve to convex hulls');
   }
   if (solid.clip?.length) {
     const polyhedron = worldSolid(IDENTITY, solid);

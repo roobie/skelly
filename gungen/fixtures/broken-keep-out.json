@@ -1,10 +1,10 @@
 {
   "name": "broken-keep-out",
-  "description": "Rifle with an oversized handguard and a front post intruding into the optic's sightline.",
+  "description": "Bolt rifle with an oversized handguard and a straight stock obstructing bolt travel.",
   "expect": ["handguard-fit", "keep-out"],
   "root": "receiver",
   "parts": {
-    "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },
+    "receiver": { "family": "receiver", "params": { "action": "bolt", "feed": "box", "bore": "M" } },
     "lower": { "family": "lower", "params": { "layout": "conventional" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
     "handguard": { "family": "handguard", "params": { "fit": "oversized" } },

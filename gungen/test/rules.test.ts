@@ -29,12 +29,12 @@ describe('rules', () => {
   it('port-compat: rejects two parts on one rail slot', () => {
     const a = variant('archetype-battle-rifle', (x) => {
       x.parts.sight2 = { family: 'sight' };
-      x.connections.push({ from: 'receiver.rail', slot: 2, to: 'sight2.base' });
+      x.connections.push({ from: 'receiver.rail', slot: 3, to: 'sight2.base' });
     });
     const messages = validate(a, gunDomain)
       .issues.filter((i) => i.rule === 'port-compat')
       .map((i) => i.message);
-    expect(messages).toEqual(['receiver.rail[2] is used by both connection #8 and #9.']);
+    expect(messages).toEqual(['receiver.rail[3] is used by both connection #8 and #9.']);
   });
 
   it('axis-alignment: rejects a bore that is parallel but offset', () => {

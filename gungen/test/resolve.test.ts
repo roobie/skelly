@@ -60,7 +60,7 @@ describe('resolve', () => {
   });
 
   it('offsets slotted connections along the port', () => {
-    expectVec(at(r, 'sight'), [-14 + 2 * 2, 2.5, 0]);
+    expectVec(at(r, 'sight'), [-14 + 3 * 2, 2.5, 0]);
   });
 
   it('mates the grip bevel flush to its lower port', () => {
@@ -104,6 +104,7 @@ describe('resolve', () => {
     // Root the assembly at the sight: the receiver is placed from the sight.
     const fromSight = variant('broken-axis-alignment', (a) => {
       a.root = 'sight';
+      a.connections.find((c) => c.to === 'sight.base')!.slot = 3;
     });
     const r1 = resolve(rolled, gunDomain);
     const r2 = resolve(fromSight, gunDomain);
@@ -121,7 +122,7 @@ describe('resolve', () => {
       ];
     };
     expectVec(inv(r2, [2, 1, 0]), inv(r1, [2, 1, 0]));
-    expectVec(at(r1, 'sight', [2, 0, 0]).map(Math.abs), [10, 2.5, 2]);
+    expectVec(at(r1, 'sight', [2, 0, 0]).map(Math.abs), [8, 2.5, 2]);
   });
 });
 

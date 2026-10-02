@@ -187,7 +187,7 @@ extrusion kinds cannot describe.
   circumference and hard where the profile bends past `creaseDegrees` (40 by
   default). The facet count is a level of detail chosen when the mesh is built,
   not a field of the solid: `meshForSolid` takes it (default 6), the viewer
-  takes `?facets=N` (24 for close-ups) and the glb export takes `revolveFacets`.
+  takes `?facets=N` (default 16, 24 for close-ups) and the glb export takes `revolveFacets`.
   The bevel and `display.mergeGroup` do not apply; the viewer draws it
   smooth-shaded and without an edge outline.
 - Collision: `src/core/revolve.ts#revolvedLocalPolyhedron`, the convex hull of

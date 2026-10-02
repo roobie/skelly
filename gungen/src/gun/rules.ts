@@ -3,7 +3,7 @@
 import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
 import type { Vec3 } from '../core/math.ts';
-import { add, applyDir, applyPoint, dot as dotProduct, length, scale, sub } from '../core/math.ts';
+import { add, applyDir, applyPoint, dot as dotProduct, IDENTITY, invert, length, scale, sub } from '../core/math.ts';
 import type { PortRef, Resolved, ResolvedConnection } from '../core/resolve.ts';
 import type { Box, PartDef, Rule, Solid } from '../core/schema.ts';
 import { mountCanAccept } from './mounts.ts';
@@ -502,13 +502,56 @@ const magazineAxisError = (
   };
 };
 
+const opticContactPoints = (solids: readonly Solid[]): readonly Vec3[] =>
+  solids.flatMap((solid) => {
+    if (solid.kind !== 'box' || Math.abs(localSolidBounds(solid)[0][1]) > 1e-6) {
+      return [];
+    }
+    const { center, half } = solid.box;
+    return [-1, 0, 1].flatMap((x) =>
+      [-1, 0, 1].map((z): Vec3 => [center[0] + x * half[0], 0, center[2] + z * half[2]]),
+    );
+  });
+
+/** A named rail is not enough: its contact feet must remain on the action body (or pistol slide). */
+const opticSupportError = (r: Resolved, sight: string, host: PortRef): string | undefined => {
+  const def = r.defs.get(host.part)!;
+  if (!['receiver', 'slide'].includes(def.family) || host.port.id !== 'rail') {
+    return 'requires the receiver top rail (the pistol uses its slide), not a handguard/scout mount';
+  }
+  const hostTransform = r.placed.get(host.part)!;
+  const sightTransform = r.placed.get(sight)!;
+  const toHost = invert(hostTransform);
+  const body = def.solids.filter(
+    ({ id }) => !id.includes('rail') && (def.family === 'slide' || id.startsWith('receiver-')),
+  );
+  const bodyBounds = body.map(localSolidBounds);
+  const minX = Math.min(...bodyBounds.map(([min]) => min[0]));
+  const maxX = Math.max(...bodyBounds.map(([, max]) => max[0]));
+  const surfaces = def.solids.map((solid) => worldSolid(IDENTITY, solid));
+  const params = r.params.get(sight);
+  const contacts = opticContactPoints(getOptic(params?.type?.value, params?.mountSection?.value).solids);
+  for (const contact of contacts) {
+    const local = applyPoint(toHost, applyPoint(sightTransform, contact));
+    if (local[0] < minX - 1e-6 || local[0] > maxX + 1e-6 || Math.abs(local[1] - host.port.pos[1]) > 1e-6) {
+      return 'mount foot extends beyond the receiver body or is not on its top';
+    }
+    const point = worldSolid(IDENTITY, { id: 'contact-probe', kind: 'box', box: { center: local, half: [0, 0, 0] } });
+    if (!surfaces.some((surface) => distanceWorld(point, surface) <= 1e-6)) {
+      return 'mount foot is not supported by a physical receiver top solid';
+    }
+  }
+  return undefined;
+};
+
 export const opticMountFit: Rule = {
   id: 'optic-mount-fit',
   title: 'Optic footprint fits its generic mount interface',
   check(r) {
     const issues: Issue[] = [];
     for (const [sight] of placedOptics(r)) {
-      const optic = getOptic(r.params.get(sight)?.type?.value);
+      const params = r.params.get(sight);
+      const optic = getOptic(params?.type?.value, params?.mountSection?.value);
       const connection = r.connections.find((candidate) =>
         [candidate.from, candidate.to].some((end) => end.part === sight && end.port.id === 'base'),
       );
@@ -519,10 +562,11 @@ export const opticMountFit: Rule = {
       const { port } = host;
       const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
       const slot = connection.conn.slot ?? 0;
-      if (!mountCanAccept(port, optic.mount, slot)) {
+      const supportError = opticSupportError(r, sight, host);
+      if (!mountCanAccept(port, optic.mount, slot) || supportError) {
         issues.push({
           rule: 'optic-mount-fit',
-          message: `${sight} (${optic.id}) needs ${optic.mount.kind} with ${optic.mount.contactLengthU}u contact length, ${optic.mount.contactWidthU}u width, and ${optic.mount.minimumSlots} slots; ${host.part}.${port.id} offers ${port.mount} with ${span}u span at slot ${slot}.`,
+          message: `${sight} (${optic.id}) needs ${optic.mount.kind} with ${optic.mount.contactLengthU}u contact length, ${optic.mount.contactWidthU}u width, and ${optic.mount.minimumSlots} slots; ${host.part}.${port.id} offers ${port.mount} with ${span}u span at slot ${slot}.${supportError ? ` ${supportError}.` : ''}`,
           parts: [sight, host.part],
         });
       }
@@ -537,7 +581,8 @@ export const opticEyeRelief: Rule = {
   check(r) {
     const issues: Issue[] = [];
     for (const [sight] of placedOptics(r)) {
-      const optic = getOptic(r.params.get(sight)?.type?.value);
+      const params = r.params.get(sight);
+      const optic = getOptic(params?.type?.value, params?.mountSection?.value);
       if (optic.eyeReliefU === undefined) {
         continue;
       }

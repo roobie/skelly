@@ -1,7 +1,7 @@
 {
   "name": "broken-action-handle",
-  "description": "AR-pattern receiver with a charging handle inside its travel volume and an optic line blocked by the fixed front sight.",
-  "expect": ["action-handle-rest", "keep-out"],
+  "description": "AR-pattern receiver with a charging handle inside its travel volume.",
+  "expect": ["action-handle-rest"],
   "root": "receiver",
   "parts": {
     "receiver": {

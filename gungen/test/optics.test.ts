@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { obbPolyhedron, worldSolid } from '../src/core/geometry.ts';
+import { localSolidBounds, obbPolyhedron, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, IDENTITY, invert, type Transform } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { PartDef } from '../src/core/schema.ts';
@@ -24,7 +25,7 @@ import {
 import type { MutableAssembly } from './helpers.ts';
 
 const HTTPS_URL = /^https:\/\//;
-const TUBULAR_SOLID_ID = /tube|bell|turret|housing/;
+const TUBULAR_SOLID_ID = /tube|bell|turret|housing|ring-band/;
 const MOUNT_SOLID_ID = /foot|mount/;
 
 describe('optic catalog', () => {
@@ -44,28 +45,121 @@ describe('optic catalog', () => {
     });
     expect(optic.source).toMatch(HTTPS_URL);
     expect(optic.envelopeMm.every((n) => n > 0)).toBe(true);
-    expect(optic.envelopeU.every((n) => n > 0)).toBe(true);
+    const bounds = optic.solids.map(localSolidBounds);
+    const actual = [0, 1, 2].map(
+      (axis) => Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!)),
+    );
+    expect(actual).toEqual(optic.envelopeU);
   });
 
-  it('keeps the BR reference proportions and the mini-reflex to one window prism plus foot', () => {
-    expect(getOptic('mini-reflex').solids.map(({ id }) => id)).toEqual(['mount-foot', 'front-window-prism']);
-    expect(getOptic('holographic')).toMatchObject({ envelopeMm: [95, 56, 65], envelopeU: [8.25, 4.875, 5.75] });
-    expect(getOptic('fixed-prism-4x')).toMatchObject({ envelopeMm: [150, 45, 60], envelopeU: [13, 4, 5.25] });
+  it('bounds the complete XPS2 incl. base to 90 × 59 × 53 mm while preserving the fixed prism', () => {
+    const bounds = getOptic('holographic').solids.map(localSolidBounds);
+    const extent = [0, 1, 2].map(
+      (axis) =>
+        (Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!))) * 11.5,
+    );
+    extent.forEach((size, axis) => {
+      expect(size).toBeLessThanOrEqual([90, 59, 53][axis]!);
+    });
+    // Its actual last-round size, not just a catalog label: 149.5 × 43.125 × 63.25 mm.
+    expect(getOptic('fixed-prism-4x')).toMatchObject({ envelopeMm: [150, 45, 60], envelopeU: [13, 3.75, 5.5] });
   });
 
-  it('models tubular optics and adjustment turrets as octagonal extrusions, not boxes', () => {
+  it('gives the closed micro dot a rear-to-front tunnel and two rear-left adjustment dials', () => {
+    const optic = getOptic('mini-reflex');
+    expect(optic.reference).toContain('ACRO');
+    const dials = optic.solids.filter(({ id }) => id.includes('adjustment-dial'));
+    expect(dials).toHaveLength(2);
+    for (const dial of dials) {
+      expect(dial.kind).toBe('revolved');
+      const [, max] = localSolidBounds(dial);
+      expect(max[0]).toBeLessThan(0);
+      expect(max[2]).toBeLessThan(0);
+    }
+    // The rear, middle and front all have four walls; deleting most of the housing must not pass as a tunnel.
+    for (const x of [-2, 0, 1.75]) {
+      for (const [y, z] of [
+        [0.75, 0],
+        [2.5, 0],
+        [1.5, -1],
+        [1.5, 1],
+      ]) {
+        const wallProbe = worldSolid(IDENTITY, {
+          id: 'wall-probe',
+          kind: 'box',
+          box: { center: [x, y!, z!], half: [0.1, 0.1, 0.1] },
+        });
+        expect(
+          optic.solids.some((solid) => penetrationWorld(wallProbe, worldSolid(IDENTITY, solid)) > 0),
+          `wall at ${x},${y},${z}`,
+        ).toBe(true);
+      }
+    }
+    const probe = worldSolid(IDENTITY, {
+      id: 'window-probe',
+      kind: 'box',
+      box: { center: [0, optic.opticalAxisY, 0], half: [2.5, 0.25, 0.25] },
+    });
+    for (const solid of optic.solids) {
+      expect(penetrationWorld(probe, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it('gives the fixed prism smaller round ocular and flared objective ends around a squat chamfered body', () => {
+    const optic = getOptic('fixed-prism-4x');
+    const find = (id: string) => {
+      const solid = optic.solids.find((candidate) => candidate.id === id);
+      if (!solid) {
+        throw new Error(`missing prism solid ${id}`);
+      }
+      return solid;
+    };
+    const objective = find('objective-bell');
+    const ocular = find('ocular-bell');
+    expect(objective.kind).toBe('revolved');
+    expect(ocular.kind).toBe('revolved');
+    const [omin, omax] = localSolidBounds(objective);
+    const [rmin, rmax] = localSolidBounds(ocular);
+    const housing = find('prism-housing');
+    expect(housing.kind).toBe('extruded-polygon');
+    if (housing.kind === 'extruded-polygon') {
+      expect(housing.profile.length).toBeGreaterThanOrEqual(6);
+    }
+    const [hmin, hmax] = localSolidBounds(housing);
+    expect(hmax[2] - hmin[2]).toBeGreaterThan(omax[2] - omin[2]);
+    expect(hmax[1] - hmin[1]).toBeGreaterThan(omax[1] - omin[1]);
+    expect(omax[0]).toBeGreaterThan(hmax[0]);
+    expect(rmin[0]).toBeLessThan(hmin[0]);
+    expect(rmax[2] - rmin[2]).toBeLessThan(omax[2] - omin[2]);
+    expect(find('elevation-cap').kind).toBe('revolved');
+    expect(find('windage-cap').kind).toBe('revolved');
+    expect(find('mount-cross-bolt').kind).toBe('revolved');
+  });
+
+  it('keeps low LPVO and high-mag objective bell gaps between 2 and 3 mm above the mounting plane', () => {
+    for (const type of ['lpvo-1-6x', 'high-mag-5-25x']) {
+      const optic = getOptic(type);
+      const body = optic.solids.find(({ id }) => id === 'tube-with-flared-bells')!;
+      const gapMm = localSolidBounds(body)[0][1] * 11.5;
+      expect(gapMm, type).toBeGreaterThanOrEqual(2);
+      expect(gapMm, type).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('models tubular optics, rings and adjustment turrets as revolved solids', () => {
     const solids = [
       ...getOptic('tube-dot').solids.filter(({ id }) => id === 'tube-body'),
       ...getOptic('lpvo-1-6x').solids.filter(({ id }) => TUBULAR_SOLID_ID.test(id)),
       ...getOptic('high-mag-5-25x').solids.filter(({ id }) => TUBULAR_SOLID_ID.test(id)),
       ...getOptic('digital-thermal').solids.filter(({ id }) => TUBULAR_SOLID_ID.test(id)),
     ];
-    expect(solids.length).toBeGreaterThan(0);
+    for (const type of ['lpvo-1-6x', 'high-mag-5-25x', 'digital-thermal']) {
+      expect(getOptic(type).solids.map(({ id }) => id)).toEqual(
+        expect.arrayContaining(['rear-ring-band', 'front-ring-band']),
+      );
+    }
     for (const solid of solids) {
-      expect(solid.kind, solid.id).toBe('extruded-polygon');
-      if (solid.kind === 'extruded-polygon') {
-        expect(solid.profile, solid.id).toHaveLength(8);
-      }
+      expect(solid.kind, solid.id).toBe('revolved');
     }
   });
 });
@@ -179,7 +273,7 @@ const assertMountFeetSupported = ({
   readonly sightTransform: Transform;
 }): void => {
   const contactSolids = getOptic(opticId).solids.filter(
-    (solid) => solid.kind === 'box' && MOUNT_SOLID_ID.test(solid.id),
+    (solid) => solid.kind === 'box' && MOUNT_SOLID_ID.test(solid.id) && Math.abs(localSolidBounds(solid)[0][1]) < 1e-6,
   );
   ensure(contactSolids.length > 0, `${opticId} has no physical mount feet`);
   const toHost = invert(hostTransform);
@@ -234,6 +328,22 @@ const expectContactOnPhysicalRail = (assembly: MutableAssembly, opticId: string)
   );
   ensure(port.mount === 'rail-top', `${assembly.name} receiver.rail is not a top rail`);
   const [, railY] = port.pos;
+  // Receiver body, independent of a rail that might extend beyond it.
+  const bodyBounds = host.solids
+    .filter(({ id }) => id.startsWith('receiver-') && !id.includes('rail'))
+    .map(localSolidBounds);
+  const bodyX = [Math.min(...bodyBounds.map(([min]) => min[0])), Math.max(...bodyBounds.map(([, max]) => max[0]))];
+  for (const foot of getOptic(opticId).solids.filter(
+    (solid) => solid.kind === 'box' && MOUNT_SOLID_ID.test(solid.id) && Math.abs(localSolidBounds(solid)[0][1]) < 1e-6,
+  )) {
+    for (const corner of localSolidBounds(foot)) {
+      const [x] = applyPoint(invert(hostTransform), applyPoint(sightTransform, corner));
+      ensure(
+        x >= bodyX[0]! - 1e-6 && x <= bodyX[1]! + 1e-6,
+        `${assembly.name} ${opticId} foot outside receiver body X extent`,
+      );
+    }
+  }
   const topFaces = physicalTopFaces(host, railY);
   ensure(topFaces.length > 0, `${assembly.name} receiver has no physical top solid at its rail`);
   assertMountFeetSupported({ assembly, opticId, solids: topFaces, railY, hostTransform, sightTransform });
@@ -269,7 +379,97 @@ describe('template optics can be attached, validated, and removed', () => {
   );
 });
 
+describe('curated optic mounts', () => {
+  it('keeps published designs receiver-mounted and valid when only the optic type is swapped', () => {
+    const designs = [
+      ['archetype-battle-rifle', OPTIC_TYPE_IDS.slice(0, 6)],
+      ['archetype-ar', OPTIC_TYPE_IDS.slice(0, 5)],
+      ['archetype-ar-free-float', OPTIC_TYPE_IDS.slice(0, 5)],
+      ['archetype-bolt-rifle', OPTIC_TYPE_IDS.slice(3)],
+      ['archetype-bolt-rifle-box', OPTIC_TYPE_IDS.slice(4)],
+      ['archetype-awm', OPTIC_TYPE_IDS.slice(4)],
+      ['archetype-smg', OPTIC_TYPE_IDS.slice(0, 3)],
+      ['archetype-anti-materiel', ['high-mag-5-25x']],
+    ] as const;
+    for (const [name, types] of designs) {
+      const { assembly } = JSON.parse(readFileSync(new URL(`../designs/${name}.json`, import.meta.url), 'utf8')) as {
+        assembly: MutableAssembly;
+      };
+      for (const type of types) {
+        assembly.parts.sight!.params = { type };
+        expectContactOnPhysicalRail(assembly, type);
+        expect(validate(assembly, gunDomain).issues, `${name} with ${type}`).toEqual([]);
+      }
+    }
+  });
+
+  it('leaves the top-loading opening empty at the receiver top, between the two scope bases', () => {
+    const receiver = FAMILIES.receiver!.build({ action: 'bolt', feed: 'top', bore: 'M' });
+    const opening = worldSolid(IDENTITY, {
+      id: 'opening',
+      kind: 'box',
+      box: { center: [-6.5, 2.5, 0], half: [2.49, 0.1, 1.49] },
+    });
+    for (const solid of receiver.solids) {
+      expect(penetrationWorld(opening, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
+    }
+  });
+});
+
 describe('optic incompatibility validation', () => {
+  it('rejects a receiver-named rail reaching over the forend instead of the receiver body', () => {
+    const assembly = fitOptic(ar, 0, 'tube-dot');
+    const receiver = gunDomain.families.receiver!;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        receiver: {
+          ...receiver,
+          build: (params: Readonly<Record<string, string>>) => {
+            const def = receiver.build(params);
+            return {
+              ...def,
+              ports: def.ports.map((port) =>
+                port.id === 'rail' ? { ...port, pos: [port.pos[0] + 16, port.pos[1], port.pos[2]] as const } : port,
+              ),
+              solids: def.solids.map((solid) =>
+                solid.id === 'receiver-optic-rail' && solid.kind === 'box'
+                  ? {
+                      ...solid,
+                      box: {
+                        ...solid.box,
+                        center: [solid.box.center[0] + 16, solid.box.center[1], solid.box.center[2]] as const,
+                      },
+                    }
+                  : solid,
+              ),
+            };
+          },
+        },
+      },
+    };
+    const issues = validate(assembly, domain).issues.filter(({ rule }) => rule === 'optic-mount-fit');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toContain('beyond the receiver body');
+  });
+
+  it('rejects a compact foot suspended over the top-loading opening despite matching rail metadata', () => {
+    const assembly = fitOptic(boltRifle, 0, 'high-mag-5-25x');
+    assembly.parts.sight!.params = { type: 'mini-reflex' };
+    const issues = validate(assembly, gunDomain).issues.filter(({ rule }) => rule === 'optic-mount-fit');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toContain('not supported');
+  });
+
+  it('rejects a rail over the handguard even when the compact footprint fits it', () => {
+    const assembly = fitOptic(ar, 0, 'tube-dot');
+    assembly.connections = assembly.connections.map((connection) =>
+      connection.to === 'sight.base' ? { ...connection, from: 'handguard.rail', slot: 3 } : connection,
+    );
+    expect(validate(assembly, gunDomain).issues.map(({ rule }) => rule)).toContain('optic-mount-fit');
+  });
+
   it('rejects a 12u scope on the pistol slide rail and a long optic without a cheek datum', () => {
     const assembly = fitOptic(pistol, 0, 'mini-reflex');
     assembly.parts.sight!.params = { ...assembly.parts.sight!.params, type: 'high-mag-5-25x' };
