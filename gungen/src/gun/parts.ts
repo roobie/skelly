@@ -22,11 +22,12 @@
 //   forend     tube magazine ↔ sliding forend
 
 import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
-import { boxFromMinMax } from '../core/geometry.ts';
-import type { ExtrusionAxis, Vec3 } from '../core/math.ts';
+import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
+import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
+import { gunPort } from './portData.ts';
 import { buildReceiverSection, type SectionWindow } from './receiverSection.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
@@ -42,39 +43,7 @@ const NEG_Y: Vec3 = [0, -1, 0];
 
 const solid = (id: string, min: Vec3, max: Vec3): Solid => ({ id, kind: 'box', box: boxFromMinMax(min, max) });
 const metalSolid = (id: string, min: Vec3, max: Vec3): Solid => ({ ...solid(id, min, max), slot: 'metal' });
-const solidBounds = (component: Solid): readonly [Vec3, Vec3] => {
-  if (component.kind === 'box') {
-    return [
-      component.box.center.map(
-        (coordinateCenter, axisIndex) => coordinateCenter - component.box.half[axisIndex]!,
-      ) as unknown as Vec3,
-      component.box.center.map(
-        (coordinateCenter, axisIndex) => coordinateCenter + component.box.half[axisIndex]!,
-      ) as unknown as Vec3,
-    ];
-  }
-  const extrusionAxis: ExtrusionAxis = component.axis ?? 'z';
-  const profileBounds = [0, 1].map((coordinate) => [
-    Math.min(...component.profile.map((point) => point[coordinate]!)),
-    Math.max(...component.profile.map((point) => point[coordinate]!)),
-  ]);
-  if (extrusionAxis === 'x') {
-    return [
-      [component.z[0], profileBounds[0]![0]!, profileBounds[1]![0]!],
-      [component.z[1], profileBounds[0]![1]!, profileBounds[1]![1]!],
-    ];
-  }
-  if (extrusionAxis === 'y') {
-    return [
-      [profileBounds[1]![0]!, component.z[0], profileBounds[0]![0]!],
-      [profileBounds[1]![1]!, component.z[1], profileBounds[0]![1]!],
-    ];
-  }
-  return [
-    [profileBounds[0]![0]!, profileBounds[1]![0]!, component.z[0]],
-    [profileBounds[0]![1]!, profileBounds[1]![1]!, component.z[1]],
-  ];
-};
+const solidBounds = (component: Solid): readonly [Vec3, Vec3] => localSolidBounds(component);
 const AK_CHARGING_HANDLE_OUTSTAND_U = 2.25;
 const AK_CHARGING_HANDLE_PADDLE_THICKNESS_U = 0.5;
 const akChargingHandleSolids = (envelope: CarrierEnvelope = BOLT_CARRIER_ENVELOPES.ak): Solid[] => {
@@ -127,6 +96,7 @@ const akChargingHandleSolids = (envelope: CarrierEnvelope = BOLT_CARRIER_ENVELOP
       { normal: [0, 1, -1], offset: yMax - paddleOuterZ - bevel },
       { normal: [0, -1, -1], offset: -yMin - paddleOuterZ - bevel },
     ],
+    display: { bevel: false },
     slot: 'metal',
   };
   return [stick, paddle];
@@ -1421,6 +1391,9 @@ const translateSolid = (component: Solid, offset: Vec3): Solid => {
       },
     };
   }
+  if (component.kind === 'revolved') {
+    throw new Error(`Solid "${component.id}" cannot be translated as an envelope-local extrusion.`);
+  }
   const axis = component.axis ?? 'z';
   if (axis === 'x') {
     return {
@@ -1588,8 +1561,8 @@ const boltHandleArm: PartFamily = {
       motion: {
         kind: 'linear',
         axis: BOLT_HANDLE_MOTION_AXIS,
-        rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'base', id: 'bolt-handle-travel' },
       },
     };
@@ -1624,8 +1597,8 @@ const boltHandleKnob: PartFamily = {
       motion: {
         kind: 'linear',
         axis: BOLT_HANDLE_KNOB_MOTION_AXIS,
-        rest: [0, 0, 0],
-        rearmost: BOLT_HANDLE_KNOB_MOTION_AXIS.map((value) => value * travel) as unknown as Vec3,
+        start: [0, 0, 0],
+        end: BOLT_HANDLE_KNOB_MOTION_AXIS.map((value) => value * travel) as unknown as Vec3,
       },
     };
   },
@@ -1750,8 +1723,8 @@ const smgSlidingHandle: PartFamily = {
       motion: {
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [travel, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'mount', id: 'smg-handle-travel' },
       },
     };
@@ -1859,8 +1832,8 @@ export const boltCarrier: PartFamily = {
       motion: {
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [0, 0, 0],
+        start: [0, 0, 0],
+        end: [0, 0, 0],
         sourceKeepOut: { port: 'mount', id: 'bolt-travel' },
       },
     };
@@ -3360,7 +3333,7 @@ export const magazine: PartFamily = {
         ...floorplate,
       ],
       ports: [
-        {
+        gunPort({
           id: 'top',
           mount: 'magazine',
           gender: 'male',
@@ -3369,7 +3342,7 @@ export const magazine: PartFamily = {
           up: X,
           required: true,
           seat: curveProfile?.seat ?? 'well',
-        },
+        }),
       ],
       keepOuts: [],
       axes: [],
@@ -3419,6 +3392,7 @@ const m4StockSolids = (len: number): Solid[] => {
       { normal: [-sideSlope, 0, 1], offset: sideIntercept },
       { normal: [-sideSlope, 0, -1], offset: sideIntercept },
     ],
+    display: { bevel: false },
   };
   const buttplate: Solid = {
     id: 'buttplate',

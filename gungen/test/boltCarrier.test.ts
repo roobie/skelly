@@ -170,10 +170,10 @@ const travelMeasurements = (resolved: ReturnType<typeof resolve>) => {
   const motion = resolved.defs.get('bolt-carrier')!.motion!;
   const transform = resolved.placed.get('bolt-carrier')!;
   const restOrigin = applyPoint(transform, [0, 0, 0]);
-  const rearOrigin = applyPoint(transform, motion.rearmost);
+  const rearOrigin = applyPoint(transform, motion.end);
   return {
     pathLength: path.box.half[0] * 2,
-    motionLength: motion.rearmost[0],
+    motionLength: motion.end[0],
     restOrigin,
     rearOrigin,
     distance: Math.hypot(...(rearOrigin.map((value, i) => value - restOrigin[i]!) as [number, number, number])),
@@ -199,7 +199,7 @@ const coreFitsCavity = (entry: TravelCase, resolved: ReturnType<typeof resolve>)
   const bodyFits = corners(body)
     .flatMap((corner) => [
       applyPoint(transform, corner),
-      applyPoint(transform, [corner[0] + motion.rearmost[0], corner[1], corner[2]]),
+      applyPoint(transform, [corner[0] + motion.end[0], corner[1], corner[2]]),
     ])
     .every(
       (point) =>
@@ -249,9 +249,9 @@ const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof re
   const carrierTransform = resolved.placed.get('bolt-carrier')!;
   const motion = carrier.motion!;
   const receiverSolids = receiver.solids.map((solid) => worldSolid(receiverTransform, solid));
-  const samples = Math.ceil(motion.rearmost[0] / 0.25);
+  const samples = Math.ceil(motion.end[0] / 0.25);
   for (let sample = 0; sample <= samples; sample++) {
-    const progress = motion.rearmost[0] * (sample / samples);
+    const progress = motion.end[0] * (sample / samples);
     const transform = compose(carrierTransform, translation([progress, 0, 0]));
     for (const solid of carrier.solids.filter(({ id }) => id !== 'bolt-handle-seat')) {
       const moved = worldSolid(transform, solid);
@@ -279,7 +279,7 @@ const allCarrierSolidsStayWithinReceiverLength = (resolved: ReturnType<typeof re
     .flatMap((solid) =>
       corners(solid).flatMap((corner) => [
         applyPoint(transform, corner),
-        applyPoint(transform, [corner[0] + motion.rearmost[0], corner[1], corner[2]]),
+        applyPoint(transform, [corner[0] + motion.end[0], corner[1], corner[2]]),
       ]),
     )
     .every((point) => point[0] >= cavityX[0]! - 1e-6 && point[0] <= cavityX[1]! + 1e-6);
@@ -372,8 +372,8 @@ describe('procedural bolt carrier', () => {
       expect(resolved.defs.get('bolt-carrier')?.motion, label).toMatchObject({
         kind: 'linear',
         axis: [1, 0, 0],
-        rest: [0, 0, 0],
-        rearmost: [expectedPart.travel, 0, 0],
+        start: [0, 0, 0],
+        end: [expectedPart.travel, 0, 0],
       });
     }
   });
@@ -439,8 +439,8 @@ describe('procedural bolt carrier', () => {
     const localStickBounds = limits(corners(stick));
     const paddleBounds = worldBounds(corners(handle).map((point) => applyPoint(transform, point)));
     const pistonBounds = worldBounds(corners(piston).map((point) => applyPoint(transform, point)));
-    const carrierMotion = carrier.motion!;
-    const rearTransform = compose(transform, translation(carrierMotion.rearmost));
+    const motion = carrier.motion!;
+    const rearTransform = compose(transform, translation(motion.end));
     const rearHandleBounds = worldBounds(corners(handle).map((point) => applyPoint(rearTransform, point)));
     const portMin = port.actualX![0]!;
     const portMax = port.actualX![1]!;
@@ -622,17 +622,17 @@ describe('procedural bolt carrier', () => {
     expect(actualRadial).toBeCloseTo(radial, 2);
     expect(actualDiameter).toBeCloseTo(diameter, 6);
     expect(knobCenter[2] - receiverSideFace).toBeCloseTo(outstand, 6);
-    expect(motion.rearmost).toHaveLength(3);
-    expect(knobMotion.rearmost).toHaveLength(3);
-    expect(Math.hypot(...motion.rearmost)).toBeCloseTo(Math.hypot(...carrier.motion!.rearmost), 6);
-    expect(Math.hypot(...knobMotion.rearmost)).toBeCloseTo(Math.hypot(...carrier.motion!.rearmost), 6);
-    const carrierDisplacement = applyPoint(carrierTransform, carrier.motion!.rearmost).map(
+    expect(motion.end).toHaveLength(3);
+    expect(knobMotion.end).toHaveLength(3);
+    expect(Math.hypot(...motion.end)).toBeCloseTo(Math.hypot(...carrier.motion!.end), 6);
+    expect(Math.hypot(...knobMotion.end)).toBeCloseTo(Math.hypot(...carrier.motion!.end), 6);
+    const carrierDisplacement = applyPoint(carrierTransform, carrier.motion!.end).map(
       (value, axis) => value - applyPoint(carrierTransform, [0, 0, 0])[axis]!,
     );
-    const armDisplacement = applyPoint(armTransform, motion.rearmost).map(
+    const armDisplacement = applyPoint(armTransform, motion.end).map(
       (value, axis) => value - applyPoint(armTransform, [0, 0, 0])[axis]!,
     );
-    const knobDisplacement = applyPoint(knobTransform, knobMotion.rearmost).map(
+    const knobDisplacement = applyPoint(knobTransform, knobMotion.end).map(
       (value, axis) => value - applyPoint(knobTransform, [0, 0, 0])[axis]!,
     );
     for (const axis of [0, 1, 2]) {
@@ -644,7 +644,7 @@ describe('procedural bolt carrier', () => {
 
     for (const progress of [0, 0.5, 1]) {
       const accessoryTransform = (transform: typeof armTransform, partMotion: typeof motion) =>
-        compose(transform, translation(partMotion.rearmost.map((distance) => distance * progress) as unknown as Vec3));
+        compose(transform, translation(partMotion.end.map((distance) => distance * progress) as unknown as Vec3));
       const moving = [
         { def: arm, transform: accessoryTransform(armTransform, motion) },
         { def: knob, transform: accessoryTransform(knobTransform, knobMotion) },
@@ -700,7 +700,7 @@ describe('procedural bolt carrier', () => {
       const motion = handle.motion!;
       const transform = compose(
         handleTransform,
-        translation(motion.rearmost.map((distance) => distance * progress) as unknown as Vec3),
+        translation(motion.end.map((distance) => distance * progress) as unknown as Vec3),
       );
       return worldBounds(handle.solids.flatMap(corners).map((point) => applyPoint(transform, point)));
     };
@@ -720,7 +720,7 @@ describe('procedural bolt carrier', () => {
     expect(gripBounds[2]![1]!).toBeLessThanOrEqual(guardBounds[2]![0]! + 1e-6);
     expect(guardBounds[2]![0]! - gripBounds[2]![0]!).toBeGreaterThanOrEqual(1.5);
     expect(handKeepOut).toBeDefined();
-    expect(handle.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], rearmost: [2.5, 0, 0] });
+    expect(handle.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], end: [2.5, 0, 0] });
     expect(handleBoundsAt(0)[0]![1]!).toBeLessThanOrEqual(handguardFrontX + 1e-6);
     for (const progress of [0, 0.5, 1]) {
       expect(handleBoundsAt(progress)[0]![1]!, `progress ${progress}`).toBeLessThanOrEqual(handguardFrontX + 1e-6);
@@ -854,7 +854,7 @@ describe('procedural bolt carrier', () => {
     const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
     const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
     const port = portMeasurements(entry, resolved);
-    const [travel] = carrier.motion!.rearmost;
+    const [travel] = carrier.motion!.end;
     const [barrelMountX] = receiver.ports.find(({ id }) => id === 'barrel')!.pos;
 
     expect(BOLT_CARRIER_ENVELOPES.ar.x).toEqual([-2.5, 1.5]);
@@ -953,7 +953,7 @@ describe('procedural bolt carrier', () => {
       const style = CARRIER_HANDLE_STYLES[entry.handleStyle];
       const hand = carrier.keepOuts.find(({ id }) => id === `${entry.handleStyle}-handle-hand`)!.box;
       const sweep = carrier.keepOuts.find(({ id }) => id === `${entry.handleStyle}-handle-sweep`)!.box;
-      const [actualMotion] = carrier.motion!.rearmost;
+      const [actualMotion] = carrier.motion!.end;
       expect(actualMotion, entry.pattern).toBe(entry.travel);
       expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0]), entry.pattern).toBe(actualMotion);
       expect(style.motion).toBe('linear');

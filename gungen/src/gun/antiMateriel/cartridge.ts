@@ -2,7 +2,7 @@
 // dimensions are the only numbers the magazine, the magazine well and the action are derived from, so
 // they live here once. Pure arithmetic: no imports beyond core constants.
 
-import { METRES_PER_UNIT } from '../../core/exportFrame.ts';
+import { METRES_PER_UNIT } from '../exportFrame.ts';
 
 const MM_PER_INCH = 25.4;
 const MM_PER_U = METRES_PER_UNIT * 1000;

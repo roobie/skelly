@@ -1,7 +1,7 @@
 // Feasibility rules (PROJECT.md §1). Each rule checks a resolved assembly and
 // returns readable issues; none of them simulates anything.
 
-import { INTERFACE_TOLERANCE_BY_MOUNT, MAIN_AXIS, TOLERANCE } from './conventions.ts';
+import { MAIN_AXIS, TOLERANCE } from './conventions.ts';
 import {
   distanceWorld,
   lowerBoundDistanceWorld,
@@ -122,7 +122,7 @@ const connectionAllowances = (r: Resolved): Map<string, number> => {
   const allowances = new Map<string, number>();
   for (const rc of r.connections) {
     const pair = [rc.from.part, rc.to.part].sort().join('|');
-    const allowance = INTERFACE_TOLERANCE_BY_MOUNT[rc.from.port.mount] ?? TOLERANCE.interface;
+    const allowance = r.domain.mountAllowances?.[rc.from.port.mount] ?? TOLERANCE.interface;
     allowances.set(pair, Math.max(allowances.get(pair) ?? 0, allowance));
   }
   return allowances;
@@ -141,10 +141,13 @@ const placedSolids = (r: Resolved): Map<string, WorldSolid[]> => {
 };
 
 /** Worst penetration between any solid of two parts. */
-const worstPenetration = (a: readonly WorldSolid[], b: readonly WorldSolid[]): number => {
+const worstPenetration = (a: readonly WorldSolid[], b: readonly WorldSolid[], cutoff: number): number => {
   let worst = Number.NEGATIVE_INFINITY;
   for (const sa of a) {
     for (const sb of b) {
+      if (lowerBoundDistanceWorld(sa, sb) > cutoff) {
+        continue;
+      }
       worst = Math.max(worst, penetrationWorld(sa, sb));
     }
   }
@@ -165,7 +168,7 @@ export const solidOverlap: Rule = {
         const a = ids[i]!;
         const b = ids[j]!;
         const allowed = allowances.get([a, b].sort().join('|')) ?? TOLERANCE.contact;
-        const depth = worstPenetration(solids.get(a)!, solids.get(b)!);
+        const depth = worstPenetration(solids.get(a)!, solids.get(b)!, allowed + TOLERANCE.contact);
         if (depth > allowed + TOLERANCE.contact) {
           issues.push({
             rule: 'solid-overlap',
@@ -258,6 +261,9 @@ export const keepOut: Rule = {
           }
           let worst = Number.NEGATIVE_INFINITY;
           for (const s of solids.get(other)!) {
+            if (lowerBoundDistanceWorld(koShape, s) > TOLERANCE.contact) {
+              continue;
+            }
             worst = Math.max(worst, penetrationWorld(koShape, s));
           }
           if (worst > TOLERANCE.contact) {

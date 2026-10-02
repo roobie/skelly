@@ -24,7 +24,7 @@ import {
   type Transform,
 } from './math.ts';
 import { revolvedProfileError } from './revolve.ts';
-import type { Assembly, Connection, Domain, PartDef, PortDef } from './schema.ts';
+import type { Assembly, Connection, Domain, KeepOut, PartDef, PortDef } from './schema.ts';
 
 /** A param's final value and where it came from. */
 export interface ResolvedParam {
@@ -128,8 +128,8 @@ const resolveMotionSources = (
     }
     const travel =
       2 * axisInOwner.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
-    const rearmost = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
-    defs.set(id, { ...def, motion: { ...motion, rearmost } });
+    const end = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
+    defs.set(id, { ...def, motion: { ...motion, end } });
   }
 };
 
@@ -165,6 +165,11 @@ const splitRef = (ref: string): [string, string] | undefined => {
  * needs the connection list, not placement, so it runs before parts are built.
  * Parts with an unknown family or a bad param are reported and left out.
  */
+const boxKeepOutFallback = (keepOut: KeepOut): KeepOut => {
+  const { profile: _profile, axis: _axis, z: _z, ...boxOnly } = keepOut;
+  return boxOnly;
+};
+
 type ParamTable = Map<string, Record<string, ResolvedParam>>;
 type ReportStructure = (message: string, parts?: string[]) => void;
 
@@ -298,7 +303,32 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
       structure(`Part "${id}" solid "${solid.id}" is invalid: ${error}.`, [id]);
       return false;
     });
-    defs.set(id, validSolids.length === def.solids.length ? def : { ...def, solids: validSolids });
+    const validKeepOuts = def.keepOuts.map((keepOut) => {
+      const hasProfile = keepOut.profile !== undefined;
+      const hasZ = keepOut.z !== undefined;
+      if (hasProfile !== hasZ) {
+        structure(`Part "${id}" keep-out "${keepOut.id}" requires both profile and z; falling back to its box.`, [id]);
+        return boxKeepOutFallback(keepOut);
+      }
+      if (hasProfile && hasZ) {
+        const error = validateExtrudedPolygon(keepOut.profile!, keepOut.z!, keepOut.axis);
+        if (error) {
+          structure(
+            `Part "${id}" keep-out "${keepOut.id}" has an invalid profile: ${error}; falling back to its box.`,
+            [id],
+          );
+          return boxKeepOutFallback(keepOut);
+        }
+      }
+      return keepOut;
+    });
+    defs.set(
+      id,
+      validSolids.length === def.solids.length &&
+        validKeepOuts.every((keepOut, index) => keepOut === def.keepOuts[index])
+        ? def
+        : { ...def, solids: validSolids, keepOuts: validKeepOuts },
+    );
   }
 
   // Check each connection refers to real parts and ports.

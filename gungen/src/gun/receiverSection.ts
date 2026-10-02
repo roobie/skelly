@@ -1,4 +1,5 @@
-import { clippedExtrudedPolygonPolyhedron, validateExtrudedPolygon } from '../core/geometry.ts';
+import { clipPolygon, clippedExtrudedPolygonPolyhedron, validateExtrudedPolygon } from '../core/geometry.ts';
+import type { Vec3 } from '../core/math.ts';
 import type { ClipPlane, Solid, Vec2 } from '../core/schema.ts';
 
 export interface SectionWindow {
@@ -32,41 +33,15 @@ export const assertConvexSection = (profile: readonly Vec2[], id = 'receiver'): 
   }
 };
 
-const cleanProfile = (profile: readonly Vec2[]): Vec2[] => {
-  const output: Vec2[] = [];
-  for (const point of profile) {
-    const previous = output.at(-1);
-    if (!previous || Math.hypot(point[0] - previous[0], point[1] - previous[1]) > 1e-9) {
-      output.push(point);
-    }
-  }
-  if (output.length > 1 && Math.hypot(output[0]![0] - output.at(-1)![0], output[0]![1] - output.at(-1)![1]) <= 1e-9) {
-    output.pop();
-  }
-  return output;
-};
-
-const clip = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boolean): Vec2[] => {
-  const output: Vec2[] = [];
-  const inside = (p: Vec2) => (keepLess ? p[axis] <= edge : p[axis] >= edge);
-  for (let i = 0; i < profile.length; i++) {
-    const current = profile[i]!;
-    const previous = profile[(i + profile.length - 1) % profile.length]!;
-    const ci = inside(current);
-    const pi = inside(previous);
-    if (ci !== pi) {
-      const t = (edge - previous[axis]) / (current[axis] - previous[axis]);
-      output.push(
-        axis === 0
-          ? [edge, previous[1] + (current[1] - previous[1]) * t]
-          : [previous[0] + (current[0] - previous[0]) * t, edge],
-      );
-    }
-    if (ci) {
-      output.push(current);
-    }
-  }
-  return cleanProfile(output);
+const clipProfile = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLess: boolean): Vec2[] => {
+  const normal: Vec3 = axis === 0 ? [keepLess ? 1 : -1, 0, 0] : [0, keepLess ? 1 : -1, 0];
+  const plane: ClipPlane = { normal, offset: keepLess ? edge : -edge };
+  return clipPolygon(
+    profile.map(([x, y]) => [x, y, 0]),
+    plane,
+    true,
+    1e-9,
+  ).map(([x, y]) => [x, y]);
 };
 
 const positive = (profile: readonly Vec2[]): boolean => validateExtrudedPolygon(profile, [0, 1], 'x') === undefined;
@@ -75,7 +50,7 @@ const windowIntersectsProfile = (profile: readonly Vec2[], window: SectionWindow
   return Math.max(...values) > window.section[0] + 1e-9 && Math.min(...values) < window.section[1] - 1e-9;
 };
 const clipBand = (profile: readonly Vec2[], axis: 0 | 1, lo: number, hi: number): Vec2[] =>
-  clip(clip(profile, axis, lo, false), axis, hi, true);
+  clipProfile(clipProfile(profile, axis, lo, false), axis, hi, true);
 
 interface PrismOptions {
   readonly mergeGroup: string;
@@ -165,7 +140,7 @@ const sectionRemainderProfiles = (
     cursor = Math.max(cursor, end);
   }
   if (cursor < maximum) {
-    sections.push(clip(profile, axis, cursor, false));
+    sections.push(clipProfile(profile, axis, cursor, false));
   }
   return sections;
 };
@@ -237,17 +212,17 @@ const windowForBand = (name: string, spec: ReceiverSectionSpec): SectionWindow |
 const sectionBands = (spec: ReceiverSectionSpec): [string, Vec2[]][] => {
   const { y, z } = spec.cavity;
   const midY = clipBand(spec.outline, 0, y[0], y[1]);
-  const bottom = clip(spec.outline, 0, y[0], true);
-  const top = clip(spec.outline, 0, y[1], false);
+  const bottom = clipProfile(spec.outline, 0, y[0], true);
+  const top = clipProfile(spec.outline, 0, y[1], false);
   return [
-    ['bottom-far', clip(bottom, 1, z[0], true)],
+    ['bottom-far', clipProfile(bottom, 1, z[0], true)],
     ['bottom', clipBand(bottom, 1, z[0], z[1])],
-    ['bottom-near', clip(bottom, 1, z[1], false)],
-    ['top-far', clip(top, 1, z[0], true)],
+    ['bottom-near', clipProfile(bottom, 1, z[1], false)],
+    ['top-far', clipProfile(top, 1, z[0], true)],
     ['top', clipBand(top, 1, z[0], z[1])],
-    ['top-near', clip(top, 1, z[1], false)],
-    ['far-side', clip(midY, 1, z[0], true)],
-    ['near-side', clip(midY, 1, z[1], false)],
+    ['top-near', clipProfile(top, 1, z[1], false)],
+    ['far-side', clipProfile(midY, 1, z[0], true)],
+    ['near-side', clipProfile(midY, 1, z[1], false)],
   ];
 };
 

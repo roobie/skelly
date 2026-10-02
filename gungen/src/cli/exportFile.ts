@@ -1,8 +1,8 @@
-import type { AppearanceContext, DeadvoxModelEntry, GlbAssetIdentity } from '../core/design.ts';
+import type { AppearanceContext, GlbAssetIdentity } from '../core/design.ts';
 import { parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly } from '../core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
-import { exportGunGlb } from '../gun/exportGlb.ts';
+import { type DeadvoxModelEntry, exportGunGlb } from '../gun/exportGlb.ts';
 
 /** Canonical fixture identities supply appearance independently from their mechanical templates. */
 const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = {

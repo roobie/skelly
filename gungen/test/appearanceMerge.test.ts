@@ -73,7 +73,6 @@ const appearancePairs = (solids: readonly Solid[]) => {
   const exported = exportGlb({
     resolved,
     palette: GUN_PALETTE,
-    anchors: { hold: { position: [0, 0, 0], forward: [1, 0, 0], up: [0, 1, 0] }, others: {} },
     asset: { id: 'appearance-merge-contract', file: 'assets/models/appearance-merge-contract.glb' },
   });
   if (!exported.ok) {

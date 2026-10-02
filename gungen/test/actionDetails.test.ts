@@ -89,10 +89,10 @@ describe('visible action details', () => {
     ).toBe(false);
     expect(handguardDef.keepOuts.some(({ id }) => id === 'smg-support-hand')).toBe(true);
     expect(movingDef.solids.map(({ id }) => id)).toEqual(['smg-sliding-handle', 'smg-handle-grip']);
-    expect(movingDef.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], rest: [0, 0, 0], rearmost: [2.5, 0, 0] });
+    expect(movingDef.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0], start: [0, 0, 0], end: [2.5, 0, 0] });
     const hand = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-hand')!.box;
     const sweep = movingDef.keepOuts.find(({ id }) => id === 'smg-handle-sweep')!.box;
-    expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0])).toBe(movingDef.motion!.rearmost[0]);
+    expect(sweep.center[0] + sweep.half[0] - (hand.center[0] + hand.half[0])).toBe(movingDef.motion!.end[0]);
   });
 
   it('keeps receiver-shell walls at least 0.5u thick around the carrier cavity', () => {
