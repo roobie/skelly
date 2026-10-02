@@ -504,17 +504,22 @@ const magazineAxisError = (
 
 const opticContactPoints = (solids: readonly Solid[]): readonly Vec3[] =>
   solids.flatMap((solid) => {
-    if (solid.kind !== 'box' || Math.abs(localSolidBounds(solid)[0][1]) > 1e-6) {
+    if (solid.kind !== 'box' || !solid.id.endsWith('foot')) {
       return [];
     }
     const { center, half } = solid.box;
     return [-1, 0, 1].flatMap((x) =>
-      [-1, 0, 1].map((z): Vec3 => [center[0] + x * half[0], 0, center[2] + z * half[2]]),
+      [-1, 0, 1].map((z): Vec3 => [center[0] + x * half[0], center[1] - half[1], center[2] + z * half[2]]),
     );
   });
 
 /** A named rail is not enough: its contact feet must remain on the action body (or pistol slide). */
-const opticSupportError = (r: Resolved, sight: string, host: PortRef): string | undefined => {
+const opticSupportError = (
+  r: Resolved,
+  sight: string,
+  host: PortRef,
+  requiredContactLengthU: number,
+): string | undefined => {
   const def = r.defs.get(host.part)!;
   if (!['receiver', 'slide'].includes(def.family) || host.port.id !== 'rail') {
     return 'requires the receiver top rail (the pistol uses its slide), not a handguard/scout mount';
@@ -529,8 +534,14 @@ const opticSupportError = (r: Resolved, sight: string, host: PortRef): string | 
   const minX = Math.min(...bodyBounds.map(([min]) => min[0]));
   const maxX = Math.max(...bodyBounds.map(([, max]) => max[0]));
   const surfaces = def.solids.map((solid) => worldSolid(IDENTITY, solid));
-  const params = r.params.get(sight);
-  const contacts = opticContactPoints(getOptic(params?.type?.value, params?.mountSection?.value).solids);
+  const contacts = opticContactPoints(r.defs.get(sight)!.solids);
+  if (contacts.length === 0) {
+    return 'missing physical mount feet';
+  }
+  const contactLength = Math.max(...contacts.map(([x]) => x)) - Math.min(...contacts.map(([x]) => x));
+  if (contactLength < requiredContactLengthU - 1e-6) {
+    return 'missing mount foot or physical contact span shorter than the mount requires';
+  }
   for (const contact of contacts) {
     const local = applyPoint(toHost, applyPoint(sightTransform, contact));
     if (local[0] < minX - 1e-6 || local[0] > maxX + 1e-6 || Math.abs(local[1] - host.port.pos[1]) > 1e-6) {
@@ -562,7 +573,7 @@ export const opticMountFit: Rule = {
       const { port } = host;
       const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
       const slot = connection.conn.slot ?? 0;
-      const supportError = opticSupportError(r, sight, host);
+      const supportError = opticSupportError(r, sight, host, optic.mount.contactLengthU);
       if (!mountCanAccept(port, optic.mount, slot) || supportError) {
         issues.push({
           rule: 'optic-mount-fit',

@@ -26,7 +26,6 @@ import type { MutableAssembly } from './helpers.ts';
 
 const HTTPS_URL = /^https:\/\//;
 const TUBULAR_SOLID_ID = /tube|bell|turret|housing|ring-band/;
-const MOUNT_SOLID_ID = /foot|mount/;
 
 describe('optic catalog', () => {
   it('preserves stable ids as the sight type parameter values', () => {
@@ -260,6 +259,7 @@ const pointOnTopFace = (point: readonly [number, number], face: readonly (readon
 const assertMountFeetSupported = ({
   assembly,
   opticId,
+  sightDef,
   solids,
   railY,
   hostTransform,
@@ -267,14 +267,13 @@ const assertMountFeetSupported = ({
 }: {
   readonly assembly: MutableAssembly;
   readonly opticId: string;
+  readonly sightDef: PartDef;
   readonly solids: readonly (readonly (readonly [number, number])[])[];
   readonly railY: number;
   readonly hostTransform: Transform;
   readonly sightTransform: Transform;
 }): void => {
-  const contactSolids = getOptic(opticId).solids.filter(
-    (solid) => solid.kind === 'box' && MOUNT_SOLID_ID.test(solid.id) && Math.abs(localSolidBounds(solid)[0][1]) < 1e-6,
-  );
+  const contactSolids = sightDef.solids.filter((solid) => solid.id.endsWith('foot'));
   ensure(contactSolids.length > 0, `${opticId} has no physical mount feet`);
   const toHost = invert(hostTransform);
   for (const solid of contactSolids) {
@@ -303,8 +302,8 @@ const assertMountFeetSupported = ({
   }
 };
 
-const expectContactOnPhysicalRail = (assembly: MutableAssembly, opticId: string): void => {
-  const resolved = resolve(assembly, gunDomain);
+const expectContactOnPhysicalRail = (assembly: MutableAssembly, opticId: string, domain = gunDomain): void => {
+  const resolved = resolve(assembly, domain);
   ensure(resolved.issues.length === 0, `${assembly.name} structure: ${JSON.stringify(resolved.issues)}`);
   const connection = assembly.connections.find(({ to }) => to === 'sight.base');
   ensure(connection !== undefined, `${assembly.name} has no optic connection`);
@@ -312,30 +311,32 @@ const expectContactOnPhysicalRail = (assembly: MutableAssembly, opticId: string)
   ensure(hostId !== undefined && portId !== undefined, `${assembly.name} has malformed optic mount ${connection.from}`);
   if (assembly.name.startsWith('pistol-')) {
     ensure(hostId === 'slide', 'pistol optic must use the slide top rail');
-    return;
   }
   ensure(
-    hostId === 'receiver' && portId === 'rail',
+    (hostId === 'receiver' || hostId === 'slide') && portId === 'rail',
     `${assembly.name} optic must use receiver.rail, not ${connection.from}`,
   );
   const host = resolved.defs.get(hostId);
   const hostTransform = resolved.placed.get(hostId);
   const sightTransform = resolved.placed.get('sight');
+  const sightDef = resolved.defs.get('sight');
   const port = host?.ports.find(({ id }) => id === portId);
   ensure(
-    host !== undefined && hostTransform !== undefined && sightTransform !== undefined && port !== undefined,
+    host !== undefined &&
+      hostTransform !== undefined &&
+      sightTransform !== undefined &&
+      sightDef !== undefined &&
+      port !== undefined,
     `${assembly.name} optic placement is unresolved`,
   );
   ensure(port.mount === 'rail-top', `${assembly.name} receiver.rail is not a top rail`);
   const [, railY] = port.pos;
   // Receiver body, independent of a rail that might extend beyond it.
   const bodyBounds = host.solids
-    .filter(({ id }) => id.startsWith('receiver-') && !id.includes('rail'))
+    .filter(({ id }) => (host.family === 'slide' || id.startsWith('receiver-')) && !id.includes('rail'))
     .map(localSolidBounds);
   const bodyX = [Math.min(...bodyBounds.map(([min]) => min[0])), Math.max(...bodyBounds.map(([, max]) => max[0]))];
-  for (const foot of getOptic(opticId).solids.filter(
-    (solid) => solid.kind === 'box' && MOUNT_SOLID_ID.test(solid.id) && Math.abs(localSolidBounds(solid)[0][1]) < 1e-6,
-  )) {
+  for (const foot of sightDef.solids.filter((solid) => solid.id.endsWith('foot'))) {
     for (const corner of localSolidBounds(foot)) {
       const [x] = applyPoint(invert(hostTransform), applyPoint(sightTransform, corner));
       ensure(
@@ -346,7 +347,7 @@ const expectContactOnPhysicalRail = (assembly: MutableAssembly, opticId: string)
   }
   const topFaces = physicalTopFaces(host, railY);
   ensure(topFaces.length > 0, `${assembly.name} receiver has no physical top solid at its rail`);
-  assertMountFeetSupported({ assembly, opticId, solids: topFaces, railY, hostTransform, sightTransform });
+  assertMountFeetSupported({ assembly, opticId, sightDef, solids: topFaces, railY, hostTransform, sightTransform });
 };
 
 const FIT_CASES = [
@@ -417,6 +418,57 @@ describe('curated optic mounts', () => {
 });
 
 describe('optic incompatibility validation', () => {
+  it.each(['floating', 'missing-one', 'missing-all'] as const)(
+    'rejects actual sight.build %s feet with unchanged catalog, ports and axes',
+    (fault) => {
+      const type = fault === 'missing-one' ? 'high-mag-5-25x' : 'mini-reflex';
+      const assembly = fitOptic(fault === 'missing-one' ? boltRifle : ar, 0, type);
+      const baseline = validate(assembly, gunDomain);
+      expect(baseline.issues).toEqual([]);
+      expectContactOnPhysicalRail(assembly, type);
+      const original = FAMILIES.sight!;
+      let consumed = false;
+      const domain = {
+        ...gunDomain,
+        families: {
+          ...gunDomain.families,
+          sight: {
+            ...original,
+            build(params: Readonly<Record<string, string>>) {
+              consumed = true;
+              const def = original.build(params);
+              const solids =
+                fault === 'floating'
+                  ? def.solids.map((solid) =>
+                      solid.kind === 'box' && solid.id.endsWith('foot')
+                        ? {
+                            ...solid,
+                            box: {
+                              ...solid.box,
+                              center: [solid.box.center[0], solid.box.center[1] + 0.125, solid.box.center[2]] as const,
+                            },
+                          }
+                        : solid,
+                    )
+                  : def.solids.filter(({ id }) =>
+                      fault === 'missing-one' ? id !== 'rear-ring-foot' : !id.endsWith('foot'),
+                    );
+              return { ...def, solids };
+            },
+          },
+        },
+      };
+      const report = validate(assembly, domain);
+      expect(consumed).toBe(true);
+      expect(report.resolved.defs.get('sight')!.ports).toEqual(baseline.resolved.defs.get('sight')!.ports);
+      expect(report.resolved.defs.get('sight')!.axes).toEqual(baseline.resolved.defs.get('sight')!.axes);
+      expect(report.issues.filter(({ rule }) => rule === 'optic-mount-fit')).toHaveLength(1);
+      if (fault === 'floating') {
+        expect(() => expectContactOnPhysicalRail(assembly, type, domain)).toThrow('contact is not on');
+      }
+    },
+  );
+
   it('rejects a receiver-named rail reaching over the forend instead of the receiver body', () => {
     const assembly = fitOptic(ar, 0, 'tube-dot');
     const receiver = gunDomain.families.receiver!;
