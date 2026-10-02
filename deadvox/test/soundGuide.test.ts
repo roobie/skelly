@@ -23,18 +23,44 @@ describe('audio listening guide', () => {
     const guide = buildSoundGuide(sounds, manifest);
     expect(guide.every(({ note }) => note !== null && note.length > 0)).toBe(true);
     const statusNote = (id: string) => guide.find((entry) => entry.id === id)?.note ?? '';
-    expect(statusNote('melee_swing')).toContain('Approved by BR');
-    expect(statusNote('item_drop_wood')).toContain('Approved by BR');
-    expect(statusNote('pouch_take')).toContain('Approved by BR');
-    expect(statusNote('door_close')).toContain('Approved by BR');
+    for (const id of [
+      'player_hurt_light',
+      'player_hurt_heavy',
+      'player_strain',
+      'footstep_grass',
+      'footstep_sand',
+      'footstep_wood',
+      'footstep_leaves',
+      'shambler_step_grass',
+      'shambler_step_sand',
+      'shambler_step_wood',
+      'shambler_step_leaves',
+      'melee_swing',
+      'melee_hit',
+      'item_drop_wood',
+      'pouch_take',
+      'shambler_idle',
+      'shambler_alert',
+      'shambler_attack',
+      'shambler_hurt',
+      'door_open',
+      'door_close',
+    ]) {
+      expect(statusNote(id)).toContain('Approved by BR (2026-10-02)');
+    }
+    expect(statusNote('player_landing_hard')).toContain('Placeholder');
+    expect(statusNote('player_landing_hard')).toContain('2026-10-02');
     expect(statusNote('melee_hit_fist')).toContain('Placeholder');
+    expect(statusNote('melee_hit_fist')).toContain('2026-10-02');
+    expect(statusNote('door_blocked_close')).toContain('Placeholder');
+    expect(statusNote('door_blocked_close')).toContain('2026-10-02');
     expect(statusNote('door_blocked_close')).toContain('shares door_close');
     expect(statusNote('footstep_mud')).toContain('To replace');
     expect(statusNote('shambler_step_mud')).toContain('To replace');
     expect(statusNote('footstep_stone')).toContain('future gravel surface');
     expect(statusNote('shambler_step_stone')).toContain('future gravel surface');
-    expect(statusNote('footstep_leaves')).toContain('Passable to BR as one variant');
-    expect(statusNote('shambler_step_leaves')).toContain('Passable to BR as one variant');
+    expect(statusNote('footstep_leaves')).toContain('Approved by BR (2026-10-02) with one variant');
+    expect(statusNote('shambler_step_leaves')).toContain('Approved by BR (2026-10-02) with one variant');
     expect(statusNote('door_open')).toContain('door-open-03 only');
   });
 

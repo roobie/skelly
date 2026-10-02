@@ -209,6 +209,8 @@ See [SLICE-1.md](SLICE-1.md). It covers:
 
 ### Sound polish — BR 2026-10-01
 
+**Re-listen — BR 2026-10-02:** BR approved the current d13-selected recordings presented for re-listen. Prior explicit placeholders and rejected/deferred work below remain open (including a better fist hit, a hard-landing-specific sound, a distinct stuck-door cue, and the rejected mud/stone footsteps).
+
 - Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood still need recordings. Implement after d7's deferred surface-hit result.
 - Split item-drop sounds by pile surface; the wood clips currently play on every surface because piles expose no surface classification.
 - Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
