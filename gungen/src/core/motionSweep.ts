@@ -2,18 +2,20 @@ import type { ConvexPolyhedron } from './geometry.ts';
 import { cross, dot, length, mulMV, normalize, rotX, sub, type Vec3 } from './math.ts';
 
 const normals = (poly: ConvexPolyhedron): Vec3[] =>
-  poly.faces
-    .map((face) =>
+  uniqueAxes(
+    poly.faces.map((face) =>
       cross(
         sub(poly.vertices[face[1]!]!, poly.vertices[face[0]!]!),
         sub(poly.vertices[face[2]!]!, poly.vertices[face[0]!]!),
       ),
-    )
-    .filter((axis) => length(axis) > 1e-9);
+    ),
+  );
 const edges = (poly: ConvexPolyhedron): Vec3[] =>
-  poly.faces
-    .flatMap((face) => face.map((v, i) => sub(poly.vertices[face[(i + 1) % face.length]!]!, poly.vertices[v]!)))
-    .filter((axis) => length(axis) > 1e-9);
+  uniqueAxes(
+    poly.faces.flatMap((face) =>
+      face.map((v, i) => sub(poly.vertices[face[(i + 1) % face.length]!]!, poly.vertices[v]!)),
+    ),
+  );
 const uniqueAxes = (axes: readonly Vec3[]): Vec3[] => {
   const seen = new Set<string>();
   return axes
@@ -29,8 +31,11 @@ const uniqueAxes = (axes: readonly Vec3[]): Vec3[] => {
       return true;
     });
 };
-const axesBetween = (a: ConvexPolyhedron, b: ConvexPolyhedron): Vec3[] =>
-  uniqueAxes([...normals(a), ...normals(b), ...edges(a).flatMap((u) => edges(b).map((v) => cross(u, v)))]);
+const axesBetween = (a: ConvexPolyhedron, b: ConvexPolyhedron): Vec3[] => {
+  const aEdges = edges(a);
+  const bEdges = edges(b);
+  return uniqueAxes([...normals(a), ...normals(b), ...aEdges.flatMap((u) => bEdges.map((v) => cross(u, v)))]);
+};
 const projection = (poly: ConvexPolyhedron, axis: Vec3): readonly [number, number] => {
   const values = poly.vertices.map((v) => dot(v, axis));
   return [Math.min(...values), Math.max(...values)];
@@ -148,5 +153,8 @@ export const rotationSweepClear = (
     const mid = (low + high) / 2;
     return visit(low, mid) && visit(mid, high);
   };
-  return visit(Math.min(fromDegrees, toDegrees), Math.max(fromDegrees, toDegrees));
+  // Keep critical angles within the finite periodic extrema search, even for multi-turn input datums.
+  const start = fromDegrees % 360;
+  const end = start + (toDegrees - fromDegrees);
+  return visit(Math.min(start, end), Math.max(start, end));
 };

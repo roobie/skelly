@@ -11,6 +11,9 @@ it('rejects a middle-angle strike even when both end poses clear', () => {
 it('certifies a clear curved path whose enclosing rectangle crosses an obstacle', () => {
   expect(rotationSweepClear(small([0, 4, 0]), small([0, 1, 1]), [0, 90])).toBe(true);
 });
+it('preserves internal extrema when an angle datum wraps through multiple turns', () => {
+  expect(rotationSweepClear(small([0, 0, 4]), small([0, 0, 4]), [675, 765])).toBe(false);
+});
 it('rejects translation through an obstacle despite clear end poses', () => {
   expect(translationSweepClear(small([0, 0, 0]), small([2, 0, 0]), [4, 0, 0])).toBe(false);
 });
