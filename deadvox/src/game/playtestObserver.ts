@@ -6,6 +6,7 @@ import {
   type SessionMetrics,
   SNAPSHOT_BATCH_TARGET_MS,
   type SnapshotMeasurement,
+  snapshotTimerQuantumForUserAgent,
 } from './playtestTools.ts';
 import type { Session } from './session.ts';
 
@@ -243,12 +244,19 @@ export class PlaytestObserver {
 
   measureSnapshot(snapshot: () => unknown, session: Session, repeats = 50): SnapshotMeasurement {
     try {
-      return measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
+      const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+      return measureSnapshots(snapshot, () => inspectLiveSession(session), {
+        repeats,
+        now: () => performance.now(),
+        timerQuantum: snapshotTimerQuantumForUserAgent(userAgent),
+      });
     } catch {
       return {
         batchCount: 0,
         batchSize: 0,
-        timerResolutionMs: null,
+        observedTimerTickMs: null,
+        timerQuantum: null,
+        timerQuantumCrossCheckPassed: false,
         targetBatchMs: SNAPSHOT_BATCH_TARGET_MS,
         calibrationBatchMs: 0,
         batchMeanP50Ms: 0,

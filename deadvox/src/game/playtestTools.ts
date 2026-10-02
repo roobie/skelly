@@ -175,12 +175,40 @@ const normalizeMetrics = (value: SessionMetricsV1): SessionMetricsV1 => ({
 
 export const metricsExportJson = (metrics: SessionMetrics): string => `${JSON.stringify(metrics.toJSON(), null, 2)}\n`;
 
+export interface SnapshotTimerQuantum {
+  readonly browser: 'Firefox' | 'Chromium';
+  readonly quantumMs: number;
+}
+
+export interface SnapshotMeasurementOptions {
+  readonly repeats?: number;
+  readonly now?: () => number;
+  readonly timerQuantum?: SnapshotTimerQuantum | null;
+}
+
+const FIREFOX_USER_AGENT = /Firefox\//;
+const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;
+
+/** Default browser-profile quanta (Firefox privacy reduction 1 ms; Chromium TimeClamper 0.1 ms); observed tick is a cross-check. */
+export const snapshotTimerQuantumForUserAgent = (userAgent: string): SnapshotTimerQuantum | null => {
+  if (FIREFOX_USER_AGENT.test(userAgent)) {
+    return { browser: 'Firefox', quantumMs: 1 };
+  }
+  if (CHROMIUM_USER_AGENT.test(userAgent)) {
+    return { browser: 'Chromium', quantumMs: 0.1 };
+  }
+  return null;
+};
+
 export interface SnapshotMeasurement {
   /** Number of timed batches; each batch contains `batchSize` snapshot captures. */
   readonly batchCount: number;
   readonly batchSize: number;
-  /** Smallest positive increment observed while probing the injected monotonic clock. */
-  readonly timerResolutionMs: number | null;
+  /** Smallest positive increment observed while probing the injected monotonic clock; not a timestamp-error bound. */
+  readonly observedTimerTickMs: number | null;
+  /** Browser-specific known quantum used for the timestamp-error bound, or null for an unknown browser. */
+  readonly timerQuantum: SnapshotTimerQuantum | null;
+  readonly timerQuantumCrossCheckPassed: boolean;
   readonly targetBatchMs: number;
   readonly calibrationBatchMs: number;
   /** Percentiles of batch durations divided by batch size: a throughput statistic. */
@@ -191,7 +219,7 @@ export interface SnapshotMeasurement {
   readonly individualCaptureCount: number;
   readonly individualCaptureP95Ms: number;
   readonly individualCaptureMaxMs: number;
-  /** Strict upper bounds under the observed timer resolution; unavailable when unknown. */
+  /** Strict upper bounds using two known-quantum timestamp errors; unavailable if unknown or cross-check fails. */
   readonly individualCaptureP95UpperBoundMs: number | null;
   readonly individualCaptureMaxUpperBoundMs: number | null;
   /** Compares live-state endpoints; it does not check purity of each individual call. */
@@ -287,7 +315,7 @@ const MAX_INDIVIDUAL_CAPTURE_SAMPLES = 8192;
 const MAX_TIMER_PROBE_READS = 100_000;
 const MIN_TIMER_PROBE_TICKS = 8;
 
-const detectTimerResolution = (now: () => number): number | null => {
+const detectMinimumTimerTickMs = (now: () => number): number | null => {
   let previous = now();
   let minimum = Number.POSITIVE_INFINITY;
   let ticks = 0;
@@ -310,15 +338,24 @@ const detectTimerResolution = (now: () => number): number | null => {
 export const measureSnapshots = (
   snapshot: () => unknown,
   liveState: () => unknown,
-  repeats = 50,
-  now: () => number = () => performance.now(),
+  options: SnapshotMeasurementOptions = {},
 ): SnapshotMeasurement => {
+  const { repeats = 50, now = () => performance.now(), timerQuantum = null } = options;
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
     throw new Error(`Invalid snapshot repetitions: ${repeats}`);
   }
   const before = liveState();
-  const timerResolutionMs = detectTimerResolution(now);
-  const targetBatchMs = Math.max(SNAPSHOT_BATCH_TARGET_MS, (timerResolutionMs ?? 1) * 20);
+  const observedTimerTickMs = detectMinimumTimerTickMs(now);
+  const crossCheckedTimerQuantumMs =
+    timerQuantum !== null &&
+    Number.isFinite(timerQuantum.quantumMs) &&
+    timerQuantum.quantumMs > 0 &&
+    observedTimerTickMs !== null &&
+    observedTimerTickMs <= 2 * timerQuantum.quantumMs
+      ? timerQuantum.quantumMs
+      : null;
+  const timerQuantumCrossCheckPassed = crossCheckedTimerQuantumMs !== null;
+  const targetBatchMs = Math.max(SNAPSHOT_BATCH_TARGET_MS, (observedTimerTickMs ?? 1) * 20);
   const timeBatch = (captureCount: number): number => {
     const start = now();
     for (let i = 0; i < captureCount; i++) {
@@ -352,16 +389,18 @@ export const measureSnapshots = (
   const individualCaptureP95Ms = percentile(individualCaptureDurationsMs, 0.95);
   const individualCaptureMaxMs = Math.max(...individualCaptureDurationsMs);
   const after = liveState();
-  // The upper bounds are strict: with observed timer resolution r, reading k bounds a duration above by k + r.
+  // Each timestamp is within r of true time, so a duration's strict upper bound is observed + 2r.
   const individualCaptureP95UpperBoundMs =
-    timerResolutionMs === null ? null : individualCaptureP95Ms + timerResolutionMs;
+    crossCheckedTimerQuantumMs === null ? null : individualCaptureP95Ms + 2 * crossCheckedTimerQuantumMs;
   const individualCaptureMaxUpperBoundMs =
-    timerResolutionMs === null ? null : individualCaptureMaxMs + timerResolutionMs;
+    crossCheckedTimerQuantumMs === null ? null : individualCaptureMaxMs + 2 * crossCheckedTimerQuantumMs;
 
   return {
     batchCount: repeats,
     batchSize,
-    timerResolutionMs,
+    observedTimerTickMs,
+    timerQuantum,
+    timerQuantumCrossCheckPassed,
     targetBatchMs,
     calibrationBatchMs,
     batchMeanP50Ms: percentile(batchMeanDurationsMs, 0.5),

@@ -234,7 +234,7 @@ try {
   const snapshotResult = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
   assert.match(
     snapshotResult,
-    /batch-mean throughput p50 .* ms\/capture, p95 .* ms\/capture; individual tail n=\d+: observed p95 .* ms, max .* ms; at observed r=.* ms, true p95 </,
+    /batch-mean throughput p50 .* ms\/capture, p95 .* ms\/capture; individual tail n=\d+: observed p95 .* ms, max .* ms; known Chromium browser-profile quantum r=.* ms \(observed minimum tick .* ms; duration error <2r\): true p95 </,
   );
   assert.match(snapshotResult, /net state unchanged across measurement/);
   assert.equal(await evaluate("document.querySelector('#copy-snapshot-result').textContent.trim()"), 'Copy');

@@ -401,26 +401,28 @@ is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-
 save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
 runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
 the reference-laptop batch-mean throughput in Firefox: 50 batches of 128 captures
-(6,400 total), observed timer resolution 1 ms, calibration 27 ms, batch-mean p50
-0.203 ms/capture and p95 0.219 ms/capture. These percentiles are of per-batch
-means (batch time divided by 128), not individual per-capture timings, and do
-not demonstrate the ≤1 ms per-frame snapshot target. That run did not record an
-individual-capture tail. The F4 measurement now reports an individual
-per-capture p95 and max separately; with observed timer resolution `r`, an
-observed duration `k` gives a strict upper bound `< k + r`. Its state guard
-compares endpoints only and reports net state equality, not per-capture purity.
+(6,400 total), observed minimum timer tick 1 ms, calibration 27 ms, batch-mean
+p50 0.203 ms/capture and p95 0.219 ms/capture. These percentiles are of
+per-batch means (batch time divided by 128), not individual per-capture timings,
+and do not demonstrate the ≤1 ms per-frame snapshot target. That run did not
+record an individual-capture tail. The F4 measurement now reports an individual
+per-capture p95 and max separately. It uses the known browser quantum `r`
+(Firefox 1 ms, Chromium 0.1 ms); the observed minimum tick is a cross-check, not
+the error bound. Since each timestamp error is `< r`, a duration read as `k` has
+a strict upper bound `< k + 2r`. Its state guard compares endpoints only and
+reports net state equality, not per-capture purity.
 
 On 2026-10-02 at about 19:32–19:33 BR reran build `80644d1` on the reference
 laptop:
 
 ```text
-Firefox: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.273 ms/capture, p95 0.445 ms/capture; individual tail n=6400: observed p95 1.000 ms, max 2.000 ms; at observed r=1.000 ms, true p95 <2.000 ms and max <3.000 ms; calibration 32.000 ms; net state unchanged across measurement
-Chromium: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.184 ms/capture, p95 0.266 ms/capture; individual tail n=6400: observed p95 0.200 ms, max 0.500 ms; at observed r=0.100 ms, true p95 <0.300 ms and max <0.600 ms; calibration 32.800 ms; net state unchanged across measurement
+Firefox: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.273 ms/capture, p95 0.445 ms/capture; individual tail n=6400: observed p95 1.000 ms, max 2.000 ms; at observed r=1.000 ms, true p95 <3.000 ms and max <4.000 ms; calibration 32.000 ms; net state unchanged across measurement
+Chromium: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.184 ms/capture, p95 0.266 ms/capture; individual tail n=6400: observed p95 0.200 ms, max 0.500 ms; at observed r=0.100 ms, true p95 <0.400 ms and max <0.700 ms; calibration 32.800 ms; net state unchanged across measurement
 ```
 
 Chromium's individual-capture bound (true p95 <0.3 ms, max <0.6 ms) shows the
 ≤1 ms per-frame p95 target is met on the reference laptop. Firefox's 1 ms timer
-only bounds its p95 at <2 ms, consistent with that result but not conclusive on
+only bounds its p95 at <3 ms, consistent with that result but not conclusive on
 its own.
 
 ### Continue, New world, and implementation plan

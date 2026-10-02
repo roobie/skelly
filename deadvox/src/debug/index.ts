@@ -6,6 +6,7 @@ import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { KEY_BINDINGS } from '../game/input.ts';
+import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { BuildMode } from './build.ts';
@@ -29,6 +30,29 @@ import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { scrollPanelByWheel } from './wheel.ts';
+
+const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
+  const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
+  let quantization: string;
+  if (result.timerQuantum === null) {
+    quantization = `true-time bounds unavailable (no known Firefox/Chromium quantum; observed minimum tick ${observedTick} is not an error bound)`;
+  } else if (
+    !result.timerQuantumCrossCheckPassed ||
+    result.individualCaptureP95UpperBoundMs === null ||
+    result.individualCaptureMaxUpperBoundMs === null
+  ) {
+    quantization = `true-time bounds unavailable (known ${result.timerQuantum.browser} browser-profile quantum r=${result.timerQuantum.quantumMs.toFixed(3)} ms failed the observed-tick cross-check at ${observedTick})`;
+  } else {
+    quantization = `known ${result.timerQuantum.browser} browser-profile quantum r=${result.timerQuantum.quantumMs.toFixed(3)} ms (observed minimum tick ${observedTick}; duration error <2r): true p95 <${result.individualCaptureP95UpperBoundMs.toFixed(3)} ms and max <${result.individualCaptureMaxUpperBoundMs.toFixed(3)} ms`;
+  }
+
+  return (
+    `Snapshot: ${result.batchCount} batches × ${result.batchSize} captures/batch (${result.batchCount * result.batchSize} timed captures); ` +
+    `batch-mean throughput p50 ${result.batchMeanP50Ms.toFixed(3)} ms/capture, p95 ${result.batchMeanP95Ms.toFixed(3)} ms/capture; ` +
+    `individual tail n=${result.individualCaptureCount}: observed p95 ${result.individualCaptureP95Ms.toFixed(3)} ms, max ${result.individualCaptureMaxMs.toFixed(3)} ms; ` +
+    `${quantization}; calibration ${result.calibrationBatchMs.toFixed(3)} ms; net state ${result.netStateUnchanged ? 'unchanged' : 'CHANGED'} across measurement`
+  );
+};
 
 export interface Action extends GroupedAction {
   readonly code: string;
@@ -902,18 +926,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             drawShell();
           },
           measureSnapshot: () => {
-            const result = hooks.measureSnapshot();
-            const quantization =
-              result.timerResolutionMs === null ||
-              result.individualCaptureP95UpperBoundMs === null ||
-              result.individualCaptureMaxUpperBoundMs === null
-                ? 'true-time upper bounds unavailable (timer resolution unknown)'
-                : `at observed r=${result.timerResolutionMs.toFixed(3)} ms, true p95 <${result.individualCaptureP95UpperBoundMs.toFixed(3)} ms and max <${result.individualCaptureMaxUpperBoundMs.toFixed(3)} ms`;
-            snapshotStatus =
-              `Snapshot: ${result.batchCount} batches × ${result.batchSize} captures/batch (${result.batchCount * result.batchSize} timed captures); ` +
-              `batch-mean throughput p50 ${result.batchMeanP50Ms.toFixed(3)} ms/capture, p95 ${result.batchMeanP95Ms.toFixed(3)} ms/capture; ` +
-              `individual tail n=${result.individualCaptureCount}: observed p95 ${result.individualCaptureP95Ms.toFixed(3)} ms, max ${result.individualCaptureMaxMs.toFixed(3)} ms; ` +
-              `${quantization}; calibration ${result.calibrationBatchMs.toFixed(3)} ms; net state ${result.netStateUnchanged ? 'unchanged' : 'CHANGED'} across measurement`;
+            snapshotStatus = snapshotMeasurementStatus(hooks.measureSnapshot());
             shellKey = '';
             drawShell();
           },

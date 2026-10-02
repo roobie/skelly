@@ -8,6 +8,7 @@ import {
   metricsStorageKey,
   persistMetrics,
   SessionMetrics,
+  snapshotTimerQuantumForUserAgent,
 } from '../src/game/playtestTools.ts';
 
 describe('playtest metrics', () => {
@@ -64,26 +65,56 @@ describe('playtest metrics', () => {
   });
 });
 
+const makeJitteredClock = (quantumMs: number) => {
+  let time = 0;
+  let captures = 0;
+  let previousCaptures = 0;
+  return {
+    capture: () => {
+      captures += 1;
+      time += 1.5 * quantumMs;
+    },
+    now: () => {
+      if (captures > 0 && captures === previousCaptures) {
+        time = Math.ceil(time / (2 * quantumMs)) * 2 * quantumMs + 0.1 * quantumMs;
+      } else if (captures === 0) {
+        time += 0.01 * quantumMs;
+      }
+      previousCaptures = captures;
+      const bucket = Math.floor(time / quantumMs);
+      const remainder = time / quantumMs - bucket;
+      const midpoint = bucket % 2 === 0 ? 0.05 : 0.95;
+      return (bucket + (remainder >= midpoint ? 1 : 0)) * quantumMs;
+    },
+  };
+};
+
 describe('snapshot measurement', () => {
   it('reports batch-mean throughput separately from individual capture tails at a 1 ms resolution', () => {
     let clock = 0;
     let captures = 0;
+    const timerQuantum = snapshotTimerQuantumForUserAgent('Mozilla/5.0 Firefox/140.0');
     const result = measureSnapshots(
       () => {
         captures += 1;
         clock += captures % 16 === 0 ? 8 : 0.05;
       },
       () => 0,
-      50,
-      () => {
-        clock += 0.02;
-        return Math.floor(clock);
+      {
+        repeats: 50,
+        now: () => {
+          clock += 0.02;
+          return Math.floor(clock);
+        },
+        timerQuantum,
       },
     );
 
     expect(result.batchCount).toBe(50);
     expect(result.batchSize).toBe(64);
-    expect(result.timerResolutionMs).toBe(1);
+    expect(result.observedTimerTickMs).toBe(1);
+    expect(result.timerQuantum).toEqual({ browser: 'Firefox', quantumMs: 1 });
+    expect(result.timerQuantumCrossCheckPassed).toBe(true);
     expect(result.batchMeanP50Ms).toBeLessThan(1);
     expect(result.batchMeanP95Ms).toBeCloseTo(0.546_875, 5);
     expect(result.batchMeanDurationsMs).toHaveLength(result.batchCount);
@@ -93,9 +124,54 @@ describe('snapshot measurement', () => {
     expect(result.individualCaptureP95Ms).toBeLessThan(10);
     expect(result.individualCaptureMaxMs).toBeGreaterThanOrEqual(8);
     expect(result.individualCaptureMaxMs).toBeLessThan(10);
-    expect(result.individualCaptureP95UpperBoundMs).toBe(result.individualCaptureP95Ms + 1);
-    expect(result.individualCaptureMaxUpperBoundMs).toBe(result.individualCaptureMaxMs + 1);
+    expect(result.individualCaptureP95UpperBoundMs).toBe(result.individualCaptureP95Ms + 2);
+    expect(result.individualCaptureMaxUpperBoundMs).toBe(result.individualCaptureMaxMs + 2);
     expect(result.netStateUnchanged).toBe(true);
+  });
+
+  it('uses the known browser quantum for jittered timestamp error bounds', () => {
+    for (const { userAgent, quantumMs } of [
+      { userAgent: 'Firefox/140.0', quantumMs: 1 },
+      { userAgent: 'Chrome/130.0', quantumMs: 0.1 },
+    ]) {
+      const timerQuantum = snapshotTimerQuantumForUserAgent(userAgent);
+      const clock = makeJitteredClock(quantumMs);
+      const result = measureSnapshots(clock.capture, () => 0, {
+        repeats: 50,
+        now: clock.now,
+        timerQuantum,
+      });
+
+      expect(timerQuantum?.quantumMs).toBe(quantumMs);
+      expect(result.observedTimerTickMs).toBeCloseTo(quantumMs);
+      expect(result.timerQuantumCrossCheckPassed).toBe(true);
+      expect(result.individualCaptureP95Ms).toBe(0);
+      expect(result.individualCaptureP95UpperBoundMs).toBeCloseTo(2 * quantumMs);
+      expect(result.individualCaptureP95UpperBoundMs).toBeGreaterThan(1.5 * quantumMs);
+    }
+  });
+
+  it('withholds a true-time bound when the observed tick is incompatible with the known browser quantum', () => {
+    let clock = 0;
+    const result = measureSnapshots(
+      () => {
+        clock += 0.5;
+      },
+      () => 0,
+      {
+        repeats: 1,
+        now: () => {
+          clock += 0.5;
+          return Math.floor(clock);
+        },
+        timerQuantum: { browser: 'Chromium', quantumMs: 0.1 },
+      },
+    );
+
+    expect(result.observedTimerTickMs).toBe(1);
+    expect(result.timerQuantumCrossCheckPassed).toBe(false);
+    expect(result.individualCaptureP95UpperBoundMs).toBeNull();
+    expect(result.individualCaptureMaxUpperBoundMs).toBeNull();
   });
 
   it('reports net endpoint state as changed when captures leave a mutation', () => {
@@ -108,10 +184,12 @@ describe('snapshot measurement', () => {
         return state;
       },
       () => state,
-      1,
-      () => {
-        elapsedMs += 0.01;
-        return Math.floor(elapsedMs);
+      {
+        repeats: 1,
+        now: () => {
+          elapsedMs += 0.01;
+          return Math.floor(elapsedMs);
+        },
       },
     );
     expect(result.netStateUnchanged).toBe(false);
@@ -133,10 +211,12 @@ describe('snapshot measurement', () => {
         elapsedMs += 0.25;
       },
       () => state,
-      1,
-      () => {
-        elapsedMs += 0.02;
-        return Math.floor(elapsedMs);
+      {
+        repeats: 1,
+        now: () => {
+          elapsedMs += 0.02;
+          return Math.floor(elapsedMs);
+        },
       },
     );
     expect(result.netStateUnchanged).toBe(true);
@@ -152,10 +232,12 @@ describe('snapshot measurement', () => {
         elapsedMs += 0.5;
       },
       () => ({ ...state }),
-      1,
-      () => {
-        elapsedMs += 0.01;
-        return Math.floor(elapsedMs);
+      {
+        repeats: 1,
+        now: () => {
+          elapsedMs += 0.01;
+          return Math.floor(elapsedMs);
+        },
       },
     );
     expect(result.netStateUnchanged).toBe(false);
