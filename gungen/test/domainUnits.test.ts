@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { GlbAssetIdentity, Palette, SelectedAnchors } from '../src/core/design.ts';
+import { boxFromMinMax } from '../src/core/geometry.ts';
 import { exportGlb } from '../src/core/glb.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Domain, DomainUnits, PartDef } from '../src/core/schema.ts';
+import { validate } from '../src/core/validate.ts';
 import { readGlb } from './glbReader.ts';
 
 // Each test here protects one thing a domain's units decide, using a synthetic domain whose numbers
@@ -35,6 +37,44 @@ const PALETTE: Palette = {
   fallbackColor: [0.5, 0.5, 0.5],
 };
 
+/** Two parts joined at a port, with their boxes `gap` apart along the connection normal. */
+const gappedPair = (units: DomainUnits, gap: number): Domain => ({
+  name: 'gapped-pair',
+  families: {
+    source: {
+      name: 'source',
+      params: {},
+      build: () => ({
+        family: 'source',
+        solids: [{ id: 'body', kind: 'box', box: boxFromMinMax([-1, -0.5, -0.5], [0, 0.5, 0.5]) }],
+        ports: [{ id: 'mate', mount: 'test', gender: 'female', pos: [0, 0, 0], normal: [1, 0, 0], up: [0, 1, 0] }],
+        keepOuts: [],
+        axes: [],
+      }),
+    },
+    target: {
+      name: 'target',
+      params: {},
+      build: () => ({
+        family: 'target',
+        solids: [{ id: 'body', kind: 'box', box: boxFromMinMax([gap, -0.5, -0.5], [gap + 1, 0.5, 0.5]) }],
+        ports: [{ id: 'mate', mount: 'test', gender: 'male', pos: [0, 0, 0], normal: [-1, 0, 0], up: [0, 1, 0] }],
+        keepOuts: [],
+        axes: [],
+      }),
+    },
+  },
+  axisRules: [],
+  units,
+});
+
+const pairAssembly = {
+  name: 'pair',
+  root: 'source',
+  parts: { source: { family: 'source' }, target: { family: 'target' } },
+  connections: [{ from: 'source.mate', to: 'target.mate' }],
+};
+
 describe('domain units', () => {
   it('scales exported positions, node translations and the recorded unit by the domain, not the gun constant', () => {
     const resolved = resolve(widgetAssembly, widgetDomain(MILLIMETRE_UNITS, widgetDef));
@@ -52,5 +92,12 @@ describe('domain units', () => {
     }
     expect(portNode.translation).toEqual([0.002, 0, 0]);
     expect(glb.json.nodes[0]!.extras).toMatchObject({ gungen: { metresPerUnit: 0.001 } });
+  });
+
+  it('takes the largest gap between connected solids from the domain grid', () => {
+    const contactIssues = (units: DomainUnits) =>
+      validate(pairAssembly, gappedPair(units, 0.1)).issues.filter((issue) => issue.rule === 'connection-contact');
+    expect(contactIssues({ ...MILLIMETRE_UNITS, grid: 0.25 })).toEqual([]);
+    expect(contactIssues({ ...MILLIMETRE_UNITS, grid: 0.05 })).toHaveLength(1);
   });
 });

@@ -37,8 +37,6 @@ export const TOLERANCE = {
   angle: 0.5,
   /** Penetration below this is contact, not overlap (u). */
   contact: 1e-6,
-  /** Maximum separation between solids attached at a connection (one 0.25u grid step). */
-  connectionContact: GRID,
   /** Fallback nesting allowance for directly connected parts (u). */
   interface: 0.75,
 } as const;
