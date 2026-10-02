@@ -6,7 +6,7 @@ import { meshForSolid } from '../src/core/mesh.ts';
 import type { PartFamily } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { BOLT_CARRIER_RUNNING_CLEARANCE_U, FAMILIES } from '../src/gun/parts.ts';
+import { BOLT_CARRIER_RUNNING_CLEARANCE_U, CARRIER_HANDLE_STYLES, FAMILIES } from '../src/gun/parts.ts';
 import { fullProduct, tWiseCases } from './coveringArray.ts';
 import { expectWatertightMesh, variant } from './helpers.ts';
 import { runSweeps, sweepGroup } from './sweeps.ts';
@@ -20,9 +20,13 @@ import { runSweeps, sweepGroup } from './sweeps.ts';
  * `parts.ts` mutants it killed every mutant the full product killed, where 2-wise missed one.
  * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
  * The full product of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
+ * `handleStyle` is deliberately excluded from these unconstrained products: arbitrary combinations
+ * create invalid owner/pattern pairings. The compatible style × pattern × owner matrix below tests it.
  */
 const ARRAY_SAMPLED_KEYS = ['receiver', 'barrel', 'handguard'] as const;
 const ARRAY_STRENGTH = 3;
+const withoutHandleStyle = (family: PartFamily) =>
+  Object.fromEntries(Object.entries(family.params).filter(([name]) => name !== 'handleStyle'));
 
 /**
  * Interactions the array is known to miss, as explicit cases. `receiver`'s shell coordinates depend
@@ -38,25 +42,67 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
       bore: 'S',
       chargingHandle: 'side',
       boltHandle: 'rest',
+      boltHandleProfile: 'standard',
       rail: 'full',
       magazineWell: 'standard',
     },
   ],
 };
 
-const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly string[]).includes(key);
+const CARRIER_HANDLE_PAIRINGS = [
+  { style: 'ar', pattern: 'ar', owner: 'receiver' },
+  { style: 'ak', pattern: 'ak', owner: 'carrier' },
+  { style: 'autoShotgun', pattern: 'ak', owner: 'carrier' },
+  { style: 'bolt', pattern: 'bolt', owner: 'carrier' },
+  { style: 'smg', pattern: 'smg', owner: 'handguard' },
+  { style: 'battle', pattern: 'barrett', owner: 'carrier' },
+  { style: 'barrett', pattern: 'barrett', owner: 'carrier' },
+  { style: 'pump', pattern: 'pump', owner: 'none' },
+  { style: 'pistol', pattern: 'ar', owner: 'none' },
+  { style: 'bullpup', pattern: 'ar', owner: 'none' },
+  { style: 'none', pattern: 'ar', owner: 'none' },
+] as const;
 
+const compatibleHandleStyleCases = (): Record<string, string>[] => {
+  const carrier = FAMILIES['bolt-carrier']!;
+  const pairings = CARRIER_HANDLE_PAIRINGS.map(({ style }) => style);
+  const cases = tWiseCases(
+    {
+      pairing: { values: pairings },
+      section: carrier.params.section!,
+      bore: carrier.params.bore!,
+      handleProfile: carrier.params.handleProfile!,
+    },
+    3,
+  );
+  return cases.map(({ pairing, ...axes }) => {
+    const compatible = CARRIER_HANDLE_PAIRINGS.find(({ style }) => style === pairing)!;
+    if (CARRIER_HANDLE_STYLES[compatible.style].owner !== compatible.owner) {
+      throw new Error(`${compatible.style}: compatible owner row does not match the style catalog.`);
+    }
+    return {
+      action: 'bolt',
+      feed: 'box',
+      pattern: compatible.pattern,
+      handleStyle: compatible.style,
+      ...axes,
+    };
+  });
+};
+
+const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly string[]).includes(key);
 const sameParams = (a: Record<string, string>, b: Record<string, string>): boolean =>
   Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
 
-/** The cases the default run checks for a family. */
+/** The default product/covering-array cases; owner-specific styles are covered separately below. */
 const defaultCases = (key: string, family: PartFamily): Record<string, string>[] => {
+  const params = withoutHandleStyle(family);
   if (!isArraySampled(key)) {
-    return fullProduct(family.params);
+    return fullProduct(params);
   }
-  const cases = tWiseCases(family.params, ARRAY_STRENGTH);
+  const cases = tWiseCases(params, ARRAY_STRENGTH);
   for (const extra of EXPLICIT_CASES[key] ?? []) {
-    for (const [name, spec] of Object.entries(family.params)) {
+    for (const [name, spec] of Object.entries(params)) {
       if (!spec.values.includes(extra[name] ?? '')) {
         throw new Error(`explicit ${key} case: ${name}=${extra[name]} is not one of ${spec.values.join(', ')}`);
       }
@@ -330,50 +376,105 @@ describe('part library', () => {
 
   // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
   // ports, unique port ids and positive box sizes. No rules or geometry checks run.
-  const definePartChecks = (family: PartFamily, cases: Record<string, string>[]): void => {
-    for (const params of cases) {
-      const tag = JSON.stringify(params);
+  const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
+    let gridStep = GRID;
+    if (family.name === 'forend') {
+      gridStep = GRID / 5;
+    } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
+      gridStep = GRID / 2;
+    }
+    const check = (params: Record<string, string>) => {
+      const def = family.build(params);
+      const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
+        box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
+      // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
+      // Explicit metal handle parts use sub-grid clearances; their ownership, contact and motion have dedicated geometry tests.
+      const explicitCarrierStyle = family.name === 'bolt-carrier' && params.handleStyle !== undefined;
+      const numbers = [
+        ...def.solids.flatMap((s) =>
+          s.kind === 'box' &&
+          !s.id.startsWith('trigger-guard-') &&
+          !(family.name === 'magazine' && params.profile === 'smg') &&
+          !(explicitCarrierStyle && s.slot === 'metal')
+            ? bounds(s.box)
+            : [],
+        ),
+        ...def.keepOuts.flatMap((k) =>
+          explicitCarrierStyle && k.id.startsWith(`${params.handleStyle}-handle-`) ? [] : bounds(k.box),
+        ),
+        ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
+        ...def.axes.flatMap((a) => [...a.origin]),
+      ];
+      return {
+        geometryOnGrid: numbers.every((n) => onGridWithCarrierClearance(n, gridStep, family)),
+        portsOrthonormal: def.ports.every(
+          (p) =>
+            Math.abs(length(p.normal) - 1) < 1e-6 &&
+            Math.abs(length(p.up) - 1) < 1e-6 &&
+            Math.abs(dot(p.normal, p.up)) < 1e-6 &&
+            Math.abs(length(cross(p.normal, p.up)) - 1) < 1e-6,
+        ),
+        uniquePortIds: new Set(def.ports.map((p) => p.id)).size === def.ports.length,
+        positiveBoxSizes: def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0)),
+      };
+    };
+    const expected = {
+      geometryOnGrid: true,
+      portsOrthonormal: true,
+      uniquePortIds: true,
+      positiveBoxSizes: true,
+    };
 
-      let gridStep = GRID;
-      if (family.name === 'forend') {
-        gridStep = GRID / 5;
-      } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
-        gridStep = GRID / 2;
+    if (batchSize === 1) {
+      for (const params of cases) {
+        const tag = JSON.stringify(params);
+        it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+          expect(check(params), tag).toEqual(expected);
+        });
       }
+      return;
+    }
 
-      it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
-        const def = family.build(params);
-        const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
-          box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
-        // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
-        const numbers = [
-          ...def.solids.flatMap((s) =>
-            s.kind === 'box' &&
-            !s.id.startsWith('trigger-guard-') &&
-            !(family.name === 'magazine' && params.profile === 'smg')
-              ? bounds(s.box)
-              : [],
-          ),
-          ...def.keepOuts.flatMap((k) => bounds(k.box)),
-          ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
-          ...def.axes.flatMap((a) => [...a.origin]),
-        ];
-        expect(numbers.filter((n) => !onGridWithCarrierClearance(n, gridStep, family))).toEqual([]);
-        for (const p of def.ports) {
-          expect(length(p.normal)).toBeCloseTo(1);
-          expect(length(p.up)).toBeCloseTo(1);
-          expect(dot(p.normal, p.up)).toBeCloseTo(0);
-          expect(length(cross(p.normal, p.up))).toBeCloseTo(1);
+    for (let start = 0; start < cases.length; start += batchSize) {
+      const batch = cases.slice(start, start + batchSize);
+      // 256 builds take under 1 s on the reference host; 10 s is ~10x measured and bounds the full sweep.
+      it(`cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+        for (const params of batch) {
+          expect(check(params), JSON.stringify(params)).toEqual(expected);
         }
-        expect(new Set(def.ports.map((p) => p.id)).size).toBe(def.ports.length);
-        expect(def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0))).toBe(true);
-      });
+      }, 10_000);
     }
   };
 
+  it('retains every receiver section in the default 3-wise sample', () => {
+    const receiver = FAMILIES.receiver!;
+    const sections = new Set(defaultCases('receiver', receiver).map(({ section }) => section));
+    expect([...sections].sort()).toEqual([...receiver.params.section!.values].sort());
+  });
+
   for (const [key, family] of Object.entries(FAMILIES)) {
     describe(key, () => {
-      definePartChecks(family, defaultCases(key, family));
+      const cases = defaultCases(key, family);
+      if (key === 'bolt-carrier') {
+        const compatible = compatibleHandleStyleCases();
+        it('retains every compatible handle-style pairing across all sections', () => {
+          for (const pairing of CARRIER_HANDLE_PAIRINGS) {
+            for (const section of family.params.section!.values) {
+              expect(
+                compatible.some(
+                  (entry) =>
+                    entry.handleStyle === pairing.style &&
+                    entry.pattern === pairing.pattern &&
+                    entry.section === section,
+                ),
+                `${pairing.style}/${pairing.pattern}/${pairing.owner} in ${section}`,
+              ).toBe(true);
+            }
+          }
+        });
+        cases.push(...compatible);
+      }
+      definePartChecks(family, cases);
     });
   }
 
@@ -382,7 +483,8 @@ describe('part library', () => {
     for (const [key, family] of Object.entries(FAMILIES).filter(([k]) => isArraySampled(k))) {
       describe(key, () => {
         // A skipped group still registers its cases, so build none in the default run.
-        definePartChecks(family, runSweeps ? fullProduct(family.params) : []);
+        // Batch exhaustive cases to cap Vitest registration memory; failures retain the exact params.
+        definePartChecks(family, runSweeps ? fullProduct(withoutHandleStyle(family)) : [], 256);
       });
     }
   });

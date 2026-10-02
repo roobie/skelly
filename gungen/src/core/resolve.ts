@@ -8,6 +8,7 @@ import { validateExtrudedPolygon } from './geometry.ts';
 import type { Issue } from './issue.ts';
 import {
   add,
+  applyDir,
   compose,
   cross,
   fromColumns,
@@ -79,14 +80,16 @@ export const portFrame = (port: PortDef, slot = 0): Transform => ({
   t: add(port.pos, scale(port.up, slot * (port.slots?.pitch ?? 0))),
 });
 
+type PortConnection = Pick<ResolvedConnection, 'conn' | 'from' | 'to'>;
+
 /** The `from` port's frame in the assembly, including slot and roll. */
-const fromSideFrame = (rc: ResolvedConnection, fromPart: Transform): Transform =>
+const fromSideFrame = (rc: PortConnection, fromPart: Transform): Transform =>
   compose(compose(fromPart, portFrame(rc.from.port, rc.conn.slot)), rotation(rotX(rc.conn.roll ?? 0)));
 
-const placeTo = (rc: ResolvedConnection, fromPart: Transform): Transform =>
+const placeTo = (rc: PortConnection, fromPart: Transform): Transform =>
   compose(compose(fromSideFrame(rc, fromPart), FLIP), invert(portFrame(rc.to.port)));
 
-const placeFrom = (rc: ResolvedConnection, toPart: Transform): Transform => {
+const placeFrom = (rc: PortConnection, toPart: Transform): Transform => {
   const fromSide = compose(compose(toPart, portFrame(rc.to.port)), FLIP);
   return compose(
     compose(fromSide, rotation(rotX(-(rc.conn.roll ?? 0)))),
@@ -116,8 +119,15 @@ const resolveMotionSources = (
       continue;
     }
     const { sourceKeepOut: _sourceKeepOut, ...motion } = def.motion!;
+    let axisInOwner = motion.axis;
+    if (connection) {
+      axisInOwner =
+        connection.from.part === owner
+          ? applyDir(placeTo(connection, IDENTITY), motion.axis)
+          : applyDir(placeFrom(connection, IDENTITY), motion.axis);
+    }
     const travel =
-      2 * motion.axis.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
+      2 * axisInOwner.reduce((distance, component, axis) => distance + Math.abs(component) * path.box.half[axis]!, 0);
     const end = [motion.axis[0] * travel, motion.axis[1] * travel, motion.axis[2] * travel] as const;
     defs.set(id, { ...def, motion: { ...motion, end } });
   }

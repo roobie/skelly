@@ -14,7 +14,7 @@
           "bore": "M"
         }
       },
-      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett" } },
+      "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "barrett", "handleStyle": "bullpup" } },
       "lower": {
         "family": "lower",
         "params": {
