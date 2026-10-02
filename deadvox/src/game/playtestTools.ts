@@ -315,6 +315,12 @@ const MAX_INDIVIDUAL_CAPTURE_SAMPLES = 8192;
 const MAX_TIMER_PROBE_READS = 100_000;
 const MIN_TIMER_PROBE_TICKS = 8;
 
+const observedTickFitsQuantum = (observedTickMs: number | null, quantumMs: number): boolean =>
+  observedTickMs !== null &&
+  Number.isFinite(quantumMs) &&
+  quantumMs > 0 &&
+  observedTickMs <= quantumMs * (1 + Number.EPSILON * 8);
+
 const detectMinimumTimerTickMs = (now: () => number): number | null => {
   let previous = now();
   let minimum = Number.POSITIVE_INFINITY;
@@ -347,11 +353,7 @@ export const measureSnapshots = (
   const before = liveState();
   const observedTimerTickMs = detectMinimumTimerTickMs(now);
   const crossCheckedTimerQuantumMs =
-    timerQuantum !== null &&
-    Number.isFinite(timerQuantum.quantumMs) &&
-    timerQuantum.quantumMs > 0 &&
-    observedTimerTickMs !== null &&
-    observedTimerTickMs <= 2 * timerQuantum.quantumMs
+    timerQuantum !== null && observedTickFitsQuantum(observedTimerTickMs, timerQuantum.quantumMs)
       ? timerQuantum.quantumMs
       : null;
   const timerQuantumCrossCheckPassed = crossCheckedTimerQuantumMs !== null;

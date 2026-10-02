@@ -174,6 +174,28 @@ describe('snapshot measurement', () => {
     expect(result.individualCaptureMaxUpperBoundMs).toBeNull();
   });
 
+  it('withholds bounds when a jittered clock tick is just coarser than or twice the browser profile quantum', () => {
+    for (const { userAgent, quantumMs } of [
+      { userAgent: 'Firefox/140.0', quantumMs: 1 },
+      { userAgent: 'Chrome/130.0', quantumMs: 0.1 },
+    ]) {
+      const timerQuantum = snapshotTimerQuantumForUserAgent(userAgent);
+      for (const factor of [1.01, 2]) {
+        const clock = makeJitteredClock(quantumMs * factor);
+        const result = measureSnapshots(clock.capture, () => 0, {
+          repeats: 1,
+          now: clock.now,
+          timerQuantum,
+        });
+
+        expect(result.observedTimerTickMs).toBeCloseTo(quantumMs * factor, 10);
+        expect(result.timerQuantumCrossCheckPassed).toBe(false);
+        expect(result.individualCaptureP95UpperBoundMs).toBeNull();
+        expect(result.individualCaptureMaxUpperBoundMs).toBeNull();
+      }
+    }
+  });
+
   it('reports net endpoint state as changed when captures leave a mutation', () => {
     let state = 0;
     let elapsedMs = 0;
