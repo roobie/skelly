@@ -151,7 +151,7 @@ const WeaponSchema = strictObject({
   }),
 });
 
-// Capability marker for firearms: ranged mechanics are not implemented yet, but action selection is data-driven.
+// Capability marker for primary-action dispatch. d15 handles debug shots and spent cases only—no hits or ammo economy.
 const FirearmSchema = strictObject({});
 
 const LightSchema = strictObject({

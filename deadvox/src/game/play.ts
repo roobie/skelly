@@ -17,6 +17,7 @@ import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
+import { CaseEffects } from '../render/caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { FurnitureMeshes } from '../render/furniture.ts';
@@ -49,6 +50,7 @@ import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
+import { debugFirearmShot } from './firearmHandling.ts';
 import {
   CONTROL_CODES,
   Input,
@@ -239,7 +241,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
   const playerPalette = registry.figures.get('player')!.palette;
-  const piles = new PileMeshes(s, models);
+  const piles = new PileMeshes(s, models, config.seed);
+  const caseEffects = new CaseEffects(s);
+  scene.add(caseEffects.mesh);
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const held = new HeldItems(inventory, models, playerPalette);
@@ -835,9 +839,27 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         }
         return;
       }
-      case 'firearm':
-        showNotice('Firearms are not usable yet');
+      case 'firearm': {
+        const effect = debugFirearmShot({
+          debugMode: config.debug,
+          inventory,
+          item: action.item,
+          feet: feet(),
+          eye: eye(),
+          yaw: input.yaw,
+          pitch: input.pitch,
+          aim: lookDir(),
+          seed: config.seed,
+          simTime: sim.time,
+          blockSize: s,
+        });
+        if (effect) {
+          caseEffects.spawn(effect);
+        } else {
+          showNotice('Firearms can only be fired in debug mode');
+        }
         return;
+      }
       case 'fists':
         swing(action.hand);
         return;
@@ -1102,6 +1124,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
+    caseEffects.update(dt, engine.isSolid);
     simulationMs = performance.now() - mark;
     options.saveController?.afterFrame();
     playtestObserver?.afterFrame(
