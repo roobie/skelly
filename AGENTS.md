@@ -13,6 +13,22 @@ don't require byte-identical exports. What must still work: gungen exports a mod
 that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta.
 
+## Work item IDs
+
+Every coordinated work item (agent mail `X-Item`, branch, PR) has an ID:
+
+- **Item:** `<subproject><number>`, one unit of work that becomes one PR on one
+  branch. Subprojects: `g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide or docs.
+  Numbers count up per subproject. New work always gets a new number, even when it
+  grows out of another item.
+- **Round:** BR's feedback, review fixes or a main merge on the same branch is a new
+  round, written `g26-2`, `g26-3`; round 1 is plain `g26`.
+- **Review:** `cr-` plus the exact round reviewed: `cr-g26`, `cr-g26-2`. Fixes after a
+  review are the next round, so each review has one target.
+- **PR titles** end with the item ID, e.g. "(g26)".
+
+IDs from before 2026-10-02 used letter suffixes (`g25b`, `g29c`) and keep them.
+
 ## Worktrees
 
 Put git worktrees in `.claude/worktrees/<name>` inside this repo, not beside
