@@ -56,6 +56,15 @@ CPU contention, not just intrinsically slow tests, accounts for that inflation.
 - Full seed sweeps remain behind the projects' existing sweep mode. This work
   does not move or trim coverage to manufacture a timing improvement.
 
+## Browser readiness encountered during verification
+
+`primary-action.mjs` previously clicked the visible `#go` before asynchronous
+save discovery completed. The captured failure left the title visible, pointer
+lock unset, and no application errors. It now waits for the same “Title screen
+ready” signal used by the Firefox/save contracts, then performs the original
+click and all action assertions. The old contract failed repeatedly; the
+readiness-gated contract passed. No sleep, larger timeout or game-code change.
+
 Per-file/per-test diagnostics and pool comparisons are archived under the main
 checkout's `.agent-mail/scratch/r4-before-*.json` and `r4-after-*.json`, with
 matching logs. Those are measurement transport; this document is the lasting
