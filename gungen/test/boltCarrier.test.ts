@@ -273,7 +273,7 @@ const allCarrierSolidsStayWithinReceiverLength = (resolved: ReturnType<typeof re
   const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - 0.5];
 
   return carrier.solids
-    .filter(({ id }) => !id.startsWith('action-bar-') && !HANDLE_ID_REGEX.test(id))
+    .filter(({ id }) => !(id.startsWith('action-bar-') || HANDLE_ID_REGEX.test(id)))
     .flatMap((solid) =>
       corners(solid).flatMap((corner) => [
         applyPoint(transform, corner),

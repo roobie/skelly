@@ -680,7 +680,6 @@ const receiverShellSolids = ({
   portSlots,
   internalPockets = [],
   farPortWindow,
-
 }: {
   section: string;
   feed: string;

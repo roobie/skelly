@@ -815,7 +815,9 @@ describe('pump shotgun tube and barrel contact', () => {
       expectWatertightMesh(meshForSolid(component), `forend ${component.id}`);
     }
     const topSlitFacets = forend.solids.filter(
-      (component) => component.kind === 'extruded-polygon' && component.profile.some(([y, z]) => Math.abs(y - 1.15) < 1e-8 && Math.abs(Math.abs(z) - 0.1) < 1e-8),
+      (component) =>
+        component.kind === 'extruded-polygon' &&
+        component.profile.some(([y, z]) => Math.abs(y - 1.15) < 1e-8 && Math.abs(Math.abs(z) - 0.1) < 1e-8),
     );
     expect(topSlitFacets).toHaveLength(2);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
