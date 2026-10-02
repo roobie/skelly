@@ -80,10 +80,10 @@ Each needs sourced cartridge data and frame dimensions with a source or a stated
 
 - **Ordering:** after g34 (round profiles and magazine columns from cartridge data), because magwells and magazines come from those. g35's cycle travel should then come from the frame's action length instead of a per-gun number.
 - **Deadvox:** gets `calibre` in the export (ADR 0003, g34), so a 7.62 AR differs in game data as well as in looks.
-- **Existing designs and export compatibility:** the curated AR designs take the small frame through their default cartridge (5.56×45). The boundary:
-  - The unenriched (legacy) export path keeps byte-identical GLBs and model entries, tested on full bytes as in g29's 52-export A/B.
-  - An enriched export (with `calibre`, as g34's CLI does with an explicit opt-in) may add only the documented optional fields. Its GLBs and existing field values stay identical.
-  - No existing consumer is opted into new metadata silently.
+- **Existing designs and exports:** the curated AR designs take the small frame through their default cartridge (5.56×45).
+  - There are no external consumers yet, so **byte-identical exports are not a requirement** (BR, 2026-10-02). Keeping them identical is an anti-requirement when it would contort the code: no legacy export paths or opt-in flags only to preserve old bytes.
+  - What must hold: gungen can still export a model that deadvox validates and loads.
+  - A before/after export diff remains a useful review aid: the PR names which exports change and why. It isn't a gate.
 - **The anti-materiel rifle:** its bespoke cartridge sizing becomes one family's frame data when convenient; until then it stays as it is.
 - **Bands retire gradually:** magazine bands remain for families without frames; a family moves off them when it gets frames.
 - **Tests (#120):**
