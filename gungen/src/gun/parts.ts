@@ -343,21 +343,23 @@ const BOLT_TRAVEL = {
 const PUMP_ACTION_BAR_THICKNESS = BOLT_CARRIER_RUNNING_CLEARANCE_U;
 const PUMP_ACTION_BAR_OUTER_CLEARANCE = 0.15;
 const PUMP_ACTION_BAR_CLEARANCE = 0.05;
-const pumpActionBarOuterZ = (): number => TUBE_HALF_HEIGHT + PUMP_FOREND_WALL - PUMP_ACTION_BAR_OUTER_CLEARANCE;
+const PUMP_FOREND_TUBE_CLEARANCE = 0.05;
+const pumpActionBarOuterY = (): number =>
+  TUBE_HALF_HEIGHT + PUMP_FOREND_TUBE_CLEARANCE + PUMP_FOREND_WALL - PUMP_ACTION_BAR_OUTER_CLEARANCE;
 const pumpActionBarSolids = (bore: SizeClass): Solid[] => {
   const carrierRestX = BOLT_TRAVEL.pump.restX;
   const tubeY = -tubeDropForBore(bore);
-  const barOuterZ = pumpActionBarOuterZ();
   const halfThickness = PUMP_ACTION_BAR_THICKNESS / 2;
+  const barTopY = tubeY + pumpActionBarOuterY();
   return [
     {
       ...extrudedPolygon(
-        'action-bar-right',
+        'action-bar-top',
         [
-          [tubeY - halfThickness, -(barOuterZ + halfThickness)],
-          [tubeY + halfThickness, -(barOuterZ + halfThickness)],
-          [tubeY + halfThickness, -(barOuterZ - halfThickness)],
-          [tubeY - halfThickness, -(barOuterZ - halfThickness)],
+          [barTopY - PUMP_ACTION_BAR_THICKNESS, -halfThickness],
+          [barTopY, -halfThickness],
+          [barTopY, halfThickness],
+          [barTopY - PUMP_ACTION_BAR_THICKNESS, halfThickness],
         ],
         [carrierRestX - PUMP_FOREND_MOUNT_X, carrierRestX + halfThickness],
       ),
@@ -368,13 +370,13 @@ const pumpActionBarSolids = (bore: SizeClass): Solid[] => {
 
 const pumpActionBarSlot = (bore: SizeClass): SectionPocket => {
   const tubeY = -tubeDropForBore(bore);
-  const barOuterZ = pumpActionBarOuterZ();
+  const barTopY = tubeY + pumpActionBarOuterY();
   const clearance = PUMP_ACTION_BAR_CLEARANCE;
   const halfThickness = PUMP_ACTION_BAR_THICKNESS / 2;
   return {
     x: [-BOLT_TRAVEL.pump.length - PUMP_ACTION_BAR_THICKNESS / 2 - clearance, 0],
-    y: [tubeY - halfThickness - clearance, tubeY + halfThickness + clearance],
-    z: [barOuterZ - PUMP_ACTION_BAR_THICKNESS - clearance, barOuterZ + clearance],
+    y: [barTopY - PUMP_ACTION_BAR_THICKNESS - clearance, barTopY + clearance],
+    z: [-halfThickness - clearance, halfThickness + clearance],
   };
 };
 const RECEIVER_FRONT_HALF_WIDTH = 2;
@@ -2819,36 +2821,51 @@ export const tubeMagazine: PartFamily = {
   },
 };
 
-/** The sliding forend of a pump action: open-topped, around the tube. */
+/** Sliding tubular forend: the octagonal sleeve leaves only a narrow top slit for the action bar. */
 export const forend: PartFamily = {
   name: 'forend',
   params: {},
   build(): PartDef {
-    const outer = [
-      [0, -1 - PUMP_FOREND_WALL],
-      [-0.414 * (1 + PUMP_FOREND_WALL), -1 - PUMP_FOREND_WALL],
-      [-1 - PUMP_FOREND_WALL, -0.414 * (1 + PUMP_FOREND_WALL)],
-      [-1 - PUMP_FOREND_WALL, 0.414 * (1 + PUMP_FOREND_WALL)],
-      [-0.414 * (1 + PUMP_FOREND_WALL), 1 + PUMP_FOREND_WALL],
-      [0, 1 + PUMP_FOREND_WALL],
-    ] as const;
-    const inner = [
-      [0, -1],
-      [-0.414, -1],
-      [-1, -0.414],
-      [-1, 0.414],
-      [-0.414, 1],
-      [0, 1],
-    ] as const;
-    const shellFacets = outer.slice(0, -1).map(
-      (outside, index): Solid => ({
-        id: `shell-${index + 1}`,
+    const innerRadius = TUBE_HALF_HEIGHT + PUMP_FOREND_TUBE_CLEARANCE;
+    const outerRadius = innerRadius + PUMP_FOREND_WALL;
+    const corner = 0.414;
+    const slitHalfWidth = PUMP_ACTION_BAR_THICKNESS / 2 + PUMP_ACTION_BAR_CLEARANCE;
+    const outerTopY = pumpActionBarOuterY();
+    const outer: readonly Vec2[] = [
+      [-outerRadius, -corner * outerRadius],
+      [-outerRadius, corner * outerRadius],
+      [-corner * outerRadius, outerRadius],
+      [outerTopY, corner * outerRadius],
+      [outerTopY, slitHalfWidth],
+      [outerTopY, -slitHalfWidth],
+      [outerTopY, -corner * outerRadius],
+      [corner * outerRadius, -outerRadius],
+      [-corner * outerRadius, -outerRadius],
+    ];
+    const inner: readonly Vec2[] = [
+      [-innerRadius, -corner * innerRadius],
+      [-innerRadius, corner * innerRadius],
+      [-corner * innerRadius, innerRadius],
+      [innerRadius, corner * innerRadius],
+      [innerRadius, slitHalfWidth],
+      [innerRadius, -slitHalfWidth],
+      [innerRadius, -corner * innerRadius],
+      [corner * innerRadius, -innerRadius],
+      [-corner * innerRadius, -innerRadius],
+    ];
+    const shellFacets: Solid[] = [];
+    for (let index = 0; index < outer.length - 1; index++) {
+      if (index === 4) {
+        continue;
+      }
+      shellFacets.push({
+        id: `shell-${shellFacets.length + 1}`,
         kind: 'extruded-polygon',
-        profile: [outside, inner[index]!, inner[index + 1]!, outer[index + 1]!],
+        profile: [outer[index]!, inner[index]!, inner[index + 1]!, outer[index + 1]!],
         axis: 'x',
         z: [0, PUMP_FOREND_LENGTH],
-      }),
-    );
+      });
+    }
     return {
       family: 'forend',
       solids: shellFacets,

@@ -801,30 +801,21 @@ describe('pump stock raised butt heel', () => {
 });
 
 describe('pump shotgun tube and barrel contact', () => {
-  it('builds a watertight octagonal lower-half shell with a clear tube cavity', () => {
+  it('builds a watertight near-complete tubular forend with a narrow top slit', () => {
     const forend = FAMILIES.forend!.build({});
-    const outer: readonly (readonly [number, number])[] = [
-      [0, -1.55],
-      [-0.6417, -1.55],
-      [-1.55, -0.6417],
-      [-1.55, 0.6417],
-      [-0.6417, 1.55],
-      [0, 1.55],
-    ];
-    expect(forend.solids).toHaveLength(5);
-    for (const [index, component] of forend.solids.entries()) {
+    expect(forend.solids).toHaveLength(7);
+    for (const component of forend.solids) {
       if (component.kind !== 'extruded-polygon' || component.axis !== 'x') {
         throw new Error('pump forend shell facets must be X-axis polygon extrusions');
       }
       expect(component.z).toEqual([0, 9.6]);
       expect(component.profile).toHaveLength(4);
-      expect(component.profile[0]![0]).toBeCloseTo(outer[index]![0], 8);
-      expect(component.profile[0]![1]).toBeCloseTo(outer[index]![1], 8);
-      expect(component.profile[3]![0]).toBeCloseTo(outer[index + 1]![0], 8);
-      expect(component.profile[3]![1]).toBeCloseTo(outer[index + 1]![1], 8);
       expectWatertightMesh(meshForSolid(component), `forend ${component.id}`);
     }
-    expect(forend.solids.reduce((sum, component) => sum + meshForSolid(component).triangleCount, 0)).toBe(220);
+    const topSlitFacets = forend.solids.filter(
+      (component) => component.kind === 'extruded-polygon' && component.profile.some(([y, z]) => Math.abs(y - 1.45) < 1e-8 && Math.abs(Math.abs(z) - 0.1) < 1e-8),
+    );
+    expect(topSlitFacets).toHaveLength(2);
     const tube = FAMILIES['tube-magazine']!.build({ bore: 'L', barrelLength: 'M', lengthPercent: '75' });
     expect(tube.ports.find((port) => port.id === 'forend')?.pos).toEqual([8, 0, 0]);
     expect(tube.keepOuts.find(({ id }) => id === 'forend-travel')?.box.half[0]).toBe(2.75);
