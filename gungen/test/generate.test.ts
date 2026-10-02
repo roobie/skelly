@@ -140,12 +140,14 @@ describe('templates', () => {
 // Same describe names as above so the snapshot keys stay `templates > <name> > known-good seeds`.
 sweepGroup('templates', () => {
   for (const t of TEMPLATES) {
-    const chunkSize = t.name === 'ar' || t.name === 'ak' ? 10 : CHUNK;
+    const chunkSize = t.name === 'ar' || t.name === 'ak' || t.name === 'bolt-rifle' ? 10 : CHUNK;
     describe(t.name, () => {
       // Chunked by seed range so each test stays well inside the default timeout; the sweep
       // runs only in CI (see sweeps.ts) and its timeouts are never raised. An isolated 25-seed
       // chunk measured 1.285s for AR and 2.175s for AK, so those expensive families use 10-seed
-      // chunks. The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
+      // chunks. The tubular rifle's 25-seed chunk measured 5.215s alone after continuous
+      // motion certification was added; it uses the same 10-seed chunks.
+      // The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
       // memoized count and one final test asserts it (computing any chunk that has not run, e.g. under `-t`).
       // Each chunk test also records its valid count, so the final test is normally free.
       const validIn = new Map<number, number>();

@@ -64,7 +64,7 @@ The LPVO optical axis remains Y=4.5u = 51.75 mm above the bore (23 mm above rail
 The approved g26 arm and knob retain their local meshes and human-scale dimensions.
 The tubular frame puts the carrier on the bore axis, shortens the wall-crossing
 attachment to Z=1.75u, and rotates the arm's mounting frame 45° farther downward.
-Its projected closed angle is about 72° below horizontal; after the 90° lift it
+Its rear-view (Y/Z) projected closed angle is about 72° below horizontal; after the 90° lift it
 is about 18° above. This is a constructed frame attachment for clearance, not a
 sourced claim about the exact Remington handle angle. Keeping the old mounting
 orientation made the lifted arm intersect the rear deck and optic feet. The
