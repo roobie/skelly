@@ -296,31 +296,14 @@ rail face and its axis 6u to the left of the shroud wall; it is nowhere near the
 bipod or the ejection port (y 0 to 2, x up to -1.25). The resolved assembly closes exactly: the three new
 connections show 0 u and 0 degrees of mismatch (largest 1e-15 u), against the 0.01u and 0.5 degrees allowed.
 
-**Scope envelope: a stand-in until the attachments work lands.** The scope vocabulary (optics, mounts) is the
-next gungen iteration and is not built here; `src/gun/antiMateriel/scopeEnvelope.ts` holds the space of a
-full-size, high-magnification scope as three boxes, only so the handle can be sized against it. The design
-keeps the small `sight` as a placeholder. Dimensions come from Leupold's product page for the Mark 4HD 6-24x52
-(leupold.com/mark-4hd-6-24x52-m5c3-side-focus-ffp-illum-pr2-mil, "Dimensions", read 2026-10-01) and its Mark 4
-34mm High ring (leupold.com/mark-4-34mm-aluminum-high-matte, read 2026-10-01):
-
-| | Source | in | mm | u |
-| --- | --- | ---: | ---: | ---: |
-| Total length | A | 14.6 | 371 | 32.2 |
-| Total mounting space | B | 6.3 | 160 | 13.9 |
-| Eyepiece length | E | 3.3 | 84 | 7.3 |
-| Objective length | F | 5.1 | 130 | 11.3 |
-| Objective diameter | G | 2.4 | 61 | 5.3 (radius 2.65, boxed at 2.75) |
-| Eyepiece diameter | H | 1.8 | 46 | 4.0 (radius 2.0) |
-| Main tube | K | 1.34 | 34 | 3.0 (radius 1.5) |
-| Ring height | High ring, "Ring Height (in)" | 1.06 | 27 | 2.3 |
-
-The ring height is read as the distance from the rail to the bottom of the tube, which puts the tube axis
-3.75u above the rail face (2.34 + 1.48, rounded to the grid) and the objective bell's underside 1.0u above it;
-the other reading (axis at the ring height) would put the 2.4 in bell below the rail, so it cannot be right
-for a 52 mm scope. That reading is an assumption about Leupold's figure. The envelope is placed with the
-middle of its mounting space on the sight's slot (x = -12): eyepiece to the rear, objective ahead to x = 6.2.
-Rings and the scope's own turrets are not boxed. `test/antiMateriel.test.ts` asserts the handle's solids and
-its hand room stay at least 0.25u from every box.
+**Scope geometry now comes from the optic catalog.** The stand-in envelope has been removed. The curated
+anti-materiel design mounts the catalog's high-magnification optic (`high-mag-5-25x`) on slot 5 of the receiver's
+`rail-top` interface. Its actual body, bells, turrets, mount feet, and sightline are the same geometry used by all
+gungen optic validation; catalog dimensions and source are recorded in `src/gun/optics.ts` (Nightforce ATACR
+5-25×56 class). The receiver rail exposes 11 slots at 2u pitch, enough for the optic's 12u contact span and
+10u ring-center span. `test/antiMateriel.test.ts` checks every catalog solid against the carry-handle solids and
+hand-room keep-outs, requiring at least 0.25u clearance in both handle poses and bipod poses. This remains a
+static exterior envelope; no zoom, reticle, or sensor behavior is simulated.
 
 **Not modelled.** The feed opening in the receiver floor (the shared `standard` section has none
 either), feed lips, and the magazine's follower and rounds.

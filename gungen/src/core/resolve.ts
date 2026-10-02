@@ -295,7 +295,7 @@ export const resolve = (assembly: Assembly, domain: Domain): Resolved => {
       }
       const error =
         solid.kind === 'revolved'
-          ? revolvedProfileError(solid.profile, solid.axis)
+          ? revolvedProfileError(solid.profile, solid.axis, solid.origin)
           : validateExtrudedPolygon(solid.profile, solid.z, solid.axis, solid.clip);
       if (!error) {
         return true;
