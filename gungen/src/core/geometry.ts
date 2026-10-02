@@ -609,12 +609,32 @@ const axisAlignedBounds = (box: Obb): readonly [Vec3, Vec3] | undefined => {
 const distanceAabb = (a: readonly [Vec3, Vec3], b: readonly [Vec3, Vec3]): number =>
   Math.hypot(...([0, 1, 2] as const).map((axis) => Math.max(0, a[0][axis] - b[1][axis], b[0][axis] - a[1][axis])));
 
-const worldBounds = (shape: WorldSolid): readonly [Vec3, Vec3] => {
-  const vertices = isPolyhedron(shape) ? shape.vertices : obbPolyhedron(shape).vertices;
-  return [
-    ([0, 1, 2] as const).map((axis) => Math.min(...vertices.map((point) => point[axis]))) as unknown as Vec3,
-    ([0, 1, 2] as const).map((axis) => Math.max(...vertices.map((point) => point[axis]))) as unknown as Vec3,
-  ];
+type WorldBounds = readonly [Vec3, Vec3];
+const worldBoundsCache = new WeakMap<WorldSolid, WorldBounds>();
+const worldBounds = (shape: WorldSolid): WorldBounds => {
+  const cached = worldBoundsCache.get(shape);
+  if (cached) {
+    return cached;
+  }
+  let bounds: WorldBounds;
+  if (isPolyhedron(shape)) {
+    bounds = [
+      ([0, 1, 2] as const).map((axis) => Math.min(...shape.vertices.map((point) => point[axis]))) as unknown as Vec3,
+      ([0, 1, 2] as const).map((axis) => Math.max(...shape.vertices.map((point) => point[axis]))) as unknown as Vec3,
+    ];
+  } else {
+    const { center, r, half } = shape;
+    const radius = [0, 1, 2].map(
+      (axis) =>
+        Math.abs(r[axis * 3]!) * half[0] + Math.abs(r[axis * 3 + 1]!) * half[1] + Math.abs(r[axis * 3 + 2]!) * half[2],
+    ) as unknown as Vec3;
+    bounds = [
+      [center[0] - radius[0], center[1] - radius[1], center[2] - radius[2]],
+      [center[0] + radius[0], center[1] + radius[1], center[2] + radius[2]],
+    ];
+  }
+  worldBoundsCache.set(shape, bounds);
+  return bounds;
 };
 
 /** Cheap AABB lower bound used to cull exact convex-distance checks. */
