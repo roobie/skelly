@@ -11,7 +11,10 @@ status: active
 [[THIS grounds: ../../INTERACTIONS.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
-**Status:** accepted (2026-09-27, issue #25). Proposed 2026-09-26.
+**Status:** accepted (2026-09-27, issue #25) and implemented. Proposed 2026-09-26.
+The port was completed in Slice 1: the last screen, the inventory, moved to
+lit-html in #105, and `NOT_YET_PORTED` in `test/uiLitHtml.test.ts` is empty
+(checked 2026-10-03).
 
 ## Context
 
@@ -66,12 +69,11 @@ Draw the HTML screens with **lit-html**:
 - Every screen moves to lit-html, and no screen stays plain DOM. New screens are
   written in lit-html from the start.
 - The move goes one screen at a time. The spawn menu and the death screen came first,
-  then the credits and the HUD (quickbar and handling bar). The inventory screen is
-  ported as the first step of Slice 2's inventory and crafting work, before any
-  of that work changes it (INTERACTIONS.md, "Order of work").
-- `test/uiLitHtml.test.ts` fails on hand-built DOM in `src/ui` outside a list of
-  screens not yet ported. The list only shrinks, and the port is done when it is
-  empty.
+  then the credits and the HUD (quickbar and handling bar). The inventory screen came
+  last, with its behaviour unchanged (#105), before Slice 2's crafting work changes it.
+- `test/uiLitHtml.test.ts` fails on hand-built DOM in `src/ui` and `src/debug` outside
+  a list of screens not yet ported. The list only shrinks, and the port is done when
+  it is empty. It has been empty since #105.
 
 ## Consequences
 
