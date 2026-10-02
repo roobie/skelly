@@ -195,7 +195,7 @@ export const pistol: Template = {
 
 export const revolver: Template = {
   name: 'revolver',
-  description: 'Rebuilt K/L-frame revolver with an aligned six-chamber cylinder.',
+  description: 'Photo-led K/L-frame revolver with an aligned six-chamber cylinder and raked grip.',
   root: 'frame',
   slots: [
     {
@@ -205,7 +205,7 @@ export const revolver: Template = {
     },
     { id: 'barrel', family: 'revolver-barrel', params: { length: SML, style: ['classic', 'vented'] } },
     { id: 'cylinder', family: 'revolver-cylinder', params: { chamberCount: '6', chamberIndex: '0' } },
-    { id: 'grip', family: 'revolver-grip', params: { length: ['M'] } },
+    { id: 'grip', family: 'revolver-grip', params: { length: SML } },
   ],
   connections: [
     { from: 'frame.barrel', to: 'barrel.frame' },

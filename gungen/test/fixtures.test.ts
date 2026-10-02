@@ -17,6 +17,7 @@ describe('fixtures', () => {
       'revolver-cylinder-gap',
       'revolver-topstrap-span',
       'revolver-grip-joint',
+      'revolver-trigger-bow',
     ]);
     const rules = [
       ...CORE_RULE_IDS.filter((r) => r !== 'structure'),

@@ -216,29 +216,19 @@ describe('part library', () => {
     expect(barrel.ports.find((port) => port.id === 'frame')?.required).toBe(true);
   });
 
-  it('builds a sectioned revolver frame with the rear grip block, named interfaces, and keep-outs', () => {
+  it('builds a sectioned revolver frame with a continuous rear web, named interfaces, and keep-outs', () => {
     const frame = FAMILIES['revolver-frame']!.build({ bore: 'S', frameSize: 'M', butt: 'round' });
     expect(frame.family).toBe('revolver-frame');
     expect(frame.solids.map((part) => part.id)).toContain('topstrap');
-    expect(frame.solids.map((part) => part.id)).toContain('rear-grip-block');
-    expect(frame.ports.map((port) => port.id)).toEqual([
-      'barrel',
-      'cylinder',
-      'grip-frame',
-      'hammer',
-      'trigger-guard',
-    ]);
-    expect(frame.keepOuts.map((volume) => volume.id)).toEqual([
-      'trigger-finger',
-      'cylinder-swing',
-      'hammer-travel',
-      'cylinder-gap',
-    ]);
+    expect(frame.solids.map((part) => part.id)).toContain('rear-joint');
+    expect(frame.solids.map((part) => part.id)).toContain('rear-grip-web');
+    expect(frame.ports.map((port) => port.id)).toEqual(['barrel', 'cylinder', 'grip-frame', 'hammer', 'trigger-guard']);
+    expect(frame.keepOuts.map((volume) => volume.id)).toEqual(['cylinder-swing', 'cylinder-gap', 'hammer-travel']);
   });
 
-  it('joins the grip port to the rear block lower face below the cylinder window', () => {
+  it('joins the grip port to the rear-joint lower face below the cylinder window', () => {
     const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
-    const block = frame.solids.find((solid) => solid.id === 'rear-grip-block')!;
+    const block = frame.solids.find((solid) => solid.id === 'rear-joint')!;
     const gripPort = frame.ports.find((port) => port.id === 'grip-frame')!;
     const [min, max] = localSolidBounds(block);
     expect(gripPort.pos[1]).toBe(min[1]);
@@ -256,61 +246,149 @@ describe('part library', () => {
     if (drum.kind === 'extruded-polygon') {
       expect(drum.z[1] - drum.z[0]).toBe(5);
     }
-    expect(localSolidBounds(topstrap)[0][0]).toBe(-5.25);
+    expect(localSolidBounds(topstrap)[0][0]).toBe(-6.25);
     expect(frame.ports.find((port) => port.id === 'cylinder')?.pos[0]).toBe(-2.75);
   });
 
-  it('builds the raked two-piece grip to the approved 10.50u centreline and butt variants', () => {
+  it('builds the approved raked grip envelope and distinct rounded/square butt profiles', () => {
     const round = FAMILIES['revolver-grip']!.build({ length: 'M', butt: 'round' });
     const square = FAMILIES['revolver-grip']!.build({ length: 'M', butt: 'square' });
-    const upper = round.solids.find((solid) => solid.id === 'grip-core-upper')!;
-    const lower = round.solids.find((solid) => solid.id === 'grip-core')!;
-    const squareLower = square.solids.find((solid) => solid.id === 'grip-core')!;
-    expect(upper.kind).toBe('extruded-polygon');
-    expect(lower.kind).toBe('extruded-polygon');
-    expect(squareLower.kind).toBe('extruded-polygon');
-    if (upper.kind !== 'extruded-polygon' || lower.kind !== 'extruded-polygon' || squareLower.kind !== 'extruded-polygon') {
-      throw new Error('revolver grip sections must be extruded polygons');
+    const roundButt = round.solids.find((solid) => solid.id === 'grip-core-butt')!;
+    const squareButt = square.solids.find((solid) => solid.id === 'grip-core-butt')!;
+    expect(roundButt.kind).toBe('extruded-polygon');
+    expect(squareButt.kind).toBe('extruded-polygon');
+    if (roundButt.kind !== 'extruded-polygon' || squareButt.kind !== 'extruded-polygon') {
+      throw new Error('revolver grip butt sections must be extruded polygons');
     }
-    expect(upper.profile[1]).toEqual(lower.profile[0]);
-    expect(upper.profile[2]).toEqual(lower.profile.at(-1));
-    const bottomY = Math.min(...lower.profile.map((point) => point[1]));
-    const bottomXs = lower.profile.filter((point) => point[1] === bottomY).map((point) => point[0]);
+    expect(roundButt.profile).toHaveLength(6);
+    expect(squareButt.profile).toHaveLength(4);
+    const ordered = (profile: readonly (readonly [number, number])[]) =>
+      [...profile].map(([x, y]) => [x, y]).sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!);
+    const localProfile = (id: string) => {
+      const solid = round.solids.find((entry) => entry.id === id)!;
+      if (solid.kind !== 'extruded-polygon') {
+        throw new Error(`${id} must be an extruded polygon`);
+      }
+      return solid.profile;
+    };
+    expect(ordered(localProfile('grip-core-neck'))).toEqual(
+      ordered([
+        [-1.5, 0],
+        [1.5, 0],
+        [1, -1.5],
+        [-3.5, -1.5],
+      ]),
+    );
+    expect(ordered(localProfile('grip-core'))).toEqual(
+      ordered([
+        [-3.5, -1.5],
+        [1, -1.5],
+        [0, -4.5],
+        [-4.5, -4.5],
+      ]),
+    );
+    expect(ordered(roundButt.profile)).toEqual(
+      ordered([
+        [-4.5, -4.5],
+        [0, -4.5],
+        [-0.25, -6.5],
+        [-0.75, -7],
+        [-5, -7],
+        [-5.5, -6.5],
+      ]),
+    );
+    const bounds = round.solids.map(localSolidBounds);
+    const envelope = Math.max(...bounds.map((item) => item[1][1])) - Math.min(...bounds.map((item) => item[0][1]));
+    expect(envelope).toBe(REVOLVER_PROPORTIONS.gripEnvelopeLengthM.pickedU);
+    const bottomY = Math.min(...roundButt.profile.map((point) => point[1]));
+    const bottomXs = roundButt.profile.filter((point) => point[1] === bottomY).map((point) => point[0]);
     const bottomX = (Math.min(...bottomXs) + Math.max(...bottomXs)) / 2;
-    const length = Math.hypot(bottomX, bottomY);
-    const rake = (Math.acos(bottomX / length) * 180) / Math.PI;
-    expect(length).toBeCloseTo(10.5, 6);
+    const rake = (Math.atan2(Math.abs(bottomX), Math.abs(bottomY)) * 180) / Math.PI + 90;
     expect(rake).toBeGreaterThanOrEqual(110);
     expect(rake).toBeLessThanOrEqual(115);
-    expect(lower.clip).toHaveLength(2);
-    expect(squareLower.clip).toBeUndefined();
-    expect(round.solids.filter((solid) => solid.id.startsWith('grip-panel-'))).toHaveLength(4);
+    expect(round.solids.filter((solid) => solid.id.startsWith('grip-panel-'))).toHaveLength(6);
   });
 
   it('builds named frame height and grip depth into their physical geometry', () => {
     const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: 'M', butt: 'round' });
     const strap = frame.solids.find((solid) => solid.id === 'topstrap')!;
-    const guardBottom = frame.solids.find((solid) => solid.id === 'trigger-guard-bottom')!;
-    const frameHeight = localSolidBounds(strap)[1][1] - localSolidBounds(guardBottom)[0][1];
+    const guardSolids = frame.solids.filter((solid) => solid.id.startsWith('trigger-guard-'));
+    const guardBottomY = Math.min(...guardSolids.map((solid) => localSolidBounds(solid)[0][1]));
+    const frameHeight = localSolidBounds(strap)[1][1] - guardBottomY;
     expect(frameHeight).toBe(REVOLVER_PROPORTIONS.frameHeight.pickedU);
 
     const grip = FAMILIES['revolver-grip']!.build({ length: 'M', butt: 'round' });
     const gripBounds = grip.solids.map(localSolidBounds);
-    const gripDepth = Math.max(...gripBounds.map((bounds) => bounds[1][2])) - Math.min(...gripBounds.map((bounds) => bounds[0][2]));
+    const gripDepth =
+      Math.max(...gripBounds.map((bounds) => bounds[1][2])) - Math.min(...gripBounds.map((bounds) => bounds[0][2]));
     expect(gripDepth).toBe(REVOLVER_PROPORTIONS.gripDepth.pickedU);
   });
 
-  it('builds a revolver octagonal barrel with its forcing cone, rib, shroud, sight and loop port', () => {
+  it('consumes each named frame-height, visible-wood-height and barrel-length row in geometry', () => {
+    const frameHeights = {
+      S: REVOLVER_PROPORTIONS.frameHeightS.pickedU,
+      M: REVOLVER_PROPORTIONS.frameHeight.pickedU,
+      L: REVOLVER_PROPORTIONS.frameHeightL.pickedU,
+    } as const;
+    const gripHeights = {
+      S: REVOLVER_PROPORTIONS.gripEnvelopeLengthS.pickedU,
+      M: REVOLVER_PROPORTIONS.gripEnvelopeLengthM.pickedU,
+      L: REVOLVER_PROPORTIONS.gripEnvelopeLengthL.pickedU,
+    } as const;
+    const barrelLengths = {
+      S: REVOLVER_PROPORTIONS.barrelLengthS.pickedU,
+      M: REVOLVER_PROPORTIONS.barrelLengthM.pickedU,
+      L: REVOLVER_PROPORTIONS.barrelLengthL.pickedU,
+    } as const;
+    for (const size of ['S', 'M', 'L'] as const) {
+      const frame = FAMILIES['revolver-frame']!.build({ bore: 'M', frameSize: size, butt: 'round' });
+      const guardBottom = Math.min(
+        ...frame.solids
+          .filter((solid) => solid.id.startsWith('trigger-guard-'))
+          .map((solid) => localSolidBounds(solid)[0][1]),
+      );
+      const strapBounds = localSolidBounds(frame.solids.find((solid) => solid.id === 'topstrap')!);
+      expect(strapBounds[1][1] - guardBottom).toBe(frameHeights[size]);
+      expect(strapBounds[1][2] - strapBounds[0][2]).toBe(REVOLVER_PROPORTIONS.topstrapWidth.pickedU);
+
+      const grip = FAMILIES['revolver-grip']!.build({ length: size, butt: 'round' });
+      const gripBounds = grip.solids.map(localSolidBounds);
+      expect(
+        Math.max(...gripBounds.map((bounds) => bounds[1][1])) - Math.min(...gripBounds.map((bounds) => bounds[0][1])),
+      ).toBe(gripHeights[size]);
+
+      const barrel = FAMILIES['revolver-barrel']!.build({ bore: 'M', length: size, style: 'classic' });
+      expect(barrel.ports.find((port) => port.id === 'muzzle')?.pos[0]).toBe(barrelLengths[size]);
+    }
+    expect(REVOLVER_PROPORTIONS.frameHeightEstimate.pickedU).toBe(8);
+    expect(REVOLVER_PROPORTIONS.frameHeight.pickedU).toBe(9);
+    expect(REVOLVER_PROPORTIONS.frameHeight.sourceRow).toContain('BR-approved correction');
+  });
+
+  it('builds a revolver octagonal barrel with its forcing cone, open underlug, sight and loop port', () => {
     const barrel = FAMILIES['revolver-barrel']!.build({ bore: 'S', length: 'S', style: 'classic' });
     expect(barrel.ports.map((port) => port.id)).toEqual(['frame', 'cylinder', 'muzzle']);
     expect(barrel.solids.map((part) => part.id)).toEqual([
-      'barrel-octagon',
       'forcing-cone',
+      'barrel-octagon',
       'top-rib',
-      'underlug-shroud',
+      'underlug-roof',
+      'underlug-floor',
+      'underlug-far-wall',
+      'underlug-near-wall',
+      'underlug-nose-cap',
       'front-sight',
     ]);
-    expect(localSolidBounds(barrel.solids[0]!)[1][0]).toBeCloseTo(7.5);
+    expect(localSolidBounds(barrel.solids[1]!)[1][0]).toBeCloseTo(7.5);
+
+    const vented = FAMILIES['revolver-barrel']!.build({ bore: 'M', length: 'S', style: 'vented' });
+    const posts = vented.solids.filter((solid) => solid.id.startsWith('vented-rib-post-'));
+    const intervals = posts.map((solid) => {
+      const [min, max] = localSolidBounds(solid);
+      return [min[0], max[0]] as const;
+    });
+    expect(intervals[0]).toEqual([0.5, 1]);
+    expect(intervals.at(-1)).toEqual([7, 7.5]);
   });
 
   it('keeps six chamber positions as data and aligns index zero with the bore', () => {

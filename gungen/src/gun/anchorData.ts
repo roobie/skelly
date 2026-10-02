@@ -9,8 +9,8 @@ import type { AnchorFrame } from '../core/design.ts';
 import { extrusionPoint, type Vec3 } from '../core/math.ts';
 import type { PartDef, Solid } from '../core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
-import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
 import { FIRING_GRIP } from './parts.ts';
+import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
 
 const X: Vec3 = [1, 0, 0];
 const Y: Vec3 = [0, 1, 0];

@@ -2726,7 +2726,7 @@ exports[`templates > revolver > known-good seeds 1`] = `
       "grip": {
         "family": "revolver-grip",
         "params": {
-          "length": "M",
+          "length": "L",
         },
       },
     },
@@ -2832,7 +2832,7 @@ exports[`templates > revolver > known-good seeds 1`] = `
       "grip": {
         "family": "revolver-grip",
         "params": {
-          "length": "M",
+          "length": "L",
         },
       },
     },
