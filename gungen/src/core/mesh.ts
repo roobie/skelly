@@ -10,8 +10,18 @@
 // X/Y extrusion axes are then mapped through right-handed coordinate cycles.
 
 import { GRID } from './conventions.ts';
-import { clippedExtrudedPolygonPolyhedron, localSolidBounds } from './geometry.ts';
-import { add, cross, dot, type ExtrusionAxis, extrusionPoint, normalize, sub, type Vec3 } from './math.ts';
+import {
+  boundsOfPoints,
+  type ConvexPolyhedron,
+  cleanPolygon,
+  clipPolygon as clipPolygonByPlane,
+  clippedExtrudedPolygonPolyhedron,
+  localSolidBounds,
+  obbPolyhedron,
+  polygonArea,
+  worldBox,
+} from './geometry.ts';
+import { add, cross, dot, type ExtrusionAxis, extrusionPoint, IDENTITY, normalize, sub, type Vec3 } from './math.ts';
 import { DEFAULT_REVOLVE_FACETS, meshForRevolved } from './revolve.ts';
 import type { Box, DomainUnits, Solid, Vec2 } from './schema.ts';
 
@@ -291,6 +301,9 @@ export const meshForSolid = (
   if (solid.kind === 'revolved') {
     return orientExtrusion(meshForRevolved(solid, revolveFacets), solid.axis);
   }
+  if (solid.kind === 'extruded-polygon' && solid.clip?.length && solid.display?.bevel !== false) {
+    throw new Error(`Solid "${solid.id}" has clip planes; set display.bevel to false explicitly.`);
+  }
   if (solid.kind === 'box') {
     const { profile, z } = boxProfile(solid.box);
     return chamferedPrism(profile, z, bevel);
@@ -331,110 +344,38 @@ interface MeshGroupBuffers {
   readonly triangleKeys: Set<string>;
 }
 
-const trianglePoints = (mesh: TriangleMesh, triangle: number): [Vec3, Vec3, Vec3] =>
-  [0, 1, 2].map((corner) => {
-    const index = mesh.indices[triangle + corner]! * 3;
-    return [mesh.positions[index]!, mesh.positions[index + 1]!, mesh.positions[index + 2]!] as Vec3;
-  }) as [Vec3, Vec3, Vec3];
-
-const triangleNormal = (mesh: TriangleMesh, triangle: number): Vec3 => {
-  const vertex = mesh.indices[triangle]! * 3;
-  return [mesh.normals[vertex]!, mesh.normals[vertex + 1]!, mesh.normals[vertex + 2]!];
-};
-
-const polygonArea = (points: readonly Vec3[]): number => {
-  let x = 0;
-  let y = 0;
-  let z = 0;
-  for (let i = 0; i < points.length; i++) {
-    const normal = cross(points[i]!, points[(i + 1) % points.length]!);
-    x += normal[0];
-    y += normal[1];
-    z += normal[2];
-  }
-  return Math.hypot(x, y, z) / 2;
-};
-
-const cleanPolygon = (points: readonly Vec3[]): Vec3[] => {
-  const clean: Vec3[] = [];
-  for (const point of points) {
-    const previous = clean.at(-1);
-    if (
-      !previous ||
-      Math.hypot(point[0] - previous[0], point[1] - previous[1], point[2] - previous[2]) > GROUP_WELD_TOLERANCE_U
-    ) {
-      clean.push(point);
-    }
-  }
-  if (clean.length > 2) {
-    const first = clean[0]!;
-    const last = clean.at(-1)!;
-    if (Math.hypot(first[0] - last[0], first[1] - last[1], first[2] - last[2]) <= GROUP_WELD_TOLERANCE_U) {
-      clean.pop();
-    }
-  }
-  return clean.length >= 3 && polygonArea(clean) > GROUP_WELD_TOLERANCE_U ** 2 ? clean : [];
-};
-
-const polygonHalfSpaces = (mesh: TriangleMesh): HalfSpace[] => {
-  const vertices: Vec3[] = [];
-  for (let i = 0; i < mesh.positions.length; i += 3) {
-    vertices.push([mesh.positions[i]!, mesh.positions[i + 1]!, mesh.positions[i + 2]!]);
-  }
+const polyhedronSurfaceFaces = (polyhedron: ConvexPolyhedron, swapCaps = false): SurfacePolygon[] => {
   const center = [0, 1, 2].map(
-    (axis) => vertices.reduce((sum, point) => sum + point[axis]!, 0) / vertices.length,
+    (axis) => polyhedron.vertices.reduce((sum, point) => sum + point[axis]!, 0) / polyhedron.vertices.length,
   ) as unknown as Vec3;
-  const planes = new Map<string, HalfSpace>();
-  for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
-    const [a, b, c] = trianglePoints(mesh, triangle);
-    let normal = normalize(cross(sub(b, a), sub(c, a)));
-    let offset = dot(normal, a);
+  const faces = [...polyhedron.faces];
+  if (swapCaps && faces.length > 1) {
+    [faces[0], faces[1]] = [faces[1]!, faces[0]!];
+  }
+  return faces.flatMap((face) => {
+    const points = face.map((index) => polyhedron.vertices[index]!);
+    let normal = normalize(cross(sub(points[1]!, points[0]!), sub(points[2]!, points[0]!)));
+    let offset = dot(normal, points[0]!);
     if (dot(normal, center) > offset) {
       normal = [-normal[0], -normal[1], -normal[2]];
       offset = -offset;
+      points.reverse();
     }
-    const plane = { normal, offset };
-    const key = `${weldKey(normal)}|${weldCoordinate(offset).toFixed(5)}`;
-    planes.set(key, plane);
+    return [{ points, normal }];
+  });
+};
+
+const halfSpacesFromPolyhedron = (polyhedron: ConvexPolyhedron, swapCaps = false): HalfSpace[] => {
+  const planes = new Map<string, HalfSpace>();
+  for (const face of polyhedronSurfaceFaces(polyhedron, swapCaps)) {
+    const plane = { normal: face.normal, offset: dot(face.normal, face.points[0]!) };
+    planes.set(`${weldKey(plane.normal)}|${weldCoordinate(plane.offset).toFixed(5)}`, plane);
   }
   return [...planes.values()];
 };
 
-const clipPolygonEdges = (polygon: readonly Vec3[], distances: readonly number[], keepInside: boolean): Vec3[] => {
-  const result: Vec3[] = [];
-  for (let i = 0; i < polygon.length; i++) {
-    const a = polygon[i]!;
-    const b = polygon[(i + 1) % polygon.length]!;
-    const distanceA = distances[i]!;
-    const distanceB = distances[(i + 1) % polygon.length]!;
-    const insideA = keepInside ? distanceA <= 0 : distanceA >= 0;
-    const insideB = keepInside ? distanceB <= 0 : distanceB >= 0;
-    if (insideA !== insideB) {
-      const ratio = distanceA / (distanceA - distanceB);
-      result.push([a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio, a[2] + (b[2] - a[2]) * ratio]);
-    }
-    if (insideB) {
-      result.push(b);
-    }
-  }
-  return cleanPolygon(result);
-};
-
-const clipPolygon = (polygon: readonly Vec3[], plane: HalfSpace, keepInside: boolean): Vec3[] => {
-  if (polygon.length < 3) {
-    return [];
-  }
-  const distances = polygon.map((point) => dot(plane.normal, point) - plane.offset);
-  const minimum = Math.min(...distances);
-  const maximum = Math.max(...distances);
-  if (maximum <= GROUP_WELD_TOLERANCE_U) {
-    return keepInside ? [...polygon] : [];
-  }
-  if (minimum >= -GROUP_WELD_TOLERANCE_U) {
-    return keepInside ? [] : [...polygon];
-  }
-  return clipPolygonEdges(polygon, distances, keepInside);
-};
+const clipPolygon = (polygon: readonly Vec3[], plane: HalfSpace, keepInside: boolean): Vec3[] =>
+  clipPolygonByPlane(polygon, plane, keepInside, GROUP_WELD_TOLERANCE_U);
 
 /** Subtract one convex piece from a planar convex polygon, returning disjoint survivors. */
 const subtractConvexPiece = (polygon: readonly Vec3[], planes: readonly HalfSpace[]): Vec3[][] => {
@@ -458,69 +399,6 @@ const subtractConvexPiece = (polygon: readonly Vec3[], planes: readonly HalfSpac
     }
   }
   return survivors;
-};
-
-interface PlanarFaceEdges {
-  readonly normal: Vec3;
-  readonly edges: Map<string, { readonly from: Vec3; readonly to: Vec3 }>;
-}
-
-const registerPlanarTriangle = (
-  groups: Map<string, PlanarFaceEdges>,
-  points: readonly [Vec3, Vec3, Vec3],
-  normal: Vec3,
-): void => {
-  const offset = dot(normal, points[0]);
-  const key = `${weldKey(normal)}|${weldCoordinate(offset).toFixed(5)}`;
-  let group = groups.get(key);
-  if (!group) {
-    group = { normal, edges: new Map() };
-    groups.set(key, group);
-  }
-  for (let edge = 0; edge < 3; edge++) {
-    const from = points[edge]!;
-    const to = points[(edge + 1) % 3]!;
-    const edgeKey = [weldKey(from), weldKey(to)].sort().join('|');
-    if (group.edges.has(edgeKey)) {
-      group.edges.delete(edgeKey);
-    } else {
-      group.edges.set(edgeKey, { from, to });
-    }
-  }
-};
-
-const tracePlanarBoundary = (group: PlanarFaceEdges): Vec3[] | undefined => {
-  const edges = [...group.edges.values()];
-  if (edges.length < 3) {
-    return undefined;
-  }
-  const points: Vec3[] = [];
-  const startKey = weldKey(edges[0]!.from);
-  let currentKey = startKey;
-  while (points.length <= group.edges.size) {
-    const edgeIndex = edges.findIndex((candidate) => weldKey(candidate.from) === currentKey);
-    if (edgeIndex < 0) {
-      return undefined;
-    }
-    const edge = edges.splice(edgeIndex, 1)[0]!;
-    points.push(edge.from);
-    currentKey = weldKey(edge.to);
-    if (currentKey === startKey) {
-      return edges.length === 0 && polygonArea(points) > GROUP_WELD_TOLERANCE_U ** 2 ? points : undefined;
-    }
-  }
-  return undefined;
-};
-
-const facesFromMesh = (mesh: TriangleMesh): SurfacePolygon[] => {
-  const groups = new Map<string, PlanarFaceEdges>();
-  for (let triangle = 0; triangle < mesh.indices.length; triangle += 3) {
-    registerPlanarTriangle(groups, trianglePoints(mesh, triangle), triangleNormal(mesh, triangle));
-  }
-  return [...groups.values()].flatMap((group) => {
-    const points = tracePlanarBoundary(group);
-    return points ? [{ points, normal: group.normal }] : [];
-  });
 };
 
 const pointsOnEdge = (a: Vec3, b: Vec3, candidates: readonly Vec3[]): Vec3[] => {
@@ -650,7 +528,7 @@ const appendSurfacePolygon = (surface: SurfacePolygon, vertices: readonly Vec3[]
 interface SolidMeshContext {
   readonly halfSpaces: readonly HalfSpace[][];
   readonly vertices: readonly (readonly Vec3[])[];
-  readonly bounds: readonly Bounds3[];
+  readonly bounds: readonly (readonly [Vec3, Vec3])[];
 }
 
 const subtractFaceByOtherPieces = (
@@ -685,20 +563,10 @@ const subtractFaceByOtherPieces = (
     .map((points) => ({ points, normal: face.normal }));
 };
 
-interface Bounds3 {
-  readonly min: Vec3;
-  readonly max: Vec3;
-}
-
-const boundsOfPoints = (points: readonly Vec3[]): Bounds3 => ({
-  min: [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis]!))) as unknown as Vec3,
-  max: [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis]!))) as unknown as Vec3,
-});
-
-const boundsOverlap = (a: Bounds3, b: Bounds3): boolean =>
+const boundsOverlap = (a: readonly [Vec3, Vec3], b: readonly [Vec3, Vec3]): boolean =>
   [0, 1, 2].every(
     (axis) =>
-      a.min[axis]! <= b.max[axis]! + GROUP_WELD_TOLERANCE_U && a.max[axis]! >= b.min[axis]! - GROUP_WELD_TOLERANCE_U,
+      a[0][axis]! <= b[1][axis]! + GROUP_WELD_TOLERANCE_U && a[1][axis]! >= b[0][axis]! - GROUP_WELD_TOLERANCE_U,
   );
 
 const liesStrictlyOnOneSide = (face: SurfacePolygon, vertices: readonly Vec3[]): boolean => {
@@ -716,18 +584,21 @@ const liesStrictlyOnOneSide = (face: SurfacePolygon, vertices: readonly Vec3[]):
   return minimum > GROUP_WELD_TOLERANCE_U || maximum < -GROUP_WELD_TOLERANCE_U;
 };
 
-const meshVertices = (mesh: TriangleMesh): Vec3[] =>
-  Array.from({ length: mesh.positions.length / 3 }, (_, index) => [
-    mesh.positions[index * 3]!,
-    mesh.positions[index * 3 + 1]!,
-    mesh.positions[index * 3 + 2]!,
-  ]);
-
-const boundarySurfaces = (meshes: readonly TriangleMesh[], halfSpaces: readonly HalfSpace[][]): SurfacePolygon[] => {
-  const vertices = meshes.map(meshVertices);
-  const context: SolidMeshContext = { halfSpaces, vertices, bounds: vertices.map(boundsOfPoints) };
-  return meshes.flatMap((mesh, ownerIndex) =>
-    facesFromMesh(mesh).flatMap((face) => subtractFaceByOtherPieces(face, ownerIndex, context)),
+const boundarySurfaces = (
+  polyhedra: readonly ConvexPolyhedron[],
+  halfSpaces: readonly HalfSpace[][],
+  swapCaps: readonly boolean[],
+): SurfacePolygon[] => {
+  const vertices = polyhedra.map((polyhedron) => polyhedron.vertices);
+  const context: SolidMeshContext = {
+    halfSpaces,
+    vertices,
+    bounds: vertices.map(boundsOfPoints),
+  };
+  return polyhedra.flatMap((polyhedron, ownerIndex) =>
+    polyhedronSurfaceFaces(polyhedron, swapCaps[ownerIndex]).flatMap((face) =>
+      subtractFaceByOtherPieces(face, ownerIndex, context),
+    ),
   );
 };
 
@@ -839,9 +710,24 @@ export const meshForSolidGroup = (solids: readonly Solid[]): TriangleMesh => {
       throw new Error(`Solid "${solid.id}" is thinner than the mesh-group weld contract.`);
     }
   }
-  const meshes = solids.map((solid) => meshForSolid(solid, 0));
-  const halfSpaces = meshes.map(polygonHalfSpaces);
-  const surfaces = boundarySurfaces(meshes, halfSpaces);
+  const swapCaps = solids.map(
+    (solid) => solid.kind === 'box' || (solid.kind === 'extruded-polygon' && !solid.clip?.length),
+  );
+  const polyhedra = solids.map((solid) => {
+    if (solid.kind === 'revolved') {
+      throw new Error(`Solid "${solid.id}" is revolved; mesh groups merge only boxes and convex extrusions.`);
+    }
+    if (solid.kind === 'box') {
+      return obbPolyhedron(worldBox(IDENTITY, solid.box));
+    }
+    const polyhedron = clippedExtrudedPolygonPolyhedron(solid);
+    if (!polyhedron) {
+      throw new Error(`Solid "${solid.id}" clips to an empty or degenerate mesh.`);
+    }
+    return polyhedron;
+  });
+  const halfSpaces = polyhedra.map((polyhedron, index) => halfSpacesFromPolyhedron(polyhedron, swapCaps[index]));
+  const surfaces = boundarySurfaces(polyhedra, halfSpaces, swapCaps);
   const vertices = surfaceVertices(surfaces);
   const output: MeshGroupBuffers = {
     positions: [],

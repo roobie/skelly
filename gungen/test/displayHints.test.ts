@@ -2,14 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { SelectedAnchors } from '../src/core/design.ts';
 import { exportGlb, partNodeName } from '../src/core/glb.ts';
 import { meshForSolid } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Domain } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
-import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
-import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_PALETTE } from '../src/gun/palette.ts';
@@ -81,8 +78,7 @@ describe('per-solid display hints', () => {
 
   it('exports the hinted solid with its unbeveled mesh', () => {
     const resolved = resolve(rifle, hintedDomain);
-    const anchors = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    const result = exportGlb({ resolved, anchors, palette: GUN_PALETTE, asset: ASSET });
+    const result = exportGlb({ resolved, palette: GUN_PALETTE, asset: ASSET });
     expect(result.ok).toBe(true);
     if (!result.ok) {
       throw new Error('expected a valid glb export');

@@ -1,4 +1,5 @@
 import type { PartDef, PartFamily } from '../../core/schema.ts';
+import { gunPort } from '../portData.ts';
 import { BMG_BASE_DIAMETER_U, BMG_OVERALL_LENGTH_U, ceilTo } from './cartridge.ts';
 import { RUBBER, X, Y } from './common.ts';
 
@@ -76,7 +77,7 @@ export const heavyMagazine: PartFamily = {
         },
       ],
       ports: [
-        {
+        gunPort({
           id: 'top',
           mount: 'magazine',
           gender: 'male',
@@ -85,7 +86,7 @@ export const heavyMagazine: PartFamily = {
           up: X,
           required: true,
           seat: 'well',
-        },
+        }),
       ],
       keepOuts: [],
       axes: [],
