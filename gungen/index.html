@@ -9,6 +9,9 @@
   <body>
     <aside id="panel">
       <h1>gungen viewer</h1>
+      <button id="issues-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="issues-overlay">
+        Issues: -
+      </button>
       <label class="field">
         Assembly
         <select id="fixture"></select>
@@ -47,8 +50,6 @@
       </fieldset>
       <section id="design-info" aria-live="polite"></section>
       <p id="description"></p>
-      <div id="status"></div>
-      <ol id="issues"></ol>
       <fieldset>
         <legend>Colours</legend>
         <label><input id="role-colors" type="checkbox" /> Colour by role (geometry check)</label>
@@ -66,6 +67,11 @@
       </p>
       <p id="hover"></p>
     </aside>
+    <div id="issues-overlay" role="dialog" aria-label="Validation issues and warnings" hidden>
+      <div id="status"></div>
+      <ol id="issues"></ol>
+      <section id="design-warnings"></section>
+    </div>
     <main id="view">
       <section id="param-panel" aria-label="Parameters"></section>
     </main>

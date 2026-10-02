@@ -89,6 +89,9 @@ const description = $<HTMLParagraphElement>('description');
 const designInfo = $<HTMLElement>('design-info');
 const status = $<HTMLDivElement>('status');
 const issueList = $<HTMLOListElement>('issues');
+const designWarnings = $<HTMLElement>('design-warnings');
+const issuesBtn = $<HTMLButtonElement>('issues-btn');
+const issuesOverlay = $<HTMLElement>('issues-overlay');
 const hover = $<HTMLParagraphElement>('hover');
 const templateSelect = $<HTMLSelectElement>('template');
 const seedInput = $<HTMLInputElement>('seed');
@@ -350,6 +353,55 @@ const frame = (group: Object3D) => {
   controls.update();
 };
 
+/** Design-file issue and error counts, for the issues button. */
+let designCounts = { warnings: 0, errors: 0 };
+
+const setOverlayOpen = (open: boolean) => {
+  issuesOverlay.hidden = !open;
+  issuesBtn.setAttribute('aria-expanded', String(open));
+};
+issuesBtn.addEventListener('click', () => setOverlayOpen(Boolean(issuesOverlay.hidden)));
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    setOverlayOpen(false);
+  }
+});
+document.addEventListener('pointerdown', (event) => {
+  const target = event.target as Node;
+  if (!(issuesOverlay.hidden || issuesOverlay.contains(target) || issuesBtn.contains(target))) {
+    setOverlayOpen(false);
+  }
+});
+
+/**
+ * The always-present issues button: its size never changes, only its label and colour. The lists it opens live in
+ * a fixed-position overlay, so nothing in the layout moves when issues appear or vanish.
+ */
+const updateIssuesButton = () => {
+  let kind: 'idle' | 'pass' | 'warning' | 'fail' = 'idle';
+  let label = 'Issues: -';
+  const editable = Boolean(editorState?.template);
+  const count = (report?.issues.length ?? 0) + designCounts.warnings;
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  if (designCounts.errors > 0) {
+    kind = 'fail';
+    label = `✖ ${plural(designCounts.errors + (report && !editable ? report.issues.length : 0), 'error')}`;
+  } else if (report) {
+    if (count === 0) {
+      kind = 'pass';
+      label = 'Issues: 0';
+    } else if (editable || report.ok) {
+      kind = 'warning';
+      label = `⚠ ${plural(count, 'warning')}`;
+    } else {
+      kind = 'fail';
+      label = `✖ ${plural(count, 'error')}`;
+    }
+  }
+  issuesBtn.textContent = label;
+  issuesBtn.className = kind;
+};
+
 const renderPanel = (assembly: Assembly) => {
   if (!report) {
     return;
@@ -385,16 +437,20 @@ const renderPanel = (assembly: Assembly) => {
       return li;
     }),
   );
+  updateIssuesButton();
 };
 
 const renderDesignInfo = () => {
   designInfo.replaceChildren();
+  designWarnings.replaceChildren();
+  designCounts = { warnings: 0, errors: 0 };
   designStatus.value = editorState?.status ?? 'draft';
   saveButton.disabled = !editorState?.template;
   saveMessage.textContent = editorState?.template
     ? ''
     : 'This assembly has no matching template and cannot be saved as a design.';
   if (!activeDesign) {
+    updateIssuesButton();
     return;
   }
   const model = buildDesignViewModel(activeDesign.loaded, activeDesign.name);
@@ -413,10 +469,12 @@ const renderDesignInfo = () => {
     const error = document.createElement('p');
     error.className = 'design-error';
     error.textContent = `${model.errorCode}: ${model.errorMessage}`;
-    designInfo.append(error);
+    designWarnings.append(error);
+    designCounts = { warnings: 0, errors: 1 };
     if (model.declaredStatus) {
       designInfo.append(line('Declared status', model.declaredStatus));
     }
+    updateIssuesButton();
     return;
   }
 
@@ -431,20 +489,26 @@ const renderDesignInfo = () => {
   locks.textContent = `Locks: ${[...params, ...optional].join(', ') || 'none'}`;
   designInfo.append(locks);
 
-  if (model.infoIssues.length === 0) {
-    designInfo.append(line('Warnings', model.issues.length === 0 ? 'none' : 'See affected part cards.'));
-  } else {
+  // Design warnings live in the issues overlay, not inline, so they never push the controls around.
+  designCounts = { warnings: model.issues.length, errors: 0 };
+  if (model.issues.length > 0) {
+    const warningsHeading = document.createElement('h2');
+    warningsHeading.textContent = 'Design warnings';
     const designIssues = document.createElement('ul');
     designIssues.className = 'design-issues design-warnings';
-    for (const issue of model.infoIssues) {
+    for (const issue of model.issues) {
       const item = document.createElement('li');
       const code = document.createElement('code');
       code.textContent = issue.code;
       item.append(code, ` ${issue.message}`);
+      if (issue.parts.length > 0) {
+        item.append(` (${issue.parts.join(', ')})`);
+      }
       designIssues.append(item);
     }
-    designInfo.append(line('Warnings', ''), designIssues);
+    designWarnings.append(warningsHeading, designIssues);
   }
+  updateIssuesButton();
 };
 
 const clearRenderedModel = () => {
@@ -463,6 +527,7 @@ const clearRenderedModel = () => {
   description.textContent = '';
   status.textContent = '';
   issueList.replaceChildren();
+  updateIssuesButton();
 };
 
 const load = (assembly: Assembly) => {
@@ -504,34 +569,47 @@ const paramStateText = (state: PanelParam['state']): string => {
   return state.kind === 'user' ? 'set' : 'seed';
 };
 
-const cardTitle = (entry: PanelEntry): HTMLDivElement => {
+interface PartWarning {
+  readonly code: string;
+  readonly message: string;
+}
+
+/**
+ * A card's title row. Warnings and the prefab note are small badges with tooltips in this one-line row, so a
+ * warning appearing never changes the card's height.
+ */
+const cardTitle = (
+  entry: PanelEntry,
+  warnings: readonly PartWarning[] = [],
+  prefab?: PanelPart['prefab'],
+): HTMLDivElement => {
   const title = document.createElement('div');
   title.className = 'part-title';
   const id = document.createElement('span');
+  id.className = 'part-id';
   id.textContent = entry.id;
+  title.append(id);
+  if (prefab) {
+    const badge = document.createElement('span');
+    badge.className = prefab.stale ? 'part-badge part-prefab stale' : 'part-badge part-prefab';
+    badge.textContent = prefab.stale ? 'prefab · stale' : 'prefab';
+    badge.title = `prefab: ${prefab.label}${prefab.stale ? ' · stale' : ''}\nfixes ${Object.entries(prefab.fixedParams)
+      .map(([name, value]) => `${name}=${value}`)
+      .join(', ')}`;
+    title.append(badge);
+  }
+  if (warnings.length > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'part-badge part-warnings';
+    badge.textContent = `⚠ ${warnings.length}`;
+    badge.title = warnings.map((w) => `${w.code}: ${w.message}`).join('\n');
+    title.append(badge);
+  }
   const family = document.createElement('span');
   family.className = 'family';
   family.textContent = entry.family;
-  title.append(id, family);
+  title.append(family);
   return title;
-};
-
-const renderPartWarnings = (
-  warnings: readonly { readonly code: string; readonly message: string }[],
-): HTMLElement | undefined => {
-  if (warnings.length === 0) {
-    return undefined;
-  }
-  const list = document.createElement('ul');
-  list.className = 'part-warnings';
-  for (const warning of warnings) {
-    const item = document.createElement('li');
-    const code = document.createElement('code');
-    code.textContent = warning.code;
-    item.append(code, ` ${warning.message}`);
-    list.append(item);
-  }
-  return list;
 };
 
 /** An optional slot the current model doesn't use, with a button to add it. */
@@ -541,11 +619,7 @@ const renderSlotCard = (
 ): HTMLElement => {
   const card = document.createElement('fieldset');
   card.className = 'param-part optional';
-  card.append(cardTitle(entry));
-  const warningList = renderPartWarnings(warnings);
-  if (warningList) {
-    card.append(warningList);
-  }
+  card.append(cardTitle(entry, warnings));
   const row = document.createElement('div');
   row.className = 'param-slot';
   const note = document.createElement('span');
@@ -724,23 +798,7 @@ const renderPartCard = (
 ): HTMLElement => {
   const card = document.createElement('fieldset');
   card.className = entry.optional ? 'param-part optional' : 'param-part';
-  card.append(cardTitle(entry));
-  const warningList = renderPartWarnings(warnings);
-  if (warningList) {
-    card.append(warningList);
-  }
-  if (entry.prefab) {
-    const prefab = document.createElement('div');
-    prefab.className = entry.prefab.stale ? 'part-prefab stale' : 'part-prefab';
-    const label = document.createElement('div');
-    label.textContent = `prefab: ${entry.prefab.label}${entry.prefab.stale ? ' · stale' : ''}`;
-    const fixed = document.createElement('div');
-    fixed.textContent = `fixes ${Object.entries(entry.prefab.fixedParams)
-      .map(([name, value]) => `${name}=${value}`)
-      .join(', ')}`;
-    prefab.append(label, fixed);
-    card.append(prefab);
-  }
+  card.append(cardTitle(entry, warnings, entry.prefab));
   if (entry.optional) {
     card.append(renderOptionalPartActions(entry));
   }
@@ -776,22 +834,35 @@ const renderParamPanel = () => {
   });
   const nodes: HTMLElement[] = [];
 
+  // The meta card is always the first cell and has a fixed size: its button greys out and its note text
+  // changes, but it never adds or removes a grid cell.
+  const edited = hasOverrides(diffOverrides(baseline, current));
+  const meta = document.createElement('fieldset');
+  meta.className = 'param-part param-meta';
+  const metaTitle = document.createElement('div');
+  metaTitle.className = 'part-title';
+  const metaName = document.createElement('span');
+  metaName.textContent = 'edits';
+  metaTitle.append(metaName);
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'param-reset';
+  reset.textContent = 'Reset to seed';
+  reset.disabled = !edited;
+  reset.addEventListener('click', () => applyPanelChange(structuredClone(baseline!)));
+  const note = document.createElement('p');
+  note.className = 'param-note';
   if (lastDropped.length > 0) {
-    const note = document.createElement('p');
-    note.className = 'param-note';
+    note.classList.add('dropped');
     note.textContent = lastDropped
       .map((c) => `removed connection ${c.from} → ${c.to}: port no longer exists`)
       .join('; ');
-    nodes.push(note);
+    note.title = note.textContent;
+  } else {
+    note.textContent = edited ? 'Edited from the seed.' : 'No edits.';
   }
-  if (hasOverrides(diffOverrides(baseline, current))) {
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = 'param-reset';
-    reset.textContent = 'Reset to seed';
-    reset.addEventListener('click', () => applyPanelChange(structuredClone(baseline!)));
-    nodes.push(reset);
-  }
+  meta.append(metaTitle, reset, note);
+  nodes.push(meta);
   for (const entry of model) {
     nodes.push(
       entry.present
