@@ -20,7 +20,7 @@ const observationPlugin = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, held, showNotice, getNotice: () => notice, feet } });\n  const originalHeldUpdate = held.update.bind(held);\n  held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
+      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, held, showNotice, getNotice: () => notice, feet, caseEffects } });\n  const originalHeldUpdate = held.update.bind(held);\n  held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
     );
   },
 };
@@ -79,10 +79,19 @@ try {
     (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
   );
   await page.locator('#go').click();
+  if (!(await page.evaluate(() => document.querySelector('#overlay')?.hidden))) {
+    await page.locator('#go').click();
+  }
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
   } catch (error) {
-    process.stderr.write(`startup errors: ${JSON.stringify(pageErrors)}\\n`);
+    const startup = await page.evaluate(() => ({
+      title: document.title,
+      body: document.body.innerText,
+      overlayHidden: document.querySelector('#overlay')?.hidden,
+      canvas: Boolean(document.querySelector('#view canvas')),
+    }));
+    process.stderr.write(`startup errors: ${JSON.stringify(pageErrors)}; state: ${JSON.stringify(startup)}\\n`);
     throw error;
   }
 
@@ -357,9 +366,42 @@ try {
   assert.ok(menuBlocked.stamina >= beforeBlocked);
   assert.deepEqual(menuBlocked.swings, []);
   await page.keyboard.press('Tab');
+
+  const casesBeforeFirearm = await page.evaluate(() => {
+    const { inventory } = globalThis.primaryActionTest;
+    Reflect.deleteProperty(inventory.hands, 'left');
+    inventory.hands.right = inventory.create('debug_rifle_assault');
+    inventory.version += 1;
+    return [...inventory.piles.values()]
+      .flatMap((pile) => pile.items)
+      .filter(({ item }) => item.type === 'spent_case_7_62x39')
+      .reduce((sum, { item }) => sum + item.count, 0);
+  });
+  await page.mouse.click(640, 450);
+  await page.waitForFunction((before) => {
+    const { inventory } = globalThis.primaryActionTest;
+    return (
+      [...inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .filter(({ item }) => item.type === 'spent_case_7_62x39')
+        .reduce((sum, { item }) => sum + item.count, 0) ===
+      before + 1
+    );
+  }, casesBeforeFirearm);
+  const firearmAction = await page.evaluate(() => ({
+    rifle: globalThis.primaryActionTest.inventory.hands.right?.type,
+    flyingCases: globalThis.primaryActionTest.caseEffects.activeCount,
+    cases: [...globalThis.primaryActionTest.inventory.piles.values()]
+      .flatMap((pile) => pile.items)
+      .filter(({ item }) => item.type === 'spent_case_7_62x39')
+      .reduce((sum, { item }) => sum + item.count, 0),
+  }));
+  assert.equal(firearmAction.rifle, 'debug_rifle_assault');
+  assert.equal(firearmAction.cases, casesBeforeFirearm + 1, 'debug primary action records one persistent case');
+  assert.ok(firearmAction.flyingCases > 0, 'debug primary action also spawns a render-only flying case');
   assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
   process.stdout.write(
-    'primary-action browser contract passed: right/left hand bindings, held-hand attachment, unsupported hints, and alternating empty fists.\n',
+    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, and debug firearm cases.\n',
   );
 } finally {
   await browser?.close();

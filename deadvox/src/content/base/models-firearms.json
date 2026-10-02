@@ -85,7 +85,8 @@
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A stand-in for checking the gungen AR export in piles and hands. No loot table has it; spawn it with G (?debug=1). It doesn't fire.",
+      "description": "A stand-in for checking the gungen AR export and debug handling. Spawn it with G (?debug=1); it fires without hits or ammo use.",
+      "firearm": {},
       "model": "rifle_assault"
     }
   ]

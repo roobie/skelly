@@ -120,6 +120,27 @@ describe('the hamlet', () => {
     expect(world.getBlock(Math.floor(sx!), Math.floor(sy!) - 1, Math.floor(sz!))).toBe(id('asphalt'));
   });
 
+  it('adds a deterministic handling range beside the hamlet, without a new site', () => {
+    const hamlet = new Hamlet(13, registry, scale);
+    const other = new Hamlet(13, registry, scale);
+    const nearestHamletEdge = Math.max(hamlet.road.x1, ...hamlet.lots.map((lot) => lot.rect.x1));
+    expect(hamlet.range.rect.x0).toBeGreaterThan(nearestHamletEdge);
+    expect(hamlet.range.rect).toEqual(other.range.rect);
+    expect(hamlet.range.targetXs).toEqual(other.range.targetXs);
+
+    const columns = columnsOf(hamlet);
+    const { world, furniture } = generate(hamlet, 13, columns);
+    const line = hamlet.range.firingLine;
+    const lineZ = Math.floor((line.z0 + line.z1) / 2);
+    expect(world.getBlock(line.x0, hamlet.range.floor, lineZ)).toBe(id('asphalt'));
+    expect(world.getBlock(hamlet.range.targetXs[0]!, hamlet.range.floor + 2, lineZ)).not.toBe(0);
+    expect(furniture.filter((entry) => entry.includes('range_table'))).toHaveLength(1);
+    expect(
+      hamlet.range.furnitureIn(toChunk(hamlet.range.table.pos[0]), toChunk(hamlet.range.table.pos[2]))[0]?.spec,
+    ).toEqual(hamlet.range.table);
+    expect(hamlet.surface.height(line.x0, lineZ, -999)).toBe(hamlet.range.floor);
+  });
+
   it('puts furniture in air, standing on something, and doors in walls', () => {
     const hamlet = new Hamlet(3, registry, scale);
     const columns = columnsOf(hamlet);
