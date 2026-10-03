@@ -30,8 +30,23 @@ export interface SurvivalHooks {
 }
 
 export class Survival {
-  /** The light that's on, if any. */
-  lit: Item | undefined;
+  /** Selection is non-owning; a removed light resolves to empty immediately. */
+  private litUid: number | undefined;
+
+  get lit(): Item | undefined {
+    if (this.litUid === undefined) {
+      return undefined;
+    }
+    const light = this.inventory.itemByUid(this.litUid);
+    if (!light) {
+      this.litUid = undefined;
+    }
+    return light;
+  }
+
+  set lit(item: Item | undefined) {
+    this.litUid = item?.uid;
+  }
   private readonly sim: Simulation;
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
@@ -67,7 +82,8 @@ export class Survival {
   }
 
   snapshotState(): Readonly<{ litUid?: number }> {
-    return Object.freeze(this.lit === undefined ? {} : { litUid: this.lit.uid });
+    const light = this.lit;
+    return Object.freeze(light === undefined ? {} : { litUid: light.uid });
   }
 
   restoreState(state: { litUid?: number }): void {

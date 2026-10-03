@@ -5,6 +5,25 @@ area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the prob
 ahead; lessons are what past problems taught us. Newest first. Each entry says what
 happened, why, and what to do differently.
 
+## Item bindings must not own item lifetimes (2026-10-03)
+
+**What happened.** Eating a quickbar-bound can of beans removed it from inventory but
+left the quickbar's `Item` alias alive. A snapshot stored that dangling UID and Continue
+refused it. An active light selection could likewise outlive removal of its owner.
+
+**What to do.** Hands, worn slots and container/pile/furniture trees own Items. Quickbar
+bindings and the persistent light selection store only UIDs and resolve through
+`Inventory.itemByUid`; a missing live item is empty. Full consumption, container-subtree
+removal and whole-stack merging therefore need no per-consumer cleanup hooks. Transfers
+and partial consumption keep the same live UID. Queued actions already resolve their UID
+parameters at execution. Keep the canonical traversal lazy and carried-first, so a held
+light lookup does not collect the entire world's items each frame.
+
+Check non-owning references at the synchronous snapshot boundary. Restore still refuses
+a dangling saved reference: normalizing a missing *live* binding is not permission to
+repair malformed saved state under ADR 0002. Future crafting/take-apart consumption must
+use the inventory ownership boundary, not retain aliased Items after removal.
+
 ## Save-lock queue deadlines (2026-10-03)
 
 **What happened.** BR reported an intermittent Firefox close/relaunch hang at

@@ -630,7 +630,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   /** A quickbar key puts its item in your hands; pressing it again uses it. */
   const quickKey = (slot: number) => {
-    const item = quickbar.slots[slot];
+    const item = quickbar.resolve(slot, inventory);
     if (!item) {
       showNotice(`Quickbar ${slot + 1} is empty: open the inventory, pick an item, press ${slot + 1}`);
       return;

@@ -100,6 +100,16 @@ references:
 | In-flight jobs | The live queue uses tagged data descriptors (`jobType` plus serializable parameters, elapsed time and duration), not closures. Step 1 converts the current handling jobs to this representation. The 1.9 snapshot omits pending descriptors and clears its transient `searching` set in the saved copy only; it must not cancel or mutate the live queue/set. | Descriptors leave room for later resumable long actions. In 1.9, jobs still apply only on completion; the saved target is untouched and the player can retry. The live session keeps its original job progress and timing. |
 | Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio playback queues after readers drain, render interpolation/feedback, footstep cadence and airborne peak, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
 
+Runtime ownership follows the same boundary: inventory roots (hands, worn items,
+piles and furniture) and their pocket trees own Item instances. Quickbar bindings
+and the selected light store non-owning UIDs and resolve through the inventory's
+canonical live lookup; a removed live binding becomes empty before serialization.
+The synchronous snapshot barrier checks that every emitted quickbar/light UID is
+still owned. Restore refuses a dangling saved UID rather than silently repairing
+it. Full consumption, including a container subtree, and whole-stack merging end
+an item's lifetime; transfers and partial consumption do not. Future crafting and
+take-apart actions must consume through this same inventory ownership boundary.
+
 A future system that adds a persistent counter, RNG stream, or state machine
 must declare its save representation in the same change; “not currently in the
 schema” is not permission to reset it on load. The current audio branch already
