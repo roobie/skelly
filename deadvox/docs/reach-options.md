@@ -15,6 +15,14 @@ inventory revision; the screen keys redraws on precise origin as well as revisio
 The view is derived, never saved or authority for a delayed command. Moves and
 battery swaps recheck current ownership, reach and search at completion.
 
+The simulation fingerprint deliberately changes from main's
+`04329c8af428e3fd8882ffa26d931d007a0e0957c0f50e753f9f428ab8759ec9`
+to `7fc0930e39b8d33d1eaec3fcba2d236d5a9fc39c038c0fa96eba822aeb640fd5`:
+`core/reach.ts` and `core/options.ts` are in the fingerprint graph. This is a new
+simulation identity permitted pre-alpha; old saves are refused. No migration or
+save-schema change. The menu-pointer modifier fix itself is presentation-only,
+excluded from that graph.
+
 `src/core/options.ts` supplies move/use plans, labels, refusal reasons and times.
 Survival retains registered queue actions and effects, not separate eligibility.
 Ordinary E chooses the quickest pocket; ordinary to-hands and five-spot drop ordering
@@ -40,6 +48,11 @@ immediately or invokes use/eat/drink/switch.
   The swap revalidates reach/search and consumes no battery on refusal. Swap first,
   then a separate next use switches the light on, as before.
 
-Tests protect each quick-move rule, actual pointer queue binding, searched/nested
+The locked-menu adapter preserves Ctrl, Cmd, Shift and Alt on forwarded pointer
+and click events. The inventory regression crosses that adapter from the locked
+canvas (Ctrl, best-effort Mac Cmd, ordinary click and Shift-only drag controls),
+not just the inventory's receiving handler.
+
+Tests protect each quick-move rule, locked-menu pointer queue binding, searched/nested
 reach, delayed revalidation and scalar invalidation. Absolute boundary tests fail
 when the 2-metre constant is mutated to 2.1 and pass after restoring 2.
