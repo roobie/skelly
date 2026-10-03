@@ -25,6 +25,8 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 
+import { SOUND_EVENT_IDS } from './soundEvents.ts';
+
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 
@@ -79,6 +81,10 @@ export const BlockSchema = strictObject({
   color: Color,
   /** Blocks movement. Non-solid blocks still render as cubes for now. */
   solid: vBoolean(),
+  /** Blocks sight/aim/picking; ordinary blocks inherit their movement rule when omitted. */
+  opaque: optional(vBoolean()),
+  /** Content-owned brushing events: gentle movement and fast movement. */
+  rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
 });

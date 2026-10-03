@@ -1224,7 +1224,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
                   world: engine.world,
                   registry: engine.registry,
                   entities: engine.entities,
-                  isSolid: engine.isSolid,
+                  isSolid: engine.isOpaque,
                   blockSize: engine.config.scale.blockSize,
                 },
                 eye,

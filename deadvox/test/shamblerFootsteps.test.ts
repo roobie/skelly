@@ -43,6 +43,7 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
     store,
     seed: 73,
     isSolid,
+    isOpaque: isSolid,
     blockSize: BLOCK_SIZE,
     physics: PHYSICS,
     jumpSpeed: PLAYER.jump,

@@ -52,6 +52,7 @@ if (bench === 'report') {
     resumed.actors = config.actors;
     resumed.site = savedWorld.site;
     resumed.storeys = savedWorld.storeys;
+    resumed.density = savedWorld.density;
     config = resumed;
   }
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;

@@ -23,6 +23,7 @@ const BAT = registry.items.get('baseball_bat')!.weapon!.melee!;
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
 const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isSolid,
+  isOpaque: isSolid,
   blockSize: BLOCK,
   physics: physicsFor(makeScale(BLOCK)),
   jumpSpeed: PLAYER.jump,

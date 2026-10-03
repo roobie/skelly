@@ -67,6 +67,7 @@ describe('melee while debug-frozen', () => {
           lightSeenFrom: 40,
         }),
         isSolid: FLOOR,
+        isOpaque: FLOOR,
         hour: () => 12,
         blockSize: BLOCK_SIZE,
         physics: physicsFor(SCALE),

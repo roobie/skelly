@@ -45,6 +45,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
       lightSeenFrom: 40,
     }),
     isSolid: FLOOR,
+    isOpaque: FLOOR,
     hour: () => 12,
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),

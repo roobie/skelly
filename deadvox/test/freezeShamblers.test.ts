@@ -34,6 +34,7 @@ const makeSystem = (
   new ZombieSystem({
     player: () => player(target),
     isSolid: FLOOR,
+    isOpaque: FLOOR,
     hour: () => 12,
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
@@ -88,6 +89,7 @@ describe('debug shambler freeze', () => {
     const system = new ZombieSystem({
       player: () => player(target),
       isSolid: FLOOR,
+      isOpaque: FLOOR,
       hour: () => 12,
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
