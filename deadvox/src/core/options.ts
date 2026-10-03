@@ -1,0 +1,230 @@
+// Item action availability. Views display these plans; commands revalidate at completion.
+
+import type { Vec3 } from './coords.ts';
+import type { HandlingQueue } from './handling.ts';
+import type { HandSide, Inventory, Plan, Target } from './inventory.ts';
+import { defOf, type Item } from './items.ts';
+import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
+import type { ReachSnapshot } from './reach.ts';
+
+export const EAT_TIME = 3;
+export const DRINK_TIME = 2;
+
+export interface MoveOption {
+  kind: 'move';
+  label: string;
+  target: Target;
+  plan: Plan;
+}
+
+export interface UseOption {
+  kind: 'use';
+  label: string;
+  plan: Plan;
+  operation?: 'eat' | 'switch' | 'battery';
+  light?: Item;
+  battery?: Item;
+}
+
+export type Option = MoveOption | UseOption;
+const SIDES: readonly HandSide[] = ['right', 'left'];
+const OBVIOUS = new Set(["It can't go inside itself", "It's already in that hand", "You're already wearing it"]);
+
+/** Every pocket of what the player holds and wears, retaining ordinary move ordering. */
+export const playerPockets = (inv: Inventory): { owner: Item; pocket: number; label: string }[] =>
+  inv.carried().flatMap((owner) =>
+    (defOf(inv.registry, owner.type).container?.pockets ?? []).map((spec, pocket) => ({
+      owner,
+      pocket,
+      label: `${inv.name(owner)}${spec.name ? ` · ${spec.name}` : ''}`,
+    })),
+  );
+
+export const dropSpots = (feet: Vec3): Vec3[] => [
+  feet,
+  [feet[0] + 1, feet[1], feet[2]],
+  [feet[0] - 1, feet[1], feet[2]],
+  [feet[0], feet[1], feet[2] + 1],
+  [feet[0], feet[1], feet[2] - 1],
+];
+
+/** Ordinary drop finds the first of the five existing drop spots with room. */
+export const dropTarget = (inv: Inventory, item: Item, feet: Vec3): { target: Target; plan: Plan } => {
+  let first: { target: Target; plan: Plan } | undefined;
+  for (const pos of dropSpots(feet)) {
+    const target: Target = { kind: 'pile', pos };
+    const plan = inv.plan(item, target);
+    first ??= { target, plan };
+    if (plan.ok) {
+      return { target, plan };
+    }
+  }
+  return first!;
+};
+
+/** Ordinary E key still picks the quickest pocket, not quick-move's backpack priority. */
+export const bestPocket = (inv: Inventory, item: Item): MoveOption | undefined =>
+  playerPockets(inv)
+    .map(({ owner, pocket, label }): MoveOption => {
+      const target: Target = { kind: 'pocket', owner, pocket };
+      return { kind: 'move', label, target, plan: inv.plan(item, target) };
+    })
+    .filter((o) => o.plan.ok)
+    .sort((a, b) => (a.plan.ok && b.plan.ok ? a.plan.time - b.plan.time : 0))[0];
+
+/** Quick move uses worn inventory only: back, other containers, then clothing pockets. */
+const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
+  const priority = (owner: Item): number => {
+    const def = defOf(inv.registry, owner.type);
+    if (def.wearable?.slot === 'back') {
+      return 0;
+    }
+    return def.category === 'bag' ? 1 : 2;
+  };
+  for (const owner of Object.values(inv.worn)
+    .filter((i): i is Item => i !== undefined)
+    .sort((a, b) => priority(a) - priority(b))) {
+    for (const [pocket] of (defOf(inv.registry, owner.type).container?.pockets ?? []).entries()) {
+      const target: Target = { kind: 'pocket', owner, pocket };
+      if (inv.plan(item, target).ok) {
+        return target;
+      }
+    }
+  }
+  return undefined;
+};
+
+/** Right-hand (primary/wielded) items stow; other carried items drop exactly at the feet. */
+export const quickMove = (item: Item, view: ReachSnapshot): MoveOption => {
+  const inv = view.player.inventory;
+  const at = inv.locate(item);
+  let target: Target = { kind: 'pile', pos: view.feet };
+  if (at && ((at.kind === 'hand' && at.side === 'right') || inv.placeOf(at) !== undefined)) {
+    const wear: Target = { kind: 'worn' };
+    if (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok) {
+      target = wear;
+    } else {
+      const pocket = inventoryPocket(inv, item);
+      if (!pocket) {
+        return {
+          kind: 'move',
+          label: 'Quick move',
+          target,
+          plan: { ok: false, reason: "It doesn't fit in your inventory" },
+        };
+      }
+      target = pocket;
+    }
+  }
+  return { kind: 'move', label: 'Quick move', target, plan: inv.plan(item, target) };
+};
+
+const refuseUse = (reason: string): UseOption => ({ kind: 'use', label: 'Use', plan: { ok: false, reason } });
+
+const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): UseOption => {
+  const light =
+    selectedLight ?? [inv.hands.right, inv.hands.left].find((held) => held && fitsLight(inv.registry, held, battery));
+  return light
+    ? {
+        kind: 'use',
+        label: `Put a battery in the ${inv.name(light).toLowerCase()}`,
+        operation: 'battery',
+        light,
+        battery,
+        plan: { ok: true, time: BATTERY_SWAP },
+      }
+    : refuseUse('Hold the light it goes in first');
+};
+
+const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
+  const inv = view.player.inventory;
+  if (!item.on && chargeOf(inv.registry, item) === 0) {
+    const [battery] = view.entries
+      .map((entry) => entry.item)
+      .filter((candidate) => fitsLight(inv.registry, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)
+      .sort((a, b) => (chargeOf(inv.registry, b) ?? 0) - (chargeOf(inv.registry, a) ?? 0));
+    return battery ? batteryOption(battery, inv, item) : refuseUse('The battery is dead, and you have no spare');
+  }
+  return {
+    kind: 'use',
+    label: `Switch ${item.on ? 'off' : 'on'}`,
+    operation: 'switch',
+    light: item,
+    plan: { ok: true, time: 0 },
+  };
+};
+
+/** Eligibility only: effects remain in the domain command owner. */
+export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
+  const inv = view.player.inventory;
+  const def = defOf(inv.registry, item.type);
+  const name = def.name.toLowerCase();
+  const at = inv.locate(item);
+  if (!at) {
+    return refuseUse(def.battery ? "The battery isn't there any more" : `Take the ${name} in your hands first`);
+  }
+  if (!view.entries.some((entry) => entry.item === item)) {
+    const place = inv.placeOf(at);
+    return refuseUse(place?.kind === 'furniture' && !place.entity.searched ? 'Search it first' : 'Too far away');
+  }
+  if (def.battery) {
+    return batteryOption(item, inv);
+  }
+  if (at.kind !== 'hand') {
+    return refuseUse(`Take the ${name} in your hands first`);
+  }
+  if (def.food) {
+    const drink = def.category === 'drink';
+    return {
+      kind: 'use',
+      label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
+      operation: 'eat',
+      plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
+    };
+  }
+  return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
+};
+
+/** All move/use choices, including their refusal reasons and ordinary handling times. */
+export const options = (item: Item, view: ReachSnapshot): Option[] => {
+  const inv = view.player.inventory;
+  const out: Option[] = SIDES.map((side): MoveOption => {
+    const target: Target = { kind: 'hand', side };
+    return { kind: 'move', label: `${side === 'right' ? 'Right' : 'Left'} hand`, target, plan: inv.plan(item, target) };
+  });
+  if (defOf(inv.registry, item.type).wearable) {
+    out.push({ kind: 'move', label: 'Wear it', target: { kind: 'worn' }, plan: inv.plan(item, { kind: 'worn' }) });
+  }
+  for (const { owner, pocket, label } of playerPockets(inv)) {
+    const target: Target = { kind: 'pocket', owner, pocket };
+    out.push({ kind: 'move', label, target, plan: inv.plan(item, target) });
+  }
+  out.push(
+    { kind: 'move', label: 'Drop it here', ...dropTarget(inv, item, view.feet) },
+    quickMove(item, view),
+    useOption(item, view),
+  );
+  return out.filter((o) => o.plan.ok || !OBVIOUS.has(o.plan.reason));
+};
+
+/** Ordinary to-hands behavior, including moving an occupied hand away first. */
+export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+  for (const side of SIDES) {
+    const result = queue.enqueue(item, { kind: 'hand', side });
+    if (result.ok) {
+      return undefined;
+    }
+  }
+  const held = inv.hands.right ?? inv.hands.left;
+  if (!held || held === item) {
+    return inv.plan(item, { kind: 'hand', side: 'right' }).ok ? undefined : 'Your hands are full';
+  }
+  const away = bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
+  const stow = queue.enqueue(held, away);
+  if (!stow.ok) {
+    return stow.reason;
+  }
+  const side: HandSide = inv.hands.right === held ? 'right' : 'left';
+  const take = queue.enqueue(item, { kind: 'hand', side }, item.count, true);
+  return take.ok ? undefined : take.reason;
+};

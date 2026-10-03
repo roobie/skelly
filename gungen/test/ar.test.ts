@@ -14,12 +14,18 @@ describe('AR-pattern parts', () => {
       bore: 'M',
       chargingHandle: 'rear-top',
       rail: 'full',
+      section: 'ar',
     });
-    const handle = receiver.keepOuts.find(({ id }) => id === 'charging-handle');
+    const mount = receiver.ports.find(({ id }) => id === 'charging-handle');
     const rail = receiver.ports.find(({ id }) => id === 'rail');
-
-    expect(handle?.box.center).toEqual([-17, 2.25, 0]);
-    expect(handle?.box.half).toEqual([1, 0.5, 1.5]);
+    const handle = FAMILIES['ar-charging-handle']!.build({});
+    const bar = handle.solids.find(({ id }) => id === 'ar-handle-crossbar');
+    expect(mount?.pos).toEqual([0, 0, 0]);
+    expect(receiver.solids.some(({ id }) => id === 'charging-handle')).toBe(false);
+    if (bar?.kind !== 'box') {
+      throw new Error('T-bar is missing');
+    }
+    expect(bar.box.center[0] + bar.box.half[0]).toBeLessThan(-16);
     expect(rail?.slots).toEqual({ count: 7, pitch: 2 });
   });
 

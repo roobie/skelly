@@ -8,21 +8,11 @@ import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { HandSide, Inventory, Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import {
-  BATTERY_SWAP,
-  chargeOf,
-  chargeShare,
-  drainLight,
-  fitsLight,
-  swapBattery,
-  toggleLight,
-} from '../core/lights.ts';
+import { chargeShare, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
 import { consume, FOOD_POISONING } from '../core/needs.ts';
+import { useOption } from '../core/options.ts';
+import type { ReachSnapshot } from '../core/reach.ts';
 import type { Simulation } from '../core/sim.ts';
-
-/** Seconds to eat or drink something. */
-export const EAT_TIME = 3;
-export const DRINK_TIME = 2;
 
 const numberParam = (params: JobParams, key: string): number => {
   const value = params[key];
@@ -36,6 +26,7 @@ export interface SurvivalHooks {
   /** Where a spent battery with charge left is dropped. */
   feet: () => Target;
   notice: (text: string) => void;
+  reach: () => ReachSnapshot;
 }
 
 export class Survival {
@@ -82,6 +73,9 @@ export class Survival {
       if (!battery) {
         return "The battery isn't there any more";
       }
+      if (!this.hooks.reach().entries.some((entry) => entry.item === battery)) {
+        return 'The battery is no longer in reach';
+      }
       return swapBattery(this.inventory, light, battery, this.hooks.feet());
     });
     sim.scheduler.register({ id: 'lights', rate: 1, maxStep: 30, tick: (dt) => this.tickLights(dt) });
@@ -105,23 +99,27 @@ export class Survival {
     return at?.kind === 'hand' ? at.side : undefined;
   }
 
-  /** Uses an item: it has to be in your hands, except a battery for the light you're holding. Says why not. */
+  /** Executes the live core option; this owner retains effects and serializable queue actions. */
   use(item: Item): string | undefined {
-    const def = defOf(this.inventory.registry, item.type);
-    const name = def.name.toLowerCase();
-    if (def.battery) {
-      return this.loadBattery(item);
+    const option = useOption(item, this.hooks.reach());
+    if (!option.plan.ok) {
+      return option.plan.reason;
     }
-    if (this.handOf(item) === undefined) {
-      return `Take the ${name} in your hands first`;
+    switch (option.operation) {
+      case 'eat':
+        this.queue.enqueueAction('survival.eat', option.label, option.plan.time, { itemUid: item.uid });
+        return undefined;
+      case 'battery':
+        this.queue.enqueueAction('survival.battery', option.label, option.plan.time, {
+          lightUid: option.light!.uid,
+          batteryUid: option.battery!.uid,
+        });
+        return undefined;
+      case 'switch':
+        return this.switchLight(item);
+      default:
+        throw new Error('Invalid usable core option');
     }
-    if (def.food) {
-      return this.eat(item);
-    }
-    if (def.light) {
-      return this.switchLight(item);
-    }
-    return `Nothing to do with the ${name} yet`;
   }
 
   /** Lines for the inventory's details panel: freshness, charge, whether it's on. */
@@ -144,17 +142,6 @@ export class Survival {
     return lines;
   }
 
-  private eat(item: Item): string | undefined {
-    const { registry } = this.inventory;
-    const def = defOf(registry, item.type);
-    const drink = def.category === 'drink';
-    const name = def.name.toLowerCase();
-    this.queue.enqueueAction('survival.eat', `${drink ? 'Drink' : 'Eat'} the ${name}`, drink ? DRINK_TIME : EAT_TIME, {
-      itemUid: item.uid,
-    });
-    return undefined;
-  }
-
   /** Eats or drinks what's in your hand; rotten food makes you sick instead. */
   private finishEating(item: Item): undefined {
     const def = defOf(this.inventory.registry, item.type);
@@ -170,51 +157,15 @@ export class Survival {
 
   private switchLight(light: Item): string | undefined {
     const { registry } = this.inventory;
-    if (!light.on && chargeOf(registry, light) === 0) {
-      const battery = this.findBattery(light);
-      return battery ? this.loadBattery(battery) : 'The battery is dead, and you have no spare';
-    }
     const reason = toggleLight(registry, light);
     if (reason === undefined) {
       if (light.on && this.lit && this.lit !== light) {
         this.lit.on = false;
       }
       this.lit = light.on ? light : undefined;
+      this.inventory.version += 1;
     }
     return reason;
-  }
-
-  /** A battery you're carrying that fits the light, fullest first. */
-  private findBattery(light: Item): Item | undefined {
-    const { registry } = this.inventory;
-    const all: Item[] = [];
-    const walk = (items: readonly Item[]) => {
-      for (const item of items) {
-        if (fitsLight(registry, light, item) && (chargeOf(registry, item) ?? 0) > 0) {
-          all.push(item);
-        }
-        for (const grid of item.pockets ?? []) {
-          walk(grid.map((p) => p.item));
-        }
-      }
-    };
-    walk(this.inventory.carried());
-    return all.sort((a, b) => (chargeOf(registry, b) ?? 0) - (chargeOf(registry, a) ?? 0))[0];
-  }
-
-  /** Queues swapping a battery into the light in your hands. */
-  private loadBattery(battery: Item): string | undefined {
-    const { registry, hands } = this.inventory;
-    const light = [hands.right, hands.left].find((held) => held && fitsLight(registry, held, battery));
-    if (!light) {
-      return 'Hold the light it goes in first';
-    }
-    const name = defOf(registry, light.type).name.toLowerCase();
-    this.queue.enqueueAction('survival.battery', `Put a battery in the ${name}`, BATTERY_SWAP, {
-      lightUid: light.uid,
-      batteryUid: battery.uid,
-    });
-    return undefined;
   }
 
   /** Drains the light that's on; one that left your hands goes off. */
@@ -224,13 +175,21 @@ export class Survival {
       return;
     }
     if (!light.on || this.handOf(light) === undefined) {
-      light.on = false;
+      if (light.on) {
+        light.on = false;
+        this.inventory.version += 1;
+      }
       this.lit = undefined;
       return;
     }
-    if (drainLight(this.inventory.registry, light, gameHours(this.sim.clock, dt)) !== undefined) {
-      this.lit = undefined;
+    const beforeCharge = light.charges;
+    const beforeOn = light.on;
+    const expired = drainLight(this.inventory.registry, light, gameHours(this.sim.clock, dt));
+    if (light.charges !== beforeCharge || light.on !== beforeOn) {
       this.inventory.version += 1;
+    }
+    if (expired !== undefined) {
+      this.lit = undefined;
       const reason = `The ${defOf(this.inventory.registry, light.type).name.toLowerCase()} died`;
       this.hooks.notice(reason);
       this.sim.emit({ kind: 'interrupt', reason });

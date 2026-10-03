@@ -7817,6 +7817,241 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -16.8,
+        1.8,
+        -2.25,
+      ],
+      [
+        -16.8,
+        1.8,
+        2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        -2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        2.25,
+      ],
+      [
+        -16.3,
+        1.8,
+        -2.25,
+      ],
+      [
+        -16.3,
+        1.8,
+        2.25,
+      ],
+      [
+        -16.3,
+        2.15,
+        -2.25,
+      ],
+      [
+        -16.3,
+        2.15,
+        2.25,
+      ],
+    ],
+    "id": "ar-handle-crossbar",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -16.4,
+        1.8,
+        -2.5,
+      ],
+      [
+        -16.4,
+        1.8,
+        -2.2,
+      ],
+      [
+        -16.4,
+        2.15,
+        -2.5,
+      ],
+      [
+        -16.4,
+        2.15,
+        -2.2,
+      ],
+      [
+        -15.65,
+        1.8,
+        -2.5,
+      ],
+      [
+        -15.65,
+        1.8,
+        -2.2,
+      ],
+      [
+        -15.65,
+        2.15,
+        -2.5,
+      ],
+      [
+        -15.65,
+        2.15,
+        -2.2,
+      ],
+    ],
+    "id": "ar-handle-latch",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -17.15,
+        1.8,
+        -2.25,
+      ],
+      [
+        -17.15,
+        1.8,
+        -1.4,
+      ],
+      [
+        -17.15,
+        2.15,
+        -2.25,
+      ],
+      [
+        -17.15,
+        2.15,
+        -1.4,
+      ],
+      [
+        -16.8,
+        1.8,
+        -2.25,
+      ],
+      [
+        -16.8,
+        1.8,
+        -1.4,
+      ],
+      [
+        -16.8,
+        2.15,
+        -2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        -1.4,
+      ],
+    ],
+    "id": "ar-handle-left-grip",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -17.15,
+        1.8,
+        1.4,
+      ],
+      [
+        -17.15,
+        1.8,
+        2.25,
+      ],
+      [
+        -17.15,
+        2.15,
+        1.4,
+      ],
+      [
+        -17.15,
+        2.15,
+        2.25,
+      ],
+      [
+        -16.8,
+        1.8,
+        1.4,
+      ],
+      [
+        -16.8,
+        1.8,
+        2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        1.4,
+      ],
+      [
+        -16.8,
+        2.15,
+        2.25,
+      ],
+    ],
+    "id": "ar-handle-right-grip",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -16.65,
+        1.75,
+        -0.15,
+      ],
+      [
+        -16.65,
+        1.75,
+        0.15,
+      ],
+      [
+        -16.65,
+        1.95,
+        -0.15,
+      ],
+      [
+        -16.65,
+        1.95,
+        0.15,
+      ],
+      [
+        -3,
+        1.75,
+        -0.15,
+      ],
+      [
+        -3,
+        1.75,
+        0.15,
+      ],
+      [
+        -3,
+        1.95,
+        -0.15,
+      ],
+      [
+        -3,
+        1.95,
+        0.15,
+      ],
+    ],
+    "id": "charging-handle",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
         25.75,
         0.414214,
         1,
@@ -9613,147 +9848,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -18,
-        2,
-        -2,
-      ],
-      [
-        -18,
-        2,
-        2,
-      ],
-      [
-        -18,
-        2.5,
-        -2,
-      ],
-      [
-        -18,
-        2.5,
-        2,
-      ],
-      [
-        -17.5,
-        2,
-        -2,
-      ],
-      [
-        -17.5,
-        2,
-        2,
-      ],
-      [
-        -17.5,
-        2.5,
-        -2,
-      ],
-      [
-        -17.5,
-        2.5,
-        2,
-      ],
-    ],
-    "id": "ar-handle-crossbar",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16.5,
-        2,
-        -0.5,
-      ],
-      [
-        -16.5,
-        2,
-        0.5,
-      ],
-      [
-        -16.5,
-        2.5,
-        -0.5,
-      ],
-      [
-        -16.5,
-        2.5,
-        0.5,
-      ],
-      [
-        -16,
-        2,
-        -0.5,
-      ],
-      [
-        -16,
-        2,
-        0.5,
-      ],
-      [
-        -16,
-        2.5,
-        -0.5,
-      ],
-      [
-        -16,
-        2.5,
-        0.5,
-      ],
-    ],
-    "id": "ar-handle-latch",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -18,
-        2,
-        1.5,
-      ],
-      [
-        -18,
-        2,
-        2,
-      ],
-      [
-        -18,
-        2.5,
-        1.5,
-      ],
-      [
-        -18,
-        2.5,
-        2,
-      ],
-      [
-        -16,
-        2,
-        1.5,
-      ],
-      [
-        -16,
-        2,
-        2,
-      ],
-      [
-        -16,
-        2.5,
-        1.5,
-      ],
-      [
-        -16,
-        2.5,
-        2,
-      ],
-    ],
-    "id": "charging-handle",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -2.25,
         -2.5,
         -1.75,
@@ -10407,53 +10501,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -2.25,
         1.1,
-        -1.35,
-      ],
-      [
-        -2.25,
-        1.1,
-        1.35,
-      ],
-      [
-        -2.25,
-        2.5,
-        -1.35,
-      ],
-      [
-        -2.25,
-        2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-barrel-seat-top",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -2.25,
-        1.1,
         -2,
       ],
       [
@@ -10737,6 +10784,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -2.25,
+        1.1,
+        -1.35,
+      ],
+      [
+        -2.25,
+        1.1,
+        1.35,
+      ],
+      [
+        -2.25,
+        2.5,
+        -1.35,
+      ],
+      [
+        -2.25,
+        2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        1.1,
+        -1.35,
+      ],
+      [
+        -0.5,
+        1.1,
+        1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-barrel-seat-top-pocket-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -0.5,
         1.1,
         -1.35,
@@ -10777,7 +10871,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
     ],
-    "id": "receiver-ar-barrel-seat-top-span-1",
+    "id": "receiver-ar-barrel-seat-top-pocket-span-0-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -11447,53 +11541,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         1.1,
-        -1.35,
-      ],
-      [
-        -16,
-        1.1,
-        1.35,
-      ],
-      [
-        -16,
-        2.5,
-        -1.35,
-      ],
-      [
-        -16,
-        2.5,
-        1.35,
-      ],
-      [
-        -2.75,
-        1.1,
-        -1.35,
-      ],
-      [
-        -2.75,
-        1.1,
-        1.35,
-      ],
-      [
-        -2.75,
-        2.5,
-        -1.35,
-      ],
-      [
-        -2.75,
-        2.5,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-top",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        1.1,
         -2,
       ],
       [
@@ -11777,6 +11824,194 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -16,
+        1.1,
+        -1.35,
+      ],
+      [
+        -16,
+        1.1,
+        1.35,
+      ],
+      [
+        -16,
+        1.65,
+        -1.35,
+      ],
+      [
+        -16,
+        1.65,
+        1.35,
+      ],
+      [
+        -2.75,
+        1.1,
+        -1.35,
+      ],
+      [
+        -2.75,
+        1.1,
+        1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        -1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        2,
+        -1.35,
+      ],
+      [
+        -16,
+        2,
+        1.35,
+      ],
+      [
+        -16,
+        2.5,
+        -1.35,
+      ],
+      [
+        -16,
+        2.5,
+        1.35,
+      ],
+      [
+        -2.75,
+        2,
+        -1.35,
+      ],
+      [
+        -2.75,
+        2,
+        1.35,
+      ],
+      [
+        -2.75,
+        2.5,
+        -1.35,
+      ],
+      [
+        -2.75,
+        2.5,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        1.65,
+        -1.35,
+      ],
+      [
+        -16,
+        1.65,
+        -0.25,
+      ],
+      [
+        -16,
+        2,
+        -1.35,
+      ],
+      [
+        -16,
+        2,
+        -0.25,
+      ],
+      [
+        -2.75,
+        1.65,
+        -1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        -0.25,
+      ],
+      [
+        -2.75,
+        2,
+        -1.35,
+      ],
+      [
+        -2.75,
+        2,
+        -0.25,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-2",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        1.65,
+        0.25,
+      ],
+      [
+        -16,
+        1.65,
+        1.35,
+      ],
+      [
+        -16,
+        2,
+        0.25,
+      ],
+      [
+        -16,
+        2,
+        1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        0.25,
+      ],
+      [
+        -2.75,
+        1.65,
+        1.35,
+      ],
+      [
+        -2.75,
+        2,
+        0.25,
+      ],
+      [
+        -2.75,
+        2,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-3",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -2.75,
         1.1,
         -1.35,
@@ -11817,7 +12052,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
     ],
-    "id": "receiver-ar-top-span-1",
+    "id": "receiver-ar-top-pocket-span-1-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -13505,6 +13740,241 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -16.8,
+        1.8,
+        -2.25,
+      ],
+      [
+        -16.8,
+        1.8,
+        2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        -2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        2.25,
+      ],
+      [
+        -16.3,
+        1.8,
+        -2.25,
+      ],
+      [
+        -16.3,
+        1.8,
+        2.25,
+      ],
+      [
+        -16.3,
+        2.15,
+        -2.25,
+      ],
+      [
+        -16.3,
+        2.15,
+        2.25,
+      ],
+    ],
+    "id": "ar-handle-crossbar",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -16.4,
+        1.8,
+        -2.5,
+      ],
+      [
+        -16.4,
+        1.8,
+        -2.2,
+      ],
+      [
+        -16.4,
+        2.15,
+        -2.5,
+      ],
+      [
+        -16.4,
+        2.15,
+        -2.2,
+      ],
+      [
+        -15.65,
+        1.8,
+        -2.5,
+      ],
+      [
+        -15.65,
+        1.8,
+        -2.2,
+      ],
+      [
+        -15.65,
+        2.15,
+        -2.5,
+      ],
+      [
+        -15.65,
+        2.15,
+        -2.2,
+      ],
+    ],
+    "id": "ar-handle-latch",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -17.15,
+        1.8,
+        -2.25,
+      ],
+      [
+        -17.15,
+        1.8,
+        -1.4,
+      ],
+      [
+        -17.15,
+        2.15,
+        -2.25,
+      ],
+      [
+        -17.15,
+        2.15,
+        -1.4,
+      ],
+      [
+        -16.8,
+        1.8,
+        -2.25,
+      ],
+      [
+        -16.8,
+        1.8,
+        -1.4,
+      ],
+      [
+        -16.8,
+        2.15,
+        -2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        -1.4,
+      ],
+    ],
+    "id": "ar-handle-left-grip",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -17.15,
+        1.8,
+        1.4,
+      ],
+      [
+        -17.15,
+        1.8,
+        2.25,
+      ],
+      [
+        -17.15,
+        2.15,
+        1.4,
+      ],
+      [
+        -17.15,
+        2.15,
+        2.25,
+      ],
+      [
+        -16.8,
+        1.8,
+        1.4,
+      ],
+      [
+        -16.8,
+        1.8,
+        2.25,
+      ],
+      [
+        -16.8,
+        2.15,
+        1.4,
+      ],
+      [
+        -16.8,
+        2.15,
+        2.25,
+      ],
+    ],
+    "id": "ar-handle-right-grip",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
+        -16.65,
+        1.75,
+        -0.15,
+      ],
+      [
+        -16.65,
+        1.75,
+        0.15,
+      ],
+      [
+        -16.65,
+        1.95,
+        -0.15,
+      ],
+      [
+        -16.65,
+        1.95,
+        0.15,
+      ],
+      [
+        -3,
+        1.75,
+        -0.15,
+      ],
+      [
+        -3,
+        1.75,
+        0.15,
+      ],
+      [
+        -3,
+        1.95,
+        -0.15,
+      ],
+      [
+        -3,
+        1.95,
+        0.15,
+      ],
+    ],
+    "id": "charging-handle",
+    "kind": "box",
+    "partId": "charging-handle",
+  },
+  {
+    "geometry": [
+      [
         -17.053229,
         -11.620455,
         -1.25,
@@ -14737,147 +15207,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
-        -18,
-        2,
-        -2,
-      ],
-      [
-        -18,
-        2,
-        2,
-      ],
-      [
-        -18,
-        2.5,
-        -2,
-      ],
-      [
-        -18,
-        2.5,
-        2,
-      ],
-      [
-        -17.5,
-        2,
-        -2,
-      ],
-      [
-        -17.5,
-        2,
-        2,
-      ],
-      [
-        -17.5,
-        2.5,
-        -2,
-      ],
-      [
-        -17.5,
-        2.5,
-        2,
-      ],
-    ],
-    "id": "ar-handle-crossbar",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16.5,
-        2,
-        -0.5,
-      ],
-      [
-        -16.5,
-        2,
-        0.5,
-      ],
-      [
-        -16.5,
-        2.5,
-        -0.5,
-      ],
-      [
-        -16.5,
-        2.5,
-        0.5,
-      ],
-      [
-        -16,
-        2,
-        -0.5,
-      ],
-      [
-        -16,
-        2,
-        0.5,
-      ],
-      [
-        -16,
-        2.5,
-        -0.5,
-      ],
-      [
-        -16,
-        2.5,
-        0.5,
-      ],
-    ],
-    "id": "ar-handle-latch",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -18,
-        2,
-        1.5,
-      ],
-      [
-        -18,
-        2,
-        2,
-      ],
-      [
-        -18,
-        2.5,
-        1.5,
-      ],
-      [
-        -18,
-        2.5,
-        2,
-      ],
-      [
-        -16,
-        2,
-        1.5,
-      ],
-      [
-        -16,
-        2,
-        2,
-      ],
-      [
-        -16,
-        2.5,
-        1.5,
-      ],
-      [
-        -16,
-        2.5,
-        2,
-      ],
-    ],
-    "id": "charging-handle",
-    "kind": "box",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
         -2.25,
         -2.5,
         -1.75,
@@ -15531,53 +15860,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -2.25,
         1.1,
-        -1.35,
-      ],
-      [
-        -2.25,
-        1.1,
-        1.35,
-      ],
-      [
-        -2.25,
-        2.5,
-        -1.35,
-      ],
-      [
-        -2.25,
-        2.5,
-        1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        -1.35,
-      ],
-      [
-        -0.5,
-        1.1,
-        1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        -1.35,
-      ],
-      [
-        -0.5,
-        2.5,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-barrel-seat-top",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -2.25,
-        1.1,
         -2,
       ],
       [
@@ -15861,6 +16143,53 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -2.25,
+        1.1,
+        -1.35,
+      ],
+      [
+        -2.25,
+        1.1,
+        1.35,
+      ],
+      [
+        -2.25,
+        2.5,
+        -1.35,
+      ],
+      [
+        -2.25,
+        2.5,
+        1.35,
+      ],
+      [
+        -0.5,
+        1.1,
+        -1.35,
+      ],
+      [
+        -0.5,
+        1.1,
+        1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        -1.35,
+      ],
+      [
+        -0.5,
+        2.5,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-barrel-seat-top-pocket-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -0.5,
         1.1,
         -1.35,
@@ -15901,7 +16230,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
     ],
-    "id": "receiver-ar-barrel-seat-top-span-1",
+    "id": "receiver-ar-barrel-seat-top-pocket-span-0-region-0-span-1",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },
@@ -16571,53 +16900,6 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
       [
         -16,
         1.1,
-        -1.35,
-      ],
-      [
-        -16,
-        1.1,
-        1.35,
-      ],
-      [
-        -16,
-        2.5,
-        -1.35,
-      ],
-      [
-        -16,
-        2.5,
-        1.35,
-      ],
-      [
-        -2.75,
-        1.1,
-        -1.35,
-      ],
-      [
-        -2.75,
-        1.1,
-        1.35,
-      ],
-      [
-        -2.75,
-        2.5,
-        -1.35,
-      ],
-      [
-        -2.75,
-        2.5,
-        1.35,
-      ],
-    ],
-    "id": "receiver-ar-top",
-    "kind": "extruded-polygon",
-    "partId": "receiver",
-  },
-  {
-    "geometry": [
-      [
-        -16,
-        1.1,
         -2,
       ],
       [
@@ -16901,6 +17183,194 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
   {
     "geometry": [
       [
+        -16,
+        1.1,
+        -1.35,
+      ],
+      [
+        -16,
+        1.1,
+        1.35,
+      ],
+      [
+        -16,
+        1.65,
+        -1.35,
+      ],
+      [
+        -16,
+        1.65,
+        1.35,
+      ],
+      [
+        -2.75,
+        1.1,
+        -1.35,
+      ],
+      [
+        -2.75,
+        1.1,
+        1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        -1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-0",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        2,
+        -1.35,
+      ],
+      [
+        -16,
+        2,
+        1.35,
+      ],
+      [
+        -16,
+        2.5,
+        -1.35,
+      ],
+      [
+        -16,
+        2.5,
+        1.35,
+      ],
+      [
+        -2.75,
+        2,
+        -1.35,
+      ],
+      [
+        -2.75,
+        2,
+        1.35,
+      ],
+      [
+        -2.75,
+        2.5,
+        -1.35,
+      ],
+      [
+        -2.75,
+        2.5,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-1",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        1.65,
+        -1.35,
+      ],
+      [
+        -16,
+        1.65,
+        -0.25,
+      ],
+      [
+        -16,
+        2,
+        -1.35,
+      ],
+      [
+        -16,
+        2,
+        -0.25,
+      ],
+      [
+        -2.75,
+        1.65,
+        -1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        -0.25,
+      ],
+      [
+        -2.75,
+        2,
+        -1.35,
+      ],
+      [
+        -2.75,
+        2,
+        -0.25,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-2",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
+        -16,
+        1.65,
+        0.25,
+      ],
+      [
+        -16,
+        1.65,
+        1.35,
+      ],
+      [
+        -16,
+        2,
+        0.25,
+      ],
+      [
+        -16,
+        2,
+        1.35,
+      ],
+      [
+        -2.75,
+        1.65,
+        0.25,
+      ],
+      [
+        -2.75,
+        1.65,
+        1.35,
+      ],
+      [
+        -2.75,
+        2,
+        0.25,
+      ],
+      [
+        -2.75,
+        2,
+        1.35,
+      ],
+    ],
+    "id": "receiver-ar-top-pocket-span-0-region-3",
+    "kind": "extruded-polygon",
+    "partId": "receiver",
+  },
+  {
+    "geometry": [
+      [
         -2.75,
         1.1,
         -1.35,
@@ -16941,7 +17411,7 @@ exports[`published design corpus > snapshots every resolved solid by design, wit
         1.35,
       ],
     ],
-    "id": "receiver-ar-top-span-1",
+    "id": "receiver-ar-top-pocket-span-1-region-0",
     "kind": "extruded-polygon",
     "partId": "receiver",
   },

@@ -53,7 +53,7 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
 };
 
 const CARRIER_HANDLE_PAIRINGS = [
-  { style: 'ar', pattern: 'ar', owner: 'receiver' },
+  { style: 'ar', pattern: 'ar', owner: 'ar-charging-handle' },
   { style: 'ak', pattern: 'ak', owner: 'carrier' },
   { style: 'autoShotgun', pattern: 'ak', owner: 'carrier' },
   { style: 'bolt', pattern: 'bolt', owner: 'carrier' },
@@ -531,7 +531,7 @@ describe('part library', () => {
   // ports, unique port ids and positive box sizes. No rules or geometry checks run.
   const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
     let gridStep = GRID;
-    if (family.name === 'forend') {
+    if (family.name === 'forend' || family.name === 'ar-charging-handle') {
       gridStep = GRID / 5;
     } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
       gridStep = GRID / 2;
@@ -543,6 +543,9 @@ describe('part library', () => {
       // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
       // Explicit metal handle parts use sub-grid clearances; their ownership, contact and motion have dedicated geometry tests.
       const explicitCarrierStyle = family.name === 'bolt-carrier' && params.handleStyle !== undefined;
+      // AR hand corridors follow the thin, 0.05u-authored handle; body stations retain their usual grid.
+      const fineHandleIds = new Set(['charging-handle', 'rear-t-hand-grip-clearance', 'rear-t-hand-clearance']);
+      const fineHandleKeepOuts = def.keepOuts.filter((k) => family.name === 'receiver' && fineHandleIds.has(k.id));
       const numbers = [
         ...def.solids.flatMap((s) =>
           s.kind === 'box' &&
@@ -553,7 +556,9 @@ describe('part library', () => {
             : [],
         ),
         ...def.keepOuts.flatMap((k) =>
-          explicitCarrierStyle && k.id.startsWith(`${params.handleStyle}-handle-`) ? [] : bounds(k.box),
+          (explicitCarrierStyle && k.id.startsWith(`${params.handleStyle}-handle-`)) || fineHandleKeepOuts.includes(k)
+            ? []
+            : bounds(k.box),
         ),
         ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
         ...def.axes
@@ -561,7 +566,9 @@ describe('part library', () => {
           .flatMap((axis) => [...axis.origin]),
       ];
       return {
-        geometryOnGrid: numbers.every((n) => onGridWithCarrierClearance(n, gridStep, family)),
+        geometryOnGrid:
+          numbers.every((n) => onGridWithCarrierClearance(n, gridStep, family)) &&
+          fineHandleKeepOuts.flatMap((k) => bounds(k.box)).every((n) => onGrid(n, GRID / 5)),
         portsOrthonormal: def.ports.every(
           (p) =>
             Math.abs(length(p.normal) - 1) < 1e-6 &&

@@ -9,9 +9,9 @@ import {
   type Object3D,
   Vector3,
 } from 'three';
-import { applyDir } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
-import { type CycleMotion, type CycleTimeline, cycleMotion, ejectionPoint, sweepMovingPart } from '../gun/cycle.ts';
+import type { ResolvedGunAction } from '../gun/actionDescription.ts';
+import { type CycleMode, type CycleMotion, type CycleTimeline, sweepMovingPart } from '../gun/cycle.ts';
 
 const SPEEDS = [1, 0.25, 0.1, 0.02] as const;
 const XRAY_OPACITY = 0.2;
@@ -26,10 +26,11 @@ const disposeMaterials = (materials: Material | Material[]): void => {
 interface Mover {
   readonly meshes: readonly { readonly mesh: Mesh; readonly base: readonly number[] }[];
   readonly world: readonly [number, number, number];
+  readonly modes: readonly CycleMode[];
 }
 
 export interface CycleView {
-  bind: (solids: Group, resolved: Resolved) => void;
+  bind: (solids: Group, resolved: Resolved, action: ResolvedGunAction | undefined) => void;
   frame: (elapsedSeconds: number) => void;
 }
 
@@ -72,6 +73,7 @@ export const createCycleView = (): CycleView => {
   };
   let boundSolids: Group | undefined;
   let boundResolved: Resolved | undefined;
+  let boundAction: ResolvedGunAction | undefined;
   let ejectionArrow: ArrowHelper | undefined;
   let strokeUnits = 0;
   let millimetresPerUnit = 11.5;
@@ -110,11 +112,12 @@ export const createCycleView = (): CycleView => {
     const phase = phaseTime();
     const fraction = timeline.at(phase, emptyBox.checked);
     for (const mover of movers) {
+      const movement = mover.modes.includes(timeline.mode) ? fraction : 0;
       for (const { mesh, base } of mover.meshes) {
         mesh.matrix.fromArray(base as number[]);
-        mesh.matrix.elements[12] = base[12]! + mover.world[0] * fraction;
-        mesh.matrix.elements[13] = base[13]! + mover.world[1] * fraction;
-        mesh.matrix.elements[14] = base[14]! + mover.world[2] * fraction;
+        mesh.matrix.elements[12] = base[12]! + mover.world[0] * movement;
+        mesh.matrix.elements[13] = base[13]! + mover.world[1] * movement;
+        mesh.matrix.elements[14] = base[14]! + mover.world[2] * movement;
         mesh.matrixWorldNeedsUpdate = true;
       }
     }
@@ -157,11 +160,11 @@ export const createCycleView = (): CycleView => {
     history.replaceState(null, '', search ? `?${search}` : location.pathname);
   };
 
-  const drawEjectionArrow = (solids: Group, resolved: Resolved, cycle: CycleTimeline) => {
+  const drawEjectionArrow = (solids: Group, action: ResolvedGunAction, cycle: CycleTimeline) => {
     if (cycle.mode !== 'fire') {
       return;
     }
-    const point = ejectionPoint(resolved);
+    const point = action.ejection;
     if (!point) {
       return;
     }
@@ -176,46 +179,38 @@ export const createCycleView = (): CycleView => {
     solids.add(ejectionArrow);
   };
 
-  const updateSweepNotes = (resolved: Resolved, action: string, cycle: CycleMotion) => {
-    const sweep = sweepMovingPart(resolved, 'bolt-carrier', cycle.strokeUnits + 2.5);
+  const updateSweepNotes = (resolved: Resolved, action: ResolvedGunAction, cycle: CycleMotion) => {
+    const sweep = sweepMovingPart(resolved, action.carrier.id, cycle.strokeUnits + 2.5);
     const [first] = sweep.clashes;
     const direction = cycle.ejectDirection.map((value) => value.toFixed(2)).join(', ');
-    notes.textContent = `Estimated ${action.toUpperCase()} cycle; ${sweep.clear >= sweep.declared ? 'full declared stroke clears' : `stroke clearance ${sweep.clear.toFixed(2)} of ${sweep.declared.toFixed(2)} u`}${first ? ` · first overlap ${first.pair} at ${first.at.toFixed(2)} u` : ''} · eject direction [${direction}]`;
+    notes.textContent = `Estimated ${action.kind.toUpperCase()} cycle; ${sweep.clear >= sweep.declared ? 'full declared stroke clears' : `stroke clearance ${sweep.clear.toFixed(2)} of ${sweep.declared.toFixed(2)} u`}${first ? ` · first overlap ${first.pair} at ${first.at.toFixed(2)} u` : ''} · eject direction [${direction}]`;
   };
 
-  const bind = (solids: Group, resolved: Resolved) => {
+  const bind = (solids: Group, resolved: Resolved, action: ResolvedGunAction | undefined) => {
     clearEjectionArrow();
     const geometryChanged = boundResolved !== resolved;
     boundSolids = solids;
     boundResolved = resolved;
+    boundAction = action;
     setPlaying(false);
     timeline = undefined;
     movers = [];
     faded = [];
     strokeUnits = 0;
-    const carrier = resolved.assembly.parts['bolt-carrier'];
-    const action = carrier?.params?.pattern;
-    if (action !== 'ak' && action !== 'ar') {
+    const cycle = action?.cycle;
+    if (!(action && cycle)) {
       panel.hidden = true;
       return;
     }
-    const def = resolved.defs.get('bolt-carrier');
-    const placed = resolved.placed.get('bolt-carrier');
-    if (!(carrier && def?.motion && placed)) {
-      panel.hidden = true;
-      return;
-    }
-
-    const cycle = cycleMotion(action, def.motion, resolved.domain.units.metresPerUnit);
     timeline = modeSelect.value === 'hand' ? cycle.hand : cycle.fire;
-    drawEjectionArrow(solids, resolved, timeline);
+    drawEjectionArrow(solids, action, timeline);
     millimetresPerUnit = resolved.domain.units.metresPerUnit * 1000;
     ({ strokeUnits } = cycle);
-    const worldAxis = applyDir(placed, def.motion.axis);
-    movers.push({
-      meshes: meshesOf(solids, 'bolt-carrier').map((mesh) => ({ mesh, base: basePose(mesh) })),
-      world: [worldAxis[0] * strokeUnits, worldAxis[1] * strokeUnits, worldAxis[2] * strokeUnits],
-    });
+    movers = Object.values(action.parts).map((part) => ({
+      meshes: meshesOf(solids, part.id).map((mesh) => ({ mesh, base: basePose(mesh) })),
+      world: part.travel,
+      modes: part.modes,
+    }));
 
     // Fire/hand switches rebind the same resolved geometry. Its full-stroke
     // clearance is unchanged, so do the expensive diagnostic only on an edit/load.
@@ -225,7 +220,7 @@ export const createCycleView = (): CycleView => {
     emptyLabel.hidden = !cycle.holdOpenOnEmpty || modeSelect.value === 'hand';
     emptyBox.checked = false;
     panel.hidden = false;
-    faded = meshesOf(solids, 'receiver');
+    faded = meshesOf(solids, action.receiverId);
     applyXray();
     timeSeconds = 0;
     apply();
@@ -238,7 +233,7 @@ export const createCycleView = (): CycleView => {
   modeSelect.addEventListener('change', () => {
     syncCycleQuery();
     if (boundSolids && boundResolved) {
-      bind(boundSolids, boundResolved);
+      bind(boundSolids, boundResolved, boundAction);
     }
   });
   speedSelect.addEventListener('change', syncCycleQuery);

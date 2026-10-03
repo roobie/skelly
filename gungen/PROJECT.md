@@ -905,10 +905,14 @@ Decisions where the plan left representation open:
   additions to `DeadvoxModelEntry` are optional. `anchors.ejection` is a plain
   `[x, y, z]` point in metres in model coordinates (`+x` forward, `+y` up,
   `+z` right). `action.ejectDirection` is a unit `[x, y, z]` vector in the same frame.
-  `action.parts` maps roles such as `carrier` to `{ node, axis, strokeMetres }`:
+  `action.parts` maps roles such as `carrier` and `handle` to `{ node, axis, strokeMetres, modes }`:
   `node` is the exact GLB node name `<part id>:<registry key>`, `axis` is a
   unit travel vector in model coordinates, and `strokeMetres` is the travel
-  length in metres. `action.fire` and `action.hand` each contain
+  length in metres. Required `modes` is a nonempty, distinct list of `fire`/`hand`
+  timing references: a node follows the corresponding shared timeline, and
+  stays home in modes not listed. The AR carrier follows both; its separate
+  T-handle follows only `hand`. The AK's handle remains geometry on the carrier
+  node and follows both. `action.fire` and `action.hand` each contain
   `durationSeconds`, `rearwardSeconds`, `dwellSeconds`, and `forwardSeconds`,
   all in seconds. `action.ejectAt` is a stroke fraction; `action.holdOpen` is a
   boolean; `action.rpm` is rounds per minute. `action.ejectAt` and
@@ -918,6 +922,16 @@ Decisions where the plan left representation open:
   for visual tuning, not physical simulation. These fields are emitted only
   when the design declares a supported AK/AR action. No angles are present in
   this contract; any angle added later uses degrees, never radians.
+  Node names are exact glTF names, not Three.js `Object3D.name` (which sanitizes
+  colons). Match the name in `parser.json.nodes`, then find its loaded object
+  using `parser.associations`' node index.
+  Gun-owned `resolveGunAction` owns discovery, world travel, coupled roles and
+  cycle/ejection data for viewer and exporter. It also owns the pump's
+  carrier/forend open-pose pairing; this remains presentation-only and does not
+  move validation/export geometry or invent a pump firing timeline.
+  The AR handle is a separate `ar-charging-handle` family. Its thin shaft and
+  finger grips are authored on a 0.05u grid; an enclosed upper channel preserves
+  the 0.5u roof skin and clears its continuous 6.5u stroke.
 - `Suggest` takes `effectiveLocks`, precomputed by the caller from design
   locks plus only the fixed parameter names of referenced prefabs; core does
   not import or need a gun catalogue, and unrelated prefab params remain

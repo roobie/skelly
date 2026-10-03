@@ -1,0 +1,66 @@
+{
+  "skills": [{ "id": "crafting", "name": "Crafting" }],
+  "items": [
+    { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
+    { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
+    {
+      "id": "torch",
+      "name": "Torch",
+      "category": "light",
+      "weight": 350,
+      "size": [1, 4],
+      "description": "Rags and wax wrapped tightly around a stick."
+    },
+    {
+      "id": "candle",
+      "name": "Candle",
+      "category": "light",
+      "weight": 150,
+      "size": [1, 1],
+      "description": "A wax candle with a rag wick."
+    },
+    {
+      "id": "repair_kit",
+      "name": "Repair kit",
+      "category": "tool",
+      "weight": 1250,
+      "size": [2, 2],
+      "description": "Metal patches, tape and rags for a makeshift repair."
+    }
+  ],
+  "recipes": [
+    {
+      "id": "torch",
+      "result": { "item": "torch", "count": 1 },
+      "time": 20,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [
+        [{ "item": "stick", "count": 1 }],
+        [{ "item": "rag", "count": 2 }],
+        [{ "item": "wax", "count": 1 }]
+      ]
+    },
+    {
+      "id": "candle",
+      "result": { "item": "candle", "count": 1 },
+      "time": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [[{ "item": "wax", "count": 2 }], [{ "item": "rag", "count": 1 }]],
+      "workstation": null
+    },
+    {
+      "id": "repair_kit",
+      "result": { "item": "repair_kit", "count": 1 },
+      "time": 30,
+      "skills": { "crafting": 1 },
+      "qualities": { "hammering": 1 },
+      "components": [
+        [{ "item": "scrap_metal", "count": 2 }],
+        [{ "item": "duct_tape", "count": 1 }],
+        [{ "item": "rag", "count": 2 }]
+      ]
+    }
+  ]
+}

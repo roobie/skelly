@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import type { SoundEventId } from '../src/core/soundEvents.ts';
+import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotSound } from '../src/game/audioPresentation.ts';
 
@@ -74,9 +77,26 @@ const setup = () => {
     throw new Error(`Invalid sound fixture: ${JSON.stringify(issues)}`);
   }
   const isSolid = vi.fn(() => false);
-  const audio = new GameAudio({ registry, seed: 17, blockSize: 1, isSolid, report: vi.fn() });
+  const audio = new GameAudio({ registry, blockSize: 1, isSolid, report: vi.fn() });
+  const picker = new SoundPicker(53, registry.sounds);
+  const selected: SoundEmission[] = [];
+  // Playback tests supply selected emissions; GameAudio has no gameplay admission/picker API.
+  const play = (event: SoundEventId, position: Vec3, time: number, meta: SoundEmissionMeta = {}) => {
+    const pick = picker.pick(event, time)!;
+    const emission = {
+      event,
+      position,
+      time,
+      pick,
+      emittedAsNoise: false,
+      sourceLabel: meta.sourceLabel ?? null,
+      listenerRelative: meta.listenerRelative ?? false,
+    };
+    selected.push(emission);
+    audio.play(emission, position);
+  };
   audio.unlock();
-  return { audio, context: FakeAudioContext.lastCreated, fetchBuffer, isSolid };
+  return { audio, play, selected, context: FakeAudioContext.lastCreated, fetchBuffer, isSolid };
 };
 
 // Yield one event-loop turn to settle fetch/decode microtasks, without a timed sleep.
@@ -86,9 +106,9 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('firearm sound playback', () => {
   it('starts every rapid shot, steals the oldest with a 10ms fade, and bounds even unended tails', async () => {
-    const { audio, context, fetchBuffer } = setup();
+    const { audio, play, selected, context, fetchBuffer } = setup();
     for (let index = 0; index < 40; index++) {
-      expect(audio.play('gunshot', [1, 2, 3], index * 0.02)).toBe(true);
+      play('gunshot', [1, 2, 3], index * 0.02);
       // biome-ignore lint/performance/noAwaitInLoops: exercise ordered warm shots, not another cold burst
       await flush();
       expect(context.sources).toHaveLength(index + 1);
@@ -106,6 +126,12 @@ describe('firearm sound playback', () => {
     );
     expect(fetchBuffer).toHaveBeenCalledTimes(2);
     expect(context.decodeAudioData).toHaveBeenCalledTimes(2);
+    expect(audio.heardSounds.map(({ file }) => file)).toEqual(
+      selected.slice(-audio.heardSounds.length).map(({ pick }) => pick.file),
+    );
+    expect(context.sources.map(({ playbackRate }) => playbackRate.value)).toEqual(
+      selected.map(({ pick }) => pick.pitch),
+    );
 
     // A late ended callback from a stolen voice must not disconnect it twice or release its replacement.
     oldest.onended?.();
@@ -113,18 +139,18 @@ describe('firearm sound playback', () => {
     for (const source of context.sources) {
       source.onended?.();
     }
-    expect(audio.play('gunshot', [1, 2, 3], 1)).toBe(true);
+    play('gunshot', [1, 2, 3], 1);
     await flush();
     expect(context.sources).toHaveLength(41);
     expect(context.sources[40]!.stop).not.toHaveBeenCalled();
   });
 
   it('does not let pending decodes reject trigger pulls and still deduplicates cold loads', async () => {
-    const { audio, context, fetchBuffer } = setup();
+    const { play, context, fetchBuffer } = setup();
     const complete: Array<(response: Response) => void> = [];
     fetchBuffer.mockImplementation(() => new Promise<Response>((resolve) => complete.push(resolve)));
     for (let index = 0; index < 40; index++) {
-      expect(audio.play('gunshot', [0, 0, 0], index * 0.02)).toBe(true);
+      play('gunshot', [0, 0, 0], index * 0.02);
     }
     expect(fetchBuffer).toHaveBeenCalledTimes(2);
     expect(context.sources).toHaveLength(0);
@@ -138,7 +164,7 @@ describe('firearm sound playback', () => {
     expect(context.sources.flatMap(({ stop }) => stop.mock.calls).every(([when]) => when === 10.01)).toBe(true);
     expect(context.decodeAudioData).toHaveBeenCalledTimes(2);
     for (let index = 40; index < 80; index++) {
-      audio.play('gunshot', [0, 0, 0], index * 0.02);
+      play('gunshot', [0, 0, 0], index * 0.02);
     }
     await flush();
     expect(context.sources).toHaveLength(80);
@@ -146,10 +172,10 @@ describe('firearm sound playback', () => {
   });
 
   it('head-locks the player shot through listener translation and rotation while retaining world-shot routing', async () => {
-    const { audio, context, isSolid } = setup();
+    const { audio, play, context, isSolid } = setup();
     const cue = firearmShotSound('debug_rifle_assault');
     audio.updateListener([10, 0, 0], [0, 0, -1]);
-    expect(audio.play(cue.event, [0, 0, 0], 0, cue)).toBe(true);
+    play(cue.event, [0, 0, 0], 0, cue);
     audio.updateListener([20, 0, 0], [1, 0, 0]);
     await flush();
     expect(context.panners).toHaveLength(0);
@@ -159,7 +185,7 @@ describe('firearm sound playback', () => {
     expect(context.panners).toHaveLength(0);
 
     // Other actors retain the default positional API and world-volume category.
-    expect(audio.play('gunshot', [0, 0, 0], 1, { sourceLabel: 'other actor' })).toBe(true);
+    play('gunshot', [0, 0, 0], 1, { sourceLabel: 'other actor' });
     await flush();
     expect(context.panners).toHaveLength(1);
     expect(audio.heardSounds[1]).toMatchObject({ sourceLabel: 'other actor', distanceMetres: 30 });

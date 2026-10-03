@@ -1,10 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Window } from 'happy-dom';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { bindReach } from '../src/core/reach.ts';
+import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -38,6 +40,8 @@ Object.defineProperty(globalThis, 'removeEventListener', {
   configurable: true,
   value: dom.removeEventListener.bind(dom),
 });
+// Happy DOM has no layout and omits this API; a moved cursor in these controls hits no drop zone.
+Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [] });
 const { InventoryScreen } = await import('../src/ui/inventoryScreen.ts');
 
 afterAll(() => dom.happyDOM.abort());
@@ -66,6 +70,7 @@ function setup() {
     inv.entities.markSearched(entity);
   });
   const hooks = {
+    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [],
     distance: () => 0,
@@ -107,6 +112,87 @@ describe('inventory screen Lit rendering', () => {
     expect(test.queue.jobs).toHaveLength(1);
     expect(test.searching.has(test.entity)).toBe(true);
     expect(test.root.querySelectorAll('.inv-pane')[1]?.textContent).toContain('Searching…');
+  });
+
+  it.each([
+    {
+      name: 'Ctrl (plus Alt)',
+      platform: 'Linux x86_64',
+      ctrlKey: true,
+      metaKey: false,
+      shiftKey: false,
+      altKey: true,
+      quick: true,
+    },
+    {
+      name: 'Cmd (plus Shift, best-effort Mac mapping)',
+      platform: 'MacIntel',
+      ctrlKey: false,
+      metaKey: true,
+      shiftKey: true,
+      altKey: false,
+      quick: true,
+    },
+    {
+      name: 'unmodified',
+      platform: 'Linux x86_64',
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      altKey: false,
+      quick: false,
+    },
+    {
+      name: 'Shift only',
+      platform: 'Linux x86_64',
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: true,
+      altKey: false,
+      quick: false,
+    },
+  ])('$name crosses the locked-menu adapter with unchanged modifiers and inventory behavior', (binding) => {
+    const t = setup();
+    const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
+    const canvas = document.createElement('canvas');
+    document.body.append(canvas);
+    const input = { locked: true, menuPointer: true, cursorX: 100, cursorY: 100, moveMenuCursor: () => undefined };
+    const adapter = mountMenuPointer({ input, canvas, cursor: document.createElement('div') });
+    const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(node);
+    vi.stubGlobal('navigator', { platform: binding.platform });
+    const modifiers = {
+      ctrlKey: binding.ctrlKey,
+      metaKey: binding.metaKey,
+      shiftKey: binding.shiftKey,
+      altKey: binding.altKey,
+    };
+    let received: typeof modifiers | undefined;
+    node.addEventListener('pointerdown', (event) => {
+      received = { ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey, altKey: event.altKey };
+    });
+    try {
+      // The locked canvas receives the original event; only the production adapter can deliver it to the item.
+      canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...modifiers }));
+      expect(received).toEqual(modifiers);
+      expect(t.screen.selected).toBe(t.beans);
+      expect(t.inv.hands.right).toBe(t.beans);
+      expect(t.queue.jobs).toHaveLength(binding.quick ? 1 : 0);
+      input.cursorX += 10;
+      canvas.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 1 }));
+      expect(document.querySelector('.inv-ghost') !== null).toBe(!binding.quick);
+      canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
+      if (binding.quick) {
+        t.queue.tick(10);
+        expect(t.inv.locate(t.beans)?.kind).toBe('pocket');
+      }
+      expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
+    } finally {
+      input.locked = false;
+      adapter.releaseCaptures();
+      t.screen.close();
+      hit.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 
   it('keeps shipped jeans and hoodie pockets inside their wrapping container', () => {

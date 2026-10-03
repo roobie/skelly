@@ -13,10 +13,11 @@ import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import { toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
-import type { SoundEventId } from '../core/soundEvents.ts';
+import type { SoundEmission } from '../core/soundPicker.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { CaseEffects } from '../render/caseEffects.ts';
@@ -46,7 +47,7 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
-import { GameAudio, type SoundPlaybackMeta } from './audio.ts';
+import { GameAudio } from './audio.ts';
 import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { mountControlsCard } from './controls.ts';
 import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
@@ -75,8 +76,7 @@ import {
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
 import type { RestKind } from './rest.ts';
-import { createSession, LOOT_REACH } from './session.ts';
-import { toHands } from './targets.ts';
+import { createSession } from './session.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -119,7 +119,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const audio = new GameAudio({
     registry,
-    seed: config.seed,
     blockSize: s,
     isSolid: engine.isSolid,
     report: (message) => {
@@ -128,8 +127,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
   });
   document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
-  const playSessionSound = (event: SoundEventId, position: Vec3, time: number, meta: SoundPlaybackMeta) =>
-    audio.play(event, position.map((v) => v * s) as Vec3, time, meta);
+  const playSessionSound = (sound: Readonly<SoundEmission>): void =>
+    audio.play(sound, sound.position.map((v) => v * s) as Vec3);
 
   // ---- simulation ----
 
@@ -188,18 +187,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     // The session works in blocks; playback is in metres.
     audio: {
       play: playSessionSound,
-      snapshotState: () => audio.snapshotState(),
-      restoreState: (state) => audio.restoreState(state),
       onMoveStart: (move, ownerLocation, position, time) => {
         const cue = handlingMoveStartCue(move, ownerLocation, position);
         if (cue) {
-          playSessionSound(cue.event, cue.position, time, {});
+          session.playWorldSound(cue.event, cue.position, time);
         }
       },
       onMoveComplete: (move, time) => {
         const cue = handlingMoveCompleteCue(move);
         if (cue) {
-          playSessionSound(cue.event, cue.position, time, {});
+          session.playWorldSound(cue.event, cue.position, time);
         }
       },
     },
@@ -229,7 +226,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     rest,
     body,
     feet,
-    chest,
     pileDistance,
     entityDistance,
     nameOf,
@@ -379,9 +375,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
     feet,
-    nearby: () => inventory.pilesNear(body.pos, LOOT_REACH / s),
+    reach: session.reach,
+    nearby: () => session.reach().piles,
     distance: (pile: Pile) => pileDistance(pile.pos),
-    containers: () => entities.containersNear(chest(), LOOT_REACH / s),
+    containers: () => session.reach().furniture,
     entityDistance,
     search: (entity) => {
       playtestObserver?.beginSearch(entity, nameOf(entity));
@@ -883,7 +880,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     caseEffects.spawn(effect);
     const shot = firearmShotSound(item.type);
-    playSessionSound(shot.event, chest(), time, shot);
+    session.playPlayerSound(shot.event, time, shot);
     return true;
   };
 

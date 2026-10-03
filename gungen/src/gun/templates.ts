@@ -92,6 +92,7 @@ export const ar: Template = {
       },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
+    { id: 'charging-handle', family: 'ar-charging-handle' },
     { id: 'lower', family: 'lower', params: { layout: 'ar' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     {
@@ -143,6 +144,7 @@ export const ar: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.rail', to: 'sight.base', slot: 3 },
+    { from: 'receiver.charging-handle', to: 'charging-handle.mount' },
     {
       from: 'barrel.front-sight',
       to: 'front-sight.base',

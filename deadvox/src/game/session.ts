@@ -22,12 +22,20 @@ import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import type { SolidAt } from '../core/raycast.ts';
+import {
+  bindReach,
+  pileDistance as distanceToPile,
+  furnitureDistance,
+  INVENTORY_CHEST,
+  INVENTORY_REACH,
+} from '../core/reach.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
+import { freezeSnapshot } from '../core/snapshotData.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
-import type { SoundPickerState } from '../core/soundPicker.ts';
+import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import type { World } from '../core/world.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
@@ -55,10 +63,6 @@ import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
 import { Survival } from './survival.ts';
 
-/** Metres: how far away you can loot a pile or furniture. */
-export const LOOT_REACH = 2;
-/** Metres above the feet that reach to furniture is measured from. */
-export const CHEST = 1;
 const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
 const HANDLING_RATE = 20;
@@ -100,16 +104,9 @@ export interface SessionControls {
 
 /** Sound output. Positions are in blocks; the game converts to metres for playback. */
 export interface SessionAudio {
-  /** Returns whether the sound actually played: that gates the noise it makes for shamblers. */
-  play: (
-    event: SoundEventId,
-    position: Vec3,
-    time: number,
-    meta: { emittedAsNoise?: boolean; sourceLabel?: string | null },
-  ) => boolean;
-  snapshotState: () => Readonly<SoundPickerState>;
-  restoreState: (state: SoundPickerState) => void;
-  /** Presentation-only cues for inventory handling; never affect noise or simulation state. */
+  /** One-way playback of an admitted choice; unavailable output cannot undo hearing or picker state. */
+  play: (sound: Readonly<SoundEmission>) => void;
+  /** Presentation cue selectors; selected cues use the session picker without adding vocal noise. */
   onMoveStart?: (move: MoveStart, ownerLocation: Location | undefined, chest: Vec3, time: number) => void;
   onMoveComplete?: (move: MoveStart, time: number) => void;
 }
@@ -202,14 +199,17 @@ export const createSession = (options: SessionOptions) => {
 
   /** The air block at the player's feet, where drops land. */
   const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
-  /** Metres from the player's feet to the middle of a pile's block. */
-  const pileDistance = (pos: Vec3) =>
-    Math.hypot(pos[0] + 0.5 - body.pos[0], pos[1] - body.pos[1], pos[2] + 0.5 - body.pos[2]) * s;
-  const chest = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
-  /** Metres from the player's chest to the nearest part of a piece of furniture. */
-  const entityDistance = (entity: BlockEntity) => entities.distance(entity, chest()) * s;
-  inventory.canReach = (pos) => pileDistance(pos) <= LOOT_REACH;
-  inventory.canReachEntity = (entity) => entityDistance(entity) <= LOOT_REACH;
+  const reachPlayer = {
+    inventory,
+    blockSize: s,
+    get position() {
+      return body.pos;
+    },
+  };
+  const reach = bindReach(reachPlayer);
+  const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
+  const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
+  const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
   const sim = new Simulation({
     seed,
@@ -219,6 +219,7 @@ export const createSession = (options: SessionOptions) => {
   });
   const { compression } = sim;
   const audioEvents = sim.events.reader();
+  const soundPicker = new SoundPicker(seed, registry.sounds);
 
   // The player's own noise, which shamblers can hear. Saved with the character.
   const playerAudio: { vocalNoiseId: number; vocalNoise: VocalNoise | undefined } = {
@@ -230,33 +231,56 @@ export const createSession = (options: SessionOptions) => {
     playerAudio.vocalNoiseId = saved.vocalNoiseId;
     playerAudio.vocalNoise =
       saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] };
-    audio.restoreState(structuredClone(saved.soundPicker) as SoundPickerState);
+    soundPicker.restoreState(structuredClone(saved.soundPicker));
   }
 
-  const playWorldSound = (
+  const admitSound = (
     event: SoundEventId,
     position: Vec3,
-    time = sim.time,
-    meta: { emittedAsNoise?: boolean; sourceLabel?: string | null } = {},
-  ): boolean => audio.play(event, position, time, meta);
-  const playPlayerSound = (event: SoundEventId, time = sim.time): boolean => {
-    const position = chest();
-    const definition = registry.sounds.get(event);
-    const emittedAsNoise = definition?.noise.enabled ?? false;
-    if (!playWorldSound(event, position, time, { emittedAsNoise })) {
+    time: number,
+    { player, sourceLabel = null, listenerRelative = false }: SoundEmissionMeta & { player: boolean },
+  ): boolean => {
+    const pick = soundPicker.pick(event, time);
+    if (!pick) {
       return false;
     }
-    if (definition?.noise.enabled) {
+    const definition = registry.sounds.get(event)!;
+    const emittedAsNoise = player && definition.noise.enabled;
+    const sound = freezeSnapshot({
+      event,
+      position: [...position] as Vec3,
+      time,
+      pick,
+      emittedAsNoise,
+      sourceLabel,
+      listenerRelative,
+    });
+    // Commit gameplay before calling the output adapter, regardless of device/assets/volume.
+    if (emittedAsNoise) {
       playerAudio.vocalNoiseId += 1;
       playerAudio.vocalNoise = {
         id: playerAudio.vocalNoiseId,
-        pos: position,
+        pos: [...position],
         radiusMetres: definition.noise.radiusMetres,
         expiresAt: time + VOCAL_NOISE_LIFETIME,
       };
     }
+    sim.events.emit({ kind: 'sound', ...sound });
+    if (emittedAsNoise) {
+      const { id, pos, radiusMetres, expiresAt } = playerAudio.vocalNoise!;
+      sim.events.emit({ kind: 'noise', event, position: [...pos], time, id, radiusMetres, expiresAt });
+    }
+    audio.play(sound);
     return true;
   };
+  const playWorldSound = (
+    event: SoundEventId,
+    position: Vec3,
+    time = sim.time,
+    meta: SoundEmissionMeta = {},
+  ): boolean => admitSound(event, position, time, { ...meta, player: false });
+  const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
+    admitSound(event, chest(), time, { ...meta, player: true });
   const queue = new HandlingQueue(
     inventory,
     (move) =>
@@ -270,12 +294,13 @@ export const createSession = (options: SessionOptions) => {
   );
 
   const survival = new Survival(sim, inventory, queue, {
+    reach,
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: options.notice,
   });
   const rest = new RestController(sim, {
     bedQuality: () => {
-      const bed = entities.bedNear(chest(), LOOT_REACH / s);
+      const bed = entities.bedNear(chest(), INVENTORY_REACH / s);
       return bed ? entities.defOf(bed).bed!.quality : undefined;
     },
     notice: options.notice,
@@ -538,9 +563,10 @@ export const createSession = (options: SessionOptions) => {
     /** The player's noise state; saved with the character. */
     playerAudio,
     worldDiffs: () => world.snapshotDiffs((id) => registry.blocks[id]!.id),
-    audioState: () => audio.snapshotState(),
+    audioState: () => soundPicker.snapshotState(),
     feet,
     chest,
+    reach,
     pileDistance,
     entityDistance,
     playWorldSound,
@@ -607,7 +633,7 @@ export const createSession = (options: SessionOptions) => {
         handling: queue,
         vocalNoiseId: playerAudio.vocalNoiseId,
         vocalNoise: playerAudio.vocalNoise,
-        audio,
+        audio: soundPicker,
       }),
   };
 };

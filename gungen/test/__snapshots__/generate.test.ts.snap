@@ -855,6 +855,10 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "sight.base",
       },
       {
+        "from": "receiver.charging-handle",
+        "to": "charging-handle.mount",
+      },
+      {
         "from": "handguard.rail",
         "slot": 10,
         "to": "rail-front-sight.base",
@@ -874,6 +878,9 @@ exports[`templates > ar > known-good seeds 1`] = `
         "params": {
           "pattern": "ar",
         },
+      },
+      "charging-handle": {
+        "family": "ar-charging-handle",
       },
       "grip": {
         "family": "grip",
@@ -968,6 +975,10 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "sight.base",
       },
       {
+        "from": "receiver.charging-handle",
+        "to": "charging-handle.mount",
+      },
+      {
         "from": "handguard.rail",
         "slot": 13,
         "to": "rail-front-sight.base",
@@ -987,6 +998,9 @@ exports[`templates > ar > known-good seeds 1`] = `
         "params": {
           "pattern": "ar",
         },
+      },
+      "charging-handle": {
+        "family": "ar-charging-handle",
       },
       "grip": {
         "family": "grip",
@@ -1085,6 +1099,10 @@ exports[`templates > ar > known-good seeds 1`] = `
         "to": "sight.base",
       },
       {
+        "from": "receiver.charging-handle",
+        "to": "charging-handle.mount",
+      },
+      {
         "from": "barrel.front-sight",
         "to": "front-sight.base",
       },
@@ -1103,6 +1121,9 @@ exports[`templates > ar > known-good seeds 1`] = `
         "params": {
           "pattern": "ar",
         },
+      },
+      "charging-handle": {
+        "family": "ar-charging-handle",
       },
       "front-sight": {
         "family": "front-sight",
