@@ -57,8 +57,8 @@ The existing code provides useful foundations but no save API yet:
   On `origin/deadvox/audio`, `play.ts` also holds `vocalNoiseId` and the current
   `vocalNoise`; these feed player sounds into zombie hearing. Its footstep clock
   and airborne peak only schedule footsteps/landing cues. Their content has
-  `noise.enabled: false`, so they do not affect hearing. `GameAudio`'s
-  `SoundPicker` state also matters: a suppressed event makes `playPlayerSound`
+  `noise.enabled: false`, so they do not affect hearing. The session's
+  `SoundPicker` state also matters: a cooldown-suppressed event makes `playPlayerSound`
   return before it creates a vocal noise. Meshes, workers, interpolation,
   cursor, and Web Audio nodes are reconstructed, not persisted.
 
@@ -76,7 +76,11 @@ of the recorded seed, worldgen version, content, and coordinates; one-shot loot
 RNG is consumed at generation/death and its result is the saved item tree. There
 is no global advancing simulation RNG. Each shambler's mutable behavior RNG
 words are saved. Purely acoustic playback queues and Web Audio nodes are never
-part of simulation state.
+part of simulation state. The session owns admission and the saved picker; it commits
+hearing before emitting a selected sound to the void playback adapter. Missing assets,
+locked/muted output and decode failures cannot veto that admission. Observational
+`sound`/`noise` events are transient; the existing picker/vocal-noise save fields remain
+authoritative. F4 deliberately changes the simulation fingerprint, not the save schema.
 
 ## Decision
 
@@ -252,9 +256,9 @@ are pinned by `test/simulationFingerprint.test.ts`:
 - `src/render/{flashlight,furniture,hands,look,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
   imported by `src/game/play.ts`: mesh construction, draw transforms, and render
   interpolation only. The simulation never reads these objects back.
-- `src/ui/audioOptions.ts`: output volume controls only. The `GameAudio` event
-  gate is intentionally included in the fingerprint because whether playback
-  succeeds can create persisted vocal-noise state.
+- `src/ui/audioOptions.ts`: output volume controls only. `src/game/audio.ts` is
+  also excluded: WebAudio output/voice allocation cannot veto session admission.
+  The session and saved picker remain fingerprinted because they create vocal-noise state.
 - `src/ui/credits.ts`, `src/ui/gameCursor.ts`: static credits and cursor DOM.
 - `src/ui/death.ts`: death summary and a new-world navigation callback; it does
   not mutate or restore the current world's saved simulation.
@@ -288,8 +292,8 @@ first failed with `city.ts`, `collision.ts`, `hamlet.ts`, `site.ts`, `engine.ts`
 `testHouse.ts`, and `worldSetup.ts` unclassified when the world-setup edge and
 its renderer exclusion were removed. `src/ui/inventoryScreen.ts` is deliberately
 not excluded: it routes pointer and key actions into inventory and handling mutations.
-`src/game/audio.ts` is included because its playback-success result gates
-hearing-relevant vocal noise. The debug subtree has no reached runtime import
+`src/game/audio.ts` is excluded because playback is one-way: the simulation owns
+admission, seeded selection and hearing-relevant vocal noise. The debug subtree has no reached runtime import
 edges (the play module's debug interfaces are type-only). The graph walker
 follows static/dynamic imports and star re-exports, fails closed for unresolved,
 virtual, out-of-root, and unclassified dependencies, and rejects unrecognized
