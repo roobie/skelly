@@ -98,6 +98,11 @@ export const SIMULATION_EXCLUSIONS = [
   // Read-only debug readout formatting and byte-count estimates.
   'src/ui/playReadout.ts',
   'src/ui/inventoryScreen.ts',
+  // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
+  // remain fingerprinted through session -> core/craftCommands and core/longAction.
+  'src/ui/craftController.ts',
+  'src/ui/craftReadout.ts',
+  'src/ui/crafting.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
   // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
