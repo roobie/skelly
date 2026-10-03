@@ -269,7 +269,9 @@ const SECTIONS: readonly ContentSection[] = [
 
 ## Appendix A — exact executable proposal checks
 
-The following blocks are copied from the executed scratch files, not pseudocode. They use the retained `r9-1-prior/harness.mts` (production `createSession`, deterministic content/terrain) and absolute/relative paths for the detached review checkout. Recreate that checkout at2817610 and install Deadvox dependencies before rerunning after cleanup. All evidence lives outside the worktree.
+The following blocks are copied from the executed scratch files, not pseudocode. They use the retained `r9-1-prior/harness.mts` (production `createSession`, deterministic content/terrain) and paths relative to `.agent-mail/scratch/r9-1-prior/` for the detached review checkout. Recreate that checkout at2817610 and install Deadvox dependencies before rerunning after cleanup. All evidence lives outside the worktree.
+
+*Edited 2026-10-03:* the host's absolute paths in these blocks were rewritten as paths relative to the script's own directory (`import.meta.dirname`), which resolve to the same files. BR's rule: no local absolute paths in tracked files. The code is otherwise as run.
 
 <!-- exact-scratch-code -->
 
@@ -285,7 +287,8 @@ import {HandlingQueue} from '../../../.claude/worktrees/review-r9-1/deadvox/src/
 import {Simulation} from '../../../.claude/worktrees/review-r9-1/deadvox/src/core/sim.ts';
 import {Survival} from '../../../.claude/worktrees/review-r9-1/deadvox/src/game/survival.ts';
 import {readFileSync,readdirSync} from 'node:fs';
-const base='/home/jani/devel/skelly/.claude/worktrees/review-r9-1/deadvox/src/content/base';
+import {resolve} from 'node:path';
+const base=resolve(import.meta.dirname,'../../../.claude/worktrees/review-r9-1/deadvox/src/content/base');
 describe('r9 proposal executable checks',()=>{
  it('A1 persisted quickbar contains no dangling UID after consuming its bound item',()=>{
   const r=createRuntime(), inv=r.session.inventory;
@@ -329,7 +332,7 @@ import {resolve} from 'node:path';
 import {resolveConfig} from 'vite';
 import {fingerprintSimulationSources,SIMULATION_ENTRIES,SIMULATION_EXCLUSIONS} from '../../../.claude/worktrees/review-r9-1/deadvox/tools/simulationFingerprint.ts';
 it('A5 presentation-only HUD wording leaves simulation fingerprint unchanged',async()=>{
- const root='/home/jani/devel/skelly/.claude/worktrees/review-r9-1/deadvox';
+ const root=resolve(import.meta.dirname,'../../../.claude/worktrees/review-r9-1/deadvox');
  const config=await resolveConfig({configFile:false,root,logLevel:'silent'},'build');const vr=config.createResolver();
  const host={resolve:(s,i)=>s.startsWith('@mobgen/')?Promise.resolve(resolve(root,'../mobgen/src',s.slice(8))):Promise.resolve(vr(s,i)),readFile:f=>readFile(f,'utf8')};
  const options={exclude:SIMULATION_EXCLUSIONS},file=resolve(root,'src/game/play.ts');
@@ -344,9 +347,10 @@ it('A5 presentation-only HUD wording leaves simulation fingerprint unchanged',as
 ### `r9-1-prior/vitest.config.mts`
 
 ```ts
-import {defineConfig} from '/home/jani/devel/skelly/.claude/worktrees/review-r9-1/deadvox/node_modules/vitest/dist/config.js';
-const root='/home/jani/devel/skelly/.claude/worktrees/review-r9-1';
-export default defineConfig({root:root+'/deadvox',resolve:{alias:{'@mobgen/':root+'/mobgen/src/'}},test:{include:['/home/jani/devel/skelly/.agent-mail/scratch/r9-1-prior/**/*.test.mts'],maxWorkers:1,testTimeout:30000}});
+import {resolve} from 'node:path';
+import {defineConfig} from '../../../.claude/worktrees/review-r9-1/deadvox/node_modules/vitest/dist/config.js';
+const root=resolve(import.meta.dirname,'../../../.claude/worktrees/review-r9-1');
+export default defineConfig({root:root+'/deadvox',resolve:{alias:{'@mobgen/':root+'/mobgen/src/'}},test:{include:[resolve(import.meta.dirname,'**/*.test.mts')],maxWorkers:1,testTimeout:30000}});
 
 ```
 

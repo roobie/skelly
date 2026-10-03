@@ -8,7 +8,7 @@ not reference-laptop frame budgets or GitHub runner guarantees.
 ## Admission rules
 
 - **One heavy run at a time**, through
-  `flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 …`. Acquire and
+  `flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" timeout 300 …`. Acquire and
   release for **each** suite/build/browser stage, not a whole chained pipeline.
   Time waiting for the lock is not suite execution time.
 - Keep **5 GiB free disk** on the repository filesystem. Check before a new
@@ -199,12 +199,12 @@ systemctl --user cat agents.slice agents-coder.slice agents-review.slice agents-
 # pi-only memory: /proc/<pi-pid>/status, VmHWM and VmRSS (not virtual size).
 
 # Repeat three times, each command with its own lock hold; time INSIDE the lock.
-flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 \
+flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" timeout 300 \
   sh -c 'cd gungen; /usr/bin/time -f "wall=%e user=%U sys=%S" npm test'
 # Repeat for deadvox/mobgen; time npm run ci and npm run test:site from the root.
 
 # Fresh cgroup peak for one actual browser stage, without changing host caps.
-flock -w 900 /run/user/1000/skelly-heavy.lock \
+flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" \
   systemd-run --user --scope --unit=budget-browser --slice=agents-infra.slice \
   sh -c 'cd deadvox; timeout 300 xvfb-run -a node test/browser/save-storage.mjs firefox; \
     result=$?; systemctl --user show budget-browser.scope \

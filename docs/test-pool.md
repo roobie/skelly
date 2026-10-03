@@ -19,7 +19,7 @@ corpus, commands and capacity rules: [host-budget.md](host-budget.md).
 
 2026-10-02, main `8597386`, Node 26.8.1 / Vitest 5.0.1, Linux VM exposing
 7 logical CPUs (4 cores, SMT). All full runs and solo probes held
-`/run/user/1000/skelly-heavy.lock`; no other full suite was admitted. Background
+`$XDG_RUNTIME_DIR/skelly-heavy.lock`; no other full suite was admitted. Background
 single-file work and host scheduling still cause noise: these are measurements,
 not universal speed guarantees. Same test corpus, unchanged expectations.
 

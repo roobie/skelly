@@ -55,7 +55,7 @@ Concrete follow-ups, identified from messages/diffs, not mere overlapping hot fi
 ```sh
 node --test .agent-mail/scratch/r9-2-contracts.mjs
 cd .claude/worktrees/review-r9-2/gungen
-node node_modules/vitest/vitest.mjs run --config /home/jani/devel/skelly/.agent-mail/scratch/r9-2-handoff.config.mjs
+node node_modules/vitest/vitest.mjs run --config ../../../../.agent-mail/scratch/r9-2-handoff.config.mjs
 ```
 
 | Check | Today | Meaning / adoption |
@@ -284,7 +284,9 @@ Method limitations: very young history; hot parts reflect construction as well a
 
 ## Appendix — exact executable checks
 
-The following sources are appended verbatim from the retained scratch files; their absolute/worktree imports are review harness paths, not proposed production dependencies.
+The following sources are appended verbatim from the retained scratch files; their worktree imports are review harness paths, not proposed production dependencies.
+
+*Edited 2026-10-03:* the host's absolute scratch paths (here and in the run command in section A) were rewritten as relative paths that resolve to the same files. BR's rule: no local absolute paths in tracked files. The code is otherwise as run.
 
 ### A1–A5 source
 
@@ -369,5 +371,5 @@ it('A6 current AR export is accepted by actual Deadvox registry and held/ground 
 ```
 
 ```js
-export default {test:{include:['/home/jani/devel/skelly/.agent-mail/scratch/r9-2-handoff.test.mts'],maxWorkers:1}};
+export default {test:{include:[import.meta.dirname+'/r9-2-handoff.test.mts'],maxWorkers:1}};
 ```
