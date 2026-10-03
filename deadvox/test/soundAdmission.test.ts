@@ -25,6 +25,7 @@ const makeSession = (play: SessionAudio['play'], content: Registry = registry) =
     registry: content,
     world: new World(),
     isSolid: () => false,
+    isOpaque: () => false,
     scale: makeScale(0.5),
     seed,
     start: 43_200,

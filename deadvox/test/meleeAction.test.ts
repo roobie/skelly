@@ -41,6 +41,7 @@ const makeSystem = (isSolid: SolidAt = FLOOR, results: string[] = [], sounds: st
   new ZombieSystem({
     player: () => blockedPlayer,
     isSolid,
+    isOpaque: isSolid,
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,

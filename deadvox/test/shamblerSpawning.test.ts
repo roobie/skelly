@@ -26,11 +26,13 @@ const testEngine = (isSolid: (x: number, y: number, z: number) => boolean): Engi
     spawn: { pos: [0, SCALE.blockSize, 0], yaw: 0 },
     groundAt: () => SCALE.blockSize,
     isSolid,
+    isOpaque: isSolid,
   }) as unknown as Engine;
 
 const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: number, z: number) => boolean) =>
   new ZombieSystem({
     isSolid,
+    isOpaque: isSolid,
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,

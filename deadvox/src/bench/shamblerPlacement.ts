@@ -9,6 +9,7 @@ export interface ShamblerPlacementWorld {
   spawn: { pos: Vec3 };
   groundAt: (xm: number, zm: number) => number;
   isSolid: SolidAt;
+  isOpaque: SolidAt;
 }
 
 export const bodyIsClear = (body: Body, isSolid: SolidAt): boolean => {
@@ -94,7 +95,7 @@ export const placeShamblerRing = ({
           Math.abs(candidate.pos[0] - other.pos[0]) < candidate.halfWidth + other.halfWidth &&
           Math.abs(candidate.pos[2] - other.pos[2]) < candidate.halfWidth + other.halfWidth,
       );
-      if (overlaps || !bodyIsClear(candidate, engine.isSolid) || !rayIsClear(candidate, player, engine.isSolid, s)) {
+      if (overlaps || !bodyIsClear(candidate, engine.isSolid) || !rayIsClear(candidate, player, engine.isOpaque, s)) {
         continue;
       }
       body = candidate;

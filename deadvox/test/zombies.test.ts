@@ -61,6 +61,7 @@ const senses = (
 ) => ({
   player: playerFn,
   isSolid,
+  isOpaque: isSolid,
   hour: hourFn,
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,

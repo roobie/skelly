@@ -580,6 +580,24 @@ try {
   assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes spawn menu');
   await press('Backquote', '`', 192);
   assert.equal(await evaluate("!document.querySelector('.debug-panel').hidden"), true, 'Backquote opens debug panel');
+  const debugScroll = await evaluate(`(() => {
+    const panel = document.querySelector('.debug-panel');
+    panel.scrollTop = 0;
+    const rect = panel.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2,
+      height: panel.clientHeight, scroll: panel.scrollHeight };
+  })()`);
+  assert.ok(debugScroll.scroll > debugScroll.height, 'expanded authored debug panel actually overflows');
+  await moveCursorTo(debugScroll);
+  await evaluate(`document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', {
+    bubbles: true, cancelable: true, deltaY: 3, deltaMode: 1,
+  }))`);
+  assert.equal(
+    await evaluate("document.querySelector('.debug-panel').scrollTop"),
+    48,
+    'shared cursor route scrolls the debug panel once, normalizing line units',
+  );
+  assert.equal(await evaluate('window.scrollY'), 0, 'debug wheel does not scroll the page');
   assert.equal(
     await evaluate("Boolean(document.querySelector('.debug-shambler-count output'))"),
     true,

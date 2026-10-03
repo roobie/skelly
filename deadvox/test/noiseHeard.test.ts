@@ -36,6 +36,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     registry,
     world,
     isSolid: (_x, y) => y === 0,
+    isOpaque: (_x, y) => y === 0,
     scale,
     seed: 73,
     start: 43_200,

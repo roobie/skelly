@@ -32,6 +32,7 @@ const standing = (position: Vec3, facing: Vec3) => {
       lightSeenFrom: 40,
     }),
     isSolid: FLOOR,
+    isOpaque: FLOOR,
     hour: () => 12,
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),

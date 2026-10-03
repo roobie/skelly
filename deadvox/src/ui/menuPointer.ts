@@ -4,6 +4,8 @@
 // input's lock and cursor state and the DOM, never simulation state (ADR 0002: it is
 // excluded from the save fingerprint, so pointer fixes don't invalidate saves).
 
+import { wheelPane, wheelPixels } from './wheel.ts';
+
 /** The input state the cursor needs; `Input` satisfies it. */
 export interface MenuPointerInput {
   readonly locked: boolean;
@@ -105,6 +107,30 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'] as const) {
     document.addEventListener(type, forwardMenuPointer, true);
   }
+
+  // The main card already owns its locked wheel route, independent of cursor position.
+  const gameOwnsWheel = () =>
+    input.locked && (!input.menuPointer || document.getElementById('overlay')?.hidden === false);
+  document.addEventListener(
+    'wheel',
+    (event) => {
+      if (event.defaultPrevented || !(event.deltaX || event.deltaY) || gameOwnsWheel()) {
+        return;
+      }
+      const target = input.locked ? document.elementFromPoint(input.cursorX, input.cursorY) : event.target;
+      const pane = wheelPane(target);
+      if (pane) {
+        pane.scrollTop += wheelPixels(event.deltaY, event.deltaMode, pane.clientHeight);
+        pane.scrollLeft += wheelPixels(event.deltaX, event.deltaMode, pane.clientWidth);
+      } else if (!input.locked) {
+        return;
+      }
+      // Consume even at a pane's edge: neither page scroll nor the build wheel should leak through.
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    { capture: true, passive: false },
+  );
 
   let forwardingClick = false;
   let hoveredElement: Element | null = null;

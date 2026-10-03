@@ -1,5 +1,5 @@
 import { BlockEntities } from '../core/blockEntities.ts';
-import { worldSolid } from '../core/collision.ts';
+import { worldOpaque, worldSolid } from '../core/collision.ts';
 import type { Registry } from '../core/content.ts';
 import { CHUNK, toChunk } from '../core/coords.ts';
 import { HAMLET_BLOCK_SIZE, Hamlet } from '../core/hamlet.ts';
@@ -38,6 +38,7 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
     spawn: site.spawn,
     groundAt: (xm, zm) => worldGroundAt({ seed, scale, surface, xm, zm }),
     isSolid: worldSolid(world, registry, entities),
+    isOpaque: worldOpaque(world, registry, entities),
     world,
     entities,
     loadedColumns: 0,

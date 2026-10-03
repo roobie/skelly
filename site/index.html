@@ -111,10 +111,14 @@
               <select name="site" data-url-param="site" id="deadvox-site">
                 <option id="deadvox-default-site" value="">Hamlet (default)</option>
                 <option value="city">Stress-test city</option>
+                <option value="forest">Forest (tree first look)</option>
               </select>
             </label>
             <label id="deadvox-storeys-field" hidden>Tallest city building (storeys)
               <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required />
+            </label>
+            <label id="deadvox-density-field" hidden>Forest fixed density (blank: seeded 0.2–0.75 field)
+              <input name="density" data-url-param="density" type="number" min="0" max="1" step="0.05" value="" />
             </label>
             <label id="deadvox-actors-field">Zombie models
               <select name="actors" data-url-param="actors">

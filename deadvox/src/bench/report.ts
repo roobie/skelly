@@ -85,8 +85,12 @@ export const markdownTable = (record: BenchRecord): string => {
 
 const environmentLines = (record: BenchRecord): string[] => {
   const { env } = record;
+  const workload = [
+    `Site: ${record.site ?? 'test house'}`,
+    ...(record.forest ? [`Forest workload: ${JSON.stringify(record.forest)}`] : []),
+  ];
   if (!env) {
-    return ['Environment: not recorded'];
+    return ['Environment: not recorded', ...workload];
   }
   return [
     ...(record.post ? ['Rendering: with post-processing and shadows (the default look)'] : []),
@@ -95,7 +99,7 @@ const environmentLines = (record: BenchRecord): string[] => {
     `Canvas: ${env.canvas} at pixel ratio ${env.pixelRatio}`,
     `Browser: ${env.userAgent}`,
     `Run: ${record.startedAt}${record.quick ? ' (quick mode: not valid results)' : ''}`,
-    `Site: ${record.site ?? 'test house'}`,
+    ...workload,
     `Time: ${record.time ?? '12:00'}`,
   ];
 };

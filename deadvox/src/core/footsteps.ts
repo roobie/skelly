@@ -31,6 +31,11 @@ const SURFACE_EVENTS = new Map<string, SoundEventId>([
   ['roof', 'footstep_stone'],
   ['window_frame', 'footstep_stone'],
   ['planks', 'footstep_wood'],
+  ['tree_trunk', 'footstep_wood'],
+  ['tree_branch', 'footstep_wood'],
+  ['leaves', 'footstep_leaves'],
+  ['hedge', 'footstep_leaves'],
+  ['leaf_litter', 'footstep_leaves'],
   ['fabric', 'footstep_leaves'],
   ['carpet', 'footstep_leaves'],
 ]);
@@ -103,6 +108,11 @@ const SHAMBLER_SURFACE_EVENTS = new Map<string, SoundEventId>([
   ['roof', 'shambler_step_stone'],
   ['window_frame', 'shambler_step_stone'],
   ['planks', 'shambler_step_wood'],
+  ['tree_trunk', 'shambler_step_wood'],
+  ['tree_branch', 'shambler_step_wood'],
+  ['leaves', 'shambler_step_leaves'],
+  ['hedge', 'shambler_step_leaves'],
+  ['leaf_litter', 'shambler_step_leaves'],
   ['fabric', 'shambler_step_leaves'],
   ['carpet', 'shambler_step_leaves'],
 ]);

@@ -63,6 +63,7 @@ const updateDeadvoxVisibility = () => {
   showWhen(byId('deadvox-world-bench'), mode === '1');
   showWhen(byId('deadvox-shambler-bench'), mode === 'shamblers');
   showWhen(byId('deadvox-storeys-field'), deadvoxSite.value === 'city' && mode !== 'report' && mode !== 'shamblers');
+  showWhen(byId('deadvox-density-field'), deadvoxSite.value === 'forest' && mode !== 'report' && mode !== 'shamblers');
 
   const nextDefault = defaultTime();
   if (deadvoxTime.value === deadvoxTime.dataset.defaultTime) {
@@ -127,6 +128,10 @@ const makeDeadvoxUrl = () => {
   if ((mode === '' || mode === '1') && deadvoxSite.value === 'city') {
     params.set('site', 'city');
     setUnlessDefault(params, 'storeys', deadvoxForm.elements.namedItem('storeys').value, '1');
+  }
+  if (deadvoxSite.value === 'forest') {
+    params.set('site', 'forest');
+    setUnlessDefault(params, 'density', deadvoxForm.elements.namedItem('density').value, '');
   }
 
   if (mode === '1') {
