@@ -922,8 +922,20 @@ is in place; see [EPIC.md](EPIC.md#3-flesh-and-noise).
   - their first reaction to an interruption
   - what they do when they hear something they can't see
   - where they get stuck
-- **Afterwards:** the 6 playtest questions, plus the most annoying moment and
-  the best moment.
+- **Afterwards:** the 6 Slice 1 playtest questions, the Slice 2 questions below,
+  plus the most annoying moment and the best moment. Slice 2's question is
+  **does crafting from scavenged materials give looting a purpose?**
+  ([SLICE-2.md](SLICE-2.md#playtest-questions)):
+  - **Purpose:** do players pick up things they can't use directly (rags, nails,
+    scrap) because of what they could make? Do they plan a loot run around a
+    recipe?
+  - **Readability:** can players tell from the crafting panel what they're
+    missing and where it might be found?
+  - **Time:** is crafting in compressed time, with interruptions, readable and
+    fair? Do players come back to a half-made item?
+  - **Wear:** do players notice wear, and is repairing worth the materials?
+  - **Light:** do players make light, and does carrying a burning torch change
+    how they move at night?
 - **Collect:** the metrics JSON and the notes. After the end-of-Slice-3
   playtest, write the findings back into this file and into [DESIGN.md](DESIGN.md)
   and [CHALLENGES.md](CHALLENGES.md) before Slice 4 is planned.
