@@ -26,7 +26,11 @@ continued-motion cooldown, not every frame; stillness makes no rustle. Gentle/fa
 content events use 0.45/0.15 s intervals, gain 0.4/0.75 and noise radius 4/10 m.
 `assets/audio/footstep-leaves-01.ogg` is the bundled **placeholder**, not a new bush
 recording. Leaf litter still uses player/shambler leaf footsteps. The rustle source
-is the brushed voxel centre; it is not a listener-relative UI sound.
+is the brushed voxel centre; it is not a listener-relative UI sound. Physical
+brushing includes vertical travel (falling/jumping), but ignores displacement
+of at most two contact skins: 0.0002 blocks, or 0.1 mm at 0.5 m blocks. This
+excludes ordinary contact correction, including one skin per axis and floating
+point slack, rather than treating a resting body's settling as motion.
 
 ## Frozen workload
 
@@ -89,5 +93,8 @@ one ordered run per variant shows no reliable budget advantage. Approved opaque
 drawing is retained. Normal Hamlet was also rechecked, without load timeout.
 These are host observations, not proof the reference laptop meets the budget.
 The Slice 1 budget is unchanged: 60 fps, at most 1% of frames above 18 ms in every
-phase, and no sprint holes. **Unmet budgets remain unmet; BR's Firefox after-run
-is still required.**
+phase, and no sprint holes. The host observations remain failed measurements.
+**BR's later reference verdict (2026-10-03, relayed at 17:14):** fixed 0.75 by day,
+the frozen field by day and by night all hold 60 fps, 0% slow, zero holes.
+Performance is met on the reference GPU; feel is “good enough!”. Semi-occluding
+leaves and ground-level foliage are follow-ups in #187, not this implementation.

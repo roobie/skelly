@@ -719,7 +719,7 @@ playable".
 
 ## Results
 
-### Trees: d24-2, 2026-10-03 — CPU lookup fixed; reference budget pending
+### Trees: d24-2, 2026-10-03 — CPU lookup fixed
 
 BR approved shapes and hedges; the new movement/sight ruling and F4 player
 rustle are implemented. Frozen feature baseline **`8abee65`**, localized lookup
@@ -800,7 +800,8 @@ BR's separate **pre-feature**, fixed-0.75 `603a64a` Firefox 153 / Intel HD run
 reported look 60 fps, p95 17.2 ms, 0% slow; jog/sprint main-thread work p95
 310/467 ms; blocking render median/p95 13/20 ms. It confirms the streaming
 bottleneck but is **not** the varying-field before/after pair. A reference
-Firefox after-run is still BR's; Slice 2.13's performance gate remains open.
+Firefox after-run was still outstanding when these host results were recorded;
+BR's later verdict is recorded below.
 Use `?density=0.75` for an exact fixed-density comparison, and omit it for the
 frozen field. Do not change density or view distance to claim a pass.
 
@@ -817,3 +818,28 @@ The separately declared new-cap identical busy-lock A/B for d24-1 also passed
 on trees and pristine main; historical failures remain disclosed, not explained
 away by the later passes. Frame-budget failure is separate from green functional
 gates.
+
+#### BR's reference after-runs and d24-3 (2026-10-03)
+
+The lead relayed BR's verdict at 17:14: **all three real-GPU after-runs** —
+fixed density 0.75 by day, the frozen field by day and by night — hold **60 fps,
+0% slow frames, zero holes**. The reference performance criterion is met;
+this does not turn the older SwiftShader failures into passes. BR's feel verdict
+is “I'd say it's good enough!”. Semi-occluding leaves and ground-level foliage
+are filed in #187 and remain outside this round.
+
+Review found one missed path: pure vertical brushing was classified as still.
+d24-3 measures three-dimensional displacement after physical movement, requiring
+more than twice physics' unchanged 0.0001-block contact skin. The 0.0002-block
+band (0.1 mm at 0.5 m blocks) rejects one contact-skin correction on all axes
+(norm ≤ √3 skins), with floating-point slack, while falling/jumping movement is
+well above it. The named skin replaces the old private `EPS`; physical constants
+and collision resolution are otherwise unchanged.
+
+The actual-session seed-73 falling regression fails on `5710d54`, passes with
+the fix, fails again after exact source restoration and passes after reapplying.
+A stationary control checks both the true resting height 1.0001 and the nominal
+floor height 1 that corrects to it. Naive 3D displacement with the old tiny
+threshold emits a sound/noise pair for that correction and fails the control;
+the skin-aware rule stays silent. F4 admission, positioning and cooldown are
+unchanged.
