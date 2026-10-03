@@ -9,6 +9,7 @@ import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
+import type { SnapshotMeasurement } from './playtestTools.ts';
 
 export interface DebugHooks {
   readonly engine: Engine;
@@ -33,7 +34,7 @@ export interface DebugHooks {
   readonly skipGameHours: (hours: number) => void;
   readonly setTimeOfDay: (hour: number, minute: number) => void;
   readonly revealZombies: (enabled: boolean) => void;
-  readonly measureSnapshot: () => { samples: number; p50Ms: number; p95Ms: number; stateUnchanged: boolean };
+  readonly measureSnapshot: () => SnapshotMeasurement;
   readonly exportMetrics: () => void;
 }
 

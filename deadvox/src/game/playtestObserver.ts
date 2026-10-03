@@ -4,8 +4,9 @@ import type { Inventory, Location } from '../core/inventory.ts';
 import {
   measureSnapshots,
   type SessionMetrics,
-  type SnapshotHistory,
+  SNAPSHOT_BATCH_TARGET_MS,
   type SnapshotMeasurement,
+  snapshotTimerQuantumForUserAgent,
 } from './playtestTools.ts';
 import type { Session } from './session.ts';
 
@@ -241,20 +242,33 @@ export class PlaytestObserver {
     }
   }
 
-  measureSnapshot(
-    snapshot: () => unknown,
-    session: Session,
-    history: SnapshotHistory,
-    repeats = 50,
-  ): SnapshotMeasurement {
+  measureSnapshot(snapshot: () => unknown, session: Session, repeats = 50): SnapshotMeasurement {
     try {
-      const result = measureSnapshots(snapshot, () => inspectLiveSession(session), repeats);
-      for (const duration of result.durationsMs) {
-        history.add(duration);
-      }
-      return result;
+      const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent;
+      return measureSnapshots(snapshot, () => inspectLiveSession(session), {
+        repeats,
+        now: () => performance.now(),
+        timerQuantum: snapshotTimerQuantumForUserAgent(userAgent),
+      });
     } catch {
-      return { samples: 0, p50Ms: 0, p95Ms: 0, durationsMs: [], stateUnchanged: false };
+      return {
+        batchCount: 0,
+        batchSize: 0,
+        observedTimerTickMs: null,
+        timerQuantum: null,
+        timerQuantumCrossCheckPassed: false,
+        targetBatchMs: SNAPSHOT_BATCH_TARGET_MS,
+        calibrationBatchMs: 0,
+        batchMeanP50Ms: 0,
+        batchMeanP95Ms: 0,
+        batchMeanDurationsMs: [],
+        individualCaptureCount: 0,
+        individualCaptureP95Ms: 0,
+        individualCaptureMaxMs: 0,
+        individualCaptureP95UpperBoundMs: null,
+        individualCaptureMaxUpperBoundMs: null,
+        netStateUnchanged: false,
+      };
     }
   }
 

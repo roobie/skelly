@@ -6,6 +6,7 @@ import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { KEY_BINDINGS } from '../game/input.ts';
+import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
@@ -30,6 +31,29 @@ import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { scrollPanelByWheel } from './wheel.ts';
+
+const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
+  const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
+  let quantization: string;
+  if (result.timerQuantum === null) {
+    quantization = `true-time bounds unavailable (no known Firefox/Chromium quantum; observed minimum tick ${observedTick} is not an error bound)`;
+  } else if (
+    !result.timerQuantumCrossCheckPassed ||
+    result.individualCaptureP95UpperBoundMs === null ||
+    result.individualCaptureMaxUpperBoundMs === null
+  ) {
+    quantization = `true-time bounds unavailable (known ${result.timerQuantum.browser} browser-profile quantum r=${result.timerQuantum.quantumMs.toFixed(3)} ms failed the observed-tick cross-check at ${observedTick})`;
+  } else {
+    quantization = `known ${result.timerQuantum.browser} browser-profile quantum r=${result.timerQuantum.quantumMs.toFixed(3)} ms (observed minimum tick ${observedTick}; duration error <2r): true p95 <${result.individualCaptureP95UpperBoundMs.toFixed(3)} ms and max <${result.individualCaptureMaxUpperBoundMs.toFixed(3)} ms`;
+  }
+
+  return (
+    `Snapshot: ${result.batchCount} batches × ${result.batchSize} captures/batch (${result.batchCount * result.batchSize} timed captures); ` +
+    `batch-mean throughput p50 ${result.batchMeanP50Ms.toFixed(3)} ms/capture, p95 ${result.batchMeanP95Ms.toFixed(3)} ms/capture; ` +
+    `individual tail n=${result.individualCaptureCount}: observed p95 ${result.individualCaptureP95Ms.toFixed(3)} ms, max ${result.individualCaptureMaxMs.toFixed(3)} ms; ` +
+    `${quantization}; calibration ${result.calibrationBatchMs.toFixed(3)} ms; net state ${result.netStateUnchanged ? 'unchanged' : 'CHANGED'} across measurement`
+  );
+};
 
 export interface Action extends GroupedAction {
   readonly code: string;
@@ -193,6 +217,7 @@ const panelTemplate = ({
   revealZombies,
   toggleReveal,
   measureSnapshot,
+  copySnapshotResult,
   exportMetrics,
   toggleOpen,
   dumpLook,
@@ -215,6 +240,7 @@ const panelTemplate = ({
   revealZombies: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
+  copySnapshotResult: () => void;
   exportMetrics: () => void;
   toggleOpen: () => void;
   dumpLook: () => void;
@@ -275,7 +301,11 @@ const panelTemplate = ({
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
-    <p>F4 toggles the performance overlay. ${snapshotStatus}</p>
+    <p>F4 toggles the performance overlay.</p>
+    <div class="debug-snapshot-result-row">
+      <p id="snapshot-measurement-result" class="debug-snapshot-result" aria-live="polite" tabindex="0">${snapshotStatus || 'No snapshot measurement yet.'}</p>
+      <button id="copy-snapshot-result" type="button" ?disabled=${snapshotStatus === ''} @click=${copySnapshotResult}>Copy</button>
+    </div>
     <label class="debug-axis-toggle"><input type="checkbox" .checked=${axesVisible} @change=${toggleAxes} /> Show axis gizmo</label>
     <div class="debug-readout"><button id="copy-view-link" type="button" @click=${copyViewLink}>Copy view link</button><span aria-live="polite">${copyStatus}</span></div>
     <div id="debug-readout" class="debug-readout"></div>
@@ -672,6 +702,23 @@ export const formatMeleeResult = (result: MeleeResult): string => {
   return `${result.region} ${result.damage} damage (${result.healthBefore}→${result.healthAfter}) · ${outcome}`;
 };
 
+export const copyTextOrSelect = async (
+  text: string,
+  clipboard: { writeText: (value: string) => Promise<void> } | undefined,
+  selectFallback: () => void,
+): Promise<boolean> => {
+  try {
+    if (!clipboard) {
+      throw new Error('Clipboard API unavailable');
+    }
+    await clipboard.writeText(text);
+    return true;
+  } catch {
+    selectFallback();
+    return false;
+  }
+};
+
 const DEBUG_START_LIGHT = 'flashlight';
 
 /** A fresh debug game starts with a switched-off flashlight in the left hand, which leaves the right free. */
@@ -971,10 +1018,22 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             drawShell();
           },
           measureSnapshot: () => {
-            const result = hooks.measureSnapshot();
-            snapshotStatus = `Snapshot ${result.samples}×: p50 ${result.p50Ms.toFixed(3)} ms, p95 ${result.p95Ms.toFixed(3)} ms; state ${result.stateUnchanged ? 'unchanged' : 'CHANGED'}`;
+            snapshotStatus = snapshotMeasurementStatus(hooks.measureSnapshot());
             shellKey = '';
             drawShell();
+          },
+          copySnapshotResult: async () => {
+            const resultLine = host.querySelector<HTMLElement>('#snapshot-measurement-result');
+            if (!resultLine || snapshotStatus === '') {
+              return;
+            }
+            const text = snapshotStatus;
+            await copyTextOrSelect(text, globalThis.navigator.clipboard, () => {
+              resultLine.focus();
+              const selection = globalThis.getSelection();
+              selection?.removeAllRanges();
+              selection?.selectAllChildren(resultLine);
+            });
           },
           exportMetrics: hooks.exportMetrics,
           toggleOpen: togglePanel,
