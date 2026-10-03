@@ -72,15 +72,16 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
+  const held = new HeldItems(inventory, models, playerPalette);
   scene.add(caseEffects.mesh);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
+    held.dispose();
   };
   page.addEventListener('pagehide', dispose);
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
-  const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
   engine.shadows.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);

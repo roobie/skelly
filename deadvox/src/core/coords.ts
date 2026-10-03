@@ -3,6 +3,9 @@
 
 export type Vec3 = [number, number, number];
 
+/** Canonical map compass convention: north is −z; with +y up, east is +x. */
+export const WORLD_NORTH: Readonly<Vec3> = [0, 0, -1];
+
 export const CHUNK_BITS = 5;
 export const CHUNK = 1 << CHUNK_BITS;
 export const CHUNK_VOLUME = CHUNK * CHUNK * CHUNK;

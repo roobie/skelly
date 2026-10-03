@@ -26,6 +26,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import { createCompass } from './compass.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
@@ -57,6 +58,7 @@ export class HeldItems {
   private drawn = '';
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
+  private readonly compasses = new Map<number, ReturnType<typeof createCompass>>();
   private readonly arms = new Map<HandSide, Group>();
   private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
@@ -123,6 +125,9 @@ export class HeldItems {
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(main.quaternion);
     this.view.updateMatrixWorld(true);
+    for (const compass of this.compasses.values()) {
+      compass.update(main.rotation.y);
+    }
     for (const [side, arm] of this.arms) {
       this.updateArmChain(side, arm);
     }
@@ -226,6 +231,7 @@ export class HeldItems {
       return;
     }
     this.drawn = version;
+    this.disposeCompasses();
     this.clearArms();
     this.view.clear();
     this.view.add(this.torso);
@@ -238,6 +244,19 @@ export class HeldItems {
     this.syncHand('left', hands.left);
     this.syncFistHand('right');
     this.syncFistHand('left');
+  }
+
+  private disposeCompasses(): void {
+    for (const compass of this.compasses.values()) {
+      compass.dispose();
+    }
+    this.compasses.clear();
+  }
+
+  /** Releases the spike's owned display resources on page teardown too. */
+  dispose(): void {
+    this.disposeCompasses();
+    this.clearArms();
   }
 
   /** Detaches and disposes arm chains before rebuilding the hands scene on an inventory/model version change. */
@@ -332,7 +351,9 @@ export class HeldItems {
       return;
     }
     const def = defOf(this.inventory.registry, item.type);
-    const heldAt = HOLD[def.twoHanded ? 'both' : side];
+    // A permanently raised inspection pose keeps this small display legible without a new input route.
+    const heldAt: Vec3 =
+      item.type === 'compass' ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3] : HOLD[def.twoHanded ? 'both' : side];
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
@@ -354,6 +375,11 @@ export class HeldItems {
   }
 
   private shape(item: Item): Object3D {
+    if (item.type === 'compass') {
+      const compass = createCompass();
+      this.compasses.set(item.uid, compass);
+      return compass.group;
+    }
     const def = defOf(this.inventory.registry, item.type);
     const model = def.model === undefined ? undefined : this.models?.held(def.model);
     if (model) {

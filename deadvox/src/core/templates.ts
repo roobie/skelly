@@ -9,7 +9,7 @@ import type { Chunk } from './chunk.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 
-/** The way something's front faces: north is -z, east is +x. */
+/** Horizontal front facings follow WORLD_NORTH in coords.ts. */
 export type Facing = 'n' | 'e' | 's' | 'w';
 /** Quarter turns clockwise seen from above: a turn takes north to east. */
 export type Turn = 0 | 1 | 2 | 3;
