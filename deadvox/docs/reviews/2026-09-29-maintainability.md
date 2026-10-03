@@ -1,6 +1,6 @@
 # deadvox maintainability review (2026-09-29, read-only)
 
-Repo: `/home/bjorn/devel/skelly`, branch `main` at `efd3e9f`. Scope: `deadvox/` only.
+Repo: the repository root, branch `main` at `efd3e9f`. Scope: `deadvox/` only.
 
 ## 0. Derived inputs
 

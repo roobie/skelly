@@ -1263,7 +1263,7 @@ entry keeps the original id and asset path, with export-derived grip and anchors
 GLB and sidecar from the `gungen/` directory with:
 
 ```sh
-npm run export:glb -- designs/archetype-ar.json --out ../deadvox/src/content/base/assets/models --entry-out /tmp/gungen-rifle-assault-entry --id rifle_assault
+npm run export:glb -- designs/archetype-ar.json --out ../deadvox/src/content/base/assets/models --entry-out "$XDG_RUNTIME_DIR/gungen-rifle-assault-entry" --id rifle_assault
 ```
 
 The generated sidecar's `grip` and `anchors` are recorded in
