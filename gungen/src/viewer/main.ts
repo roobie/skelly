@@ -549,9 +549,7 @@ const renderPanel = (assembly: Assembly) => {
   }
   const note = expectationNote(expected, failed);
   const actionOpen =
-    initialQuery.get('pose') === 'action-open' &&
-    report.resolved.placed.has('forend') &&
-    report.resolved.defs.get('bolt-carrier')?.motion !== undefined;
+    initialQuery.get('pose') === 'action-open' && actionOpenOffsets(resolveGunAction(report.resolved)).size > 0;
   const poseNote = actionOpen
     ? '<span class="note"> · view-only full-rearward pump pose; validation and export remain at rest</span>'
     : '';
