@@ -23,6 +23,9 @@ not reference-laptop frame budgets or GitHub runner guarantees.
   stop admitting new work and report the consumers; do not wait for an OOM kill
   or raise a cap. Adding workers requires a fresh capacity check by the lead.
   Existing role caps are **not additive capacity reservations**.
+- After an OOM, preserve the failure evidence and report the workload and scope
+  membership. Do not rerun the unchanged workload until the cause or capacity
+  breach is addressed; never raise caps or retry until green.
 - A browser may span multiple cgroups: reserve headroom in both the launching
   agent/infra group and the separate Chromium app scope. A 3 GiB *scope* limit
   is not a proved 3 GiB limit for the whole browser job. Keep serialization even
@@ -66,7 +69,10 @@ Read from `systemctl --user show`, without changing any properties:
 | `app-org.chromium.Chromium-*.scope` | 2,560 MiB = 2.5 GiB | 3 GiB |
 
 The team parent also has `MemorySwapMax=1G`; the Chromium prefix drop-in has
-`MemorySwapMax=256M`. The role limits can sum above their parent's limit: seven
+`MemorySwapMax=256M` (268,435,456 bytes), observed in the original prefix-file
+read retained in `d21-capacity-observations.txt` §F. The live browser probe did
+not query swap limits/use; this is configured-cap evidence. The role limits can
+sum above their parent's limit: seven
 3 GiB coder scopes do not grant seven concurrent 3 GiB workloads.
 
 **Important override:** `~/.config/systemd/user/agents-review.slice.d/host.conf`
@@ -175,8 +181,12 @@ an explicitly measured runner baseline first.
 git rev-parse HEAD
 node --version
 node -p 'require("node:os").availableParallelism()'
-du -sk . node_modules gungen/node_modules deadvox/node_modules \
-  mobgen/node_modules deadvox/tools/lit-check/node_modules
+du -sk .
+for dir in node_modules gungen/node_modules deadvox/node_modules \
+  mobgen/node_modules deadvox/tools/lit-check/node_modules; do
+  du -sk "$dir"
+done
+# Independent sizes: do not sum the install rows with the whole-tree total.
 df -B1 --output=size,used,avail,pcent .
 
 # Effective properties and their higher-precedence source files.
@@ -206,7 +216,26 @@ flock -w 900 /run/user/1000/skelly-heavy.lock \
 For Vite, read `/proc/<vite-pid>/status` before exit; CPU seconds are stat fields
 14 + 15 divided by `getconf CLK_TCK`. Compare CPU counter deltas over a stated
 wall window for idle measurements; do not use VSZ as resident memory.
-Measurement transport is `.agent-mail/scratch/d21-{*.time,*.log,final-caps.txt,
-effective-dropins.txt}` plus the disposable browser scope/pre-teardown probes.
-The tables and commands above are the lasting record; no profiler is added to
-the project.
+## Source evidence index
+
+All paths below are under the main checkout's `.agent-mail/scratch/`:
+
+- **Raw capacity observations:** `d21-capacity-observations.txt` retains original
+  dated command/output excerpts for the checkout, host RAM/CPUs/Node, fresh
+  du/install allocations, final df, pi status and every coder scope. It includes
+  session ID, durable record IDs and original timestamps for recovery; these
+  are recovered source outputs, not re-measured later footprints. §F retains
+  the configured Chromium **256M swap cap** observation noted above.
+- **Browser commands, membership, peaks and outcomes:** `d21-chromium-ui.log`,
+  `d21-chromium-ui-final.log` and `d21-firefox-storage.log`. Disposable observation
+  code is `d21-browser-scope.sh` and `d21-prekill-probe.mjs`.
+- **Effective role caps and precedence:** `d21-final-caps.txt` and
+  `d21-effective-dropins.txt`; the earlier parent current charge and all seven
+  session lifetime peaks are in the capacity observations, not inferred from
+  the later current values.
+- **Default-run samples and outcomes:** `d21-{gungen,deadvox,mobgen}-{1,2,3}.time`
+  and corresponding `.log` files; root checks are
+  `d21-root-{ci,test:site}-{1,2,3}.time` and corresponding `.log` files.
+
+These are source observations; the tables and reproducible commands here are
+the lasting summary. No profiler is added to the project.
