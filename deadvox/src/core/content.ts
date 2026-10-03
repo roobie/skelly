@@ -313,6 +313,9 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
   }
+  if (entry.loot !== undefined && furniture && furniture.container === undefined) {
+    found.push(['.loot', 'has loot but no container to put it in']);
+  }
   if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }
@@ -412,7 +415,14 @@ export const requiredSoundIssues = (registry: Registry, source = 'sounds.json'):
  * skipped. Then references are checked; files with broken references are dropped
  * and the rest merged again, until what's left is consistent.
  */
-export const buildRegistry = (sources: readonly ContentSource[]): { registry: Registry; issues: ContentIssue[] } => {
+export const buildRegistry = (
+  sources: readonly ContentSource[],
+): {
+  registry: Registry;
+  issues: ContentIssue[];
+  /** Winning origins, including ordered overrides and whole-file removal. */
+  origins: ReadonlyMap<string, Origin>;
+} => {
   const issues: ContentIssue[] = [];
   let files: { source: string; file: ContentFile }[] = [];
   for (const src of sources) {
@@ -426,7 +436,7 @@ export const buildRegistry = (sources: readonly ContentSource[]): { registry: Re
     const { registry, origins } = merge(files);
     const broken = referenceIssues(registry, origins);
     if (broken.length === 0) {
-      return { registry, issues };
+      return { registry, issues, origins };
     }
     issues.push(...broken);
     const bad = new Set(broken.map((i) => i.source));

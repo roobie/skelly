@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": "fixture_tool",
+      "name": "Tool",
+      "category": "tool",
+      "weight": 1,
+      "size": [1, 1],
+      "tool": { "qualities": { "fixture_quality": 2 } }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "fixture_tool",
+      "result": { "item": "fixture_tool", "count": 1 },
+      "time": 1,
+      "skills": {},
+      "qualities": { "fixture_quality": 2 },
+      "components": [[{ "item": "rag", "count": 1 }]]
+    }
+  ]
+}

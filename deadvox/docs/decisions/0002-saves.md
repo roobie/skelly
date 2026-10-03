@@ -220,24 +220,20 @@ erased; `src/core/site.ts`'s runtime helpers are reached through the city/hamlet
 builders, and config logic has its own entry.
 
 The excluded runtime import edges reached from non-excluded simulation modules
-are pinned by `test/simulationFingerprint.test.ts`:
+are pinned by `test/simulationFingerprint.test.ts`. Rendering helpers within those
+excluded subtrees are justified here as well:
 
 - `src/game/saveStorage.ts`, `src/game/saveStorageRecord.ts`,
   `src/game/saveStorageProtocol.ts`, and `src/worker/save.worker.ts`: browser
   persistence, A/B slot framing and disk I/O
   only. Save bytes are already bound to the simulation by `versionIdentity`;
   changing OPFS/IndexedDB mechanics must not invalidate a save.
-- `src/core/sky.ts`, imported by `src/game/play.ts`: values only feed rendered
-  sky state; no simulation system reads them. Include this source if daylight
-  becomes a simulation input.
-- `src/core/mood.ts` and `src/core/weather.ts`, imported by `src/game/play.ts`:
-  the look's defaults, the mood pass's numbers, and the weather's fogginess as it
-  shapes the sky's fog; values only feed rendering. Remove `weather.ts` from the
-  exclusions and save its state as soon as weather affects the simulation.
-- `src/game/damageFeedback.ts`, imported by `src/game/play.ts`: vignette and
-  camera-roll animation only. Camera rotation remains visual in this excluded
-  module; gameplay targeting uses fingerprinted `src/game/aim.ts` with input
-  pitch/yaw only, not the feedback-rolled camera.
+- `src/core/sky.ts`, `src/core/mood.ts` and `src/core/weather.ts`, now used within
+  `src/render/playView.ts`: rendered sky, look/mood defaults and fogginess only.
+  Include daylight/weather and save their state when they become simulation inputs.
+- `src/game/damageFeedback.ts`, now used within `src/render/playView.ts`: vignette
+  and camera-roll animation only. Gameplay targeting still uses fingerprinted
+  `src/game/aim.ts` with input pitch/yaw, never the feedback-rolled camera.
 - `src/game/engine.ts`: WebGL renderer, camera, lights, `ChunkMeshes`, and resize
   setup only. Its `Engine` interface extends `WorldSetup`, but gameplay imports
   that contract type-only; `engine.ts` is not a simulation entry, so Three.js and
@@ -253,18 +249,29 @@ are pinned by `test/simulationFingerprint.test.ts`:
 - `src/core/sideButton.ts`, imported by `src/game/play.ts`: which pointer events
   count as the Mouse 5 side button and the de-duplication of one press; what the
   button does is in the fingerprinted `src/core/lights.ts` and `play.ts`.
-- `src/render/{flashlight,furniture,hands,look,models,piles,playerFigure,sky,stepOffset,zombies}.ts`,
-  imported by `src/game/play.ts`: mesh construction, draw transforms, and render
-  interpolation only. The simulation never reads these objects back.
+- `src/render/playView.ts`: owned mesh/model construction, read-only camera/player/
+  actor interpolation, held items, sky/lighting, mood drawing, warm-up and pagehide
+  disposal of pile/case instance resources. It does not advance the session or select
+  actions. Shared prepared-model geometry/material lifetime stays with the model library.
+  Its rendering helpers remain under the existing `src/render` exclusion.
+- `src/render/playFrames.ts`: recursive RAF wiring passes timestamps unchanged and
+  stops when the fingerprinted caller returns false. Elapsed-time clamp, pause/freeze,
+  input sampling, simulation stepping, death and save/observer hooks remain in `play.ts`.
+  `src/render/frameTimes.ts` and `src/render/meleePose.ts` are also presentation-only.
 - `src/ui/audioOptions.ts`: output volume controls only. `src/game/audio.ts` is
   also excluded: WebAudio output/voice allocation cannot veto session admission.
   The session and saved picker remain fingerprinted because they create vocal-noise state.
 - `src/ui/credits.ts`, `src/ui/gameCursor.ts`: static credits and cursor DOM.
 - `src/ui/death.ts`: death summary and a new-world navigation callback; it does
   not mutate or restore the current world's saved simulation.
-- `src/ui/hud.ts`, `src/ui/hudOptions.ts`: drawing and visibility settings only.
-  The stateful `Quickbar` was moved to `src/game/quickbar.ts` and is fingerprinted
-  directly by `play.ts`.
+- `src/ui/hud.ts`, `src/ui/hudOptions.ts`, `src/ui/playHud.ts`, `src/ui/playReadout.ts`:
+  HUD/status/prompt/debug-readout projections, DOM rendering, byte estimates and visibility only. The new play HUD consumes readonly
+  data, not a session or input controller. Target acquisition/action selection stay
+  in `play.ts`; the hint only describes an already selected target. Quickbar cache
+  refresh stays in `play.ts`, and stateful `src/game/quickbar.ts` remains fingerprinted.
+  The A5 canary proves HUD wording alone preserves the fingerprint; changing the
+  gameplay interaction reach still changes it. This extraction deliberately changes
+  simulation identity once; there is no save schema change or migration.
 - `src/ui/menuPointer.ts`: the pointer-lock menu cursor and the forwarding of locked
   pointer and click events to the element under it. It reads only the input's
   lock and cursor state and the DOM, never simulation state; what the inventory

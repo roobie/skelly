@@ -10,6 +10,43 @@ describe('npm run validate', () => {
     const run = validate();
     expect(run.status).toBe(0);
     expect(run.stdout).toContain('0 issue(s)');
+    expect(run.stdout).toContain('Component closure: 36 item types');
+    expect(run.stdout).toContain('Content count: 36 reachable / 40 defined eligible types');
+    expect(run.stdout).toContain('Defined but unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest');
+    expect(run.stdout).toContain('4 pending prerequisite(s)');
+  });
+
+  it.each([
+    ['unfound', ['recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable']],
+    [
+      'cycle',
+      [
+        'recipes[0].components[0][0].item: item "fixture_b" is neither found nor craftable',
+        'recipes[1].components[0][0].item: item "fixture_a" is neither found nor craftable',
+      ],
+    ],
+    [
+      'self-tool',
+      [
+        'recipes[0].qualities.fixture_quality: no reachable tool provides "fixture_quality" level 2 without bootstrapping its own requirements',
+      ],
+    ],
+  ])('rejects %s reachability with its semantic diagnostic', (fixture, diagnostics) => {
+    const run = validate(`test/fixtures/content/reachability-${fixture}.json`);
+    expect(run.status).toBe(1);
+    for (const diagnostic of diagnostics) {
+      expect(run.stdout).toContain(diagnostic);
+    }
+  });
+
+  it('accepts the same unfound component when a grounded recipe makes it', () => {
+    const run = validate(
+      'test/fixtures/content/reachability-unfound.json',
+      'test/fixtures/content/reachability-craftable.json',
+    );
+    expect(run.status).toBe(0);
+    expect(run.stdout).toContain('0 issue(s)');
+    expect(run.stdout).toContain('Component closure: 38 item types');
   });
 
   it('rejects a recipe with a missing component item and names its reference', () => {

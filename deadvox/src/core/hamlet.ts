@@ -65,6 +65,40 @@ const SOUTH_SIDE = ['gas_station', 'shed'] as const;
 /** Every template the hamlet uses. */
 export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE];
 
+/** Also seeded by the static reachability check: roadside wanderers spawn independently of markers. */
+export const HAMLET_WANDERER = 'shambler';
+const ZOMBIE_COUNT = [6, 10] as const;
+
+/** Possible types before seed rolls: north rows may shuffle; south rows keep their order.
+ * Certain earlier markers can consume all spawn slots; wanderers only fill remaining slots. */
+export const possibleHamletZombies = (templates: ReadonlyMap<string, readonly SpawnMarker[]>): Set<string> => {
+  const types = new Set<string>();
+  const certain = (id: string) => (templates.get(id) ?? []).filter((marker) => marker.chance === 1).length;
+  const scan = (id: string, prior: number) => {
+    let used = prior;
+    for (const marker of templates.get(id) ?? []) {
+      if (marker.chance > 0 && used < ZOMBIE_COUNT[1]) {
+        types.add(marker.zombie);
+      }
+      if (marker.chance === 1) {
+        used += 1;
+      }
+    }
+    return used;
+  };
+  for (const id of NORTH_SIDE) {
+    scan(id, 0); // Each north template can be first.
+  }
+  let before = NORTH_SIDE.reduce((total, id) => total + certain(id), 0);
+  for (const id of SOUTH_SIDE) {
+    before = scan(id, before);
+  }
+  if (before < ZOMBIE_COUNT[1]) {
+    types.add(HAMLET_WANDERER);
+  }
+  return types;
+};
+
 /** Deterministic marker rolls plus enough roadside wanderers to reach the 6–10 population target. */
 export const hamletZombieSpawns = (
   seed: number,
@@ -74,14 +108,14 @@ export const hamletZombieSpawns = (
 ): ZombieSpawn[] => {
   const rng = Rng.stream(seed, 'hamlet-zombies');
   const selected = markers.filter((spawn) => rng.chance(spawn.chance));
-  const count = rng.int(6, 10);
+  const count = rng.int(...ZOMBIE_COUNT);
   const spawns = selected.slice(0, count).map(({ zombie, pos }) => ({ type: zombie, pos }));
   const wanderers = count - spawns.length;
   for (let i = 0; i < wanderers; i++) {
     const x = Math.floor(road.x0 + ((i + 1) * (road.x1 - road.x0)) / (wanderers + 1));
     const side = i % 2 === 0 ? -1 : 1;
     const z = Math.floor((road.z0 + road.z1) / 2 + side * (HAMLET.road / 2 + 2));
-    spawns.push({ type: 'shambler', pos: [x, roadHeightAt(x) + 1, z] });
+    spawns.push({ type: HAMLET_WANDERER, pos: [x, roadHeightAt(x) + 1, z] });
   }
   return spawns;
 };
