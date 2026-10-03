@@ -61,11 +61,6 @@ try {
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
-    globalThis.addEventListener('keydown', (event) => {
-      if (event.code === 'F10') {
-        globalThis.firefoxF10Prevented = event.defaultPrevented;
-      }
-    });
   });
   await page.goto(`http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`);
   await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view canvas')), null, {
@@ -82,6 +77,14 @@ try {
     timeout: 20_000,
   });
   assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
+  // Register after startup: Input and play must handle this window event before we read cancellation.
+  await page.evaluate(() => {
+    globalThis.addEventListener('keydown', (event) => {
+      if (event.code === 'F10') {
+        globalThis.firefoxF10Prevented = event.defaultPrevented;
+      }
+    });
+  });
   await page.keyboard.press('F10');
   assert.equal(await page.locator('#overlay').evaluate((panel) => panel.hidden), true);
   assert.equal(await page.evaluate(() => globalThis.firefoxF10Prevented), false);
