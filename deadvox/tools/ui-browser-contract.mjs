@@ -227,8 +227,21 @@ try {
     `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Measure snapshot'))?.click()`,
   );
   await waitFor(
-    () => evaluate("document.querySelector('.debug-panel').textContent.includes('Snapshot 50×')"),
-    'on-demand snapshot measurement',
+    () =>
+      evaluate("document.querySelector('#snapshot-measurement-result').textContent.includes('Snapshot: 50 batches ×')"),
+    'on-demand batched snapshot measurement',
+  );
+  const snapshotResult = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
+  assert.match(
+    snapshotResult,
+    /batch-mean throughput p50 .* ms\/capture, p95 .* ms\/capture; individual tail n=\d+: observed p95 .* ms, max .* ms; known Chromium browser-profile quantum r=.* ms \(observed minimum tick .* ms; duration error <2r\): true p95 </,
+  );
+  assert.match(snapshotResult, /net state unchanged across measurement/);
+  assert.equal(await evaluate("document.querySelector('#copy-snapshot-result').textContent.trim()"), 'Copy');
+  assert.equal(
+    await evaluate("getComputedStyle(document.querySelector('#snapshot-measurement-result')).userSelect"),
+    'text',
+    'snapshot result line is selectable',
   );
   await evaluate(
     `Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Export metrics'))?.click()`,

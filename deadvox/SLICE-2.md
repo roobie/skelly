@@ -1,0 +1,564 @@
+# Slice 2 — Craft and mend
+
+The second slice on the [road to version 1](EPIC.md). It builds the crafting
+design in [INTERACTIONS.md](INTERACTIONS.md) on top of Slice 1
+([SLICE-1.md](SLICE-1.md)), and the systems in [DESIGN.md](DESIGN.md),
+"Crafting" and "Light".
+
+**Status:** draft, proposed by the lead (2026-10-03), revised after review
+cr-d19. BR approves the plan. The scope follows BR's defaults of 2026-10-03
+("overall defaults - we might tweak some on the way"). Numbers and rules that
+aren't among those defaults are listed under "Plan defaults" and "Questions for
+BR".
+
+## Goal
+
+The player loots the hamlet as in Slice 1, but now what they find is material.
+They make a torch before the first night, mend a worn crowbar, take a broken
+radio apart for its parts, read a manual that teaches them a recipe, and do the
+bigger jobs at a workbench in the garage. Crafting, repair, disassembly and
+reading run in compressed time and can be interrupted and resumed. Crafting and
+disassembly keep their inputs and progress in a work item; repair and reading
+keep their target item and progress under the long-action contract (2.4).
+
+## Playtest questions
+
+EPIC's question for this slice: **does crafting from scavenged materials give
+looting a purpose?** In more detail:
+
+1. **Purpose:** do players pick up things they can't use directly (rags, nails,
+   scrap) because of what they could make? Do they plan a loot run around a
+   recipe?
+2. **Readability:** can players tell from the crafting panel what they're
+   missing and where it might be found?
+3. **Time:** is crafting in compressed time, with interruptions, readable and
+   fair? Do players come back to a half-made item?
+4. **Wear:** do players notice wear, and is repairing worth the materials?
+5. **Light:** do players make light, and does carrying a burning torch change
+   how they move at night?
+
+The playtest itself runs at the end of Slice 3 (BR, 2026-10-02). These questions
+join the Slice 1 [playtest plan](SLICE-1.md#playtest-plan) there; milestone 2.0
+adds them.
+
+## Scope
+
+### In
+
+- **Reach and options in the core:** one `reach()` snapshot and one `options()`
+  list (INTERACTIONS.md, "Reach" and "Options").
+- **Recipes as content:** result, time, skills, tool qualities, groups of
+  alternative components, optional workstation; the validator checks references
+  and the 1,024-combination cap.
+- **The planner and crafting as a long action** in compressed time: start,
+  interrupt, stop, continue and cancel, with the work-in-progress item holding
+  its components. Rest and sleep move onto the same long action.
+- **A crafting panel** in lit-html beside the inventory.
+- **Skills:** `crafting` and `mechanics`, both named in DESIGN.md. They rise
+  with use and don't decay.
+- **Recipes known:** a small set from the start; books teach the rest. No
+  schematic items yet.
+- **Books and reading** as a long action, with a `book` component.
+- **Wear and repair:** melee weapons wear per hit, worn clothing when you're
+  hit. Repair consumes materials and needs a tool quality.
+- **Disassembly:** a finished item yields a fraction of its components, rising
+  with skill. Found items with no recipe get a salvage list.
+- **Workbenches:** furniture placed by templates, a `workstation` component with
+  qualities and a speed bonus.
+- **Light you make:** torches and candles are crafted, and glowsticks are found
+  (DESIGN.md, "Light"). They're carried, burn down, and give a real light all
+  around (not the flashlight's beam).
+- **Weapon mods as data:** plain mod items, with a category and recipes, found
+  and crafted like other items.
+- **About 80 item types** in the content count (see 2.3 for what it counts).
+- **Two templates:** a hardware store and a garage, placed in the hamlet.
+- **Reachability:** the validator checks that every recipe component can be
+  found or crafted. "Found" means it's in a loot table that a template placed in
+  the world uses (BR, 2026-10-03).
+- **The noise → positional-sound scenario test** carried from 1.10, as an exit
+  gate.
+
+### Out (and which slice has it)
+
+| Feature | Slice |
+| --- | --- |
+| Fitting and removing weapon mods; mods changing a gun in play; a `mod` component or mount data | 3 |
+| Zombies sensing light (made lights don't change `isLit`, `src/core/zombies.ts:396`) | 3 |
+| Body-part wear (clothing wears without a body model; see Questions for BR) | 3 |
+| Batch actions (CHALLENGES.md §5) | after Slice 2 |
+| Ammunition economy: crafting or salvaging ammo | not scheduled |
+| Pouring, mixing or any other fluid simulation | not scheduled; needs BR |
+| Building a workbench; construction | 5 |
+| Fire: spreading, a torch setting things alight; stoves and cooking with `heat` | 5 |
+| Appliances: `controls`, `process`, `power` | 5 |
+| Schematic items | after Slice 2 |
+
+Also out: the sound polish list in EPIC.md ("Sound polish") stays there, apart
+from the scenario test above (BR, 2026-10-03).
+
+### Settled by the lead
+
+Engineering and scope defaults inside BR's rulings (lead, 2026-10-03, on review
+cr-d19). Any new mount integration or batch feature goes back to BR.
+
+- The skills are `crafting` and `mechanics`. INTERACTIONS.md's recipe example,
+  which used `survival`, now matches.
+- Glowsticks are found only, as DESIGN.md says.
+- Mod items are plain items with a category, with no `mod` component yet.
+- Batch actions are deferred out of Slice 2.
+- Deterministic tie-breaking and rounding, and minimal payload shapes, are
+  engineering decisions made in the milestones.
+
+### Plan defaults
+
+These are proposed numbers and rules for BR to approve with the plan. They are
+not among BR's eleven rulings:
+
+- about 30 recipes counting disassembly and repair, and 4 books
+- a lower bound of 75 for the content count (2.11)
+- repair raising condition by an amount that grows with skill (2.6)
+- the extinguish and relight rules for each light (2.9)
+
+## Pulled forward and carried forward
+
+### Pulled forward into Slice 1 (already merged)
+
+| Item | From | Effect on exit criteria |
+| --- | --- | --- |
+| Shambler body regions and severing (#65), limb debris physics (#97) | 3 | Counts toward Slice 3's body work. Severed parts are items in ordinary piles (`src/game/session.ts:358`); BR excluded them from the content count (2.3) |
+| Melee: models (#42), first-person motion and hits at contact (#115), machete and KA-BAR (#130), the primary action (#128) | 3 | These weapons wear in 2.6; Slice 3 still owes melee depth and blocking |
+| Firearm handling ADR 0003 (#133), the debug range with spent-case piles (#148), debug loadout (#124), gungen gun models (#79, #82) | 3 | Debug firearms and spent cases are proposed exclusions from the content count. Firearms don't wear in Slice 2 |
+| Positional sound with wall gain and low-pass (#43, #147) | 3 | Half of Slice 3's positional-sound item; Slice 2 adds the scenario test (2.12) |
+
+In flight on 2026-10-03: the AR/AK firing cycle (#154), gunshot audio (d18),
+debug axes (#151) and saves closure (#143). Not pulled forward: deadvox weapon
+mods and mounts, and the ammunition economy.
+
+### Carried forward from Slice 1
+
+| Item | Source | Effect on exit criteria |
+| --- | --- | --- |
+| The first real playtest, and 1.8's "players understand why they were woken" | 1.8, 1.11 | Runs at the end of Slice 3; 2.0 adds Slice 2's questions to its plan |
+| 1.8.5: BR's in-game approval, a severing sound, reviving incapacitated shamblers | 1.8.5 | Approval at the Slice 3 playtest; sound and revival stay future work. Not Slice 2 gates |
+| 1.10's scenario test: every noise event emits a positional sound | 1.10 | **Slice 2 gate** (2.12) |
+| 1.10's missing cues, placeholder recordings and night audibility tuning | 1.10 | Stay on EPIC's Sound polish list; not Slice 2 gates |
+| Snapshot p95 on a long session | 1.11 | At the Slice 3 playtest; Slice 2 milestones that add saved state keep the round trip and size budgets of ADR 0002 |
+| Occlusion culling | 1.5 results | Not planned; the 2026-09-26 measurement found it not worth doing |
+| Batch actions (CHALLENGES.md §5) | 1.4 | Deferred out of Slice 2 (lead); not a gate |
+
+## How this slice runs
+
+The retrospective's proposals for Slice 2
+(`deadvox/docs/retro-slice-1.md`, section 4, on `docs/retro-slice-1`), as they
+apply here:
+
+- Pulling work forward from later slices is BR's decision, and gets a line in
+  the table above.
+- Visual work gets a rough screenshot and BR's direction before the full
+  engineering round. Milestones marked **first look** below need one.
+- One behaviour per test. Sweeps stay behind a flag with a named consumer. The
+  default run keeps the budget 2.0 records. Negative fixtures test distinct
+  rejection paths: tests assert that invalid fixtures are rejected with the
+  expected diagnostic, and the CI job stays green.
+- No flaky tests: fix the nondeterminism, or disable that exact test in CI with
+  an owner and an issue. Never retry until green or raise a timeout to hide a
+  failure.
+- Each PR is checked against current main before it's opened or relayed, and
+  again when main moves.
+- Every milestone that adds simulation state puts it in the save snapshot and
+  in the simulation fingerprint. ADR 0002 refuses any save whose version
+  differs, so there are no migrations: old saves are refused, and the
+  current-build round trip covers the new state.
+- Where a later milestone needs state an earlier one introduces, the plan says
+  which milestone owns it (see 2.2, 2.4 and 2.5). Nobody installs a second,
+  temporary representation.
+
+## Milestones
+
+Each milestone is one or two PRs, merged and deployed to Pages with CI green.
+The order follows dependencies. 2.12 depends on nothing and can run alongside
+the others.
+
+### 2.0 Before code starts
+
+Paperwork; no game code.
+
+- ADR 0001 is closed: the inventory screen moved to lit-html in Slice 1 (#105),
+  which replaces EPIC's first Slice 2 item. PROJECT.md and INTERACTIONS.md say
+  so.
+- **Host budget**, measured: disk per worktree with its installs, memory per
+  agent and per browser test, the number of heavy runs at once, and the free
+  disk to keep in reserve. Recorded in `docs/PROCESS.md` or a doc it links.
+- **Default test-run budget**, measured: the wall time of each subproject's
+  default test run (deadvox, gungen, mobgen) on the shared host, recorded next
+  to the host budget. A milestone that pushes a run past it says why.
+- The Slice 2 checklist issue is open, listing every milestone and gate below.
+- Slice 2's playtest questions are added to SLICE-1.md's playtest plan.
+- #143 (saves closure) is merged before any milestone that adds saved state
+  (2.4 on).
+- BR has answered the questions below, or accepted their defaults.
+
+**Done when:** each item above is merged or linked from the checklist issue.
+
+### 2.1 Reach and options
+
+- `reach(player)` in `src/core`: hands, worn items and their pockets, piles
+  within 2 m and containers lying in them, searched furniture within 2 m, and
+  workstations within 2 m with their qualities. Each entry carries its location
+  and handling time. Cached against the versions it was built from.
+- The core states the player origin it measures from, and how distance to a
+  pile and to a piece of furniture is measured (to its block, or to its nearest
+  cell).
+- The workstation part of the result is defined here and stays empty until the
+  `workstation` component and the first bench land in 2.8.
+- It replaces the scattered queries: `LOOT_REACH` (`src/game/session.ts:59`),
+  `pilesNear` (`src/core/inventory.ts:289`), `containersNear`
+  (`src/core/blockEntities.ts:292`) and `Survival.findBattery`
+  (`src/game/survival.ts:172`).
+- `options(thing, reach)` in the core returns every action with its time or the
+  reason it can't happen. Today's `options` (`src/game/targets.ts:36`) covers
+  moves only; "use" (eat, drink, switch, swap battery) moves into it from
+  `Survival.use`.
+- Existing handling, search visibility and reach limits are kept, except for
+  alignments with the unified reach that the PR lists explicitly. One is
+  decided in the PR: whether a dead light finds a spare battery in nearby
+  searched furniture and ground containers, not only in what you carry, as
+  today.
+
+**Saves:** none; queries hold no state.
+**Tests:** an item in a pile or a backpack lying just inside 2 m is in reach,
+and one just outside is not; unsearched furniture shows no contents; options for
+a can of beans give eat with its time, and a reason when your hands are full.
+**Done when:** every caller above uses `reach()`, the existing inventory and
+survival tests pass apart from the listed alignments, and nothing outside
+`src/core` decides what's within reach.
+
+### 2.2 Recipes as content
+
+- A `recipes` section in content files (INTERACTIONS.md, "Recipes"): result,
+  time in game minutes, skills, qualities, component groups, and an optional
+  workstation.
+- This milestone defines the ids validation needs: recipe ids, skill ids
+  (content: an id and a name), quality ids and workstation ids. The state that
+  uses them comes later (2.4, 2.5, 2.8).
+- **Liquids:** before any recipe takes a quantity in millilitres, the milestone
+  writes down how a liquid item's stored quantity maps to millilitres, how
+  using part of it is represented and saved, and whether its container is kept.
+  Slice 2 doesn't grow a pouring, mixing or other fluid simulation as a side
+  effect; anything like that goes to BR. If no Slice 2 recipe needs a partial
+  liquid, recipes count whole items only.
+- The validator checks every reference (result, components, qualities, skills,
+  workstation) and refuses a recipe with more than 1,024 component
+  combinations. Tool qualities stay as they are (`ToolSchema`,
+  `src/core/schema.ts:137-140`).
+- A handful of base recipes (torch, candle, a repair kit) to exercise it.
+
+**Saves:** none.
+**Tests:** tests assert that invalid fixtures are rejected with the expected
+diagnostic: a recipe naming a missing item, and one over the combination cap
+(with its count). The CI job stays green.
+**Done when:** `npm run validate` checks recipes, and both rejections are
+tested.
+
+### 2.3 Reachability
+
+- The validator computes a least fixed point. It starts from positive-chance
+  loot in furniture of templates the world actually places (including loot
+  overrides on a placement), follows nested tables, and adds the loot of zombie
+  types that are actually spawned. Placed templates are the hamlet's list
+  (`HAMLET_TEMPLATES`, `src/core/hamlet.ts:54-57`). A recipe adds its result
+  only once its inputs are reachable, so a cycle of recipes with no found item
+  in it adds nothing.
+- It's a static closure, not a whole-game solver. It doesn't claim every type
+  shows up in every seed.
+- **Component reachability** (every recipe component is found or craftable) is
+  reported separately from the **content count**.
+- Components alone don't prove a recipe can be made. Content acceptance also
+  checks that each recipe's tools, workstation, knowledge and skills can be
+  reached: a recipe can't be the only source of the tool quality it needs.
+  That includes the starting torch, repair, and the books that teach recipes.
+- **The count:** at caa0d31 there are 31 loot-reachable item types that aren't
+  debug items (43 defined). `baseball_bat`, `fanny_pack`, `hiking_backpack` and
+  `utility_vest` are defined but in no reachable loot. **Policy (BR,
+  2026-10-03):** the ~80 target leaves out debug-only items, spent cases and
+  severed body parts, even though spent cases and severed parts can be picked
+  up.
+
+This comes before content grows, not after it, so every later content PR is
+checked as it lands. Today's validator checks references only
+(`src/core/content.ts:261-373`).
+
+**Saves:** none.
+**Tests:** tests assert that invalid fixtures are rejected with the expected
+diagnostic: a recipe needing an item no placed loot table holds; a cycle of
+recipes that only make each other; a recipe whose only source of a needed tool
+quality is its own result. The same first item made craftable passes. The CI
+job stays green.
+**Done when:** `npm run validate` runs the check on the base pack and prints the
+component closure and the count, and the rejections are tested.
+
+### 2.4 The planner and crafting
+
+- `planCraft(recipe, reach, character, prefer?)`, a pure function: tries the
+  combinations and keeps the cheapest that works; chooses items by gathering
+  time, then smaller stacks, then worse condition, with a deterministic
+  tie-break; a tool isn't also a component; `prefer` overrides an alternative.
+  Returns a plan or what's missing.
+- **Minimal character state:** this milestone adds the persisted skill levels
+  (all starting at 0) and the starting set of known recipes that the planner
+  and the panel read. 2.5 adds progression to the same state.
+- **A long action in the core**, registered with the scheduler (1 Hz, steps up
+  to 30 s under compression), saved as a tagged job descriptor (ADR 0002,
+  "Upcoming state"). Crafting is its first new user; rest and sleep move onto it
+  from `RestController` (`src/game/rest.ts`), so there is one mechanism.
+- **The long-action contract**, for every kind:
+  - Each kind defines its saved payload and who owns its items. A craft or a
+    disassembly keeps its inputs and progress in the work item. A repair keeps
+    its target item's uid, the materials already taken and its progress (2.6).
+    Reading keeps the book's uid and its progress (2.5).
+  - Stop keeps progress. Continuing checks the needed items, hands, tools and
+    workstation again.
+  - Taking apart or cancelling a work item gives back its exact inputs, once.
+  - Finishing applies its effect (the result, the condition change, the
+    recipes learned) once.
+  - The snapshot and the fingerprint include these payloads, and loading checks
+    the items they refer to. Ordinary handling jobs stay cancelled in the save
+    copy. Taking a snapshot doesn't change the running action.
+- **The work item:** starting needs both hands empty; the components go into a
+  `work_in_progress` item in both hands, holding the recipe and progress.
+  Interruptions ask Continue or Stop through the existing compression
+  controller. "Continue" from the work item's options resumes; "Take apart"
+  gives the components back. A tool or workstation lost mid-craft stops the
+  craft at once, with the reason.
+- **The crafting panel** (lit-html): known recipes, each with its time or what's
+  missing (per group: needed and found; each quality with the best level in
+  reach; the skill gap). **First look:** a rough screenshot for BR before the
+  panel's full round.
+
+**Saves:** skill levels and known recipes; the work item as ordinary item data;
+the running long action. All in the snapshot and fingerprinted. The round trip
+covers a craft saved while running and while stopped.
+**Tests:** competing groups (two groups both accept rags) find the plan that
+works; `prefer` is honoured or refused with a reason. With a fixed recipe,
+skill and workstation, an uninterrupted craft and an interrupted and resumed
+one need the same accumulated active work and give the same result; time spent
+stopped moves the world on but not the job. Saving and loading a running or a
+stopped craft keeps that rule and doesn't duplicate inputs or the result.
+Taking a tool away mid-craft stops it. The planner for every base recipe on a
+reach snapshot of 200 items is timed and recorded. Targeted cases, one per
+payload or ownership risk, not a seed sweep.
+**Done when:** a torch can be crafted in the game from found items, interrupted
+by a shambler, continued, and saved and loaded mid-craft; the existing rest and
+sleep tests pass on the new long action; **BR has approved the crafting panel
+in the game.**
+
+### 2.5 Skills, known recipes and books
+
+- Progression on 2.4's character state: finishing a craft gives practice in the
+  recipe's skills; levels never go down. A skill shortens work time and gates
+  recipes that need it.
+- A `book` component (title, recipes taught, reading time). Reading is a long
+  action with the book in your hands, under 2.4's contract; finishing it
+  teaches its recipes. The `paperback` stays inert.
+- 4 books.
+
+**Saves:** skill practice, added to 2.4's state; a reading in progress as a long
+action (the book's uid and progress).
+**Tests:** practice crosses a level at the right craft; a recipe needing
+`mechanics` 2 is refused at 1 with the gap; reading interrupted and resumed
+teaches the recipe once.
+**Done when:** a found book teaches a recipe that then shows in the panel, and
+skills survive save → load.
+
+### 2.6 Wear and repair
+
+- Condition (0–1, already on items, saved and rolled by loot) starts to move: a
+  melee weapon loses condition per hit, and a worn item loses condition when
+  you're hit. Rates are per item, in content.
+- A ruined item (condition 0) stays an item. It can't attack or supply a usable
+  tool quality, but it can still be moved or dropped, repaired or taken apart.
+- Repair is a recipe kind: it consumes materials, needs a tool quality, and
+  raises condition by an amount that grows with skill. It runs as a long action
+  under 2.4's contract.
+
+**Saves:** a repair in progress: its target item's uid, the materials already
+taken and its progress. Condition itself is already saved.
+**Tests:** a weapon's condition after N hits matches its rate; a repair raises
+condition by the skill's amount and consumes its materials once, also across
+save and load; a ruined weapon can't attack and a ruined tool gives no quality.
+**Done when:** the crowbar wears in a fight and can be repaired with found
+materials.
+
+### 2.7 Disassembly and salvage
+
+- A finished item has one explicit disassembly yield in content: the item ids
+  and counts, the integer rounding, and any skill or tool modifiers. It isn't
+  worked out by reversing every alternative, or every recipe that can make the
+  item. The fraction rises with skill.
+- Items with no recipe (a radio, a toaster) get a `salvage` list in content.
+- An unfinished work item isn't disassembled: taking it apart returns its exact
+  inputs (2.4).
+- "Take apart" is an option on any item with a yield or a salvage list.
+- The reachability check (2.3) extends its closure with the declared yield and
+  salvage outputs of reachable items, reading the same data the game does.
+- Condition doesn't lower the yield in Slice 2 (BR, 2026-10-03; it may later).
+
+**Saves:** a disassembly in progress is a work item, as in 2.4.
+**Tests:** the yield at skill 0 and at the top skill matches the declared
+fractions after rounding; salvage returns only listed items; a work item from an
+unfinished craft gives back exactly its inputs.
+**Done when:** found junk can be taken apart into the components of other
+recipes, and the reachability check counts what a reachable item yields.
+
+### 2.8 Workbenches
+
+- A `workstation` component on furniture: qualities it gives (such as
+  `hammering`, `sawing`) and a work-time bonus. Reach (2.1) starts listing it.
+- A workbench furniture type, placed by templates (the garage and hardware
+  store in 2.10; one in the shed now). Building one waits for Slice 5.
+- Recipes that name a workstation need one within 2 m.
+
+**Saves:** none; furniture regenerates from the seed and holds no new state.
+**Tests:** a recipe needing `sawing` is planned with the bench in reach and
+refused out of reach; the bonus shortens work time by its amount.
+**Done when:** a recipe that needs a workbench can be made at the shed's bench.
+**First look:** the bench's look in the shed.
+
+### 2.9 Light you make
+
+- Torch, candle and glowstick, with their numbers from DESIGN.md ("Light").
+- **Each light's rules** (plan defaults until BR approves):
+
+  | Light | Ignite | Douse | Sprint | Stow in a pocket | Drop | Relight |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Torch | needs a lighter or matches in reach | yes, as an action | stays lit | not while lit | goes out | yes, while it has burn time left |
+  | Candle | needs a lighter or matches in reach | yes (blow out) | goes out | goes out | goes out | yes, while it has burn time left |
+  | Glowstick | snap once; it can't be reused | no | stays lit | stays lit | keeps glowing **and lights the area around it** (BR) | no |
+
+- Remaining burn time is kept when a light goes out and is relit, and across
+  save and load; nothing resets it. Burning down is closed-form, like
+  `drainLight` (`src/core/lights.ts:59`). `LightSchema`
+  (`src/core/schema.ts:159-168`) gains a burn time beside its battery `power`.
+  The lighter and matches start using their own fuel.
+- This changes today's rule that a light is held-only and goes off when put
+  away (`src/game/survival.ts`), as the table says.
+- **Rendering:** an all-around point light at the held item. Today only the
+  flashlight's spot light exists (`src/render/flashlight.ts:84`).
+- **Dropped glowsticks light their surroundings** (BR, 2026-10-03). They draw
+  from the same fixed pool of shadowless point lights as carried lights. The
+  pool is a constant size, with unused slots at zero intensity, so dropping or
+  picking up a light never recompiles shaders. When there are more dropped
+  glowsticks than free slots, the ones nearest the player get the slots, and
+  the rest still glow (emissive) but light nothing. A glowstick's light is a
+  small radius and dim (DESIGN.md's 15 m is the radius you see it from, not the
+  radius it lights). The benchmark workload below includes dropped glowsticks.
+- **The benchmark workload, recorded before the engineering round:** the number
+  of carried lights supported at once, and the benchmark's exact count of
+  active lights, their settings, the seed, the night time, the shambler count,
+  and the reference machine and frame-budget conditions. However the lights
+  are pooled is an implementation of that workload, not its definition.
+- Zombies don't sense made lights yet (Slice 3). No fire spread.
+
+**Saves:** whether each light is lit, when it was lit, and its remaining burn
+time.
+**Tests:** a torch lit for its burn time is out, the same in one step as ticking
+every second; a candle doused halfway and relit lasts its remaining time, also
+across save and load; a candle goes out on sprint; a used glowstick can't be
+lit again.
+**Done when:** the player can make a torch, light it and carry it at night, and
+the frame budget holds on the recorded workload (the cost recorded in
+Results).
+**First look** and **BR's in-game approval.**
+
+### 2.10 Hardware store and garage
+
+- Two templates in half-metre blocks, added to the hamlet layout with their
+  lots (`src/core/hamlet.ts:54-57`), each with a workbench and loot tables for
+  tools, materials and parts.
+- The hamlet still generates the same in any chunk order.
+
+**Saves:** none; templates regenerate from the seed. Existing saves are refused
+anyway, since the world changes.
+**Tests:** the hamlet's chunk-order property test covers the new buildings; the
+validator passes both templates.
+**Done when:** both buildings stand in the hamlet, with loot.
+**First look:** both buildings in the game.
+
+### 2.11 Content
+
+- About 80 item types by the validator's content count (2.3), up from 31 today.
+  Materials (sticks, wax, lamp oil, wire, pipe, wood), tools that give missing
+  qualities (saw, screwdriver, wrench), salvageable junk, the books, and
+  repair kits. The four defined but unreachable types get loot entries or are
+  removed.
+- Weapon mods as plain items (an improvised suppressor, a taped-on flashlight
+  mount, a foregrip) with recipes and salvage. They can't be fitted until
+  Slice 3.
+- About 30 recipes counting disassembly and repair, every component reachable
+  and every recipe's tools, workstation, knowledge and skills reachable.
+
+**Saves:** none.
+**Tests:** none beyond the validator; content is data.
+**Done when:** the validator's content count is at least 75 and the base pack
+passes both reachability checks.
+
+### 2.12 Every noise is heard
+
+Carried from 1.10. A scenario test that every noise event the simulation makes
+(footsteps by surface and speed, doors, fights, player pain) also emits a sound
+event at its position, and the reverse: no positional sound without a noise
+event where the content says it makes noise.
+
+**Saves:** none.
+**Tests:** that one scenario test.
+**Done when:** it runs in the default test run and passes.
+
+## Content for Slice 2
+
+| Kind | Today (caa0d31) | Slice 2 |
+| --- | --- | --- |
+| Item types (content count, 2.3) | 31 loot-reachable, of 43 defined | about 80 |
+| Recipes (including disassembly and repair) | 0 | about 30 |
+| Books | 0 (`paperback` is inert) | 4 |
+| Skills | 0 | 2: `crafting`, `mechanics` |
+| Building templates | 5 | 7 |
+| Furniture types | 10 | 11, with the workbench |
+| Loot tables | 10 | as many as the new templates need |
+
+## Definition of done
+
+- Milestones 2.0–2.12 are merged and deployed, with CI green: Biome, types,
+  tests, content validation including both reachability checks, and the save
+  round trip.
+- The frame budget from 1.0 holds, unchanged. Every new per-frame cost (reach
+  rebuilds, the crafting panel's planning, made lights on the recorded
+  workload) is measured on the reference laptop and recorded in Results.
+- The default test run stays within the budget recorded in 2.0.
+- The noise → positional-sound scenario test passes (2.12).
+- Slice 2's playtest questions are in the playtest plan that runs at the end of
+  Slice 3.
+- BR has approved the crafting panel (2.4) and made lights (2.9) in the game.
+- The checklist issue is closed, with links to the evidence and to every item
+  carried forward.
+- A retrospective is written.
+
+## BR's answers (2026-10-03)
+
+1. **Wear when hit:** the outermost clothing over the hit area wears. *Later:*
+   items carried in that clothing can be damaged too.
+2. **Condition and performance:** condition matters only at ruin in Slice 2.
+   *Later:* condition affects how an item performs.
+3. **Books** teach recipes only. *Later:* books may also speed up skill
+   practice.
+4. **Dropped lights:** a torch or candle goes out. A glowstick keeps glowing and
+   lights the area around it, from the light pool (2.9).
+5. **Salvage yield** doesn't depend on condition. *Later:* it may.
+6. **The ~80 item count** leaves out debug items, spent cases and severed
+   parts.
+
+The *Later* notes are recorded in EPIC.md, under "Later, after the game is more
+playable".
+
+## Results
+
+Filled in as milestones land.

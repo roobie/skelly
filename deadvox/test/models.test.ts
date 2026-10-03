@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Box3, type Loader, LoadingManager, Vector3 } from 'three';
+import { Box3, type Loader, LoadingManager, Mesh, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
@@ -31,6 +31,7 @@ const { registry, issues } = buildRegistry([
     read(`${BASE}/${f}`),
   ),
   read(`${BASE}/models-melee.json`),
+  read(`${BASE}/models-firearms.json`),
   read('test/fixtures/packs/lamp/lamp.json'),
 ]);
 
@@ -96,6 +97,28 @@ describe('model forms', () => {
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
     expect(box.max.x - box.min.x).toBeCloseTo(0.3); // long side along x
+  });
+
+  it('exposes shared ground mesh resources with the prepared root transforms for instancing', async () => {
+    const { ground, groundParts } = await load();
+    const meshes: Mesh[] = [];
+    ground.traverse((object) => {
+      if (object instanceof Mesh) {
+        meshes.push(object);
+      }
+    });
+    expect(groundParts).toHaveLength(meshes.length);
+    expect(groundParts.length).toBeGreaterThan(0);
+    const bounds = new Box3();
+    for (const [index, part] of groundParts.entries()) {
+      expect(part.geometry).toBe(meshes[index]!.geometry);
+      expect(part.material).toBe(meshes[index]!.material);
+      part.geometry.computeBoundingBox();
+      bounds.union(part.geometry.boundingBox!.clone().applyMatrix4(part.matrix));
+    }
+    const groundBounds = new Box3().setFromObject(ground);
+    expect(bounds.min.distanceTo(groundBounds.min)).toBeLessThan(1e-8);
+    expect(bounds.max.distanceTo(groundBounds.max)).toBeLessThan(1e-8);
   });
 
   it('is held at its grip, pointing forward', async () => {

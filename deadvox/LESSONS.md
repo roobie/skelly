@@ -25,6 +25,24 @@ retry recovery and the queued writer's inability to encode or commit. Quota esti
 are advisory: give them the same one-second metadata deadline as persistence status,
 so a browser metadata promise cannot block startup either.
 
+## Case visuals and instanced-resource ownership (2026-10-03)
+
+**What happened.** Case visuals were cloned on every shot and dirty pile update.
+When a case GLB failed to load, clearing and rebuilding the fallback scatter also
+left one instance buffer and VAO behind per rebuild. `renderer.info.memory.geometries`
+stayed flat: it did not count those resources.
+
+**What to do.** Keep flying visuals per pool slot/model and pile instances per
+pile/model. Skip scatter generation and matrix writes when capped counts are
+unchanged. Call `InstancedMesh.dispose()` on removal, upgrade and presentation
+teardown; never dispose the shared model geometry or materials. When a delayed
+load replaces cached flying fallbacks, only the slot's current model may be visible.
+
+`test/browser/case-visual-pool.mjs` checks real WebGL buffer/VAO creation and deletion
+with loaded, failed and delayed GLBs, plus flat visual clone counts across 100
+retire/refire cycles. It is a resource-lifetime contract, not a laptop performance
+benchmark or an explanation for the earlier large browser-memory incident.
+
 ## Shader varyings under MSAA (2026-10-01)
 
 **What happened.** White pixels, and with bloom on white discs, appeared on block edges at

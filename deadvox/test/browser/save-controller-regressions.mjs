@@ -25,7 +25,7 @@ const browser = await chromium.launch({
 });
 const address = server.httpServer.address();
 assert(address && typeof address !== 'string');
-const url = `http://127.0.0.1:${address.port}/?seed=73&save-test=1&save-backend=indexeddb`;
+const url = `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`;
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
 const QUOTA_ERROR = /quota regression/i;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
@@ -33,7 +33,7 @@ const BASE_MISMATCH = /Generated base mismatch/;
 
 try {
   await test('title, two-hour checkpoint, and visible save-failure recovery', async () => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -139,7 +139,7 @@ try {
   });
 
   await test('retry saves the latest capture rather than restoring an older failed snapshot', async () => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -233,7 +233,7 @@ try {
   });
 
   await test('actual Continue refuses a generated-base mismatch and reloads with a recovery diagnosis', async () => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
