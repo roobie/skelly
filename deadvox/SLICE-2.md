@@ -582,7 +582,7 @@ worldgen. The full plan is in DESIGN.md, "A world that feels real".
 - **Blocks and behaviour:** trunk, branch, leaf and hedge blocks, each declaring
   whether it blocks movement and raycasts, and its footstep surface. Leaf litter
   is a ground surface using `footstep_leaves`. `core/footsteps.ts` maps block
-  ids explicitly and falls back to stone, so the mapping has to be added. For
+  ids explicitly and falls back to stone, so the mapping has to be added.
   **BR's ruling, 2026-10-03, replaces the first look's solid foliage:** leaves
   and hedges are passable for players, zombies and physical bodies, but opaque
   to sight, aim and LOS. Trunks/branches remain solid and opaque. Content declares
@@ -702,4 +702,101 @@ playable".
 
 ## Results
 
-Filled in as milestones land.
+### Trees: d24-2, 2026-10-03 — CPU lookup fixed; reference budget pending
+
+BR approved shapes and hedges; the new movement/sight ruling and F4 player
+rustle are implemented. Frozen feature baseline **`8abee65`**, localized lookup
+**`b2072af`**, both after the normal main merge `603a64a`. Workload: seed 1,
+0.5 m blocks, 96 m radius, `post=1`, the field and full routes documented in
+`docs/trees-first-look.md`. **5,341** placements: 2,676 broadleaf, 1,321 conifer,
+1,344 young; 768 m square, unchanged jitter/mix and no thinned routes.
+
+These are **coder-host** production-build observations: Chromium 153, ANGLE
+Vulkan SwiftShader (software GPU), 7 reported cores, 1280 × 800, DPR 1.
+Instrumentation overhead is not subtracted; the runs are full, not quick.
+Generation runs on the main thread; meshing already runs in workers. No worker,
+mesh, upload, material or shadow optimization is being shipped.
+
+| Frozen field, opaque drawing | Before day | After day | Before night | After night |
+| --- | ---: | ---: | ---: | ---: |
+| Load s | 121.03 **timeout** | 98.72 | 118.23 | 89.34 |
+| Column generation median / p95 ms | 129.2 / 147.2 | 1.3 / 2.9 | 131.9 / 155.4 | 1.3 / 2.5 |
+| Jog main-thread work p95 ms | 751.9 | 11.3 | 317.8 | 9.8 |
+| Sprint main-thread work p95 ms | 297.2 | 14.6 | 298.4 | 12.1 |
+| Blocking render median ms | 929.7 | 909.6 | 823.1 | 774.9 |
+| Sprint missing columns, max | 72 | 66 | 69 | 54 |
+
+All recorded look/jog/sprint frames exceeded 18 ms on this software GPU, before
+and after: **the 60 fps / ≤1% slow / no-hole budget is not met here**. The daytime
+before run timed out loading and is not a valid settled-world budget result.
+Generation improves about 100×; it does not make GPU-bound frames 100× faster.
+Afterward, worker mesh p95 remains about 5–7 ms; mesh input/request p95 about
+1 ms; CPU installation p95 about 0.2 ms, included in receive, not additive.
+GL buffer submission is not GPU completion; the GPU timer extension is absent.
+
+The change is a once-built footprint-column index used for litter and stamping,
+with exclusive bounds and original placement order. Six route columns have
+identical voxel SHA-256 values for global, litter-only-local, stamp-only-local
+and both-local variants. Node-only medians in fixed, nonrandomized order:
+145.77, 1.79, 150.13 and 1.37 ms. **Litter localization is the measured win**;
+stamping-only benefit is below this experiment's variation. Six Hamlet columns
+also match brute-force hashes. Negative/positive bounds and clipped writes are
+covered by the targeted index regression; a dropped upper bucket makes it fail.
+
+#### Opaque versus cut-out diagnostic
+
+A separate, **unshipped** shader prototype keeps exactly the same voxels and
+meshing, alpha-testing circular perforations at four per block edge (about 63.6%
+coverage). The same mask is applied to the camera and depth-shadow pass. Daytime
+camera/depth shaders compiled and foliage-tagged vertices were observed; at
+23:30 this benchmark makes no shadow draws. Sight/collision policies are
+unchanged. These are not a production cut-out renderer or a new approved look.
+
+| Same optimized field | Opaque day | Cut-out day | Opaque night | Cut-out night |
+| --- | ---: | ---: | ---: | ---: |
+| Worker mesh p95 ms | 6.2 | 6.6 | 6.0 | 5.7 |
+| Mesh triangles median / p95 | 1800 / 2882 | 1796 / 2890 | 1768 / 2882 | 1768 / 2882 |
+| Load non-shadow / shadow draw calls | 4511 / 3069 | 4511 / 3069 | 3413 / 0 | 3413 / 0 |
+| Load non-shadow / shadow submitted triangles | 4830871 / 6360554 | 4830871 / 6360554 | 3157433 / 0 | 3157433 / 0 |
+| Peak mesh payload bytes | 16306576 | 16306576 | 16402360 | 16402360 |
+| Blocking render median / p95 ms | 903.1 / 932.1 | 915.3 / 992.7 | 765.9 / 867.6 | 763.4 / 769.1 |
+| Look / jog / sprint frame p95 ms | 966.6 / 1066.7 / 1033.2 | 1083.3 / 1016.7 / 966.5 | 816.6 / 950.0 / 950.0 | 816.7 / 883.3 / 1083.2 |
+| Sprint missing columns, max | 63 | 60 | 56 | 56 |
+
+World storage is 14,748,750 bytes / 1,800 chunks in all four runs. Mesh payload
+is the live attribute/index byte total, not process memory or measured VRAM.
+Draws are actual GL dispatches over the load phase, including post passes;
+the old benchmark's final `drawCalls=1` is just its fullscreen pass. Fragment
+overdraw and GPU-only timing are unavailable: triangle dispatches do not measure
+pixel overdraw. One ordered run per variant, only 12–18 movement/look frames,
+is not enough to rank small timing differences. All three phases remain 100%
+slow. **Retain approved opaque drawing:** cut-out does not reduce geometry,
+draws or memory and shows no reliable budget improvement. No density/radius
+reduction, cheaper shadows or extra upload scheduler is justified by this data.
+
+Normal Hamlet was rechecked at `b2072af`, same host/settings: load 102.25 s
+without timeout, generation median/p95 1.5/2.7 ms, worker mesh p95 6.0 ms,
+look/jog/sprint frame p95 916.6/900/950 ms, all slow, sprint holes max 64.
+It also cannot establish a reference-laptop pass on SwiftShader.
+
+BR's separate **pre-feature**, fixed-0.75 `603a64a` Firefox 153 / Intel HD run
+reported look 60 fps, p95 17.2 ms, 0% slow; jog/sprint main-thread work p95
+310/467 ms; blocking render median/p95 13/20 ms. It confirms the streaming
+bottleneck but is **not** the varying-field before/after pair. A reference
+Firefox after-run is still BR's; Slice 2.13's performance gate remains open.
+Use `?density=0.75` for an exact fixed-density comparison, and omit it for the
+frozen field. Do not change density or view distance to claim a pass.
+
+Local retained evidence under `.agent-mail/scratch/`: `d24-2-frozen-*.json`,
+`d24-2-lookup-ab.{mjs,json}`, `d24-2-hamlet-lookup-ab.{mjs,json}`,
+`d24-2-render-*.json`, `d24-2-render-compare.mjs`, `d24-2-cutout-transform.mjs`.
+A diagnostic build initially failed from an observer variable collision; one
+night observer assumed shadows must draw and rejected its completed run before
+saving data. Neither is used as performance evidence; the corrected observer
+checks a shadow shader only when shadows actually draw, with unchanged limits.
+Application browser gates: all 13 bounded Chromium members passed (maintenance
+interrupted the earlier stage 6, which was resumed, not counted as green).
+The separately declared new-cap identical busy-lock A/B for d24-1 also passed
+on trees and pristine main; historical failures remain disclosed, not explained
+away by the later passes. Frame-budget failure is separate from green functional
+gates.

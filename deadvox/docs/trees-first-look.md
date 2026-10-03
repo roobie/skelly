@@ -38,6 +38,7 @@ is the brushed voxel centre; it is not a listener-relative UI sound.
   `?density=0..1` is an explicit fixed-density override, including zero. Omitted
   or invalid density selects the field (`density:null` in config/save/results).
 - Seed-derived **50% broadleaf / 25% conifer / 25% young**, unchanged shapes.
+  Frozen seed 1 has **5,341** placements: 2,676 broadleaf, 1,321 conifer, 1,344 young.
 - Extent **768 × 768 m**, flat inland ground; only the **8 × 8 m** spawn clearing
   is reserved. No thinned camera corridors.
 - Full routes unchanged: look 12 s, blocking render 6 s, jog 15 s at 4.3 m/s,
@@ -60,6 +61,15 @@ broadleaf/young footprints, never replacing road/range surfaces. Both sites reus
 metre-box `rasterize`/`stampChunk` and coordinate-keyed placement. `stackTemplate`
 remains for building storeys/furniture/doors/loot, not a second vegetation engine.
 
+## Localized lookup
+
+`TreeIndex` is built once from seed-owned footprint rectangles. Litter lookup and
+clipped stamping inspect only trees overlapping the queried column, preserving
+their original order. The upper bounds are **exclusive** (last cell `x1-1`), not
+inclusive; this matters at negative and positive column borders. No tree, leaf
+face, route, reservation, mix or distance is removed. Existing meshing already
+culls internal non-air faces and runs in workers.
+
 ## Measurement status
 
 Pre-feature uniform-0.75 profiling identified whole-site litter lookups: about
@@ -67,6 +77,17 @@ Pre-feature uniform-0.75 profiling identified whole-site litter lookups: about
 7 ms. BR's frozen `603a64a` real-GPU Firefox run independently measured jog/sprint
 main-thread work p95 **310/467 ms**, while look achieved **60 fps**. The coder's
 SwiftShader GPU is not BR's laptop; its render timings cannot establish the
-reference budget. Frozen-field before/after measurements are recorded separately
-in Slice 2 Results. The Slice 1 budget is unchanged: 60 fps, at most 1% of frames
-above 18 ms in every phase, and no sprint holes. Unmet budgets remain unmet.
+reference budget. Frozen-field **`8abee65` → `b2072af`** full day/night measurements
+are recorded separately in Slice 2 Results: generation median about 129–132 ms
+→ **1.3 ms**, while software-GPU frames remain about one second and sprint
+holes remain. All 13 functional Chromium browser gates passed.
+
+The same-workload unshipped cut-out experiment applies the same alpha mask to
+camera and depth shadows, retaining about 63.6% of each leaf face. It changes
+neither voxel rules nor geometry, draw-call totals or peak mesh payload bytes;
+one ordered run per variant shows no reliable budget advantage. Approved opaque
+drawing is retained. Normal Hamlet was also rechecked, without load timeout.
+These are host observations, not proof the reference laptop meets the budget.
+The Slice 1 budget is unchanged: 60 fps, at most 1% of frames above 18 ms in every
+phase, and no sprint holes. **Unmet budgets remain unmet; BR's Firefox after-run
+is still required.**
