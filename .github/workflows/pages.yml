@@ -1,6 +1,6 @@
 name: pages
 
-# Publishes the site to GitHub Pages on every push to main:
+# Publishes the site to GitHub Pages on runtime/build-input changes to main:
 #   /          site/index.html (landing page)
 #   /gungen/   the gungen viewer
 #   /deadvox/  the deadvox game
@@ -10,8 +10,23 @@ name: pages
 on:
   push:
     branches: [main]
-    # The site publishes no Markdown, so a Markdown-only change has nothing to redeploy.
-    paths-ignore: ['**/*.md']
+    # Retain project runtime/build inputs; tests and Markdown do not change the site.
+    paths:
+      - 'site/**'
+      - 'gungen/**'
+      - 'deadvox/**'
+      - 'mobgen/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'biome.jsonc'
+      - 'testPool.ts'
+      - '.npmrc'
+      - '.node-version'
+      - '.github/workflows/pages.yml'
+      - '!**/*.md'
+      - '!gungen/test/**'
+      - '!deadvox/test/**'
+      - '!mobgen/test/**'
   workflow_dispatch:
 
 permissions:
