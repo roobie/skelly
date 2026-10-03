@@ -183,7 +183,15 @@ const FINISHES: Record<string, Readonly<Record<string, string>>> = {
 
 export const GUN_PALETTE: Palette = createPalette({
   familyColors: fromHex(FAMILY_HEX),
-  specialColors: {},
+  // Geometry-check roles of the compound wood stock; normal finishes stay wood.
+  specialColors: fromHex({
+    grip: 0x46_ac_8f,
+    'stock-joint': 0xce_9d_52,
+    'fore-stock': 0xce_9d_52,
+    'cut-stub': 0xce_9d_52,
+    'stock-comb': 0x64_8b_c4,
+    'stock-wrist': 0xa9_7c_c8,
+  }),
   fallbackColor: hexToSrgb(0x88_88_88),
   materials: fromHex(MATERIAL_HEX),
   roleSlots: ROLE_SLOTS,

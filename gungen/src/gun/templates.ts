@@ -429,7 +429,18 @@ export const pumpShotgun: Template = {
       params: { layout: ['pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'trigger', 'trigger', 'trigger'] },
     },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'tube', family: 'tube-magazine', params: { lengthPercent: ['50', '75', '100'] } },
+    {
+      id: 'tube',
+      family: 'tube-magazine',
+      // Larger hand furniture must fit ahead of its stroke and behind the fixed cap.
+      params: {
+        lengthPercent: {
+          when: { part: 'barrel', param: 'length', equals: 'S' },
+          onMatch: '100',
+          onMismatch: ['75', '100'],
+        },
+      },
+    },
     { id: 'forend', family: 'forend' },
     {
       id: 'grip',

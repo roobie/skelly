@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
-import { validateExtrudedPolygon } from '../src/core/geometry.ts';
+import { distanceWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
+import { IDENTITY } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { ExtrudedPolygonSolid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
@@ -30,48 +31,42 @@ describe('sawed-off tapered stock', () => {
     for (const solid of sawed) {
       expect(validateExtrudedPolygon(solid.profile, solid.z)).toBeUndefined();
     }
-    expect(polygon(sawed, 'fore-stock')).toEqual(polygon(full, 'fore-stock'));
-    expect(polygon(sawed, 'grip')).toEqual(polygon(full, 'grip'));
-
-    const cutStub = polygon(sawed, 'cut-stub');
-    const baselineCutProfile = {
-      M: [
-        [-4.98, -5.742_080_547_436_795],
-        [-4.48, -5.749_622_939_466_714],
-        [-4.48, -0.629_622_939_466_713_8],
-        [-4.98, -0.699_893_356_817_909_5],
-      ],
-      L: [
-        [-6.66, -7.899_950_607_391_004],
-        [-6.16, -7.905_731_541_766_731],
-        [-6.16, -0.865_731_541_766_731_4],
-        [-6.66, -0.936_001_959_117_927],
-      ],
-    } as const;
-    expect(cutStub.profile).toHaveLength(baselineCutProfile[length].length);
-    for (const [index, point] of cutStub.profile.entries()) {
-      const baseline = baselineCutProfile[length][index]!;
-      expect(Math.abs(point[0] - baseline[0])).toBeLessThanOrEqual(1e-9);
-      expect(Math.abs(point[1] - baseline[1])).toBeLessThanOrEqual(1e-9);
-    }
-
-    const gripRear = Math.min(...polygon(sawed, 'grip').profile.map(([x]) => x));
-    const cutFaceX = Math.min(...cutStub.profile.map(([x]) => x));
-    const distanceBehindGrip = gripRear - cutFaceX;
-    expect(distanceBehindGrip).toBeGreaterThan(0);
-    expect(distanceBehindGrip).toBeLessThanOrEqual(1);
+    const handRoles = ['fore-stock', 'stock-wrist', 'grip'];
+    const hand = (solids: readonly ExtrudedPolygonSolid[]) =>
+      solids.filter((s) => handRoles.includes(s.display?.role ?? ''));
+    expect(hand(sawed)).toEqual(hand(full));
+    const stubs = sawed.filter((s) => s.display?.role === 'cut-stub');
+    const grips = sawed.filter((s) => s.display?.role === 'grip');
     expect(
-      polygon(sawed, 'cut-stub')
-        .profile.filter(([x]) => x === cutFaceX)
-        .map(([, y]) => y),
-    ).toHaveLength(2);
-
-    const jointX = 0;
-    const stockLength = jointX - cutFaceX;
-    const fullM = stockProfile('M', 'tapered');
-    const mJointToPad = jointX - Math.min(...polygon(fullM, 'butt-pad').profile.map(([x]) => x));
-    expect(stockLength / mJointToPad).toBeLessThanOrEqual(0.45);
-    expect(sawed.map((solid) => solid.id)).toEqual(['fore-stock', 'grip', 'cut-stub']);
+      Math.min(...grips.map((s) => distanceWorld(worldSolid(IDENTITY, stubs[0]!), worldSolid(IDENTITY, s)))),
+    ).toBeCloseTo(0, 9);
+    for (const stub of stubs) {
+      const original = polygon(full, stub.id.replace('cut-stub', 'stock-joint'));
+      expect(stub.clip).toEqual(original.clip);
+      expect(stub.z).toEqual(original.z);
+      for (const [x, y] of stub.profile) {
+        const ys = original.profile.flatMap((a, i) => {
+          const b = original.profile[(i + 1) % original.profile.length]!;
+          if (Math.abs(a[0] - b[0]) < 1e-9 || x < Math.min(a[0], b[0]) - 1e-9 || x > Math.max(a[0], b[0]) + 1e-9) {
+            return [];
+          }
+          return [a[1] + ((x - a[0]) / (b[0] - a[0])) * (b[1] - a[1])];
+        });
+        expect(
+          Math.min(...ys.map((value) => Math.abs(value - y))),
+          'cut inherits the full joint surface without resampling',
+        ).toBeLessThan(1e-9);
+      }
+    }
+    const gripRear = Math.min(...grips.flatMap((s) => s.profile.map(([x]) => x)));
+    const cutFaceX = Math.min(...stubs.flatMap((s) => s.profile.map(([x]) => x)));
+    expect(gripRear - cutFaceX).toBeGreaterThan(0);
+    expect(gripRear - cutFaceX).toBeLessThanOrEqual(1);
+    const lastStub = stubs.at(-1)!;
+    expect(lastStub.profile.filter(([x]) => x === cutFaceX)).toHaveLength(2);
+    const mLength = -Math.min(...polygon(stockProfile('M', 'tapered'), 'butt-pad').profile.map(([x]) => x));
+    expect(-cutFaceX / mLength).toBeLessThanOrEqual(0.45);
+    expect(new Set(sawed.map((s) => s.display?.role))).toEqual(new Set([...handRoles, 'cut-stub']));
   });
 
   // Measured about 5.2 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { localSolidBounds } from '../src/core/geometry.ts';
 import type { Box } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -47,11 +48,8 @@ describe('trigger guards', () => {
         def.solids
           .filter(({ id }) => id.startsWith('trigger-guard-'))
           .map((solid) => {
-            expect(solid.kind, `${layout}.${solid.id}`).toBe('box');
-            if (solid.kind !== 'box') {
-              throw new Error('Expected a box trigger guard.');
-            }
-            return [solid.id, bounds(solid.box)] as const;
+            const [min, max] = localSolidBounds(solid);
+            return [solid.id, { min, max }] as const;
           }),
       );
       const rear = guards.get('trigger-guard-rear')!;
@@ -77,7 +75,7 @@ describe('trigger guards', () => {
     }
   });
 
-  it('builds one four-box guard around every lower layout trigger volume', () => {
+  it('builds one four-wall guard around every lower layout trigger volume', () => {
     for (const layout of Object.keys(LOWER_LAYOUTS)) {
       const lower = FAMILIES.lower!.build({ layout });
       const guards = lower.solids.filter(({ id }) => id.startsWith('trigger-guard-'));

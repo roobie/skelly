@@ -1,8 +1,9 @@
 # Cartridge data
 
 One JSON file per cartridge, named `<id>.json`, where `id` is the slug other cartridges
-use to refer to it (`7.62x39`). This is data only: geometry, viewer and export come later
-(roobie/skelly#109). The scope exception that allows real dimensions here is in
+use to refer to it (`7.62x39`). This is data only: cartridge solids, viewer presentation and cartridge export are still pending
+(roobie/skelly#109). The pump-action clearance model already consumes the sourced loaded length,
+without generating cartridge geometry. The scope exception that allows real dimensions here is in
 `PROJECT.md` ("Non-goals").
 
 The files sit at the package root next to `designs/` and `fixtures/` because they are
@@ -79,7 +80,8 @@ Planned cartridges map onto these shapes without a format change:
 | 7.62×54R | metallic | rimmed | bottleneck | |
 | 9×19, 9×18, .45 ACP | metallic | rimless | straight | tapered cases use a mouth narrower than the head |
 | .357 Magnum, .38 Special | metallic | rimmed | straight | the one-way relation above |
-| 12 gauge 00 buck, 12 gauge slug | shotshell | | | `shot` and `slug` payloads, 70 mm nominal length for 2¾″ |
+| 12 gauge 00 buck | shotshell | | | `12-gauge-00-buck.json`; Federal PFC154 00 representative, 70 mm nominal length |
+| 12 gauge slug | shotshell | | | `slug` payload; pending |
 
 ## Checks
 
