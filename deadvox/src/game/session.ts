@@ -594,7 +594,7 @@ export const createSession = (options: SessionOptions) => {
         player: snapshotPlayer(body, controls.yaw(), controls.pitch(), controls.walking()),
         rest,
         survival,
-        quickbar: quickbar.snapshotState(),
+        quickbar: quickbar.snapshotState(inventory),
         zombies: zombieSystem,
         spawner,
         handling: queue,

@@ -76,13 +76,15 @@ describe('quickbarViewModel', () => {
     expect(vm.slots[3]).toMatchObject({ where: 'in the kitchen cupboard' });
   });
 
-  it('shows an item that is not with the player', () => {
+  it('renders a consumed binding as an empty slot', () => {
     const inv = new Inventory(registry);
     const rag = inv.create('rag');
+    inv.add(rag, { kind: 'hand', side: 'right' });
     const bar = new Quickbar();
     bar.assign(4, rag);
+    inv.consume(rag);
     const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[4]).toMatchObject({ where: 'not with you' });
+    expect(vm.slots[4]).toMatchObject({ filled: false, name: 'empty', where: '' });
   });
 
   it('shows the count when there is more than one', () => {
@@ -110,6 +112,8 @@ describe('quickbarKey', () => {
     const inv = new Inventory(registry);
     const flashlight = inv.create('flashlight');
     const rag = inv.create('rag');
+    inv.add(flashlight, { kind: 'hand', side: 'right' });
+    inv.add(rag, { kind: 'hand', side: 'left' });
     const bar = new Quickbar();
     bar.assign(0, flashlight);
     const before = quickbarKey(bar, inv);

@@ -517,10 +517,21 @@ export class Inventory {
     return place?.kind !== 'furniture' || place.entity.searched;
   }
 
-  private roots(): Item[] {
-    const inPiles = [...this.piles.values()].flatMap((p) => p.items.map((placed) => placed.item));
-    const inFurniture = [...this.entities.all].flatMap((e) => (e.pockets ?? []).flat().map((placed) => placed.item));
-    return [...this.carried(), ...inPiles, ...inFurniture];
+  private *roots(): IterableIterator<Item> {
+    // UID resolution is also used for held lights every frame; do not collect the whole world first.
+    yield* this.carried();
+    for (const pile of this.piles.values()) {
+      for (const placed of pile.items) {
+        yield placed.item;
+      }
+    }
+    for (const entity of this.entities.all) {
+      for (const pocket of entity.pockets ?? []) {
+        for (const placed of pocket) {
+          yield placed.item;
+        }
+      }
+    }
   }
 
   private searchPockets(owner: Item, item: Item): Location | undefined {
