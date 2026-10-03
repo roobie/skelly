@@ -180,10 +180,8 @@ export class SaveStorage {
       return null;
     }
     const persistent = await navigator.storage.persist();
-    // status() caches the capability probe; retain the player's newly observed grant too.
-    if (this.initialized) {
-      this.initialized = this.initialized.then((status) => ({ ...status, persistent }));
-    }
+    // Preserve the explicit result even before startup status begins; a late query cannot erase it.
+    this.initialized = this.status().then((status) => ({ ...status, persistent }));
     return persistent;
   }
 
