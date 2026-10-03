@@ -78,8 +78,15 @@ export const snapshotSession = ({
   vocalNoiseId,
   vocalNoise,
   audio,
-}: SnapshotSessionInput): Readonly<SaveSnapshot> =>
-  freezeSnapshot({
+}: SnapshotSessionInput): Readonly<SaveSnapshot> => {
+  const lightUid = survival.snapshotState().litUid ?? null;
+  // Check non-owning references at the synchronous snapshot barrier, not only during restore.
+  for (const uid of [lightUid, ...quickbar]) {
+    if (uid !== null && !inventory.itemByUid(uid)) {
+      throw new Error(`Snapshot contains dangling item UID ${uid}`);
+    }
+  }
+  return freezeSnapshot({
     world: {
       id: worldId,
       diffs: world.snapshotDiffs(blockContentId) as WorldDiffs,
@@ -92,7 +99,7 @@ export const snapshotSession = ({
       player: structuredClone(player),
       inventory: inventory.snapshotState() as InventoryState,
       rest: rest.snapshotState() as SaveSnapshot['character']['rest'],
-      lightUid: survival.snapshotState().litUid ?? null,
+      lightUid,
       quickbar: [...quickbar],
       handling: handling.snapshotCancelled() as HandlingQueueState,
       playerAudio: {
@@ -110,6 +117,7 @@ export const snapshotSession = ({
       },
     },
   });
+};
 
 export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<PlayerAudioSnapshot> => {
   if (

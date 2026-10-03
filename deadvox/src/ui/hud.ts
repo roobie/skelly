@@ -40,7 +40,8 @@ export interface QuickbarViewModel {
 }
 
 export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewModel => ({
-  slots: bar.slots.map((item, i) => {
+  slots: bar.slots.map((_, i) => {
+    const item = bar.resolve(i, inv);
     if (!item) {
       return { key: String(i + 1), filled: false, name: 'empty', where: '' };
     }
@@ -72,7 +73,7 @@ export const renderQuickbar = (root: HTMLElement, bar: Quickbar, inv: Inventory)
 
 /** Changes when the inventory or a slot's item does; the redraw contract's key. */
 export const quickbarKey = (bar: Quickbar, inv: Inventory): string =>
-  `${inv.version}|${bar.slots.map((item) => item?.uid ?? 0).join(',')}`;
+  `${inv.version}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
 
 export interface HandlingViewModel {
   readonly visible: boolean;
