@@ -153,6 +153,35 @@ export const vegetationPlacements = ({
   return trees;
 };
 
+const EMPTY_TREES: readonly TreePlacement[] = [];
+
+/** Seed-owned footprint buckets, built once. Query cost depends on nearby trees, not site extent. */
+export class TreeIndex {
+  private readonly columns = new Map<string, TreePlacement[]>();
+
+  constructor(trees: readonly TreePlacement[]) {
+    for (const tree of trees) {
+      // Bounds are exclusive block rectangles, shared by litter and clipped voxel writes.
+      for (let cz = Math.floor(tree.bounds.z0 / CHUNK); cz < Math.ceil(tree.bounds.z1 / CHUNK); cz++) {
+        for (let cx = Math.floor(tree.bounds.x0 / CHUNK); cx < Math.ceil(tree.bounds.x1 / CHUNK); cx++) {
+          const key = `${cx},${cz}`;
+          const bucket = this.columns.get(key) ?? [];
+          bucket.push(tree);
+          this.columns.set(key, bucket);
+        }
+      }
+    }
+  }
+
+  inColumn(cx: number, cz: number): readonly TreePlacement[] {
+    return this.columns.get(`${cx},${cz}`) ?? EMPTY_TREES;
+  }
+
+  at(x: number, z: number): readonly TreePlacement[] {
+    return this.inColumn(Math.floor(x / CHUNK), Math.floor(z / CHUNK));
+  }
+}
+
 export const stampTrees = (chunk: Chunk, trees: readonly TreePlacement[]): void => {
   const column = { x0: chunk.cx * CHUNK, x1: (chunk.cx + 1) * CHUNK, z0: chunk.cz * CHUNK, z1: (chunk.cz + 1) * CHUNK };
   for (const tree of trees) {

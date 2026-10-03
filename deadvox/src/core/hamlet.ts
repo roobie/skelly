@@ -34,6 +34,7 @@ import {
   DEFAULT_TREE_DENSITY,
   leafLitterAt,
   stampTrees,
+  TreeIndex,
   type TreePlacement,
   vegetationPlacements,
 } from './vegetation.ts';
@@ -103,6 +104,7 @@ export class Hamlet implements Site {
   readonly bounds: Rect;
   readonly range: HamletRange;
   readonly trees: readonly TreePlacement[];
+  private readonly treeIndex: TreeIndex;
   readonly hedges: readonly BlockBox[];
   /** Where the player starts: feet in metres, and a yaw that looks down the road. */
   readonly spawn: { pos: Vec3; yaw: number };
@@ -195,6 +197,7 @@ export class Hamlet implements Site {
         ...this.hedges.map((box) => grow({ x0: box.min[0], z0: box.min[2], x1: box.max[0], z1: box.max[2] }, 2)),
       ],
     });
+    this.treeIndex = new TreeIndex(this.trees);
     this.makeZombieSpawns();
   }
 
@@ -206,7 +209,7 @@ export class Hamlet implements Site {
         rectDistance(this.road, x, z) === 0
           ? this.asphalt
           : (this.range.top(x, z) ??
-            (leafLitterAt(this.trees, x, z) ? this.registry.blockIds.get('leaf_litter')! : undefined)),
+            (leafLitterAt(this.treeIndex.at(x, z), x, z) ? this.registry.blockIds.get('leaf_litter')! : undefined)),
     };
   }
 
@@ -230,7 +233,7 @@ export class Hamlet implements Site {
       }
     }
     this.range.stamp(chunk);
-    stampTrees(chunk, this.trees);
+    stampTrees(chunk, this.treeIndex.inColumn(chunk.cx, chunk.cz));
     stampChunk(chunk, this.hedges);
   }
 

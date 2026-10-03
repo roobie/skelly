@@ -9,6 +9,7 @@ import {
   forestDensityAt,
   leafLitterAt,
   stampTrees,
+  TreeIndex,
   type TreePlacement,
   vegetationPlacements,
 } from './vegetation.ts';
@@ -19,6 +20,7 @@ export class Forest implements Site {
   readonly trees: readonly TreePlacement[];
   readonly spawn: { pos: Vec3; yaw: number };
   readonly surface: Surface;
+  private readonly treeIndex: TreeIndex;
 
   constructor(seed: number, registry: Registry, scale: Scale, density: number | null = null) {
     const reach = FOREST_HALF_EXTENT_METRES / scale.blockSize;
@@ -36,15 +38,16 @@ export class Forest implements Site {
       ground: () => floor,
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });
+    this.treeIndex = new TreeIndex(this.trees);
     const litter = registry.blockIds.get('leaf_litter')!;
     this.surface = {
       height: (x, z, natural) => (rectDistance(this.bounds, x, z) === 0 ? floor : natural),
-      top: (x, z) => (leafLitterAt(this.trees, x, z) ? litter : undefined),
+      top: (x, z) => (leafLitterAt(this.treeIndex.at(x, z), x, z) ? litter : undefined),
     };
   }
 
   stamp(chunk: Chunk): void {
-    stampTrees(chunk, this.trees);
+    stampTrees(chunk, this.treeIndex.inColumn(chunk.cx, chunk.cz));
   }
   furnitureIn() {
     return [];

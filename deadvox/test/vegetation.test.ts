@@ -12,7 +12,15 @@ import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
 import { countSolidRuns, raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
-import { forestDensityAt, rectsOverlap, TREE_MIX } from '../src/core/vegetation.ts';
+import {
+  forestDensityAt,
+  leafLitterAt,
+  placeTree,
+  rectsOverlap,
+  stampTrees,
+  TREE_MIX,
+  TreeIndex,
+} from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
@@ -241,6 +249,47 @@ describe('passable but opaque vegetation', () => {
     expect(forestDensityAt(1, unit[0]! * 16, unit[1]! * 16)).toBe(0.75);
     expect(forestDensityAt(1, unit[0]! * 96, unit[1]! * 96)).toBeLessThan(0.65);
     expect(forestDensityAt(2, unit[0]! * 96, unit[1]! * 96)).not.toBe(forestDensityAt(1, unit[0]! * 96, unit[1]! * 96));
+  });
+
+  it('indexes exclusive litter borders and preserves clipped voxel writes across negative and positive columns', () => {
+    const trees = [
+      placeTree(
+        'broadleaf',
+        [-32, 1, -32],
+        [{ min: [0, 0, 0], max: [32, 1, 32], block: registry.blockIds.get('leaves')! }],
+      ),
+      placeTree(
+        'young',
+        [-1, 1, -1],
+        [{ min: [0, 0, 0], max: [2, 2, 2], block: registry.blockIds.get('tree_trunk')! }],
+      ),
+    ];
+    const index = new TreeIndex(trees);
+    for (const [x, z] of [
+      [-33, -32],
+      [-32, -32],
+      [-1, -1],
+      [0, 0],
+      [1, 1],
+      [32, 32],
+    ]) {
+      expect(leafLitterAt(index.at(x!, z!), x!, z!)).toBe(leafLitterAt(trees, x!, z!));
+    }
+    expect(leafLitterAt(index.at(-1, -16), -1, -16)).toBe(true);
+    expect(leafLitterAt(index.at(0, -16), 0, -16)).toBe(false);
+    for (const [cx, cz] of [
+      [-1, -1],
+      [0, -1],
+      [-1, 0],
+      [0, 0],
+    ]) {
+      const full = new Chunk(cx!, 0, cz!);
+      const local = new Chunk(cx!, 0, cz!);
+      stampTrees(full, trees);
+      stampTrees(local, index.inColumn(cx!, cz!));
+      expect(local.toArray()).toEqual(full.toArray());
+    }
+    expect(index.at(1000, 1000)).toHaveLength(0);
   });
 
   it('makes denser forests a seeded superset without moving existing trees or narrowing the extent', () => {
