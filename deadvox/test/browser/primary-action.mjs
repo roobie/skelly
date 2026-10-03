@@ -74,8 +74,8 @@ try {
   await page.goto(
     `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
-  // Title-ready precedes main's dynamic debug import and startPlay. Its debug mount and
-  // game canvas are the later signal: startPlay installs the click handler in that same task.
+  // In this debug scenario, canvas alone precedes content validation/startPlay. The debug
+  // mount is installed with the play/input handlers in the same synchronous startup task.
   await page.waitForFunction(() =>
     Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view canvas')),
   );
