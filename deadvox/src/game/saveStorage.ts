@@ -16,7 +16,7 @@ type SlotName = 'a' | 'b';
 const SAVE_WRITE_LOCK = 'deadvox-save-storage';
 const SAVE_READ_RETRIES = 3;
 const SAVE_READ_RETRY_MS = 50;
-const PERSISTENCE_STATUS_TIMEOUT_MS = 1000;
+const STORAGE_METADATA_TIMEOUT_MS = 1000;
 type CrashStage =
   | 'before-truncate'
   | 'after-truncate'
@@ -150,16 +150,19 @@ export class SaveStorage {
     });
     this.backend = response.backend;
     const persistenceRequest = this.requestPersistence().catch(() => null);
-    let persistenceTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
-    const persistenceDeadline = new Promise<null>((resolve) => {
-      persistenceTimer = globalThis.setTimeout(() => resolve(null), PERSISTENCE_STATUS_TIMEOUT_MS);
+    let metadataTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+    const metadataDeadline = new Promise<null>((resolve) => {
+      metadataTimer = globalThis.setTimeout(() => resolve(null), STORAGE_METADATA_TIMEOUT_MS);
     });
     const [persistent, quota] = await Promise.all([
-      Promise.race([persistenceRequest, persistenceDeadline]),
-      this.estimateQuota().catch((): SaveQuota => ({ supported: false })),
+      Promise.race([persistenceRequest, metadataDeadline]),
+      Promise.race([
+        this.estimateQuota().catch((): SaveQuota => ({ supported: false })),
+        metadataDeadline.then((): SaveQuota => ({ supported: false })),
+      ]),
     ]);
-    if (persistenceTimer !== undefined) {
-      globalThis.clearTimeout(persistenceTimer);
+    if (metadataTimer !== undefined) {
+      globalThis.clearTimeout(metadataTimer);
     }
     return { backend: this.backend, persistent, quota };
   }
@@ -181,6 +184,22 @@ export class SaveStorage {
     const usageBytes = estimate.usage ?? 0;
     const quotaBytes = estimate.quota ?? 0;
     return { supported: true, usageBytes, quotaBytes, availableBytes: Math.max(0, quotaBytes - usageBytes) };
+  }
+
+  private async withLock<T>(mode: 'shared' | 'exclusive', operation: () => Promise<T>): Promise<T> {
+    // The worker deadline starts only after acquisition; bound the queue wait separately.
+    // Aborting a pending request never steals or releases an existing writer's lock.
+    const signal = AbortSignal.timeout(this.timeoutMs);
+    try {
+      return await navigator.locks.request(SAVE_WRITE_LOCK, { mode, signal }, operation);
+    } catch (error) {
+      if (signal.aborted && error === signal.reason) {
+        throw new Error('World is still open or saving in another tab. Retry saved worlds after it finishes.', {
+          cause: error,
+        });
+      }
+      throw error;
+    }
   }
 
   async listNamespaces(): Promise<readonly string[]> {
@@ -205,10 +224,7 @@ export class SaveStorage {
   private async readRawSlotsAttempt(namespace: string, attempt: number): Promise<RawSaveSlots> {
     try {
       const read = () => this.request<SaveSlotPair>({ operation: 'read', namespace });
-      const slots =
-        typeof navigator.locks?.request === 'function'
-          ? await navigator.locks.request(SAVE_WRITE_LOCK, { mode: 'shared' }, read)
-          : await read();
+      const slots = typeof navigator.locks?.request === 'function' ? await this.withLock('shared', read) : await read();
       return {
         a: slots.a === null ? null : new Uint8Array(slots.a),
         b: slots.b === null ? null : new Uint8Array(slots.b),
@@ -269,7 +285,7 @@ export class SaveStorage {
     });
 
     if (typeof navigator.locks?.request === 'function') {
-      return navigator.locks.request(SAVE_WRITE_LOCK, { mode: 'exclusive' }, write);
+      return this.withLock('exclusive', write);
     }
     if (status.backend === 'opfs') {
       throw new Error('OPFS writes require Web Locks; select IndexedDB fallback');
