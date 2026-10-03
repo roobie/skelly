@@ -30,6 +30,25 @@ the bounded metadata-only capture; do not label the promptly completed GNOME pro
 as the 25-second call. Hosted headless CI lacks this desktop-keyring precondition;
 other repository browser tests already use Playwright's isolated launch defaults.
 
+## Ask for persistence only when the player chooses (2026-10-03)
+
+**What happened.** Save startup called `navigator.storage.persist()`, which could
+open Firefox's native permission popup before the player acted. Its boolean false
+was then described as a refusal, although querying an existing best-effort grant
+is not a request. An unknown metadata result also hid the explicit request button.
+
+**What to do.** Startup uses non-prompting `persisted()` under the existing bounded
+advisory-metadata deadline. Only the title/pause `#save-persist` click calls `persist()`;
+show it whenever that API exists and a grant is not known, including unknown state.
+Say best-effort until granted, explain the permission request, and update both cached
+storage metadata and the button after the result. Never restore an automatic path.
+
+**Firefox audit.** The maintained synthetic UI and storage stages do not pre-grant
+persistence or assert an automatic grant. Earlier r6 default/deny popup controls were
+scratch diagnostics, not CI setup. They now query the existing state rather than
+creating a popup; synthetic pointer-lock coverage and native #168/#170 quarantines
+stay distinct. This policy does not prove the historical native flakes fixed.
+
 ## Keep cosmetic play changes outside simulation identity (2026-10-03)
 
 **What happened.** Changing the HUD's FPS/seed wording changed the save's simulation
