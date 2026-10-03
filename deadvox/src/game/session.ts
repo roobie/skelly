@@ -106,7 +106,7 @@ export interface SessionControls {
 export interface SessionAudio {
   /** One-way playback of an admitted choice; unavailable output cannot undo hearing or picker state. */
   play: (sound: Readonly<SoundEmission>) => void;
-  /** Presentation-only cues for inventory handling; never affect noise or simulation state. */
+  /** Presentation cue selectors; selected cues use the session picker without adding vocal noise. */
   onMoveStart?: (move: MoveStart, ownerLocation: Location | undefined, chest: Vec3, time: number) => void;
   onMoveComplete?: (move: MoveStart, time: number) => void;
 }
@@ -267,15 +267,8 @@ export const createSession = (options: SessionOptions) => {
     }
     sim.events.emit({ kind: 'sound', ...sound });
     if (emittedAsNoise) {
-      sim.events.emit({
-        kind: 'noise',
-        event,
-        position: [...position],
-        time,
-        id: playerAudio.vocalNoiseId,
-        radiusMetres: definition.noise.radiusMetres,
-        expiresAt: time + VOCAL_NOISE_LIFETIME,
-      });
+      const { id, pos, radiusMetres, expiresAt } = playerAudio.vocalNoise!;
+      sim.events.emit({ kind: 'noise', event, position: [...pos], time, id, radiusMetres, expiresAt });
     }
     audio.play(sound);
     return true;

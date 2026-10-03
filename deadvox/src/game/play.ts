@@ -226,7 +226,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     rest,
     body,
     feet,
-    chest,
     pileDistance,
     entityDistance,
     nameOf,
