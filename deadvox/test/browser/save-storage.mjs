@@ -14,6 +14,7 @@ import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { build, createServer, preview } from 'vite';
+import { observeFailures } from './failure-diagnostics.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
@@ -21,7 +22,8 @@ const browserName = process.argv[2] ?? 'chromium';
 const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
 const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
 const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
-if (!['continue', 'replacement'].includes(autosaveScenario)) {
+const busyLockOnly = autosaveOnly && autosaveScenario === 'busy-lock';
+if (!['continue', 'replacement', 'busy-lock'].includes(autosaveScenario)) {
   throw new Error(`Unsupported autosave scenario ${autosaveScenario}`);
 }
 if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosaveBackend)) {
@@ -94,6 +96,7 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
 };
 let browser;
 let chromeProcess;
+let firefoxServer;
 let chromeExitPromise;
 let profile;
 try {
@@ -134,10 +137,28 @@ try {
     [context] = browser.contexts();
     assert(context);
   } else {
-    browser = await withTimeout('Playwright Firefox launch', firefox.launch({ headless: false }));
+    // The managed server exposes public child-process diagnostics without reaching into Playwright internals.
+    firefoxServer = await withTimeout('Playwright Firefox launch', firefox.launchServer({ headless: false }));
+    browser = await withTimeout('Playwright Firefox connection', firefox.connect(firefoxServer.wsEndpoint()));
     context = await browser.newContext();
   }
-  let page = await context.newPage();
+  await observeFailures(context, browser, chromeProcess ?? firefoxServer?.process());
+  if (busyLockOnly) {
+    await context.addInitScript(() => {
+      let locked = null;
+      Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+      Element.prototype.requestPointerLock = function () {
+        locked = this;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = null;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+  }
+  let page = await withTimeout('initial page creation', context.newPage());
   const pageErrors = [];
   const optionalTelemetryRequests = new Set([
     'https://scripts.simpleanalyticscdn.com/latest.js',
@@ -639,7 +660,9 @@ try {
   };
   const autosaveResults = [];
   let appBackends = [];
-  if (autosaveOnly && requestedAutosaveBackend) {
+  if (busyLockOnly) {
+    assert.equal(requestedAutosaveBackend, 'indexeddb', 'isolated busy-lock regression uses IndexedDB');
+  } else if (autosaveOnly && requestedAutosaveBackend) {
     appBackends = [requestedAutosaveBackend];
   } else if (autosaveOnly) {
     appBackends = contract.autoBackend === 'opfs' ? ['opfs'] : ['indexeddb'];
@@ -654,20 +677,36 @@ try {
     autosaveResults.push(await testTitleAndAutosave(backend));
   }
 
-  // One built-app regression per engine: hold a real writer lock rather than racing tab teardown.
-  if (autosaveOnly && requestedAutosaveBackend === 'indexeddb' && autosaveScenario === 'continue') {
+  // Independent of quarantined Continue/native gestures: seed a valid checkpoint, then hold a real writer lock.
+  if (busyLockOnly) {
     const appUrl = `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`;
-    const holder = await context.newPage();
-    holder.on('pageerror', (error) => pageErrors.push(error.message));
-    await holder.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
-    await holder.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+    await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
-    const originalSlots = await holder.evaluate(async () => {
+    await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.waitForFunction(
+      async () => {
+        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        return Boolean(await storage.load(namespace));
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    const originalSlots = await page.evaluate(async () => {
       const { storage, namespace } = globalThis.deadvoxSaveTest;
       const slots = await storage.readRawSlots(namespace);
       return { a: slots.a ? Array.from(slots.a) : null, b: slots.b ? Array.from(slots.b) : null };
     });
+    const holder = await withTimeout('busy-lock holder page creation', context.newPage());
+    holder.on('pageerror', (error) => pageErrors.push(error.message));
+    // The lock owner needs a same-origin document, not another renderer/world/worker.
+    const holderUrl = `http://127.0.0.1:${address.port}/?save-lock-holder=1`;
+    await holder.route(holderUrl, (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<title>Save writer holder</title>' }),
+    );
+    await holder.goto(holderUrl, { timeout: STAGE_TIMEOUT_MS });
     await holder.evaluate(async () => {
       let acquired;
       const ready = new Promise((resolve) => {
@@ -682,9 +721,9 @@ try {
       await ready;
     });
     try {
-      // The continued session is entered (paused), so closing still triggers its lifecycle checkpoint.
+      // Closing the seed session triggers its lifecycle checkpoint; it cannot steal the held writer lock.
       await page.close();
-      page = await context.newPage();
+      page = await withTimeout('busy-lock relaunch page creation', context.newPage());
       page.on('pageerror', (error) => pageErrors.push(error.message));
       page.on('requestfailed', recordRequestFailure);
       await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
@@ -746,11 +785,16 @@ try {
     assert.equal(contract.crashResults.length, contract.autoBackend === 'opfs' ? 9 : 4);
   }
   assert.deepEqual(pageErrors, []);
-  process.stdout.write(
-    `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
-  );
+  if (!busyLockOnly) {
+    process.stdout.write(
+      `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
+    );
+  }
 } finally {
   await withTimeout('browser shutdown', browser?.close() ?? Promise.resolve(), 5000).catch((error) => {
+    process.stderr.write(`Cleanup warning: ${String(error)}\n`);
+  });
+  await withTimeout('Firefox server shutdown', firefoxServer?.close() ?? Promise.resolve(), 5000).catch((error) => {
     process.stderr.write(`Cleanup warning: ${String(error)}\n`);
   });
   if (chromeProcess && chromeProcess.exitCode === null && chromeProcess.signalCode === null) {
