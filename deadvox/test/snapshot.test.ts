@@ -904,7 +904,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 7,
+  schemaVersion: 8,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -1108,6 +1108,17 @@ describe('canonical save format', () => {
 
     expect(restored.regions).toEqual(zombie.regions);
     expect(capture(loaded)).toEqual(decoded.snapshot);
+  });
+
+  it('preserves an authored site id through the save codec', async () => {
+    const snapshot = capture(createRuntime());
+    const bytes = await encodeSave(snapshot, {
+      generation: 1,
+      version: formatVersion,
+      worldOptions: { ...formatWorldOptions, site: 'lone_house' },
+    });
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    expect(decoded.worldOptions.site).toBe('lone_house');
   });
 
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
