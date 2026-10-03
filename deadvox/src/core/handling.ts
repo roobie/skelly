@@ -2,6 +2,7 @@
 // live in the freshly-created runtime; a 1.9 snapshot omits pending jobs without
 // mutating the running queue.
 
+import { canonicalJson } from './canonicalJson.ts';
 import { describeTarget, type Inventory, type Location, type Target, type TargetState } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 
@@ -34,7 +35,7 @@ const isJobValue = (value: unknown, seen = new Set<object>()): value is JobValue
 interface JobBase {
   readonly label: string;
   /** Seconds. */
-  readonly duration: number;
+  duration: number;
   elapsed: number;
 }
 
@@ -82,6 +83,7 @@ export class HandlingQueue {
   private readonly onMoveStart: ((move: MoveStart) => void) | undefined;
   private readonly onMoveComplete: ((move: MoveStart) => void) | undefined;
   private readonly handlers = new Map<string, (params: JobParams) => string | undefined>();
+  private announced: MoveJob | undefined;
 
   constructor(
     inventory: Inventory,
@@ -118,7 +120,7 @@ export class HandlingQueue {
   /**
    * Queues a move if it could happen now. With `later`, a move that depends on
    * earlier jobs (a hand that is about to be freed) is queued anyway and checked
-   * when its time is up.
+   * when it reaches the head, before spending time.
    */
   enqueue(
     item: Item,
@@ -126,6 +128,18 @@ export class HandlingQueue {
     count = item.count,
     later = false,
   ): { ok: true; job: MoveJob } | { ok: false; reason: string } {
+    const state = this.inventory.targetState(target);
+    if (
+      this.jobs.some(
+        (pending) =>
+          pending.kind === 'move' &&
+          pending.itemUid === item.uid &&
+          pending.count === count &&
+          canonicalJson(pending.target) === canonicalJson(state),
+      )
+    ) {
+      return { ok: false, reason: 'Already queued' };
+    }
     const from = this.inventory.locate(item);
     const plan = this.inventory.plan(item, target, count);
     if (!(plan.ok || (later && from))) {
@@ -136,7 +150,7 @@ export class HandlingQueue {
     const job: MoveJob = {
       kind: 'move',
       itemUid: item.uid,
-      target: this.inventory.targetState(target),
+      target: state,
       count,
       label: `${name}${count > 1 ? ` ×${count}` : ''} → ${describeTarget(this.inventory, target)}`,
       duration,
@@ -164,6 +178,7 @@ export class HandlingQueue {
 
   cancel(): void {
     this.jobs.length = 0;
+    this.announced = undefined;
   }
 
   /** Spends `dt` seconds on the queue, finishing jobs in order. */
@@ -172,6 +187,15 @@ export class HandlingQueue {
     let left = dt;
     while (this.jobs.length > 0) {
       const job = this.jobs[0]!;
+      if (job.kind === 'move' && job.elapsed === 0) {
+        const reason = this.prepareMove(job);
+        if (reason !== undefined) {
+          this.jobs.shift();
+          this.announced = undefined;
+          result.failed.push({ job, reason });
+          continue;
+        }
+      }
       const need = job.duration - job.elapsed;
       if (left < need - 1e-9) {
         job.elapsed += left;
@@ -180,12 +204,37 @@ export class HandlingQueue {
       left -= need;
       job.elapsed = job.duration;
       this.jobs.shift();
+      this.announced = undefined;
       this.execute(job, result);
-      if (this.jobs[0]?.kind === 'move') {
-        this.announceMoveStart(this.jobs[0]);
-      }
     }
     return result;
+  }
+
+  /** Validate the new head against the live owner, before consuming any time. */
+  private prepareMove(job: MoveJob): string | undefined {
+    const item = this.inventory.itemByUid(job.itemUid);
+    const target = this.inventory.resolveTarget(job.target);
+    if (!(item && target)) {
+      return "It isn't there any more";
+    }
+    const plan = this.inventory.plan(item, target, job.count);
+    if (!plan.ok) {
+      return plan.reason;
+    }
+    const from = this.inventory.locate(item)!;
+    const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);
+    // An automatic grid target means this container/pile; an explicit spot still permits rearranging it.
+    if ('at' in job.target && job.target.at && 'placed' in from && current.kind !== 'hand' && current.kind !== 'worn') {
+      current.at = { x: from.placed.x, y: from.placed.y, rotated: from.placed.rotated };
+    }
+    if (job.count === item.count && canonicalJson(current) === canonicalJson(job.target)) {
+      return "It's already there";
+    }
+    job.duration = plan.time;
+    if (this.announced !== job) {
+      this.announceMoveStart(job);
+    }
+    return undefined;
   }
 
   private announceMoveStart(job: MoveJob): void {
@@ -193,6 +242,7 @@ export class HandlingQueue {
     const from = item ? this.inventory.locate(item) : undefined;
     const target = this.inventory.resolveTarget(job.target);
     if (item && from && target) {
+      this.announced = job;
       this.onMoveStart?.({ item, from, target });
     }
   }

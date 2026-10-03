@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { EAT_TIME, options, quickMove } from '../src/core/options.ts';
+import { EAT_TIME, options, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
 import { quickMoveModifier } from '../src/game/input.ts';
 
@@ -92,6 +92,100 @@ it('beans expose the eat time and a refusal when both hands hold other items', (
   t.add('chocolate_bar', { kind: 'hand', side: 'left' });
   expect(options(beans, t.view()).find((option) => option.kind === 'use')).toMatchObject({
     plan: { ok: false, reason: 'Take the can of beans in your hands first' },
+  });
+});
+
+describe('handling move admission', () => {
+  it('refuses an identical quick move and spends only the first job time', () => {
+    const t = setup();
+    t.add('school_backpack', { kind: 'worn' });
+    const item = t.add('canned_beans', { kind: 'pile', pos: [0, 0, 0] });
+    const first = t.queue.enqueue(item, quickMove(item, t.view()).target);
+    if (!first.ok) {
+      throw new Error(first.reason);
+    }
+    expect
+      .soft(t.queue.enqueue(item, quickMove(item, t.view()).target))
+      .toEqual({ ok: false, reason: 'Already queued' });
+    expect.soft(t.queue.jobs).toHaveLength(1);
+    expect(t.queue.tick(first.job.duration).done).toEqual([first.job]);
+    expect(t.queue.remaining).toBe(0);
+    expect(t.queue.busy).toBe(false);
+    // Same uid/target with a different requested count is not an exact duplicate.
+    const stack = t.add('rag', { kind: 'pile', pos: [0, 0, 0] }, 2);
+    const { target } = quickMove(stack, t.view());
+    expect(t.queue.enqueue(stack, target, 1).ok).toBe(true);
+    expect(t.queue.enqueue(stack, target, 2).ok).toBe(true);
+    t.queue.cancel();
+  });
+
+  it.each(['moved', 'consumed'] as const)('drops a %s item move at its turn without spending time', (change) => {
+    const t = setup();
+    const bag = t.add('school_backpack', { kind: 'worn' });
+    const item = t.add('rag', { kind: 'pile', pos: [0, 0, 0] });
+    const target = { kind: 'pocket', owner: bag, pocket: 0 } as const;
+    t.queue.registerAction('fixture.change', () => {
+      if (change === 'consumed') {
+        t.inventory.consume(item);
+      } else {
+        const result = t.inventory.move(item, target);
+        if (!result.ok) {
+          return result.reason;
+        }
+      }
+    });
+    t.queue.enqueueAction('fixture.change', 'Change item', 1);
+    const move = t.queue.enqueue(item, target);
+    if (!move.ok) {
+      throw new Error(move.reason);
+    }
+    const result = t.queue.tick(1);
+    expect(result.done).toHaveLength(1);
+    expect(result.failed).toEqual([
+      { job: move.job, reason: change === 'consumed' ? "It isn't there any more" : "It's already there" },
+    ]);
+    expect(move.job.elapsed).toBe(0);
+    expect(t.queue.remaining).toBe(0);
+    expect(t.queue.jobs).toEqual([]);
+  });
+
+  it('keeps same-item different-target chains and re-plans their time at the head', () => {
+    const t = setup();
+    const item = t.add('rag', { kind: 'pile', pos: [0, 0, 0] });
+    const first = t.queue.enqueue(item, { kind: 'hand', side: 'left' });
+    const second = t.queue.enqueue(item, { kind: 'hand', side: 'right' });
+    if (!(first.ok && second.ok)) {
+      throw new Error('Fixture chain did not queue');
+    }
+    // A 1x1 rag takes 1.05s from the floor, then zero handling time hand-to-hand.
+    const result = t.queue.tick(1.05);
+    expect(result.done).toEqual([first.job, second.job]);
+    expect(result.failed).toEqual([]);
+    expect(second.job.duration).toBe(0);
+    expect(t.inventory.hands.right).toBe(item);
+    expect(t.inventory.hands.left).toBeUndefined();
+    expect(t.queue.remaining).toBe(0);
+  });
+
+  it('re-plans a deferred toHands take only after the occupied hand has been freed', () => {
+    const t = setup();
+    const jeans = t.add('jeans', { kind: 'worn' });
+    const held = t.add('duct_tape', { kind: 'hand', side: 'right' });
+    t.add('flashlight', { kind: 'hand', side: 'left' });
+    const item = t.add('rag', { kind: 'pile', pos: [0, 0, 0] });
+    t.queue.registerAction('fixture.pocket', () => {
+      const result = t.inventory.move(item, { kind: 'pocket', owner: jeans, pocket: 0 });
+      return result.ok ? undefined : result.reason;
+    });
+    t.queue.enqueueAction('fixture.pocket', 'Pocket rag', 1);
+    expect(toHands(t.inventory, t.queue, item, [0, 0, 0])).toBeUndefined();
+    // 1s action +0.55s jeans stow +0.55s jeans extraction (rather than 1.05s floor).
+    const result = t.queue.tick(2.1);
+    expect(result.done).toHaveLength(3);
+    expect(result.failed).toEqual([]);
+    expect(t.inventory.locate(held)).toMatchObject({ kind: 'pocket', owner: jeans });
+    expect(t.inventory.hands.right).toBe(item);
+    expect(t.queue.busy).toBe(false);
   });
 });
 
