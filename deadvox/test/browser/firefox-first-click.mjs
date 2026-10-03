@@ -17,7 +17,7 @@ const observation = {
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
-    const marker = '  const renderHandlingFrame = (): void => {';
+    const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(marker, `  Object.assign(globalThis, { firefoxNativeSim: sim });\n${marker}`);
   },

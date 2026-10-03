@@ -5,6 +5,20 @@ area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the prob
 ahead; lessons are what past problems taught us. Newest first. Each entry says what
 happened, why, and what to do differently.
 
+## Keep cosmetic play changes outside simulation identity (2026-10-03)
+
+**What happened.** Changing the HUD's FPS/seed wording changed the save's simulation
+fingerprint because formatting, camera/mesh rendering and gameplay shared `play.ts`.
+
+**What to do.** Project readonly data into `ui/playHud.ts`/`ui/playReadout.ts`; own
+render resources, draw/warm-up and pile/case pagehide cleanup in `render/playView.ts`.
+`render/playFrames.ts` only wires RAF callbacks. Keep dt policy, input sampling,
+action/target selection, simulation advancement, saves and death in fingerprinted
+`play.ts`/session. Don't exclude all of `play.ts`. Test observable draw/lifecycle
+routing, not exact callback spelling; keep the HUD-wording and gameplay-reach hash
+canaries together. Module extraction deliberately invalidates exact-version saves
+once; subsequent cosmetic wording edits should not.
+
 ## Admit sound and hearing before playback (2026-10-03)
 
 **What happened.** `SessionAudio.play` returned a boolean that gated player vocal

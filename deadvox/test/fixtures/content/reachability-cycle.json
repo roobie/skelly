@@ -1,0 +1,24 @@
+{
+  "items": [
+    { "id": "fixture_a", "name": "A", "category": "material", "weight": 1, "size": [1, 1] },
+    { "id": "fixture_b", "name": "B", "category": "material", "weight": 1, "size": [1, 1] }
+  ],
+  "recipes": [
+    {
+      "id": "fixture_a",
+      "result": { "item": "fixture_a", "count": 1 },
+      "time": 1,
+      "skills": {},
+      "qualities": {},
+      "components": [[{ "item": "fixture_b", "count": 1 }]]
+    },
+    {
+      "id": "fixture_b",
+      "result": { "item": "fixture_b", "count": 1 },
+      "time": 1,
+      "skills": {},
+      "qualities": {},
+      "components": [[{ "item": "fixture_a", "count": 1 }]]
+    }
+  ]
+}
