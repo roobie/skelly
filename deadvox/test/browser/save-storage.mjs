@@ -117,6 +117,8 @@ try {
         '--no-sandbox',
         '--disable-dev-shm-usage',
         '--disable-extensions',
+        // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
+        '--password-store=basic',
         '--enable-webgl',
         '--use-gl=swiftshader',
         '--enable-unsafe-swiftshader',

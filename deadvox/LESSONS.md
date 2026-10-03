@@ -5,6 +5,31 @@ area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the prob
 ahead; lessons are what past problems taught us. Newest first. Each entry says what
 happened, why, and what to do differently.
 
+## Isolate browser-test profiles from the desktop keyring (2026-10-03)
+
+**What happened.** Custom Chromium launches let Chrome select the OS password store.
+On the shared desktop-session host, cookie encryption-key initialization took about
+25 seconds. TCP connected immediately, but Chrome did not send the first HTTP request
+until the key loaded. First navigation then took 28 seconds or crossed its unchanged
+30-second bound (#190). A late response `Date` header did not mean Vite was slow:
+its first curl response took 8 ms, and its browser-request handler took 4–15 ms.
+
+**What to do.** Use `--password-store=basic` for the throwaway profiles in
+`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`, matching
+Playwright's normal launch arguments. This is test-profile isolation, not a setting
+for players' browsers. Do not warm up a request, retry or raise the timeout.
+
+**Proof.** Three fresh-profile launches without the flag took 27.76–28.89 seconds;
+three with it took 2.87–2.91 seconds. Cookie-key loading fell from 25.16–25.20 seconds
+to 112–138 ms; first-request arrival fell from about 24.8 seconds to 8–13 ms.
+Restoring the original launch after a fast flagged run restored the stall despite
+shared file-cache warming. Same-profile warm navigations were fast even without the
+flag: distinguish fresh browser/server state from OS-cache coldness. No OS caches
+were reset or certified cold. The exact slow D-Bus endpoint was not identified by
+the bounded metadata-only capture; do not label the promptly completed GNOME prompt
+as the 25-second call. Hosted headless CI lacks this desktop-keyring precondition;
+other repository browser tests already use Playwright's isolated launch defaults.
+
 ## Keep cosmetic play changes outside simulation identity (2026-10-03)
 
 **What happened.** Changing the HUD's FPS/seed wording changed the save's simulation
