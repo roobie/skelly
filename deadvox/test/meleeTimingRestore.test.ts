@@ -41,7 +41,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'recipe') {
     return registry.recipes.has(id);
   }
-  return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
+  return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const saveVersion = {
   simulationHash: 'a'.repeat(64),

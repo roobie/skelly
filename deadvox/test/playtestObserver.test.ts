@@ -221,6 +221,7 @@ describe('playtest observer snapshot oracle', () => {
     const runtime = {
       sim: {
         needs: { health: 100 },
+        actions: { snapshotState: () => ({ job: null }) },
         paused: false,
         godMode: false,
         ignoreUnsafe: false,
@@ -234,7 +235,6 @@ describe('playtest observer snapshot oracle', () => {
       queue: { jobs: [{ kind: 'action', jobType: 'furniture.search', elapsed: 1 }] },
       zombies: { snapshotState: () => ({}) },
       spawner: { snapshotState: () => [] },
-      rest: { snapshotState: () => ({}) },
       survival: { snapshotState: () => ({}) },
       playerAudio: {},
       worldDiffs: () => ({ chunks: [] }),
