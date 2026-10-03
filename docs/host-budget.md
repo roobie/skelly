@@ -75,10 +75,12 @@ not query swap limits/use; this is configured-cap evidence. The role limits can
 sum above their parent's limit: seven
 3 GiB coder scopes do not grant seven concurrent 3 GiB workloads.
 
-**Important override:** `~/.config/systemd/user/agents-review.slice.d/host.conf`
-still says 1,700 MiB / 2 GiB. Higher-precedence files under
-`~/.config/systemd/user.control/agents-review.slice.d/` set the effective
-5 GiB / 6 GiB values above. `systemctl --user cat` exposes both. Capacity checks
+**Drop-in order:** `$HOME/.config/systemd/user/agents-review.slice.d/host.conf`
+carries the slice's limits (5 GiB / 6 GiB since 2026-10-03). `systemctl --user set-property`
+writes `$HOME/.config/systemd/user.control/agents-review.slice.d/50-Memory*.conf`, but
+`host.conf` sorts after those files and wins at the next `daemon-reload`. A raise made only
+with `set-property` reverts on reload, as it did once on 2026-10-03. Change `host.conf`
+together with any `set-property`. `systemctl --user cat` exposes both. Capacity checks
 must use effective properties, not one stale drop-in. None was edited.
 
 ## Agent-session memory
@@ -195,7 +197,7 @@ systemctl --user show agents.slice agents-coder.slice agents-review.slice \
   -p MemoryCurrent -p MemoryPeak -p MemoryHigh -p MemoryMax \
   -p EffectiveMemoryMax -p MemorySwapMax -p ControlGroup
 systemctl --user cat agents.slice agents-coder.slice agents-review.slice agents-infra.slice
-# Also read ~/.config/systemd/user/app-org.chromium.Chromium-.scope.d/50-memory-cap.conf.
+# Also read "$HOME/.config/systemd/user/app-org.chromium.Chromium-.scope.d/50-memory-cap.conf".
 # pi-only memory: /proc/<pi-pid>/status, VmHWM and VmRSS (not virtual size).
 
 # Repeat three times, each command with its own lock hold; time INSIDE the lock.
