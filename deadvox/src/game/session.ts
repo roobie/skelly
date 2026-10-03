@@ -10,6 +10,7 @@ import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
+import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
@@ -222,7 +223,7 @@ export const createSession = (options: SessionOptions) => {
     seed,
     clock: { ratio: CLOCK_RATIO, start: options.start },
     unsafe: () => debug?.()?.dangerReason() ?? zombieSystem.unsafeReason(),
-    restRate: () => rest.action?.rate,
+    restRate: () => sim.actions.restRate,
   });
   const { compression } = sim;
   const audioEvents = sim.events.reader();
@@ -305,6 +306,7 @@ export const createSession = (options: SessionOptions) => {
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: options.notice,
   });
+  sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   const rest = new RestController(sim, {
     bedQuality: () => {
       const bed = entities.bedNear(chest(), INVENTORY_REACH / s);
@@ -569,7 +571,7 @@ export const createSession = (options: SessionOptions) => {
     const schedulerState = sim.scheduler.snapshotState();
     lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
-    rest.restoreState(restored.character.rest);
+    sim.actions.restoreState(restored.character.longAction);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
     quickbar.restoreState(restored.character.quickbar, inventory);
   }
@@ -656,7 +658,6 @@ export const createSession = (options: SessionOptions) => {
         character,
         simulation: sim,
         player: snapshotPlayer(body, controls.yaw(), controls.pitch(), controls.walking()),
-        rest,
         survival,
         quickbar: quickbar.snapshotState(inventory),
         zombies: zombieSystem,

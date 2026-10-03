@@ -72,7 +72,7 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
-import type { RestKind } from './rest.ts';
+import type { RestKind } from '../core/longAction.ts';
 import { createSession } from './session.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 

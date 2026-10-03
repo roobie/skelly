@@ -7,6 +7,7 @@ import {
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import type { InventoryState } from './inventory.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
+import { validateLongJob } from './longAction.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { MeleeActionState, ZombieState } from './zombies.ts';
@@ -111,7 +112,7 @@ interface WirePayload {
     player: SaveSnapshot['character']['player'];
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
     progression: SaveSnapshot['character']['progression'];
-    rest: SaveSnapshot['character']['rest'];
+    longAction: SaveSnapshot['character']['longAction'];
     lightUid: number | null;
     quickbar: (number | null)[];
     handling: SaveSnapshot['character']['handling'];
@@ -242,6 +243,17 @@ itemSchema = obj({
   on: opt(bool),
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  work: opt(
+    obj({
+      recipe: str({ id: true }),
+      elapsed: nonNegative,
+      duration: positive,
+      components: arr(
+        lazy(() => itemSchema),
+        1,
+      ),
+    }),
+  ),
 });
 placedSchema = obj({ item: lazy(() => itemSchema), x: nonNegativeInt, y: nonNegativeInt, rotated: bool });
 const placedGrid = arr(lazy(() => placedSchema));
@@ -276,13 +288,22 @@ const inventory = obj({
   piles: arr(pileSchema),
   entities: entitiesState,
 });
-const rest = obj({
-  action: opt(
+const longAction = obj({
+  job: nullable(
     obj({
-      kind: enumeration(['rest', 'sleep']),
-      label: str({ nonEmpty: true }),
-      rate: finite,
-      startFatigue: num({ min: 0, max: 100 }),
+      jobType: enumeration(['rest', 'sleep', 'craft']),
+      stopped: bool,
+      last: nonNegative,
+      elapsed: opt(nonNegative),
+      workUid: opt(positiveInt),
+      rest: opt(
+        obj({
+          kind: enumeration(['rest', 'sleep']),
+          label: str({ nonEmpty: true }),
+          rate: finite,
+          startFatigue: num({ min: 0, max: 100 }),
+        }),
+      ),
     }),
   ),
 });
@@ -441,7 +462,7 @@ const wirePayloadSchema = obj({
     simulation: simulationWithoutWorldIdentity,
     player,
     inventory: playerStateInventory,
-    rest,
+    longAction,
     lightUid: nullable(positiveInt),
     quickbar: arr(nullable(positiveInt)),
     handling,
@@ -755,7 +776,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         worn: savedInventory.worn,
         looted: savedInventory.looted,
       },
-      rest: snapshot.character.rest,
+      longAction: snapshot.character.longAction,
       lightUid: snapshot.character.lightUid,
       quickbar: [...snapshot.character.quickbar],
       handling: snapshot.character.handling,
@@ -955,6 +976,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     spawnKeys.add(key);
   }
   const snapshot = restoreWirePayload(wire);
+  validateActionReferences(snapshot);
   collectItemIds(savedItemTree(snapshot.character.inventory), snapshot.character.inventory.nextItemUid);
   const maxEntity = [...entityIds].reduce((maximum, id) => Math.max(maximum, id), 0);
   if (wire.world.blockEntitiesNextUid <= maxEntity) {
@@ -999,6 +1021,23 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   return snapshot;
 }
 
+function validateActionReferences(snapshot: SaveSnapshot): void {
+  const { job } = snapshot.character.longAction;
+  validateLongJob(job, snapshot.character.simulation.time);
+  let owns = job?.jobType !== 'craft';
+  for (const { item } of savedItemTree(snapshot.character.inventory)) {
+    if (item.work && (item.type !== 'work_in_progress' || item.work.elapsed > item.work.duration)) {
+      throw new Error('Invalid craft work payload');
+    }
+    if (job?.jobType === 'craft' && item.uid === job.workUid && item.work) {
+      owns = true;
+    }
+  }
+  if (!owns) {
+    throw new Error('Missing craft work item');
+  }
+}
+
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string) => {
     if (!lookup(kind, id)) {
@@ -1024,6 +1063,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   for (const { item, path } of savedItemTree(snapshot.character.inventory)) {
     check('item', item.type, `${path}.type`);
+    if (item.work) {
+      check('recipe', item.work.recipe, `${path}.work.recipe`);
+    }
   }
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);
@@ -1073,7 +1115,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         simulation,
         player: playerState,
         inventory,
-        rest,
+        longAction,
         lightUid: nullable(positiveInt),
         quickbar: arr(nullable(positiveInt)),
         handling: obj({ jobs: arr(anyJson, 0) }),
@@ -1083,6 +1125,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     snapshot,
     'snapshot',
   );
+  validateActionReferences(snapshot);
   const blockEntities = snapshot.character.inventory.entities;
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {
     throw new Error('Invalid next block entity id');

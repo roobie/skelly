@@ -109,6 +109,9 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entities: furniture.filter((entity) => entity.searched),
   });
   for (const { item, location } of walkItemTree(roots)) {
+    if (location.kind === 'work') {
+      continue;
+    }
     entries.push({
       item,
       location,

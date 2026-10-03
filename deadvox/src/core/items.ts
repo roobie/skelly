@@ -5,6 +5,14 @@
 import type { ItemDef, Registry } from './content.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
+/** Craft inputs/progress have exactly one owner: this ordinary item subtree. */
+export interface CraftWork<Node> {
+  recipe: string;
+  elapsed: number;
+  duration: number;
+  components: Node[];
+}
+
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {
   count: number;
@@ -21,6 +29,7 @@ export interface ItemFields<Node> {
   made?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
   pockets?: PlacedItem<Node>[][];
+  work?: CraftWork<Node> | undefined;
 }
 
 export interface Item extends ItemFields<Item> {
@@ -56,6 +65,14 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.made === undefined ? {} : { made: item.made }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+    ...(item.work === undefined
+      ? {}
+      : {
+          work: {
+            ...item.work,
+            components: item.work.components.map((component) => snapshotItem(component) as ItemState),
+          },
+        }),
   });
 
 export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
@@ -75,6 +92,12 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
   };
+  if (state.work) {
+    item.work = {
+      ...state.work,
+      components: state.work.components.map((component) => restoreItem(registry, component)),
+    };
+  }
   return item;
 };
 
@@ -160,7 +183,7 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
 /** True when the item has no pockets, or they're all empty. */
-export const isEmpty = (item: Item): boolean => (item.pockets ?? []).every((grid) => grid.length === 0);
+export const isEmpty = (item: Item): boolean => !item.work && (item.pockets ?? []).every((grid) => grid.length === 0);
 
 /** Condition as a word (DESIGN.md, "The item model"). */
 export const conditionWord = (condition: number): string => {
@@ -246,4 +269,5 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
 /** Grams, counting the stack and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
   defOf(registry, item.type).weight * item.count +
-  (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0);
+  (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
+  (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);

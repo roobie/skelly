@@ -76,7 +76,8 @@ Placed workstation declarations are discoverable; bench behavior stays 2.8.
 Current base: 33 found types, 36 in the component closure; 36 reachable / 40
 defined eligible content types. The explicit `CONTENT_COUNT_EXCLUSIONS` policy
 leaves out the current debug-only items, spent case, and severed body-part items;
-extend this set when new excluded definitions land. Defined eligible but
+extend this set when new excluded definitions land. `work_in_progress` is also
+excluded: it is runtime escrow, not acquired loot or a recipe result. Defined eligible but
 unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest (2.11 owns
 these gaps). Stick and wax each have one weight-1 entry in `junk`, used by placed
 crates and nested `shed_tools`; no other material/loot growth is included.

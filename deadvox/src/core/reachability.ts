@@ -9,6 +9,7 @@ export const PENDING_REACHABILITY = { skill: '2.5', workstation: '2.8' } as cons
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
+  'work_in_progress', // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'debug_rifle_assault',
   'spent_case_5_d_56x45',

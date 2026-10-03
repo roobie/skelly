@@ -5,6 +5,7 @@
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { CraftPlan } from './crafting.ts';
 import {
   cellCount,
   couldFit,
@@ -308,6 +309,9 @@ export class Inventory {
     if (!from) {
       return refuse("It isn't there any more");
     }
+    if (from.kind === 'work') {
+      return refuse('Inputs are held by the work item');
+    }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
     }
@@ -377,6 +381,82 @@ export class Inventory {
     return true;
   }
 
+  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
+  beginWork(plan: CraftPlan): Item | undefined {
+    if (this.hands.left || this.hands.right || !this.registry.recipes.has(plan.recipe)) {
+      return undefined;
+    }
+    const seen = new Set<number>();
+    for (const { item, count } of plan.components) {
+      if (
+        seen.has(item.uid) ||
+        this.itemByUid(item.uid) !== item ||
+        !this.locate(item) ||
+        !isEmpty(item) ||
+        !Number.isSafeInteger(count) ||
+        count < 1 ||
+        count > item.count
+      ) {
+        return undefined;
+      }
+      seen.add(item.uid);
+    }
+    if (plan.tools.some((tool) => seen.has(tool.item.uid))) {
+      return undefined;
+    }
+    const work = this.create('work_in_progress');
+    const components = plan.components.map(({ item, count }) => {
+      const from = this.locate(item)!;
+      if (from.kind === 'furniture') {
+        this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
+      }
+      if (count < item.count) {
+        return this.factory.split(item, count);
+      }
+      this.remove(from);
+      return item;
+    });
+    work.work = { recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+    this.hands.right = work;
+    this.version += 1;
+    return work;
+  }
+
+  /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
+  releaseWork(work: Item, finish: boolean, feet: Vec3): void {
+    const payload = work.work;
+    const at = this.locate(work);
+    if (!(payload && at)) {
+      return;
+    }
+    const recipe = this.registry.recipes.get(payload.recipe)!;
+    const outputs = finish ? [this.create(recipe.result.item, recipe.result.count)] : payload.components;
+    const resultInHand = finish && at.kind === 'hand';
+    if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
+      throw new Error('An input or result is too large to put down');
+    }
+    this.remove(at);
+    work.work = undefined;
+    this.version += 1;
+    if (resultInHand && at.kind === 'hand') {
+      this.put(outputs[0]!, { kind: 'hand', side: at.side });
+      return;
+    }
+    for (const item of outputs) {
+      let offset = 0;
+      for (;;) {
+        const pos: Vec3 = [feet[0] + offset, feet[1], feet[2]];
+        const pile = this.pileAt(pos);
+        const spot = findSpot(this.registry, { size: PILE_GRID, placed: pile?.items ?? [] }, item);
+        if (spot) {
+          this.put(item, { kind: 'pile', pos }, spot);
+          break;
+        }
+        offset += 1;
+      }
+    }
+  }
+
   /** The pile or furniture an item is in, directly or inside a bag lying there; undefined if it's on you. */
   placeOf(location: Location): Place | undefined {
     switch (location.kind) {
@@ -384,6 +464,7 @@ export class Inventory {
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
         return { kind: 'furniture', entity: location.entity };
+      case 'work':
       case 'pocket': {
         const owner = this.locate(location.owner);
         return owner ? this.placeOf(owner) : undefined;
@@ -566,7 +647,7 @@ export class Inventory {
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
-    if (!at || count > item.count) {
+    if (!at || item.work || at.kind === 'work' || count > item.count) {
       return false;
     }
     if (count < item.count) {
@@ -596,6 +677,8 @@ export class Inventory {
         grid.splice(grid.indexOf(from.placed), 1);
         return;
       }
+      case 'work':
+        throw new Error('Craft inputs are owned by the work item');
       default:
         from.pile.items.splice(from.pile.items.indexOf(from.placed), 1);
         if (from.pile.items.length === 0) {
@@ -661,6 +744,12 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   };
   for (const { item } of savedItemTree(state)) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
+    if (item.type === 'work_in_progress' && !item.work) {
+      throw new Error('Missing craft work payload');
+    }
+    if (item.work) {
+      validateWorkItem(registry, item);
+    }
   }
   for (const pile of state.piles) {
     grid(pile.items, PILE_GRID);
@@ -674,9 +763,50 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   }
 };
 
+export const validateWorkItem = (registry: Registry, item: ItemState): void => {
+  const work = item.work!;
+  const recipe = registry.recipes.get(work.recipe);
+  if (
+    item.type !== 'work_in_progress' ||
+    item.count !== 1 ||
+    !recipe ||
+    !Number.isFinite(work.elapsed) ||
+    !Number.isFinite(work.duration) ||
+    work.elapsed < 0 ||
+    work.duration < recipe.time * 60 ||
+    work.elapsed > work.duration ||
+    work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length))
+  ) {
+    throw new Error('Invalid craft work payload');
+  }
+  const actual = new Map<string, number>();
+  for (const component of work.components) {
+    actual.set(component.type, (actual.get(component.type) ?? 0) + component.count);
+  }
+  const matches = (group: number, remaining: Map<string, number>): boolean => {
+    if (group === recipe.components.length) {
+      return [...remaining.values()].every((count) => count === 0);
+    }
+    return recipe.components[group]!.some((alternative) => {
+      const available = remaining.get(alternative.item) ?? 0;
+      if (available < alternative.count) {
+        return false;
+      }
+      const next = new Map(remaining);
+      next.set(alternative.item, available - alternative.count);
+      return matches(group + 1, next);
+    });
+  };
+  if (!matches(0, actual)) {
+    throw new Error('Craft inputs do not match recipe');
+  }
+};
+
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  at.kind === 'hand' || at.kind === 'worn' ? undefined : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
+  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work'
+    ? undefined
+    : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
 
 /** A target in the same grid as a location, at a spot: for turning an item where it lies. */
 export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefined => {

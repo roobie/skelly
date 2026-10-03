@@ -20,7 +20,7 @@ import {
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
 import { computeMenuState } from './menuState.ts';
 
-const SCHEDULER_IDS = new Set(['needs', 'lights', 'zombies', 'player', 'handling']);
+const SCHEDULER_IDS = new Set(['needs', 'long-action', 'lights', 'zombies', 'player', 'handling']);
 const SAVE_CHECKPOINT_GAME_HOURS = 2;
 export const saveCheckpointInterval = (clock: ClockSettings): number =>
   SAVE_CHECKPOINT_GAME_HOURS * simSecondsPerHour(clock);
