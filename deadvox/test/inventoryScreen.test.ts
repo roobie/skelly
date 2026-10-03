@@ -2,7 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
+import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
@@ -90,14 +93,49 @@ function setup() {
     use: (_item: typeof beans) => undefined,
     describe: (_item: typeof beans) => ['test description'],
     assign: (_slot: number, _item: typeof beans) => undefined,
+    workOptions: (_uid: number): WorkOption[] => [],
+    work: (_uid: number, _operation: WorkOperation): string | undefined => undefined,
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices };
+  return { root, screen, inv, queue, entity, searching, beans, notices, hooks };
 }
 
 describe('inventory screen Lit rendering', () => {
+  it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
+    const { root, screen, inv, hooks } = setup();
+    expect(inv.move(inv.hands.right!, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    for (const [type, count] of [
+      ['stick', 1],
+      ['rag', 2],
+      ['wax', 1],
+      ['kitchen_knife', 1],
+    ] as const) {
+      inv.add(inv.create(type, count), { kind: 'pile', pos: [0, 0, 0] });
+    }
+    const result = planCraft(registry.recipes.get('torch')!, hooks.reach(), new Character(registry));
+    if (!('plan' in result)) {
+      throw new Error(result.missing.reason);
+    }
+    const item = inv.beginWork(result.plan)!;
+    const calls: [number, WorkOperation][] = [];
+    hooks.workOptions = () => [
+      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, time: 0 } },
+      { operation: 'apart', label: 'Take apart', plan: { ok: true, time: 0 } },
+    ];
+    hooks.work = (uid, operation) => {
+      calls.push([uid, operation]);
+    };
+    screen.selected = item;
+    screen.update();
+    expect(root.querySelectorAll(`.inv-hands [data-uid="${item.uid}"]`)).toHaveLength(1);
+    expect(root.querySelector('[data-target="hand:left"]')!.textContent).toContain('Reserved: Torch in progress');
+    expect(inv.hands.left).toBeUndefined();
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('.inv-details button')];
+    buttons.find((button) => button.textContent!.includes('Take apart'))!.click();
+    expect(calls).toEqual([[item.uid, 'apart']]);
+  });
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];

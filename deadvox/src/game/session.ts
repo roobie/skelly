@@ -9,6 +9,7 @@ import { Character } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
@@ -584,6 +585,7 @@ export const createSession = (options: SessionOptions) => {
     quickbar,
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
+    crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,
     zombies: zombieSystem,
