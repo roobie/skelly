@@ -5,7 +5,7 @@
   ],
   "recipes": [
     {
-      "id": "fixture_consumer",
+      "id": "torch",
       "result": { "item": "fixture_result", "count": 1 },
       "time": 1,
       "skills": {},

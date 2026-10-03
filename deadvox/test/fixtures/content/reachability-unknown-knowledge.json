@@ -1,8 +1,8 @@
 {
   "recipes": [
     {
-      "id": "candle",
-      "result": { "item": "fixture_unfound", "count": 1 },
+      "id": "unlearned_recipe",
+      "result": { "item": "torch", "count": 1 },
       "time": 1,
       "skills": {},
       "qualities": {},

@@ -13,10 +13,14 @@ describe('npm run validate', () => {
     expect(run.stdout).toContain('Component closure: 36 item types');
     expect(run.stdout).toContain('Content count: 36 reachable / 40 defined eligible types');
     expect(run.stdout).toContain('Defined but unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest');
-    expect(run.stdout).toContain('4 pending prerequisite(s)');
+    expect(run.stdout).toContain('1 pending prerequisite(s)');
   });
 
   it.each([
+    [
+      'unknown-knowledge',
+      ['recipes[0].knowledge: recipe "unlearned_recipe" has no starting knowledge source (books arrive in 2.5)'],
+    ],
     ['unfound', ['recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable']],
     [
       'cycle',
@@ -46,7 +50,8 @@ describe('npm run validate', () => {
     );
     expect(run.status).toBe(0);
     expect(run.stdout).toContain('0 issue(s)');
-    expect(run.stdout).toContain('Component closure: 38 item types');
+    // Two real starting-known recipe IDs replace torch/candle, rather than adding unknown recipes.
+    expect(run.stdout).toContain('Component closure: 36 item types');
   });
 
   it('rejects a recipe with a missing component item and names its reference', () => {

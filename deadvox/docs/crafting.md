@@ -61,7 +61,9 @@ Restoration preserves the saved levels/knowledge instead of reseeding them and
 validates skill definitions, recipe references, duplicate knowledge and levels.
 Older saves without this field are deliberately rejected: no migration or
 compatibility mode. Canonical numeric handling, including signed zero, is
-unchanged. The pending-knowledge CLI hand-off is the next implementation step.
+unchanged. The CLI now uses this same starting source as a hard knowledge check;
+unknown recipes cannot seed the component or tool closure. Skills stay pending
+until 2.5 and workstation behavior until 2.8.
 
 ## Proofs
 

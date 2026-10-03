@@ -1,10 +1,11 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
+import { startingKnownRecipes } from './character.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** Deferred source contracts. Their owning milestones must promote these to hard checks. */
-export const PENDING_REACHABILITY = { knowledge: '2.4/2.5', skill: '2.5', workstation: '2.8' } as const;
+export const PENDING_REACHABILITY = { skill: '2.5', workstation: '2.8' } as const;
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
@@ -61,11 +62,13 @@ const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: s
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
 const closure = (registry: Registry, found: ReadonlySet<string>, tools: boolean): Set<string> => {
   const items = new Set(found);
+  const knowledge = new Set(startingKnownRecipes(registry));
   let previous: number;
   do {
     previous = items.size;
     for (const recipe of registry.recipes.values()) {
       if (
+        knowledge.has(recipe.id) &&
         inputsReady(recipe, items) &&
         (!tools ||
           Object.entries(recipe.qualities).every(([quality, level]) => qualityReady(registry, items, quality, level)))
@@ -114,7 +117,6 @@ const pendingFor = (recipe: RecipeDef, workstations: ReadonlySet<string>): Pendi
   const defer = (kind: keyof typeof PENDING_REACHABILITY, path: string) => {
     pending.push({ recipe: recipe.id, path, kind, message: `pending: no source yet (${PENDING_REACHABILITY[kind]})` });
   };
-  defer('knowledge', '.knowledge');
   for (const [skill, level] of Object.entries(recipe.skills)) {
     if (level > 0) {
       defer('skill', `.skills.${skill}`);
@@ -134,7 +136,15 @@ const recipeDiagnostics = (
 ) => {
   const issues: RecipeDiagnostic[] = [];
   const pending: Pending[] = [];
+  const knowledge = new Set(startingKnownRecipes(registry));
   for (const recipe of registry.recipes.values()) {
+    if (!knowledge.has(recipe.id)) {
+      issues.push({
+        recipe: recipe.id,
+        path: '.knowledge',
+        message: `recipe "${recipe.id}" has no starting knowledge source (books arrive in 2.5)`,
+      });
+    }
     recipe.components.forEach((group, g) => {
       group.forEach((component, a) => {
         if (!components.has(component.item)) {
