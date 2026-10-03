@@ -47,6 +47,10 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
         bubbles: true,
         cancelable: true,
         composed: true,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
         pointerId: event.pointerId,
         pointerType: event.pointerType,
         isPrimary: event.isPrimary,
@@ -126,6 +130,10 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
               clientX: input.cursorX,
               clientY: input.cursorY,
               button: (e as MouseEvent).button,
+              ctrlKey: (e as MouseEvent).ctrlKey,
+              metaKey: (e as MouseEvent).metaKey,
+              shiftKey: (e as MouseEvent).shiftKey,
+              altKey: (e as MouseEvent).altKey,
             }),
           );
         } finally {

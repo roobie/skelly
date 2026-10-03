@@ -22,6 +22,13 @@ import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import type { SolidAt } from '../core/raycast.ts';
+import {
+  bindReach,
+  pileDistance as distanceToPile,
+  furnitureDistance,
+  INVENTORY_CHEST,
+  INVENTORY_REACH,
+} from '../core/reach.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { Simulation } from '../core/sim.ts';
@@ -55,10 +62,6 @@ import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
 import { Survival } from './survival.ts';
 
-/** Metres: how far away you can loot a pile or furniture. */
-export const LOOT_REACH = 2;
-/** Metres above the feet that reach to furniture is measured from. */
-export const CHEST = 1;
 const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
 const HANDLING_RATE = 20;
@@ -202,14 +205,17 @@ export const createSession = (options: SessionOptions) => {
 
   /** The air block at the player's feet, where drops land. */
   const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
-  /** Metres from the player's feet to the middle of a pile's block. */
-  const pileDistance = (pos: Vec3) =>
-    Math.hypot(pos[0] + 0.5 - body.pos[0], pos[1] - body.pos[1], pos[2] + 0.5 - body.pos[2]) * s;
-  const chest = (): Vec3 => [body.pos[0], body.pos[1] + CHEST / s, body.pos[2]];
-  /** Metres from the player's chest to the nearest part of a piece of furniture. */
-  const entityDistance = (entity: BlockEntity) => entities.distance(entity, chest()) * s;
-  inventory.canReach = (pos) => pileDistance(pos) <= LOOT_REACH;
-  inventory.canReachEntity = (entity) => entityDistance(entity) <= LOOT_REACH;
+  const reachPlayer = {
+    inventory,
+    blockSize: s,
+    get position() {
+      return body.pos;
+    },
+  };
+  const reach = bindReach(reachPlayer);
+  const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
+  const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
+  const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
   const sim = new Simulation({
     seed,
@@ -270,12 +276,13 @@ export const createSession = (options: SessionOptions) => {
   );
 
   const survival = new Survival(sim, inventory, queue, {
+    reach,
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: options.notice,
   });
   const rest = new RestController(sim, {
     bedQuality: () => {
-      const bed = entities.bedNear(chest(), LOOT_REACH / s);
+      const bed = entities.bedNear(chest(), INVENTORY_REACH / s);
       return bed ? entities.defOf(bed).bed!.quality : undefined;
     },
     notice: options.notice,
@@ -541,6 +548,7 @@ export const createSession = (options: SessionOptions) => {
     audioState: () => audio.snapshotState(),
     feet,
     chest,
+    reach,
     pileDistance,
     entityDistance,
     playWorldSound,
