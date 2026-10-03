@@ -5,10 +5,8 @@
 import type { ItemDef, Registry } from './content.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export interface Item {
-  /** Unique per world; never reused. */
-  readonly uid: number;
-  readonly type: string;
+/** Scalar and pocket fields are shared by live items and their saved tree. */
+export interface ItemFields<Node> {
   count: number;
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
@@ -22,34 +20,30 @@ export interface Item {
    */
   made?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
-  pockets?: Placed[][];
+  pockets?: PlacedItem<Node>[][];
+}
+
+export interface Item extends ItemFields<Item> {
+  /** Unique per world; never reused. */
+  readonly uid: number;
+  readonly type: string;
 }
 
 /** An item in a grid, at its top-left cell. */
-export interface Placed {
-  item: Item;
+export interface PlacedItem<Node> {
+  item: Node;
   x: number;
   y: number;
   rotated: boolean;
 }
 
-export interface ItemState {
+export interface ItemState extends ItemFields<ItemState> {
   uid: number;
   type: string;
-  count: number;
-  condition: number;
-  charges?: number;
-  on?: boolean;
-  made?: number;
-  pockets?: PlacedState[][];
 }
 
-export interface PlacedState {
-  item: ItemState;
-  x: number;
-  y: number;
-  rotated: boolean;
-}
+export type Placed = PlacedItem<Item>;
+export type PlacedState = PlacedItem<ItemState>;
 
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>

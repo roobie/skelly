@@ -5,6 +5,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
+import { itemRoots, walkItemTree } from './itemTree.ts';
 
 export const INVENTORY_REACH = 2;
 export const INVENTORY_CHEST = 1;
@@ -101,35 +102,18 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     .filter((entity) => entity.pockets !== undefined && furnitureInReach(player, entity))
     .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
   const entries: ReachEntry[] = [];
-  const visit = (item: Item, location: Location): void => {
+  const roots = itemRoots<Item, Pile, BlockEntity>({
+    hands: inventory.hands,
+    worn: inventory.worn,
+    piles,
+    entities: furniture.filter((entity) => entity.searched),
+  });
+  for (const { item, location } of walkItemTree(roots)) {
     entries.push({
       item,
       location,
       handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: 'right' }),
     });
-    for (const [pocket, grid] of (item.pockets ?? []).entries()) {
-      for (const placed of grid) {
-        visit(placed.item, { kind: 'pocket', owner: item, pocket, placed });
-      }
-    }
-  };
-  for (const item of inventory.carried()) {
-    visit(item, inventory.locate(item)!);
-  }
-  for (const pile of piles) {
-    for (const placed of pile.items) {
-      visit(placed.item, { kind: 'pile', pile, placed });
-    }
-  }
-  for (const entity of furniture) {
-    if (!entity.searched) {
-      continue;
-    }
-    for (const [pocket, grid] of entity.pockets!.entries()) {
-      for (const placed of grid) {
-        visit(placed.item, { kind: 'furniture', entity, pocket, placed });
-      }
-    }
   }
   const snapshot: ReachSnapshot = {
     player,

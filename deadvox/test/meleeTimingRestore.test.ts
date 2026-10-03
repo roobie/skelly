@@ -35,6 +35,12 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'sound') {
     return registry.sounds.has(id);
   }
+  if (kind === 'skill') {
+    return registry.skills.has(id);
+  }
+  if (kind === 'recipe') {
+    return registry.recipes.has(id);
+  }
   return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };
 const saveVersion = {

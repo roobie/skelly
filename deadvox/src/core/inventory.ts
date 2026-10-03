@@ -19,6 +19,7 @@ import {
   isEmpty,
   itemAt,
   type Placed,
+  type PlacedState,
   restoreItem,
   restorePlaced,
   snapshotItem,
@@ -26,6 +27,7 @@ import {
   stackRoom,
   weightOf,
 } from './items.ts';
+import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } from './itemTree.ts';
 import type { Rolled } from './loot.ts';
 import type { WearSlot } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -58,12 +60,7 @@ export interface Spot {
 }
 
 /** Where an item is now. */
-export type Location =
-  | { kind: 'hand'; side: HandSide }
-  | { kind: 'worn'; slot: WearSlot }
-  | { kind: 'pocket'; owner: Item; pocket: number; placed: Placed }
-  | { kind: 'pile'; pile: Pile; placed: Placed }
-  | { kind: 'furniture'; entity: BlockEntity; pocket: number; placed: Placed };
+export type Location = TreeLocation<Item, Pile, BlockEntity>;
 
 /** Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. */
 export type TargetState =
@@ -131,6 +128,7 @@ export class Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
       throw new Error('Invalid next item id');
     }
+    validateInventoryTree(registry, state);
     const restoredEntities = entities ?? BlockEntities.restoreState(registry, state.entities);
     if (entities) {
       entities.restoreState(state.entities);
@@ -154,24 +152,6 @@ export class Inventory {
     }
     for (const [type, count] of state.looted) {
       inventory.looted.set(type, count);
-    }
-    const seen = new Set<number>();
-    let maxUid = 0;
-    const visit = (item: Item) => {
-      if (!Number.isSafeInteger(item.uid) || item.uid < 1 || seen.has(item.uid)) {
-        throw new Error(`Invalid or duplicate item id ${item.uid}`);
-      }
-      seen.add(item.uid);
-      maxUid = Math.max(maxUid, item.uid);
-      for (const placed of (item.pockets ?? []).flat()) {
-        visit(placed.item);
-      }
-    };
-    for (const root of inventory.roots()) {
-      visit(root);
-    }
-    if (state.nextItemUid <= maxUid) {
-      throw new Error('Next item id does not exceed saved item ids');
     }
     return inventory;
   }
@@ -199,23 +179,27 @@ export class Inventory {
     return entity;
   }
 
+  /** The sole live item-tree projection; callers hold UIDs, not ownership caches. */
+  items() {
+    const inventory = this;
+    return walkItemTree(
+      itemRoots<Item, Pile, BlockEntity>({
+        hands: this.hands,
+        worn: this.worn,
+        get piles() {
+          return inventory.piles.values();
+        },
+        get entities() {
+          return inventory.entities.all;
+        },
+      }),
+    );
+  }
+
   itemByUid(uid: number): Item | undefined {
-    const visit = (item: Item): Item | undefined => {
+    for (const { item } of this.items()) {
       if (item.uid === uid) {
         return item;
-      }
-      for (const placed of (item.pockets ?? []).flat()) {
-        const found = visit(placed.item);
-        if (found) {
-          return found;
-        }
-      }
-      return undefined;
-    };
-    for (const root of this.roots()) {
-      const found = visit(root);
-      if (found) {
-        return found;
       }
     }
     return undefined;
@@ -300,30 +284,9 @@ export class Inventory {
 
   /** Where an item is, searching hands, worn items, piles and every pocket inside them. */
   locate(item: Item): Location | undefined {
-    for (const side of SIDES) {
-      if (this.hands[side] === item) {
-        return { kind: 'hand', side };
-      }
-    }
-    for (const [slot, worn] of Object.entries(this.worn) as [WearSlot, Item][]) {
-      if (worn === item) {
-        return { kind: 'worn', slot };
-      }
-    }
-    for (const pile of this.piles.values()) {
-      const placed = pile.items.find((p) => p.item === item);
-      if (placed) {
-        return { kind: 'pile', pile, placed };
-      }
-    }
-    const inFurniture = this.inFurniture(item);
-    if (inFurniture) {
-      return inFurniture;
-    }
-    for (const root of this.roots()) {
-      const found = this.searchPockets(root, item);
-      if (found) {
-        return found;
+    for (const entry of this.items()) {
+      if (entry.item === item) {
+        return entry.location;
       }
     }
     return undefined;
@@ -471,19 +434,6 @@ export class Inventory {
 
   // ---- internals ----
 
-  /** An item lying directly in a piece of furniture. */
-  private inFurniture(item: Item): Location | undefined {
-    for (const entity of this.entities.all) {
-      for (const [pocket, grid] of (entity.pockets ?? []).entries()) {
-        const placed = grid.find((p) => p.item === item);
-        if (placed) {
-          return { kind: 'furniture', entity, pocket, placed };
-        }
-      }
-    }
-    return undefined;
-  }
-
   /** Where a move would put the item, if not on the player. A pile that doesn't exist yet counts by its position. */
   private targetPlace(target: Target): Place | undefined {
     switch (target.kind) {
@@ -509,38 +459,6 @@ export class Inventory {
 
   private searched(place: Place | undefined): boolean {
     return place?.kind !== 'furniture' || place.entity.searched;
-  }
-
-  private *roots(): IterableIterator<Item> {
-    // UID resolution is also used for held lights every frame; do not collect the whole world first.
-    yield* this.carried();
-    for (const pile of this.piles.values()) {
-      for (const placed of pile.items) {
-        yield placed.item;
-      }
-    }
-    for (const entity of this.entities.all) {
-      for (const pocket of entity.pockets ?? []) {
-        for (const placed of pocket) {
-          yield placed.item;
-        }
-      }
-    }
-  }
-
-  private searchPockets(owner: Item, item: Item): Location | undefined {
-    for (const [pocket, grid] of (owner.pockets ?? []).entries()) {
-      for (const placed of grid) {
-        if (placed.item === item) {
-          return { kind: 'pocket', owner, pocket, placed };
-        }
-        const deeper = this.searchPockets(placed.item, item);
-        if (deeper) {
-          return deeper;
-        }
-      }
-    }
-    return undefined;
   }
 
   private placement(item: Item, target: Target, count: number, from: Location): Plan {
@@ -710,6 +628,51 @@ export class Inventory {
     }
   }
 }
+
+/** Reject registry-invalid topology before constructing or exposing a live inventory. */
+const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
+  itemIds(savedItemTree(state), state.nextItemUid);
+  const grid = (placed: readonly PlacedState[], size: GridSize) => {
+    const previous: Placed[] = [];
+    for (const entry of placed) {
+      if (!fitsAt(registry, { size, placed: previous }, entry.item, entry)) {
+        throw new Error('Invalid item placement');
+      }
+      previous.push(entry);
+    }
+  };
+  const pockets = (
+    type: string,
+    saved: PlacedState[][] | undefined,
+    specs: { grid: [number, number] }[] | undefined,
+  ) => {
+    if (!specs) {
+      if (saved !== undefined) {
+        throw new Error(`${type} has no container`);
+      }
+      return;
+    }
+    if (saved?.length !== specs.length) {
+      throw new Error(`${type} must have ${specs.length} pocket grids`);
+    }
+    for (const [index, spec] of specs.entries()) {
+      grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
+    }
+  };
+  for (const { item } of savedItemTree(state)) {
+    pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
+  }
+  for (const pile of state.piles) {
+    grid(pile.items, PILE_GRID);
+  }
+  for (const entity of state.entities.entities) {
+    const def = registry.furniture.get(entity.type);
+    if (!def) {
+      throw new Error(`Unknown furniture ${entity.type}`);
+    }
+    pockets(entity.type, entity.pockets, def.container?.pockets);
+  }
+};
 
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>

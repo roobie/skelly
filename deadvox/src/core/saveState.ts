@@ -5,6 +5,7 @@ import type { PlayerState } from '../game/player.ts';
 import type { RestController } from '../game/rest.ts';
 import type { Survival } from '../game/survival.ts';
 import type { BlockEntitiesState } from './blockEntities.ts';
+import type { Character, CharacterState } from './character.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
 import type { Simulation, SimulationState } from './sim.ts';
@@ -23,6 +24,7 @@ export interface SaveSnapshot {
   };
   character: {
     id: string;
+    progression: CharacterState;
     simulation: SimulationState;
     player: PlayerState;
     inventory: InventoryState;
@@ -47,6 +49,7 @@ export interface SnapshotSessionInput {
   /** Runtime block number to stable content id. */
   blockContentId: (blockId: number) => string;
   inventory: Inventory;
+  character: Character;
   simulation: Simulation;
   player: PlayerState;
   rest: RestController;
@@ -67,6 +70,7 @@ export const snapshotSession = ({
   world,
   blockContentId,
   inventory,
+  character,
   simulation,
   player,
   rest,
@@ -95,6 +99,7 @@ export const snapshotSession = ({
     },
     character: {
       id: characterId,
+      progression: character.snapshotState(),
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),
       inventory: inventory.snapshotState() as InventoryState,

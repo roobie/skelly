@@ -41,6 +41,10 @@ const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): b
       return registry.sounds.has(id);
     case 'scheduler':
       return SCHEDULER_IDS.has(id);
+    case 'skill':
+      return registry.skills.has(id);
+    case 'recipe':
+      return registry.recipes.has(id);
     default:
       return false;
   }

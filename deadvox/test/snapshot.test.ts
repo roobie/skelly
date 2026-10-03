@@ -424,6 +424,30 @@ const setBudgetClock = (runtime: Runtime): void => {
 };
 
 describe('snapshot state components', () => {
+  it('persists zero-start skills and changed recipe knowledge without reseeding or mutating live state', async () => {
+    const runtime = createRuntime();
+    const actor = runtime.session.character;
+    expect(Object.keys(actor.skills).sort()).toEqual([...registry.skills.keys()].sort());
+    expect(Object.values(actor.skills).every((level) => level === 0)).toBe(true);
+    expect([...actor.knownRecipes].sort()).toEqual(['candle', 'repair_kit', 'torch']);
+    actor.skills.crafting = 2;
+    actor.knownRecipes.delete('candle');
+    const snapshot = capture(runtime);
+    actor.skills.crafting = 9;
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loadedRuntime = createRuntime(decoded.snapshot);
+    const loaded = loadedRuntime.session.character;
+    expect(loaded.skills.crafting).toBe(2);
+    loaded.skills.crafting = -0;
+    const zero = await decodeSave(await encodeFixture(capture(loadedRuntime)), {
+      version: formatVersion,
+      contentLookup,
+    });
+    expect(Object.is(createRuntime(zero.snapshot).session.character.skills.crafting, -0)).toBe(true);
+    expect([...loaded.knownRecipes].sort()).toEqual(['repair_kit', 'torch']);
+    expect(actor.skills.crafting).toBe(9);
+  });
+
   it('restores after eating the quickbar-bound item without a dangling UID', () => {
     const runtime = createRuntime();
     const { inventory, quickbar, survival, handling, player } = runtime;
@@ -846,6 +870,12 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   }
   if (kind === 'sound') {
     return registry.sounds.has(id);
+  }
+  if (kind === 'skill') {
+    return registry.skills.has(id);
+  }
+  if (kind === 'recipe') {
+    return registry.recipes.has(id);
   }
   return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
 };

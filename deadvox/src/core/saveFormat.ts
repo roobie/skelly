@@ -6,7 +6,7 @@ import {
 } from './canonicalJson.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import type { InventoryState } from './inventory.ts';
-import type { ItemState, PlacedState } from './items.ts';
+import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { MeleeActionState, ZombieState } from './zombies.ts';
@@ -37,7 +37,7 @@ export interface SaveWorldIdentity extends SaveWorldOptions {
   clock: { ratio: number; start: number };
 }
 
-export type SaveContentKind = 'block' | 'item' | 'furniture' | 'zombie' | 'sound' | 'scheduler';
+export type SaveContentKind = 'block' | 'item' | 'furniture' | 'zombie' | 'sound' | 'scheduler' | 'skill' | 'recipe';
 export type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
 
 export interface EncodeSaveOptions {
@@ -109,6 +109,7 @@ interface WirePayload {
     simulation: Omit<SaveSnapshot['character']['simulation'], 'seed' | 'clock'>;
     player: SaveSnapshot['character']['player'];
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
+    progression: SaveSnapshot['character']['progression'];
     rest: SaveSnapshot['character']['rest'];
     lightUid: number | null;
     quickbar: (number | null)[];
@@ -202,6 +203,7 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
+const progression = obj({ skills: record(nonNegativeInt), knownRecipes: arr(str({ nonEmpty: true })) });
 const nonNegative = num({ min: 0 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
@@ -433,6 +435,7 @@ const wirePayloadSchema = obj({
   }),
   character: obj({
     id: str({ nonEmpty: true }),
+    progression,
     simulation: simulationWithoutWorldIdentity,
     player,
     inventory: playerStateInventory,
@@ -732,6 +735,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
     },
     character: {
       id: snapshot.character.id,
+      progression: snapshot.character.progression,
       simulation: {
         time: snapshot.character.simulation.time,
         scheduler: snapshot.character.simulation.scheduler,
@@ -859,7 +863,6 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   const chunkSet = new Set<string>();
   const entityIds = new Set<number>();
   const zombieIds = new Set<number>();
-  const itemIds = new Set<number>();
   const anchors = new Set<string>();
   const spawnKeys = new Set<string>();
   const regionChunks = WORLD_REGION_METRES / (CHUNK * worldOptions.blockSize);
@@ -950,44 +953,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     spawnKeys.add(key);
   }
   const snapshot = restoreWirePayload(wire);
-  const walkItem = (item: ItemState, path: string): void => {
-    if (itemIds.has(item.uid)) {
-      throw new Error(`Duplicate item id ${item.uid} at ${path}`);
-    }
-    itemIds.add(item.uid);
-    for (const [pi, grid] of (item.pockets ?? []).entries()) {
-      for (const [ii, placed] of grid.entries()) {
-        walkItem(placed.item, `${path}.pockets[${pi}][${ii}].item`);
-      }
-    }
-  };
-  const walkPlaced = (placed: PlacedState, path: string): void => walkItem(placed.item, `${path}.item`);
-  for (const [side, item] of Object.entries(snapshot.character.inventory.hands)) {
-    if (item) {
-      walkItem(item, `character.inventory.hands.${side}`);
-    }
-  }
-  for (const [slot, item] of Object.entries(snapshot.character.inventory.worn)) {
-    if (item) {
-      walkItem(item, `character.inventory.worn.${slot}`);
-    }
-  }
-  for (const [pi, pile] of snapshot.character.inventory.piles.entries()) {
-    for (const [ii, placed] of pile.items.entries()) {
-      walkPlaced(placed, `character.inventory.piles[${pi}].items[${ii}]`);
-    }
-  }
-  for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
-    for (const [pi, pocket] of (entity.pockets ?? []).entries()) {
-      for (const [ii, placed] of pocket.entries()) {
-        walkPlaced(placed, `character.inventory.entities[${ei}].pockets[${pi}][${ii}]`);
-      }
-    }
-  }
-  const maxItem = [...itemIds].reduce((maximum, id) => Math.max(maximum, id), 0);
-  if (snapshot.character.inventory.nextItemUid <= maxItem) {
-    throw new Error('Next item id does not exceed saved item ids');
-  }
+  collectItemIds(savedItemTree(snapshot.character.inventory), snapshot.character.inventory.nextItemUid);
   const maxEntity = [...entityIds].reduce((maximum, id) => Math.max(maximum, id), 0);
   if (wire.world.blockEntitiesNextUid <= maxEntity) {
     throw new Error('Invalid next block entity id');
@@ -1031,7 +997,6 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   return snapshot;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one traversal validates every persisted stable content reference before restoration.
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string) => {
     if (!lookup(kind, id)) {
@@ -1044,36 +1009,22 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
       check('block', cell.id, `world.diffs.chunks.${chunk.cx},${chunk.cy},${chunk.cz}.cells[${index}].id`);
     }
   }
-  const visitItem = (item: ItemState, path: string) => {
+  for (const skill of Object.keys(snapshot.character.progression.skills)) {
+    check('skill', skill, `character.progression.skills.${skill}`);
+  }
+  for (const [index, recipe] of snapshot.character.progression.knownRecipes.entries()) {
+    check('recipe', recipe, `character.progression.knownRecipes[${index}]`);
+  }
+  if (
+    new Set(snapshot.character.progression.knownRecipes).size !== snapshot.character.progression.knownRecipes.length
+  ) {
+    throw new Error('Duplicate known recipe');
+  }
+  for (const { item, path } of savedItemTree(snapshot.character.inventory)) {
     check('item', item.type, `${path}.type`);
-    for (const [pi, grid] of (item.pockets ?? []).entries()) {
-      for (const [ii, placed] of grid.entries()) {
-        visitItem(placed.item, `${path}.pockets[${pi}][${ii}].item`);
-      }
-    }
-  };
-  for (const [side, item] of Object.entries(snapshot.character.inventory.hands)) {
-    if (item) {
-      visitItem(item, `character.inventory.hands.${side}`);
-    }
-  }
-  for (const [slot, item] of Object.entries(snapshot.character.inventory.worn)) {
-    if (item) {
-      visitItem(item, `character.inventory.worn.${slot}`);
-    }
-  }
-  for (const [pi, pile] of snapshot.character.inventory.piles.entries()) {
-    for (const [ii, placed] of pile.items.entries()) {
-      visitItem(placed.item, `character.inventory.piles[${pi}].items[${ii}].item`);
-    }
   }
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);
-    for (const [pi, pocket] of (entity.pockets ?? []).entries()) {
-      for (const [ii, placed] of pocket.entries()) {
-        visitItem(placed.item, `character.inventory.entities[${ei}].pockets[${pi}][${ii}].item`);
-      }
-    }
   }
   for (const [index, savedZombie] of snapshot.world.zombies.zombies.entries()) {
     check('zombie', savedZombie.zombie.type, `world.zombies[${index}].type`);
@@ -1116,6 +1067,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
       }),
       character: obj({
         id: str({ nonEmpty: true }),
+        progression,
         simulation,
         player: playerState,
         inventory,
