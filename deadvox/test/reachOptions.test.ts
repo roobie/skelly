@@ -127,13 +127,10 @@ describe('handling move admission', () => {
     t.queue.registerAction('fixture.change', () => {
       if (change === 'consumed') {
         t.inventory.consume(item);
-      } else {
-        const result = t.inventory.move(item, target);
-        if (!result.ok) {
-          return result.reason;
-        }
+        return;
       }
-      return;
+      const result = t.inventory.move(item, target);
+      return result.ok ? undefined : result.reason;
     });
     t.queue.enqueueAction('fixture.change', 'Change item', 1);
     const move = t.queue.enqueue(item, target);
