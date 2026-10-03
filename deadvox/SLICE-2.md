@@ -173,6 +173,26 @@ apply here:
   which milestone owns it (see 2.2, 2.4 and 2.5). Nobody installs a second,
   temporary representation.
 
+## Consolidation folded into the milestones
+
+The 2026-10-03 consolidation survey (r9-1,
+[docs/reviews/2026-10-03-consolidation.md](docs/reviews/2026-10-03-consolidation.md))
+ranked eight refactors. Each one either lands inside the milestone that needs it
+or before it, so Slice 2 builds on one owner per concept rather than adding
+another copy. They are tracked with everything else in the refactoring backlog
+issue.
+
+| # | Consolidation | Where it lands |
+| --- | --- | --- |
+| F1 | One core `reach()` snapshot and `options()` contract | inside 2.1 (top 3) |
+| F3 | One boundary for the item tree, mutations and external UID references | the dangling quickbar fix now (d22); the tree/reference contract before or inside 2.4; state invalidation inside 2.1 and 2.6 (top 3) |
+| F2 | Rest generalized into the core long-action owner | inside 2.4, before 2.5–2.7 (top 3) |
+| F7 | View, HUD and render lifecycle extracted from `play.ts` | standalone, before the 2.4 panel and 2.9 lighting |
+| F4 | The simulation owns sound and noise admission; playback is one-way | before or inside 2.12 |
+| F5 | Per-item burn state, with lights derived from it | inside 2.9, after F3 |
+| F6 | Player combat continuation separated from zombie AI | inside 2.6 |
+| F8 | Exhaustive content-section metadata from one descriptor | inside 2.2, carried through 2.5 |
+
 ## Milestones
 
 Each milestone is one or two PRs, merged and deployed to Pages with CI green.
