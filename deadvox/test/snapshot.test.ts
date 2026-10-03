@@ -96,7 +96,6 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
   const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false };
-  const audioPicker = new SoundPicker(seed, registry.sounds);
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const session = createSession({
     registry,
@@ -117,16 +116,9 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       descending: () => false,
     },
     audio: {
-      play: (event, position, time) => {
-        const pick = audioPicker.pick(event, time);
-        if (!pick) {
-          return false;
-        }
+      play: ({ event, position, time, pick }) => {
         heardSounds.push({ event, file: pick.file, time, position: [...position] });
-        return true;
       },
-      snapshotState: () => audioPicker.snapshotState(),
-      restoreState: (state) => audioPicker.restoreState(state),
     },
     notice: () => undefined,
     ...(snapshot ? { restore: snapshot } : {}),
@@ -191,7 +183,6 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     survival,
     quickbar,
     playerAudio,
-    audioPicker,
     heardSounds,
     emitPlayerSound: session.playPlayerSound,
   };
@@ -293,7 +284,7 @@ const inspect = (runtime: Runtime): unknown => {
     audio: {
       vocalNoiseId: runtime.playerAudio.vocalNoiseId,
       vocalNoise: runtime.playerAudio.vocalNoise,
-      soundPicker: runtime.audioPicker.snapshotState(),
+      soundPicker: runtime.session.audioState(),
     },
     spawned: [...spawns].sort(),
     rest: runtime.rest.action && { ...runtime.rest.action },

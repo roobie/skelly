@@ -5,6 +5,21 @@ area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the prob
 ahead; lessons are what past problems taught us. Newest first. Each entry says what
 happened, why, and what to do differently.
 
+## Admit sound and hearing before playback (2026-10-03)
+
+**What happened.** `SessionAudio.play` returned a boolean that gated player vocal
+noise. `GameAudio` owned the saved picker and could return false after picking an
+unbundled asset, so output packaging changed zombie hearing.
+
+**What to do.** The DOM-free session owns the picker and commits its seeded choice,
+cooldown and hearing stimulus once. It emits positioned `sound`/`noise` observations
+and calls the void playback adapter with the immutable selected sound. WebAudio may
+report/skip missing files, unavailable output or failed decoding, never undo admission.
+Keep output voice allocation separate from simulation admission. Handling cues and
+debug firearm shots use this same session picker; manifest previews remain exact-file
+playback, not gameplay events. Content noise-disabled footsteps/doors/melee stay disabled;
+continuous movement hearing is a separate perception input, not a second discrete noise.
+
 ## Item bindings must not own item lifetimes (2026-10-03)
 
 **What happened.** Eating a quickbar-bound can of beans removed it from inventory but

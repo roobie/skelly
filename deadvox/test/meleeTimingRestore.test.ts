@@ -6,7 +6,6 @@ import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
@@ -46,7 +45,6 @@ const saveVersion = {
 };
 
 const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) => {
-  const audio = new SoundPicker(13, registry.sounds);
   const contacts: number[] = [];
   let session: ReturnType<typeof createSession>;
   let primaryAction = false;
@@ -81,9 +79,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
       descending: () => false,
     },
     audio: {
-      play: () => false,
-      snapshotState: () => audio.snapshotState(),
-      restoreState: (state) => audio.restoreState(state),
+      play: () => undefined,
     },
     notice: () => undefined,
     zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },

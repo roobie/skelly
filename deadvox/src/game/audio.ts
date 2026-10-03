@@ -3,7 +3,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
-import { SoundPicker, type SoundPickerState } from '../core/soundPicker.ts';
+import type { SoundEmission } from '../core/soundPicker.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -67,17 +67,9 @@ interface Nodes {
 
 export interface GameAudioOptions {
   registry: Registry;
-  seed: number;
   blockSize: number;
   isSolid: SolidAt;
   report: (message: string) => void;
-}
-
-export interface SoundPlaybackMeta {
-  /** First-person playback bypasses world panning/occlusion, but retains its category volume. */
-  listenerRelative?: boolean;
-  emittedAsNoise?: boolean;
-  sourceLabel?: string | null;
 }
 
 export interface HeardSound {
@@ -108,7 +100,6 @@ interface SourceStartOptions {
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
 export class GameAudio {
-  private readonly picker: SoundPicker;
   private readonly buffers = new Map<string, AudioBuffer>();
   private readonly loading = new Map<string, Promise<AudioBuffer | null>>();
   private readonly volumes = readVolumes();
@@ -125,20 +116,11 @@ export class GameAudio {
   // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
   private readonly retiring = new Map<SoundEventId, Set<Voice>>();
 
-  constructor({ registry, seed, blockSize, isSolid, report }: GameAudioOptions) {
+  constructor({ registry, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
     this.blockSize = blockSize;
     this.isSolid = isSolid;
     this.report = report;
-    this.picker = new SoundPicker(seed, registry.sounds);
-  }
-
-  snapshotState(): Readonly<SoundPickerState> {
-    return this.picker.snapshotState();
-  }
-
-  restoreState(state: SoundPickerState): void {
-    this.picker.restoreState(state);
   }
 
   get settings(): AudioVolumes {
@@ -206,22 +188,19 @@ export class GameAudio {
     }
   }
 
-  play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, metadata: SoundPlaybackMeta = {}): boolean {
-    const { emittedAsNoise = false, sourceLabel = null, listenerRelative = false } = metadata;
+  /** Playback only. The session has already selected/committed this event and its hearing stimulus. */
+  play(emission: Readonly<SoundEmission>, positionMetres: Vec3): void {
+    const { event, pick, emittedAsNoise, sourceLabel, listenerRelative } = emission;
     const sound = this.registry.sounds.get(event);
     if (!sound) {
-      return false;
-    }
-    const pick = this.picker.pick(event, simulationTime);
-    if (!pick) {
-      return false;
+      return;
     }
     const origin = this.registry.soundOrigins.get(event);
     const packPath = origin?.source.slice(0, origin.source.lastIndexOf('/'));
     const url = packPath ? PACK_FILES[`${packPath}/${pick.file}`] : undefined;
     if (!url) {
       this.report(`sound file "${pick.file}" is not bundled for "${event}"`);
-      return false;
+      return;
     }
     const { context, nodes } = this;
     if (context && nodes && context.state === 'running') {
@@ -243,7 +222,6 @@ export class GameAudio {
         });
       });
     }
-    return true;
   }
 
   /** Plays one exact manifest variant at the event's base gain, with no picker jitter or cooldown. */
@@ -291,7 +269,7 @@ export class GameAudio {
     return true;
   }
 
-  /** Admission happens after decoding: pending loads never consume playback slots. */
+  /** Playback voice allocation happens after decoding; pending loads consume no playback slots. */
   private stealOldestVoice(event: SoundEventId, context: AudioContext): void {
     const cap = VOICE_CAPS.get(event);
     const active = this.voices.get(event);
