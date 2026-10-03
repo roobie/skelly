@@ -8,7 +8,7 @@ not reference-laptop frame budgets or GitHub runner guarantees.
 ## Admission rules
 
 - **One heavy run at a time**, through
-  `flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 …`. Acquire and
+  `flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" timeout 300 …`. Acquire and
   release for **each** suite/build/browser stage, not a whole chained pipeline.
   Time waiting for the lock is not suite execution time.
 - Keep **5 GiB free disk** on the repository filesystem. Check before a new
@@ -75,11 +75,14 @@ not query swap limits/use; this is configured-cap evidence. The role limits can
 sum above their parent's limit: seven
 3 GiB coder scopes do not grant seven concurrent 3 GiB workloads.
 
-**Important override:** `~/.config/systemd/user/agents-review.slice.d/host.conf`
-still says 1,700 MiB / 2 GiB. Higher-precedence files under
-`~/.config/systemd/user.control/agents-review.slice.d/` set the effective
-5 GiB / 6 GiB values above. `systemctl --user cat` exposes both. Capacity checks
-must use effective properties, not one stale drop-in. None was edited.
+**Drop-in order:** `$HOME/.config/systemd/user/agents-review.slice.d/host.conf`
+carries the slice's limits (5 GiB / 6 GiB since 2026-10-03). `systemctl --user set-property`
+writes `$HOME/.config/systemd/user.control/agents-review.slice.d/50-Memory*.conf`, but
+`host.conf` sorts after those files and wins at the next `daemon-reload`. A raise made only
+with `set-property` reverts on reload, as it did once on 2026-10-03. Change `host.conf`
+together with any `set-property`. `systemctl --user cat` exposes both. Capacity checks
+must use effective properties, not one stale drop-in. No limits were edited during the
+original measurement.
 
 ## Agent-session memory
 
@@ -195,16 +198,16 @@ systemctl --user show agents.slice agents-coder.slice agents-review.slice \
   -p MemoryCurrent -p MemoryPeak -p MemoryHigh -p MemoryMax \
   -p EffectiveMemoryMax -p MemorySwapMax -p ControlGroup
 systemctl --user cat agents.slice agents-coder.slice agents-review.slice agents-infra.slice
-# Also read ~/.config/systemd/user/app-org.chromium.Chromium-.scope.d/50-memory-cap.conf.
+# Also read "$HOME/.config/systemd/user/app-org.chromium.Chromium-.scope.d/50-memory-cap.conf".
 # pi-only memory: /proc/<pi-pid>/status, VmHWM and VmRSS (not virtual size).
 
 # Repeat three times, each command with its own lock hold; time INSIDE the lock.
-flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 \
+flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" timeout 300 \
   sh -c 'cd gungen; /usr/bin/time -f "wall=%e user=%U sys=%S" npm test'
 # Repeat for deadvox/mobgen; time npm run ci and npm run test:site from the root.
 
 # Fresh cgroup peak for one actual browser stage, without changing host caps.
-flock -w 900 /run/user/1000/skelly-heavy.lock \
+flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" \
   systemd-run --user --scope --unit=budget-browser --slice=agents-infra.slice \
   sh -c 'cd deadvox; timeout 300 xvfb-run -a node test/browser/save-storage.mjs firefox; \
     result=$?; systemctl --user show budget-browser.scope \

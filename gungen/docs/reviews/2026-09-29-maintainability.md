@@ -1,6 +1,6 @@
 # gungen maintainability review
 
-Repo: `/home/bjorn/devel/skelly`, project `gungen/`, HEAD `efd3e9f` (main), 2026-09-29. Read-only review; nothing in the repo was changed.
+Repo: the repository root, project `gungen/`, HEAD `efd3e9f` (main), 2026-09-29. Read-only review; nothing in the repo was changed.
 
 ## 0. Derived inputs
 

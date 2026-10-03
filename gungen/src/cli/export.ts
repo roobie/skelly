@@ -1,6 +1,6 @@
 // Writes a design's (or fixture's) .glb and the matching deadvox model entry (PROJECT.md 3.4).
 //
-//   npm run export:glb -- designs/archetype-ar.json --out /tmp/export [--entry-out /tmp/entries] [--id rifle_test]
+//   npm run export:glb -- designs/archetype-ar.json --out "$XDG_RUNTIME_DIR/export" [--entry-out "$XDG_RUNTIME_DIR/entries"] [--id rifle_test]
 //
 // Writes <out>/<id>.glb and <entry-out>/<id>.model.json (entry-out defaults to out). The entry's `file` is `assets/models/<id>.glb`, where
 // deadvox expects the model; `--id` defaults to the input's file name with dashes turned to underscores.

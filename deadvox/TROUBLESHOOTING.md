@@ -84,7 +84,7 @@ One-time per host: `npx playwright install chromium`. Then, with `npm run dev` r
 
 ```sh
 cd deadvox
-node tools/render-probe.mjs "http://localhost:5173/?debug=1&site=testHouse&cam=-5.21,23.00,5.01,-87.8,-10.2,0.0&hotcheck=1&bloom=0" --out /tmp/shot.png
+node tools/render-probe.mjs "http://localhost:5173/?debug=1&site=testHouse&cam=-5.21,23.00,5.01,-87.8,-10.2,0.0&hotcheck=1&bloom=0" --out "$XDG_RUNTIME_DIR/shot.png"
 ```
 
 It prints the WebGL renderer, console errors, page errors, and scan counts with the first

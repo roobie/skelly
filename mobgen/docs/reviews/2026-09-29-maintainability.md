@@ -1,6 +1,6 @@
 # mobgen maintainability review
 
-Repo: /home/bjorn/devel/skelly, branch main at efd3e9f (2026-09-29). Read-only review; nothing in the repo was changed.
+Repo: the repository root, branch main at efd3e9f (2026-09-29). Read-only review; nothing in the repo was changed.
 
 ## 0. Derived inputs
 
