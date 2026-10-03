@@ -143,11 +143,9 @@ The first real playtest is at this slice's end (BR, 2026-10-02): use the Slice 1
 playtest plan and include the questions added by Slices 2 and 3. BR's reason for
 the timing is that the base game will be in place by then.
 
-- An authored playtest map for that playtest (BR, 2026-10-03; discussion in
-  [#181](https://github.com/roobie/skelly/issues/181)): a fixed site laid out from
-  BR's schematic, with one beat per playtest question from Slices 1–3, over two
-  in-game days. Key loot is fixed and filler is seeded. Its buildings are the first
-  hand-authored points of interest, reused later by the region map.
+- An authored playtest map for that playtest (BR, 2026-10-03;
+  [#181](https://github.com/roobie/skelly/issues/181)). BR provides a simple
+  schematic. Aim for two in-game days, with fixed key loot and seeded filler.
 - The body model: parts, wounds, bleeding, infection, fractures, and first aid.
 - Melee depth (weapon types, stamina, knockback) and blocking.
 - Firearms from gungen assemblies: ammo, magazines, reloading as handling,
