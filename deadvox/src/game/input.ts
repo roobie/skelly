@@ -3,6 +3,13 @@
 import type { MoveIntent } from './player.ts';
 
 const SENSITIVITY = 0.0022;
+const MAC_PLATFORM = /Mac/i;
+
+/** Cmd on macOS (best effort), Ctrl elsewhere; Shift alone stays free for splitting. */
+export const quickMoveModifier = (
+  event: Pick<MouseEvent, 'ctrlKey' | 'metaKey'>,
+  platform = globalThis.navigator?.platform ?? '',
+): boolean => (MAC_PLATFORM.test(platform) ? event.metaKey : event.ctrlKey);
 
 /** UI key bindings and browser-owned keys referenced by the help and browser contract. */
 export const KEY_BINDINGS = {
@@ -164,7 +171,10 @@ export class Input {
   lock(): void {
     // Rejects if the browser refuses (e.g. too soon after Esc); the overlay stays up and the player clicks again.
     // Firefox returns undefined instead of a promise, whatever the DOM types say.
-    (this.target.requestPointerLock() as Promise<void> | undefined)?.catch(() => undefined);
+    (this.target.requestPointerLock() as Promise<void> | undefined)?.catch((error: unknown) => {
+      // biome-ignore lint/suspicious/noConsole: preserve native permission failures for browser diagnosis.
+      console.warn('Pointer lock request failed', error);
+    });
   }
 
   unlock(): void {

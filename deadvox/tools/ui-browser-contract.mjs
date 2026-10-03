@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { inspect } from 'node:util';
 
 const cwd = process.cwd();
 const profile = await mkdtemp(join(tmpdir(), 'deadvox-ui-contract-'));
@@ -30,7 +31,7 @@ const vite = spawn(
   ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', `${port}`, '--strictPort'],
   {
     cwd,
-    stdio: 'ignore',
+    stdio: ['ignore', 'pipe', 'pipe'],
   },
 );
 const chrome = spawn(
@@ -49,56 +50,91 @@ const chrome = spawn(
     // The contract tests UI, not the look: without a GPU the post chain and shadows make each frame several times slower.
     `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
   ],
-  { stdio: 'ignore' },
+  { stdio: ['ignore', 'pipe', 'pipe'] },
 );
-let viteStartupError;
-let chromeStartupError;
-vite.on('error', (error) => {
-  viteStartupError = error;
+const startupAbort = new AbortController();
+const children = [
+  ['Vite', vite],
+  ['Chrome', chrome],
+].map(([name, child]) => {
+  const state = { name, child, stdout: '', stderr: '', spawnError: undefined };
+  for (const stream of ['stdout', 'stderr']) {
+    child[stream].on('data', (chunk) => {
+      state[stream] = (state[stream] + chunk.toString()).slice(-16_384);
+    });
+  }
+  child.on('error', (error) => {
+    state.spawnError = error.message;
+    startupAbort.abort(new Error(`${name} failed to start: ${error.message}`));
+  });
+  child.on('exit', (code, signal) => startupAbort.abort(new Error(`${name} failed to start: ${signal ?? code}`)));
+  return state;
 });
-chrome.on('error', (error) => {
-  chromeStartupError = error;
-});
-
+const checkChildren = () => {
+  for (const { name, child, spawnError } of children) {
+    if (spawnError || child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`${name} failed to start: ${spawnError ?? child.signalCode ?? child.exitCode}`);
+    }
+  }
+};
+const discovery = { phase: 'Vite server', lastHttpStatus: undefined, lastError: undefined, targets: [] };
 const waitFor = async (test, message, timeout = 30_000) => {
   const until = Date.now() + timeout;
   while (Date.now() < until) {
-    if (await test()) {
+    if (await test(until)) {
       return;
     }
-    await delay(100);
+    await delay(Math.min(100, Math.max(0, until - Date.now())));
   }
-  throw new Error(`Timed out: ${message}`);
+  throw new Error(`Timed out: ${message}; last discovery error: ${discovery.lastError ?? 'none'}`);
 };
-const getPage = async () => {
-  const pages = await (await fetch(`http://127.0.0.1:${cdpPort}/json`)).json();
+const fetchBeforeDeadline = async (url, until, json = false) => {
+  const remaining = until - Date.now();
+  if (remaining <= 0) {
+    throw new Error(`Startup deadline expired fetching ${url}`);
+  }
+  const response = await fetch(url, {
+    signal: AbortSignal.any([startupAbort.signal, AbortSignal.timeout(remaining)]),
+  });
+  discovery.lastHttpStatus = { url, status: response.status };
+  if (!response.ok) {
+    throw new Error(`Discovery HTTP ${response.status}: ${url}`);
+  }
+  // The fetch signal also bounds a JSON body that never completes.
+  return json ? response.json() : response;
+};
+const getPage = async (until) => {
+  const pages = await fetchBeforeDeadline(`http://127.0.0.1:${cdpPort}/json`, until, true);
+  discovery.targets = pages.map(({ id, type, url }) => ({ id, type, url }));
   return pages.find((page) => page.type === 'page' && page.url.includes(`127.0.0.1:${port}`));
 };
 
 let ws;
 try {
-  await waitFor(async () => {
-    if (viteStartupError || vite.exitCode !== null) {
-      throw new Error(`Vite failed to start: ${viteStartupError?.message ?? vite.exitCode}`);
-    }
+  await waitFor(async (until) => {
+    checkChildren();
     try {
-      const response = await fetch(`http://127.0.0.1:${port}/`);
-      return response.ok;
-    } catch {
+      return Boolean(await fetchBeforeDeadline(`http://127.0.0.1:${port}/`, until));
+    } catch (error) {
+      discovery.lastError = inspect(error, { depth: 3 }).slice(-4096);
+      checkChildren();
       return false;
     }
   }, 'Vite server');
-  await waitFor(async () => {
-    if (chromeStartupError || chrome.exitCode !== null) {
-      throw new Error(`Chrome failed to start: ${chromeStartupError?.message ?? chrome.exitCode}`);
-    }
+  discovery.phase = 'Chrome page';
+  let discoveryDeadline;
+  await waitFor(async (until) => {
+    discoveryDeadline = until;
+    checkChildren();
     try {
-      return Boolean(await getPage());
-    } catch {
+      return Boolean(await getPage(until));
+    } catch (error) {
+      discovery.lastError = inspect(error, { depth: 3 }).slice(-4096);
+      checkChildren();
       return false;
     }
   }, 'Chrome page');
-  const page = await getPage();
+  const page = await getPage(discoveryDeadline);
   if (!page) {
     throw new Error('Chrome page disappeared after startup');
   }
@@ -930,10 +966,32 @@ try {
   process.stdout.write(
     'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',
   );
+} catch (error) {
+  process.stderr.write(
+    `UI_LAUNCH_FAILURE ${JSON.stringify({
+      error: String(error),
+      ports: { vite: port, cdp: cdpPort },
+      discovery,
+      children: children.map(({ name, child, stdout, stderr, spawnError }) => ({
+        name,
+        executable: child.spawnfile,
+        args: child.spawnargs,
+        pid: child.pid,
+        exitCode: child.exitCode,
+        signalCode: child.signalCode,
+        spawnError,
+        stdout,
+        stderr,
+      })),
+    })}\n`,
+  );
+  throw error;
 } finally {
   ws?.close();
   chrome.kill('SIGTERM');
   vite.kill('SIGTERM');
-  await Promise.race([new Promise((resolve) => chrome.once('exit', resolve)), delay(5000)]);
+  if (chrome.exitCode === null && chrome.signalCode === null) {
+    await Promise.race([new Promise((resolve) => chrome.once('exit', resolve)), delay(5000)]);
+  }
   await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

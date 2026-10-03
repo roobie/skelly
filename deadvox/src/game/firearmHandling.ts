@@ -6,6 +6,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { Rng } from '../core/random.ts';
+import { pilesInRadius } from '../core/reach.ts';
 
 export interface FirearmHandlingData {
   readonly calibre: string;
@@ -168,9 +169,9 @@ export const debugFirearmShot = (input: DebugFirearmShotInput): FirearmShotEffec
     Math.floor((origin[2] + direction[2] * flightDistance) / input.blockSize),
   ];
   const caseType = spentCaseItemId(data.calibre);
-  const nearby = input.inventory
-    .pilesNear(input.feet, 20 / input.blockSize)
-    .find((pile) => pile.items.some(({ item }) => item.type === caseType));
+  const nearby = pilesInRadius(input.inventory, input.feet, 20 / input.blockSize).find((pile) =>
+    pile.items.some(({ item }) => item.type === caseType),
+  );
   const pilePos = nearby?.pos ?? landing;
   if (!input.inventory.add(input.inventory.create(caseType), { kind: 'pile', pos: pilePos })) {
     throw new Error(`Could not add ${caseType} to pile ${pilePos.join(',')}`);

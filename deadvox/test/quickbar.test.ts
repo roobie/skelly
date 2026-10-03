@@ -5,6 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { BATTERY_SWAP } from '../src/core/lights.ts';
+import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { Survival } from '../src/game/survival.ts';
@@ -20,6 +21,7 @@ const runtime = () => {
   const inventory = new Inventory(registry);
   const queue = new HandlingQueue(inventory);
   const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
+    reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 1 }),
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: () => undefined,
   });
