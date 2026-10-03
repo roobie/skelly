@@ -257,6 +257,11 @@ export class HeldItems {
   dispose(): void {
     this.disposeCompasses();
     this.clearArms();
+    this.view.clear();
+    this.shown.clear();
+    this.heldByHand.clear();
+    // A bfcache pageshow may resume this owner; its next update must rebuild disposed displays.
+    this.drawn = '';
   }
 
   /** Detaches and disposes arm chains before rebuilding the hands scene on an inventory/model version change. */
