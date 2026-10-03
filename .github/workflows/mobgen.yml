@@ -8,6 +8,11 @@ on:
   pull_request:
     paths: ['mobgen/**', '!**/*.md', 'testPool.ts', '.github/workflows/mobgen.yml']
 
+# Unique non-PR groups preserve pending main and manual runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
