@@ -22,7 +22,8 @@ export interface PhysicsParams {
   obstacles?: readonly Body[];
 }
 
-const EPS = 1e-4;
+/** Separation from a contacted voxel face, in blocks; not physical travel. */
+export const CONTACT_SKIN = 1e-4;
 const MAX_STEP = 0.45; // per-axis move per substep; below 1 so only one new block layer is touched
 
 type Axis = 0 | 1 | 2;
@@ -101,7 +102,9 @@ const moveAxis = (body: Body, axis: Axis, delta: number, { isSolid, bodies = [] 
   if (terrainHit) {
     const [lo, hi] = offsets(body, axis);
     contact =
-      delta > 0 ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - EPS : Math.floor(body.pos[axis]! + lo) + 1 - lo + EPS;
+      delta > 0
+        ? Math.ceil(body.pos[axis]! + hi) - 1 - hi - CONTACT_SKIN
+        : Math.floor(body.pos[axis]! + lo) + 1 - lo + CONTACT_SKIN;
   }
   for (const other of bodyHits) {
     const face = bodyContact(body, other, axis, delta);
@@ -184,7 +187,7 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
     moveHorizontal(ctx, 0, body.vel[0] * h);
     moveHorizontal(ctx, 2, body.vel[2] * h);
     if (body.onGround) {
-      body.onGround = moveAxis(body, 1, -2 * EPS, { isSolid });
+      body.onGround = moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
     }
   }
 };
@@ -212,7 +215,7 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
 
   const firstMoved = Math.abs(first.pos[axis]! - firstStart[axis]!);
   const secondMoved = Math.abs(second.pos[axis]! - secondStart[axis]!);
-  if (firstMoved >= push - EPS && secondMoved >= push - EPS) {
+  if (firstMoved >= push - CONTACT_SKIN && secondMoved >= push - CONTACT_SKIN) {
     return;
   }
   const otherAxis: Axis = axis === 0 ? 2 : 0;

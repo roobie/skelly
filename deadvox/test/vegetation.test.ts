@@ -39,6 +39,52 @@ const { registry, issues } = buildRegistry(
 );
 const scale = makeScale(0.5);
 
+const verticalBrushSession = (spawnY: number) => {
+  const world = new World();
+  const entities = new BlockEntities(registry);
+  for (let x = 0; x < 8; x++) {
+    for (let z = -8; z < 8; z++) {
+      world.setBlock(x, 0, z, registry.blockIds.get('stone')!);
+      for (let y = 4; y <= 6; y++) {
+        world.setBlock(x, y, z, registry.blockIds.get('leaves')!);
+      }
+    }
+  }
+  const session = createSession({
+    registry,
+    world,
+    entities,
+    isSolid: worldSolid(world, registry, entities),
+    isOpaque: worldOpaque(world, registry, entities),
+    scale,
+    seed: 73,
+    start: 43_200,
+    spawn: [2.5, spawnY, 2.5],
+    ready: () => true,
+    controls: {
+      active: () => true,
+      intent: () => ({ ...IDLE, walk: true }),
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => true,
+      descending: () => false,
+    },
+    audio: { play: () => false },
+    notice: () => undefined,
+  });
+  session.sim.paused = false;
+  const reader = session.sim.events.reader();
+  for (let frame = 0; frame < 60; frame++) {
+    session.frame(1 / 60);
+  }
+  return {
+    body: session.body,
+    events: reader
+      .read()
+      .filter((event) => (event.kind === 'sound' || event.kind === 'noise') && event.event === 'foliage_rustle'),
+  };
+};
+
 describe('passable but opaque vegetation', () => {
   it('keeps foliage opaque to sight/rays but passable to bodies, attacks and acoustic rays', () => {
     expect(issues).toEqual([]);
@@ -204,6 +250,28 @@ describe('passable but opaque vegetation', () => {
       events.filter((event) => event.kind === 'noise').map((event) => event.position),
     );
     expect(session.playerAudio.vocalNoise?.radiusMetres).toBe(4);
+  });
+
+  it('admits paired rustle and hearing when a real session falls vertically through leaves without horizontal input', () => {
+    const { body, events } = verticalBrushSession(8);
+    expect([body.pos[0], body.pos[2]]).toEqual([2.5, 2.5]);
+    expect(body.pos[1]).toBeLessThan(4);
+    const sounds = events.filter((event) => event.kind === 'sound');
+    expect(sounds.length).toBeGreaterThan(0);
+    expect(sounds.map((event) => event.position)).toEqual(
+      events.filter((event) => event.kind === 'noise').map((event) => event.position),
+    );
+  });
+
+  it('keeps stationary foliage overlap silent both at the true resting height and during contact-skin correction', () => {
+    // A stone floor tops out at y=1; physics leaves a 0.0001-block contact skin.
+    // The second case also catches a naive 3D predicate mistaking that correction for brushing.
+    for (const spawnY of [1.0001, 1]) {
+      const { body, events } = verticalBrushSession(spawnY);
+      expect([body.pos[0], body.pos[2]]).toEqual([2.5, 2.5]);
+      expect(body.pos[1]).toBeCloseTo(1.0001, 8);
+      expect(events, `stationary spawn y=${spawnY}`).toHaveLength(0);
+    }
   });
 
   it('maps wood and foliage footsteps explicitly for both player and shambler', () => {

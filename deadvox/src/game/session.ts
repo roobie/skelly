@@ -21,7 +21,7 @@ import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling
 import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
-import { type Body, stepBody } from '../core/physics.ts';
+import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import {
   bindReach,
@@ -490,7 +490,14 @@ export const createSession = (options: SessionOptions) => {
         world,
         registry,
         gait: playerMovement(),
-        moving: Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) > 1e-6,
+        // Ignore contact-skin correction (even one skin on all three axes), not real brushing.
+        moving:
+          Math.hypot(
+            body.pos[0] - previousPosition[0],
+            body.pos[1] - previousPosition[1],
+            body.pos[2] - previousPosition[2],
+          ) >
+          2 * CONTACT_SKIN,
         time,
       });
       rustleClock = rustle.clock;
