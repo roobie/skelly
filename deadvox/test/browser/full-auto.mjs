@@ -138,9 +138,9 @@ try {
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.
   await page.evaluate(() => {
-    const { audio, session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.fullAutoRuntime;
     for (let index = 0; index < 40; index++) {
-      audio.play('gunshot', [0, 0, 0], session.sim.time, { listenerRelative: true });
+      session.playPlayerSound('gunshot', session.sim.time, { listenerRelative: true });
     }
   });
   await page.waitForFunction(
@@ -230,12 +230,12 @@ try {
       .every((record) => record.disconnected),
   );
   await page.evaluate(() => {
-    const { audio, session } = globalThis.fullAutoRuntime;
+    const { session } = globalThis.fullAutoRuntime;
     const probe = globalThis.fullAutoProbe;
     probe.sources = [];
     probe.peak = 0;
     for (let index = 0; index < 32; index++) {
-      audio.play('gunshot', [0, 0, 0], session.sim.time, { listenerRelative: true });
+      session.playPlayerSound('gunshot', session.sim.time, { listenerRelative: true });
     }
   });
   await page.waitForFunction(

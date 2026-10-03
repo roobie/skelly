@@ -1,4 +1,5 @@
 import type { SoundDef } from './content.ts';
+import type { Vec3 } from './coords.ts';
 import { Rng, type RngState } from './random.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
@@ -7,6 +8,23 @@ export interface SoundPick {
   file: string;
   gain: number;
   pitch: number;
+}
+
+/** A simulation-admitted choice. Positions are in blocks; playback cannot veto it. */
+export interface SoundEmission {
+  readonly event: SoundEventId;
+  readonly position: Vec3;
+  readonly time: number;
+  readonly pick: Readonly<SoundPick>;
+  readonly emittedAsNoise: boolean;
+  readonly sourceLabel: string | null;
+  readonly listenerRelative: boolean;
+}
+
+export interface SoundEmissionMeta {
+  sourceLabel?: string | null;
+  /** Playback-only first-person routing, never a hearing-policy decision. */
+  listenerRelative?: boolean;
 }
 
 interface EventState {

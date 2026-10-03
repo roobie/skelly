@@ -24,7 +24,6 @@ describe('GameAudio Web Audio compatibility', () => {
     vi.stubGlobal('AudioContext', LegacyAudioContext);
     const audio = new GameAudio({
       registry: { sounds: new Map(), soundOrigins: new Map() } as never,
-      seed: 1,
       blockSize: 1,
       isSolid: () => false,
       report: () => undefined,
