@@ -5,6 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
+  DebugFirearmTrigger,
   debugFirearmShot,
   FIREARM_HANDLING_STAND_IN,
   firearmHandlingFor,
@@ -45,10 +46,74 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
   });
 
 describe('debug firearm handling', () => {
+  it.each([
+    [800, 27],
+    [600, 20],
+  ])('fires exact %i rpm deadlines independent of polling partitions', (rpm, count) => {
+    const regular = new DebugFirearmTrigger();
+    const coarse = new DebugFirearmTrigger();
+    const weapon = { uid: 1, rpm };
+    const shots: number[] = [];
+    for (let tick = 0; tick < 120; tick++) {
+      shots.push(...regular.advance(tick / 60, weapon, tick === 0, true));
+    }
+    const batched = [
+      ...coarse.advance(0, weapon, true, true),
+      ...coarse.advance(0.43, weapon, false, true),
+      ...coarse.advance(1.99, weapon, false, true),
+    ];
+    expect(shots).toEqual(batched);
+    expect(shots).toHaveLength(count);
+    expect(shots).toEqual(Array.from({ length: count }, (_, index) => index * (60 / rpm)));
+    expect(regular.advance(2, weapon, false, false)).toEqual([]);
+    expect(regular.advance(3, weapon, false, false)).toEqual([]);
+  });
+
+  it('unlatches release and quick clicks, and resets cadence on a weapon change', () => {
+    const trigger = new DebugFirearmTrigger();
+    const weapon = { uid: 1, rpm: 800 };
+    expect(trigger.advance(1, weapon, true, false)).toEqual([1]);
+    expect(trigger.advance(1.1, weapon, false, false)).toEqual([]);
+    expect(trigger.advance(2, weapon, true, true)).toEqual([2]);
+    // A release/repress between ticks is still a new trigger edge.
+    expect(trigger.advance(2.02, weapon, true, true)).toEqual([2.02]);
+    expect(trigger.advance(2.04, { uid: 2, rpm: 600 }, false, true)).toEqual([2.04]);
+    expect(trigger.advance(2.14, undefined, false, true)).toEqual([]);
+    expect(trigger.advance(4, weapon, true, true)).toEqual([4]);
+  });
+
+  it('slugs calibre punctuation injectively for spent-case item IDs', () => {
+    expect(spentCaseItemId('5.56x45')).toBe('spent_case_5_d_56x45');
+    expect(spentCaseItemId('5_56x45')).toBe('spent_case_5_u_56x45');
+    expect(spentCaseItemId('5-56x45')).toBe('spent_case_5_h_56x45');
+    expect(new Set(['5.56x45', '5_56x45', '5-56x45'].map(spentCaseItemId)).size).toBe(3);
+  });
+
+  it('consumes g34 calibre and case/round exports while retaining the missing ejection stand-in', () => {
+    const rifleModel = registry.models.get('rifle_assault');
+    expect(rifleModel).toMatchObject({
+      calibre: '5.56x45',
+      anchors: { magwell: [-0.048_875, -0.046, 0] },
+    });
+    expect(rifleModel?.anchors?.ejection).toBeUndefined();
+    expect(registry.models.get('round_5_d_56x45')?.file).toBe('assets/models/round-5_d_56x45.glb');
+    expect(registry.models.get('case_5_d_56x45')?.file).toBe('assets/models/case-5_d_56x45.glb');
+    expect(registry.items.get(caseType)?.model).toBe('case_5_d_56x45');
+  });
+
   it('does not fire outside debug mode', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const { version } = inventory;
-    expect(firearmHandlingFor(rifle)).toBe(FIREARM_HANDLING_STAND_IN);
+    expect(firearmHandlingFor(rifle, inventory.registry)).toMatchObject({
+      calibre: '5.56x45',
+      caseModelId: 'case_5_d_56x45',
+      ejection: FIREARM_HANDLING_STAND_IN.ejection,
+      cycle: { rear: 0.026_25, dwell: 0.011_25, forward: 0.0375 },
+      rpm: 800,
+    });
+    expect(firearmHandlingFor(inventory.create('debug_shotgun_pump'), inventory.registry)).toBe(
+      FIREARM_HANDLING_STAND_IN,
+    );
     const result = debugFirearmShot({
       debugMode: false,
       inventory,
@@ -77,7 +142,10 @@ describe('debug firearm handling', () => {
     expect(inventory.add(nearestCases, { kind: 'pile', pos: [2, 1, 0] })).toBe(true);
     expect(inventory.add(fartherCases, { kind: 'pile', pos: [45, 1, 0] })).toBe(true);
 
-    expect(shot(inventory, rifle)?.speed).toBe(FIREARM_HANDLING_STAND_IN.ejection.speed);
+    expect(shot(inventory, rifle)).toMatchObject({
+      speed: FIREARM_HANDLING_STAND_IN.ejection.speed,
+      caseModelId: 'case_5_d_56x45',
+    });
     expect(inventory.pileAt([0, 1, 0])?.items.find(({ item }) => item.type === 'nails')?.item.count).toBe(2);
     expect(inventory.pileAt([2, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(6);
     expect(inventory.pileAt([45, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(11);

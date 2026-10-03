@@ -389,16 +389,46 @@ state.
 The measured reference-laptop budget at 96 m is 16.7 ms/frame; existing main-
 thread work p95 is 3 ms looking, 4 ms jogging and 10 ms sprinting. The benchmark
 has 1,800 loaded render chunks and 19.4 MiB of in-memory chunk data, but neither
-is copied into a save. There is no save implementation measurement yet. For a
+is copied into a save. At decision time there was no save implementation measurement. For a
 hamlet session with a player inventory, five buildings and the current two
-spawn points, the snapshot is estimated below 1 MiB and below 1 ms p95 main-
+spawn points, the snapshot was estimated below 1 MiB and below 1 ms p95 main-
 thread time when only dirty chunks and dynamic state are copied; encoding and
-disk I/O are worker work. This is an estimate, not a result. Keep a hard
+disk I/O are worker work. This estimate was not a result. Keep a hard
 instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 16.7 ms); if measurement misses, reduce the snapshot surface or copy incrementally
-at barriers, never move serialization/disk work onto the frame. CI also checks a
-10-game-hour save is under 50 MiB and validates/loads in under 5 s, matching
-`CHALLENGES.md`'s save targets.
+at barriers, never move serialization/disk work onto the frame. The snapshot p95
+is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
+save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
+runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
+the reference-laptop batch-mean throughput in Firefox: 50 batches of 128 captures
+(6,400 total), observed minimum timer tick 1 ms, calibration 27 ms, batch-mean
+p50 0.203 ms/capture and p95 0.219 ms/capture. These percentiles are of
+per-batch means (batch time divided by 128), not individual per-capture timings,
+and do not demonstrate the ≤1 ms per-frame snapshot target. That run did not
+record an individual-capture tail. The F4 measurement now reports an individual
+per-capture p95 and max separately. It uses the known browser quantum `r`
+(Firefox 1 ms, Chromium 0.1 ms); the observed minimum tick is a cross-check, not
+the error bound. Since each timestamp error is `< r`, a duration read as `k` has
+a strict upper bound `< k + 2r`. Its state guard compares endpoints only and
+reports net state equality, not per-capture purity.
+
+On 2026-10-02 at about 19:32–19:33 BR reran build `80644d1` on the reference
+laptop:
+
+```text
+Firefox: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.273 ms/capture, p95 0.445 ms/capture; individual tail n=6400: observed p95 1.000 ms, max 2.000 ms; at observed r=1.000 ms, true p95 <2.000 ms and max <3.000 ms; calibration 32.000 ms; net state unchanged across measurement
+Chromium: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.184 ms/capture, p95 0.266 ms/capture; individual tail n=6400: observed p95 0.200 ms, max 0.500 ms; at observed r=0.100 ms, true p95 <0.300 ms and max <0.600 ms; calibration 32.800 ms; net state unchanged across measurement
+```
+
+Recomputed from BR's unchanged observed p95/max using the known browser-profile
+quantum and the jitter-safe `+2r` bound (not output by build `80644d1`): Firefox
+true p95 <3.000 ms and max <4.000 ms; Chromium true p95 <0.400 ms and max
+<0.700 ms.
+
+Chromium's recomputed individual-capture bound (true p95 <0.4 ms, max <0.7 ms)
+shows the ≤1 ms per-frame p95 target is met on the reference laptop. Firefox's
+1 ms timer only bounds its p95 at <3 ms, consistent with that result but not
+conclusive on its own.
 
 ### Continue, New world, and implementation plan
 
@@ -440,10 +470,11 @@ generation until the new world's first snapshot commits.
    failed storage write leaves Continue on the previous valid generation.
 5. **Round-trip CI and budget.** Generate a deterministic save with the current
    build in CI and require the same build to read it back exactly; add
-   save-size/load-time checks and a hamlet snapshot-frame benchmark. Done when CI
-   checks the 10-hour <50 MiB and <5 s limits, the 1 ms p95 snapshot bound is
-   demonstrated on the reference laptop, and the current-build round trip
-   passes.
+   save-size/load-time checks. Done when CI checks the 10-hour <5 MiB and <1 s
+   decode/restore limits on `ubuntu-latest` and the current-build round trip
+   passes. The ≤1 ms individual per-capture p95 target is assessed in-game via
+   the F4 individual-tail observation under SLICE-1 §1.11, not by batch-mean
+   throughput, the Node benchmark, or a CI gate.
 
 ## Consequences
 

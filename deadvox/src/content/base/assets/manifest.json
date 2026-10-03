@@ -35,7 +35,16 @@
       "licence": "CC0-1.0",
       "download": null,
       "files": ["assets/models/rifle_assault.glb"],
-      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; original project-built geometry, +x forward and +y up"
+      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; cartridge metadata from the sourced 5.56x45 design; original project-built geometry, +x forward and +y up"
+    },
+    {
+      "title": "Gungen 5.56x45 cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/5.56x45.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/round-5_d_56x45.glb", "assets/models/case-5_d_56x45.glb"],
+      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; round includes the projectile and case, case includes the fired case and primer"
     },
     {
       "title": "15 vocal male strain/hurt/pain/jump sounds",
@@ -259,6 +268,20 @@
         "assets/audio/melee_hit_fist-01.ogg"
       ],
       "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting (final measured LUFS and true peak are in the d13b report). The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active."
+    },
+    {
+      "title": "BR csound gunshot synthesis",
+      "url": null,
+      "author": "BR",
+      "licence": "NONE",
+      "download": null,
+      "files": [
+        "assets/audio/gunshot-akm-01.ogg",
+        "assets/audio/gunshot-akm-02.ogg",
+        "assets/audio/gunshot-akm-pbs1-01.ogg",
+        "assets/audio/gunshot-akm-pbs1-02.ogg"
+      ],
+      "changes": "BR's original synthetic csound shots. Trimmed trailing silence only, then converted from 48 kHz 24-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
     }
   ]
 }

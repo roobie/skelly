@@ -35,6 +35,26 @@ describe('creditsViewModel', () => {
     ]);
   });
 
+  it('shows original work with no licence as plain text rather than a broken link', () => {
+    const { manifest } = validateManifest('fixture.json', {
+      sources: [
+        {
+          title: 'BR csound gunshot synthesis',
+          url: null,
+          author: 'BR',
+          licence: 'NONE',
+          download: null,
+          files: ['assets/audio/gunshot-akm-01.ogg'],
+          changes: 'Trimmed trailing silence only.',
+        },
+      ],
+    });
+    expect(creditsViewModel(manifest).entries[0]).toMatchObject({
+      licenceName: 'No licence required',
+      licenceUrl: null,
+    });
+  });
+
   it('leaves the host and author out when a source has neither a link nor a listed author', () => {
     const { manifest } = validateManifest('fixture.json', {
       sources: [

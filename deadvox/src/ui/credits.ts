@@ -13,7 +13,7 @@ export interface CreditsEntryViewModel {
   /** The hostname the source came from, when it has a link. */
   readonly host: string | null;
   readonly licenceName: string;
-  readonly licenceUrl: string;
+  readonly licenceUrl: string | null;
   readonly changes: string | null;
 }
 
@@ -46,7 +46,12 @@ const entryTemplate = (entry: CreditsEntryViewModel): TemplateResult => html`
         : html`<a href=${entry.url} target="_blank" rel="noopener">${entry.title}</a>`
     }${entry.author === null ? '' : ` by ${entry.author}`}${entry.host === null ? '' : `, from ${entry.host}`}
     <br />
-    Licence: <a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>${entry.changes === null ? '' : html`<br />Changes: ${entry.changes}`}
+    Licence:
+    ${
+      entry.licenceUrl === null
+        ? entry.licenceName
+        : html`<a href=${entry.licenceUrl} target="_blank" rel="noopener">${entry.licenceName}</a>`
+    }${entry.changes === null ? '' : html`<br />Changes: ${entry.changes}`}
   </li>
 `;
 

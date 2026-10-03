@@ -133,6 +133,7 @@ export class SaveController {
     $('save-export')?.addEventListener('click', () => this.exportCurrentRecords().catch(() => undefined));
     $('save-replace-confirm').addEventListener('click', () => this.confirmNewWorld());
     $('save-retry').addEventListener('click', () => this.retrySave());
+    $('save-rescan').addEventListener('click', () => location.reload());
     $('save-export-current').addEventListener('click', () => this.exportCurrentSnapshot().catch(() => undefined));
     $('save-replace-cancel').addEventListener('click', () => {
       $('save-confirmation').hidden = true;
@@ -158,7 +159,7 @@ export class SaveController {
       await this.discoverSaves();
     } catch (error) {
       this.storageUnavailable = true;
-      this.failure = `Save storage unavailable: ${errorMessage(error)}`;
+      this.failure = `Save storage unavailable: ${errorMessage(error)} This session will not be saved.`;
       this.statusText = this.failure;
     }
     this.render();
@@ -345,7 +346,10 @@ export class SaveController {
   }
 
   get titleNewWorldLabel(): string {
-    return this.protectedCurrent ? 'Saved world needs recovery' : 'New world';
+    if (this.protectedCurrent) {
+      return 'Saved world needs recovery';
+    }
+    return this.storageUnavailable ? 'Play without saving' : 'New world';
   }
 
   bindSession(
@@ -586,6 +590,7 @@ export class SaveController {
     render(html`${[this.statusText, this.oldVersionLabel, this.failure].filter(Boolean).join('\n')}`, status);
     button.disabled = !(this.ready && controls.continueEnabled);
     button.hidden = !(controls.showTitleControls && this.restored) || this.entered;
+    $('save-rescan').hidden = this.entered || !this.storageUnavailable || Boolean(this.environmentProblem);
     const persist = $('save-persist');
     if (persist) {
       persist.hidden = this.storageStatus?.persistent !== false;

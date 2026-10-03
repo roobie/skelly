@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
@@ -11,10 +13,10 @@ import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState, type SaveSnapshot, type snapshotSession } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { chunksFor, makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
@@ -35,6 +37,10 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 const seed = 13;
+// biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
+const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
+const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024; // ~17× headroom over the current synthetic fixture; catches meaningful growth.
+const TEN_HOUR_LOAD_BUDGET_MS = 1000; // CI-runner bound for ubuntu-latest, not a general device target.
 const scale = makeScale(0.5);
 const blockId = (id: string): number => {
   const found = registry.blockIds.get(id);
@@ -297,6 +303,8 @@ const inspect = (runtime: Runtime): unknown => {
   };
 };
 
+const stateHash = (state: unknown): string => createHash('sha256').update(jsonCanonical(state)).digest('hex');
+
 const plainDataTree = (value: unknown): boolean => {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') {
     return true;
@@ -331,6 +339,95 @@ const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
     }
     runtime.session.frame(1 / 60);
   }
+};
+
+const editBudgetChunk = (runtime: Runtime, cx: number, cy: number, cz: number): void => {
+  for (let cell = 0; cell < 8; cell++) {
+    const x = cx * CHUNK + 4 + cell;
+    const y = cy * CHUNK + 4;
+    const z = cz * CHUNK + 6;
+    const current = runtime.world.getBlock(x, y, z);
+    runtime.world.setBlock(x, y, z, current === blockId('planks') ? blockId('dirt') : blockId('planks'));
+  }
+};
+
+// PROJECT.md/config.ts default radius is 96 m; 32-block chunks at 0.5 m are 16 m,
+// so config.ts/streamer.ts cover a 13x13 mesh square, with 8 vertical layers from scale.ts.
+// The 25%-edited / 8-cells-per-edited-chunk load is an explicit high-side stress assumption.
+const applyBudgetWorldEdits = (runtime: Runtime) => {
+  const radiusChunks = chunksFor(scale, 96);
+  const centerX = toChunk(Math.floor(runtime.hamlet.spawn.pos[0] / scale.blockSize));
+  const centerZ = toChunk(Math.floor(runtime.hamlet.spawn.pos[2] / scale.blockSize));
+  const visitedChunks = (radiusChunks * 2 + 1) ** 2 * (scale.maxCy - scale.minCy + 1);
+  let ordinal = 0;
+  let editedChunks = 0;
+  // 13x13 horizontal columns x 8 vertical layers: one edited layer in four, 8 block changes.
+  for (let cz = centerZ - radiusChunks; cz <= centerZ + radiusChunks; cz++) {
+    for (let cx = centerX - radiusChunks; cx <= centerX + radiusChunks; cx++) {
+      runtime.session.onColumn(cx, cz, runtime.hamlet);
+      for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+        const editThisChunk = ordinal % 4 === 0;
+        ordinal += 1;
+        if (!editThisChunk) {
+          continue;
+        }
+        editedChunks += 1;
+        editBudgetChunk(runtime, cx, cy, cz);
+      }
+    }
+  }
+  return { visitedChunks, editedChunks };
+};
+
+// One full floor pile per each of the five hamlet lots each game hour: 50 piles in 10 h.
+// PILE_GRID is 8x6 and duct_tape is a real 1x1 non-stackable content item.
+const applyBudgetPiles = (runtime: Runtime) => {
+  const baselinePileCount = runtime.inventory.piles.size;
+  const baselinePileItems = [...runtime.inventory.piles.values()].reduce((sum, pile) => sum + pile.items.length, 0);
+  const pileCount = 10 * runtime.hamlet.lots.length;
+  const pileCapacity = PILE_GRID.w * PILE_GRID.h;
+  const centerX = toChunk(Math.floor(runtime.hamlet.spawn.pos[0] / scale.blockSize));
+  const centerZ = toChunk(Math.floor(runtime.hamlet.spawn.pos[2] / scale.blockSize));
+  const pileY = Math.floor(runtime.hamlet.spawn.pos[1] / scale.blockSize);
+  let addedItems = 0;
+  for (let index = 0; index < pileCount; index++) {
+    const pos: [number, number, number] = [
+      centerX * CHUNK + 4 + (index % 10) * 2,
+      pileY,
+      centerZ * CHUNK + 4 + Math.floor(index / 10) * 2,
+    ];
+    for (let cell = 0; cell < pileCapacity; cell++) {
+      const added = runtime.inventory.add(runtime.inventory.create('duct_tape'), {
+        kind: 'pile',
+        pos,
+        at: { x: cell % PILE_GRID.w, y: Math.floor(cell / PILE_GRID.w), rotated: false },
+      });
+      addedItems += Number(added);
+    }
+  }
+  return { baselinePileCount, baselinePileItems, pileCount, pileCapacity, addedItems };
+};
+
+// Exercise the normal idempotent column-arrival path; the seeded hamlet spawns 6–10
+// shamblers and the existing fixture removes one, leaving its spawn-ledger entry behind.
+const touchBudgetFurnitureAndZombies = (runtime: Runtime) => {
+  const touchedContainers = [...runtime.entities.all].filter((entity) => entity.pockets);
+  for (const entity of touchedContainers) {
+    runtime.entities.markSearched(entity);
+  }
+  return {
+    touchedContainers: touchedContainers.length,
+    spawned: runtime.spawner.snapshotState().length,
+    alive: runtime.zombies.store.size,
+  };
+};
+
+const setBudgetClock = (runtime: Runtime): void => {
+  const scheduler = runtime.sim.scheduler.snapshotState();
+  runtime.sim.scheduler.restoreState({
+    time: 4500,
+    systems: scheduler.systems.map((cursor) => ({ ...cursor, done: 4500 })),
+  });
 };
 
 describe('snapshot state components', () => {
@@ -918,6 +1015,7 @@ describe('canonical save format', () => {
     advance(source, 17);
     prepareAudioContinuation(source);
     const snapshot = capture(source);
+    const sourceHash = stateHash(snapshot);
     const started = performance.now();
     const bytes = await encodeFixture(snapshot);
     const encodedAt = performance.now();
@@ -935,6 +1033,7 @@ describe('canonical save format', () => {
     });
     expect(decoded.snapshot).toEqual(snapshot);
     const loaded = createRuntime(decoded.snapshot);
+    expect(stateHash(decoded.snapshot)).toBe(sourceHash);
     advance(source, 90);
     advance(loaded, 90);
     expect(inspect(loaded)).toEqual(inspect(source));
@@ -961,9 +1060,56 @@ describe('canonical save format', () => {
     expect(buildDecoded.versionIdentity.buildRevision.length).toBeGreaterThan(0);
     expect(buildDecoded.versionIdentity.components.contentPacks[0]!.canonicalHash).toMatch(hashPattern);
     expect(buildDecoded.generation).toBe(8);
+    expect(stateHash(buildDecoded.snapshot)).toBe(sourceHash);
     expect(encodedAt - started).toBeGreaterThanOrEqual(0);
     expect(decodedAt - encodedAt).toBeGreaterThanOrEqual(0);
   }, 20_000);
+
+  it('checks a representative ten-hour hamlet save and records its size and timings', async () => {
+    const runtime = createRuntime();
+    const worldStats = applyBudgetWorldEdits(runtime);
+    const pileStats = applyBudgetPiles(runtime);
+    const population = touchBudgetFurnitureAndZombies(runtime);
+    expect(worldStats.visitedChunks).toBe(1352);
+    expect(worldStats.editedChunks).toBe(338);
+    expect(pileStats.pileCount).toBe(50);
+    expect(pileStats.addedItems).toBe(pileStats.pileCount * pileStats.pileCapacity);
+    expect(population.touchedContainers).toBe(36);
+    expect(population.spawned).toBe(8);
+    expect(population.alive).toBe(7);
+
+    // 1:8 clock ratio makes 4,500 simulation seconds ten game hours. Advance
+    // scheduler cursors without running the fixed-rate physics ticks.
+    setBudgetClock(runtime);
+    const snapshot = capture(runtime);
+    expect(snapshot.world.diffs.chunks.length).toBeGreaterThanOrEqual(worldStats.editedChunks);
+    expect(snapshot.world.spawned.length).toBe(population.spawned);
+    expect(snapshot.world.zombies.zombies.length).toBe(population.alive);
+    expect(snapshot.character.inventory.piles.length).toBe(pileStats.pileCount + pileStats.baselinePileCount);
+    expect(snapshot.character.inventory.piles.reduce((sum, pile) => sum + pile.items.length, 0)).toBe(
+      pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems,
+    );
+    expect(snapshot.character.inventory.entities.entities.filter((entity) => entity.searched).length).toBe(
+      population.touchedContainers,
+    );
+    const encodeStarted = performance.now();
+    const bytes = await encodeSave(snapshot, { generation: 1, worldOptions: formatWorldOptions });
+    const encodeMs = performance.now() - encodeStarted;
+    expect(bytes.byteLength).toBeLessThan(TEN_HOUR_SAVE_BUDGET_BYTES);
+
+    const decodeStarted = performance.now();
+    const decoded = await decodeSave(bytes, { contentLookup });
+    const decodeMs = performance.now() - decodeStarted;
+    const loadStarted = performance.now();
+    const loaded = createRuntime(decoded.snapshot);
+    const restoreMs = performance.now() - loadStarted;
+    const loadMs = decodeMs + restoreMs;
+    expect(capture(loaded)).toEqual(decoded.snapshot);
+    expect(loadMs).toBeLessThan(TEN_HOUR_LOAD_BUDGET_MS);
+    process.stdout.write(
+      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawned=${population.spawned} alive=${population.alive} dead=${population.spawned - population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
+    );
+  }, 30_000);
 
   it('preserves signed zero, subnormals, the largest safe integer, and ordinary decimal values exactly', async () => {
     const snapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
