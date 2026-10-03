@@ -91,6 +91,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/gameCursor.ts',
   'src/ui/hud.ts',
   'src/ui/hudOptions.ts',
+  // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
+  'src/ui/playHud.ts',
   'src/ui/inventoryScreen.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',

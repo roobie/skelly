@@ -175,6 +175,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/playHud.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/primaryActionHint.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
@@ -199,6 +200,24 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
     expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);
+  });
+
+  it('ignores HUD-only wording but fingerprints the gameplay interaction reach', async () => {
+    const host = await actualSimulationHost();
+    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
+      exclude: SIMULATION_EXCLUSIONS,
+    });
+    const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts', 'fps   seed', 'FPS / seed');
+    expect(hud.reads).toBe(0);
+    expect(hud.value).toBe(original);
+    const reach = await mutateSimulationSource(
+      host,
+      'src/game/play.ts',
+      'const USE_REACH = 2;',
+      'const USE_REACH = 3;',
+    );
+    expect(reach.reads).toBe(1);
+    expect(reach.value).not.toBe(original);
   });
 
   it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {

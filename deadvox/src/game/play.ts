@@ -43,6 +43,7 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
+import { type PlayStatus, playHudText, playInteractionText, playNeedsText, playPromptText } from '../ui/playHud.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
@@ -783,15 +784,15 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     });
 
   /** What F would do to it, for the prompt. */
-  const useText = (entity: BlockEntity): string => {
-    if (entities.defOf(entity).door) {
-      return `F: ${entity.open ? 'close' : 'open'} the ${nameOf(entity)}`;
-    }
-    if (entity.pockets) {
-      return `F: ${entity.searched ? 'look in' : 'search'} the ${nameOf(entity)}`;
-    }
-    return entities.defOf(entity).name;
-  };
+  const useText = (entity: BlockEntity): string =>
+    playInteractionText({
+      door: Boolean(entities.defOf(entity).door),
+      open: entity.open,
+      container: Boolean(entity.pockets),
+      searched: entity.searched,
+      name: nameOf(entity),
+      fullName: entities.defOf(entity).name,
+    });
 
   /** F: opens or closes a door; searches a container and opens the inventory beside it. */
   function use(): void {
@@ -970,51 +971,45 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   let meshingQueueMs = 0;
 
   const displayCalendar = (): number => sim.calendar;
-  const clockText = (): string => {
-    const speed = compression.c > 1.05 ? `   ×${compression.c.toFixed(0)}` : '';
-    return `${formatClock(displayCalendar())}${speed}${sim.paused ? '   paused' : ''}`;
-  };
-
-  const needsText = (): string => {
-    const { calories, hydration, fatigue, health, stamina } = sim.needs;
-    const light = survival.lit ? `   light ${Math.round((chargeShare(registry, survival.lit) ?? 0) * 100)}%` : '';
-    return [
-      `health ${health.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${session.sprinting ? ' (sprinting)' : ''}${light}`,
-      `food ${calories.toFixed(0)}%   water ${hydration.toFixed(0)}%   fatigue ${fatigue.toFixed(0)}%`,
-    ].join('\n');
-  };
-
-  const optionalHudLine = (visible: boolean, text: string): string => (visible ? text : '');
-  const hudText = (looking: string): string => {
-    const [x, y, z] = body.pos.map((v) => (v * s).toFixed(1));
-    const visible = hudVisibility(hudOptions);
-    const detailed = visible.details;
-    return [
-      optionalHudLine(visible.clock, clockText()),
-      optionalHudLine(visible.stats, needsText()),
-      optionalHudLine(visible.stats, `carrying ${(inventory.carriedWeight() / 1000).toFixed(1)} kg`),
-      optionalHudLine(detailed, `${fps.toFixed(0)} fps   seed ${config.seed}`),
-      optionalHudLine(detailed, `radius ${config.radiusM} m   ${input.walking ? 'walking' : 'jogging'} (Z)`),
-      optionalHudLine(detailed, `pos ${x} ${y} ${z} m`),
-      optionalHudLine(detailed, `chunks ${meshes.count} meshed, ${streamer.pending} pending`),
-      optionalHudLine(visible.interaction && Boolean(looking), `looking at ${looking}`),
-    ]
-      .filter((line) => line !== '')
-      .join('\n');
-  };
-
+  const statusView = (): PlayStatus => ({
+    calendar: displayCalendar(),
+    speed: compression.c,
+    paused: sim.paused,
+    needs: sim.needs,
+    sprinting: session.sprinting,
+    lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
+  });
+  const needsText = (): string => playNeedsText(statusView());
+  const hudText = (looking: string): string =>
+    playHudText(
+      {
+        ...statusView(),
+        carriedGrams: inventory.carriedWeight(),
+        fps,
+        seed: config.seed,
+        radiusMetres: config.radiusM,
+        walking: input.walking,
+        positionMetres: body.pos.map((v) => v * s),
+        meshed: meshes.count,
+        pending: streamer.pending,
+        looking,
+      },
+      hudVisibility(hudOptions),
+    );
   const promptText = (now: number): string => {
-    const { messages, interaction } = hudVisibility(hudOptions);
-    const lines = messages && now < noticeUntil ? [notice] : [];
-    const entity = interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
-    if (entity) {
-      lines.push(useText(entity));
-    }
-    // The rest screen carries its own Continue/Stop prompt while a long action is running.
-    if (messages && compression.interruption !== undefined && !rest.action) {
-      lines.push(`${compression.interruption}.   C: continue   X: stop`);
-    }
-    return lines.join('\n');
+    const visible = hudVisibility(hudOptions);
+    const entity = visible.interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
+    return playPromptText(
+      {
+        now,
+        notice,
+        noticeUntil,
+        interactionHint: entity ? useText(entity) : undefined,
+        interruption: compression.interruption,
+        resting: rest.action !== undefined,
+      },
+      visible,
+    );
   };
 
   let quickbarDrawn = '';
