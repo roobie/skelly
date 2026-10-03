@@ -195,6 +195,18 @@ try {
   );
   const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
   const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
+  const saveNote = 'Saves are kept in this browser. When two tabs play the same world, the last one to save wins.';
+  const assertSaveNote = async (screen) =>
+    assert.equal(
+      await evaluate(`(() => {
+        const note = document.querySelector('#save-note');
+        return Boolean(note && !document.querySelector('#overlay').hidden && note.getClientRects().length &&
+          note.classList.contains('scale') && note.textContent.trim() === ${JSON.stringify(saveNote)});
+      })()`),
+      true,
+      `${screen} shows the browser-local, last-writer-wins note as visible secondary text`,
+    );
+  await assertSaveNote('title');
   assert.equal(
     await evaluate(`(() => {
       const controls = document.querySelector('#controls');
@@ -497,6 +509,7 @@ try {
   );
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');
+  await assertSaveNote('pause card');
   assert.equal(
     Number(await evaluate("document.querySelector('#audio-volume-world').value")),
     savedWorldVolume,

@@ -588,6 +588,11 @@ export class SaveController {
       },
     }).saveMenu!;
     render(html`${[this.statusText, this.oldVersionLabel, this.failure].filter(Boolean).join('\n')}`, status);
+    // Title and pause reuse the same card, so this copy has one rendering site.
+    render(
+      html`Saves are kept in this browser. When two tabs play the same world, the last one to save wins.`,
+      $('save-note'),
+    );
     button.disabled = !(this.ready && controls.continueEnabled);
     button.hidden = !(controls.showTitleControls && this.restored) || this.entered;
     $('save-rescan').hidden = this.entered || !this.storageUnavailable || Boolean(this.environmentProblem);
