@@ -117,3 +117,13 @@ an overshoot clamped to 1 is white).
 - Bisect with the debug toggles one at a time (`post=0`, `bloom=0`, `patterns=0`,
   `sunshadow=0`, `actors=boxes`, `crackcheck=1`, `hotcheck=1`) before theorising; two
   plausible hypotheses (mesh cracks, a too-low bloom threshold) were wrong here.
+
+## Pointer-lock scrolling belongs to the menu cursor, not an individual panel (d33)
+
+CSS overflow cannot retarget a locked wheel to the drawn cursor. Inventory, vicinity and
+item details all had real overflow but no locked wheel route; native free-pointer scrolling
+and #67's redraw preservation already worked. Route to the nearest scrollable ancestor in
+`ui/menuPointer.ts`, including the debug panel, normalise line/page units with `wheelPixels`,
+and consume at pane edges to prevent page/game chaining. Keep the separate main-card and
+build-wheel routes. Browser proofs should measure actual overflow and distinguish native
+free-pointer input from explicitly synthetic locked-cursor input.
