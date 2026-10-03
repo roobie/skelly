@@ -1,0 +1,16 @@
+{
+  "items": [
+    { "id": "fixture_unfound", "name": "Unfound", "category": "material", "weight": 1, "size": [1, 1] },
+    { "id": "fixture_result", "name": "Result", "category": "material", "weight": 1, "size": [1, 1] }
+  ],
+  "recipes": [
+    {
+      "id": "fixture_consumer",
+      "result": { "item": "fixture_result", "count": 1 },
+      "time": 1,
+      "skills": {},
+      "qualities": {},
+      "components": [[{ "item": "fixture_unfound", "count": 1 }]]
+    }
+  ]
+}
