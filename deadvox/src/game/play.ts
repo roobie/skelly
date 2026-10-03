@@ -13,6 +13,7 @@ import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import { toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
@@ -75,8 +76,7 @@ import {
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
 import type { RestKind } from './rest.ts';
-import { createSession, LOOT_REACH } from './session.ts';
-import { toHands } from './targets.ts';
+import { createSession } from './session.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -379,9 +379,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, {
     feet,
-    nearby: () => inventory.pilesNear(body.pos, LOOT_REACH / s),
+    reach: session.reach,
+    nearby: () => session.reach().piles,
     distance: (pile: Pile) => pileDistance(pile.pos),
-    containers: () => entities.containersNear(chest(), LOOT_REACH / s),
+    containers: () => session.reach().furniture,
     entityDistance,
     search: (entity) => {
       playtestObserver?.beginSearch(entity, nameOf(entity));
