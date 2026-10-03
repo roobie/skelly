@@ -124,6 +124,38 @@ describe('authored layout acceptance', () => {
   });
 });
 
+it('keeps adjacent different-elevation lots and their aprons independent of building order', () => {
+  const lowered = structuredClone(layout);
+  lowered.buildings[1]!.position[1] = 19;
+  for (const buildings of [lowered.buildings, [...lowered.buildings].reverse()]) {
+    const site = new AuthoredSite(1, registry, scale, { ...lowered, buildings });
+    expect(site.surface.height(100, 118, 42)).toBe(38); // shed footprint
+    expect(site.surface.height(104, 118, 42)).toBe(38); // shed apron beside the house blend
+    expect(site.surface.height(120, 118, 42)).toBe(42); // house footprint
+    expect(site.surface.height(106.5, 118, 42)).toBe(38); // equal footprint distances: stable shed key
+    const world = new World();
+    for (const chunk of generateColumn(
+      {
+        seed: 1,
+        scale,
+        blocks: {
+          grass: registry.blockIds.get('grass')!,
+          dirt: registry.blockIds.get('dirt')!,
+          stone: registry.blockIds.get('stone')!,
+          sand: registry.blockIds.get('sand')!,
+        },
+        surface: site.surface,
+        stamp: (written) => site.stamp(written),
+      },
+      3,
+      3,
+    )) {
+      world.addChunk(chunk);
+    }
+    expect([39, 40, 41, 42].map((y) => world.getBlock(104, y, 118))).toEqual([0, 0, 0, 0]);
+  }
+});
+
 it('stamps the rotated two-storey house deterministically across columns, with upstairs furniture and spawns', () => {
   const site = new AuthoredSite(1, registry, scale, layout);
   const columns: [number, number][] = [

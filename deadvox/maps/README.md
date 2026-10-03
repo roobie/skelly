@@ -74,10 +74,19 @@ polygon/building edges may touch them. Track width, including end caps, must fit
 
 All coordinates/widths are finite metres. Bounds have positive area. The normal
 content pipeline checks IDs, every object's bounds and rotated building overlap,
-and drops a broken file whole. `AuthoredSite` reuses template compilation,
+and drops a broken file whole. Startup URL discovery and world construction
+share that same admitted bundled registry; malformed-but-parseable sources
+cannot contribute site IDs or prevent built-in sites from starting.
+`AuthoredSite` reuses template compilation,
 `stackTemplate`, clipping/stamping, furniture/loot and seed-owned tree placement
 and `TreeIndex`. It flattens the site/lots, blends the boundary into natural
 terrain, paints tracks, and rolls authored plus template spawn markers once.
+Lot ownership is resolved before blending: a containing footprint wins,
+otherwise the nearest footprint by block-cell rectangle distance wins. Equal
+distances use the lexicographic key `template:position.join(','):rotation`,
+never building-array order. Only that owner's 2 m flat apron and 4 m blend toward
+site ground apply; a neighbour's transition cannot override its foundation.
+Footprints do not overlap after admission; no per-column sorting is involved.
 Overlapping woodlands use the maximum density multiplier. Woodland edges and
 track canopy exclusion are rough, deliberately; no new renderer is involved.
 

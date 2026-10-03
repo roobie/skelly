@@ -46,10 +46,16 @@ export class AuthoredSite implements Site {
     const blocks = (position: readonly number[]) => position.map((n) => n / s) as Vec3;
     const rectBlocks = (rect: Rect): Rect => ({ x0: rect.x0 / s, x1: rect.x1 / s, z0: rect.z0 / s, z1: rect.z1 / s });
     const area = rectBlocks(layout.bounds);
-    const lots = layout.buildings.map((building) => ({
-      rect: rectBlocks(buildingBounds(building, registry.templates.get(building.template)!.size)),
-      floor: building.position[1] / s,
-    }));
+    const lots = layout.buildings.map((building) => {
+      const rect = rectBlocks(buildingBounds(building, registry.templates.get(building.template)!.size));
+      return {
+        rect,
+        apron: grow(rect, 2 / s),
+        floor: building.position[1] / s,
+        // Content-derived, not array order: unique for admitted non-overlapping placements.
+        key: `${building.template}:${building.position.join(',')}:${building.rotation}`,
+      };
+    });
     this.placements = layout.buildings.map((building) => ({
       template: stackTemplate(
         compileTemplate(registry, registry.templates.get(building.template)!),
@@ -60,10 +66,21 @@ export class AuthoredSite implements Site {
     }));
     this.spawn = { pos: [...layout.player.position], yaw: (layout.player.yaw * Math.PI) / 180 };
     const height = (x: number, z: number, natural: number): number => {
+      // A containing footprint wins (distance zero); otherwise nearest footprint, stable-key ties.
+      // Choose ownership BEFORE apron/blend distance, so a neighbour cannot override an authored lot.
+      let closest: (typeof lots)[number] | undefined;
+      let nearestDistance = Number.POSITIVE_INFINITY;
       for (const lot of lots) {
-        const distance = rectDistance(grow(lot.rect, 2 / s), x, z);
+        const distance = rectDistance(lot.rect, x, z);
+        if (!closest || distance < nearestDistance || (distance === nearestDistance && lot.key < closest.key)) {
+          closest = lot;
+          nearestDistance = distance;
+        }
+      }
+      if (closest) {
+        const distance = rectDistance(closest.apron, x, z);
         if (distance < 4 / s) {
-          return Math.round(lot.floor + (layout.ground / s - lot.floor) * smoothstep(distance / (4 / s)));
+          return Math.round(closest.floor + (layout.ground / s - closest.floor) * smoothstep(distance / (4 / s)));
         }
       }
       const distance = rectDistance(area, x, z);
@@ -75,7 +92,7 @@ export class AuthoredSite implements Site {
       layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
     const player = blocks(layout.player.position);
     const reserved = [
-      ...lots.map((lot) => grow(lot.rect, 2 / s)),
+      ...lots.map((lot) => lot.apron),
       { x0: player[0] - 3 / s, x1: player[0] + 3 / s, z0: player[2] - 3 / s, z1: player[2] + 3 / s },
     ];
     const candidates = vegetationPlacements({
