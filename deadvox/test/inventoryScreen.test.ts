@@ -69,10 +69,11 @@ function setup() {
     searching.delete(entity);
     inv.entities.markSearched(entity);
   });
+  const notices: string[] = [];
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
-    nearby: () => [],
+    nearby: () => [...inv.piles.values()],
     distance: () => 0,
     containers: () => [entity],
     entityDistance: () => 1,
@@ -85,7 +86,7 @@ function setup() {
       return undefined;
     },
     searching: (target: typeof entity) => searching.has(target),
-    notice: (_text: string) => undefined,
+    notice: (text: string) => notices.push(text),
     use: (_item: typeof beans) => undefined,
     describe: (_item: typeof beans) => ['test description'],
     assign: (_slot: number, _item: typeof beans) => undefined,
@@ -93,7 +94,7 @@ function setup() {
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans };
+  return { root, screen, inv, queue, entity, searching, beans, notices };
 }
 
 describe('inventory screen Lit rendering', () => {
@@ -191,6 +192,25 @@ describe('inventory screen Lit rendering', () => {
       adapter.releaseCaptures();
       t.screen.close();
       hit.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('three Ctrl-clicks on one pile item queue one move and report Already queued', () => {
+    const t = setup();
+    vi.stubGlobal('navigator', { platform: 'Linux x86_64' });
+    try {
+      expect(t.inv.move(t.beans, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      t.screen.update();
+      for (let click = 0; click < 3; click++) {
+        const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
+        expect(node).not.toBeNull();
+        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true, pointerId: 1 }));
+      }
+      expect.soft(t.queue.jobs).toHaveLength(1);
+      expect(t.notices).toEqual(['Already queued', 'Already queued']); // feedback on each refused repeat
+    } finally {
+      t.screen.close();
       vi.unstubAllGlobals();
     }
   });
