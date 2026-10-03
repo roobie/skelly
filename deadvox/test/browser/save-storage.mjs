@@ -271,6 +271,76 @@ try {
             reader.close();
           }
         };
+        const testQuotaStatusDeadline = async () => {
+          const storage = create('indexeddb');
+          const { estimate } = navigator.storage;
+          // Simulate a browser metadata request that never settles, without blocking worker I/O.
+          navigator.storage.estimate = () => new Promise(() => undefined);
+          try {
+            const status = await stage('unresponsive quota status reaches its deadline', storage.status());
+            if (status.quota.supported) {
+              throw new Error('Unresponsive quota status did not degrade to unavailable metadata');
+            }
+          } finally {
+            navigator.storage.estimate = estimate;
+            storage.close();
+          }
+        };
+        const testBusyWriterDeadline = async () => {
+          const namespace = await namespaceFor('busy-writer-deadline');
+          const writer = create('indexeddb');
+          const waiting = create('indexeddb', { requestTimeoutMs: 2000 });
+          await stage('busy-writer capability probes', Promise.all([writer.status(), waiting.status()]));
+          let release;
+          let acquired;
+          const gate = new Promise((resolve) => {
+            release = resolve;
+          });
+          const ready = new Promise((resolve) => {
+            acquired = resolve;
+          });
+          let encodedWhileBusy = false;
+          const write = writer.save(namespace, async (generation) => {
+            acquired();
+            await gate;
+            return encoder.encode(`${generation}:owner`);
+          });
+          try {
+            await stage('writer holds exclusive lock', ready);
+            const failure = await stage(
+              'queued writer reaches its acquisition deadline',
+              waiting
+                .save(namespace, () => {
+                  encodedWhileBusy = true;
+                  return Promise.resolve(encoder.encode('unexpected second writer'));
+                })
+                .then(
+                  () => '',
+                  (error) => error.message,
+                ),
+            );
+            if (!failure.includes('World is still open or saving in another tab') || encodedWhileBusy) {
+              throw new Error(`Queued writer did not fail safely at its deadline: ${failure}`);
+            }
+            const locks = await navigator.locks.query();
+            if (locks.held.length !== 1 || locks.pending.length > 0) {
+              throw new Error('Timed-out writer stole the lock or left a queued request behind');
+            }
+            release();
+            await stage('original writer commits after its waiter expires', write);
+            await stage('later writer can acquire normally', saveValue(waiting, namespace, 'later'));
+            const loaded = await stage('load later committed generation', waiting.load(namespace));
+            if (loaded?.generation !== 2 || decoder.decode(loaded.payload) !== '2:later') {
+              throw new Error('Acquisition deadline interfered with serialized commits');
+            }
+            return { backend: 'indexeddb', generation: loaded.generation };
+          } finally {
+            release();
+            await write.catch(() => undefined);
+            writer.close();
+            waiting.close();
+          }
+        };
         const testCrashStage = async (backend, crashAt) => {
           const namespace = await namespaceFor(`crash:${backend}:${crashAt}`);
           const seedStorage = create(backend);
@@ -308,6 +378,8 @@ try {
           throw new Error(`Feature detection selected unsupported backend ${autoStatus.backend}`);
         }
         autoStorage.close();
+        await testQuotaStatusDeadline();
+        const busyWriterDeadline = await testBusyWriterDeadline();
         const backends = autoStatus.backend === 'opfs' ? ['opfs', 'indexeddb'] : ['indexeddb'];
         const backendResults = [];
         const concurrentBackendResults = [];
@@ -333,6 +405,7 @@ try {
           concurrentBackendResults,
           crashResults,
           openWriterReadResults,
+          busyWriterDeadline,
         };
       }, STAGE_TIMEOUT_MS),
       OVERALL_TIMEOUT_MS,
@@ -579,6 +652,91 @@ try {
       page.on('requestfailed', recordRequestFailure);
     }
     autosaveResults.push(await testTitleAndAutosave(backend));
+  }
+
+  // One built-app regression per engine: hold a real writer lock rather than racing tab teardown.
+  if (autosaveOnly && requestedAutosaveBackend === 'indexeddb' && autosaveScenario === 'continue') {
+    const appUrl = `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`;
+    const holder = await context.newPage();
+    holder.on('pageerror', (error) => pageErrors.push(error.message));
+    await holder.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+    await holder.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
+    const originalSlots = await holder.evaluate(async () => {
+      const { storage, namespace } = globalThis.deadvoxSaveTest;
+      const slots = await storage.readRawSlots(namespace);
+      return { a: slots.a ? Array.from(slots.a) : null, b: slots.b ? Array.from(slots.b) : null };
+    });
+    await holder.evaluate(async () => {
+      let acquired;
+      const ready = new Promise((resolve) => {
+        acquired = resolve;
+      });
+      globalThis.deadvoxHeldSaveLock = navigator.locks.request('deadvox-save-storage', { mode: 'exclusive' }, () => {
+        acquired();
+        return new Promise((resolve) => {
+          globalThis.deadvoxReleaseSaveLock = resolve;
+        });
+      });
+      await ready;
+    });
+    try {
+      // The continued session is entered (paused), so closing still triggers its lifecycle checkpoint.
+      await page.close();
+      page = await context.newPage();
+      page.on('pageerror', (error) => pageErrors.push(error.message));
+      page.on('requestfailed', recordRequestFailure);
+      await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+      try {
+        await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+          timeout: STAGE_TIMEOUT_MS,
+        });
+      } catch (error) {
+        throw new Error(`Busy-lock relaunch stalled at ${await page.locator('#save-status').textContent()}`, {
+          cause: error,
+        });
+      }
+      await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+      const busy = await page.evaluate(async () => ({
+        status: document.querySelector('#save-status').textContent,
+        newWorldLabel: document.querySelector('#go').textContent,
+        retryVisible: document.querySelector('#save-rescan').checkVisibility(),
+        continueDisabled: document.querySelector('#continue').disabled,
+        locks: await navigator.locks.query(),
+      }));
+      assert.match(busy.status, /World is still open or saving in another tab/);
+      assert.match(busy.newWorldLabel, /Play without saving/);
+      assert.equal(busy.retryVisible, true);
+      assert.equal(busy.continueDisabled, true);
+      assert.equal(busy.locks.held.length, 1);
+      assert.equal(busy.locks.held[0].mode, 'exclusive');
+      assert.equal(busy.locks.pending.length, 0);
+      await holder.evaluate(async () => {
+        globalThis.deadvoxReleaseSaveLock();
+        await globalThis.deadvoxHeldSaveLock;
+      });
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+        page.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
+      ]);
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+      assert.equal(await page.locator('#continue').isEnabled(), true);
+      assert.equal(await page.locator('#save-rescan').isVisible(), false);
+      const recoveredSlots = await page.evaluate(async () => {
+        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        const slots = await storage.readRawSlots(namespace);
+        return { a: slots.a ? Array.from(slots.a) : null, b: slots.b ? Array.from(slots.b) : null };
+      });
+      assert.deepEqual(recoveredSlots, originalSlots);
+      process.stdout.write(`${browserName}: busy-lock tab relaunch recovered; A/B records unchanged\n`);
+    } finally {
+      await holder.evaluate(() => globalThis.deadvoxReleaseSaveLock());
+      await holder.close();
+    }
   }
 
   if (!autosaveOnly) {
