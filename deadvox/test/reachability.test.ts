@@ -97,6 +97,7 @@ describe('static reachability', () => {
       color: '#000000',
       solid: false,
       loot: 'default',
+      container: { pockets: [{ grid: [1, 1], handling: 1 }] },
       workstation: { id: 'placed_bench' },
     });
     const shambler = registry.zombies.get('shambler')!;

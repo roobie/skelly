@@ -313,6 +313,9 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
   }
+  if (entry.loot !== undefined && furniture && furniture.container === undefined) {
+    found.push(['.loot', 'has loot but no container to put it in']);
+  }
   if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }
