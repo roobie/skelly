@@ -348,6 +348,13 @@ This comes before content grows, not after it, so every later content PR is
 checked as it lands. Today's validator checks references only
 (`src/core/content.ts:261-373`).
 
+**2.3 staging policy:** components and tool-quality sources are hard failures.
+Knowledge, positive skill levels and named-but-unplaced workstations report
+`pending: no source yet` and a count, not acceptance or CI failure. The pinned
+pending-class test and 2.4/2.5/2.8 hand-offs make promotion to hard checks explicit.
+Stick/wax each gain only one positive-weight entry in the placed `junk` table;
+other material growth and the four historical unreachable types remain 2.11.
+
 **Saves:** none.
 **Tests:** tests assert that invalid fixtures are rejected with the expected
 diagnostic: a recipe needing an item no placed loot table holds; a cycle of
@@ -358,6 +365,9 @@ job stays green.
 component closure and the count, and the rejections are tested.
 
 ### 2.4 The planner and crafting
+
+**Reachability hand-off:** starting knowledge must turn 2.3's pending knowledge
+class into a hard source check; update the pinned pending-class test deliberately.
 
 - `planCraft(recipe, reach, character, prefer?)`, a pure function: tries the
   combinations and keeps the cheapest that works; chooses items by gathering
@@ -413,6 +423,10 @@ sleep tests pass on the new long action; **BR has approved the crafting panel
 in the game.**
 
 ### 2.5 Skills, known recipes and books
+
+**Reachability hand-off:** practice must turn 2.3's pending positive-skill class
+into a hard source check, and reachable teaching books must extend the hard
+knowledge check from 2.4; update the pinned pending-class test deliberately.
 
 - Progression on 2.4's character state: finishing a craft gives practice in the
   recipe's skills; levels never go down. A skill shortens work time and gates
@@ -471,6 +485,9 @@ unfinished craft gives back exactly its inputs.
 recipes, and the reachability check counts what a reachable item yields.
 
 ### 2.8 Workbenches
+
+**Reachability hand-off:** placed benches must turn 2.3's pending workstation
+class into a hard source check; update the pinned pending-class test deliberately.
 
 - A `workstation` component on furniture: qualities it gives (such as
   `hammering`, `sawing`) and a work-time bonus. Reach (2.1) starts listing it.

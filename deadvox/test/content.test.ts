@@ -2,8 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
-import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS } from '../src/core/schema.ts';
+import { checkReachability } from '../src/core/reachability.ts';
+import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile } from '../src/core/schema.ts';
+import { furnitureOf } from '../src/core/site.ts';
+import { compileTemplate, type Placement } from '../src/core/templates.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -19,6 +23,34 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
+    const source = 'test/fixtures/content/loot-override-no-container.json';
+    const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
+    const rejected = buildRegistry([...base, { source, data }]);
+    expect
+      .soft(rejected.issues)
+      .toEqual([{ source, path: 'templates[0].palette["Ω"].loot', message: 'has loot but no container to put it in' }]);
+    expect.soft(rejected.registry.items.has('review_only_item')).toBe(false);
+    // Only the container changes: shape/references and actual marked placement stay identical.
+    const control = structuredClone(data);
+    control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handling: 1 }] };
+    const { registry, issues } = buildRegistry([...base, { source, data: control }]);
+    expect(issues).toEqual([]);
+    expect(checkReachability(registry).found.has('review_only_item')).toBe(true);
+    const placement: Placement = {
+      template: compileTemplate(registry, registry.templates.get('shed')!),
+      origin: [0, 0, 0],
+      turn: 0,
+    };
+    const spawned = furnitureOf({ seed: 1, registry }, placement, [0, 0]).find(
+      (piece) => piece.spec.type === 'review_pedestal',
+    )!;
+    expect(spawned.loot.map((item) => item.type)).toEqual(['review_only_item']);
+    const inventory = new Inventory(registry);
+    const entity = inventory.furnish(spawned.spec, spawned.loot)!;
+    expect(entity.pockets![0]!.map((placed) => placed.item.type)).toEqual(['review_only_item']);
   });
 
   it('registers the machete and Kabar as cutting melee tools and makes both findable', () => {
