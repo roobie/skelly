@@ -12,6 +12,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
+import type { RestKind } from '../core/longAction.ts';
 import { toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
@@ -72,7 +73,6 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
-import type { RestKind } from '../core/longAction.ts';
 import { createSession } from './session.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 

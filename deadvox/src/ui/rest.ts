@@ -4,8 +4,8 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
-import type { Simulation } from '../core/sim.ts';
 import type { RestAction, RestKind } from '../core/longAction.ts';
+import type { Simulation } from '../core/sim.ts';
 
 /** The key that toggles each kind off again (SLICE-1.md, 1.8 follow-up: a manual stop). */
 const STOP_KEY: Readonly<Record<RestKind, string>> = { rest: 'R', sleep: 'L' };
