@@ -15,6 +15,7 @@
         "section": "ar"
       }
     },
+    "charging-handle": { "family": "ar-charging-handle" },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "ar" } },
     "lower": {
       "family": "lower",
@@ -66,6 +67,7 @@
     }
   },
   "connections": [
+    { "from": "receiver.charging-handle", "to": "charging-handle.mount" },
     {
       "from": "receiver.lower",
       "to": "lower.top"

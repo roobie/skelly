@@ -1,13 +1,14 @@
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
-import { exportGlb, partNodeName } from '../core/glb.ts';
-import { applyDir, type Vec3 } from '../core/math.ts';
+import { exportGlb } from '../core/glb.ts';
+import { length, type Vec3 } from '../core/math.ts';
 import { type Resolved, resolve } from '../core/resolve.ts';
 import type { Assembly } from '../core/schema.ts';
+import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
-import { type CycleTimeline, cycleMotion, ejectionDirection } from './cycle.ts';
+import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { GUN_PALETTE } from './palette.ts';
@@ -21,6 +22,8 @@ export interface ActionPartMetadata {
   readonly axis: Vec3;
   /** Carrier stroke length in metres. */
   readonly strokeMetres: number;
+  /** Shared timelines this node follows; other modes leave it at home. */
+  readonly modes: readonly CycleMode[];
 }
 
 export interface CycleMetadata {
@@ -96,41 +99,31 @@ const cycleMetadata = (cycle: CycleTimeline): CycleMetadata => ({
   forwardSeconds: cycle.forwardSeconds,
 });
 
-const buildActionExport = (resolved: Resolved, ejection: Vec3 | undefined): GunActionExport | undefined => {
-  const carrier = resolved.assembly.parts['bolt-carrier'];
-  if (!carrier) {
+const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
+  const description = resolveGunAction(resolved);
+  const cycle = description?.cycle;
+  if (!(description?.ejection && cycle)) {
     return undefined;
   }
-  const action = carrier.params?.pattern;
-  if (action !== 'ak' && action !== 'ar') {
-    return undefined;
-  }
-  const motion = resolved.defs.get('bolt-carrier')?.motion;
-  const placed = resolved.placed.get('bolt-carrier');
-  if (!(motion && placed && ejection)) {
-    return undefined;
-  }
-  const cycle = cycleMotion(action, motion, resolved.domain.units.metresPerUnit);
-  const carrierFamily = carrier.family;
-  const axis = toFileAxes(applyDir(placed, motion.axis));
-  const actionPart: ActionPartMetadata = {
-    node: partNodeName('bolt-carrier', carrierFamily),
-    axis,
-    strokeMetres: round6(cycle.strokeMetres),
-  };
-  const parts: Record<string, ActionPartMetadata> = { carrier: actionPart };
-  const { bolt } = resolved.assembly.parts;
-  if (bolt && resolved.placed.has('bolt')) {
-    parts.bolt = { ...actionPart, node: partNodeName('bolt', bolt.family) };
-  }
+  const parts = Object.fromEntries(
+    Object.entries(description.parts).map(([role, part]) => [
+      role,
+      {
+        node: part.node,
+        axis: toFileAxes(part.axis),
+        strokeMetres: round6(length(part.travel) * resolved.domain.units.metresPerUnit),
+        modes: part.modes,
+      },
+    ]),
+  );
   return {
-    ejection,
+    ejection: description.ejection,
     action: {
       parts,
       fire: cycleMetadata(cycle.fire),
       hand: cycleMetadata(cycle.hand),
       ejectAt: cycle.ejectAt,
-      ejectDirection: ejectionDirection(action),
+      ejectDirection: cycle.ejectDirection,
       holdOpen: cycle.holdOpenOnEmpty,
       rpm: cycle.rpm,
     },
@@ -195,7 +188,7 @@ export const exportGunGlb = (
   if (!result.ok) {
     return result;
   }
-  const handling = buildActionExport(resolved, anchors.others.ejection?.position);
+  const handling = buildActionExport(resolved);
   return {
     ...result,
     modelEntry: createGunModelEntry(asset, anchors, resolved.domain.units.metresPerUnit, {

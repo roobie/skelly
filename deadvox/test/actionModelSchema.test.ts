@@ -19,7 +19,20 @@ const build = (model: unknown) => buildRegistry([{ source: SOURCE, data: { model
 describe('optional action model metadata', () => {
   it('accepts named moving nodes, metre strokes, second-based cycles, and unit ejection vectors', () => {
     const action = {
-      parts: { carrier: { node: 'bolt-carrier:bolt-carrier', axis: [1, 0, 0], strokeMetres: 0.074_75 } },
+      parts: {
+        carrier: {
+          node: 'bolt-carrier:bolt-carrier',
+          axis: [1, 0, 0],
+          strokeMetres: 0.074_75,
+          modes: ['fire', 'hand'],
+        },
+        handle: {
+          node: 'charging-handle:ar-charging-handle',
+          axis: [1, 0, 0],
+          strokeMetres: 0.074_75,
+          modes: ['hand'],
+        },
+      },
       fire: cycle,
       hand: { durationSeconds: 1.7, rearwardSeconds: 0.65, dwellSeconds: 0.3, forwardSeconds: 0.05 },
       ejectAt: 0.72,
@@ -46,7 +59,14 @@ describe('optional action model metadata', () => {
 
   it('rejects non-unit direction vectors and cycle phases that exceed the duration', () => {
     const baseAction = {
-      parts: { carrier: { node: 'bolt-carrier:bolt-carrier', axis: [1, 0, 0], strokeMetres: 0.074_75 } },
+      parts: {
+        carrier: {
+          node: 'bolt-carrier:bolt-carrier',
+          axis: [1, 0, 0],
+          strokeMetres: 0.074_75,
+          modes: ['fire', 'hand'],
+        },
+      },
       fire: cycle,
       hand: { durationSeconds: 1.7, rearwardSeconds: 0.65, dwellSeconds: 0.3, forwardSeconds: 0.05 },
       ejectAt: 0.72,

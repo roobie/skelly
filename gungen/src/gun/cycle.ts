@@ -1,5 +1,5 @@
 import { penetrationWorld, type WorldSolid, worldSolid } from '../core/geometry.ts';
-import { applyPoint, compose, length, scale, sub, translation, type Vec3 } from '../core/math.ts';
+import { compose, length, scale, sub, translation, type Vec3 } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
 import type { PartMotion, Solid } from '../core/schema.ts';
 
@@ -257,18 +257,6 @@ export const sweepMovingPart = (resolved: Resolved, partId: string, limit: numbe
     clear,
     clashes: [...first].map(([pair, at]) => ({ pair, at })),
   };
-};
-
-/** The case leaves at the near (right-hand) edge of the receiver's ejection keep-out. */
-export const ejectionPoint = (resolved: Resolved, receiverId = 'receiver'): Vec3 | undefined => {
-  const receiver = resolved.defs.get(receiverId);
-  const placed = resolved.placed.get(receiverId);
-  const volume = receiver?.keepOuts.find(({ id }) => id === 'ejection');
-  if (!(placed && volume)) {
-    return undefined;
-  }
-  const local: Vec3 = [volume.box.center[0], volume.box.center[1], volume.box.center[2] - volume.box.half[2]];
-  return applyPoint(placed, local);
 };
 
 /** The profile direction is already expressed in the model frame required by the export contract. */

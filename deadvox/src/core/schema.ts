@@ -247,6 +247,12 @@ const ActionPartSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   axis: UnitVector,
   strokeMetres: Positive,
+  /** References shared timelines; modes not listed keep this node at home. */
+  modes: pipe(
+    array(picklist(['fire', 'hand'])),
+    nonEmpty('needs at least one cycle mode'),
+    check((modes) => new Set(modes).size === modes.length, 'cycle modes must be distinct'),
+  ),
 });
 
 const ActionSchema = strictObject({
