@@ -35,6 +35,13 @@ jobs:
       - run: npx vite build
       # The actual viewer indication needs a DOM/browser, not only the action inventory unit tests.
       - run: npm ci --prefix ../deadvox
-      - run: npx playwright install --with-deps chromium
-        working-directory: deadvox
-      - run: npm run test:browser
+      - name: Viewer pump pose indication (runner Chrome)
+        timeout-minutes: 2
+        run: |
+          CHROME_BIN="$(command -v google-chrome)" || {
+            echo "::error::Runner google-chrome is required for the viewer regression"
+            exit 1
+          }
+          export CHROME_BIN
+          echo "Viewer browser: $CHROME_BIN"
+          npm run test:browser
