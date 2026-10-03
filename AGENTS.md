@@ -93,3 +93,13 @@ tests, and build; Gungen also runs `test:sweeps`, and Deadvox also runs
 configures Git to use `.githooks`. If the hook is not installed, run
 `git config core.hooksPath .githooks`. Fix failures before pushing; do not use
 `--no-verify` to bypass a real failure. It is for emergencies only.
+
+**No local absolute paths in tracked files** (BR, 2026-10-03). This covers code,
+tests, docs, review reports, content and credits. Never write a host path
+(`/home/…`, `~/…`, `/run/user/1000/…`, `/tmp/…`). Use a path relative to the
+repository root or to the file, a public URL for an external source, or an
+environment variable for a host location, such as
+`"$XDG_RUNTIME_DIR/skelly-heavy.lock"`. Untracked scratch and mail may use
+absolute paths. **Don't modify third-party files** to meet this rule: they stay as
+received, so paths embedded in their metadata (for example inside the
+`mobgen/reference/*.blend` files) are out of scope.
