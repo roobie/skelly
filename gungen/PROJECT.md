@@ -983,6 +983,16 @@ the geometry declares them, whether or not a cartridge is assigned.
   `src/ammo/calibreSlug.ts` (e.g. `round_7_d_62x39`,
   `round-7_d_62x39.glb`); a test checks every registered id and all accepted
   separator forms. Gungen's internal revolve profiles remain in millimetres.
+- Shotshells use that same cartridge export contract and writer. Shared
+  `src/gun/shotshellGeometry.ts#shotshellGeometry` supplies loaded and opened
+  hull solids to exporter and viewer; known fold/roll closures select their
+  presentation. The current source's unknown closure stays null and uses the
+  authorised generic roll-crimp visual proxy at the 62.23 mm conservative
+  envelope. No primer diameter is invented. Wall/lip/card/material choices and
+  Deadvox's 40 g loaded / 5 g fired gameplay mass estimates are explicitly
+  labelled in `docs/shotshell-export.md`; none is written back as sourced data.
+  `npm run export:cartridges -- <cartridge.json> <model-dir> [entry-dir]` handles
+  both kinds; `?ammo=12-gauge-00-buck` shows shell and hull with a proxy label.
 
 #### 3.0b (implemented)
 

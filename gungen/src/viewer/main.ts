@@ -95,7 +95,7 @@ const cartridges = Object.entries(
   if (!parsed.ok) {
     throw new Error(`${path}: ${formatCartridgeParseError(parsed.error)}`);
   }
-  return parsed.cartridge.kind === 'metallic' ? [parsed.cartridge] : [];
+  return [parsed.cartridge];
 });
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -229,6 +229,17 @@ const showMagazine = initialQuery.has('mag');
 const magazineView = initialQuery.get('mag');
 if (ammoMeshes) {
   scene.add(ammoMeshes.loose, ammoMeshes.fired);
+  const label = document.createElement('p');
+  label.id = 'ammo-info';
+  label.textContent = ammoCartridge?.designation ?? '';
+  if (ammoCartridge?.kind === 'shotshell') {
+    const proxy =
+      ammoCartridge.closure.value === null
+        ? 'Roll-crimp visual proxy (source closure unknown).'
+        : `Visual ${ammoCartridge.closure.value}.`;
+    label.textContent += ` Loaded ${ammoCartridge.length.loaded.value} mm; fired ${ammoCartridge.length.nominal.value} mm. ${proxy} Unsourced primer omitted; wall and materials are visual approximations.`;
+  }
+  $('description').insertAdjacentElement('afterend', label);
 }
 const grid = new GridHelper(120, 60, 0x3a_3f_46, 0x26_2a_30);
 grid.position.y = -16;
@@ -421,7 +432,7 @@ const placeDetachedMagazine = (shown: Report, solids: Group): void => {
     disposeGroup(detachedMagazine);
     detachedMagazine = undefined;
   }
-  if (!(showMagazine && ammoCartridge && ammoMeshes)) {
+  if (!(showMagazine && ammoCartridge?.kind === 'metallic' && ammoMeshes)) {
     delete view.dataset.magazineRounds;
     delete view.dataset.magazineView;
     return;
