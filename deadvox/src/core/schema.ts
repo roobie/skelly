@@ -264,20 +264,30 @@ const ActionPartSchema = strictObject({
   ),
 });
 
-const ActionSchema = strictObject({
-  parts: pipe(
-    record(Id, ActionPartSchema),
-    check((parts) => Object.keys(parts).length > 0, 'needs at least one moving part'),
+const ActionSchema = pipe(
+  strictObject({
+    parts: pipe(
+      record(Id, ActionPartSchema),
+      check((parts) => Object.keys(parts).length > 0, 'needs at least one moving part'),
+    ),
+    fire: optional(ActionCycleSchema),
+    hand: ActionCycleSchema,
+    ejectAt: Fraction,
+    /** Unit direction vector in the exported model frame. */
+    ejectDirection: UnitVector,
+    holdOpen: vBoolean(),
+    /** Cyclic rate in rounds per minute. */
+    rpm: optional(Positive),
+  }),
+  check(
+    (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
+    'moving part modes must reference a declared timeline',
   ),
-  fire: ActionCycleSchema,
-  hand: ActionCycleSchema,
-  ejectAt: Fraction,
-  /** Unit direction vector in the exported model frame. */
-  ejectDirection: UnitVector,
-  holdOpen: vBoolean(),
-  /** Cyclic rate in rounds per minute. */
-  rpm: Positive,
-});
+  check(
+    (action) => (action.fire === undefined) === (action.rpm === undefined),
+    'only an automatic fire timeline has a cyclic rpm',
+  ),
+);
 
 const MagazineRoundSchema = strictObject({
   /** Centre in metres in the magazine model frame (+x forward, +y up, +z right). */
@@ -297,6 +307,8 @@ const ModelSchema = pipe(
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
     capacity: optional(MagazineCapacity),
+    /** Integral tube, loaded singly through anchors.loading_port; no box round-pose column. */
+    tube: optional(strictObject({ capacity: MagazineCapacity })),
     rounds: optional(array(MagazineRoundSchema)),
     /**
      * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
@@ -318,6 +330,12 @@ const ModelSchema = pipe(
         ? true
         : calibre !== undefined && capacity !== undefined && rounds !== undefined && rounds.length === capacity,
     'magazine metadata needs calibre, capacity, and one round pose per capacity slot',
+  ),
+  check(
+    ({ tube, calibre, anchors, capacity, rounds }) =>
+      tube === undefined ||
+      (calibre !== undefined && anchors?.loading_port !== undefined && capacity === undefined && rounds === undefined),
+    'tube metadata needs calibre/loading_port and cannot carry a box round column',
   ),
 );
 

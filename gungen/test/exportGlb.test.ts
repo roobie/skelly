@@ -468,6 +468,9 @@ describe('glb export: deadvox model entry', () => {
       const assembly = design(name);
       const out = exported(assembly);
       const action = out.modelEntry.action!;
+      if (!(action.fire && action.rpm)) {
+        throw new Error('automatic actions require fire timing and rpm');
+      }
       const carrier = out.resolved.defs.get('bolt-carrier')!;
       const motion = carrier.motion!;
       expect(action.rpm).toBe(expectedAction === 'ak' ? 600 : 800);

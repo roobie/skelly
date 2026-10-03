@@ -6,7 +6,7 @@
   "parts": {
     "receiver": {
       "family": "receiver",
-      "params": { "action": "pump", "feed": "tube", "bore": "L", "section": "pump" }
+      "params": { "action": "pump", "feed": "tube", "bore": "L", "section": "pump", "rail": "none" }
     },
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "pump" } },
     "lower": { "family": "lower", "params": { "layout": "pump" } },

@@ -62,16 +62,21 @@ This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and De
 - `anchors` gain named points: `muzzle` (already accepted), `ejection` (where the case leaves) and `magwell` (where the magazine seats). Each point is `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right).
 - `action`:
   - `parts`: the moving roles as **separate named nodes** in the GLB, each with `node` (exact glTF name), `axis` (unit travel direction), `strokeMetres`, and required `modes` (a nonempty, distinct list of `fire`/`hand` timing references). Nodes follow the shared timeline in each listed mode and stay home in other modes. The AR carrier lists both; its separate T-handle lists only `hand`, pulls through the same stroke, and returns/latches home. The AK handle remains part of its carrier node, which lists both. This needs no separate per-node animation scheduler;
-  - `fire` and `hand`: cycle timelines (rear, dwell, forward seconds, or sampled curves);
+  - `fire` (optional) and `hand`: cycle timelines (rear, dwell, forward seconds, or sampled curves). A pump exports hand only, with carrier/forend coupled on both hand-driven legs; no gas-driven fire timeline or cyclic rpm;
   - `ejectAt`: the stroke fraction at which the case leaves, and `ejectDirection`: a unit vector in the model frame; both are fields of `action`;
   - `holdOpen`: whether the carrier stays back on an empty magazine;
   - `rpm`.
 - **Magazines** are separate items with their own model entry: `calibre`, `capacity`, and the round column (`rounds: [{ at, tilt }]`, from the top round down). `at` is the round centre in metres in magazine-model coordinates; `tilt` is degrees about +z (nose-up positive). Left/right stagger is encoded by the sign of `at[2]`, not a separate field, so deadvox can draw remaining rounds by instancing the round model.
+- **Integral tube:** optional `tube: { capacity }` on the gun, excluding the chamber,
+  with `anchors.loading_port` in metres for loading single shells. It requires calibre
+  and the loading anchor, and does not carry a detached-box `capacity`/`rounds`
+  column. Geometry-derived fit and visual reserve estimates are documented in
+  `gungen/docs/pump-action-export.md`; runtime loading remains later work.
 - **Cartridge models:** `round_<calibre>` and `case_<calibre>` GLBs with their own entries, at real dimensions (#109). In model ids and filenames `<calibre>` means the deterministic slug of the cartridge id (e.g. `round_7_d_62x39`); the entry's `calibre` remains the exact source id (`7.62x39`).
 
 Three.js sanitizes `Object3D.name` (including stripping colons). Runtime node discovery must match `node` against `parser.json.nodes`, then use `parser.associations`' node index to find the actual loaded object, rather than calling `getObjectByName` with the raw glTF name.
 
-Gungen's resolved action description is the shared source for part discovery, coupling and ejection data in viewer/export. Its pump carrier/forend open pose is view-only: validation and export stay at rest, and no pump firing timeline is implied.
+Gungen's resolved action description is the shared source for part discovery, coupling and ejection data in viewer/export. Its pump carrier/forend hand cycle is manual on both legs. The separate static open pose remains view-only, with cycle controls hidden there: validation and export stay at rest, and no pump firing timeline is implied.
 
 The exact field names and units are settled in the gungen work items (g34, g35, g38) and recorded in `gungen/PROJECT.md` next to the 3.0a contracts; this ADR fixes what the contract must carry.
 
