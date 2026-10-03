@@ -9,6 +9,7 @@ import {
   type InferOutput,
   integer,
   maxValue,
+  minLength,
   minValue,
   nonEmpty,
   nullable,
@@ -398,6 +399,46 @@ export const TemplateSchema = strictObject({
   layers: array(array(string())),
 });
 
+// ---- authored site layouts (metres, independent of chunk/block order) ----
+
+const Metres = pipe(
+  number(),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
+const HalfMetres = pipe(
+  Metres,
+  check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
+);
+const MetrePosition = tuple([Metres, Metres, Metres]);
+const LayoutPoint = tuple([Metres, Metres]); // [x, z]; Tiled's pixel y becomes world z.
+const LayoutBuilding = strictObject({
+  template: Id,
+  position: tuple([HalfMetres, HalfMetres, HalfMetres]),
+  rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
+  storeys: optional(pipe(Count, minValue(1), maxValue(8))),
+});
+
+export const SiteLayoutSchema = strictObject({
+  id: Id,
+  bounds: pipe(
+    strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
+    check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),
+  ),
+  /** Foundation elevation: lower face of the top ground block, in metres. */
+  ground: HalfMetres,
+  buildings: array(LayoutBuilding),
+  player: strictObject({ position: MetrePosition, yaw: Metres }),
+  shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
+  woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
+  tracks: array(
+    strictObject({
+      points: pipe(array(LayoutPoint), minLength(2)),
+      width: pipe(Metres, minValue(Number.MIN_VALUE)),
+      surface: optional(picklist(['dirt', 'asphalt'])),
+    }),
+  ),
+});
+
 // ---- zombies ----
 
 export const ZOMBIE_ABILITIES = [
@@ -548,6 +589,7 @@ const SECTION_DESCRIPTOR = {
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+  layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -564,6 +606,7 @@ export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
+export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;

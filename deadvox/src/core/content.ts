@@ -5,6 +5,7 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { authoredLayoutIssues } from './authoredLayout.ts';
 import {
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -400,6 +401,11 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkTemplates(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);
+  for (const layout of registry.layouts.values()) {
+    for (const [path, message] of authoredLayoutIssues(layout, registry)) {
+      report('layouts', layout.id, path, message);
+    }
+  }
   return issues;
 };
 

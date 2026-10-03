@@ -1,3 +1,4 @@
+import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid } from '../core/collision.ts';
@@ -85,6 +86,13 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
  * Otherwise (other block sizes, broken content) the world has the test house.
  */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
+  const layout = registry.layouts.get(config.site);
+  if (layout) {
+    return new AuthoredSite(config.seed, registry, config.scale, layout);
+  }
+  if (!['hamlet', 'city', 'forest', 'testHouse'].includes(config.site)) {
+    throw new Error(`Content does not define site "${config.site}"`);
+  }
   if (config.site === 'forest') {
     return new Forest(config.seed, registry, config.scale, config.density);
   }

@@ -129,7 +129,7 @@ export const benchSiteLabel = (run: BenchRun): string =>
     city: `city, up to ${run.storeys} storeys`,
     hamlet: 'hamlet',
     testHouse: 'test house',
-  })[run.site];
+  })[run.site] ?? `authored site ${run.site}`;
 
 export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats): void => {
   const { config, streamer, renderer, camera, world } = engine;

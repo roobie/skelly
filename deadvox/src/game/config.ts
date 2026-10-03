@@ -55,7 +55,16 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
 export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
   params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
-export type SiteName = 'hamlet' | 'testHouse' | 'city' | 'forest';
+export type SiteName = string;
+
+// URL parsing precedes world construction. Discover authored ids from the same bundled pack.
+const layoutFiles = import.meta.glob<{ layouts?: { id: string }[] }>('../content/base/*.json', {
+  eager: true,
+  import: 'default',
+});
+const authoredIds = new Set(
+  Object.values(layoutFiles).flatMap((file) => (file.layouts ?? []).map((layout) => layout.id)),
+);
 
 const MAX_STOREYS = 20;
 
@@ -73,7 +82,11 @@ export const siteFromUrl = (
   const requested = params.get('site');
   return {
     site:
-      requested === 'city' || requested === 'testHouse' || requested === 'forest' || requested === 'hamlet'
+      requested === 'city' ||
+      requested === 'testHouse' ||
+      requested === 'forest' ||
+      requested === 'hamlet' ||
+      (requested !== null && authoredIds.has(requested))
         ? requested
         : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,

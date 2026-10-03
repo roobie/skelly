@@ -28,7 +28,7 @@ export interface SaveVersionIdentity {
 
 export interface SaveWorldOptions {
   blockSize: number;
-  site: 'hamlet' | 'testHouse' | 'city' | 'forest';
+  site: string;
   storeys: number;
   density: number | null;
 }
@@ -129,7 +129,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -391,7 +391,7 @@ const playerStateInventory = obj({
 });
 const worldOptionsSchema = obj({
   blockSize: positive,
-  site: enumeration(['hamlet', 'testHouse', 'city', 'forest']),
+  site: str({ nonEmpty: true }),
   storeys: num({ integer: true, safe: true, min: 1, max: 20 }),
   density: nullable(num({ min: 0, max: 1 })),
 });
