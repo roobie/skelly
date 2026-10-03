@@ -191,6 +191,8 @@
       "id": "junk",
       "rolls": [1, 3],
       "entries": [
+        { "item": "stick", "weight": 1 },
+        { "item": "wax", "weight": 1 },
         {
           "item": "rag",
           "weight": 4,
