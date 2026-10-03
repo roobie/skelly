@@ -37,6 +37,16 @@
       "calibre": "5.56x45"
     },
     {
+      "id": "round_12_h_gauge_h_00_h_buck",
+      "file": "assets/models/round-12_h_gauge_h_00_h_buck.glb",
+      "calibre": "12-gauge-00-buck"
+    },
+    {
+      "id": "case_12_h_gauge_h_00_h_buck",
+      "file": "assets/models/case-12_h_gauge_h_00_h_buck.glb",
+      "calibre": "12-gauge-00-buck"
+    },
+    {
       "id": "rifle_battle",
       "file": "assets/models/rifle_battle.glb",
       "grip": { "at": [0.3158, 0.0004, -0.0138], "turn": [-90, 0, 0] },

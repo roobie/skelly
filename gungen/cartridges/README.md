@@ -1,9 +1,10 @@
 # Cartridge data
 
 One JSON file per cartridge, named `<id>.json`, where `id` is the slug other cartridges
-use to refer to it (`7.62x39`). This is data only: cartridge solids, viewer presentation and cartridge export are still pending
-(roobie/skelly#109). The pump-action clearance model already consumes the sourced loaded length,
-without generating cartridge geometry. The scope exception that allows real dimensions here is in
+use to refer to it (`7.62x39`). Metallic cartridges and shotshells have real-size solids,
+viewer presentation and the common cartridge exporter (roobie/skelly#109).
+Shotshell reproduction and explicit visual proxies: `../docs/shotshell-export.md`.
+The pump-action clearance model also consumes the sourced loaded length. The scope exception that allows real dimensions here is in
 `PROJECT.md` ("Non-goals").
 
 The files sit at the package root next to `designs/` and `fixtures/` because they are

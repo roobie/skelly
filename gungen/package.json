@@ -9,10 +9,11 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "test:sweeps": "GUNGEN_SWEEPS=1 vitest run",
-    "test:browser": "node test/browser/pump-pose-note.mjs",
+    "test:browser": "node test/browser/pump-pose-note.mjs && node test/browser/shotshell-viewer.mjs",
     "validate": "node src/cli/validate.ts",
     "check:designs": "node src/cli/checkDesigns.ts",
     "export:glb": "node src/cli/export.ts",
+    "export:cartridges": "node src/cli/exportCartridges.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
     "mesh-stats": "node src/cli/mesh-stats.ts"

@@ -113,6 +113,7 @@ export class SaveController {
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
   private checkpointInterval = SAVE_CHECKPOINT_GAME_HOURS * 450;
   private writing = false;
+  private requestingPersistence = false;
 
   constructor(backend: SaveBackendPreference = 'auto') {
     this.environmentProblem = saveEnvironmentProblem();
@@ -263,13 +264,10 @@ export class SaveController {
     if (!this.storageStatus) {
       return '';
     }
-    if (this.storageStatus.persistent === false) {
-      return 'Browser persistence was refused; saves may be evicted.';
-    }
     if (this.storageStatus.persistent === true) {
       return `Persistent ${this.storageStatus.backend} storage · ${this.storageStatus.quota.availableBytes ?? 0} bytes available.`;
     }
-    return `${this.storageStatus.backend} storage · quota status unavailable.`;
+    return `Best-effort ${this.storageStatus.backend} storage · saves may be evicted by the browser.`;
   }
 
   /** Runs full content-reference validation after the running registry has been built. */
@@ -525,19 +523,27 @@ export class SaveController {
   }
 
   private async requestPersistence(): Promise<void> {
+    if (this.requestingPersistence) {
+      return;
+    }
+    this.requestingPersistence = true;
+    this.render();
     try {
       const persistent = await this.storage.requestPersistence();
+      this.storageStatus = await this.storage.status();
       if (persistent === true) {
         this.statusText = 'Persistent storage granted.';
       } else if (persistent === false) {
-        this.statusText = 'Persistent storage was refused; browser eviction remains possible.';
+        this.statusText = 'Persistent storage was refused; saves remain best-effort and may be evicted.';
       } else {
         this.statusText = 'This browser does not support persistent storage.';
       }
     } catch (error) {
       this.statusText = `Could not request persistent storage: ${errorMessage(error)}`;
+    } finally {
+      this.requestingPersistence = false;
+      this.render();
     }
-    this.render();
   }
 
   private async exportCurrentRecords(): Promise<void> {
@@ -602,7 +608,9 @@ export class SaveController {
     $('save-rescan').hidden = this.entered || !this.storageUnavailable || Boolean(this.environmentProblem);
     const persist = $('save-persist');
     if (persist) {
-      persist.hidden = this.storageStatus?.persistent !== false;
+      persist.hidden = !this.storage.canRequestPersistence || this.storageStatus?.persistent === true;
+      (persist as HTMLButtonElement).disabled = this.requestingPersistence;
+      $('save-persist-note').hidden = persist.hidden;
     }
     const exportButton = $('save-export');
     if (exportButton) {

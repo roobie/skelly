@@ -149,13 +149,17 @@ export class SaveStorage {
       webLocks,
     });
     this.backend = response.backend;
-    const persistenceRequest = this.requestPersistence().catch(() => null);
+    // A query cannot prompt. Only the title/pause button may request persistence.
+    const persistenceQuery =
+      typeof navigator.storage?.persisted === 'function'
+        ? navigator.storage.persisted().catch(() => null)
+        : Promise.resolve(null);
     let metadataTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
     const metadataDeadline = new Promise<null>((resolve) => {
       metadataTimer = globalThis.setTimeout(() => resolve(null), STORAGE_METADATA_TIMEOUT_MS);
     });
     const [persistent, quota] = await Promise.all([
-      Promise.race([persistenceRequest, metadataDeadline]),
+      Promise.race([persistenceQuery, metadataDeadline]),
       Promise.race([
         this.estimateQuota().catch((): SaveQuota => ({ supported: false })),
         metadataDeadline.then((): SaveQuota => ({ supported: false })),
@@ -167,12 +171,18 @@ export class SaveStorage {
     return { backend: this.backend, persistent, quota };
   }
 
-  requestPersistence(): Promise<boolean | null> {
-    const { storage } = navigator;
-    if (typeof storage?.persist !== 'function') {
-      return Promise.resolve(null);
+  get canRequestPersistence(): boolean {
+    return typeof navigator.storage?.persist === 'function';
+  }
+
+  async requestPersistence(): Promise<boolean | null> {
+    if (!this.canRequestPersistence) {
+      return null;
     }
-    return storage.persist();
+    const persistent = await navigator.storage.persist();
+    // Preserve the explicit result even before startup status begins; a late query cannot erase it.
+    this.initialized = this.status().then((status) => ({ ...status, persistent }));
+    return persistent;
   }
 
   async estimateQuota(): Promise<SaveQuota> {

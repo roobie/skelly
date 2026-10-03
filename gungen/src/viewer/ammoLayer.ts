@@ -6,15 +6,17 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   PMREMGenerator,
+  SRGBColorSpace,
   type Texture,
   type WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import type { MetallicCartridge } from '../ammo/cartridge.ts';
+import type { Cartridge, Shotshell } from '../ammo/cartridge.ts';
 import { roundProfiles } from '../ammo/roundProfile.ts';
 import { meshForSolid } from '../core/mesh.ts';
 import type { RevolvedSolid, Vec2 } from '../core/schema.ts';
 import { UNITS_PER_MM } from '../gun/magazineGeometry.ts';
+import { shotshellGeometry, shotshellHullColor } from '../gun/shotshellGeometry.ts';
 
 export const DEFAULT_ROUND_FACETS = 24;
 const ROUND_CREASE_DEGREES = 12;
@@ -79,13 +81,57 @@ const revolvedGeometry = (profile: readonly Vec2[], facets: number): BufferGeome
   return geometry;
 };
 
-/** Build the loose loaded round and fired case in real-size-derived gungen units, axis along +X. */
+const buildShellMeshes = (shell: Shotshell, finish: CaseFinish, env: Texture, facets: number): AmmoMeshes => {
+  const solids = shotshellGeometry(shell);
+  const { casing } = finishMaterials(finish, env);
+  const hull = new MeshPhysicalMaterial({
+    color: new Color().setRGB(...shotshellHullColor(shell), SRGBColorSpace),
+    roughness: 0.65,
+    metalness: 0,
+  });
+  const card = new MeshPhysicalMaterial({ color: 0x45_3b_2b, roughness: 0.9 });
+  const bySlot: Record<string, MeshPhysicalMaterial> = { case: casing, closure: card, hull };
+  const groupOf = (parts: typeof solids.round): Group => {
+    const group = new Group();
+    for (const solid of parts) {
+      const scaled =
+        solid.kind === 'revolved'
+          ? { ...solid, profile: solid.profile.map(([x, y]): Vec2 => [x * UNITS_PER_MM, y * UNITS_PER_MM]) }
+          : {
+              ...solid,
+              profile: solid.profile.map(([x, y]): Vec2 => [x * UNITS_PER_MM, y * UNITS_PER_MM]),
+              z: [solid.z[0] * UNITS_PER_MM, solid.z[1] * UNITS_PER_MM] as const,
+            };
+      const data = meshForSolid(scaled, 0, facets);
+      const geometry = new BufferGeometry();
+      geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
+      geometry.setAttribute('normal', new BufferAttribute(data.normals, 3));
+      geometry.setIndex(new BufferAttribute(data.indices, 1));
+      const mesh = new Mesh(geometry, bySlot[solid.slot ?? 'hull'] ?? hull);
+      mesh.name = solid.id;
+      group.add(mesh);
+    }
+    return group;
+  };
+  return {
+    loose: groupOf(solids.round),
+    fired: groupOf(solids.case),
+    lengthUnits: shell.length.loaded.value! * UNITS_PER_MM,
+    caseLengthUnits: shell.length.nominal.value! * UNITS_PER_MM,
+    headDiameterUnits: shell.head.rimDiameter.value! * UNITS_PER_MM,
+  };
+};
+
+/** Build the loose loaded round/shell and fired case in real-size-derived gungen units, axis along +X. */
 export const buildAmmoMeshes = (
-  cartridge: MetallicCartridge,
+  cartridge: Cartridge,
   finish: CaseFinish,
   env: Texture,
   facets = DEFAULT_ROUND_FACETS,
 ): AmmoMeshes => {
+  if (cartridge.kind === 'shotshell') {
+    return buildShellMeshes(cartridge, finish, env, facets);
+  }
   const profiles = roundProfiles(cartridge);
   const materials = finishMaterials(finish, env);
   const loose = new Group();

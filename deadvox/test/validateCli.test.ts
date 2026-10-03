@@ -11,8 +11,10 @@ describe('npm run validate', () => {
     expect(run.status).toBe(0);
     expect(run.stdout).toContain('0 issue(s)');
     expect(run.stdout).toContain('Component closure: 36 item types');
-    expect(run.stdout).toContain('Content count: 36 reachable / 40 defined eligible types');
-    expect(run.stdout).toContain('Defined but unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest');
+    expect(run.stdout).toContain('Content count: 36 reachable / 42 defined eligible types');
+    expect(run.stdout).toContain(
+      'Defined but unreachable: baseball_bat, fanny_pack, hiking_backpack, shell_12_gauge_00_buck, spent_case_12_h_gauge_h_00_h_buck, utility_vest',
+    );
     expect(run.stdout).toContain('1 pending prerequisite(s)');
   });
 
@@ -77,7 +79,7 @@ describe('npm run validate', () => {
   it('passes on a pack with a model, its file and a manifest that lists it', () => {
     const run = validate('test/fixtures/packs/lamp/lamp.json', 'test/fixtures/packs/lamp/assets/manifest.json');
     // The fixture is validated on top of the base pack, including the new cartridge round and case models.
-    expect(run.stdout).toContain('35 models');
+    expect(run.stdout).toContain('37 models');
     expect(run.stdout).toContain('0 issue(s)');
     expect(run.status).toBe(0);
   });
