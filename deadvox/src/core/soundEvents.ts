@@ -1,4 +1,4 @@
-/** Events the running game may ask the sound system to play. */
+/** Sound events available to gameplay or exact-variant preview on the listening sheet. */
 export const SOUND_EVENT_IDS = [
   'player_hurt_light',
   'player_hurt_heavy',
@@ -19,6 +19,8 @@ export const SOUND_EVENT_IDS = [
   'melee_swing',
   'melee_hit',
   'melee_hit_fist',
+  'gunshot',
+  'gunshot_pbs1_reference',
   'item_drop_wood',
   'pouch_take',
   'shambler_idle',

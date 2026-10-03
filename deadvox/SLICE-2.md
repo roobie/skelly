@@ -77,6 +77,9 @@ adds them.
   the world uses (BR, 2026-10-03).
 - **The noise → positional-sound scenario test** carried from 1.10, as an exit
   gate.
+- **A sneak peek at trees** (BR, 2026-10-03), pulled forward from Slice 4: voxel
+  trees and hedges in the hamlet, plus the near-player performance work that a
+  lot of trees will need (2.13).
 
 ### Out (and which slice has it)
 
@@ -134,6 +137,12 @@ In flight on 2026-10-03: the AR/AK firing cycle (#154), gunshot audio (d18),
 debug axes (#151) and saves closure (#143). Not pulled forward: deadvox weapon
 mods and mounts, and the ammunition economy.
 
+### Pulled forward into Slice 2
+
+| Item | From | Effect on exit criteria |
+| --- | --- | --- |
+| Trees and hedges in the hamlet, with a forest benchmark (BR, 2026-10-03) | 4 | 2.13, with its exclusions; Slice 4 still owes biomes, far-terrain trees and the rest of "A world that feels real" |
+
 ### Carried forward from Slice 1
 
 | Item | Source | Effect on exit criteria |
@@ -173,11 +182,34 @@ apply here:
   which milestone owns it (see 2.2, 2.4 and 2.5). Nobody installs a second,
   temporary representation.
 
+## Consolidation folded into the milestones
+
+The 2026-10-03 consolidation survey (r9-1,
+[docs/reviews/2026-10-03-consolidation.md](docs/reviews/2026-10-03-consolidation.md))
+ranked eight refactors. Each one either lands inside the milestone that needs it
+or before it, so Slice 2 builds on one owner per concept rather than adding
+another copy. They are tracked with everything else in the refactoring backlog
+issue.
+
+| # | Consolidation | Where it lands |
+| --- | --- | --- |
+| F1 | One core `reach()` snapshot and `options()` contract | inside 2.1 (top 3) |
+| F3 | One boundary for the item tree, mutations and external UID references | the dangling quickbar fix now (d22); the tree/reference contract before or inside 2.4; state invalidation inside 2.1 and 2.6 (top 3) |
+| F2 | Rest generalized into the core long-action owner | inside 2.4, before 2.5–2.7 (top 3) |
+| F7 | View, HUD and render lifecycle extracted from `play.ts` | standalone, before the 2.4 panel and 2.9 lighting |
+| F4 | The simulation owns sound and noise admission; playback is one-way | before or inside 2.12 |
+| F5 | Per-item burn state, with lights derived from it | inside 2.9, after F3 |
+| F6 | Player combat continuation separated from zombie AI | inside 2.6 |
+| F8 | Exhaustive content-section metadata from one descriptor | inside 2.2, carried through 2.5 |
+
 ## Milestones
 
 Each milestone is one or two PRs, merged and deployed to Pages with CI green.
-The order follows dependencies. 2.12 depends on nothing and can run alongside
-the others.
+The order follows dependencies. After 2.0, 2.13 can run before the crafting
+milestones, to get BR's first look early. The lead serializes its hamlet
+placement with 2.10; whichever lands second uses the integrated layout and
+reruns the placement and chunk-order checks. 2.12 follows or includes the F4
+sound and noise consolidation and can run alongside unrelated work.
 
 ### 2.0 Before code starts
 
@@ -224,6 +256,30 @@ Paperwork; no game code.
   decided in the PR: whether a dead light finds a spare battery in nearby
   searched furniture and ground containers, not only in what you carry, as
   today.
+
+- **Quick move** (BR, 2026-10-03; pulled into 2.1 with BR's go). It's one more
+  option from the core `options()`: `quickMove(item, reach)` returns the move it
+  would make, or the reason it can't. The UI binds it to **Ctrl-click**, or
+  **Cmd-click on macOS**, which is best effort since no one on the team tests a
+  Mac. Shift-click stays free for splitting a stack later.
+  - **An item you carry** (in hands, worn, in a pocket or a container) drops to
+    the ground pile at your feet. A worn container drops with its contents.
+    Taking it off costs its usual handling time.
+  - **The item you're wielding** goes into your inventory only if it fits,
+    trying the backpack first, then other worn containers, then pockets. If
+    nothing fits, it stays wielded and a brief "doesn't fit" hint shows.
+  - **An item on the floor or in a container** goes to the inventory: the
+    backpack first, then other worn containers and pockets. If nothing fits, a
+    brief hint shows. A container lying on the floor, such as a backpack with
+    items in it, is **worn** if its slot is free, and keeps its contents. That's
+    "batch by the rules", not a separate take-all feature.
+  - **Stacks** move whole. Splitting comes later, on Shift-click.
+  - **Time:** a quick move is an ordinary move. It takes the same handling time
+    and goes through the handling queue, so it saves clicks, not game time.
+  - **Tests:** one case per rule: carried to the floor, wielded with and without
+    room, floor to the backpack, falling through to a pocket, no room giving the
+    hint, a floor backpack worn with its contents, and a whole stack. Plus the
+    platform key mapping.
 
 **Saves:** none; queries hold no state.
 **Tests:** an item in a pile or a backpack lying just inside 2 m is in reach,
@@ -513,6 +569,74 @@ event where the content says it makes noise.
 **Tests:** that one scenario test.
 **Done when:** it runs in the default test run and passes.
 
+### 2.13 Trees, a sneak peek
+
+Pulled forward from Slice 4 (BR, 2026-10-03), so the look and the cost of
+foliage at half-metre blocks can be judged before Slice 4's region and biome
+worldgen. The full plan is in DESIGN.md, "A world that feels real".
+
+- **Blocks and behaviour:** trunk, branch, leaf and hedge blocks, each declaring
+  whether it blocks movement and raycasts, and its footstep surface. Leaf litter
+  is a ground surface using `footstep_leaves`. `core/footsteps.ts` maps block
+  ids explicitly and falls back to stone, so the mapping has to be added. For
+  this sneak peek, solid blocks keep today's rules: they collide, and they block
+  sight like any opaque block (`core/collision.ts`, `core/zombies.ts`). Drawing
+  leaves cut-out doesn't change that rule. The player and zombies use the same
+  declared block rules.
+- **Shapes:** three tree shapes (a broadleaf, a conifer, a young tree), stamped
+  on the hamlet's open ground and in gardens, deterministically from the seed.
+  Hedges line some lots. Placement keeps the spawn, roads, entrances and
+  required routes clear, and doesn't overwrite buildings or the range. A tree
+  crossing a chunk boundary comes from the same seed-derived placement in
+  either chunk, never from whether its neighbour is already loaded.
+- **Performance, near the player:**
+  - Add a forest benchmark site (`?bench=1&site=forest&plan=0.5:96&seed=1&post=1`,
+    once implemented). Prove that URL parsing, later runs and the exported
+    results keep the forest workload.
+  - Before the optimization round, BR approves its density, three-shape mix,
+    seed, extent and camera routes at the first look, and the brief records
+    them. The forest covers the look, jog and sprint routes, not only the
+    spawn.
+  - Measure the full benchmark, not quick mode: 0.5 m blocks at 96 m, with the
+    normal look and shadows (`post=1`), by day and by night, recording the
+    resolution and device pixel ratio.
+  - Compare solid and cut-out leaves on the same workload. Record mesh time,
+    triangles, draw calls, memory, frame and CPU/GPU timing where available,
+    the slow-frame fraction, and streaming holes.
+  - Neither is assumed cheaper in advance. Density and view radius aren't cut
+    to make the budget without BR's decision; if the budget can't be met, the
+    measured trade-off goes to BR.
+- **Out:** foliage-specific visibility, light transmission and crouching rules
+  (Slice 3); cutting trees down and wood from trees, wind sway, far-terrain
+  trees, biomes, grass instancing, wildlife and new ambience (Slice 4). No new
+  weather, growth or decay simulation.
+
+**Saves:** none; trees regenerate from the seed. Existing saves are refused
+anyway, since the world changes.
+**Tests:**
+- Extend the chunk-order test with a tree whose canopy crosses a chunk
+  boundary, asserting that the tree's blocks exist.
+- Add targeted checks for the placement clearances, the declared collision
+  and sight behaviour, and leaf footsteps.
+- Content validation checks the new definitions.
+- No new seed sweep.
+
+**Done when:**
+- The three tree shapes and the hedges stand in the hamlet without blocking
+  required routes.
+- BR has approved them in the game.
+- The approved forest workload meets Slice 1's unchanged budget on the
+  reference laptop in Firefox: 60 fps at 0.5 m and 96 m, at most 1% of frames
+  over 18 ms in every benchmark phase, and no holes at sprint speed
+  (the frame budget decided in `SLICE-1.md`, 1.0).
+- The workload, build, rendering choice and results are recorded in Results,
+  and the normal hamlet workload is rechecked with trees.
+
+The reference laptop is BR's, so its run is BR's. A coder's own-host numbers
+are labelled as such.
+**First look** with screenshots by day and at night, and **BR's in-game
+approval.**
+
 ## Content for Slice 2
 
 | Kind | Today (caa0d31) | Slice 2 |
@@ -524,20 +648,25 @@ event where the content says it makes noise.
 | Building templates | 5 | 7 |
 | Furniture types | 10 | 11, with the workbench |
 | Loot tables | 10 | as many as the new templates need |
+| Vegetation | no placed trees or hedges | three tree shapes, hedges and a leaf-litter ground surface (2.13) |
+
+Tree shapes and their blocks aren't building templates or obtainable items, so
+they don't change those two counts.
 
 ## Definition of done
 
-- Milestones 2.0–2.12 are merged and deployed, with CI green: Biome, types,
+- Milestones 2.0–2.13 are merged and deployed, with CI green: Biome, types,
   tests, content validation including both reachability checks, and the save
   round trip.
 - The frame budget from 1.0 holds, unchanged. Every new per-frame cost (reach
   rebuilds, the crafting panel's planning, made lights on the recorded
-  workload) is measured on the reference laptop and recorded in Results.
+  workload, trees on the approved forest workload) is measured on the reference laptop and recorded in Results.
 - The default test run stays within the budget recorded in 2.0.
 - The noise → positional-sound scenario test passes (2.12).
 - Slice 2's playtest questions are in the playtest plan that runs at the end of
   Slice 3.
-- BR has approved the crafting panel (2.4) and made lights (2.9) in the game.
+- BR has approved the crafting panel (2.4), made lights (2.9), and trees and
+  hedges (2.13) in the game.
 - The checklist issue is closed, with links to the evidence and to every item
   carried forward.
 - A retrospective is written.

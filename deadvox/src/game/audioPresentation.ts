@@ -8,6 +8,18 @@ export interface HandlingSoundCue {
   readonly position: Vec3;
 }
 
+const FIREARM_SOUND_BY_ITEM: Readonly<Partial<Record<string, SoundEventId>>> = {};
+
+/** Item-keyed override point for future weapon-specific shot profiles. */
+export const firearmShotSound = (
+  itemType: string,
+  perspective: 'player' | 'actor' = 'player',
+): { event: SoundEventId; sourceLabel: string; listenerRelative: boolean } => ({
+  event: FIREARM_SOUND_BY_ITEM[itemType] ?? 'gunshot',
+  sourceLabel: itemType,
+  listenerRelative: perspective === 'player',
+});
+
 /** Sound policy for a move beginning; presentation-only and deliberately outside the simulation fingerprint. */
 export const handlingMoveStartCue = (
   move: MoveStart,

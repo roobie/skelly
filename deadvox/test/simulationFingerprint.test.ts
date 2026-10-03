@@ -48,6 +48,7 @@ const UNRESOLVED_DEPENDENCY_ERROR = /Cannot resolve runtime dependency/;
 const UNSUPPORTED_ID_ERROR = /Unsupported virtual runtime dependency|resolves outside src\//;
 const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
 const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
+const GUNSHOT_CAP_ENTRY_PATTERN = /\['gunshot', \d+\]/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 
 // These files are not runtime roots: buildRevision is a test/build diagnostic helper,
@@ -56,6 +57,7 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
+  'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -144,6 +146,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/game/audio.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/audioPresentation.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
@@ -177,6 +180,25 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
       { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
     ]);
+  });
+
+  it('ignores WebAudio voice-cap changes in the real graph but retains seeded sound selection and saves', async () => {
+    const host = await actualSimulationHost();
+    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
+      exclude: SIMULATION_EXCLUSIONS,
+    });
+    const capSource = await host.readFile(resolve(projectRoot, 'src/game/audio.ts'));
+    const capEntry = capSource.match(GUNSHOT_CAP_ENTRY_PATTERN)?.[0];
+    expect(capEntry).toBeDefined();
+    const cap = await mutateSimulationSource(host, 'src/game/audio.ts', capEntry!, "['gunshot', 64]");
+    expect(cap.value).toBe(original);
+    expect(cap.reads).toBe(0);
+    const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
+    expect(picker.reads).toBe(1);
+    expect(picker.value).not.toBe(original);
+    const graph = await actualSimulationGraph();
+    expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
+    expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);
   });
 
   it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {
@@ -278,6 +300,14 @@ describe('simulation source fingerprint', () => {
     const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts', 'rpm: 600', 'rpm: 601');
     expect(firearmHandling.reads).toBe(1);
     expect(firearmHandling.value).not.toBe(original);
+    const cadence = await mutateSimulationSource(
+      host,
+      'src/game/firearmHandling.ts',
+      'const interval = 60 / weapon.rpm;',
+      'const interval = 61 / weapon.rpm;',
+    );
+    expect(cadence.reads).toBe(1);
+    expect(cadence.value).not.toBe(original);
 
     const handPolicy = await mutateSimulationSource(
       host,

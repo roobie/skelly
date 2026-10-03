@@ -134,6 +134,8 @@ as this slice's first step, was done in Slice 1 (#105), which completed
 - About 80 item types. The validator checks that every component can be found
   or crafted.
 - More templates: a hardware store and a garage.
+- A sneak peek at trees and hedges in the hamlet, pulled forward from Slice 4
+  (2.13).
 
 ### 3. Flesh and noise
 
@@ -169,6 +171,12 @@ the timing is that the base game will be in place by then.
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
+- A world that feels real (BR, 2026-10-03; see
+  [DESIGN.md](DESIGN.md#a-world-that-feels-real)): vegetation by biome (trees,
+  shrubs, hedges, overgrowth) that gives cover, makes noise and yields wood;
+  cosmetic wind and motion; the sound of the place; and wildlife as scenery.
+  Trees are voxels near the player and simplified shapes in the far terrain,
+  measured against a forest benchmark. Slice 2's tree sneak peek (2.13) comes first.
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
 - Body temperature, clothing warmth, and rain.
