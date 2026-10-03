@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
-import { BLOCK_PATTERNS } from '../src/core/schema.ts';
+import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS } from '../src/core/schema.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -227,17 +227,89 @@ describe('content', () => {
     ).toBe(false);
   });
 
-  it('has every kind of content in the base pack', () => {
+  it('merges every descriptor section in the base pack, including recipes and skills', () => {
     const { registry } = buildRegistry(base);
     expect(registry.items.size).toBeGreaterThan(30);
-    for (const map of [registry.furniture, registry.figures, registry.loot, registry.templates, registry.zombies]) {
-      expect(map.size).toBeGreaterThan(0);
+    for (const section of CONTENT_SECTION_KEYS) {
+      const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
+      expect(count, section).toBeGreaterThan(0);
     }
+    expect(registry.recipes.get('torch')?.skills).toEqual({ crafting: 0 });
+    expect(registry.skills.get('crafting')?.name).toBe('Crafting');
     expect(registry.figures.get('player')?.palette).toEqual({ skin: '#c58f70', shirt: '#52677d', trousers: '#4a4b55' });
   });
 });
 
 describe('content references', () => {
+  const recipePack = {
+    items: [
+      {
+        id: 'fixture_tool',
+        name: 'Shaper',
+        category: 'tool',
+        weight: 1,
+        size: [1, 1],
+        tool: { qualities: Object.fromEntries([['custom_shaping', 1]]) },
+      },
+    ],
+    skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+    furniture: [
+      { id: 'fixture_bench', name: 'Bench', size: [1, 1, 1], color: '#ffffff', workstation: { id: 'fixture_station' } },
+      { id: 'fixture_plain_bench', name: 'Ordinary bench', size: [1, 1, 1], color: '#ffffff' },
+    ],
+    recipes: [
+      {
+        id: 'fixture_recipe',
+        result: { item: 'rag', count: 1 },
+        time: 2,
+        skills: Object.fromEntries([['fixture_skill', 0]]),
+        qualities: Object.fromEntries([['custom_shaping', 1]]),
+        workstation: 'fixture_station',
+        components: Array.from({ length: 10 }, () => [
+          { item: 'rag', count: 1 },
+          { item: 'nails', count: 1 },
+        ]),
+      },
+    ],
+  };
+
+  it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
+    const { registry, issues } = buildRegistry([...base, { source: 'recipe-mod.json', data: recipePack }]);
+    expect(issues).toEqual([]);
+    expect(registry.recipes.get('fixture_recipe')).toEqual(recipePack.recipes[0]);
+    expect(registry.skills.get('fixture_skill')).toEqual(recipePack.skills[0]);
+  });
+
+  it('checks result, skill, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
+    const data = {
+      ...recipePack,
+      recipes: [
+        {
+          ...recipePack.recipes[0]!,
+          result: { item: 'missing_result', count: 1 },
+          skills: Object.fromEntries([
+            ['fixture_skill', 0],
+            ['missing_skill', 1],
+          ]),
+          qualities: Object.fromEntries([
+            ['custom_shaping', 1],
+            ['missing_quality', 1],
+          ]),
+          workstation: 'fixture_plain_bench',
+        },
+      ],
+    };
+    const { registry, issues } = buildRegistry([...base, { source: 'bad-recipe-mod.json', data }]);
+    expect(issues.map(({ path, message }) => [path, message])).toEqual([
+      ['recipes[0].result.item', 'no item "missing_result"'],
+      ['recipes[0].skills.missing_skill', 'no skill "missing_skill"'],
+      ['recipes[0].qualities.missing_quality', 'no tool quality "missing_quality"'],
+      ['recipes[0].workstation', 'no workstation "fixture_plain_bench"'],
+    ]);
+    expect(registry.recipes.has('fixture_recipe')).toBe(false);
+    expect(registry.skills.has('fixture_skill')).toBe(false);
+  });
+
   const fixture = {
     source: 'broken-reference.json',
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,

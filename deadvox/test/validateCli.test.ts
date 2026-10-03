@@ -12,6 +12,18 @@ describe('npm run validate', () => {
     expect(run.stdout).toContain('0 issue(s)');
   });
 
+  it('rejects a recipe with a missing component item and names its reference', () => {
+    const run = validate('test/fixtures/content/recipe-missing-item.json');
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain('recipes[0].components[0][0].item: no item "golden_toilet"');
+  });
+
+  it('rejects a recipe above 1024 component combinations and reports its exact count', () => {
+    const run = validate('test/fixtures/content/recipe-too-many-combinations.json');
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain('recipes[0].components: 2048 component combinations exceeds maximum 1024');
+  });
+
   it('fails on a fixture with a broken reference', () => {
     const run = validate('test/fixtures/content/broken-reference.json');
     expect(run.status).toBe(1);

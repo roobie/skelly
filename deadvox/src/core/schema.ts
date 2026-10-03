@@ -11,6 +11,7 @@ import {
   maxValue,
   minValue,
   nonEmpty,
+  nullable,
   number,
   optional,
   picklist,
@@ -322,6 +323,8 @@ export const FurnitureSchema = strictObject({
   door: optional(strictObject({ handling: NonNegative })),
   /** You can sleep on it; 1 is a good bed. */
   bed: optional(strictObject({ quality: Fraction })),
+  /** Declared workstation id only; qualities, speed and runtime behavior come in Slice 2.8. */
+  workstation: optional(strictObject({ id: Id })),
 });
 
 // ---- loot tables ----
@@ -501,20 +504,47 @@ export const FigureSchema = strictObject({
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
 });
 
+// ---- skills and recipes ----
+
+export const SkillSchema = strictObject({ id: Id, name: Name });
+const RecipeItemSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) });
+
+/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
+export const RecipeSchema = strictObject({
+  id: Id,
+  result: RecipeItemSchema,
+  /** Game minutes, not simulation seconds. */
+  time: Positive,
+  skills: record(Id, Count),
+  qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
+  components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  workstation: optional(nullable(Id)),
+});
+
 // ---- files ----
 
-/** One content file: any of these sections, each a list of definitions. */
-export const ContentFileSchema = strictObject({
-  blocks: optional(array(BlockSchema)),
-  items: optional(array(ItemSchema)),
-  furniture: optional(array(FurnitureSchema)),
-  loot: optional(array(LootTableSchema)),
-  templates: optional(array(TemplateSchema)),
-  zombies: optional(array(ZombieSchema)),
-  figures: optional(array(FigureSchema)),
-  models: optional(array(ModelSchema)),
-  sounds: optional(array(SoundSchema)),
-});
+/** Native schemas and section metadata live here, not in parallel loader/validator lists. */
+const SECTION_DESCRIPTOR = {
+  blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
+  items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
+  furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
+  loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
+  templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
+  zombies: { schema: optional(array(ZombieSchema)), label: 'zombie types', order: 6 },
+  figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
+  models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
+  sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
+  skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
+  recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+} as const;
+
+type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
+const sectionSchemas = Object.fromEntries(
+  Object.entries(SECTION_DESCRIPTOR).map(([section, descriptor]) => [section, descriptor.schema]),
+) as SectionSchemas;
+
+/** One content file: any declared section, each a list of definitions. */
+export const ContentFileSchema = strictObject(sectionSchemas);
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
@@ -526,5 +556,14 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
+export type SkillDef = InferOutput<typeof SkillSchema>;
+export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
+
+/** Also rejects independently adding a schema section without its metadata. */
+export const CONTENT_SECTIONS = SECTION_DESCRIPTOR satisfies Record<ContentSection, { label: string; order: number }>;
+/** Order preserves the existing duplicate-id diagnostics independently of schema field order. */
+export const CONTENT_SECTION_KEYS = (Object.keys(CONTENT_SECTIONS) as ContentSection[]).sort(
+  (a, b) => CONTENT_SECTIONS[a].order - CONTENT_SECTIONS[b].order,
+);
