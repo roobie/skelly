@@ -334,8 +334,13 @@ export const meshForSolid = (
 };
 
 const GROUP_WELD_TOLERANCE_U = 1e-5;
-const weldCoordinate = (coordinate: number): number =>
-  Math.round(coordinate / GROUP_WELD_TOLERANCE_U) * GROUP_WELD_TOLERANCE_U;
+const weldCoordinate = (coordinate: number): number => {
+  const scaled = coordinate / GROUP_WELD_TOLERANCE_U;
+  const half = Math.round(scaled - 0.5) + 0.5;
+  // Independent face intersections can straddle the same exact rounding tie by a few floating-point ulps.
+  const stable = Math.abs(scaled - half) <= 32 * Number.EPSILON * Math.max(1, Math.abs(scaled)) ? half : scaled;
+  return Math.round(stable) * GROUP_WELD_TOLERANCE_U;
+};
 const weldPoint = (point: Vec3): Vec3 => [weldCoordinate(point[0]), weldCoordinate(point[1]), weldCoordinate(point[2])];
 const weldKey = (point: Vec3): string => point.map((coordinate) => weldCoordinate(coordinate).toFixed(5)).join(',');
 
@@ -390,6 +395,12 @@ const clipPolygon = (polygon: readonly Vec3[], plane: HalfSpace, keepInside: boo
 
 /** Subtract one convex piece from a planar convex polygon, returning disjoint survivors. */
 const subtractConvexPiece = (polygon: readonly Vec3[], planes: readonly HalfSpace[]): Vec3[][] => {
+  const overlap = planes.reduce((part, plane) => clipPolygon(part, plane, true), cleanPolygon(polygon));
+  // A neighboring curved cell may share only an edge. Partitioning by its extrapolated planes
+  // creates near-collinear slivers even though no material is removed.
+  if (polygonArea(overlap) <= GROUP_WELD_TOLERANCE_U ** 2) {
+    return [cleanPolygon(polygon)];
+  }
   let intersection = [cleanPolygon(polygon)];
   const survivors: Vec3[][] = [];
   for (const plane of planes) {

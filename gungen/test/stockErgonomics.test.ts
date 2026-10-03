@@ -99,6 +99,7 @@ const measure = (assembly: Assembly) => {
     gapAfterTwoUnitMove: triggerRearX - 2 - gripFrontWorld[0],
     triggerCenterStockLocalY: localTriggerCenter[1],
     holdY: holdWorld[1],
+    reach: Math.hypot(...holdWorld.map((v, i) => v - triggerCenter[i]!)),
     holdInsideGrip,
     anchors,
   };
@@ -120,12 +121,14 @@ describe('pump stock ergonomics', () => {
     }
   });
 
-  it('keeps the hold inside the grip and below the trigger centre for the M and L pump stocks', () => {
+  it('keeps the palm inside the grip above the index finger, with 5–7u actual reach for M/L stocks', () => {
     for (const assembly of pumpSamples()) {
       const result = measure(assembly);
       expect(result.stockLength, result.name).toMatch(PUMP_LENGTH);
       expect(result.holdInsideGrip, result.name).toBe(true);
-      expect(result.holdY, result.name).toBeLessThan(result.triggerCenterY);
+      expect(result.holdY, result.name).toBeGreaterThan(result.triggerCenterY);
+      expect(result.reach, result.name).toBeGreaterThanOrEqual(5);
+      expect(result.reach, result.name).toBeLessThanOrEqual(7);
       expect('code' in result.anchors, result.name).toBe(false);
       const report = validate(assembly, gunDomain);
       expect(report.ok, `${result.name}: ${report.issues.map((issue) => issue.message).join('; ')}`).toBe(true);

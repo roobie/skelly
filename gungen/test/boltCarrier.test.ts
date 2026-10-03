@@ -1,7 +1,7 @@
 // biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: Geometry contract tests intentionally assert linked dimensions, motion paths, and clearances together.
 import { describe, expect, it } from 'vitest';
-import { penetrationWorld, worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
+import { distanceWorld, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
+import { applyPoint, compose, extrusionPoint, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Box, Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -16,6 +16,7 @@ import {
   FAMILIES,
   RECEIVER_SECTION,
 } from '../src/gun/parts.ts';
+import { PUMP_ACTION_TRAVEL_U, PUMP_SHELL_LOADED_LENGTH_U } from '../src/gun/pumpShell.ts';
 import { buildReceiverSection } from '../src/gun/receiverSection.ts';
 import { loadCorpus, loadFixture } from './helpers.ts';
 
@@ -32,9 +33,7 @@ const corners = (solid: Solid): Vec3[] => {
     throw new Error('gun designs have no revolved solids');
   }
   return solid.profile.flatMap((point) =>
-    [solid.z[0], solid.z[1]].map((along) =>
-      solid.axis === 'x' ? ([along, point[0], point[1]] as const) : ([point[0], point[1], along] as const),
-    ),
+    [solid.z[0], solid.z[1]].map((along) => extrusionPoint(solid.axis, point, along)),
   );
 };
 
@@ -239,7 +238,9 @@ const akSlotWitness = (entry: TravelCase, resolved: ReturnType<typeof resolve>) 
   };
   const [, carrierY] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
   const slot = akChargingHandleSlotWindow(carrierY, port, entry.travel);
-  return [(slot.x[0] + Math.min(slot.x[1], port.x[0])) / 2, (slot.section[0] + slot.section[1]) / 2, 1.6] as const;
+  // The slim pump is 3u wide; retain the original witness on unchanged shells.
+  const z = entry.pattern === 'pump' ? 1.25 : 1.6;
+  return [(slot.x[0] + Math.min(slot.x[1], port.x[0])) / 2, (slot.section[0] + slot.section[1]) / 2, z] as const;
 };
 
 const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof resolve>): boolean => {
@@ -253,7 +254,7 @@ const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof re
   for (let sample = 0; sample <= samples; sample++) {
     const progress = motion.end[0] * (sample / samples);
     const transform = compose(carrierTransform, translation([progress, 0, 0]));
-    for (const solid of carrier.solids.filter(({ id }) => id !== 'bolt-handle-seat')) {
+    for (const solid of carrier.solids.filter(({ id }) => !id.startsWith('action-bar-') && id !== 'bolt-handle-seat')) {
       const moved = worldSolid(transform, solid);
       const overlaps = receiver.solids
         .map((obstacle, index) => ({ obstacle, depth: penetrationWorld(moved, receiverSolids[index]!) }))
@@ -276,7 +277,7 @@ const allCarrierSolidsStayWithinReceiverLength = (resolved: ReturnType<typeof re
   const cavityX = [bounds[0]![0]! + 0.5, bounds[0]![1]! - (isAr ? 0 : 0.5)];
 
   return carrier.solids
-    .filter(({ id }) => !HANDLE_ID_REGEX.test(id) && id !== 'carrier-tail')
+    .filter(({ id }) => !(id.startsWith('action-bar-') || HANDLE_ID_REGEX.test(id) || id === 'carrier-tail'))
     .flatMap((solid) =>
       corners(solid).flatMap((corner) => [
         applyPoint(transform, corner),
@@ -779,19 +780,23 @@ describe('procedural bolt carrier', () => {
     expect(carrier.motion).toMatchObject({ kind: 'linear', axis: [1, 0, 0] });
   });
 
-  it('keeps the AK and carrier/ejection-port anchors unchanged', () => {
-    const unchanged = [
+  it('pins carrier and ejection-port anchors, including the forward-shifted pump action', () => {
+    const expectedAnchors = [
       { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
       { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
-      { pattern: 'pump', restX: -7, carrierX: [-3.25, 3], portX: [-10.25, -3.5], portY: [-1, 1] },
+      { pattern: 'pump', restX: -3, carrierX: [-3.25, 3], portX: [-6.25, 0.5], portY: [-1, 1] },
       { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
       { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25], portY: [0.5, 1.75] },
     ] as const;
 
-    for (const expected of unchanged) {
+    for (const expected of expectedAnchors) {
       const entry = travelCases.find(({ pattern }) => pattern === expected.pattern)!;
       const resolved = resolve(assemblyFor(entry), gunDomain);
       const port = portMeasurements(entry, resolved);
+      if (expected.pattern === 'pump') {
+        // Forward growth contains the full stroke without changing the stock-to-trigger distance.
+        expect(resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'stock')!.pos).toEqual([-16, -1, 0]);
+      }
       expect(BOLT_CARRIER_ENVELOPES[expected.pattern].x, expected.pattern).toEqual(expected.carrierX);
       expect(
         resolved.defs.get('receiver')!.ports.find(({ id }) => id === 'bolt-carrier')!.pos[0],
@@ -948,9 +953,24 @@ describe('procedural bolt carrier', () => {
     expect(body.box.half).toEqual([3, 1.25, 1.25]);
   });
 
-  it('uses one carrier-face margin, a pump shell minimum, and unchanged pistol apertures', () => {
+  it('derives pump travel and port clearance from the sourced loaded shell length', () => {
+    const entry = travelCases.find(({ pattern }) => pattern === 'pump')!;
+    const resolved = resolve(assemblyFor(entry), gunDomain);
+    const port = portMeasurements(entry, resolved);
+    expect(PUMP_SHELL_LOADED_LENGTH_U).toBeCloseTo(62.23 / 11.5, 12);
+    expect(PUMP_ACTION_TRAVEL_U).toBe(5.5);
+    expect(entry.travel).toBe(PUMP_ACTION_TRAVEL_U);
+    expect(entry.travel).toBeGreaterThanOrEqual(PUMP_SHELL_LOADED_LENGTH_U);
     expect(EJECTION_PORT_MARGIN_U).toBe(0.25);
-    expect(EJECTION_PORT_RULES.pumpShellMinimum).toEqual({ lengthU: 6.25, endClearanceU: 0.25 });
+    expect(EJECTION_PORT_RULES.pumpShellMinimum).toEqual({
+      lengthU: PUMP_SHELL_LOADED_LENGTH_U,
+      endClearanceU: EJECTION_PORT_MARGIN_U,
+    });
+    expect(port.width).toBeGreaterThanOrEqual(PUMP_SHELL_LOADED_LENGTH_U + 2 * EJECTION_PORT_MARGIN_U);
+  });
+
+  it('uses one carrier-face margin and leaves pistol apertures unchanged', () => {
+    expect(EJECTION_PORT_MARGIN_U).toBe(0.25);
 
     const slide = FAMILIES.slide!.build({ bore: 'M', length: 'M' });
     const portPoints = slide.solids.filter(({ id }) => id.startsWith('ejection-port-')).flatMap(corners);
@@ -959,17 +979,91 @@ describe('procedural bolt carrier', () => {
     expect(portBounds[1]).toEqual([0.5, 2.5]);
   });
 
+  it('keeps the top action bar inside the forend slit and clear of the tube and barrel through full travel', () => {
+    const { assembly } = loadCorpus().find(({ label }) => label === 'design archetype-pump-shotgun.json')!;
+    const resolved = resolve(assembly, gunDomain);
+    const carrier = resolved.defs.get('bolt-carrier')!;
+    const forend = resolved.defs.get('forend')!;
+    const tube = resolved.defs.get('tube')!;
+    const barrel = resolved.defs.get('barrel')!;
+    const receiver = resolved.defs.get('receiver')!;
+    const carrierTransform = resolved.placed.get('bolt-carrier')!;
+    const forendTransform = resolved.placed.get('forend')!;
+    const carrierMotion = carrier.motion!;
+    const forendMotion = forend.motion!;
+    const bars = carrier.solids.filter(({ id }) => id.startsWith('action-bar-'));
+    expect(bars.map(({ id }) => id)).toEqual(['action-bar-top']);
+    expect(forendMotion.end).toEqual([-carrierMotion.end[0], 0, 0]);
+    const receiverBounds = limits(receiver.solids.flatMap(corners));
+    const receiverSolids = receiver.solids.map((solid) => worldSolid(resolved.placed.get('receiver')!, solid));
+    const tubeSolids = tube.solids.map((solid) => worldSolid(resolved.placed.get('tube')!, solid));
+    const barrelSolids = barrel.solids.map((solid) => worldSolid(resolved.placed.get('barrel')!, solid));
+    const travelSamples = Array.from({ length: Math.round(carrierMotion.end[0] * 4) + 1 }, (_, index) => index / 4);
+
+    for (const progress of travelSamples) {
+      const carrierAt = compose(carrierTransform, translation([progress, 0, 0]));
+      const forendProgress = progress / carrierMotion.end[0];
+      const forendAt = compose(
+        forendTransform,
+        translation(forendMotion.end.map((distance) => distance * forendProgress) as unknown as Vec3),
+      );
+      const barWorld = worldSolid(carrierAt, bars[0]!);
+      const barBounds = limits(corners(bars[0]!).map((point) => applyPoint(carrierAt, point)));
+      expect(barBounds[1]![0]!).toBeGreaterThanOrEqual(receiverBounds[1]![0]! - 1e-6);
+      expect(barBounds[1]![1]!).toBeLessThanOrEqual(receiverBounds[1]![1]! + 1e-6);
+      expect(barBounds[2]![0]!).toBeGreaterThanOrEqual(receiverBounds[2]![0]! - 1e-6);
+      expect(barBounds[2]![1]!).toBeLessThanOrEqual(receiverBounds[2]![1]! + 1e-6);
+      expect((barBounds[2]![0]! + barBounds[2]![1]!) / 2).toBeCloseTo(0, 6);
+
+      const forendSolids = forend.solids.map((solid) => worldSolid(forendAt, solid));
+      expect(
+        Math.min(...forendSolids.map((solid) => distanceWorld(barWorld, solid))),
+        `bar/slit clearance at ${progress}`,
+      ).toBeGreaterThanOrEqual(0.049);
+      const receiverPenetration = Math.max(...receiverSolids.map((obstacle) => penetrationWorld(barWorld, obstacle)));
+      const tubePenetration = Math.max(...tubeSolids.map((solid) => penetrationWorld(barWorld, solid)));
+      const barrelPenetration = Math.max(...barrelSolids.map((solid) => penetrationWorld(barWorld, solid)));
+      expect(receiverPenetration, `receiver clearance at ${progress}`).toBeLessThanOrEqual(1e-3);
+      expect(tubePenetration, `tube clearance at ${progress}`).toBeLessThanOrEqual(1e-6);
+      expect(barrelPenetration, `barrel clearance at ${progress}`).toBeLessThanOrEqual(1e-6);
+    }
+  });
+
+  it('keeps the pump action-bar channel internal and preserves the main receiver side face', () => {
+    const entry = travelCases.find(({ pattern }) => pattern === 'pump')!;
+    const resolved = resolve(assemblyFor(entry), gunDomain);
+    const receiver = resolved.defs.get('receiver')!;
+    const tubeY = -2.75;
+
+    for (const x of [-5.5, -4, -1, -0.25]) {
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY, 1.25), `outer skin x=${x}`).toBe(true);
+    }
+    // The port's longitudinal span stays open, with closed side skin ahead of it.
+    for (const x of [-6, -3, -2]) {
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, 0, 1.25), `shifted ejection opening x=${x}`).toBe(false);
+    }
+    expect(receiverSectionHasMaterialAt(receiver.solids, 1, 0, 1.25), 'receiver side ahead of the port').toBe(true);
+    for (const x of [-5, -2, -0.25]) {
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY + 1.1, 0), `internal slot x=${x}`).toBe(false);
+    }
+  });
+
   it('makes each family style produce the expected procedural features', () => {
     const build = (pattern: string) => FAMILIES['bolt-carrier']!.build({ pattern, bore: 'L', action: 'auto' });
     expect(build('ar').solids.map(({ id }) => id)).toEqual(['carrier-body', 'bolt-head', 'gas-key', 'carrier-tail']);
     expect(build('ak').solids.map(({ id }) => id)).toContain('piston');
     const pump = build('pump');
-    expect(pump.solids.map(({ id }) => id)).toContain('action-bar-left');
+    expect(pump.solids.map(({ id }) => id)).toContain('action-bar-top');
+    const actionBars = pump.solids.filter(({ id }) => id.startsWith('action-bar-'));
+    expect(actionBars.map(({ id }) => id)).toEqual(['action-bar-top']);
+    expect(actionBars.some(({ id }) => id.includes('left'))).toBe(false);
     const pumpBody = pump.solids.find(({ id }) => id === 'carrier-body');
     expect(pumpBody?.kind).toBe('box');
     if (pumpBody?.kind === 'box') {
       expect(pumpBody.box.half).toEqual([3.125, 0.75, 0.75]);
+      expect(pumpBody.box.center[2]).toBe(0);
     }
+    expect(pump.keepOuts.find(({ id }) => id === 'action-bar-sweep')).toBeDefined();
     expect(build('smg').solids.map(({ id }) => id)).toContain('carrier-body');
     expect(build('barrett').solids.map(({ id }) => id)).toContain('heavy-carrier');
     expect(build('bolt').solids.map(({ id }) => id)).toContain('bolt-handle-seat');

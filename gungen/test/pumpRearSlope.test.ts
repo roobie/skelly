@@ -24,9 +24,9 @@ describe('pump receiver rear lean', () => {
     expect(receiverPort.normal).toEqual([-1, 0, 0]);
     expect(stockPort.normal).toEqual([1, 0, 0]);
     expect(receiverPort.pos).toEqual([-16, -1, 0]);
-    const rearTopAtPort =
-      (PUMP_REAR_SLOPE.clip.offset - PUMP_REAR_SLOPE.clip.normal[0] * receiverPort.pos[0]) /
-      PUMP_REAR_SLOPE.clip.normal[1];
+    const rearTopAtPort = Math.min(
+      ...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[0] * receiverPort.pos[0]) / normal[1]),
+    );
     expect(receiverPort.pos[1]).toBeLessThan(rearTopAtPort);
   });
 });

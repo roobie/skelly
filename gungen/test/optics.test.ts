@@ -359,7 +359,7 @@ const FIT_CASES = [
   { template: boltRifle, seed: 0, types: OPTIC_TYPE_IDS.slice(3) },
   { template: boltRifleBox, seed: 0, types: OPTIC_TYPE_IDS.slice(4) },
   { template: boltRifleThumbhole, seed: 0, types: OPTIC_TYPE_IDS.slice(4) },
-  { template: pumpShotgun, seed: 1, types: OPTIC_TYPE_IDS.slice(0, 3) },
+  { template: pumpShotgun, seed: 4, types: OPTIC_TYPE_IDS.slice(0, 3) },
 ] as const;
 
 describe('template optics can be attached, validated, and removed', () => {

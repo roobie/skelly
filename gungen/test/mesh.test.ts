@@ -271,6 +271,34 @@ describe('watertightness (welded at 1e-5u)', () => {
     }
   });
 
+  it('welds adjacent tapered cells whose shared width is on a half-grid rounding tie', () => {
+    const cellProfiles = [
+      [
+        [-0.656_25, -2.260_742_187_5],
+        [-0.609_375, -2.273_071_289_062_5],
+        [-0.609_375, 0.766_152_343_75],
+        [-0.656_25, 0.748_984_375],
+      ],
+      [
+        [-0.703_125, -2.252_807_617_187_5],
+        [-0.656_25, -2.260_742_187_5],
+        [-0.656_25, 0.748_984_375],
+        [-0.703_125, 0.731_933_593_75],
+      ],
+    ] as const;
+    const cells: ExtrudedPolygonSolid[] = cellProfiles.map((profile, i) => ({
+      id: `cell-${i}`,
+      kind: 'extruded-polygon',
+      profile,
+      z: [-1.5, 1.5],
+      clip: [
+        { normal: [-5 / 6, 0, 1], offset: 1.5 },
+        { normal: [-5 / 6, 0, -1], offset: 1.5 },
+      ],
+    }));
+    expectWatertightMesh(meshForSolidGroup(cells), 'half-grid shared station');
+  });
+
   it('rejects union pieces thinner than ten weld tolerances', () => {
     const thin: BoxSolid = { id: 'thin', kind: 'box', box: { center: [0, 0, 0], half: [2.5e-6, 1, 1] } };
     expect(() => meshForSolidGroup([thin])).toThrow(THIN_SOLID_ERROR);
