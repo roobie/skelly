@@ -613,27 +613,36 @@ something in play, not only decorate it.
     materials loot gives in Slice 2.
   - **Movement and landmarks:** hedges and thickets channel movement, for you
     and the dead, and a lone big tree is a landmark you can find your way by.
-- **Motion:** wind moves foliage and loose debris, and rain falls (Slice 4). A
-  world where nothing moves reads as paused.
+- **Motion:** cosmetic wind moves foliage and loose debris, and rain falls
+  (Slice 4). It makes exposure and the weather readable, rather than leaving a
+  world that reads as paused. Wind here is render and audio ambience, not
+  another simulated weather system beyond version 1's rain and temperature.
 - **Sound of the place:** wind in the trees by biome, birds by day, insects at
   night, a building settling, and the distant sounds from the simulation (see
-  [Audio](#audio)). An idea for BR: birds going quiet, or taking off, when
-  something comes near. That's diegetic, so it would be a warning the world gives
-  rather than one the UI gives.
-- **Wildlife as scenery:** birds, crows on the dead, flies. No hunting or
-  farming in version 1 (EPIC.md, "Not in version 1").
-- **Time passing:** overgrowth, dust and leaves indoors, and food rotting. These
-  are signs of how long ago people left.
+  [Audio](#audio)). **An idea for BR, not accepted:** birds going quiet, or
+  taking off, when something comes near. If adopted, it responds to an actual
+  nearby cause, never to a timer or a guaranteed enemy alarm, so it stays a
+  warning the world gives rather than one the UI gives.
+- **Wildlife as scenery:** birds, crows on the dead and flies help the player
+  read the place, the bodies and the decay. They're environmental cues, not an
+  animal ecology, hunting or farming in version 1 (EPIC.md, "Not in version
+  1").
+- **Time passing:** authored overgrowth, and dust and leaves indoors, show the
+  weeks since people left. Food rotting changes what's still worth scavenging.
+  There is no plant-growth or dust-accumulation simulation.
 
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:
 
-- **Near the player,** trees are voxels in the block grid (trunk, branch and leaf
-  blocks), so they collide, block sight, take light and can be cut down. Leaf
-  blocks have to mesh cheaply. Whether they render solid or with cut-out holes is
-  decided by measurement.
-- **Far away,** the far-terrain meshes (see [Rendering](#rendering)) carry
-  simplified tree shapes, so a forest still reads as a forest at 512 m.
+- **Near the player,** trees use trunk, branch and leaf blocks in the voxel
+  grid. Their movement and sight behaviour is explicit; richer foliage rules
+  and cutting come in their scheduled slices. Solid and cut-out leaves are
+  measured on the same forest workload, including meshing, overdraw, shadows
+  and memory. Neither is assumed faster in advance.
+- **Far away (Slice 4),** simplified tree shapes are planned in the far-terrain
+  meshes (see [Rendering](#rendering)), aiming for a forest that still reads as
+  one at 512 m. That distance and its cost are unmeasured. Neither far-tree
+  detail levels nor grass instancing is part of Slice 2's sneak peek.
 - **Grass tufts and small plants** that have no effect on play are instanced
   decoration, not blocks.
 - **A forest workload in the benchmark,** like the stress-test city, keeps every
