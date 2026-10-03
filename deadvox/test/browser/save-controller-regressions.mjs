@@ -28,10 +28,54 @@ assert(address && typeof address !== 'string');
 const url = `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`;
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
 const QUOTA_ERROR = /quota regression/i;
+const BEST_EFFORT = /best.effort/i;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const BASE_MISMATCH = /Generated base mismatch/;
 
 try {
+  await test('persistence button alone requests once and updates status after an unavailable startup query', async () => {
+    const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    try {
+      await context.addInitScript(() => {
+        globalThis.persistenceRequests = 0;
+        Object.defineProperties(navigator.storage, {
+          persisted: { configurable: true, value: () => Promise.reject(new Error('query unavailable')) },
+          persist: {
+            configurable: true,
+            value: () => {
+              globalThis.persistenceRequests += 1;
+              return Promise.resolve(true);
+            },
+          },
+        });
+      });
+      const page = await context.newPage();
+      await page.goto(url);
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      const button = page.locator('#save-persist');
+      assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
+      assert.match(await page.locator('#save-status').textContent(), BEST_EFFORT);
+      assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
+      await button.click();
+      await page.waitForFunction(() =>
+        document.querySelector('#save-status').textContent.includes('Persistent storage granted'),
+      );
+      assert.equal(
+        await page.evaluate(() => globalThis.persistenceRequests),
+        1,
+        'one player click makes one native API call',
+      );
+      assert.equal(await button.isVisible(), false, 'granted status removes the request button');
+      assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
+      assert.equal(
+        await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
+        true,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
   await test('title, two-hour checkpoint, and visible save-failure recovery', async () => {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     const page = await context.newPage();
