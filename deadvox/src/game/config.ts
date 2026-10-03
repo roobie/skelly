@@ -1,5 +1,6 @@
 import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
+import { BUNDLED_CONTENT } from './bundledContent.ts';
 
 /** View distances offered on the start card, in metres. 96 m is the default. */
 export const VIEW_DISTANCES: readonly number[] = [64, 96, 128];
@@ -55,7 +56,10 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
 export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
   params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
-export type SiteName = 'hamlet' | 'testHouse' | 'city' | 'forest';
+export type SiteName = string;
+
+// URL parsing precedes world construction; only admitted files may contribute authored ids.
+const authoredIds = new Set(BUNDLED_CONTENT.registry.layouts.keys());
 
 const MAX_STOREYS = 20;
 
@@ -73,7 +77,11 @@ export const siteFromUrl = (
   const requested = params.get('site');
   return {
     site:
-      requested === 'city' || requested === 'testHouse' || requested === 'forest' || requested === 'hamlet'
+      requested === 'city' ||
+      requested === 'testHouse' ||
+      requested === 'forest' ||
+      requested === 'hamlet' ||
+      (requested !== null && authoredIds.has(requested))
         ? requested
         : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,

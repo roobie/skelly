@@ -1,0 +1,89 @@
+{
+  "type": "map",
+  "version": "1.10",
+  "tiledversion": "1.11.0",
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "width": 128,
+  "height": 128,
+  "tilewidth": 1,
+  "tileheight": 1,
+  "infinite": false,
+  "nextlayerid": 5,
+  "nextobjectid": 7,
+  "properties": [
+    {"name": "id", "type": "string", "value": "lone_house"},
+    {"name": "ground", "type": "float", "value": 21}
+  ],
+  "tilesets": [],
+  "layers": [
+    {
+      "id": 1, "name": "Buildings", "type": "objectgroup", "color": "#ba845c",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {
+          "id": 1, "name": "Lone house (two storeys; no stairs in spike)", "type": "building",
+          "x": 65, "y": 62, "width": 10, "height": 7, "rotation": 180, "visible": true,
+          "properties": [
+            {"name": "template", "type": "string", "propertytype": "template_id", "value": "small_house"},
+            {"name": "storeys", "type": "int", "value": 2}
+          ]
+        },
+        {
+          "id": 2, "name": "Tool shack stand-in", "type": "building",
+          "x": 52, "y": 57, "width": 4, "height": 3, "rotation": 90, "visible": true,
+          "properties": [
+            {"name": "template", "type": "string", "propertytype": "template_id", "value": "shed"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2, "name": "Spawns", "type": "objectgroup", "color": "#e9c368",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {
+          "id": 3, "name": "Player on track looking northwest", "type": "player_spawn",
+          "point": true, "x": 72, "y": 65, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "properties": [
+            {"name": "yaw", "type": "float", "value": 60},
+            {"name": "elevation", "type": "float", "value": 21.5}
+          ]
+        },
+        {
+          "id": 4, "name": "Upstairs shambler", "type": "shambler",
+          "point": true, "x": 58, "y": 59.5, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "properties": [
+            {"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"},
+            {"name": "elevation", "type": "float", "value": 25},
+            {"name": "chance", "type": "float", "value": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3, "name": "Woodland behind house", "type": "objectgroup", "color": "#518a4f",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {
+          "id": 5, "name": "North wood", "type": "woodland",
+          "x": 35, "y": 25, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "polygon": [{"x": 0, "y": 0}, {"x": 45, "y": 0}, {"x": 45, "y": 23}, {"x": 0, "y": 23}],
+          "properties": [{"name": "density", "type": "float", "value": 1}]
+        }
+      ]
+    },
+    {
+      "id": 4, "name": "East track", "type": "objectgroup", "color": "#957448",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {
+          "id": 6, "name": "East dirt track", "type": "track",
+          "x": 72, "y": 22, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "polyline": [{"x": 0, "y": 0}, {"x": 0, "y": 74}],
+          "properties": [{"name": "width", "type": "float", "value": 3}]
+        }
+      ]
+    }
+  ]
+}

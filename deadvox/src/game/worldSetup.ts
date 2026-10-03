@@ -1,7 +1,8 @@
+import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid } from '../core/collision.ts';
-import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
+import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
@@ -12,6 +13,7 @@ import { type BlockBox, rasterize } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
+import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
@@ -85,6 +87,13 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
  * Otherwise (other block sizes, broken content) the world has the test house.
  */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
+  const layout = registry.layouts.get(config.site);
+  if (layout) {
+    return new AuthoredSite(config.seed, registry, config.scale, layout);
+  }
+  if (!['hamlet', 'city', 'forest', 'testHouse'].includes(config.site)) {
+    throw new Error(`Content does not define site "${config.site}"`);
+  }
   if (config.site === 'forest') {
     return new Forest(config.seed, registry, config.scale, config.density);
   }
@@ -100,18 +109,9 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
     : new Hamlet(config.seed, registry, config.scale);
 };
 
-export const loadContent = (): { registry: Registry; contentErrors: string } => {
-  // Base content is bundled. Mods would be appended to this list (from URLs or local files).
-  const files = import.meta.glob<unknown>('../content/base/*.json', { eager: true, import: 'default' });
-  const sources: ContentSource[] = Object.entries(files)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([source, data]) => ({ source, data }));
-  const { registry, issues } = buildRegistry(sources);
-  return { registry, contentErrors: issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n') };
-};
-
 export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
-  const { registry, contentErrors } = loadContent();
+  const { registry, issues } = BUNDLED_CONTENT;
+  const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
 
