@@ -16,7 +16,6 @@ errorRoot.setAttribute('role', 'status');
 
 const audio = new GameAudio({
   registry,
-  seed: 1,
   blockSize: 1,
   isSolid: () => false,
   report: (message) => {

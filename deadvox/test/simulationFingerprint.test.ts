@@ -183,7 +183,7 @@ describe('simulation source fingerprint', () => {
     ]);
   });
 
-  it('ignores WebAudio voice-cap changes in the real graph but retains seeded sound selection and saves', async () => {
+  it('ignores WebAudio voice-cap changes but fingerprints sound admission, seeded selection and saves', async () => {
     const host = await actualSimulationHost();
     const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
       exclude: SIMULATION_EXCLUSIONS,
@@ -197,6 +197,14 @@ describe('simulation source fingerprint', () => {
     const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
     expect(picker.reads).toBe(1);
     expect(picker.value).not.toBe(original);
+    const admission = await mutateSimulationSource(
+      host,
+      'src/game/session.ts',
+      'const emittedAsNoise = player && definition.noise.enabled;',
+      'const emittedAsNoise = false;',
+    );
+    expect(admission.reads).toBe(1);
+    expect(admission.value).not.toBe(original);
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
     expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);

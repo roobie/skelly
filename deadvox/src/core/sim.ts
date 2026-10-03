@@ -3,17 +3,22 @@
 
 import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
+import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
 import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import type { SoundEventId } from './soundEvents.ts';
+import type { SoundEmission } from './soundPicker.ts';
 
-/** Events systems emit. Noise, damage and block changes join as their systems arrive. */
+/** Events systems emit. Sound choices and their hearing stimuli are committed before playback. */
 export type SimEvent =
   | { kind: 'interrupt'; reason: string }
   | { kind: 'damage'; amount: number; cause: string }
-  | { kind: 'death'; cause: string };
+  | { kind: 'death'; cause: string }
+  | ({ kind: 'sound' } & SoundEmission)
+  | { kind: 'noise'; event: SoundEventId; position: Vec3; id: number; radiusMetres: number; expiresAt: number };
 
 export type Timed<E> = E & { readonly time: number };
 
