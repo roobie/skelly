@@ -300,6 +300,14 @@ describe('simulation source fingerprint', () => {
     const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts', 'rpm: 600', 'rpm: 601');
     expect(firearmHandling.reads).toBe(1);
     expect(firearmHandling.value).not.toBe(original);
+    const cadence = await mutateSimulationSource(
+      host,
+      'src/game/firearmHandling.ts',
+      'const interval = 60 / weapon.rpm;',
+      'const interval = 61 / weapon.rpm;',
+    );
+    expect(cadence.reads).toBe(1);
+    expect(cadence.value).not.toBe(original);
 
     const handPolicy = await mutateSimulationSource(
       host,

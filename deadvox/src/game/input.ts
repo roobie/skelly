@@ -182,6 +182,7 @@ export class Input {
       sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
       primaryAction: this.primaryActionPressed,
+      primaryActionHeld: this.primaryActionDown,
       leftHandAction: this.leftHandActionPressed,
     };
   }

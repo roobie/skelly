@@ -26,6 +26,7 @@ const VOICE_FADE_SECONDS = 0.01;
 interface Voice {
   source: AudioBufferSourceNode;
   gain: GainNode;
+  stopAt?: number;
   finish: () => void;
 }
 
@@ -121,8 +122,8 @@ export class GameAudio {
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
   private readonly voices = new Map<SoundEventId, Set<Voice>>();
-  // At most one crossfade tail per capped event, even before WebAudio delivers onended.
-  private readonly retiring = new Map<SoundEventId, Voice>();
+  // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
+  private readonly retiring = new Map<SoundEventId, Set<Voice>>();
 
   constructor({ registry, seed, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
@@ -297,19 +298,29 @@ export class GameAudio {
     if (cap === undefined || !active || active.size < cap) {
       return;
     }
-    const oldest = active.values().next().value!;
-    // A cold decode burst can deliver several shots in one render quantum. Bound tails too.
-    const previousTail = this.retiring.get(event);
-    if (previousTail) {
+    const now = context.currentTime;
+    const tails = this.retiring.get(event) ?? new Set<Voice>();
+    // A delayed ended callback need not keep an already-stopped node connected.
+    for (const tail of tails) {
+      if (tail.stopAt !== undefined && tail.stopAt <= now) {
+        tail.finish();
+      }
+    }
+    // The safety ceiling is 2*cap connected sources, including pathological >64-shot
+    // same-quantum calls. Ordinary 75/100ms cadence never reaches this tail ceiling.
+    if (tails.size >= cap) {
+      const previousTail = tails.values().next().value!;
       previousTail.source.stop();
       previousTail.finish();
     }
+    const oldest = active.values().next().value!;
     active.delete(oldest);
-    this.retiring.set(event, oldest);
-    const now = context.currentTime;
+    tails.add(oldest);
+    this.retiring.set(event, tails);
+    oldest.stopAt = now + VOICE_FADE_SECONDS;
     oldest.gain.gain.setValueAtTime(oldest.gain.gain.value, now);
-    oldest.gain.gain.linearRampToValueAtTime(0, now + VOICE_FADE_SECONDS);
-    oldest.source.stop(now + VOICE_FADE_SECONDS);
+    oldest.gain.gain.linearRampToValueAtTime(0, oldest.stopAt);
+    oldest.source.stop(oldest.stopAt);
   }
 
   private applyVolumes(): void {
@@ -429,7 +440,9 @@ export class GameAudio {
         if (active?.size === 0) {
           this.voices.delete(event);
         }
-        if (this.retiring.get(event) === voice) {
+        const tails = this.retiring.get(event);
+        tails?.delete(voice);
+        if (tails?.size === 0) {
           this.retiring.delete(event);
         }
         for (const node of connectedNodes) {

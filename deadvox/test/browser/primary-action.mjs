@@ -74,9 +74,9 @@ try {
   await page.goto(
     `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
-  // The title's save discovery is asynchronous; a visible #go is not yet an actionable New world.
+  // startPlay mounts debug UI after save discovery; its synchronous task also installs the click handler.
   await page.waitForFunction(() =>
-    (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
+    Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view canvas')),
   );
   await page.locator('#go').click();
   try {

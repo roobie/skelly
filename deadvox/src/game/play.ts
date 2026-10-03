@@ -10,6 +10,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
@@ -52,7 +53,7 @@ import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
-import { debugFirearmShot } from './firearmHandling.ts';
+import { DebugFirearmTrigger, debugFirearmShot, firearmHandlingFor } from './firearmHandling.ts';
 import {
   CONTROL_CODES,
   Input,
@@ -135,6 +136,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   let playtestObserver: PlaytestObserver | undefined;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
+  const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
     world: engine.world,
@@ -153,8 +155,24 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       consumeLeftHandAction: () => input.consumeLeftHandAction(),
       primaryAction: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
-        if (!debugTools?.buildOn) {
+        const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
+        if (!(debugTools?.buildOn || (config.debug && action.kind === 'firearm'))) {
           performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
+        }
+      },
+      heldPrimaryAction: (time, pressed, triggerHeld) => {
+        const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
+        const weapon = config.debug && !debugTools?.buildOn && action.kind === 'firearm' ? action.item : undefined;
+        const deadlines = firearmTrigger.advance(
+          time,
+          weapon ? { uid: weapon.uid, rpm: firearmHandlingFor(weapon, registry).rpm } : undefined,
+          pressed,
+          triggerHeld,
+        );
+        if (weapon) {
+          for (const deadline of deadlines) {
+            fireDebugWeapon(weapon, deadline);
+          }
         }
       },
       leftHandAction: () => {
@@ -846,6 +864,29 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
+  const fireDebugWeapon = (item: Item, time: number): boolean => {
+    const effect = debugFirearmShot({
+      debugMode: config.debug,
+      inventory,
+      item,
+      feet: feet(),
+      eye: eye(),
+      yaw: input.yaw,
+      pitch: input.pitch,
+      aim: lookDir(),
+      seed: config.seed,
+      simTime: time,
+      blockSize: s,
+    });
+    if (!effect) {
+      return false;
+    }
+    caseEffects.spawn(effect);
+    const shot = firearmShotSound(item.type);
+    playSessionSound(shot.event, chest(), time, shot);
+    return true;
+  };
+
   performPrimaryAction = (hand: 'right' | 'left') => {
     const action = selectPrimaryAction(registry, inventory.hands, hand);
     switch (action.kind) {
@@ -860,24 +901,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         return;
       }
       case 'firearm': {
-        const effect = debugFirearmShot({
-          debugMode: config.debug,
-          inventory,
-          item: action.item,
-          feet: feet(),
-          eye: eye(),
-          yaw: input.yaw,
-          pitch: input.pitch,
-          aim: lookDir(),
-          seed: config.seed,
-          simTime: sim.time,
-          blockSize: s,
-        });
-        if (effect) {
-          caseEffects.spawn(effect);
-          const shot = firearmShotSound(action.item.type);
-          playSessionSound(shot.event, chest(), sim.time, shot);
-        } else {
+        if (!fireDebugWeapon(action.item, sim.time)) {
           showNotice('Firearms can only be fired in debug mode');
         }
         return;

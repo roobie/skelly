@@ -93,8 +93,8 @@ describe('firearm sound playback', () => {
       await flush();
       expect(context.sources).toHaveLength(index + 1);
     }
-    // Thirty-two full voices and at most one fading tail, even if onended has not been delivered.
-    expect(context.peakConnectedSources).toBeLessThanOrEqual(33);
+    // Thirty-two full voices and at most thirty-two fading tails, including late onended.
+    expect(context.peakConnectedSources).toBeLessThanOrEqual(64);
     const oldest = context.sources[0]!;
     const gain = oldest.connect.mock.calls[0]![0] as GainNode;
     expect(gain.gain.setValueAtTime).toHaveBeenCalledWith(expect.any(Number), 10);
@@ -123,7 +123,7 @@ describe('firearm sound playback', () => {
     const { audio, context, fetchBuffer } = setup();
     const complete: Array<(response: Response) => void> = [];
     fetchBuffer.mockImplementation(() => new Promise<Response>((resolve) => complete.push(resolve)));
-    for (let index = 0; index < 36; index++) {
+    for (let index = 0; index < 40; index++) {
       expect(audio.play('gunshot', [0, 0, 0], index * 0.02)).toBe(true);
     }
     expect(fetchBuffer).toHaveBeenCalledTimes(2);
@@ -132,9 +132,17 @@ describe('firearm sound playback', () => {
       resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) } as Response);
     }
     await flush();
-    expect(context.sources).toHaveLength(36);
-    expect(context.peakConnectedSources).toBeLessThanOrEqual(33);
+    expect(context.sources).toHaveLength(40);
+    expect(context.peakConnectedSources).toBeLessThanOrEqual(64);
+    // The review's 40-shot cold burst now gives every retiree its fade, in one audio quantum.
+    expect(context.sources.flatMap(({ stop }) => stop.mock.calls).every(([when]) => when === 10.01)).toBe(true);
     expect(context.decodeAudioData).toHaveBeenCalledTimes(2);
+    for (let index = 40; index < 80; index++) {
+      audio.play('gunshot', [0, 0, 0], index * 0.02);
+    }
+    await flush();
+    expect(context.sources).toHaveLength(80);
+    expect(context.peakConnectedSources).toBe(64);
   });
 
   it('head-locks the player shot through listener translation and rotation while retaining world-shot routing', async () => {
