@@ -79,6 +79,8 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 
 ## Further docs
 
+- Shared-host admission, capacity and default-run budgets: `docs/host-budget.md`.
+
 - Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
 - Lessons from past problems: `deadvox/LESSONS.md`.
 
