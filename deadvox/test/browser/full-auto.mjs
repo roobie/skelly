@@ -20,7 +20,7 @@ const vite = await createServer({
       enforce: 'pre',
       transform(code, id) {
         if (id.endsWith('/src/game/play.ts')) {
-          const marker = '  const renderHandlingFrame = (): void => {';
+          const marker = '  const onForwardPress = (e: MouseEvent) => {';
           assert(code.includes(marker));
           return code.replace(
             marker,
