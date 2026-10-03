@@ -22,7 +22,8 @@ describe('asset manifest', () => {
     expect(validateManifest('base', data).issues).toEqual([]);
   });
 
-  it('accepts CC0 and CC BY, and refuses other licences', () => {
+  it('accepts CC0, no-licence original work and CC BY, and refuses other licences', () => {
+    expect(check(source({ licence: 'NONE' })).issues).toEqual([]);
     expect(check(source(), source({ licence: 'CC-BY-4.0', files: ['assets/models/a.glb'] })).issues).toEqual([]);
     expect(check(source({ licence: 'CC-BY-3.0' })).issues).toEqual([]);
     const { issues } = check(source({ licence: 'CC-BY-SA-4.0' }));

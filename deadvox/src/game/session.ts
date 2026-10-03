@@ -85,6 +85,8 @@ export interface SessionControls {
   consumeLeftHandAction?: () => void;
   /** Runs the right-hand action on the player-tick boundary, with that tick's aim/state. */
   primaryAction?: () => void;
+  /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
+  heldPrimaryAction?: (time: number, pressed: boolean, held: boolean) => void;
   /** Runs the left-hand action on the player-tick boundary, with that tick's aim/state. */
   leftHandAction?: () => void;
   /** Radians; 0 looks down -z. */
@@ -379,6 +381,11 @@ export const createSession = (options: SessionOptions) => {
   let lastZombieStep = 0;
   let lastPlayerStep = 0;
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
+    controls.heldPrimaryAction?.(
+      sim.time,
+      moving && Boolean(intent.primaryAction),
+      moving && Boolean(intent.primaryActionHeld),
+    );
     if (!moving) {
       return;
     }

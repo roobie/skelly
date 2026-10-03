@@ -17,6 +17,19 @@ export interface AudioVolumes {
 }
 
 const DEFAULT_VOLUMES: AudioVolumes = { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 };
+const VOICE_CAPS = new Map<SoundEventId, number>([
+  ['gunshot', 32],
+  ['gunshot_pbs1_reference', 32],
+]);
+const VOICE_FADE_SECONDS = 0.01;
+
+interface Voice {
+  source: AudioBufferSourceNode;
+  gain: GainNode;
+  stopAt?: number;
+  finish: () => void;
+}
+
 const clampVolume = (value: number): number => Math.max(0, Math.min(1, value));
 
 const readVolumes = (): AudioVolumes => {
@@ -61,6 +74,8 @@ export interface GameAudioOptions {
 }
 
 export interface SoundPlaybackMeta {
+  /** First-person playback bypasses world panning/occlusion, but retains its category volume. */
+  listenerRelative?: boolean;
   emittedAsNoise?: boolean;
   sourceLabel?: string | null;
 }
@@ -88,6 +103,7 @@ interface SourceStartOptions {
   positionMetres: Vec3;
   emittedAsNoise: boolean;
   sourceLabel: string | null;
+  listenerRelative: boolean;
 }
 
 /** Thin Web Audio adapter; sound choices and occlusion calculations live in pure core modules. */
@@ -105,6 +121,9 @@ export class GameAudio {
   private readonly isSolid: SolidAt;
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
+  private readonly voices = new Map<SoundEventId, Set<Voice>>();
+  // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
+  private readonly retiring = new Map<SoundEventId, Set<Voice>>();
 
   constructor({ registry, seed, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
@@ -188,10 +207,13 @@ export class GameAudio {
   }
 
   play(event: SoundEventId, positionMetres: Vec3, simulationTime: number, metadata: SoundPlaybackMeta = {}): boolean {
-    const { emittedAsNoise = false, sourceLabel = null } = metadata;
+    const { emittedAsNoise = false, sourceLabel = null, listenerRelative = false } = metadata;
     const sound = this.registry.sounds.get(event);
+    if (!sound) {
+      return false;
+    }
     const pick = this.picker.pick(event, simulationTime);
-    if (!(sound && pick)) {
+    if (!pick) {
       return false;
     }
     const origin = this.registry.soundOrigins.get(event);
@@ -207,7 +229,18 @@ export class GameAudio {
         if (!buffer || this.context !== context || context.state !== 'running') {
           return;
         }
-        this.startSource({ context, nodes, event, sound, pick, buffer, positionMetres, emittedAsNoise, sourceLabel });
+        this.startSource({
+          context,
+          nodes,
+          event,
+          sound,
+          pick,
+          buffer,
+          positionMetres,
+          emittedAsNoise,
+          sourceLabel,
+          listenerRelative,
+        });
       });
     }
     return true;
@@ -251,10 +284,43 @@ export class GameAudio {
           positionMetres,
           emittedAsNoise: false,
           sourceLabel: null,
+          listenerRelative: true,
         });
       }
     });
     return true;
+  }
+
+  /** Admission happens after decoding: pending loads never consume playback slots. */
+  private stealOldestVoice(event: SoundEventId, context: AudioContext): void {
+    const cap = VOICE_CAPS.get(event);
+    const active = this.voices.get(event);
+    if (cap === undefined || !active || active.size < cap) {
+      return;
+    }
+    const now = context.currentTime;
+    const tails = this.retiring.get(event) ?? new Set<Voice>();
+    // A delayed ended callback need not keep an already-stopped node connected.
+    for (const tail of tails) {
+      if (tail.stopAt !== undefined && tail.stopAt <= now) {
+        tail.finish();
+      }
+    }
+    // The safety ceiling is 2*cap connected sources, including pathological >64-shot
+    // same-quantum calls. Ordinary 75/100ms cadence never reaches this tail ceiling.
+    if (tails.size >= cap) {
+      const previousTail = tails.values().next().value!;
+      previousTail.source.stop();
+      previousTail.finish();
+    }
+    const oldest = active.values().next().value!;
+    active.delete(oldest);
+    tails.add(oldest);
+    this.retiring.set(event, tails);
+    oldest.stopAt = now + VOICE_FADE_SECONDS;
+    oldest.gain.gain.setValueAtTime(oldest.gain.gain.value, now);
+    oldest.gain.gain.linearRampToValueAtTime(0, oldest.stopAt);
+    oldest.source.stop(oldest.stopAt);
   }
 
   private applyVolumes(): void {
@@ -307,7 +373,9 @@ export class GameAudio {
     positionMetres,
     emittedAsNoise,
     sourceLabel,
+    listenerRelative,
   }: SourceStartOptions): void {
+    this.stealOldestVoice(event, context);
     const source = context.createBufferSource();
     const gain = context.createGain();
     source.buffer = buffer;
@@ -319,19 +387,19 @@ export class GameAudio {
     const category = nodes.categories.get(sound.category)!;
     const listenerBlocks: Vec3 = this.listenerPosition.map((v) => v / this.blockSize) as Vec3;
     const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
-    const uiSound = sound.category === 'ui';
-    const occlusion = uiSound
+    const headLocked = listenerRelative || sound.category === 'ui';
+    const occlusion = headLocked
       ? { wallRuns: 0, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
       : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
-    const distanceMetres = uiSound
+    const distanceMetres = headLocked
       ? 0
       : Math.hypot(
           positionMetres[0] - this.listenerPosition[0],
           positionMetres[1] - this.listenerPosition[1],
           positionMetres[2] - this.listenerPosition[2],
         );
-    const distanceGain = uiSound ? 1 : 1 / Math.max(1, Math.min(64, distanceMetres));
-    if (uiSound) {
+    const distanceGain = headLocked ? 1 : 1 / Math.max(1, Math.min(64, distanceMetres));
+    if (headLocked) {
       gain.connect(category);
     } else {
       const filter = context.createBiquadFilter();
@@ -358,11 +426,36 @@ export class GameAudio {
       wallGain.connect(panner);
       panner.connect(category);
     }
-    source.onended = () => {
-      for (const node of connectedNodes) {
-        node.disconnect();
-      }
+    let finished = false;
+    const voice: Voice = {
+      source,
+      gain,
+      finish: () => {
+        if (finished) {
+          return;
+        }
+        finished = true;
+        const active = this.voices.get(event);
+        active?.delete(voice);
+        if (active?.size === 0) {
+          this.voices.delete(event);
+        }
+        const tails = this.retiring.get(event);
+        tails?.delete(voice);
+        if (tails?.size === 0) {
+          this.retiring.delete(event);
+        }
+        for (const node of connectedNodes) {
+          node.disconnect();
+        }
+      },
     };
+    if (VOICE_CAPS.has(event)) {
+      const active = this.voices.get(event) ?? new Set<Voice>();
+      active.add(voice);
+      this.voices.set(event, active);
+    }
+    source.onended = voice.finish;
     source.start();
     this.recentSounds.push({
       event,
@@ -370,7 +463,7 @@ export class GameAudio {
       sourceLabel,
       distanceMetres,
       wallRuns: occlusion.wallRuns,
-      lowpassHz: uiSound ? null : occlusion.cutoffHz,
+      lowpassHz: headLocked ? null : occlusion.cutoffHz,
       gain: pick.gain * occlusion.gain * this.volumes.master * this.volumes[sound.category] * distanceGain,
       emittedAsNoise,
       noiseRadiusMetres: emittedAsNoise && sound.noise.enabled ? sound.noise.radiusMetres : null,

@@ -72,6 +72,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/occlusion.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
+  // WebAudio playback/voice admission is presentation; seeded SoundPicker remains an explicit root.
+  'src/game/audio.ts',
   'src/game/audioPresentation.ts',
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',

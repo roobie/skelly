@@ -119,6 +119,7 @@ describe('menu input', () => {
       expect(input.intent().primaryAction).toBe(true);
       input.consumePrimaryAction();
       expect(input.intent().primaryAction).toBe(false);
+      expect(input.intent().primaryActionHeld).toBe(true);
       windowListeners.get('keydown')?.({ code: KEY_BINDINGS.leftHandAction.code, repeat: false } as KeyboardEvent);
       expect(input.intent().leftHandAction).toBe(true);
       input.consumeLeftHandAction();
@@ -131,8 +132,11 @@ describe('menu input', () => {
       targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
       expect(input.intent().primaryAction).toBe(false);
       windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryActionHeld).toBe(false);
       targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
       expect(input.intent().primaryAction).toBe(true);
+      windowListeners.get('blur')?.(new Event('blur'));
+      expect(input.intent().primaryActionHeld).toBe(false);
     } finally {
       if (original) {
         Object.defineProperty(globalThis, 'addEventListener', original);

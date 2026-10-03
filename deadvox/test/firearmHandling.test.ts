@@ -5,6 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
+  DebugFirearmTrigger,
   debugFirearmShot,
   FIREARM_HANDLING_STAND_IN,
   firearmHandlingFor,
@@ -45,6 +46,42 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
   });
 
 describe('debug firearm handling', () => {
+  it.each([
+    [800, 27],
+    [600, 20],
+  ])('fires exact %i rpm deadlines independent of polling partitions', (rpm, count) => {
+    const regular = new DebugFirearmTrigger();
+    const coarse = new DebugFirearmTrigger();
+    const weapon = { uid: 1, rpm };
+    const shots: number[] = [];
+    for (let tick = 0; tick < 120; tick++) {
+      shots.push(...regular.advance(tick / 60, weapon, tick === 0, true));
+    }
+    const batched = [
+      ...coarse.advance(0, weapon, true, true),
+      ...coarse.advance(0.43, weapon, false, true),
+      ...coarse.advance(1.99, weapon, false, true),
+    ];
+    expect(shots).toEqual(batched);
+    expect(shots).toHaveLength(count);
+    expect(shots).toEqual(Array.from({ length: count }, (_, index) => index * (60 / rpm)));
+    expect(regular.advance(2, weapon, false, false)).toEqual([]);
+    expect(regular.advance(3, weapon, false, false)).toEqual([]);
+  });
+
+  it('unlatches release and quick clicks, and resets cadence on a weapon change', () => {
+    const trigger = new DebugFirearmTrigger();
+    const weapon = { uid: 1, rpm: 800 };
+    expect(trigger.advance(1, weapon, true, false)).toEqual([1]);
+    expect(trigger.advance(1.1, weapon, false, false)).toEqual([]);
+    expect(trigger.advance(2, weapon, true, true)).toEqual([2]);
+    // A release/repress between ticks is still a new trigger edge.
+    expect(trigger.advance(2.02, weapon, true, true)).toEqual([2.02]);
+    expect(trigger.advance(2.04, { uid: 2, rpm: 600 }, false, true)).toEqual([2.04]);
+    expect(trigger.advance(2.14, undefined, false, true)).toEqual([]);
+    expect(trigger.advance(4, weapon, true, true)).toEqual([4]);
+  });
+
   it('slugs calibre punctuation injectively for spent-case item IDs', () => {
     expect(spentCaseItemId('5.56x45')).toBe('spent_case_5_d_56x45');
     expect(spentCaseItemId('5_56x45')).toBe('spent_case_5_u_56x45');
@@ -71,8 +108,8 @@ describe('debug firearm handling', () => {
       calibre: '5.56x45',
       caseModelId: 'case_5_d_56x45',
       ejection: FIREARM_HANDLING_STAND_IN.ejection,
-      cycle: FIREARM_HANDLING_STAND_IN.cycle,
-      rpm: FIREARM_HANDLING_STAND_IN.rpm,
+      cycle: { rear: 0.026_25, dwell: 0.011_25, forward: 0.0375 },
+      rpm: 800,
     });
     expect(firearmHandlingFor(inventory.create('debug_shotgun_pump'), inventory.registry)).toBe(
       FIREARM_HANDLING_STAND_IN,

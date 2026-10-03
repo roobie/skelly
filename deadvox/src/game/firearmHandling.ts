@@ -29,6 +29,42 @@ export const FIREARM_HANDLING_STAND_IN: FirearmHandlingData = {
   rpm: 600,
 };
 
+/** AR range stand-in: retain the phase proportions at 800 rpm until g35 exports timing. */
+const AR_HANDLING_STAND_IN: FirearmHandlingData = {
+  ...FIREARM_HANDLING_STAND_IN,
+  rpm: 800,
+  cycle: { rear: 0.026_25, dwell: 0.011_25, forward: 0.0375 },
+};
+
+/** Exact shot deadlines sampled by the existing player scheduler; no wall-clock timers. */
+export class DebugFirearmTrigger {
+  private burst: { uid: number; rpm: number; start: number; next: number } | undefined;
+
+  advance(time: number, weapon: { uid: number; rpm: number } | undefined, pressed: boolean, held: boolean): number[] {
+    if (!(weapon && (pressed || held))) {
+      this.burst = undefined;
+      return [];
+    }
+    // Preserve a quick click released between player ticks, without latching it on.
+    if (!held) {
+      this.burst = undefined;
+      return [time];
+    }
+    if (pressed || !this.burst || this.burst.uid !== weapon.uid || this.burst.rpm !== weapon.rpm) {
+      this.burst = { ...weapon, start: time, next: 0 };
+    }
+    const interval = 60 / weapon.rpm;
+    const shots: number[] = [];
+    let deadline = this.burst.start + this.burst.next * interval;
+    while (deadline <= time + 1e-9) {
+      shots.push(deadline);
+      this.burst.next += 1;
+      deadline = this.burst.start + this.burst.next * interval;
+    }
+    return shots;
+  }
+}
+
 /** One seam joins the held model's g34 metadata to its exported case GLB, with explicit stand-in fallback. */
 export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandlingData => {
   const itemModelId = defOf(registry, item.type).model;
@@ -41,7 +77,7 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
     .map((model) => model.id)
     .sort();
   return {
-    ...FIREARM_HANDLING_STAND_IN,
+    ...(itemModelId === 'rifle_assault' ? AR_HANDLING_STAND_IN : FIREARM_HANDLING_STAND_IN),
     calibre: gunModel.calibre,
     ...(caseModelId === undefined ? {} : { caseModelId }),
   };

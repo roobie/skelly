@@ -78,6 +78,8 @@ export interface MoveIntent {
   walk: boolean;
   /** Edge-triggered right-hand action; the player tick consumes this once. */
   primaryAction?: boolean;
+  /** Held primary trigger; only debug firearms repeat, not other item actions. */
+  primaryActionHeld?: boolean;
   /** Edge-triggered left-hand action (`=`); the player tick consumes this once. */
   leftHandAction?: boolean;
   /** Speed factor from load and handling (paceFactor); 1 when absent. */
