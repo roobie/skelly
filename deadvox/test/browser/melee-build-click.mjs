@@ -22,7 +22,7 @@ const observationPlugin = {
     assert(code.includes(marker), 'game loop observation point is present');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { d7Review: { input, session, held, engine, camera, debugTools, inventory } });\n${marker}`,
+      `  Object.assign(globalThis, { d7Review: { input, session, held: view.held, engine, camera, debugTools, inventory } });\n${marker}`,
     );
   },
 };
