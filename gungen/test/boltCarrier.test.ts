@@ -238,7 +238,9 @@ const akSlotWitness = (entry: TravelCase, resolved: ReturnType<typeof resolve>) 
   };
   const [, carrierY] = receiver.ports.find(({ id }) => id === 'bolt-carrier')!.pos;
   const slot = akChargingHandleSlotWindow(carrierY, port, entry.travel);
-  return [(slot.x[0] + Math.min(slot.x[1], port.x[0])) / 2, (slot.section[0] + slot.section[1]) / 2, 1.6] as const;
+  // The slim pump is 3u wide; retain the original witness on unchanged shells.
+  const z = entry.pattern === 'pump' ? 1.25 : 1.6;
+  return [(slot.x[0] + Math.min(slot.x[1], port.x[0])) / 2, (slot.section[0] + slot.section[1]) / 2, z] as const;
 };
 
 const noCarrierReceiverIntersectionsOverTravel = (resolved: ReturnType<typeof resolve>): boolean => {
@@ -1034,13 +1036,13 @@ describe('procedural bolt carrier', () => {
     const tubeY = -2.75;
 
     for (const x of [-5.5, -4, -1, -0.25]) {
-      expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY, 1.95), `outer skin x=${x}`).toBe(true);
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY, 1.25), `outer skin x=${x}`).toBe(true);
     }
-    // The port and its forward skin move 2u with the action; the opening shape is unchanged.
+    // The port's longitudinal span stays open, with closed side skin ahead of it.
     for (const x of [-6, -3, -2]) {
-      expect(receiverSectionHasMaterialAt(receiver.solids, x, 0, 1.95), `shifted ejection opening x=${x}`).toBe(false);
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, 0, 1.25), `shifted ejection opening x=${x}`).toBe(false);
     }
-    expect(receiverSectionHasMaterialAt(receiver.solids, 1, 0, 1.95), 'receiver side ahead of the port').toBe(true);
+    expect(receiverSectionHasMaterialAt(receiver.solids, 1, 0, 1.25), 'receiver side ahead of the port').toBe(true);
     for (const x of [-5, -2, -0.25]) {
       expect(receiverSectionHasMaterialAt(receiver.solids, x, tubeY + 1.1, 0), `internal slot x=${x}`).toBe(false);
     }

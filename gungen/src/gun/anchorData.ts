@@ -47,7 +47,7 @@ const interiorPoint = (s: Solid): Vec3 => {
   );
 };
 
-/** A tapered-stock hold sits low inside the grip, below the trigger centre. */
+/** Existing ordinary grip placement; authored palm datums take precedence for curved stocks. */
 const gripHoldPoint = (s: Solid): Vec3 => {
   if (s.kind === 'box') {
     return s.box.center;
@@ -142,13 +142,15 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
       return { ...hold, ...(magazine ? { magwell: frameAt(magazine.pos) } : {}) };
     },
   },
-  // Only a firing-grip stock has a hold: the tapered style uses its grip; others use the wrist.
+  // Only a firing-grip stock has a hold. An authored palm datum is independent
+  // of the stock's lowest silhouette vertex; ordinary wrists use their interior.
   stock: {
     holdRank: 'firing-grip-stock',
     anchors: (_params, part) => {
-      const taperedGrip = part.solids.find((solid) => solid.id === 'grip');
-      const grip = taperedGrip ?? findSolid(part, 'wrist');
-      const position = grip && (taperedGrip ? gripHoldPoint(grip) : interiorPoint(grip));
+      const gripSolid = part.solids.find((solid) => solid.id === 'grip');
+      const grip = gripSolid ?? findSolid(part, 'wrist');
+      const palm = part.axes.find((a) => a.kind === 'firing-grip');
+      const position = palm?.origin ?? (grip && (gripSolid ? gripHoldPoint(grip) : interiorPoint(grip)));
       return position && part.tags?.includes(FIRING_GRIP) ? { hold: frameAt(position) } : {};
     },
   },

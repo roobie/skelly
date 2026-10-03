@@ -37,8 +37,12 @@ export interface PortDef {
 export interface SolidDisplayHints {
   readonly bevel?: boolean;
   readonly outline?: boolean;
-  /** Solids in one group are rendered/exported as one receiver display mesh. */
+  /** Minimum crease angle for Three.js edge outlines; undefined uses its native 1° default. */
+  readonly outlineAngleDeg?: number;
+  /** Solids in one group are rendered/exported as one display mesh. */
   readonly mergeGroup?: string;
+  /** Diagnostic role shared by convex cells of one authored component; otherwise its solid id. */
+  readonly role?: string;
 }
 
 export interface SolidFinish {

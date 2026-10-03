@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { penetrationWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
+import { localSolidBounds, penetrationWorld, validateExtrudedPolygon, worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, compose, IDENTITY, translation, type Vec3 } from '../src/core/math.ts';
 import type { TriangleMesh } from '../src/core/mesh.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
@@ -257,11 +257,11 @@ describe('receiver section builder', () => {
     expectWatertightMesh(meshForSolidGroup(solids), 'closed section');
   });
 
-  it('moves the pump rear slope while preserving its 4u / 1.5u angle', () => {
+  it('rounds the pump rear transition while preserving its total 4u run and 1.5u rise', () => {
     const bottomY = 1;
     const topY = 2.5;
-    const { normal, offset } = PUMP_REAR_SLOPE.clip;
-    const rearXAt = (y: number) => (offset - normal[1] * y) / normal[0];
+    const rearXAt = (y: number) =>
+      Math.max(...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - normal[1] * y) / normal[0]));
     const run = Math.abs(rearXAt(topY) - rearXAt(bottomY));
     const rise = topY - bottomY;
     expect(run).toBeCloseTo(PUMP_REAR_SLOPE.run, 12);
@@ -331,9 +331,8 @@ describe('receiver section builder', () => {
     const stock = def.ports.find(({ id }) => id === 'stock')!;
     const { faces, outline } = RECEIVER_SECTION.pump;
     const drop = faces.bottom - def.ports.find(({ id }) => id === 'lower')!.pos[1];
-    const { normal, offset } = PUMP_REAR_SLOPE.clip;
-    const slopeOffset = offset - drop;
-    const slopeXAt = (y: number) => (slopeOffset - y) / normal[0];
+    const slopeXAt = (y: number) =>
+      Math.max(...PUMP_REAR_SLOPE.clip.map(({ normal, offset }) => (offset - drop - y) / normal[0]));
     const slopeStartX = slopeXAt(faces.top.y - drop);
     const points = (solid: Solid): Vec3[] => {
       const { positions } = meshForSolid(solid, 0);
@@ -345,7 +344,9 @@ describe('receiver section builder', () => {
     };
     const expectInsideShell = ([x, y, z]: Vec3, label: string) => {
       expect(x, `${label}: rear`).toBeGreaterThanOrEqual(faces.rear - 1e-6);
-      expect(normal[0] * x + y, `${label}: slope`).toBeLessThanOrEqual(slopeOffset + 1e-6);
+      for (const { normal, offset } of PUMP_REAR_SLOPE.clip) {
+        expect(normal[0] * x + y, `${label}: roof facet`).toBeLessThanOrEqual(offset - drop + 1e-6);
+      }
       for (let index = 0; index < outline.length; index++) {
         const a = outline[index]!;
         const b = outline[(index + 1) % outline.length]!;
@@ -384,8 +385,10 @@ describe('receiver section builder', () => {
       }
     }
     expect(
-      solids.every((solid) => solid.kind === 'extruded-polygon' && solid.axis === 'x'),
-      'no added wedge',
+      solids
+        .filter((solid) => localSolidBounds(solid)[0][0] < slopeStartX)
+        .every((solid) => solid.kind === 'extruded-polygon' && solid.axis === 'x'),
+      'rear transition has no added wedge',
     ).toBe(true);
     // Cover the entire slope, including its centre where the old cavity broke the surface.
     for (const y of [0.1, 0.5, 0.9, 1.4]) {

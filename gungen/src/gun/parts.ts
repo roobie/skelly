@@ -36,8 +36,13 @@ import {
   type ReceiverSectionSpec,
   type SectionPocket,
   type SectionWindow,
+  subtractAxialPockets,
+  subtractConvexSection,
 } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
+import { roundedTriggerGuardSolids } from './roundedTriggerGuard.ts';
+import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
+import { taperedStockSolids } from './taperedStock.ts';
 
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
 
@@ -157,7 +162,7 @@ const AK_GAS_BLOCK_CLEARANCE = 0.1;
 const AK_GAS_BLOCK_HALF_LENGTH = 1;
 const akHandguardLength = (length: SizeClass): number => AK_HANDGUARD_LENGTH[length];
 
-/** Tube magazines keep a shared barrel-support clearance; the forend is slimmed to show its top. */
+/** Tube magazines keep the approved barrel-support clearance; the larger forend clears the barrel with a groove. */
 const TUBE_HALF_HEIGHT = 1;
 const PUMP_TUBE_CAP_LENGTH = 2.5;
 const PUMP_TUBE_CAP_END_INSET = 0.5;
@@ -168,8 +173,7 @@ const TUBE_RECEIVER_CLEARANCE = 0.25;
 const PUMP_RECEIVER_DROP = 1;
 // Keep stock/trigger datums fixed while moving the pump action forward clear of the rear slope.
 const PUMP_RECEIVER_FORWARD_EXTENSION_U = 3.5;
-const PUMP_FOREND_MOUNT_X = 8;
-const PUMP_FOREND_LENGTH = PUMP_FOREND_MOUNT_X * 1.2;
+const PUMP_FOREND_MOUNT_X = PUMP_FOREND_PROPORTIONS.mountX;
 const PUMP_FOREND_WALL = 0.25;
 const PUMP_TUBE_LENGTH_PERCENTAGES = ['50', '75', '100'] as const;
 
@@ -294,7 +298,7 @@ export const LOWER_LAYOUTS = {
   conventional: { tiltedMagazineProfiles: ['standard'] },
   bullpup: { tiltedMagazineProfiles: [] },
   trigger: { tiltedMagazineProfiles: [] },
-  pump: { tiltedMagazineProfiles: [] },
+  pump: { tiltedMagazineProfiles: [], triggerAssembly: COMPACT_TRIGGER_PLATE },
   ak: { tiltedMagazineProfiles: [] },
   ar: { tiltedMagazineProfiles: ['standard'] },
   thumbhole: { tiltedMagazineProfiles: ['standard'] },
@@ -321,7 +325,12 @@ export const PUMP_REAR_SLOPE = {
   run: 4,
   rise: 1.5,
   angleDegrees: (Math.atan(1.5 / 4) * 180) / Math.PI,
-  clip: { normal: [-0.375, 1, 0], offset: 7 },
+  // Three roof facets approximate the reference's rounded rear, wholly in the shell.
+  clip: [
+    { normal: [-1 / 6, 1, 0], offset: 4.5 },
+    { normal: [-1 / 3, 1, 0], offset: 6.75 },
+    { normal: [-0.75, 1, 0], offset: 13 },
+  ],
 } as const;
 const PUMP_REAR_PORT_Y = -1;
 const AK_STOCK_PORT_Y = 0.5;
@@ -435,7 +444,13 @@ const LOWER_TRIGGER_GUARD = { ...TRIGGER_GUARD, innerXClearance: 0.5 };
 const triggerGuardSolids = (
   triggerFinger: KeepOut,
   gripContactX?: number,
-  dimensions: { innerXClearance: number; sideWall: number; verticalWall: number; zRatio: number } = TRIGGER_GUARD,
+  dimensions: {
+    innerXClearance: number;
+    sideWall: number;
+    verticalWall: number;
+    zRatio: number;
+    cornerU?: number;
+  } = TRIGGER_GUARD,
 ): Solid[] => {
   const { center, half } = triggerFinger.box;
   const minX = center[0] - half[0];
@@ -451,6 +466,15 @@ const triggerGuardSolids = (
   const zHalf = half[2] * dimensions.zRatio;
   const minZ = center[2] - zHalf;
   const maxZ = center[2] + zHalf;
+  if (dimensions.cornerU) {
+    return roundedTriggerGuardSolids(triggerFinger.box, {
+      x: [outerRearX, outerFrontX],
+      y: [lowerY, upperY],
+      innerX: [innerRearX, innerFrontX],
+      z: [minZ, maxZ],
+      corner: dimensions.cornerU,
+    });
+  }
   return [
     solid('trigger-guard-top', [outerRearX, maxY, minZ], [outerFrontX, upperY, maxZ]),
     solid('trigger-guard-rear', [outerRearX, lowerY, minZ], [innerRearX, upperY, maxZ]),
@@ -653,21 +677,20 @@ export const RECEIVER_SECTION = {
     } as const,
   },
   pump: {
-    clip: [PUMP_REAR_SLOPE.clip],
+    clip: PUMP_REAR_SLOPE.clip,
+    portCornerU: COMPACT_TRIGGER_PLATE.cornerU,
     outline: [
-      [-2.5, -2],
-      [1, -2],
-      [2, -1.75],
+      [-2.5, -1.5],
+      [2.25, -1.5],
       [2.5, -1.25],
       [2.5, 1.25],
-      [2, 1.75],
-      [1, 2],
-      [-2.5, 2],
+      [2.25, 1.5],
+      [-2.5, 1.5],
     ] as const,
     faces: {
       top: { y: 2.5, halfWidth: 1.25 },
-      portSide: 2.25,
-      handleSides: [-2.25, 2.25],
+      portSide: 1.5,
+      handleSides: [-1.5, 1.5],
       front: PUMP_RECEIVER_FORWARD_EXTENSION_U,
       rear: -16,
       bottom: -2.5,
@@ -727,7 +750,12 @@ const receiverShellSolids = ({
       wall: 0.5,
       // End the pump cavity in the full-height section; its own rear wall carries the entire slope.
       cavity: section === 'pump' ? { ...cavity, x: [xMin + PUMP_REAR_SLOPE.run, xMax - 0.5] } : cavity,
-      port: { x: portWindow.x, sectionAxis: 0, section: portWindow.y },
+      port: {
+        x: portWindow.x,
+        sectionAxis: 0,
+        section: portWindow.y,
+        ...('portCornerU' in data ? { cornerU: data.portCornerU } : {}),
+      },
       ...(farPortWindow ? { farPort: { x: farPortWindow.x, sectionAxis: 0, section: farPortWindow.y } } : {}),
       ...(portSlots ? { portSlots } : {}),
       internalPockets,
@@ -1304,7 +1332,12 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
       opticRail.push(solid('receiver-optic-rail', [start, receiverTop - 0.5, -1.25], [start + 12, receiverTop, 1.25]));
     }
   }
-  return [...shell, ...receiverHandles, ...receiverTubeSeat(bore, receiverBottom, tubeFed), ...opticRail];
+  // Sectioned shells already have a real front mounting wall; the old box-shell
+  // underside bridge is unnecessary there (and hung as a separate front block).
+  const tubeSeat = isSectionedReceiver(params.section ?? 'standard')
+    ? []
+    : receiverTubeSeat(bore, receiverBottom, tubeFed);
+  return [...shell, ...receiverHandles, ...tubeSeat, ...opticRail];
 };
 
 export const receiver: PartFamily = {
@@ -2156,7 +2189,13 @@ export const lower: PartFamily = {
         ),
       ];
     };
-    const trigger = (x: number) => keepOut('trigger-finger', [x, -4.5, -1], [x + 2, -1.75, 1]);
+    const triggerAssembly = layoutData && 'triggerAssembly' in layoutData ? layoutData.triggerAssembly : undefined;
+    const trigger = (x: number) =>
+      keepOut(
+        'trigger-finger',
+        [x, triggerAssembly?.fingerBottomU ?? -4.5, -1],
+        [x + 2, triggerAssembly?.fingerTopU ?? -1.75, 1],
+      );
     const triggerX =
       params.layout === 'conventional'
         ? conventionalTriggerX
@@ -2170,7 +2209,7 @@ export const lower: PartFamily = {
             layout === 'pump'
               ? undefined
               : lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
-            LOWER_TRIGGER_GUARD,
+            { ...LOWER_TRIGGER_GUARD, ...(triggerAssembly ? { cornerU: triggerAssembly.cornerU } : {}) },
           );
 
     switch (params.layout) {
@@ -2264,7 +2303,20 @@ export const lower: PartFamily = {
       case 'pump':
         return {
           family: 'lower',
-          solids: [solid('frame', [-16, -1.5, -1.5], [-9, 0, 1.5]), ...triggerGuards],
+          solids: [
+            solid('frame', [-16, -COMPACT_TRIGGER_PLATE.thicknessU, -1.5], [-9, 0, 1.5]),
+            ...triggerGuards,
+            extrudedPolygon(
+              'trigger',
+              [
+                [triggerX + 0.5, COMPACT_TRIGGER_PLATE.fingerBottomU + 0.25],
+                [triggerX + 1.25, COMPACT_TRIGGER_PLATE.fingerBottomU + 0.75],
+                [triggerX + 1.25, COMPACT_TRIGGER_PLATE.fingerTopU],
+                [triggerX + 1, COMPACT_TRIGGER_PLATE.fingerTopU],
+              ],
+              [-0.25, 0.25],
+            ),
+          ],
           ports: [top],
           keepOuts: [triggerFinger],
           axes: [],
@@ -2910,13 +2962,48 @@ export const tubeMagazine: PartFamily = {
 /** Sliding tubular forend: the octagonal sleeve leaves only a narrow top slit for the action bar. */
 export const forend: PartFamily = {
   name: 'forend',
-  params: {},
-  build(): PartDef {
+  params: {
+    bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
+    barrelLength: { ...size, from: [{ port: 'rear', param: 'barrelLength' }] },
+    lengthPercent: {
+      values: PUMP_TUBE_LENGTH_PERCENTAGES,
+      default: '75',
+      from: [{ port: 'rear', param: 'lengthPercent' }],
+    },
+  },
+  build(params): PartDef {
+    const bore = cls(params, 'bore');
+    const barrelEnd = barrelLength({ length: cls(params, 'barrelLength') });
+    const tubeLength = pumpTubeLength(barrelEnd, params.lengthPercent ?? '75');
+    const length = Math.min(
+      PUMP_FOREND_PROPORTIONS.lengthU,
+      tubeLength - PUMP_FOREND_MOUNT_X - PUMP_TUBE_CAP_LENGTH - GRID,
+    );
+    const supportX = snapAkGrid(barrelEnd * HANDGUARD_REACH.barrelFraction);
+    const supportPockets: SectionPocket[] =
+      tubeLength > supportX
+        ? [
+            {
+              x: [
+                supportX - 1 - PUMP_FOREND_MOUNT_X - PUMP_FOREND_TUBE_CLEARANCE,
+                supportX - PUMP_FOREND_MOUNT_X + BOLT_TRAVEL.pump.length + PUMP_FOREND_TUBE_CLEARANCE,
+              ],
+              y: [
+                TUBE_HALF_HEIGHT - PUMP_FOREND_TUBE_CLEARANCE,
+                TUBE_HALF_HEIGHT + TUBE_BARREL_CLEARANCE + PUMP_FOREND_TUBE_CLEARANCE,
+              ],
+              z: [-0.5 - PUMP_FOREND_TUBE_CLEARANCE, 0.5 + PUMP_FOREND_TUBE_CLEARANCE],
+            },
+          ]
+        : [];
+    const barrelGroove = octagonalProfile(BARREL_RADIUS[bore] + PUMP_FOREND_PROPORTIONS.barrelClearanceU).map(
+      ([y, z]): Vec2 => [y + tubeDropForBore(bore), z],
+    );
     const innerRadius = TUBE_HALF_HEIGHT + PUMP_FOREND_TUBE_CLEARANCE;
-    const outerRadius = innerRadius + PUMP_FOREND_WALL;
+    const outerRadius = PUMP_FOREND_PROPORTIONS.outerRadiusU;
     const corner = 0.414;
     const slitHalfWidth = PUMP_ACTION_BAR_THICKNESS / 2 + PUMP_ACTION_BAR_CLEARANCE;
-    const outerTopY = pumpActionBarOuterY();
+    const outerTopY = outerRadius;
     const outer: readonly Vec2[] = [
       [-outerRadius, -corner * outerRadius],
       [-outerRadius, corner * outerRadius],
@@ -2947,14 +3034,19 @@ export const forend: PartFamily = {
         continue;
       }
       const next = (index + 1) % outer.length;
-      shellFacets.push({
-        id: `shell-${shellFacets.length + 1}`,
-        kind: 'extruded-polygon',
-        profile: [outer[index]!, inner[index]!, inner[next]!, outer[next]!],
-        axis: 'x',
-        z: [0, PUMP_FOREND_LENGTH],
-        display: { bevel: false, outline: false, mergeGroup: 'pump-forend-shell' },
-      });
+      const profile = [outer[index]!, inner[index]!, inner[next]!, outer[next]!];
+      const regions = subtractConvexSection(profile, barrelGroove);
+      for (const [region, cut] of regions.entries()) {
+        const shellRegion: Solid = {
+          id: regions.length === 1 ? `shell-${index + 1}` : `shell-${index + 1}-barrel-${region}`,
+          kind: 'extruded-polygon',
+          profile: cut,
+          axis: 'x',
+          z: [0, length],
+          display: { bevel: false, outline: false, mergeGroup: 'pump-forend-shell' },
+        };
+        shellFacets.push(...subtractAxialPockets(shellRegion, supportPockets));
+      }
     }
     return {
       family: 'forend',
@@ -2965,8 +3057,8 @@ export const forend: PartFamily = {
         {
           ...keepOut(
             'slide-travel',
-            [-BOLT_TRAVEL.pump.length, -1 - PUMP_FOREND_WALL, -1 - PUMP_FOREND_WALL],
-            [0, 0, 1 + PUMP_FOREND_WALL],
+            [-BOLT_TRAVEL.pump.length, -outerRadius, -outerRadius],
+            [0, 0, outerRadius],
             'rear',
           ),
           allowFamilies: ['bolt-carrier'],
@@ -3597,7 +3689,8 @@ export const stock: PartFamily = {
     style: choice('straight', 'sporting', 'dropped', 'ak-dropped', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
   },
   build(params): PartDef {
-    const len = { S: 10, M: 16, L: 22 }[cls(params, 'length')];
+    const tapered = params.style === 'tapered' || params.style === 'tapered-sawed';
+    const len = (tapered ? TAPERED_STOCK_PROPORTIONS.lengthU : { S: 10, M: 16, L: 22 })[cls(params, 'length')];
     const cheekDatum = { kind: 'cheek', origin: [-10, 2.5, 0] as Vec3, dir: X };
     const port: PortDef = {
       id: 'front',
@@ -3676,124 +3769,13 @@ export const stock: PartFamily = {
         tags: [FIRING_GRIP],
       };
     }
-    if (params.style === 'tapered' || params.style === 'tapered-sawed') {
-      const stockDrop = 1.5;
-      const sideZ: readonly [number, number] = [-1.5, 1.5];
-      const combStartY = 1.5 - stockDrop;
-      const combTangent = Math.tan((8 * Math.PI) / 180);
-      const bellyTangent = Math.tan((13 * Math.PI) / 180);
-      const padThickness = 0.06 * len;
-      const buttHeight = 0.34 * len;
-      const buttRake = 0.25;
-      const padRearBottomX = -len;
-      const padFrontBottomX = padRearBottomX + padThickness;
-      const padRearTopX = padRearBottomX + buttRake;
-      const padFrontTopX = padRearTopX + padThickness;
-      const combY = (x: number) => combStartY + combTangent * x;
-      const heelY = combY(padFrontTopX);
-      const toeY = heelY - buttHeight;
-      const wristX = -2.5;
-      const wristTopY = combY(wristX);
-      const wristBottomY = wristTopY - 0.18 * len;
-      const gripX = -0.28 * len;
-      const gripY = combY(gripX) - 0.32 * len;
-      const bellyRearX = -0.45 * len;
-      const bellyRearY = toeY + bellyTangent * (bellyRearX - padFrontBottomX);
-
-      const foreStock = extrudedPolygon(
-        'fore-stock',
-        [
-          [wristX, wristBottomY],
-          [0, -2 - stockDrop],
-          [0, combStartY],
-          [wristX, wristTopY],
-        ],
-        sideZ,
-      );
-      const gripSolid = extrudedPolygon(
-        'grip',
-        [
-          [gripX, gripY],
-          [wristX, wristBottomY],
-          [wristX, wristTopY],
-          [gripX, combY(gripX)],
-        ],
-        sideZ,
-      );
-
-      if (params.style === 'tapered-sawed') {
-        const cutBehindGrip = 0.5;
-        const cutX = gripX - cutBehindGrip;
-        const lowerTangent = (bellyRearY - gripY) / (bellyRearX - gripX);
-        const cutBottomY = gripY + lowerTangent * (cutX - gripX);
-        return {
-          family: 'stock',
-          solids: [
-            foreStock,
-            gripSolid,
-            extrudedPolygon(
-              'cut-stub',
-              [
-                [cutX, cutBottomY],
-                [gripX, gripY],
-                [gripX, combY(gripX)],
-                [cutX, combY(cutX)],
-              ],
-              sideZ,
-            ),
-          ],
-          ports: [port],
-          keepOuts: [],
-          axes: [cheekDatum],
-          tags: [FIRING_GRIP],
-        };
-      }
-
-      const heelRise = 0.05 * buttHeight;
-      const raisedHeelY = heelY + heelRise;
+    if (tapered) {
       return {
         family: 'stock',
-        solids: [
-          foreStock,
-          gripSolid,
-          extrudedPolygon(
-            'grip-back',
-            [
-              [bellyRearX, bellyRearY],
-              [gripX, gripY],
-              [gripX, combY(gripX)],
-              [bellyRearX, combY(bellyRearX)],
-            ],
-            sideZ,
-          ),
-          extrudedPolygon(
-            'belly',
-            [
-              [padFrontBottomX, toeY],
-              [bellyRearX, bellyRearY],
-              [bellyRearX, combY(bellyRearX)],
-              [padFrontTopX, raisedHeelY],
-            ],
-            sideZ,
-          ),
-          {
-            ...extrudedPolygon(
-              'butt-pad',
-              [
-                [padRearBottomX, toeY],
-                [padFrontBottomX, toeY],
-                [padFrontTopX, raisedHeelY],
-                [padRearTopX, raisedHeelY],
-              ],
-              sideZ,
-            ),
-            material: 'rubber-black',
-            slot: 'accent',
-          },
-        ],
+        solids: taperedStockSolids({ length: cls(params, 'length'), sawed: params.style === 'tapered-sawed' }),
         ports: [port],
         keepOuts: [],
-        axes: [cheekDatum],
+        axes: [cheekDatum, { kind: 'firing-grip', origin: TAPERED_STOCK_PROPORTIONS.holdPoint, dir: X }],
         tags: [FIRING_GRIP],
       };
     }
