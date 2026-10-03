@@ -107,6 +107,21 @@ describe('authored layout acceptance', () => {
   it('rejects woodland density outside 0..1', () => {
     invalid({ ...layout, woodlands: [{ ...layout.woodlands[0], density: 1.1 }] }, 'must be 0 to 1');
   });
+  it('rejects shambler chance outside 0..1', () => {
+    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], chance: 1.1 }] }, 'must be 0 to 1');
+  });
+  it('rejects a zero-width track', () => {
+    invalid({ ...layout, tracks: [{ ...layout.tracks[0], width: 0 }] }, 'Invalid value');
+  });
+  it('rejects bounds without positive area', () => {
+    invalid({ ...layout, bounds: { ...layout.bounds, x1: 0 } }, 'positive area');
+  });
+  it('rejects a foundation elevation between block layers', () => {
+    invalid({ ...layout, ground: 21.25 }, 'snapped to 0.5 m');
+  });
+  it('rejects a layout that shadows a built-in site', () => {
+    invalid({ ...layout, id: 'hamlet' }, 'reserved built-in site id');
+  });
 });
 
 it('stamps the rotated two-storey house deterministically across columns, with upstairs furniture and spawns', () => {
