@@ -280,11 +280,25 @@ qualities, the body model, saves, dark nights and sound. They are the game.
 ## How each slice runs
 
 1. **Plan:** a `SLICE-N.md` with its goal, playtest questions, scope, ordered
-   milestones and a definition of done.
+   milestones and a definition of done. Run or explicitly reuse the slice-start
+   consolidation surveys for deadvox, gungen and mobgen, following
+   [Continuous consolidation](../docs/PROCESS.md#continuous-consolidation).
+   Give open findings owners, decisions and calendar revisit dates; name which
+   work is standalone and which folds into a milestone.
 2. **Build:** in PR-sized milestones. Each one is merged and deployed to Pages,
-   with CI green (Biome, types, tests, content validation, golden saves).
+   with CI green (Biome, types, tests, content validation, golden saves). Briefs
+   and reviews check consolidation; deliveries record its scope, proof and
+   metrics. Revisit dated backlog decisions throughout the slice, not just at
+   its end.
 3. **Playtest:** at least 3 people follow a short script, and the build logs
    local metrics. The first real playtest is scheduled for the end of Slice 3
    (BR, 2026-10-02), covering the Slice 1 plan plus questions from Slices 2 and 3.
-4. **Record findings:** update DESIGN.md, CHALLENGES.md and this document. Then
-   plan the next slice.
+4. **Review the slice:** run the exit consolidation surveys and report the
+   process metrics: findings and their dispositions, per-item line/site changes,
+   regressions including review-caught defects, standalone/folded capacity,
+   milestone timing evidence and recurring findings. State missing measurements;
+   decide what to keep or change about the procedure. This review still happens
+   when the real playtest is deferred.
+5. **Record findings:** update DESIGN.md, CHALLENGES.md and this document, and
+   the canonical refactoring backlog. Date the next decision for every remaining
+   owned finding. Then plan the next slice.

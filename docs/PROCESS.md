@@ -67,6 +67,64 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 - **Mail and chat are transport, not the record.** A ruling that only exists in a thread isn't
   recorded.
 
+## Continuous consolidation
+
+We refactor actively while pre-pre-alpha, against real change costs and the next
+planned work, not a deletion target. [#159](https://github.com/roobie/skelly/issues/159)
+is the ranked backlog; survey reports live beside each subproject's code.
+
+- **Every brief and review:** name the ownership or duplicated decision worth
+  consolidating, or say none. Name the old authorities, intended consumers and
+  deliberate distinctions. Review the callers and secondary consumers, not only
+  the new owner. Prove the risky boundary with a discriminating test or mutation;
+  do not add near-duplicate tests for a larger count.
+- **At slice start and exit:** the lead commissions a history-and-planned-change
+  maintainability survey for each subproject. Use the `maintainability-review`
+  method: checks first, ranked and refutation-tested findings, stable IDs, and
+  explicit disposition of earlier findings. An exit survey may serve as the next
+  start survey if its base and next-change assumptions still hold; record reuse
+  and inspect the intervening delta. A recurring smell or a repeated boundary
+  failure triggers a targeted survey, not automatically another full survey.
+- **Decide and date:** the lead records each finding's owner, rationale, scope,
+  affected milestone and decision: do separately, fold into named work, defer,
+  or drop. Every open owned finding has an actual calendar revisit date, including
+  folded and deferred work; a milestone name is not a date. On that date, record
+  progress or a new decision and date. Done/drop records a dated disposition and
+  evidence or reason; partial completion leaves the remaining scope open and
+  dated. BR decides new scope and trade-offs.
+- **One durable record:** #159 (or its linked issue) holds the finding and decision.
+  The host-local work.db tracker enforces assignment dates and sends reminders
+  after its approved cutover; until then the lead maintains and checks the dated
+  issue entries. Mail is transport, not another backlog. A reminder prompts a
+  decision; it does not complete, drop or reassign work automatically.
+- **Capacity:** review each group of four newly dispatched advanced-coder feature
+  IDs for named backlog work, aiming for at least one. Count each feature once,
+  not its correction/review rounds; classify it as standalone, folded, or neither.
+  A folded item counts only with a named, bounded backlog scope and proof. Record
+  the split and explain a group with no such work. Also decide any due standalone
+  finding explicitly: folded credits must not silently starve it. This is an
+  attention check, not a claim that 25% of engineering time is refactoring.
+- **Scope and proof:** use a separate PR for independently useful work; fold a
+  refactor into the milestone that immediately exercises it when that gives the
+  clearer boundary. Keep the refactor and feature distinguishable in commits or
+  the report. State preserved behavior, deliberate changes and save/export
+  identity effects. No compatibility shims or speculative shared frameworks.
+
+Each delivery links its finding ID and records the base/tip, completed versus
+remaining scope, named authorities retired and consumers unified, and additions,
+deletions and net lines. Separate source, tests, docs, content and generated
+snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
+changes cannot be isolated, say so rather than estimate.
+
+The slice retrospective reports findings opened, completed, partially completed,
+carried and dropped; per-item line/site figures; review-caught defects, escaped
+regressions and review/CI rework separately; and standalone/folded capacity counts
+with their denominator. Distinguish a persistent finding from a reintroduced one.
+For milestones said to be unblocked, record ready/start/review-ready/merge dates
+and known waits; claim a speedup only with a defensible comparison. Unknown effort
+or time saved stays unknown. Decide whether the cadence and capacity check earned
+their cost, and date the next review.
+
 ## Working rules
 
 - **Heavy runs:** serialize full suites, browser suites and builds with `flock -w 900 /run/user/1000/skelly-heavy.lock timeout 300 …` on a shared host; single-file tests, typecheck and lint stay unlocked. Why: agent-kit `skills/agent-mail/RESOURCES.md`.
