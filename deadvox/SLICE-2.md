@@ -173,6 +173,26 @@ apply here:
   which milestone owns it (see 2.2, 2.4 and 2.5). Nobody installs a second,
   temporary representation.
 
+## Consolidation folded into the milestones
+
+The 2026-10-03 consolidation survey (r9-1,
+[docs/reviews/2026-10-03-consolidation.md](docs/reviews/2026-10-03-consolidation.md))
+ranked eight refactors. Each one either lands inside the milestone that needs it
+or before it, so Slice 2 builds on one owner per concept rather than adding
+another copy. They are tracked with everything else in the refactoring backlog
+issue.
+
+| # | Consolidation | Where it lands |
+| --- | --- | --- |
+| F1 | One core `reach()` snapshot and `options()` contract | inside 2.1 (top 3) |
+| F3 | One boundary for the item tree, mutations and external UID references | the dangling quickbar fix now (d22); the tree/reference contract before or inside 2.4; state invalidation inside 2.1 and 2.6 (top 3) |
+| F2 | Rest generalized into the core long-action owner | inside 2.4, before 2.5–2.7 (top 3) |
+| F7 | View, HUD and render lifecycle extracted from `play.ts` | standalone, before the 2.4 panel and 2.9 lighting |
+| F4 | The simulation owns sound and noise admission; playback is one-way | before or inside 2.12 |
+| F5 | Per-item burn state, with lights derived from it | inside 2.9, after F3 |
+| F6 | Player combat continuation separated from zombie AI | inside 2.6 |
+| F8 | Exhaustive content-section metadata from one descriptor | inside 2.2, carried through 2.5 |
+
 ## Milestones
 
 Each milestone is one or two PRs, merged and deployed to Pages with CI green.
@@ -224,6 +244,30 @@ Paperwork; no game code.
   decided in the PR: whether a dead light finds a spare battery in nearby
   searched furniture and ground containers, not only in what you carry, as
   today.
+
+- **Quick move** (BR, 2026-10-03; pulled into 2.1 with BR's go). It's one more
+  option from the core `options()`: `quickMove(item, reach)` returns the move it
+  would make, or the reason it can't. The UI binds it to **Ctrl-click**, or
+  **Cmd-click on macOS**, which is best effort since no one on the team tests a
+  Mac. Shift-click stays free for splitting a stack later.
+  - **An item you carry** (in hands, worn, in a pocket or a container) drops to
+    the ground pile at your feet. A worn container drops with its contents.
+    Taking it off costs its usual handling time.
+  - **The item you're wielding** goes into your inventory only if it fits,
+    trying the backpack first, then other worn containers, then pockets. If
+    nothing fits, it stays wielded and a brief "doesn't fit" hint shows.
+  - **An item on the floor or in a container** goes to the inventory: the
+    backpack first, then other worn containers and pockets. If nothing fits, a
+    brief hint shows. A container lying on the floor, such as a backpack with
+    items in it, is **worn** if its slot is free, and keeps its contents. That's
+    "batch by the rules", not a separate take-all feature.
+  - **Stacks** move whole. Splitting comes later, on Shift-click.
+  - **Time:** a quick move is an ordinary move. It takes the same handling time
+    and goes through the handling queue, so it saves clicks, not game time.
+  - **Tests:** one case per rule: carried to the floor, wielded with and without
+    room, floor to the backpack, falling through to a pocket, no room giving the
+    hint, a floor backpack worn with its contents, and a whole stack. Plus the
+    platform key mapping.
 
 **Saves:** none; queries hold no state.
 **Tests:** an item in a pile or a backpack lying just inside 2 m is in reach,
