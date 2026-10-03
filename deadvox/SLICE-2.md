@@ -245,6 +245,30 @@ Paperwork; no game code.
   searched furniture and ground containers, not only in what you carry, as
   today.
 
+- **Quick move** (BR, 2026-10-03; pulled into 2.1 with BR's go). It's one more
+  option from the core `options()`: `quickMove(item, reach)` returns the move it
+  would make, or the reason it can't. The UI binds it to **Ctrl-click**, or
+  **Cmd-click on macOS**, which is best effort since no one on the team tests a
+  Mac. Shift-click stays free for splitting a stack later.
+  - **An item you carry** (in hands, worn, in a pocket or a container) drops to
+    the ground pile at your feet. A worn container drops with its contents.
+    Taking it off costs its usual handling time.
+  - **The item you're wielding** goes into your inventory only if it fits,
+    trying the backpack first, then other worn containers, then pockets. If
+    nothing fits, it stays wielded and a brief "doesn't fit" hint shows.
+  - **An item on the floor or in a container** goes to the inventory: the
+    backpack first, then other worn containers and pockets. If nothing fits, a
+    brief hint shows. A container lying on the floor, such as a backpack with
+    items in it, is **worn** if its slot is free, and keeps its contents. That's
+    "batch by the rules", not a separate take-all feature.
+  - **Stacks** move whole. Splitting comes later, on Shift-click.
+  - **Time:** a quick move is an ordinary move. It takes the same handling time
+    and goes through the handling queue, so it saves clicks, not game time.
+  - **Tests:** one case per rule: carried to the floor, wielded with and without
+    room, floor to the backpack, falling through to a pocket, no room giving the
+    hint, a floor backpack worn with its contents, and a whole stack. Plus the
+    platform key mapping.
+
 **Saves:** none; queries hold no state.
 **Tests:** an item in a pile or a backpack lying just inside 2 m is in reach,
 and one just outside is not; unsearched furniture shows no contents; options for
