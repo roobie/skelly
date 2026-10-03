@@ -85,3 +85,8 @@ canary checks cadence arithmetic remains fingerprinted while voice caps do not.
 40 cold starts retain fades; a held AR produces 27 shots/cases in two simulation
 seconds; release stops; a warm two-second burst with 32 existing tails exercises
 stealing, starts one native source per shot, and releases every source/gain node.
+The audio probe skips renderer draw calls to avoid measuring SwiftShader frame
+contention as audio cadence; it keeps the real game/player scheduler, sample
+decoding and WebAudio graph. The 27 native attacks span 1.95s (150ms scheduling
+allowance), independently of the exact simulation deadline assertions. Actual
+rendered case/pile lifecycle remains covered by the separate case-visual probe.
