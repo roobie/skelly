@@ -310,6 +310,8 @@ survival tests pass apart from the listed alignments, and nothing outside
   combinations. Tool qualities stay as they are (`ToolSchema`,
   `src/core/schema.ts:137-140`).
 - A handful of base recipes (torch, candle, a repair kit) to exercise it.
+- Initial Slice 2 recipes count whole solid items only; no millilitre components,
+  partial-liquid storage, container-retention or save-format change.
 
 **Saves:** none.
 **Tests:** tests assert that invalid fixtures are rejected with the expected

@@ -145,18 +145,20 @@ Recipes are content, checked by the validator like the rest:
   "skills": { "crafting": 0 },
   "qualities": { "cutting": 1 },
   "components": [
-    [{ "item": "stick", "count": 1 }, { "item": "branch", "count": 1 }],
+    [{ "item": "stick", "count": 1 }],
     [{ "item": "rag", "count": 2 }],
-    [{ "item": "lamp_oil", "count": 100 }, { "item": "gasoline", "count": 100 }]
+    [{ "item": "wax", "count": 1 }]
   ],
   "workstation": null
 }
 ```
 
 `time` is in game minutes. Each entry in `components` is a group of
-alternatives, as in DESIGN.md (`2 × [plank | branch]`). A count is items, or
-millilitres for a liquid. The validator checks references, and (CHALLENGES.md 6)
-that every component can be found in loot or crafted.
+alternatives, as in DESIGN.md (`2 × [plank | branch]`). Initial Slice 2 recipes
+count whole solid items only. Before accepting any millilitre component, define
+stored quantity, partial use and saving, and whether its container survives; no
+pouring or mixing simulation is implied. The validator checks references; loot
+or craft reachability is milestone 2.3 (CHALLENGES.md 6).
 
 ### The planner
 
