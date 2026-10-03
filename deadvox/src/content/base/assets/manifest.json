@@ -20,7 +20,6 @@
         "assets/models/pistol_full.glb",
         "assets/models/rifle_battle.glb",
         "assets/models/shotgun_auto.glb",
-        "assets/models/shotgun_pump.glb",
         "assets/models/smg_compact.glb",
         "assets/models/smg_full.glb",
         "assets/models/sniper_material.glb",
@@ -36,6 +35,15 @@
       "download": null,
       "files": ["assets/models/rifle_assault.glb"],
       "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; cartridge metadata from the sourced 5.56x45 design; original project-built geometry, +x forward and +y up"
+    },
+    {
+      "title": "Gungen hunting-cabin pump design export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-pump-shotgun.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/shotgun_pump.glb"],
+      "changes": "Original curated 12-gauge pump geometry, metres/+x forward/+y up, separate carrier and forend GLB nodes coupled in hand mode only. Loading aperture/stroke from sourced shell dimensions; integral tube capacity from geometry with labelled visual reserve estimates. See gungen/docs/pump-action-export.md."
     },
     {
       "title": "Gungen 5.56x45 cartridge exports",

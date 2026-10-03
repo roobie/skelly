@@ -3,7 +3,7 @@ import { partNodeName } from '../core/glb.ts';
 import { applyDir, applyPoint, sub, type Transform, type Vec3 } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
 import type { PartDef } from '../core/schema.ts';
-import { type CycleMode, type CycleMotion, cycleMotion } from './cycle.ts';
+import { type CycleMode, type CycleMotion, cycleMotion, pumpCycleMotion } from './cycle.ts';
 import { localEjectionPoint } from './ejection.ts';
 
 export interface ActionPart {
@@ -23,8 +23,8 @@ export interface ResolvedGunAction {
   readonly parts: Readonly<Record<string, ActionPart>>;
   readonly receiverId: string;
   readonly ejection?: Vec3;
-  /** Pump open pose is presentation only, not an automatic firing timeline. */
-  readonly cycle?: CycleMotion;
+  /** Pump has a hand timeline only; automatic actions additionally have a fire timeline. */
+  readonly cycle: CycleMotion;
 }
 
 const actionPart = (resolved: Resolved, id: string, modes: readonly CycleMode[]): ActionPart | undefined => {
@@ -79,7 +79,7 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
   if (kind !== 'ar' && kind !== 'ak' && kind !== 'pump') {
     return undefined;
   }
-  const carrier = actionPart(resolved, id, ['fire', 'hand']);
+  const carrier = actionPart(resolved, id, kind === 'pump' ? ['hand'] : ['fire', 'hand']);
   const receiverId = carrierReceiver(resolved, id);
   const receiver = receiverId && resolved.defs.get(receiverId);
   const placed = receiverId && resolved.placed.get(receiverId);
@@ -93,7 +93,10 @@ export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefi
     parts: coupledParts(resolved, kind, carrier),
     receiverId,
     ...(local ? { ejection: applyPoint(placed, local) } : {}),
-    ...(kind === 'pump' ? {} : { cycle: cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit) }),
+    cycle:
+      kind === 'pump'
+        ? pumpCycleMotion(carrier.def.motion!, resolved.domain.units.metresPerUnit)
+        : cycleMotion(kind, carrier.def.motion!, resolved.domain.units.metresPerUnit),
   };
 };
 

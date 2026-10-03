@@ -1,5 +1,5 @@
 import { calibreSlug } from '../ammo/calibreSlug.ts';
-import type { MetallicCartridge } from '../ammo/cartridge.ts';
+import type { Cartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
 import { exportGlb } from '../core/glb.ts';
 import { length, type Vec3 } from '../core/math.ts';
@@ -12,6 +12,7 @@ import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
 
@@ -35,14 +36,14 @@ export interface CycleMetadata {
 
 export interface GunActionMetadata {
   readonly parts: Readonly<Record<string, ActionPartMetadata>>;
-  readonly fire: CycleMetadata;
+  readonly fire?: CycleMetadata;
   readonly hand: CycleMetadata;
   /** Stroke fraction at which the case leaves. */
   readonly ejectAt: number;
   /** Unit ejection direction in model coordinates. */
   readonly ejectDirection: Vec3;
   readonly holdOpen: boolean;
-  readonly rpm: number;
+  readonly rpm?: number;
 }
 
 export interface DeadvoxModelEntry {
@@ -54,6 +55,8 @@ export interface DeadvoxModelEntry {
   readonly calibre?: string;
   /** Present on magazine entries; one local pose per round slot, top to bottom. */
   readonly capacity?: number;
+  /** Integral tube capacity in shells; unlike a detached box magazine, no round-pose column. */
+  readonly tube?: { readonly capacity: number };
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
 }
@@ -64,11 +67,12 @@ export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
 
 export interface GunExportMetadata {
   /** Cartridge loaded by this design; its id becomes the exact Deadvox `calibre` value. */
-  readonly cartridge?: MetallicCartridge;
+  readonly cartridge?: Cartridge;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
   readonly handling?: GunActionExport;
+  readonly tubeCapacity?: number;
 }
 
 export type GunAssetIdentity = GlbAssetIdentity;
@@ -120,12 +124,12 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
     ejection: description.ejection,
     action: {
       parts,
-      fire: cycleMetadata(cycle.fire),
+      ...(cycle.fire ? { fire: cycleMetadata(cycle.fire) } : {}),
       hand: cycleMetadata(cycle.hand),
       ejectAt: cycle.ejectAt,
       ejectDirection: cycle.ejectDirection,
       holdOpen: cycle.holdOpenOnEmpty,
-      rpm: cycle.rpm,
+      ...(cycle.rpm === undefined ? {} : { rpm: cycle.rpm }),
     },
   };
 };
@@ -159,6 +163,7 @@ export const createGunModelEntry = (
       : {}),
     ...(calibre === undefined ? {} : { calibre }),
     ...(handling ? { action: handling.action } : {}),
+    ...(options.tubeCapacity === undefined ? {} : { tube: { capacity: options.tubeCapacity } }),
   };
 };
 
@@ -189,11 +194,14 @@ export const exportGunGlb = (
     return result;
   }
   const handling = buildActionExport(resolved);
+  const tubeCapacity =
+    metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
   return {
     ...result,
     modelEntry: createGunModelEntry(asset, anchors, resolved.domain.units.metresPerUnit, {
       ...metadata,
       ...(handling ? { handling } : {}),
+      ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
     }),
   };
 };

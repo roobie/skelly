@@ -101,6 +101,15 @@ describe('debug firearm handling', () => {
     expect(registry.items.get(caseType)?.model).toBe('case_5_d_56x45');
   });
 
+  it('resolves the exported pump calibre and hull while retaining existing debug-only timing stand-ins', () => {
+    const inventory = new Inventory(registry);
+    expect(firearmHandlingFor(inventory.create('debug_shotgun_pump'), registry)).toMatchObject({
+      ...FIREARM_HANDLING_STAND_IN,
+      calibre: '12-gauge-00-buck',
+      caseModelId: 'case_12_h_gauge_h_00_h_buck',
+    });
+  });
+
   it('does not fire outside debug mode', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const { version } = inventory;
@@ -111,9 +120,6 @@ describe('debug firearm handling', () => {
       cycle: { rear: 0.026_25, dwell: 0.011_25, forward: 0.0375 },
       rpm: 800,
     });
-    expect(firearmHandlingFor(inventory.create('debug_shotgun_pump'), inventory.registry)).toBe(
-      FIREARM_HANDLING_STAND_IN,
-    );
     const result = debugFirearmShot({
       debugMode: false,
       inventory,

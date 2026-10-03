@@ -164,6 +164,23 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
       return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
     },
   },
-  receiver: { anchors: ejectionAnchor },
+  receiver: {
+    anchors: (params, part) => {
+      const mouth = params.feed === 'tube' && part.keepOuts.find((volume) => volume.id === 'loading-port');
+      return {
+        ...ejectionAnchor(params, part),
+        ...(mouth
+          ? {
+              // biome-ignore lint/style/useNamingConvention: exported Deadvox anchor is a snake_case content Id.
+              loading_port: frameAt([
+                mouth.box.center[0],
+                mouth.box.center[1] + mouth.box.half[1],
+                mouth.box.center[2],
+              ]),
+            }
+          : {}),
+      };
+    },
+  },
   'ak-receiver': { anchors: ejectionAnchor },
 };
