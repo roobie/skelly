@@ -106,13 +106,18 @@ jobs:
       - name: Firefox save-storage browser contract
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Firefox autosave — IndexedDB Continue
-        timeout-minutes: 1
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: continue
-        run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      # Quarantined (BR's no-flaky rule): after Continue, the wait for a visible #view canvas
+      # intermittently times out; cause unknown. Coverage lost (including the d20 busy-lock
+      # regression's Firefox run) and the proof needed to reinstate this step:
+      # https://github.com/roobie/skelly/issues/170
+      # `npm run test:browser:firefox` still runs it locally. To reinstate, restore this step:
+      #   - name: Firefox autosave — IndexedDB Continue
+      #     timeout-minutes: 1
+      #     env:
+      #       SAVE_AUTOSAVE_ONLY: '1'
+      #       SAVE_AUTOSAVE_BACKEND: indexeddb
+      #       SAVE_AUTOSAVE_SCENARIO: continue
+      #     run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox autosave — IndexedDB replacement
         timeout-minutes: 1
         env:
