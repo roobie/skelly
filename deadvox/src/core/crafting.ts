@@ -191,25 +191,65 @@ function* toolSelections(
   needs: [string, number][],
   index: ReachIndex,
   requirements: ReadonlyMap<string, number>,
-  selected: CraftPlan['tools'] = [],
 ): Generator<CraftPlan['tools']> {
-  const position = selected.length;
-  if (position === needs.length) {
-    yield selected;
-    return;
-  }
-  const [quality, level] = needs[position]!;
-  const providers = (index.qualities.get(quality) ?? [])
-    .filter((provider) => provider.level >= level)
-    .sort((a, b) => a.entry.item.uid - b.entry.item.uid);
-  // Nonconsumed providers are equivalent; retain the first UID, not 200 identical branches.
-  const free = providers.find((provider) => !requirements.has(provider.entry.item.type));
-  for (const { entry } of providers) {
-    if (!requirements.has(entry.item.type) && entry !== free?.entry) {
-      continue;
+  const providers = needs.map(([quality, level]) =>
+    (index.qualities.get(quality) ?? []).filter((provider) => provider.level >= level),
+  );
+  // A type can reserve at most one UID per quality it supplies. Keep that many
+  // representatives, not just one: multiple reservations can change greedy stack
+  // allocation. Within an equivalent class, reserving larger UIDs leaves strictly
+  // preferred component UIDs available at identical quantities/condition/cost.
+  const limits = new Map<string, number>();
+  for (const candidates of providers) {
+    for (const type of new Set(candidates.map(({ entry }) => entry.item.type))) {
+      limits.set(type, (limits.get(type) ?? 0) + 1);
     }
-    yield* toolSelections(needs, index, requirements, [...selected, { item: entry.item, quality }]);
   }
+  const choices = providers.map((candidates) => {
+    const [free] = candidates
+      .filter(({ entry }) => !requirements.has(entry.item.type))
+      .sort((a, b) => a.entry.item.uid - b.entry.item.uid);
+    const classes = new Map<string, ReachEntry[]>();
+    for (const { entry } of candidates) {
+      if (!requirements.has(entry.item.type)) {
+        continue;
+      }
+      const key = JSON.stringify([
+        entry.item.type,
+        entry.item.count,
+        entry.item.condition,
+        entry.handlingTime,
+        isEmpty(entry.item),
+      ]);
+      const group = classes.get(key) ?? [];
+      group.push(entry);
+      classes.set(key, group);
+    }
+    const retained = [...classes.values()].flatMap((group) =>
+      group.sort((a, b) => b.item.uid - a.item.uid).slice(0, limits.get(group[0]!.item.type)!),
+    );
+    return free ? [free.entry, ...retained] : retained;
+  });
+  // Different quality assignments with the same reserved UIDs have identical
+  // future feasibility and allocation. Evaluate each reservation set only once.
+  const visited = Array.from({ length: needs.length + 1 }, () => new Set<string>());
+  function* visit(selected: CraftPlan['tools']): Generator<CraftPlan['tools']> {
+    const position = selected.length;
+    const key = [...new Set(selected.map(({ item }) => item.uid))].sort((a, b) => a - b).join(',');
+    if (visited[position]!.has(key)) {
+      return;
+    }
+    visited[position]!.add(key);
+    if (position === needs.length) {
+      yield selected;
+      return;
+    }
+    const [quality] = needs[position]!;
+    for (const entry of choices[position]!) {
+      yield* visit([...selected, { item: entry.item, quality }]);
+    }
+  }
+  yield* visit([]);
 }
 
 const allocateCombination = (

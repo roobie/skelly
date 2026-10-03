@@ -8,15 +8,14 @@ import { indexCraftReach, planCraft } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
 
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-    })),
-);
+const inputs = readdirSync('src/content/base')
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
+  }));
+const { registry } = buildRegistry(inputs);
 const recipe = (components: RecipeDef['components'], qualities: RecipeDef['qualities'] = {}): RecipeDef => ({
   id: 'fixture',
   result: { item: 'torch', count: 1 },
@@ -26,8 +25,11 @@ const recipe = (components: RecipeDef['components'], qualities: RecipeDef['quali
   components,
 });
 const character = { skills: {}, knownRecipes: new Set(['fixture']) };
-const stock = (specs: { type: string; count?: number; condition?: number; time?: number }[]) => {
-  const inventory = new Inventory(registry);
+const stock = (
+  specs: { type: string; count?: number; condition?: number; time?: number }[],
+  definitions = registry,
+) => {
+  const inventory = new Inventory(definitions);
   const items = specs.map((spec, index) => {
     const item = inventory.create(spec.type, spec.count ?? 1);
     item.condition = spec.condition ?? 1;
@@ -48,6 +50,102 @@ const stock = (specs: { type: string; count?: number; condition?: number; time?:
 };
 
 describe('pure craft planner', () => {
+  it('bounds overlapping multi-quality provider work while retaining the cheapest disjoint components', () => {
+    const definition = {
+      ...recipe(['crowbar', 'kitchen_knife', 'can_opener'].map((item) => [{ item, count: 1 }])),
+      qualities: { hammering: 1, prying: 1, cutting: 1, opening: 1 },
+    };
+    const built = buildRegistry([
+      ...inputs,
+      {
+        source: 'multi-quality.json',
+        data: {
+          recipes: [definition],
+          items: [
+            { ...registry.items.get('crowbar')!, stack: 4 },
+            {
+              ...registry.items.get('school_backpack')!,
+              container: { pockets: [{ name: 'Fixture', grid: [600, 8], handling: 0.5 }] },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(built.issues).toEqual([]);
+    const inventory = new Inventory(built.registry);
+    const bag = inventory.create('school_backpack');
+    expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
+    const types = ['crowbar', 'kitchen_knife', 'can_opener'];
+    for (let i = 0; i < 199; i += 1) {
+      expect(
+        inventory.add(inventory.create(types[i % 3]!), {
+          kind: 'pocket',
+          owner: bag,
+          pocket: 0,
+          at: { x: i * 3, y: 0, rotated: false },
+        }),
+      ).toBe(true);
+    }
+    const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const before = inventory.snapshotState();
+    const counted = (qualities: RecipeDef['qualities']) => {
+      let reads = 0;
+      const countedReach = {
+        ...snapshot,
+        entries: snapshot.entries.map((entry) => {
+          const seconds = entry.handlingTime;
+          return {
+            ...entry,
+            get handlingTime() {
+              reads += 1;
+              if (reads > 100_000) {
+                throw new Error('Tool provider operation budget exceeded');
+              }
+              return seconds;
+            },
+          };
+        }),
+      };
+      const result = planCraft({ ...definition, qualities }, countedReach, character);
+      expect('plan' in result).toBe(true);
+      if (!('plan' in result)) {
+        throw new Error(result.missing.reason);
+      }
+      expect(result.plan.components.map(({ item }) => item.uid).sort((a, b) => a - b)).toEqual([2, 3, 4]);
+      expect(
+        result.plan.tools.every(({ item }) =>
+          result.plan.components.every((component) => component.item.uid !== item.uid),
+        ),
+      ).toBe(true);
+      return { ...result, reads };
+    };
+    // Independent control: even the old search completes this exact stock with one quality.
+    const control = counted({ hammering: 1 });
+    const full = counted(definition.qualities);
+    process.stdout.write(`craft-tool-provider reads: one=${control.reads} four=${full.reads}\n`);
+    expect(full.plan.tools.map(({ quality }) => quality)).toEqual(['cutting', 'hammering', 'opening', 'prying']);
+    expect(full.plan.tools.find(({ quality }) => quality === 'hammering')!.item.uid).toBe(
+      full.plan.tools.find(({ quality }) => quality === 'prying')!.item.uid,
+    );
+    expect(inventory.snapshotState()).toEqual(before);
+    // Keeping only one representative per class would lose this feasible cheapest
+    // allocation: reserving both cheap singleton tools avoids two retrievals.
+    const varied = stock(
+      [
+        { type: 'crowbar', time: 0.9 },
+        { type: 'crowbar', time: 0.9 },
+        { type: 'crowbar', count: 4, time: 1 },
+      ],
+      built.registry,
+    );
+    const cheapest = planCraft(
+      recipe([[{ item: 'crowbar', count: 2 }]], { hammering: 1, prying: 1 }),
+      varied.snapshot,
+      character,
+    );
+    expect(cheapest).toMatchObject({ plan: { components: [{ item: varied.items[2], count: 2 }], gather: 8 } });
+  });
+
   it('finds the cheapest feasible alternative when two groups compete for the same rags', () => {
     const { inventory, snapshot, items } = stock([
       { type: 'rag', count: 2 },
