@@ -40,4 +40,5 @@ partial use and container retention must be approved. Torch/candle result
 metadata has no light or burning component yet; those mechanics belong to 2.9.
 Recipes are data only, not a crafting runtime, knowledge system or reachability
 solver. No save change. The simulation fingerprint changes with the schema/core
-source and base-content changes, intentionally accepted pre-alpha.
+source and base-content changes, intentionally accepted pre-alpha. Old saves with
+the earlier simulation/content identity are refused; no migration is provided.
