@@ -77,6 +77,9 @@ adds them.
   the world uses (BR, 2026-10-03).
 - **The noise → positional-sound scenario test** carried from 1.10, as an exit
   gate.
+- **A sneak peek at trees** (BR, 2026-10-03), pulled forward from Slice 4: voxel
+  trees and hedges in the hamlet, plus the near-player performance work that a
+  lot of trees will need (2.13).
 
 ### Out (and which slice has it)
 
@@ -196,8 +199,9 @@ issue.
 ## Milestones
 
 Each milestone is one or two PRs, merged and deployed to Pages with CI green.
-The order follows dependencies. 2.12 depends on nothing and can run alongside
-the others.
+The order follows dependencies. 2.12 and 2.13 depend on nothing and can run
+alongside the others, but 2.13 and 2.10 both change the hamlet layout, so they
+don't run at the same time.
 
 ### 2.0 Before code starts
 
@@ -557,6 +561,35 @@ event where the content says it makes noise.
 **Tests:** that one scenario test.
 **Done when:** it runs in the default test run and passes.
 
+### 2.13 Trees, a sneak peek
+
+Pulled forward from Slice 4 (BR, 2026-10-03), so the look and the cost of
+foliage at half-metre blocks can be judged long before worldgen. The full plan is
+in DESIGN.md, "A world that feels real".
+
+- **Blocks:** trunk, branch and leaf blocks, plus a hedge, as content with
+  footstep surfaces. Leaf litter uses `footstep_leaves`.
+- **Shapes:** a few tree shapes (a broadleaf, a conifer, a young tree), stamped
+  on the hamlet's open ground and in gardens, deterministically from the seed.
+  Hedges line some lots.
+- **Performance, near the player:** leaf blocks mesh cheaply, and the meshing
+  choice (solid or cut-out leaves) is made by measurement. A forest workload,
+  `?bench=1&site=forest`, joins the benchmark beside `site=city`, at a density
+  BR approves on the first look.
+- **Out:** sight blocking by foliage for zombies (Slice 3's sight), cutting
+  trees down and wood from trees, wind sway, far-terrain trees, and biomes
+  (Slice 4).
+- The hamlet still generates the same in any chunk order.
+
+**Saves:** none; trees regenerate from the seed. Existing saves are refused
+anyway, since the world changes.
+**Tests:** the hamlet's chunk-order property test covers the trees; the
+validator passes the new blocks.
+**Done when:** trees and hedges stand in the hamlet, and the forest workload's
+frame cost on the reference laptop is recorded in Results.
+**First look** with screenshots by day and at night, and **BR's in-game
+approval.**
+
 ## Content for Slice 2
 
 | Kind | Today (caa0d31) | Slice 2 |
@@ -571,7 +604,7 @@ event where the content says it makes noise.
 
 ## Definition of done
 
-- Milestones 2.0–2.12 are merged and deployed, with CI green: Biome, types,
+- Milestones 2.0–2.13 are merged and deployed, with CI green: Biome, types,
   tests, content validation including both reachability checks, and the save
   round trip.
 - The frame budget from 1.0 holds, unchanged. Every new per-frame cost (reach

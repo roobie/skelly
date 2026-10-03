@@ -594,6 +594,51 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
   was made with. Ids that no longer exist are kept as "unknown" rather than
   dropped (see [CHALLENGES.md](CHALLENGES.md#7-saves-and-migration)).
 
+## A world that feels real
+
+BR, 2026-10-03: the world should feel like a real place that was left behind, not
+a set. A place feels real when things happen in it that the player didn't cause,
+and when it answers what the player does. Each layer below should also do
+something in play, not only decorate it.
+
+- **Vegetation:** trees, shrubs, hedges, tall grass, and overgrowth a few weeks
+  old: gardens gone wild, weeds through cracked asphalt, leaves blown into open
+  doorways. What it does in play:
+  - **Cover:** foliage blocks sight, for zombies (Slice 3's sight and crouching)
+    and for the player, so a hedge is a place to hide and a place something can
+    hide.
+  - **Noise:** pushing through a bush rustles, and leaf litter changes your
+    footsteps (`footstep_leaves` already exists).
+  - **Materials:** branches and felled trees give sticks and wood, the same
+    materials loot gives in Slice 2.
+  - **Movement and landmarks:** hedges and thickets channel movement, for you
+    and the dead, and a lone big tree is a landmark you can find your way by.
+- **Motion:** wind moves foliage and loose debris, and rain falls (Slice 4). A
+  world where nothing moves reads as paused.
+- **Sound of the place:** wind in the trees by biome, birds by day, insects at
+  night, a building settling, and the distant sounds from the simulation (see
+  [Audio](#audio)). An idea for BR: birds going quiet, or taking off, when
+  something comes near. That's diegetic, so it would be a warning the world gives
+  rather than one the UI gives.
+- **Wildlife as scenery:** birds, crows on the dead, flies. No hunting or
+  farming in version 1 (EPIC.md, "Not in version 1").
+- **Time passing:** overgrowth, dust and leaves indoors, and food rotting. These
+  are signs of how long ago people left.
+
+**Rendering and performance.** There will be a lot of trees (BR), so foliage gets
+a performance plan from the start rather than as a fix later:
+
+- **Near the player,** trees are voxels in the block grid (trunk, branch and leaf
+  blocks), so they collide, block sight, take light and can be cut down. Leaf
+  blocks have to mesh cheaply. Whether they render solid or with cut-out holes is
+  decided by measurement.
+- **Far away,** the far-terrain meshes (see [Rendering](#rendering)) carry
+  simplified tree shapes, so a forest still reads as a forest at 512 m.
+- **Grass tufts and small plants** that have no effect on play are instanced
+  decoration, not blocks.
+- **A forest workload in the benchmark,** like the stress-test city, keeps every
+  step measured on the reference laptop.
+
 ## Rendering
 
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).

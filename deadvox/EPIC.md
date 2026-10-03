@@ -169,6 +169,12 @@ the timing is that the base game will be in place by then.
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
+- A world that feels real (BR, 2026-10-03; see
+  [DESIGN.md](DESIGN.md#a-world-that-feels-real)): vegetation by biome (trees,
+  shrubs, hedges, overgrowth) that gives cover, makes noise and yields wood;
+  wind and motion; the sound of the place; and wildlife as scenery. Trees are
+  voxels near the player and simplified shapes in the far terrain, measured
+  with a forest benchmark. Slice 2's tree sneak peek (2.13) comes first.
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
 - Body temperature, clothing warmth, and rain.
