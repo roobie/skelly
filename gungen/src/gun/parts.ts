@@ -26,6 +26,7 @@ import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
+import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
@@ -514,7 +515,7 @@ type BoltCarrierPattern = keyof typeof BOLT_CARRIER_ENVELOPES;
 type CarrierEnvelope = (typeof BOLT_CARRIER_ENVELOPES)[BoltCarrierPattern];
 
 export const CARRIER_HANDLE_STYLES = {
-  ar: { shape: 'rear-t', owner: 'receiver', motion: 'fixed', handClearanceU: 0.25 },
+  ar: { shape: 'rear-t', owner: 'ar-charging-handle', motion: 'hand', handClearanceU: 0.25 },
   ak: { shape: 'stick-paddle', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   autoShotgun: { shape: 'stick-paddle', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
   bolt: { shape: 'down-back-ball', owner: 'carrier', motion: 'linear', handClearanceU: 0.25, sweep: true },
@@ -1001,10 +1002,11 @@ const receiverShellSolids = ({
   return solids.filter((component) => component.kind !== 'box' || component.box.half.every((half) => half > 0));
 };
 
-const arRearTHandle = (inside = false): Solid[] => {
+/** Deliberately invalid inside-upper handle for the action-handle-rest fault fixture. */
+const arInsideHandleFault = (): Solid[] => {
   const receiverTop = RECEIVER_SECTION.ar.faces.top.y;
   return [
-    metalSolid('charging-handle', [-18, receiverTop - 0.5, inside ? 1 : 1.5], [-16, receiverTop, inside ? 1.75 : 2]),
+    metalSolid('charging-handle', [-18, receiverTop - 0.5, 1], [-16, receiverTop, 1.75]),
     metalSolid('ar-handle-crossbar', [-18, receiverTop - 0.5, -2], [-17.5, receiverTop, 2]),
     metalSolid('ar-handle-latch', [-16.5, receiverTop - 0.5, -0.5], [-16, receiverTop, 0.5]),
   ];
@@ -1023,15 +1025,8 @@ const receiverActionDetails = (params: Readonly<Record<string, string>>): Solid[
     return [];
   }
   const handleStyle = carrierHandleStyleFor(params);
-  const style = CARRIER_HANDLE_STYLES[handleStyle];
   if (params.chargingHandle === 'inside' && handleStyle === 'ar') {
-    return arRearTHandle(true);
-  }
-  if (style.owner !== 'receiver') {
-    return [];
-  }
-  if (style.shape === 'rear-t') {
-    return arRearTHandle();
+    return arInsideHandleFault();
   }
   return [];
 };
@@ -1095,6 +1090,19 @@ const receiverPorts = (context: ReceiverContext): PortDef[] => {
       required: true,
     },
     { id: 'bolt-carrier', mount: 'bolt-carrier', gender: 'female', pos: [travel.restX, carrierY, 0], normal: X, up: Y },
+    ...(params.section === 'ar'
+      ? [
+          {
+            id: 'charging-handle',
+            mount: 'ar-charging-handle',
+            gender: 'female' as const,
+            pos: [0, 0, 0] as Vec3,
+            normal: X,
+            up: Y,
+            required: true,
+          },
+        ]
+      : []),
     { id: 'handguard', mount: 'handguard', gender: 'female', pos: [frontFaceX, 0, 0], normal: X, up: Y },
     {
       id: 'lower',
@@ -1155,10 +1163,10 @@ const addActionKeepOuts = (params: Readonly<Record<string, string>>, keepOuts: K
 
 const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, keepOuts: KeepOut[]): void => {
   const style = CARRIER_HANDLE_STYLES[carrierHandleStyleFor(params)];
-  if (style.owner !== 'receiver' || !('handClearanceU' in style)) {
+  if (style.owner !== 'ar-charging-handle' || !('handClearanceU' in style)) {
     return;
   }
-  const solids = receiverActionDetails(params);
+  const solids = params.chargingHandle === 'inside' ? receiverActionDetails(params) : arChargingHandle.build({}).solids;
   if (solids.length === 0) {
     return;
   }
@@ -1184,19 +1192,19 @@ const addReceiverHandleKeepOuts = (params: Readonly<Record<string, string>>, kee
           shaftMaximum[1] + clearance,
           shaftMinimum[2] + (params.chargingHandle === 'inside' ? clearance : 0),
         ],
-        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
+        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower', 'ar-charging-handle'] },
       ),
       keepOut(
         'rear-t-hand-grip-clearance',
         [minimum[0] - clearance, minimum[1] - clearance, minimum[2] - clearance],
         [maximum[0], maximum[1] + clearance, maximum[2] + clearance],
-        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
+        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower', 'ar-charging-handle'] },
       ),
       keepOut(
         'rear-t-hand-clearance',
         [minimum[0] - pullReach, minimum[1] - clearance, minimum[2] - clearance],
         [minimum[0] + clearance, maximum[1] + clearance, maximum[2] + clearance],
-        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower'] },
+        { allowPort: 'bolt-carrier', allowFamilies: ['stock', 'lower', 'ar-charging-handle'] },
       ),
     );
   }
@@ -1302,6 +1310,10 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
         ] as const,
       }
     : undefined;
+  const internalPockets = params.section === 'ar' ? [AR_HANDLE_CHANNEL] : [];
+  if (params.section === 'pump' && tubeFed && carrierPattern === 'pump') {
+    internalPockets.push(pumpActionBarSlot(bore));
+  }
   const shell = receiverShellSolids({
     section: params.section ?? 'standard',
     bore,
@@ -1314,9 +1326,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     carrierY,
     portWindow,
     frontFaceX,
-    ...(params.section === 'pump' && tubeFed && carrierPattern === 'pump'
-      ? { internalPockets: [pumpActionBarSlot(bore)] }
-      : {}),
+    ...(internalPockets.length > 0 ? { internalPockets } : {}),
     ...(farPortWindow ? { farPortWindow } : {}),
   });
   const opticRail: Solid[] = [];
@@ -3856,6 +3866,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   receiver,
   'ak-receiver': akReceiver,
   'bolt-carrier': boltCarrier,
+  'ar-charging-handle': arChargingHandle,
   'bolt-handle-arm': boltHandleArm,
   'bolt-handle-knob': boltHandleKnob,
   'smg-handle': smgSlidingHandle,

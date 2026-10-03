@@ -8,9 +8,9 @@ import { type Resolved, resolve } from '../src/core/resolve.ts';
 import type { Assembly, PartDef, Solid } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { GUN_ANCHOR_POLICY, type GunAnchorDeclarations, selectGunAnchors } from '../src/gun/anchors.ts';
-import { ejectionPoint } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { ejectionPoint } from '../src/gun/ejection.ts';
 import { loadCorpus, loadFixture, loadFixtures } from './helpers.ts';
 
 const EPS = 1e-6;

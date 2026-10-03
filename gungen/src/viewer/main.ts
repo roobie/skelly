@@ -21,12 +21,12 @@ import type { DesignLoadResult } from '../core/design.ts';
 import { generate, generateValid } from '../core/generate.ts';
 import { worldBox } from '../core/geometry.ts';
 import type { Issue } from '../core/issue.ts';
-import type { Vec3 } from '../core/math.ts';
 import { formatParseError, parseAssemblyJson } from '../core/parseAssembly.ts';
 import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '../core/revolve.ts';
 import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
+import { actionOpenOffsets, resolveGunAction } from '../gun/actionDescription.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
@@ -361,22 +361,6 @@ let pendingCamera: CameraState | undefined;
 const cycleView = createCycleView();
 let detachedMagazine: Group | undefined;
 
-const pumpActionOpenOffsets = (shown: Report): ReadonlyMap<string, Vec3> => {
-  if (initialQuery.get('pose') !== 'action-open') {
-    return new Map();
-  }
-  const carrier = shown.resolved.defs.get('bolt-carrier');
-  if (!(shown.resolved.placed.has('forend') && carrier?.motion)) {
-    return new Map();
-  }
-  const [x, y, z] = carrier.motion.end;
-  const rearward: Vec3 = [-x, -y, -z];
-  return new Map([
-    ['bolt-carrier', rearward],
-    ['forend', rearward],
-  ]);
-};
-
 const redraw = () => {
   if (!report) {
     return;
@@ -387,6 +371,7 @@ const redraw = () => {
       disposeGroup(g);
     }
   }
+  const action = resolveGunAction(report.resolved);
   const contextTemplate = editorState?.template ?? activeTemplate;
   layers = buildLayers(
     report,
@@ -397,13 +382,13 @@ const redraw = () => {
       ...(editorState?.finish ? { finish: editorState.finish } : {}),
     },
     revolveFacets,
-    pumpActionOpenOffsets(report),
+    initialQuery.get('pose') === 'action-open' ? actionOpenOffsets(action) : new Map(),
   );
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
-  cycleView.bind(layers.solids, report.resolved);
+  cycleView.bind(layers.solids, report.resolved, action);
   if (ammoMeshes) {
     scene.add(ammoMeshes.loose, ammoMeshes.fired);
     placeAmmo(report);
@@ -564,9 +549,7 @@ const renderPanel = (assembly: Assembly) => {
   }
   const note = expectationNote(expected, failed);
   const actionOpen =
-    initialQuery.get('pose') === 'action-open' &&
-    report.resolved.placed.has('forend') &&
-    report.resolved.defs.get('bolt-carrier')?.motion !== undefined;
+    initialQuery.get('pose') === 'action-open' && actionOpenOffsets(resolveGunAction(report.resolved)).size > 0;
   const poseNote = actionOpen
     ? '<span class="note"> · view-only full-rearward pump pose; validation and export remain at rest</span>'
     : '';
