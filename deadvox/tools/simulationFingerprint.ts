@@ -58,6 +58,8 @@ export const SIMULATION_ENTRIES = [
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
+  // Includes playView's owned meshes/camera/draw/disposal and playFrames' RAF wiring.
+  // play.ts retains timestamp-to-dt policy, input sampling, actions and simulation advancement.
   'src/render',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
@@ -93,6 +95,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/hudOptions.ts',
   // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
   'src/ui/playHud.ts',
+  // Read-only debug readout formatting and byte-count estimates.
+  'src/ui/playReadout.ts',
   'src/ui/inventoryScreen.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',

@@ -3,7 +3,6 @@
 // time of wherever it is; pressing it again uses it.
 
 import { html, render, type TemplateResult } from 'lit-html';
-import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
 import type { Quickbar } from '../game/quickbar.ts';
@@ -83,8 +82,12 @@ export interface HandlingViewModel {
   readonly next: string;
 }
 
+export interface HandlingPresentationSource {
+  readonly jobs: readonly { readonly label: string; readonly duration: number; readonly elapsed: number }[];
+}
+
 /** The current move and the next one, while the inventory is closed. */
-export const handlingViewModel = (queue: HandlingQueue): HandlingViewModel => {
+export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {
   const [job, next] = queue.jobs;
   if (!job) {
     return { visible: false, label: '', time: '', percent: 0, next: '' };
@@ -111,7 +114,7 @@ const handlingTemplate = (vm: HandlingViewModel): TemplateResult => html`
   <div class="hd-slow">Half speed · no sprinting</div>
 `;
 
-export const renderHandling = (root: HTMLElement, queue: HandlingQueue): void => {
+export const renderHandling = (root: HTMLElement, queue: HandlingPresentationSource): void => {
   const vm = handlingViewModel(queue);
   root.hidden = !vm.visible;
   if (!vm.visible) {

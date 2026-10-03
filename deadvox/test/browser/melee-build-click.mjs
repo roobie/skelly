@@ -18,7 +18,7 @@ const observationPlugin = {
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
-    const marker = '  const renderHandlingFrame = (): void => {';
+    const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game loop observation point is present');
     return code.replace(
       marker,

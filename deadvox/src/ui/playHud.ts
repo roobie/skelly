@@ -1,7 +1,43 @@
 // Read-only play presentation. No input handlers, commands, admission or simulation writes.
+import { render } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Needs } from '../core/needs.ts';
+import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
+
+export interface PlayHudRoots {
+  readonly hud: HTMLElement;
+  readonly prompt: HTMLElement;
+  readonly crosshair: HTMLElement;
+}
+
+export interface PlayHudFrame {
+  readonly hud: string;
+  readonly prompt: string;
+  readonly crosshairVisible: boolean;
+}
+
+/** Rendering consumes a completed projection, never live session/input APIs. */
+export const renderPlayHud = (roots: PlayHudRoots, frame: PlayHudFrame): void => {
+  render(frame.hud, roots.hud);
+  roots.hud.hidden = frame.hud === '';
+  roots.crosshair.hidden = !frame.crosshairVisible;
+  render(frame.prompt, roots.prompt);
+  roots.prompt.hidden = frame.prompt === '';
+};
+
+export const renderPlayInventoryStats = (root: HTMLElement, open: boolean, needs: string): void => {
+  root.hidden = !open;
+  render(needs, root);
+};
+
+export const renderPlayHandling = (root: HTMLElement, queue: HandlingPresentationSource, visible: boolean): void => {
+  if (!visible) {
+    root.hidden = true;
+    return;
+  }
+  renderHandling(root, queue);
+};
 
 export interface PlayStatus {
   readonly calendar: number;

@@ -5,45 +5,42 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { formatClock, hourOfDay, nextTimeOfDay, skipTarget } from '../core/clock.ts';
+import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import { toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
-import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
-import { CaseEffects } from '../render/caseEffects.ts';
-import { Flashlight, flashlightDaylightScale } from '../render/flashlight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
-import { FurnitureMeshes } from '../render/furniture.ts';
-import { HeldItems } from '../render/hands.ts';
-import { applyLook } from '../render/look.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
-import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
-import { ModelLibrary } from '../render/models.ts';
-import { PileMeshes } from '../render/piles.ts';
-import { PlayerMeshes } from '../render/playerFigure.ts';
-import { applySky } from '../render/sky.ts';
-import { StepOffset } from '../render/stepOffset.ts';
-import { ZombieMeshes } from '../render/zombies.ts';
+import { startPlayFrames } from '../render/playFrames.ts';
+import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
-import { quickbarKey, renderHandling, renderQuickbar } from '../ui/hud.ts';
+import { quickbarKey, renderQuickbar } from '../ui/hud.ts';
 import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
-import { type PlayStatus, playHudText, playInteractionText, playNeedsText, playPromptText } from '../ui/playHud.ts';
+import {
+  type PlayStatus,
+  playHudText,
+  playInteractionText,
+  playNeedsText,
+  playPromptText,
+  renderPlayHandling,
+  renderPlayHud,
+  renderPlayInventoryStats,
+} from '../ui/playHud.ts';
+import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
@@ -51,7 +48,6 @@ import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { mountControlsCard } from './controls.ts';
-import { cameraRotation, DamageFeedback } from './damageFeedback.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
@@ -92,7 +88,7 @@ export interface StartPlayOptions {
 }
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
-  const { config, registry, streamer, renderer, scene, camera, meshes } = engine;
+  const { config, registry, streamer, renderer, camera, meshes } = engine;
   if (options.saveController) {
     streamer.onGenerationError = (error) => {
       if (!options.saveController?.refuseRestore(error)) {
@@ -107,17 +103,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const playerStart = playerStartFromWorld(engine, scale);
   const input = new Input(renderer.domElement);
   input.yaw = playerStart.yaw;
-  let cameraRoll = 0;
   let debugTools: DebugRuntime | undefined;
   let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
-  // Play's look is on by default (the benchmark never applies it); debug tools may then restore a look from the URL.
-  applyLook(renderer, meshes, DEFAULT_LOOK);
-  engine.mood.restore(DEFAULT_MOOD);
-  engine.shadows.restore(DEFAULT_SHADOWS);
-  // The weather the sky is rendered in. No weather system yet (DESIGN.md, Slice 4): it will set
-  // `fogginess` (and later more) here; until then only the debug controls change it.
-  const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
-
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -134,8 +121,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   // ---- simulation ----
 
   let playtestObserver: PlaytestObserver | undefined;
-  let meleeRecoilStrength = 0;
-  let meleeRecoilTime = 0;
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
@@ -211,10 +196,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
       onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
-      onMeleeContact: (impulse) => {
-        meleeRecoilStrength = Math.max(0, Math.min(1, impulse / 12));
-        meleeRecoilTime = 0.08;
-      },
+      onMeleeContact: (impulse) => view.recoil(impulse),
     },
   });
   const {
@@ -255,8 +237,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
   const { zombies: zombieSystem, zombieStore } = session;
-  const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
-  let playerGaitPhase = 0;
   if (!options.restore) {
     startingLoadout(inventory);
   }
@@ -267,40 +247,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       inventory.furnish(spec, loot);
     }
   };
-  const models = new ModelLibrary(registry, (message) => {
+  const view = createPlayView(engine, inventory, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
-  const playerPalette = registry.figures.get('player')!.palette;
-  const piles = new PileMeshes(s, models, config.seed);
-  const caseEffects = new CaseEffects(s, models);
-  scene.add(caseEffects.mesh);
-  globalThis.addEventListener('pagehide', () => {
-    piles.dispose();
-    caseEffects.dispose();
-  });
-  const furniture = new FurnitureMeshes(s);
-  const playerMeshes = new PlayerMeshes(s, playerPalette);
-  const held = new HeldItems(inventory, models, playerPalette);
-  const flashlight = new Flashlight(scene);
-  engine.shadows.attachTorch(flashlight.light);
-  scene.add(piles.group, furniture.group, playerMeshes.group);
+  const { weather, caseEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
-  const damageFeedback = new DamageFeedback();
-  // Mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` swaps in ZombieMeshes' six
-  // boxes — same ZombieRenderer shape (group/sync/…), so the rest of this function
-  // doesn't care which one it has. Declared after createSession, whose zombie hooks (above) reach it
-  // through a closure that only ever runs later, during play.
-  //
-  // zombieDied ordering: a melee kill starts from the player-tick primary-action callback below and can
-  // land before or after this frame's `zombieMeshes.sync()` call in either order. The session's onDeath hook calls zombieDied synchronously, in the very same call that
-  // removes the zombie from zombieStore — MobActorMeshes' own zombieDied moves that id out of its
-  // live-tracking map *before* returning, so whichever order sync() and a death happen to fall in this
-  // frame, sync()'s own prune pass never mistakes a just-died zombie for a plain vanish (see
-  // mobActors.ts's own doc comment).
-  const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
-  zombieMeshes.setWorld?.(engine.isSolid, s);
-  scene.add(zombieMeshes.group);
 
   // ---- UI ----
 
@@ -445,7 +397,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     newGame: options.restore === undefined,
     sim,
     input,
-    roll: () => cameraRoll,
+    roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
     feet,
     showNotice,
@@ -1021,13 +973,21 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const updateVisualFeedback = (dt: number): void => {
     for (const event of damageEvents.read()) {
       if (event.kind === 'damage') {
-        damageFeedback.hit(event.amount);
+        view.damage(event.amount);
       }
     }
-    const feedback = damageFeedback.step(dt);
-    cameraRoll = feedback.roll;
-    camera.rotation.copy(cameraRotation(input.pitch, input.yaw, feedback.roll));
-    $('damage').style.opacity = String(feedback.vignetteOpacity);
+    view.updateCamera(
+      {
+        dt,
+        body,
+        paused: sim.paused,
+        noclip: debugTools?.noclip ?? false,
+        yaw: input.yaw,
+        pitch: input.pitch,
+        eye: eye(),
+      },
+      $('damage'),
+    );
   };
 
   const updateDebugReadout = (now: number): void => {
@@ -1035,56 +995,39 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       return;
     }
     lastDebugUpdate = now;
-    debugTools.update({
-      fps,
-      frame: frameInterval.summary(),
-      work: frameWork.summary(),
-      seed: config.seed,
-      radius: config.radiusM,
-      movement: input.walking ? 'walking' : 'jogging',
-      position: [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
-      chunks: meshes.count,
-      pending: streamer.pending,
-      holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
-      zombies: zombieStore.size,
-      sounds: audio.heardSounds,
-      simulationMs,
-      renderMs,
-      meshingQueueMs,
-      entities: zombieStore.size + [...entities.all].length + inventory.piles.size,
-      memoryBytes:
-        [...engine.world.chunks.values()].reduce((sum, chunk) => sum + chunk.bytes, 0) +
-        engine.meshes.group.children.reduce((sum, child) => {
-          const mesh = child as unknown as {
-            geometry?: { attributes?: Record<string, { array?: { byteLength: number } }> };
-          };
-          return (
-            sum +
-            Object.values(mesh.geometry?.attributes ?? {}).reduce(
-              (bytes, attribute) => bytes + (attribute.array?.byteLength ?? 0),
-              0,
-            )
-          );
-        }, 0),
-      clock: formatClock(displayCalendar()),
-      compression: compression.c,
-      snapshotLastMs: snapshotHistory.lastMs ?? 0,
-      snapshotP95Ms: snapshotHistory.p95Ms,
-      snapshotCount: snapshotHistory.count,
-      revealedZombies: revealZombies
-        ? [...zombieStore.entries()]
-            .map(([, { body: zombieBody }]) => zombieBody.pos.map((v) => (v * s).toFixed(1)).join(','))
-            .slice(0, 40)
-        : [],
-    });
-  };
-
-  const renderHandlingFrame = (): void => {
-    if (screen.isOpen || !hudVisibility(hudOptions).handling) {
-      handlingBox.hidden = true;
-      return;
-    }
-    renderHandling(handlingBox, queue);
+    debugTools.update(
+      playReadout({
+        measurements: {
+          fps,
+          frame: frameInterval.summary(),
+          work: frameWork.summary(),
+          seed: config.seed,
+          radius: config.radiusM,
+          chunks: meshes.count,
+          pending: streamer.pending,
+          holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
+          zombies: zombieStore.size,
+          sounds: audio.heardSounds,
+          simulationMs,
+          renderMs,
+          meshingQueueMs,
+          entities: zombieStore.size + [...entities.all].length + inventory.piles.size,
+          compression: compression.c,
+          snapshotLastMs: snapshotHistory.lastMs ?? 0,
+          snapshotP95Ms: snapshotHistory.p95Ms,
+          snapshotCount: snapshotHistory.count,
+        },
+        walking: input.walking,
+        positionBlocks: body.pos,
+        blockSize: s,
+        calendar: displayCalendar(),
+        chunks: engine.world.chunks.values(),
+        drawn: engine.meshes.group.children,
+        revealedPositions: revealZombies
+          ? [...zombieStore.entries()].map(([, { body: zombieBody }]) => zombieBody.pos)
+          : [],
+      }),
+    );
   };
 
   const updateHeldItems = (dt: number): void => {
@@ -1102,10 +1045,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready);
-    meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
-    const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
-    held.update(camera, pose, recoil);
-    flashlight.update(registry, survival.lit, held, camera);
+    view.updateHeld(dt, pose, survival.lit);
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -1182,66 +1122,48 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     ) {
       saveMetrics();
     }
-    const hour = hourOfDay(sim.calendar);
-    const sky = skyInWeather(skyAt(hour), weather);
-    applySky(engine.sky, sky);
-    engine.mood.setSky(sky);
-    piles.sync(inventory);
-    furniture.sync(entities);
-    const zombieAlpha = Math.max(0, Math.min(1, (sim.time - session.lastZombieStep) * 20));
-    zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
-    zombieMeshes.sync(zombieStore, dt, zombieAlpha, debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen));
+    const { hour, sky } = view.syncWorld({
+      calendar: sim.calendar,
+      time: sim.time,
+      lastZombieStep: session.lastZombieStep,
+      dt,
+      entities,
+      zombies: zombieStore,
+      frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
+    });
     updateDebugTargets();
     updateDebugReadout(now);
     mark = performance.now();
 
-    const cameraOffset = cameraStepOffset.update(
-      [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
-      body.onGround,
-      dt,
-      debugTools?.noclip ?? false,
-    );
-    const travel = Math.hypot(body.vel[0], body.vel[2]) * s * dt;
-    const playerMoving = travel > 0.001 && !sim.paused;
-    if (playerMoving) {
-      playerGaitPhase += (travel / 0.6) * Math.PI;
-    }
-    playerMeshes.sync({
-      body,
-      yaw: input.yaw,
-      stepOffset: cameraOffset,
-      gaitPhase: playerGaitPhase,
-      moving: playerMoving,
-      inventory,
-    });
-    const [ex, ey, ez] = eye();
-    camera.position.set(ex * s, ey * s + cameraOffset, ez * s);
     updateVisualFeedback(dt);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 
-    hud.textContent = hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '');
-    hud.hidden = hud.textContent === '';
-    $('crosshair').hidden = !hudVisibility(hudOptions).crosshair;
-    prompt.textContent = promptText(now);
-    prompt.hidden = prompt.textContent === '';
+    renderPlayHud(
+      { hud, prompt, crosshair: $('crosshair') },
+      {
+        hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? ''),
+        crosshairVisible: hudVisibility(hudOptions).crosshair,
+        prompt: promptText(now),
+      },
+    );
     document.body.classList.toggle('resting', rest.action !== undefined);
     renderRest(restBox, rest.action, sim);
     screen.update();
-    inventoryStats.hidden = !screen.isOpen;
-    inventoryStats.textContent = needsText();
+    renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
-    renderHandlingFrame();
-    flashlight.daylightScale = flashlightDaylightScale(sky);
-    flashlight.shadowsAllowed = engine.shadows.torchOn;
+    renderPlayHandling(handlingBox, queue, !screen.isOpen && hudVisibility(hudOptions).handling);
+    view.prepareLighting(sky);
     updateHeldItems(dt);
-    engine.shadows.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
-    const renderStart = performance.now();
-    engine.mood.render(() => held.render(renderer, camera, engine.sky));
-    renderMs = performance.now() - renderStart;
+    view.updateShadows(hour, sky);
+    renderMs = view.render();
     frameWork.record(now, performance.now() - workStart);
-    finishFrame();
+    if (sim.dead) {
+      die(sim.dead);
+      return false;
+    }
+    return true;
   };
 
   /** Stops play and shows what happened; "New world" reloads with the next seed. */
@@ -1261,17 +1183,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     };
     showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
   };
-  const finishFrame = (): void => {
-    if (sim.dead) {
-      die(sim.dead);
-    } else {
-      requestAnimationFrame(frame);
-    }
-  };
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
-  engine.shadows
-    .warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget])
-    .catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
-  requestAnimationFrame(frame);
+  view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
+  startPlayFrames(frame);
 };

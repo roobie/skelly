@@ -63,8 +63,5 @@ describe('debug isolation', () => {
     expect(source).toContain('id="measure-snapshot"');
     expect(source).toContain('id="export-metrics"');
     expect(source).toContain('incl. post passes');
-    const play = readFileSync('src/game/play.ts', 'utf8');
-    expect(play).toContain('engine.mood.render(() => held.render(renderer, camera, engine.sky))');
-    expect(play).toContain('renderMs = performance.now() - renderStart');
   });
 });
