@@ -100,4 +100,6 @@ tests, docs, review reports, content and credits. Never write a host path
 repository root or to the file, a public URL for an external source, or an
 environment variable for a host location, such as
 `"$XDG_RUNTIME_DIR/skelly-heavy.lock"`. Untracked scratch and mail may use
-absolute paths.
+absolute paths. **Don't modify third-party files** to meet this rule: they stay as
+received, so paths embedded in their metadata (for example inside the
+`mobgen/reference/*.blend` files) are out of scope.
