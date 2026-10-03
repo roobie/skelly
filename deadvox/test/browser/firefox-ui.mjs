@@ -1,0 +1,232 @@
+// Headed Firefox UI contract under Xvfb. Pointer lock is explicitly SYNTHETIC:
+// this keeps menu/inventory coverage independent of the quarantined native gesture (#168).
+// biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
+import assert from 'node:assert/strict';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'vite';
+
+const { firefox } = await import('playwright');
+const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+const observation = {
+  name: 'firefox-ui-session-observation',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.endsWith('/src/game/play.ts')) {
+      return;
+    }
+    const marker = '  const renderHandlingFrame = (): void => {';
+    assert(code.includes(marker), 'game-loop observation point exists');
+    return code.replace(marker, `  Object.assign(globalThis, { firefoxUiTest: { session, input } });\n${marker}`);
+  },
+};
+const vite = await createServer({
+  configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
+  root: projectRoot,
+  logLevel: 'error',
+  plugins: [observation],
+  server: { host: '127.0.0.1', port: 0 },
+});
+let browser;
+try {
+  await vite.listen();
+  const address = vite.httpServer.address();
+  assert(address && typeof address !== 'string');
+  browser = await firefox.launch({ headless: false });
+  const page = await browser.newPage();
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  await page.addInitScript(() => {
+    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
+    let locked = null;
+    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+    Element.prototype.requestPointerLock = function () {
+      locked = this;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      return Promise.resolve();
+    };
+    document.exitPointerLock = () => {
+      locked = null;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+    globalThis.firefoxUiFrames = 0;
+    const frame = () => {
+      globalThis.firefoxUiFrames += 1;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    globalThis.addEventListener('keydown', (event) => {
+      if (event.code === 'F10') {
+        globalThis.firefoxF10Prevented = event.defaultPrevented;
+      }
+    });
+  });
+  await page.goto(`http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`);
+  await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view canvas')), null, {
+    timeout: 30_000,
+  });
+  const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('canvas'),
+    null,
+    { timeout: 10_000 },
+  );
+  await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, initialTime, {
+    timeout: 20_000,
+  });
+  assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
+  await page.keyboard.press('F10');
+  assert.equal(await page.locator('#overlay').evaluate((panel) => panel.hidden), true);
+  assert.equal(await page.evaluate(() => globalThis.firefoxF10Prevented), false);
+  await page.keyboard.press('F9');
+  await page.waitForFunction(
+    () => !document.querySelector('#overlay').hidden && globalThis.firefoxUiTest.session.sim.paused,
+    null,
+    { timeout: 5000 },
+  );
+  assert.equal(await page.evaluate(() => document.pointerLockElement === document.querySelector('canvas')), true);
+  assert.ok(await page.locator('#audio-volume-master').count());
+  const paused = await page.evaluate(() => ({
+    time: globalThis.firefoxUiTest.session.sim.time,
+    frames: globalThis.firefoxUiFrames,
+  }));
+  await page.waitForFunction((frames) => globalThis.firefoxUiFrames >= frames + 2, paused.frames, { timeout: 5000 });
+  assert.equal(
+    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time),
+    paused.time,
+    'paused frames do not advance simulation time',
+  );
+  await page.keyboard.press('F9');
+  await page.waitForFunction(
+    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('canvas'),
+    null,
+    { timeout: 5000 },
+  );
+  await page.waitForFunction((before) => globalThis.firefoxUiTest.session.sim.time > before, paused.time, {
+    timeout: 20_000,
+  });
+  assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
+
+  let cursor = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
+  const moveCursorTo = async (position) => {
+    const movement = { x: position.x - cursor.x, y: position.y - cursor.y };
+    await page.evaluate(({ x, y }) => {
+      const canvas = document.querySelector('canvas');
+      const event = new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        button: -1,
+        buttons: 0,
+        clientX: innerWidth / 2,
+        clientY: innerHeight / 2,
+      });
+      Object.defineProperties(event, { movementX: { value: x }, movementY: { value: y } });
+      canvas.dispatchEvent(event);
+      document.dispatchEvent(
+        new MouseEvent('mousemove', {
+          bubbles: true,
+          clientX: innerWidth / 2,
+          clientY: innerHeight / 2,
+          movementX: x,
+          movementY: y,
+        }),
+      );
+    }, movement);
+    cursor = position;
+    await page.waitForTimeout(100);
+  };
+  const clickGameElement = async (selector) => {
+    const rect = await page.locator(selector).boundingBox();
+    assert(rect);
+    await moveCursorTo({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
+    await page.evaluate(() =>
+      document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
+    );
+  };
+  await page.keyboard.press('g');
+  await page.locator('#spawn input').fill('bandage');
+  await clickGameElement('#spawn .spawn-list button');
+  assert.match((await page.locator('#spawn .spawn-status').textContent()) ?? '', /is at your feet/);
+  await page.locator('#spawn input').evaluate((input) => input.blur());
+  await page.keyboard.press('g');
+  await page.keyboard.press('Tab');
+  await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+  const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
+    await page.evaluate(
+      ({ type, button, buttons }) =>
+        document.querySelector('canvas').dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            pointerId: 1,
+            pointerType: 'mouse',
+            isPrimary: true,
+            button,
+            buttons,
+            clientX: innerWidth / 2,
+            clientY: innerHeight / 2,
+          }),
+        ),
+      { type: eventType, button: pointerButton, buttons: pressedButtons },
+    );
+  };
+  const drag = async (source, target) => {
+    const sourceBox = await source.boundingBox();
+    const targetBox = await target.boundingBox();
+    assert(sourceBox && targetBox);
+    await moveCursorTo({ x: sourceBox.x + sourceBox.width / 2, y: sourceBox.y + sourceBox.height / 2 });
+    await dispatchPointer('pointerdown', 0, 1);
+    await moveCursorTo({ x: targetBox.x + 16, y: targetBox.y + 16 });
+    await dispatchPointer('pointerup', -1, 0);
+  };
+  const finishMove = async () => {
+    await page.keyboard.press('Tab');
+    await page.waitForFunction(() => globalThis.firefoxUiTest.session.queue.jobs.length === 0, null, { timeout: 5000 });
+    await page.keyboard.press('Tab');
+  };
+  const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item').filter({ hasText: 'Bandage' });
+  assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
+  await drag(floorItem, page.locator('#inventory .inv-grid[data-target="pocket:1:0"]'));
+  await finishMove();
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('#inventory .inv-item')].some(
+        (item) =>
+          item.querySelector('.inv-item-name')?.textContent === 'Bandage' &&
+          item.closest('.inv-grid')?.dataset.target === 'pocket:1:0',
+      ),
+    null,
+    { timeout: 5000 },
+  );
+  const beans = page.locator('#inventory .inv-item').filter({ hasText: 'Can of beans' }).first();
+  await drag(beans, page.locator('#inventory .inv-grid[data-target="pocket:1:1"]'));
+  await finishMove();
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('#inventory .inv-item')].some(
+        (item) =>
+          item.querySelector('.inv-item-name')?.textContent === 'Can of beans' &&
+          item.closest('.inv-grid')?.dataset.target === 'pocket:1:1',
+      ),
+    null,
+    { timeout: 5000 },
+  );
+  assert.deepEqual(pageErrors, []);
+  assert.deepEqual(consoleErrors, []);
+  process.stdout.write(
+    'Firefox synthetic-lock UI passed: time advance/pause/resume, F10/F9, audio controls, debug spawn, floor pickup and pocket transfer. Native acquisition is NOT tested.\n',
+  );
+} finally {
+  await browser?.close();
+  await vite.close();
+}

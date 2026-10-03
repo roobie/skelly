@@ -164,7 +164,10 @@ export class Input {
   lock(): void {
     // Rejects if the browser refuses (e.g. too soon after Esc); the overlay stays up and the player clicks again.
     // Firefox returns undefined instead of a promise, whatever the DOM types say.
-    (this.target.requestPointerLock() as Promise<void> | undefined)?.catch(() => undefined);
+    (this.target.requestPointerLock() as Promise<void> | undefined)?.catch((error: unknown) => {
+      // biome-ignore lint/suspicious/noConsole: preserve native permission failures for browser diagnosis.
+      console.warn('Pointer lock request failed', error);
+    });
   }
 
   unlock(): void {

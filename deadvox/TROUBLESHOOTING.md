@@ -103,11 +103,35 @@ Firefox start-up probe, page load took 6.1 s with the default look against 2.5 s
 those three parameters (commit `3299e50`; on the full look the contract took 8m09s against
 its 300 s cap). It tests the UI, not the look.
 
-`npm run test:browser:firefox` still runs with the full look, on purpose, as it covers the
-real start-up path. On a loaded machine it can time out at its 10 s pointer-lock and overlay
-wait (`test/browser/firefox-first-click.mjs:103`): on this branch it failed once and then
-passed twice on a host at load ~5, and it passed on `main` at the branch point and on a real
-GPU. Re-run it before suspecting the code, and compare with a real-GPU run. Install Firefox
-once with `npx playwright install --with-deps firefox`, then from `deadvox/` run
-`xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop), as
-`.github/workflows/deadvox.yml` does.
+Install Firefox once with `npx playwright install --with-deps firefox`, then from
+`deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).
+This matches CI's enabled cases: explicitly synthetic pointer-lock UI coverage, storage
+protocol/kill stages, an independent busy-lock relaunch, and IndexedDB replacement.
+The UI checks wait for positive simulation advance, paused nonadvance across observed
+frames, and resumed advance—not a HUD minute reached within a wall-clock interval.
+
+Two single-case quarantines remain; a fresh pass does not establish a fix:
+- [#168](https://github.com/roobie/skelly/issues/168): native first-gesture pointer-lock
+  refusal. Investigate with `xvfb-run -a npm run test:browser:firefox:native`.
+- [#170](https://github.com/roobie/skelly/issues/170): built IndexedDB Continue's canvas
+  timeout. Investigate with `xvfb-run -a npm run test:browser:firefox:continue`.
+Neither is in the default Firefox command. No retries or increased bounds; record a
+fixed trial plan and before/after/restored-before evidence before reinstating a case.
+
+Set `DEBUG=pw:browser` for native browser launch/stderr/exit traces. The Chromium UI
+launcher emits `UI_LAUNCH_FAILURE` with both executable/argument/PID/exit/signal records,
+bounded output tails, ports, HTTP status, discovery error (including its cause), and CDP
+targets. Startup fetches and JSON bodies share their stage's remaining deadline.
+
+Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
+separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,
+crash/close/context-loss events, page/console errors, last responsive frame/simulation
+time, child output/exit status, and parent/child cgroup memory limits/events/pressure.
+Each failure page evaluation is bounded to five seconds. Firefox's public managed
+server API supplies child-process diagnostics; this is test infrastructure, not product
+persistence policy. Cgroup deltas cover the entire named group, not just the renderer:
+`high` reclaim pressure is not an OOM or proof of an app leak.
+
+The busy-lock fixture owns a real exclusive Web Lock in a same-origin blank document.
+It needs no second world, renderer or save worker; seeding and recovery use the built
+app. It explicitly simulates pointer lock and does not claim native-gesture coverage.

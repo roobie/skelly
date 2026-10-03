@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Input, isMenuOpeningKey, KEY_BINDINGS, nextMenuCursor, worldActionForKey } from '../src/game/input.ts';
 
 describe('menu input', () => {
+  it('surfaces a native pointer-lock promise rejection without an unhandled rejection', async () => {
+    const error = new Error('The browser failed to lock the pointer');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const input = Object.create(Input.prototype) as Input;
+    Object.assign(input, { target: { requestPointerLock: () => Promise.reject(error) } });
+    try {
+      input.lock();
+      await Promise.resolve();
+      expect(warn).toHaveBeenCalledWith('Pointer lock request failed', error);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('identifies G as the opening key so its text default can be cancelled', () => {
     expect(isMenuOpeningKey('KeyG', true, false)).toBe(true);
     expect(isMenuOpeningKey('KeyG', true, true)).toBe(false);
