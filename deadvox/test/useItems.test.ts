@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
@@ -6,19 +6,17 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { EAT_TIME } from '../src/core/options.ts';
+import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
-import { EAT_TIME, Survival } from '../src/game/survival.ts';
+import { Survival } from '../src/game/survival.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(
-  [
-    'items-food.json',
-    'items-other.json',
-    'items-tools.json',
-    'items-wearables.json',
-    'models-melee.json',
-    'models-firearms.json',
-  ].map((f) => read(`src/content/base/${f}`)),
+  readdirSync('src/content/base')
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map((file) => read(`src/content/base/${file}`)),
 );
 
 const setup = () => {
@@ -26,7 +24,10 @@ const setup = () => {
   const inventory = new Inventory(registry);
   const queue = new HandlingQueue(inventory);
   const notices: string[] = [];
+  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+  const reach = bindReach(player);
   const survival = new Survival(sim, inventory, queue, {
+    reach,
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
   });
@@ -35,7 +36,7 @@ const setup = () => {
     inventory.add(item, { kind: 'hand', side });
     return item;
   };
-  return { sim, inventory, queue, survival, notices, hold };
+  return { sim, inventory, queue, survival, notices, hold, reach, player };
 };
 
 describe('using what you hold', () => {
@@ -100,6 +101,51 @@ describe('using what you hold', () => {
     expect(chargeOf(registry, light)).toBe(1);
     expect(batteries.count).toBe(1);
     expect(survival.use(light)).toBeUndefined();
+    expect(light.on).toBe(true);
+  });
+
+  it('scalar light switching and drain invalidate the cached state-sensitive reach', () => {
+    const t = setup();
+    t.hold('flashlight');
+    const before = t.reach();
+    expect(t.reach()).toBe(before);
+    t.survival.use(t.inventory.hands.right!);
+    const switched = t.reach();
+    expect(switched).not.toBe(before);
+    t.sim.frame(1);
+    expect(t.reach()).not.toBe(switched);
+  });
+
+  it('selects the fullest searched/ground spare and rechecks its reach at battery completion', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    light.charges = 0;
+    const bag = t.inventory.create('school_backpack');
+    t.inventory.add(bag, { kind: 'pile', pos: [0, 0, 0] });
+    const floor = t.inventory.create('aa_battery');
+    floor.charges = 0.7;
+    t.inventory.add(floor, { kind: 'pocket', owner: bag, pocket: 0 });
+    const definition = [...registry.furniture.values()].find((def) => def.container)!;
+    const furniture = t.inventory.entities.add({ type: definition.id, pos: [1, 0, 0], size: [1, 2, 1], facing: 'n' })!;
+    const spare = t.inventory.create('aa_battery');
+    spare.charges = 0.9;
+    t.inventory.add(spare, { kind: 'furniture', entity: furniture, pocket: 0 });
+    expect(t.survival.use(light)).toBeUndefined();
+    expect(t.queue.jobs[0]).toMatchObject({ params: { batteryUid: floor.uid } });
+    t.queue.cancel();
+    t.inventory.entities.markSearched(furniture);
+    t.survival.use(light);
+    expect(t.queue.jobs[0]).toMatchObject({ params: { batteryUid: spare.uid } });
+    t.player.position[0] = 10;
+    expect(t.queue.tick(3).failed[0]?.reason).toBe('The battery is no longer in reach');
+    expect(light.charges).toBe(0);
+    expect(t.inventory.itemByUid(spare.uid)).toBe(spare);
+    t.player.position[0] = 0;
+    t.survival.use(light);
+    t.queue.tick(3);
+    expect(light.charges).toBe(0.9);
+    expect(light.on).not.toBe(true);
+    t.survival.use(light);
     expect(light.on).toBe(true);
   });
 

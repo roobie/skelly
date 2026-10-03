@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { bindReach } from '../src/core/reach.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -66,6 +67,7 @@ function setup() {
     inv.entities.markSearched(entity);
   });
   const hooks = {
+    reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [],
     distance: () => 0,
@@ -107,6 +109,17 @@ describe('inventory screen Lit rendering', () => {
     expect(test.queue.jobs).toHaveLength(1);
     expect(test.searching.has(test.entity)).toBe(true);
     expect(test.root.querySelectorAll('.inv-pane')[1]?.textContent).toContain('Searching…');
+  });
+
+  it('Ctrl pointer binding enqueues quick move without immediately moving or starting a drag', () => {
+    const t = setup();
+    const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
+    node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true }));
+    expect(t.queue.jobs).toHaveLength(1);
+    expect(t.inv.hands.right).toBe(t.beans);
+    t.queue.tick(10);
+    expect(t.inv.locate(t.beans)?.kind).toBe('pocket');
+    expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
   });
 
   it('keeps shipped jeans and hoodie pockets inside their wrapping container', () => {

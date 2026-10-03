@@ -3,6 +3,13 @@
 import type { MoveIntent } from './player.ts';
 
 const SENSITIVITY = 0.0022;
+const MAC_PLATFORM = /Mac/i;
+
+/** Cmd on macOS (best effort), Ctrl elsewhere; Shift alone stays free for splitting. */
+export const quickMoveModifier = (
+  event: Pick<MouseEvent, 'ctrlKey' | 'metaKey'>,
+  platform = globalThis.navigator?.platform ?? '',
+): boolean => (MAC_PLATFORM.test(platform) ? event.metaKey : event.ctrlKey);
 
 /** UI key bindings and browser-owned keys referenced by the help and browser contract. */
 export const KEY_BINDINGS = {

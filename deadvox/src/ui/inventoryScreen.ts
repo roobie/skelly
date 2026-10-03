@@ -10,9 +10,10 @@ import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
+import { bestPocket, dropTarget, options, quickMove, toHands } from '../core/options.ts';
+import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { CONTROL_CODES, quickbarSlotForKey } from '../game/input.ts';
-import { bestPocket, dropTarget, options, toHands } from '../game/targets.ts';
+import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
 
 /** Pixels per inventory cell. */
 export const CELL = 32;
@@ -30,14 +31,15 @@ const SLOT_LABEL: Record<WearSlot, string> = {
 };
 
 export interface ScreenHooks {
+  reach: () => ReachSnapshot;
   /** The air block at the player's feet, where drops land. */
   feet: () => Vec3;
   /** Piles within reach. */
-  nearby: () => Pile[];
+  nearby: () => readonly Pile[];
   /** Distance in metres from the player to a pile. */
   distance: (pile: Pile) => number;
   /** Furniture with pockets within reach, nearest first. */
-  containers: () => BlockEntity[];
+  containers: () => readonly BlockEntity[];
   /** Distance in metres from the player to a piece of furniture. */
   entityDistance: (entity: BlockEntity) => number;
   /** Queues a search of a container; says why not, or undefined. */
@@ -163,11 +165,11 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
 const optionTemplate = (
   option: OptionViewModel,
   item: Item,
-  queue: (item: Item, target: Target) => void,
+  queue: (item: Item, target?: Target) => void,
 ): TemplateResult =>
-  option.button && option.target
+  option.button
     ? html`
-        <button class="inv-option" type="button" @click=${() => queue(item, option.target!)}>
+        <button class="inv-option" type="button" @click=${() => queue(item, option.target)}>
           <span>${option.label}</span><span class="inv-time">${option.time}</span>
         </button>
       `
@@ -177,7 +179,7 @@ const optionTemplate = (
         </div>
       `;
 
-const detailsTemplate = (vm: DetailsViewModel, queue: (item: Item, target: Target) => void): TemplateResult => {
+const detailsTemplate = (vm: DetailsViewModel, queue: (item: Item, target?: Target) => void): TemplateResult => {
   if (vm.empty) {
     return html`<aside class="inv-details"><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
   }
@@ -214,13 +216,13 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  queue: (item: Item, target: Target) => void,
+  queue: (item: Item, target?: Target) => void,
   search: (uid: number) => void,
 ): TemplateResult => html`
   <header class="inv-head">
     <h2>Inventory</h2>
     <span class="inv-weight">Carrying ${vm.weight}</span>
-    <span class="inv-help">Drag items · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
+    <span class="inv-help">Drag items · Ctrl/Cmd-click quick move · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
   </header>
   <div class="inv-body">
     <section class="inv-pane">
@@ -364,7 +366,7 @@ export class InventoryScreen {
       .containers()
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}`;
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${this.hooks.reach().origin.join(',')}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -506,7 +508,7 @@ export class InventoryScreen {
     render(
       inventoryTemplate(
         vm,
-        (item, target) => this.report(this.tryQueue(item, target)),
+        (item, target) => this.report(target ? this.tryQueue(item, target) : this.hooks.use(item)),
         (uid) => {
           const entity = this.entityByUid.get(uid);
           if (entity) {
@@ -647,10 +649,15 @@ export class InventoryScreen {
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
-      options: options(this.inv, item, this.hooks.feet()).map(
+      options: options(item, this.hooks.reach()).map(
         (option): OptionViewModel =>
           option.plan.ok
-            ? { label: option.label, button: true, time: secs(option.plan.time), target: option.target }
+            ? {
+                label: option.label,
+                button: true,
+                time: secs(option.plan.time),
+                ...(option.kind === 'move' ? { target: option.target } : {}),
+              }
             : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
       ),
     };
@@ -711,6 +718,13 @@ export class InventoryScreen {
     }
     e.preventDefault();
     this.selected = item;
+    if (quickMoveModifier(e)) {
+      const option = quickMove(item, this.hooks.reach());
+      this.report(option.plan.ok ? this.tryQueue(item, option.target) : option.plan.reason);
+      this.drawn = '';
+      this.update();
+      return;
+    }
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;
