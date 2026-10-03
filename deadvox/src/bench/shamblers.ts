@@ -113,6 +113,7 @@ export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void 
     zombies = new ZombieSystem({
       seed: run.seed,
       isSolid: engine.isSolid,
+      isOpaque: engine.isOpaque,
       blockSize: s,
       physics: physicsFor(scale),
       jumpSpeed: PLAYER.jump,

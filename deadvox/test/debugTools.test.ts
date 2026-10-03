@@ -120,6 +120,7 @@ describe('debug starting equipment', () => {
         lightSeenFrom: 40,
       }),
       isSolid: FLOOR,
+      isOpaque: FLOOR,
       hour: () => 12,
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),

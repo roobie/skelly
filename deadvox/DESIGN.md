@@ -604,15 +604,19 @@ something in play, not only decorate it.
 - **Vegetation:** trees, shrubs, hedges, tall grass, and overgrowth a few weeks
   old: gardens gone wild, weeds through cracked asphalt, leaves blown into open
   doorways. What it does in play:
-  - **Cover:** foliage blocks sight, for zombies (Slice 3's sight and crouching)
-    and for the player, so a hedge is a place to hide and a place something can
-    hide.
-  - **Noise:** pushing through a bush rustles, and leaf litter changes your
-    footsteps (`footstep_leaves` already exists).
+  - **Cover (BR, 2026-10-03):** leaves and hedges are passable but opaque to
+    zombie sight, player aim and LOS. Trunks/branches are solid and opaque.
+    Movement rules apply to player, zombies and physical bodies alike. A hedge
+    hides you without trapping you; richer crouching/light rules remain Slice 3.
+  - **Noise:** pushing through a bush admits positioned rustle and hearing
+    together through F4, on entry and a moving cooldown, faster/louder when
+    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead
+    defaults pending BR override: leaves do not muffle either simulation hearing
+    or WebAudio, and do not obstruct melee/bites; they still obstruct ray picks.
   - **Materials:** branches and felled trees give sticks and wood, the same
     materials loot gives in Slice 2.
-  - **Movement and landmarks:** hedges and thickets channel movement, for you
-    and the dead, and a lone big tree is a landmark you can find your way by.
+  - **Movement and landmarks:** solid trunks channel movement for you and the
+    dead; passable hedges conceal it. A lone big tree is a landmark.
 - **Motion:** cosmetic wind moves foliage and loose debris, and rain falls
   (Slice 4). It makes exposure and the weather readable, rather than leaving a
   world that reads as paused. Wind here is render and audio ambience, not

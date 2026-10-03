@@ -41,6 +41,7 @@ const makeRest = (
 /** A ZombieSystem with a fixed player sense and a flat floor, for the scenarios below. */
 const zombieHooks = (player: PlayerSense, hour = 23) => ({
   isSolid: FLOOR,
+  isOpaque: FLOOR,
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,

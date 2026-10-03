@@ -1,9 +1,61 @@
 {
   "blocks": [
-    { "id": "tree_trunk", "name": "Tree trunk", "color": "#62503b", "solid": true, "pattern": "rough" },
-    { "id": "tree_branch", "name": "Tree branch", "color": "#705941", "solid": true, "pattern": "rough" },
-    { "id": "leaves", "name": "Leaves", "color": "#526b3d", "solid": true, "pattern": "noise" },
-    { "id": "hedge", "name": "Hedge", "color": "#425b35", "solid": true, "pattern": "noise" },
-    { "id": "leaf_litter", "name": "Leaf litter", "color": "#766047", "solid": true, "pattern": "noise" }
+    { "id": "tree_trunk", "name": "Tree trunk", "color": "#62503b", "solid": true, "opaque": true, "pattern": "rough" },
+    {
+      "id": "tree_branch",
+      "name": "Tree branch",
+      "color": "#705941",
+      "solid": true,
+      "opaque": true,
+      "pattern": "rough"
+    },
+    {
+      "id": "leaves",
+      "name": "Leaves",
+      "color": "#526b3d",
+      "solid": false,
+      "opaque": true,
+      "rustle": { "gentle": "foliage_rustle", "fast": "foliage_rustle_fast" },
+      "pattern": "noise"
+    },
+    {
+      "id": "hedge",
+      "name": "Hedge",
+      "color": "#425b35",
+      "solid": false,
+      "opaque": true,
+      "rustle": { "gentle": "foliage_rustle", "fast": "foliage_rustle_fast" },
+      "pattern": "noise"
+    },
+    {
+      "id": "leaf_litter",
+      "name": "Leaf litter",
+      "color": "#766047",
+      "solid": true,
+      "opaque": true,
+      "pattern": "noise"
+    }
+  ],
+  "sounds": [
+    {
+      "id": "foliage_rustle",
+      "variants": ["assets/audio/footstep-leaves-01.ogg"],
+      "gain": 0.4,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.45,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 4 }
+    },
+    {
+      "id": "foliage_rustle_fast",
+      "variants": ["assets/audio/footstep-leaves-01.ogg"],
+      "gain": 0.75,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0.15,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 10 }
+    }
   ]
 }

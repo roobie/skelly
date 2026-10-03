@@ -3,17 +3,22 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
-import { worldSolid } from '../src/core/collision.ts';
+import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
 import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import { Forest } from '../src/core/forest.ts';
 import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
-import { raycast } from '../src/core/raycast.ts';
+import { countSolidRuns, raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
-import { rectsOverlap, TREE_MIX } from '../src/core/vegetation.ts';
+import { forestDensityAt, rectsOverlap, TREE_MIX } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
-import { perceivePlayer } from '../src/core/zombies.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
+import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
+import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 
 const { registry, issues } = buildRegistry(
   readdirSync('src/content/base')
@@ -26,13 +31,15 @@ const { registry, issues } = buildRegistry(
 );
 const scale = makeScale(0.5);
 
-describe('solid first-look vegetation', () => {
-  it('validates content and uses the same declared solids for movement, player raycasts and zombie sight', () => {
+describe('passable but opaque vegetation', () => {
+  it('keeps foliage opaque to sight/rays but passable to bodies, attacks and acoustic rays', () => {
     expect(issues).toEqual([]);
     const world = new World();
     const chunk = new Chunk(0, 0, 0);
     world.addChunk(chunk);
-    const solid = worldSolid(world, registry, new BlockEntities(registry));
+    const entities = new BlockEntities(registry);
+    const solid = worldSolid(world, registry, entities);
+    const opaque = worldOpaque(world, registry, entities);
     const sense = () =>
       perceivePlayer({
         zombie: registry.zombies.get('shambler')!,
@@ -41,19 +48,154 @@ describe('solid first-look vegetation', () => {
         player: { pos: [10, 2, 0], facing: [-1, 0, 0], movement: 'still', lit: false, lightSeenFrom: 40 },
         hour: 12,
         blockSize: 0.5,
-        isSolid: solid,
+        isSolid: opaque,
       });
     expect(sense()).toBe(true);
     for (const name of ['tree_trunk', 'tree_branch', 'leaves', 'hedge', 'leaf_litter']) {
       const id = registry.blockIds.get(name)!;
-      expect(registry.blocks[id]!.solid, name).toBe(true);
+      const blocksMovement = name !== 'leaves' && name !== 'hedge';
+      expect(registry.blocks[id]!.solid, name).toBe(blocksMovement);
+      expect(registry.blocks[id]!.opaque, name).toBe(true);
       for (let y = 0; y < 8; y++) {
         chunk.set(4, y, 0, id);
       }
-      expect(solid(4, 4, 0), name).toBe(true);
-      expect(raycast([0.5, 4.5, 0.5], [1, 0, 0], 10, solid)?.block, name).toEqual([4, 4, 0]);
+      expect(solid(4, 4, 0), name).toBe(blocksMovement);
+      expect(countSolidRuns([0.5, 4.5, 0.5], [10.5, 4.5, 0.5], solid), name).toBe(blocksMovement ? 1 : 0);
+      expect(raycast([0.5, 4.5, 0.5], [1, 0, 0], 10, opaque)?.block, name).toEqual([4, 4, 0]);
       expect(sense(), name).toBe(false);
     }
+  });
+
+  it('hides targets from actual zombie sight and aim while player melee still contacts through foliage', () => {
+    const world = new World();
+    const entities = new BlockEntities(registry);
+    for (let x = -3; x < 4; x++) {
+      for (let y = 1; y < 10; y++) {
+        world.setBlock(x, y, 4, registry.blockIds.get('leaves')!);
+      }
+    }
+    const movement = worldSolid(world, registry, entities);
+    const opaque = worldOpaque(world, registry, entities);
+    const player = {
+      pos: [0.5, 1, 0.5] as [number, number, number],
+      facing: [0, 0, 1] as [number, number, number],
+      movement: 'still' as const,
+      lit: false,
+      lightSeenFrom: 40,
+    };
+    const hits: number[] = [];
+    const system = new ZombieSystem({
+      isSolid: (x, y, z) => y === 0 || movement(x, y, z),
+      isOpaque: opaque,
+      blockSize: 0.5,
+      physics: physicsFor(scale),
+      jumpSpeed: PLAYER.jump,
+      player: () => player,
+      hour: () => 12,
+      hurtPlayer: () => undefined,
+      onMeleeResult: (result) => hits.push(result.damage),
+    });
+    const id = system.add(registry.zombies.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
+    system.tick(1 / 20);
+    const zombie = system.store.get(id)!;
+    expect(zombie.mode).not.toBe('chase');
+    system.setFrozen(true);
+    const { center } = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5)).head.find(
+      (box) => box.bone === 'head',
+    )!;
+    const origin: [number, number, number] = [center[0], center[1], 0.5];
+    const direction: [number, number, number] = [0, 0, 1];
+    const weapon = { damage: 1, reach: 6, cooldown: 0.8 };
+    expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
+    expect(
+      system.beginMeleeSwing({
+        origin,
+        direction,
+        weapon,
+        profile: 'blunt',
+        twoHanded: false,
+        hands: { right: null, left: null },
+      }),
+    ).toBe(true);
+    for (let frame = 0; frame < 40; frame++) {
+      system.tickPlayerAction(1 / 60, { right: null, left: null });
+    }
+    expect(hits).toEqual([1]);
+  });
+
+  it('rustles on entry and cooldown only while moving, with faster content cadence', () => {
+    const world = new World();
+    world.setBlock(2, 2, 2, registry.blockIds.get('leaves')!);
+    world.setBlock(3, 2, 2, registry.blockIds.get('hedge')!);
+    const body = {
+      pos: [2.5, 2, 2.5] as [number, number, number],
+      vel: [0, 0, 0] as [number, number, number],
+      halfWidth: 0.2,
+      height: 0.8,
+      onGround: false,
+    };
+    const sample = { body, world, registry, gait: 'walking' as const, moving: true, time: 0 };
+    const entry = foliageRustle(initialRustleClock(), sample);
+    expect(entry.sound?.event).toBe('foliage_rustle');
+    expect(foliageRustle(entry.clock, { ...sample, time: 0.2 }).sound).toBeUndefined();
+    expect(foliageRustle(entry.clock, { ...sample, time: 0.5, moving: false }).sound).toBeUndefined();
+    expect(foliageRustle(entry.clock, { ...sample, time: 0.5 }).sound?.event).toBe('foliage_rustle');
+    body.pos[0] = 3.5;
+    const fast = foliageRustle(entry.clock, { ...sample, gait: 'sprinting', time: 0.3 });
+    expect(fast.sound?.event).toBe('foliage_rustle_fast');
+    expect(fast.clock.nextTime - 0.3).toBeLessThan(entry.clock.nextTime);
+    expect(foliageRustle(fast.clock, { ...sample, gait: 'sprinting', time: 0.5 }).sound?.event).toBe(
+      'foliage_rustle_fast',
+    );
+  });
+
+  it('admits brushing sound and positioned hearing together during actual player movement even without output', () => {
+    const world = new World();
+    const entities = new BlockEntities(registry);
+    for (let z = 0; z < 6; z++) {
+      for (let x = 0; x < 6; x++) {
+        world.setBlock(x, 0, z, registry.blockIds.get('stone')!);
+        for (let y = 1; y < 5; y++) {
+          world.setBlock(x, y, z, registry.blockIds.get('leaves')!);
+        }
+      }
+    }
+    const session = createSession({
+      registry,
+      world,
+      entities,
+      isSolid: worldSolid(world, registry, entities),
+      isOpaque: worldOpaque(world, registry, entities),
+      scale,
+      seed: 1,
+      start: 43_200,
+      spawn: [2.5, 1, 4.5],
+      ready: () => true,
+      controls: {
+        active: () => true,
+        intent: () => ({ ...IDLE, forward: 1, walk: true }),
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => true,
+        descending: () => false,
+      },
+      audio: { play: () => false },
+      notice: () => undefined,
+    });
+    session.sim.paused = false;
+    const reader = session.sim.events.reader();
+    for (let frame = 0; frame < 30; frame++) {
+      session.frame(1 / 60);
+    }
+    expect(session.body.pos[2]).toBeLessThan(4.5);
+    const events = reader
+      .read()
+      .filter((event) => (event.kind === 'sound' || event.kind === 'noise') && event.event === 'foliage_rustle');
+    expect(events.length).toBeGreaterThan(0);
+    expect(events.filter((event) => event.kind === 'sound').map((event) => event.position)).toEqual(
+      events.filter((event) => event.kind === 'noise').map((event) => event.position),
+    );
+    expect(session.playerAudio.vocalNoise?.radiusMetres).toBe(4);
   });
 
   it('maps wood and foliage footsteps explicitly for both player and shambler', () => {
@@ -91,6 +233,14 @@ describe('solid first-look vegetation', () => {
     expect(hamlet.surface.top!(broadleaf.origin[0], broadleaf.origin[2])).toBe(registry.blockIds.get('leaf_litter'));
     const [x, , z] = hamlet.spawn.pos;
     expect(hamlet.surface.top!(Math.floor(x / 0.5), Math.floor(z / 0.5))).toBe(registry.blockIds.get('asphalt'));
+  });
+
+  it('freezes a seeded smooth field with a 0.75 patch beyond the clearing on the full route', () => {
+    const heading = [-0.9, 0.44];
+    const unit = heading.map((value) => value / Math.hypot(...heading));
+    expect(forestDensityAt(1, unit[0]! * 16, unit[1]! * 16)).toBe(0.75);
+    expect(forestDensityAt(1, unit[0]! * 96, unit[1]! * 96)).toBeLessThan(0.65);
+    expect(forestDensityAt(2, unit[0]! * 96, unit[1]! * 96)).not.toBe(forestDensityAt(1, unit[0]! * 96, unit[1]! * 96));
   });
 
   it('makes denser forests a seeded superset without moving existing trees or narrowing the extent', () => {

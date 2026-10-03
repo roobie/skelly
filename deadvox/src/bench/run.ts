@@ -7,7 +7,7 @@ import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
-import { FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
+import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
@@ -35,7 +35,7 @@ export interface BenchRun {
   /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
   site: SiteName;
   storeys: number;
-  density: number;
+  density: number | null;
   /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
   time?: string;
   /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
@@ -100,18 +100,19 @@ export const nextUrl = (run: BenchRun, seed: number): string => {
   const site =
     `&site=${run.site}` +
     (run.site === 'city' ? `&storeys=${run.storeys}` : '') +
-    (run.site === 'forest' ? `&density=${run.density}` : '');
+    (run.site === 'forest' && run.density !== null ? `&density=${run.density}` : '');
   const time = run.time === undefined ? '' : `&time=${run.time}`;
   return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${postUrlPart(run.post)}${quick}`;
 };
 
-export const forestWorkload = (seed: number, density: number) => ({
+export const forestWorkload = (seed: number, density: number | null) => ({
   seed,
   density,
+  densityField: density === null ? FOREST_DENSITY_FIELD : null,
   extentMetres: 2 * FOREST_HALF_EXTENT_METRES,
   cellMetres: TREE_CELL_METRES,
   shapeMix: TREE_MIX,
-  foliage: 'solid' as const,
+  foliage: 'passable-opaque' as const,
   routes: {
     heading: HEADING,
     lookSeconds: DURATIONS.full.look,
@@ -124,7 +125,7 @@ export const forestWorkload = (seed: number, density: number) => ({
 
 export const benchSiteLabel = (run: BenchRun): string =>
   ({
-    forest: `forest, density ${run.density}`,
+    forest: run.density === null ? 'forest, seeded density field (0.2–0.75)' : `forest, density ${run.density}`,
     city: `city, up to ${run.storeys} storeys`,
     hamlet: 'hamlet',
     testHouse: 'test house',

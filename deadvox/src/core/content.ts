@@ -381,6 +381,16 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  for (const block of registry.blocks) {
+    for (const [gait, event] of Object.entries(block.rustle ?? {})) {
+      const sound = registry.sounds.get(event);
+      if (!sound) {
+        report('blocks', block.id, `.rustle.${gait}`, `no sound "${event}"`);
+      } else if (!sound.noise.enabled) {
+        report('blocks', block.id, `.rustle.${gait}`, `rustle sound "${event}" must emit noise`);
+      }
+    }
+  }
   checkItems(registry, report);
   checkLoot(registry, report);
   checkFurniture(registry, report);

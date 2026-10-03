@@ -583,10 +583,16 @@ worldgen. The full plan is in DESIGN.md, "A world that feels real".
   whether it blocks movement and raycasts, and its footstep surface. Leaf litter
   is a ground surface using `footstep_leaves`. `core/footsteps.ts` maps block
   ids explicitly and falls back to stone, so the mapping has to be added. For
-  this sneak peek, solid blocks keep today's rules: they collide, and they block
-  sight like any opaque block (`core/collision.ts`, `core/zombies.ts`). Drawing
-  leaves cut-out doesn't change that rule. The player and zombies use the same
-  declared block rules.
+  **BR's ruling, 2026-10-03, replaces the first look's solid foliage:** leaves
+  and hedges are passable for players, zombies and physical bodies, but opaque
+  to sight, aim and LOS. Trunks/branches remain solid and opaque. Content declares
+  movement (`solid`) and sight (`opaque`) separately; closed/open doors retain
+  their semantics. Lead defaults: melee/bites and both acoustic paths follow
+  movement; picking remains opaque and body placement follows movement.
+  Brushing leaf/hedge cells admits positioned rustle and hearing together through
+  F4, on entry and moving cooldown; faster movement is louder/more frequent.
+  The bundled leaf-footstep recording is a placeholder. Cut-out drawing does
+  not change either declared rule.
 - **Shapes:** three tree shapes (a broadleaf, a conifer, a young tree), stamped
   on the hamlet's open ground and in gardens, deterministically from the seed.
   Hedges line some lots. Placement keeps the spawn, roads, entrances and
@@ -597,10 +603,12 @@ worldgen. The full plan is in DESIGN.md, "A world that feels real".
   - Add a forest benchmark site (`?bench=1&site=forest&plan=0.5:96&seed=1&post=1`,
     once implemented). Prove that URL parsing, later runs and the exported
     results keep the forest workload.
-  - Before the optimization round, BR approves its density, three-shape mix,
-    seed, extent and camera routes at the first look, and the brief records
-    them. The forest covers the look, jog and sprint routes, not only the
-    spawn.
+  - BR approved shapes/hedges and varying density on 2026-10-03. Frozen seed 1:
+    `min(0.75, 0.2 + valueNoise2(seed+137, x/128, z/128))` in metres, sampled at
+    8 m placement-cell centres; fixed `?density=` overrides remain available.
+    Mix 50/25/25, extent 768 × 768 m, ±1.5 m root jitter and existing full routes
+    are unchanged. The route crosses a 0.75 patch at 16 m, beyond spawn's clearing.
+    Exact parameters and routes: `docs/trees-first-look.md`.
   - Measure the full benchmark, not quick mode: 0.5 m blocks at 96 m, with the
     normal look and shadows (`post=1`), by day and by night, recording the
     resolution and device pixel ratio.

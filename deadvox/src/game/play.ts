@@ -140,6 +140,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     registry,
     world: engine.world,
     isSolid: engine.isSolid,
+    isOpaque: engine.isOpaque,
     scale,
     seed: config.seed,
     start: config.start,
@@ -775,7 +776,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       direction: lookDir(),
       maxDistance: USE_REACH / s,
       blockSize: s,
-      isSolid: engine.isSolid,
+      isSolid: engine.isOpaque,
     });
 
   /** What F would do to it, for the prompt. */

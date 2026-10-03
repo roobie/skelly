@@ -232,7 +232,10 @@ export interface PlayerSense {
 export interface ZombieSystemOptions {
   store?: EntityStore<Zombie>;
   seed?: number;
+  /** Movement, attacks and hearing use the body's blockers. */
   isSolid: SolidAt;
+  /** Visibility alone uses sight opacity. */
+  isOpaque: SolidAt;
   blockSize: number;
   physics: PhysicsParams;
   /** Take-off speed in metres per second, like `PLAYER.jump`; the system divides by `blockSize` itself. */
@@ -1080,7 +1083,15 @@ export class ZombieSystem {
       // withinAttackReach and its two call sites (attack start and attack resolve).
       const { pos } = zombie.body;
       const { type, behaviorRng: rng } = zombie;
-      const perception = { zombie: type, from: pos, facing: zombie.facing, player, hour, blockSize, isSolid };
+      const perception = {
+        zombie: type,
+        from: pos,
+        facing: zombie.facing,
+        player,
+        hour,
+        blockSize,
+        isSolid: this.options.isOpaque,
+      };
       const sees = seesPlayer(perception);
       const hearingInput = { zombie: type, from: pos, player, blockSize, isSolid };
       let vocal: HeardNoise | undefined;
@@ -1453,8 +1464,9 @@ export class ZombieSystem {
   private firstRegionHit(
     origin: Vec3,
     direction: Vec3,
+    isBlocked: SolidAt,
   ): [EntityId, Zombie, ZombieRegion, number, readonly PosedBoneBox[]] | undefined {
-    const { blockSize, isSolid } = this.options;
+    const { blockSize } = this.options;
     let nearest: [EntityId, Zombie, ZombieRegion, number, readonly PosedBoneBox[]] | undefined;
     let nearestDistance = Number.POSITIVE_INFINITY;
     for (const [id, zombie] of this.store.entries()) {
@@ -1482,7 +1494,7 @@ export class ZombieSystem {
           continue;
         }
         const distance = posedRegionHitDistance(posed[region], origin, direction, blockSize);
-        if (distance === undefined || raycast(origin, direction, distance, isSolid) || distance >= nearestDistance) {
+        if (distance === undefined || raycast(origin, direction, distance, isBlocked) || distance >= nearestDistance) {
           continue;
         }
         nearestDistance = distance;
@@ -1494,7 +1506,11 @@ export class ZombieSystem {
 
   /** Purely queries the first visible posed region along the ray, including hits beyond melee reach. */
   aimAt(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): ZombieAim | undefined {
-    const found = this.firstRegionHit(origin, unit(direction));
+    return this.targetAt(origin, direction, weapon, this.options.isOpaque);
+  }
+
+  private targetAt(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isBlocked: SolidAt): ZombieAim | undefined {
+    const found = this.firstRegionHit(origin, unit(direction), isBlocked);
     if (!found) {
       return undefined;
     }
@@ -1550,7 +1566,7 @@ export class ZombieSystem {
     weapon: MeleeWeapon,
     isFist = weapon === FISTS_MELEE,
   ): EntityId | undefined {
-    const aim = this.aimAt(origin, direction, weapon);
+    const aim = this.targetAt(origin, direction, weapon, this.options.isSolid);
     if (!aim?.inReach) {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
       return undefined;

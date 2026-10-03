@@ -10,6 +10,8 @@ export const SOUND_EVENT_IDS = [
   'footstep_stone',
   'footstep_wood',
   'footstep_leaves',
+  'foliage_rustle',
+  'foliage_rustle_fast',
   'shambler_step_grass',
   'shambler_step_mud',
   'shambler_step_sand',

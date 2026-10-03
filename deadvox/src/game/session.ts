@@ -9,6 +9,7 @@ import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
   footstepEventForBlock,
@@ -122,6 +123,7 @@ export interface SessionOptions {
   registry: Registry;
   world: World;
   isSolid: SolidAt;
+  isOpaque: SolidAt;
   scale: Scale;
   /** The world's seed. */
   seed: number;
@@ -308,6 +310,7 @@ export const createSession = (options: SessionOptions) => {
 
   let sprinting = false;
   let footstepClock = initialFootstepClock();
+  let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
   const playerMovement = (): PlayerMovement => {
     const moving = controls.active() && !compression.locksInput ? controls.intent() : IDLE;
@@ -361,6 +364,7 @@ export const createSession = (options: SessionOptions) => {
     store: zombieStore,
     seed: sim.seed,
     isSolid,
+    isOpaque: options.isOpaque,
     blockSize: s,
     physics,
     // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
@@ -481,6 +485,18 @@ export const createSession = (options: SessionOptions) => {
       const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
       stepBody(body, dt, isSolid, { ...physics, obstacles: zombieBodies });
       updatePlayerSounds(wasGrounded, previousPosition, time);
+      const rustle = foliageRustle(rustleClock, {
+        body,
+        world,
+        registry,
+        gait: playerMovement(),
+        moving: Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) > 1e-6,
+        time,
+      });
+      rustleClock = rustle.clock;
+      if (rustle.sound) {
+        admitSound(rustle.sound.event, rustle.sound.position, time, { player: true, sourceLabel: 'brushing foliage' });
+      }
     },
   });
 

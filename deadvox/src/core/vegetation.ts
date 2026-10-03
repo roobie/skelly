@@ -2,7 +2,7 @@
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
-import { Rng } from './random.ts';
+import { Rng, valueNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import { type Rect, rectDistance } from './site.ts';
 import { type BlockBox, type MetreBox, rasterize, stampChunk } from './structure.ts';
@@ -12,6 +12,23 @@ export const TREE_MIX: readonly TreeShape[] = ['broadleaf', 'broadleaf', 'conife
 export const TREE_CELL_METRES = 8;
 export const DEFAULT_TREE_DENSITY = 0.5;
 export const FOREST_HALF_EXTENT_METRES = 384;
+
+/** Frozen d24-2 field: smooth seeded value noise with broad 0.75 plateaus. Coordinates are metres. */
+export const FOREST_DENSITY_FIELD = {
+  wavelengthMetres: 128,
+  seedSalt: 137,
+  floor: 0.2,
+  gain: 1,
+  ceiling: 0.75,
+} as const;
+export const forestDensityAt = (seed: number, x: number, z: number): number => {
+  const field = FOREST_DENSITY_FIELD;
+  return Math.min(
+    field.ceiling,
+    field.floor +
+      field.gain * valueNoise2(seed + field.seedSalt, x / field.wavelengthMetres, z / field.wavelengthMetres),
+  );
+};
 
 export interface TreePlacement {
   readonly shape: TreeShape;
@@ -102,7 +119,7 @@ export const vegetationPlacements = ({
   registry: Registry;
   scale: Scale;
   area: Rect;
-  density: number;
+  density: number | ((x: number, z: number) => number);
   ground: (x: number, z: number) => number;
   reserved: readonly Rect[];
 }): TreePlacement[] => {
@@ -113,7 +130,9 @@ export const vegetationPlacements = ({
   for (let cz = Math.floor(area.z0 / step); cz < Math.ceil(area.z1 / step); cz++) {
     for (let cx = Math.floor(area.x0 / step); cx < Math.ceil(area.x1 / step); cx++) {
       const rng = Rng.stream(seed, `vegetation:${cx},${cz}`);
-      if (!rng.chance(density)) {
+      const occupancy =
+        typeof density === 'number' ? density : density((cx + 0.5) * TREE_CELL_METRES, (cz + 0.5) * TREE_CELL_METRES);
+      if (!rng.chance(occupancy)) {
         continue;
       }
       const x = Math.floor((cx + 0.5) * step) + rng.int(-jitter, jitter);

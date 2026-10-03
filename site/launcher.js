@@ -131,7 +131,7 @@ const makeDeadvoxUrl = () => {
   }
   if (deadvoxSite.value === 'forest') {
     params.set('site', 'forest');
-    setUnlessDefault(params, 'density', deadvoxForm.elements.namedItem('density').value, '0.5');
+    setUnlessDefault(params, 'density', deadvoxForm.elements.namedItem('density').value, '');
   }
 
   if (mode === '1') {

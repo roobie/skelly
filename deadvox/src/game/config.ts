@@ -1,6 +1,5 @@
 import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
-import { DEFAULT_TREE_DENSITY } from '../core/vegetation.ts';
 
 /** View distances offered on the start card, in metres. 96 m is the default. */
 export const VIEW_DISTANCES: readonly number[] = [64, 96, 128];
@@ -26,8 +25,8 @@ export interface GameConfig {
   site: SiteName;
   /** The city's tallest buildings, in storeys (`?storeys=N`). */
   storeys: number;
-  /** Fraction of fixed 8m forest placement cells occupied (`?density=0..1`). */
-  density: number;
+  /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
+  density: number | null;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
    * ZombieMeshes' six boxes instead. */
   actors: ActorRenderer;
@@ -47,7 +46,7 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     debug: false,
     site: 'hamlet',
     storeys: 1,
-    density: DEFAULT_TREE_DENSITY,
+    density: null,
     actors: 'detailed',
   };
 };
@@ -69,7 +68,7 @@ export const siteFromUrl = (
   fallback: SiteName,
 ): Pick<GameConfig, 'site' | 'storeys' | 'density'> => {
   const densityText = params.get('density');
-  const density = densityText === null || densityText.trim() === '' ? DEFAULT_TREE_DENSITY : Number(densityText);
+  const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
   const storeys = Number(params.get('storeys') ?? 1);
   const requested = params.get('site');
   return {
@@ -78,7 +77,7 @@ export const siteFromUrl = (
         ? requested
         : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,
-    density: Number.isFinite(density) && density >= 0 && density <= 1 ? density : DEFAULT_TREE_DENSITY,
+    density: density !== null && Number.isFinite(density) && density >= 0 && density <= 1 ? density : null,
   };
 };
 

@@ -127,11 +127,12 @@ export interface BenchRecord {
   /** The exact first-look tree workload, retained in the exported JSON. */
   forest?: {
     seed: number;
-    density: number;
+    density: number | null;
+    densityField: { wavelengthMetres: number; seedSalt: number; floor: number; gain: number; ceiling: number } | null;
     extentMetres: number;
     cellMetres: number;
     shapeMix: readonly string[];
-    foliage: 'solid';
+    foliage: 'passable-opaque';
     routes: {
       heading: readonly [number, number];
       lookSeconds: number;

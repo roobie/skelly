@@ -6,6 +6,7 @@ import type { Scale } from './scale.ts';
 import { type Rect, rectDistance, type Site } from './site.ts';
 import {
   FOREST_HALF_EXTENT_METRES,
+  forestDensityAt,
   leafLitterAt,
   stampTrees,
   type TreePlacement,
@@ -19,7 +20,7 @@ export class Forest implements Site {
   readonly spawn: { pos: Vec3; yaw: number };
   readonly surface: Surface;
 
-  constructor(seed: number, registry: Registry, scale: Scale, density: number) {
+  constructor(seed: number, registry: Registry, scale: Scale, density: number | null = null) {
     const reach = FOREST_HALF_EXTENT_METRES / scale.blockSize;
     this.bounds = { x0: -reach, z0: -reach, x1: reach, z1: reach };
     // Flat inland ground isolates tree cost; extent covers the full 162m route plus the view radius.
@@ -31,7 +32,7 @@ export class Forest implements Site {
       registry,
       scale,
       area: this.bounds,
-      density,
+      density: density ?? ((x, z) => forestDensityAt(seed, x, z)),
       ground: () => floor,
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });

@@ -81,7 +81,7 @@ export class BuildMode {
 
   /** Breaks (left) or places (right) at the targeted block. */
   click(button: number, eye: Vec3, dir: Vec3): void {
-    const { world, streamer, registry, isSolid } = this.engine;
+    const { world, streamer, registry, isOpaque: isSolid } = this.engine;
     const hit = this.on ? raycast(eye, dir, this.reach, isSolid) : undefined;
     if (!hit) {
       return;
@@ -99,7 +99,7 @@ export class BuildMode {
 
   /** Outlines the targeted block; returns its name for the HUD. */
   target(eye: Vec3, dir: Vec3, active: boolean): string {
-    const { world, registry, isSolid } = this.engine;
+    const { world, registry, isOpaque: isSolid } = this.engine;
     const hit = this.on && active ? raycast(eye, dir, this.reach, isSolid) : undefined;
     this.outline.visible = hit !== undefined;
     if (!hit) {

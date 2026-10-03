@@ -1,58 +1,72 @@
-# Slice 2.13 trees — first look (d24-1)
+# Slice 2.13 trees — approved shapes and frozen workload (d24-2)
 
-This round stops at workload approval. There is no cut-out renderer, LOD, wind,
-visibility exception or performance optimization. BR must freeze the workload
-before solid/cut-out measurement; density and view radius will not be reduced to
-meet a budget without BR's decision.
+BR approved the three shapes and the hedges on **2026-10-03**. The same ruling
+replaces the first look's solid foliage: leaves and hedges are passable but opaque.
+Neither geometry, density nor view distance is reduced for performance.
 
-## Declared block rules
+## Declared rules and lead defaults
 
-| Block ID | Movement | Player raycast / zombie sight | Player footstep | Shambler footstep |
-| --- | --- | --- | --- | --- |
-| `tree_trunk` | solid | blocks | `footstep_wood` | `shambler_step_wood` |
-| `tree_branch` | solid | blocks | `footstep_wood` | `shambler_step_wood` |
-| `leaves` | solid | blocks | `footstep_leaves` | `shambler_step_leaves` |
-| `hedge` | solid | blocks | `footstep_leaves` | `shambler_step_leaves` |
-| `leaf_litter` | solid ground | blocks | `footstep_leaves` | `shambler_step_leaves` |
+| Blocks | Movement / physics / melee / bites / acoustics | Sight / aim / LOS / picking |
+| --- | --- | --- |
+| `tree_trunk`, `tree_branch`, `leaf_litter` | solid | opaque |
+| `leaves`, `hedge` | passable, no acoustic attenuation | opaque |
 
-`solid` in the content definitions drives the shared `worldSolid` predicate used
-by collision and raycasts, including zombie sight. All blocks draw with today's
-opaque voxel mesh. No separate foliage collision or sight system is introduced.
+Content `solid` drives `worldSolid` (bodies, attacks and hearing); content `opaque`
+drives `worldOpaque`. Ordinary blocks inherit `solid` when `opaque` is omitted.
+Furniture and closed/open doors retain their existing entity semantics in both.
+Player, zombie, corpse, detached-part and case physics use movement. Player melee
+and zombie attacks use movement blockers; aim, debug/furniture picking, zombie
+sight and benchmark placement rays use opacity. Placement bodies use movement.
+`isLit` still only checks daylight/flashlight; renderer non-air occupancy is unchanged.
 
-## Proposed workload (not yet approved)
+Hedges default to leaf behavior, per the lead's interpretation; BR can override.
+The player brushing an actual leaf/hedge body-overlap cell admits a positioned
+rustle through F4, committing hearing and seeded sound before output. Entry and
+continued-motion cooldown, not every frame; stillness makes no rustle. Gentle/fast
+content events use 0.45/0.15 s intervals, gain 0.4/0.75 and noise radius 4/10 m.
+`assets/audio/footstep-leaves-01.ogg` is the bundled **placeholder**, not a new bush
+recording. Leaf litter still uses player/shambler leaf footsteps. The rustle source
+is the brushed voxel centre; it is not a listener-relative UI sound.
 
-- Seed **1**, blocks **0.5 m**, view **96 m**, normal look and shadows (`post=1`).
-- Forest density candidates **0.25, 0.5, 0.75**. Density is the probability that
-  a fixed **8 m** placement cell contains a tree, not a draw-distance multiplier.
-  Root jitter is at most **1.5 m** on each horizontal axis.
-- Seed-derived mix: **50% broadleaf / 25% conifer / 25% young**, no seed sweep.
-  Broadleaf is about 7.5 m tall, conifer 8.5 m, young about 4.75 m.
-- Forest extent **768 × 768 m**, centred on spawn, with flat inland ground.
-  Only the spawn's **8 × 8 m** clearing is reserved; no route is thinned.
-- Existing full benchmark routes are unchanged: 12 s rotating look (plus 6 s
-  blocking render timing), then 15 s jog at 4.3 m/s and 15 s sprint at 6.5 m/s,
-  heading `[-0.9, 0.44]`, following ground at player eye height. Travel is about
-  **162 m**, so every phase plus the 96 m view stays inside the forest extent.
-- First looks by day (`time=12:00`) and night (`time=23:30`). Later results must
-  record resolution, DPR and host; BR's reference-laptop Firefox run is BR's.
+## Frozen workload
 
-The benchmark keeps site/density/seed/time/post on later runs. JSON records retain
-mix, extent, cell size, solid foliage and full route parameters under `forest`;
-Markdown includes the same workload. Quick mode is diagnostics, not performance
-results. Forest density is also kept in the generated-world save identity, so a
-Continue cannot silently regenerate a different forest; old saves are refused.
+- Seed **1**, blocks **0.5 m**, radius **96 m**, normal look/shadows (`post=1`).
+- Default forest: `density = min(0.75, 0.2 + valueNoise2(seed + 137, x/128, z/128))`,
+  with coordinates in metres. Smooth low-frequency noise, 128 m wavelength,
+  floor 0.2, gain 1, ceiling 0.75. No chunk-order or loaded-neighbour input.
+- Placement samples the field at fixed **8 m** cell centres; root jitter **±1.5 m**.
+  `?density=0..1` is an explicit fixed-density override, including zero. Omitted
+  or invalid density selects the field (`density:null` in config/save/results).
+- Seed-derived **50% broadleaf / 25% conifer / 25% young**, unchanged shapes.
+- Extent **768 × 768 m**, flat inland ground; only the **8 × 8 m** spawn clearing
+  is reserved. No thinned camera corridors.
+- Full routes unchanged: look 12 s, blocking render 6 s, jog 15 s at 4.3 m/s,
+  sprint 15 s at 6.5 m/s, normalized `[-0.9,0.44]`, ground-following eye height.
+  Travel about **162 m**, plus 96 m view, remains inside the extent.
+- At route distance **16 m**, beyond the clearing, the field is **0.75**; at 96 m
+  it is about **0.60134**. The route crosses dense foliage, then sparser ground.
+- Day **12:00**, night **23:30**. Full runs, not quick; record host, resolution,
+  DPR, rendering choice, timeout/holes and every phase's slow-frame fraction.
+
+Site, override/field, seed, time and post survive later benchmark URLs. JSON and
+Markdown retain the field parameters and routes. Saves retain `density:null` or
+the exact override; schema 7 refuses earlier saves, with no migration.
 
 ## Placement and consolidation
 
-Hamlet trees reserve the entire canopy footprint against lot padding, road
-frontage/entrance access, spawn and the handling range. Hedges line alternating
-back-garden edges only, leaving front and side access open. Leaf litter follows
-broadleaf/young footprints and never replaces asphalt or range surfaces.
+Hamlet canopies reserve lots/padding, road/frontage/entrances, spawn and handling
+range. Alternating back-garden hedges leave front/side access open. Litter follows
+broadleaf/young footprints, never replacing road/range surfaces. Both sites reuse
+metre-box `rasterize`/`stampChunk` and coordinate-keyed placement. `stackTemplate`
+remains for building storeys/furniture/doors/loot, not a second vegetation engine.
 
-Trees reuse `structure.ts`'s metre-box rasterization and `stampChunk` clipping.
-They do not add a second stamping engine. `stackTemplate` remains for authored
-multi-storey building layers: vegetation has no furniture, doors, entrances,
-storeys or template-loot semantics, so forcing tree crowns through it would add
-an unrelated contract. Both use the same chunk-owned voxel destination. Shape
-recipes and the coordinate-keyed placement helper are shared by Hamlet and
-Forest, with no runtime dependence on neighbour load order.
+## Measurement status
+
+Pre-feature uniform-0.75 profiling identified whole-site litter lookups: about
+165 ms per generated column on the coder host, versus worker meshing p95 about
+7 ms. BR's frozen `603a64a` real-GPU Firefox run independently measured jog/sprint
+main-thread work p95 **310/467 ms**, while look achieved **60 fps**. The coder's
+SwiftShader GPU is not BR's laptop; its render timings cannot establish the
+reference budget. Frozen-field before/after measurements are recorded separately
+in Slice 2 Results. The Slice 1 budget is unchanged: 60 fps, at most 1% of frames
+above 18 ms in every phase, and no sprint holes. Unmet budgets remain unmet.
