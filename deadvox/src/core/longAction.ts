@@ -1,4 +1,5 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
+import type { CraftPlan } from './crafting.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -18,6 +19,8 @@ export interface LongActionState {
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftActionHooks {
+  admit: (plan: CraftPlan) => string | undefined;
+  begin: (plan: CraftPlan) => number | undefined;
   owns: (uid: number) => boolean;
   validate: (uid: number) => string | undefined;
   advance: (uid: number, gameSeconds: number) => boolean;
@@ -90,8 +93,8 @@ export class LongActions {
     if (this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
-    if (this.current?.jobType === 'craft') {
-      return 'Stop or cancel the craft first';
+    if (this.current?.jobType === 'craft' && !this.current.stopped) {
+      return 'Stop crafting first';
     }
     const result = this.sim.compress();
     if (!result.ok) {
@@ -106,12 +109,58 @@ export class LongActions {
     };
     return undefined;
   }
+  /** Admit and secure compression before any structural escrow effect. */
+  beginCraft(plan: CraftPlan): string | undefined {
+    if (!this.craft) {
+      return 'Missing craft action owner';
+    }
+    if (this.current?.jobType === 'craft' && !this.current.stopped) {
+      return 'Another craft is active';
+    }
+    const reason = this.craft.admit(plan);
+    if (reason) {
+      return reason;
+    }
+    const result = this.sim.compress();
+    if (!result.ok) {
+      return result.reason;
+    }
+    let uid: number | undefined;
+    try {
+      uid = this.craft.begin(plan);
+    } catch (error) {
+      this.stop();
+      throw error;
+    }
+    if (uid === undefined) {
+      this.stop();
+      return 'The materials or hands changed';
+    }
+    this.current = { jobType: 'craft', stopped: false, last: this.sim.time, workUid: uid };
+    return undefined;
+  }
+  /** Release a legal unreferenced/stopped work item through its native effect owner. */
+  cancelCraft(workUid: number): string | undefined {
+    if (!this.craft?.owns(workUid)) {
+      return 'The work item is missing';
+    }
+    if (this.current?.jobType === 'craft' && this.current.workUid === workUid) {
+      this.cancel();
+      return this.craft.owns(workUid) ? this.sim.compression.interruption : undefined;
+    }
+    try {
+      this.craft.cancel(workUid);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Cannot return the inputs';
+    }
+    return undefined;
+  }
   startCraft(workUid: number): string | undefined {
     const reason = this.craft?.validate(workUid);
     if (!this.craft || reason) {
       return reason ?? 'Missing craft action owner';
     }
-    if (this.current && this.current.jobType === 'craft' && this.current.workUid !== workUid) {
+    if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
     }
     const result = this.sim.compress();

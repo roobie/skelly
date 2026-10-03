@@ -237,10 +237,10 @@ describe('static reachability', () => {
       components: [[{ item: input, count: 1 }]],
     });
     // Deliberately reverse dependency order; at least three passes are needed.
-    registry.recipes.set('torch', recipe('torch', 'fixture_product', 'crafted_tool', 'grounded'));
-    registry.recipes.set('repair_kit', recipe('repair_kit', 'crafted_tool', 'middle'));
-    registry.recipes.set('candle', {
-      ...recipe('candle', 'middle', 'rag'),
+    registry.recipes.set('consumer', recipe('consumer', 'fixture_product', 'crafted_tool', 'grounded'));
+    registry.recipes.set('tool', recipe('tool', 'crafted_tool', 'middle'));
+    registry.recipes.set('middle', {
+      ...recipe('middle', 'middle', 'rag'),
       components: [
         [
           { item: 'missing_alternative', count: 1 },
@@ -249,12 +249,11 @@ describe('static reachability', () => {
       ],
     });
     registry.recipes.set('cycle', recipe('cycle', 'cyclic_tool', 'rag', 'cyclic'));
-    const result = checkReachability(registry);
+    const result = checkReachability(registry, new Set(registry.recipes.keys()));
     expect(result.toolReachable.has('fixture_product')).toBe(true);
     expect(result.toolReachable.has('cyclic_tool')).toBe(false);
-    // The unknown cycle has no knowledge source either; the starting-known self-tool CLI fixture
-    // independently preserves the cyclic-tool bootstrap guard when knowledge is available.
-    expect(result.components.has('cyclic_tool')).toBe(false);
+    // A known cyclic-tool recipe still grounds its component result, but never its own tool.
+    expect(result.components.has('cyclic_tool')).toBe(true);
     expect(result.issues.filter((issue) => issue.path.startsWith('.components')).map((issue) => issue.path)).toEqual([
       '.components[0][0].item',
     ]);

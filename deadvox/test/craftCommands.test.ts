@@ -19,11 +19,11 @@ const { registry } = buildRegistry(
       data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
     })),
 );
-const make = () => {
+const make = (unsafe?: () => string | undefined) => {
   const inventory = new Inventory(registry);
   const character = new Character(registry);
   const queue = new HandlingQueue(inventory);
-  const sim = new Simulation({ seed: 1 });
+  const sim = new Simulation({ seed: 1, ...(unsafe ? { unsafe } : {}) });
   const position: [number, number, number] = [0, 0, 0];
   const reach = bindReach({ inventory, position, blockSize: 0.5 });
   sim.actions.craft = craftActionHooks(inventory, character, reach, () => position);
@@ -43,6 +43,65 @@ const make = () => {
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 
 describe('live craft commands', () => {
+  it('native begin rechecks knowledge after planning before any escrow or compression', () => {
+    const r = make();
+    const result = r.commands.preview('torch')!;
+    if (!('plan' in result)) {
+      throw new Error(result.missing.reason);
+    }
+    r.character.knownRecipes.delete('torch');
+    const before = r.inventory.snapshotState();
+    expect(r.sim.actions.beginCraft(result.plan)).toBe('Recipe not known');
+    expect(r.sim.compression.active).toBe(false);
+    expect(r.inventory.snapshotState()).toEqual(before);
+  });
+  it('native escrow refusal stops compression without creating or moving an item', () => {
+    const r = make();
+    const result = r.commands.preview('torch')!;
+    if (!('plan' in result)) {
+      throw new Error(result.missing.reason);
+    }
+    expect(
+      r.inventory.move(r.inventory.pileAt([0, 0, 0])!.items.find(({ item }) => item.type === 'kitchen_knife')!.item, {
+        kind: 'hand',
+        side: 'left',
+      }).ok,
+    ).toBe(true);
+    const before = r.inventory.snapshotState();
+    expect(r.sim.actions.beginCraft(result.plan)).toBe('The materials or hands changed');
+    expect(r.sim.compression.active).toBe(false);
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.inventory.snapshotState()).toEqual(before);
+  });
+
+  it('native release-by-UID returns an unreferenced work tree exactly once', () => {
+    const r = make();
+    const result = r.commands.preview('torch')!;
+    if (!('plan' in result)) {
+      throw new Error(result.missing.reason);
+    }
+    const work = r.inventory.beginWork(result.plan)!;
+    const uids = work.work!.components.map(({ uid }) => uid).sort();
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.sim.actions.cancelCraft(work.uid)).toBeUndefined();
+    expect(
+      r.inventory
+        .pileAt([0, 0, 0])!
+        .items.filter(({ item }) => item.type !== 'kitchen_knife')
+        .map(({ item }) => item.uid)
+        .sort(),
+    ).toEqual(uids);
+    const before = r.inventory.snapshotState();
+    expect(r.sim.actions.cancelCraft(work.uid)).toBe('The work item is missing');
+    expect(r.inventory.snapshotState()).toEqual(before);
+  });
+  it('unsafe start refuses before escrowing inputs or allocating a work UID', () => {
+    const r = make(() => 'A shambler is close');
+    const before = r.inventory.snapshotState();
+    expect(r.commands.start('torch')).toBe('A shambler is close');
+    expect(r.inventory.snapshotState()).toEqual(before);
+    expect(r.sim.actions.job).toBeUndefined();
+  });
   it('refuses occupied hands without creating work or moving any inputs', () => {
     const r = make();
     const held = r.inventory.create('rag');

@@ -74,11 +74,7 @@ export class CraftCommands {
     if ('missing' in result) {
       return result.missing.reason;
     }
-    const item = this.inventory.beginWork(result.plan);
-    if (!item) {
-      return 'The materials or hands changed';
-    }
-    return this.sim.actions.startCraft(item.uid);
+    return this.sim.actions.beginCraft(result.plan);
   }
   private reachable(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
@@ -96,7 +92,7 @@ export class CraftCommands {
     const reason =
       this.reachable(uid) ??
       (this.queue.busy ? 'Finish handling first' : undefined) ??
-      (job?.jobType === 'craft' && job.workUid !== uid ? 'Another craft is active' : undefined) ??
+      (job?.jobType === 'craft' && !job.stopped && job.workUid !== uid ? 'Another craft is active' : undefined) ??
       (job?.jobType === 'craft' && !job.stopped ? 'Already working' : undefined) ??
       this.sim.actions.craft?.validate(uid);
     const recipe = this.inventory.registry.recipes.get(item.work.recipe)!;
@@ -122,17 +118,6 @@ export class CraftCommands {
     if (operation === 'continue') {
       return this.sim.actions.startCraft(uid);
     }
-    const { job } = this.sim.actions;
-    if (job?.jobType === 'craft' && job.workUid === uid) {
-      this.sim.actions.cancel();
-      return this.inventory.itemByUid(uid)?.work ? this.sim.compression.interruption : undefined;
-    }
-    // A stopped item can exist without an active descriptor. Inventory is still its sole owner.
-    try {
-      this.inventory.releaseWork(this.inventory.itemByUid(uid)!, false, this.reach().feet);
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Cannot return the inputs';
-    }
-    return undefined;
+    return this.sim.actions.cancelCraft(uid);
   }
 }

@@ -85,6 +85,9 @@ export const indexCraftReach = (snapshot: ReachSnapshot): ReachIndex => {
       qualities.set(quality, providers);
     }
   }
+  for (const entries of byType.values()) {
+    entries.sort((a, b) => a.handlingTime - b.handlingTime || stackTie(a.item, b.item));
+  }
   const index = { byType, qualities };
   indexes.set(snapshot, index);
   return index;
@@ -118,10 +121,13 @@ const allocate = (
 ): Allocation | undefined => {
   const allocation: Allocation = { components: [], gather: 0 };
   let remaining = needed;
-  const candidates = entries
-    .filter((entry) => !reserved.has(entry.item.uid))
-    .sort((a, b) => a.handlingTime - b.handlingTime || stackTie(a.item, b.item));
-  for (const { item, location, handlingTime } of candidates) {
+  // The snapshot index is already in cost/tie order. Reserving tools cannot change it.
+  for (const entry of entries) {
+    const { item } = entry;
+    if (reserved.has(item.uid)) {
+      continue;
+    }
+    const { location, handlingTime } = entry;
     const count = Math.min(item.count, remaining);
     allocation.components.push({ item, count, from: location });
     allocation.gather += handlingTime * CLOCK_RATIO;
@@ -151,10 +157,7 @@ const missingRequirements = (
       available: Math.max(0, ...(index.qualities.get(quality) ?? []).map((provider) => provider.level)),
     }))
     .filter((quality) => quality.available < quality.required),
-  ...(recipe.workstation &&
-  !snapshot.workstations.some(
-    (station) => snapshot.player.inventory.entities.defOf(station.entity).workstation?.id === recipe.workstation,
-  )
+  ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, snapshot, station))
     ? { workstation: recipe.workstation }
     : {}),
   components: recipe.components.map((group, number) => ({
@@ -273,9 +276,7 @@ const craftPlan = (
 ): CraftPlan => {
   const workstation = recipe.workstation
     ? snapshot.workstations
-        .filter(
-          (station) => snapshot.player.inventory.entities.defOf(station.entity).workstation?.id === recipe.workstation,
-        )
+        .filter((station) => stationMatches(recipe, snapshot, station))
         .sort((a, b) => a.entity.uid - b.entity.uid)[0]?.entity
     : undefined;
   return { recipe: recipe.id, ...allocation, tools, ...(workstation ? { workstation } : {}), work: recipe.time * 60 };
@@ -301,6 +302,22 @@ const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: Craf
   }
   return undefined;
 };
+
+/** Shared equipment/knowledge/skill admission; components are held in escrow on Continue. */
+export const admissionRefusal = (
+  recipe: RecipeDef,
+  snapshot: ReachSnapshot,
+  character: CraftCharacter,
+): string | undefined =>
+  refusalReason(recipe, {}, missingRequirements(recipe, snapshot, character, indexCraftReach(snapshot)));
+
+export const stationMatches = (
+  recipe: RecipeDef,
+  snapshot: ReachSnapshot,
+  station: ReachSnapshot['workstations'][number],
+): boolean =>
+  Boolean(recipe.workstation) &&
+  snapshot.player.inventory.entities.defOf(station.entity).workstation?.id === recipe.workstation;
 
 /** Native recipe validator caps alternative combinations at 1,024. */
 export const planCraft = (

@@ -2,6 +2,7 @@
 import { startingKnownRecipes } from './character.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
+import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** Deferred source contracts. Their owning milestones must promote these to hard checks. */
@@ -9,7 +10,7 @@ export const PENDING_REACHABILITY = { skill: '2.5', workstation: '2.8' } as cons
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
-  'work_in_progress', // Runtime-owned escrow, not an acquired content type.
+  WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'debug_rifle_assault',
   'spent_case_5_d_56x45',
@@ -61,9 +62,13 @@ const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: s
   [...items].some((id) => (registry.items.get(id)?.tool?.qualities[quality] ?? 0) >= level);
 
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
-const closure = (registry: Registry, found: ReadonlySet<string>, tools: boolean): Set<string> => {
+const closure = (
+  registry: Registry,
+  found: ReadonlySet<string>,
+  tools: boolean,
+  knowledge: ReadonlySet<string>,
+): Set<string> => {
   const items = new Set(found);
-  const knowledge = new Set(startingKnownRecipes(registry));
   let previous: number;
   do {
     previous = items.size;
@@ -133,11 +138,10 @@ const recipeDiagnostics = (
   registry: Registry,
   components: ReadonlySet<string>,
   toolReachable: ReadonlySet<string>,
-  workstations: ReadonlySet<string>,
+  { workstations, knowledge }: { workstations: ReadonlySet<string>; knowledge: ReadonlySet<string> },
 ) => {
   const issues: RecipeDiagnostic[] = [];
   const pending: Pending[] = [];
-  const knowledge = new Set(startingKnownRecipes(registry));
   for (const recipe of registry.recipes.values()) {
     if (!knowledge.has(recipe.id)) {
       issues.push({
@@ -171,11 +175,17 @@ const recipeDiagnostics = (
   return { issues, pending };
 };
 
-export const checkReachability = (registry: Registry) => {
+export const checkReachability = (
+  registry: Registry,
+  known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
+) => {
   const { found, workstations } = worldSources(registry);
-  const components = closure(registry, found, false);
-  const toolReachable = closure(registry, found, true);
-  const { issues, pending } = recipeDiagnostics(registry, components, toolReachable, workstations);
+  const components = closure(registry, found, false, known);
+  const toolReachable = closure(registry, found, true, known);
+  const { issues, pending } = recipeDiagnostics(registry, components, toolReachable, {
+    workstations,
+    knowledge: known,
+  });
   const eligible = [...registry.items.keys()].filter((id) => !CONTENT_COUNT_EXCLUSIONS.has(id));
   return {
     found,

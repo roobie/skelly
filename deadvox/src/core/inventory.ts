@@ -45,6 +45,16 @@ export const HANDLING = {
 
 /** What one block of floor holds. */
 export const PILE_GRID: GridSize = { w: 8, h: 6 };
+export const WORK_IN_PROGRESS = 'work_in_progress';
+
+/** Ordinary dropping and craft retirement share the same bounded neighborhood. */
+export const dropSpots = (feet: Vec3): Vec3[] => [
+  feet,
+  [feet[0] + 1, feet[1], feet[2]],
+  [feet[0] - 1, feet[1], feet[2]],
+  [feet[0], feet[1], feet[2] + 1],
+  [feet[0], feet[1], feet[2] - 1],
+];
 
 export type HandSide = 'right' | 'left';
 
@@ -404,7 +414,7 @@ export class Inventory {
     if (plan.tools.some((tool) => seen.has(tool.item.uid))) {
       return undefined;
     }
-    const work = this.create('work_in_progress');
+    const work = this.create(WORK_IN_PROGRESS);
     const components = plan.components.map(({ item, count }) => {
       const from = this.locate(item)!;
       if (from.kind === 'furniture') {
@@ -422,6 +432,32 @@ export class Inventory {
     return work;
   }
 
+  private workDrops(work: Item, outputs: readonly Item[], feet: Vec3): { item: Item; pos: Vec3; spot: Spot }[] {
+    const drops: { item: Item; pos: Vec3; spot: Spot }[] = [];
+    const grids = new Map<string, Placed[]>();
+    for (const item of outputs) {
+      let found = false;
+      for (const pos of dropSpots(feet)) {
+        const key = pileKey(pos);
+        const placed =
+          grids.get(key) ?? (this.pileAt(pos)?.items ?? []).filter(({ item: existing }) => existing !== work);
+        grids.set(key, placed);
+        const spot = findSpot(this.registry, { size: PILE_GRID, placed }, item);
+        if (spot) {
+          // Shadow occupancy reserves every output before transferring any of them.
+          placed.push({ item, ...spot });
+          drops.push({ item, pos, spot });
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        throw new Error('No room nearby to put the inputs or result down');
+      }
+    }
+    return drops;
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, feet: Vec3): void {
     const payload = work.work;
@@ -435,6 +471,7 @@ export class Inventory {
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
     }
+    const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
     this.remove(at);
     work.work = undefined;
     this.version += 1;
@@ -442,18 +479,8 @@ export class Inventory {
       this.put(outputs[0]!, { kind: 'hand', side: at.side });
       return;
     }
-    for (const item of outputs) {
-      let offset = 0;
-      for (;;) {
-        const pos: Vec3 = [feet[0] + offset, feet[1], feet[2]];
-        const pile = this.pileAt(pos);
-        const spot = findSpot(this.registry, { size: PILE_GRID, placed: pile?.items ?? [] }, item);
-        if (spot) {
-          this.put(item, { kind: 'pile', pos }, spot);
-          break;
-        }
-        offset += 1;
-      }
+    for (const { item, pos, spot } of drops) {
+      this.put(item, { kind: 'pile', pos }, spot);
     }
   }
 
@@ -744,7 +771,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   };
   for (const { item } of savedItemTree(state)) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
-    if (item.type === 'work_in_progress' && !item.work) {
+    if (item.type === WORK_IN_PROGRESS && !item.work) {
       throw new Error('Missing craft work payload');
     }
     if (item.work) {
@@ -767,7 +794,7 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
   const work = item.work!;
   const recipe = registry.recipes.get(work.recipe);
   if (
-    item.type !== 'work_in_progress' ||
+    item.type !== WORK_IN_PROGRESS ||
     item.count !== 1 ||
     !recipe ||
     !Number.isFinite(work.elapsed) ||

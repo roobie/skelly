@@ -5,7 +5,7 @@ import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 
@@ -70,6 +70,42 @@ const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
 
 describe('core long actions', () => {
+  it('insufficient bounded drop room retains all cancel inputs and a stopped descriptor', () => {
+    const runtime = start();
+    for (const pos of dropSpots([0, 0, 0])) {
+      while (runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos })) {
+        /* fill without stack merging */
+      }
+    }
+    // One 1×3 hole admits the first rag, but not the next 1×4 stick. No partial transfer.
+    const filler = runtime.inv.pileAt([0, 0, 0])!.items[0]!.item;
+    expect(runtime.inv.consume(filler)).toBe(true);
+    const before = runtime.inv.snapshotState();
+    const pileAt = runtime.inv.pileAt.bind(runtime.inv);
+    runtime.inv.pileAt = (pos) => {
+      if (!dropSpots([0, 0, 0]).some((spot) => spot.every((value, axis) => value === pos[axis]))) {
+        throw new Error('Escaped bounded drop neighborhood');
+      }
+      return pileAt(pos);
+    };
+    runtime.sim.actions.cancel();
+    expect(runtime.sim.compression.interruption).toBe('No room nearby to put the inputs or result down');
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'craft', stopped: true, workUid: runtime.item.uid });
+    expect(runtime.inv.snapshotState()).toEqual(before);
+  });
+  it('sleep can replace a stopped craft and Continue retains its owned progress', () => {
+    const runtime = start();
+    runtime.sim.scheduler.advance(20);
+    expect(runtime.sim.actions.startRest('sleep', -10)).toBeDefined();
+    runtime.sim.actions.stop();
+    const { elapsed } = runtime.payload;
+    expect(runtime.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    runtime.sim.scheduler.advance(4);
+    expect(runtime.payload.elapsed).toBe(elapsed);
+    expect(runtime.sim.actions.startCraft(runtime.item.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(1);
+    expect(runtime.payload.elapsed).toBe(elapsed + runtime.sim.clock.ratio);
+  });
   it('accumulates identical active work after Stop/Continue while stopped time advances only the world', () => {
     const direct = start();
     const interrupted = start();
@@ -135,8 +171,8 @@ describe('core long actions', () => {
     runtime.inv.consume(knife);
     runtime.sim.scheduler.advance(1);
     expect(runtime.payload.elapsed).toBe(elapsed);
-    expect(runtime.sim.compression.interruption).toContain('cutting');
-    expect(runtime.sim.actions.resume()).toContain('cutting');
+    expect(runtime.sim.compression.interruption).toBe('Required tool quality not in reach');
+    expect(runtime.sim.actions.resume()).toBe('Required tool quality not in reach');
     expect(runtime.payload.elapsed).toBe(elapsed);
     runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos: [0, 0, 0] });
     expect(runtime.sim.actions.resume()).toBeUndefined();

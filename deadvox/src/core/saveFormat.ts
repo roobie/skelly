@@ -5,7 +5,7 @@ import {
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
-import type { InventoryState } from './inventory.ts';
+import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import type { SaveSnapshot } from './saveState.ts';
@@ -1026,7 +1026,7 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   validateLongJob(job, snapshot.character.simulation.time);
   let owns = job?.jobType !== 'craft';
   for (const { item } of savedItemTree(snapshot.character.inventory)) {
-    if (item.work && (item.type !== 'work_in_progress' || item.work.elapsed > item.work.duration)) {
+    if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
       throw new Error('Invalid craft work payload');
     }
     if (job?.jobType === 'craft' && item.uid === job.workUid && item.work) {

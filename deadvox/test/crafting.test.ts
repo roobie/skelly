@@ -90,12 +90,12 @@ describe('pure craft planner', () => {
     }
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
     const before = inventory.snapshotState();
-    const counted = (qualities: RecipeDef['qualities']) => {
+    const counted = (qualities: RecipeDef['qualities'], classes = 1) => {
       let reads = 0;
       const countedReach = {
         ...snapshot,
         entries: snapshot.entries.map((entry) => {
-          const seconds = entry.handlingTime;
+          const seconds = entry.handlingTime + (Math.floor(Math.max(0, entry.item.uid - 2) / 3) % classes) * 0.1;
           return {
             ...entry,
             get handlingTime() {
@@ -129,6 +129,8 @@ describe('pure craft planner', () => {
     expect(full.plan.tools.find(({ quality }) => quality === 'hammering')!.item.uid).toBe(
       full.plan.tools.find(({ quality }) => quality === 'prying')!.item.uid,
     );
+    const fourClasses = counted(definition.qualities, 4);
+    process.stdout.write(`craft-tool-provider four-class reads: ${fourClasses.reads}\n`);
     expect(inventory.snapshotState()).toEqual(before);
     // Keeping only one representative per class would lose this feasible cheapest
     // allocation: reserving both cheap singleton tools avoids two retrievals.
