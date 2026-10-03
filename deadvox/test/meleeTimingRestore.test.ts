@@ -40,7 +40,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 };
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 5,
+  schemaVersion: 6,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -116,7 +116,7 @@ describe('tick-consumed primary melee input across save and restore', () => {
     const bytes = await encodeSave(snapshot, {
       generation: 1,
       version: saveVersion,
-      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1 },
+      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: 0.5 },
     });
     const decoded = await decodeSave(bytes, { version: saveVersion, contentLookup });
     const restored = makeSession(decoded.snapshot);

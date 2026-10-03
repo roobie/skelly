@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { toChunk } from '../src/core/coords.ts';
+import { CHUNK, toChunk } from '../src/core/coords.ts';
 import { HAMLET, Hamlet, hamletZombieSpawns } from '../src/core/hamlet.ts';
 import { rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
@@ -85,6 +85,18 @@ describe('the hamlet', () => {
       expect(differing(a.world, c.world)).toEqual([]);
       expect(b.furniture).toEqual(a.furniture);
       expect(c.furniture).toEqual(a.furniture);
+      const canopy = new Hamlet(seed, registry, scale).trees.find(
+        (tree) => toChunk(tree.bounds.x0) !== toChunk(tree.bounds.x1 - 1),
+      );
+      expect(canopy, 'seeded tree canopy must cross a chunk boundary').toBeDefined();
+      const cut = (toChunk(canopy!.bounds.x0) + 1) * CHUNK;
+      const leaf = id('leaves');
+      for (const x of [cut - 1, cut]) {
+        const containsLeaf = canopy!.boxes
+          .filter((box) => box.block === leaf && box.min[0] <= x && box.max[0] > x)
+          .some((box) => a.world.getBlock(x, box.min[1], box.min[2]) === leaf);
+        expect(containsLeaf, `leaf voxels on boundary side x=${x}`).toBe(true);
+      }
     }, 30_000);
   }
 

@@ -1,7 +1,7 @@
 // Seed-owned vegetation placements; every chunk stamps the same clipped boxes independently.
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import type { Vec3 } from './coords.ts';
+import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import { type Rect, rectDistance } from './site.ts';
@@ -108,6 +108,7 @@ export const vegetationPlacements = ({
 }): TreePlacement[] => {
   const shapes = treeShapes(registry, scale);
   const step = TREE_CELL_METRES / scale.blockSize;
+  const jitter = Math.round(1.5 / scale.blockSize);
   const trees: TreePlacement[] = [];
   for (let cz = Math.floor(area.z0 / step); cz < Math.ceil(area.z1 / step); cz++) {
     for (let cx = Math.floor(area.x0 / step); cx < Math.ceil(area.x1 / step); cx++) {
@@ -115,8 +116,8 @@ export const vegetationPlacements = ({
       if (!rng.chance(density)) {
         continue;
       }
-      const x = Math.floor((cx + 0.5) * step) + rng.int(-1, 1);
-      const z = Math.floor((cz + 0.5) * step) + rng.int(-1, 1);
+      const x = Math.floor((cx + 0.5) * step) + rng.int(-jitter, jitter);
+      const z = Math.floor((cz + 0.5) * step) + rng.int(-jitter, jitter);
       const shape = TREE_MIX[rng.int(0, TREE_MIX.length - 1)]!;
       const tree = placeTree(shape, [x, ground(x, z) + 1, z], shapes[shape]);
       if (
@@ -134,8 +135,11 @@ export const vegetationPlacements = ({
 };
 
 export const stampTrees = (chunk: Chunk, trees: readonly TreePlacement[]): void => {
+  const column = { x0: chunk.cx * CHUNK, x1: (chunk.cx + 1) * CHUNK, z0: chunk.cz * CHUNK, z1: (chunk.cz + 1) * CHUNK };
   for (const tree of trees) {
-    stampChunk(chunk, tree.boxes);
+    if (rectsOverlap(column, tree.bounds)) {
+      stampChunk(chunk, tree.boxes);
+    }
   }
 };
 

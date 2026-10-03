@@ -20,6 +20,7 @@ import {
   smoothstep,
   type ZombieSpawn,
 } from './site.ts';
+import { type BlockBox, stampChunk } from './structure.ts';
 import {
   compileTemplate,
   footprint,
@@ -29,7 +30,13 @@ import {
   stampPlacement,
   type Turn,
 } from './templates.ts';
-import { stampTrees, type TreePlacement } from './vegetation.ts';
+import {
+  DEFAULT_TREE_DENSITY,
+  leafLitterAt,
+  stampTrees,
+  type TreePlacement,
+  vegetationPlacements,
+} from './vegetation.ts';
 import { type Surface, terrainHeight } from './worldgen.ts';
 
 /** Templates are drawn in half-metre blocks. */
@@ -95,8 +102,8 @@ export class Hamlet implements Site {
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
   readonly range: HamletRange;
-  /** Tree recipes are checkpointed first; seed-owned placements follow in this round. */
-  readonly trees: readonly TreePlacement[] = [];
+  readonly trees: readonly TreePlacement[];
+  readonly hedges: readonly BlockBox[];
   /** Where the player starts: feet in metres, and a yaw that looks down the road. */
   readonly spawn: { pos: Vec3; yaw: number };
   readonly seed: number;
@@ -143,12 +150,15 @@ export class Hamlet implements Site {
       HAMLET.blend,
     );
     this.range = new HamletRange(seed, registry, scale, hamletBounds);
-    this.bounds = {
-      x0: Math.min(hamletBounds.x0, this.range.blendBounds.x0),
-      z0: Math.min(hamletBounds.z0, this.range.blendBounds.z0),
-      x1: Math.max(hamletBounds.x1, this.range.blendBounds.x1),
-      z1: Math.max(hamletBounds.z1, this.range.blendBounds.z1),
-    };
+    this.bounds = grow(
+      {
+        x0: Math.min(hamletBounds.x0, this.range.blendBounds.x0),
+        z0: Math.min(hamletBounds.z0, this.range.blendBounds.z0),
+        x1: Math.max(hamletBounds.x1, this.range.blendBounds.x1),
+        z1: Math.max(hamletBounds.z1, this.range.blendBounds.z1),
+      },
+      24,
+    );
     const sx = this.road.x0 + 2;
     const roadTop = this.roadHeights[2]!;
     this.spawn = {
@@ -159,6 +169,32 @@ export class Hamlet implements Site {
       ],
       yaw: -Math.PI / 2, // east, down the road
     };
+    const ground = (x: number, z: number) => this.height(x, z, terrainHeight(seed, scale, x, z));
+    this.hedges = this.lots
+      .filter((_, index) => index % 2 === 0)
+      .flatMap((lot) => {
+        // A back-garden edge only: no entrance, frontage or side access is fenced shut.
+        const z = lot.placement.turn === 2 ? lot.rect.z0 - 4 : lot.rect.z1 + 3;
+        return Array.from({ length: lot.rect.x1 - lot.rect.x0 - 4 }, (_, index): BlockBox => {
+          const x = lot.rect.x0 + 2 + index;
+          const y = ground(x, z) + 1;
+          return { min: [x, y, z], max: [x + 1, y + 3, z + 1], block: registry.blockIds.get('hedge')! };
+        });
+      });
+    this.trees = vegetationPlacements({
+      seed,
+      registry,
+      scale,
+      area: this.bounds,
+      density: DEFAULT_TREE_DENSITY,
+      ground,
+      reserved: [
+        grow(this.road, HAMLET.gap),
+        grow(this.range.rect, 4),
+        ...this.lots.map((lot) => grow(lot.rect, 2)),
+        ...this.hedges.map((box) => grow({ x0: box.min[0], z0: box.min[2], x1: box.max[0], z1: box.max[2] }, 2)),
+      ],
+    });
     this.makeZombieSpawns();
   }
 
@@ -166,7 +202,11 @@ export class Hamlet implements Site {
   get surface(): Surface {
     return {
       height: (x, z, natural) => this.height(x, z, natural),
-      top: (x, z) => (rectDistance(this.road, x, z) === 0 ? this.asphalt : this.range.top(x, z)),
+      top: (x, z) =>
+        rectDistance(this.road, x, z) === 0
+          ? this.asphalt
+          : (this.range.top(x, z) ??
+            (leafLitterAt(this.trees, x, z) ? this.registry.blockIds.get('leaf_litter')! : undefined)),
     };
   }
 
@@ -191,6 +231,7 @@ export class Hamlet implements Site {
     }
     this.range.stamp(chunk);
     stampTrees(chunk, this.trees);
+    stampChunk(chunk, this.hedges);
   }
 
   /**

@@ -1,5 +1,6 @@
 import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
+import { DEFAULT_TREE_DENSITY } from '../core/vegetation.ts';
 
 /** View distances offered on the start card, in metres. 96 m is the default. */
 export const VIEW_DISTANCES: readonly number[] = [64, 96, 128];
@@ -25,6 +26,8 @@ export interface GameConfig {
   site: SiteName;
   /** The city's tallest buildings, in storeys (`?storeys=N`). */
   storeys: number;
+  /** Fraction of fixed 8m forest placement cells occupied (`?density=0..1`). */
+  density: number;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
    * ZombieMeshes' six boxes instead. */
   actors: ActorRenderer;
@@ -44,6 +47,7 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     debug: false,
     site: 'hamlet',
     storeys: 1,
+    density: DEFAULT_TREE_DENSITY,
     actors: 'detailed',
   };
 };
@@ -52,7 +56,7 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
 export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
   params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
-export type SiteName = 'hamlet' | 'testHouse' | 'city';
+export type SiteName = 'hamlet' | 'testHouse' | 'city' | 'forest';
 
 const MAX_STOREYS = 20;
 
@@ -60,12 +64,21 @@ const MAX_STOREYS = 20;
  * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
  * `fallback` is the site otherwise.
  */
-export const siteFromUrl = (params: URLSearchParams, fallback: SiteName): { site: SiteName; storeys: number } => {
+export const siteFromUrl = (
+  params: URLSearchParams,
+  fallback: SiteName,
+): Pick<GameConfig, 'site' | 'storeys' | 'density'> => {
+  const densityText = params.get('density');
+  const density = densityText === null || densityText.trim() === '' ? DEFAULT_TREE_DENSITY : Number(densityText);
   const storeys = Number(params.get('storeys') ?? 1);
   const requested = params.get('site');
   return {
-    site: requested === 'city' || requested === 'testHouse' ? requested : fallback,
+    site:
+      requested === 'city' || requested === 'testHouse' || requested === 'forest' || requested === 'hamlet'
+        ? requested
+        : fallback,
     storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,
+    density: Number.isFinite(density) && density >= 0 && density <= 1 ? density : DEFAULT_TREE_DENSITY,
   };
 };
 

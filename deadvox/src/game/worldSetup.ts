@@ -3,6 +3,7 @@ import { StressCity } from '../core/city.ts';
 import { worldSolid } from '../core/collision.ts';
 import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
+import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { blockPatterns } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
@@ -83,6 +84,9 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
  * Otherwise (other block sizes, broken content) the world has the test house.
  */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
+  if (config.site === 'forest') {
+    return new Forest(config.seed, registry, config.scale, config.density);
+  }
   const buildable =
     config.scale.blockSize === HAMLET_BLOCK_SIZE &&
     registry.blockIds.has('asphalt') &&

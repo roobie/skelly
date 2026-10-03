@@ -7,6 +7,7 @@ import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
+import { FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
@@ -34,6 +35,7 @@ export interface BenchRun {
   /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
   site: SiteName;
   storeys: number;
+  density: number;
   /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
   time?: string;
   /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
@@ -90,15 +92,43 @@ const movingStats = (frames: number[], work: number[], holes: number[]): MovingS
   holeFraction: holes.length === 0 ? 0 : holes.filter((h) => h > 0).length / holes.length,
 });
 
-const nextUrl = (run: BenchRun, seed: number): string => {
+export const nextUrl = (run: BenchRun, seed: number): string => {
   if (run.index + 1 >= run.plan.length) {
     return '?bench=report';
   }
   const quick = run.quick ? '&quick' : '';
-  const site = run.site === 'city' ? `&site=city&storeys=${run.storeys}` : '';
+  const site =
+    `&site=${run.site}` +
+    (run.site === 'city' ? `&storeys=${run.storeys}` : '') +
+    (run.site === 'forest' ? `&density=${run.density}` : '');
   const time = run.time === undefined ? '' : `&time=${run.time}`;
   return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${postUrlPart(run.post)}${quick}`;
 };
+
+export const forestWorkload = (seed: number, density: number) => ({
+  seed,
+  density,
+  extentMetres: 2 * FOREST_HALF_EXTENT_METRES,
+  cellMetres: TREE_CELL_METRES,
+  shapeMix: TREE_MIX,
+  foliage: 'solid' as const,
+  routes: {
+    heading: HEADING,
+    lookSeconds: DURATIONS.full.look,
+    jogSeconds: DURATIONS.full.jog,
+    jogMetresPerSecond: PLAYER.jog,
+    sprintSeconds: DURATIONS.full.sprint,
+    sprintMetresPerSecond: PLAYER.sprint,
+  },
+});
+
+export const benchSiteLabel = (run: BenchRun): string =>
+  ({
+    forest: `forest, density ${run.density}`,
+    city: `city, up to ${run.storeys} storeys`,
+    hamlet: 'hamlet',
+    testHouse: 'test house',
+  })[run.site];
 
 export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats): void => {
   const { config, streamer, renderer, camera, world } = engine;
@@ -119,7 +149,8 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
       ? {
           startedAt: new Date().toISOString(),
           quick: run.quick,
-          site: run.site === 'city' ? `city, up to ${run.storeys} storeys` : 'test house',
+          site: benchSiteLabel(run),
+          ...(run.site === 'forest' ? { forest: forestWorkload(config.seed, run.density) } : {}),
           time: run.time ?? '12:00',
           ...(run.post ? { post: true } : {}),
           env: environment(engine),
@@ -307,7 +338,7 @@ export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats):
       triangles.push(renderer.info.render.triangles);
     }
     hud.textContent = [
-      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius${run.site === 'city' ? `, city (≤ ${run.storeys} storeys)` : ''}`,
+      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius, ${benchSiteLabel(run)}`,
       `${phase} ${((now - phaseStart) / 1000).toFixed(1)} s`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,
       interrupted ? 'Tab was hidden: this run will be marked unreliable.' : 'Keep this tab visible.',

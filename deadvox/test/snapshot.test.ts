@@ -834,11 +834,11 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 5,
+  schemaVersion: 6,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
-const formatWorldOptions = { blockSize: 0.5, site: 'hamlet' as const, storeys: 1 };
+const formatWorldOptions = { blockSize: 0.5, site: 'hamlet' as const, storeys: 1, density: 0.5 };
 const hashPattern = /^[0-9a-f]{64}$/;
 const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'block') {

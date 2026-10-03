@@ -124,6 +124,23 @@ export interface BenchRecord {
   quick: boolean;
   /** What stood around spawn; records from before the city don't say (the test house). */
   site?: string;
+  /** The exact first-look tree workload, retained in the exported JSON. */
+  forest?: {
+    seed: number;
+    density: number;
+    extentMetres: number;
+    cellMetres: number;
+    shapeMix: readonly string[];
+    foliage: 'solid';
+    routes: {
+      heading: readonly [number, number];
+      lookSeconds: number;
+      jogSeconds: number;
+      jogMetresPerSecond: number;
+      sprintSeconds: number;
+      sprintMetresPerSecond: number;
+    };
+  };
   /** Time of day (`&time=HH:MM`); records from before it existed ran at noon. */
   time?: string;
   /** Drawn through the mood pass with the default look (`&post=1`, bench/post.ts); records from before it existed, and runs without it, drew plain. */

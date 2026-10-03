@@ -251,7 +251,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     snapshotIds = options.saveController.bindSession(
       captureSnapshot,
       () => sim.time,
-      { blockSize: s, site: config.site, storeys: config.storeys },
+      { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   } else if (!options.restore) {
