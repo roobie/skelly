@@ -143,30 +143,16 @@ describe('simulation source fingerprint', () => {
       ]),
     );
     expect(graph.excludedImports).toEqual([
-      { importer: 'src/game/play.ts', excluded: 'src/core/mood.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/core/sky.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/core/weather.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/audio.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/audioPresentation.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/damageFeedback.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/playtestObserver.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/caseEffects.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/flashlight.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/furniture.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/hands.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/look.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/meleePose.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/mobActors.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/models.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/piles.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/playerFigure.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/sky.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/stepOffset.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/zombies.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/playFrames.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/render/playView.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
@@ -176,6 +162,8 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/playHud.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/playReadout.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/primaryActionHint.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
@@ -208,6 +196,24 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
     expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);
+  });
+
+  it('ignores HUD-only wording but fingerprints the gameplay interaction reach', async () => {
+    const host = await actualSimulationHost();
+    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
+      exclude: SIMULATION_EXCLUSIONS,
+    });
+    const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts', 'fps   seed', 'FPS / seed');
+    expect(hud.reads).toBe(0);
+    expect(hud.value).toBe(original);
+    const reach = await mutateSimulationSource(
+      host,
+      'src/game/play.ts',
+      'const USE_REACH = 2;',
+      'const USE_REACH = 3;',
+    );
+    expect(reach.reads).toBe(1);
+    expect(reach.value).not.toBe(original);
   });
 
   it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {
