@@ -43,6 +43,7 @@ const fromHex = (table: Record<string, number>): Record<string, SrgbColor> =>
 const FAMILY_HEX: Record<string, number> = {
   receiver: 0x8d_93_9c,
   'bolt-carrier': 0x6d_73_7c,
+  'ar-charging-handle': 0x6d_73_7c,
   'bolt-handle': 0x6d_73_7c,
   'bolt-handle-arm': 0x6d_73_7c,
   'bolt-handle-knob': 0x6d_73_7c,
@@ -74,6 +75,7 @@ const ROLE_SLOTS: Record<string, string> = {
   receiver: 'metal',
   'ak-receiver': 'metal',
   'bolt-carrier': 'metal',
+  'ar-charging-handle': 'metal',
   'bolt-handle': 'metal',
   'bolt-handle-arm': 'metal',
   'bolt-handle-knob': 'metal',
@@ -105,6 +107,7 @@ const SHADE: Record<string, number> = {
   receiver: 1,
   'ak-receiver': 0.93,
   'bolt-carrier': 0.78,
+  'ar-charging-handle': 0.78,
   'bolt-handle': 0.78,
   'bolt-handle-arm': 0.78,
   'bolt-handle-knob': 0.78,
@@ -183,7 +186,15 @@ const FINISHES: Record<string, Readonly<Record<string, string>>> = {
 
 export const GUN_PALETTE: Palette = createPalette({
   familyColors: fromHex(FAMILY_HEX),
-  specialColors: {},
+  // Geometry-check roles of the compound wood stock; normal finishes stay wood.
+  specialColors: fromHex({
+    grip: 0x46_ac_8f,
+    'stock-joint': 0xce_9d_52,
+    'fore-stock': 0xce_9d_52,
+    'cut-stub': 0xce_9d_52,
+    'stock-comb': 0x64_8b_c4,
+    'stock-wrist': 0xa9_7c_c8,
+  }),
   fallbackColor: hexToSrgb(0x88_88_88),
   materials: fromHex(MATERIAL_HEX),
   roleSlots: ROLE_SLOTS,

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Mesh, type MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
+import type { Vec3 } from '../src/core/math.ts';
 import { validate } from '../src/core/validate.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -56,6 +57,38 @@ describe('viewer geometry', () => {
       expect((stock.material as MeshStandardMaterial).color.getHex()).toBe(0x4b_58_36);
     } finally {
       for (const group of Object.values(layers)) {
+        disposeGroup(group);
+      }
+    }
+  });
+
+  it('renders a view-only pump action-open pose by moving the carrier and forend together', () => {
+    const report = validate(loadFixture('archetype-pump-shotgun'), gunDomain);
+    const travel = report.resolved.defs.get('bolt-carrier')?.motion?.end[0] ?? 0;
+    const offsets = new Map<string, Vec3>([
+      ['bolt-carrier', [-travel, 0, 0]],
+      ['forend', [-travel, 0, 0]],
+    ]);
+    const rest = buildLayers(report, []);
+    const open = buildLayers(report, [], 'finish', {}, undefined, offsets);
+    try {
+      const xOf = (layers: typeof rest, part: string) => {
+        const mesh = layers.solids.children.find((child) => String(child.userData.label).startsWith(`${part} (`));
+        if (!mesh) {
+          throw new Error(`missing ${part} mesh`);
+        }
+        return mesh.matrix.elements[12];
+      };
+      expect(travel).toBe(5.5);
+      for (const part of ['bolt-carrier', 'forend']) {
+        expect(xOf(open, part)).toBe(xOf(rest, part) - travel);
+      }
+      expect(report.ok).toBe(true);
+    } finally {
+      for (const group of Object.values(rest)) {
+        disposeGroup(group);
+      }
+      for (const group of Object.values(open)) {
         disposeGroup(group);
       }
     }

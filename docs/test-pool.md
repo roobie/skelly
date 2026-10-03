@@ -6,6 +6,15 @@ On the measured 7-logical-CPU VM this resolves to 3 workers; on a 2-core GitHub
 runner it resolves to 1. CLI `--maxWorkers` remains available for diagnostics.
 Changes to this shared file trigger all three subproject workflows.
 
+## Default-run time budgets (Slice 2.0)
+
+On deb39, 2026-10-03, three same-checkout default runs establish **40s Gungen,
+40s Deadvox, 65s Mobgen**, plus **5s root ci / 1s root site**. These include
+startup, exclude lock wait/browser/sweep runs, and allow at least 50% headroom
+over measured medians. A milestone exceeding one records and explains its cost;
+these are not case-timeout increases or CI-runner limits. Exact samples, versions,
+corpus, commands and capacity rules: [host-budget.md](host-budget.md).
+
 ## Measurements
 
 2026-10-02, main `8597386`, Node 26.8.1 / Vitest 5.0.1, Linux VM exposing

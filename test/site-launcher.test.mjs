@@ -18,6 +18,7 @@ const intentionallyUnofferedGungenParams = {
     'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
   facets:
     'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
+  pose: 'A fixed, view-only pump action-open presentation; not an editable design parameter.',
 };
 
 const paramsReadBy = (sources) => {

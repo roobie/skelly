@@ -96,7 +96,6 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
   const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false };
-  const audioPicker = new SoundPicker(seed, registry.sounds);
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const session = createSession({
     registry,
@@ -117,16 +116,9 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       descending: () => false,
     },
     audio: {
-      play: (event, position, time) => {
-        const pick = audioPicker.pick(event, time);
-        if (!pick) {
-          return false;
-        }
+      play: ({ event, position, time, pick }) => {
         heardSounds.push({ event, file: pick.file, time, position: [...position] });
-        return true;
       },
-      snapshotState: () => audioPicker.snapshotState(),
-      restoreState: (state) => audioPicker.restoreState(state),
     },
     notice: () => undefined,
     ...(snapshot ? { restore: snapshot } : {}),
@@ -191,7 +183,6 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     survival,
     quickbar,
     playerAudio,
-    audioPicker,
     heardSounds,
     emitPlayerSound: session.playPlayerSound,
   };
@@ -293,12 +284,14 @@ const inspect = (runtime: Runtime): unknown => {
     audio: {
       vocalNoiseId: runtime.playerAudio.vocalNoiseId,
       vocalNoise: runtime.playerAudio.vocalNoise,
-      soundPicker: runtime.audioPicker.snapshotState(),
+      soundPicker: runtime.session.audioState(),
     },
     spawned: [...spawns].sort(),
     rest: runtime.rest.action && { ...runtime.rest.action },
     light: runtime.survival.lit?.uid,
-    quickbar: runtime.quickbar.slots.map((item) => item?.uid ?? null),
+    quickbar: runtime.quickbar.slots.map((uid) =>
+      uid === null ? null : (runtime.inventory.itemByUid(uid)?.uid ?? null),
+    ),
     handling: structuredClone(runtime.handling.jobs),
   };
 };
@@ -431,6 +424,29 @@ const setBudgetClock = (runtime: Runtime): void => {
 };
 
 describe('snapshot state components', () => {
+  it('restores after eating the quickbar-bound item without a dangling UID', () => {
+    const runtime = createRuntime();
+    const { inventory, quickbar, survival, handling, player } = runtime;
+    const beans = inventory.hands.right!.pockets![0]![0]!.item;
+    const feet = player.body.pos.map(Math.floor) as Vec3;
+    expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
+    expect(inventory.move(beans, { kind: 'hand', side: 'left' }).ok).toBe(true);
+    quickbar.assign(0, beans);
+    expect(survival.use(beans)).toBeUndefined();
+    handling.tick(3.1);
+    expect(inventory.itemByUid(beans.uid)).toBeUndefined();
+    const snapshot = capture(runtime);
+    expect(() => createRuntime(snapshot)).not.toThrow();
+    expect(snapshot.character.quickbar[0]).toBeNull();
+  });
+
+  it('rejects a dangling component reference at the snapshot barrier', () => {
+    const runtime = createRuntime();
+    const missingUid = runtime.inventory.factory.next;
+    runtime.quickbar.snapshotState = () => [missingUid, null, null, null, null];
+    expect(() => capture(runtime)).toThrow(`Snapshot contains dangling item UID ${missingUid}`);
+  });
+
   it('exports/restores scheduler cursors without changing their next due tick', () => {
     const first = new Simulation({ seed: 4 });
     let count = 0;

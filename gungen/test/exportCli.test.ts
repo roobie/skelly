@@ -61,9 +61,12 @@ describe('export CLI core', () => {
       const glb = readGlb(exported.glb);
       const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
       expect(stock?.mesh).toBeDefined();
-      const primitive = glb.json.meshes[stock!.mesh!]!.primitives[0]!;
-      expect(primitive.extras).toMatchObject({ material: 'wood-walnut', slot: 'furniture' });
-      expect(glb.json.materials[primitive.material]!.name).toBe('#754324');
+      // Display-group merging can put the separate rubber pad first. Identify
+      // the wood by its semantic slot, not incidental primitive ordering.
+      const primitive = glb.json.meshes[stock!.mesh!]!.primitives.find((p) => p.extras?.slot === 'furniture');
+      expect(primitive).toBeDefined();
+      expect(primitive?.extras).toMatchObject({ material: 'wood-walnut', slot: 'furniture' });
+      expect(glb.json.materials[primitive!.material]!.name).toBe('#754324');
     }
   });
 

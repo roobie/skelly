@@ -11,6 +11,7 @@ import { basename, dirname, join, relative } from 'node:path';
 import process from 'node:process';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
 import { buildRegistry, type ContentSource, requiredSoundIssues } from '../core/content.ts';
+import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -62,15 +63,10 @@ issues.push(...soundFileIssues(registry, (contentFile, file) => existsSync(join(
 for (const issue of issues) {
   console.log(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
 }
-const counts = [
-  `${registry.blocks.length - 1} blocks`,
-  `${registry.items.size} items`,
-  `${registry.furniture.size} furniture`,
-  `${registry.loot.size} loot tables`,
-  `${registry.templates.size} templates`,
-  `${registry.zombies.size} zombie types`,
-  `${registry.models.size} models`,
-  `${assets} asset sources`,
-];
+const counts = CONTENT_SECTION_KEYS.map((section) => {
+  const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
+  return `${count} ${CONTENT_SECTIONS[section].label}`;
+});
+counts.push(`${assets} asset sources`);
 console.log(`${files.length} file(s): ${counts.join(', ')}; ${issues.length + broken} issue(s)`);
 process.exitCode = issues.length + broken > 0 ? 1 : 0;

@@ -6,7 +6,7 @@ import { createPalette, GUN_PALETTE, hexToSrgb, solidColor, srgbToHex } from '..
 import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCorpus, loadFixtures } from './helpers.ts';
 
-/** Frozen pre-palette scene.ts table; the new cap-lug is intentionally excluded because it has a distinct metal colour. */
+/** Reference family colours; the cap lug and compound-stock roles intentionally have distinct per-solid colours. */
 const OLD_FAMILY_COLORS: Record<string, number> = {
   receiver: 0x8d_93_9c,
   lower: 0x6f_75_7e,
@@ -45,15 +45,22 @@ const renderedSolids = (assemblies: Assembly[]): { family: string; id: string; m
     [...resolve(a, gunDomain).defs.values()].flatMap((def) =>
       (def.displaySolids ?? def.solids).map((s) => ({
         family: def.family,
-        id: s.id,
+        id: s.display?.role ?? s.id,
         ...(s.material ? { material: s.material } : {}),
       })),
     ),
   );
 
 describe('palette migration', () => {
+  const compoundStockRoles = new Set(['fore-stock', 'stock-wrist', 'grip', 'stock-joint', 'stock-comb', 'cut-stub']);
   const oldColored = (assemblies: Assembly[]) =>
-    renderedSolids(assemblies).filter((x) => !x.material && x.id !== 'cap-lug' && x.family in OLD_FAMILY_COLORS);
+    renderedSolids(assemblies).filter(
+      (x) =>
+        !x.material &&
+        x.id !== 'cap-lug' &&
+        !(x.family === 'stock' && compoundStockRoles.has(x.id)) &&
+        x.family in OLD_FAMILY_COLORS,
+    );
   const mismatches = (solids: ReturnType<typeof renderedSolids>) =>
     solids
       .filter(
@@ -61,14 +68,14 @@ describe('palette migration', () => {
       )
       .map(({ family, id }) => `${family}/${id}`);
 
-  it('reproduces the old FAMILY_COLORS lookup bit-identically for every archetype solid of a role that had a colour', () => {
+  it('preserves ordinary family role colours for every archetype', () => {
     const old = oldColored(fixtureAssemblies());
     expect(old.length).toBeGreaterThan(50);
     expect(mismatches(old)).toEqual([]);
   });
 
   // Measured about 1.5 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
-  it('reproduces the old FAMILY_COLORS lookup bit-identically across every fixture and design', {
+  it('preserves ordinary family role colours across every fixture and design', {
     timeout: 10_000,
   }, () => {
     const old = oldColored(corpusAssemblies());

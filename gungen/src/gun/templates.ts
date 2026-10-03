@@ -92,6 +92,7 @@ export const ar: Template = {
       },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
+    { id: 'charging-handle', family: 'ar-charging-handle' },
     { id: 'lower', family: 'lower', params: { layout: 'ar' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
     {
@@ -143,6 +144,7 @@ export const ar: Template = {
     { from: 'lower.magazine', to: 'magazine.top' },
     { from: 'receiver.stock', to: 'stock.front' },
     { from: 'receiver.rail', to: 'sight.base', slot: 3 },
+    { from: 'receiver.charging-handle', to: 'charging-handle.mount' },
     {
       from: 'barrel.front-sight',
       to: 'front-sight.base',
@@ -429,7 +431,18 @@ export const pumpShotgun: Template = {
       params: { layout: ['pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'trigger', 'trigger', 'trigger'] },
     },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
-    { id: 'tube', family: 'tube-magazine', params: { lengthPercent: ['50', '75', '100'] } },
+    {
+      id: 'tube',
+      family: 'tube-magazine',
+      // Larger hand furniture must fit ahead of its stroke and behind the fixed cap.
+      params: {
+        lengthPercent: {
+          when: { part: 'barrel', param: 'length', equals: 'S' },
+          onMatch: '100',
+          onMismatch: ['75', '100'],
+        },
+      },
+    },
     { id: 'forend', family: 'forend' },
     {
       id: 'grip',

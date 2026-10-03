@@ -220,10 +220,12 @@ Paperwork; no game code.
   so.
 - **Host budget**, measured: disk per worktree with its installs, memory per
   agent and per browser test, the number of heavy runs at once, and the free
-  disk to keep in reserve. Recorded in `docs/PROCESS.md` or a doc it links.
+  disk to keep in reserve. Measured 2026-10-03 in
+  [the host budget](../docs/host-budget.md), linked from `docs/PROCESS.md`.
 - **Default test-run budget**, measured: the wall time of each subproject's
   default test run (deadvox, gungen, mobgen) on the shared host, recorded next
-  to the host budget. A milestone that pushes a run past it says why.
+  to the host budget. [Three-run medians and budgets](../docs/host-budget.md#default-test-run-budgets)
+  are recorded; a milestone that pushes a run past one says why.
 - The Slice 2 checklist issue is open, listing every milestone and gate below.
 - Slice 2's playtest questions are added to SLICE-1.md's playtest plan.
 - #143 (saves closure) is merged before any milestone that adds saved state
@@ -308,6 +310,8 @@ survival tests pass apart from the listed alignments, and nothing outside
   combinations. Tool qualities stay as they are (`ToolSchema`,
   `src/core/schema.ts:137-140`).
 - A handful of base recipes (torch, candle, a repair kit) to exercise it.
+- Initial Slice 2 recipes count whole solid items only; no millilitre components,
+  partial-liquid storage, container-retention or save-format change.
 
 **Saves:** none.
 **Tests:** tests assert that invalid fixtures are rejected with the expected

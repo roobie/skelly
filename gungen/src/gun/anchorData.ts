@@ -9,6 +9,7 @@ import type { AnchorFrame } from '../core/design.ts';
 import { add, extrusionPoint, type Vec3 } from '../core/math.ts';
 import type { PartDef, RevolvedSolid, Solid } from '../core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
+import { localEjectionPoint } from './ejection.ts';
 import { FIRING_GRIP } from './parts.ts';
 import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
 
@@ -47,7 +48,7 @@ const interiorPoint = (s: Solid): Vec3 => {
   );
 };
 
-/** A tapered-stock hold sits low inside the grip, below the trigger centre. */
+/** Existing ordinary grip placement; authored palm datums take precedence for curved stocks. */
 const gripHoldPoint = (s: Solid): Vec3 => {
   if (s.kind === 'box') {
     return s.box.center;
@@ -77,13 +78,8 @@ const gripHoldPoint = (s: Solid): Vec3 => {
 const frameAt = (position: Vec3, forward: Vec3 = X, up: Vec3 = Y): AnchorFrame => ({ position, forward, up });
 
 const ejectionAnchor = (_params: Readonly<Record<string, string>>, part: PartDef): GunPartAnchors => {
-  const volume = part.keepOuts.find(({ id }) => id === 'ejection');
-  if (!volume) {
-    return {};
-  }
-  return {
-    ejection: frameAt([volume.box.center[0], volume.box.center[1], volume.box.center[2] - volume.box.half[2]]),
-  };
+  const point = localEjectionPoint(part);
+  return point ? { ejection: frameAt(point) } : {};
 };
 
 /** The firing hand on a grip's body; `axes` are the grip's own forward and up. */
@@ -96,12 +92,19 @@ const gripHold =
 
 /** Centre of a solid's underside, at `along` (0..1) of its length: where the support hand cups a fore-end. */
 const undersideSupport = (part: PartDef, along: number): GunPartAnchors => {
-  const under = findSolid(part, 'bottom');
-  if (under?.kind !== 'box') {
-    return {};
+  const under = findSolid(part, 'bottom', 'shell-3');
+  if (under?.kind === 'box') {
+    const { center, half } = under.box;
+    return { support: frameAt([center[0] - half[0] + 2 * half[0] * along, center[1], 0]) };
   }
-  const { center, half } = under.box;
-  return { support: frameAt([center[0] - half[0] + 2 * half[0] * along, center[1], 0]) };
+  if (under?.kind === 'extruded-polygon' && under.axis === 'x') {
+    const bottomY = Math.min(...under.profile.map(([y]) => y));
+    const bottomEdge = under.profile.filter(([y]) => Math.abs(y - bottomY) <= 1e-6);
+    const bottomZ = bottomEdge.reduce((sum, [, z]) => sum + z, 0) / bottomEdge.length;
+    const x = under.z[0] + (under.z[1] - under.z[0]) * along;
+    return { support: frameAt(extrusionPoint('x', [bottomY, bottomZ], x)) };
+  }
+  return {};
 };
 
 export const GUN_ANCHORS: GunAnchorDeclarations = {
@@ -135,13 +138,15 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
       return { ...hold, ...(magazine ? { magwell: frameAt(magazine.pos) } : {}) };
     },
   },
-  // Only a firing-grip stock has a hold: the tapered style uses its grip; others use the wrist.
+  // Only a firing-grip stock has a hold. An authored palm datum is independent
+  // of the stock's lowest silhouette vertex; ordinary wrists use their interior.
   stock: {
     holdRank: 'firing-grip-stock',
     anchors: (_params, part) => {
-      const taperedGrip = part.solids.find((solid) => solid.id === 'grip');
-      const grip = taperedGrip ?? findSolid(part, 'wrist');
-      const position = grip && (taperedGrip ? gripHoldPoint(grip) : interiorPoint(grip));
+      const gripSolid = part.solids.find((solid) => solid.id === 'grip');
+      const grip = gripSolid ?? findSolid(part, 'wrist');
+      const palm = part.axes.find((a) => a.kind === 'firing-grip');
+      const position = palm?.origin ?? (grip && (gripSolid ? gripHoldPoint(grip) : interiorPoint(grip)));
       return position && part.tags?.includes(FIRING_GRIP) ? { hold: frameAt(position) } : {};
     },
   },

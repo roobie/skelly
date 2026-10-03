@@ -6,6 +6,14 @@ export interface SectionWindow {
   readonly x: readonly [number, number];
   readonly sectionAxis: 0 | 1;
   readonly section: readonly [number, number];
+  /** Faceted XY corner radius for a side aperture; omitted for a rectangular opening. */
+  readonly cornerU?: number;
+}
+
+export interface SectionPocket {
+  readonly x: readonly [number, number];
+  readonly y: readonly [number, number];
+  readonly z: readonly [number, number];
 }
 
 export interface ReceiverSectionSpec {
@@ -15,9 +23,16 @@ export interface ReceiverSectionSpec {
   readonly x: readonly [number, number];
   readonly wall: number;
   readonly clip?: readonly ClipPlane[];
-  readonly cavity: { readonly y: readonly [number, number]; readonly z: readonly [number, number] };
+  readonly cavity: {
+    /** Axial cavity limits, defaulting to a wall-thickness inset at each end. */
+    readonly x?: readonly [number, number];
+    readonly y: readonly [number, number];
+    readonly z: readonly [number, number];
+  };
   readonly port?: SectionWindow;
   readonly portSlots?: readonly SectionWindow[];
+  /** Enclosed cross-section channels that preserve the receiver's outer skin. */
+  readonly internalPockets?: readonly SectionPocket[];
   readonly farPort?: SectionWindow;
   readonly magazineWell?: SectionWindow;
 }
@@ -45,6 +60,37 @@ const clipProfile = (profile: readonly Vec2[], axis: 0 | 1, edge: number, keepLe
 };
 
 const positive = (profile: readonly Vec2[]): boolean => validateExtrudedPolygon(profile, [0, 1], 'x') === undefined;
+/** Convex-cell difference using core half-space clipping, with no fragments for a non-intersecting opening. */
+export const subtractConvexSection = (profile: readonly Vec2[], opening: readonly Vec2[]): Vec2[][] => {
+  const planes = opening.map((a, i) => {
+    const b = opening[(i + 1) % opening.length]!;
+    const normal: Vec3 = [b[1] - a[1], a[0] - b[0], 0];
+    return { normal, offset: normal[0] * a[0] + normal[1] * a[1] };
+  });
+  const clip = (p: readonly Vec2[], plane: ClipPlane, inside: boolean): Vec2[] =>
+    clipPolygon(
+      p.map(([x, y]) => [x, y, 0]),
+      plane,
+      inside,
+      1e-9,
+    ).map(([x, y]) => [x, y]);
+  if (!positive(planes.reduce((p, plane) => clip(p, plane, true), profile as Vec2[]))) {
+    return [profile as Vec2[]];
+  }
+  const pieces: Vec2[][] = [];
+  let remaining = profile;
+  for (const plane of planes) {
+    const outside = clip(remaining, plane, false);
+    if (positive(outside)) {
+      pieces.push(outside);
+    }
+    remaining = clip(remaining, plane, true);
+    if (!positive(remaining)) {
+      break;
+    }
+  }
+  return pieces;
+};
 const windowIntersectsProfile = (profile: readonly Vec2[], window: SectionWindow): boolean => {
   const values = profile.map((point) => point[window.sectionAxis]);
   return Math.max(...values) > window.section[0] + 1e-9 && Math.min(...values) < window.section[1] - 1e-9;
@@ -175,6 +221,51 @@ const subtractSectionWindows = (spec: WindowCutSpec, windows: readonly SectionWi
   });
 };
 
+const subtractPocketProfile = (profile: readonly Vec2[], pocket: SectionPocket): Vec2[][] => {
+  const insideY = clipBand(profile, 0, pocket.y[0], pocket.y[1]);
+  return [
+    clipProfile(profile, 0, pocket.y[0], true),
+    clipProfile(profile, 0, pocket.y[1], false),
+    clipProfile(insideY, 1, pocket.z[0], true),
+    clipProfile(insideY, 1, pocket.z[1], false),
+  ].filter(positive);
+};
+
+export const subtractAxialPockets = (solid: Solid, pockets: readonly SectionPocket[]): Solid[] => {
+  if (solid.kind !== 'extruded-polygon' || pockets.length === 0) {
+    return [solid];
+  }
+  const bounds = profileBounds(solid.profile);
+  const intersecting = pockets.filter(
+    ({ y, z }) => y[0] < bounds[0][1] && y[1] > bounds[0][0] && z[0] < bounds[1][1] && z[1] > bounds[1][0],
+  );
+  if (intersecting.length === 0) {
+    return [solid];
+  }
+  const cuts = [
+    ...new Set([
+      solid.z[0],
+      solid.z[1],
+      ...intersecting.flatMap(({ x }) => x).filter((edge) => edge > solid.z[0] && edge < solid.z[1]),
+    ]),
+  ].sort((a, b) => a - b);
+  return cuts.slice(0, -1).flatMap((start, span) => {
+    const end = cuts[span + 1]!;
+    const middle = (start + end) / 2;
+    const active = intersecting.filter(({ x }) => x[0] < middle && x[1] > middle);
+    let profiles = [solid.profile as Vec2[]];
+    for (const pocket of active) {
+      profiles = profiles.flatMap((profile) => subtractPocketProfile(profile, pocket));
+    }
+    return profiles.map((profile, region) => ({
+      ...solid,
+      id: `${solid.id}-pocket-span-${span}-region-${region}`,
+      profile,
+      z: [start, end] as const,
+    }));
+  });
+};
+
 const assertCavityWall = (spec: ReceiverSectionSpec): void => {
   const { y, z } = spec.cavity;
   const corners: readonly Vec2[] = [
@@ -239,7 +330,11 @@ const sectionAdapters = (spec: ReceiverSectionSpec): Solid[] => {
       mergeGroup: spec.id,
       ...(spec.clip ? { clipPlanes: spec.clip } : {}),
     });
-  return [adapter('rear', [spec.x[0], spec.x[0] + spec.wall]), adapter('front', [spec.x[1] - spec.wall, spec.x[1]])];
+  const [rear, front] = spec.cavity.x ?? [spec.x[0] + spec.wall, spec.x[1] - spec.wall];
+  if (rear < spec.x[0] + spec.wall || front > spec.x[1] - spec.wall || rear >= front) {
+    throw new Error(`${spec.id}: axial cavity must leave at least ${spec.wall}u wall thickness at each end.`);
+  }
+  return [adapter('rear', [spec.x[0], rear]), adapter('front', [front, spec.x[1]])];
 };
 
 const sectionBandSolids = (spec: ReceiverSectionSpec, name: string, profile: readonly Vec2[]): Solid[] => {
@@ -251,24 +346,83 @@ const sectionBandSolids = (spec: ReceiverSectionSpec, name: string, profile: rea
     ...(window ? [window] : []),
     ...(name === 'near-side' || name.endsWith('-near') ? (spec.portSlots ?? []) : []),
   ].filter((candidate) => windowIntersectsProfile(profile, candidate));
-  if (windows.length > 0) {
-    return subtractSectionWindows(
-      {
-        id: `${spec.id}-${name}`,
-        profile,
-        x: spec.x,
-        mergeGroup: spec.id,
-        ...(spec.clip ? { clip: spec.clip } : {}),
-      },
-      windows,
-    );
-  }
-  return [
-    prism(`${spec.id}-${name}`, profile, spec.x, {
-      mergeGroup: spec.id,
-      ...(spec.clip ? { clipPlanes: spec.clip } : {}),
-    }),
+  const sectionSolids =
+    windows.length > 0
+      ? subtractSectionWindows(
+          {
+            id: `${spec.id}-${name}`,
+            profile,
+            x: spec.x,
+            mergeGroup: spec.id,
+            ...(spec.clip ? { clip: spec.clip } : {}),
+          },
+          windows,
+        )
+      : [
+          prism(`${spec.id}-${name}`, profile, spec.x, {
+            mergeGroup: spec.id,
+            ...(spec.clip ? { clipPlanes: spec.clip } : {}),
+          }),
+        ];
+  return sectionSolids.flatMap((solid) => subtractAxialPockets(solid, spec.internalPockets ?? []));
+};
+
+const apertureCorners = (spec: ReceiverSectionSpec): Solid[] => {
+  const outlineClips = spec.outline.map(([y, z], i) => {
+    const [nextY, nextZ] = spec.outline[(i + 1) % spec.outline.length]!;
+    return { normal: [0, nextZ - z, y - nextY] as Vec3, offset: (nextZ - z) * y + (y - nextY) * z };
+  });
+  const apertures: readonly [SectionWindow | undefined, boolean][] = [
+    [spec.port, true],
+    [spec.farPort, false],
   ];
+  return apertures.flatMap(([port, near]) => {
+    const radius = port?.cornerU;
+    if (!(port && radius)) {
+      return [];
+    }
+    const [x0, x1] = port.x;
+    const [y0, y1] = port.section;
+    if (port.sectionAxis !== 0 || radius <= 0 || radius > Math.min(x1 - x0, y1 - y0) / 2) {
+      throw new Error(`${spec.id}: aperture corners require a fitting positive XY radius.`);
+    }
+    const zs = spec.outline.map((p) => p[1]);
+    const z: readonly [number, number] = near
+      ? [spec.cavity.z[1], Math.max(...zs)]
+      : [Math.min(...zs), spec.cavity.z[0]];
+    const corners: readonly (readonly Vec2[])[] = [
+      [
+        [x0, y0],
+        [x0 + radius, y0],
+        [x0, y0 + radius],
+      ],
+      [
+        [x0, y1 - radius],
+        [x0 + radius, y1],
+        [x0, y1],
+      ],
+      [
+        [x1 - radius, y0],
+        [x1, y0],
+        [x1, y0 + radius],
+      ],
+      [
+        [x1, y1 - radius],
+        [x1, y1],
+        [x1 - radius, y1],
+      ],
+    ];
+    return corners.map(
+      (profile, i): Solid => ({
+        id: `${spec.id}-${near ? 'near' : 'far'}-port-corner-${i}`,
+        kind: 'extruded-polygon',
+        profile,
+        z,
+        clip: outlineClips,
+        display: { bevel: false, outline: false, mergeGroup: spec.id },
+      }),
+    );
+  });
 };
 
 /**
@@ -283,8 +437,9 @@ export const buildReceiverSection = (spec: ReceiverSectionSpec): Solid[] => {
   }
   assertCavityWall(spec);
   const result = [
-    ...sectionAdapters(spec),
+    ...sectionAdapters(spec).flatMap((solid) => subtractAxialPockets(solid, spec.internalPockets ?? [])),
     ...sectionBands(spec).flatMap(([name, profile]) => sectionBandSolids(spec, name, profile)),
+    ...apertureCorners(spec),
   ];
   return splitAt(result, [spec.x[1] - spec.wall]).filter(
     (solid) => solid.kind !== 'extruded-polygon' || clippedExtrudedPolygonPolyhedron(solid) !== undefined,

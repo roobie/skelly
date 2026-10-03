@@ -7,17 +7,11 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import {
   type BlockDef,
+  CONTENT_SECTION_KEYS,
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
-  type FigureDef,
-  type FurnitureDef,
-  type ItemDef,
-  type LootTable,
-  type ModelDef,
-  type SoundDef,
   type TemplateDef,
-  type ZombieDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { findPieces, pieceSize } from './templates.ts';
@@ -30,6 +24,8 @@ export type {
   LootEntry,
   LootTable,
   ModelDef,
+  RecipeDef,
+  SkillDef,
   SoundDef,
   TemplateDef,
   ZombieDef,
@@ -47,18 +43,14 @@ export interface ContentIssue {
   message: string;
 }
 
-export interface Registry {
+type RegistryMaps = {
+  [S in Exclude<ContentSection, 'blocks'>]: Map<string, NonNullable<ContentFile[S]>[number]>;
+};
+
+export interface Registry extends RegistryMaps {
   /** Index is the runtime block id stored in chunks. Index 0 is always air. */
   blocks: BlockDef[];
   blockIds: Map<string, number>;
-  items: Map<string, ItemDef>;
-  furniture: Map<string, FurnitureDef>;
-  figures: Map<string, FigureDef>;
-  loot: Map<string, LootTable>;
-  templates: Map<string, TemplateDef>;
-  zombies: Map<string, ZombieDef>;
-  models: Map<string, ModelDef>;
-  sounds: Map<string, SoundDef>;
   /** Where each model was defined; its file is a path within that content file's pack. */
   modelOrigins: Map<string, { source: string; path: string }>;
   /** Where each sound event was defined; variant paths are relative to this content file's pack. */
@@ -67,17 +59,8 @@ export interface Registry {
 
 export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
-const SECTIONS: readonly ContentSection[] = [
-  'blocks',
-  'items',
-  'furniture',
-  'figures',
-  'loot',
-  'templates',
-  'zombies',
-  'models',
-  'sounds',
-];
+const SECTIONS = CONTENT_SECTION_KEYS;
+const RECIPE_COMBINATION_CAP = 1024n;
 
 // ---- shape (one file) ----
 
@@ -162,6 +145,15 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
   (file.templates ?? []).forEach((template, i) => {
     out.push(...templateIssues(template, `templates[${i}]`));
   });
+  (file.recipes ?? []).forEach((recipe, i) => {
+    const combinations = recipe.components.reduce((count, group) => count * BigInt(group.length), 1n);
+    if (combinations > RECIPE_COMBINATION_CAP) {
+      out.push([
+        `recipes[${i}].components`,
+        `${combinations} component combinations exceeds maximum ${RECIPE_COMBINATION_CAP}`,
+      ]);
+    }
+  });
   if (source.endsWith('/models-melee.json') || source === 'models-melee.json') {
     (file.models ?? []).forEach((model, i) => {
       if (model.hold === undefined) {
@@ -197,16 +189,12 @@ interface Origin {
 }
 
 const emptyRegistry = (): Registry => ({
+  // Object.fromEntries loses key-specific types; every ordinary section receives its native map.
+  ...(Object.fromEntries(
+    SECTIONS.filter((section) => section !== 'blocks').map((section) => [section, new Map()]),
+  ) as RegistryMaps),
   blocks: [AIR],
   blockIds: new Map([[AIR.id, 0]]),
-  items: new Map(),
-  furniture: new Map(),
-  figures: new Map(),
-  loot: new Map(),
-  templates: new Map(),
-  zombies: new Map(),
-  models: new Map(),
-  sounds: new Map(),
   modelOrigins: new Map(),
   soundOrigins: new Map(),
 });
@@ -228,17 +216,11 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       }
       note('blocks', block.id, source, i);
     });
-    const maps = [
-      ['items', registry.items],
-      ['furniture', registry.furniture],
-      ['figures', registry.figures],
-      ['loot', registry.loot],
-      ['templates', registry.templates],
-      ['zombies', registry.zombies],
-      ['models', registry.models],
-      ['sounds', registry.sounds],
-    ] as const;
-    for (const [section, map] of maps) {
+    for (const section of SECTIONS) {
+      if (section === 'blocks') {
+        continue;
+      }
+      const map = registry[section];
       (file[section] ?? []).forEach((def, i) => {
         (map as Map<string, typeof def>).set(def.id, def);
         note(section, def.id, source, i);
@@ -360,6 +342,39 @@ const checkZombies = (registry: Registry, report: Report) => {
   }
 };
 
+const checkRecipes = (registry: Registry, report: Report) => {
+  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
+  const workstations = new Set(
+    [...registry.furniture.values()].flatMap((furniture) => (furniture.workstation ? [furniture.workstation.id] : [])),
+  );
+  for (const recipe of registry.recipes.values()) {
+    const checkItem = (id: string, path: string) => {
+      if (!registry.items.has(id)) {
+        report('recipes', recipe.id, path, `no item "${id}"`);
+      }
+    };
+    checkItem(recipe.result.item, '.result.item');
+    recipe.components.forEach((group, g) => {
+      group.forEach((component, c) => {
+        checkItem(component.item, `.components[${g}][${c}].item`);
+      });
+    });
+    for (const id of Object.keys(recipe.skills)) {
+      if (!registry.skills.has(id)) {
+        report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
+      }
+    }
+    for (const id of Object.keys(recipe.qualities)) {
+      if (!qualities.has(id)) {
+        report('recipes', recipe.id, `.qualities.${id}`, `no tool quality "${id}"`);
+      }
+    }
+    if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
+      report('recipes', recipe.id, '.workstation', `no workstation "${recipe.workstation}"`);
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -371,6 +386,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkFurniture(registry, report);
   checkTemplates(registry, report);
   checkZombies(registry, report);
+  checkRecipes(registry, report);
   return issues;
 };
 

@@ -4,11 +4,11 @@ import {
   ACTION_CYCLE_PROFILES,
   cycleMotion,
   ejectionDirection,
-  ejectionPoint,
   type GunAction,
   sweepMovingPart,
 } from '../src/gun/cycle.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { ejectionPoint } from '../src/gun/ejection.ts';
 import { loadFixture } from './helpers.ts';
 
 const resolvedFixture = (name: string) => resolve(loadFixture(name), gunDomain);

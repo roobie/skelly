@@ -26,6 +26,7 @@ import { DEFAULT_REVOLVE_FACETS, MAX_REVOLVE_FACETS, MIN_REVOLVE_FACETS } from '
 import type { Assembly, Connection } from '../core/schema.ts';
 import type { Template } from '../core/template.ts';
 import { type Report, validate } from '../core/validate.ts';
+import { actionOpenOffsets, resolveGunAction } from '../gun/actionDescription.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
@@ -171,6 +172,7 @@ const syncUrl = () => {
   const ammo = initialQuery.get('ammo');
   const ammoCase = initialQuery.get('ammoCase');
   const mag = initialQuery.get('mag');
+  const pose = initialQuery.get('pose');
   const viewerQuery = new URLSearchParams(location.search);
   const cycle = viewerQuery.get('cycle');
   const cycleSpeed = Number(viewerQuery.get('cycleSpeed'));
@@ -188,6 +190,9 @@ const syncUrl = () => {
   }
   if (mag) {
     params.set('mag', mag);
+  }
+  if (pose === 'action-open') {
+    params.set('pose', pose);
   }
   if (revolveFacets !== DEFAULT_REVOLVE_FACETS) {
     params.set('facets', String(revolveFacets));
@@ -366,6 +371,7 @@ const redraw = () => {
       disposeGroup(g);
     }
   }
+  const action = resolveGunAction(report.resolved);
   const contextTemplate = editorState?.template ?? activeTemplate;
   layers = buildLayers(
     report,
@@ -376,12 +382,13 @@ const redraw = () => {
       ...(editorState?.finish ? { finish: editorState.finish } : {}),
     },
     revolveFacets,
+    initialQuery.get('pose') === 'action-open' ? actionOpenOffsets(action) : new Map(),
   );
   for (const [name, group] of Object.entries(layers)) {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
-  cycleView.bind(layers.solids, report.resolved);
+  cycleView.bind(layers.solids, report.resolved, action);
   if (ammoMeshes) {
     scene.add(ammoMeshes.loose, ammoMeshes.fired);
     placeAmmo(report);
@@ -541,7 +548,12 @@ const renderPanel = (assembly: Assembly) => {
     verdict = `<span class="fail">FAIL</span> <span class="note">(${report.issues.length} issue${report.issues.length === 1 ? '' : 's'})</span>`;
   }
   const note = expectationNote(expected, failed);
-  status.innerHTML = verdict + note;
+  const actionOpen =
+    initialQuery.get('pose') === 'action-open' && actionOpenOffsets(resolveGunAction(report.resolved)).size > 0;
+  const poseNote = actionOpen
+    ? '<span class="note"> · view-only full-rearward pump pose; validation and export remain at rest</span>'
+    : '';
+  status.innerHTML = verdict + note + poseNote;
 
   issueList.replaceChildren(
     ...report.issues.map((issue, index) => {
@@ -1343,6 +1355,7 @@ saveButton.addEventListener('click', () => {
 
 // ?fixture=<name> opens a fixture; ?design=<name> loads a curated design;
 // ?template=<name>&seed=<n> generates one. AK/AR views also accept ?cycle=fire|hand&cycleSpeed=0.02.
+// `&pose=action-open` is a pump-only, view-only full rearward pose.
 // Each can add &set=<part.param:value,...> to override params, or
 // &set=<part:on|off> to force an optional part in or out (paramPanel.ts).
 const query = new URLSearchParams(location.search);

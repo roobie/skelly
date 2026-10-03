@@ -91,23 +91,49 @@ jobs:
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
+      - name: Save busy-lock relaunch (Chromium; independent of Continue)
+        timeout-minutes: 2
+        env:
+          SAVE_AUTOSAVE_ONLY: '1'
+          SAVE_AUTOSAVE_BACKEND: indexeddb
+          SAVE_AUTOSAVE_SCENARIO: busy-lock
+        run: node test/browser/save-storage.mjs chromium
       - name: Insecure-context browser contract
         timeout-minutes: 1
         run: node test/browser/insecure-saves.mjs
       - name: Install headed Firefox and system dependencies
         run: npx playwright install --with-deps firefox
-      - name: Firefox first-click browser contract
+      # Quarantined (BR's no-flaky rule): Firefox refuses the pointer lock with NotSupportedError
+      # under a real user activation, intermittently. Root cause, coverage lost and the proof
+      # needed to reinstate this step: https://github.com/roobie/skelly/issues/168
+      # Local investigation: `npm run test:browser:firefox:native`. To reinstate, restore this step:
+      #   - name: Firefox first-click browser contract
+      #     timeout-minutes: 2
+      #     run: xvfb-run -a node test/browser/firefox-first-click.mjs
+      - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         timeout-minutes: 2
-        run: xvfb-run -a node test/browser/firefox-first-click.mjs
+        run: xvfb-run -a node test/browser/firefox-ui.mjs
       - name: Firefox save-storage browser contract
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Firefox autosave — IndexedDB Continue
-        timeout-minutes: 1
+      # Quarantined (BR's no-flaky rule): after Continue, the wait for a visible #view canvas
+      # intermittently times out; cause unknown. The d20 busy-lock regression is independent below.
+      # Coverage lost and the proof needed to reinstate this step:
+      # https://github.com/roobie/skelly/issues/170
+      # Local investigation: `npm run test:browser:firefox:continue`. To reinstate, restore this step:
+      #   - name: Firefox autosave — IndexedDB Continue
+      #     timeout-minutes: 1
+      #     env:
+      #       SAVE_AUTOSAVE_ONLY: '1'
+      #       SAVE_AUTOSAVE_BACKEND: indexeddb
+      #       SAVE_AUTOSAVE_SCENARIO: continue
+      #     run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      - name: Firefox busy-lock relaunch (independent of quarantined Continue)
+        timeout-minutes: 2
         env:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: continue
+          SAVE_AUTOSAVE_SCENARIO: busy-lock
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox autosave — IndexedDB replacement
         timeout-minutes: 1

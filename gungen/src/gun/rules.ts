@@ -332,25 +332,31 @@ const solidBounds = (solid: Solid): { min: Vec3; max: Vec3 } => {
   const [min, max] = localSolidBounds(solid);
   return { min, max };
 };
-const rangesOverlap = (a: { min: Vec3; max: Vec3 }, b: { min: Vec3; max: Vec3 }): boolean =>
-  [0, 1, 2].every((axis) => a.max[axis]! > b.min[axis]! + 1e-8 && b.max[axis]! > a.min[axis]! + 1e-8);
 const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, Solid>): boolean => {
   const top = guards.get('trigger-guard-top');
   const rear = guards.get('trigger-guard-rear');
   const front = guards.get('trigger-guard-front');
   const bottom = guards.get('trigger-guard-bottom');
-  if (![top, rear, front, bottom].every((solid) => solid?.kind === 'box')) {
+  if (![top, rear, front, bottom].every((solid) => solid && solid.kind !== 'revolved')) {
     return false;
   }
-  const topBounds = solidBounds(top as Extract<Solid, { kind: 'box' }>);
-  const rearBounds = solidBounds(rear as Extract<Solid, { kind: 'box' }>);
-  const frontBounds = solidBounds(front as Extract<Solid, { kind: 'box' }>);
-  const bottomBounds = solidBounds(bottom as Extract<Solid, { kind: 'box' }>);
+  const topBounds = solidBounds(top!);
+  const rearBounds = solidBounds(rear!);
+  const frontBounds = solidBounds(front!);
+  const bottomBounds = solidBounds(bottom!);
   const fingerBounds = solidBounds({ id: 'trigger-guard-finger', kind: 'box', box: fingerBox });
   const close = (a: number, b: number) => Math.abs(a - b) <= 1e-8;
   const rearClearance = fingerBounds.min[0] - rearBounds.max[0];
   const frontClearance = frontBounds.min[0] - fingerBounds.max[0];
   const zBounds = [topBounds, rearBounds, frontBounds, bottomBounds];
+  const fingerWorld = worldSolid(IDENTITY, { id: 'trigger-finger', kind: 'box', box: fingerBox });
+  const worldGuards = [top, rear, front, bottom].map((solid) => worldSolid(IDENTITY, solid!));
+  const connected = [
+    [0, 1],
+    [0, 2],
+    [3, 1],
+    [3, 2],
+  ].every(([a, b]) => distanceWorld(worldGuards[a!]!, worldGuards[b!]!) <= 1e-8);
   return (
     rearClearance > 1e-8 &&
     close(rearClearance, frontClearance) &&
@@ -358,18 +364,16 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
     close(topBounds.max[1], fingerBounds.max[1] + TRIGGER_GUARD.verticalWall) &&
     close(bottomBounds.max[1], fingerBounds.min[1]) &&
     close(bottomBounds.min[1], fingerBounds.min[1] - TRIGGER_GUARD.verticalWall) &&
-    close(topBounds.min[0], rearBounds.min[0]) &&
-    close(topBounds.max[0], frontBounds.max[0]) &&
-    close(bottomBounds.min[0], rearBounds.min[0]) &&
-    close(bottomBounds.max[0], frontBounds.max[0]) &&
-    close(rearBounds.min[1], bottomBounds.min[1]) &&
-    close(rearBounds.max[1], topBounds.max[1]) &&
-    close(frontBounds.min[1], bottomBounds.min[1]) &&
-    close(frontBounds.max[1], topBounds.max[1]) &&
+    connected &&
+    [topBounds, bottomBounds].every(
+      (bounds) =>
+        bounds.min[0] >= rearBounds.min[0] - 1e-8 &&
+        bounds.min[0] <= rearBounds.max[0] + 1e-8 &&
+        bounds.max[0] >= frontBounds.min[0] - 1e-8 &&
+        bounds.max[0] <= frontBounds.max[0] + 1e-8,
+    ) &&
     zBounds.every((bounds) => close(bounds.min[2], topBounds.min[2]) && close(bounds.max[2], topBounds.max[2])) &&
-    [top, rear, front, bottom].every(
-      (solid) => !rangesOverlap(solidBounds(solid as Extract<Solid, { kind: 'box' }>), fingerBounds),
-    )
+    worldGuards.every((guard) => penetrationWorld(guard, fingerWorld) <= 1e-8)
   );
 };
 
@@ -415,8 +419,8 @@ const triggerGuardContactIssue = (
     break;
   }
   for (const path of def.keepOuts.filter(({ id }) => id !== 'trigger-finger')) {
-    const pathBounds = solidBounds({ id: 'action-handle-path', kind: 'box', box: path.box });
-    if (guardSolids.some((guard) => guard.kind === 'box' && rangesOverlap(solidBounds(guard), pathBounds))) {
+    const pathWorld = worldSolid(IDENTITY, { id: 'action-handle-path', kind: 'box', box: path.box });
+    if (guardSolids.some((guard) => penetrationWorld(worldSolid(IDENTITY, guard), pathWorld) > 1e-8)) {
       return `${part}'s trigger guard crosses the ${path.id} keep-out.`;
     }
   }

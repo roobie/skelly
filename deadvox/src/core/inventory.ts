@@ -285,12 +285,6 @@ export class Inventory {
     return this.piles.get(pileKey(pos));
   }
 
-  /** Piles whose block is within `radius` blocks of `pos`, nearest first. */
-  pilesNear(pos: Vec3, radius: number): Pile[] {
-    const dist = (p: Pile) => Math.hypot(p.pos[0] + 0.5 - pos[0], p.pos[1] - pos[1], p.pos[2] + 0.5 - pos[2]);
-    return [...this.piles.values()].filter((p) => dist(p) <= radius).sort((a, b) => dist(a) - dist(b));
-  }
-
   /** The grid of a pocket, from the owner's type. */
   pocketGrid(owner: Item, pocket: number): GridSize {
     const spec = defOf(this.registry, owner.type).container?.pockets[pocket];
@@ -405,7 +399,7 @@ export class Inventory {
           return slot && !this.worn[slot] ? { ok: true as const, time: 0 } : refuse('full');
         }
         default:
-          return this.gridPlacement(item, item.count, this.gridOf(target), target.at);
+          return this.gridPlacement(item, item.count, this.gridOf(target), target);
       }
     })();
     if (!placement.ok) {
@@ -517,10 +511,21 @@ export class Inventory {
     return place?.kind !== 'furniture' || place.entity.searched;
   }
 
-  private roots(): Item[] {
-    const inPiles = [...this.piles.values()].flatMap((p) => p.items.map((placed) => placed.item));
-    const inFurniture = [...this.entities.all].flatMap((e) => (e.pockets ?? []).flat().map((placed) => placed.item));
-    return [...this.carried(), ...inPiles, ...inFurniture];
+  private *roots(): IterableIterator<Item> {
+    // UID resolution is also used for held lights every frame; do not collect the whole world first.
+    yield* this.carried();
+    for (const pile of this.piles.values()) {
+      for (const placed of pile.items) {
+        yield placed.item;
+      }
+    }
+    for (const entity of this.entities.all) {
+      for (const pocket of entity.pockets ?? []) {
+        for (const placed of pocket) {
+          yield placed.item;
+        }
+      }
+    }
   }
 
   private searchPockets(owner: Item, item: Item): Location | undefined {
@@ -563,10 +568,10 @@ export class Inventory {
         if (!this.locate(target.owner)) {
           return refuse("You can't reach that");
         }
-        return this.gridPlacement(item, count, this.gridOf(target), target.at);
+        return this.gridPlacement(item, count, this.gridOf(target), target);
       }
       default:
-        return this.gridPlacement(item, count, this.gridOf(target), target.at);
+        return this.gridPlacement(item, count, this.gridOf(target), target);
     }
   }
 
@@ -609,8 +614,14 @@ export class Inventory {
     }
   }
 
-  private gridPlacement(item: Item, count: number, grid: GridState, at?: Spot): Plan {
-    if (!isEmpty(item)) {
+  private gridPlacement(
+    item: Item,
+    count: number,
+    grid: GridState,
+    target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
+  ): Plan {
+    const { at } = target;
+    if (target.kind !== 'pile' && !isEmpty(item)) {
       return refuse('Only empty bags go inside other containers');
     }
     if (!couldFit(this.registry, grid.size, item)) {

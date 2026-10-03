@@ -35,8 +35,9 @@ cartridges only. Calibre is a gameplay identity, because ammo must match the
 gun, not a brand, and a standard (C.I.P., SAAMI) fixes a cartridge's dimensions
 rather than a designer choosing them. Guns keep size classes. Every cartridge
 dimension carries its source, and a value that can't be sourced stays empty.
-Tracked in roobie/skelly#109: data first, then geometry, viewer and export. The
-data format is described in `cartridges/README.md`.
+Tracked in roobie/skelly#109: data first, then cartridge solids, viewer and export.
+The pump-action clearance model may consume a cited loaded-shell length without
+adding shell geometry. The data format is described in `cartridges/README.md`.
 
 ## Decisions
 
@@ -904,10 +905,14 @@ Decisions where the plan left representation open:
   additions to `DeadvoxModelEntry` are optional. `anchors.ejection` is a plain
   `[x, y, z]` point in metres in model coordinates (`+x` forward, `+y` up,
   `+z` right). `action.ejectDirection` is a unit `[x, y, z]` vector in the same frame.
-  `action.parts` maps roles such as `carrier` to `{ node, axis, strokeMetres }`:
+  `action.parts` maps roles such as `carrier` and `handle` to `{ node, axis, strokeMetres, modes }`:
   `node` is the exact GLB node name `<part id>:<registry key>`, `axis` is a
   unit travel vector in model coordinates, and `strokeMetres` is the travel
-  length in metres. `action.fire` and `action.hand` each contain
+  length in metres. Required `modes` is a nonempty, distinct list of `fire`/`hand`
+  timing references: a node follows the corresponding shared timeline, and
+  stays home in modes not listed. The AR carrier follows both; its separate
+  T-handle follows only `hand`. The AK's handle remains geometry on the carrier
+  node and follows both. `action.fire` and `action.hand` each contain
   `durationSeconds`, `rearwardSeconds`, `dwellSeconds`, and `forwardSeconds`,
   all in seconds. `action.ejectAt` is a stroke fraction; `action.holdOpen` is a
   boolean; `action.rpm` is rounds per minute. `action.ejectAt` and
@@ -917,6 +922,16 @@ Decisions where the plan left representation open:
   for visual tuning, not physical simulation. These fields are emitted only
   when the design declares a supported AK/AR action. No angles are present in
   this contract; any angle added later uses degrees, never radians.
+  Node names are exact glTF names, not Three.js `Object3D.name` (which sanitizes
+  colons). Match the name in `parser.json.nodes`, then find its loaded object
+  using `parser.associations`' node index.
+  Gun-owned `resolveGunAction` owns discovery, world travel, coupled roles and
+  cycle/ejection data for viewer and exporter. It also owns the pump's
+  carrier/forend open-pose pairing; this remains presentation-only and does not
+  move validation/export geometry or invent a pump firing timeline.
+  The AR handle is a separate `ar-charging-handle` family. Its thin shaft and
+  finger grips are authored on a 0.05u grid; an enclosed upper channel preserves
+  the 0.5u roof skin and clears its continuous 6.5u stroke.
 - `Suggest` takes `effectiveLocks`, precomputed by the caller from design
   locks plus only the fixed parameter names of referenced prefabs; core does
   not import or need a gun catalogue, and unrelated prefab params remain
@@ -1300,8 +1315,9 @@ not part of the export's acceptance:
 - trapezoidal side profiles for stocks and pistol grips (BR, 2026-09-28;
   split into gungen.7 stock and deferred grip). The stock family now offers a
   `tapered` style, and the pump-shotgun opts in with M/L lengths; the other
-  existing stock styles stay unchanged. It is a constant-width side profile
-  using the current extruded-polygon solid:
+  existing stock styles stay unchanged. The 870 follow-up uses authored curved
+  side profiles partitioned into convex extruded-polygon cells, with clipped side
+  planes for width taper; no new solid kind is needed:
   - **stock — done** (reference `.agent-mail/scratch/br-ref-stock-taper.png`,
     an 870-style wood stock): a narrow wrist at the receiver that widens to a
     tall butt; the comb line drops toward the butt while the belly line runs
@@ -1310,8 +1326,8 @@ not part of the export's acceptance:
     AR-style): raked, with slanted front and back faces rather than a
     constant-width slab.
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
-  `FIRING_GRIP` role, and every existing rule passing. Tapering in width (narrower
-  at the wrist from above) would need a new convex solid kind and is not asked for;
+  `FIRING_GRIP` role, and every existing rule passing. The follow-up narrows the
+  wrist in width as well as height, using those existing clipping planes;
 - visible action details (BR, 2026-09-28; three basics done): receivers with
   ejection keep-outs have a real opening; side/rear-top charging handles and
   bolt handles touch the rest face of their travel volumes. The domain's
@@ -1325,8 +1341,50 @@ not part of the export's acceptance:
   and its bounds are the bolt-carrier face bounds plus 0.25u on every side; the
   port and ejection keep-out derive from one clearance definition. Pump receiver
   ports follow the lowered carrier face. The far wall closes the cavity, with
-  the carrier face above the magazine path. Revolver receivers have no ejection
-  keep-out and remain solid; the pistol frame/slide are separate parts.
+  the carrier face above the magazine path. For the pump shotgun, Federal PFC154 00
+  is the representative shell; SAAMI's longer rolled-closed length (62.23 mm =
+  5.411u at 11.5 mm/u) sizes a 5.5u (63.25 mm) grid-rounded action stroke. The
+  port minimum is loaded length plus 0.25u end clearance at both ends (5.911u);
+  the carrier-derived aperture is 6.75u wide. BR required receiver elongation,
+  not a rear closure patch (2026-10-02). The receiver grows 3.5u forward, moving
+  the carrier rest anchor to -3u and its port, barrel, tube and forend together.
+  At full stroke the carrier rear is -11.5u, 0.5u ahead of the full-height
+  section's -12u rear boundary. The rear transition retains its 4u run and
+  1.5u rise; the axial cavity stops ahead of it so the receiver's own rear wall
+  closes it without a wedge. The flat rail also starts at -12u, and the stock
+  contact stays at [-16, -1, 0]. The 870 restyle (g31c-2) narrows the pump
+  section from 4u to 3u and rounds its own roof with three facets. Its port
+  uses the section builder's optional 0.5u faceted corners within the existing
+  ejection envelope. Sectioned shells mount the tube on their actual front
+  wall, without the old hanging box-shell bridge. The lower is a 0.5u trigger
+  plate with a 4u-wide, 2u-high faceted loop and a visible trigger. Shared
+  `tapered` / `tapered-sawed` stock profiles merge their wood surfaces; the
+  full stock is about 1.7 receiver lengths. Its cubic top saddle is 0.5u deep;
+  the circular throat has radius 5.55u and a 71.08° sweep, followed by tangent
+  cubic rounding into the grip knob and an underside rise into the straight belly.
+  The comb drops 6° toward the heel; the shoulder face pitches 4.5°, heel aft of toe.
+  Hand geometry stays absolute across S/M/L; butt heights are 10/10.5/11u. Curved
+  width transitions and a 1.75u-wide wrist avoid a slab-like neck. Finish merges the
+  convex cells; diagnostic colours retain authored component roles. The viewer uses
+  Three.js's native 30° crease threshold on this wood to avoid drawing cell facets
+  as black seams; metal retains its usual edge threshold. The original 5u–7u
+  wrist-front-to-trigger clearance stays 5.5u; the authored palm datum is inside the
+  grip, above the index-finger centre, and also within 7u of it. Source and estimated proportions:
+  `src/gun/shotgunProportions.ts`; physical/silhouette proof:
+  `test/pumpReference.test.ts`, `test/stockErgonomics.test.ts`, and
+  `test/receiverSection.test.ts`. AR/AK stock and lower geometry, and the
+  approved pump barrel and tube, are unchanged. The forend grows to a photo-derived
+  19u maximum length and 2.4u outer radius, capped by available tube length and the
+  fixed cap. Barrel grooves and swept support-band pockets provide real clearance;
+  an exact axial swept-volume test covers the whole 5.5u stroke against every fixed
+  barrel/tube solid. The template uses 100% tubes on short barrels and 75/100% on
+  longer barrels to leave room for hand-sized furniture. The pump roof cannot
+  go below 1.35u above bore (0.85u cavity roof plus 0.5u minimum skin); it
+  stays on the 1.5u grid station, only 0.25u above the L-bore barrel. The 62.23 mm
+  figure is a conservative standard envelope, not a claim about Federal's
+  unspecified crimp. See `cartridges/12-gauge-00-buck.json` and
+  `test/boltCarrier.test.ts`. Revolver receivers have no ejection keep-out and
+  remain solid; the pistol frame/slide are separate parts.
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
 - **Deferred (BR, 2026-09-30):** revolute `PartMotion` for lifting the bolt handle
