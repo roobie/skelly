@@ -47,6 +47,15 @@
       "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; round includes the projectile and case, case includes the fired case and primer"
     },
     {
+      "title": "Gungen 12-gauge shotshell exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/12-gauge-00-buck.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/round-12_h_gauge_h_00_h_buck.glb", "assets/models/case-12_h_gauge_h_00_h_buck.glb"],
+      "changes": "Original project-built geometry, sourced external mm dimensions converted to metres. Unknown closure uses a labelled generic roll-crimp visual proxy at the conservative loaded envelope; fired hull is open. Wall, lip, closure card and plastic/brass look are visual approximations, not manufacturer data; unsourced primer omitted. See gungen/docs/shotshell-export.md."
+    },
+    {
       "title": "15 vocal male strain/hurt/pain/jump sounds",
       "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds",
       "author": "qubodup",

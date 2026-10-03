@@ -101,6 +101,7 @@ export const ITEM_CATEGORIES = [
   'bag',
   'light',
   'battery',
+  'ammo',
   'material',
   'book',
   'misc',
