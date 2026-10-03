@@ -110,6 +110,33 @@ describe('debug firearm handling', () => {
     });
   });
 
+  it('uses the 5.56/600-rpm stand-in when an admitted firearm model has no calibre', () => {
+    const fixture = buildRegistry([
+      {
+        source: 'no-calibre-fixture.json',
+        data: {
+          models: [{ id: 'pistol_full', file: 'assets/models/pistol_full.glb' }],
+          items: [
+            {
+              id: 'unannotated_gun',
+              name: 'Unannotated gun',
+              category: 'weapon',
+              weight: 1000,
+              size: [1, 1],
+              model: 'pistol_full',
+            },
+          ],
+        },
+      },
+    ]);
+    expect(fixture.issues).toEqual([]);
+    expect(fixture.registry.models.get('pistol_full')!.calibre).toBeUndefined();
+    const inventory = new Inventory(fixture.registry);
+    expect(firearmHandlingFor(inventory.create('unannotated_gun'), fixture.registry)).toEqual(
+      FIREARM_HANDLING_STAND_IN,
+    );
+  });
+
   it('does not fire outside debug mode', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const { version } = inventory;
