@@ -11,7 +11,7 @@ on:
   pull_request:
     paths-ignore: ['**/*.md']
 
-# Unique non-PR groups preserve pending main and manual runs.
+# PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
