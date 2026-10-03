@@ -33,7 +33,13 @@ retrieval-seconds, smaller-stack, worse-condition, UID order. A partial retrieva
 costs one stack handling operation. Filled containers are not component stock.
 Tools remain in place; their UIDs cannot also supply components. A single tool
 can satisfy several qualities. Tool selection considers competing component
-stock, rather than blindly reserving the first provider.
+stock, rather than blindly reserving the first provider. Provider search groups
+consumed tools by type, stack quantity, retrieval cost and component eligibility;
+condition/UID dominance preserves preferred component stock. Each class retains
+only as many representatives as its type can supply required qualities. Keeping
+more than one matters when several reservations change greedy stack allocation.
+Equivalent reserved-UID sets are visited once per quality prefix, not once per
+provider tuple. No feasible plan is rejected by a search-budget cutoff.
 
 Gather time is in **game seconds** (`handlingTime * CLOCK_RATIO`); work time is
 recipe game minutes times 60. Skill speed bonuses arrive in 2.5, not here.
@@ -73,6 +79,9 @@ quickbar and furniture controls protect the unchanged ownership semantics.
 `test/crafting.test.ts` covers competing groups, preference, tool/component
 separation, stack ordering, filled-container exclusion, missing requirements,
 and records all base-recipe timings on one indexed 200-item reach snapshot.
+One overlapping four-quality case has a deterministic operation-count control,
+varied conditions, shared tool UIDs and a cheapest-allocation guard against
+incorrectly collapsing a provider class to just one representative.
 `test/snapshot.test.ts` round-trips changed skill/knowledge state and signed zero
 without mutating live state. Controlled mutation evidence and measurements are
 retained under `.agent-mail/scratch/d31-*`.

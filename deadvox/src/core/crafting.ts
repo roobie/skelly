@@ -197,8 +197,9 @@ function* toolSelections(
   );
   // A type can reserve at most one UID per quality it supplies. Keep that many
   // representatives, not just one: multiple reservations can change greedy stack
-  // allocation. Within an equivalent class, reserving larger UIDs leaves strictly
-  // preferred component UIDs available at identical quantities/condition/cost.
+  // allocation. At equal quantities/cost, reserve the better-condition/larger-UID
+  // members so strictly preferred component members remain available. Condition
+  // changes ordering, not provided quality levels (usable providers are already indexed).
   const limits = new Map<string, number>();
   for (const candidates of providers) {
     for (const type of new Set(candidates.map(({ entry }) => entry.item.type))) {
@@ -214,19 +215,13 @@ function* toolSelections(
       if (!requirements.has(entry.item.type)) {
         continue;
       }
-      const key = JSON.stringify([
-        entry.item.type,
-        entry.item.count,
-        entry.item.condition,
-        entry.handlingTime,
-        isEmpty(entry.item),
-      ]);
+      const key = JSON.stringify([entry.item.type, entry.item.count, entry.handlingTime, isEmpty(entry.item)]);
       const group = classes.get(key) ?? [];
       group.push(entry);
       classes.set(key, group);
     }
     const retained = [...classes.values()].flatMap((group) =>
-      group.sort((a, b) => b.item.uid - a.item.uid).slice(0, limits.get(group[0]!.item.type)!),
+      group.sort((a, b) => stackTie(b.item, a.item)).slice(0, limits.get(group[0]!.item.type)!),
     );
     return free ? [free.entry, ...retained] : retained;
   });

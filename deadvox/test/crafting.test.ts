@@ -77,8 +77,10 @@ describe('pure craft planner', () => {
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
     const types = ['crowbar', 'kitchen_knife', 'can_opener'];
     for (let i = 0; i < 199; i += 1) {
+      const item = inventory.create(types[i % 3]!);
+      item.condition = (i + 1) / 200;
       expect(
-        inventory.add(inventory.create(types[i % 3]!), {
+        inventory.add(item, {
           kind: 'pocket',
           owner: bag,
           pocket: 0,
