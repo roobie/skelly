@@ -81,7 +81,8 @@ writes `$HOME/.config/systemd/user.control/agents-review.slice.d/50-Memory*.conf
 `host.conf` sorts after those files and wins at the next `daemon-reload`. A raise made only
 with `set-property` reverts on reload, as it did once on 2026-10-03. Change `host.conf`
 together with any `set-property`. `systemctl --user cat` exposes both. Capacity checks
-must use effective properties, not one stale drop-in. None was edited.
+must use effective properties, not one stale drop-in. No limits were edited during the
+original measurement.
 
 ## Agent-session memory
 
