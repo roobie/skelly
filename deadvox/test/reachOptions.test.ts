@@ -133,6 +133,7 @@ describe('handling move admission', () => {
           return result.reason;
         }
       }
+      return undefined;
     });
     t.queue.enqueueAction('fixture.change', 'Change item', 1);
     const move = t.queue.enqueue(item, target);
