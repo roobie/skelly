@@ -9,6 +9,7 @@ import type { AnchorFrame } from '../core/design.ts';
 import { add, extrusionPoint, type Vec3 } from '../core/math.ts';
 import type { PartDef, RevolvedSolid, Solid } from '../core/schema.ts';
 import type { GunAnchorDeclarations, GunPartAnchors } from './anchors.ts';
+import { localEjectionPoint } from './ejection.ts';
 import { FIRING_GRIP } from './parts.ts';
 import { REVOLVER_GRIP_RAKE_DEGREES } from './revolver.ts';
 
@@ -77,13 +78,8 @@ const gripHoldPoint = (s: Solid): Vec3 => {
 const frameAt = (position: Vec3, forward: Vec3 = X, up: Vec3 = Y): AnchorFrame => ({ position, forward, up });
 
 const ejectionAnchor = (_params: Readonly<Record<string, string>>, part: PartDef): GunPartAnchors => {
-  const volume = part.keepOuts.find(({ id }) => id === 'ejection');
-  if (!volume) {
-    return {};
-  }
-  return {
-    ejection: frameAt([volume.box.center[0], volume.box.center[1], volume.box.center[2] - volume.box.half[2]]),
-  };
+  const point = localEjectionPoint(part);
+  return point ? { ejection: frameAt(point) } : {};
 };
 
 /** The firing hand on a grip's body; `axes` are the grip's own forward and up. */

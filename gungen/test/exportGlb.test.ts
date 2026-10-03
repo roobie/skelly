@@ -12,9 +12,9 @@ import type { Assembly } from '../src/core/schema.ts';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import type { SelectedAnchors } from '../src/gun/anchors.ts';
 import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
-import { ejectionPoint } from '../src/gun/cycle.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { ejectionPoint } from '../src/gun/ejection.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
@@ -32,6 +32,7 @@ const design = (name: string): Assembly => {
 
 const ASSET: GlbAssetIdentity = { id: 'rifle_test', file: 'assets/models/rifle_test.glb' };
 const S = METRES_PER_UNIT;
+const CARRIER_ENDPOINT_PREFIX = /^bolt-carrier\./;
 const AK_CARTRIDGE = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
 const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantName?: string) => {
   const result = exportGunGlb(assembly, asset, { variant: variantName ?? 'ar' });
@@ -439,10 +440,30 @@ describe('glb export: deadvox model entry', () => {
     );
   });
 
+  it('retains action metadata when the carrier instance is consistently renamed', () => {
+    const assembly = design('archetype-ar');
+    expect(exported(assembly).modelEntry.action).toBeDefined();
+    const renamed: Assembly = {
+      ...assembly,
+      parts: Object.fromEntries(
+        Object.entries(assembly.parts).map(([id, part]) => [id === 'bolt-carrier' ? 'carrier-renamed' : id, part]),
+      ),
+      connections: assembly.connections.map((connection) => ({
+        ...connection,
+        from: connection.from.replace(CARRIER_ENDPOINT_PREFIX, 'carrier-renamed.'),
+        to: connection.to.replace(CARRIER_ENDPOINT_PREFIX, 'carrier-renamed.'),
+      })),
+    };
+    const out = exported(renamed);
+    expect(out.read.json.nodes.some((node) => node.name === 'carrier-renamed:bolt-carrier')).toBe(true);
+    expect(out.modelEntry.action, 'identity-only changes must not silently drop action data').toBeDefined();
+    expect(out.modelEntry.action!.parts.carrier!.node).toBe('carrier-renamed:bolt-carrier');
+  });
+
   it('exports action nodes, estimated cycles, ejection metadata, and leaves GLB bytes unchanged', () => {
-    for (const [name, expectedAction] of [
-      ['archetype-ak', 'ak'],
-      ['archetype-ar', 'ar'],
+    for (const [name, expectedAction, expectedModes] of [
+      ['archetype-ak', 'ak', { carrier: ['fire', 'hand'] }],
+      ['archetype-ar', 'ar', { carrier: ['fire', 'hand'], handle: ['hand'] }],
     ] as const) {
       const assembly = design(name);
       const out = exported(assembly);
@@ -461,7 +482,9 @@ describe('glb export: deadvox model entry', () => {
       expect(action.hand.forwardSeconds).toBeGreaterThan(0);
       expect(action.ejectAt).toBeGreaterThan(0);
       expect(action.ejectAt).toBeLessThan(1);
-      expect(Object.keys(action.parts)).toEqual(['carrier']);
+      expect(Object.fromEntries(Object.entries(action.parts).map(([role, part]) => [role, part.modes]))).toEqual(
+        expectedModes,
+      );
       for (const part of Object.values(action.parts)) {
         const node = out.read.json.nodes.find(({ name: nodeName }) => nodeName === part.node)!;
         expect(node.mesh).toBeDefined();

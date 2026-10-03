@@ -1170,10 +1170,20 @@ describe('procedural bolt carrier', () => {
 
   it('covers the catalog styles with compatible owners and slotted handle geometry', () => {
     const receiverStyles = [
-      { style: 'ar', bore: 'M', expected: ['charging-handle', 'ar-handle-crossbar', 'ar-handle-latch'] },
+      {
+        style: 'ar',
+        bore: 'M',
+        expected: [
+          'charging-handle',
+          'ar-handle-crossbar',
+          'ar-handle-left-grip',
+          'ar-handle-right-grip',
+          'ar-handle-latch',
+        ],
+      },
     ] as const;
     for (const entry of receiverStyles) {
-      const def = FAMILIES.receiver!.build({
+      const def = FAMILIES['ar-charging-handle']!.build({
         action: 'auto',
         feed: 'box',
         bore: entry.bore,
@@ -1230,8 +1240,8 @@ describe('procedural bolt carrier', () => {
       {
         style: 'ar',
         pattern: 'ar',
-        owner: 'receiver',
-        receiver: ['charging-handle', 'ar-handle-crossbar', 'ar-handle-latch'],
+        owner: 'ar-charging-handle',
+        receiver: [],
         handguard: [],
         carrier: [],
       },

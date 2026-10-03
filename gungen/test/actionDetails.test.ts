@@ -124,26 +124,23 @@ describe('visible action details', () => {
   });
 
   it('places the AR T-handle at the rear rest face and keeps its pull zone clear', () => {
-    const rearTop = handleAndTravel(receiver('auto', 'rear-top'), 'charging-handle');
-    expect(rearTop.handle[2]![0]).toBe(rearTop.travel[2]![1]);
-    expect(intervalsOverlap(rearTop.handle[0]!, rearTop.travel[0]!)).toBe(true);
+    const handleDef = FAMILIES['ar-charging-handle']!.build({});
+    const rearTop = handleAndTravel(handleDef, 'charging-handle');
+    expect(rearTop.handle[0]![0]).toBeGreaterThanOrEqual(rearTop.travel[0]![1]);
     expect(intervalsOverlap(rearTop.handle[1]!, rearTop.travel[1]!)).toBe(true);
-    const receiverDef = receiver('auto', 'rear-top');
-    expect(receiverDef.solids.filter(({ id }) => id.startsWith('ar-handle-'))).toHaveLength(2);
-    const crossbar = receiverDef.solids.find(({ id }) => id === 'ar-handle-crossbar');
+    expect(handleDef.solids.filter(({ id }) => id.startsWith('ar-handle-'))).toHaveLength(4);
+    const crossbar = handleDef.solids.find(({ id }) => id === 'ar-handle-crossbar');
     expect(crossbar?.kind).toBe('box');
     if (crossbar?.kind === 'box') {
-      const [, receiverTop] = receiverDef.ports.find(({ id }) => id === 'rail')!.pos;
-      const [, [, crossbarTop]] = limits(crossbar.box);
-      expect(Math.abs(crossbarTop - receiverTop)).toBeLessThanOrEqual(1e-6);
+      expect(crossbar.box.half[2] / crossbar.box.half[0]).toBeGreaterThanOrEqual(8);
     }
-    expect(receiverDef.keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
+    expect(receiver('auto', 'rear-top').keepOuts.some(({ id }) => id === 'rear-t-hand-clearance')).toBe(true);
   });
 
   it('rejects a rail feature that physically occupies the AR T-grip', () => {
     const { assembly } = loadDesigns().find(({ label }) => label.includes('archetype-ar.json'))!;
     const resolved = resolve(assembly, gunDomain);
-    const point = [-17.75, 2.25, 1.75] as const;
+    const point = [-16.55, 1.975, 1.75] as const;
     const local = applyPoint(invert(resolved.placed.get('sight')!), point);
     const probe: Solid = {
       id: 'rail-accessory-feature',
