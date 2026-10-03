@@ -7,7 +7,7 @@ import { blockPatterns } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
-import { compileTemplate } from '../src/core/templates.ts';
+import { compileTemplate, type Placement } from '../src/core/templates.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -39,10 +39,10 @@ describe('content', () => {
     const { registry, issues } = buildRegistry([...base, { source, data: control }]);
     expect(issues).toEqual([]);
     expect(checkReachability(registry).found.has('review_only_item')).toBe(true);
-    const placement = {
+    const placement: Placement = {
       template: compileTemplate(registry, registry.templates.get('shed')!),
-      origin: [0, 0, 0] as const,
-      turn: 0 as const,
+      origin: [0, 0, 0],
+      turn: 0,
     };
     const spawned = furnitureOf({ seed: 1, registry }, placement, [0, 0]).find(
       (piece) => piece.spec.type === 'review_pedestal',
