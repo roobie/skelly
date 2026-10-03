@@ -42,10 +42,17 @@ const counters = (value) =>
         }),
       )
     : {};
-const delta = (before, after) =>
-  Object.fromEntries(
-    Object.entries(counters(after)).map(([key, value]) => [key, value - (counters(before)[key] ?? 0)]),
-  );
+const pressureTotals = (value) =>
+  typeof value === 'string'
+    ? Object.fromEntries(
+        value.split('\n').map((line) => {
+          const [kind] = line.split(' ');
+          return [kind, Number(line.split('total=')[1])];
+        }),
+      )
+    : {};
+const delta = (before, after, parse = counters) =>
+  Object.fromEntries(Object.entries(parse(after)).map(([key, value]) => [key, value - (parse(before)[key] ?? 0)]));
 
 export async function observeFailures(context, browser, child) {
   const initial = { parent: await cgroup(process.pid), child: child?.pid ? await cgroup(child.pid) : undefined };
@@ -98,9 +105,10 @@ export async function observeFailures(context, browser, child) {
     );
   });
   const attach = (page) => {
+    const openedAt = Date.now();
     const events = [];
     const record = (event, detail) => {
-      events.push({ event, detail, time: new Date().toISOString() });
+      events.push({ event, detail, time: new Date().toISOString(), elapsedMs: Date.now() - openedAt });
       if (events.length > 64) {
         events.shift();
       }
@@ -192,6 +200,8 @@ export async function observeFailures(context, browser, child) {
             current,
             parentEventsDelta: delta(initial.parent.events, current.parent.events),
             childEventsDelta: delta(initial.child?.events, current.child?.events),
+            parentPressureDeltaUs: delta(initial.parent.pressure, current.parent.pressure, pressureTotals),
+            childPressureDeltaUs: delta(initial.child?.pressure, current.child?.pressure, pressureTotals),
           },
         })}\n`,
       );
