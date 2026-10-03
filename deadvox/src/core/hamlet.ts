@@ -29,6 +29,7 @@ import {
   stampPlacement,
   type Turn,
 } from './templates.ts';
+import { stampTrees, type TreePlacement } from './vegetation.ts';
 import { type Surface, terrainHeight } from './worldgen.ts';
 
 /** Templates are drawn in half-metre blocks. */
@@ -94,6 +95,8 @@ export class Hamlet implements Site {
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
   readonly range: HamletRange;
+  /** Tree recipes are checkpointed first; seed-owned placements follow in this round. */
+  readonly trees: readonly TreePlacement[] = [];
   /** Where the player starts: feet in metres, and a yaw that looks down the road. */
   readonly spawn: { pos: Vec3; yaw: number };
   readonly seed: number;
@@ -187,6 +190,7 @@ export class Hamlet implements Site {
       }
     }
     this.range.stamp(chunk);
+    stampTrees(chunk, this.trees);
   }
 
   /**

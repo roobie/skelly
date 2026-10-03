@@ -1,0 +1,9 @@
+{
+  "blocks": [
+    { "id": "tree_trunk", "name": "Tree trunk", "color": "#62503b", "solid": true, "pattern": "rough" },
+    { "id": "tree_branch", "name": "Tree branch", "color": "#705941", "solid": true, "pattern": "rough" },
+    { "id": "leaves", "name": "Leaves", "color": "#526b3d", "solid": true, "pattern": "noise" },
+    { "id": "hedge", "name": "Hedge", "color": "#425b35", "solid": true, "pattern": "noise" },
+    { "id": "leaf_litter", "name": "Leaf litter", "color": "#766047", "solid": true, "pattern": "noise" }
+  ]
+}
