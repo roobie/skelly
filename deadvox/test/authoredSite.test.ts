@@ -12,7 +12,7 @@ import { generateColumn } from '../src/core/worldgen.ts';
 import { configFromUrl } from '../src/game/config.ts';
 
 const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && file !== 'layouts.json')
+  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
   .sort()
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
 const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] })

@@ -19,7 +19,10 @@ Ids are global/authored, not scoped per placement. Content validation rejects
 invalid ids, locks on non-door furniture, and keys naming no actual door.
 Authored-site validation rejects repeated lock ids across doors, building
 placements, and storeys. Unused palette declarations do not create usable locks.
-This is intentionally not a procedural placement-id scheme.
+This is intentionally not a procedural placement-id scheme. Explicit bedroom
+and cellar storeys use the same palette metadata, with no floor-specific lock
+field: compiled pieces retain the lock while placement lowers cellar geometry.
+Use distinct palette characters and ids for independently keyed doors.
 
 ## Interaction
 

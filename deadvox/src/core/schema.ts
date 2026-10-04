@@ -414,6 +414,27 @@ const PaletteThingSchema = pipe(
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );
 
+/** Template-local block coordinates; horizontal half cells permit centred, two-cell-wide landings. */
+const CellCoordinate = pipe(
+  number(),
+  check((v) => Number.isFinite(v) && Number.isInteger(v * 2), 'must be on the half-cell grid'),
+);
+const CellPosition = tuple([CellCoordinate, Count, CellCoordinate]);
+const StairSchema = strictObject({
+  from: Id,
+  to: Id,
+  lower: CellPosition,
+  upper: CellPosition,
+  width: pipe(Count, minValue(2)),
+  block: Id,
+});
+const TemplateAccessSchema = strictObject({
+  ground: Id,
+  entrance: CellPosition,
+  storeys: pipe(array(strictObject({ id: Id, floor: Count })), nonEmpty()),
+  stairs: array(StairSchema),
+});
+
 export const TemplateSchema = strictObject({
   id: Id,
   /** Blocks: [x, y, z]. */
@@ -422,6 +443,8 @@ export const TemplateSchema = strictObject({
   palette: record(Char, union([Id, PaletteThingSchema])),
   /** Layers from the bottom up; each is rows along z of characters along x. */
   layers: array(array(string())),
+  /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
+  access: optional(TemplateAccessSchema),
 });
 
 // ---- authored site layouts (metres, independent of chunk/block order) ----
@@ -631,6 +654,8 @@ export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
+export type StairDef = InferOutput<typeof StairSchema>;
+export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;

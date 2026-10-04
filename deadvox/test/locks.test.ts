@@ -1,10 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { toChunk } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { doorOptions } from '../src/core/options.ts';
+import { makeScale } from '../src/core/scale.ts';
+import { placedPieces } from '../src/core/templates.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 
 const base = readdirSync('src/content/base')
@@ -57,6 +61,73 @@ const make = () => {
 };
 
 describe('door locks', () => {
+  it('carries independent locks through explicit bedroom and cellar placements into native queued door operations', () => {
+    const bedroom = structuredClone(registry.templates.get('stairs_house')!);
+    bedroom.id = 'locked_bedroom';
+    bedroom.palette.D = { furniture: 'wood_door', lock: { id: 'bedroom', locked: true } };
+    const cellar = structuredClone(registry.templates.get('stairs_cabin')!);
+    cellar.id = 'locked_cellar';
+    cellar.palette.D = { furniture: 'wood_door', lock: { id: 'cellar', locked: true } };
+    for (let y = 1; y <= 4; y++) {
+      const row = [...cellar.layers[y]![9]!];
+      row[6] = 'D';
+      row[7] = 'D';
+      cellar.layers[y]![9] = row.join('');
+    }
+    const layout = structuredClone(registry.layouts.get('stair_demo')!);
+    layout.id = 'locks_storeys';
+    layout.buildings = [
+      { template: bedroom.id, position: [55, 21, 55], rotation: 90 },
+      { template: cellar.id, position: [75, 21, 55], rotation: 270 },
+    ];
+    const result = buildRegistry([
+      ...base,
+      {
+        source: 'storey-locks.json',
+        data: {
+          templates: [bedroom, cellar],
+          layouts: [layout],
+          items: [key('bedroom_key', 'bedroom'), key('cellar_key', 'cellar')],
+        },
+      },
+    ]);
+    expect(result.issues).toEqual([]);
+    const site = new AuthoredSite(73, result.registry, makeScale(0.5), layout);
+    const doors = site.placements.flatMap(placedPieces).filter((piece) => piece.lock);
+    expect(doors.map((piece) => [piece.lock!.id, piece.pos[1]])).toEqual([
+      ['bedroom', 51],
+      ['cellar', 35],
+    ]);
+    const inventory = new Inventory(result.registry);
+    const queue = new HandlingQueue(inventory);
+    registerDoorAction({
+      queue,
+      inventory,
+      player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
+      others: () => [],
+      playWorldSound: () => undefined,
+    });
+    for (const piece of doors) {
+      const spawn = site
+        .furnitureIn(toChunk(piece.pos[0]), toChunk(piece.pos[2]))
+        .find(({ spec }) => spec.lock?.id === piece.lock!.id)!;
+      const door = inventory.furnish(spawn.spec, spawn.loot)!;
+      expect(inventory.entities.setOpen(door, true)).toBe("It's locked");
+      const held = inventory.create(`${piece.lock!.id}_key`);
+      inventory.add(held, { kind: 'hand', side: 'right' });
+      const unlock = doorOptions(inventory, door)[1]!;
+      expect(unlock.plan.ok).toBe(true);
+      if (!unlock.plan.ok) {
+        throw new Error(unlock.plan.reason);
+      }
+      queue.enqueueAction(DOOR_ACTION, 'Unlock', unlock.plan.time, { entityUid: door.uid, locked: false });
+      expect(queue.tick(unlock.plan.time).failed).toEqual([]);
+      expect(door.lock).toEqual({ id: piece.lock!.id, locked: false });
+      expect(piece.lock!.locked).toBe(true);
+      expect(inventory.entities.setOpen(door, true)).toBeUndefined();
+      inventory.consume(held);
+    }
+  });
   it('the door owner refuses opening a locked door even without the interaction adapter', () => {
     const { inventory, door } = make();
     expect(inventory.entities.setOpen(door, true)).toBe("It's locked");

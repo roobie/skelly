@@ -1,5 +1,6 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
 import type { Registry, TemplateDef } from './content.ts';
+import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { templateLockIds } from './templates.ts';
@@ -50,6 +51,14 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       return;
     }
     checkLocks(template, building.storeys ?? 1, i);
+    if (template.access && (building.storeys ?? 1) !== 1) {
+      issues.push([`.buildings[${i}].storeys`, 'explicit storeys cannot be stress-test stacked']);
+    }
+    const groundLayer =
+      (template.access?.storeys.find((storey) => storey.id === template.access?.ground)?.floor ?? 1) - 1;
+    if (building.position[1] - groundLayer * 0.5 < WORLD_BOTTOM_M) {
+      issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
+    }
     const rect = buildingBounds(building, template.size);
     check([rect.x0, rect.z0], `.buildings[${i}].position`);
     check([rect.x1, rect.z1], `.buildings[${i}].position`);

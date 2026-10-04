@@ -1,0 +1,349 @@
+// biome-ignore-all lint/correctness/noNodejsModules: standalone maintained browser test starts Vite and Chrome.
+// biome-ignore-all lint/style/noProcessEnv: test executable and evidence destination are runner configuration.
+// biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser contract assertions.
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+
+const { chromium } = await import('playwright');
+
+import { createServer } from 'vite';
+
+const [, , mode] = process.argv;
+assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
+await mkdir(artifacts, { recursive: true });
+const vite = await createServer({
+  root,
+  configFile: resolve(root, 'vite.config.ts'),
+  logLevel: 'error',
+  server: { host: '127.0.0.1', port: 0 },
+  plugins: [
+    {
+      name: 'stairs-test-observation',
+      enforce: 'pre',
+      transform(code, id) {
+        if (mode === 'lighting' && id.endsWith('/src/content/base/layouts-stairs.json')) {
+          // Two real authored cellars within the view radius; no tracked demo/lore change.
+          const content = JSON.parse(code);
+          const layout = content.layouts.find((value) => value.id === 'stair_demo');
+          layout.buildings.push({ template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 });
+          return JSON.stringify(content);
+        }
+        if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
+          // Fixture-only: keep the raised cabin above the shared terrain, exposing its lower west wall.
+          // Otherwise its raised terrain apron duplicates the first field's buried-wall samples.
+          const anchor = 'floor: building.position[1] / s,';
+          assert.equal(code.split(anchor).length, 2);
+          return code.replace(
+            anchor,
+            'floor: building.position[0] === 82 ? layout.ground / s : building.position[1] / s,',
+          );
+        }
+        if (id.endsWith('/src/render/skylight.ts')) {
+          // Test-only reference: identical scene with diffuse sky visibility forced to one.
+          assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
+          assert.ok(code.includes('float skyVisibility() {'));
+          return code
+            .replace(
+              'shader.uniforms.uSkyVolume = this.texture;',
+              'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
+            )
+            .replace(
+              'float skyVisibility() {',
+              'uniform float uSkyProofControl;\nfloat skyVisibility() {\n  if (uSkyProofControl > 0.5) return 1.0;',
+            );
+        }
+        if (!id.endsWith('/src/game/play.ts')) {
+          return;
+        }
+        const marker = 'startPlayFrames(frame);';
+        assert.ok(code.includes(marker));
+        return code.replace(
+          marker,
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,get noclip(){return debugTools?.noclip??false;}}});\n${marker}`,
+        );
+      },
+    },
+  ],
+});
+let browser;
+try {
+  await vite.listen();
+  const { port } = vite.httpServer.address();
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.CHROME_BIN,
+    args: [
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--enable-webgl',
+      '--use-gl=swiftshader',
+      '--enable-unsafe-swiftshader',
+    ],
+  });
+  // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
+  const page = await browser.newPage({
+    viewport: mode === 'traversal' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
+  });
+  const errors = [];
+  const states = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      errors.push(message.text());
+    }
+  });
+  await page.goto(`http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`);
+  await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    (lighting) =>
+      [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
+        globalThis.stairsWitness.engine.meshes.group.children.some(
+          (mesh) => mesh.position.x === x && mesh.position.y === y && mesh.position.z === z,
+        ),
+      ),
+    mode === 'lighting',
+    { timeout: 60_000 },
+  );
+  // The contrast witnesses measure only the world, never the debug hover label or HUD.
+  await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
+  const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2) => {
+    // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
+    await page.evaluate(
+      ({ position, yaw }) => {
+        const { session, input, noclip } = globalThis.stairsWitness;
+        assertNoNoclip();
+        function assertNoNoclip() {
+          if (noclip) {
+            throw new Error('noclip must be OFF');
+          }
+        }
+        session.body.pos = [...position];
+        session.body.vel = [0, 0, 0];
+        session.body.onGround = true;
+        input.yaw = yaw;
+        input.pitch = 0;
+      },
+      { position: fixturePosition, yaw: fixtureYaw },
+    );
+    await page.waitForTimeout(200);
+  };
+  const state = async (label) => {
+    const value = await page.evaluate(() => {
+      const { body, noclip, engine, session, input } = globalThis.stairsWitness;
+      return {
+        position: [...body.pos],
+        velocity: [...body.vel],
+        onGround: body.onGround,
+        simulationTime: session.sim.time,
+        paused: session.sim.paused,
+        noclip,
+        locked: input.locked,
+        contentErrors: engine.contentErrors,
+        zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
+          id,
+          pos: [...z.body.pos],
+          mode: z.mode,
+          lastPerceived: z.lastPerceived,
+        })),
+      };
+    });
+    states.push({ label, ...value });
+    await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
+    assert.equal(value.noclip, false);
+    assert.equal(value.locked, true);
+    assert.equal(value.contentErrors, '');
+    return value;
+  };
+  const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
+  const walk = async (key, targetX, ascending, targetFeet) => {
+    try {
+      const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+      await page.keyboard.down(key);
+      const arrivalHandle = await page.waitForFunction(
+        ({ x, increasing, from }) => {
+          const { body, session } = globalThis.stairsWitness;
+          const reached = increasing ? body.pos[0] >= x : body.pos[0] <= x;
+          const seconds = session.sim.time - from;
+          const { paused } = session.sim;
+          return reached || seconds >= 10 || paused ? { reached, seconds, paused } : false;
+        },
+        { x: targetX, increasing: ascending, from: keyDownTime },
+        { timeout: 0 },
+      );
+      const arrival = await arrivalHandle.jsonValue();
+      await page.keyboard.up(key);
+      await state(`arrival ${key} x=${targetX}: ${JSON.stringify(arrival)}`);
+      assert.equal(arrival.reached && !arrival.paused, true, JSON.stringify(arrival));
+      const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+      // Same three-second physical bound, now simulation seconds rather than renderer wall time.
+      // The outer stage remains capped at 300 s; no retry or larger stage cap.
+      const result = await page.waitForFunction(
+        ({ feet, from }) => {
+          const { body, session } = globalThis.stairsWitness;
+          const seconds = session.sim.time - from;
+          const supported = body.onGround && Math.abs(body.pos[1] - feet) < 0.01;
+          const { paused } = session.sim;
+          return supported || seconds >= 3 || paused ? { supported, seconds, paused } : false;
+        },
+        { feet: targetFeet, from: start },
+        { timeout: 0 },
+      );
+      const settled = await result.jsonValue();
+      await state(`settle ${key} x=${targetX} feet=${targetFeet}: ${JSON.stringify(settled)}`);
+      assert.equal(settled.supported && !settled.paused, true, JSON.stringify(settled));
+    } catch (error) {
+      await page.keyboard.up(key);
+      await state(`walk/settle failure ${key} x=${targetX} feet=${targetFeet}: ${error}`);
+      throw error;
+    }
+  };
+  let lightProof;
+  let outdoorProof;
+  let residentProof;
+  let secondSlotProof;
+  if (mode === 'traversal') {
+    await stage([112, 43.0001, 115]);
+    await state('house lower landing');
+    await walk('w', 121, true, 51);
+    assert.ok(Math.abs((await state('house upstairs walked')).position[1] - 51) < 0.01);
+    await page.evaluate(() => {
+      globalThis.stairsWitness.input.yaw = Math.PI / 2;
+      globalThis.stairsWitness.input.pitch = -0.3;
+    });
+    await page.waitForTimeout(150);
+    await shot('house-upstairs-looking-down');
+    await page.evaluate(() => {
+      globalThis.stairsWitness.input.yaw = -Math.PI / 2;
+      globalThis.stairsWitness.input.pitch = 0;
+    });
+    await walk('s', 112, false, 43);
+    assert.ok(Math.abs((await state('house downstairs walked')).position[1] - 43) < 0.01);
+    await shot('house-downstairs');
+    await stage([143, 43.0001, 115]);
+    await walk('s', 134, false, 35);
+    assert.ok(Math.abs((await state('cellar lower landing walked')).position[1] - 35) < 0.01);
+    await shot('cellar-lower-landing');
+    await walk('w', 143, true, 43);
+    assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
+  } else {
+    await stage([134, 35.0001, 115]);
+    const residents = () =>
+      page.evaluate(() => {
+        const { engine } = globalThis.stairsWitness;
+        return [engine.skylight.at([67, 17.6, 57.5]), engine.skylight.at([83, 23.6, 57.5])];
+      });
+    const first = await residents();
+    assert.deepEqual(first, [0, 0]);
+    // This cabin's padded top is 64, in an all-air chunk: only real data events clear its load-time cache.
+    const raisedOutdoor = await page.evaluate(() => globalThis.stairsWitness.engine.skylight.at([81.5, 28, 59]));
+    assert.equal(raisedOutdoor, 1);
+    const dark = await shot('cellar-dark');
+    await page.evaluate(() => {
+      const { session } = globalThis.stairsWitness;
+      session.inventory.hands.left = session.inventory.create('flashlight');
+      session.inventory.version += 1;
+    });
+    const mouse5 = () =>
+      page.evaluate(() =>
+        document
+          .querySelector('#view canvas')
+          .dispatchEvent(
+            new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
+          ),
+      );
+    await mouse5();
+    await page.waitForTimeout(700);
+    assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
+    const lit = await shot('cellar-beam');
+    const luminance = async (png, cropHeight = 240) =>
+      page.evaluate(
+        async ({ data, height }) => {
+          const image = new Image();
+          image.src = `data:image/png;base64,${data}`;
+          await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = 240;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(image, 480, 260, 240, height, 0, 0, 240, height);
+          const pixels = ctx.getImageData(0, 0, 240, height).data;
+          let sum = 0;
+          for (let i = 0; i < pixels.length; i += 4) {
+            sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+          }
+          return sum / (240 * height * 3);
+        },
+        { data: png.toString('base64'), height: cropHeight },
+      );
+    lightProof = { dark: await luminance(dark), beam: await luminance(lit) };
+    assert.ok(lightProof.dark < 15, JSON.stringify(lightProof));
+    assert.ok(lightProof.beam > lightProof.dark + 10, JSON.stringify(lightProof));
+    await mouse5();
+    await stage([166, 47.0001, 115]);
+    const second = await residents();
+    assert.deepEqual(second, first);
+    const secondDark = await luminance(await shot('second-cellar-dark'));
+    assert.ok(secondDark < 15, JSON.stringify({ secondDark }));
+    residentProof = { first, second, secondDark, raisedOutdoor };
+    await stage([125, 43.0001, 118]);
+    await page.evaluate(() => {
+      globalThis.stairsWitness.input.pitch = -0.3;
+    });
+    await page.waitForTimeout(700);
+    const outdoor = await shot('outdoor-normal');
+    await page.evaluate(() => {
+      globalThis.skyProofControl.value = 1;
+    });
+    await page.waitForTimeout(200);
+    const outdoorReference = await shot('outdoor-sky-one');
+    await page.evaluate(() => {
+      globalThis.skyProofControl.value = 0;
+    });
+    // The west-wall window excludes the floor/wall AO corner and hands scene.
+    outdoorProof = { normal: await luminance(outdoor, 160), reference: await luminance(outdoorReference, 160) };
+    assert.ok(Math.abs(outdoorProof.normal - outdoorProof.reference) < 1.5, JSON.stringify(outdoorProof));
+
+    // Same local field cell: first cabin's west side is buried, raised cabin's west side is exposed.
+    // A missing atlas offset reads the dark first-slot cell despite the CPU sample being lit.
+    const contrast = await page.evaluate(() => {
+      const { engine } = globalThis.stairsWitness;
+      return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
+    });
+    assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
+    await stage([157, 43.0001, 118]);
+    await page.evaluate(() => {
+      globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
+    });
+    await page.waitForTimeout(700);
+    const secondWall = await shot('second-slot-wall-normal');
+    await page.evaluate(() => {
+      globalThis.skyProofControl.value = 1;
+    });
+    await page.waitForTimeout(200);
+    const secondWallReference = await shot('second-slot-wall-sky-one');
+    await page.evaluate(() => {
+      globalThis.skyProofControl.value = 0;
+    });
+    secondSlotProof = {
+      contrast,
+      normal: await luminance(secondWall, 160),
+      reference: await luminance(secondWallReference, 160),
+    };
+    await writeFile(resolve(artifacts, 'second-slot.json'), JSON.stringify(secondSlotProof, null, 2));
+    assert.ok(Math.abs(secondSlotProof.normal - secondSlotProof.reference) < 1.5, JSON.stringify(secondSlotProof));
+  }
+  assert.deepEqual(errors, []);
+  await writeFile(
+    resolve(artifacts, 'result.json'),
+    JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, errors }, null, 2),
+  );
+} finally {
+  await browser?.close();
+  await vite.close();
+}
