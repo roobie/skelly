@@ -59,7 +59,7 @@ the player-tick boundary (up to 16.7ms after their exact simulation deadline),
 then after sample decoding on the first cold use; no claim of sample-accurate
 wall-clock playback is made.
 
-Review: `http://192.168.9.39:5189/?seed=73&debug=1&radius=64&cam=43.50,33.00,0.00,-90.0,0.0,0.0`.
+Review: `/?seed=73&debug=1&radius=64&cam=43.50,33.00,0.00,-90.0,0.0,0.0` on a deadvox dev server.
 
 ## Related observation, deliberately not changed
 
