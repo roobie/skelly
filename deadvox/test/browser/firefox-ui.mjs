@@ -128,7 +128,7 @@ try {
       alsoDispatchMouseMove: true,
     });
     cursor = position;
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    await page.waitForTimeout(100);
   };
   const clickGameElement = async (selector) => {
     const rect = await page.locator(selector).boundingBox();

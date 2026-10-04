@@ -6,7 +6,6 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 
 const { chromium, firefox } = await import('playwright');
 // biome-ignore lint/style/noProcessEnv: the launcher accepts the installed Chromium path
@@ -134,22 +133,14 @@ try {
           globalThis.scrollFixture.resetWheels();
           input.locked = trial.locked;
           input.menuPointer = trial.locked;
+          input.cursorX = trial.x;
+          input.cursorY = trial.y;
           document.querySelector(trial.selector).scrollTop = 0;
           menu.update();
         },
         { selector, x, y, locked },
       );
       if (locked) {
-        const cursor = await page.evaluate(() => ({
-          x: globalThis.scrollFixture.input.cursorX,
-          y: globalThis.scrollFixture.input.cursorY,
-        }));
-        await page.evaluate(dispatchMenuPointerMove, {
-          movementX: x - cursor.x,
-          movementY: y - cursor.y,
-          centerClient: true,
-          alsoDispatchMouseMove: true,
-        });
         await page.evaluate(() =>
           globalThis.scrollFixture.canvas.dispatchEvent(
             new WheelEvent('wheel', {
