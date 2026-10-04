@@ -40,8 +40,7 @@ export const craftActionHooks = (
     if (inventory.hands.right !== item || inventory.hands.left) {
       return 'The work needs both hands';
     }
-    const recipe = inventory.registry.recipes.get(work.recipe);
-    return recipe ? admissionRefusal(recipe, reach(), character) : 'Recipe not known';
+    return admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character);
   },
   advance: (uid, seconds) => {
     const work = inventory.itemByUid(uid)!.work!;

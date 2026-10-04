@@ -602,6 +602,9 @@ export class Inventory {
   }
 
   private handPlacement(item: Item, side: HandSide, from: Location): Plan {
+    if (item.work && side === 'left') {
+      return refuse('Work stays in the right hand');
+    }
     if (from.kind === 'hand' && from.side === side) {
       return refuse("It's already in that hand");
     }

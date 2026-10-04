@@ -40,8 +40,8 @@ export class CraftCommands {
   }
   get currentUid(): number | undefined {
     const { job } = this.sim.actions;
-    if (job?.jobType === 'craft') {
-      return job.workUid;
+    if (job) {
+      return job.jobType === 'craft' ? job.workUid : undefined;
     }
     const { right } = this.inventory.hands;
     return right?.work ? right.uid : undefined;
@@ -52,9 +52,6 @@ export class CraftCommands {
     }
     if (this.queue.busy) {
       return 'Finish handling first';
-    }
-    if (this.sim.actions.job?.jobType === 'craft') {
-      return 'Finish or take apart the other craft';
     }
     return undefined;
   }

@@ -30,6 +30,7 @@ export interface CraftMissing {
   /** Raw stock per alternative; groups and tools may compete for it. */
   components: { group: number; alternatives: { item: string; needed: number; available: number }[] }[];
 }
+export type CraftRequirements = Omit<CraftMissing, 'reason'>;
 export type CraftResult = { plan: CraftPlan } | { missing: CraftMissing };
 /** Optional alternative item id for each component group, never a silent fallback. */
 export type CraftPreference = Readonly<Record<number, string>>;
@@ -139,36 +140,38 @@ const allocate = (
   return undefined;
 };
 
-const missingRequirements = (
+/** Raw requirement status shared by admission and readouts, before filtering shortages. */
+export const requirementStatus = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
   character: CraftCharacter,
-  index: ReachIndex,
-): CraftMissing => ({
-  reason: '',
-  knowledge: !character.knownRecipes.has(recipe.id),
-  skills: Object.entries(recipe.skills)
-    .filter(([id, level]) => (character.skills[id] ?? 0) < level)
-    .map(([skill, required]) => ({ skill, required, available: character.skills[skill] ?? 0 })),
-  qualities: Object.entries(recipe.qualities)
-    .map(([quality, required]) => ({
+): CraftRequirements => {
+  const index = indexCraftReach(snapshot);
+  return {
+    knowledge: !character.knownRecipes.has(recipe.id),
+    skills: Object.entries(recipe.skills).map(([skill, required]) => ({
+      skill,
+      required,
+      available: character.skills[skill] ?? 0,
+    })),
+    qualities: Object.entries(recipe.qualities).map(([quality, required]) => ({
       quality,
       required,
       available: Math.max(0, ...(index.qualities.get(quality) ?? []).map((provider) => provider.level)),
-    }))
-    .filter((quality) => quality.available < quality.required),
-  ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, snapshot, station))
-    ? { workstation: recipe.workstation }
-    : {}),
-  components: recipe.components.map((group, number) => ({
-    group: number,
-    alternatives: group.map((alternative) => ({
-      item: alternative.item,
-      needed: alternative.count,
-      available: (index.byType.get(alternative.item) ?? []).reduce((sum, entry) => sum + entry.item.count, 0),
     })),
-  })),
-});
+    ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, snapshot, station))
+      ? { workstation: recipe.workstation }
+      : {}),
+    components: recipe.components.map((group, number) => ({
+      group: number,
+      alternatives: group.map((alternative) => ({
+        item: alternative.item,
+        needed: alternative.count,
+        available: (index.byType.get(alternative.item) ?? []).reduce((sum, entry) => sum + entry.item.count, 0),
+      })),
+    })),
+  };
+};
 
 function* componentAlternatives(
   recipe: RecipeDef,
@@ -282,7 +285,7 @@ const craftPlan = (
   return { recipe: recipe.id, ...allocation, tools, ...(workstation ? { workstation } : {}), work: recipe.time * 60 };
 };
 
-const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: CraftMissing): string | undefined => {
+const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: CraftRequirements): string | undefined => {
   for (const [number, item] of Object.entries(prefer)) {
     if (!recipe.components[Number(number)]?.some((alternative) => alternative.item === item)) {
       return `Preferred ${item} is not an alternative for group ${number}`;
@@ -291,11 +294,12 @@ const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: Craf
   if (missing.knowledge) {
     return 'Recipe not known';
   }
-  if (missing.skills.length > 0) {
+  if (missing.skills.some(({ available, required }) => available < required)) {
     return 'Skill level too low';
   }
-  if (missing.qualities.length > 0) {
-    return 'Required tool quality not in reach';
+  const quality = missing.qualities.find(({ available, required }) => available < required);
+  if (quality) {
+    return `Required ${quality.quality} tool is not in reach`;
   }
   if (missing.workstation) {
     return 'Required workstation not in reach';
@@ -303,13 +307,27 @@ const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: Craf
   return undefined;
 };
 
+const componentRefusal = (snapshot: ReachSnapshot, status: CraftRequirements, prefer: CraftPreference): string => {
+  const shortage = status.components.find(
+    ({ group, alternatives }) =>
+      !alternatives.some(
+        ({ item, available, needed }) => (prefer[group] === undefined || prefer[group] === item) && available >= needed,
+      ),
+  );
+  const alternative = shortage?.alternatives.find(
+    ({ item }) => prefer[shortage.group] === undefined || prefer[shortage.group] === item,
+  );
+  return alternative
+    ? `Needs ${alternative.needed} ${snapshot.player.inventory.registry.items.get(alternative.item)!.name.toLowerCase()} (${alternative.available} found)`
+    : `${Object.keys(prefer).length > 0 ? 'Preferred alternatives' : 'Components'} compete for the same stock or would consume a required tool`;
+};
+
 /** Shared equipment/knowledge/skill admission; components are held in escrow on Continue. */
 export const admissionRefusal = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
   character: CraftCharacter,
-): string | undefined =>
-  refusalReason(recipe, {}, missingRequirements(recipe, snapshot, character, indexCraftReach(snapshot)));
+): string | undefined => refusalReason(recipe, {}, requirementStatus(recipe, snapshot, character));
 
 export const stationMatches = (
   recipe: RecipeDef,
@@ -327,7 +345,13 @@ export const planCraft = (
   prefer: CraftPreference = {},
 ): CraftResult => {
   const index = indexCraftReach(snapshot);
-  const missing = missingRequirements(recipe, snapshot, character, index);
+  const status = requirementStatus(recipe, snapshot, character);
+  const missing: CraftMissing = {
+    ...status,
+    reason: '',
+    skills: status.skills.filter(({ available, required }) => available < required),
+    qualities: status.qualities.filter(({ available, required }) => available < required),
+  };
   const refusal = (reason: string): CraftResult => ({ missing: { ...missing, reason } });
   const requirementReason = refusalReason(recipe, prefer, missing);
   if (requirementReason) {
@@ -336,10 +360,7 @@ export const planCraft = (
 
   const cache = cachedPlans(snapshot, recipe);
   const key = JSON.stringify(Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)));
-  const componentReason =
-    Object.keys(prefer).length > 0
-      ? 'Preferred alternatives cannot be supplied without sharing components or consuming a required tool'
-      : 'Components are missing, compete for the same stock, or would consume a required tool';
+  const componentReason = componentRefusal(snapshot, status, prefer);
   const cached = cache.get(key);
   if (cached !== undefined) {
     return cached ? { plan: copyPlan(cached) } : refusal(componentReason);

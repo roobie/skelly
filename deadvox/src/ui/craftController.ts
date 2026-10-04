@@ -48,7 +48,12 @@ export const mountCraftPanel = (
       }
       renderCraftStatus(
         statusRoot,
-        craftStatus(session.inventory, session.sim.actions.job, session.sim.compression.interruption),
+        craftStatus(
+          session.inventory,
+          session.crafting.currentUid,
+          session.sim.actions.job,
+          session.sim.compression.interruption,
+        ),
         controls,
       );
     },

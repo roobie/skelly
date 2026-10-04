@@ -40,6 +40,7 @@ describe('crafting read-only presentation', () => {
     const broken = inventory.create('kitchen_knife');
     broken.condition = 0;
     inventory.add(broken, { kind: 'pile', pos: [0, 0, 0] });
+    inventory.add(inventory.create('hammer'), { kind: 'pile', pos: [0, 0, 0] });
     inventory.add(inventory.create('rag', 3), { kind: 'pile', pos: [0, 0, 0] });
     const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 });
     const before = inventory.snapshotState();
@@ -48,6 +49,9 @@ describe('crafting read-only presentation', () => {
     const torch = rows.find((row) => row.id === 'torch')!;
     expect(torch.components[1]!.alternatives[0]).toMatchObject({ needed: 2, found: 3 });
     expect(torch.qualities).toContainEqual({ name: 'cutting', required: 1, best: 0 });
+    expect(torch.reason).toBe('Required cutting tool is not in reach');
+    expect(torch.skills[0]).toMatchObject({ required: 0, available: 0 });
+    expect(rows[0]!.qualities).toContainEqual({ name: 'hammering', required: 1, best: 2 });
     expect(rows[0]!.skills[0]).toMatchObject({ required: 1, available: 0 });
     const root = document.createElement('section');
     const start = vi.fn();
@@ -64,6 +68,7 @@ describe('crafting read-only presentation', () => {
     inventory.add(item, { kind: 'hand', side: 'right' });
     const status = craftStatus(
       inventory,
+      item.uid,
       { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 },
       'Required cutting tool is not in reach',
     )!;

@@ -8,6 +8,7 @@ import type { BlockEntity } from '../core/blockEntities.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -344,14 +345,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     use: (item) => survival.use(item),
     describe: (item) => survival.describe(item),
     workOptions: (uid) => session.crafting.options(uid),
-    work: (uid, operation) => {
-      const reason = session.crafting.act(uid, operation);
-      if (!reason && operation === 'continue') {
-        closeInventoryScreen();
-        syncMenuState();
-      }
-      return reason;
-    },
+    work: (uid, operation) => actOnWork(uid, operation),
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
@@ -551,16 +545,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
+  const actOnWork = (uid: number, operation: WorkOperation): string | undefined => {
+    const reason = session.crafting.act(uid, operation);
+    if (!reason && operation === 'continue') {
+      closeInventoryScreen();
+      syncMenuState();
+    }
+    return reason;
+  };
+
   /** Continue a craft, rest/sleep, or the debug compression test. */
   const continueAction = (): void => {
     const workUid = session.crafting.currentUid;
     if (workUid !== undefined) {
-      const reason = session.crafting.act(workUid, 'continue');
+      const reason = actOnWork(workUid, 'continue');
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
-      } else {
-        closeInventoryScreen();
-        syncMenuState();
       }
     } else if (rest.action) {
       const reason = rest.resume();

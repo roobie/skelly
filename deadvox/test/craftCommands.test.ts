@@ -7,6 +7,7 @@ import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 
@@ -43,6 +44,31 @@ const make = (unsafe?: () => string | undefined) => {
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 
 describe('live craft commands', () => {
+  it('sleep replacing a stopped craft owns Continue instead of the held work', () => {
+    const r = make();
+    expect(r.commands.start('torch')).toBeUndefined();
+    r.sim.actions.stop();
+    expect(r.commands.currentUid).toBe(r.inventory.hands.right!.uid);
+    expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    expect(r.commands.currentUid).toBeUndefined();
+  });
+  it('Inventory refuses a work item in the left hand without changing its owning tree', () => {
+    const r = make();
+    expect(r.commands.start('torch')).toBeUndefined();
+    r.sim.actions.stop();
+    const item = r.inventory.hands.right!;
+    const before = r.inventory.snapshotState();
+    expect(options(item, r.reach()).find((option) => option.label === 'Left hand')!.plan).toEqual({
+      ok: false,
+      reason: 'Work stays in the right hand',
+    });
+    expect(r.inventory.move(item, { kind: 'hand', side: 'left' })).toEqual({
+      ok: false,
+      reason: 'Work stays in the right hand',
+    });
+    expect(r.inventory.snapshotState()).toEqual(before);
+    expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
+  });
   it('native begin rechecks knowledge after planning before any escrow or compression', () => {
     const r = make();
     const result = r.commands.preview('torch')!;
@@ -129,7 +155,7 @@ describe('live craft commands', () => {
     expect(workOf(r).components.map((i) => i.uid)).toContain(replacement.uid);
     expect(workOf(r).components.map((i) => i.uid)).not.toContain(wax.uid);
   });
-  it('will not create a second work tree while another craft descriptor is pending', () => {
+  it('starts a second work tree with free hands while preserving the stopped work on the ground', () => {
     const r = make();
     expect(r.commands.start('torch')).toBeUndefined();
     r.sim.actions.stop();
@@ -138,9 +164,11 @@ describe('live craft commands', () => {
     expect(r.inventory.add(r.inventory.create('wax', 2), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     expect(r.inventory.add(r.inventory.create('rag'), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     expect(r.commands.preview('candle')).toHaveProperty('plan');
-    const before = r.inventory.snapshotState();
-    expect(r.commands.start('candle')).toBe('Finish or take apart the other craft');
-    expect(r.inventory.snapshotState()).toEqual(before);
+    const inputs = structuredClone(item.work!.components);
+    expect(r.commands.start('candle')).toBeUndefined();
+    expect(r.inventory.itemByUid(item.uid)).toBe(item);
+    expect(item.work!.components).toEqual(inputs);
+    expect([...r.inventory.items()].filter((entry) => entry.item.work)).toHaveLength(2);
   });
   it('Continue checks the held root again rather than trusting an earlier enabled option', () => {
     const r = make();

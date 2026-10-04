@@ -90,7 +90,8 @@ Stopped actions do not recover fatigue or accumulate work while the world advanc
 A `work_in_progress` item's `work` field owns recipe, elapsed/duration (game
 seconds) and exact input item subtrees. F3's walker includes them; no job or second
 hand owns a copy. The native type reserves both hands through `twoHanded`, with
-one right-hand root. Inventory alone escrows/removes/releases inputs, prevents
+one right-hand root. Inventory refuses a work item into the left hand with
+`Work stays in the right hand`. Inventory alone escrows/removes/releases inputs, prevents
 independent consumption/moves of escrow, and maintains weights/UID lookup.
 Reach omits escrowed inputs. This core representation is required to prove F2;
 work-item options, native command wiring and the derived second-hand label now
@@ -101,6 +102,8 @@ two-handed stand-in box without adding a second item UID.
 safe compression before calling Inventory's structural escrow primitive. Refusal
 moves no inputs; a stale structural plan stops compression without creating a job.
 Unreferenced work remains legal and can be released via `cancelCraft(workUid)`.
+Free hands and no active craft permit another work tree; a stopped descriptor is
+not a one-pending-craft restriction. Dropped half-finished work keeps its own inputs.
 
 One shared planner admission function and station matcher serve planning, native
 start and Continue/ticks. The work owner adds only payload and hand checks.
@@ -109,7 +112,9 @@ hands, skill, current tool qualities and workstation. Tools/stations are live
 requirements, not stale saved provider references. Stop preserves elapsed work;
 Continue resets only the active-time cursor so stopped time is not charged. A
 running craft refuses rest with `Stop crafting first`; rest/sleep may replace a
-stopped descriptor, since progress still belongs to the work item.
+stopped descriptor, since progress still belongs to the work item. C and the
+status panel use the same native Continue UID: an existing rest/sleep job takes
+precedence over held work, and only no job permits the held-work fallback.
 Terminal state is cleared before effects; finish consumes escrow once and puts
 the result in the freed hand, while cancel returns exact input UIDs/counts without
 stack merging. The five ordinary `dropSpots` are shared with craft retirement;
@@ -149,7 +154,11 @@ without mutating live state. Controlled mutation evidence and measurements are
 retained under `.agent-mail/scratch/d31-*`.
 
 The rough panel shows only known recipes, raw found/needed counts, best usable
-qualities, skill gaps, preferences and refusal reasons. Clicks submit recipe/UID
+qualities, skill gaps, preferences and refusal reasons. The shared unfiltered
+`requirementStatus` supplies counts and levels to both admission and readouts.
+Refusals name missing tool qualities or the first understocked component group;
+allocation competition is reported only when each chosen group is stocked alone.
+Clicks submit recipe/UID
 intents and revalidate live state; readouts never mutate work or own another tree.
 Panel styling and in-game acceptance still stop at BR's first-look gate.
 

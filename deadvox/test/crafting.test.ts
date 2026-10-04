@@ -50,6 +50,19 @@ const stock = (
 };
 
 describe('pure craft planner', () => {
+  it('names the first understocked component group instead of reporting allocation competition', () => {
+    const { snapshot } = stock([{ type: 'rag' }, { type: 'wax' }]);
+    const definition = recipe([
+      [{ item: 'rag', count: 1 }],
+      [
+        { item: 'wax', count: 2 },
+        { item: 'stick', count: 2 },
+      ],
+    ]);
+    expect(planCraft(definition, snapshot, character)).toMatchObject({
+      missing: { reason: 'Needs 2 wax lump (1 found)' },
+    });
+  });
   it('bounds overlapping multi-quality provider work while retaining the cheapest disjoint components', () => {
     const definition = {
       ...recipe(['crowbar', 'kitchen_knife', 'can_opener'].map((item) => [{ item, count: 1 }])),

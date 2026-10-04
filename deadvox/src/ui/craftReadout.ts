@@ -1,9 +1,9 @@
 // Read-only crafting projection: one reach index, no item ownership or commands.
 import type { CraftCharacter } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
-import { type CraftPreference, indexCraftReach, planCraft } from '../core/crafting.ts';
+import { type CraftPreference, planCraft, requirementStatus } from '../core/crafting.ts';
 import type { Inventory } from '../core/inventory.ts';
-import { type Item, isEmpty } from '../core/items.ts';
+import type { Item } from '../core/items.ts';
 import type { LongJob } from '../core/longAction.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 
@@ -23,10 +23,11 @@ export interface CraftStatus {
 }
 export const craftStatus = (
   inventory: Inventory,
+  uid: number | undefined,
   job: Readonly<LongJob> | undefined,
   reason: string | undefined,
 ): CraftStatus | undefined => {
-  const item = job?.jobType === 'craft' ? inventory.itemByUid(job.workUid) : inventory.hands.right;
+  const item = uid === undefined ? undefined : inventory.itemByUid(uid);
   if (!item?.work) {
     return undefined;
   }
@@ -71,40 +72,37 @@ export const craftRows = ({
   reach: ReachSnapshot;
   preferences: Readonly<Record<string, CraftPreference>>;
   startReason: string | undefined;
-}): CraftRow[] => {
-  const index = indexCraftReach(reach);
-  return [...character.knownRecipes].sort().map((id) => {
+}): CraftRow[] =>
+  [...character.knownRecipes].sort().map((id) => {
     const recipe = registry.recipes.get(id)!;
     const prefer = preferences[id];
     const result = planCraft(recipe, reach, character, prefer);
+    const status = requirementStatus(recipe, reach, character);
     return {
       id,
       name: registry.items.get(recipe.result.item)!.name,
       time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.time * 60),
       reason: startReason ?? ('missing' in result ? result.missing.reason : undefined),
-      components: recipe.components.map((alternatives, group) => ({
+      components: status.components.map(({ alternatives, group }) => ({
         group,
         preferred: prefer?.[group] ?? '',
         alternatives: alternatives.map((a) => ({
           id: a.item,
           name: registry.items.get(a.item)!.name,
-          needed: a.count,
-          found: (index.byType.get(a.item) ?? [])
-            .filter((e) => isEmpty(e.item))
-            .reduce((sum, e) => sum + e.item.count, 0),
+          needed: a.needed,
+          found: a.available,
         })),
       })),
-      qualities: Object.entries(recipe.qualities).map(([name, required]) => ({
-        name,
+      qualities: status.qualities.map(({ quality, required, available }) => ({
+        name: quality,
         required,
-        best: Math.max(0, ...(index.qualities.get(name) ?? []).map((entry) => entry.level)),
+        best: available,
       })),
-      skills: Object.entries(recipe.skills).map(([name, required]) => ({
-        name: registry.skills.get(name)!.name,
+      skills: status.skills.map(({ skill, required, available }) => ({
+        name: registry.skills.get(skill)!.name,
         required,
-        available: character.skills[name] ?? 0,
+        available,
       })),
       workstation: recipe.workstation ?? null,
     };
   });
-};

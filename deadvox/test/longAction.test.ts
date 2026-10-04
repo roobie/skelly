@@ -6,6 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
+import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 
@@ -171,8 +172,8 @@ describe('core long actions', () => {
     runtime.inv.consume(knife);
     runtime.sim.scheduler.advance(1);
     expect(runtime.payload.elapsed).toBe(elapsed);
-    expect(runtime.sim.compression.interruption).toBe('Required tool quality not in reach');
-    expect(runtime.sim.actions.resume()).toBe('Required tool quality not in reach');
+    expect(runtime.sim.compression.interruption).toBe('Required cutting tool is not in reach');
+    expect(runtime.sim.actions.resume()).toBe('Required cutting tool is not in reach');
     expect(runtime.payload.elapsed).toBe(elapsed);
     runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos: [0, 0, 0] });
     expect(runtime.sim.actions.resume()).toBeUndefined();
@@ -193,6 +194,18 @@ describe('core long actions', () => {
     expect(resultCount(runtime.inv)).toBe(0);
     expect(runtime.inv.itemByUid(runtime.item.uid)).toBeUndefined();
     expect(inputs.map(({ uid }) => runtime.inv.itemByUid(uid))).toMatchObject(inputs);
+    const cells: string[] = [];
+    for (const pile of runtime.inv.piles.values()) {
+      for (const { item, x, y, rotated } of pile.items) {
+        const [w, h] = footprint(defOf(registry, item.type), rotated);
+        for (let dx = 0; dx < w; dx += 1) {
+          for (let dy = 0; dy < h; dy += 1) {
+            cells.push(`${pile.pos.join(',')}:${x + dx},${y + dy}`);
+          }
+        }
+      }
+    }
+    expect(new Set(cells).size).toBe(cells.length);
     expect(runtime.sim.actions.job).toBeUndefined();
   });
 
