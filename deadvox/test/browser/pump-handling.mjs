@@ -104,7 +104,7 @@ try {
     const gun = inv.hands.right;
     const box = [...inv.items()].find((item) => item.type === 'shotshell_box');
     const payload = inv.registry.items.get(box.type).unpack.count;
-    const capacity = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube.capacity;
+    const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube;
     return {
       gun: gun.uid,
       box: box.uid,
