@@ -71,10 +71,8 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
   });
-  // This contract covers hand actions, not mortality: gunshots attract nearby shamblers.
-  // Keep damage from killing the actor and stopping the sim during a later cock cycle.
   await page.goto(
-    `http://127.0.0.1:${address.port}/?debug=1&god=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+    `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
   // In this debug scenario, canvas alone precedes content validation/startPlay. The debug
   // mount is installed with the play/input handlers in the same synchronous startup task.
@@ -97,6 +95,15 @@ try {
     process.stderr.write(`startup errors: ${JSON.stringify(pageErrors)}; state: ${JSON.stringify(startup)}\\n`);
     throw error;
   }
+
+  // Gunshots attract shamblers. Mortality is not this hand-action contract;
+  // use the actual debug control and verify it (there is no god URL parameter).
+  await page.keyboard.press('KeyH');
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode),
+    true,
+    'hand-action fixture is damage immune',
+  );
 
   const loadoutMeleeUid = await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
