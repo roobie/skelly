@@ -7,13 +7,15 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, options, quickMove, toHands, type UseOption } from '../core/options.ts';
+import { bestPocket, dropTarget, type Option, options, quickMove, toHands, type UseOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
+import { workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
 export const CELL = 32;
@@ -68,6 +70,8 @@ export interface ScreenHooks {
   describe: (item: Item) => string[];
   /** Assigns a quickbar slot (0–4). */
   assign: (slot: number, item: Item) => void;
+  workOptions: (uid: number) => readonly WorkOption[];
+  work: (uid: number, operation: WorkOperation) => string | undefined;
 }
 
 interface Drag {
@@ -108,6 +112,7 @@ interface SlotViewModel {
   readonly label: string;
   readonly item?: ItemViewModel | undefined;
   readonly pockets?: readonly PocketViewModel[];
+  readonly occupied?: string | undefined;
 }
 
 interface PileViewModel {
@@ -130,6 +135,7 @@ interface OptionViewModel {
   readonly time?: string;
   readonly reason?: string;
   readonly target?: Target;
+  readonly operation?: WorkOperation;
 }
 
 interface DetailsViewModel {
@@ -156,6 +162,25 @@ interface InventoryScreenViewModel {
 
 const secs = (s: number) => `${s.toFixed(1)} s`;
 const kg = (g: number) => `${(g / 1000).toFixed(2)} kg`;
+const occupiedHand = (inv: Inventory, side: 'right' | 'left'): string | undefined => {
+  const other = inv.hands[side === 'right' ? 'left' : 'right'];
+  return !inv.hands[side] && other && defOf(inv.registry, other.type).twoHanded
+    ? workName(inv.registry, other)
+    : undefined;
+};
+
+const handContents = (slot: SlotViewModel): TemplateResult | typeof nothing => {
+  if (slot.item) {
+    return itemTemplate(slot.item);
+  }
+  return slot.occupied ? html`<span class="inv-occupied-hand">Reserved: ${slot.occupied}</span>` : nothing;
+};
+const optionAction = (option: Option | WorkOption): Pick<OptionViewModel, 'target' | 'operation'> => {
+  if ('kind' in option) {
+    return option.kind === 'move' ? { target: option.target } : {};
+  }
+  return { operation: option.operation };
+};
 
 const itemTemplate = (vm: ItemViewModel): TemplateResult => html`
   <div class=${vm.className} data-uid=${vm.uid} title=${vm.title} style=${vm.style ?? ''}>
@@ -180,11 +205,11 @@ const pocketTemplate = (vm: PocketViewModel): TemplateResult => html`
 const optionTemplate = (
   option: OptionViewModel,
   item: Item,
-  queue: (item: Item, target?: Target) => void,
+  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
 ): TemplateResult =>
   option.button
     ? html`
-        <button class="inv-option" type="button" @click=${() => queue(item, option.target)}>
+        <button class="inv-option" type="button" @click=${() => queue(item, option.target, option.operation)}>
           <span>${option.label}</span><span class="inv-time">${option.time}</span>
         </button>
       `
@@ -194,7 +219,10 @@ const optionTemplate = (
         </div>
       `;
 
-const detailsTemplate = (vm: DetailsViewModel, queue: (item: Item, target?: Target) => void): TemplateResult => {
+const detailsTemplate = (
+  vm: DetailsViewModel,
+  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
+): TemplateResult => {
   if (vm.empty) {
     return html`<aside class="inv-details"><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
   }
@@ -231,7 +259,7 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  queue: (item: Item, target?: Target) => void,
+  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
   search: (uid: number) => void,
 ): TemplateResult => html`
   <header class="inv-head">
@@ -246,7 +274,7 @@ const inventoryTemplate = (
         ${vm.hands.map(
           (slot) => html`
             <div class="inv-slot" data-target=${slot.target}>
-              <span class="inv-slot-label">${slot.label}</span>${slot.item ? itemTemplate(slot.item) : nothing}
+              <span class="inv-slot-label">${slot.label}</span>${handContents(slot)}
             </div>
           `,
         )}
@@ -525,7 +553,13 @@ export class InventoryScreen {
     render(
       inventoryTemplate(
         vm,
-        (item, target) => this.report(target ? this.tryQueue(item, target) : this.hooks.use(item)),
+        (item, target, operation) => {
+          if (operation) {
+            this.report(this.hooks.work(item.uid, operation));
+          } else {
+            this.report(target ? this.tryQueue(item, target) : this.hooks.use(item));
+          }
+        },
         (uid) => {
           const entity = this.entityByUid.get(uid);
           if (entity) {
@@ -544,6 +578,7 @@ export class InventoryScreen {
         target: `hand:${side}`,
         label: `${side === 'right' ? 'Right' : 'Left'} hand`,
         item: this.inv.hands[side] ? this.itemViewModel(this.inv.hands[side]!, 'inv-item inv-item-slot') : undefined,
+        occupied: occupiedHand(this.inv, side),
       }),
     );
     const slots = new Set<WearSlot>([...SHOWN_SLOTS, ...(Object.keys(this.inv.worn) as WearSlot[])]);
@@ -642,7 +677,7 @@ export class InventoryScreen {
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}`,
       title: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}, ${conditionWord(item.condition)}`,
-      name: def.name,
+      name: workName(this.inv.registry, item),
       count: item.count > 1 ? `×${item.count}` : undefined,
       style: style
         ? Object.entries(style)
@@ -662,12 +697,14 @@ export class InventoryScreen {
       item,
       empty: false,
       category: def.category,
-      name: `${def.name}${item.count > 1 ? ` ×${item.count}` : ''}`,
+      name: `${workName(this.inv.registry, item)}${item.count > 1 ? ` ×${item.count}` : ''}`,
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
-      options: options(item, this.hooks.reach())
-        .map((option) => (option.kind === 'use' ? this.hooks.useOption(item, this.hooks.reach()) : option))
+      options: [...options(item, this.hooks.reach()), ...this.hooks.workOptions(item.uid)]
+        .map((option) =>
+          'kind' in option && option.kind === 'use' ? this.hooks.useOption(item, this.hooks.reach()) : option,
+        )
         .map(
           (option): OptionViewModel =>
             option.plan.ok
@@ -675,7 +712,7 @@ export class InventoryScreen {
                   label: option.label,
                   button: true,
                   time: secs(option.plan.time),
-                  ...(option.kind === 'move' ? { target: option.target } : {}),
+                  ...optionAction(option),
                 }
               : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
         ),
@@ -687,6 +724,12 @@ export class InventoryScreen {
     const lines = [
       `${kg(weightOf(this.inv.registry, item))} · ${def.size[0]} × ${def.size[1]} cells · condition ${Math.round(item.condition * 100)}%`,
     ];
+    if (item.work) {
+      lines.push(
+        `Recipe: ${item.work.recipe}`,
+        `Progress: ${item.work.elapsed.toFixed(1)} / ${item.work.duration.toFixed(1)} game seconds`,
+      );
+    }
     if (def.stack) {
       lines.push(`Stacks up to ${def.stack}`);
     }

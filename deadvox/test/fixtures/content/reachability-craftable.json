@@ -1,7 +1,7 @@
 {
   "recipes": [
     {
-      "id": "fixture_supplier",
+      "id": "candle",
       "result": { "item": "fixture_unfound", "count": 1 },
       "time": 1,
       "skills": {},

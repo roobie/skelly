@@ -1,11 +1,55 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
 
+import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue } from './handling.ts';
-import type { HandSide, Inventory, Plan, Target } from './inventory.ts';
+import { dropSpots, type HandSide, type Inventory, type Plan, type Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
+import type { Readable } from './readable.ts';
+
+/** Keys stay ordinary Inventory-owned items; only held definitions authorize a door lock. */
+export const heldKeyLocks = (inventory: Inventory): string[] =>
+  Object.values(inventory.hands).flatMap((item) => {
+    const lock = item && defOf(inventory.registry, item.type).key?.lock;
+    return lock === undefined ? [] : [lock];
+  });
+
+export const doorPlan = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  operation: DoorOperation,
+  keyLocks = heldKeyLocks(inventory),
+): Plan => {
+  const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks);
+  const reason =
+    refusal ??
+    ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)
+      ? 'Too far away'
+      : undefined);
+  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handling };
+};
+
+export const doorOptions = (
+  inventory: Inventory,
+  entity: BlockEntity,
+): { operation: DoorOperation; label: string; plan: Plan }[] => {
+  const operation = entity.open ? 'close' : 'open';
+  const lock: DoorOperation = entity.lock?.locked ? 'unlock' : 'lock';
+  return [
+    { operation, label: entity.open ? 'Close' : 'Open', plan: doorPlan(inventory, entity, operation) },
+    ...(entity.lock
+      ? [
+          {
+            operation: lock,
+            label: entity.lock.locked ? 'Unlock' : 'Lock',
+            plan: doorPlan(inventory, entity, lock),
+          },
+        ]
+      : []),
+  ];
+};
 
 export const EAT_TIME = 3;
 export const DRINK_TIME = 2;
@@ -21,9 +65,10 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'eat' | 'switch' | 'battery';
+  operation?: 'eat' | 'switch' | 'battery' | 'read';
   light?: Item;
   battery?: Item;
+  readable?: Readable;
 }
 
 export type Option = MoveOption | UseOption;
@@ -39,14 +84,6 @@ export const playerPockets = (inv: Inventory): { owner: Item; pocket: number; la
       label: `${inv.name(owner)}${spec.name ? ` · ${spec.name}` : ''}`,
     })),
   );
-
-export const dropSpots = (feet: Vec3): Vec3[] => [
-  feet,
-  [feet[0] + 1, feet[1], feet[2]],
-  [feet[0] - 1, feet[1], feet[2]],
-  [feet[0], feet[1], feet[2] + 1],
-  [feet[0], feet[1], feet[2] - 1],
-];
 
 /** Ordinary drop finds the first of the five existing drop spots with room. */
 export const dropTarget = (inv: Inventory, item: Item, feet: Vec3): { target: Target; plan: Plan } => {
@@ -154,6 +191,13 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   };
 };
 
+const foodOption = (name: string, drink: boolean): UseOption => ({
+  kind: 'use',
+  label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
+  operation: 'eat',
+  plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
+});
+
 /** Eligibility only: effects remain in the domain command owner. */
 export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
@@ -173,14 +217,11 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (at.kind !== 'hand') {
     return refuseUse(`Take the ${name} in your hands first`);
   }
+  if (def.readable) {
+    return { kind: 'use', label: 'Read', operation: 'read', readable: def.readable, plan: { ok: true, time: 0 } };
+  }
   if (def.food) {
-    const drink = def.category === 'drink';
-    return {
-      kind: 'use',
-      label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
-      operation: 'eat',
-      plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
-    };
+    return foodOption(name, def.category === 'drink');
   }
   return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
 };

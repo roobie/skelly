@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { RestAction } from '../src/core/longAction.ts';
 import { Simulation } from '../src/core/sim.ts';
-import type { RestAction } from '../src/game/rest.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 
 describe('restViewModel', () => {

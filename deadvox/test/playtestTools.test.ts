@@ -285,6 +285,7 @@ describe('controls card', () => {
     expect(rows.map(({ keys }) => keys)).toContain('F9');
     expect(rows.map(({ keys }) => keys)).toContain('F4');
     expect(rows.map(({ keys }) => keys)).toContain('Tab');
+    expect(rows.map(({ keys }) => keys)).not.toContain('Shift+F');
     expect(rows.find(({ keys }) => keys === 'Left click')?.action).toContain('Right-hand primary action');
     expect(rows.find(({ keys }) => keys === '=')?.action).toContain('Left-hand primary action');
     expect(rows.at(-1)?.action).toContain('E: Move to your best pocket');
@@ -292,9 +293,10 @@ describe('controls card', () => {
 
   it('derives the card label from the same remapped key code used by dispatch', () => {
     const remapped = PLAYER_CONTROL_BINDINGS.map((binding) =>
-      binding.action === 'Interact with a door or furniture' ? { ...binding, codes: ['KeyJ'] as const } : binding,
+      binding.action.includes('door') ? { ...binding, codes: ['KeyJ'] as const } : binding,
     );
     const rows = controlsCardRows(remapped);
+    expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
     expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
   });
 });

@@ -6,10 +6,16 @@ import type { ItemDef, Registry } from './content.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export interface Item {
-  /** Unique per world; never reused. */
-  readonly uid: number;
-  readonly type: string;
+/** Craft inputs/progress have exactly one owner: this ordinary item subtree. */
+export interface CraftWork<Node> {
+  recipe: string;
+  elapsed: number;
+  duration: number;
+  components: Node[];
+}
+
+/** Scalar and pocket fields are shared by live items and their saved tree. */
+export interface ItemFields<Node> {
   count: number;
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
@@ -23,37 +29,33 @@ export interface Item {
    */
   made?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
-  pockets?: Placed[][];
+  pockets?: PlacedItem<Node>[][];
   /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
   firearm?: FirearmState;
+  work?: CraftWork<Node> | undefined;
+}
+
+export interface Item extends ItemFields<Item> {
+  /** Unique per world; never reused. */
+  readonly uid: number;
+  readonly type: string;
 }
 
 /** An item in a grid, at its top-left cell. */
-export interface Placed {
-  item: Item;
+export interface PlacedItem<Node> {
+  item: Node;
   x: number;
   y: number;
   rotated: boolean;
 }
 
-export interface ItemState {
+export interface ItemState extends ItemFields<ItemState> {
   uid: number;
   type: string;
-  count: number;
-  condition: number;
-  charges?: number;
-  on?: boolean;
-  made?: number;
-  pockets?: PlacedState[][];
-  firearm?: FirearmState;
 }
 
-export interface PlacedState {
-  item: ItemState;
-  x: number;
-  y: number;
-  rotated: boolean;
-}
+export type Placed = PlacedItem<Item>;
+export type PlacedState = PlacedItem<ItemState>;
 
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>
@@ -67,6 +69,14 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.made === undefined ? {} : { made: item.made }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+    ...(item.work === undefined
+      ? {}
+      : {
+          work: {
+            ...item.work,
+            components: item.work.components.map((component) => snapshotItem(component) as ItemState),
+          },
+        }),
   });
 
 export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
@@ -96,6 +106,12 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
   };
+  if (state.work) {
+    item.work = {
+      ...state.work,
+      components: state.work.components.map((component) => restoreItem(registry, component)),
+    };
+  }
   return item;
 };
 
@@ -181,7 +197,7 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
 /** True when the item has no pockets, or they're all empty. */
-export const isEmpty = (item: Item): boolean => (item.pockets ?? []).every((grid) => grid.length === 0);
+export const isEmpty = (item: Item): boolean => !item.work && (item.pockets ?? []).every((grid) => grid.length === 0);
 
 /** Condition as a word (DESIGN.md, "The item model"). */
 export const conditionWord = (condition: number): string => {
@@ -269,4 +285,5 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
 /** Grams, counting the stack and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
   defOf(registry, item.type).weight * item.count +
-  (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0);
+  (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
+  (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);

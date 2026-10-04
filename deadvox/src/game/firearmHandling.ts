@@ -146,7 +146,7 @@ export class FirearmMechanics {
     this.blockSize = blockSize;
     this.pose = pose;
     this.onEjection = onEjection;
-    for (const item of inventory.items()) {
+    for (const { item } of inventory.items()) {
       if (item.firearm?.cycle) {
         this.active.add(item.uid);
       }

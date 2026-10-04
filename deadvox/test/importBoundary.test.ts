@@ -3,11 +3,12 @@ import { join, normalize, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The projects are independent on purpose (root README): deadvox copies, it never imports from
-// gungen, mobgen or site, and nothing reaches above its own directory.
+// gungen, mobgen or site. The native browser-profile test adapter alone reuses the root temp owner.
 const ROOTS = ['src', 'test', 'tools'];
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist']);
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
 const SIBLING = /(^|[\\/])(gungen|mobgen|site)([\\/]|$)/;
+const SHARED_TEST_IMPORTS = new Map([['tools/browser-profile.mjs', new Set(['../../testTemp.ts'])]]);
 
 // Static `from '…'`, side-effect `import '…'`, dynamic `import('…')` and `require('…')`.
 const SPECIFIER = /\b(?:from\s*|import\s*\(?\s*|require\s*\(\s*)(['"`])([^'"`\n]+)\1/g;
@@ -22,6 +23,9 @@ const sourceFiles = (dir: string): string[] =>
   });
 
 const escapesProject = (file: string, specifier: string): boolean => {
+  if (SHARED_TEST_IMPORTS.get(file)?.has(specifier)) {
+    return false;
+  }
   if (SIBLING.test(specifier)) {
     return true;
   }
@@ -40,7 +44,7 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(files.length).toBeGreaterThan(50);
   });
 
-  it('imports nothing from gungen, mobgen, site or above deadvox/', () => {
+  it('imports nothing from sibling projects or above deadvox except the shared test utility', () => {
     const offenders = files.flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(SPECIFIER)]
         .map((match) => match[2] ?? '')
@@ -57,6 +61,8 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(escapesProject('src/a.ts', 'site/x')).toBe(true);
     expect(escapesProject('src/game/a.ts', '../core/x.ts')).toBe(false);
     expect(escapesProject('test/a.ts', '../src/core/x.ts')).toBe(false);
+    expect(escapesProject('tools/browser-profile.mjs', '../../testTemp.ts')).toBe(false);
+    expect(escapesProject('test/a.ts', '../../testTemp.ts')).toBe(true);
     expect(escapesProject('src/a.ts', 'three')).toBe(false);
   });
 });

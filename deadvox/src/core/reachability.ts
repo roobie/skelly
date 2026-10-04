@@ -1,13 +1,16 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
+import { startingKnownRecipes } from './character.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
+import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** Deferred source contracts. Their owning milestones must promote these to hard checks. */
-export const PENDING_REACHABILITY = { knowledge: '2.4/2.5', skill: '2.5', workstation: '2.8' } as const;
+export const PENDING_REACHABILITY = { skill: '2.5', workstation: '2.8' } as const;
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
+  WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'debug_rifle_assault',
   'spent_case_5_d_56x45',
@@ -59,13 +62,19 @@ const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: s
   [...items].some((id) => (registry.items.get(id)?.tool?.qualities[quality] ?? 0) >= level);
 
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
-const closure = (registry: Registry, found: ReadonlySet<string>, tools: boolean): Set<string> => {
+const closure = (
+  registry: Registry,
+  found: ReadonlySet<string>,
+  tools: boolean,
+  knowledge: ReadonlySet<string>,
+): Set<string> => {
   const items = new Set(found);
   let previous: number;
   do {
     previous = items.size;
     for (const recipe of registry.recipes.values()) {
       if (
+        knowledge.has(recipe.id) &&
         inputsReady(recipe, items) &&
         (!tools ||
           Object.entries(recipe.qualities).every(([quality, level]) => qualityReady(registry, items, quality, level)))
@@ -114,7 +123,6 @@ const pendingFor = (recipe: RecipeDef, workstations: ReadonlySet<string>): Pendi
   const defer = (kind: keyof typeof PENDING_REACHABILITY, path: string) => {
     pending.push({ recipe: recipe.id, path, kind, message: `pending: no source yet (${PENDING_REACHABILITY[kind]})` });
   };
-  defer('knowledge', '.knowledge');
   for (const [skill, level] of Object.entries(recipe.skills)) {
     if (level > 0) {
       defer('skill', `.skills.${skill}`);
@@ -130,11 +138,18 @@ const recipeDiagnostics = (
   registry: Registry,
   components: ReadonlySet<string>,
   toolReachable: ReadonlySet<string>,
-  workstations: ReadonlySet<string>,
+  { workstations, knowledge }: { workstations: ReadonlySet<string>; knowledge: ReadonlySet<string> },
 ) => {
   const issues: RecipeDiagnostic[] = [];
   const pending: Pending[] = [];
   for (const recipe of registry.recipes.values()) {
+    if (!knowledge.has(recipe.id)) {
+      issues.push({
+        recipe: recipe.id,
+        path: '.knowledge',
+        message: `recipe "${recipe.id}" has no starting knowledge source (books arrive in 2.5)`,
+      });
+    }
     recipe.components.forEach((group, g) => {
       group.forEach((component, a) => {
         if (!components.has(component.item)) {
@@ -160,11 +175,17 @@ const recipeDiagnostics = (
   return { issues, pending };
 };
 
-export const checkReachability = (registry: Registry) => {
+export const checkReachability = (
+  registry: Registry,
+  known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
+) => {
   const { found, workstations } = worldSources(registry);
-  const components = closure(registry, found, false);
-  const toolReachable = closure(registry, found, true);
-  const { issues, pending } = recipeDiagnostics(registry, components, toolReachable, workstations);
+  const components = closure(registry, found, false, known);
+  const toolReachable = closure(registry, found, true, known);
+  const { issues, pending } = recipeDiagnostics(registry, components, toolReachable, {
+    workstations,
+    knowledge: known,
+  });
   const eligible = [...registry.items.keys()].filter((id) => !CONTENT_COUNT_EXCLUSIONS.has(id));
   return {
     found,

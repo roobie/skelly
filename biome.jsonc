@@ -44,6 +44,10 @@
       "includes": ["**"],
       "linter": {
         "rules": {
+          "correctness": {
+            // Shared Tiled/runtime ES modules have .d.mts type bridges, but execute as .mjs.
+            "useImportExtensions": { "level": "error", "options": { "extensionMappings": { "mts": "mjs" } } }
+          },
           "complexity": {
             // noExcessiveCognitiveComplexity (on) measures what matters; raw length doesn't.
             "noExcessiveLinesPerFunction": "off"
@@ -96,7 +100,7 @@
     },
     {
       // Node is allowed only in CLIs, tests and build config; game/core code stays browser-pure.
-      "includes": ["**/src/cli/**", "**/test/**", "**/vite.config.ts"],
+      "includes": ["**/src/cli/**", "**/test/**", "**/vite.config.ts", "testPool.ts"],
       "linter": { "rules": { "correctness": { "noNodejsModules": "off" } } }
     },
     {

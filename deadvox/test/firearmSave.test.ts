@@ -6,7 +6,7 @@ import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponent
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
+import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -36,7 +36,11 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
     case 'sound':
       return registry.sounds.has(id);
     case 'scheduler':
-      return ['needs', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+      return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+    case 'skill':
+      return registry.skills.has(id);
+    case 'recipe':
+      return registry.recipes.has(id);
     default:
       throw new Error(`Unknown content kind ${kind}`);
   }
@@ -62,6 +66,7 @@ const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>)
     },
     audio: { play: () => undefined },
     notice: () => undefined,
+    onRead: () => undefined,
     onFirearmEjection: (effect) => effects.push(effect),
     ...(restore ? { restore } : {}),
   });
@@ -72,6 +77,12 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
   const rifle = original.inventory.create('debug_rifle_assault');
   expect(original.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
   const pickerBefore = original.audioState();
+  const { action, calibre } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR save fixture needs exported automatic action data');
+  }
+  const ejectTime = action.fire.rearwardSeconds * action.ejectAt;
+  const cycleTime = action.fire.durationSeconds;
   expect(
     original.firearms.fire({
       debugMode: true,
@@ -85,7 +96,7 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
       blockSize: 0.5,
     }),
   ).toBe(true);
-  original.frame(0.005);
+  original.frame(ejectTime / 2);
   original.firearms.advanceTo(original.sim.time);
   const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
   const bytes = await encodeSave(saved, {
@@ -98,23 +109,18 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
   const restored = session(restoredEffects, decoded.snapshot);
   const cases = (runtime: ReturnType<typeof session>) =>
     [...runtime.inventory.items()]
-      .filter((item) => item.type === 'spent_case_5_d_56x45')
-      .map(({ uid, count }) => ({ uid, count }));
-  const { action } = firearmHandlingFor(rifle, registry);
-  if (!action.fire) {
-    throw new Error('AR save fixture needs exported automatic action data');
-  }
-  const ejectTime = action.fire.rearwardSeconds * action.ejectAt;
+      .filter(({ item }) => item.type === spentCaseItemId(calibre))
+      .map(({ item: { uid, count } }) => ({ uid, count }));
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(ejectTime - 1e-6);
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(ejectTime);
   expect(cases(restored)).toEqual([{ uid: rifle.uid + 1, count: 1 }]);
-  restored.firearms.advanceTo(0.5);
-  restored.firearms.advanceTo(1);
+  restored.firearms.advanceTo(cycleTime);
+  restored.firearms.advanceTo(cycleTime * 2);
   expect(cases(restored)).toEqual([{ uid: rifle.uid + 1, count: 1 }]);
   expect(restoredEffects).toHaveLength(1);
-  original.firearms.advanceTo(1);
+  original.firearms.advanceTo(cycleTime * 2);
   expect(restoredEffects).toEqual(originalEffects);
   expect(restored.audioState()).toEqual(pickerBefore);
   expect(saved.character.inventory.hands.right?.firearm?.chamber).toBe('case');

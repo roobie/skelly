@@ -62,7 +62,7 @@ const inspectLiveSession = (session: Session): unknown => ({
   jobs: session.queue.jobs.map((job) => structuredClone(job)),
   zombies: session.zombies.snapshotState(),
   spawner: session.spawner.snapshotState(),
-  rest: session.rest.snapshotState(),
+  longAction: session.sim.actions.snapshotState(),
   survival: session.survival.snapshotState(),
   playerAudio: structuredClone(session.playerAudio),
   audio: session.audioState(),

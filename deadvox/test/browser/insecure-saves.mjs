@@ -53,7 +53,6 @@ try {
     undefined,
     { timeout: STAGE_TIMEOUT_MS },
   );
-  await page.waitForTimeout(500);
   assert.match(
     await page.locator('#save-status').textContent(),
     /Saves need a secure \(https\) page; this session won't be saved/,

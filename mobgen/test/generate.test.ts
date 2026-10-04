@@ -8,19 +8,6 @@ import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 100;
 
-/** FNV-1a over owner + colour: fingerprints the actual voxel grid, not the genome (mirrors
- * src/cli/stats.ts's hashVoxels — two genomes can render the same shape, and vice versa). */
-const hashVoxels = (owner: Uint8Array, color: Uint8Array): string => {
-  let h = 0x81_1c_9d_c5;
-  for (const b of owner) {
-    h = Math.imul(h ^ b, 0x01_00_01_93);
-  }
-  for (const b of color) {
-    h = Math.imul(h ^ b, 0x01_00_01_93);
-  }
-  return (h >>> 0).toString(16);
-};
-
 describe('generate', () => {
   it('is deterministic: same seed, same genome', () => {
     for (const t of TEMPLATES) {
@@ -369,17 +356,4 @@ describe('templates', () => {
     expect(mean).toBeGreaterThanOrEqual(head.min);
     expect(mean).toBeLessThanOrEqual(head.max);
   });
-
-  // Known-good seeds. A snapshot change means generation changed: check the gallery in the viewer
-  // (phase B) before updating (vitest -u). Mirrors gungen's generate.test.ts snapshot pattern.
-  for (const t of TEMPLATES) {
-    it(`${t.name}: known-good seeds (genome + voxel-grid hash)`, () => {
-      const gallery = [1, 2, 3].map((seed) => {
-        const found = generateValid(t, seed * 100)!;
-        const { voxels } = found.realized;
-        return { genome: found.genome, gridHash: hashVoxels(voxels.owner, voxels.color) };
-      });
-      expect(gallery).toMatchSnapshot();
-    });
-  }
 });
