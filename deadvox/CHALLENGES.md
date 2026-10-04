@@ -52,7 +52,7 @@ frames over 18 ms in every
 benchmark phase, and no holes at sprint speed. The 96 m default leaves room for
 zombies, lighting and UI. See `src/bench/run.ts`, `startBench`.
 
-BR's 2026-09-26 decision keeps culling, which costs nothing and hides no visible
+The 2026-09-26 decision keeps culling, which costs nothing and hides no visible
 chunks, and rejects occlusion culling because GPU time did not track chunk count;
 if a later milestone needs GPU headroom, inspect per-pixel cost first (pixel
 ratio, antialiasing, chunk shader). The cull is in `src/render/chunks.ts`,
