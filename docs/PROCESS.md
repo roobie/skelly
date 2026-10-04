@@ -147,9 +147,11 @@ deletions and net lines. Separate source, tests, docs, content and generated
 snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
 changes cannot be isolated, say so rather than estimate.
 
-The slice retrospective reports findings opened, completed, partially completed,
-carried and dropped; per-item line/site figures; review-caught defects, escaped
-regressions and review/CI rework separately; and standalone/folded capacity counts
+The slice plan leaves the tree at its retrospective, after its live content moves;
+git and GitHub history keep it. The slice retrospective reports findings opened,
+completed, partially completed, carried and dropped; per-item line/site figures;
+review-caught defects, escaped regressions and review/CI rework separately; and
+standalone/folded capacity counts
 with their denominator. Distinguish a persistent finding from a reintroduced one.
 For milestones said to be unblocked, record ready/start/review-ready/merge dates
 and known waits; claim a speedup only with a defensible comparison. Unknown effort

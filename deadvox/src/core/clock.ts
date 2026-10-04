@@ -7,7 +7,6 @@ export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 /** Calendar seconds per simulation second. 1:8 makes a game day 3 real hours. */
 export const CLOCK_RATIO = 8;
 
-/** Slice 1 starts at dusk on day 1 (SLICE-1.md, "Tunables"). */
 export const SPAWN_TIME = 19.5 * SECONDS_PER_HOUR;
 
 export interface ClockSettings {

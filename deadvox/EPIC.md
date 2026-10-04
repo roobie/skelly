@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're planning a version 1 slice, milestone or playtest
+  - you're deciding which features belong in deadvox version 1
+---
+
 # deadvox — the road to version 1
 
 **Goal:** a playable hybrid of CDDA and DayZ in a voxel package.
@@ -6,8 +12,7 @@ This document defines what version 1 is, then breaks the way there into
 slices. Each slice is playable and deployed to GitHub Pages. The first real
 playtest is at the end of Slice 3, before Slice 4 starts (BR, 2026-10-02); later
 slices are playtested before the next one starts. The systems are described in
-[DESIGN.md](DESIGN.md), the risks in [CHALLENGES.md](CHALLENGES.md), and the
-first slice in detail in [SLICE-1.md](SLICE-1.md).
+[DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES.md).
 
 ## What version 1 is
 
@@ -101,22 +106,6 @@ The order follows dependencies:
 - Slice 7 needs the electricity and fire systems from Slice 5, because labs
   have powered doors and hot zombies start fires.
 
-### 1. The loot run
-
-See [SLICE-1.md](SLICE-1.md). It covers:
-
-- the scale measurement and the switch to 0.5 m blocks
-- the simulation core: clock, day and night, scheduler, compression
-- schema-based content
-- items with pockets, handling time and the inventory screen
-- a hamlet of templated houses with loot
-- needs, and health as a single pool
-- shamblers
-- sleep in compressed time
-- basic sound: footsteps, doors, shamblers and night ambience
-- saves
-- a playtest build that logs local metrics
-
 ### 2. Craft and mend
 
 See [SLICE-2.md](SLICE-2.md). The inventory screen's move to lit-html, planned
@@ -139,9 +128,54 @@ as this slice's first step, was done in Slice 1 (#105), which completed
 
 ### 3. Flesh and noise
 
-The first real playtest is at this slice's end (BR, 2026-10-02): use the Slice 1
-playtest plan and include the questions added by Slices 2 and 3. BR's reason for
-the timing is that the base game will be in place by then.
+The first real playtest is at this slice's end (BR, 2026-10-02), before Slice 4
+starts. BR chose this timing because the base game will be in place. It combines
+the questions below with those added by Slice 2 in [SLICE-2.md](SLICE-2.md) and
+by this slice.
+
+#### Playtest plan
+
+Use the authored map specified in
+[#181](https://github.com/roobie/skelly/issues/181). Test at least three people,
+including someone new to both CDDA and DayZ, in a 45-minute session on Pages. Give only this prompt: “Survive until morning. Loot
+what you think you need.” Do not teach the systems first.
+
+Run: open the Pages build, read the controls card and start at dusk. Walk the
+road between houses; search kitchen cupboards, move food into pockets, then put
+on a backpack and rearrange items. While in the inventory, have a shambler reach
+the door they left open; drop what they are holding, take the crowbar from the
+pile, and fight or evade it. Eat, drink and use the flashlight; listen for
+something outside at night and decide whether to switch the light off. Close the
+door, sleep, respond to the 03:40 interruption, then continue to morning. Close the tab and return with Continue; on a later death,
+review the death screen and start a new world.
+
+Ask each player:
+
+1. Is looting tense and fun when each item move takes real seconds while the
+   world keeps moving?
+2. Does choosing a pocket matter? Do players notice handling time? Is fitting
+   items into grids a puzzle or a chore?
+3. Does 0.5 m feel right for doors, stairs, interiors and furniture?
+4. Is compressed sleep readable? Is the interruption clear and fair?
+5. Are a few shamblers enough threat to make looting and sleep meaningful?
+6. Is the first night frightening? What scared the player, and did it come from
+   darkness and sounds rather than a scripted moment? Until voxel light arrives
+   in Slice 4, interiors are no darker than outdoors; read the answers with that
+   in mind ([DESIGN.md](DESIGN.md#light)).
+7. Does the 1:8 clock ratio let a 45-minute session show enough of the world?
+8. Do non-respawning shamblers make the second night too safe?
+9. Is combat readable? Do noise and wounds change what the player does? Do they
+   listen before moving?
+
+Watch how long people spend in the inventory screen, pocket choices, reactions
+to unseen sounds and interruptions, and any point where players stall or
+misunderstand. Ask which moment most annoyed and which most delighted each
+player. Save the local metrics and facilitator notes with the findings. If the
+second night is too safe, add night wanderers after the first playtest. Update DESIGN, CHALLENGES and this EPIC with
+the findings before planning Slice 4.
+
+The death/new-run contract is still open for version 1: should a new run in the
+same world preserve piles left by the previous character?
 
 - An authored playtest map for that playtest (BR, 2026-10-03;
   [#181](https://github.com/roobie/skelly/issues/181)). BR provides a simple
@@ -238,6 +272,20 @@ the timing is that the base game will be in place by then.
 - New sources for `footstep_stone` and `shambler_step_stone`; park the current gravel-sounding clips for a future gravel surface.
 - More `door_open` variants; only `door-open-03.ogg` is currently accepted.
 - A distinct stuck-door sound; `door_close` and `door_blocked_close` temporarily share `door_blocked_close-01.ogg`.
+- Wire eating, drinking, and flashlight on/off sounds to their use actions; add
+  sustained or periodic breathing when stamina is low.
+- Add shambler door-contact sounds with the door-banging behavior.
+- Mix wind ambience quieter at night. Expand shambler idle presence beyond
+  occasional groans with state-shaped moans, breathing and in-place shuffling.
+- Add the player's bodily cues—yawning, stomach sounds, coughing and uneven
+  footsteps when limping—when those states and events exist.
+- Record sand-specific player footsteps and heavier, dragging shambler steps;
+  don't pitch down player recordings to stand in for shambler steps.
+- Shambler steps measured 14.5 m at effective gain 0.014, but audibility by ear
+  beyond 10 m at night is unconfirmed; tune gain and falloff by ear.
+- Record a distinct blocked-door close and a hard-landing-specific sound; add
+  the missing scenario proof that footsteps, doors and fights emit positional
+  sounds.
 - A better fist-hit source (the current placeholder is retained).
 - A blunt hit on a wall, a hard landing, and more swing variants.
 
@@ -295,7 +343,8 @@ qualities, the body model, saves, dark nights and sound. They are the game.
    its end.
 3. **Playtest:** at least 3 people follow a short script, and the build logs
    local metrics. The first real playtest is scheduled for the end of Slice 3
-   (BR, 2026-10-02), covering the Slice 1 plan plus questions from Slices 2 and 3.
+   (BR, 2026-10-02), covering the first-slice questions recorded above plus
+   questions from Slices 2 and 3.
 4. **Review the slice:** run the exit consolidation surveys and report the
    process metrics: findings and their dispositions, per-item line/site changes,
    regressions including review-caught defects, standalone/folded capacity,
