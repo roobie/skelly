@@ -458,11 +458,8 @@ try {
     const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
     await openResidentDoor(residentId);
-    const residentApproach = await page.evaluate((id) => {
-      const resident = globalThis.stairsWitness.session.zombieStore.get(id);
-      return [resident.body.pos[0] - 3, resident.body.pos[1], resident.body.pos[2] - 2];
-    }, residentId);
-    await walkTo(residentApproach, 'approach resident through its open door');
+    const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    await page.keyboard.down('KeyW');
     await waitForSimulation(
       page,
       (id) => {
@@ -475,9 +472,11 @@ try {
       },
       residentId,
       {
-        seconds: 6,
+        seconds: 8,
+        from: approachStart,
         label: 'resident hears the player at the open doorway',
         record: state,
+        stop: () => page.keyboard.up('KeyW'),
       },
     );
     await walkTo([121, 51, 115], 'return to upper stair landing');
