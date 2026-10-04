@@ -1379,6 +1379,7 @@ describe('authored stair navigation', () => {
   const systemFor = (start: Vec3, target: Vec3, stairFlights = [flight]) => {
     const system = new ZombieSystem({
       ...senses(() => player(target, [-1, 0, 0], 'sprinting'), stair),
+      isOpaque: () => true,
       stairFlights,
     });
     const id = system.add(SHAMBLER, start, [1, 0, 0]);
@@ -1388,7 +1389,7 @@ describe('authored stair navigation', () => {
   it('climbs the authored cellar flight instead of arriving at its lower-floor projection', () => {
     const { system, zombie } = systemFor(flight.lower, flight.upper);
     system.tick(1 / 20, 1 / 20);
-    expect(zombie.mode).toBe('chase');
+    expect(zombie.mode).toBe('investigate');
     for (let tick = 2; tick <= 20 * 12; tick++) {
       system.tick(1 / 20, tick / 20);
     }
@@ -1396,7 +1397,8 @@ describe('authored stair navigation', () => {
   });
 
   it('does not report arrival at a disconnected cross-floor projection', () => {
-    const { system, zombie } = systemFor(flight.lower, flight.upper, []);
+    const projectedTarget: Vec3 = [flight.lower[0], flight.upper[1], flight.lower[2]];
+    const { system, zombie } = systemFor(flight.lower, projectedTarget, []);
     for (let tick = 1; tick <= 20 * 3; tick++) {
       system.tick(1 / 20, tick / 20);
     }

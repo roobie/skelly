@@ -267,6 +267,76 @@ try {
       throw error;
     }
   };
+  const openResidentDoor = async (residentId) => {
+    const uid = await page.evaluate((id) => {
+      const { body, input, session, entities, doorPanel } = globalThis.stairsWitness;
+      const resident = session.zombieStore.get(id);
+      if (!resident) {
+        throw new Error('stairs_house resident is not streamed');
+      }
+      const doors = [...entities.all].filter(
+        (entity) => entities.defOf(entity).door && !entity.open && !entity.lock?.locked,
+      );
+      const centre = (entity) => [
+        entity.pos[0] + entity.size[0] / 2,
+        entity.pos[1],
+        entity.pos[2] + entity.size[2] / 2,
+      ];
+      const distanceToResident = (entity) =>
+        Math.hypot(...centre(entity).map((value, axis) => value - resident.body.pos[axis]));
+      const [door] = doors.sort((a, b) => distanceToResident(a) - distanceToResident(b));
+      if (!door) {
+        throw new Error('stairs_house resident has no closed ordinary door nearby');
+      }
+      const [cx, , cz] = centre(door);
+      const normal = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] }[door.facing];
+      const residentSide =
+        Math.sign((resident.body.pos[0] - cx) * normal[0] + (resident.body.pos[2] - cz) * normal[1]) || 1;
+      body.pos = [cx - residentSide * normal[0] * 2.4, resident.body.pos[1], cz - residentSide * normal[1] * 2.4];
+      body.vel = [0, 0, 0];
+      const panel = doorPanel(door, 0.5);
+      const c = Math.cos(panel.rotationY);
+      const s = Math.sin(panel.rotationY);
+      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
+      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
+      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
+      input.yaw = Math.atan2(-dx, -dz);
+      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      return door.uid;
+    }, residentId);
+    const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    await page.keyboard.press('KeyF');
+    const result = await page.waitForFunction(
+      ({ targetUid, until }) => {
+        const { session, entities } = globalThis.stairsWitness;
+        const door = entities.byUid(targetUid);
+        return door.open || session.sim.time >= until ? { open: door.open } : false;
+      },
+      { targetUid: uid, until: started + 3 },
+      { timeout: 0, polling: 50 },
+    );
+    assert.equal((await result.jsonValue()).open, true, "F opens the resident's ordinary closed door");
+  };
+  const walkTo = async (target, label) => {
+    const start = await page.evaluate((destination) => {
+      const { input, session, body } = globalThis.stairsWitness;
+      input.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
+      input.pitch = 0;
+      return session.sim.time;
+    }, target);
+    await page.keyboard.down('KeyW');
+    await waitForSimulation(
+      page,
+      (destination) => {
+        const { body, session } = globalThis.stairsWitness;
+        const distance = Math.hypot(body.pos[0] - destination[0], body.pos[2] - destination[2]);
+        const supported = body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01;
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5 && supported, distance };
+      },
+      target,
+      { seconds: 12, from: start, label, record: state, stop: () => page.keyboard.up('KeyW') },
+    );
+  };
   let lightProof;
   let outdoorProof;
   let residentProof;
@@ -380,21 +450,53 @@ try {
     assert.equal(wrongKey.notice, "The key doesn't fit", 'a wrong held key refuses activation');
     assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
     await stage([112, 43.0001, 115]);
-    await state('house lower landing');
+    const houseLower = await state('house lower landing');
+    const residentId = houseLower.zombies[0]?.id;
+    assert.ok(Number.isSafeInteger(residentId), 'stairs_house streams its authored resident');
     await walk('w', 121, true, 51);
-    assert.ok(Math.abs((await state('house upstairs walked')).position[1] - 51) < 0.01);
-    await page.evaluate(() => {
-      globalThis.stairsWitness.input.yaw = Math.PI / 2;
-      globalThis.stairsWitness.input.pitch = -0.3;
-    });
-    await page.waitForTimeout(150);
-    // No screenshots in render-free traversal mode; they would show no world.
+    const houseUpper = await state('house upstairs walked');
+    const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
+    assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
+    await openResidentDoor(residentId);
+    await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
       globalThis.stairsWitness.input.yaw = -Math.PI / 2;
       globalThis.stairsWitness.input.pitch = 0;
     });
     await walk('s', 112, false, 43);
-    assert.ok(Math.abs((await state('house downstairs walked')).position[1] - 43) < 0.01);
+    const houseDownstairs = await state('house downstairs walked');
+    const residentBeforeDescent = houseDownstairs.zombies.find(({ id }) => id === residentId);
+    assert.ok(residentBeforeDescent);
+    if (Math.round(residentBeforeDescent.pos[1]) !== Math.round(houseDownstairs.position[1])) {
+      assert.notEqual(residentBeforeDescent.mode, 'search');
+    }
+    const followed = await waitForSimulation(
+      page,
+      (id) => {
+        const { session, body } = globalThis.stairsWitness;
+        const resident = session.zombieStore.get(id);
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: resident !== undefined && Math.round(resident.body.pos[1]) === Math.round(body.pos[1]),
+          residentFloor: resident ? Math.round(resident.body.pos[1]) : null,
+          targetFloor: Math.round(body.pos[1]),
+        };
+      },
+      residentId,
+      {
+        seconds: 30,
+        from: houseDownstairs.simulationTime,
+        label: 'stairs_house resident follows the authored flight to the player floor',
+        record: state,
+      },
+    );
+    residentProof = {
+      residentId,
+      upperFloor: Math.round(residentAtUpper.pos[1]),
+      lowerFloor: Math.round(houseDownstairs.position[1]),
+      simulationSeconds: followed.seconds,
+    };
 
     await stage([143, 43.0001, 115]);
     await walk('s', 134, false, 35);
