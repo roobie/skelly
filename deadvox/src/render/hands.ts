@@ -23,6 +23,7 @@ import {
 } from 'three';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Job } from '../core/handling.ts';
 import { HOLD, heldAnchorOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -38,6 +39,7 @@ import {
 } from './firearmModel.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
+import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Metres per grid cell for the stand-in box. */
@@ -50,6 +52,11 @@ export interface HeldFirearmPose {
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
+}
+
+export interface HeldHandlingFrame {
+  readonly firearms: readonly HeldFirearmPose[];
+  readonly job?: Readonly<Job> | undefined;
 }
 
 export class HeldItems {
@@ -84,13 +91,21 @@ export class HeldItems {
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
+  private rummageSupportRest: { arm: Group; position: Vector3 } | undefined;
 
   private readonly palette: FigureDef['palette'];
+  private readonly primaryHandSide: HandSide;
 
-  constructor(inventory: Inventory, models: ModelLibrary | undefined, palette: FigureDef['palette']) {
+  constructor(
+    inventory: Inventory,
+    models: ModelLibrary | undefined,
+    palette: FigureDef['palette'],
+    primaryHandSide: HandSide = 'right',
+  ) {
     this.inventory = inventory;
     this.models = models;
     this.palette = palette;
+    this.primaryHandSide = primaryHandSide;
     this.view.add(this.torso);
     this.scene.add(this.view, this.light, this.ambient);
     // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
@@ -109,8 +124,10 @@ export class HeldItems {
     main: PerspectiveCamera,
     pose?: MeleePoseFrame,
     recoil = 0,
-    firearmPoses: readonly HeldFirearmPose[] = [],
+    handling: HeldHandlingFrame = { firearms: [] },
   ): void {
+    const { firearms: firearmPoses } = handling;
+    this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
@@ -151,6 +168,7 @@ export class HeldItems {
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(main.quaternion);
     this.view.updateMatrixWorld(true);
+    this.poseRummage(pose, handling);
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
@@ -158,6 +176,47 @@ export class HeldItems {
       this.updateArmChain(side, arm);
     }
     this.view.updateMatrixWorld(true);
+  }
+
+  private restoreRummageSupport(): void {
+    // A support arm parented to an item needs its local rest restored before projecting the next frame.
+    if (this.rummageSupportRest) {
+      this.rummageSupportRest.arm.position.copy(this.rummageSupportRest.position);
+      this.rummageSupportRest = undefined;
+    }
+  }
+
+  private poseRummage(pose: MeleePoseFrame | undefined, handling: HeldHandlingFrame): void {
+    if (handling.firearms.length > 0 || pose?.viewOrientation) {
+      return;
+    }
+    const frame = rummageFrame(this.inventory, handling.job, this.primaryHandSide);
+    if (!frame) {
+      return;
+    }
+    const rests = new Map<HandSide, Vec3>();
+    for (const [side, arm] of this.arms) {
+      const rest = this.view.worldToLocal(arm.getWorldPosition(new Vector3()));
+      rests.set(side, [rest.x, rest.y, rest.z]);
+    }
+    const otherSide = frame.holdingSide === 'right' ? 'left' : 'right';
+    for (const side of [frame.holdingSide, otherSide] as const) {
+      const arm = this.arms.get(side);
+      const rest = rests.get(side);
+      if (!(arm?.parent && rest)) {
+        continue;
+      }
+      const grip = rummageGrip(rest, side, frame);
+      if (arm.parent !== this.torso) {
+        this.rummageSupportRest = { arm, position: arm.position.clone() };
+      }
+      arm.position.copy(arm.parent.worldToLocal(this.view.localToWorld(new Vector3(...grip))));
+      const held = this.heldByHand.get(side);
+      if (held) {
+        this.placeHeldItem(held, arm, { offset: grip });
+      }
+      this.view.updateMatrixWorld(true);
+    }
   }
 
   private poseFirearms(frames: readonly HeldFirearmPose[]): void {
@@ -239,7 +298,7 @@ export class HeldItems {
     this.poseRotation.premultiply(this.relativeCamera);
   }
 
-  private placeHeldItem(held: Object3D, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
+  private placeHeldItem(held: Object3D, arm: Group, transform: { offset: Vec3 }): void {
     if (arm.parent === this.torso) {
       this.handPosition.copy(arm.position).applyQuaternion(this.torso.quaternion);
       held.position.copy(this.handPosition);

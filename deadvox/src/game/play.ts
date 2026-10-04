@@ -109,9 +109,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
-  const input = new Input(inputTarget);
-  input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
+  const input = new Input(inputTarget, () => !debugTools?.buildOn);
+  input.yaw = playerStart.yaw;
   let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
   const audio = new GameAudio({
     registry,
@@ -1209,7 +1209,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready);
-    view.updateHeld(dt, pose, survival.lit, firearms.frames());
+    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
