@@ -437,7 +437,7 @@ describe('snapshot state components', () => {
     if (removedRecipe === undefined) {
       throw new Error('starter character has no known recipe');
     }
-    const savedLevel = actor.skills.crafting + 1;
+    const savedLevel = actor.skills.crafting! + 1;
     actor.skills.crafting = savedLevel;
     actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);

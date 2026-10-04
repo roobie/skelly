@@ -187,7 +187,9 @@ describe('live craft commands', () => {
     expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
     expect(r.inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
     const continuePlan = r.commands.options(item.uid).find(({ operation }) => operation === 'continue')!.plan;
-    expect(continuePlan.ok).toBe(false);
+    if (continuePlan.ok) {
+      throw new Error('continue unexpectedly planned without both hands');
+    }
     expect(r.commands.act(item.uid, 'continue')).toBe(continuePlan.reason);
     expect(r.sim.actions.job?.stopped).toBe(true);
     expect(r.inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
@@ -201,7 +203,9 @@ describe('live craft commands', () => {
     r.inventory.move(item, { kind: 'pile', pos: [0, 0, 0] });
     r.position[0] = 20;
     const apartPlan = r.commands.options(item.uid).find(({ operation }) => operation === 'apart')!.plan;
-    expect(apartPlan.ok).toBe(false);
+    if (apartPlan.ok) {
+      throw new Error('take-apart unexpectedly planned outside reach');
+    }
     expect(r.commands.act(item.uid, 'apart')).toBe(apartPlan.reason);
     expect(r.inventory.itemByUid(item.uid)!.work!.components.length).toBeGreaterThan(0);
     r.position[0] = 0;
