@@ -76,14 +76,13 @@ so keep their number small.
 | World height | Start at −48 m to +80 m (256 blocks, 8 chunks). Labs need depth below ground; towers need height above it |
 | Mass, liquids, item size | Grams and millilitres, as whole numbers. In inventories, an item takes w × h cells |
 
-BR chose half-metre blocks because doorways, furniture and stairs read at a
-human scale; one-metre steps needed jumps. A 0.25 m test on 2026-10-01 did not
-feel better and would have cost about eight times as many chunks at the same
-view radius, plus a redraw of building templates. The initial reference-laptop run had no slow frames at 96 m, while 128 m had
-4% slow frames during sprinting; 96 m is the default for headroom, with 128 m
-available as a higher setting. The choice is implemented by
-`src/core/scale.ts`, `BLOCK_SIZE`; the cost per volume is covered in
-[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks).
+The 2026-09-25 feel test found 0.5 m blocks far better than 1 m: doorways,
+furniture and interiors read at a human scale, and stairs are walked instead of
+jumped. A 0.25 m look on 2026-10-01 did not feel better and would have cost
+about eight times as many chunks at the same view radius, plus a redraw of
+building templates. The frame budget and why the default is 96 m are in
+[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). The choice is implemented by
+`src/core/scale.ts`, `BLOCK_SIZE`.
 
 ### Block shapes
 

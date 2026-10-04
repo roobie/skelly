@@ -664,10 +664,9 @@ anyway, since the world changes.
 - The three tree shapes and the hedges stand in the hamlet without blocking
   required routes.
 - BR has approved them in the game.
-- The approved forest workload meets the established budget on the
-  reference laptop in Firefox: 60 fps at 0.5 m and 96 m, at most 1% of frames
-  over 18 ms in every benchmark phase, and no holes at sprint speed
-  (the frame budget recorded in [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks)).
+- The approved forest workload meets the frame budget in
+  [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks) on the reference laptop in
+  Firefox.
 - The workload, build, rendering choice and results are recorded in Results,
   and the normal hamlet workload is rechecked with trees.
 
@@ -697,9 +696,10 @@ they don't change those two counts.
 - Milestones 2.0–2.13 are merged and deployed, with CI green: Biome, types,
   tests, content validation including both reachability checks, and the save
   round trip.
-- The frame budget from 1.0 holds, unchanged. Every new per-frame cost (reach
-  rebuilds, the crafting panel's planning, made lights on the recorded
-  workload, trees on the approved forest workload) is measured on the reference laptop and recorded in Results.
+- The frame budget in [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks)
+  remains the gate. Measure every new per-frame cost (reach rebuilds, crafting
+  panel planning, made lights on the recorded workload, trees on the approved
+  forest workload) on the reference laptop and record the results here.
 - The default test run stays within the budget recorded in 2.0.
 - The noise → positional-sound scenario test passes (2.12).
 - Slice 2's playtest questions are in the playtest plan that runs at the end of

@@ -38,16 +38,25 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
   Today's per-block colour jitter would stop faces merging, so the variation
   moves into the fragment shader as a hash of world position. Faces then merge
   whenever they share block type and AO.
-- **Batched draws.** One draw call per chunk is too many at this scale. Group
-  chunks into regions, or use three.js `BatchedMesh`.
+- **Batched draws, if measurement shows draw overhead is the bottleneck.** The
+  2026-09-26 reference run left render time unchanged despite one quarter of the
+  draw calls; grouping chunks is not an established speedup.
 
-**When.** The measured block-size decision is complete; its reason and the
-reference-laptop result are in [DESIGN.md](DESIGN.md#scale-and-units). This
-challenge remains relevant as later features spend the same performance budget.
+**When.** The measured block-size decision is complete; its feel rationale is
+in [DESIGN.md](DESIGN.md#scale-and-units). This challenge remains relevant as
+later features spend the same performance budget.
 
-**How we'll know.** On the [reference laptop](DESIGN.md#reference-hardware)
-(Iris Xe integrated graphics), a 128 m near
-radius runs at 60 fps with meshing keeping up with walking speed. *Measure.*
+**How we'll know.** On the [reference laptop](DESIGN.md#reference-hardware) in
+Firefox, 0.5 m blocks at 96 m meet the frame budget: 60 fps, at most 1% of
+frames over 18 ms in every
+benchmark phase, and no holes at sprint speed. The 96 m default leaves room for
+zombies, lighting and UI. See `src/bench/run.ts`, `startBench`.
+
+BR's 2026-09-26 decision keeps culling, which costs nothing and hides no visible
+chunks, and rejects occlusion culling because GPU time did not track chunk count;
+if a later milestone needs GPU headroom, inspect per-pixel cost first (pixel
+ratio, antialiasing, chunk shader). The cull is in `src/render/chunks.ts`,
+`ChunkMeshes.cull`.
 
 ## 2. View distance
 

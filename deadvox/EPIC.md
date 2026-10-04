@@ -159,18 +159,20 @@ Ask each player:
 4. Is compressed sleep readable? Is the interruption clear and fair?
 5. Are a few shamblers enough threat to make looting and sleep meaningful?
 6. Is the first night frightening? What scared the player, and did it come from
-   darkness and sounds rather than a scripted moment?
+   darkness and sounds rather than a scripted moment? Until voxel light arrives
+   in Slice 4, interiors are no darker than outdoors; read the answers with that
+   in mind ([DESIGN.md](DESIGN.md#light)).
 7. Does the 1:8 clock ratio let a 45-minute session show enough of the world?
 8. Do non-respawning shamblers make the second night too safe?
 9. Is combat readable? Do noise and wounds change what the player does? Do they
    listen before moving?
 
-Watch looting time, pocket choices, reactions to unseen sounds and interruptions,
-and any point where players stall or misunderstand. Ask which moment most
-annoyed and which most delighted each player. Save the local metrics and
-facilitator notes with the findings. If the second night lacks threat, consider
-a nearby wandering group; do not add respawns without evidence. Update DESIGN,
-CHALLENGES and this EPIC with the findings before planning Slice 4.
+Watch how long people spend in the inventory screen, pocket choices, reactions
+to unseen sounds and interruptions, and any point where players stall or
+misunderstand. Ask which moment most annoyed and which most delighted each
+player. Save the local metrics and facilitator notes with the findings. If the
+second night is too safe, add night wanderers after the first playtest. Update DESIGN, CHALLENGES and this EPIC with
+the findings before planning Slice 4.
 
 The death/new-run contract is still open for version 1: should a new run in the
 same world preserve piles left by the previous character?
