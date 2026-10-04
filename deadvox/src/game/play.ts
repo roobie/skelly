@@ -109,9 +109,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
-  const input = new Input(inputTarget);
-  input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
+  const input = new Input(inputTarget, () => !debugTools?.buildOn);
+  input.yaw = playerStart.yaw;
   let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
   const audio = new GameAudio({
     registry,
