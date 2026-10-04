@@ -71,8 +71,10 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
   });
+  // This contract covers hand actions, not mortality: gunshots attract nearby shamblers.
+  // Keep damage from killing the actor and stopping the sim during a later cock cycle.
   await page.goto(
-    `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+    `http://127.0.0.1:${address.port}/?debug=1&god=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
   );
   // In this debug scenario, canvas alone precedes content validation/startPlay. The debug
   // mount is installed with the play/input handlers in the same synchronous startup task.
@@ -454,7 +456,13 @@ try {
     'hand',
     'already-held quickbar rifle uses the same cock command',
   );
-  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle);
+  await page.waitForFunction(() => {
+    const { inventory, session } = globalThis.primaryActionTest;
+    if (session.sim.dead) {
+      throw new Error(`Actor died during quickbar cock: ${session.sim.dead.cause}`);
+    }
+    return !inventory.hands.right.firearm?.cycle;
+  });
   assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
   process.stdout.write(
     'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, head-locked AKM shot audio, inventory-owned U/cock labels, and held quickbar cocking.\n',
