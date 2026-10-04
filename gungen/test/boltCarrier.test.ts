@@ -998,7 +998,7 @@ describe('procedural bolt carrier', () => {
     const receiverSolids = receiver.solids.map((solid) => worldSolid(resolved.placed.get('receiver')!, solid));
     const tubeSolids = tube.solids.map((solid) => worldSolid(resolved.placed.get('tube')!, solid));
     const barrelSolids = barrel.solids.map((solid) => worldSolid(resolved.placed.get('barrel')!, solid));
-    const travel = carrierMotion.end[0];
+    const [travel] = carrierMotion.end;
     const travelSteps = Math.max(1, Math.round(travel * 4));
 
     for (let step = 0; step <= travelSteps; step += 1) {
