@@ -220,12 +220,13 @@ Paperwork; no game code.
   so.
 - **Host budget**, measured: disk per worktree with its installs, memory per
   agent and per browser test, the number of heavy runs at once, and the free
-  disk to keep in reserve. Measured 2026-10-03 in
-  [the host budget](../docs/host-budget.md), linked from `docs/PROCESS.md`.
+  disk to keep in reserve. Measured 2026-10-03. These are facts about the host,
+  so since 2026-10-04 they live in its notes, outside the repository (AGENTS.md,
+  "No host-specific information in tracked files").
 - **Default test-run budget**, measured: the wall time of each subproject's
-  default test run (deadvox, gungen, mobgen) on the shared host, recorded next
-  to the host budget. [Three-run medians and budgets](../docs/host-budget.md#default-test-run-budgets)
-  are recorded; a milestone that pushes a run past one says why.
+  default test run (deadvox, gungen, mobgen) on the shared host, recorded with
+  the host budget as three-run medians and budgets; a milestone that pushes a
+  run past one says why.
 - The Slice 2 checklist issue is open, listing every milestone and gate below.
 - Slice 2's playtest questions are added to SLICE-1.md's playtest plan.
 - #143 (saves closure) is merged before any milestone that adds saved state

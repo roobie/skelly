@@ -10,6 +10,10 @@ import { createServer } from 'node:net';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
+import {
+  dispatchMenuPointerClickExpression,
+  dispatchMenuPointerMoveExpression,
+} from '../test/browser/menu-pointer.mjs';
 import { createBrowserProfile } from './browser-profile.mjs';
 
 const cwd = process.cwd();
@@ -369,35 +373,15 @@ try {
   assert.equal(await emptyQuickbarReady(), true, 'rendered empty quickbar slots contain no inventory help text');
   let cursor = await evaluate('({ x: innerWidth / 2, y: innerHeight / 2 })');
   const moveCursorTo = async (position) => {
-    await evaluate(`(() => {
-      const event = new PointerEvent('pointermove', {
-        bubbles: true,
-        cancelable: true,
-        pointerId: 1,
-        pointerType: 'mouse',
-        isPrimary: true,
-        button: -1,
-        buttons: 0,
-      });
-      Object.defineProperties(event, {
-        movementX: { value: ${position.x - cursor.x} },
-        movementY: { value: ${position.y - cursor.y} },
-      });
-      document.querySelector('canvas').dispatchEvent(event);
-    })()`);
+    await evaluate(
+      dispatchMenuPointerMoveExpression({
+        movementX: position.x - cursor.x,
+        movementY: position.y - cursor.y,
+      }),
+    );
     cursor = position;
     await delay(120);
   };
-  const dispatchPointer = async (type, button, buttons) =>
-    evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
-      bubbles: true,
-      cancelable: true,
-      pointerId: 1,
-      pointerType: 'mouse',
-      isPrimary: true,
-      button: ${button},
-      buttons: ${buttons},
-    }))`);
   const dispatchPointerAt = async (type, button, buttons, position) =>
     evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
       bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true,
@@ -427,11 +411,7 @@ try {
         rootBlend: getComputedStyle(document.querySelector('#game-cursor-root')).mixBlendMode,
       };
     })(); undefined`);
-    await dispatchPointer('pointerdown', 0, 1);
-    await dispatchPointer('pointerup', -1, 0);
-    await evaluate(
-      `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))`,
-    );
+    await evaluate(dispatchMenuPointerClickExpression());
     await delay(120);
   };
 

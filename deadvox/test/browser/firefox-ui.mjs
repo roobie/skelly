@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -120,31 +121,12 @@ try {
   let cursor = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
   const moveCursorTo = async (position) => {
     const movement = { x: position.x - cursor.x, y: position.y - cursor.y };
-    await page.evaluate(({ x, y }) => {
-      const canvas = document.querySelector('canvas');
-      const event = new PointerEvent('pointermove', {
-        bubbles: true,
-        cancelable: true,
-        pointerId: 1,
-        pointerType: 'mouse',
-        isPrimary: true,
-        button: -1,
-        buttons: 0,
-        clientX: innerWidth / 2,
-        clientY: innerHeight / 2,
-      });
-      Object.defineProperties(event, { movementX: { value: x }, movementY: { value: y } });
-      canvas.dispatchEvent(event);
-      document.dispatchEvent(
-        new MouseEvent('mousemove', {
-          bubbles: true,
-          clientX: innerWidth / 2,
-          clientY: innerHeight / 2,
-          movementX: x,
-          movementY: y,
-        }),
-      );
-    }, movement);
+    await page.evaluate(dispatchMenuPointerMove, {
+      movementX: movement.x,
+      movementY: movement.y,
+      centerClient: true,
+      alsoDispatchMouseMove: true,
+    });
     cursor = position;
     await page.waitForTimeout(100);
   };
