@@ -50,7 +50,9 @@ later features spend the same performance budget.
 Firefox, 0.5 m blocks at 96 m meet the frame budget: 60 fps, at most 1% of
 frames over 18 ms in every
 benchmark phase, and no holes at sprint speed. The 96 m default leaves room for
-zombies, lighting and UI. See `src/bench/run.ts`, `startBench`.
+zombies, lighting and UI. See `src/bench/run.ts`, `startBench`. The challenge's own
+target is unchanged: a 128 m near radius runs at 60 fps, with meshing keeping up
+with walking speed.
 
 The 2026-09-26 decision keeps culling, which costs nothing and hides no visible
 chunks, and rejects occlusion culling because GPU time did not track chunk count;
