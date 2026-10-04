@@ -1,3 +1,8 @@
+---
+read_if:
+  - you're an agent starting any task in this repository (always)
+---
+
 # Notes for coding agents
 
 Keep this file short: only what every agent needs on every task. Topic detail goes in
@@ -41,6 +46,22 @@ review links. A host rule changes there, not through a PR.
 Untracked scratch and mail may use absolute paths. **Don't modify third-party files** to
 meet this rule: they stay as received, so paths embedded in their metadata (for example
 inside the `mobgen/reference/*.blend` files) are out of scope.
+
+## Zero drift: code shows what and how, docs say why and when
+
+BR, 2026-10-04. The pillar and its reasons are in `README.md`, "Zero drift". When you
+write a doc, a comment or a PR:
+
+- Cue code by path and symbol ("see `path/file.ts`, `symbolName`"). No line numbers, and
+  no lists, tables or values copied from code.
+- A "when" names its trigger: an item ID or an issue. No "today", "currently" or
+  "newly". When your PR completes an item, resolve every doc line that names it.
+- The final reason goes in a tracked doc or ADR before the merge, not only in the PR,
+  an issue or a commit message.
+- Write a comment only for a special why.
+- Every tracked doc starts with front matter whose `read_if` lists the reasons to read
+  it. Add or update it whenever you add or change a doc.
+- A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs
 
