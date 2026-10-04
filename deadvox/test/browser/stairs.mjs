@@ -61,10 +61,10 @@ const vite = await createServer({
         }
         const marker = 'startPlayFrames(frame);';
         assert.ok(code.includes(marker));
-        return code.replace(
+        return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
           marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,get noclip(){return debugTools?.noclip??false;}}});\n${marker}`,
-        );
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performPrimaryAction,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}}});\n${marker}`,
+        )}`;
       },
     },
   ],
@@ -207,6 +207,113 @@ try {
   let residentProof;
   let secondSlotProof;
   if (mode === 'traversal') {
+    const sprintDoor = await page.evaluate(() => {
+      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+      const doors = [...entities.all].filter((entity) => entities.defOf(entity).door && !entity.lock && !entity.open);
+      const centre = (entity) => [
+        entity.pos[0] + entity.size[0] / 2,
+        entity.pos[1],
+        entity.pos[2] + entity.size[2] / 2,
+      ];
+      const distance2 = (entity) => (centre(entity)[0] - body.pos[0]) ** 2 + (centre(entity)[2] - body.pos[2]) ** 2;
+      const [door] = doors.sort((a, b) => distance2(a) - distance2(b));
+      if (!door) {
+        throw new Error('stair_demo has no streamed, ordinary door');
+      }
+      const [cx, cy, cz] = centre(door);
+      const normal = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] }[door.facing];
+      const side = Math.sign((body.pos[0] - cx) * normal[0] + (body.pos[2] - cz) * normal[1]) || 1;
+      body.pos = [cx + side * normal[0] * 2.4, cy, cz + side * normal[1] * 2.4];
+      body.vel = [0, 0, 0];
+      const panel = doorPanel(door, 0.5);
+      const c = Math.cos(panel.rotationY);
+      const s = Math.sin(panel.rotationY);
+      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
+      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
+      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
+      input.yaw = Math.atan2(-dx, -dz);
+      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      return door.uid;
+    });
+    await page.keyboard.down('ShiftLeft');
+    assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.intent().sprint), true);
+    await page.keyboard.press('KeyF');
+    await page.keyboard.up('ShiftLeft');
+    const sprintStarted = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    const sprintResult = await page.waitForFunction(
+      ({ uid, until }) => {
+        const { session, entities } = globalThis.stairsWitness;
+        const door = entities.byUid(uid);
+        return door.open || session.sim.time >= until
+          ? { open: door.open, notice: globalThis.stairsWitness.getNotice() }
+          : false;
+      },
+      { uid: sprintDoor, until: sprintStarted + 3 },
+      { timeout: 0, polling: 50 },
+    );
+    assert.equal((await sprintResult.jsonValue()).open, true, 'F opens an ordinary door while ShiftLeft is held');
+    await page.evaluate((uid) => {
+      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+      const door = entities.byUid(uid);
+      const panel = doorPanel(door, 0.5);
+      const c = Math.cos(panel.rotationY);
+      const s = Math.sin(panel.rotationY);
+      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
+      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
+      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
+      input.yaw = Math.atan2(-dx, -dz);
+      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    }, sprintDoor);
+    await page.keyboard.press('KeyF');
+    const doorValue = async (propertyName, expectedValue) => {
+      const deadline = (await page.evaluate(() => globalThis.stairsWitness.session.sim.time)) + 3;
+      const result = await page.waitForFunction(
+        ({ uid: targetUid, propertyName: targetProperty, expectedValue: desiredValue, deadline: simDeadline }) => {
+          const { session, entities } = globalThis.stairsWitness;
+          const door = entities.byUid(targetUid);
+          const currentValue = targetProperty === 'locked' ? door.lock?.locked : door[targetProperty];
+          return currentValue === desiredValue || session.sim.time >= simDeadline ? { currentValue } : false;
+        },
+        { uid: sprintDoor, propertyName, expectedValue, deadline },
+        { timeout: 0, polling: 50 },
+      );
+      return (await result.jsonValue()).currentValue;
+    };
+    assert.equal(await doorValue('open', false), false, 'plain F closes the same door');
+    await page.evaluate((uid) => {
+      const { entities, session } = globalThis.stairsWitness;
+      const door = entities.byUid(uid);
+      door.lock = { id: 'test_shed', locked: false };
+      const wrongDefinition = {
+        ...session.inventory.registry.items.get('shed_key'),
+        id: 'stairs_wrong_key',
+        name: 'Wrong key',
+        key: { lock: 'other' },
+      };
+      session.inventory.registry.items.set(wrongDefinition.id, wrongDefinition);
+      const key = session.inventory.create('shed_key');
+      session.inventory.add(key, { kind: 'hand', side: 'right' });
+    }, sprintDoor);
+    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
+    assert.equal(await doorValue('locked', true), true, 'activating the matching held key locks its door');
+    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
+    assert.equal(await doorValue('locked', false), false, 'activating the matching held key unlocks its door');
+    await page.evaluate(() => {
+      const { body, session } = globalThis.stairsWitness;
+      const current = session.inventory.hands.right;
+      if (current) {
+        session.inventory.move(current, { kind: 'pile', pos: body.pos });
+      }
+      const key = session.inventory.create('stairs_wrong_key');
+      session.inventory.add(key, { kind: 'hand', side: 'right' });
+    });
+    const wrongKey = await page.evaluate((uid) => {
+      const { entities, performPrimaryAction, getNotice } = globalThis.stairsWitness;
+      performPrimaryAction('right');
+      return { notice: getNotice(), locked: entities.byUid(uid)?.lock?.locked };
+    }, sprintDoor);
+    assert.equal(wrongKey.notice, "The key doesn't fit", 'a wrong held key refuses activation');
+    assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
     await stage([112, 43.0001, 115]);
     await state('house lower landing');
     await walk('w', 121, true, 51);

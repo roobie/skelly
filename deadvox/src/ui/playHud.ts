@@ -113,6 +113,8 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
 };
 
 export interface InteractionHint {
+  readonly doorReason?: string | undefined;
+  readonly lock?: string | undefined;
   readonly door: boolean;
   readonly open: boolean;
   readonly container: boolean;
@@ -126,6 +128,8 @@ export interface InteractionHint {
 export const playInteractionText = ({
   door,
   open,
+  doorReason,
+  lock,
   container,
   readable,
   searched,
@@ -133,7 +137,7 @@ export const playInteractionText = ({
   fullName,
 }: InteractionHint): string => {
   if (door) {
-    return `F: ${open ? 'close' : 'open'} the ${name}`;
+    return `F: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
   }
   if (readable) {
     return `F: read the ${name}`;

@@ -217,6 +217,8 @@ export const ItemSchema = strictObject({
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
   battery: optional(BatterySchema),
+  /** One authored/global lock id; no per-placement key payload. */
+  key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
   model: optional(Id),
 });
@@ -406,6 +408,8 @@ export const LootTableSchema = strictObject({
 
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
+export const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
+
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
   strictObject({
@@ -413,14 +417,16 @@ const PaletteThingSchema = pipe(
     /** Overrides the furniture's own loot table. */
     loot: optional(Id),
     facing: optional(picklist(['n', 'e', 's', 'w'])),
+    /** Initial lock state, only on a door; ids are unique within an authored site. */
+    lock: optional(DoorLockSchema),
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
   }),
   check((e) => (e.furniture === undefined) !== (e.spawn === undefined), 'needs exactly one of "furniture" or "spawn"'),
   check(
-    (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined),
-    '"loot" and "facing" only go with "furniture"',
+    (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),
+    '"loot", "facing" and "lock" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );
@@ -688,6 +694,7 @@ export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;

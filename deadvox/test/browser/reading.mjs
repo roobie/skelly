@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 
 const { chromium } = await import('playwright');
@@ -106,16 +107,16 @@ try {
     await locator.scrollIntoViewIfNeeded();
     const rect = await locator.boundingBox();
     assert.ok(rect);
-    await page.evaluate(
-      ({ x, y }) => {
-        const { input } = globalThis.readingWitness;
-        input.cursorX = x;
-        input.cursorY = y;
-      },
-      { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 },
-    );
-    await page.mouse.down();
-    await page.mouse.up();
+    const target = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    const cursor = await page.evaluate(() => {
+      const { input } = globalThis.readingWitness;
+      return { x: input.cursorX, y: input.cursorY };
+    });
+    await page.evaluate(dispatchMenuPointerMove, {
+      movementX: target.x - cursor.x,
+      movementY: target.y - cursor.y,
+    });
+    await page.evaluate(dispatchMenuPointerClick, {});
   };
   let proof;
   if (mode === 'consumer') {

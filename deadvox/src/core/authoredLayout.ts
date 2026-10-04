@@ -1,13 +1,13 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
 import { placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
-import type { Registry } from './content.ts';
+import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
-import { type Placement, placedBlockAt, templateResolves } from './templates.ts';
+import { type Placement, placedBlockAt, templateLockIds, templateResolves } from './templates.ts';
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
@@ -44,6 +44,17 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   };
   const footprints: { rect: Rect; index: number }[] = [];
   const placements: Placement[] = [];
+  const locks = new Set<string>();
+  const checkLocks = (template: TemplateDef, storeys: number, i: number) => {
+    for (let storey = 0; storey < storeys; storey += 1) {
+      for (const id of templateLockIds(registry, template)) {
+        if (locks.has(id)) {
+          issues.push([`.buildings[${i}]`, `lock "${id}" is used more than once in this site`]);
+        }
+        locks.add(id);
+      }
+    }
+  };
   const checkFootprint = (rect: Rect, i: number) => {
     check([rect.x0, rect.z0], `.buildings[${i}].position`);
     check([rect.x1, rect.z1], `.buildings[${i}].position`);
@@ -60,6 +71,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       issues.push([`.buildings[${i}].template`, `no template "${building.template}"`]);
       return;
     }
+    checkLocks(template, building.storeys ?? 1, i);
     if (template.access && (building.storeys ?? 1) !== 1) {
       issues.push([`.buildings[${i}].storeys`, 'explicit storeys cannot be stress-test stacked']);
       return;
