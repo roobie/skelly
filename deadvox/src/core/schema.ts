@@ -27,8 +27,8 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
-import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { hasSegment } from './authoredTerrain.mjs';
+import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
