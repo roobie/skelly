@@ -206,8 +206,9 @@ describe('live craft commands', () => {
     if (apartPlan.ok) {
       throw new Error('take-apart unexpectedly planned outside reach');
     }
+    const before = structuredClone(item.work!.components);
     expect(r.commands.act(item.uid, 'apart')).toBe(apartPlan.reason);
-    expect(r.inventory.itemByUid(item.uid)!.work!.components.length).toBeGreaterThan(0);
+    expect(r.inventory.itemByUid(item.uid)!.work!.components).toEqual(before);
     r.position[0] = 0;
     expect(r.commands.act(item.uid, 'apart')).toBeUndefined();
     expect(r.inventory.itemByUid(item.uid)).toBeUndefined();
