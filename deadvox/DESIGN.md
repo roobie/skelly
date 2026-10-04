@@ -295,8 +295,12 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   together and rummage with the held item\"". Handling needs visible feedback,
   not a second action owner. See `src/render/rummagePose.ts`, `rummageFrame`
   and `RUMMAGE_POSE`, and `src/render/hands.ts`, `HeldItems.poseRummage`.
-  BR's look gates acceptance; estimates remain un-pinned in
-  `../docs/deferred-assertions.md`, "Rummage pose — BR's look".
+  BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
+  On stowing: "putting away the shotgun from being wielded also plays rummaging
+  anim - i think it kinda fits". The longer-term direction is "over time, we'll
+  maybe add more specific anims."; shell-loading feedback is d53, after d47.
+  Approval does not pin `RUMMAGE_POSE` tuning: see
+  `../docs/deferred-assertions.md`.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
