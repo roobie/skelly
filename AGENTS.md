@@ -102,8 +102,8 @@ parallel and unbilled, on every push to a PR, so don't repeat it locally.
 - **CI** runs the full matrix, including Deadvox's whole `test:ui-browser`. Open a draft PR
   at a feature's first push, so every later push is checked. Cite the CI run instead of
   re-running stages locally, and fix a red job in the next push.
-- **Mutation proof:** one mutant per new or changed rule, against that rule's own test
-  file. Don't re-prove untouched rules.
+- **Mutation proof:** only where "Tests" calls for it (tricky invariants): one mutant,
+  against that rule's own test file. Don't re-prove untouched rules.
 - **Reviews:** don't re-run what CI covers. Run only the probes a specific claim needs,
   in one reused review worktree, installing only where a lockfile changed.
 
