@@ -3,7 +3,7 @@
 const modes = Object.freeze({
   'inventory-scroll': 'render-free',
   'ui-browser-contract': 'pixel',
-  'melee-build-click': 'pixel',
+  'melee-build-click': 'render-free',
   'primary-action': 'render-free',
   'full-auto': 'render-free',
   'case-visual-pool': 'pixel',

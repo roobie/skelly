@@ -61,7 +61,7 @@ try {
     let locked = false;
     Object.defineProperty(document, 'pointerLockElement', {
       configurable: true,
-      get: () => (locked ? document.querySelector('#view') : null),
+      get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
     });
     Element.prototype.requestPointerLock = () => {
       locked = true;
