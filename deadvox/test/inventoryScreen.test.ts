@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 
@@ -88,6 +89,7 @@ function setup() {
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
     use: (_item: typeof beans) => undefined,
+    useOption,
     describe: (_item: typeof beans) => ['test description'],
     assign: (_slot: number, _item: typeof beans) => undefined,
   };

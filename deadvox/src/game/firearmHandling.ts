@@ -166,14 +166,21 @@ export class FirearmMechanics {
     return true;
   }
 
-  cock(uid: number, time: number): string | undefined {
+  /** Read-only admission policy, also used by the inventory's Use affordance. */
+  cockReason(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
     if (!(item && this.held(uid))) {
       return 'Hold the firearm before cocking it';
     }
-    if (this.queue.busy || item.firearm?.cycle) {
-      return 'Already handling something';
+    return this.queue.busy || item.firearm?.cycle ? 'Already handling something' : undefined;
+  }
+
+  cock(uid: number, time: number): string | undefined {
+    const reason = this.cockReason(uid);
+    if (reason) {
+      return reason;
     }
+    const item = this.inventory.itemByUid(uid)!;
     const data = firearmHandlingFor(item, this.inventory.registry);
     const state: FirearmState = item.firearm ?? { chamber: 'round' };
     state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, ejected: false, feedRound: true };

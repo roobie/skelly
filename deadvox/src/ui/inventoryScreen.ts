@@ -10,7 +10,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, options, quickMove, toHands } from '../core/options.ts';
+import { bestPocket, dropTarget, options, quickMove, toHands, type UseOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
@@ -49,6 +49,8 @@ export interface ScreenHooks {
   notice: (text: string) => void;
   /** Uses an item (eat, drink, switch a light, load a battery); says why not, or undefined. */
   use: (item: Item) => string | undefined;
+  /** Read-only availability and handling time for the same Use command. */
+  useOption: (item: Item, view: ReachSnapshot) => UseOption;
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   /** Assigns a quickbar slot (0–4). */
@@ -366,7 +368,9 @@ export class InventoryScreen {
       .containers()
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${this.hooks.reach().origin.join(',')}`;
+    const view = this.hooks.reach();
+    const use = this.selected ? this.hooks.useOption(this.selected, view) : undefined;
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${use?.label}|${JSON.stringify(use?.plan)}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -649,17 +653,19 @@ export class InventoryScreen {
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
-      options: options(item, this.hooks.reach()).map(
-        (option): OptionViewModel =>
-          option.plan.ok
-            ? {
-                label: option.label,
-                button: true,
-                time: secs(option.plan.time),
-                ...(option.kind === 'move' ? { target: option.target } : {}),
-              }
-            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
-      ),
+      options: options(item, this.hooks.reach())
+        .map((option) => (option.kind === 'use' ? this.hooks.useOption(item, this.hooks.reach()) : option))
+        .map(
+          (option): OptionViewModel =>
+            option.plan.ok
+              ? {
+                  label: option.label,
+                  button: true,
+                  time: secs(option.plan.time),
+                  ...(option.kind === 'move' ? { target: option.target } : {}),
+                }
+              : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
+        ),
     };
   }
 
