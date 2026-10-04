@@ -42,7 +42,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
-  notice: () => {}, use: () => undefined, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {},
+  notice: () => {}, use: () => undefined, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
 });
 screen.open();
 screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));

@@ -155,6 +155,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/render/playFrames.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/playView.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/craftController.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },

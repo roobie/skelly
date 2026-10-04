@@ -1,6 +1,7 @@
 import { NoToneMapping } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { WORK_IN_PROGRESS } from '../src/core/inventory.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
@@ -41,6 +42,21 @@ const keyEvent = (key: string): KeyboardEvent => {
 };
 
 describe('spawnMenuViewModel', () => {
+  it('never offers payload-less native work through search or an empty filter', () => {
+    const fixture = buildRegistry([
+      {
+        source: 'work.json',
+        data: {
+          items: [
+            { id: WORK_IN_PROGRESS, name: 'Work in progress', category: 'tool', weight: 0, size: [2, 2] },
+            { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+          ],
+        },
+      },
+    ]).registry;
+    expect(spawnMenuViewModel(fixture, '', '').items.map(({ id }) => id)).toEqual(['rag']);
+    expect(spawnMenuViewModel(fixture, 'work', '').items).toEqual([]);
+  });
   it('lists every item, category then name, with an empty filter', () => {
     const vm = spawnMenuViewModel(registry, '', '');
     expect(vm.items.map((i) => i.id)).toEqual(['can_of_beans', 'rag', 'flashlight']);

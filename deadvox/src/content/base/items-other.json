@@ -1,6 +1,14 @@
 {
   "items": [
     {
+      "id": "work_in_progress",
+      "name": "Work in progress",
+      "category": "material",
+      "weight": 0,
+      "size": [2, 2],
+      "twoHanded": true
+    },
+    {
       "id": "aa_battery",
       "name": "AA battery",
       "category": "battery",

@@ -2,11 +2,12 @@
 // one bound character nested underneath. Storage/version identity arrive later.
 
 import type { PlayerState } from '../game/player.ts';
-import type { RestController } from '../game/rest.ts';
 import type { Survival } from '../game/survival.ts';
 import type { BlockEntitiesState } from './blockEntities.ts';
+import type { Character, CharacterState } from './character.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
+import type { LongActionState } from './longAction.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
@@ -23,10 +24,11 @@ export interface SaveSnapshot {
   };
   character: {
     id: string;
+    progression: CharacterState;
     simulation: SimulationState;
     player: PlayerState;
     inventory: InventoryState;
-    rest: { action?: { kind: 'rest' | 'sleep'; label: string; rate: number; startFatigue: number } };
+    longAction: LongActionState;
     lightUid: number | null;
     quickbar: readonly (number | null)[];
     handling: HandlingQueueState;
@@ -47,9 +49,9 @@ export interface SnapshotSessionInput {
   /** Runtime block number to stable content id. */
   blockContentId: (blockId: number) => string;
   inventory: Inventory;
+  character: Character;
   simulation: Simulation;
   player: PlayerState;
-  rest: RestController;
   survival: Survival;
   quickbar: readonly (number | null)[];
   zombies: ZombieSystem;
@@ -67,9 +69,9 @@ export const snapshotSession = ({
   world,
   blockContentId,
   inventory,
+  character,
   simulation,
   player,
-  rest,
   survival,
   quickbar,
   zombies,
@@ -95,10 +97,11 @@ export const snapshotSession = ({
     },
     character: {
       id: characterId,
+      progression: character.snapshotState(),
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),
       inventory: inventory.snapshotState() as InventoryState,
-      rest: rest.snapshotState() as SaveSnapshot['character']['rest'],
+      longAction: simulation.actions.snapshotState(),
       lightUid,
       quickbar: [...quickbar],
       handling: handling.snapshotCancelled() as HandlingQueueState,

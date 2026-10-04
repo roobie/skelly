@@ -5,9 +5,13 @@
 // callbacks; nothing here draws or listens.
 
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { Character } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
-import type { Registry } from '../core/content.ts';
+import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { CraftCommands } from '../core/craftCommands.ts';
+import { type CraftPreference, planCraft } from '../core/crafting.ts';
+import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
@@ -197,6 +201,9 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities)
     : new Inventory(registry, undefined, options.entities);
+  const character = restored
+    ? Character.restoreState(registry, restored.character.progression)
+    : new Character(registry);
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
@@ -220,7 +227,7 @@ export const createSession = (options: SessionOptions) => {
     seed,
     clock: { ratio: CLOCK_RATIO, start: options.start },
     unsafe: () => debug?.()?.dangerReason() ?? zombieSystem.unsafeReason(),
-    restRate: () => rest.action?.rate,
+    restRate: () => sim.actions.restRate,
   });
   const { compression } = sim;
   const audioEvents = sim.events.reader();
@@ -304,6 +311,7 @@ export const createSession = (options: SessionOptions) => {
     notice: options.notice,
     read: options.onRead,
   });
+  sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   const rest = new RestController(sim, {
     bedQuality: () => {
       const bed = entities.bedNear(chest(), INVENTORY_REACH / s);
@@ -568,7 +576,7 @@ export const createSession = (options: SessionOptions) => {
     const schedulerState = sim.scheduler.snapshotState();
     lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
-    rest.restoreState(restored.character.rest);
+    sim.actions.restoreState(restored.character.longAction);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
     quickbar.restoreState(restored.character.quickbar, inventory);
   }
@@ -579,6 +587,9 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     quickbar,
+    character,
+    planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
+    crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,
     zombies: zombieSystem,
@@ -665,9 +676,9 @@ export const createSession = (options: SessionOptions) => {
         world,
         blockContentId: (id) => registry.blocks[id]!.id,
         inventory,
+        character,
         simulation: sim,
         player: snapshotPlayer(body, controls.yaw(), controls.pitch(), controls.walking()),
-        rest,
         survival,
         quickbar: quickbar.snapshotState(inventory),
         zombies: zombieSystem,

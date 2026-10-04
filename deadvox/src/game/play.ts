@@ -8,10 +8,12 @@ import type { BlockEntity } from '../core/blockEntities.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
+import type { RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
@@ -22,6 +24,7 @@ import { renderMeleePose } from '../render/meleePose.ts';
 import { startPlayFrames } from '../render/playFrames.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
+import { mountCraftPanel } from '../ui/craftController.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
@@ -73,7 +76,6 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
-import type { RestKind } from './rest.ts';
 import { createSession } from './session.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -369,10 +371,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     notice: showNotice,
     use: (item) => survival.use(item),
     describe: (item) => survival.describe(item),
+    workOptions: (uid) => session.crafting.options(uid),
+    work: (uid, operation) => actOnWork(uid, operation),
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
     },
+  });
+
+  const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
+    notice: showNotice,
+    started: () => {
+      closeInventoryScreen();
+      syncMenuState();
+    },
+    continue: () => continueAction(),
+    stop: () => stopAction(),
   });
 
   let revealZombies = false;
@@ -560,9 +574,24 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Continues: resumes a rest/sleep action, or the debug compression test. */
+  const actOnWork = (uid: number, operation: WorkOperation): string | undefined => {
+    const reason = session.crafting.act(uid, operation);
+    if (!reason && operation === 'continue') {
+      closeInventoryScreen();
+      syncMenuState();
+    }
+    return reason;
+  };
+
+  /** Continue a craft, rest/sleep, or the debug compression test. */
   const continueAction = (): void => {
-    if (rest.action) {
+    const workUid = session.crafting.currentUid;
+    if (workUid !== undefined) {
+      const reason = actOnWork(workUid, 'continue');
+      if (reason) {
+        showNotice(`Can't continue: ${reason}`);
+      }
+    } else if (rest.action) {
       const reason = rest.resume();
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
@@ -572,9 +601,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Stops: ends a rest/sleep action, or the debug compression test. */
+  /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
-    if (rest.action) {
+    if (sim.actions.job?.jobType === 'craft') {
+      sim.actions.stop();
+    } else if (rest.action) {
       rest.stop();
     } else {
       compression.stop();
@@ -630,15 +661,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Rest and sleep keys, each responsible for its own guard. */
-  const restActions = new Map<string, () => void>([
+  /** Long-action keys, each responsible for its own guard. */
+  const longActionKeys = new Map<string, () => void>([
     // R also descends in noclip (debug), but only while starting; stopping an active rest is fine.
     [CONTROL_CODES.rest, () => (rest.action?.kind === 'rest' || !debugTools?.noclip) && toggleRest('rest')],
     [CONTROL_CODES.sleep, () => toggleRest('sleep')],
+    [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
   ]);
 
   const playKeys = (code: string) => {
-    const restAction = restActions.get(code);
+    const restAction = longActionKeys.get(code);
     if (restAction) {
       restAction();
       return;
@@ -649,8 +681,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       use();
     } else if (action === 'cancel') {
       queue.cancel();
-      if (rest.action) {
-        rest.stop(); // X also stops resting/sleeping at once, the same as Stop after an interruption
+      if (sim.actions.job) {
+        stopAction();
       }
     } else if (quick !== undefined && !compression.locksInput) {
       quickKey(quick);
@@ -1213,6 +1245,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     document.body.classList.toggle('resting', rest.action !== undefined);
     renderRest(restBox, rest.action, sim);
     screen.update();
+    craftPanel.update(screen.isOpen && !sim.dead);
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;

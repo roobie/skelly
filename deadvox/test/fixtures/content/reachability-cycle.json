@@ -5,7 +5,7 @@
   ],
   "recipes": [
     {
-      "id": "fixture_a",
+      "id": "torch",
       "result": { "item": "fixture_a", "count": 1 },
       "time": 1,
       "skills": {},
@@ -13,7 +13,7 @@
       "components": [[{ "item": "fixture_b", "count": 1 }]]
     },
     {
-      "id": "fixture_b",
+      "id": "candle",
       "result": { "item": "fixture_b", "count": 1 },
       "time": 1,
       "skills": {},
