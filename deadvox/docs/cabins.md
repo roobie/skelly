@@ -1,9 +1,16 @@
+---
+read_if:
+  - you're placing or changing the beat 3 cabins or their anchors
+  - you're wiring loot, the key or the shambler into them
+---
+
 # Beat 3 cabins
 
-`templates-cabins.json` defines Dad's cabin, the hunter's cabin and the woodshed in
-half-metre template blocks. Dad's cabin has a ground storey and a cellar, with no
-loft or upper storey; a flat, low roof caps the ground-floor ceiling. The cellar is
-reached through the stair opening described by its `access` data. The north wall's
+Dad's cabin is one storey over a cellar (see
+`deadvox/src/content/base/templates-cabins.json`, `dads_cabin`). Its tall solid top
+read as a second storey with no stairs up, so the roof was lowered. BR approved it
+(2026-10-04: "i'm approving dad's cabin like that, but at some point we'll wanna
+make prettier buildings possible"); future prettier-building work is #221. The north wall's
 `dad_front_door` is an ordinary openable door, not locked in this content. Its
 outside key placement anchor is `dad_front_step_key_spot` at local block position
 `[11, 6, 1]` (metres `[5.75, 3, 0.75]` from the template origin). This recess is

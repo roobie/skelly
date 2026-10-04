@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're authoring multi-storey templates, stairs or root cellars
+  - you're changing stair traversal, floor-opening validation or cellar lighting
+---
+
 # Explicit storeys, stairs and root cellars
 
 ASCII `layers` remain the floor plans. Optional `access` describes named storeys and
@@ -79,6 +85,13 @@ requires:
 - standing and step-up body clearance along the flight, including furniture/closed doors;
 - every standing floor-space sample reachable from the entrance through openings,
   openable doors and flights, with player/shambler-sized bounds and step-up clearance.
+
+An upper-storey floor opening may not reach beyond its incoming flights' footprint
+and headroom, because a wider one leaves a gap at the top of the stairs (BR,
+2026-10-04: "as for the dad's hunting cabin, it got this gap by the top of the
+stairs"). Only openings under reachable standing floor count, so a storey that
+doesn't fill its box passes. See `deadvox/src/core/templateSpatial.ts`,
+`upperFloorOpeningIssues`.
 
 The static spatial check uses a half-cell horizontal grid and one-block vertical
 steps. Doors are treated as openable for route acceptance; other solid furniture
