@@ -1,0 +1,40 @@
+name: zero-drift
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/zero-drift-check.mjs'
+      - 'tools/zero-drift-baseline.json'
+      - 'test/zero-drift-check.test.mjs'
+      - '.github/workflows/zero-drift.yml'
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/zero-drift-check.mjs'
+      - 'tools/zero-drift-baseline.json'
+      - 'test/zero-drift-check.test.mjs'
+      - '.github/workflows/zero-drift.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  zero-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run test:zero-drift
+      - run: npm run check:zero-drift

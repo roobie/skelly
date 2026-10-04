@@ -54,8 +54,8 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
    - a clean merge with main;
    - no BR gate left: a first look, an in-game approval or a "do not merge before" note.
 
-   Otherwise BR merges. The grant covers docs PRs. Until r27-1 lands, a docs-only PR gets no
-   CI run, and the lead takes the pre-push hook's pass on the head commit in place of green CI.
+   Otherwise BR merges. The grant covers docs PRs. Docs-only PRs get the zero-drift
+   workflow too, so green CI on the head commit applies to them as well.
 7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
    branch.
 
