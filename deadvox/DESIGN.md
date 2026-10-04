@@ -285,6 +285,15 @@ chunks can generate in any order.
 
 The inventory is diegetic, as in DayZ, with one exception for long actions.
 
+- **Wield, then activate (BR, 2026-10-04):** "diegesis: wield item->activate".
+  Using an item means holding it and using the ordinary held-item activation,
+  aimed at its target if it has one: "using the key means wielding it, and
+  activating it on the door". Ammo boxes are unpacked the same way, never from
+  the inventory screen, and no modifier chord bypasses it.
+- **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
+  left-handed dominant is a thing we should accomodate". Quick actions, the
+  dominant and off-hand activations, holds and drawing follow the character's
+  dominant hand. Until that's built (d47), two-handed holds are right-handed.
 - **You use things from your hands:** eating, drinking, bandaging, reading,
   striking a match, switching a light on. Getting the item into your hands costs
   its handling time; using it is a separate action. A two-handed item takes both
@@ -369,6 +378,11 @@ plain box in your hands. Files are small, and follow
   its page, the author, the licence linked to its text, and what we changed. It
   opens from the start and pause card, and it's how we give the credit CC BY
   asks for.
+- **The sound sheet stays, curated (BR, 2026-10-01):** "let's keep the audio
+  sheet, and keep it curated. We'll have to incrementally work on the audio
+  anyways." `/sounds.html` lists every sound event with its variants and a
+  status (approved, placeholder, to replace). Any change that adds, replaces or
+  re-levels a sound updates it in the same PR.
 
 ## Crafting
 
@@ -745,6 +759,10 @@ decoration.
 - **The UI only shows what your character knows.** No enemy markers, no
   minimap of zombies, no threat meter. A rest interruption says what you
   heard, not what it was.
+- **Aim for full diegesis (BR, 2026-10-03):** "we should _aim_ for full
+  diegesis - that's why the HUD is default off, but we can't always with voxel
+  graphics". Utilities such as the compass and the wristwatch are items the
+  player finds and holds (#183).
 
 ## Tone
 

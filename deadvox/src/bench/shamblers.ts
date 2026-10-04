@@ -7,7 +7,7 @@ import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
 import { ZombieSystem } from '../core/zombies.ts';
 import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
-import type { Engine } from '../game/engine.ts';
+import type { RenderedEngine } from '../game/engine.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
@@ -62,7 +62,7 @@ const nextUrl = (run: ShamblerBenchRun): string => {
 
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
 
-export const startShamblerBench = (engine: Engine, run: ShamblerBenchRun): void => {
+export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun): void => {
   const { camera, scene, streamer, config } = engine;
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');

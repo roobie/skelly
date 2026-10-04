@@ -5,6 +5,7 @@ import {
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
+import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
@@ -134,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -246,6 +247,29 @@ itemSchema = obj({
   on: opt(bool),
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  firearm: opt(
+    obj({
+      chamber: enumeration(['empty', 'round', 'case']),
+      roundType: opt(str({ id: true })),
+      pendingCase: opt(
+        obj({
+          origin: vec3,
+          direction: vec3,
+          feet: vec3,
+          seed: num({ integer: true, safe: true, min: 0, max: 0xff_ff_ff_ff }),
+        }),
+      ),
+      cycle: opt(
+        obj({
+          mode: enumeration(['fire', 'hand']),
+          startedAt: nonNegative,
+          elapsed: nonNegative,
+          ejected: bool,
+          feedRound: bool,
+        }),
+      ),
+    }),
+  ),
   work: opt(
     obj({
       recipe: str({ id: true }),
@@ -1007,6 +1031,14 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   const snapshot = restoreWirePayload(wire);
   validateActionReferences(snapshot);
   collectItemIds(savedItemTree(snapshot.character.inventory), snapshot.character.inventory.nextItemUid);
+  for (const { item, path } of savedItemTree(snapshot.character.inventory)) {
+    if (item.firearm) {
+      if (item.count !== 1) {
+        throw new Error(`Mechanical firearm state needs one item at ${path}`);
+      }
+      assertFirearmState(item.firearm);
+    }
+  }
   const maxEntity = [...entityIds].reduce((maximum, id) => Math.max(maximum, id), 0);
   if (wire.world.blockEntitiesNextUid <= maxEntity) {
     throw new Error('Invalid next block entity id');
@@ -1067,6 +1099,21 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   }
 }
 
+function validateItemContentReferences(
+  state: SaveSnapshot['character']['inventory'],
+  check: (kind: SaveContentKind, id: string, path: string) => void,
+): void {
+  for (const { item, path } of savedItemTree(state)) {
+    check('item', item.type, `${path}.type`);
+    if (item.firearm?.roundType) {
+      check('item', item.firearm.roundType, `${path}.firearm.roundType`);
+    }
+    if (item.work) {
+      check('recipe', item.work.recipe, `${path}.work.recipe`);
+    }
+  }
+}
+
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string) => {
     if (!lookup(kind, id)) {
@@ -1090,12 +1137,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   ) {
     throw new Error('Duplicate known recipe');
   }
-  for (const { item, path } of savedItemTree(snapshot.character.inventory)) {
-    check('item', item.type, `${path}.type`);
-    if (item.work) {
-      check('recipe', item.work.recipe, `${path}.work.recipe`);
-    }
-  }
+  validateItemContentReferences(snapshot.character.inventory, check);
   for (const [ei, entity] of snapshot.character.inventory.entities.entities.entries()) {
     check('furniture', entity.type, `character.inventory.entities[${ei}].type`);
   }

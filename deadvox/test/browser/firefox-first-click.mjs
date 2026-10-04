@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -110,20 +111,16 @@ try {
       }
     };
   });
-  await page.goto(`http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64`);
-  await page.waitForFunction(
-    () => Boolean(globalThis.firefoxNativeSim && document.querySelector('#view canvas')),
-    null,
-    { timeout: 30_000 },
-  );
+  await page.goto(browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64`));
+  await page.waitForFunction(() => Boolean(globalThis.firefoxNativeSim && document.querySelector('#view')), null, {
+    timeout: 30_000,
+  });
   await page.bringToFront();
   await page.evaluate(() => window.focus());
   const before = await page.evaluate(() => globalThis.firefoxNativeSim.time);
   await page.locator('#go').click();
   await page.waitForFunction(
-    () =>
-      document.pointerLockElement === document.querySelector('#view canvas') &&
-      document.querySelector('#overlay').hidden,
+    () => document.pointerLockElement === document.querySelector('#view') && document.querySelector('#overlay').hidden,
     null,
     { timeout: 10_000 },
   );
@@ -132,9 +129,9 @@ try {
   assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
   assert.equal(gesture.pointerDownTarget, 'p#go.go');
   assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
-  assert.equal(gesture.lockRequests[0].target, 'canvas');
+  assert.equal(gesture.lockRequests[0].target, 'div#view');
   assert.equal(gesture.lockRequests[0].userActivationActive, true);
-  assert.ok(gesture.lockChanges.includes('canvas'));
+  assert.ok(gesture.lockChanges.includes('div#view'));
   assert.ok(gesture.audioResumeCalls.some((call) => call.duringPointerDown));
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);

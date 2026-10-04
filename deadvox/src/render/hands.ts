@@ -23,23 +23,30 @@ import {
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { HOLD } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import {
+  type FirearmAction,
+  type FirearmMode,
+  type HeldActionPart,
+  poseActionParts,
+  sampleActionStroke,
+} from './firearmModel.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
-/** Where a held item's grip sits, in metres from the eye (x right, y up, −z forward). */
-export const HOLD: Readonly<Record<HandSide | 'both', Vec3>> = {
-  right: [0.2, -0.2, -0.38],
-  left: [-0.2, -0.2, -0.38],
-  both: [0.08, -0.22, -0.42],
-};
-
 /** Metres per grid cell for the stand-in box. */
 const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
+
+export interface HeldFirearmPose {
+  readonly uid: number;
+  readonly mode: FirearmMode;
+  readonly elapsed: number;
+}
 
 export class HeldItems {
   private readonly scene = new Scene();
@@ -57,6 +64,7 @@ export class HeldItems {
   private drawn = '';
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
+  private readonly firearmParts = new Map<number, { action: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly arms = new Map<HandSide, Group>();
   private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
@@ -89,8 +97,17 @@ export class HeldItems {
   }
 
   /** Catches up with what's held and turns it with the main camera. Call before rendering the frame. */
-  update(main: PerspectiveCamera, pose?: MeleePoseFrame, recoil = 0): void {
+  update(
+    main: PerspectiveCamera,
+    pose?: MeleePoseFrame,
+    recoil = 0,
+    firearmPoses: readonly HeldFirearmPose[] = [],
+  ): void {
     this.sync();
+    for (const [uid, { action, parts }] of this.firearmParts) {
+      const frame = firearmPoses.find((entry) => entry.uid === uid);
+      poseActionParts(parts, frame?.mode, frame ? sampleActionStroke(action, frame.mode, frame.elapsed) : 0);
+    }
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
     for (const side of ['right', 'left'] as const) {
       const hand = pose?.[side] ?? { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
@@ -230,6 +247,7 @@ export class HeldItems {
     this.view.clear();
     this.view.add(this.torso);
     this.shown.clear();
+    this.firearmParts.clear();
     this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
@@ -357,7 +375,11 @@ export class HeldItems {
     const def = defOf(this.inventory.registry, item.type);
     const model = def.model === undefined ? undefined : this.models?.held(def.model);
     if (model) {
-      return model;
+      const action = this.inventory.registry.models.get(def.model!)?.action;
+      if (action) {
+        this.firearmParts.set(item.uid, { action, parts: model.parts });
+      }
+      return model.root;
     }
     // Long side forward, short side across, and flatter than it is wide.
     const long = Math.max(...def.size) * CELL;

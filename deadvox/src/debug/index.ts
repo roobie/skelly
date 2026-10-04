@@ -12,7 +12,7 @@ import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
-import { equipDebugStartWeapons } from './debugLoadout.ts';
+import { equipDebugFirearms, equipDebugStartWeapons } from './debugLoadout.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -79,7 +79,15 @@ interface GroupView {
   readonly toggle: () => void;
 }
 
-const ms = (value: number): string => (Number.isFinite(value) ? value.toFixed(1) : '–');
+const ms = (value: number | null): string => {
+  if (value === null) {
+    return 'n/a';
+  }
+  if (!Number.isFinite(value)) {
+    return '–';
+  }
+  return value.toFixed(1);
+};
 
 /** One line of the readout: the shadow settings, and what the sun's fade and the casters look like right now. */
 export const shadowReadoutText = (
@@ -737,16 +745,18 @@ export const equipDebugStartLight = ({
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
-  equipDebugStartLight({
-    inventory: hooks.inventory,
-    debugMode: hooks.engine.config.debug,
-    newGame: hooks.newGame,
-  });
-  equipDebugStartWeapons({
-    inventory: hooks.inventory,
-    debugMode: hooks.engine.config.debug,
-    newGame: hooks.newGame,
-  });
+  if (!equipDebugFirearms(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
+    equipDebugStartLight({
+      inventory: hooks.inventory,
+      debugMode: hooks.engine.config.debug,
+      newGame: hooks.newGame,
+    });
+    equipDebugStartWeapons({
+      inventory: hooks.inventory,
+      debugMode: hooks.engine.config.debug,
+      newGame: hooks.newGame,
+    });
+  }
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);
@@ -786,7 +796,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const { shadows } = hooks.engine;
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
     weather: hooks.weather,
-    shadows,
+    ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
@@ -971,6 +981,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       axisAnimation = undefined;
     }
   }
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {
     const groups = groupViews();
     const key = JSON.stringify([
@@ -1039,6 +1050,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }),
         host,
       );
+      host.querySelector<HTMLElement>('#debug-ui-root')!.dataset.rendering = hooks.engine.renderer
+        ? 'available'
+        : 'unavailable';
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
       aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');
@@ -1050,7 +1064,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
-      render(readoutTemplate(readout, shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)), root);
+      const shadowText = shadows
+        ? shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)
+        : '3D rendering unavailable (render-free mode)';
+      render(readoutTemplate(readout, shadowText), root);
     }
     drawAxisGizmo();
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');

@@ -31,7 +31,10 @@ await Promise.all(
 );
 const library: ModelLibrary = {
   version: 0,
-  held: (id: string) => realHeldModels.get(id)?.clone(),
+  held: (id: string) => {
+    const root = realHeldModels.get(id)?.clone();
+    return root ? { root, parts: [] } : undefined;
+  },
 } as unknown as ModelLibrary;
 const screen = (point: Vector3, camera: PerspectiveCamera): { x: number; y: number } => {
   const ndc = point.clone().project(camera);
@@ -102,7 +105,7 @@ function measure(
     modelId && modelOverride
       ? ({
           ...library,
-          held: (id: string) => realHeldModels.get(id === modelId ? modelOverride : id)?.clone(),
+          held: (id: string) => library.held(id === modelId ? modelOverride : id),
         } as ModelLibrary)
       : library;
   const held = new HeldItems(inventory, models, palette);

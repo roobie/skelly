@@ -3,6 +3,7 @@
 // items stack up to their type's limit.
 
 import type { ItemDef, Registry } from './content.ts';
+import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -29,6 +30,8 @@ export interface ItemFields<Node> {
   made?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
   pockets?: PlacedItem<Node>[][];
+  /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
+  firearm?: FirearmState;
   work?: CraftWork<Node> | undefined;
 }
 
@@ -64,6 +67,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.charges === undefined ? {} : { charges: item.charges }),
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.made === undefined ? {} : { made: item.made }),
+    ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
     ...(item.work === undefined
       ? {}
@@ -79,7 +83,16 @@ export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<Placed
   freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
 
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
-  defOf(registry, state.type);
+  const def = defOf(registry, state.type);
+  if (state.firearm !== undefined) {
+    if (!def.firearm || state.count !== 1) {
+      throw new Error('Mechanical firearm state needs one firearm');
+    }
+    assertFirearmState(state.firearm);
+    if (state.firearm.roundType !== undefined) {
+      defOf(registry, state.firearm.roundType);
+    }
+  }
   const item: Item = {
     uid: state.uid,
     type: state.type,
@@ -88,6 +101,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
     ...(state.made === undefined ? {} : { made: state.made }),
+    ...(state.firearm === undefined ? {} : { firearm: structuredClone(state.firearm) }),
     ...(state.pockets === undefined
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
@@ -208,6 +222,8 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.condition === item.condition &&
     onto.charges === item.charges &&
     onto.made === item.made &&
+    onto.firearm === undefined &&
+    item.firearm === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
   return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;

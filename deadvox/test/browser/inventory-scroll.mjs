@@ -1,11 +1,11 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/performance/noAwaitInLoops: one page and cursor; declared wheel trials cannot overlap
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs } from './stage-mode.mjs';
 
 const { chromium, firefox } = await import('playwright');
 // biome-ignore lint/style/noProcessEnv: the launcher accepts the installed Chromium path
@@ -14,49 +14,66 @@ const chromeBin = process.env.CHROME_BIN;
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
-const content = readdirSync(resolve(root, 'src/content/base'))
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((source) => ({
-    source,
-    data: JSON.parse(readFileSync(resolve(root, 'src/content/base', source), 'utf8')),
-  }));
+// Owned overflowing containers/items: changing shipped clothes or loadouts cannot turn this into a no-op.
+const content = [
+  {
+    source: 'inventory-scroll-fixture',
+    data: {
+      items: [
+        ...['legs', 'torso', 'back'].map((slot) => ({
+          id: `scroll_${slot}`,
+          name: `Scroll ${slot}`,
+          category: 'clothing',
+          weight: 100,
+          size: [1, 1],
+          wearable: { slot, encumbrance: 0, warmth: 0 },
+          container: { pockets: [{ grid: [1, 12], handling: 0.1 }] },
+        })),
+        { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
+      ],
+    },
+  },
+];
 const fixture = `
 import '/src/ui/style.css';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
 import { bindReach } from '/src/core/reach.ts';
-import { startingLoadout } from '/src/game/loadout.ts';
+import { useOption } from '/src/core/options.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
-const { registry } = buildRegistry(${JSON.stringify(content)});
+const { registry, issues } = buildRegistry(${JSON.stringify(content)});
+if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 const inventory = new Inventory(registry);
-startingLoadout(inventory);
-const bag = inventory.create('hiking_backpack');
-if (!inventory.add(bag, { kind: 'worn' })) throw Error('backpack fixture failed');
+for (const slot of ['legs', 'torso', 'back']) {
+  if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
+}
 for (let i = 0; i < 12; i++) {
-  inventory.add(inventory.create('canned_beans'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] });
+  if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
 }
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
-  notice: () => {}, use: () => undefined, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
+  notice: () => {}, use: () => undefined, useOption, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
 });
 screen.open();
 screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
 screen.update();
 const input = { locked: false, menuPointer: false, cursorX: 0, cursorY: 0,
   moveMenuCursor(x, y) { this.cursorX += x; this.cursorY += y; } };
-const canvas = document.querySelector('canvas');
-const menu = mountMenuPointer({ input, canvas, cursor: document.querySelector('#game-cursor') });
+const target = document.querySelector('#view');
+const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySelector('#game-cursor') });
 let gameplayWheels = 0;
-canvas.addEventListener('wheel', () => gameplayWheels++);
-globalThis.scrollFixture = { input, screen, inventory, canvas, menu,
+target.addEventListener('wheel', () => gameplayWheels++);
+globalThis.scrollFixture = { input, screen, inventory, target, menu,
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
-  redraw() { inventory.version++; screen.update(); },
+  redraw() {
+    if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('redraw fixture failed');
+    screen.update();
+  },
 };
 `;
 const vite = await createServer({
@@ -73,7 +90,7 @@ const vite = await createServer({
           if (request.url === '/__scroll.html') {
             response.setHeader('Content-Type', 'text/html');
             response.end(
-              '<html><body><canvas></canvas><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor"></div><script type="module" src="/__scroll.js"></script></body></html>',
+              '<html><body><div id="view"></div><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor-root"><div id="game-cursor"></div></div><script type="module" src="/__scroll.js"></script></body></html>',
             );
           } else {
             next();
@@ -104,7 +121,7 @@ try {
       : await chromium.launch({
           executablePath: chromeBin,
           headless: true,
-          args: ['--no-sandbox', '--disable-dev-shm-usage'],
+          args: browserStageArgs('inventory-scroll'),
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
@@ -142,7 +159,7 @@ try {
       );
       if (locked) {
         await page.evaluate(() =>
-          globalThis.scrollFixture.canvas.dispatchEvent(
+          globalThis.scrollFixture.target.dispatchEvent(
             new WheelEvent('wheel', {
               deltaY: 3,
               deltaMode: 1,
@@ -174,7 +191,7 @@ try {
     }
   }
   assert.deepEqual(errors, []);
-  assert.deepEqual(failures, [], 'each pane scrolls without page/canvas wheel leakage and survives #67 redraw');
+  assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );
