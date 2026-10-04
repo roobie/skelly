@@ -76,7 +76,7 @@ kept every snapshot unchanged but left two unit systems in one body plan.
 ### Zero drift
 
 BR, 2026-10-04: "Code shows what and how (and github can show this too - but the
-lifecycle of an issue or PR terminates). Docs describe why and when."
+lifecycle of an issue or PR terminates) / Docs describe why and when"
 
 If a code change can make a doc sentence false without anyone touching the doc, that
 sentence is in the wrong place. Say it in code (a name, a type, a test) and point to it
@@ -85,7 +85,7 @@ from the doc.
 - **Point, don't restate.** Cue code by path and symbol, for example "see
   `deadvox/src/core/options.ts`, `dropTarget`". Never cite a line number, and never copy
   or generate a list, table or value from code into a doc.
-- **A "when" names its trigger.** "Until d45" or "after #209" can be checked; "today",
+- **A "when" names its trigger.** "Until `<item>`" or "after #`<pr>`" can be checked; "today",
   "currently" and "newly" can't. The PR that completes an item resolves every doc line
   that names it.
 - **The final reason lives in the repo.** Reasoning in a PR, review, issue or commit

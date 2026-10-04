@@ -45,7 +45,7 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 5. **BR's verdict:** anything judged by eye, ear or feel waits for BR (below). This runs in
    parallel with the code review.
 6. **PR:** the lead opens it with a description that stands on its own and watches CI. Before
-   it merges, the PR resolves every doc line that names its item ("until d45", "with #209"),
+   it merges, the PR resolves every doc line that names its item (`until <item>`, `with #<pr>`),
    and any reason that outlives it is in a tracked doc. The lead merges it under BR's grant.
    BR, 2026-10-03: "yes, until i revoke merge-rights you are granted merge-rights for PRs".
    That needs all of these:
@@ -54,7 +54,8 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
    - a clean merge with main;
    - no BR gate left: a first look, an in-game approval or a "do not merge before" note.
 
-   Otherwise BR merges.
+   Otherwise BR merges. The grant covers docs PRs. Until r27-1 lands, a docs-only PR gets no
+   CI run, and the lead takes the pre-push hook's pass on the head commit in place of green CI.
 7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
    branch.
 
