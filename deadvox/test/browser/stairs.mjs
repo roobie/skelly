@@ -495,12 +495,27 @@ try {
       }
       return [resident.body.pos[0], body.pos[1], resident.body.pos[2]];
     }, residentId);
-    await page.keyboard.down('ShiftLeft');
-    try {
-      await walkTo(groundProjection, 'move below resident on the lower floor');
-    } finally {
-      await page.keyboard.up('ShiftLeft');
-    }
+    await walkTo(groundProjection, 'move below resident on the lower floor');
+    const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    await waitForSimulation(
+      page,
+      () => {
+        const { body, session } = globalThis.stairsWitness;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: Math.hypot(body.vel[0], body.vel[2]) < 0.1,
+          speed: Math.hypot(body.vel[0], body.vel[2]),
+        };
+      },
+      undefined,
+      {
+        seconds: 4,
+        from: settleStart,
+        label: 'come to rest under the resident',
+        record: state,
+      },
+    );
     const residentBeforeDescent = await state('resident hears player below the upstairs projection');
     const residentAtProjection = residentBeforeDescent.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtProjection);
