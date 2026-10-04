@@ -71,6 +71,7 @@ try {
   await page.waitForFunction(
     () =>
       globalThis.readingWitness.input.locked &&
+      !globalThis.readingWitness.session.sim.paused &&
       [...globalThis.readingWitness.engine.entities.all].some((entity) => entity.type === 'crate'),
     undefined,
     { timeout: 60_000 },
