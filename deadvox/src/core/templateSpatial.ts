@@ -145,44 +145,52 @@ class TemplateSpace {
     }
     return undefined;
   }
+  private addFlightHeadroom(stair: StairDef, layer: number, cells: Set<string>): void {
+    const plan = planFlight(stair, this.template.size);
+    if (!plan) {
+      return;
+    }
+    for (let step = 1; step < plan.rise; step++) {
+      for (const [x, , z] of plan.row(step)) {
+        cells.add(`${x},${z}`);
+      }
+    }
+    for (const sample of this.flightSamples(stair, plan)) {
+      for (const [x, y, z] of bodyCells(sample)) {
+        if (y === layer) {
+          cells.add(`${x},${z}`);
+        }
+      }
+    }
+  }
+  private hasFloorOpeningOutsideHeadroom(layer: number, headroom: Set<string>): boolean {
+    const [sx, , sz] = this.template.size;
+    for (let z = 0; z < sz; z++) {
+      for (let x = 0; x < sx; x++) {
+        const block = this.template.blocks[x + sx * (z + sz * layer)]!;
+        if (!(this.solids.has(block) || headroom.has(`${x},${z}`))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
   upperFloorOpeningIssues(): SpatialIssue[] {
     const access = this.template.access!;
     const floors = new Map(access.storeys.map((floor) => [floor.id, floor.floor]));
     for (const floor of access.storeys) {
-      const stairs = access.stairs.filter(
+      const incoming = access.stairs.filter(
         (stair) => stair.to === floor.id && (floors.get(stair.from) ?? floor.floor) < floor.floor,
       );
-      if (stairs.length === 0) {
+      if (incoming.length === 0) {
         continue;
       }
-      const layer = floor.floor - 1;
       const headroom = new Set<string>();
-      for (const stair of stairs) {
-        const plan = planFlight(stair, this.template.size);
-        if (!plan) {
-          continue;
-        }
-        for (let step = 1; step < plan.rise; step++) {
-          for (const [x, , z] of plan.row(step)) {
-            headroom.add(`${x},${z}`);
-          }
-        }
-        for (const sample of this.flightSamples(stair, plan)) {
-          for (const [x, y, z] of bodyCells(sample)) {
-            if (y === layer) {
-              headroom.add(`${x},${z}`);
-            }
-          }
-        }
+      for (const stair of incoming) {
+        this.addFlightHeadroom(stair, floor.floor - 1, headroom);
       }
-      const [sx, , sz] = this.template.size;
-      for (let z = 0; z < sz; z++) {
-        for (let x = 0; x < sx; x++) {
-          const block = this.template.blocks[x + sx * (z + sz * layer)]!;
-          if (!this.solids.has(block) && !headroom.has(`${x},${z}`)) {
-            return [['.access.stairs', 'upper-storey floor opening extends beyond flight footprint and headroom']];
-          }
-        }
+      if (this.hasFloorOpeningOutsideHeadroom(floor.floor - 1, headroom)) {
+        return [['.access.stairs', 'upper-storey floor opening extends beyond flight footprint and headroom']];
       }
     }
     return [];

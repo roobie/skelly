@@ -37,7 +37,7 @@ describe('explicit storeys and ordinary-block flights', () => {
     expect(issues).toEqual([]);
     expect(house().pieces.some((piece) => piece.furniture === 'wood_door')).toBe(true);
   });
-  it('rejects an upper-floor opening outside every flight\'s footprint and headroom', () => {
+  it("rejects an upper-floor opening outside every flight's footprint and headroom", () => {
     const template = house();
     const floorLayer = template.access!.stairs[0]!.upper[1] - 1;
     set(template, [0, floorLayer, 0], 0);
