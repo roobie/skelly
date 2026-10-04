@@ -102,6 +102,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/menuState.ts',
   // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
   'src/ui/primaryActionHint.ts',
+  // Paper text/focus/scroll/dismissal is presentation; readable admission/effects stay in core/game.
+  'src/ui/reading.ts',
   'src/ui/rest.ts',
   'src/ui/saveController.ts',
 ] as const;

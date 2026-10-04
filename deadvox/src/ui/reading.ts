@@ -56,7 +56,7 @@ export const mountReading = (host: HTMLElement, changed: () => void) => {
       render(
         html`
         <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
-          <header><h1 id="reading-title">${readable.title}</h1><button type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
+          <header><h1 class="reading-title" id="reading-title">${readable.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
           <div class="reading-text" tabindex="0" aria-label="Text">${readable.text}</div>
           <footer>Esc or Tab to put away · The world keeps moving</footer>
         </article>`,
