@@ -1,7 +1,15 @@
 // Tiled 1.11 / Qt 5 ES module (ES6, not object spread). No Node/npm runtime dependency.
+import {
+  buildingBounds,
+  defaultFoundation,
+  hasSegment,
+  lotOf,
+  standingHeight,
+} from '../../src/core/authoredTerrain.mjs';
+
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;
-const CLASSES = ['building', 'player_spawn', 'shambler', 'woodland', 'track'];
+const CLASSES = ['building', 'player_spawn', 'shambler', 'woodland', 'track', 'ridge', 'hill'];
 const ENUM_TYPES = { template: 'template_id', zombie: 'zombie_type' };
 
 function readJson(path) {
@@ -106,11 +114,9 @@ function addBuilding(object, info, context) {
   // Tiled rotates around the rectangle's top-left pivot; Placement uses the rotated minimum.
   const offsets = { 0: [0, 0], 90: [-d, 0], 180: [-w, -d], 270: [0, -w] };
   const offset = offsets[rotation];
-  const position = [
-    x + offset[0],
-    finite(scalar(object, 'elevation', layout.ground), `${name}.elevation`),
-    z + offset[1],
-  ];
+  const position = [x + offset[0], 0, z + offset[1]];
+  const rect = buildingBounds({ position, rotation }, definition.size);
+  position[1] = finite(scalar(object, 'elevation', defaultFoundation(layout, rect)), `${name}.elevation`);
   if (!position.every((v) => Number.isInteger(v * 2))) {
     throw new Error(`${name}: position must be snapped to 0.5 m`);
   }
@@ -118,12 +124,6 @@ function addBuilding(object, info, context) {
   if (!Number.isInteger(storeys) || storeys < 1 || storeys > 8) {
     throw new Error(`${name}: storeys must be 1..8`);
   }
-  const rect = {
-    x0: position[0],
-    z0: position[2],
-    x1: position[0] + (rotation % 180 ? d : w),
-    z1: position[2] + (rotation % 180 ? w : d),
-  };
   pointInside(layout, [rect.x0, rect.z0], name);
   pointInside(layout, [rect.x1, rect.z1], name);
   if (footprints.some((r) => r.x0 < rect.x1 && rect.x0 < r.x1 && r.z0 < rect.z1 && rect.z0 < r.z1)) {
@@ -142,7 +142,10 @@ function addSpawn(object, info, context) {
   if (x === layout.bounds.x1 || z === layout.bounds.z1) {
     throw new Error(`${name}: outside site bounds`);
   }
-  const position = [x, finite(scalar(object, 'elevation', layout.ground + 0.5), `${name}.elevation`), z];
+  const lots = layout.buildings.map((building) =>
+    lotOf(building, buildingBounds(building, pack.templates.find((t) => t.id === building.template).size)),
+  );
+  const position = [x, finite(scalar(object, 'elevation', standingHeight(layout, lots, x, z)), `${name}.elevation`), z];
   if (cls === 'player_spawn') {
     if (layout.player) {
       throw new Error('Exactly one player_spawn is required');
@@ -199,6 +202,35 @@ function addTrack(object, info, { layout }) {
   }
   layout.tracks.push({ points, width, surface });
 }
+function addTerrain(object, info, { layout }) {
+  const { cls, name, x, z } = info;
+  const rise = finite(scalar(object, 'rise'), `${name}.rise`);
+  if (rise <= 0) {
+    throw new Error(`${name}: rise must be positive`);
+  }
+  if (cls === 'ridge') {
+    const points = areaPoints(object, info);
+    const width = finite(scalar(object, 'width'), `${name}.width`);
+    if (width <= 0 || !hasSegment(points)) {
+      throw new Error(`${name}: ridge needs positive width and a non-zero segment`);
+    }
+    for (const point of points) {
+      pointInside(layout, point, name);
+    }
+    layout.terrain.push({ kind: 'ridge', points, rise, width });
+    return;
+  }
+  if (object.shape !== MapObject.Ellipse) {
+    throw new Error(`${name}: hill must be an ellipse`);
+  }
+  const radii = [finite(object.width, name) / 2, finite(object.height, name) / 2];
+  if (radii.some((r) => r <= 0)) {
+    throw new Error(`${name}: hill radii must be positive`);
+  }
+  const centre = [x + radii[0], z + radii[1]];
+  pointInside(layout, centre, name);
+  layout.terrain.push({ kind: 'hill', centre, radii, rise });
+}
 export function exportLayout(map) {
   if (map.tileWidth !== 1 || map.tileHeight !== 1 || map.infinite || map.orientation !== TileMap.Orthogonal) {
     throw new Error('Use a finite orthogonal map with 1x1 tiles (one pixel = one metre)');
@@ -215,6 +247,7 @@ export function exportLayout(map) {
     id,
     bounds: { x0: 0, z0: 0, x1: map.width, z1: map.height },
     ground,
+    terrain: [],
     buildings: [],
     player: null,
     shamblers: [],
@@ -229,10 +262,17 @@ export function exportLayout(map) {
     shambler: addSpawn,
     woodland: addWoodland,
     track: addTrack,
+    ridge: addTerrain,
+    hill: addTerrain,
   };
-  for (const object of objects(map)) {
-    const info = objectInfo(object);
-    writers[info.cls](object, info, context);
+  const entries = objects(map).map((object) => ({ object, info: objectInfo(object) }));
+  // Contextual defaults depend on all terrain and lots, never layer/object ordering.
+  for (const classes of [['ridge', 'hill'], ['building'], ['player_spawn', 'shambler', 'woodland', 'track']]) {
+    for (const { object, info } of entries) {
+      if (classes.includes(info.cls)) {
+        writers[info.cls](object, info, context);
+      }
+    }
   }
   if (!layout.player) {
     throw new Error('Exactly one player_spawn is required');
@@ -281,6 +321,8 @@ export function generatePropertyTypes() {
     { name: 'shambler', members: [member('zombie', 'string', '', 'zombie_type'), member('chance', 'float', 1)] },
     { name: 'woodland', members: [member('density', 'float', 1)] },
     { name: 'track', members: [member('width', 'float', 3), member('surface', 'string', 'dirt')] },
+    { name: 'ridge', members: [member('rise', 'float', 10), member('width', 'float', 40)] },
+    { name: 'hill', members: [member('rise', 'float', 4)] },
   ].map((definition) => {
     const prior = existing.find((type) => type.name === definition.name);
     const id = prior ? prior.id : nextId;

@@ -49,6 +49,7 @@
       "id": "lock_test",
       "bounds": { "x0": -16, "z0": -16, "x1": 16, "z1": 16 },
       "ground": 0,
+      "terrain": [],
       "buildings": [{ "template": "locked_shed", "position": [-2, 0, -1], "rotation": 0 }],
       "player": { "position": [0, 0.5, -1.5], "yaw": 180 },
       "shamblers": [],

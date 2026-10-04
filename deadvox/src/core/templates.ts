@@ -117,6 +117,14 @@ export interface CompiledTemplate {
   readonly groundLayer?: number;
 }
 
+/** Whether every block and furniture id in a template's palette exists; `compileTemplate` needs that. */
+export const templateResolves = (registry: Registry, template: TemplateDef): boolean =>
+  Object.values(template.palette).every((entry) =>
+    typeof entry === 'string'
+      ? registry.blockIds.has(entry)
+      : entry.furniture === undefined || registry.furniture.has(entry.furniture),
+  );
+
 /** Resolves a template's palette against the registry. The validator has already checked it. */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: palette compilation resolves the template's block, furniture, and spawn encodings in one pass.
 export const compileTemplate = (registry: Registry, template: TemplateDef): CompiledTemplate => {
@@ -210,6 +218,15 @@ const unturned = (size: Vec3, turn: Turn, u: number, v: number): [number, number
     default:
       return [u, v];
   }
+};
+
+/** The authored block at a world cell, including air; undefined outside this placement. */
+export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | undefined => {
+  const { template, origin, turn } = placement;
+  const [u, v] = unturned(template.size, turn, x - origin[0], z - origin[2]);
+  const h = y - origin[1];
+  const [sx, sy, sz] = template.size;
+  return u >= 0 && u < sx && v >= 0 && v < sz && h >= 0 && h < sy ? template.blocks[u + sx * (v + sz * h)] : undefined;
 };
 
 /** Writes the part of a placed template that falls inside the chunk. */

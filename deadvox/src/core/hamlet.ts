@@ -4,6 +4,7 @@
 // its buildings put in a chunk, and what each container holds. So any chunk can be
 // generated on its own, in any order, and comes out the same.
 
+import { smoothstep } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
@@ -17,7 +18,6 @@ import {
   type Rect,
   rectDistance,
   type Site,
-  smoothstep,
   type ZombieSpawn,
 } from './site.ts';
 import { type BlockBox, stampChunk } from './structure.ts';

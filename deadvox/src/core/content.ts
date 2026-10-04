@@ -16,7 +16,7 @@ import {
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { templateSpatialIssues } from './templateSpatial.ts';
-import { compileTemplate, findPieces, pieceSize, templateLockIds } from './templates.ts';
+import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
 export type {
   BlockDef,
@@ -328,12 +328,7 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
 };
 
 const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
-  const resolvable = Object.values(template.palette).every((entry) =>
-    typeof entry === 'string'
-      ? registry.blockIds.has(entry)
-      : entry.furniture === undefined || registry.furniture.has(entry.furniture),
-  );
-  if (template.access && resolvable) {
+  if (template.access && templateResolves(registry, template)) {
     for (const [path, message] of templateSpatialIssues(registry, compileTemplate(registry, template))) {
       report('templates', template.id, path, message);
     }
