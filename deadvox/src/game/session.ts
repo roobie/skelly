@@ -131,6 +131,8 @@ export interface SessionOptions {
   isSolid: SolidAt;
   isOpaque: SolidAt;
   scale: Scale;
+  /** Immutable choice for a new actor; saved progression wins on restore. */
+  handedness?: Character['handedness'];
   /** The world's seed. */
   seed: number;
   /** Calendar seconds at the start of day 1. */
@@ -201,12 +203,12 @@ export const createSession = (options: SessionOptions) => {
     walk: restoredPlayer.walk,
   };
 
-  const inventory = restored
-    ? Inventory.restoreState(registry, restored.character.inventory, options.entities)
-    : new Inventory(registry, undefined, options.entities);
   const character = restored
     ? Character.restoreState(registry, restored.character.progression)
-    : new Character(registry);
+    : new Character(registry, { handedness: options.handedness });
+  const inventory = restored
+    ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
+    : new Inventory(registry, undefined, options.entities, character);
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();

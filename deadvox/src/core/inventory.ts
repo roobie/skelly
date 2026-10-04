@@ -3,6 +3,7 @@
 // handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
+import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { CraftPlan } from './crafting.ts';
@@ -102,13 +103,14 @@ type Place = { kind: 'pile'; pile: Pile } | { kind: 'furniture'; entity: BlockEn
 
 export type Plan = { ok: true; time: number; merge?: Item; at?: Spot } | { ok: false; reason: string };
 
-const SIDES: readonly HandSide[] = ['right', 'left'];
+export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
 
 export class Inventory {
   readonly registry: Registry;
+  readonly character: HandedCharacter;
   readonly factory: ItemFactory;
   readonly hands: Partial<Record<HandSide, Item>> = {};
   readonly worn: Partial<Record<WearSlot, Item>> = {};
@@ -135,7 +137,12 @@ export class Inventory {
     });
   }
 
-  static restoreState(registry: Registry, state: InventoryState, entities?: BlockEntities): Inventory {
+  static restoreState(
+    registry: Registry,
+    state: InventoryState,
+    entities?: BlockEntities,
+    character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
+  ): Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
       throw new Error('Invalid next item id');
     }
@@ -144,7 +151,7 @@ export class Inventory {
     if (entities) {
       entities.restoreState(state.entities);
     }
-    const inventory = new Inventory(registry, new ItemFactory(state.nextItemUid), restoredEntities);
+    const inventory = new Inventory(registry, new ItemFactory(state.nextItemUid), restoredEntities, character);
     for (const [side, item] of Object.entries(state.hands)) {
       if (item) {
         inventory.hands[side as HandSide] = restoreItem(registry, item);
@@ -167,8 +174,14 @@ export class Inventory {
     return inventory;
   }
 
-  constructor(registry: Registry, factory = new ItemFactory(), entities = new BlockEntities(registry)) {
+  constructor(
+    registry: Registry,
+    factory = new ItemFactory(),
+    entities = new BlockEntities(registry),
+    character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
+  ) {
     this.registry = registry;
+    this.character = character;
     this.factory = factory;
     this.entities = entities;
   }
@@ -430,7 +443,7 @@ export class Inventory {
       return item;
     });
     work.work = { recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
-    this.hands.right = work;
+    this.hands[dominantSide(this.character)] = work;
     this.version += 1;
     return work;
   }
@@ -605,8 +618,8 @@ export class Inventory {
   }
 
   private handPlacement(item: Item, side: HandSide, from: Location): Plan {
-    if (item.work && side === 'left') {
-      return refuse('Work stays in the right hand');
+    if (item.work && side !== dominantSide(this.character)) {
+      return refuse('Work stays in the dominant hand');
     }
     if (from.kind === 'hand' && from.side === side) {
       return refuse("It's already in that hand");

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '../src/core/canonicalJson.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
+import { currentSaveVersionIdentity, decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
@@ -43,9 +43,12 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   }
   return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
 };
+const {
+  components: { schemaVersion },
+} = await currentSaveVersionIdentity();
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 10,
+  schemaVersion,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

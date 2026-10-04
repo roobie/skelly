@@ -2,7 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
+import {
+  currentSaveVersionIdentity,
+  decodeSave,
+  encodeSave,
+  type SaveContentKind,
+  type SaveVersionComponents,
+} from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
@@ -17,9 +23,12 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
 );
+const {
+  components: { schemaVersion },
+} = await currentSaveVersionIdentity();
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 10,
+  schemaVersion,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

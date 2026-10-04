@@ -132,7 +132,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -206,7 +206,11 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
-const progression = obj({ skills: record(nonNegativeInt), knownRecipes: arr(str({ nonEmpty: true })) });
+const progression = obj({
+  handedness: enumeration(['right', 'left']),
+  skills: record(nonNegativeInt),
+  knownRecipes: arr(str({ nonEmpty: true })),
+});
 const nonNegative = num({ min: 0 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
