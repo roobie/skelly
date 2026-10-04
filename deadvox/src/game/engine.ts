@@ -5,17 +5,20 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { CHUNK, toChunk } from '../core/coords.ts';
 import { DAY_SKY } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
+import { Skylight } from '../render/skylight.ts';
 import type { GameConfig } from './config.ts';
 import type { StreamerStats } from './streamer.ts';
 import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
 export interface Engine extends WorldSetup {
+  skylight?: Skylight;
   renderer: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
@@ -51,7 +54,16 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   const worldSetup = createWorldSetup(config, meshes, stats);
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
-  scene.onBeforeRender = (_renderer, _scene, cam) => meshes.cull(cam);
+  const boxes = worldSetup.site?.skyBounds;
+  const skylight = boxes?.length ? new Skylight(boxes, scale.blockSize, (scale.maxCy + 1) * CHUNK - 1) : undefined;
+  scene.onBeforeRender = (_renderer, _scene, cam) => {
+    skylight?.update(
+      scene,
+      `${meshes.version}:${worldSetup.entities.version}`,
+      (x, y, z) => !worldSetup.world.getChunk(toChunk(x), toChunk(y), toChunk(z)) || worldSetup.isOpaque(x, y, z),
+    );
+    meshes.cull(cam);
+  };
 
   const mood = new Mood(renderer, scene, camera);
   const shadows = new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes);
@@ -67,6 +79,7 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
 
   return {
     ...worldSetup,
+    ...(skylight ? { skylight } : {}),
     renderer,
     scene,
     camera,

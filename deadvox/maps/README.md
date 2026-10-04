@@ -102,12 +102,12 @@ in for the tool shack, woodland north/behind the house, and a dirt track east.
 The fixed shambler's feet are at 25 m, on the second storey's floor; furniture is
 repeated upstairs by the existing stack primitive.
 
-**There is no stair connection between storeys.** Approved spike limitation, not
-finished beat-1 content. No dedicated stair block/template or stair construction
-helper exists in the current base content/structure API; ordinary half-metre
-voxel steps and player step-up physics are available for a future ASCII stair
-flight with an opening in the upper floor. Hen house, fence and actual tool shack
-are outside the spike.
+**This original spike still has no stair connection between storeys.** It is not
+finished beat-1 content. Explicit storeys, ordinary-block flights, carved cellars
+and spatial validation are now available separately: see [stairs](../docs/stairs.md)
+and `?site=stair_demo`. Neither demonstration is the final playtest house/cabin;
+`lone_house` itself remains unchanged. Hen house, fence and actual tool shack are
+outside the spike.
 
 ## Several sites and production
 
@@ -117,8 +117,9 @@ output). A Tiled `.world` can show adjacent source maps as an editor atlas, but 
 is not a runtime world loader and does not supply coordinate transforms to this
 exporter. Disconnected playtest sites need neither feature.
 
-A production pass needs proper two-storey/stair content, passability/headroom and
-spawn-support checks (XZ bounds are not those checks), better terrain profiles,
+A production pass needs proper playtest two-storey/stair content using the explicit
+construction/spatial checks, authored spawn-support checks (XZ bounds are not those
+checks), better terrain profiles,
 woodland clipping, merged-pack enum generation, contextual elevation defaults,
 and designer feedback for moved/rotated template rectangles. Stable authored spawn
 IDs would make chance streams independent of object reordering.
