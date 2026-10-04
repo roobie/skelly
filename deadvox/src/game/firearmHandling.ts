@@ -21,14 +21,28 @@ export interface FirearmHandlingData {
   readonly action: Action;
   readonly calibre: string;
   readonly caseModelId?: string;
-  readonly rpm: number;
+  readonly rpm: number | undefined;
 }
 
-export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandlingData => {
+const firearmModelFor = (item: Item, registry: Registry): ModelDef | undefined => {
   const id = defOf(registry, item.type).model;
-  const model = id === undefined ? undefined : registry.models.get(id);
-  if (!(model?.calibre && model.action && model.grip && model.anchors?.ejection)) {
-    throw new Error(`Firearm ${item.type} requires exported calibre, grip, ejection and action data`);
+  return id === undefined ? undefined : registry.models.get(id);
+};
+
+const exportedActionReason = (item: Item, registry: Registry, mode: 'fire' | 'hand'): string | undefined => {
+  const model = firearmModelFor(item, registry);
+  if (!(model?.calibre && model.action?.hand && model.grip && model.anchors?.ejection)) {
+    return 'No exported action data for this gun';
+  }
+  return mode === 'fire' && !(model.action.fire && model.action.rpm)
+    ? 'No exported automatic action data for this gun'
+    : undefined;
+};
+
+export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandlingData => {
+  const model = firearmModelFor(item, registry);
+  if (!(model?.calibre && model.action?.hand && model.grip && model.anchors?.ejection)) {
+    throw new Error('No exported action data for this gun');
   }
   const [caseModelId] = [...registry.models.values()]
     .filter((candidate) => candidate.calibre === model.calibre && candidate.id.startsWith('case_'))
@@ -88,10 +102,22 @@ export interface FirearmCycleFrame {
   readonly elapsed: number;
 }
 
-const cycleDuration = (action: Action, mode: 'fire' | 'hand'): number =>
-  mode === 'fire' ? Math.min(action.fire.durationSeconds, 60 / action.rpm) : action.hand.durationSeconds;
-const ejectSeconds = (action: Action, mode: 'fire' | 'hand'): number =>
-  (action[mode].rearwardSeconds * action.ejectAt * cycleDuration(action, mode)) / action[mode].durationSeconds;
+const cycleDuration = (action: Action, mode: 'fire' | 'hand'): number => {
+  if (mode === 'hand') {
+    return action.hand.durationSeconds;
+  }
+  if (!(action.fire && action.rpm)) {
+    throw new Error('No exported automatic action data for this gun');
+  }
+  return Math.min(action.fire.durationSeconds, 60 / action.rpm);
+};
+const ejectSeconds = (action: Action, mode: 'fire' | 'hand'): number => {
+  const cycle = action[mode];
+  if (!cycle) {
+    throw new Error('No exported automatic action data for this gun');
+  }
+  return (cycle.rearwardSeconds * action.ejectAt * cycleDuration(action, mode)) / cycle.durationSeconds;
+};
 
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
@@ -143,6 +169,12 @@ export class FirearmMechanics {
     return Object.values(this.inventory.hands).some((item) => item?.firearm?.cycle !== undefined);
   }
 
+  /** Read-only exported-data refusal; neither model admission nor inspection requires mechanics. */
+  fireReason(uid: number): string | undefined {
+    const item = this.inventory.itemByUid(uid);
+    return item ? exportedActionReason(item, this.inventory.registry, 'fire') : 'Firearm is no longer carried';
+  }
+
   fire(input: DebugFirearmShotInput): boolean {
     if (!(input.debugMode && this.held(input.item.uid)) || this.queue.busy) {
       return false;
@@ -151,6 +183,9 @@ export class FirearmMechanics {
     this.advanceTo(input.simTime);
     const item = this.inventory.itemByUid(input.item.uid)!;
     if (!defOf(this.inventory.registry, item.type).firearm || item.firearm?.cycle || item.firearm?.chamber === 'case') {
+      return false;
+    }
+    if (this.fireReason(item.uid)) {
       return false;
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
@@ -172,7 +207,9 @@ export class FirearmMechanics {
     if (!(item && this.held(uid))) {
       return 'Hold the firearm before cocking it';
     }
-    return this.queue.busy || item.firearm?.cycle ? 'Already handling something' : undefined;
+    return this.queue.busy || item.firearm?.cycle
+      ? 'Already handling something'
+      : exportedActionReason(item, this.inventory.registry, 'hand');
   }
 
   cock(uid: number, time: number): string | undefined {

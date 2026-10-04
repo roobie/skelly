@@ -286,6 +286,10 @@ button:hover {
 #generate-btn {
   flex: 1;
 }
+#cycle-controls[hidden],
+#cycle-empty-label[hidden] {
+  display: none;
+}
 #cycle-controls .estimated {
   color: var(--normal);
   font-size: 10px;

@@ -84,6 +84,37 @@ describe('piles with models', () => {
   });
 });
 
+it('loads the curated pump through preparation and resolves separate movers by glTF node index, not sanitized name', async () => {
+  const def = registry.models.get('shotgun_pump')!;
+  const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
+  expect(def.calibre).toBe('12-gauge-00-buck');
+  expect(def.tube?.capacity).toBe(4);
+  expect(def.action?.fire).toBeUndefined();
+  expect(def.grip?.turn).toEqual([0, 0, 0]);
+  for (const part of Object.values(def.action!.parts)) {
+    const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
+    expect(index).toBeGreaterThanOrEqual(0);
+    let found = false;
+    gltf.scene.traverse((object) => {
+      if (gltf.parser.associations.get(object)?.nodes === index) {
+        found = true;
+        expect(object.name).not.toBe(part.node); // Three.js strips the colon.
+      }
+    });
+    expect(found, part.node).toBe(true);
+    expect(part.modes).toEqual(['hand']);
+    expect(part.strokeMetres).toBe(0.063_25);
+  }
+  const raw = new Box3().setFromObject(gltf.scene);
+  expect(def.anchors!.muzzle![0]).toBeCloseTo(raw.max.x, 5);
+  const prepared = prepareModel(def, gltf.scene);
+  const ground = new Box3().setFromObject(prepared.ground);
+  expect(ground.min.y).toBeCloseTo(0, 9);
+  expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.x - raw.min.x, 9);
+  const held = new Box3().setFromObject(prepared.held);
+  expect(held.isEmpty()).toBe(false);
+});
+
 describe('model forms', () => {
   const load = async () => {
     const bytes = readFileSync('test/fixtures/packs/lamp/assets/models/lamp.glb');

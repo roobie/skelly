@@ -101,6 +101,9 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
       .filter((item) => item.type === 'spent_case_5_d_56x45')
       .map(({ uid, count }) => ({ uid, count }));
   const { action } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR save fixture needs exported automatic action data');
+  }
   const ejectTime = action.fire.rearwardSeconds * action.ejectAt;
   expect(cases(restored)).toEqual([]);
   restored.firearms.advanceTo(ejectTime - 1e-6);

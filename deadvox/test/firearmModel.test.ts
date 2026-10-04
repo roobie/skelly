@@ -61,6 +61,15 @@ describe('exported firearm presentation', () => {
     expect(sampleActionStroke(action, 'fire', -1)).toBe(0);
   });
 
+  it('samples the exported hand-only pump without inventing an automatic pose', () => {
+    const pump = firearmContent.models.find((model) => model.id === 'shotgun_pump') as ModelDef;
+    expect(pump.action?.fire).toBeUndefined();
+    expect(pump.action?.rpm).toBeUndefined();
+    expect(sampleActionStroke(pump.action!, 'fire', 0.01)).toBe(0);
+    expect(sampleActionStroke(pump.action!, 'hand', 0.25)).toBeCloseTo(0.5);
+    expect(sampleActionStroke(pump.action!, 'hand', 0.6)).toBe(1);
+  });
+
   it('keeps cloned action motion independent from another held copy and the prepared ground meshes', async () => {
     const gltf = await load();
     const paths = actionPartPaths(gltf.scene, ar.action, gltf.parser);

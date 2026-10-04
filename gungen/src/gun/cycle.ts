@@ -173,15 +173,61 @@ export const buildCycleTimeline = (action: GunAction, mode: CycleMode, strokeMet
 export interface CycleMotion {
   readonly strokeUnits: number;
   readonly strokeMetres: number;
-  readonly fire: CycleTimeline;
+  readonly fire?: CycleTimeline;
   readonly hand: CycleTimeline;
   readonly ejectAt: number;
   readonly ejectDirection: Vec3;
   readonly holdOpenOnEmpty: boolean;
+  readonly rpm?: number;
+}
+
+export interface AutomaticCycleMotion extends CycleMotion {
+  readonly fire: CycleTimeline;
   readonly rpm: number;
 }
 
-export const cycleMotion = (action: GunAction, motion: PartMotion, metresPerUnit: number): CycleMotion => {
+/** Manual pump tuning estimates: both legs are hand-driven, not a gas stroke or spring return. */
+export const PUMP_HAND_TIMING = { rearwardSeconds: 0.5, dwellSeconds: 0.15, forwardSeconds: 0.5, restSeconds: 0.35 };
+
+export const pumpCycleMotion = (motion: PartMotion, metresPerUnit: number): CycleMotion => {
+  const strokeUnits = length(sub(motion.end, motion.start));
+  if (!(Number.isFinite(metresPerUnit) && metresPerUnit > 0 && strokeUnits > 0)) {
+    throw new RangeError('motion stroke and metresPerUnit must be finite and positive');
+  }
+  const { rearwardSeconds, dwellSeconds, forwardSeconds, restSeconds } = PUMP_HAND_TIMING;
+  const durationSeconds = rearwardSeconds + dwellSeconds + forwardSeconds + restSeconds;
+  const ejectAt = 0.76;
+  const ejectDirection = unit([0.12, 0.24, 0.96]);
+  return {
+    strokeUnits,
+    strokeMetres: strokeUnits * metresPerUnit,
+    ejectAt,
+    ejectDirection,
+    holdOpenOnEmpty: false,
+    hand: {
+      mode: 'hand',
+      durationSeconds,
+      rearwardSeconds,
+      dwellSeconds,
+      forwardSeconds,
+      ejectAt,
+      ejectDirection,
+      holdOpenOnEmpty: false,
+      at: (seconds) => {
+        const time = ((seconds % durationSeconds) + durationSeconds) % durationSeconds;
+        if (time < rearwardSeconds) {
+          return minimumJerk(time / rearwardSeconds);
+        }
+        if (time < rearwardSeconds + dwellSeconds) {
+          return 1;
+        }
+        return Math.max(0, 1 - minimumJerk((time - rearwardSeconds - dwellSeconds) / forwardSeconds));
+      },
+    },
+  };
+};
+
+export const cycleMotion = (action: GunAction, motion: PartMotion, metresPerUnit: number): AutomaticCycleMotion => {
   const strokeUnits = length(sub(motion.end, motion.start));
   if (!(Number.isFinite(metresPerUnit) && metresPerUnit > 0 && strokeUnits > 0)) {
     throw new RangeError('motion stroke and metresPerUnit must be finite and positive');

@@ -142,8 +142,35 @@
     {
       "id": "shotgun_pump",
       "file": "assets/models/shotgun_pump.glb",
-      "grip": { "at": [0.1531, 0.0001, -0.0052], "turn": [-90, 0, 0] },
-      "anchors": { "muzzle": [0.5966, -0.0001, 0.0401] }
+      "grip": { "at": [-0.215625, -0.037375, 0], "turn": [0, 0, 0] },
+      "anchors": {
+        "support": [0.231438, -0.043051, 0.0276],
+        "muzzle": [0.45425, 0, 0],
+        "ejection": [-0.033062, 0, 0.01725],
+        "loading_port": [-0.0575, -0.04025, 0]
+      },
+      "calibre": "12-gauge-00-buck",
+      "action": {
+        "parts": {
+          "carrier": {
+            "node": "bolt-carrier:bolt-carrier",
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "strokeMetres": 0.06325,
+            "modes": ["hand"]
+          },
+          "forend": {
+            "node": "forend:forend",
+            "axis": [-1, 0, -2.4492935982947064e-16],
+            "strokeMetres": 0.06325,
+            "modes": ["hand"]
+          }
+        },
+        "hand": { "durationSeconds": 1.5, "rearwardSeconds": 0.5, "dwellSeconds": 0.15, "forwardSeconds": 0.5 },
+        "ejectAt": 0.76,
+        "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],
+        "holdOpen": false
+      },
+      "tube": { "capacity": 4 }
     },
     {
       "id": "smg_compact",
@@ -178,7 +205,7 @@
       "weight": 3000,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A stand-in for trying the model in piles and hands. No loot table has it; spawn it with G (?debug=1). It doesn't fire.",
+      "description": "Curated 12-gauge hunting-cabin pump from gungen, with a hand-racked action and four-shell tube. No loot table has it; spawn it with G (?debug=1). Runtime pumping/loading is not implemented yet.",
       "model": "shotgun_pump"
     },
     {

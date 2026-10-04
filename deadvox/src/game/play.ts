@@ -152,12 +152,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
         const weapon =
           config.debug && !debugTools?.buildOn && !queue.busy && action.kind === 'firearm' ? action.item : undefined;
-        const deadlines = firearmTrigger.advance(
-          time,
-          weapon ? { uid: weapon.uid, rpm: firearmHandlingFor(weapon, registry).rpm } : undefined,
-          pressed,
-          triggerHeld,
-        );
+        const deadlines = firearmTrigger.advance(time, triggerWeapon(weapon, pressed), pressed, triggerHeld);
         if (weapon) {
           for (const deadline of deadlines) {
             fireDebugWeapon(weapon, deadline);
@@ -846,6 +841,21 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return true;
   };
 
+  const triggerWeapon = (weapon: Item | undefined, pressed: boolean) => {
+    if (!weapon) {
+      return;
+    }
+    const reason = firearms.fireReason(weapon.uid);
+    if (reason) {
+      if (pressed) {
+        showNotice(reason);
+      }
+      return;
+    }
+    const { rpm } = firearmHandlingFor(weapon, registry);
+    return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
+  };
+
   performPrimaryAction = (hand: 'right' | 'left') => {
     const action = selectPrimaryAction(registry, inventory.hands, hand);
     switch (action.kind) {
@@ -861,7 +871,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       }
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
-          showNotice(config.debug ? 'Firearm is not ready' : 'Firearms can only be fired in debug mode');
+          showNotice(
+            config.debug
+              ? (firearms.fireReason(action.item.uid) ?? 'Firearm is not ready')
+              : 'Firearms can only be fired in debug mode',
+          );
         }
         return;
       }

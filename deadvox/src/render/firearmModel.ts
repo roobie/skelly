@@ -95,7 +95,13 @@ export const cloneHeldModel = (prepared: Object3D, paths: readonly ActionPartPat
 /** Rendering alone samples the rear/dwell/return profile; admission/ejection remain gameplay. */
 export const sampleActionStroke = (action: FirearmAction, mode: FirearmMode, elapsed: number): number => {
   const cycle = action[mode];
-  const duration = mode === 'fire' ? Math.min(cycle.durationSeconds, 60 / action.rpm) : cycle.durationSeconds;
+  if (!cycle || (mode === 'fire' && action.rpm === undefined)) {
+    return 0;
+  }
+  const duration =
+    mode === 'fire' && action.rpm !== undefined
+      ? Math.min(cycle.durationSeconds, 60 / action.rpm)
+      : cycle.durationSeconds;
   const time = (elapsed * cycle.durationSeconds) / duration;
   if (elapsed < 0 || elapsed >= duration) {
     return 0;

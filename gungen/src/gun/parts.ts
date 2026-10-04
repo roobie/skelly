@@ -31,7 +31,12 @@ import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
-import { PUMP_ACTION_TRAVEL_U, PUMP_SHELL_LOADED_LENGTH_U } from './pumpShell.ts';
+import {
+  PUMP_ACTION_TRAVEL_U,
+  PUMP_LOADING_PORT_HALF_WIDTH_U,
+  PUMP_LOADING_PORT_X,
+  PUMP_SHELL_LOADED_LENGTH_U,
+} from './pumpShell.ts';
 import {
   buildReceiverSection,
   type ReceiverSectionSpec,
@@ -1221,7 +1226,15 @@ const addFeedKeepOuts = (context: ReceiverContext, keepOuts: KeepOut[]): void =>
       );
       break;
     case 'tube':
-      keepOuts.push(keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]));
+      keepOuts.push(
+        params.section === 'pump'
+          ? keepOut(
+              'loading-port',
+              [PUMP_LOADING_PORT_X[0], -6 - receiverDrop, -PUMP_LOADING_PORT_HALF_WIDTH_U],
+              [PUMP_LOADING_PORT_X[1], receiverBottom, PUMP_LOADING_PORT_HALF_WIDTH_U],
+            )
+          : keepOut('loading-port', [-7, -6 - receiverDrop, -1.5], [-2, receiverBottom, 1.5]),
+      );
       break;
     default:
       break;
@@ -1312,7 +1325,11 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
     : undefined;
   const internalPockets = params.section === 'ar' ? [AR_HANDLE_CHANNEL] : [];
   if (params.section === 'pump' && tubeFed && carrierPattern === 'pump') {
-    internalPockets.push(pumpActionBarSlot(bore));
+    internalPockets.push(pumpActionBarSlot(bore), {
+      x: PUMP_LOADING_PORT_X,
+      y: [receiverBottom, carrierCavityBounds(carrierPattern, carrierY).y[0]],
+      z: [-PUMP_LOADING_PORT_HALF_WIDTH_U, PUMP_LOADING_PORT_HALF_WIDTH_U],
+    });
   }
   const shell = receiverShellSolids({
     section: params.section ?? 'standard',

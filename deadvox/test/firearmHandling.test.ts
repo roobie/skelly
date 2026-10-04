@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -12,6 +13,8 @@ import {
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
 import { DebugFirearmTrigger } from '../src/game/firearmTrigger.ts';
+import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
+import { prepareModel } from '../src/render/models.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -114,10 +117,89 @@ describe('debug firearm handling', () => {
       rpm: 600,
       caseModelId: 'case_7_d_62x39',
     });
-    expect(() => firearmHandlingFor(inventory.create('debug_shotgun_pump'), registry)).toThrow('requires exported');
     expect(registry.models.get('round_5_d_56x45')?.file).toBe('assets/models/round-5_d_56x45.glb');
     expect(registry.models.get('case_5_d_56x45')?.file).toBe('assets/models/case-5_d_56x45.glb');
     expect(registry.items.get(caseType)?.model).toBe('case_5_d_56x45');
+  });
+
+  it('resolves the exported pump calibre and hull without inventing automatic timing', () => {
+    const inventory = new Inventory(registry);
+    const pump = inventory.create('debug_shotgun_pump');
+    expect(inventory.add(pump, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(firearmHandlingFor(pump, registry)).toMatchObject({
+      calibre: '12-gauge-00-buck',
+      caseModelId: 'case_12_h_gauge_h_00_h_buck',
+      rpm: undefined,
+      action: { hand: { durationSeconds: 1.5 } },
+    });
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    expect(mechanics.fireReason(pump.uid)).toBe('No exported automatic action data for this gun');
+  });
+
+  it('admits and loads an unannotated held gun while its mechanics refuse without synthetic data', async () => {
+    const fixture = buildRegistry([
+      {
+        source: 'no-calibre-fixture.json',
+        data: {
+          models: [{ id: 'pistol_full', file: 'assets/models/pistol_full.glb' }],
+          items: [
+            {
+              id: 'unannotated_gun',
+              name: 'Unannotated gun',
+              category: 'weapon',
+              weight: 1000,
+              size: [1, 1],
+              model: 'pistol_full',
+              firearm: {},
+            },
+          ],
+        },
+      },
+    ]);
+    expect(fixture.issues).toEqual([]);
+    const model = fixture.registry.models.get('pistol_full')!;
+    expect(model.calibre).toBeUndefined();
+    const bytes = readFileSync(join(BASE, model.file));
+    const gltf = await new GLTFLoader().parseAsync(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      '',
+    );
+    const held = cloneHeldModel(
+      prepareModel(model, gltf.scene).held,
+      actionPartPaths(gltf.scene, model.action, gltf.parser),
+    );
+    expect(held.root.children.length).toBeGreaterThan(0);
+    expect(held.parts).toEqual([]);
+    const inventory = new Inventory(fixture.registry);
+    const gun = inventory.create('unannotated_gun');
+    expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.name(inventory.hands.right!)).toBe('Unannotated gun');
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    const before = inventory.snapshotState();
+    expect(mechanics.fireReason(gun.uid)).toBe('No exported action data for this gun');
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: gun,
+        seed: 1,
+        simTime: 0,
+      }),
+    ).toBe(false);
+    expect(mechanics.cock(gun.uid, 0)).toBe('No exported action data for this gun');
+    expect(queue.jobs).toEqual([]);
+    expect(inventory.snapshotState()).toEqual(before);
   });
 
   it('does not fire outside debug mode', () => {

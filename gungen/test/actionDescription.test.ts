@@ -30,7 +30,8 @@ it('discovers the pump open-pose pair after receiver/carrier/forend renames with
   expect(report.issues).toEqual([]);
   const before = [...report.resolved.placed].map(([id, pose]) => [id, pose.t]);
   const action = resolveGunAction(report.resolved)!;
-  expect(action.cycle).toBeUndefined();
+  expect(action.cycle.fire).toBeUndefined();
+  expect(action.carrier.modes).toEqual(['hand']);
   const offsets = actionOpenOffsets(action);
   expect([...offsets.keys()]).toEqual(['slide', 'pump-grip']);
   for (const offset of offsets.values()) {
@@ -44,7 +45,8 @@ it('discovers the pump open-pose pair after receiver/carrier/forend renames with
     if (!exported.ok) {
       throw new Error('pump export failed');
     }
-    expect(exported.modelEntry.action).toBeUndefined();
+    expect(exported.modelEntry.action?.fire).toBeUndefined();
+    expect(exported.modelEntry.action?.parts.forend?.node).toBe('pump-grip:forend');
     expect([...resolve(assembly, gunDomain).placed].map(([id, pose]) => [id, pose.t])).toEqual(before);
   } finally {
     for (const group of Object.values(layers)) {
