@@ -29,7 +29,7 @@ const vite = await createServer({
         assert.ok(code.includes(marker));
         return code.replace(
           marker,
-          `Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,get readCalls(){return proofReadCalls;}}});\n${marker}`,
         );
       },
     },
@@ -124,7 +124,8 @@ try {
     undefined,
     { timeout: 30_000 },
   );
-  const readButton = page.locator('button.inv-option').filter({ hasText: /^Read/ });
+  await page.keyboard.press('1'); // Bind the note through the real inventory quickbar command.
+  const readButton = page.getByRole('button', { name: /^Read/ });
   await readButton.waitFor();
   await readButton.focus();
   await uiClick(readButton);
@@ -141,8 +142,13 @@ try {
       walking: input.walking,
       uid: item.uid,
       count: item.count,
+      readCalls: globalThis.readingWitness.readCalls,
     };
   });
+  await page.keyboard.press('u');
+  await page.keyboard.press('1');
+  await page.keyboard.press('=');
+  await uiClick(page.locator('.reading-text'));
   await page.keyboard.press('z');
   await page.keyboard.press('r');
   await page.keyboard.down('w');
@@ -159,6 +165,7 @@ try {
       count: item.count,
       open: reading.isOpen,
       jobs: session.queue.jobs.length,
+      readCalls: globalThis.readingWitness.readCalls,
     };
   });
   assert.ok(during.time > before.time, 'reading runs the world like inventory');
@@ -167,12 +174,13 @@ try {
   assert.equal(during.uid, before.uid);
   assert.equal(during.count, before.count);
   assert.equal(during.jobs, 0);
+  assert.equal(during.readCalls, before.readCalls);
   assert.equal(during.open, true);
   await page.screenshot({ path: resolve(artifacts, 'note-reading.png') });
   await page.keyboard.press('Tab');
   assert.equal(await page.locator('#reading').isVisible(), false);
   assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
-  assert.ok((await page.evaluate(() => document.activeElement?.textContent)).startsWith('Read'));
+  assert.ok((await page.evaluate(() => document.activeElement?.textContent?.trim())).startsWith('Read'));
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => globalThis.readingWitness.input.menuPointer), false);
   await page.evaluate(() => {
@@ -287,6 +295,22 @@ try {
   await page.keyboard.press('F9');
   assert.equal(await page.locator('#reading').isVisible(), false);
   assert.equal(await page.locator('#overlay').isVisible(), true);
+  await page.keyboard.press('F9');
+  await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+  await page.evaluate(() => globalThis.readingWitness.reading.open({ title: 'Pointer loss', text: 'Placeholder' }));
+  await page.evaluate(() => document.exitPointerLock());
+  await page.waitForFunction(
+    () => !(globalThis.readingWitness.input.locked || globalThis.readingWitness.reading.isOpen),
+  );
+  assert.equal(await page.locator('#overlay').isVisible(), true);
+  await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.readingWitness.input.locked);
+  await page.evaluate(() => {
+    globalThis.readingWitness.reading.open({ title: 'Death closes paper', text: 'Placeholder' });
+    globalThis.readingWitness.session.sim.hurt(9999, 'reading browser fixture');
+  });
+  await page.locator('#death').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#reading').isVisible(), false);
   assert.deepEqual(errors, []);
   await writeFile(
     resolve(artifacts, 'result.json'),

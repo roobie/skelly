@@ -754,7 +754,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       fullName: entities.defOf(entity).name,
     });
 
-  /** F: opens or closes a door; searches a container and opens the inventory beside it. */
+  /** F: doors first, then readable furniture, then container search/inventory. */
   function use(): void {
     const entity = lookedAt();
     if (!entity) {
@@ -1188,6 +1188,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     input.unlock();
     metrics.recordDeath(cause, time * sim.clock.ratio);
     saveMetrics();
+    reading.close();
     closeInventoryScreen();
     inventoryPanel.hidden = true;
     syncMenuState();

@@ -1,0 +1,89 @@
+# Authored notes and signs
+
+Items and furniture share the optional, strict `readable` block:
+
+```json
+"readable": {
+  "title": "Evacuation note — PLACEHOLDER",
+  "text": "PLACEHOLDER ONLY\n\nWrite the actual message here later."
+}
+```
+
+Each distinct authored note/logbook is its own item type (normally `category: "book"`);
+each distinct sign is its own furniture type. Copies of a type share its immutable
+text. Item/furniture saves retain the existing type reference, not duplicated text
+or reading progress. There is no runtime editing or per-instance message state to
+justify another save format. The view itself is transient, not saved.
+
+## Authoring rules
+
+- Both fields must be strings with non-whitespace content.
+- Plain text only: reject `<`, `>` and ASCII controls other than tab, LF and CR
+  (DEL is also rejected). Newlines and blank lines preserve paragraphs. Ampersands
+  and entity spellings such as `&copy;` remain literal text, not HTML.
+- Title: at most **120 UTF-16 code units**; body: at most **12,000**. Both limits
+  include whitespace. Unknown readable fields are rejected.
+- `npm run validate` reports the owning item/furniture and field path. The Lit view
+  renders text nodes, never authored HTML.
+
+**No pages:** one scrollable body handles the playtest paragraphs and a short
+logbook without page metadata, navigation/state or repeated controls. The body
+cap is enough for roughly a couple of thousand ordinary words. Pages do not pay
+for themselves for the current beats.
+
+Place a sign through the existing template furniture pieces; give a note through
+an ordinary loot entry, starting item or item placement. A readable sign needs no
+container or loot. Runtime F priority remains **door → readable → container**.
+A hybrid readable/container presents reading through F; inventory access remains
+ordinary inventory access. The shared block does not change door ownership.
+
+## Player flow and time
+
+Select a note in inventory, take it into a hand, then choose **Read** (or U / an
+assigned quickbar key). `useOption` describes the capability; Survival revalidates
+hand ownership and owns the read effect. There is no consumption, inventory change
+or queued handling job. Reading has **zero command time**, rather than an arbitrary
+handling cost: opening paper is presentation, while time spent actually reading
+already passes in the live world.
+
+Look at a sign and press F. Normal furniture picking includes gaze/occlusion and
+Search's reach; the session command rechecks the live entity identity and reach.
+Moving away or passing a stale entity does not open the view.
+
+The parchment-styled reading surface is not a new HUD panel. It takes focus, wraps
+text and scrolls with wheel, arrows, Page Up/Down, Home/End or Space. Wheel routing
+uses the existing scroll-pane/menu-pointer implementation. **Esc, Tab or Put away**
+close it and restore previous focus. F9 opens the main menu and puts it away;
+pointer-lock loss and death also close it. Other gameplay, inventory, quickbar and
+primary-action keys do not leak through. The world **keeps moving**, just as with
+inventory; movement/action input is inactive. Main-menu/pointer-loss pause rules
+are unchanged. This does not add or enable the HUD: existing HUD preferences and
+compass/watch item plans remain unchanged.
+
+The maintained browser contract exercises the real sample pickup/search/handling/
+Read path, sign F interaction, input ownership, focus, scrolling and dismissal.
+It also checks maximum title/body sizes at 360×640 and 800×600 (20 px body text,
+no horizontal overflow, footer/button visible).
+
+## Prototype samples, not lore
+
+`readables.json` defines `sample_note`, `sample_sign` and guaranteed
+`sample_note_loot`. `?site=testHouse&seed=1&radius=32&time=12:00` places the sign near
+spawn and the note in test-house crates. The note's 5 g weight and one-cell inventory
+footprint are prototype estimates; its held/piled model remains the ordinary
+fallback, not a bespoke paper mesh.
+
+The samples loudly say **PLACEHOLDER / NOT PLAYTEST LORE**. They are neither the
+final evacuation message, Dad's cabin directions nor the hunter's logbook. The
+lead authors #181's actual text and buildings later.
+
+## Reading in darkness: report-only
+
+**Yes for a cheap, coarse gate; no for accurate local illumination already today.**
+After d39 integration, combine its sky visibility at the player's eye with the
+existing sky intensity and charged/on held-light state, and inject a read-admission
+predicate into the domain commands. That is an approximation, not photometric lux
+or a flashlight-beam/occlusion test; direct sun and arbitrary scene lights need more
+work. Current daylight-only adaptation cannot reliably recognize buried darkness.
+No darkness gate is implemented here. BR still chooses a threshold and how the
+crafted light should pay off in beat 3.
