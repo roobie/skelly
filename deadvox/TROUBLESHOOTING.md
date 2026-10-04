@@ -116,7 +116,7 @@ The stages assigned render-free mode in `test/browser/stage-mode.mjs` are `inven
 and quarantined `firefox-first-click`. The OPFS Continue autosave scenario is the intentional
 pixel-mode exception: it builds the production bundle and loads it through Vite preview.
 
-A new logic stage, `melee-build-click`, uses this mode. Add future stages to the shared mode
+The `melee-build-click` logic stage is newly render-free. Add future stages to the shared mode
 helper and use its URL/launch helpers together so the render choice and browser flags stay aligned.
 Verify that the stage creates no WebGL context while its simulation and input assertions still
 pass; put pixel-only checks in an existing visual stage.
