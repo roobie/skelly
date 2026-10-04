@@ -102,6 +102,14 @@ export interface CompiledTemplate {
   readonly groundLayer?: number;
 }
 
+/** Whether every block and furniture id in a template's palette exists; `compileTemplate` needs that. */
+export const templateResolves = (registry: Registry, template: TemplateDef): boolean =>
+  Object.values(template.palette).every((entry) =>
+    typeof entry === 'string'
+      ? registry.blockIds.has(entry)
+      : entry.furniture === undefined || registry.furniture.has(entry.furniture),
+  );
+
 /** Resolves a template's palette against the registry. The validator has already checked it. */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: palette compilation resolves the template's block, furniture, and spawn encodings in one pass.
 export const compileTemplate = (registry: Registry, template: TemplateDef): CompiledTemplate => {

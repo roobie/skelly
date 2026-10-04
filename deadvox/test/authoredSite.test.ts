@@ -88,6 +88,20 @@ describe('authored layout acceptance', () => {
   it('rejects an unknown building template', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], template: 'missing' }] }, 'no template');
   });
+  it('reports a placed template with an unknown furniture id instead of throwing', () => {
+    const template = {
+      id: 'bad_palette',
+      size: [1, 1, 1],
+      palette: { X: { furniture: 'no_such_furniture' } },
+      layers: [['X']],
+    };
+    const building = { ...layout.buildings[0], template: 'bad_palette', storeys: 1 };
+    const data = { templates: [template], layouts: [{ ...layout, id: 'bad_palette_site', buildings: [building] }] };
+    const result = buildRegistry([...base, { source: 'layout-test.json', data }]);
+    expect(result.issues.map((issue) => `${issue.path}: ${issue.message}`)).toContain(
+      'templates[0].palette["X"].furniture: no furniture "no_such_furniture"',
+    );
+  });
   it('rejects an unknown shambler type', () => {
     invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], type: 'missing' }] }, 'no zombie type');
   });

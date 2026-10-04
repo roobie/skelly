@@ -154,8 +154,8 @@ samples staying dark across the nearest-cellar switch. Its test-only terrain apr
 stays at the shared ground level, exposing the lower west wall. The same local cell
 must be dark in slot zero and lit in slot one (`at()` values `[0, 1]`); that exposed
 wall's GPU luminance must match the sky-one reference. The second-cellar dark
-screenshot proves slot 1 is sampled; the wall contrast proves it is sampled from
-its own slice. This contrast, not two identically dark interiors, detects
+screenshot proves its field is resident, not the visibility-1 fallback. The wall
+contrast proves it is read from its own slice. This contrast, not two identically dark interiors, detects
 wrong-slot sampling. The extra cabin and terrain
 override exist only in the lighting test's Vite plugin, not the demo or build. Both
 stages keep the existing 300 s outer cap; neither retries to green. Opposite-floor resident/player

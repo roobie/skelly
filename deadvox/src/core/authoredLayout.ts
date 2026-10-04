@@ -7,7 +7,7 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
-import { type Placement, placedBlockAt } from './templates.ts';
+import { type Placement, placedBlockAt, templateResolves } from './templates.ts';
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
@@ -64,10 +64,6 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       issues.push([`.buildings[${i}].storeys`, 'explicit storeys cannot be stress-test stacked']);
       return;
     }
-    const placement = placementOf(registry, building);
-    if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
-      issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
-    }
     const rect = buildingBounds(building, template.size);
     checkFootprint(rect, i);
     if (
@@ -76,6 +72,13 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       !foundationFits(layout, building, rect)
     ) {
       issues.push([`.buildings[${i}].position`, `foundation cut or fill exceeds ${FOUNDATION_TOLERANCE} m`]);
+    }
+    if (!templateResolves(registry, template)) {
+      return; // checkTemplates reports the palette; the placement can't compile without it.
+    }
+    const placement = placementOf(registry, building);
+    if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
+      issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }
     placements.push(placement);
   });
