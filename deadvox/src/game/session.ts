@@ -50,6 +50,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
+import { FirearmMechanics, type FirearmShotEffect } from './firearmHandling.ts';
 import {
   createPlayerBody,
   type MoveIntent,
@@ -141,6 +142,8 @@ export interface SessionOptions {
   notice: (text: string) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
+  /** Output only, called after the simulation has committed the case transition. */
+  onFirearmEjection?: (effect: FirearmShotEffect) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -294,6 +297,21 @@ export const createSession = (options: SessionOptions) => {
       ),
     (move) => options.audio.onMoveComplete?.(move, sim.time),
   );
+
+  const firearms = new FirearmMechanics(inventory, queue, {
+    blockSize: s,
+    pose: (uid) =>
+      inventory.hands.right?.uid === uid || inventory.hands.left?.uid === uid
+        ? {
+            feet: feet(),
+            eye: [body.pos[0], body.pos[1] + PLAYER.eye / s, body.pos[2]],
+            yaw: controls.yaw(),
+            pitch: controls.pitch(),
+            blockSize: s,
+          }
+        : undefined,
+    onEjection: (effect) => options.onFirearmEjection?.(effect),
+  });
 
   const survival = new Survival(sim, inventory, queue, {
     reach,
@@ -451,7 +469,7 @@ export const createSession = (options: SessionOptions) => {
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }
-      const handling = queue.busy;
+      const handling = queue.busy || firearms.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
       sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
       stepStamina(sim.needs, dt, sprinting);
@@ -523,6 +541,8 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
+  sim.scheduler.register({ id: 'firearms', rate: PHYSICS_RATE, tick: (_dt, time) => firearms.advanceTo(time) });
+
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
@@ -574,6 +594,7 @@ export const createSession = (options: SessionOptions) => {
     inventory,
     entities,
     queue,
+    firearms,
     quickbar,
     survival,
     rest,

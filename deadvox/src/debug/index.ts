@@ -12,7 +12,7 @@ import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
-import { equipDebugStartWeapons } from './debugLoadout.ts';
+import { equipDebugFirearms, equipDebugStartWeapons } from './debugLoadout.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -737,16 +737,18 @@ export const equipDebugStartLight = ({
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
-  equipDebugStartLight({
-    inventory: hooks.inventory,
-    debugMode: hooks.engine.config.debug,
-    newGame: hooks.newGame,
-  });
-  equipDebugStartWeapons({
-    inventory: hooks.inventory,
-    debugMode: hooks.engine.config.debug,
-    newGame: hooks.newGame,
-  });
+  if (!equipDebugFirearms(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
+    equipDebugStartLight({
+      inventory: hooks.inventory,
+      debugMode: hooks.engine.config.debug,
+      newGame: hooks.newGame,
+    });
+    equipDebugStartWeapons({
+      inventory: hooks.inventory,
+      debugMode: hooks.engine.config.debug,
+      newGame: hooks.newGame,
+    });
+  }
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
   let mouseText = formatMouseDiag(undefined);

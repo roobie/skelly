@@ -35,11 +35,11 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'sound') {
     return registry.sounds.has(id);
   }
-  return ['needs', 'player', 'zombies', 'handling', 'lights'].includes(id);
+  return ['needs', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
 };
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 8,
+  schemaVersion: 9,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

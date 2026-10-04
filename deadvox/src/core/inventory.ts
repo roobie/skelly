@@ -199,23 +199,25 @@ export class Inventory {
     return entity;
   }
 
-  itemByUid(uid: number): Item | undefined {
-    const visit = (item: Item): Item | undefined => {
-      if (item.uid === uid) {
-        return item;
-      }
-      for (const placed of (item.pockets ?? []).flat()) {
-        const found = visit(placed.item);
-        if (found) {
-          return found;
+  /** Every owned item, lazily and carried-first; no secondary owner/index is created. */
+  *items(): IterableIterator<Item> {
+    const visit = function* (item: Item): IterableIterator<Item> {
+      yield item;
+      for (const pocket of item.pockets ?? []) {
+        for (const placed of pocket) {
+          yield* visit(placed.item);
         }
       }
-      return undefined;
     };
     for (const root of this.roots()) {
-      const found = visit(root);
-      if (found) {
-        return found;
+      yield* visit(root);
+    }
+  }
+
+  itemByUid(uid: number): Item | undefined {
+    for (const item of this.items()) {
+      if (item.uid === uid) {
+        return item;
       }
     }
     return undefined;

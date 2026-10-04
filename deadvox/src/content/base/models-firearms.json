@@ -22,9 +22,90 @@
       "anchors": {
         "support": [0.177675, -0.01725, 0],
         "muzzle": [0.414, 0, 0],
+        "ejection": [-0.048875, 0.002875, 0.023],
         "magwell": [-0.048875, -0.046, 0]
       },
-      "calibre": "5.56x45"
+      "calibre": "5.56x45",
+      "action": {
+        "parts": {
+          "carrier": {
+            "node": "bolt-carrier:bolt-carrier",
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "strokeMetres": 0.07475,
+            "modes": ["fire", "hand"]
+          },
+          "handle": {
+            "node": "charging-handle:ar-charging-handle",
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "strokeMetres": 0.07475,
+            "modes": ["hand"]
+          }
+        },
+        "fire": {
+          "durationSeconds": 0.075,
+          "rearwardSeconds": 0.019933333333333334,
+          "dwellSeconds": 0.006,
+          "forwardSeconds": 0.04616585577328428
+        },
+        "hand": {
+          "durationSeconds": 1.6961658557732842,
+          "rearwardSeconds": 0.65,
+          "dwellSeconds": 0.3,
+          "forwardSeconds": 0.04616585577328428
+        },
+        "ejectAt": 0.76,
+        "ejectDirection": [-0.16063576942357702, 0.16063576942357702, 0.9738543521304357],
+        "holdOpen": true,
+        "rpm": 800
+      }
+    },
+    {
+      "id": "rifle_ak",
+      "file": "assets/models/rifle_ak.glb",
+      "grip": { "at": [-0.158906, -0.084252, 0], "turn": [0, 0, 0] },
+      "anchors": {
+        "support": [0.0966, -0.020125, 0],
+        "muzzle": [0.414, 0, 0],
+        "ejection": [-0.048875, 0, 0.023],
+        "magwell": [-0.048875, -0.046, 0]
+      },
+      "calibre": "7.62x39",
+      "action": {
+        "parts": {
+          "carrier": {
+            "node": "bolt-carrier:bolt-carrier",
+            "axis": [-1, 0, -1.2246467991473532e-16],
+            "strokeMetres": 0.07475,
+            "modes": ["fire", "hand"]
+          }
+        },
+        "fire": {
+          "durationSeconds": 0.1,
+          "rearwardSeconds": 0.019933333333333334,
+          "dwellSeconds": 0.006,
+          "forwardSeconds": 0.04616585577328428
+        },
+        "hand": {
+          "durationSeconds": 1.6961658557732842,
+          "rearwardSeconds": 0.65,
+          "dwellSeconds": 0.3,
+          "forwardSeconds": 0.04616585577328428
+        },
+        "ejectAt": 0.72,
+        "ejectDirection": [0.3396605091514848, 0.1998002995008734, 0.9190813777040178],
+        "holdOpen": false,
+        "rpm": 600
+      }
+    },
+    {
+      "id": "round_7_d_62x39",
+      "file": "assets/models/round-7_d_62x39.glb",
+      "calibre": "7.62x39"
+    },
+    {
+      "id": "case_7_d_62x39",
+      "file": "assets/models/case-7_d_62x39.glb",
+      "calibre": "7.62x39"
     },
     {
       "id": "round_5_d_56x45",
@@ -107,9 +188,20 @@
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A stand-in for checking the gungen AR export and debug handling. Spawn it with G (?debug=1); it fires without hits or ammo use.",
+      "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption; use a held rifle to cock it.",
       "firearm": {},
       "model": "rifle_assault"
+    },
+    {
+      "id": "debug_rifle_ak",
+      "name": "AK-pattern rifle (debug)",
+      "category": "weapon",
+      "weight": 3500,
+      "size": [1, 5],
+      "twoHanded": true,
+      "description": "A curated gungen AK with its handle on the carrier. Debug fire uses virtual rounds, without hits or ammunition consumption. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "firearm": {},
+      "model": "rifle_ak"
     }
   ]
 }

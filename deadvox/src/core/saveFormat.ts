@@ -5,6 +5,7 @@ import {
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
+import { assertFirearmState } from './firearmState.ts';
 import type { InventoryState } from './inventory.ts';
 import type { ItemState, PlacedState } from './items.ts';
 import type { SaveSnapshot } from './saveState.ts';
@@ -129,7 +130,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -240,6 +241,29 @@ itemSchema = obj({
   on: opt(bool),
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  firearm: opt(
+    obj({
+      chamber: enumeration(['empty', 'round', 'case']),
+      roundType: opt(str({ id: true })),
+      pendingCase: opt(
+        obj({
+          origin: vec3,
+          direction: vec3,
+          feet: vec3,
+          seed: num({ integer: true, safe: true, min: 0, max: 0xff_ff_ff_ff }),
+        }),
+      ),
+      cycle: opt(
+        obj({
+          mode: enumeration(['fire', 'hand']),
+          startedAt: nonNegative,
+          elapsed: nonNegative,
+          ejected: bool,
+          feedRound: bool,
+        }),
+      ),
+    }),
+  ),
 });
 placedSchema = obj({ item: lazy(() => itemSchema), x: nonNegativeInt, y: nonNegativeInt, rotated: bool });
 const placedGrid = arr(lazy(() => placedSchema));
@@ -957,6 +981,12 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
       throw new Error(`Duplicate item id ${item.uid} at ${path}`);
     }
     itemIds.add(item.uid);
+    if (item.firearm) {
+      if (item.count !== 1) {
+        throw new Error(`Mechanical firearm state needs one item at ${path}`);
+      }
+      assertFirearmState(item.firearm);
+    }
     for (const [pi, grid] of (item.pockets ?? []).entries()) {
       for (const [ii, placed] of grid.entries()) {
         walkItem(placed.item, `${path}.pockets[${pi}][${ii}].item`);
@@ -1048,6 +1078,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   const visitItem = (item: ItemState, path: string) => {
     check('item', item.type, `${path}.type`);
+    if (item.firearm?.roundType) {
+      check('item', item.firearm.roundType, `${path}.firearm.roundType`);
+    }
     for (const [pi, grid] of (item.pockets ?? []).entries()) {
       for (const [ii, placed] of grid.entries()) {
         visitItem(placed.item, `${path}.pockets[${pi}][${ii}].item`);

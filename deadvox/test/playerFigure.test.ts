@@ -15,12 +15,13 @@ import {
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { HOLD } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
-import { HeldItems, HOLD } from '../src/render/hands.ts';
+import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import {
   createFirstPersonArm,

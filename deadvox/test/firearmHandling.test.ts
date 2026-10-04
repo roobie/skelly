@@ -2,15 +2,16 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { HandlingQueue } from '../src/core/handling.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
-  DebugFirearmTrigger,
-  debugFirearmShot,
-  FIREARM_HANDLING_STAND_IN,
+  FirearmMechanics,
+  type FirearmShotEffect,
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
+import { DebugFirearmTrigger } from '../src/game/firearmTrigger.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -19,7 +20,7 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
-const caseType = spentCaseItemId(FIREARM_HANDLING_STAND_IN.calibre);
+const caseType = spentCaseItemId('5.56x45');
 
 const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Inventory['create']> } => {
   const inventory = new Inventory(registry);
@@ -30,20 +31,30 @@ const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Invento
   return { inventory, rifle };
 };
 
-const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simTime = 1) =>
-  debugFirearmShot({
-    debugMode: true,
-    inventory,
-    item: rifle,
-    feet: [0, 1, 0],
-    eye: [0, 4, 0],
-    yaw: 0,
-    pitch: 0,
-    aim: [0, 0, -1],
-    seed: 71,
-    simTime,
+const pose = { feet: [0, 1, 0], eye: [0, 4, 0], yaw: 0, pitch: 0, blockSize: 0.5 } as const;
+const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simTime = 1) => {
+  const effects: FirearmShotEffect[] = [];
+  const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
     blockSize: 0.5,
+    pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+    onEjection: (effect) => effects.push(effect),
   });
+  if (
+    !mechanics.fire({
+      ...pose,
+      feet: [...pose.feet],
+      eye: [...pose.eye],
+      debugMode: true,
+      item: rifle,
+      seed: 71,
+      simTime,
+    })
+  ) {
+    throw new Error('Test shot was refused');
+  }
+  mechanics.advanceTo(simTime + 0.02);
+  return effects[0];
+};
 
 describe('debug firearm handling', () => {
   it.each([
@@ -89,13 +100,21 @@ describe('debug firearm handling', () => {
     expect(new Set(['5.56x45', '5_56x45', '5-56x45'].map(spentCaseItemId)).size).toBe(3);
   });
 
-  it('consumes g34 calibre and case/round exports while retaining the missing ejection stand-in', () => {
+  it('reads the exported AR and AK cadence and ejection facts without a stand-in', () => {
     const rifleModel = registry.models.get('rifle_assault');
     expect(rifleModel).toMatchObject({
       calibre: '5.56x45',
       anchors: { magwell: [-0.048_875, -0.046, 0] },
     });
-    expect(rifleModel?.anchors?.ejection).toBeUndefined();
+    expect(rifleModel?.anchors?.ejection).toEqual([-0.048_875, 0.002_875, 0.023]);
+    const { inventory, rifle } = inventoryWithRifle();
+    expect(firearmHandlingFor(rifle, registry).rpm).toBe(800);
+    expect(firearmHandlingFor(inventory.create('debug_rifle_ak'), registry)).toMatchObject({
+      calibre: '7.62x39',
+      rpm: 600,
+      caseModelId: 'case_7_d_62x39',
+    });
+    expect(() => firearmHandlingFor(inventory.create('debug_shotgun_pump'), registry)).toThrow('requires exported');
     expect(registry.models.get('round_5_d_56x45')?.file).toBe('assets/models/round-5_d_56x45.glb');
     expect(registry.models.get('case_5_d_56x45')?.file).toBe('assets/models/case-5_d_56x45.glb');
     expect(registry.items.get(caseType)?.model).toBe('case_5_d_56x45');
@@ -104,33 +123,84 @@ describe('debug firearm handling', () => {
   it('does not fire outside debug mode', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const { version } = inventory;
-    expect(firearmHandlingFor(rifle, inventory.registry)).toMatchObject({
-      calibre: '5.56x45',
-      caseModelId: 'case_5_d_56x45',
-      ejection: FIREARM_HANDLING_STAND_IN.ejection,
-      cycle: { rear: 0.026_25, dwell: 0.011_25, forward: 0.0375 },
-      rpm: 800,
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
     });
-    expect(firearmHandlingFor(inventory.create('debug_shotgun_pump'), inventory.registry)).toBe(
-      FIREARM_HANDLING_STAND_IN,
-    );
-    const result = debugFirearmShot({
+    const result = mechanics.fire({
       debugMode: false,
-      inventory,
       item: rifle,
       feet: [0, 1, 0],
       eye: [0, 4, 0],
       yaw: 0,
       pitch: 0,
-      aim: [0, 0, -1],
       seed: 71,
       simTime: 1,
       blockSize: 0.5,
     });
-    expect(result).toBeUndefined();
+    expect(result).toBe(false);
+    expect(rifle.firearm).toBeUndefined();
     expect(inventory.version).toBe(version);
     expect(inventory.piles.size).toBe(0);
     expect(rifle.count).toBe(1);
+  });
+
+  it('uses exported cock duration in the handling queue and prevents firing during the hand action', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    const duration = firearmHandlingFor(rifle, registry).action.hand.durationSeconds;
+    expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
+    expect(queue.jobs[0]?.duration).toBe(duration);
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 10,
+      }),
+    ).toBe(false);
+    queue.tick(0.3);
+    mechanics.advanceTo(10.3);
+    expect(mechanics.frames()).toEqual([{ uid: rifle.uid, mode: 'hand', elapsed: 0.3 }]);
+    queue.tick(duration - 0.3);
+    expect(queue.busy).toBe(false);
+    expect(mechanics.frames()).toEqual([]);
+    expect(rifle.firearm?.chamber).toBe('round');
+  });
+
+  it('cancels only manual motion in a snapshot, retaining an unejected fired chamber', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    rifle.firearm = {
+      chamber: 'case',
+      pendingCase: { origin: [0, 2, 0], direction: [1, 0, 0], feet: [0, 1, 0], seed: 71 },
+    };
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
+    queue.tick(0.2);
+    mechanics.advanceTo(10.2);
+    const saved = inventory.snapshotState();
+    expect(saved.hands.right?.firearm).toEqual({ chamber: 'case', pendingCase: rifle.firearm.pendingCase });
+    expect(rifle.firearm.cycle?.mode).toBe('hand');
+    const restored = Inventory.restoreState(registry, saved);
+    expect(restored.hands.right?.firearm?.pendingCase).toEqual(rifle.firearm.pendingCase);
+    queue.cancel();
+    mechanics.advanceTo(10.3);
+    expect(rifle.firearm.cycle).toBeUndefined();
+    expect(rifle.firearm.chamber).toBe('case');
   });
 
   it('adds a case to the nearest matching pile and round-trips it through inventory save state', () => {
@@ -143,7 +213,7 @@ describe('debug firearm handling', () => {
     expect(inventory.add(fartherCases, { kind: 'pile', pos: [45, 1, 0] })).toBe(true);
 
     expect(shot(inventory, rifle)).toMatchObject({
-      speed: FIREARM_HANDLING_STAND_IN.ejection.speed,
+      speed: 3.5,
       caseModelId: 'case_5_d_56x45',
     });
     expect(inventory.pileAt([0, 1, 0])?.items.find(({ item }) => item.type === 'nails')?.item.count).toBe(2);
@@ -155,7 +225,7 @@ describe('debug firearm handling', () => {
     expect(restored.snapshotState()).toEqual(saved);
   });
 
-  it('creates a deterministic case pile at the stand-in landing point when none is within 20 m', () => {
+  it('creates a deterministic case pile from the exported held pose when none is within 20 m', () => {
     const first = inventoryWithRifle();
     const second = inventoryWithRifle();
     const firstEffect = shot(first.inventory, first.rifle, 2.5);

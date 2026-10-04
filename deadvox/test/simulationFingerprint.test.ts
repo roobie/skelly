@@ -312,12 +312,25 @@ describe('simulation source fingerprint', () => {
     expect(casePresentation.reads).toBe(0);
     expect(casePresentation.value).toBe(original);
 
-    const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts', 'rpm: 600', 'rpm: 601');
+    const firearmDrawing = await mutateSimulationSource(
+      host,
+      'src/render/firearmModel.ts',
+      '60 / action.rpm',
+      '61 / action.rpm',
+    );
+    expect(firearmDrawing.reads).toBe(0);
+    expect(firearmDrawing.value).toBe(original);
+    const firearmHandling = await mutateSimulationSource(
+      host,
+      'src/game/firearmHandling.ts',
+      'const CASE_SPEED = 3.5;',
+      'const CASE_SPEED = 4.5;',
+    );
     expect(firearmHandling.reads).toBe(1);
     expect(firearmHandling.value).not.toBe(original);
     const cadence = await mutateSimulationSource(
       host,
-      'src/game/firearmHandling.ts',
+      'src/game/firearmTrigger.ts',
       'const interval = 60 / weapon.rpm;',
       'const interval = 61 / weapon.rpm;',
     );

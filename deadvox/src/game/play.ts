@@ -51,7 +51,8 @@ import { mountControlsCard } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
-import { DebugFirearmTrigger, debugFirearmShot, firearmHandlingFor } from './firearmHandling.ts';
+import { firearmHandlingFor } from './firearmHandling.ts';
+import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import {
   CONTROL_CODES,
   Input,
@@ -148,7 +149,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       },
       heldPrimaryAction: (time, pressed, triggerHeld) => {
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
-        const weapon = config.debug && !debugTools?.buildOn && action.kind === 'firearm' ? action.item : undefined;
+        const weapon =
+          config.debug && !debugTools?.buildOn && !queue.busy && action.kind === 'firearm' ? action.item : undefined;
         const deadlines = firearmTrigger.advance(
           time,
           weapon ? { uid: weapon.uid, rpm: firearmHandlingFor(weapon, registry).rpm } : undefined,
@@ -189,6 +191,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
     notice: (text) => showNotice(text),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
+    onFirearmEjection: (effect) => caseEffects.spawn(effect),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
@@ -205,6 +208,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     inventory,
     entities,
     queue,
+    firearms,
     quickbar,
     survival,
     rest,
@@ -215,6 +219,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     nameOf,
     search,
   } = session;
+  const useItem = (item: Item): string | undefined =>
+    registry.items.get(item.type)?.firearm ? firearms.cock(item.uid, sim.time) : survival.use(item);
   const { compression } = sim;
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
@@ -340,7 +346,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
     searching: session.searching,
     notice: showNotice,
-    use: (item) => survival.use(item),
+    use: useItem,
     describe: (item) => survival.describe(item),
     assign: (slot, item) => {
       quickbar.assign(slot, item);
@@ -589,7 +595,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!at) {
       showNotice(`The ${inventory.name(item).toLowerCase()} isn't with you`);
     } else if (at.kind === 'hand' || registry.items.get(item.type)?.battery) {
-      const reason = survival.use(item);
+      const reason = useItem(item);
       if (reason) {
         showNotice(reason);
       }
@@ -816,23 +822,20 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
-    const effect = debugFirearmShot({
+    const fired = firearms.fire({
       debugMode: config.debug,
-      inventory,
       item,
       feet: feet(),
       eye: eye(),
       yaw: input.yaw,
       pitch: input.pitch,
-      aim: lookDir(),
       seed: config.seed,
       simTime: time,
       blockSize: s,
     });
-    if (!effect) {
+    if (!fired) {
       return false;
     }
-    caseEffects.spawn(effect);
     const shot = firearmShotSound(item.type);
     session.playPlayerSound(shot.event, time, shot);
     return true;
@@ -853,7 +856,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       }
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
-          showNotice('Firearms can only be fired in debug mode');
+          showNotice(config.debug ? 'Firearm is not ready' : 'Firearms can only be fired in debug mode');
         }
         return;
       }
@@ -1046,7 +1049,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready);
-    view.updateHeld(dt, pose, survival.lit);
+    view.updateHeld(dt, pose, survival.lit, firearms.frames());
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
