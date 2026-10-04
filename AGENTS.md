@@ -60,9 +60,32 @@ Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/de
 
 ## Tests
 
-More tests is not better QA; a test earns its place by catching a bug no other test
-catches. So:
+Pre-pre-alpha, tests exist so we can change the game quickly and safely, not to freeze it
+(BR, 2026-10-04). More tests is not better QA; a test earns its place by catching a bug
+no other test catches. So:
 
+- Test behaviour and contracts that are costly to rediscover or that BR has ruled on:
+  simulation rules, inventory and handling, save round-trip, and gungen exports that
+  deadvox validates and loads. A bug fix gets a test that fails before the fix.
+- **Never assert data that can drift during development.** That means content counts and
+  lists, ids beyond the test's own fixture, exact coordinates or seeded outputs, hashes,
+  fingerprints, tuning numbers and UI wording. Assert the property instead (validate
+  reports 0 issues; every tree stands on the surface), or leave it un-asserted and record
+  it in `docs/deferred-assertions.md` with how to check it and when to pin it.
+- **Test hygiene is must-fix** (BR, 2026-10-04). A test that does any of the following is
+  fixed or removed in the same round, never deferred as a nit:
+  - pins drifting data;
+  - writes state past its owner, or sets state a player can't;
+  - waits on wall-clock time for simulated work;
+  - can pass vacuously;
+  - near-duplicates another test.
+- Mutation proof is for tricky invariants only (ordering, reach, persistence, concurrency):
+  show one mutant its test catches. Plain mappings and data-driven rows don't need one.
+- Browser stages stay few: a handful of smoke flows plus the stages that must check
+  pixels. A UI feature extends a flow rather than adding a stage, and any stage it does
+  add gets its CI step in the same PR (a root contract test enforces this).
+- Reviews return FIX only for a real defect or a test-hygiene problem. Style nits are
+  listed, but never start a round.
 - Each test protects one specific behaviour or constraint, and its name says which. Don't
   add a near-duplicate case for comfort.
 - Prefer targeted cases and covering arrays (every pair or triple of parameter values)
@@ -80,6 +103,7 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 ## Further docs
 
 - Shared-host admission, capacity and default-run budgets: `docs/host-budget.md`.
+- Values tests deliberately don't assert, and when to pin them: `docs/deferred-assertions.md`.
 
 - Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
 - Lessons from past problems: `deadvox/LESSONS.md`.
