@@ -21,6 +21,7 @@ const ENTRY = /^([\w-]+):\s*(.*)$/;
 const BLOCK_SCALAR = /^[|>]/;
 const QUOTED = /^(['"])(.*)\1$/;
 const WHITESPACE = /\s+/;
+const NODE_RELATIVE_PATH = /^node \.\//;
 
 // `SAVE_AUTOSAVE_ONLY=1 timeout 300 node test/x.mjs chromium` and `xvfb-run -a node test/x.mjs chromium` name the
 // same stage as `node test/x.mjs chromium` once the wrappers are stripped; the env assignments still tell
@@ -41,7 +42,7 @@ const parseCommand = (text) => {
       break;
     }
   }
-  return { env, command: words.join(' ') };
+  return { env, command: words.join(' ').replace(NODE_RELATIVE_PATH, 'node ') };
 };
 
 const describeStage = ({ env, command }) =>
@@ -78,9 +79,9 @@ const readNested = (step, key, body) => {
 
 // Reads one line of a `steps:` list; `depth` is its indent beyond the `steps:` key. Items sit 2 deeper and
 // their keys 4 deeper, anything further belongs to the key `state.open` names.
-const readStepLine = (state, steps, depth, body) => {
+const readStepLine = ({ state, steps, depth, body, job }) => {
   if (depth === 2 && body.startsWith('- ')) {
-    state.step = { env: {}, run: [] };
+    state.step = { env: {}, run: [], coverageExcluded: false, job };
     steps.push(state.step);
     state.open = readEntry(state.step, body.slice(2));
   } else if (depth === 4) {
@@ -90,27 +91,83 @@ const readStepLine = (state, steps, depth, body) => {
   }
 };
 
-// Just enough of the workflow's YAML to read each step's `run` lines and `env` map. Comments are skipped, so a
-// quarantined step that is commented out (its reinstatement recipe) never counts as coverage.
+const readJobLine = (state, { indent, body }) => {
+  if (state.jobsIndent < 0) {
+    return false;
+  }
+  if (indent <= state.jobsIndent) {
+    state.jobsIndent = -1;
+    state.job = undefined;
+    state.listIndent = -1;
+    return false;
+  }
+  if (indent === state.jobsIndent + 2 && ENTRY.test(body)) {
+    state.job = { coverageExcluded: false };
+    state.listIndent = -1;
+    return true;
+  }
+  if (state.job && indent === state.jobsIndent + 4) {
+    const [, key] = body.match(ENTRY) ?? [];
+    if (key === 'if' || key === 'continue-on-error') {
+      state.job.coverageExcluded = true;
+    }
+    state.listIndent = body === 'steps:' ? indent : -1;
+    return true;
+  }
+  return false;
+};
+
+const readStepListLine = (state, steps, { indent, body }) => {
+  if (state.listIndent < 0) {
+    return;
+  }
+  if (indent > state.listIndent) {
+    readStepLine({
+      state,
+      steps,
+      depth: indent - state.listIndent,
+      body,
+      job: state.job,
+    });
+  } else {
+    state.listIndent = -1;
+  }
+};
+
+// Just enough of the workflow's YAML to read job-level exclusions and each step's `run` lines and `env` map.
+// Comments are skipped, so a quarantined step that is commented out never counts as coverage.
 const workflowSteps = (text) => {
   const steps = [];
-  const state = {};
-  let listIndent = -1; // indent of the `steps:` key whose list we are inside, or -1
+  const state = { jobsIndent: -1, listIndent: -1 };
   const lines = text
     .split('\n')
     .map((line) => ({ indent: line.length - line.trimStart().length, body: line.trim() }))
     .filter(({ body }) => body !== '' && !body.startsWith('#'));
-  for (const { indent, body } of lines) {
-    if (body === 'steps:') {
-      listIndent = indent;
-    } else if (indent <= listIndent) {
-      listIndent = -1;
-    } else if (listIndent >= 0) {
-      readStepLine(state, steps, indent - listIndent, body);
+  for (const line of lines) {
+    if (line.body === 'jobs:') {
+      state.jobsIndent = line.indent;
+      state.job = undefined;
+      state.listIndent = -1;
+    } else if (!readJobLine(state, line)) {
+      readStepListLine(state, steps, line);
     }
   }
   return steps;
 };
+
+const coveredStagesIn = (workflow) =>
+  new Set(
+    workflowSteps(workflow)
+      .filter((step) => !(step.coverageExcluded || step.job.coverageExcluded))
+      .flatMap((step) =>
+        step.run.flatMap((run) =>
+          run.split('&&').map((part) => {
+            const stage = parseCommand(part);
+            return describeStage({ env: { ...step.env, ...stage.env }, command: stage.command });
+          }),
+        ),
+      ),
+  );
 
 const { scripts } = JSON.parse(read('deadvox/package.json'));
 const browserStages = Object.fromEntries(
@@ -123,22 +180,37 @@ const browserStages = Object.fromEntries(
     ])
     .filter(([, stages]) => stages.length > 0),
 );
-const covered = new Set(
-  workflowSteps(read('.github/workflows/deadvox.yml'))
-    .filter((step) => !step.coverageExcluded)
-    .flatMap((step) =>
-      step.run.flatMap((run) =>
-        run.split('&&').map((part) => {
-          const stage = parseCommand(part);
-          return describeStage({ env: { ...step.env, ...stage.env }, command: stage.command });
-        }),
-      ),
-    ),
-);
+const covered = coveredStagesIn(read('.github/workflows/deadvox.yml'));
 const browserScripts = Object.keys(browserStages);
 const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
 
 describe('deadvox CI runs every browser stage package.json lists', () => {
+  it('excludes job- and step-disabled commands from coverage', () => {
+    const fixture = `jobs:
+  disabled-job:
+    steps:
+      - run: node test/browser/x.mjs
+    if: false
+  continue-step:
+    steps:
+      - continue-on-error: true
+        run: node test/browser/y.mjs
+  active-job:
+    steps:
+      - run: node test/browser/z.mjs
+`;
+    assert.deepEqual([...coveredStagesIn(fixture)], ['node test/browser/z.mjs']);
+  });
+
+  it('normalizes a leading ./ in selected and covered commands', () => {
+    const workflow = ['jobs:', '  browser:', '    steps:', '      - run: node ./test/browser/x.mjs'].join('\n');
+    assert.deepEqual([...coveredStagesIn(workflow)], ['node test/browser/x.mjs']);
+    assert.deepEqual(parseCommand('node ./test/browser/x.mjs'), {
+      env: {},
+      command: 'node test/browser/x.mjs',
+    });
+  });
+
   it('selects stages by browser command content', () => {
     assert.ok(browserScripts.length > 0, 'no deadvox browser stages selected');
   });
