@@ -27,6 +27,7 @@ import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
 import { bindReach } from '/src/core/reach.ts';
+import { useOption } from '/src/core/options.ts';
 import { startingLoadout } from '/src/game/loadout.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -42,7 +43,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
-  notice: () => {}, use: () => undefined, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {},
+  notice: () => {}, use: () => undefined, useOption, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {},
 });
 screen.open();
 screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
