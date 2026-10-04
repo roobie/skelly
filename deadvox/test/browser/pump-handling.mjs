@@ -101,7 +101,18 @@ try {
   );
   const ids = await page.evaluate(() => {
     const inv = globalThis.pumpHandlingTest.session.inventory;
-    return { gun: inv.hands.right.uid, box: [...inv.items()].find((item) => item.type === 'shotshell_box').uid };
+    const gun = inv.hands.right;
+    const box = [...inv.items()].find((item) => item.type === 'shotshell_box');
+    const payload = inv.registry.items.get(box.type).unpack.count;
+    const capacity = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube.capacity;
+    return {
+      gun: gun.uid,
+      box: box.uid,
+      payload,
+      capacity,
+      expectedLoaded: Math.min(payload, capacity),
+      fov: globalThis.pumpHandlingTest.camera.fov,
+    };
   });
   const select = async (uid) => {
     const count = await page.locator('#inventory [data-uid]').count();
@@ -187,10 +198,13 @@ try {
   }, ids.box);
   await waitForWork((uid) => !globalThis.pumpHandlingTest.session.inventory.itemByUid(uid), ids.box);
   const unpacked = await observe();
-  assert.equal(unpacked.loose, 20);
+  assert.equal(unpacked.loose, ids.payload);
   assert.equal(unpacked.hand, null);
   await page.keyboard.press('KeyR');
-  await page.waitForFunction(() => performance.now() - globalThis.pumpRDownAt >= 250);
+  await page.waitForFunction(
+    (window) => performance.now() - globalThis.pumpRDownAt >= window,
+    RELOAD_GESTURE_MS.doublePress,
+  );
   assert.equal((await observe()).rest, null, 'R with no reloadable item does not rest');
   await page.keyboard.press('Tab');
   await select(ids.gun);
@@ -198,10 +212,13 @@ try {
   await waitForHands(ids.gun);
   await page.keyboard.press('Tab');
   await page.keyboard.press('KeyR');
-  await page.waitForFunction(() => performance.now() - globalThis.pumpRDownAt >= 250);
+  await page.waitForFunction(
+    (window) => performance.now() - globalThis.pumpRDownAt >= window,
+    RELOAD_GESTURE_MS.doublePress,
+  );
   const tapped = await observe();
   assert.equal(tapped.jobs, 0);
-  assert.equal(tapped.loose, 20);
+  assert.equal(tapped.loose, ids.payload);
   assert.deepEqual(tapped.gun.tube, []);
   assert.equal(tapped.rest, null);
   await page.keyboard.down('KeyR');
@@ -210,29 +227,33 @@ try {
   );
   await page.keyboard.up('KeyR');
   const released = await observe();
-  assert.equal(released.loose, 20);
+  assert.equal(released.loose, ids.payload);
   assert.equal(released.jobs, 0);
   assert.deepEqual(released.gun.tube, []);
   await page.keyboard.down('KeyR');
-  await page.waitForFunction((uid) => {
+  await page.waitForFunction(({ gun, expectedLoaded }) => {
     const s = globalThis.pumpHandlingTest.session;
     return (
-      s.inventory.itemByUid(uid).firearm.tube.length === 4 || s.queue.jobs.some((job) => job.jobType === 'firearm.load')
+      s.inventory.itemByUid(gun).firearm.tube.length === expectedLoaded ||
+      s.queue.jobs.some((job) => job.jobType === 'firearm.load')
     );
-  }, ids.gun);
-  const futureInserts = await page.evaluate((uid) => {
+  }, ids);
+  const futureInserts = await page.evaluate(({ gun, expectedLoaded }) => {
     const s = globalThis.pumpHandlingTest.session;
     const job = s.queue.jobs.find((entry) => entry.jobType === 'firearm.load');
-    return Math.max(0, 4 - s.inventory.itemByUid(uid).firearm.tube.length - 1) * (job?.duration ?? 0);
-  }, ids.gun);
+    return Math.max(0, expectedLoaded - s.inventory.itemByUid(gun).firearm.tube.length - 1) * (job?.duration ?? 0);
+  }, ids);
   await waitForWork(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.tube.length === 4,
-    ids.gun,
+    ({ gun, expectedLoaded }) => {
+      const s = globalThis.pumpHandlingTest.session;
+      return !s.queue.busy && s.inventory.itemByUid(gun).firearm.tube.length === expectedLoaded;
+    },
+    ids,
     futureInserts,
   );
   await page.keyboard.up('KeyR');
   const loaded = await observe();
-  assert.equal(loaded.loose, 16);
+  assert.equal(loaded.loose, ids.payload - ids.expectedLoaded);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
   if (process.env.PUMP_ARTIFACT_DIR) {
@@ -271,8 +292,8 @@ try {
     return !s.queue.busy && s.inventory.itemByUid(uid).firearm.chamber === 'round';
   }, ids.gun);
   const racked = await observe();
-  assert.equal(racked.loose, 16);
-  assert.equal(racked.gun.tube.length, 3);
+  assert.equal(racked.loose, loaded.loose);
+  assert.equal(racked.gun.tube.length, ids.expectedLoaded - 1);
   assert.equal(racked.rest, null);
   await page.mouse.click(640, 450);
   await page.waitForFunction(
@@ -281,10 +302,10 @@ try {
   );
   const fired = await observe();
   assert.equal(fired.gun.cycle, undefined);
-  assert.equal(fired.gun.tube.length, 3);
-  assert.equal(fired.loose, 16);
+  assert.equal(fired.gun.tube.length, racked.gun.tube.length);
+  assert.equal(fired.loose, racked.loose);
   assert.equal(fired.dead, null);
-  assert.equal(fired.fov, 75);
+  assert.equal(fired.fov, ids.fov, 'handling never changes the camera field of view');
   assert.deepEqual(errors, []);
   await page.waitForFunction(() => globalThis.pumpDecoded.some((source) => source.event === 'shotgun_blast'));
   const decoded = await page.evaluate(() =>

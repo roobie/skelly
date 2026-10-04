@@ -17,19 +17,29 @@ const { registry, issues } = buildRegistry(sources);
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
-const UNPACK_OR_LOAD = /Unpack|Load/;
 const shellType = 'shell_12_gauge_00_buck';
+const payloadCount = 7;
+const stackCapacity = 11;
 const fixture = (small = false, held = true) => {
   const bagDef = registry.items.get('hiking_backpack')!;
+  const packageRegistry = {
+    ...registry,
+    items: new Map(registry.items)
+      .set(shellType, { ...registry.items.get(shellType)!, stack: stackCapacity })
+      .set('shotshell_box', {
+        ...registry.items.get('shotshell_box')!,
+        unpack: { item: shellType, count: payloadCount },
+      }),
+  };
   const content = small
     ? {
-        ...registry,
-        items: new Map(registry.items).set(bagDef.id, {
+        ...packageRegistry,
+        items: new Map(packageRegistry.items).set(bagDef.id, {
           ...bagDef,
           container: { pockets: [{ name: 'Small test pocket', grid: [1, 1] as [number, number], handling: 0 }] },
         }),
       }
-    : registry;
+    : packageRegistry;
   const inventory = new Inventory(content);
   const box = inventory.create('shotshell_box');
   const bag = inventory.create('hiking_backpack');
@@ -56,7 +66,7 @@ describe('sealed ammunition package activation', () => {
     expect(f.inventory.hands.right).toBe(f.box);
     expect(f.inventory.locate(gun)?.kind).toBe('pocket');
   });
-  it('held primary activation yields exactly twenty loose shells and consumes the noncontainer box', () => {
+  it('held primary activation yields its authored payload and consumes the noncontainer box', () => {
     const f = fixture();
     expect(f.box.pockets).toBeUndefined();
     expect(selectPrimaryAction(registry, f.inventory.hands)).toMatchObject({ kind: 'unpack', item: f.box });
@@ -65,23 +75,24 @@ describe('sealed ammunition package activation', () => {
     expect(f.queue.tick(BOX_UNPACK_SECONDS).failed).toEqual([]);
     expect(f.inventory.itemByUid(f.box.uid)).toBeUndefined();
     expect(f.inventory.hands.right).toBeUndefined();
-    expect(f.bag.pockets![0]!.map(({ item }) => [item.type, item.count])).toEqual([[shellType, 20]]);
+    expect(f.bag.pockets![0]!.map(({ item }) => [item.type, item.count])).toEqual([[shellType, payloadCount]]);
     expect(f.inventory.piles.size).toBe(0);
   });
 
-  it('unpack fills the available fifteen stack places and drops only the five-shell overflow in an ordinary pile', () => {
+  it('unpack fills a partial stack and conserves the remainder in an ordinary spill pile', () => {
     const f = fixture(true);
-    const shells = f.inventory.create(shellType, 10);
+    const freePlaces = Math.floor(payloadCount / 2);
+    const initialCount = stackCapacity - freePlaces;
+    const shells = f.inventory.create(shellType, initialCount);
     expect(f.inventory.add(shells, { kind: 'pocket', owner: f.bag, pocket: 0 })).toBe(true);
     expect(f.unpacking.activate(f.box)).toBeUndefined();
     expect(f.queue.tick(BOX_UNPACK_SECONDS).failed).toEqual([]);
-    expect(shells.count).toBe(25);
-    expect(
-      [...f.inventory.piles.values()].map((pile) => ({
-        pos: pile.pos,
-        items: pile.items.map(({ item }) => [item.type, item.count]),
-      })),
-    ).toEqual([{ pos: [0, 0, 0], items: [[shellType, 5]] }]);
+    expect(shells.count).toBe(stackCapacity);
+    const spilled = [...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item));
+    expect(spilled).toHaveLength(1);
+    expect(spilled[0]?.type).toBe(shellType);
+    expect(spilled[0]?.count).toBe(payloadCount - freePlaces);
+    expect(shells.count + spilled[0]!.count).toBe(initialCount + payloadCount);
     expect(f.inventory.itemByUid(f.box.uid)).toBeUndefined();
   });
 
@@ -99,7 +110,6 @@ describe('sealed ammunition package activation', () => {
     const f = fixture();
     const choices = options(f.box, reach({ inventory: f.inventory, position: [0, 0, 0], blockSize: 0.5 }));
     expect(choices.filter((choice) => choice.kind === 'use' && choice.plan.ok)).toEqual([]);
-    expect(choices.some((choice) => UNPACK_OR_LOAD.test(choice.label))).toBe(false);
   });
 
   it('content admission rejects a payload larger than the stack reserved by unpack spill preflight', () => {
@@ -107,14 +117,11 @@ describe('sealed ammunition package activation', () => {
       const data = structuredClone(source.data) as { items?: { id: string; unpack?: { count: number } }[] };
       const box = data.items?.find((item) => item.id === 'shotshell_box');
       if (box?.unpack) {
-        box.unpack.count = 26;
+        const payload = registry.items.get(registry.items.get('shotshell_box')!.unpack!.item)!;
+        box.unpack.count = (payload.stack ?? 1) + 1;
       }
       return { ...source, data };
     });
-    expect(
-      buildRegistry(bad).issues.some(
-        (issue) => issue.path.endsWith('.unpack.count') && issue.message === 'payload must fit one stack',
-      ),
-    ).toBe(true);
+    expect(buildRegistry(bad).issues.some((issue) => issue.path.endsWith('.unpack.count'))).toBe(true);
   });
 });

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
+import { labelForCode } from '../src/game/controls.ts';
+import { CONTROL_CODES } from '../src/game/input.ts';
 import type { RestAction } from '../src/game/rest.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 
@@ -24,9 +26,13 @@ describe('restViewModel', () => {
   it('shows how to stop it, by kind (SLICE-1.md 1.8 follow-up)', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
-    expect(restViewModel(rest, sim).stopHint).toBe('X to stop');
+    const stopKey = labelForCode(CONTROL_CODES.cancel);
+    const sleepKey = labelForCode(CONTROL_CODES.sleep);
+    expect(restViewModel(rest, sim).stopHint).toContain(stopKey);
+    expect(restViewModel(rest, sim).stopHint).not.toContain(sleepKey);
     const sleep: RestAction = { kind: 'sleep', label: 'Sleeping', rate: -30, startFatigue: 40 };
-    expect(restViewModel(sleep, sim).stopHint).toBe('L or X to stop');
+    expect(restViewModel(sleep, sim).stopHint).toContain(stopKey);
+    expect(restViewModel(sleep, sim).stopHint).toContain(sleepKey);
   });
 
   it('carries the interruption reason as the prompt', () => {

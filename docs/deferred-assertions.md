@@ -1,0 +1,13 @@
+# Deferred assertions
+
+Pre-pre-alpha tests protect behaviour, not evolving content or tuning. These d36
+checks remain deliberate human follow-up; this is not an audit of finished rounds.
+
+| What is deliberately not pinned | Where | How to check | When to pin |
+| --- | --- | --- | --- |
+| Eligible/reachable content counts, unreachable IDs and pending prerequisite count | `deadvox/test/validateCli.test.ts` | Run `npm run validate` in Deadvox; review reachability and prerequisites against the intended loot catalogue. The test still requires zero issues. | When loot/content closure becomes a release contract. |
+| Specific audio approval dates, note wording and selected variants | `deadvox/test/soundGuide.test.ts`, `/sounds.html` | BR reviews the listening sheet and provenance. The touched note test checks nonempty per-event coverage, not mutable verdict copy. | When an approved release asset set is frozen. |
+| Rest/sleep instruction wording | `deadvox/test/restUi.test.ts` | Read both panels. Verify rest shows only the current stop binding, while sleep also shows its own binding; automated checks retain those binding relationships. | When localized accessibility copy has an explicit contract. |
+| Pump tube capacity, shell payload count and camera FOV as fixed content numbers | `deadvox/test/pumpShotgun.test.ts`, `deadvox/test/unpacking.test.ts`, `deadvox/test/browser/pump-handling.mjs` | Compare exported model/content metadata to BR's chosen gun and box. Unit fixtures own alternate capacity/payload values; the native flow derives current metadata and checks conservation and unchanged FOV. | When these authored specifications become release guarantees. |
+| Spread, range, base damage/impulse, blast hearing radius and hull flight delay | `deadvox/src/core/pellets.ts`, `deadvox/src/game/firearmHandling.ts`, `deadvox/docs/pump-shotgun.md` | BR plays at different distances/cover and listens to the shot/rack/hull. Tests retain cartridge-driven diameter scaling, occlusion, admitted hearing and once-only saved landing at its committed timestamp. | After gameplay/audio tuning is accepted as a stable contract. |
+| Exact wall-clock handling bounds | `deadvox/test/browserHandlingBudget.test.ts` | Inspect native work/pacing logs under slow software rendering. Tests check monotonic work/pacing scaling and a simulation-work lower bound, not a tuning-derived millisecond golden. | When an explicit supported-host latency budget is adopted. |
