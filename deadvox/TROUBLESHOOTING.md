@@ -73,7 +73,7 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture).
-- `voicePitch=<factor>` on `?site=voice_size&debug=1` multiplies the smallest figure's body-pitch factor after its clamp, for tuning the comparison by ear; ignored on other sites and without debug mode.
+- `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune the smallest and tallest figures' pitch anchors before interpolation and clamping; ignored on other sites and without debug mode.
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.

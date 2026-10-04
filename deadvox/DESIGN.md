@@ -728,10 +728,15 @@ decoration.
   `shambler_idle` provides an occasional groan while idling or strolling. Each
   shambler's vocals and body-made sounds shift lower with its realized body
   height, so larger figures sound heavier and the runner/brute templates inherit
-  the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, clamps this
-  effect so size variation stays perceptible without making figures sound
-  cartoonish. BR's direction was, “we should widen the clamp for pitch by 10%
-  more”. This changes playback only, never hearing or simulation.
+  the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, interpolates one
+  power curve between the pool's smallest and tallest realized bodies. The
+  smallest anchor is 1.2 times the prior square-root law at that body's height;
+  the tallest stays at the prior law until BR picks a new value. The clamp spans
+  0.5 to 1.3 times the prior law at the smallest height. BR's tuning note was,
+  “voicePitch 0.5 to 1.3 sounds good ,but for different purposes / for the tiny
+  shambler, 1.2 is good”. Debug URL multipliers tune the two endpoints for the
+  `voice_size` comparison site. This changes playback only, never hearing or
+  simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down
