@@ -7,6 +7,14 @@ read_if:
 
 # deadvox — lessons
 
+## Gate actions when the input edge is captured (2026-10-04)
+
+**What happened.** `Input` latched a primary click on canvas `mousedown`, but build-mode exclusion was checked only when the later fixed-step player tick consumed it. If B toggled build mode off first, an editor click could start melee and spend stamina; the next click could then be rejected as busy. That mechanism is consistent with the positive-control failure on PR #223 (run 37234915439), but the CI trace did not capture the prior input/tick order, so attribution remains open in #224.
+
+**What to do.** Apply mode-specific suppression at the input edge, using the mode at `mousedown`; keep the tick-time guard as defense in depth. A rendering frame is not proof that the fixed-step simulation consumed a latched input.
+
+**Proof.** `test/input.test.ts`'s `does not queue primary clicks rejected at press time` failed before the gate (the build-mode click was latched) and passed after it. First-load and Firefox OPFS startup failures are separate unresolved evidence tracked in #224; do not attribute them to this input race.
+
 What we learned the hard way, and what to understand before troubleshooting the same
 area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the problems
 ahead; lessons are what past problems taught us. Newest first. Each entry says what

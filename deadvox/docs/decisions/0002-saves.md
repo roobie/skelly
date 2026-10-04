@@ -1,6 +1,9 @@
 ---
 id: deadvox::adr-0002-saves
 description: Decision for exact, versioned, crash-safe local saves of the Deadvox simulation
+read_if:
+  - you're changing persistent simulation state or restore guarantees
+  - you're evaluating the save-format decision
 tags: [deadvox, adr, saves, persistence, determinism]
 created: 2026-09-28
 status: accepted
@@ -8,7 +11,6 @@ status: accepted
 
 # 2. Save the simulation, not the runtime
 
-[[THIS is_grounded_by: ../../SLICE-1.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
 **Status:** accepted (2026-09-28). BR's rulings are recorded under [Rulings](#rulings-2026-09-28).
@@ -418,7 +420,8 @@ disk I/O are worker work. This estimate was not a result. Keep a hard
 instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 16.7 ms); if measurement misses, reduce the snapshot surface or copy incrementally
 at barriers, never move serialization/disk work onto the frame. The snapshot p95
-is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
+is measured in-game with the F4 snapshot controls in `src/debug/index.ts`,
+`measureSnapshot`. CI checks a ten-game-hour
 save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
 runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
 the reference-laptop batch-mean throughput in Firefox: 50 batches of 128 captures
@@ -494,8 +497,8 @@ generation until the new world's first snapshot commits.
    save-size/load-time checks. Done when CI checks the 10-hour <5 MiB and <1 s
    decode/restore limits on `ubuntu-latest` and the current-build round trip
    passes. The ≤1 ms individual per-capture p95 target is assessed in-game via
-   the F4 individual-tail observation under SLICE-1 §1.11, not by batch-mean
-   throughput, the Node benchmark, or a CI gate.
+   the F4 individual-tail observation (`src/debug/index.ts`, `measureSnapshot`),
+   not by batch-mean throughput, the Node benchmark, or a CI gate.
 
 ## Consequences
 

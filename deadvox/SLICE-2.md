@@ -1,14 +1,15 @@
 ---
 read_if:
+  - you're planning or building the crafting-and-mending slice
   - you're implementing or reviewing a Slice 2 milestone and need its approved scope and proofs
+  - you're carrying Slice 2 questions into the Slice 3 playtest
 ---
 
 # Slice 2 — Craft and mend
 
 The second slice on the [road to version 1](EPIC.md). It builds the crafting
-design in [INTERACTIONS.md](INTERACTIONS.md) on top of Slice 1
-([SLICE-1.md](SLICE-1.md)), and the systems in [DESIGN.md](DESIGN.md),
-"Crafting" and "Light".
+design in [INTERACTIONS.md](INTERACTIONS.md) on the first-slice foundation and
+the systems in [DESIGN.md](DESIGN.md), "Crafting" and "Light".
 
 **Status:** draft, proposed by the lead (2026-10-03), revised after review
 cr-d19. BR approves the plan. The scope follows BR's defaults of 2026-10-03
@@ -43,8 +44,8 @@ looting a purpose?** In more detail:
    how they move at night?
 
 The playtest itself runs at the end of Slice 3 (BR, 2026-10-02). These questions
-join the Slice 1 [playtest plan](SLICE-1.md#playtest-plan) there; milestone 2.0
-adds them.
+join the end-of-Slice-3 playtest plan in [EPIC.md](EPIC.md#3-flesh-and-noise);
+milestone 2.0 adds them.
 
 ## Scope
 
@@ -233,7 +234,7 @@ Paperwork; no game code.
   the host budget as three-run medians and budgets; a milestone that pushes a
   run past one says why.
 - The Slice 2 checklist issue is open, listing every milestone and gate below.
-- Slice 2's playtest questions are added to SLICE-1.md's playtest plan.
+- Slice 2's playtest questions are added to EPIC.md's end-of-Slice-3 playtest plan.
 - #143 (saves closure) is merged before any milestone that adds saved state
   (2.4 on).
 - BR has answered the questions below, or accepted their defaults.
@@ -664,10 +665,9 @@ anyway, since the world changes.
 - The three tree shapes and the hedges stand in the hamlet without blocking
   required routes.
 - BR has approved them in the game.
-- The approved forest workload meets Slice 1's unchanged budget on the
-  reference laptop in Firefox: 60 fps at 0.5 m and 96 m, at most 1% of frames
-  over 18 ms in every benchmark phase, and no holes at sprint speed
-  (the frame budget decided in `SLICE-1.md`, 1.0).
+- The approved forest workload meets the frame budget in
+  [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks) on the reference laptop in
+  Firefox.
 - The workload, build, rendering choice and results are recorded in Results,
   and the normal hamlet workload is rechecked with trees.
 
@@ -697,9 +697,10 @@ they don't change those two counts.
 - Milestones 2.0–2.13 are merged and deployed, with CI green: Biome, types,
   tests, content validation including both reachability checks, and the save
   round trip.
-- The frame budget from 1.0 holds, unchanged. Every new per-frame cost (reach
-  rebuilds, the crafting panel's planning, made lights on the recorded
-  workload, trees on the approved forest workload) is measured on the reference laptop and recorded in Results.
+- The frame budget in [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks)
+  remains the gate. Measure every new per-frame cost (reach rebuilds, crafting
+  panel planning, made lights on the recorded workload, trees on the approved
+  forest workload) on the reference laptop and record the results here.
 - The default test run stays within the budget recorded in 2.0.
 - The noise → positional-sound scenario test passes (2.12).
 - Slice 2's playtest questions are in the playtest plan that runs at the end of

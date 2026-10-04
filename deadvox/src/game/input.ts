@@ -98,15 +98,23 @@ export class Input {
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
+  private readonly primaryActionAllowed: () => boolean;
 
-  constructor(target: HTMLElement) {
+  constructor(target: HTMLElement, primaryActionAllowed: () => boolean = () => true) {
     this.target = target;
+    this.primaryActionAllowed = primaryActionAllowed;
     target.addEventListener('mousedown', (event) => {
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
         this.rightMouseHeld = true;
       }
-      if (mouse.button === 0 && !this.primaryActionDown && this.locked && !this.menuPointer) {
+      if (
+        mouse.button === 0 &&
+        !this.primaryActionDown &&
+        this.locked &&
+        !this.menuPointer &&
+        this.primaryActionAllowed()
+      ) {
         this.primaryActionPressed = true;
         this.primaryActionDown = true;
       }
