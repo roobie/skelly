@@ -124,7 +124,7 @@ export const createCycleView = (): CycleView => {
     scrub.max = String(Math.max(1, Math.round(timeline.durationSeconds * 1000)));
     scrub.value = String(Math.round(phase * 1000));
     const ejection =
-      timeline.mode === 'fire'
+      timeline.mode === 'fire' || boundAction?.kind === 'pump'
         ? ` · case exits at ${(timeline.ejectAt * 100).toFixed(0)}% toward [${timeline.ejectDirection.map((value) => value.toFixed(2)).join(', ')}]`
         : ' · hand cycle has no case ejection';
     readout.textContent = `${phase.toFixed(3)} s · carrier ${(fraction * strokeUnits).toFixed(2)} u (${(fraction * strokeUnits * millimetresPerUnit).toFixed(0)} mm)${ejection}`;
@@ -161,7 +161,7 @@ export const createCycleView = (): CycleView => {
   };
 
   const drawEjectionArrow = (solids: Group, action: ResolvedGunAction, cycle: CycleTimeline) => {
-    if (cycle.mode !== 'fire') {
+    if (cycle.mode !== 'fire' && action.kind !== 'pump') {
       return;
     }
     const point = action.ejection;
@@ -202,7 +202,18 @@ export const createCycleView = (): CycleView => {
       panel.hidden = true;
       return;
     }
+    const fireOption = [...modeSelect.options].find((option) => option.value === 'fire');
+    if (fireOption) {
+      fireOption.disabled = !cycle.fire;
+    }
+    if (!cycle.fire) {
+      modeSelect.value = 'hand';
+      syncCycleQuery();
+    }
     timeline = modeSelect.value === 'hand' ? cycle.hand : cycle.fire;
+    if (!timeline) {
+      return;
+    }
     drawEjectionArrow(solids, action, timeline);
     millimetresPerUnit = resolved.domain.units.metresPerUnit * 1000;
     ({ strokeUnits } = cycle);

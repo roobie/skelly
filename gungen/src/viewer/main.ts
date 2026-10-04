@@ -399,7 +399,12 @@ const redraw = () => {
     group.visible = layerToggles.find((t) => t.dataset.layer === name)?.checked ?? true;
     scene.add(group);
   }
-  cycleView.bind(layers.solids, report.resolved, action);
+  // A static full-rearward inspection pose must not become the hand-cycle's new home pose.
+  cycleView.bind(
+    layers.solids,
+    report.resolved,
+    initialQuery.get('pose') === 'action-open' && action?.kind === 'pump' ? undefined : action,
+  );
   if (ammoMeshes) {
     scene.add(ammoMeshes.loose, ammoMeshes.fired);
     placeAmmo(report);

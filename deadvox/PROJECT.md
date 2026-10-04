@@ -132,12 +132,14 @@ npm run validate   # base content; add paths to validate a mod on top
   bundle in piles and a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
-- `models-firearms.json` has ten firearm models: nine from "CC0 Flat Guns West"
-  on OpenGameArt and `rifle_assault`, exported from gungen's curated AR design.
+- `models-firearms.json` has ten firearm models: eight from "CC0 Flat Guns West"
+  on OpenGameArt and two Gungen exports: `rifle_assault` from the curated AR and
+  `shotgun_pump` from the curated 12-gauge sporting pump.
   Debug-only `debug_shotgun_pump` and `debug_rifle_assault` items (no loot table;
-  spawn with G under `?debug=1`; neither fires) exercise the models in hands and
-  piles. See `gungen/PROJECT.md` §3.5 for the exact command that regenerates the
-  rifle export.
+  spawn with G under `?debug=1`) exercise the models in hands and piles, with
+  existing debug firing stand-ins, not production ammunition/pump gameplay.
+  See `gungen/PROJECT.md` §3.5 for the rifle regeneration command and
+  [pump-action-export.md](../gungen/docs/pump-action-export.md) for the pump's.
 - `models-melee.json` has all 20 weapons from Pichuliru's "CC0 Flat Shaded Melee
   Weapons" pack, plus the steel pipe from neincenets' CC0 "Pipe" model. Converted
   in Blender to static, self-contained GLBs in metres, with a palm `grip`, a
