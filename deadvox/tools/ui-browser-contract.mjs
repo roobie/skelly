@@ -14,6 +14,7 @@ import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
+import { browserStageArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
 import { createBrowserProfile } from './browser-profile.mjs';
 
 const cwd = process.cwd();
@@ -37,23 +38,23 @@ const vite = spawn(
     stdio: ['ignore', 'pipe', 'pipe'],
   },
 );
+const stageUrl = browserStageUrl(
+  'ui-browser-contract',
+  `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
+);
 const chrome = spawn(
   process.env.CHROME_BIN ?? 'google-chrome',
   [
     '--headless=new',
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-extensions',
-    // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
-    '--password-store=basic',
-    '--enable-webgl',
-    '--use-gl=swiftshader',
-    '--enable-unsafe-swiftshader',
-    `--remote-debugging-port=${cdpPort}`,
-    `--user-data-dir=${profile}`,
-    '--window-size=1280,900',
-    // The contract tests UI, not the look: without a GPU the post chain and shadows make each frame several times slower.
-    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
+    ...browserStageArgs('ui-browser-contract', [
+      '--disable-extensions',
+      // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
+      '--password-store=basic',
+      `--remote-debugging-port=${cdpPort}`,
+      `--user-data-dir=${profile}`,
+      '--window-size=1280,900',
+      stageUrl,
+    ]),
   ],
   { stdio: ['ignore', 'pipe', 'pipe'] },
 );

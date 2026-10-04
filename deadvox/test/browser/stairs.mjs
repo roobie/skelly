@@ -11,6 +11,7 @@ const { chromium } = await import('playwright');
 
 import { createServer } from 'vite';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
@@ -76,13 +77,7 @@ try {
   browser = await chromium.launch({
     headless: true,
     executablePath: process.env.CHROME_BIN,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting'),
   });
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const page = await browser.newPage({
@@ -96,7 +91,10 @@ try {
       errors.push(message.text());
     }
   });
-  await page.goto(`http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`);
+  const stageId = mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting';
+  await page.goto(
+    browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
+  );
   await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   await page.locator('#go').click();
   await page.waitForFunction(
@@ -323,18 +321,18 @@ try {
       globalThis.stairsWitness.input.pitch = -0.3;
     });
     await page.waitForTimeout(150);
-    await shot('house-upstairs-looking-down');
+    // No screenshots in render-free traversal mode; they would show no world.
     await page.evaluate(() => {
       globalThis.stairsWitness.input.yaw = -Math.PI / 2;
       globalThis.stairsWitness.input.pitch = 0;
     });
     await walk('s', 112, false, 43);
     assert.ok(Math.abs((await state('house downstairs walked')).position[1] - 43) < 0.01);
-    await shot('house-downstairs');
+
     await stage([143, 43.0001, 115]);
     await walk('s', 134, false, 35);
     assert.ok(Math.abs((await state('cellar lower landing walked')).position[1] - 35) < 0.01);
-    await shot('cellar-lower-landing');
+
     await walk('w', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
   } else {

@@ -59,6 +59,24 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
+  it('skips drawing and shadow warmup without renderer resources', async () => {
+    const inventory = new Inventory({ ...registry, models: new Map() });
+    const engine = {
+      config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
+      registry: inventory.registry,
+      scene: new Scene(),
+      camera: new PerspectiveCamera(),
+      meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+      sky: {},
+      isSolid: () => false,
+    } as unknown as Engine;
+    const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+
+    expect(view.render()).toBeNull();
+    await expect(view.warmUp()).resolves.toBeUndefined();
+    view.dispose();
+  });
+
   it('releases owned pile and case instances on pagehide', () => {
     const { page, view } = fixture();
     const piles = vi.spyOn(view.piles, 'dispose');

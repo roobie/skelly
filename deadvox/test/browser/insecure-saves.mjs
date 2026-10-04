@@ -5,7 +5,8 @@
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { build, preview } from 'vite';
+import { createServer } from 'vite';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -13,21 +14,20 @@ const configFile = fileURLToPath(new URL('../../vite.config.ts', import.meta.url
 let server;
 let browser;
 try {
-  await build({ configFile, root: projectRoot, logLevel: 'error' });
-  server = await preview({ configFile, root: projectRoot, preview: { host: '127.0.0.1', port: 0 } });
+  server = await createServer({
+    configFile,
+    root: projectRoot,
+    logLevel: 'error',
+    server: { host: '127.0.0.1', port: 0 },
+  });
+  await server.listen();
   const address = server.httpServer.address();
   assert(address && typeof address !== 'string');
   const { chromium } = await import('playwright');
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN ?? undefined,
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('insecure-saves'),
   });
   const context = await browser.newContext();
   await context.addInitScript(() => {
@@ -38,8 +38,10 @@ try {
   const page = await context.newPage();
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.goto(`http://127.0.0.1:${address.port}/?seed=73`, { timeout: STAGE_TIMEOUT_MS });
-  await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+  await page.goto(browserStageUrl('insecure-saves', `http://127.0.0.1:${address.port}/?seed=73`), {
+    timeout: STAGE_TIMEOUT_MS,
+  });
+  await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
   await page.waitForFunction(
     () => (document.querySelector('#save-status')?.textContent ?? '').includes('Saves need a secure (https) page'),
     undefined,

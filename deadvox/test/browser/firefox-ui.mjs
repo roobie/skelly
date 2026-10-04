@@ -6,6 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -63,14 +64,19 @@ try {
     };
     requestAnimationFrame(frame);
   });
-  await page.goto(`http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`);
-  await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view canvas')), null, {
+  await page.goto(
+    browserStageUrl(
+      'firefox-ui',
+      `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+    ),
+  );
+  await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')), null, {
     timeout: 30_000,
   });
   const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
   await page.locator('#go').click();
   await page.waitForFunction(
-    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('canvas'),
+    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
     { timeout: 10_000 },
   );
@@ -95,7 +101,7 @@ try {
     null,
     { timeout: 5000 },
   );
-  assert.equal(await page.evaluate(() => document.pointerLockElement === document.querySelector('canvas')), true);
+  assert.equal(await page.evaluate(() => document.pointerLockElement === document.querySelector('#view')), true);
   assert.ok(await page.locator('#audio-volume-master').count());
   const paused = await page.evaluate(() => ({
     time: globalThis.firefoxUiTest.session.sim.time,
@@ -109,7 +115,7 @@ try {
   );
   await page.keyboard.press('F9');
   await page.waitForFunction(
-    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('canvas'),
+    () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
     { timeout: 5000 },
   );
@@ -122,6 +128,7 @@ try {
   const moveCursorTo = async (position) => {
     const movement = { x: position.x - cursor.x, y: position.y - cursor.y };
     await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
       movementX: movement.x,
       movementY: movement.y,
       centerClient: true,
@@ -135,7 +142,7 @@ try {
     assert(rect);
     await moveCursorTo({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
     await page.evaluate(() =>
-      document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
+      document.querySelector('#view').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
     );
   };
   await page.keyboard.press('g');
@@ -149,7 +156,7 @@ try {
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
     await page.evaluate(
       ({ type, button, buttons }) =>
-        document.querySelector('canvas').dispatchEvent(
+        document.querySelector('#view').dispatchEvent(
           new PointerEvent(type, {
             bubbles: true,
             cancelable: true,

@@ -11,9 +11,10 @@ import { createServer as createNetServer } from 'node:net';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { build, createServer, preview } from 'vite';
+import { createServer } from 'vite';
 import { createBrowserProfile } from '../../tools/browser-profile.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
@@ -35,17 +36,7 @@ const { chromium, firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
-let previewServer;
 const startWebServer = async () => {
-  if (autosaveOnly) {
-    await build({ configFile: viteConfig, root: projectRoot, logLevel: 'error' });
-    previewServer = await preview({
-      configFile: viteConfig,
-      root: projectRoot,
-      preview: { host: '127.0.0.1', port: 0 },
-    });
-    return previewServer.httpServer.address();
-  }
   vite = await createServer({
     configFile: viteConfig,
     root: projectRoot,
@@ -113,14 +104,11 @@ try {
       process.env.CHROME_BIN ?? 'google-chrome',
       [
         '--headless=new',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-extensions',
-        // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
-        '--password-store=basic',
-        '--enable-webgl',
-        '--use-gl=swiftshader',
-        '--enable-unsafe-swiftshader',
+        ...browserStageArgs('save-storage', [
+          '--disable-extensions',
+          // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
+          '--password-store=basic',
+        ]),
         `--remote-debugging-port=${cdpPort}`,
         `--user-data-dir=${profile}`,
         '--window-size=1280,900',
@@ -451,7 +439,10 @@ try {
   }
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
   const testTitleAndAutosave = async (backend) => {
-    const appUrl = `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}${autosaveOnly ? '&save-test=1' : ''}`;
+    const appUrl = browserStageUrl(
+      'save-storage',
+      `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}${autosaveOnly ? '&save-test=1' : ''}`,
+    );
     if (!autosaveOnly) {
       await probePage.evaluate(async (preferredBackend) => {
         // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
@@ -517,7 +508,7 @@ try {
         cause: error,
       });
     }
-    await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     const initialStatus = await page.locator('#save-status').textContent();
     if (!initialStatus?.includes('No saved world found')) {
       throw new Error(`${backend} title startup reported: ${initialStatus}`);
@@ -550,7 +541,7 @@ try {
       const status = await page.locator('#save-status').textContent();
       throw new Error(`${backend} refresh stayed at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
     }
-    await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     if (autosaveOnly) {
       await page.evaluate(() => {
         const { storage, namespace } = globalThis.deadvoxSaveTest;
@@ -589,7 +580,7 @@ try {
         const status = await page.locator('#save-status').textContent();
         throw new Error(`${backend} Continue stalled at ${status}; errors: ${pageErrors.join('; ')}`, { cause: error });
       }
-      await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+      await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
       const restoredMenu = await page.evaluate(() => ({
         status: document.querySelector('#save-status')?.textContent,
         pointerLocked: document.pointerLockElement !== null,
@@ -641,7 +632,7 @@ try {
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(() => globalThis.deadvoxSaveTest !== undefined, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
@@ -680,7 +671,10 @@ try {
 
   // Independent of quarantined Continue/native gestures: seed a valid checkpoint, then hold a real writer lock.
   if (busyLockOnly) {
-    const appUrl = `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`;
+    const appUrl = browserStageUrl(
+      'save-storage',
+      `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`,
+    );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
@@ -737,7 +731,7 @@ try {
           cause: error,
         });
       }
-      await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+      await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
       const busy = await page.evaluate(async () => ({
         status: document.querySelector('#save-status').textContent,
         newWorldLabel: document.querySelector('#go').textContent,
@@ -763,7 +757,7 @@ try {
       await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
-      await page.waitForSelector('#view canvas', { timeout: STAGE_TIMEOUT_MS });
+      await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
       assert.equal(await page.locator('#continue').isEnabled(), true);
       assert.equal(await page.locator('#save-rescan').isVisible(), false);
       const recoveredSlots = await page.evaluate(async () => {
@@ -809,15 +803,6 @@ try {
   }
   if (vite) {
     await withTimeout('Vite shutdown', vite.close(), 5000).catch((error) => {
-      process.stderr.write(`Cleanup warning: ${String(error)}\n`);
-    });
-  }
-  if (previewServer) {
-    await withTimeout(
-      'Vite preview shutdown',
-      new Promise((resolve, reject) => previewServer.httpServer.close((error) => (error ? reject(error) : resolve()))),
-      5000,
-    ).catch((error) => {
       process.stderr.write(`Cleanup warning: ${String(error)}\n`);
     });
   }

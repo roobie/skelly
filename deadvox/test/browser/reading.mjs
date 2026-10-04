@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
 const [, , mode] = process.argv;
@@ -46,15 +47,8 @@ try {
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('reading'),
   });
-  // Consumer rendering is diagnostic, not a pixel oracle; reduce its SwiftShader frame cost.
   const page = await browser.newPage({
     viewport: mode === 'consumer' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
   });
@@ -67,7 +61,10 @@ try {
     }
   });
   await page.goto(
-    `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+    browserStageUrl(
+      'reading',
+      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+    ),
   );
   await page.waitForFunction(() => globalThis.readingWitness, undefined, { timeout: 60_000 });
   await page.locator('#go').click();
@@ -113,10 +110,11 @@ try {
       return { x: input.cursorX, y: input.cursorY };
     });
     await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
       movementX: target.x - cursor.x,
       movementY: target.y - cursor.y,
     });
-    await page.evaluate(dispatchMenuPointerClick, {});
+    await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
   let proof;
   if (mode === 'consumer') {
@@ -142,9 +140,9 @@ try {
       }
     };
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
-    await walk('w', startX + 9, true);
+    await walk('w', startX + 10, true);
     const aim = async (type) => {
-      await page.evaluate((id) => {
+      const target = await page.evaluate((id) => {
         const { engine, input, eye } = globalThis.readingWitness;
         const entity = [...engine.entities.all].find((value) => value.type === id);
         const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
@@ -152,9 +150,11 @@ try {
         const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
         input.yaw = Math.atan2(-dx, -dz);
         input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
       }, type);
       await record(`aim ${type}`);
-      assert.equal(await page.evaluate(() => globalThis.readingWitness.lookedAt()?.type), type);
+      const hit = await page.evaluate(() => globalThis.readingWitness.lookedAt()?.type);
+      assert.equal(hit, type, JSON.stringify({ target, hit }));
     };
     await aim('crate');
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);

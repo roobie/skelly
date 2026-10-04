@@ -43,7 +43,12 @@ export interface EngineOptions {
 }
 
 export function createEngine(config: GameConfig, view: HTMLElement, stats?: StreamerStats): RenderedEngine;
-export function createEngine(config: GameConfig, view: HTMLElement, stats: StreamerStats | undefined, options: EngineOptions): Engine;
+export function createEngine(
+  config: GameConfig,
+  view: HTMLElement,
+  stats: StreamerStats | undefined,
+  options: EngineOptions,
+): Engine;
 export function createEngine(
   config: GameConfig,
   view: HTMLElement,
@@ -53,7 +58,9 @@ export function createEngine(
   const { scale, radiusM } = config;
   const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
-  if (renderer) view.appendChild(renderer.domElement);
+  if (renderer) {
+    view.appendChild(renderer.domElement);
+  }
 
   const scene = new Scene();
   // The far plane is set by the sky: it ends where the fog does.
@@ -113,4 +120,4 @@ export function createEngine(
     ...(mood ? { mood } : {}),
     ...(shadows ? { shadows } : {}),
   };
-};
+}

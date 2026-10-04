@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
@@ -188,7 +189,9 @@ const measure = async (launchedBrowser, address, mode) => {
     }
   });
   try {
-    await page.goto(`http://127.0.0.1:${address.port}/__casePoolProbe.html?mode=${mode}`);
+    await page.goto(
+      browserStageUrl('case-visual-pool', `http://127.0.0.1:${address.port}/__casePoolProbe.html?mode=${mode}`),
+    );
     if (mode === 'delayed') {
       await page.waitForFunction(() => globalThis.__casePoolWaiting, undefined, { timeout: 20_000 });
       releaseRequest();
@@ -239,13 +242,7 @@ try {
   browser = await chromium.launch({
     headless: true,
     executablePath: process.env.CHROME_BIN,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('case-visual-pool'),
   });
   // Measure all three controls before checking, so fail-before logs show both clone churn and fallback GPU growth.
   const loaded = await measure(browser, address, 'loaded');

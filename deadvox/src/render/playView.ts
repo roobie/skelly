@@ -71,16 +71,19 @@ export const createPlayView = (
   report: (message: string) => void,
   page: Pick<EventTarget, 'addEventListener'> = globalThis,
 ) => {
-  const { config, registry, renderer, meshes, scene, camera } = engine;
+  const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
-    if (!engine.mood || !engine.shadows) {
+    if (mood === undefined) {
+      throw new Error('rendering resources are incomplete');
+    }
+    if (shadows === undefined) {
       throw new Error('rendering resources are incomplete');
     }
     applyLook(renderer, meshes, DEFAULT_LOOK);
-    engine.mood.restore(DEFAULT_MOOD);
-    engine.shadows.restore(DEFAULT_SHADOWS);
+    mood.restore(DEFAULT_MOOD);
+    shadows.restore(DEFAULT_SHADOWS);
   }
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const models = new ModelLibrary(registry, report);
@@ -180,16 +183,24 @@ export const createPlayView = (
       flashlight.update(registry, light, held, camera);
     },
     render: (): number | null => {
-      if (!renderer || !engine.mood) {
+      if (!renderer) {
+        return null;
+      }
+      if (!mood) {
         return null;
       }
       const start = performance.now();
-      engine.mood.render(() => held.render(renderer, camera, engine.sky));
+      mood.render(() => held.render(renderer, camera, engine.sky));
       return performance.now() - start;
     },
-    warmUp: () =>
-      engine.shadows && engine.mood
-        ? engine.shadows.warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget])
-        : Promise.resolve(),
+    warmUp: () => {
+      if (!mood) {
+        return Promise.resolve();
+      }
+      if (!shadows) {
+        return Promise.resolve();
+      }
+      return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
+    },
   };
 };

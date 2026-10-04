@@ -6,13 +6,13 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const progressingSample = ({ start }) => {
-  const session = globalThis.primaryActionTest.session;
+  const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
 const observationPlugin = {
@@ -76,7 +76,7 @@ try {
   if (renderMode === 'render-free') {
     await page.addInitScript(() => {
       globalThis.renderFreeWitness = { webglRequests: [] };
-      const getContext = HTMLCanvasElement.prototype.getContext;
+      const { getContext } = HTMLCanvasElement.prototype;
       HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
         if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') {
           globalThis.renderFreeWitness.webglRequests.push(kind);
@@ -93,7 +93,9 @@ try {
       renderOverride,
     ),
   );
-  await page.waitForFunction(() => Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view')));
+  await page.waitForFunction(() =>
+    Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view')),
+  );
   await page.locator('#go').click();
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
@@ -112,14 +114,22 @@ try {
   }
 
   if (renderMode === 'render-free') {
-    const before = await page.evaluate(() => ({ time: globalThis.primaryActionTest.session.sim.time, feet: globalThis.primaryActionTest.feet() }));
+    const before = await page.evaluate(() => ({
+      time: globalThis.primaryActionTest.session.sim.time,
+      feet: globalThis.primaryActionTest.feet(),
+    }));
     await page.keyboard.down('KeyW');
-    await waitForSimulation(page, progressingSample, { start: before.time }, {
-      seconds: 0.35,
-      label: 'render-free input and simulation witness',
-      record: (line) => process.stderr.write(`${line}\\n`),
-      stop: () => page.keyboard.up('KeyW'),
-    });
+    await waitForSimulation(
+      page,
+      progressingSample,
+      { start: before.time },
+      {
+        seconds: 0.35,
+        label: 'render-free input and simulation witness',
+        record: (line) => process.stderr.write(`${line}\\n`),
+        stop: () => page.keyboard.up('KeyW'),
+      },
+    );
     const witness = await page.evaluate(() => ({
       engineHasRenderer: Boolean(globalThis.primaryActionTest.engine.renderer),
       webglRequests: globalThis.renderFreeWitness.webglRequests,

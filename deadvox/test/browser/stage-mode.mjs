@@ -3,7 +3,7 @@
 const modes = Object.freeze({
   'inventory-scroll': 'render-free',
   'ui-browser-contract': 'pixel',
-  'melee-build-click': 'render-free',
+  'melee-build-click': 'pixel',
   'primary-action': 'render-free',
   'full-auto': 'render-free',
   'case-visual-pool': 'pixel',
@@ -19,24 +19,27 @@ const modes = Object.freeze({
 });
 
 export const browserStageMode = (stage, override) => {
+  if (!Object.hasOwn(modes, stage)) {
+    throw new Error(`Unknown browser stage mode: ${stage}`);
+  }
   const mode = modes[stage];
-  if (!mode) throw new Error(`Unknown browser stage mode: ${stage}`);
   if (override !== undefined && override !== 'pixel' && override !== 'render-free') {
     throw new Error(`Unknown browser render mode: ${override}`);
   }
   return override ?? mode;
 };
 
-export const browserStageArgs = (stage, extra = [], override) => {
+export const browserStageArgs = (stage, extra, override) => {
+  const additionalArgs = extra ?? [];
   const mode = browserStageMode(stage, override);
-  const explicitGl = extra.some((arg) => arg.startsWith('--use-gl='));
+  const explicitGl = additionalArgs.some((arg) => arg.startsWith('--use-gl='));
   return [
     '--no-sandbox',
     '--disable-dev-shm-usage',
     ...(mode === 'render-free'
       ? ['--disable-gpu']
       : [...(explicitGl ? [] : ['--use-gl=swiftshader']), '--enable-unsafe-swiftshader']),
-    ...extra,
+    ...additionalArgs,
   ];
 };
 

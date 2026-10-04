@@ -5,17 +5,17 @@
 import type { WebGLRenderer } from 'three';
 import {
   AUTO_TONE,
-  DEFAULT_LOOK,
-  DEFAULT_MOOD,
-  DEFAULT_SHADOWS,
   bloomClipFor,
   clampBloomClip,
   clampExposure,
   clampGrade,
   clampTorch,
-  nextShadowDistance,
+  DEFAULT_LOOK,
+  DEFAULT_MOOD,
+  DEFAULT_SHADOWS,
   type LookState,
   type MoodState,
+  nextShadowDistance,
   type ShadowState,
   TORCH_STEP,
 } from '../core/mood.ts';
@@ -232,7 +232,9 @@ export class LookControls {
 
   cycleToneMapping(): void {
     this.mode = (this.mode + 1) % TONE_MODES.length;
-    if (this.renderer) this.renderer.toneMapping = TONE_MODES[this.mode]!.mapping;
+    if (this.renderer) {
+      this.renderer.toneMapping = TONE_MODES[this.mode]!.mapping;
+    }
   }
 
   /** The `?tone=` URL value of the current mode. */
@@ -243,7 +245,9 @@ export class LookControls {
   /** Steps exposure by `steps` tenths, clamped. */
   stepExposure(steps: number): void {
     this.exposureValue = clampExposure(this.exposure + steps * EXPOSURE_STEP);
-    if (this.renderer) this.renderer.toneMappingExposure = this.exposureValue;
+    if (this.renderer) {
+      this.renderer.toneMappingExposure = this.exposureValue;
+    }
   }
 
   /** Applies a state read from the URL; an unknown tone key leaves the mode alone. */
@@ -257,7 +261,9 @@ export class LookControls {
         hotCheck: boolean;
       },
   ): void {
-    if (this.renderer && this.meshes) applyLook(this.renderer, this.meshes, state);
+    if (this.renderer && this.meshes) {
+      applyLook(this.renderer, this.meshes, state);
+    }
     this.exposureValue = state.exposure;
     this.linearColorsValue = state.srgb;
     this.patternsValue = state.patterns;

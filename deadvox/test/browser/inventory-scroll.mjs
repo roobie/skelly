@@ -74,7 +74,7 @@ const vite = await createServer({
           if (request.url === '/__scroll.html') {
             response.setHeader('Content-Type', 'text/html');
             response.end(
-              '<html><body><div id="view"></div><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor"></div><script type="module" src="/__scroll.js"></script></body></html>',
+              '<html><body><div id="view"></div><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor-root"><div id="game-cursor"></div></div><script type="module" src="/__scroll.js"></script></body></html>',
             );
           } else {
             next();
