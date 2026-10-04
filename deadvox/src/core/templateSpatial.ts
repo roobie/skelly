@@ -163,19 +163,21 @@ class TemplateSpace {
       }
     }
   }
-  private hasFloorOpeningOutsideHeadroom(layer: number, headroom: Set<string>): boolean {
+  private hasFloorOpeningOutsideHeadroom(floor: number, headroom: Set<string>, reached: Set<string>): boolean {
     const [sx, , sz] = this.template.size;
+    const layer = floor - 1;
     for (let z = 0; z < sz; z++) {
       for (let x = 0; x < sx; x++) {
         const block = this.template.blocks[x + sx * (z + sz * layer)]!;
-        if (!(this.solids.has(block) || headroom.has(`${x},${z}`))) {
+        const standingHere = reached.has(key([x + 0.5, floor, z + 0.5]));
+        if (standingHere && !(this.solids.has(block) || headroom.has(`${x},${z}`))) {
           return true;
         }
       }
     }
     return false;
   }
-  upperFloorOpeningIssues(): SpatialIssue[] {
+  upperFloorOpeningIssues(reached: Set<string>): SpatialIssue[] {
     const access = this.template.access!;
     const floors = new Map(access.storeys.map((floor) => [floor.id, floor.floor]));
     for (const floor of access.storeys) {
@@ -189,7 +191,7 @@ class TemplateSpace {
       for (const stair of incoming) {
         this.addFlightHeadroom(stair, floor.floor - 1, headroom);
       }
-      if (this.hasFloorOpeningOutsideHeadroom(floor.floor - 1, headroom)) {
+      if (this.hasFloorOpeningOutsideHeadroom(floor.floor, headroom, reached)) {
         return [['.access.stairs', 'upper-storey floor opening extends beyond flight footprint and headroom']];
       }
     }
@@ -266,14 +268,14 @@ export const templateSpatialIssues = (registry: Registry, template: CompiledTemp
   if (issues.length > 0) {
     return issues;
   }
-  const openingIssues = space.upperFloorOpeningIssues();
-  if (openingIssues.length > 0) {
-    return openingIssues;
-  }
   if (!space.standing(access.entrance)) {
     return [['.access.entrance', 'entrance needs support and standing headroom']];
   }
   const reached = space.reached(access.entrance);
+  const openingIssues = space.upperFloorOpeningIssues(reached);
+  if (openingIssues.length > 0) {
+    return openingIssues;
+  }
   const [sx, , sz] = template.size;
   const ground = floors.get(access.ground)!;
   const outside = [...reached].some((point) => {
