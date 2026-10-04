@@ -52,7 +52,12 @@ export const PLAYER_CONTROL_BINDINGS = [
     action: 'Left-hand primary action',
   },
   { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
-  { keys: 'Shift+F', codes: [CONTROL_CODES.interact], action: 'Lock or unlock a closed door with a held key' },
+  {
+    keys: 'Shift+F',
+    modifier: 'Shift',
+    codes: [CONTROL_CODES.interact],
+    action: 'Lock or unlock a closed door with a held key',
+  },
   {
     keys: 'R',
     codes: [CONTROL_CODES.rest, CONTROL_CODES.rotate],
@@ -89,12 +94,13 @@ export const controlsCardRows = (
   bindings: readonly {
     readonly codes: readonly string[];
     readonly keys?: string;
+    readonly modifier?: string;
     readonly action: string;
     readonly context?: string;
   }[] = PLAYER_CONTROL_BINDINGS,
 ) => {
   const rows = bindings.map((binding) => ({
-    keys: binding.codes.length > 0 ? [...new Set(binding.codes.map(labelForCode))].join(' / ') : (binding.keys ?? ''),
+    keys: `${binding.modifier ? `${binding.modifier}+` : ''}${binding.codes.length > 0 ? [...new Set(binding.codes.map(labelForCode))].join(' / ') : (binding.keys ?? '')}`,
     action: binding.action,
     inventory: 'context' in binding && binding.context === 'inventory',
   }));
