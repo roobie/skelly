@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import type { Session } from '../src/game/session.ts';
 import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
 
 const { registry } = buildRegistry(
@@ -32,6 +33,7 @@ for (const key of [
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
 const { renderCrafting, renderCraftStatus } = await import('../src/ui/crafting.ts');
+const { mountCraftPanel } = await import('../src/ui/craftController.ts');
 afterAll(() => dom.happyDOM.abort());
 describe('crafting read-only presentation', () => {
   it('shows raw material counts, best usable quality and skill gap without granting unknown recipes', () => {
@@ -113,5 +115,37 @@ describe('crafting read-only presentation', () => {
     expect(item.work.elapsed).toBe(recipeSeconds);
     renderCraftStatus(root, undefined, { continue: resume, stop });
     expect(root.hidden).toBe(true);
+  });
+  it('hides held-work status while inventory is open and restores it when closed', () => {
+    const inventory = new Inventory(registry);
+    const item = inventory.create('work_in_progress');
+    const recipeSeconds = registry.recipes.get('torch')!.time * 60;
+    item.work = { recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
+    inventory.add(item, { kind: 'hand', side: 'right' });
+    const character = new Character(registry);
+    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const session = {
+      inventory,
+      character,
+      reach: () => reach,
+      crafting: { currentUid: item.uid, startReason: () => undefined },
+      sim: {
+        actions: { job: { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 } },
+        compression: { interruption: undefined },
+      },
+    } as unknown as Session;
+    const panel = document.createElement('section');
+    const status = document.createElement('section');
+    const controller = mountCraftPanel(panel, status, session, {
+      notice: vi.fn(),
+      started: vi.fn(),
+      continue: vi.fn(),
+      stop: vi.fn(),
+    });
+
+    controller.update(true);
+    expect(status.hidden).toBe(true);
+    controller.update(false);
+    expect(status.hidden).toBe(false);
   });
 });

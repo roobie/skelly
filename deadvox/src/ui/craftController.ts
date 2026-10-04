@@ -46,14 +46,17 @@ export const mountCraftPanel = (
           actions,
         );
       }
+      // The inventory has its own Continue action; keep this fixed status box off its controls.
       renderCraftStatus(
         statusRoot,
-        craftStatus(
-          session.inventory,
-          session.crafting.currentUid,
-          session.sim.actions.job,
-          session.sim.compression.interruption,
-        ),
+        open
+          ? undefined
+          : craftStatus(
+              session.inventory,
+              session.crafting.currentUid,
+              session.sim.actions.job,
+              session.sim.compression.interruption,
+            ),
         controls,
       );
     },
