@@ -261,6 +261,34 @@ describe('handling time', () => {
   });
 });
 
+describe('registry-aware item tree restoration', () => {
+  it('rejects pockets on a noncontainer before exposing the restored item', () => {
+    const inv = new Inventory(registry);
+    const rag = inv.create('rag');
+    expect(inv.add(rag, { kind: 'hand', side: 'right' })).toBe(true);
+    const state = structuredClone(inv.snapshotState());
+    state.hands.right!.pockets = [[]];
+    expect(() => Inventory.restoreState(registry, state)).toThrow('rag has no container');
+  });
+
+  it('rejects a missing declared pocket grid before exposing the restored bag', () => {
+    const inv = new Inventory(registry);
+    const bag = inv.create('school_backpack');
+    expect(inv.add(bag, { kind: 'hand', side: 'right' })).toBe(true);
+    const state = structuredClone(inv.snapshotState());
+    state.hands.right!.pockets!.pop();
+    expect(() => Inventory.restoreState(registry, state)).toThrow('school_backpack must have 2 pocket grids');
+  });
+
+  it('rejects a pile placement outside its fixed grid before exposing the restored pile', () => {
+    const inv = new Inventory(registry);
+    expect(inv.add(inv.create('rag'), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const state = structuredClone(inv.snapshotState());
+    state.piles[0]!.items[0] = { ...state.piles[0]!.items[0]!, x: 8 };
+    expect(() => Inventory.restoreState(registry, state)).toThrow('Invalid item placement');
+  });
+});
+
 describe('condition', () => {
   it('reads as a word', () => {
     expect([1, 0.7, 0.4, 0.15, 0.05].map(conditionWord)).toEqual([

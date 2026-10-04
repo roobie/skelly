@@ -19,7 +19,7 @@ const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, p
 
 describe('static reachability', () => {
   it('pins the pending classes and their owning milestones, without accepting them', () => {
-    expect(PENDING_REACHABILITY).toEqual({ knowledge: '2.4/2.5', skill: '2.5', workstation: '2.8' });
+    expect(PENDING_REACHABILITY).toEqual({ skill: '2.5', workstation: '2.8' });
     const registry = fresh();
     registry.recipes.clear();
     registry.furniture.set('unplaced_bench', {
@@ -27,8 +27,8 @@ describe('static reachability', () => {
       id: 'unplaced_bench',
       workstation: { id: 'unplaced' },
     });
-    registry.recipes.set('pending_fixture', {
-      id: 'pending_fixture',
+    registry.recipes.set('torch', {
+      id: 'torch',
       result: { item: 'rag', count: 1 },
       time: 1,
       components: [[{ item: 'rag', count: 1 }]],
@@ -39,12 +39,60 @@ describe('static reachability', () => {
     const result = checkReachability(registry);
     expect(result.issues).toEqual([]);
     expect(result.pending.map(({ kind, path, message }) => [kind, path, message])).toEqual([
-      ['knowledge', '.knowledge', 'pending: no source yet (2.4/2.5)'],
       ['skill', '.skills.crafting', 'pending: no source yet (2.5)'],
       ['workstation', '.workstation', 'pending: no source yet (2.8)'],
     ]);
     registry.furniture.get('crate')!.workstation = { id: 'unplaced' };
-    expect(checkReachability(registry).pending.map(({ kind }) => kind)).toEqual(['knowledge', 'skill']);
+    expect(checkReachability(registry).pending.map(({ kind }) => kind)).toEqual(['skill']);
+  });
+
+  it('hard-rejects unknown knowledge and prevents its result from grounding a starting-known recipe', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    registry.items.set('unlearned_tool', {
+      id: 'unlearned_tool',
+      name: 'Unlearned tool',
+      category: 'tool',
+      weight: 1,
+      size: [1, 1],
+      tool: { qualities: { cutting: 2 } },
+    });
+    const supplier = {
+      id: 'unlearned',
+      result: { item: 'unlearned_tool', count: 1 },
+      time: 1,
+      skills: {},
+      qualities: {},
+      components: [[{ item: 'rag', count: 1 }]],
+    };
+    registry.recipes.set(supplier.id, supplier);
+    registry.recipes.set('torch', {
+      ...supplier,
+      id: 'torch',
+      result: { item: 'torch', count: 1 },
+      qualities: { cutting: 2 },
+      components: [[{ item: 'unlearned_tool', count: 1 }]],
+    });
+    const unknown = checkReachability(registry);
+    expect(unknown.issues).toContainEqual({
+      recipe: 'unlearned',
+      path: '.knowledge',
+      message: expect.stringContaining('starting knowledge'),
+    });
+    expect(unknown.components.has('unlearned_tool')).toBe(false);
+    expect(unknown.toolReachable.has('unlearned_tool')).toBe(false);
+    expect(unknown.issues).toContainEqual({
+      recipe: 'torch',
+      path: '.components[0][0].item',
+      message: expect.any(String),
+    });
+    // Same content/stock; changing only the supplier to a real starting-known recipe grounds it.
+    registry.recipes.delete('unlearned');
+    registry.recipes.set('candle', { ...supplier, id: 'candle' });
+    const known = checkReachability(registry);
+    expect(known.issues).toEqual([]);
+    expect(known.components.has('unlearned_tool')).toBe(true);
+    expect(known.toolReachable.has('torch')).toBe(true);
   });
 
   it('seeds only actual placed overrides, positive nested counts and spawnable zombie loot', () => {
@@ -148,8 +196,8 @@ describe('static reachability', () => {
   it('requires the quality level, while allowing an independently found result to supply its own tool', () => {
     const registry = fresh();
     registry.recipes.clear();
-    registry.recipes.set('hammer_upgrade', {
-      id: 'hammer_upgrade',
+    registry.recipes.set('candle', {
+      id: 'candle',
       result: { item: 'hammer', count: 1 },
       time: 1,
       skills: {},
@@ -157,7 +205,7 @@ describe('static reachability', () => {
       components: [[{ item: 'rag', count: 1 }]],
     });
     expect(checkReachability(registry).issues.map((issue) => issue.path)).toEqual(['.qualities.hammering']);
-    registry.recipes.get('hammer_upgrade')!.qualities.hammering = 2;
+    registry.recipes.get('candle')!.qualities.hammering = 2;
     expect(checkReachability(registry).issues).toEqual([]);
   });
 
@@ -201,9 +249,10 @@ describe('static reachability', () => {
       ],
     });
     registry.recipes.set('cycle', recipe('cycle', 'cyclic_tool', 'rag', 'cyclic'));
-    const result = checkReachability(registry);
+    const result = checkReachability(registry, new Set(registry.recipes.keys()));
     expect(result.toolReachable.has('fixture_product')).toBe(true);
     expect(result.toolReachable.has('cyclic_tool')).toBe(false);
+    // A known cyclic-tool recipe still grounds its component result, but never its own tool.
     expect(result.components.has('cyclic_tool')).toBe(true);
     expect(result.issues.filter((issue) => issue.path.startsWith('.components')).map((issue) => issue.path)).toEqual([
       '.components[0][0].item',
