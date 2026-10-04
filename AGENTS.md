@@ -159,9 +159,8 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 
 Every doc's `read_if` front matter says why you'd read it. `python3 tools/read_if.py`
 lists them all, read from the docs when you run it; add terms to filter
-(`python3 tools/read_if.py saves stairs`). Until the docs sweep (r28 to r32) gives every
-doc a `read_if`, `--missing` lists the docs that have none, and those are still worth a
-look.
+(`python3 tools/read_if.py saves stairs`). Until the docs sweep (#222) gives every doc a
+`read_if`, `--missing` lists the docs that have none, and those are still worth a look.
 
 ## Before pushing: tiered checks
 

@@ -6,8 +6,9 @@ Usage:
   python3 tools/read_if.py TERM ...     only docs with a reason containing a TERM
   python3 tools/read_if.py --missing    tracked docs without read_if
 
-Reads only the front matter: a block list (`- reason`) or a flow list
-(`[a, "b, c"]`). Standard library only, so any clone can run it.
+Reads only the front matter: a block list (`- reason`) or a one-line flow list
+(`[a, "b, c"]`; double-quote any item that contains a comma). Standard library
+only, so any clone can run it.
 """
 
 import csv
@@ -53,6 +54,8 @@ def read_if(lines):
         reasons = []
         for item in lines[start + 1 :]:
             text = item.strip()
+            if not text or text.startswith("#"):
+                continue
             if not item.startswith((" ", "\t", "-")):
                 break
             if text.startswith("- "):
