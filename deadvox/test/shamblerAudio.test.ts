@@ -26,4 +26,21 @@ describe('shambler body-sized audio', () => {
       }
     }
   });
+
+  it('multiplies only the smallest voice-size figure outside the clamp on the debug comparison URL', () => {
+    const figures = SHAMBLER_FIGURE_SEEDS.map((seed) => shamblerFigure(seed).realized.body);
+    const smallestHeight = Math.min(...figures.map(bodyHeight));
+    const smallest = figures.find((body) => bodyHeight(body) === smallestHeight)!;
+    const baseline = shamblerBodyPitch(smallest);
+    const doubled = shamblerBodyPitch(smallest, '?site=voice_size&debug=1&voicePitch=2');
+
+    expect(doubled).toBe(baseline * 2);
+    expect(doubled).toBeGreaterThan(SHAMBLER_PITCH_CLAMP[1]);
+    for (const body of figures.filter((candidate) => bodyHeight(candidate) > smallestHeight)) {
+      expect(shamblerBodyPitch(body, '?site=voice_size&debug=1&voicePitch=2')).toBe(shamblerBodyPitch(body));
+    }
+    expect(shamblerBodyPitch(smallest, '?site=voice_size&debug=0&voicePitch=2')).toBe(baseline);
+    expect(shamblerBodyPitch(smallest, '?site=hamlet&debug=1&voicePitch=2')).toBe(baseline);
+    expect(shamblerBodyPitch(smallest, '?site=voice_size&debug=1&voicePitch=1')).toBe(baseline);
+  });
 });

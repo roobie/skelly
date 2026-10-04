@@ -59,6 +59,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
     hint: 'address bar · JSON',
     notes: [
       { label: 'Camera pose, kept in the address bar', param: 'cam=x,y,z,yaw,pitch,roll' },
+      { label: 'Smallest voice-size comparison pitch multiplier (debug only)', param: 'voicePitch=<factor>' },
       { label: 'Dump look settings (JSON), a button' },
     ],
   },
