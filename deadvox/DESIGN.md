@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're choosing world scale, view distance or performance targets
+  - you're changing the rules for time, survival, light or zombies
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -5,7 +11,6 @@ together with:
 
 - [EPIC.md](EPIC.md): the road to version 1.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle them.
-- [SLICE-1.md](SLICE-1.md): the first playable deliverable.
 - [INTERACTIONS.md](INTERACTIONS.md): how moving, using, crafting and appliances
   work in the code, and the contract with the UI (draft).
 - [PROJECT.md](PROJECT.md): the current code, how to run it, and technical decisions.
@@ -63,7 +68,7 @@ so keep their number small.
 | | |
 | --- | --- |
 | World unit | **1 unit = 1 metre.** Physics, rendering and content all use metres, and speeds are in m/s |
-| Block size | **0.5 m** (decision; measured and play-tested in milestone 1.0, see SLICE-1.md Results). One constant, `BLOCK_SIZE`, converts between blocks and metres |
+| Block size | **0.5 m**, the measured and play-tested choice. `BLOCK_SIZE` converts between blocks and metres |
 | View distance | **96 m** by default. A setting (64, 96 or 128 m) adapts it to the hardware |
 | Chunk | 32³ blocks = a 16 m cube |
 | Player | 1.8 m tall, 0.6 m wide, eyes at 1.62 m. Steps up 0.5 m (one block) without jumping. A jump clears about 1 m |
@@ -71,9 +76,14 @@ so keep their number small.
 | World height | Start at −48 m to +80 m (256 blocks, 8 chunks). Labs need depth below ground; towers need height above it |
 | Mass, liquids, item size | Grams and millilitres, as whole numbers. In inventories, an item takes w × h cells |
 
-Half-metre blocks make interiors, furniture, vehicles and body-sized details
-readable without a separate prop system. The cost is 8× the blocks per volume;
-[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks) covers the budget.
+BR chose half-metre blocks because doorways, furniture and stairs read at a
+human scale; one-metre steps needed jumps. A 0.25 m test on 2026-10-01 did not
+feel better and would have cost about eight times as many chunks at the same
+view radius, plus a redraw of building templates. The initial reference-laptop run had no slow frames at 96 m, while 128 m had
+4% slow frames during sprinting; 96 m is the default for headroom, with 128 m
+available as a higher setting. The choice is implemented by
+`src/core/scale.ts`, `BLOCK_SIZE`; the cost per volume is covered in
+[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks).
 
 ### Block shapes
 
@@ -475,8 +485,19 @@ and the sounds for severing and destruction (the audio manifest).
 
 ## Light
 
-Nights are dark and interiors are pitch black, so you have to bring light. Light
-is the visual side of noise: it lets you see, and it lets them see you.
+Nights should be dark, and voxel-lit interiors pitch black, so you have to
+bring light. Light is the visual side of noise: it lets you see, and it lets
+them see you.
+
+Interiors need voxel light to become darker than the outdoors. Until that
+arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
+A carried beam remains a three.js light because it moves every frame, unlike
+block light. The zombie light check keeps sky visibility separate from carried
+light, so adding voxel sky light won't change the carried-light rule. Keep time
+of day in the sky/fog renderer, not baked into chunks; voxel sunlight can then
+join AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
+`src/core/zombies.ts`, `isLit`, `src/render/sky.ts`, `applySky`, and
+`src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 

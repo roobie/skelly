@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're running the game, its debug tools or its benchmarks
+  - you're checking the present implementation and known limits
+---
+
 # deadvox — singleplayer voxel survival
 
 A browser-based, singleplayer survival game in the spirit of DayZ (a large open
@@ -21,12 +27,13 @@ This file describes the code as it is. The game's design and roadmap are in
   toggles noclip (Space rises, R descends) and V spawns shamblers. Backquote
   opens the debug panel, which has the same actions as buttons. The code is in
   `src/debug`.
-- `?bench=1` runs the milestone 1.0 benchmark; `?bench=report` shows its last
-  results (the shambler benchmark's too). `&time=HH:MM` runs it at that time of
-  day instead of noon. See [SLICE-1.md](SLICE-1.md#running-it).
+- `?bench=1` runs the benchmark; `?bench=report` shows its last results (the
+  shambler benchmark's too). `&time=HH:MM` runs it at that time of day instead
+  of noon. See `src/bench/run.ts`, `benchRunFromUrl` and `startBench`.
 - `?bench=shamblers&n=10,25,50,100` runs the shambler benchmark: frame time
   with that many shamblers around you. `&seed=N` and `&time=HH:MM` (default
-  23:30) pick the world and the hour. See [SLICE-1.md](SLICE-1.md#running-it).
+  23:30) pick the world and the hour. See `src/bench/shamblers.ts`,
+  `shamblerRunFromUrl` and `startShamblerBench`.
 - `?site=city` replaces the hamlet with a stress-test city about 400 m across,
   and `&storeys=N` (up to 20) makes its buildings 1 to N storeys tall. It works
   in the game (with furniture) and in the benchmark (`?bench=1&site=city`,
@@ -59,7 +66,7 @@ This file describes the code as it is. The game's design and roadmap are in
 | Culling | The camera's far plane is where the fog ends (`render/sky.ts`): fog and clipping both go by view depth, and at the fog's end a surface is exactly the background colour, so nothing past it can show. By day that's 0.95 of the view radius; at night it's a half to a third, and most chunks are skipped. Chunk meshes are culled against their tight bounding boxes (`ChunkMeshes.cull` in `render/chunks.ts`, run from the scene's `onBeforeRender`) rather than three.js's spheres. Stars and a moon (Slice 4) will have to draw without fog, past the far plane |
 | UI | HTML/CSS over the canvas (`src/ui`), drawn with lit-html ([ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md)): each screen renders a view model when its version key changes, and nothing in `src/core` imports it. Every screen has moved over; the inventory screen was the last (#105). `test/uiLitHtml.test.ts` fails on hand-built DOM in `src/ui` and `src/debug` |
 | Meshing | Greedy meshing with per-vertex AO (`core/mesher.ts`): faces with the same block and AO merge into larger quads. Built in Web Workers; buffers are transferred, not shared. Per-block colour variation is computed in the chunk shader (`render/chunks.ts`) |
-| Scale | 0.5 m blocks (`BLOCK_SIZE` in `core/scale.ts`, chosen in milestone 1.0). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres. The benchmark can build other block sizes to compare |
+| Scale | 0.5 m blocks (`BLOCK_SIZE` in `core/scale.ts`); rationale in [DESIGN.md](DESIGN.md#scale-and-units). Player sizes, speeds, terrain and structures are defined in metres; the voxel grid and physics work in blocks, and the scene is scaled to metres. The benchmark can build other block sizes to compare |
 | Chunks | 32³ blocks of runtime block ids, y-major. A chunk where every block is the same stores a single id. The world spans −48 m to +80 m, 8 chunks tall. Unedited chunk data far out of range is dropped and regenerated from the seed when needed |
 | Simulation | `core/sim.ts` ties together the clock (`core/clock.ts`, 1:8), the fixed-step scheduler (`core/scheduler.ts`), the compression controller (`core/compression.ts`), the event queue (`core/events.ts`) and pause. Systems register a rate; under compression slow systems take bigger steps up to their `maxStep` instead of more ticks, and every tick is followed by an interruption check. The player's physics is a 60 Hz system whose step never grows; needs tick at 1 Hz and grow to 30 s steps. The pause card pauses (F9 opens the main menu, and releasing the mouse, which Esc does in the browser, brings it up too) the simulation; the inventory doesn't |
 | Randomness | Worldgen uses stateless hashed noise. Systems draw from their own seeded stream (`Rng.stream(seed, systemId)`, sfc32), never `Math.random` |
@@ -171,5 +178,4 @@ npm run validate   # base content; add paths to validate a mod on top
 - [EPIC.md](EPIC.md): what version 1 is, and the slices that get there.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle
   them.
-- [SLICE-1.md](SLICE-1.md): the first playable deliverable ("The loot run").
 - [SLICE-2.md](SLICE-2.md): the plan for the second ("Craft and mend").

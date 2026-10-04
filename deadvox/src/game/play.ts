@@ -298,12 +298,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     noticeUntil = performance.now() + 3000;
   };
 
-  /**
-   * R/L: starts resting or sleeping, or stops it on a second press of the same key
-   * (SLICE-1.md, 1.8 follow-up). Does nothing during the Continue/Stop prompt, which
-   * owns C and X instead, or while busy with something else (e.g. the other kind, or
-   * the debug compression test).
-   */
   const toggleRest = (kind: RestKind): void => {
     if (compression.interruption !== undefined) {
       return;

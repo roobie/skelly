@@ -23,14 +23,12 @@ export type Need = 'calories' | 'hydration' | 'fatigue';
 /** Change per game hour while awake; resting or sleeping overrides fatigue's rate (see REST). */
 export const NEED_RATES: Readonly<Record<Need, number>> = { calories: -3, hydration: -5, fatigue: 4 };
 
-/** Fatigue recovered per game hour, resting or sleeping (SLICE-1.md, 1.8). A bed adds `bedBonus` per point of quality. */
 export const REST = {
   rest: -15,
   sleep: -30,
   bedBonus: -20,
 } as const;
 
-/** Health per game hour (SLICE-1.md, "Tunables"). */
 export const HEALTH = {
   /** Coming back while calories and hydration are at least `metAbove` and fatigue is at most `restedBelow`. */
   regen: 2,
@@ -51,7 +49,6 @@ export const STAMINA = {
   winded: 10,
 } as const;
 
-/** Slice 1 spawns hungry, thirsty and tired (SLICE-1.md, "Tunables"). */
 export const SPAWN_NEEDS: Readonly<Needs> = { calories: 40, hydration: 35, fatigue: 70, health: 100, stamina: 100 };
 
 /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */

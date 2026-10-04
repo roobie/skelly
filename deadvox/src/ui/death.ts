@@ -1,6 +1,3 @@
-// The death screen (SLICE-1.md, 1.6): what killed you, how long you lasted, and what
-// you took from the houses. "New world" starts over in a fresh world, with the next seed.
-
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
 import { defOf } from '../core/items.ts';

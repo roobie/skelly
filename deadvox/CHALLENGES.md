@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're evaluating performance, simulation or lighting risks
+  - you're deciding when a version 1 challenge needs proof
+---
+
 # deadvox — challenges
 
 The hard problems between us and [version 1](EPIC.md), roughly in order of risk.
@@ -35,8 +41,9 @@ the surface faces, and 8× the memory for the same area. Rough numbers for
 - **Batched draws.** One draw call per chunk is too many at this scale. Group
   chunks into regions, or use three.js `BatchedMesh`.
 
-**When.** The Slice 1 scale measurement (milestone 1.0) compares 1 m and 0.5 m
-blocks with the same code. Milestone 1.1 then does the switch.
+**When.** The measured block-size decision is complete; its reason and the
+reference-laptop result are in [DESIGN.md](DESIGN.md#scale-and-units). This
+challenge remains relevant as later features spend the same performance budget.
 
 **How we'll know.** On the [reference laptop](DESIGN.md#reference-hardware)
 (Iris Xe integrated graphics), a 128 m near
@@ -108,15 +115,19 @@ invalidates cached paths.
 - **Localised updates:** block changes invalidate only the field cells and
   path segments they touch.
 - **Structure-of-arrays storage in a worker** once the counts need it. The
-  `EntityStore` interface in Slice 1 is designed so that move doesn't change
-  the systems.
+  `EntityStore` abstraction in `src/core/entities.ts` keeps a storage change from
+  altering system APIs.
 - **Instanced rendering,** no allocations per tick, and pooled objects.
 
 **When.** Basics in Slice 1 (a handful of shamblers); hordes and flow fields in
 Slice 3.
 
 **How we'll know.** 60 active and 300 background zombies at 60 fps on the
-reference laptop, with the simulation under 4 ms a frame. *Measure.*
+reference laptop, with the simulation under 4 ms a frame. *Measure.* BR's
+2026-10-02 reference-laptop run reached 100 detailed shamblers at 60 fps, but
+the zombie tick used 11 ms p95 and 1% of frames exceeded 18 ms. That limited
+headroom is why active simulation needs a strict cap and cheaper tiers. The
+benchmark path is `src/bench/shamblers.ts`, `startShamblerBench`.
 
 ## 5. Inventory speed in real time
 
@@ -234,10 +245,9 @@ sources move.
 - **Moving lights** (flashlight, hot zombies, muzzle flashes) are real three.js
   lights, limited to the nearest few, not voxel light updates.
 
-**When.** Slice 1 has only day and night from the sky, plus the flashlight, so
-until Slice 4 interiors are no darker than outdoors. That's a known gap in the
-Slice 1 playtest; SLICE-1.md ("Dark interiors") lists what Slice 1 keeps ready
-for voxel light. Voxel light comes in Slice 4.
+**When.** Until voxel light arrives in Slice 4, interiors use sky light and
+are no darker than outdoors. This temporary limit and the boundary for carried
+lights are in [DESIGN.md](DESIGN.md#light). Voxel light comes with Slice 4.
 
 **How we'll know.** Interiors are dark at noon, and placing a lamp relights a
 room within one frame of the mesh update.
