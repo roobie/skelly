@@ -103,6 +103,49 @@ describe('menu input', () => {
     }
   });
 
+  it('does not queue primary clicks rejected at press time', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener');
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    const targetListeners = new Map<string, EventListener>();
+    const target = {
+      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (typeof listener === 'function') {
+          targetListeners.set(type, listener);
+        }
+      },
+    } as unknown as HTMLElement;
+    Object.defineProperty(globalThis, 'addEventListener', {
+      configurable: true,
+      value: () => undefined,
+    });
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { pointerLockElement: target, addEventListener: () => undefined },
+    });
+    let primaryActionAllowed = false;
+    try {
+      const input = new Input(target, () => primaryActionAllowed);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(false);
+      expect(input.intent().primaryActionHeld).toBe(false);
+      primaryActionAllowed = true;
+      expect(input.intent().primaryAction).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(true);
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, 'addEventListener', original);
+      } else {
+        Reflect.deleteProperty(globalThis, 'addEventListener');
+      }
+      if (originalDocument) {
+        Object.defineProperty(globalThis, 'document', originalDocument);
+      } else {
+        Reflect.deleteProperty(globalThis, 'document');
+      }
+    }
+  });
+
   it('tracks held right mouse for the ready stance and clears it on release or blur', () => {
     const original = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener');
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
