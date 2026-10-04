@@ -6,8 +6,8 @@ read_if:
 # Notes for coding agents
 
 Keep this file short: only what every agent needs on every task. Topic detail goes in
-the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), with a
-one-line cue under "Further docs" below.
+the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whose
+`read_if` front matter says when to read it ("Further docs" below).
 
 ## Project stage: pre-pre-alpha, no backwards compatibility
 
@@ -157,10 +157,10 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 
 ## Further docs
 
-- Values tests deliberately don't assert, and when to pin them: `docs/deferred-assertions.md`.
-
-- Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
-- Lessons from past problems: `deadvox/LESSONS.md`.
+Every doc's `read_if` front matter says why you'd read it. `python3 tools/read_if.py`
+lists them all, read from the docs when you run it; add terms to filter
+(`python3 tools/read_if.py saves stairs`). Until the docs sweep (#222) gives every doc a
+`read_if`, `--missing` lists the docs that have none, and those are still worth a look.
 
 ## Before pushing: tiered checks
 

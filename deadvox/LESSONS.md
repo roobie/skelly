@@ -1,3 +1,10 @@
+---
+read_if:
+  - you're troubleshooting a deadvox problem and want to know whether the same area went wrong before
+  - you're about to change a deadvox area that has a lesson here (each heading names its area)
+  - you've just solved a hard deadvox problem and want to record what it taught
+---
+
 # deadvox — lessons
 
 What we learned the hard way, and what to understand before troubleshooting the same

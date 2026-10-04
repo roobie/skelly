@@ -1,3 +1,11 @@
+---
+read_if:
+  - you're debugging deadvox and need its debug parameters or keys
+  - you need to see the game without a display
+  - a browser contract or stage fails on software GL
+  - you're choosing render-free or pixel mode for a browser stage
+---
+
 # deadvox — troubleshooting
 
 How to look at the game and narrow down a problem. Lessons from past problems are in
