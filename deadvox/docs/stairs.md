@@ -139,15 +139,24 @@ house or Dad's beat-3 cabin/woodshed/terrain. The lead authors those later.
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
 `test/browser/stairs.mjs traversal` uses actual keyboard movement and checks
-noclip stays off. Landing settlement has a three-**simulation**-second physical
-bound, rather than a renderer wall-clock wait. Body position, velocity, onGround
-and simulation time are written to `states.json`, including on walk/settle failure.
+noclip stays off. Horizontal arrival has a ten-**simulation**-second bound;
+landing settlement has a three-simulation-second physical bound. Both waits end
+and fail if the simulation pauses, rather than waiting for the outer kill. Body
+position, velocity, onGround, simulation time and pause state are written to
+`states.json` before assertions and on walk/settle failure. Traversal uses a smaller
+640×400 viewport because its unasserted diagnostic rendering consumes frame time;
+lighting retains the 1280×800 viewport and its pixel oracles.
 `test/browser/stairs.mjs lighting` independently compares HUD-free dark/beam
 screenshots and an outdoor view against sky visibility forced to one. A test-only
 second authored cabin, raised six metres so its padded top is in an all-air chunk
-at block 64, checks real Streamer-to-render cache recovery as well as both cellars
-staying dark across the nearest-cellar switch and the second atlas slot. Both stages keep the existing 300 s
-outer cap; neither retries to green. Opposite-floor resident/player
+at block 64, checks real Streamer-to-render cache recovery and both CPU interior
+samples staying dark across the nearest-cellar switch. Its test-only terrain apron
+stays at the shared ground level, exposing the lower west wall. The same local cell
+must be dark in slot zero and lit in slot one (`at()` values `[0, 1]`); that exposed
+wall's GPU luminance must match the sky-one reference. This contrast, not two
+identically dark interiors, detects wrong-slot sampling. The extra cabin and terrain
+override exist only in the lighting test's Vite plugin, not the demo or build. Both
+stages keep the existing 300 s outer cap; neither retries to green. Opposite-floor resident/player
 screenshots remain historical scratch evidence, not a test that pins today's AI limitation.
 
 Shamblers currently steer directly in x/z; investigation arrival ignores floor

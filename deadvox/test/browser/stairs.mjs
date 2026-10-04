@@ -33,6 +33,16 @@ const vite = await createServer({
           layout.buildings.push({ template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 });
           return JSON.stringify(content);
         }
+        if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
+          // Fixture-only: keep the raised cabin above the shared terrain, exposing its lower west wall.
+          // Otherwise its raised terrain apron duplicates the first field's buried-wall samples.
+          const anchor = 'floor: building.position[1] / s,';
+          assert.equal(code.split(anchor).length, 2);
+          return code.replace(
+            anchor,
+            'floor: building.position[0] === 82 ? layout.ground / s : building.position[1] / s,',
+          );
+        }
         if (id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.
           assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
@@ -75,7 +85,10 @@ try {
       '--enable-unsafe-swiftshader',
     ],
   });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
+  const page = await browser.newPage({
+    viewport: mode === 'traversal' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
+  });
   const errors = [];
   const states = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -128,6 +141,7 @@ try {
         velocity: [...body.vel],
         onGround: body.onGround,
         simulationTime: session.sim.time,
+        paused: session.sim.paused,
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
@@ -149,14 +163,23 @@ try {
   const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
   const walk = async (key, targetX, ascending, targetFeet) => {
     try {
+      const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await page.keyboard.down(key);
-      await page.waitForFunction(
-        ({ x, increasing }) =>
-          increasing ? globalThis.stairsWitness.body.pos[0] >= x : globalThis.stairsWitness.body.pos[0] <= x,
-        { x: targetX, increasing: ascending },
-        { timeout: 30_000 },
+      const arrivalHandle = await page.waitForFunction(
+        ({ x, increasing, from }) => {
+          const { body, session } = globalThis.stairsWitness;
+          const reached = increasing ? body.pos[0] >= x : body.pos[0] <= x;
+          const seconds = session.sim.time - from;
+          const { paused } = session.sim;
+          return reached || seconds >= 10 || paused ? { reached, seconds, paused } : false;
+        },
+        { x: targetX, increasing: ascending, from: keyDownTime },
+        { timeout: 0 },
       );
+      const arrival = await arrivalHandle.jsonValue();
       await page.keyboard.up(key);
+      await state(`arrival ${key} x=${targetX}: ${JSON.stringify(arrival)}`);
+      assert.equal(arrival.reached && !arrival.paused, true, JSON.stringify(arrival));
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       // Same three-second physical bound, now simulation seconds rather than renderer wall time.
       // The outer stage remains capped at 300 s; no retry or larger stage cap.
@@ -165,14 +188,15 @@ try {
           const { body, session } = globalThis.stairsWitness;
           const seconds = session.sim.time - from;
           const supported = body.onGround && Math.abs(body.pos[1] - feet) < 0.01;
-          return supported || seconds >= 3 ? { supported, seconds } : false;
+          const { paused } = session.sim;
+          return supported || seconds >= 3 || paused ? { supported, seconds, paused } : false;
         },
         { feet: targetFeet, from: start },
         { timeout: 0 },
       );
       const settled = await result.jsonValue();
-      await state(`settle ${key} x=${targetX} feet=${targetFeet} after ${settled.seconds} simulation seconds`);
-      assert.equal(settled.supported, true, JSON.stringify(settled));
+      await state(`settle ${key} x=${targetX} feet=${targetFeet}: ${JSON.stringify(settled)}`);
+      assert.equal(settled.supported && !settled.paused, true, JSON.stringify(settled));
     } catch (error) {
       await page.keyboard.up(key);
       await state(`walk/settle failure ${key} x=${targetX} feet=${targetFeet}: ${error}`);
@@ -182,6 +206,7 @@ try {
   let lightProof;
   let outdoorProof;
   let residentProof;
+  let secondSlotProof;
   if (mode === 'traversal') {
     await stage([112, 43.0001, 115]);
     await state('house lower landing');
@@ -283,11 +308,40 @@ try {
     // The west-wall window excludes the floor/wall AO corner and hands scene.
     outdoorProof = { normal: await luminance(outdoor, 160), reference: await luminance(outdoorReference, 160) };
     assert.ok(Math.abs(outdoorProof.normal - outdoorProof.reference) < 1.5, JSON.stringify(outdoorProof));
+
+    // Same local field cell: first cabin's west side is buried, raised cabin's west side is exposed.
+    // A missing atlas offset reads the dark first-slot cell despite the CPU sample being lit.
+    const contrast = await page.evaluate(() => {
+      const { engine } = globalThis.stairsWitness;
+      return [engine.skylight.at([65.75, 18.75, 59.25]), engine.skylight.at([81.75, 24.75, 59.25])];
+    });
+    assert.deepEqual(contrast, [0, 1], 'second-slot witness requires different same-local-cell values');
+    await stage([157, 43.0001, 118]);
+    await page.evaluate(() => {
+      globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
+    });
+    await page.waitForTimeout(700);
+    const secondWall = await shot('second-slot-wall-normal');
+    await page.evaluate(() => {
+      globalThis.skyProofControl.value = 1;
+    });
+    await page.waitForTimeout(200);
+    const secondWallReference = await shot('second-slot-wall-sky-one');
+    await page.evaluate(() => {
+      globalThis.skyProofControl.value = 0;
+    });
+    secondSlotProof = {
+      contrast,
+      normal: await luminance(secondWall, 160),
+      reference: await luminance(secondWallReference, 160),
+    };
+    await writeFile(resolve(artifacts, 'second-slot.json'), JSON.stringify(secondSlotProof, null, 2));
+    assert.ok(Math.abs(secondSlotProof.normal - secondSlotProof.reference) < 1.5, JSON.stringify(secondSlotProof));
   }
   assert.deepEqual(errors, []);
   await writeFile(
     resolve(artifacts, 'result.json'),
-    JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, errors }, null, 2),
+    JSON.stringify({ mode, states, lightProof, outdoorProof, residentProof, secondSlotProof, errors }, null, 2),
   );
 } finally {
   await browser?.close();
