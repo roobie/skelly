@@ -25,6 +25,8 @@ move its row to the bottom section with the PR that pinned it.
 | Trigger-guard exact solid dimensions and clearances | `gungen/test/triggerGuard.test.ts` | Inspect the pistol/design trigger guard in the Gungen viewer; the tests retain non-overlap and validator-acceptance properties | at trigger-guard geometry changes |
 | Mesh triangle totals and per-model/render budget | `gungen/test/mesh.test.ts`, `gungen/test/extrusionAxis.test.ts`, `gungen/test/receiverSection.test.ts` | Run `npm run mesh-stats` in `gungen` and inspect changed models in the viewer | when a render budget is agreed |
 | Absolute AK/AR/thumbhole dimensions, builder solid-ID inventories, and bolt-carrier travel/part details | `gungen/test/ak.test.ts`, `gungen/test/ar.test.ts`, `gungen/test/thumbholeStock.test.ts`, `gungen/test/boltCarrier.test.ts` | Validate representative assemblies, then inspect each changed archetype part in the viewer; for action parts, inspect the full motion path for clearance | at generator-change time |
+| Known-seed mobgen genomes and voxel-grid fingerprints | `mobgen/test/generate.test.ts` and its generated snapshot | Run generation/validation tests; start `npm run dev` in `mobgen`, then inspect representative gallery bodies for shape, proportions and buildability | at generator-change time |
+| Exact gait-clock, walk/attack pose and bone-transform outputs across seed/speed samples | `mobgen/test/poseEquivalence.test.ts` and its generated snapshot | Run the gait, attack and pose property suites; start `npm run dev` in `mobgen` and inspect representative walk and Lunge Grab cycles | at gait/attack generator-change time |
 
 ## Pinned since
 
