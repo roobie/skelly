@@ -4,6 +4,9 @@ description: Draft of deadvox's whole verb-to-input map for Slices 1-3, with the
 tags: [deadvox, design, controls, input, ui]
 created: 2026-09-28
 status: draft
+read_if:
+  - you plan or change player or debug input bindings
+  - you review BR's control rulings or unresolved input questions
 ---
 
 # deadvox — controls (draft)
@@ -69,13 +72,16 @@ acting").
   map's right-hand and left-hand rows are the right-handed default.
 
 - **R reload only in the default view (BR, 2026-10-04):** with a pump held,
-  hold at least 250 ms to load loose shells, double-press within 250 ms to rack,
-  and a short single tap does nothing. No reloadable item means no action.
+  hold to load loose shells, double-press to rack, and a short single tap does
+  nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
+  `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
   Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
-  it will come from restable furniture in d45. Sleep remains on L.
+  d45 supplies restable furniture initiation. Until d44 removes its binding,
+  L toggles sleep.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
   activate with the held-item primary action to unpack. No inventory Unpack/Load.
-  Opening takes 1.2 s and X cancels without loss; overflow becomes an ordinary pile.
+  Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
+  X cancels without loss; overflow becomes an ordinary pile.
 
 ## Principles
 
@@ -176,14 +182,12 @@ Notes on the proposal:
 - **Quickbar second press:** using an item already in your hands still calls
   the shared `Survival.use` path. A light primary action on either hand calls
   that same path; the other capabilities dispatch to their existing actions.
-- **R never rests** in the default view (BR ruled). Reload currently maps only
-  the held pump; other firearms can supply the same binding later. Both real-time
-  thresholds live in `RELOAD_GESTURE_MS` in `src/game/reloadInput.ts`. The double
-  window is strictly less than 250 ms, so the first press cannot start a load.
+- **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
+  `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
   Rest has no input binding until restable furniture (d45); inventory R rotation
   is a different view. X still stops an existing rest, C continues after interruption.
-  L still toggles sleep in the current runtime; d44 removes its binding and d45
-  supplies furniture initiation for rest and sleep.
+  Until d44 removes its binding, L toggles sleep; d45 supplies furniture initiation
+  for rest and sleep.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.
@@ -219,9 +223,10 @@ tested; a shipped verb on V would collide in every test session. BR ruled on
 which frees the letters for shipped verbs, including T for the quick-action gate.
 d44 makes that change.
 
-Debug noclip descends with **Backspace** (`CONTROL_CODES.descend`), not R, Ctrl,
-or the reserved Q/E lean keys. Its browser back-navigation default is prevented
-only in the pointer-locked default view; menu text editing retains Backspace.
+See `src/game/input.ts`, `CONTROL_CODES.descend`, for the debug noclip descend
+binding, separate from reload and the reserved lean inputs. `Input` owns its
+browser back-navigation refusal in the pointer-locked default view; menu text
+editing retains native key behaviour.
 
 ## Open questions for BR
 
@@ -234,7 +239,8 @@ only in the pointer-locked default view; menu text editing retains Backspace.
    nothing applied?
 4. ~~**Reload:** R when ready (overloaded with rest), or its own key?~~
    **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
-   Pump: hold loads, double-press racks, single tap does nothing.
+   Pump: hold loads, double-press racks, single tap does nothing. See
+   `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
 5. **Continue after an interruption:** keep C (crouch elsewhere), or make the
    interruption card a two-button choice clicked with the drawn cursor, freeing
    C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.

@@ -19,7 +19,7 @@ estimates into release specifications. Their assertion policy remains in
 The pump makes cycling and ammunition handling player choices rather than
 presentation pretending that an automatic action occurred. Its mechanics must
 remain authoritative even when rendering or audio fails. See
-`deadvox/src/game/firearmHandling.ts`, `FirearmHandling`, and
+`deadvox/src/game/firearmHandling.ts`, `FirearmMechanics`, and
 `deadvox/src/game/reloadInput.ts`, `ReloadInput`.
 
 The sealed ammunition box is deliberately not a container: opening it should be
