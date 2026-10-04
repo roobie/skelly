@@ -79,7 +79,7 @@ interface GroupView {
   readonly toggle: () => void;
 }
 
-const ms = (value: number): string => (Number.isFinite(value) ? value.toFixed(1) : '–');
+const ms = (value: number | null): string => (value === null ? 'n/a' : Number.isFinite(value) ? value.toFixed(1) : '–');
 
 /** One line of the readout: the shadow settings, and what the sun's fade and the casters look like right now. */
 export const shadowReadoutText = (
@@ -786,7 +786,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const { shadows } = hooks.engine;
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
     weather: hooks.weather,
-    shadows,
+    ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
   });
   const initialLook = parseLookParams(new URLSearchParams(location.search));
@@ -1039,6 +1039,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }),
         host,
       );
+      host.querySelector<HTMLElement>('#debug-ui-root')!.dataset.rendering = hooks.engine.renderer ? 'available' : 'unavailable';
       build.setHotbar(host.querySelector<HTMLElement>('#hotbar')!);
       spawnMenu.setRoot(host.querySelector<HTMLElement>('#spawn')!);
       aimReadout = host.querySelector<HTMLElement>('#debug-aim-readout');
@@ -1050,7 +1051,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {
-      render(readoutTemplate(readout, shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)), root);
+      const shadowText = shadows
+        ? shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)
+        : '3D rendering unavailable (render-free mode)';
+      render(readoutTemplate(readout, shadowText), root);
     }
     drawAxisGizmo();
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');

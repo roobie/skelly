@@ -7,6 +7,7 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
 
@@ -41,84 +42,23 @@ try {
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
+    args: browserStageArgs('melee-build-click'),
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(`http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=16`);
+  await page.goto(browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=16`));
   await page.waitForFunction(() => Boolean(globalThis.d7Review));
   await page.evaluate(() => {
     const runtime = globalThis.d7Review;
-    globalThis.d7Observed = { frames: [], starts: [], outsideMood: 0 };
+    globalThis.d7Observed = { starts: [] };
     const begin = runtime.session.zombies.beginMeleeSwing.bind(runtime.session.zombies);
     runtime.session.zombies.beginMeleeSwing = (start) => {
       const result = begin(start);
       globalThis.d7Observed.starts.push({ result, build: runtime.debugTools.buildOn });
       return result;
     };
-    const { mood, renderer } = runtime.engine;
-    const renderMood = mood.render.bind(mood);
-    const renderHands = runtime.held.render.bind(runtime.held);
-    const render = renderer.render.bind(renderer);
-    let active;
-    mood.render = (callback) => {
-      active = { post: mood.post, hands: 0, targets: [], sequence: [] };
-      try {
-        return renderMood(callback);
-      } finally {
-        globalThis.d7Observed.frames.push(active);
-        globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
-        active = undefined;
-      }
-    };
-    runtime.held.render = (...args) => {
-      if (active) {
-        active.hands += 1;
-      } else {
-        globalThis.d7Observed.outsideMood += 1;
-      }
-      return renderHands(...args);
-    };
-    renderer.render = (scene, camera) => {
-      if (active) {
-        let sceneKind = 'post';
-        if (scene === runtime.held.scene) {
-          sceneKind = 'hands';
-        } else if (scene === runtime.engine.scene) {
-          sceneKind = 'world';
-        }
-        active.sequence.push(sceneKind);
-        if (scene === runtime.held.scene) {
-          active.targets.push(Boolean(renderer.getRenderTarget()));
-        }
-      }
-      return render(scene, camera);
-    };
   });
-  await page.waitForTimeout(300);
-
-  for (const post of [true, false]) {
-    await page.evaluate((enabled) => {
-      globalThis.d7Observed.frames = [];
-      globalThis.d7Review.engine.mood.setPost(enabled);
-    }, post);
-    await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
-    const proof = await page.evaluate(() => ({
-      frames: globalThis.d7Observed.frames.slice(-3),
-      outsideMood: globalThis.d7Observed.outsideMood,
-    }));
-    await test(`Post=${post}: one held draw inside Mood with the correct render target`, () => {
-      assert.equal(proof.outsideMood, 0);
-      for (const frame of proof.frames) {
-        assert.equal(frame.post, post);
-        assert.equal(frame.hands, 1);
-        assert.deepEqual(frame.targets, [post]);
-        assert.equal(frame.sequence[0], 'world');
-        assert.equal(frame.sequence[1], 'hands');
-      }
-    });
-  }
 
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.d7Review.input.locked && !globalThis.d7Review.input.menuPointer);

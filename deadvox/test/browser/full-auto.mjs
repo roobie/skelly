@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -24,7 +25,7 @@ const vite = await createServer({
           assert(code.includes(marker));
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n  // Native audio/cadence probe, not a software-GPU frame-time benchmark.\n  renderer.render = () => {};\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -49,13 +50,7 @@ try {
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('full-auto'),
   });
   const page = await browser.newPage();
   const errors = [];
@@ -118,7 +113,7 @@ try {
     let locked = false;
     Object.defineProperty(document, 'pointerLockElement', {
       configurable: true,
-      get: () => (locked ? document.querySelector('#view canvas') : null),
+      get: () => (locked ? document.querySelector('#view') : null),
     });
     Element.prototype.requestPointerLock = () => {
       locked = true;
@@ -131,9 +126,12 @@ try {
     };
   });
   await page.goto(
-    `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+    browserStageUrl(
+      'full-auto',
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+    ),
   );
-  await page.waitForFunction(() => document.querySelector('#debug-ui-root') && document.querySelector('#view canvas'));
+  await page.waitForFunction(() => document.querySelector('#debug-ui-root') && document.querySelector('#view'));
   await page.locator('#go').click();
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.

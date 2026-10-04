@@ -6,9 +6,15 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { waitForSimulation } from './simulation-wait.mjs';
 
 const { chromium } = await import('playwright');
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const progressingSample = ({ start }) => {
+  const session = globalThis.primaryActionTest.session;
+  return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
+};
 const observationPlugin = {
   name: 'primary-action-test-observation',
   enforce: 'pre',
@@ -20,7 +26,7 @@ const observationPlugin = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, held: view.held, showNotice, getNotice: () => notice, feet, caseEffects, audio } });\n  const originalHeldUpdate = view.held.update.bind(view.held);\n  view.held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = view.held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
+      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, engine, held: view.held, showNotice, getNotice: () => notice, feet, caseEffects, audio } });\n  const originalHeldUpdate = view.held.update.bind(view.held);\n  view.held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = view.held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
     );
   },
 };
@@ -36,16 +42,12 @@ try {
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
+  const renderOverride = process.env.DEADVOX_TEST_RENDER_MODE;
+  const renderMode = browserStageMode('primary-action', renderOverride);
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('primary-action', renderMode === 'pixel' ? ['--enable-webgl'] : [], renderOverride),
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
@@ -59,7 +61,7 @@ try {
     let locked = false;
     Object.defineProperty(document, 'pointerLockElement', {
       configurable: true,
-      get: () => (locked ? document.querySelector('#view canvas') : null),
+      get: () => (locked ? document.querySelector('#view') : null),
     });
     Element.prototype.requestPointerLock = () => {
       locked = true;
@@ -71,14 +73,27 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
   });
+  if (renderMode === 'render-free') {
+    await page.addInitScript(() => {
+      globalThis.renderFreeWitness = { webglRequests: [] };
+      const getContext = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (kind, ...args) {
+        if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') {
+          globalThis.renderFreeWitness.webglRequests.push(kind);
+          throw new Error(`render-free stage requested ${kind}`);
+        }
+        return getContext.call(this, kind, ...args);
+      };
+    });
+  }
   await page.goto(
-    `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+    browserStageUrl(
+      'primary-action',
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      renderOverride,
+    ),
   );
-  // In this debug scenario, canvas alone precedes content validation/startPlay. The debug
-  // mount is installed with the play/input handlers in the same synchronous startup task.
-  await page.waitForFunction(() =>
-    Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view canvas')),
-  );
+  await page.waitForFunction(() => Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view')));
   await page.locator('#go').click();
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
@@ -87,13 +102,35 @@ try {
       title: document.title,
       body: document.body.innerText,
       overlayHidden: document.querySelector('#overlay')?.hidden,
-      canvas: Boolean(document.querySelector('#view canvas')),
+      view: Boolean(document.querySelector('#view')),
       errors: document.querySelector('#errors')?.textContent,
       audio: globalThis.primaryActionTest?.audio?.settings,
       pointerLock: Boolean(document.pointerLockElement),
     }));
     process.stderr.write(`startup errors: ${JSON.stringify(pageErrors)}; state: ${JSON.stringify(startup)}\\n`);
     throw error;
+  }
+
+  if (renderMode === 'render-free') {
+    const before = await page.evaluate(() => ({ time: globalThis.primaryActionTest.session.sim.time, feet: globalThis.primaryActionTest.feet() }));
+    await page.keyboard.down('KeyW');
+    await waitForSimulation(page, progressingSample, { start: before.time }, {
+      seconds: 0.35,
+      label: 'render-free input and simulation witness',
+      record: (line) => process.stderr.write(`${line}\\n`),
+      stop: () => page.keyboard.up('KeyW'),
+    });
+    const witness = await page.evaluate(() => ({
+      engineHasRenderer: Boolean(globalThis.primaryActionTest.engine.renderer),
+      webglRequests: globalThis.renderFreeWitness.webglRequests,
+      feet: globalThis.primaryActionTest.feet(),
+    }));
+    assert.equal(witness.engineHasRenderer, false, 'render-free engine has no renderer');
+    assert.deepEqual(witness.webglRequests, [], 'render-free play never requests a WebGL context');
+    assert.ok(
+      Math.hypot(witness.feet[0] - before.feet[0], witness.feet[2] - before.feet[2]) > 0.01,
+      'held forward input moves the player while simulation time advances',
+    );
   }
 
   const loadoutMeleeUid = await page.evaluate(() => {

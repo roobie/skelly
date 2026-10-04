@@ -74,9 +74,14 @@ export const createPlayView = (
   const { config, registry, renderer, meshes, scene, camera } = engine;
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
-  applyLook(renderer, meshes, DEFAULT_LOOK);
-  engine.mood.restore(DEFAULT_MOOD);
-  engine.shadows.restore(DEFAULT_SHADOWS);
+  if (renderer) {
+    if (!engine.mood || !engine.shadows) {
+      throw new Error('rendering resources are incomplete');
+    }
+    applyLook(renderer, meshes, DEFAULT_LOOK);
+    engine.mood.restore(DEFAULT_MOOD);
+    engine.shadows.restore(DEFAULT_SHADOWS);
+  }
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const models = new ModelLibrary(registry, report);
   const playerPalette = registry.figures.get('player')!.palette;
@@ -92,7 +97,7 @@ export const createPlayView = (
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
-  engine.shadows.attachTorch(flashlight.light);
+  engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
@@ -129,7 +134,7 @@ export const createPlayView = (
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour), weather);
       applySky(engine.sky, sky);
-      engine.mood.setSky(sky);
+      engine.mood?.setSky(sky);
       piles.sync(inventory);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
@@ -142,10 +147,10 @@ export const createPlayView = (
         sky,
         engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1,
       );
-      flashlight.shadowsAllowed = engine.shadows.torchOn;
+      flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (hour: number, sky: ReturnType<typeof skyInWeather>) => {
-      engine.shadows.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
+      engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, eye } = frame;
@@ -174,11 +179,17 @@ export const createPlayView = (
       held.update(camera, pose, recoil);
       flashlight.update(registry, light, held, camera);
     },
-    render: (): number => {
+    render: (): number | null => {
+      if (!renderer || !engine.mood) {
+        return null;
+      }
       const start = performance.now();
       engine.mood.render(() => held.render(renderer, camera, engine.sky));
       return performance.now() - start;
     },
-    warmUp: () => engine.shadows.warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget]),
+    warmUp: () =>
+      engine.shadows && engine.mood
+        ? engine.shadows.warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget])
+        : Promise.resolve(),
   };
 };
