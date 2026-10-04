@@ -4,6 +4,38 @@ import type { ItemDef } from '../core/schema.ts';
 
 export type IncludeDebugWeapon = (item: ItemDef) => boolean;
 
+/** Explicit fresh-game firearm preview, never a replacement for restored hands. */
+export const equipDebugFirearms = (
+  inventory: Inventory,
+  debugMode: boolean,
+  newGame: boolean,
+  search: string,
+): boolean => {
+  const choice = new URLSearchParams(search).get('loadout');
+  if (
+    !((choice === 'ar' || choice === 'ak') && debugMode && newGame) ||
+    inventory.hands.left ||
+    inventory.hands.right
+  ) {
+    return false;
+  }
+  const backpack = inventory.worn.back ?? inventory.create('hiking_backpack');
+  if (!(inventory.worn.back || inventory.add(backpack, { kind: 'worn' }))) {
+    throw new Error('Could not equip firearm preview backpack');
+  }
+  const held = choice === 'ar' ? 'debug_rifle_assault' : 'debug_rifle_ak';
+  const other = choice === 'ar' ? 'debug_rifle_ak' : 'debug_rifle_assault';
+  if (
+    !(
+      inventory.add(inventory.create(held), { kind: 'hand', side: 'right' }) &&
+      inventory.add(inventory.create(other), { kind: 'pocket', owner: backpack, pocket: 0 })
+    )
+  ) {
+    throw new Error('Could not equip firearm preview loadout');
+  }
+  return true;
+};
+
 /** Selects the melee tools at runtime; a future caller can include ranged weapons with another predicate. */
 export const debugWeaponIds = (
   registry: Registry,

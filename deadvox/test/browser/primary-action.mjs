@@ -1,4 +1,5 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone browser contract starts Vite and Chrome
+// biome-ignore-all lint/performance/noAwaitInLoops: browser input selection must settle before the next keypress.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the executable and source checkout for A/B tests
 import assert from 'node:assert/strict';
@@ -26,7 +27,7 @@ const observationPlugin = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, engine, held: view.held, showNotice, getNotice: () => notice, feet, caseEffects, audio } });\n  const originalHeldUpdate = view.held.update.bind(view.held);\n  view.held.update = (main, pose, recoil) => {\n    originalHeldUpdate(main, pose, recoil);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = view.held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
+      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, engine, held: view.held, showNotice, getNotice: () => notice, feet, caseEffects, audio } });\n  const originalHeldUpdate = view.held.update.bind(view.held);\n  view.held.update = (main, pose, recoil, firearms) => {\n    originalHeldUpdate(main, pose, recoil, firearms);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = view.held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
     );
   },
 };
@@ -142,6 +143,15 @@ try {
       'held forward input moves the player while simulation time advances',
     );
   }
+
+  // Gunshots attract shamblers. Mortality is not this hand-action contract;
+  // use the actual debug control and verify it (there is no god URL parameter).
+  await page.keyboard.press('KeyH');
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode),
+    true,
+    'hand-action fixture is damage immune',
+  );
 
   const loadoutMeleeUid = await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
@@ -456,9 +466,69 @@ try {
   assert.equal(firearmAction.gunshot?.sourceLabel, 'debug_rifle_assault');
   assert.equal(firearmAction.gunshot?.distanceMetres, 0, 'the player gunshot is head-locked, not left at the muzzle');
   assert.equal(firearmAction.gunshot?.lowpassHz, null, 'the player gunshot bypasses world occlusion');
+  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle);
+  const beforeCock = await page.evaluate(() => ({
+    uid: globalThis.primaryActionTest.inventory.hands.right.uid,
+    danger: globalThis.primaryActionTest.debugTools.dangerReason() ?? null,
+  }));
+  await page.keyboard.press('Tab');
+  const candidates = await page.locator('#inventory [data-uid]').count();
+  assert.ok(candidates > 0, 'inventory exposes selectable items');
+  // Wait for each keypress to reach the rendered inventory before reading selection again.
+  for (let index = 0; index <= candidates; index += 1) {
+    const selectedUid = await page.evaluate(
+      () => document.querySelector('#inventory [data-uid].selected')?.getAttribute('data-uid') ?? null,
+    );
+    if (selectedUid === String(beforeCock.uid)) {
+      break;
+    }
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction((previousUid) => {
+      const currentUid = document.querySelector('#inventory [data-uid].selected')?.getAttribute('data-uid');
+      return typeof currentUid === 'string' && currentUid !== previousUid;
+    }, selectedUid);
+  }
+  assert.equal(await page.locator(`#inventory [data-uid="${beforeCock.uid}"].selected`).count(), 1);
+  const cockButton = page.getByRole('button', { name: /^Cock Assault rifle/ });
+  assert.equal(await cockButton.count(), 1, 'held rifle Use label offers cocking, not an unsupported survival action');
+  await page.keyboard.press('Digit1');
+  await page.keyboard.press('KeyU');
+  const inventoryCock = await page.evaluate(() => ({
+    mode: globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle?.mode,
+    danger: globalThis.primaryActionTest.debugTools.dangerReason() ?? null,
+    reason: globalThis.primaryActionTest.session.firearms.cockReason(
+      globalThis.primaryActionTest.inventory.hands.right.uid,
+    ),
+  }));
+  assert.equal(inventoryCock.mode, 'hand', 'inventory U must cock rather than dispatch the debug Danger test');
+  assert.equal(inventoryCock.danger, beforeCock.danger, 'inventory U leaves debug Danger unchanged');
+  assert.equal(inventoryCock.reason, 'Already handling something');
+  await page.waitForFunction(() =>
+    document.querySelector('.inv-details')?.textContent.includes('already handling something'),
+  );
+  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle);
+  assert.equal(
+    await cockButton.count(),
+    1,
+    'cock availability redraws after completion without an inventory version change',
+  );
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Digit1');
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle?.mode),
+    'hand',
+    'already-held quickbar rifle uses the same cock command',
+  );
+  await page.waitForFunction(() => {
+    const { inventory, session } = globalThis.primaryActionTest;
+    if (session.sim.dead) {
+      throw new Error(`Actor died during quickbar cock: ${session.sim.dead.cause}`);
+    }
+    return !inventory.hands.right.firearm?.cycle;
+  });
   assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
   process.stdout.write(
-    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, and head-locked AKM shot audio.\n',
+    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, head-locked AKM shot audio, inventory-owned U/cock labels, and held quickbar cocking.\n',
   );
 } finally {
   await browser?.close();

@@ -113,8 +113,9 @@ ignored by production builds and benchmark URLs. Chromium logic stages pair it w
 The stages assigned render-free mode in `test/browser/stage-mode.mjs` are `inventory-scroll`,
 `melee-build-click`, `primary-action`, `full-auto`, `save-controller-regressions`, the normal
 `save-storage` cases, `insecure-saves`, `stairs-traversal`, both `reading` contracts, `firefox-ui`,
-and quarantined `firefox-first-click`. The OPFS Continue autosave scenario is the intentional
-pixel-mode exception: it builds the production bundle and loads it through Vite preview.
+and quarantined `firefox-first-click`. The Chromium OPFS Continue autosave scenario and the
+quarantined Firefox IndexedDB Continue scenario are intentional pixel-mode exceptions: each builds
+the production bundle and loads it through Vite preview.
 
 The `melee-build-click` logic stage is newly render-free. Add future stages to the shared mode
 helper and use its URL/launch helpers together so the render choice and browser flags stay aligned.

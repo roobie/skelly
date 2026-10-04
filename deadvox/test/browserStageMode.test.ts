@@ -13,7 +13,12 @@ describe('browser stage rendering mode', () => {
     expect(browserStageMode('stairs-lighting')).toBe('pixel');
     expect(browserStageMode('save-storage-opfs-continue')).toBe('pixel');
     expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-gl=swiftshader');
+    expect(browserStageMode('save-storage-indexeddb-continue')).toBe('pixel');
+    expect(browserStageArgs('save-storage-indexeddb-continue')).toContain('--use-gl=swiftshader');
     expect(browserStageUrl('save-storage-opfs-continue', 'http://localhost/?seed=1&render=0')).toBe(
+      'http://localhost/?seed=1',
+    );
+    expect(browserStageUrl('save-storage-indexeddb-continue', 'http://localhost/?seed=1&render=0')).toBe(
       'http://localhost/?seed=1',
     );
     expect(browserStageArgs('stairs-lighting')).toContain('--use-gl=swiftshader');

@@ -24,8 +24,13 @@ const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
 const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
 const busyLockOnly = autosaveOnly && autosaveScenario === 'busy-lock';
 const productionBundleStage =
-  browserName === 'chromium' && autosaveOnly && requestedAutosaveBackend === 'opfs' && autosaveScenario === 'continue';
-const stageId = productionBundleStage ? 'save-storage-opfs-continue' : 'save-storage';
+  autosaveOnly &&
+  autosaveScenario === 'continue' &&
+  ((browserName === 'chromium' && requestedAutosaveBackend === 'opfs') ||
+    (browserName === 'firefox' && requestedAutosaveBackend === 'indexeddb'));
+const productionBundleStageId =
+  browserName === 'chromium' ? 'save-storage-opfs-continue' : 'save-storage-indexeddb-continue';
+const stageId = productionBundleStage ? productionBundleStageId : 'save-storage';
 if (!['continue', 'replacement', 'busy-lock'].includes(autosaveScenario)) {
   throw new Error(`Unsupported autosave scenario ${autosaveScenario}`);
 }
@@ -41,6 +46,7 @@ const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url
 let vite;
 const startWebServer = async () => {
   if (productionBundleStage) {
+    process.stdout.write(`${browserName}: building production bundle for pixel stage ${stageId}\n`);
     await viteBuild({ configFile: viteConfig, root: projectRoot, logLevel: 'error' });
     vite = await vitePreview({
       configFile: viteConfig,

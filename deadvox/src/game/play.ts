@@ -14,7 +14,7 @@ import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, toHands, type UseOption, useOption } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -55,7 +55,8 @@ import { mountControlsCard } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
-import { DebugFirearmTrigger, debugFirearmShot, firearmHandlingFor } from './firearmHandling.ts';
+import { firearmHandlingFor } from './firearmHandling.ts';
+import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import {
   CONTROL_CODES,
   Input,
@@ -66,6 +67,7 @@ import {
 } from './input.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import { handlePlayMenuKey } from './menuKeys.ts';
 import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -152,13 +154,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       },
       heldPrimaryAction: (time, pressed, triggerHeld) => {
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
-        const weapon = config.debug && !debugTools?.buildOn && action.kind === 'firearm' ? action.item : undefined;
-        const deadlines = firearmTrigger.advance(
-          time,
-          weapon ? { uid: weapon.uid, rpm: firearmHandlingFor(weapon, registry).rpm } : undefined,
-          pressed,
-          triggerHeld,
-        );
+        const weapon =
+          config.debug && !debugTools?.buildOn && !queue.busy && action.kind === 'firearm' ? action.item : undefined;
+        const deadlines = firearmTrigger.advance(time, triggerWeapon(weapon, pressed), pressed, triggerHeld);
         if (weapon) {
           for (const deadline of deadlines) {
             fireDebugWeapon(weapon, deadline);
@@ -194,6 +192,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     notice: (text) => showNotice(text),
     onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
+    onFirearmEjection: (effect) => caseEffects.spawn(effect),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
@@ -210,6 +209,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     inventory,
     entities,
     queue,
+    firearms,
     quickbar,
     survival,
     rest,
@@ -220,6 +220,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     nameOf,
     search,
   } = session;
+  const useItem = (item: Item): string | undefined =>
+    registry.items.get(item.type)?.firearm ? firearms.cock(item.uid, sim.time) : survival.use(item);
   const { compression } = sim;
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
@@ -370,7 +372,20 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
     searching: session.searching,
     notice: showNotice,
-    use: (item) => survival.use(item),
+    use: useItem,
+    useOption: (item, reachView): UseOption => {
+      if (!registry.items.get(item.type)?.firearm) {
+        return useOption(item, reachView);
+      }
+      const reason = firearms.cockReason(item.uid);
+      return {
+        kind: 'use',
+        label: `Cock ${inventory.name(item)}`,
+        plan: reason
+          ? { ok: false, reason }
+          : { ok: true, time: firearmHandlingFor(item, registry).action.hand.durationSeconds },
+      };
+    },
     describe: (item) => survival.describe(item),
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
@@ -650,7 +665,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!at) {
       showNotice(`The ${inventory.name(item).toLowerCase()} isn't with you`);
     } else if (at.kind === 'hand' || registry.items.get(item.type)?.battery) {
-      const reason = survival.use(item);
+      const reason = useItem(item);
       if (reason) {
         showNotice(reason);
       }
@@ -722,23 +737,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return true;
   };
 
-  const handleMenuKey = (e: KeyboardEvent): boolean => {
-    if (debugTools?.handleKey(e)) {
-      syncMenuState();
-      return true;
-    }
-    if (e.code === CONTROL_CODES.inventory && !compression.locksInput) {
-      toggleInventory();
-      return true;
-    }
-    if (!screen.isOpen) {
-      return false;
-    }
-    if (screen.onKey(e)) {
-      e.preventDefault();
-    }
-    return true;
-  };
+  const handleMenuKey = (e: KeyboardEvent): boolean =>
+    handlePlayMenuKey(e, {
+      inventory: screen,
+      debug: debugTools,
+      locksInput: compression.locksInput,
+      toggleInventory,
+      syncMenuState,
+    });
 
   const handleGameplayKey = (e: KeyboardEvent): void => {
     if (handleMainMenuKey(e)) {
@@ -908,26 +914,38 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
-    const effect = debugFirearmShot({
+    const fired = firearms.fire({
       debugMode: config.debug,
-      inventory,
       item,
       feet: feet(),
       eye: eye(),
       yaw: input.yaw,
       pitch: input.pitch,
-      aim: lookDir(),
       seed: config.seed,
       simTime: time,
       blockSize: s,
     });
-    if (!effect) {
+    if (!fired) {
       return false;
     }
-    caseEffects.spawn(effect);
     const shot = firearmShotSound(item.type);
     session.playPlayerSound(shot.event, time, shot);
     return true;
+  };
+
+  const triggerWeapon = (weapon: Item | undefined, pressed: boolean) => {
+    if (!weapon) {
+      return;
+    }
+    const reason = firearms.fireReason(weapon.uid);
+    if (reason) {
+      if (pressed) {
+        showNotice(reason);
+      }
+      return;
+    }
+    const { rpm } = firearmHandlingFor(weapon, registry);
+    return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
   };
 
   performPrimaryAction = (hand: 'right' | 'left') => {
@@ -945,7 +963,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       }
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
-          showNotice('Firearms can only be fired in debug mode');
+          showNotice(
+            config.debug
+              ? (firearms.fireReason(action.item.uid) ?? 'Firearm is not ready')
+              : 'Firearms can only be fired in debug mode',
+          );
         }
         return;
       }
@@ -1141,7 +1163,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready);
-    view.updateHeld(dt, pose, survival.lit);
+    view.updateHeld(dt, pose, survival.lit, firearms.frames());
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */

@@ -26,7 +26,8 @@ excluded from that graph.
 `src/core/options.ts` supplies move/use plans, labels, refusal reasons and times.
 Survival retains registered queue actions and effects, not separate eligibility.
 Ordinary E chooses the quickest pocket; ordinary to-hands and five-spot drop ordering
-are retained. Quick move is Ctrl-click, or Cmd-click on macOS; Shift is unchanged.
+are retained. Quick move is Ctrl-click (Cmd-click on macOS) until d44 moves it
+to hold T and click, as BR ruled on 2026-10-04 (CONTROLS.md); Shift is unchanged.
 The binding only queues the ordinary whole-stack handling move, never transfers
 immediately or invokes use/eat/drink/switch.
 

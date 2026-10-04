@@ -108,6 +108,10 @@ no other test catches. So:
   - waits on wall-clock time for simulated work;
   - can pass vacuously;
   - near-duplicates another test.
+- **No flaky tests** (BR, 2026-10-03): "we shall not have them. If we can't make them
+  un-flaky, we must disable them from CI and get to the bottom of _why_ they are flakes".
+  A test that fails and then passes on a rerun is a flake. Fix it, or take it out of CI
+  with an issue for its root cause; never retry until green or raise its timeout.
 - Mutation proof is for tricky invariants only (ordering, reach, persistence, concurrency):
   show one mutant its test catches. Plain mappings and data-driven rows don't need one.
 - Browser stages stay few: a handful of smoke flows plus the stages that must check
