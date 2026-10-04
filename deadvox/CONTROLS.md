@@ -38,6 +38,15 @@ acting").
   ruling: holding left click performs a long use, and releasing it early
   cancels.
 
+- **R reload only in the default view (BR, 2026-10-04):** with a pump held,
+  hold at least 250 ms to load loose shells, double-press within 250 ms to rack,
+  and a short single tap does nothing. No reloadable item means no action.
+  Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
+  it will come from restable furniture in d45. Sleep remains on L.
+- **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
+  activate with the held-item primary action to unpack. No inventory Unpack/Load.
+  Opening takes 1.2 s and X cancels without loss; overflow becomes an ordinary pile.
+
 ## Principles
 
 1. **One verb, one input, in every state where the verb exists.** A key may mean
@@ -122,7 +131,7 @@ below).
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
 | F | interact with what's outlined | interact | — | — | — |
-| R | rest; again stops | reload (Slice 3) | rotate while dragging | stop resting | — |
+| R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
 | L | sleep; again stops | — | — | stop sleeping | — |
 | X | cancel handling | cancel | cancel handling | stop | stop |
 | 1–5 | take the slot's item into your hands; pressing the held item's slot puts it away | same | assign the selected item to the slot | — | — |
@@ -136,9 +145,12 @@ Notes on the proposal:
 - **Quickbar second press:** using an item already in your hands still calls
   the shared `Survival.use` path. A light primary action on either hand calls
   that same path; the other capabilities dispatch to their existing actions.
-- **R is overloaded by state** (rest when unready, reload when ready, rotate while
-  dragging). Each state is visible (weapon raised, a drag in progress). If that
-  reads as too much, reload moves to a key of its own; see open question 4.
+- **R never rests** in the default view (BR ruled). Reload currently maps only
+  the held pump; other firearms can supply the same binding later. Both real-time
+  thresholds live in `RELOAD_GESTURE_MS` in `src/game/reloadInput.ts`. The double
+  window is strictly less than 250 ms, so the first press cannot start a load.
+  Rest has no input binding until restable furniture (d45); inventory R rotation
+  is a different view. X still stops an existing rest, C continues after interruption.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.
@@ -174,6 +186,10 @@ actions stay reachable from the debug panel (Backquote) and keep single-key
 shortcuts only while the panel is open, or move under one prefix (Backquote then
 a letter). That frees the letters for shipped verbs.
 
+Debug noclip descends with **Backspace** (`CONTROL_CODES.descend`), not R, Ctrl,
+or the reserved Q/E lean keys. Its browser back-navigation default is prevented
+only in the pointer-locked default view; menu text editing retains Backspace.
+
 ## Open questions for BR
 
 1. **The two hands:** BR's initial right-hand/left-hand key mapping is open to
@@ -184,8 +200,8 @@ a letter). That frees the letters for shipped verbs.
 3. **Press-and-hold for long uses:** confirm as the rule for every long use (eat,
    drink, bandage, read, reload), with release before completion cancelling and
    nothing applied?
-4. **Reload:** R when ready (overloaded with rest), or its own key?
-   Recommendation: R when ready; rest isn't available while ready anyway.
+4. **Answered (BR, 2026-10-04):** R only (re)loads in the default view; Rest
+   has no dedicated key. Pump: hold loads, double-press racks, single tap does nothing.
 5. **Continue after an interruption:** keep C (crouch elsewhere), or make the
    interruption card a two-button choice clicked with the drawn cursor, freeing
    C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.

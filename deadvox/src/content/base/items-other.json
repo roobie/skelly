@@ -99,13 +99,12 @@
     },
     {
       "id": "shotshell_box",
-      "name": "Shotshell box (20)",
-      "category": "bag",
-      "weight": 40,
+      "name": "Sealed shotshell box (20)",
+      "category": "ammo",
+      "weight": 840,
       "size": [2, 2],
-      "description": "A cardboard box for twenty shells. Size and empty mass are gameplay estimates; Use the carried box to load one shell per job without unpacking it.",
-      "ammoBox": "12-gauge-00-buck",
-      "container": { "pockets": [{ "name": "Shells", "grid": [2, 2], "handling": 0.5 }] }
+      "description": "Sealed cardboard box of twenty 00-buck shells. Wield it and activate it to unpack; any loose shells that do not fit go into a pile at your feet. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
+      "unpack": { "item": "shell_12_gauge_00_buck", "count": 20 }
     },
     {
       "id": "spent_case_12_h_gauge_h_00_h_buck",

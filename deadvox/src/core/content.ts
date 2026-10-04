@@ -12,6 +12,7 @@ import {
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
+  type ItemDef,
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -241,12 +242,28 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
 
 type Report = (section: ContentSection, id: string, path: string, message: string) => void;
 
+const checkUnpacking = (item: ItemDef, registry: Registry, report: Report): void => {
+  if (!item.unpack) {
+    return;
+  }
+  const payload = registry.items.get(item.unpack.item);
+  if (!payload) {
+    report('items', item.id, '.unpack.item', `no item "${item.unpack.item}"`);
+  } else if (item.unpack.count > (payload.stack ?? 1)) {
+    report('items', item.id, '.unpack.count', 'payload must fit one stack');
+  }
+  if (item.container) {
+    report('items', item.id, '.unpack', 'sealed packages are not containers');
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   for (const item of registry.items.values()) {
     const battery = item.light?.power?.battery;
     if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
     }
+    checkUnpacking(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }

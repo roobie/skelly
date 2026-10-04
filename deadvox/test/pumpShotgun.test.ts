@@ -13,6 +13,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, type FirearmShotEffect, SHELL_LOAD_SECONDS } from '../src/game/firearmHandling.ts';
+import { ReloadInput } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const base = 'src/content/base';
@@ -40,7 +41,7 @@ const fixture = (content = registry) => {
       inventory.add(gun, { kind: 'hand', side: 'right' }) &&
       inventory.add(bag, { kind: 'worn' }) &&
       inventory.add(box, { kind: 'pocket', owner: bag, pocket: 0 }) &&
-      inventory.add(shells, { kind: 'pocket', owner: box, pocket: 0 })
+      inventory.add(shells, { kind: 'pocket', owner: bag, pocket: 0 })
     )
   ) {
     throw new Error('Pump fixture does not fit');
@@ -61,7 +62,7 @@ const fixture = (content = registry) => {
     mechanics.advanceTo(time);
   };
   const load = (time: number) => {
-    const refusal = mechanics.use(shells, time);
+    const refusal = mechanics.load(shells, time);
     if (refusal) {
       throw new Error(refusal);
     }
@@ -75,7 +76,7 @@ const fixture = (content = registry) => {
     finish(1.5, time + 1.5);
   };
   const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time, debugMode: false });
-  return { inventory, gun, shells, queue, mechanics, effects, shots, sounds, finish, load, rack, fire };
+  return { inventory, gun, bag, box, shells, queue, mechanics, effects, shots, sounds, finish, load, rack, fire };
 };
 
 const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = () => undefined) =>
@@ -102,21 +103,86 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
-  it('loads one shell directly from a carried ammunition box without needing nested-pocket UI access', () => {
+  it('cannot load authored shells from a sealed unopened box or expose box inventory Use', () => {
     const f = fixture();
-    const box = [...f.inventory.items()].find((item) => item.type === 'shotshell_box')!;
-    expect(f.mechanics.useOption(box)).toMatchObject({
-      label: 'Load one shell into held shotgun',
-      plan: { ok: true, time: SHELL_LOAD_SECONDS },
-    });
-    expect(f.mechanics.use(box, 0)).toBeUndefined();
-    f.finish(SHELL_LOAD_SECONDS, SHELL_LOAD_SECONDS);
-    expect(f.shells.count).toBe(19);
-    expect(f.gun.firearm?.tube).toEqual([shellType]);
-    box.pockets![0]!.splice(0);
-    expect(f.mechanics.useOption(box).plan).toEqual({ ok: false, reason: 'No compatible shells in this box' });
-    expect(f.mechanics.use(box, 1)).toBe('No compatible shells in this box');
+    f.inventory.consume(f.shells, 20);
+    expect(f.box.pockets).toBeUndefined();
+    expect(f.mechanics.supportsUse(f.box)).toBe(false);
+    expect(f.mechanics.use(f.box, 0)).toBe('No inventory Use action for this item');
+    expect(f.mechanics.loadNext(f.gun.uid, 0)).toBe('No loose compatible shells are carried');
+    expect(f.queue.jobs).toEqual([]);
+    expect(f.gun.firearm?.tube).toEqual([]);
+    expect(f.inventory.itemByUid(f.box.uid)).toBe(f.box);
   });
+
+  it('takes loose carried shells by ascending UID rather than pocket traversal order', () => {
+    const f = fixture();
+    f.inventory.consume(f.shells, 19);
+    const later = f.inventory.create(shellType);
+    expect(
+      f.inventory.add(later, { kind: 'pocket', owner: f.bag, pocket: 0, at: { x: 4, y: 0, rotated: false } }),
+    ).toBe(true);
+    f.bag.pockets![0]!.reverse();
+    expect(f.mechanics.loadNext(f.gun.uid, 0)).toBeUndefined();
+    expect(f.queue.jobs[0]).toMatchObject({ params: { ammoUid: f.shells.uid } });
+    f.finish(SHELL_LOAD_SECONDS, SHELL_LOAD_SECONDS);
+    expect(f.inventory.itemByUid(f.shells.uid)).toBeUndefined();
+    expect(f.inventory.itemByUid(later.uid)?.count).toBe(1);
+  });
+  it.each([
+    { available: 20, loaded: 4 },
+    { available: 2, loaded: 2 },
+  ])('holding R stops at $loaded shells with $available loose shells available', ({ available, loaded }) => {
+    const f = fixture();
+    f.inventory.consume(f.shells, 20 - available);
+    const input = new ReloadInput();
+    let now = 250;
+    const binding = {
+      uid: f.gun.uid,
+      busy: () => f.queue.busy || f.mechanics.busy,
+      load: () => f.mechanics.loadNext(f.gun.uid, now / 1000) === undefined,
+      rack: () => {
+        f.mechanics.cock(f.gun.uid, now / 1000);
+      },
+      cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
+    };
+    input.keyDown(0, binding);
+    input.advance(now, binding);
+    for (let i = 0; i < 5; i++) {
+      now += SHELL_LOAD_SECONDS * 1000;
+      f.finish(SHELL_LOAD_SECONDS, now / 1000);
+      input.advance(now, binding);
+    }
+    expect(f.gun.firearm?.tube).toHaveLength(loaded);
+    expect(f.inventory.itemByUid(f.shells.uid)?.count ?? 0).toBe(available - loaded);
+    expect(f.queue.jobs).toEqual([]);
+    input.keyUp(now);
+  });
+
+  it('R release cancels a partial insert without losing a shell or discarding unrelated queued handling', () => {
+    const f = fixture();
+    const input = new ReloadInput();
+    const binding = {
+      uid: f.gun.uid,
+      busy: () => f.queue.busy,
+      load: () => f.mechanics.loadNext(f.gun.uid, 0.25) === undefined,
+      rack: () => {
+        f.mechanics.cock(f.gun.uid, 0.25);
+      },
+      cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
+    };
+    input.keyDown(0, binding);
+    input.advance(250, binding);
+    f.finish(SHELL_LOAD_SECONDS / 2, 0.7);
+    f.queue.registerAction('test.other', () => undefined);
+    const other = f.queue.enqueueAction('test.other', 'Unrelated job', 1, {});
+    input.keyUp(750);
+    input.advance(1000, binding);
+    expect(f.shells.count).toBe(20);
+    expect(f.gun.firearm?.tube).toEqual([]);
+    expect(f.queue.jobs).toEqual([other]);
+  });
+
   it('conserves five loaded shells across tube/chamber, firing and manual hull ejection without an automatic cycle', () => {
     const f = fixture();
     expect(f.fire(0)).toBe(false);

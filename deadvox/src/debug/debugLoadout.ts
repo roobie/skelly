@@ -28,8 +28,7 @@ export const equipDebugFirearms = (
     if (
       !(
         inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: 'right' }) &&
-        inventory.add(box, { kind: 'pocket', owner: backpack, pocket: 0 }) &&
-        inventory.add(inventory.create('shell_12_gauge_00_buck', 20), { kind: 'pocket', owner: box, pocket: 0 })
+        inventory.add(box, { kind: 'pocket', owner: backpack, pocket: 0 })
       )
     ) {
       throw new Error('Could not equip pump preview loadout');

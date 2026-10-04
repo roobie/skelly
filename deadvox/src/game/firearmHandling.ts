@@ -264,31 +264,11 @@ export class FirearmMechanics {
 
   supportsUse(item: Item): boolean {
     const def = defOf(this.inventory.registry, item.type);
-    return Boolean(def.firearm || def.ammo || def.ammoBox);
-  }
-
-  private shellFrom(item: Item): Item | undefined {
-    const def = defOf(this.inventory.registry, item.type);
-    if (def.ammo) {
-      return item;
-    }
-    return item.pockets
-      ?.flatMap((pocket) => pocket.map((placed) => placed.item))
-      .find((shell) => defOf(this.inventory.registry, shell.type).ammo?.calibre === def.ammoBox);
+    return Boolean(def.firearm);
   }
 
   useOption(item: Item): UseOption {
-    const def = defOf(this.inventory.registry, item.type);
-    if (def.ammo || def.ammoBox) {
-      const shell = this.shellFrom(item);
-      const reason = shell ? this.loadReason(shell) : 'No compatible shells in this box';
-      return {
-        kind: 'use',
-        label: 'Load one shell into held shotgun',
-        plan: reason ? { ok: false, reason } : { ok: true, time: SHELL_LOAD_SECONDS },
-      };
-    }
-    const reason = this.cockReason(item.uid);
+    const reason = this.supportsUse(item) ? this.cockReason(item.uid) : 'No inventory Use action for this item';
     return {
       kind: 'use',
       label: `${this.isPump(item) ? 'Rack' : 'Cock'} ${this.inventory.name(item)}`,
@@ -312,6 +292,36 @@ export class FirearmMechanics {
       location = this.inventory.locate(location.owner);
     }
     return location?.kind === 'hand' || location?.kind === 'worn';
+  }
+
+  reloadableUid(): number | undefined {
+    return this.heldPump()?.uid;
+  }
+
+  /** Loose carried cartridges only; ascending UID makes the source order save-stable. */
+  loadNext(uid: number, time: number): string | undefined {
+    const gun = this.heldPump();
+    if (gun?.uid !== uid) {
+      return 'Pump shotgun is no longer held';
+    }
+    const reason = exportedActionReason(gun, this.inventory.registry, 'hand');
+    if (reason) {
+      return reason;
+    }
+    const { calibre } = firearmHandlingFor(gun, this.inventory.registry);
+    const [shell] = [...this.inventory.items()]
+      .filter((item) => this.carried(item) && defOf(this.inventory.registry, item.type).ammo?.calibre === calibre)
+      .sort((a, b) => a.uid - b.uid);
+    return shell ? this.load(shell, time) : 'No loose compatible shells are carried';
+  }
+
+  cancelLoad(uid: number): void {
+    const job = this.queue.jobs.find(
+      (entry) => entry.kind === 'action' && entry.jobType === LOAD_ACTION && entry.params.uid === uid,
+    );
+    if (job) {
+      this.queue.cancelJob(job);
+    }
   }
 
   loadReason(ammo: Item, completing = false): string | undefined {
@@ -356,12 +366,7 @@ export class FirearmMechanics {
   }
 
   use(item: Item, time: number): string | undefined {
-    const def = defOf(this.inventory.registry, item.type);
-    if (def.ammo || def.ammoBox) {
-      const shell = this.shellFrom(item);
-      return shell ? this.load(shell, time) : 'No compatible shells in this box';
-    }
-    return this.cock(item.uid, time);
+    return this.supportsUse(item) ? this.cock(item.uid, time) : 'No inventory Use action for this item';
   }
 
   describe(item: Item): string[] {

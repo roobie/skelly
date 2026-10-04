@@ -122,7 +122,8 @@ npm run validate   # base content; add paths to validate a mod on top
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (towns, a region map).
-- Fatigue is recovered by resting (R) and sleeping (L), better on a bed. The
+- Rest has no dedicated key; restable furniture interaction arrives in d45.
+- Fatigue is recovered by the rest system and sleeping (L), better on a bed. The
   status is numbers in the HUD for now. Only food, drink, lights and batteries
   can be used.
 - A light that's switched on shines only from your hands; put away, it goes off.

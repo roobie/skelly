@@ -155,14 +155,14 @@ const TRIGGER_ENTRIES = [
     {
       trigger: 'Fire a chambered pump shotgun with LMB; rack manually before the next shot.',
       debugHint:
-        '?debug=1&loadout=pump: Use the shotshell box or a loose shell stack to load, Use the shotgun to rack.',
+        '?debug=1&loadout=pump: wield and activate the sealed box to unpack; wield the pump, hold R to load loose shells, double-R to rack.',
       note: 'Placeholder candidate: two Winchester Model 12 near shots from BR’s CC0 library. Awaiting BR listening verdict. Loud 100 m hearing radius is a gameplay estimate.',
     },
   ],
   [
     'shotgun_rack_back',
     {
-      trigger: 'Use the held pump shotgun to start its backward hand stroke.',
+      trigger: 'Double-press R or Use Rack on the held pump to start its backward hand stroke.',
       note: 'BR-selected SpringySpringo source; split back clip. At hand start, unchanged exported timeline. Cut/level still awaiting BR verdict.',
     },
   ],
@@ -176,7 +176,8 @@ const TRIGGER_ENTRIES = [
   [
     'shotgun_insert',
     {
-      trigger: 'Use a carried shotshell box or loose shell stack; each press starts one 0.9 s loading job.',
+      trigger:
+        'Hold R with the pump in hand and loose shells carried; each insert is a 0.9 s job. Release cancels the partial job; a single tap does nothing.',
       note: 'Placeholder candidates: two single inserts from zer0_sol, not whole reload sequences. Awaiting BR listening verdict.',
     },
   ],

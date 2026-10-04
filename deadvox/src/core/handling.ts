@@ -181,6 +181,17 @@ export class HandlingQueue {
     this.announced = undefined;
   }
 
+  /** Withdraws one owned job without discarding unrelated queued handling. */
+  cancelJob(job: Job): void {
+    const index = this.jobs.indexOf(job);
+    if (index >= 0) {
+      this.jobs.splice(index, 1);
+      if (this.announced === job) {
+        this.announced = undefined;
+      }
+    }
+  }
+
   /** Spends `dt` seconds on the queue, finishing jobs in order. */
   tick(dt: number): TickResult {
     const result: TickResult = { done: [], failed: [], completedMoves: [] };

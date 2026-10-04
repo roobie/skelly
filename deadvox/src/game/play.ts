@@ -59,6 +59,7 @@ import {
   isMenuOpeningKey,
   KEY_BINDINGS,
   quickbarSlotForKey,
+  restKindForControl,
   worldActionForKey,
 } from './input.ts';
 import { startingLoadout } from './loadout.ts';
@@ -74,8 +75,10 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
+import type { ReloadBinding } from './reloadInput.ts';
 import type { RestKind } from './rest.ts';
 import { createSession } from './session.ts';
+import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -178,7 +181,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
-      descending: () => input.held.has(CONTROL_CODES.rest),
+      descending: () => input.held.has(CONTROL_CODES.descend),
     },
     // The session works in blocks; playback is in metres.
     audio: {
@@ -229,6 +232,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const useItem = (item: Item): string | undefined =>
     firearms.supportsUse(item) ? firearms.use(item, sim.time) : survival.use(item);
   const { compression } = sim;
+  const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
     input.pitch = session.restoredLook.pitch;
@@ -304,7 +308,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   /**
-   * R/L: starts resting or sleeping, or stops it on a second press of the same key
+   * L toggles sleep. Rest has no input binding until restable furniture (d45).
    * (SLICE-1.md, 1.8 follow-up). Does nothing during the Continue/Stop prompt, which
    * owns C and X instead, or while busy with something else (e.g. the other kind, or
    * the debug compression test).
@@ -616,17 +620,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Rest and sleep keys, each responsible for its own guard. */
-  const restActions = new Map<string, () => void>([
-    // R also descends in noclip (debug), but only while starting; stopping an active rest is fine.
-    [CONTROL_CODES.rest, () => (rest.action?.kind === 'rest' || !debugTools?.noclip) && toggleRest('rest')],
-    [CONTROL_CODES.sleep, () => toggleRest('sleep')],
-  ]);
-
   const playKeys = (code: string) => {
-    const restAction = restActions.get(code);
-    if (restAction) {
-      restAction();
+    const restKind = restKindForControl(code);
+    if (restKind) {
+      toggleRest(restKind);
       return;
     }
     const quick = quickbarSlotForKey(code);
@@ -634,6 +631,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (action === 'interact' && !compression.locksInput) {
       use();
     } else if (action === 'cancel') {
+      input.reload.cancel();
       queue.cancel();
       if (rest.action) {
         rest.stop(); // X also stops resting/sleeping at once, the same as Stop after an interruption
@@ -683,24 +681,56 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       syncMenuState,
     });
 
-  const handleGameplayKey = (e: KeyboardEvent): void => {
+  /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
+  const reloadBinding = (): ReloadBinding | undefined => {
+    if (!input.locked || input.menuPointer || compression.locksInput || sim.paused || sim.dead || debugTools?.buildOn) {
+      return;
+    }
+    const uid = firearms.reloadableUid();
+    if (uid === undefined) {
+      return;
+    }
+    return {
+      uid,
+      busy: () => queue.busy || firearms.busy,
+      load: () => {
+        const reason = firearms.loadNext(uid, sim.time);
+        if (reason) {
+          showNotice(reason);
+        }
+        return reason === undefined;
+      },
+      rack: () => {
+        const reason = firearms.cock(uid, sim.time);
+        if (reason) {
+          showNotice(reason);
+        }
+      },
+      cancelLoad: () => firearms.cancelLoad(uid),
+    };
+  };
+
+  const prepareGameplayKey = (e: KeyboardEvent): boolean => {
     if (handleMainMenuKey(e)) {
-      return;
+      return false;
     }
-    if (e.code === CONTROL_CODES.inventory) {
+    // Prevent an opening key from becoming text in the newly focused menu.
+    if (
+      e.code === CONTROL_CODES.inventory ||
+      (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false))
+    ) {
       e.preventDefault();
     }
-    // Prevent the opening key from becoming text in a field focused by the menu.
-    if (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false)) {
+    return !(e.repeat || sim.dead);
+  };
+
+  const handleGameplayKey = (e: KeyboardEvent): void => {
+    if (!prepareGameplayKey(e) || handleMenuKey(e) || timeKeys(e.code)) {
+      return;
+    }
+    if (e.code === CONTROL_CODES.reload) {
       e.preventDefault();
-    }
-    if (e.repeat || sim.dead) {
-      return;
-    }
-    if (handleMenuKey(e)) {
-      return;
-    }
-    if (timeKeys(e.code)) {
+      input.reload.keyDown(e.timeStamp, reloadBinding());
       return;
     }
     playKeys(e.code);
@@ -860,19 +890,24 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
   };
 
+  const noticeReason = (reason: string | undefined): void => {
+    if (reason) {
+      showNotice(reason);
+    }
+  };
+
   performPrimaryAction = (hand: 'right' | 'left') => {
     const action = selectPrimaryAction(registry, inventory.hands, hand);
     switch (action.kind) {
+      case 'unpack':
+        noticeReason(unpacking.activate(action.item));
+        return;
       case 'melee':
         swing(action.hand);
         return;
-      case 'light': {
-        const reason = survival.use(action.item);
-        if (reason) {
-          showNotice(reason);
-        }
+      case 'light':
+        noticeReason(survival.use(action.item));
         return;
-      }
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
           showNotice(
@@ -1086,7 +1121,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       yaw: input.yaw,
       pitch: input.pitch,
       intent: input.intent(),
-      descend: input.held.has('KeyR'),
+      descend: input.held.has(CONTROL_CODES.descend),
       dt,
     });
   };
@@ -1126,6 +1161,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
+    input.reload.advance(now, reloadBinding());
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
