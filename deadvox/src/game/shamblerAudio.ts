@@ -1,5 +1,5 @@
-import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Body } from '@mobgen/core/body.ts';
+import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 
 export const SHAMBLER_PITCH_CLAMP = [0.8, 1.2] as const;
 const REFERENCE_BODY_HEIGHT_METRES = 1.7;
@@ -32,7 +32,7 @@ const debugVoicePitch = (search: string): number => {
 /** Taller bodies resonate lower; square-root scaling keeps ordinary figure variation subtle. */
 export const shamblerBodyPitch = (
   body: Body,
-  search = typeof window === 'undefined' ? '' : window.location.search,
+  search = typeof globalThis.location === 'undefined' ? '' : globalThis.location.search,
 ): number => {
   const height = bodyHeight(body);
   const pitch = Math.sqrt(REFERENCE_BODY_HEIGHT_METRES / height);

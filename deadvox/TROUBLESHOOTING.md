@@ -65,7 +65,6 @@ test fails when it drifts.
 | Diagnostics | — | Mouse readout (bottom left, always on) | — |
 | Diagnostics | `F4` | Performance overlay | — |
 | Share | — | Camera pose, kept in the address bar | `cam=x,y,z,yaw,pitch,roll` |
-| Share | — | Smallest voice-size comparison pitch multiplier (debug only) | `voicePitch=<factor>` |
 | Share | — | Dump look settings (JSON), a button | — |
 <!-- debug-keys:end -->
 
