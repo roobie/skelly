@@ -1,8 +1,14 @@
+---
+read_if:
+  - you change crafting, skill progression, recipe knowledge or reading
+  - you change ownership of items or resumable actions
+---
+
 # Crafting ownership and planning
 
-Slice 2.4 implementation starts at the shared item-tree boundary, then adds the
-pure planner, persisted character state and shared core long actions. Work-item
-options/command wiring and the BR-gated panel follow.
+Slice 2.4 established the shared item-tree boundary, pure planner, persisted
+character state and shared core long actions. Slice 2.5 adds progression, recipe
+learning and reading; work-item options and command wiring use those same contracts.
 
 ## Item tree (F3)
 
@@ -43,7 +49,9 @@ Equivalent reserved-UID sets are visited once per quality prefix, not once per
 provider tuple. No feasible plan is rejected by a search-budget cutoff.
 
 Gather time is in **game seconds** (`handlingTime * CLOCK_RATIO`); work time is
-recipe game minutes times 60. Skill speed bonuses arrive in 2.5, not here.
+recipe game minutes times 60 before the character's skill modifier. Skill-gated
+crafting, source-agnostic practice awards and the modifier are owned by
+`src/core/character.ts`, `src/core/craftWork.ts` and `src/core/crafting.ts`.
 Preferences never fall back silently. Missing requirements include knowledge,
 skill gaps, best usable quality levels, station, and needed/raw-found counts per
 component group. Raw counts may compete across groups or with required tools;
@@ -57,11 +65,13 @@ reach snapshot and re-plan.
 
 ## Minimal character state
 
-`src/core/character.ts` owns skill levels and recipe knowledge. New characters
-start every declared skill at 0 and know the present base recipes: torch,
-candle and repair kit. The repair kit remains skill-gated at crafting level 1.
-The starting source is explicit and filtered to loaded recipe IDs; new arbitrary
-recipes are not automatically known. Books and practice belong to 2.5.
+`src/core/character.ts`, `Character`, owns skill levels, source-agnostic practice
+and recipe knowledge. Practice awards may be made by any activity; finishing a
+craft is its first source. `src/core/bookReading.ts`, `bookReadingHooks`, owns
+reading admission and completion while the single `LongActions` owner keeps its
+book UID and progress. Books teach recipes only, as BR ruled for Slice 2. The
+starting source stays explicit and filtered to loaded recipe IDs; reading adds
+knowledge without changing the book's item ownership.
 
 Snapshots and the canonical save payload persist `character.progression`.
 Restoration preserves the saved levels/knowledge instead of reseeding them and
@@ -69,8 +79,8 @@ validates skill definitions, recipe references, duplicate knowledge and levels.
 Older saves without this field are deliberately rejected: no migration or
 compatibility mode. Canonical numeric handling, including signed zero, is
 unchanged. The CLI now uses this same starting source as a hard knowledge check;
-unknown recipes cannot seed the component or tool closure. Skills stay pending
-until 2.5 and workstation behavior until 2.8.
+unknown recipes cannot seed the component or tool closure. Workstation behavior
+remains pending until 2.8.
 
 ## Shared core long actions (step 4)
 
@@ -161,7 +171,7 @@ Refusals name missing tool qualities or the first understocked component group;
 allocation competition is reported only when each chosen group is stocked alone.
 Clicks submit recipe/UID
 intents and revalidate live state; readouts never mutate work or own another tree.
-Panel styling and in-game acceptance still stop at BR's first-look gate.
+The panel remains a projection: `src/ui/crafting.ts`, `renderCrafting`, forwards explicit actions while core admission and readout owners determine eligibility and outcomes.
 
 This is mixed feature/validation/consolidation work, **not an isolated or
 line-reducing refactor**. The staged report names source, test, doc and content

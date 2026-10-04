@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { bookReadingHooks } from '../src/core/bookReading.ts';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { planCraft } from '../src/core/crafting.ts';
@@ -9,6 +10,7 @@ import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { craftRows } from '../src/ui/craftReadout.ts';
 
 const { registry } = buildRegistry(
   readdirSync('src/content/base')
@@ -29,6 +31,7 @@ const make = (saved?: {
   const character = new Character(registry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5 });
   sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);
+  sim.actions.reading = bookReadingHooks(inv, character);
   if (saved) {
     sim.restoreState(saved.simulation);
     sim.actions.restoreState(saved.action);
@@ -71,6 +74,61 @@ const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
 
 describe('core long actions', () => {
+  it('awards recipe-skill practice only when the craft finishes', () => {
+    const runtime = start();
+    expect(runtime.character.skills.crafting).toBe(0);
+    runtime.sim.actions.stop();
+    expect(runtime.character.skills.crafting).toBe(0);
+    expect(runtime.sim.actions.resume()).toBeUndefined();
+    const { duration } = runtime.payload;
+    runtime.sim.scheduler.advance(duration / runtime.sim.clock.ratio + 2);
+    expect(runtime.character.skills.crafting).toBe(1);
+    expect(runtime.inv.hands.right?.type).toBe('torch');
+    expect(runtime.sim.actions.job).toBeUndefined();
+  });
+  it('resumes reading the held book and teaches its recipes only once on completion', () => {
+    registry.recipes.set('reading_fixture', {
+      id: 'reading_fixture',
+      result: { item: 'torch', count: 1 },
+      time: 1,
+      skills: {},
+      qualities: {},
+      components: [[{ item: 'rag', count: 1 }]],
+    });
+    registry.items.set('sample_note', {
+      ...registry.items.get('sample_note')!,
+      book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingTime: 1 },
+    });
+    const runtime = make();
+    const item = runtime.inv.create('sample_note');
+    expect(runtime.inv.add(item, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.character.knownRecipes.has('reading_fixture')).toBe(false);
+    expect(runtime.sim.actions.beginReading(item.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
+    runtime.sim.actions.stop();
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'reading', stopped: true, elapsed: 10 });
+    expect(runtime.character.knownRecipes.has('reading_fixture')).toBe(false);
+    const restored = make(snapshot(runtime));
+    expect(restored.sim.actions.resume()).toBeUndefined();
+    const reading = restored.sim.actions.job;
+    if (reading?.jobType !== 'reading') {
+      throw new Error('Reading action was not resumed');
+    }
+    restored.sim.scheduler.advance((reading.duration - reading.elapsed) / restored.sim.clock.ratio + 2);
+    expect(restored.character.knownRecipes.has('reading_fixture')).toBe(true);
+    expect(
+      craftRows({
+        registry,
+        character: restored.character,
+        reach: restored.reach(),
+        preferences: {},
+        startReason: undefined,
+      }).some((row) => row.id === 'reading_fixture'),
+    ).toBe(true);
+    expect(restored.sim.actions.job).toBeUndefined();
+    expect(restored.inv.itemByUid(item.uid)?.type).toBe('sample_note');
+    expect(restored.character.knownRecipes.size).toBe(new Character(registry).knownRecipes.size + 1);
+  });
   it('insufficient bounded drop room retains all cancel inputs and a stopped descriptor', () => {
     const runtime = start();
     for (const pos of dropSpots([0, 0, 0])) {

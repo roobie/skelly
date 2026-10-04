@@ -5,6 +5,7 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
+import { Character, practiceForNextLevel } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -437,24 +438,60 @@ describe('snapshot state components', () => {
     if (removedRecipe === undefined) {
       throw new Error('starter character has no known recipe');
     }
-    const savedLevel = actor.skills.crafting! + 1;
-    actor.skills.crafting = savedLevel;
+    const firstThreshold = practiceForNextLevel(actor.skills.crafting!);
+    const award = firstThreshold + practiceForNextLevel(actor.skills.crafting! + 1) / 2;
+    actor.awardPractice('crafting', award);
+    const savedLevel = actor.skills.crafting!;
+    const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);
-    actor.skills.crafting = savedLevel + 1;
+    actor.awardPractice('crafting', practiceForNextLevel(savedLevel));
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loadedRuntime = createRuntime(decoded.snapshot);
     const loaded = loadedRuntime.session.character;
     expect(loaded.skills.crafting).toBe(savedLevel);
-    loaded.skills.crafting = -0;
-    const zero = await decodeSave(await encodeFixture(capture(loadedRuntime)), {
-      version: formatVersion,
-      contentLookup,
-    });
-    expect(Object.is(createRuntime(zero.snapshot).session.character.skills.crafting, -0)).toBe(true);
+    expect(loaded.practice.crafting).toBe(savedPractice);
     expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
     expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
     expect(actor.skills.crafting).toBe(savedLevel + 1);
+  });
+
+  it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
+    const actor = new Character(registry);
+    const threshold = practiceForNextLevel(actor.skills.crafting!);
+    actor.awardPractice('crafting', threshold / 2);
+    expect(actor.skills.crafting).toBe(0);
+    expect(actor.practice.crafting).toBe(threshold / 2);
+    actor.awardPractice('crafting', threshold / 2);
+    expect(actor.skills.crafting).toBe(1);
+    expect(actor.practice.crafting).toBe(0);
+  });
+
+  it('round-trips a stopped reading action with its held book uid and progress', async () => {
+    const runtime = createRuntime();
+    const feet = runtime.player.body.pos.map(Math.floor) as Vec3;
+    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
+      if (item) {
+        expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
+      }
+    }
+    const book = runtime.inventory.create('field_manual');
+    expect(runtime.inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
+    runtime.sim.actions.stop();
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
+
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.actions.job).toMatchObject({
+      jobType: 'reading',
+      stopped: true,
+      bookUid: book.uid,
+      elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
+    });
+    expect(loaded.inventory.itemByUid(book.uid)?.type).toBe('field_manual');
   });
 
   it('restores after eating the quickbar-bound item without a dangling UID', () => {
@@ -912,7 +949,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 10,
+  schemaVersion: 11,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

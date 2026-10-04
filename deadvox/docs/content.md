@@ -1,3 +1,9 @@
+---
+read_if:
+  - you add or change content schemas or content validation
+  - you change recipe, book or reachability content contracts
+---
+
 # Content sections and recipes
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
@@ -38,9 +44,9 @@ storage or save format**. No container is consumed by these recipes. Before any
 later recipe uses part of a liquid, its stored quantity-to-ml mapping, saved
 partial use and container retention must be approved. Torch/candle result
 metadata has no light or burning component yet; those mechanics belong to 2.9.
-Recipes are data only, not a crafting runtime or knowledge system. No save change. The simulation fingerprint changes with the schema/core
-source and base-content changes, intentionally accepted pre-alpha. Old saves with
-the earlier simulation/content identity are refused; no migration is provided.
+Slice 2.2 introduced recipes as data only. Slice 2.5 adds crafting, progression,
+and book knowledge; `src/core/saveFormat.ts`, `SCHEMA_VERSION`, and the simulation
+fingerprint require old saves to be refused rather than migrated during pre-alpha.
 
 ## Static reachability (Slice 2.3)
 
@@ -63,25 +69,22 @@ components and sufficient tool-quality levels before adding a result. A recipe
 cannot bootstrap its own quality, directly or through another tool-dependent
 recipe. Independently found or grounded crafted providers are valid.
 
-Knowledge is now a hard source check: both closures use the same explicit
-starting recipes as a new character. An unknown recipe fails at `.knowledge`,
-and its result cannot ground another recipe's components or tool quality.
-Teaching books extend this source in 2.5; declaration alone is not knowledge.
-Positive skill requirements and named-but-unplaced workstations still emit
-`pending: no source yet` with their owning milestone and pending count. They
-**are not accepted**, but do not fail CI yet. Level 0 needs no progression source.
-Placed workstation declarations are discoverable; bench behavior stays 2.8.
-`PENDING_REACHABILITY` pins only the remaining 2.5/2.8 hand-offs.
+Knowledge is a hard source check: the explicit starting recipes and recipes
+listed by found books are the only knowledge sources. An unknown recipe fails at
+`.knowledge`, and its result cannot ground another recipe's components or tool
+quality. `src/core/reachability.ts`, `checkReachability`, closes reachable
+practice sources before accepting positive skill requirements. A recipe that
+cannot be learned and completed from reachable sources cannot bootstrap its own
+skill. Level 0 needs no progression source. Named-but-unplaced workstations
+remain pending until Slice 2.8; `PENDING_REACHABILITY` pins only that hand-off.
+`src/core/schema.ts`, `BookSchema`, owns book teaching data; the `paperback` has
+no book component and remains inert.
 
-Current base: 33 found types, 36 in the component closure; 36 reachable / 40
-defined eligible content types. The explicit `CONTENT_COUNT_EXCLUSIONS` policy
-leaves out the current debug-only items, spent case, and severed body-part items;
-extend this set when new excluded definitions land. `work_in_progress` is also
-excluded: it is runtime escrow, not acquired loot or a recipe result. Defined eligible but
-unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest (2.11 owns
-these gaps). Stick and wax each have one weight-1 entry in `junk`, used by placed
-crates and nested `shed_tools`; no other material/loot growth is included.
-The count does not imply full acceptance of the remaining positive-skill prerequisite.
-Reachability issues use the winning recipe's existing merge origin, preserving
-source file and index through ordered overrides/removal. Reachability stores no
-closure/state; runtime progression and crafting are separate 2.4 owners.
+`CONTENT_COUNT_EXCLUSIONS` keeps runtime escrow and the project's debug/case/body-part
+policy out of acquired-content totals; `npm run validate` reports the effective
+closure and any remaining unreachable content. Content growth beyond the
+crafting/books milestone remains with Slice 2.11. Reachability issues use the
+winning recipe's merge origin, preserving source file and index through ordered
+overrides/removal. `src/core/character.ts`, `Character`, owns live practice and
+knowledge; `src/core/reachability.ts`, `checkReachability`, independently proves
+that their sources are available from placed loot.

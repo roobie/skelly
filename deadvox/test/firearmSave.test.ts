@@ -19,7 +19,7 @@ const { registry } = buildRegistry(
 );
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 10,
+  schemaVersion: 11,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

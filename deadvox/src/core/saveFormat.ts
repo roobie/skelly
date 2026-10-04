@@ -132,7 +132,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -206,8 +206,12 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
-const progression = obj({ skills: record(nonNegativeInt), knownRecipes: arr(str({ nonEmpty: true })) });
 const nonNegative = num({ min: 0 });
+const progression = obj({
+  skills: record(nonNegativeInt),
+  practice: record(nonNegative),
+  knownRecipes: arr(str({ nonEmpty: true })),
+});
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
@@ -319,11 +323,13 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
       workUid: opt(positiveInt),
+      bookUid: opt(positiveInt),
+      duration: opt(positive),
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
@@ -1060,7 +1066,15 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
 function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
-  let owns = job?.jobType !== 'craft';
+  let owns = job?.jobType !== 'craft' && job?.jobType !== 'reading';
+  if (
+    job?.jobType === 'reading' &&
+    [snapshot.character.inventory.hands.right, snapshot.character.inventory.hands.left].some(
+      (item) => item?.uid === job.bookUid && item.type !== WORK_IN_PROGRESS,
+    )
+  ) {
+    owns = true;
+  }
   for (const { item } of savedItemTree(snapshot.character.inventory)) {
     if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
       throw new Error('Invalid craft work payload');
@@ -1070,7 +1084,7 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     }
   }
   if (!owns) {
-    throw new Error('Missing craft work item');
+    throw new Error(job?.jobType === 'reading' ? 'Missing reading book' : 'Missing craft work item');
   }
 }
 
@@ -1106,6 +1120,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   for (const skill of Object.keys(snapshot.character.progression.skills)) {
     check('skill', skill, `character.progression.skills.${skill}`);
+  }
+  for (const skill of Object.keys(snapshot.character.progression.practice)) {
+    check('skill', skill, `character.progression.practice.${skill}`);
   }
   for (const [index, recipe] of snapshot.character.progression.knownRecipes.entries()) {
     check('recipe', recipe, `character.progression.knownRecipes[${index}]`);

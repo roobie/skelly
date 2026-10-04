@@ -13,7 +13,13 @@ export interface RestAction {
 }
 export type LongJob =
   | { jobType: RestKind; stopped: boolean; last: number; elapsed: number; rest: RestAction }
-  | { jobType: 'craft'; stopped: boolean; last: number; workUid: number };
+  | { jobType: 'craft'; stopped: boolean; last: number; workUid: number }
+  | { jobType: 'reading'; stopped: boolean; last: number; bookUid: number; elapsed: number; duration: number };
+export interface ReadingActionHooks {
+  validate: (bookUid: number) => string | undefined;
+  duration: (bookUid: number) => number | undefined;
+  finish: (bookUid: number) => void;
+}
 export interface LongActionState {
   job: LongJob | null;
 }
@@ -27,6 +33,39 @@ export interface CraftActionHooks {
   finish: (uid: number) => void;
   cancel: (uid: number) => void;
 }
+const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
+  const { rest, elapsed } = job;
+  if (
+    'workUid' in job ||
+    !Number.isFinite(elapsed) ||
+    elapsed < 0 ||
+    !rest ||
+    rest.kind !== job.jobType ||
+    !Number.isFinite(rest.rate) ||
+    !Number.isFinite(rest.startFatigue) ||
+    rest.startFatigue < 0 ||
+    rest.startFatigue > 100 ||
+    typeof rest.label !== 'string'
+  ) {
+    throw new Error('Invalid rest descriptor');
+  }
+};
+
+const validateReading = (job: Extract<LongJob, { jobType: 'reading' }>): void => {
+  if (
+    !Number.isSafeInteger(job.bookUid) ||
+    job.bookUid < 1 ||
+    !Number.isFinite(job.elapsed) ||
+    job.elapsed < 0 ||
+    !Number.isFinite(job.duration) ||
+    job.duration <= 0 ||
+    job.elapsed > job.duration ||
+    'rest' in job
+  ) {
+    throw new Error('Invalid reading descriptor');
+  }
+};
+
 export const validateLongJob = (job: LongJob | null, time: number): void => {
   if (job === null) {
     return;
@@ -34,33 +73,28 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
   if (!Number.isFinite(job.last) || job.last < 0 || job.last > time || typeof job.stopped !== 'boolean') {
     throw new Error('Invalid long action cursor');
   }
-  if (job.jobType === 'craft') {
-    if (!Number.isSafeInteger(job.workUid) || job.workUid < 1 || 'rest' in job || 'elapsed' in job) {
-      throw new Error('Invalid craft descriptor');
-    }
-  } else if (job.jobType === 'rest' || job.jobType === 'sleep') {
-    if (
-      'workUid' in job ||
-      !Number.isFinite(job.elapsed) ||
-      job.elapsed < 0 ||
-      !job.rest ||
-      job.rest.kind !== job.jobType ||
-      !Number.isFinite(job.rest.rate) ||
-      !Number.isFinite(job.rest.startFatigue) ||
-      job.rest.startFatigue < 0 ||
-      job.rest.startFatigue > 100 ||
-      typeof job.rest.label !== 'string'
-    ) {
-      throw new Error('Invalid rest descriptor');
-    }
-  } else {
-    throw new Error('Unknown long action kind');
+  switch (job.jobType) {
+    case 'craft':
+      if (!Number.isSafeInteger(job.workUid) || job.workUid < 1 || 'rest' in job || 'elapsed' in job) {
+        throw new Error('Invalid craft descriptor');
+      }
+      return;
+    case 'reading':
+      validateReading(job);
+      return;
+    case 'rest':
+    case 'sleep':
+      validateRest(job);
+      return;
+    default:
+      throw new Error('Unknown long action kind');
   }
 };
 
 export class LongActions {
   private current: LongJob | undefined;
   craft: CraftActionHooks | undefined;
+  reading: ReadingActionHooks | undefined;
   notice: (text: string) => void = () => undefined;
   private readonly sim: Simulation;
   constructor(sim: Simulation) {
@@ -72,7 +106,9 @@ export class LongActions {
   }
   get rest(): RestAction | undefined {
     const job = this.current;
-    return job && job.jobType !== 'craft' && (!job.stopped || this.sim.compression.interruption !== undefined)
+    return job &&
+      (job.jobType === 'rest' || job.jobType === 'sleep') &&
+      (!job.stopped || this.sim.compression.interruption !== undefined)
       ? job.rest
       : undefined;
   }
@@ -87,6 +123,9 @@ export class LongActions {
     if (state.job?.jobType === 'craft' && !this.craft?.owns(state.job.workUid)) {
       throw new Error('Missing craft work item');
     }
+    if (state.job?.jobType === 'reading' && (!this.reading || this.reading.validate(state.job.bookUid))) {
+      throw new Error('Missing or unavailable reading book');
+    }
     this.current = state.job === null ? undefined : structuredClone(state.job);
   }
   startRest(kind: RestKind, rate: number): string | undefined {
@@ -95,6 +134,9 @@ export class LongActions {
     }
     if (this.current?.jobType === 'craft' && !this.current.stopped) {
       return 'Stop crafting first';
+    }
+    if (this.current?.jobType === 'reading' && !this.current.stopped) {
+      return 'Stop reading first';
     }
     const result = this.sim.compress();
     if (!result.ok) {
@@ -116,6 +158,9 @@ export class LongActions {
     }
     if (this.current?.jobType === 'craft' && !this.current.stopped) {
       return 'Another craft is active';
+    }
+    if (this.current?.jobType === 'reading' && !this.current.stopped) {
+      return 'Stop reading first';
     }
     const reason = this.craft.admit(plan);
     if (reason) {
@@ -155,10 +200,35 @@ export class LongActions {
     }
     return undefined;
   }
+  beginReading(bookUid: number): string | undefined {
+    if (!this.reading) {
+      return 'Missing reading action owner';
+    }
+    if (this.current && !this.current.stopped) {
+      return 'Stop the current action first';
+    }
+    const reason = this.reading.validate(bookUid);
+    if (reason) {
+      return reason;
+    }
+    const duration = this.reading.duration(bookUid);
+    if (duration === undefined || !Number.isFinite(duration) || duration <= 0) {
+      return 'Invalid reading time';
+    }
+    const result = this.sim.compress();
+    if (!result.ok) {
+      return result.reason;
+    }
+    this.current = { jobType: 'reading', stopped: false, last: this.sim.time, bookUid, elapsed: 0, duration };
+    return undefined;
+  }
   startCraft(workUid: number): string | undefined {
     const reason = this.craft?.validate(workUid);
     if (!this.craft || reason) {
       return reason ?? 'Missing craft action owner';
+    }
+    if (this.current?.jobType === 'reading' && !this.current.stopped) {
+      return 'Stop reading first';
     }
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
@@ -178,6 +248,11 @@ export class LongActions {
       const reason = this.craft?.validate(this.current.workUid);
       if (!this.craft || reason) {
         return reason ?? 'Missing craft action owner';
+      }
+    } else if (this.current.jobType === 'reading') {
+      const reason = this.reading?.validate(this.current.bookUid);
+      if (!this.reading || reason) {
+        return reason ?? 'Missing reading action owner';
       }
     }
     const result = this.sim.compress();
@@ -219,38 +294,57 @@ export class LongActions {
       this.current.stopped = true;
     }
   }
+  private validateOwner(job: LongJob): string | undefined {
+    if (job.jobType === 'craft') {
+      return this.craft?.validate(job.workUid) ?? (this.craft ? undefined : 'Missing craft action owner');
+    }
+    if (job.jobType === 'reading') {
+      return this.reading?.validate(job.bookUid) ?? (this.reading ? undefined : 'Missing reading action owner');
+    }
+    return undefined;
+  }
+  private advanceJob(job: LongJob, seconds: number): boolean {
+    if (job.jobType === 'craft') {
+      return this.craft!.advance(job.workUid, seconds);
+    }
+    if (job.jobType === 'reading') {
+      job.elapsed = Math.min(job.duration, job.elapsed + seconds);
+      return job.elapsed === job.duration;
+    }
+    job.elapsed += seconds;
+    return this.sim.needs.fatigue <= 0;
+  }
+  private finishJob(job: LongJob): void {
+    try {
+      if (job.jobType === 'craft') {
+        this.craft!.finish(job.workUid);
+      } else if (job.jobType === 'reading') {
+        this.reading!.finish(job.bookUid);
+      } else {
+        this.notice('You feel rested');
+      }
+    } catch (error) {
+      this.failedEffect(job, error);
+    }
+  }
   private advance(time: number): void {
     const job = this.current;
     if (!job || job.stopped || !this.sim.compression.active) {
       return;
     }
-    if (job.jobType === 'craft') {
-      const reason = this.craft?.validate(job.workUid);
-      if (!this.craft || reason) {
-        job.stopped = true;
-        this.sim.compression.interrupt(reason ?? 'Missing craft action owner');
-        return;
-      }
+    const reason = this.validateOwner(job);
+    if (reason) {
+      job.stopped = true;
+      this.sim.compression.interrupt(reason);
+      return;
     }
     const seconds = Math.max(0, time - job.last) * this.sim.clock.ratio;
     job.last = time;
-    const finished = job.jobType === 'craft' ? this.craft!.advance(job.workUid, seconds) : this.sim.needs.fatigue <= 0;
-    if (job.jobType !== 'craft') {
-      job.elapsed += seconds;
-    }
-    if (!finished) {
+    if (!this.advanceJob(job, seconds)) {
       return;
     }
     this.current = undefined;
     this.sim.compression.stop();
-    if (job.jobType === 'craft') {
-      try {
-        this.craft!.finish(job.workUid);
-      } catch (error) {
-        this.failedEffect(job, error);
-      }
-    } else {
-      this.notice('You feel rested');
-    }
+    this.finishJob(job);
   }
 }

@@ -15,7 +15,7 @@ describe('npm run validate', () => {
   it.each([
     [
       'unknown-knowledge',
-      ['recipes[0].knowledge: recipe "unlearned_recipe" has no starting knowledge source (books arrive in 2.5)'],
+      ['recipes[0].knowledge: recipe "unlearned_recipe" has no starting or reachable book knowledge source'],
     ],
     ['unfound', ['recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable']],
     [

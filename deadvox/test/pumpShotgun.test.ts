@@ -425,7 +425,7 @@ describe('real pump ammunition', () => {
     const snapshot = s.snapshot({ worldId: 'pump-world', characterId: 'pump-character' });
     const saved = { ...snapshot, character: { ...snapshot.character, inventory: f.inventory.snapshotState() } };
     const version: SaveVersionComponents = {
-      schemaVersion: 10,
+      schemaVersion: 11,
       simulationHash: 'a'.repeat(64),
       generators: {},
       contentPacks: [],

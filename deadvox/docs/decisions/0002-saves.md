@@ -4,6 +4,8 @@ description: Decision for exact, versioned, crash-safe local saves of the Deadvo
 tags: [deadvox, adr, saves, persistence, determinism]
 created: 2026-09-28
 status: accepted
+read_if:
+  - you change save format, snapshot state or compatibility policy
 ---
 
 # 2. Save the simulation, not the runtime
@@ -342,7 +344,7 @@ systems now.
 | Slice | Upcoming state | Save representation / revisit |
 | --- | --- | --- |
 | 1 — Loot run | Current clock, needs, character body/inventory, edited chunks, furniture, piles, shamblers, spawn ledger, audio hearing state | Covered by the state table above. Step 1 converts queued handling jobs from closures to tagged descriptors (`jobType` + serializable parameters and progress); 1.9 omits them from the snapshot copy, so current jobs are still canceled on load. |
-| 2 — Craft and mend | Crafting, repair, disassembly and reading as long actions; skills/XP; recipe discovery; in-progress craft holding components | Revisit the exact job parameters, component escrow, skill IDs/XP and discovered-recipe IDs at Slice 2. Put progression under the character record and use the tagged job descriptor so later jobs can resume; no Slice 2 state is guessed into the 1.9 schema. |
+| 2 — Craft and mend | Crafting, repair, disassembly and reading as long actions; skills/practice; recipe discovery; in-progress craft holding components | Exact-version refusal lets these systems extend character and tagged-action state in place, without preserving an earlier decoder or migrating its saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`. |
 | 3 — Flesh and noise | Body parts/wounds; firearms, ammo, magazines/reloading; wall-attenuated noise; smell trail; zombie LOD tiers/hordes; light as a sense | Revisit schemas at Slice 3. Wounds and bodily conditions (including limp, illness and pain from `INTERFACE.md`) belong to the character. Persist a gun assembly generated from its gungen template and seed as item state, and include the gungen generator version in `versionIdentity`; ammo/magazines use the item tree. Active noise/smell stimuli and hordes are simulation state under the world/region; wall occlusion and light fields are derived from saved geometry and sources. Ready/block stance is held-input state and resets to unready on load; transient bodily cue animation/cooldowns reset, while their wound/condition causes persist. |
 | 4 — The region | Region map, towns/sites, weather/temperature, voxel light, abstract hordes and catch-up | The world is already keyed by 512 m region, with chunk/area records nested within it. Revisit the exact region metadata, catch-up cursors and persistent horde representation at Slice 4; deterministic unmodified terrain regenerates under the matching version. |
 | 5 — Holding ground | Construction, locks, barricades, generators, batteries, electricity, fire/smoke | Constructed blocks remain chunk diffs; doors/machines remain block entities in their region. Revisit power-network state, fuel/charge, fire/smoke timers and away-catch-up state at Slice 5; derived graphs/light are rebuilt. |

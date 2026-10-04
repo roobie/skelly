@@ -18,8 +18,8 @@ const fresh = () => buildRegistry(sources).registry;
 const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, pos: [0, 0, 0] });
 
 describe('static reachability', () => {
-  it('pins the pending classes and their owning milestones, without accepting them', () => {
-    expect(PENDING_REACHABILITY).toEqual({ skill: '2.5', workstation: '2.8' });
+  it('hard-checks practice sources while keeping only unplaced workstations pending', () => {
+    expect(PENDING_REACHABILITY).toEqual({ workstation: '2.8' });
     const registry = fresh();
     registry.recipes.clear();
     registry.furniture.set('unplaced_bench', {
@@ -37,13 +37,17 @@ describe('static reachability', () => {
       workstation: 'unplaced',
     });
     const result = checkReachability(registry);
-    expect(result.issues).toEqual([]);
+    expect(result.issues).toContainEqual({
+      recipe: 'torch',
+      path: '.skills.crafting',
+      message: 'no reachable practice source can raise "crafting" to level 1',
+    });
     expect(result.pending.map(({ kind, path, message }) => [kind, path, message])).toEqual([
-      ['skill', '.skills.crafting', 'pending: no source yet (2.5)'],
       ['workstation', '.workstation', 'pending: no source yet (2.8)'],
     ]);
     registry.furniture.get('crate')!.workstation = { id: 'unplaced' };
-    expect(checkReachability(registry).pending.map(({ kind }) => kind)).toEqual(['skill']);
+    expect(checkReachability(registry).pending).toEqual([]);
+    expect(checkReachability(registry).issues.map(({ path }) => path)).toEqual(['.skills.crafting']);
   });
 
   it('hard-rejects unknown knowledge and prevents its result from grounding a starting-known recipe', () => {
@@ -77,7 +81,7 @@ describe('static reachability', () => {
     expect(unknown.issues).toContainEqual({
       recipe: 'unlearned',
       path: '.knowledge',
-      message: expect.stringContaining('starting knowledge'),
+      message: expect.stringContaining('knowledge source'),
     });
     expect(unknown.components.has('unlearned_tool')).toBe(false);
     expect(unknown.toolReachable.has('unlearned_tool')).toBe(false);
@@ -93,6 +97,35 @@ describe('static reachability', () => {
     expect(known.issues).toEqual([]);
     expect(known.components.has('unlearned_tool')).toBe(true);
     expect(known.toolReachable.has('torch')).toBe(true);
+  });
+
+  it('accepts book knowledge only when a teaching book is reachable in placed loot', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    registry.recipes.set('learned_from_book', {
+      id: 'learned_from_book',
+      result: { item: 'torch', count: 1 },
+      time: 1,
+      skills: {},
+      qualities: {},
+      components: [[{ item: 'rag', count: 1 }]],
+    });
+    registry.items.set('field_manual', {
+      ...registry.items.get('field_manual')!,
+      book: { title: 'Field Manual', recipes: ['learned_from_book'], readingTime: 5 },
+    });
+    const withBook = checkReachability(registry);
+    expect(withBook.found.has('field_manual')).toBe(true);
+    expect(withBook.issues).toEqual([]);
+
+    for (const [id, table] of registry.loot) {
+      registry.loot.set(id, { ...table, entries: table.entries.filter((entry) => entry.item !== 'field_manual') });
+    }
+    expect(checkReachability(registry).issues).toContainEqual({
+      recipe: 'learned_from_book',
+      path: '.knowledge',
+      message: expect.stringContaining('knowledge source'),
+    });
   });
 
   it('seeds only actual placed overrides, positive nested counts and spawnable zombie loot', () => {

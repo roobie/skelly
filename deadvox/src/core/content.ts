@@ -265,6 +265,16 @@ const checkItems = (registry: Registry, report: Report) => {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
     }
     checkUnpacking(item, registry, report);
+    if (item.book && item.category !== 'book') {
+      report('items', item.id, '.book', 'book component requires the book category');
+    }
+    if (registry.recipes.size > 0) {
+      item.book?.recipes.forEach((recipe, index) => {
+        if (!registry.recipes.has(recipe)) {
+          report('items', item.id, `.book.recipes[${index}]`, `no recipe "${recipe}"`);
+        }
+      });
+    }
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }

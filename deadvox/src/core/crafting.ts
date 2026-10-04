@@ -274,15 +274,16 @@ const allocateCombination = (
 const craftPlan = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
-  allocation: Allocation,
-  tools: CraftPlan['tools'],
+  { allocation, tools, character }: { allocation: Allocation; tools: CraftPlan['tools']; character: CraftCharacter },
 ): CraftPlan => {
   const workstation = recipe.workstation
     ? snapshot.workstations
         .filter((station) => stationMatches(recipe, snapshot, station))
         .sort((a, b) => a.entity.uid - b.entity.uid)[0]?.entity
     : undefined;
-  return { recipe: recipe.id, ...allocation, tools, ...(workstation ? { workstation } : {}), work: recipe.time * 60 };
+  const skillLevel = Math.max(0, ...Object.keys(recipe.skills).map((skill) => character.skills[skill] ?? 0));
+  const work = (recipe.time * 60) / (1 + skillLevel * 0.1);
+  return { recipe: recipe.id, ...allocation, tools, ...(workstation ? { workstation } : {}), work };
 };
 
 const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: CraftRequirements): string | undefined => {
@@ -359,7 +360,10 @@ export const planCraft = (
   }
 
   const cache = cachedPlans(snapshot, recipe);
-  const key = JSON.stringify(Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)));
+  const skillKey = Object.keys(recipe.skills)
+    .sort()
+    .map((skill) => [skill, character.skills[skill] ?? 0]);
+  const key = JSON.stringify([Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)), skillKey]);
   const componentReason = componentRefusal(snapshot, status, prefer);
   const cached = cache.get(key);
   if (cached !== undefined) {
@@ -371,7 +375,7 @@ export const planCraft = (
     for (const tools of toolSelections(toolNeeds, index, requirements)) {
       const allocation = allocateCombination(requirements, index, tools);
       if (allocation && (!best || compareAllocation(allocation, best) < 0)) {
-        best = craftPlan(recipe, snapshot, allocation, tools);
+        best = craftPlan(recipe, snapshot, { allocation, tools, character });
       }
     }
   }

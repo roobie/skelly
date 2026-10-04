@@ -25,6 +25,29 @@ describe('content', () => {
     }
   });
 
+  it('rejects books that teach a recipe absent from the merged registry', () => {
+    const source = 'book-reference-fixture.json';
+    const data: ContentFile = {
+      items: [
+        {
+          id: 'book_reference_fixture',
+          name: 'Fixture manual',
+          category: 'book',
+          weight: 1,
+          size: [1, 1],
+          book: { title: 'Fixture manual', recipes: ['missing_recipe'], readingTime: 1 },
+        },
+      ],
+    };
+    const result = buildRegistry([...base, { source, data }]);
+    expect(result.issues).toContainEqual({
+      source,
+      path: 'items[0].book.recipes[0]',
+      message: 'no recipe "missing_recipe"',
+    });
+    expect(result.registry.items.has('book_reference_fixture')).toBe(false);
+  });
+
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;

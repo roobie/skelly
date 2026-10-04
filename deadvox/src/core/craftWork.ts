@@ -1,5 +1,5 @@
 // Native craft effects and live admission. Item progress/inputs stay Inventory-owned.
-import type { CraftCharacter } from './character.ts';
+import type { Character } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import { admissionRefusal } from './crafting.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
@@ -18,7 +18,7 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
 
 export const craftActionHooks = (
   inventory: Inventory,
-  character: CraftCharacter,
+  character: Character,
   reach: () => ReachSnapshot,
   feet: () => Vec3,
 ): CraftActionHooks => ({
@@ -50,8 +50,12 @@ export const craftActionHooks = (
   },
   finish: (uid) => {
     const item = inventory.itemByUid(uid);
-    if (item) {
+    if (item?.work) {
+      const recipe = inventory.registry.recipes.get(item.work.recipe)!;
       inventory.releaseWork(item, true, feet());
+      for (const skill of Object.keys(recipe.skills)) {
+        character.awardPractice(skill, recipe.time);
+      }
     }
   },
   cancel: (uid) => {

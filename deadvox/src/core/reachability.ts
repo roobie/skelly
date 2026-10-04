@@ -6,7 +6,7 @@ import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** Deferred source contracts. Their owning milestones must promote these to hard checks. */
-export const PENDING_REACHABILITY = { skill: '2.5', workstation: '2.8' } as const;
+export const PENDING_REACHABILITY = { workstation: '2.8' } as const;
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
@@ -64,9 +64,17 @@ const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: s
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
 const closure = (
   registry: Registry,
-  found: ReadonlySet<string>,
-  tools: boolean,
-  knowledge: ReadonlySet<string>,
+  {
+    found,
+    tools,
+    knowledge,
+    skills,
+  }: {
+    found: ReadonlySet<string>;
+    tools: boolean;
+    knowledge: ReadonlySet<string>;
+    skills: ReadonlySet<string>;
+  },
 ): Set<string> => {
   const items = new Set(found);
   let previous: number;
@@ -75,6 +83,7 @@ const closure = (
     for (const recipe of registry.recipes.values()) {
       if (
         knowledge.has(recipe.id) &&
+        Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
         inputsReady(recipe, items) &&
         (!tools ||
           Object.entries(recipe.qualities).every(([quality, level]) => qualityReady(registry, items, quality, level)))
@@ -123,11 +132,6 @@ const pendingFor = (recipe: RecipeDef, workstations: ReadonlySet<string>): Pendi
   const defer = (kind: keyof typeof PENDING_REACHABILITY, path: string) => {
     pending.push({ recipe: recipe.id, path, kind, message: `pending: no source yet (${PENDING_REACHABILITY[kind]})` });
   };
-  for (const [skill, level] of Object.entries(recipe.skills)) {
-    if (level > 0) {
-      defer('skill', `.skills.${skill}`);
-    }
-  }
   if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
     defer('workstation', '.workstation');
   }
@@ -138,7 +142,11 @@ const recipeDiagnostics = (
   registry: Registry,
   components: ReadonlySet<string>,
   toolReachable: ReadonlySet<string>,
-  { workstations, knowledge }: { workstations: ReadonlySet<string>; knowledge: ReadonlySet<string> },
+  {
+    workstations,
+    knowledge,
+    skills,
+  }: { workstations: ReadonlySet<string>; knowledge: ReadonlySet<string>; skills: ReadonlySet<string> },
 ) => {
   const issues: RecipeDiagnostic[] = [];
   const pending: Pending[] = [];
@@ -147,7 +155,7 @@ const recipeDiagnostics = (
       issues.push({
         recipe: recipe.id,
         path: '.knowledge',
-        message: `recipe "${recipe.id}" has no starting knowledge source (books arrive in 2.5)`,
+        message: `recipe "${recipe.id}" has no starting or reachable book knowledge source`,
       });
     }
     recipe.components.forEach((group, g) => {
@@ -161,6 +169,15 @@ const recipeDiagnostics = (
         }
       });
     });
+    for (const [skill, level] of Object.entries(recipe.skills)) {
+      if (level > 0 && !skills.has(skill)) {
+        issues.push({
+          recipe: recipe.id,
+          path: `.skills.${skill}`,
+          message: `no reachable practice source can raise "${skill}" to level ${level}`,
+        });
+      }
+    }
     for (const [quality, level] of Object.entries(recipe.qualities)) {
       if (!qualityReady(registry, toolReachable, quality, level)) {
         issues.push({
@@ -175,16 +192,77 @@ const recipeDiagnostics = (
   return { issues, pending };
 };
 
+const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: ReadonlySet<string>) => {
+  const taught = new Set(known);
+  for (const item of found) {
+    for (const recipe of registry.items.get(item)?.book?.recipes ?? []) {
+      taught.add(recipe);
+    }
+  }
+  return taught;
+};
+
+const canPracticeRecipe = (
+  recipe: RecipeDef,
+  {
+    registry,
+    tools,
+    skills,
+    knowledge,
+    workstations,
+  }: {
+    registry: Registry;
+    tools: ReadonlySet<string>;
+    skills: ReadonlySet<string>;
+    knowledge: ReadonlySet<string>;
+    workstations: ReadonlySet<string>;
+  },
+): boolean =>
+  knowledge.has(recipe.id) &&
+  inputsReady(recipe, tools) &&
+  Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
+  Object.entries(recipe.qualities).every(([quality, level]) => qualityReady(registry, tools, quality, level)) &&
+  (typeof recipe.workstation !== 'string' || workstations.has(recipe.workstation));
+
+const reachableSkills = (
+  registry: Registry,
+  found: ReadonlySet<string>,
+  workstations: ReadonlySet<string>,
+  knowledge: ReadonlySet<string>,
+): Set<string> => {
+  const skills = new Set<string>();
+  let tools = new Set(found);
+  let changed: boolean;
+  do {
+    tools = closure(registry, { found, tools: true, knowledge, skills });
+    changed = false;
+    for (const recipe of registry.recipes.values()) {
+      if (canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations })) {
+        for (const skill of Object.keys(recipe.skills)) {
+          if (!skills.has(skill)) {
+            skills.add(skill);
+            changed = true;
+          }
+        }
+      }
+    }
+  } while (changed);
+  return skills;
+};
+
 export const checkReachability = (
   registry: Registry,
   known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
 ) => {
   const { found, workstations } = worldSources(registry);
-  const components = closure(registry, found, false, known);
-  const toolReachable = closure(registry, found, true, known);
+  const knowledge = knownRecipes(registry, found, known);
+  const skills = reachableSkills(registry, found, workstations, knowledge);
+  const components = closure(registry, { found, tools: false, knowledge, skills });
+  const toolReachable = closure(registry, { found, tools: true, knowledge, skills });
   const { issues, pending } = recipeDiagnostics(registry, components, toolReachable, {
     workstations,
-    knowledge: known,
+    knowledge,
+    skills,
   });
   const eligible = [...registry.items.keys()].filter((id) => !CONTENT_COUNT_EXCLUSIONS.has(id));
   return {
