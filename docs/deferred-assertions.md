@@ -25,6 +25,8 @@ move its row to the bottom section with the PR that pinned it.
 | Exact debug-readout coordinates, memory totals, revealed-coordinate list and FPS sample | `deadvox/test/playHud.test.ts` | Re-run the readout test; if telemetry fields change, review how each value is derived from the supplied measurement/geometry fixture | when telemetry fields change |
 | Exact HUD, interruption and death-summary prose and formatted clocks | `deadvox/test/playHud.test.ts`, `deadvox/test/hud.test.ts`, `deadvox/test/death.test.ts`, `deadvox/test/restUi.test.ts` | Run `npm test`; manually review play HUD, quickbar, rest interruption and death-screen copy in the browser | when UI copy changes |
 | Generated world-column level enumeration and raw air-block ID | `deadvox/test/worldgen.test.ts` | Run the worldgen tests; inspect that generated columns cover contiguous chunk levels, have a semantic surface, and resolve air above ground | at worldgen changes |
+| Known-seed mobgen genomes and voxel-grid fingerprints | `mobgen/test/generate.test.ts` and its generated snapshot | Run generation/validation tests; start `npm run dev` in `mobgen`, then inspect representative gallery bodies for shape, proportions and buildability | at generator-change time |
+| Exact gait-clock, walk/attack pose and bone-transform outputs across seed/speed samples | `mobgen/test/poseEquivalence.test.ts` and its generated snapshot | Run the gait, attack and pose property suites; start `npm run dev` in `mobgen` and inspect representative walk and Lunge Grab cycles | at gait/attack generator-change time |
 
 ## Pinned since
 
