@@ -51,9 +51,9 @@ jobs:
       - name: Browser UI contract (Chromium)
         timeout-minutes: 9
         run: node tools/ui-browser-contract.mjs
-      - name: Melee build-click browser contract
-        timeout-minutes: 1
-        run: node test/browser/melee-build-click.mjs
+      # Quarantined (no-flaky rule): CI reports a positive-control failure and a first-load timeout;
+      # root-cause work remains open at https://github.com/roobie/skelly/issues/224.
+      # Local invocation: `npm run test:browser:melee-build-click`. Restore after the issue is resolved.
       - name: Primary-action browser contract
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs
@@ -113,9 +113,8 @@ jobs:
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/firefox-ui.mjs
-      - name: Firefox save-storage browser contract
-        timeout-minutes: 2
-        run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      # Quarantined (no-flaky rule): Firefox OPFS capability probe timed out in CI; root cause remains open at
+      # https://github.com/roobie/skelly/issues/224. Local invocation: `npm run test:browser:firefox:save-storage`.
       - name: Firefox inventory-scroll browser contract
         timeout-minutes: 1
         run: xvfb-run -a node test/browser/inventory-scroll.mjs firefox
