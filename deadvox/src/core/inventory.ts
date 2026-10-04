@@ -5,6 +5,7 @@
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { CraftPlan } from './crafting.ts';
 import {
   cellCount,
   couldFit,
@@ -19,6 +20,7 @@ import {
   isEmpty,
   itemAt,
   type Placed,
+  type PlacedState,
   restoreItem,
   restorePlaced,
   snapshotItem,
@@ -26,6 +28,7 @@ import {
   stackRoom,
   weightOf,
 } from './items.ts';
+import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } from './itemTree.ts';
 import type { Rolled } from './loot.ts';
 import type { WearSlot } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -42,6 +45,16 @@ export const HANDLING = {
 
 /** What one block of floor holds. */
 export const PILE_GRID: GridSize = { w: 8, h: 6 };
+export const WORK_IN_PROGRESS = 'work_in_progress';
+
+/** Ordinary dropping and craft retirement share the same bounded neighborhood. */
+export const dropSpots = (feet: Vec3): Vec3[] => [
+  feet,
+  [feet[0] + 1, feet[1], feet[2]],
+  [feet[0] - 1, feet[1], feet[2]],
+  [feet[0], feet[1], feet[2] + 1],
+  [feet[0], feet[1], feet[2] - 1],
+];
 
 export type HandSide = 'right' | 'left';
 
@@ -58,12 +71,7 @@ export interface Spot {
 }
 
 /** Where an item is now. */
-export type Location =
-  | { kind: 'hand'; side: HandSide }
-  | { kind: 'worn'; slot: WearSlot }
-  | { kind: 'pocket'; owner: Item; pocket: number; placed: Placed }
-  | { kind: 'pile'; pile: Pile; placed: Placed }
-  | { kind: 'furniture'; entity: BlockEntity; pocket: number; placed: Placed };
+export type Location = TreeLocation<Item, Pile, BlockEntity>;
 
 /** Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. */
 export type TargetState =
@@ -131,6 +139,7 @@ export class Inventory {
     if (!Number.isSafeInteger(state.nextItemUid) || state.nextItemUid < 1) {
       throw new Error('Invalid next item id');
     }
+    validateInventoryTree(registry, state);
     const restoredEntities = entities ?? BlockEntities.restoreState(registry, state.entities);
     if (entities) {
       entities.restoreState(state.entities);
@@ -154,24 +163,6 @@ export class Inventory {
     }
     for (const [type, count] of state.looted) {
       inventory.looted.set(type, count);
-    }
-    const seen = new Set<number>();
-    let maxUid = 0;
-    const visit = (item: Item) => {
-      if (!Number.isSafeInteger(item.uid) || item.uid < 1 || seen.has(item.uid)) {
-        throw new Error(`Invalid or duplicate item id ${item.uid}`);
-      }
-      seen.add(item.uid);
-      maxUid = Math.max(maxUid, item.uid);
-      for (const placed of (item.pockets ?? []).flat()) {
-        visit(placed.item);
-      }
-    };
-    for (const root of inventory.roots()) {
-      visit(root);
-    }
-    if (state.nextItemUid <= maxUid) {
-      throw new Error('Next item id does not exceed saved item ids');
     }
     return inventory;
   }
@@ -199,23 +190,25 @@ export class Inventory {
     return entity;
   }
 
-  /** Every owned item, lazily and carried-first; no secondary owner/index is created. */
-  *items(): IterableIterator<Item> {
-    const visit = function* (item: Item): IterableIterator<Item> {
-      yield item;
-      for (const pocket of item.pockets ?? []) {
-        for (const placed of pocket) {
-          yield* visit(placed.item);
-        }
-      }
-    };
-    for (const root of this.roots()) {
-      yield* visit(root);
-    }
+  /** The sole live item-tree projection; callers hold UIDs, not ownership caches. */
+  items() {
+    const inventory = this;
+    return walkItemTree(
+      itemRoots<Item, Pile, BlockEntity>({
+        hands: this.hands,
+        worn: this.worn,
+        get piles() {
+          return inventory.piles.values();
+        },
+        get entities() {
+          return inventory.entities.all;
+        },
+      }),
+    );
   }
 
   itemByUid(uid: number): Item | undefined {
-    for (const item of this.items()) {
+    for (const { item } of this.items()) {
       if (item.uid === uid) {
         return item;
       }
@@ -302,30 +295,9 @@ export class Inventory {
 
   /** Where an item is, searching hands, worn items, piles and every pocket inside them. */
   locate(item: Item): Location | undefined {
-    for (const side of SIDES) {
-      if (this.hands[side] === item) {
-        return { kind: 'hand', side };
-      }
-    }
-    for (const [slot, worn] of Object.entries(this.worn) as [WearSlot, Item][]) {
-      if (worn === item) {
-        return { kind: 'worn', slot };
-      }
-    }
-    for (const pile of this.piles.values()) {
-      const placed = pile.items.find((p) => p.item === item);
-      if (placed) {
-        return { kind: 'pile', pile, placed };
-      }
-    }
-    const inFurniture = this.inFurniture(item);
-    if (inFurniture) {
-      return inFurniture;
-    }
-    for (const root of this.roots()) {
-      const found = this.searchPockets(root, item);
-      if (found) {
-        return found;
+    for (const entry of this.items()) {
+      if (entry.item === item) {
+        return entry.location;
       }
     }
     return undefined;
@@ -346,6 +318,9 @@ export class Inventory {
     const from = this.locate(item);
     if (!from) {
       return refuse("It isn't there any more");
+    }
+    if (from.kind === 'work') {
+      return refuse('Inputs are held by the work item');
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
@@ -419,6 +394,99 @@ export class Inventory {
     return true;
   }
 
+  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
+  beginWork(plan: CraftPlan): Item | undefined {
+    if (this.hands.left || this.hands.right || !this.registry.recipes.has(plan.recipe)) {
+      return undefined;
+    }
+    const seen = new Set<number>();
+    for (const { item, count } of plan.components) {
+      if (
+        seen.has(item.uid) ||
+        this.itemByUid(item.uid) !== item ||
+        !this.locate(item) ||
+        !isEmpty(item) ||
+        !Number.isSafeInteger(count) ||
+        count < 1 ||
+        count > item.count
+      ) {
+        return undefined;
+      }
+      seen.add(item.uid);
+    }
+    if (plan.tools.some((tool) => seen.has(tool.item.uid))) {
+      return undefined;
+    }
+    const work = this.create(WORK_IN_PROGRESS);
+    const components = plan.components.map(({ item, count }) => {
+      const from = this.locate(item)!;
+      if (from.kind === 'furniture') {
+        this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
+      }
+      if (count < item.count) {
+        return this.factory.split(item, count);
+      }
+      this.remove(from);
+      return item;
+    });
+    work.work = { recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+    this.hands.right = work;
+    this.version += 1;
+    return work;
+  }
+
+  private workDrops(work: Item, outputs: readonly Item[], feet: Vec3): { item: Item; pos: Vec3; spot: Spot }[] {
+    const drops: { item: Item; pos: Vec3; spot: Spot }[] = [];
+    const grids = new Map<string, Placed[]>();
+    for (const item of outputs) {
+      let found = false;
+      for (const pos of dropSpots(feet)) {
+        const key = pileKey(pos);
+        const placed =
+          grids.get(key) ?? (this.pileAt(pos)?.items ?? []).filter(({ item: existing }) => existing !== work);
+        grids.set(key, placed);
+        const spot = findSpot(this.registry, { size: PILE_GRID, placed }, item);
+        if (spot) {
+          // Shadow occupancy reserves every output before transferring any of them.
+          placed.push({ item, ...spot });
+          drops.push({ item, pos, spot });
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        throw new Error('No room nearby to put the inputs or result down');
+      }
+    }
+    return drops;
+  }
+
+  /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
+  releaseWork(work: Item, finish: boolean, feet: Vec3): void {
+    const payload = work.work;
+    const at = this.locate(work);
+    if (!(payload && at)) {
+      return;
+    }
+    const recipe = this.registry.recipes.get(payload.recipe)!;
+    const outputs = finish ? [this.create(recipe.result.item, recipe.result.count)] : payload.components;
+    const resultInHand = finish && at.kind === 'hand';
+    if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
+      throw new Error('An input or result is too large to put down');
+    }
+    const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
+    this.remove(at);
+    work.work = undefined;
+    this.version += 1;
+    if (resultInHand && at.kind === 'hand') {
+      this.put(outputs[0]!, { kind: 'hand', side: at.side });
+      return;
+    }
+    for (const { item, pos, spot } of drops) {
+      this.put(item, { kind: 'pile', pos }, spot);
+    }
+  }
+
   /** The pile or furniture an item is in, directly or inside a bag lying there; undefined if it's on you. */
   placeOf(location: Location): Place | undefined {
     switch (location.kind) {
@@ -426,6 +494,7 @@ export class Inventory {
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
         return { kind: 'furniture', entity: location.entity };
+      case 'work':
       case 'pocket': {
         const owner = this.locate(location.owner);
         return owner ? this.placeOf(owner) : undefined;
@@ -476,19 +545,6 @@ export class Inventory {
 
   // ---- internals ----
 
-  /** An item lying directly in a piece of furniture. */
-  private inFurniture(item: Item): Location | undefined {
-    for (const entity of this.entities.all) {
-      for (const [pocket, grid] of (entity.pockets ?? []).entries()) {
-        const placed = grid.find((p) => p.item === item);
-        if (placed) {
-          return { kind: 'furniture', entity, pocket, placed };
-        }
-      }
-    }
-    return undefined;
-  }
-
   /** Where a move would put the item, if not on the player. A pile that doesn't exist yet counts by its position. */
   private targetPlace(target: Target): Place | undefined {
     switch (target.kind) {
@@ -514,38 +570,6 @@ export class Inventory {
 
   private searched(place: Place | undefined): boolean {
     return place?.kind !== 'furniture' || place.entity.searched;
-  }
-
-  private *roots(): IterableIterator<Item> {
-    // UID resolution is also used for held lights every frame; do not collect the whole world first.
-    yield* this.carried();
-    for (const pile of this.piles.values()) {
-      for (const placed of pile.items) {
-        yield placed.item;
-      }
-    }
-    for (const entity of this.entities.all) {
-      for (const pocket of entity.pockets ?? []) {
-        for (const placed of pocket) {
-          yield placed.item;
-        }
-      }
-    }
-  }
-
-  private searchPockets(owner: Item, item: Item): Location | undefined {
-    for (const [pocket, grid] of (owner.pockets ?? []).entries()) {
-      for (const placed of grid) {
-        if (placed.item === item) {
-          return { kind: 'pocket', owner, pocket, placed };
-        }
-        const deeper = this.searchPockets(placed.item, item);
-        if (deeper) {
-          return deeper;
-        }
-      }
-    }
-    return undefined;
   }
 
   private placement(item: Item, target: Target, count: number, from: Location): Plan {
@@ -581,6 +605,9 @@ export class Inventory {
   }
 
   private handPlacement(item: Item, side: HandSide, from: Location): Plan {
+    if (item.work && side === 'left') {
+      return refuse('Work stays in the right hand');
+    }
     if (from.kind === 'hand' && from.side === side) {
       return refuse("It's already in that hand");
     }
@@ -653,7 +680,7 @@ export class Inventory {
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
-    if (!at || count > item.count) {
+    if (!at || item.work || at.kind === 'work' || count > item.count) {
       return false;
     }
     if (count < item.count) {
@@ -683,6 +710,8 @@ export class Inventory {
         grid.splice(grid.indexOf(from.placed), 1);
         return;
       }
+      case 'work':
+        throw new Error('Craft inputs are owned by the work item');
       default:
         from.pile.items.splice(from.pile.items.indexOf(from.placed), 1);
         if (from.pile.items.length === 0) {
@@ -716,9 +745,101 @@ export class Inventory {
   }
 }
 
+/** Reject registry-invalid topology before constructing or exposing a live inventory. */
+const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
+  itemIds(savedItemTree(state), state.nextItemUid);
+  const grid = (placed: readonly PlacedState[], size: GridSize) => {
+    const previous: Placed[] = [];
+    for (const entry of placed) {
+      if (!fitsAt(registry, { size, placed: previous }, entry.item, entry)) {
+        throw new Error('Invalid item placement');
+      }
+      previous.push(entry);
+    }
+  };
+  const pockets = (
+    type: string,
+    saved: PlacedState[][] | undefined,
+    specs: { grid: [number, number] }[] | undefined,
+  ) => {
+    if (!specs) {
+      if (saved !== undefined) {
+        throw new Error(`${type} has no container`);
+      }
+      return;
+    }
+    if (saved?.length !== specs.length) {
+      throw new Error(`${type} must have ${specs.length} pocket grids`);
+    }
+    for (const [index, spec] of specs.entries()) {
+      grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
+    }
+  };
+  for (const { item } of savedItemTree(state)) {
+    pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
+    if (item.type === WORK_IN_PROGRESS && !item.work) {
+      throw new Error('Missing craft work payload');
+    }
+    if (item.work) {
+      validateWorkItem(registry, item);
+    }
+  }
+  for (const pile of state.piles) {
+    grid(pile.items, PILE_GRID);
+  }
+  for (const entity of state.entities.entities) {
+    const def = registry.furniture.get(entity.type);
+    if (!def) {
+      throw new Error(`Unknown furniture ${entity.type}`);
+    }
+    pockets(entity.type, entity.pockets, def.container?.pockets);
+  }
+};
+
+export const validateWorkItem = (registry: Registry, item: ItemState): void => {
+  const work = item.work!;
+  const recipe = registry.recipes.get(work.recipe);
+  if (
+    item.type !== WORK_IN_PROGRESS ||
+    item.count !== 1 ||
+    !recipe ||
+    !Number.isFinite(work.elapsed) ||
+    !Number.isFinite(work.duration) ||
+    work.elapsed < 0 ||
+    work.duration < recipe.time * 60 ||
+    work.elapsed > work.duration ||
+    work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length))
+  ) {
+    throw new Error('Invalid craft work payload');
+  }
+  const actual = new Map<string, number>();
+  for (const component of work.components) {
+    actual.set(component.type, (actual.get(component.type) ?? 0) + component.count);
+  }
+  const matches = (group: number, remaining: Map<string, number>): boolean => {
+    if (group === recipe.components.length) {
+      return [...remaining.values()].every((count) => count === 0);
+    }
+    return recipe.components[group]!.some((alternative) => {
+      const available = remaining.get(alternative.item) ?? 0;
+      if (available < alternative.count) {
+        return false;
+      }
+      const next = new Map(remaining);
+      next.set(alternative.item, available - alternative.count);
+      return matches(group + 1, next);
+    });
+  };
+  if (!matches(0, actual)) {
+    throw new Error('Craft inputs do not match recipe');
+  }
+};
+
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  at.kind === 'hand' || at.kind === 'worn' ? undefined : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
+  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work'
+    ? undefined
+    : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
 
 /** A target in the same grid as a location, at a spot: for turning an item where it lies. */
 export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefined => {

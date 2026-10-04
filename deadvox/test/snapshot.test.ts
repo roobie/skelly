@@ -122,6 +122,9 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       },
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in snapshot fixture');
+    },
     ...(snapshot ? { restore: snapshot } : {}),
   });
   const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
@@ -288,7 +291,7 @@ const inspect = (runtime: Runtime): unknown => {
       soundPicker: runtime.session.audioState(),
     },
     spawned: [...spawns].sort(),
-    rest: runtime.rest.action && { ...runtime.rest.action },
+    longAction: { job: structuredClone(runtime.sim.actions.job ?? null) },
     light: runtime.survival.lit?.uid,
     quickbar: runtime.quickbar.slots.map((uid) =>
       uid === null ? null : (runtime.inventory.itemByUid(uid)?.uid ?? null),
@@ -425,6 +428,35 @@ const setBudgetClock = (runtime: Runtime): void => {
 };
 
 describe('snapshot state components', () => {
+  it('persists zero-start skills and changed recipe knowledge without reseeding or mutating live state', async () => {
+    const runtime = createRuntime();
+    const actor = runtime.session.character;
+    expect(Object.keys(actor.skills).sort()).toEqual([...registry.skills.keys()].sort());
+    expect(Object.values(actor.skills).every((level) => level === 0)).toBe(true);
+    const removedRecipe = actor.knownRecipes.values().next().value;
+    if (removedRecipe === undefined) {
+      throw new Error('starter character has no known recipe');
+    }
+    const savedLevel = actor.skills.crafting! + 1;
+    actor.skills.crafting = savedLevel;
+    actor.knownRecipes.delete(removedRecipe);
+    const snapshot = capture(runtime);
+    actor.skills.crafting = savedLevel + 1;
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loadedRuntime = createRuntime(decoded.snapshot);
+    const loaded = loadedRuntime.session.character;
+    expect(loaded.skills.crafting).toBe(savedLevel);
+    loaded.skills.crafting = -0;
+    const zero = await decodeSave(await encodeFixture(capture(loadedRuntime)), {
+      version: formatVersion,
+      contentLookup,
+    });
+    expect(Object.is(createRuntime(zero.snapshot).session.character.skills.crafting, -0)).toBe(true);
+    expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
+    expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
+    expect(actor.skills.crafting).toBe(savedLevel + 1);
+  });
+
   it('restores after eating the quickbar-bound item without a dangling UID', () => {
     const runtime = createRuntime();
     const { inventory, quickbar, survival, handling, player } = runtime;
@@ -595,6 +627,60 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
   runtime.heardSounds.length = 0;
 };
+
+describe('craft job codec and ownership', () => {
+  it.each([false, true])(
+    'encodes/restores stopped=%s work with one owned subtree and validated references',
+    async (stopped) => {
+      const runtime = createRuntime();
+      // Use the same session/save factory as the game; clear hands through Inventory.
+      const pos: Vec3 = runtime.player.body.pos.map(Math.floor) as Vec3;
+      for (const item of Object.values(runtime.inventory.hands)) {
+        expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
+      }
+      for (const [type, count] of [
+        ['stick', 1],
+        ['rag', 2],
+        ['wax', 1],
+        ['kitchen_knife', 1],
+      ] as const) {
+        expect(
+          runtime.inventory.add(runtime.inventory.create(type, count), {
+            kind: 'pile',
+            pos: [pos[0] - 1, pos[1], pos[2]],
+          }),
+        ).toBe(true);
+      }
+      const planned = runtime.session.planCraft(registry.recipes.get('torch')!);
+      if (!('plan' in planned)) {
+        throw new Error(planned.missing.reason);
+      }
+      const work = runtime.inventory.beginWork(planned.plan)!;
+      expect(runtime.sim.actions.startCraft(work.uid)).toBeUndefined();
+      // Progress the registered native job without changing the falling scenario body's origin.
+      runtime.sim.actions.craft!.advance(work.uid, 37);
+      if (stopped) {
+        runtime.sim.actions.stop();
+      }
+      const snapshot = capture(runtime);
+      const bytes = await encodeFixture(snapshot);
+      expect(capture(runtime)).toEqual(snapshot);
+      const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+      const loaded = createRuntime(decoded.snapshot);
+      expect(capture(loaded)).toEqual(snapshot);
+      expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
+      expect(loaded.inventory.hands.left).toBeUndefined();
+      const bad = structuredClone(snapshot);
+      bad.character.inventory.hands.right!.work!.recipe = 'unknown_craft';
+      await expect(decodeSave(await encodeFixture(bad), { version: formatVersion, contentLookup })).rejects.toThrow(
+        'Unknown recipe',
+      );
+      const dangling = structuredClone(snapshot);
+      dangling.character.longAction.job = { jobType: 'craft', stopped: true, last: 0, workUid: 999_999 };
+      await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
+    },
+  );
+});
 
 describe('restored session world state', () => {
   it('shares restored block entities and does not re-furnish visited columns', () => {
@@ -848,10 +934,31 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'sound') {
     return registry.sounds.has(id);
   }
-  return ['needs', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+  if (kind === 'skill') {
+    return registry.skills.has(id);
+  }
+  if (kind === 'recipe') {
+    return registry.recipes.has(id);
+  }
+  return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
 };
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
+
+it('a door lock survives the save codec and fresh native entity owner, independently of the source object', async () => {
+  const source = createRuntime();
+  const door = [...source.entities.all].find((entity) => registry.furniture.get(entity.type)?.door)!;
+  door.lock = { id: 'test_shed', locked: true }; // authored metadata in this hamlet save fixture
+  const snapshot = capture(source);
+  expect(source.entities.setLocked(door, false, ['test_shed'])).toBeUndefined();
+  const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  const restored = loaded.entities.byUid(door.uid)!;
+  expect(restored.lock).toEqual({ id: 'test_shed', locked: true });
+  expect(loaded.entities.setOpen(restored, true)).toBe("It's locked");
+  expect(loaded.entities.setLocked(restored, false, ['test_shed'])).toBeUndefined();
+  expect(loaded.entities.setOpen(restored, true)).toBeUndefined();
+});
 
 const jsonCanonical = (value: unknown): string => {
   if (value === null || typeof value !== 'object') {

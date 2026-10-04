@@ -6,7 +6,7 @@ import type { HandSide } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
-export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'unpack' | 'none';
+export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'none';
 
 export const ACTION_HAND_BINDINGS = {
   primaryClick: 'right',
@@ -14,7 +14,7 @@ export const ACTION_HAND_BINDINGS = {
 } as const satisfies Readonly<Record<'primaryClick' | 'leftHandKey', HandSide>>;
 
 export type PrimaryActionSelection =
-  | { kind: 'melee' | 'light' | 'firearm' | 'unpack'; hand: HandSide; item: Item }
+  | { kind: 'melee' | 'light' | 'firearm' | 'key' | 'unpack'; hand: HandSide; item: Item }
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
@@ -29,6 +29,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'melee', supports: (definition) => definition.weapon?.melee !== undefined },
   { kind: 'light', supports: (definition) => definition.light !== undefined },
   { kind: 'firearm', supports: (definition) => definition.firearm !== undefined },
+  { kind: 'key', supports: (definition) => definition.key !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
 ];
 

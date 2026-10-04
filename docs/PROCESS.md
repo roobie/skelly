@@ -51,11 +51,13 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 
 ## Reviews by eye and by play
 
-- **Links use the LAN IP** (`http://192.168.9.38:<port>/…`), and dev servers are bound with
-  `--host`. BR reviews from another machine.
+- **Links use the host's LAN address,** never `localhost`, and dev servers are bound with
+  `--host`. BR reviews from another machine. The address is in the host notes (AGENTS.md,
+  "No host-specific information in tracked files").
 - **gungen:** give a link per design with a `camera=` view (side, rear, rear-¾), from a stable
   review server pinned to the reviewed commit, not a coder's live worktree.
-- **deadvox:** `?seed=<n>&debug=1`. Anything that saves needs HTTPS: through caddy on `:8443`.
+- **deadvox:** `?seed=<n>&debug=1`. Anything that saves needs HTTPS (a secure context); the host notes say where
+  it's served.
 - **Relay what BR said, in BR's words.** A verdict on one item never counts for another.
 
 ## Recording decisions
@@ -127,8 +129,9 @@ their cost, and date the next review.
 
 ## Working rules
 
-- **Heavy runs:** serialize full suites, browser suites and builds with `flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" timeout 300 …` on a shared host; single-file tests, typecheck and lint stay unlocked. Why: agent-kit `skills/agent-mail/RESOURCES.md`.
-- **Host admission:** keep 5 GiB free disk; stop new work on reserve or live memory-high breaches. Measured session/browser/worktree costs, effective caps and default-run budgets: [host-budget.md](host-budget.md).
+- **Shared hosts:** follow the host notes: its heavy-run lock (one full suite, browser stage
+  or build at a time), its free-disk floor and its memory admission. They live outside the
+  repository (AGENTS.md, "No host-specific information in tracked files").
 - **Vitest pools:** all three projects share `testPool.ts` (40% available CPUs, file isolation). Don't raise a test timeout to mask pool contention; measured trade-offs and the two-core CI proof are in `docs/test-pool.md`.
 - **Bound every run:** wrap long shell runs in `timeout 300` (300 seconds). Vitest timeouts are
   in milliseconds; a harness's own tool timeout may be in seconds or milliseconds, so check its
@@ -138,6 +141,17 @@ their cost, and date the next review.
 - **Determinism:** seeded RNG only; no `Math.random` in simulation or generators.
 - **Don't loosen a test to make room for a change.** Pin the new measured value as a documented
   expectation, so the next change to it is noticed.
+- **CI costs time, not money** (BR, 2026-10-02: "it's not _billed_ money"). The repository is
+  public, so runners are free. Rank CI changes by wasted runs and time to green, and never cut
+  checks to save money that isn't being spent.
+- **Owned work needs a decision and a date.** BR, 2026-10-03: "I can have thousands of bugs
+  assigned to me, but what if I don't address them?" An owned failure or finding is fixed,
+  scheduled into a real slot, quarantined with a revisit date, or closed with a reason, and its
+  age forces a re-decision.
+- **Mechanize every follow-up** (BR, 2026-10-03): "we should consider in every assignment
+  relation how we can mechanize the follow-up. Basic example: set a date, and add a timer unit
+  that adds a message when a decision expired". The work tracker's revisit dates and sweep do
+  this for team items. An issue carries its revisit date in its body.
 
 ## When main is red
 

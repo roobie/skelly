@@ -5,6 +5,7 @@ import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
+import { LongActions } from './longAction.ts';
 import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
@@ -58,6 +59,7 @@ export class Simulation {
   readonly scheduler = new Scheduler();
   readonly events = new EventQueue<Timed<SimEvent>>();
   readonly compression = new Compression();
+  readonly actions: LongActions;
   readonly needs: Needs = { ...SPAWN_NEEDS };
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
@@ -93,6 +95,7 @@ export class Simulation {
         }
       },
     });
+    this.actions = new LongActions(this);
   }
 
   /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */
@@ -230,7 +233,14 @@ export class Simulation {
     const { c } = this.compression;
     const wanted = Math.min(realDt * c, this.compression.limits.maxSimPerFrame);
     const dt = until === undefined ? wanted : Math.min(wanted, Math.max(0, until - this.time));
-    return this.scheduler.advance(dt, c, () => this.dead !== undefined || this.checkInterruptions());
+    const hadAction = this.actions.job !== undefined;
+    const advanced = this.scheduler.advance(
+      dt,
+      c,
+      () => this.dead !== undefined || this.checkInterruptions() || (hadAction && this.actions.job === undefined),
+    );
+    this.actions.syncInterruption();
+    return advanced;
   }
 
   /**

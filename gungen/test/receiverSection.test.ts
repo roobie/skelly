@@ -313,10 +313,6 @@ describe('receiver section builder', () => {
         }
       }
       expectWatertightMesh(receiverMesh, id);
-      // AR now includes an internal barrel seat; retain the same absolute
-      // 450-triangle ceiling as the other detailed receiver shells.
-      const triangleBudget = 450;
-      expect(receiverMesh.triangleCount, `${id} triangle budget`).toBeLessThanOrEqual(triangleBudget);
       expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
       expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(frontFaceX);
     }

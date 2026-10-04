@@ -71,7 +71,7 @@ describe('sealed ammunition package activation', () => {
     expect(f.box.pockets).toBeUndefined();
     expect(selectPrimaryAction(registry, f.inventory.hands)).toMatchObject({ kind: 'unpack', item: f.box });
     expect(f.unpacking.activate(f.box)).toBeUndefined();
-    expect([...f.inventory.items()].filter((item) => item.type === shellType)).toEqual([]);
+    expect([...f.inventory.items()].filter(({ item }) => item.type === shellType)).toEqual([]);
     expect(f.queue.tick(BOX_UNPACK_SECONDS).failed).toEqual([]);
     expect(f.inventory.itemByUid(f.box.uid)).toBeUndefined();
     expect(f.inventory.hands.right).toBeUndefined();

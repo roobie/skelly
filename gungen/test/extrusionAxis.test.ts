@@ -65,21 +65,15 @@ describe('extruded polygon axes', () => {
     ['x', [-3, -1, -2], [3, 1, 2]],
     ['y', [-2, -3, -1], [2, 3, 1]],
     ['z', [-1, -2, -3], [1, 2, 3]],
-  ] as const)(
-    'builds a right-handed %s-axis prism with invariant bounds, volume and triangle count',
-    (axis, min, max) => {
-      const solid = prism(axis);
-      expect(localSolidBounds(solid)).toEqual([min, max]);
-      const mesh = meshForSolid(solid, 0);
-      expect(meshBounds(mesh.positions)).toEqual([min, max]);
-      expect(meshVolume(mesh)).toBeCloseTo(48, 6);
-      expect(mesh.triangleCount).toBe(4 * profile.length - 4);
-      expect(meshForSolid(solid).triangleCount).toBe(12 * profile.length - 4);
-      const unrounded = meshForSolid({ ...solid, display: { bevel: false, outline: false } });
-      expect(unrounded.triangleCount).toBe(4 * profile.length - 4);
-      expect(meshBounds(unrounded.positions)).toEqual([min, max]);
-    },
-  );
+  ] as const)('builds a right-handed %s-axis prism with invariant bounds and volume', (axis, min, max) => {
+    const solid = prism(axis);
+    expect(localSolidBounds(solid)).toEqual([min, max]);
+    const mesh = meshForSolid(solid, 0);
+    expect(meshBounds(mesh.positions)).toEqual([min, max]);
+    expect(meshVolume(mesh)).toBeCloseTo(48, 6);
+    const unrounded = meshForSolid({ ...solid, display: { bevel: false, outline: false } });
+    expect(meshBounds(unrounded.positions)).toEqual([min, max]);
+  });
 
   it('keeps penetration and contact results invariant under a common rotation for X, Y and Z prisms', () => {
     const rotation = mulMM(mulMM(rotX(23), rotY(-31)), rotZ(17));

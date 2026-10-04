@@ -148,7 +148,7 @@ export class FirearmMechanics {
     this.onEjection = onEjection;
     this.onShot = onShot;
     this.onSound = onSound;
-    for (const item of inventory.items()) {
+    for (const { item } of inventory.items()) {
       if (item.firearm?.cycle || item.firearm?.landing) {
         this.active.add(item.uid);
       }
@@ -326,6 +326,7 @@ export class FirearmMechanics {
     }
     const { calibre } = firearmHandlingFor(gun, this.inventory.registry);
     const [shell] = [...this.inventory.items()]
+      .map(({ item }) => item)
       .filter((item) => this.carried(item) && defOf(this.inventory.registry, item.type).ammo?.calibre === calibre)
       .sort((a, b) => a.uid - b.uid);
     return shell ? this.load(shell, time) : 'No loose compatible shells are carried';

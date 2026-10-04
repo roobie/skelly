@@ -1,18 +1,30 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
-import type { Registry } from './content.ts';
+import { placementOf } from './authoredPlacement.ts';
+import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
+import type { Registry, TemplateDef } from './content.ts';
+import type { Vec3 } from './coords.ts';
+import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
+import { type Placement, placedBlockAt, templateLockIds, templateResolves } from './templates.ts';
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
 export const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
   x >= bounds.x0 + inset && z >= bounds.z0 + inset && x <= bounds.x1 - inset && z <= bounds.z1 - inset;
 
-/** Half-metre ASCII cells; position is the lowest corner AFTER rotation, as Placement expects. */
-export const buildingBounds = (building: SiteLayoutDef['buildings'][number], size: readonly number[]): Rect => {
-  const [x, , z] = building.position;
-  const [w, d] = building.rotation % 180 === 0 ? [size[0]!, size[2]!] : [size[2]!, size[0]!];
-  return { x0: x, z0: z, x1: x + w * 0.5, z1: z + d * 0.5 };
+/** Maximum intentional levelling of the raw profile at any half-metre footprint cell. */
+export const FOUNDATION_TOLERANCE = 1;
+const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['buildings'][number], rect: Rect): boolean => {
+  for (let z = rect.z0 + 0.25; z < rect.z1; z += 0.5) {
+    for (let x = rect.x0 + 0.25; x < rect.x1; x += 0.5) {
+      if (Math.abs(surfaceFoundation(building) - profileHeight(layout, x, z)) > FOUNDATION_TOLERANCE) {
+        return false;
+      }
+    }
+  }
+  return true;
 };
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
@@ -31,13 +43,19 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     }
   };
   const footprints: { rect: Rect; index: number }[] = [];
-  layout.buildings.forEach((building, i) => {
-    const template = registry.templates.get(building.template);
-    if (!template) {
-      issues.push([`.buildings[${i}].template`, `no template "${building.template}"`]);
-      return;
+  const placements: Placement[] = [];
+  const locks = new Set<string>();
+  const checkLocks = (template: TemplateDef, storeys: number, i: number) => {
+    for (let storey = 0; storey < storeys; storey += 1) {
+      for (const id of templateLockIds(registry, template)) {
+        if (locks.has(id)) {
+          issues.push([`.buildings[${i}]`, `lock "${id}" is used more than once in this site`]);
+        }
+        locks.add(id);
+      }
     }
-    const rect = buildingBounds(building, template.size);
+  };
+  const checkFootprint = (rect: Rect, i: number) => {
     check([rect.x0, rect.z0], `.buildings[${i}].position`);
     check([rect.x1, rect.z1], `.buildings[${i}].position`);
     for (const prior of footprints) {
@@ -46,13 +64,68 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       }
     }
     footprints.push({ rect, index: i });
+  };
+  layout.buildings.forEach((building, i) => {
+    const template = registry.templates.get(building.template);
+    if (!template) {
+      issues.push([`.buildings[${i}].template`, `no template "${building.template}"`]);
+      return;
+    }
+    checkLocks(template, building.storeys ?? 1, i);
+    if (template.access && (building.storeys ?? 1) !== 1) {
+      issues.push([`.buildings[${i}].storeys`, 'explicit storeys cannot be stress-test stacked']);
+      return;
+    }
+    const rect = buildingBounds(building, template.size);
+    checkFootprint(rect, i);
+    if (
+      insideLayout(layout.bounds, [rect.x0, rect.z0]) &&
+      insideLayout(layout.bounds, [rect.x1, rect.z1]) &&
+      !foundationFits(layout, building, rect)
+    ) {
+      issues.push([`.buildings[${i}].position`, `foundation cut or fill exceeds ${FOUNDATION_TOLERANCE} m`]);
+    }
+    if (!templateResolves(registry, template)) {
+      return; // checkTemplates reports the palette; the placement can't compile without it.
+    }
+    const placement = placementOf(registry, building);
+    if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
+      issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
+    }
+    placements.push(placement);
   });
+  const lots = footprints.map(({ rect, index }) => lotOf(layout.buildings[index]!, rect));
+  const supported = (position: Vec3, path: string) => {
+    const [x, y, z] = position;
+    const below: Vec3 = [Math.floor(x * 2), Math.round(y * 2) - 1, Math.floor(z * 2)];
+    let support = standingHeight(layout, lots, x, z);
+    let buried = false;
+    for (const placement of placements) {
+      const block = placedBlockAt(placement, below);
+      if (block !== undefined) {
+        support = registry.blocks[block]?.solid ? y : Number.NaN;
+      }
+      const atFeet = placedBlockAt(placement, [below[0], below[1] + 1, below[2]]);
+      buried ||= atFeet !== undefined && registry.blocks[atFeet]?.solid === true;
+    }
+    if (buried || !Number.isFinite(support) || Math.abs(y - support) > 0.001 || !Number.isInteger(y * 2)) {
+      issues.push([path, 'spawn must stand on a supported surface']);
+    }
+  };
+  supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   layout.shamblers.forEach((spawn, i) => {
     if (!registry.zombies.has(spawn.type)) {
       issues.push([`.shamblers[${i}].type`, `no zombie type "${spawn.type}"`]);
     }
     checkSpawn([spawn.position[0], spawn.position[2]], `.shamblers[${i}].position`);
+    supported(spawn.position, `.shamblers[${i}].position`);
+  });
+  layout.terrain.forEach((feature, i) => {
+    const points = feature.kind === 'ridge' ? feature.points : [feature.centre];
+    points.forEach((point, j) => {
+      check(point, `.terrain[${i}].points[${j}]`);
+    });
   });
   layout.woodlands.forEach((wood, i) => {
     wood.polygon.forEach((p, j) => {
@@ -78,18 +151,4 @@ export const inPolygon = ([x, z]: LayoutPoint, polygon: readonly LayoutPoint[]):
     }
   }
   return inside;
-};
-
-export const polylineDistance = ([x, z]: LayoutPoint, points: readonly LayoutPoint[]): number => {
-  let closest = Number.POSITIVE_INFINITY;
-  for (let i = 1; i < points.length; i++) {
-    const [ax, az] = points[i - 1]!;
-    const [bx, bz] = points[i]!;
-    const dx = bx - ax;
-    const dz = bz - az;
-    const length2 = dx * dx + dz * dz;
-    const t = length2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / length2));
-    closest = Math.min(closest, Math.hypot(x - ax - t * dx, z - az - t * dz));
-  }
-  return closest;
 };

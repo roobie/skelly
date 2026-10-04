@@ -1,8 +1,8 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
-import type { Inventory, Target } from '../core/inventory.ts';
+import { dropSpots, type Inventory, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { dropSpots, playerPockets } from '../core/options.ts';
+import { playerPockets } from '../core/options.ts';
 
 /** Gameplay handling estimate for opening a sealed cardboard package. */
 export const BOX_UNPACK_SECONDS = 1.2;

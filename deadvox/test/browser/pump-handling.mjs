@@ -102,15 +102,18 @@ try {
   const ids = await page.evaluate(() => {
     const inv = globalThis.pumpHandlingTest.session.inventory;
     const gun = inv.hands.right;
-    const box = [...inv.items()].find((item) => item.type === 'shotshell_box');
-    const payload = inv.registry.items.get(box.type).unpack.count;
+    const box = [...inv.items()].find(({ item }) => inv.registry.items.get(item.type)?.unpack)?.item;
+    if (!box) {
+      throw new Error('Native pump loadout has no sealed box');
+    }
+    const { count: payload, item: payloadType } = inv.registry.items.get(box.type).unpack;
     const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube;
     return {
       gun: gun.uid,
       box: box.uid,
       payload,
+      payloadType,
       capacity,
-      expectedLoaded: Math.min(payload, capacity),
       fov: globalThis.pumpHandlingTest.camera.fov,
     };
   });
@@ -166,8 +169,8 @@ try {
         hand: inv.hands.right?.uid ?? null,
         box: Boolean(inv.itemByUid(selectedIds.box)),
         loose: [...inv.items()]
-          .filter((item) => item.type === 'shell_12_gauge_00_buck')
-          .reduce((sum, item) => sum + item.count, 0),
+          .filter(({ item }) => item.type === selectedIds.payloadType)
+          .reduce((sum, { item }) => sum + item.count, 0),
         gun: structuredClone(inv.itemByUid(selectedIds.gun)?.firearm),
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
@@ -231,29 +234,23 @@ try {
   assert.equal(released.jobs, 0);
   assert.deepEqual(released.gun.tube, []);
   await page.keyboard.down('KeyR');
-  await page.waitForFunction(({ gun, expectedLoaded }) => {
+  await page.waitForFunction((uid) => {
     const s = globalThis.pumpHandlingTest.session;
     return (
-      s.inventory.itemByUid(gun).firearm.tube.length === expectedLoaded ||
-      s.queue.jobs.some((job) => job.jobType === 'firearm.load')
+      s.inventory.itemByUid(uid).firearm.tube.length > 0 || s.queue.jobs.some((job) => job.jobType === 'firearm.load')
     );
-  }, ids);
-  const futureInserts = await page.evaluate(({ gun, expectedLoaded }) => {
-    const s = globalThis.pumpHandlingTest.session;
-    const job = s.queue.jobs.find((entry) => entry.jobType === 'firearm.load');
-    return Math.max(0, expectedLoaded - s.inventory.itemByUid(gun).firearm.tube.length - 1) * (job?.duration ?? 0);
-  }, ids);
+  }, ids.gun);
+  // One completed insertion is enough for native gesture/rack/fire integration.
+  // Full-tube repeat/conservation stays in pumpShotgun.test.ts and reloadInput.test.ts;
+  // do not spend a tuning-derived full magazine of simulation work in the smoke.
   await waitForWork(
-    ({ gun, expectedLoaded }) => {
-      const s = globalThis.pumpHandlingTest.session;
-      return !s.queue.busy && s.inventory.itemByUid(gun).firearm.tube.length === expectedLoaded;
-    },
-    ids,
-    futureInserts,
+    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.tube.length > 0,
+    ids.gun,
   );
   await page.keyboard.up('KeyR');
   const loaded = await observe();
-  assert.equal(loaded.loose, ids.payload - ids.expectedLoaded);
+  assert.ok(loaded.gun.tube.length > 0 && loaded.gun.tube.length <= ids.capacity);
+  assert.equal(loaded.loose, ids.payload - loaded.gun.tube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
   if (process.env.PUMP_ARTIFACT_DIR) {
@@ -293,7 +290,7 @@ try {
   }, ids.gun);
   const racked = await observe();
   assert.equal(racked.loose, loaded.loose);
-  assert.equal(racked.gun.tube.length, ids.expectedLoaded - 1);
+  assert.equal(racked.gun.tube.length, loaded.gun.tube.length - 1);
   assert.equal(racked.rest, null);
   await page.mouse.click(640, 450);
   await page.waitForFunction(

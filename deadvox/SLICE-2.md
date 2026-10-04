@@ -220,12 +220,13 @@ Paperwork; no game code.
   so.
 - **Host budget**, measured: disk per worktree with its installs, memory per
   agent and per browser test, the number of heavy runs at once, and the free
-  disk to keep in reserve. Measured 2026-10-03 in
-  [the host budget](../docs/host-budget.md), linked from `docs/PROCESS.md`.
+  disk to keep in reserve. Measured 2026-10-03. These are facts about the host,
+  so since 2026-10-04 they live in its notes, outside the repository (AGENTS.md,
+  "No host-specific information in tracked files").
 - **Default test-run budget**, measured: the wall time of each subproject's
-  default test run (deadvox, gungen, mobgen) on the shared host, recorded next
-  to the host budget. [Three-run medians and budgets](../docs/host-budget.md#default-test-run-budgets)
-  are recorded; a milestone that pushes a run past one says why.
+  default test run (deadvox, gungen, mobgen) on the shared host, recorded with
+  the host budget as three-run medians and budgets; a milestone that pushes a
+  run past one says why.
 - The Slice 2 checklist issue is open, listing every milestone and gate below.
 - Slice 2's playtest questions are added to SLICE-1.md's playtest plan.
 - #143 (saves closure) is merged before any milestone that adds saved state
@@ -261,9 +262,11 @@ Paperwork; no game code.
 
 - **Quick move** (BR, 2026-10-03; pulled into 2.1 with BR's go). It's one more
   option from the core `options()`: `quickMove(item, reach)` returns the move it
-  would make, or the reason it can't. The UI binds it to **Ctrl-click**, or
-  **Cmd-click on macOS**, which is best effort since no one on the team tests a
-  Mac. Shift-click stays free for splitting a stack later.
+  would make, or the reason it can't. The UI binds it to Ctrl-click today. BR
+  ruled on 2026-10-04 that it becomes **hold T and click** ("hold T+click on item
+  does the quick action (auto move)"), under his rule of no Ctrl or Cmd, ever
+  (CONTROLS.md). d44, the input registry, makes that change. Shift-click stays
+  free for splitting a stack later.
   - **An item you carry** (in hands, worn, in a pocket or a container) drops to
     the ground pile at your feet. A worn container drops with its contents.
     Taking it off costs its usual handling time.
@@ -365,6 +368,8 @@ job stays green.
 component closure and the count, and the rejections are tested.
 
 ### 2.4 The planner and crafting
+
+Decided (BR, 2026-10-04): the crafting panel is approved as a first version; expect many iterations.
 
 **Reachability hand-off:** starting knowledge must turn 2.3's pending knowledge
 class into a hard source check; update the pinned pending-class test deliberately.

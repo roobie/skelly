@@ -20,7 +20,7 @@ import {
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
 import { computeMenuState } from './menuState.ts';
 
-const SCHEDULER_IDS = new Set(['needs', 'lights', 'zombies', 'player', 'handling', 'firearms']);
+const SCHEDULER_IDS = new Set(['needs', 'long-action', 'lights', 'zombies', 'player', 'handling', 'firearms']);
 const SAVE_CHECKPOINT_GAME_HOURS = 2;
 export const saveCheckpointInterval = (clock: ClockSettings): number =>
   SAVE_CHECKPOINT_GAME_HOURS * simSecondsPerHour(clock);
@@ -41,6 +41,10 @@ const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): b
       return registry.sounds.has(id);
     case 'scheduler':
       return SCHEDULER_IDS.has(id);
+    case 'skill':
+      return registry.skills.has(id);
+    case 'recipe':
+      return registry.recipes.has(id);
     default:
       return false;
   }

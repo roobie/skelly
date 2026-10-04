@@ -35,7 +35,13 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'sound') {
     return registry.sounds.has(id);
   }
-  return ['needs', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+  if (kind === 'skill') {
+    return registry.skills.has(id);
+  }
+  if (kind === 'recipe') {
+    return registry.recipes.has(id);
+  }
+  return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
 };
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
@@ -83,6 +89,9 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
       play: () => undefined,
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in melee fixture');
+    },
     zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
     ...(restore ? { restore } : {}),
   });

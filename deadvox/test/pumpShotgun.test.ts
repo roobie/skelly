@@ -5,9 +5,8 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
+import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { weightOf } from '../src/core/items.ts';
-import { dropSpots } from '../src/core/options.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
 import { decodeSave, encodeSave, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -127,6 +126,7 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
     },
     audio: { play },
     notice: () => undefined,
+    onRead: () => undefined,
   });
 
 describe('real pump ammunition', () => {
@@ -360,7 +360,9 @@ describe('real pump ammunition', () => {
       roundType: shellType,
       tube: Array.from({ length: f.capacity - 1 }, () => shellType),
     });
-    expect([...f.inventory.items()].filter((item) => item.type === hullType).map((item) => item.count)).toEqual([1]);
+    expect([...f.inventory.items()].filter(({ item }) => item.type === hullType).map(({ item }) => item.count)).toEqual(
+      [1],
+    );
   });
 
   it('cancels a partially completed next shell without consuming it or undoing an already loaded shell', () => {
@@ -559,6 +561,7 @@ describe('real pump ammunition', () => {
       },
       audio: { play: () => undefined },
       notice: () => undefined,
+      onRead: () => undefined,
     });
     const type = registry.zombies.get('shambler')!;
     const a = open.zombies.add(type, [0, 0, -8]);

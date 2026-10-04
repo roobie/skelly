@@ -154,7 +154,7 @@ checks them. This is the first link to skelly's skeleton and rigging work.
 
 - Share of invalid builds, from the generator before validation.
 - Variety across seeds.
-- A gallery of known-good seeds, plus snapshot tests of their assembly graphs.
+- A gallery of generated builds, reviewed by hand in the viewer at generator-change time (see `docs/deferred-assertions.md`); generated geometry is not snapshotted.
 
 ### 10. Making it reusable beyond guns
 
@@ -495,9 +495,7 @@ The validator then judges it like any hand-written fixture.
   - Every param value a template can choose exists.
   - No template produces a structurally broken file over 300 seeds.
   - Every template is valid at least half the time.
-  - Snapshots of three known-good builds per template
-    (`test/__snapshots__/`). A snapshot change means generation changed: look
-    at the new builds in the viewer before updating with `vitest -u`.
+  - Review representative generated builds in the viewer when generation changes; the manual review gate is recorded in `docs/deferred-assertions.md`.
 
 ### First metrics (`npm run stats`, 1000 seeds per template)
 
@@ -688,10 +686,10 @@ existing `rifle` name has been renamed to `battle-rifle`; there is no
 compatibility alias.
 
 Each new archetype requires a passing fixture, a broken fixture for every new
-rule with readable failure text, snapshots of three known-good seeds, and
-before/after generator stats. Review generated builds in the viewer before
-updating snapshots. Report milestone results with viewer links; visual
-proportions await BR's judgment.
+rule with readable failure text, and before/after generator stats. Review
+generated builds in the viewer at generator-change time as recorded in
+`docs/deferred-assertions.md`. Report milestone results with viewer links;
+visual proportions await BR's judgment.
 
 ## Milestone 3: the designer
 
@@ -1527,12 +1525,10 @@ generator and suggester are a nice-to-have, so the generator "solver" tests
   locally" claim is unverified. Some sweeps will be removed, so their cost is
   not worth accommodating.
 - **What is gated.** Any test that calls `generate` or `generateValid` over a
-  seed range, and the `known-good seeds` snapshots, which are generator
-  output. Tests over `fixtures/`, hand-built assemblies and single fixed
+  seed range. Tests over `fixtures/`, hand-built assemblies and single fixed
   seeds used as a fixture stay local. A test that mixed both is split: the
   fixture half is local, the sweep half is gated (palette, frame checks in
-  `anchors.test.ts`). A skipped snapshot test keeps its snapshot and is not
-  reported obsolete.
+  `anchors.test.ts`).
 - **Not gated yet.** The "validator results are unchanged by the mesh
   module" block in `mesh.test.ts` stays as it is; it is deleted with PR #72.
 
@@ -1542,8 +1538,8 @@ Removal plan, one line per gated sweep:
   `designs/`; the seed loops and their CI gate are deleted. Each new test is
   local (not gated) and iterates `loadCorpus()` in `test/helpers.ts`: every
   fixture except the `broken-*` ones (they exist to break a rule; the
-  palette and triangle-budget tests use every fixture, since none of them
-  breaks a colour or a budget) plus every design:
+  palette tests use every fixture, since none breaks the relevant property)
+  plus every design:
   - handguard within receiver (`handguard.test.ts`, "keeps the handguard
     within its receiver in every fixture and design");
   - trigger guards (`triggerGuard.test.ts`, "guards the trigger volume in
@@ -1555,23 +1551,20 @@ Removal plan, one line per gated sweep:
     needs the fallback for any solid of any fixture or design" and
     "reproduces the old FAMILY_COLORS lookup bit-identically across every
     fixture and design");
-  - triangle budget (`mesh.test.ts`, "stays under 5000 triangles in every
-    fixture and design");
   - frame checks (`anchors.test.ts`, "fixture and design frames are
     unit-length and right-handed; hold frames sit within their part").
 - (b) Merge: the two 300-seed loops per template in `generate.test.ts`
   ("never produces a structurally broken file" and "is valid at least half
   the time") go over the same seeds and become one loop.
 - (c) Keep as a small CI smoke test for the 3.3 suggester, a few seeds per
-  template: "varies with the seed" and the `known-good seeds` snapshot
-  (`generate.test.ts`), the AK curve-variant, AK handguard layout, battle
+  template: "varies with the seed", the AK curve-variant, AK handguard layout, battle
   rifle magazine orientation and free-float mount choices (`ak.test.ts`,
   `battleRifle.test.ts`, `freeFloatHandguard.test.ts`). They check that the
   generator still spans its choices, which is what the suggester reuses.
 
-Golden designs (3.1) become the regression corpus. Each published design
-gets a snapshot of its resolved solids (already planned), and property tests
-iterate `fixtures/` plus `designs/` instead of seeds.
+Published designs (3.1) remain the property-test corpus. Their geometry is
+not snapshotted; review the viewer gallery at generator-change time as recorded
+in `docs/deferred-assertions.md`.
 
 ## Testing
 

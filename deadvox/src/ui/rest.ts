@@ -4,10 +4,10 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
+import type { RestAction } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
 import { labelForCode } from '../game/controls.ts';
 import { CONTROL_CODES } from '../game/input.ts';
-import type { RestAction } from '../game/rest.ts';
 
 export interface RestViewModel {
   readonly visible: boolean;

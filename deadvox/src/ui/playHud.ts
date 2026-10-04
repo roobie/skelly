@@ -113,18 +113,34 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
 };
 
 export interface InteractionHint {
+  readonly doorReason?: string | undefined;
+  readonly lock?: string | undefined;
   readonly door: boolean;
   readonly open: boolean;
   readonly container: boolean;
+  readonly readable: boolean;
   readonly searched: boolean;
   readonly name: string;
   readonly fullName: string;
 }
 
 /** Describes an already selected target; never selects/executes the interaction. */
-export const playInteractionText = ({ door, open, container, searched, name, fullName }: InteractionHint): string => {
+export const playInteractionText = ({
+  door,
+  open,
+  doorReason,
+  lock,
+  container,
+  readable,
+  searched,
+  name,
+  fullName,
+}: InteractionHint): string => {
   if (door) {
-    return `F: ${open ? 'close' : 'open'} the ${name}`;
+    return `F: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+  }
+  if (readable) {
+    return `F: read the ${name}`;
   }
   if (container) {
     return `F: ${searched ? 'look in' : 'search'} the ${name}`;

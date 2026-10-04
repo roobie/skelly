@@ -50,6 +50,7 @@ const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
 const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
 const GUNSHOT_CAP_ENTRY_PATTERN = /\['gunshot', \d+\]/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
+const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 
 // These files are not runtime roots: buildRevision is a test/build diagnostic helper,
 // while debugInterface contains only erased TypeScript contracts.
@@ -66,7 +67,7 @@ async function sourceFilesUnder(directory: string): Promise<string[]> {
   const directories = files.filter((file) => file.isDirectory());
   const nested = await Promise.all(directories.map((file) => sourceFilesUnder(join(directory, file.name))));
   const direct = files
-    .filter((file) => file.isFile() && SOURCE_FILE_PATTERN.test(file.name) && !file.name.endsWith('.d.ts'))
+    .filter((file) => file.isFile() && SOURCE_FILE_PATTERN.test(file.name) && !DECLARATION_FILE_PATTERN.test(file.name))
     .map((file) => join(directory, file.name));
   return [...direct, ...nested.flat()].sort();
 }
@@ -154,6 +155,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/render/playFrames.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/playView.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/craftController.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
@@ -165,6 +167,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/ui/playHud.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/playReadout.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/primaryActionHint.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/reading.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
       { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
       { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
@@ -198,7 +201,7 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);
   });
 
-  it('ignores HUD-only wording but fingerprints the gameplay interaction reach', async () => {
+  it('ignores HUD/paper wording but fingerprints the gameplay interaction reach', async () => {
     const host = await actualSimulationHost();
     const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
       exclude: SIMULATION_EXCLUSIONS,
@@ -206,6 +209,9 @@ describe('simulation source fingerprint', () => {
     const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts', 'fps   seed', 'FPS / seed');
     expect(hud.reads).toBe(0);
     expect(hud.value).toBe(original);
+    const paper = await mutateSimulationSource(host, 'src/ui/reading.ts', 'The world keeps moving', 'Live world');
+    expect(paper.reads).toBe(0);
+    expect(paper.value).toBe(original);
     const reach = await mutateSimulationSource(
       host,
       'src/game/play.ts',
@@ -410,6 +416,8 @@ describe('simulation source fingerprint', () => {
       (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
     );
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
+    expect(graph.sources.has('src/core/authoredTerrain.mjs')).toBe(true);
+    expect(graph.sources.has('src/core/authoredTerrain.d.mts')).toBe(false);
   });
 
   it('fingerprints pure mobgen modules imported by the simulation', async () => {

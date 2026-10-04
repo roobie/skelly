@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { formatClock } from '../src/core/clock.ts';
+import type { RestAction } from '../src/core/longAction.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { labelForCode } from '../src/game/controls.ts';
 import { CONTROL_CODES } from '../src/game/input.ts';
-import type { RestAction } from '../src/game/rest.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 
 describe('restViewModel', () => {
@@ -17,10 +18,10 @@ describe('restViewModel', () => {
     sim.needs.fatigue = 25;
     const vm = restViewModel(action, sim);
     expect(vm.visible).toBe(true);
-    expect(vm.label).toBe('Sleeping');
+    expect(vm.label).toBe(action.label);
     expect(vm.percent).toBe(50);
     expect(vm.prompt).toBeUndefined();
-    expect(vm.clock).toBe('Day 1, 19:30');
+    expect(vm.clock).toBe(formatClock(sim.calendar));
   });
 
   it('shows how to stop it, by kind (SLICE-1.md 1.8 follow-up)', () => {
@@ -43,6 +44,6 @@ describe('restViewModel', () => {
     danger = 'A shambler is close';
     sim.frame(1 / 60);
     const action: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
-    expect(restViewModel(action, sim).prompt).toBe('A shambler is close');
+    expect(restViewModel(action, sim).prompt).toBe(danger);
   });
 });

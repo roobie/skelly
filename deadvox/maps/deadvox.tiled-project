@@ -131,6 +131,45 @@
       ],
       "color": "#ff70a080",
       "drawFill": true
+    },
+    {
+      "id": 107,
+      "name": "ridge",
+      "members": [
+        {
+          "name": "rise",
+          "type": "float",
+          "value": 10
+        },
+        {
+          "name": "width",
+          "type": "float",
+          "value": 40
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 108,
+      "name": "hill",
+      "members": [
+        {
+          "name": "rise",
+          "type": "float",
+          "value": 4
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
     }
   ]
 }

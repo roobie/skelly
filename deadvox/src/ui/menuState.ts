@@ -29,6 +29,7 @@ export interface MenuStateInput {
   started: boolean;
   mainMenuOpen: boolean;
   inventoryOpen: boolean;
+  readingOpen?: boolean;
   debugMenuOpen: boolean;
   pointerLocked: boolean;
   dead: boolean;
@@ -85,14 +86,15 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
   }
   const inventoryOpen = closeOtherMenus ? false : input.inventoryOpen;
   const debugMenuOpen = closeOtherMenus ? false : input.debugMenuOpen;
-  const overlayHidden = (input.pointerLocked && !mainMenuOpen) || inventoryOpen || input.dead;
+  const readingOpen = !closeOtherMenus && Boolean(input.readingOpen);
+  const overlayHidden = (input.pointerLocked && !mainMenuOpen) || inventoryOpen || readingOpen || input.dead;
   return {
     started,
     mainMenuOpen,
     inventoryOpen,
     debugMenuOpen,
     closeOtherMenus,
-    menuPointer: mainMenuOpen || inventoryOpen || debugMenuOpen,
+    menuPointer: mainMenuOpen || inventoryOpen || readingOpen || debugMenuOpen,
     overlayHidden,
     paused: !overlayHidden,
     goLabel: started ? 'Paused. Click to continue' : (input.titleNewWorldLabel ?? 'Click to play'),

@@ -127,7 +127,7 @@ export class Input {
       ) {
         e.preventDefault(); // Backspace must not navigate back; menus retain text editing.
       }
-      if (e.code === CONTROL_CODES.walkToggle && !e.repeat) {
+      if (e.code === CONTROL_CODES.walkToggle && !e.repeat && !this.menuPointer) {
         this.walking = !this.walking;
       }
       if (e.code === KEY_BINDINGS.leftHandAction.code && !this.leftHandActionDown) {

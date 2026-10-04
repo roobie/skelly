@@ -116,6 +116,9 @@ jobs:
       - name: Firefox save-storage browser contract
         timeout-minutes: 2
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      - name: Firefox inventory-scroll browser contract
+        timeout-minutes: 1
+        run: xvfb-run -a node test/browser/inventory-scroll.mjs firefox
       # Quarantined (BR's no-flaky rule): after Continue, the wait for a visible #view canvas
       # intermittently times out; cause unknown. The d20 busy-lock regression is independent below.
       # Coverage lost and the proof needed to reinstate this step:
@@ -145,3 +148,62 @@ jobs:
       - run: timeout 300 npm run validate
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
+      - name: Upload check artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deadvox-check-test-results
+          path: deadvox/test-results/
+          if-no-files-found: ignore
+
+  # The Chromium stages of `npm run test:ui-browser` that `check` does not run, in parallel with it so the
+  # PR's time-to-green stays at `check`'s. test/deadvox-browser-ci.test.mjs (root `npm run ci`) fails when a
+  # stage of a browser script has no step in this file. Chromium is the runner image's Chrome, which the
+  # scripts find through the image's CHROME_BIN, exactly as in `check`; each script starts its own Vite server.
+  browser-stages:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deadvox
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          # Same lockfiles as `check`, so both jobs share one npm cache entry.
+          cache-dependency-path: |
+            deadvox/package-lock.json
+            deadvox/tools/lit-check/package-lock.json
+      - run: npm ci
+      - name: Inventory scroll browser contract (Chromium)
+        timeout-minutes: 1
+        run: node test/browser/inventory-scroll.mjs chromium
+      - name: Full-auto fire browser contract
+        timeout-minutes: 1
+        run: node test/browser/full-auto.mjs
+      - name: Case visual pool browser contract
+        timeout-minutes: 1
+        run: node test/browser/case-visual-pool.mjs
+      - name: Pump handling browser contract (Chromium)
+        timeout-minutes: 5
+        run: timeout 300 node test/browser/pump-handling.mjs
+      - name: Stairs traversal browser contract
+        timeout-minutes: 3
+        run: node test/browser/stairs.mjs traversal
+      - name: Stairs lighting browser contract
+        timeout-minutes: 5
+        run: node test/browser/stairs.mjs lighting
+      - name: Reading consumer browser contract
+        timeout-minutes: 3
+        run: node test/browser/reading.mjs consumer
+      - name: Reading lifecycle browser contract
+        timeout-minutes: 3
+        run: node test/browser/reading.mjs lifecycle
+      - name: Upload browser-stage artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deadvox-browser-stages-test-results
+          path: deadvox/test-results/
+          if-no-files-found: ignore
