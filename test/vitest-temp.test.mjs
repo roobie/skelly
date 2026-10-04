@@ -111,7 +111,7 @@ test('browser startup reclaims dead profile owners but preserves live or uncerta
     symlinkSync(`${hostname()}-${process.pid}`, join(profiles, liveLock, 'SingletonLock'));
     symlinkSync(`${hostname()}-1`, join(profiles, uncertainLock, 'SingletonLock'));
     symlinkSync('not-a-host-pid', join(profiles, malformedLock, 'SingletonLock'));
-    symlinkSync(`foreign-host-${process.pid}`, join(profiles, foreignLock, 'SingletonLock'));
+    symlinkSync(`foreign-host-${deadPid()}`, join(profiles, foreignLock, 'SingletonLock'));
 
     const child = loadBrowserProfile(root);
     assert.equal(child.status, 0, child.stderr);
