@@ -1,3 +1,10 @@
+---
+read_if:
+  - you're new to the repository and want its subprojects and pillars
+  - you're about to make a trade-off between churn and maintainability
+  - you're writing or changing a doc, a comment or an ADR (Zero drift)
+---
+
 # skelly
 
 A greenfield, experimental, multi-modal 3D project. The scope is not limited to
@@ -65,6 +72,52 @@ choice and why.
 Example (BR, 2026-09-29): mobgen face features are sized from the actor's
 `height` like the rest of the body, instead of in fixed metres that would have
 kept every snapshot unchanged but left two unit systems in one body plan.
+
+### Zero drift
+
+BR, 2026-10-04: "Code shows what and how (and github can show this too - but the
+lifecycle of an issue or PR terminates) / Docs describe why and when"
+
+If a code change can make a doc sentence false without anyone touching the doc, that
+sentence is in the wrong place. Say it in code (a name, a type, a test) and point to it
+from the doc.
+
+- **Point, don't restate.** Cue code by path and symbol, for example "see
+  `deadvox/src/core/options.ts`, `dropTarget`". Never cite a line number, and never copy
+  or generate a list, table or value from code into a doc.
+- **A "when" names its trigger.** "Until `<item>`" or "after #`<pr>`" can be checked; "today",
+  "currently" and "newly" can't. The PR that completes an item resolves every doc line
+  that names it.
+- **The final reason lives in the repo.** Reasoning in a PR, review, issue or commit
+  message that still matters after the merge goes into a tracked doc or ADR before the
+  merge. PRs and issues keep the history for archaeology; commit messages aren't a home
+  for the final reason.
+- **Comments say why, and only when there's a special why.** Most code needs none.
+- **Design docs may state intent ahead of the code.** The PR that builds it trims the
+  doc to the why and cues the code.
+- **ADRs:** the context is a dated snapshot. The decision and its consequences stay
+  true, amended by dated rulings or superseded by a new ADR. Specification belongs in
+  code, cued from the ADR.
+- **Reviews and retros are dated snapshots,** true as of their date, and exempt.
+- **Closed slice plans are dated records too.** `deadvox/SLICE-1.md` keeps its text
+  until the v1 EPIC ships. Then the closed slice plans are removed from the tree, and
+  git and GitHub history keep them (BR, 2026-10-04: "keep it until we've shipped v1
+  EPIC - and when we do that we archive them to the depths of git/hub history").
+- **Every doc says why you'd read it.** Its front matter carries `read_if`, a list of
+  reasons, each finishing the sentence "Read this if …" (BR, 2026-10-04: "it shall note
+  all up front reasons for readin[g] the document"):
+
+  ```yaml
+  ---
+  read_if:
+    - you change how saves are stored, versioned or loaded
+    - you add state that must survive a reload
+  ---
+  ```
+
+A false doc is a defect, and a review returns FIX for it. Until r27 lands, reviews check
+these rules by hand; r27 adds a CI check that every cited path and symbol exists, that no
+doc outside reviews and retros cites a line number, and that every doc has `read_if`.
 
 ## Shared direction
 
