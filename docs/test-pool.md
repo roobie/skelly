@@ -10,8 +10,9 @@ Changes to this shared file trigger all three subproject workflows.
 
 Vitest 5.0.1 leaves its root module-fetch cache behind even after a normal run;
 5.0.2 is also installed in Mobgen. Killed runs additionally skip project cleanup.
-On Linux, `testPool.ts` therefore sets Vitest-only `TMPDIR` before Vitest allocates
-these caches, beneath the invocation's `node_modules/.cache/vitest-tmp`.
+`testPool.ts` sets Vitest-only `TMPDIR` before Vitest allocates these caches,
+beneath the invocation's `node_modules/.cache/vitest-tmp`. Native temp-directory
+selection honours `TMPDIR` on POSIX.
 Each run has a unique PID-prefixed directory. Normal process exit removes its
 own directory; the next Vitest startup reclaims directories whose owner PID no
 longer exists. Live owners, unknown names, symlinks and uncertain liveness are
@@ -19,10 +20,14 @@ preserved. PID reuse can conservatively retain stale data until a later startup.
 
 Package tests and external mutation configs importing the package Vite config
 share this policy. A config that bypasses `testPool.ts` is not covered. Ordinary
-Vite/browser invocations retain their caller's temp directory; browser profile
-scavenging is separate work (r19). Root `npm run ci` also runs the native
-`node:test` ownership/non-Vitest contract. No worker policy, assertion, timeout,
-or dependency is changed by this cleanup.
+Vite/browser invocations retain their caller's temp directory. The Chromium
+`ui-browser-contract` and `save-storage` stages share a PID-owned profile root
+under that caller temp directory; startup reclaims dead stage owners but retains
+profiles with a live or uncertain native `SingletonLock` owner. Normal cleanup
+still runs after browser shutdown. Firefox continues to use Playwright-managed
+profiles. Root `npm run ci` also runs the native `node:test` ownership/non-Vitest
+contract. No worker policy, assertion, timeout, or dependency is changed by this
+cleanup.
 
 ## Default-run time budgets (Slice 2.0)
 

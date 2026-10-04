@@ -6,14 +6,13 @@
 // biome-ignore-all lint/complexity/useSimplifiedLogicExpression: readable browser status checks
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import { createServer as createNetServer } from 'node:net';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { build, createServer, preview } from 'vite';
+import { createBrowserProfile } from '../../tools/browser-profile.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
@@ -108,7 +107,7 @@ try {
   let context;
   if (browserName === 'chromium') {
     const cdpPort = await freePort();
-    profile = await mkdtemp(join(tmpdir(), 'deadvox-save-storage-'));
+    profile = createBrowserProfile();
     const startupError = { error: undefined };
     chromeProcess = spawn(
       process.env.CHROME_BIN ?? 'google-chrome',
