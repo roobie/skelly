@@ -1,0 +1,59 @@
+{
+  "items": [
+    {
+      "id": "shed_key",
+      "name": "Shed key",
+      "category": "tool",
+      "weight": 10,
+      "size": [1, 1],
+      "key": { "lock": "test_shed" },
+      "description": "A small key for the shed's door."
+    }
+  ],
+  "furniture": [
+    {
+      "id": "key_box",
+      "name": "Key box",
+      "size": [1, 1, 1],
+      "color": "#666666",
+      "container": { "pockets": [{ "name": "Inside", "grid": [2, 1], "handling": 0.2 }] }
+    }
+  ],
+  "loot": [
+    { "id": "shed_key_nearby", "rolls": [1, 1], "entries": [{ "weight": 1, "item": "shed_key", "count": [1, 1] }] }
+  ],
+  "templates": [
+    {
+      "id": "locked_shed",
+      "size": [8, 6, 8],
+      "palette": {
+        ".": "air",
+        "#": "planks",
+        "W": "siding_blue",
+        "R": "roof",
+        "D": { "furniture": "wood_door", "facing": "n", "lock": { "id": "test_shed", "locked": true } },
+        "K": { "furniture": "key_box", "loot": "shed_key_nearby" }
+      },
+      "layers": [
+        ["########", "########", "########", "########", "########", "########", "########", "########"],
+        ["........", "..K.....", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
+        ["........", "........", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
+        ["........", "........", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
+        ["........", "........", "WWWDDWWW", "W......W", "W......W", "W......W", "W......W", "WWWWWWWW"],
+        ["........", "........", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR", "RRRRRRRR"]
+      ]
+    }
+  ],
+  "layouts": [
+    {
+      "id": "lock_test",
+      "bounds": { "x0": -16, "z0": -16, "x1": 16, "z1": 16 },
+      "ground": 0,
+      "buildings": [{ "template": "locked_shed", "position": [-2, 0, -1], "rotation": 0 }],
+      "player": { "position": [0, 0.5, -1.5], "yaw": 180 },
+      "shamblers": [],
+      "woodlands": [],
+      "tracks": []
+    }
+  ]
+}

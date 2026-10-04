@@ -8,6 +8,7 @@
 import type { Chunk } from './chunk.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
+import type { DoorLockDef } from './schema.ts';
 
 /** The way something's front faces: north is -z, east is +x. */
 export type Facing = 'n' | 'e' | 's' | 'w';
@@ -72,8 +73,23 @@ export const findPieces = (
   return { anchors };
 };
 
+/** Actual door-lock occurrences, not unused palette declarations; shared by content and site checks. */
+export const templateLockIds = (registry: Registry, template: TemplateDef): string[] =>
+  Object.entries(template.palette).flatMap(([char, entry]) => {
+    if (typeof entry === 'string' || !entry.lock || !entry.furniture) {
+      return [];
+    }
+    const furniture = registry.furniture.get(entry.furniture);
+    if (!furniture?.door) {
+      return [];
+    }
+    const { id } = entry.lock;
+    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n')).anchors ?? []).map(() => id);
+  });
+
 /** A piece of furniture in a template, in template coordinates. */
 export interface Piece {
+  lock?: DoorLockDef;
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
   loot?: string | undefined;
@@ -123,7 +139,14 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     const facing = entry.facing ?? 'n';
     const size = pieceSize(def.size, facing);
     for (const pos of findPieces(template, char, size).anchors ?? []) {
-      pieces.push({ furniture: def.id, loot: entry.loot ?? def.loot, facing, pos, size });
+      pieces.push({
+        furniture: def.id,
+        loot: entry.loot ?? def.loot,
+        facing,
+        pos,
+        size,
+        ...(entry.lock ? { lock: entry.lock } : {}),
+      });
     }
   }
   for (const [x, y, z] of cellsOf(template.size)) {
@@ -195,6 +218,7 @@ export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
 
 /** A placed piece in world coordinates. */
 export interface PlacedPiece {
+  lock?: DoorLockDef;
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
@@ -211,6 +235,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
     const [bx, bz] = turned(template.size, turn, piece.pos[0] + piece.size[0] - 1, piece.pos[2] + piece.size[2] - 1);
     return {
       furniture: piece.furniture,
+      ...(piece.lock ? { lock: piece.lock } : {}),
       loot: piece.loot,
       facing: turnFacing(piece.facing, turn),
       pos: [origin[0] + Math.min(ax, bx), origin[1] + piece.pos[1], origin[2] + Math.min(az, bz)],

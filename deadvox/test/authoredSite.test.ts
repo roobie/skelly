@@ -19,13 +19,14 @@ const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')
   .layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
+const baseLayoutIds = [...buildRegistry(base).registry.layouts.keys()];
 const scale = makeScale(0.5);
 const invalid = (data: unknown, message: string) => {
   const result = load(data);
   expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
     true,
   );
-  expect(result.registry.layouts.size).toBe(0); // Whole-file rejection, not partially stamped content.
+  expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds); // Whole fixture file rejected; other packs remain.
 };
 
 describe('authored layout acceptance', () => {

@@ -69,7 +69,13 @@ export const furnitureOf = (
   placedPieces(placement)
     .filter((piece) => toChunk(piece.pos[0]) === cx && toChunk(piece.pos[2]) === cz)
     .map((piece) => ({
-      spec: { type: piece.furniture, pos: piece.pos, size: piece.size, facing: piece.facing },
+      spec: {
+        type: piece.furniture,
+        pos: piece.pos,
+        size: piece.size,
+        facing: piece.facing,
+        ...(piece.lock ? { lock: piece.lock } : {}),
+      },
       loot:
         piece.loot === undefined ? [] : rollLoot(registry, piece.loot, Rng.stream(seed, `loot:${piece.pos.join(',')}`)),
     }));

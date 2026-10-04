@@ -15,7 +15,7 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { findPieces, pieceSize } from './templates.ts';
+import { findPieces, pieceSize, templateLockIds } from './templates.ts';
 
 export type {
   BlockDef,
@@ -317,6 +317,9 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
   }
+  if (entry.lock && furniture && !furniture.door) {
+    found.push(['.lock', 'only a door can have a lock']);
+  }
   if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }
@@ -379,6 +382,15 @@ const checkRecipes = (registry: Registry, report: Report) => {
   }
 };
 
+const checkKeys = (registry: Registry, report: Report) => {
+  const locks = new Set([...registry.templates.values()].flatMap((template) => templateLockIds(registry, template)));
+  for (const item of registry.items.values()) {
+    if (item.key && !locks.has(item.key.lock)) {
+      report('items', item.id, '.key.lock', `no door has lock "${item.key.lock}"`);
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -399,6 +411,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
+  checkKeys(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);
   for (const layout of registry.layouts.values()) {

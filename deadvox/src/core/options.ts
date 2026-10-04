@@ -1,11 +1,46 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
 
+import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { HandSide, Inventory, Plan, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
+
+/** Keys stay ordinary Inventory-owned items; only held definitions authorize a door lock. */
+export const heldKeyLocks = (inventory: Inventory): string[] =>
+  Object.values(inventory.hands).flatMap((item) => {
+    const lock = item && defOf(inventory.registry, item.type).key?.lock;
+    return lock === undefined ? [] : [lock];
+  });
+
+export const doorPlan = (inventory: Inventory, entity: BlockEntity, operation: DoorOperation): Plan => {
+  const reason = inventory.canReachEntity(entity)
+    ? inventory.entities.doorRefusal(entity, operation, heldKeyLocks(inventory))
+    : 'Too far away';
+  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handling };
+};
+
+export const doorOptions = (
+  inventory: Inventory,
+  entity: BlockEntity,
+): { operation: DoorOperation; label: string; plan: Plan }[] => {
+  const operation = entity.open ? 'close' : 'open';
+  const lock = entity.lock?.locked ? 'unlock' : 'lock';
+  return [
+    { operation, label: entity.open ? 'Close' : 'Open', plan: doorPlan(inventory, entity, operation) },
+    ...(entity.lock
+      ? [
+          {
+            operation: lock as DoorOperation,
+            label: entity.lock.locked ? 'Unlock' : 'Lock',
+            plan: doorPlan(inventory, entity, lock),
+          },
+        ]
+      : []),
+  ];
+};
 
 export const EAT_TIME = 3;
 export const DRINK_TIME = 2;

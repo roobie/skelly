@@ -52,6 +52,7 @@ export const PLAYER_CONTROL_BINDINGS = [
     action: 'Left-hand primary action',
   },
   { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
+  { keys: 'Shift+F', codes: [CONTROL_CODES.interact], action: 'Lock or unlock a closed door with a held key' },
   {
     keys: 'R',
     codes: [CONTROL_CODES.rest, CONTROL_CODES.rotate],
