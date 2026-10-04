@@ -11,6 +11,11 @@ describe('browser stage rendering mode', () => {
 
   it('keeps pixel stages on SwiftShader and removes a render-free URL override', () => {
     expect(browserStageMode('stairs-lighting')).toBe('pixel');
+    expect(browserStageMode('save-storage-opfs-continue')).toBe('pixel');
+    expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-gl=swiftshader');
+    expect(browserStageUrl('save-storage-opfs-continue', 'http://localhost/?seed=1&render=0')).toBe(
+      'http://localhost/?seed=1',
+    );
     expect(browserStageArgs('stairs-lighting')).toContain('--use-gl=swiftshader');
     expect(browserStageArgs('stairs-lighting')).toContain('--enable-unsafe-swiftshader');
     expect(browserStageUrl('stairs-lighting', 'http://localhost/?seed=1&render=0')).toBe('http://localhost/?seed=1');

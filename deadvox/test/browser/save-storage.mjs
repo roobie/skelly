@@ -11,7 +11,7 @@ import { createServer as createNetServer } from 'node:net';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
 import { createBrowserProfile } from '../../tools/browser-profile.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
 import { browserStageLaunchArgs, browserStageUrl } from './stage-mode.mjs';
@@ -23,6 +23,9 @@ const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
 const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
 const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
 const busyLockOnly = autosaveOnly && autosaveScenario === 'busy-lock';
+const productionBundleStage =
+  browserName === 'chromium' && autosaveOnly && requestedAutosaveBackend === 'opfs' && autosaveScenario === 'continue';
+const stageId = productionBundleStage ? 'save-storage-opfs-continue' : 'save-storage';
 if (!['continue', 'replacement', 'busy-lock'].includes(autosaveScenario)) {
   throw new Error(`Unsupported autosave scenario ${autosaveScenario}`);
 }
@@ -37,6 +40,16 @@ const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
 const startWebServer = async () => {
+  if (productionBundleStage) {
+    await viteBuild({ configFile: viteConfig, root: projectRoot, logLevel: 'error' });
+    vite = await vitePreview({
+      configFile: viteConfig,
+      root: projectRoot,
+      logLevel: 'error',
+      preview: { host: '127.0.0.1', port: 0 },
+    });
+    return vite.httpServer.address();
+  }
   vite = await createServer({
     configFile: viteConfig,
     root: projectRoot,
@@ -102,7 +115,7 @@ try {
     const startupError = { error: undefined };
     chromeProcess = spawn(
       process.env.CHROME_BIN ?? 'google-chrome',
-      browserStageLaunchArgs('save-storage', [
+      browserStageLaunchArgs(stageId, [
         `--remote-debugging-port=${cdpPort}`,
         `--user-data-dir=${profile}`,
         autosaveOnly ? 'about:blank' : testUrl,
@@ -433,7 +446,7 @@ try {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
   const testTitleAndAutosave = async (backend) => {
     const appUrl = browserStageUrl(
-      'save-storage',
+      stageId,
       `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}${autosaveOnly ? '&save-test=1' : ''}`,
     );
     if (!autosaveOnly) {
@@ -665,7 +678,7 @@ try {
   // Independent of quarantined Continue/native gestures: seed a valid checkpoint, then hold a real writer lock.
   if (busyLockOnly) {
     const appUrl = browserStageUrl(
-      'save-storage',
+      stageId,
       `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`,
     );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });

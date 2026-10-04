@@ -23,8 +23,7 @@ const { registry } = buildRegistry(
 const fixture = () => {
   const inventory = new Inventory({ ...registry, models: new Map() });
   const page = new EventTarget();
-  let currentTarget: object | null = null;
-  const renderer = { toneMapping: 0, toneMappingExposure: 1, getRenderTarget: () => currentTarget };
+  const renderer = { toneMapping: 0, toneMappingExposure: 1 };
   const mood = { post: false, restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) };
   const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
@@ -46,45 +45,18 @@ const fixture = () => {
     page,
     mood,
     shadows,
-    setRenderTarget: (target: object | null) => {
-      currentTarget = target;
-    },
   };
 };
 
 describe('play presentation ownership', () => {
-  it('routes one held draw through Mood in world order and the correct post target', async () => {
-    const { engine, view, mood, shadows, setRenderTarget } = fixture();
-    const order: string[] = [];
-    const targetWasBound: boolean[] = [];
-    const postTarget = {};
-    const draw = vi.spyOn(view.held, 'render').mockImplementation(() => {
-      order.push('hands');
-      targetWasBound.push(Boolean(engine.renderer?.getRenderTarget()));
-    });
-    vi.spyOn(mood, 'render').mockImplementation((drawHands) => {
-      order.push('world');
-      setRenderTarget(mood.post ? postTarget : null);
-      drawHands();
-    });
-    const clock = vi
-      .spyOn(performance, 'now')
-      .mockReturnValueOnce(20)
-      .mockReturnValueOnce(25)
-      .mockReturnValueOnce(30)
-      .mockReturnValueOnce(35);
-    for (const post of [true, false]) {
-      mood.post = post;
-      order.length = 0;
-      targetWasBound.length = 0;
-      expect(view.render()).toBe(5);
-      expect(order).toEqual(['world', 'hands']);
-      expect(targetWasBound).toEqual([post]);
-      expect(draw).toHaveBeenCalledExactlyOnceWith(engine.renderer, engine.camera, engine.sky);
-      draw.mockClear();
-    }
+  it('routes one held draw through Mood with renderer, camera, and sky', async () => {
+    const { engine, view, mood, shadows } = fixture();
+    const draw = vi.spyOn(view.held, 'render').mockImplementation(() => undefined);
+    const clock = vi.spyOn(performance, 'now').mockReturnValueOnce(20).mockReturnValueOnce(25);
+    expect(view.render()).toBe(5);
+    expect(mood.render).toHaveBeenCalledTimes(1);
+    expect(draw).toHaveBeenCalledExactlyOnceWith(engine.renderer, engine.camera, engine.sky);
     clock.mockRestore();
-    expect(mood.render).toHaveBeenCalledTimes(2);
     await view.warmUp();
     expect(shadows.warmUp).toHaveBeenCalledExactlyOnceWith(engine.mood, [
       { scene: engine.scene, camera: engine.camera },

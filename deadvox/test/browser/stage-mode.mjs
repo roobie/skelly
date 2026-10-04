@@ -1,5 +1,5 @@
-// One mode assignment per existing browser stage. Launchers use this for both the URL opt-in
-// and Chromium's graphics flags, so a stage cannot silently request one mode and launch another.
+// One mode assignment per browser stage, including the production-bundle save scenario. Launchers
+// use this for both URL opt-in and Chromium graphics flags, so mode and launch cannot silently diverge.
 const modes = Object.freeze({
   'inventory-scroll': 'render-free',
   'ui-browser-contract': 'pixel',
@@ -9,6 +9,7 @@ const modes = Object.freeze({
   'case-visual-pool': 'pixel',
   'save-controller-regressions': 'render-free',
   'save-storage': 'render-free',
+  'save-storage-opfs-continue': 'pixel',
   'insecure-saves': 'render-free',
   'stairs-traversal': 'render-free',
   'stairs-lighting': 'pixel',
