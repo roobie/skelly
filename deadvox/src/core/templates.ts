@@ -8,7 +8,7 @@
 import type { Chunk } from './chunk.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
-import type { TemplateAccess } from './schema.ts';
+import type { DoorLockDef, TemplateAccess } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 
 /** The way something's front faces: north is -z, east is +x. */
@@ -74,8 +74,23 @@ export const findPieces = (
   return { anchors };
 };
 
+/** Actual door-lock occurrences, not unused palette declarations; shared by content and site checks. */
+export const templateLockIds = (registry: Registry, template: TemplateDef): string[] =>
+  Object.entries(template.palette).flatMap(([char, entry]) => {
+    if (typeof entry === 'string' || !entry.lock || !entry.furniture) {
+      return [];
+    }
+    const furniture = registry.furniture.get(entry.furniture);
+    if (!furniture?.door) {
+      return [];
+    }
+    const { id } = entry.lock;
+    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n')).anchors ?? []).map(() => id);
+  });
+
 /** A piece of furniture in a template, in template coordinates. */
 export interface Piece {
+  lock?: DoorLockDef;
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
   loot?: string | undefined;
@@ -101,6 +116,14 @@ export interface CompiledTemplate {
   /** The support layer of the declared ground floor, relative to the lowest template layer. */
   readonly groundLayer?: number;
 }
+
+/** Whether every block and furniture id in a template's palette exists; `compileTemplate` needs that. */
+export const templateResolves = (registry: Registry, template: TemplateDef): boolean =>
+  Object.values(template.palette).every((entry) =>
+    typeof entry === 'string'
+      ? registry.blockIds.has(entry)
+      : entry.furniture === undefined || registry.furniture.has(entry.furniture),
+  );
 
 /** Resolves a template's palette against the registry. The validator has already checked it. */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: palette compilation resolves the template's block, furniture, and spawn encodings in one pass.
@@ -128,7 +151,14 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     const facing = entry.facing ?? 'n';
     const size = pieceSize(def.size, facing);
     for (const pos of findPieces(template, char, size).anchors ?? []) {
-      pieces.push({ furniture: def.id, loot: entry.loot ?? def.loot, facing, pos, size });
+      pieces.push({
+        furniture: def.id,
+        loot: entry.loot ?? def.loot,
+        facing,
+        pos,
+        size,
+        ...(entry.lock ? { lock: entry.lock } : {}),
+      });
     }
   }
   for (const [x, y, z] of cellsOf(template.size)) {
@@ -190,6 +220,15 @@ const unturned = (size: Vec3, turn: Turn, u: number, v: number): [number, number
   }
 };
 
+/** The authored block at a world cell, including air; undefined outside this placement. */
+export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | undefined => {
+  const { template, origin, turn } = placement;
+  const [u, v] = unturned(template.size, turn, x - origin[0], z - origin[2]);
+  const h = y - origin[1];
+  const [sx, sy, sz] = template.size;
+  return u >= 0 && u < sx && v >= 0 && v < sz && h >= 0 && h < sy ? template.blocks[u + sx * (v + sz * h)] : undefined;
+};
+
 /** Writes the part of a placed template that falls inside the chunk. */
 export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
   const { template, origin, turn } = placement;
@@ -211,6 +250,7 @@ export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
 
 /** A placed piece in world coordinates. */
 export interface PlacedPiece {
+  lock?: DoorLockDef;
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
@@ -227,6 +267,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
     const [bx, bz] = turned(template.size, turn, piece.pos[0] + piece.size[0] - 1, piece.pos[2] + piece.size[2] - 1);
     return {
       furniture: piece.furniture,
+      ...(piece.lock ? { lock: piece.lock } : {}),
       loot: piece.loot,
       facing: turnFacing(piece.facing, turn),
       pos: [origin[0] + Math.min(ax, bx), origin[1] + piece.pos[1], origin[2] + Math.min(az, bz)],

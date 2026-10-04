@@ -41,6 +41,9 @@ const makeSession = (play: SessionAudio['play'], content: Registry = registry) =
     },
     audio: { play },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in sound fixture');
+    },
   });
 
 describe('simulation sound admission', () => {

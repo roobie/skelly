@@ -5,7 +5,7 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "ci": "biome ci && node --test test/vitest-temp.test.mjs",
+    "ci": "biome ci && node --test test/vitest-temp.test.mjs test/deadvox-browser-ci.test.mjs",
     "test:site": "node --test test/site-launcher.test.mjs",
     "prepare": "sh .githooks/prepare"
   },

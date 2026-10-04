@@ -35,7 +35,7 @@ A1 and A3 use `stripTypeScriptTypes` to execute exact private declaration slices
 - Mobgen **300 tests passed, 1 skipped, 18 files; 39.99 s**, default `npm test`.
 - Mobgen **typecheck passed**, including `tsc -p tsconfig.core.json`.
 - Deadvox selected seam suite **119 tests passed, 5 files; 5.39 s**: `mobgenBoundary`, `mobActors`, `zombieRegions`, `simulationFingerprint`, `zombies`.
-- All heavy runs used the shared `skelly-heavy.lock`; timeout 240 s, not a raised product-test timeout.
+- All heavy runs held the host's shared heavy-run lock; timeout 240 s, not a raised product-test timeout.
 - No sweep, browser-render/listening, full Deadvox suite, root lint/site or production-build result is claimed. No test deletion or performance improvement is inferred from these counts.
 
 ## History and upcoming-change traces

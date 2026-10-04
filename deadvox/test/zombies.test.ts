@@ -11,6 +11,7 @@ import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
@@ -253,9 +254,15 @@ const standing = (position: Vec3, facing: Vec3 = [0, 0, -1]) => {
 };
 
 /** The solid wall is real geometry; the doorway collision comes directly from BlockEntities. */
-const makeDoorWorld = () => {
+const makeDoorWorld = (lock?: DoorLockDef) => {
   const entities = new BlockEntities(registry);
-  const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+  const door = entities.add({
+    type: 'wood_door',
+    pos: [4, 1, 0],
+    size: [2, 4, 1],
+    facing: 'n',
+    ...(lock ? { lock } : {}),
+  })!;
   const solid: SolidAt = (x, y, z) =>
     FLOOR(x, y, z) || ((x === 3 || x === 6) && z === 0 && y >= 1 && y <= 4) || entities.isSolid(x, y, z);
   return { entities, door, solid };
@@ -429,8 +436,8 @@ describe('shambler scenarios', () => {
     ).toBe(true);
   });
 
-  it('B: hears the sprinting player but cannot enter through the real closed door for 120 seconds', () => {
-    const { entities, door, solid } = makeDoorWorld();
+  it('B: hears the sprinting player but cannot enter through the real locked door for 120 seconds', () => {
+    const { entities, door, solid } = makeDoorWorld({ id: 'test_shed', locked: true });
     entities.setOpen(door, false);
     const target = [5, 1, -0.56] as Vec3;
     let damage = 0;
@@ -465,6 +472,7 @@ describe('shambler scenarios', () => {
     expect(firstMinuteDamage).toBe(0);
     expect(damage).toBe(0);
     expect(positions.every((position) => position[2] > 1)).toBe(true);
+    expect(entities.setLocked(door, false, ['test_shed'])).toBeUndefined();
     entities.setOpen(door, true);
     // A hit now telegraphs: attack start plays the sound and begins the windup; damage lands only once
     // the windup elapses, still in reach/LOS (see withinAttackReach in src/core/zombies.ts).

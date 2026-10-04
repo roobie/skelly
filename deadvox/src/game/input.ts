@@ -117,7 +117,7 @@ export class Input {
       if (e.code === CONTROL_CODES.inventory) {
         e.preventDefault();
       }
-      if (e.code === CONTROL_CODES.walkToggle && !e.repeat) {
+      if (e.code === CONTROL_CODES.walkToggle && !e.repeat && !this.menuPointer) {
         this.walking = !this.walking;
       }
       if (e.code === KEY_BINDINGS.leftHandAction.code && !this.leftHandActionDown) {

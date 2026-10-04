@@ -112,10 +112,24 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
   return boxes;
 };
 
+/** Where to put the house relative to the world origin, and where the player starts (metres). */
+export const HOUSE_OFFSET: readonly [number, number] = [4, -4];
+/** On the lot, 8 m out from the front door and facing it, so the whole house is in view. */
+export const SPAWN_OFFSET: Vec3 = [-8, 0, 3.5];
+/** Yaw that faces +x (east), toward the front door. */
+export const SPAWN_YAW = -Math.PI / 2;
+/** The lot's centre, used to pick its floor height. */
+export const LOT_CENTRE: readonly [number, number] = [5, 3.5];
+
+export interface HouseFurnitureSpec extends EntitySpec {
+  loot?: string;
+}
+
 /** The house's furniture: each piece's lowest corner in metres from the lot origin, and which way its front faces. */
-const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing }[] = [
+const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing; loot?: string }[] = [
   // Outside, on the grass beside the path.
-  { type: 'crate', at: [-2, 0, 4.5], facing: 'n' },
+  { type: 'crate', at: [-2, 0, 4.5], facing: 'n', loot: 'sample_note_loot' },
+  { type: 'sample_sign', at: [SPAWN_OFFSET[0] + 2, 0, SPAWN_OFFSET[2] + 1], facing: 'n' },
   // Kitchen: a fridge in the south-west corner, a cupboard against the south wall.
   { type: 'fridge', at: [1, 0, 5.5], facing: 'n' },
   { type: 'kitchen_cupboard', at: [3, 0, 6], facing: 'n' },
@@ -129,19 +143,15 @@ const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing }[] = [
  * there, so the caller places furniture at that block size only.
  * @param sizeOf a furniture type's size in blocks, before turning
  */
-export const testHouseFurniture = (origin: Vec3, blockSize: number, sizeOf: (type: string) => Vec3): EntitySpec[] =>
-  HOUSE_FURNITURE.map(({ type, at, facing }) => ({
+export const testHouseFurniture = (
+  origin: Vec3,
+  blockSize: number,
+  sizeOf: (type: string) => Vec3,
+): HouseFurnitureSpec[] =>
+  HOUSE_FURNITURE.map(({ type, at, facing, loot }) => ({
     type,
     pos: [0, 1, 2].map((axis) => Math.round((origin[axis]! + at[axis]!) / blockSize)) as Vec3,
     size: pieceSize(sizeOf(type), facing),
     facing,
+    ...(loot ? { loot } : {}),
   }));
-
-/** Where to put the house relative to the world origin, and where the player starts (metres). */
-export const HOUSE_OFFSET: readonly [number, number] = [4, -4];
-/** On the lot, 8 m out from the front door and facing it, so the whole house is in view. */
-export const SPAWN_OFFSET: Vec3 = [-8, 0, 3.5];
-/** Yaw that faces +x (east), toward the front door. */
-export const SPAWN_YAW = -Math.PI / 2;
-/** The lot's centre, used to pick its floor height. */
-export const LOT_CENTRE: readonly [number, number] = [5, 3.5];
