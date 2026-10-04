@@ -18,9 +18,13 @@ export interface LongActionState {
   job: LongJob | null;
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
+export interface CraftRepair {
+  targetUid: number;
+  amount: number;
+}
 export interface CraftActionHooks {
   admit: (plan: CraftPlan) => string | undefined;
-  begin: (plan: CraftPlan) => number | undefined;
+  begin: (plan: CraftPlan, repair?: CraftRepair) => number | undefined;
   owns: (uid: number) => boolean;
   validate: (uid: number) => string | undefined;
   advance: (uid: number, gameSeconds: number) => boolean;
@@ -110,7 +114,7 @@ export class LongActions {
     return undefined;
   }
   /** Admit and secure compression before any structural escrow effect. */
-  beginCraft(plan: CraftPlan): string | undefined {
+  beginCraft(plan: CraftPlan, repair?: CraftRepair): string | undefined {
     if (!this.craft) {
       return 'Missing craft action owner';
     }
@@ -127,7 +131,7 @@ export class LongActions {
     }
     let uid: number | undefined;
     try {
-      uid = this.craft.begin(plan);
+      uid = this.craft.begin(plan, repair);
     } catch (error) {
       this.stop();
       throw error;

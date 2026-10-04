@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're planning or building the crafting-and-mending slice
+  - you're implementing or reviewing a Slice 2 milestone and need its approved scope and proofs
   - you're carrying Slice 2 questions into the Slice 3 playtest
 ---
 
@@ -714,6 +715,9 @@ they don't change those two counts.
 
 1. **Wear when hit:** the outermost clothing over the hit area wears. *Later:*
    items carried in that clothing can be damaged too.
+   Decided (BR, 2026-10-05): "d56:A", choosing option A as the lead put it:
+   every shambler hit lands on the torso, since shamblers grab and bite the upper
+   body; Slice 3's body model replaces it, and crawlers would add legs then.
 2. **Condition and performance:** condition matters only at ruin in Slice 2.
    *Later:* condition affects how an item performs.
 3. **Books** teach recipes only. *Later:* books may also speed up skill
