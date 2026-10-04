@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { createBrowserProfile } from '../../tools/browser-profile.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageLaunchArgs, browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
@@ -102,18 +102,11 @@ try {
     const startupError = { error: undefined };
     chromeProcess = spawn(
       process.env.CHROME_BIN ?? 'google-chrome',
-      [
-        '--headless=new',
-        ...browserStageArgs('save-storage', [
-          '--disable-extensions',
-          // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
-          '--password-store=basic',
-        ]),
+      browserStageLaunchArgs('save-storage', [
         `--remote-debugging-port=${cdpPort}`,
         `--user-data-dir=${profile}`,
-        '--window-size=1280,900',
         autosaveOnly ? 'about:blank' : testUrl,
-      ],
+      ]),
       { stdio: 'ignore' },
     );
     chromeExitPromise = new Promise((resolve) => chromeProcess.once('exit', resolve));

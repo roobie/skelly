@@ -14,9 +14,11 @@ until the key loaded. First navigation then took 28 seconds or crossed its uncha
 30-second bound (#190). A late response `Date` header did not mean Vite was slow:
 its first curl response took 8 ms, and its browser-request handler took 4–15 ms.
 
-**What to do.** Use `--password-store=basic` for the throwaway profiles in
-`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`, matching
-Playwright's normal launch arguments. This is test-profile isolation, not a setting
+**What to do.** Use shared `browserStageLaunchArgs` from
+`test/browser/stage-mode.mjs` for the throwaway profiles in
+`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`. It owns the common
+headless, isolation, graphics-mode and window-size flags; each caller supplies only its
+profile, remote-debugging port and URL. This is test-profile isolation, not a setting
 for players' browsers. Do not warm up a request, retry or raise the timeout.
 
 **Proof.** Three fresh-profile launches without the flag took 27.76–28.89 seconds;

@@ -14,7 +14,7 @@ import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
-import { browserStageArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { browserStageLaunchArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
 import { createBrowserProfile } from './browser-profile.mjs';
 
 const cwd = process.cwd();
@@ -44,18 +44,11 @@ const stageUrl = browserStageUrl(
 );
 const chrome = spawn(
   process.env.CHROME_BIN ?? 'google-chrome',
-  [
-    '--headless=new',
-    ...browserStageArgs('ui-browser-contract', [
-      '--disable-extensions',
-      // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
-      '--password-store=basic',
-      `--remote-debugging-port=${cdpPort}`,
-      `--user-data-dir=${profile}`,
-      '--window-size=1280,900',
-      stageUrl,
-    ]),
-  ],
+  browserStageLaunchArgs('ui-browser-contract', [
+    `--remote-debugging-port=${cdpPort}`,
+    `--user-data-dir=${profile}`,
+    stageUrl,
+  ]),
   { stdio: ['ignore', 'pipe', 'pipe'] },
 );
 const startupAbort = new AbortController();
