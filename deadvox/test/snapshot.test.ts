@@ -704,7 +704,7 @@ describe('craft job codec and ownership', () => {
     if (!('plan' in planned)) {
       throw new Error(planned.missing.reason);
     }
-    const amount = recipe.repair!.amount;
+    const { amount } = recipe.repair!;
     const work = runtime.inventory.beginWork(planned.plan, { targetUid: target.uid, amount });
     if (!work) {
       throw new Error('Cannot gather repair inputs');

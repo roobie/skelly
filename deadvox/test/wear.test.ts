@@ -42,5 +42,4 @@ describe('item wear', () => {
     expect(jacket.condition).toBe(1 - torsoRate);
     expect(jeans.condition).toBe(1);
   });
-
 });
