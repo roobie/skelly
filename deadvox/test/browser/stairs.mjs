@@ -486,10 +486,20 @@ try {
     });
     await walk('s', 112, false, 43);
     const houseDownstairs = await state('house downstairs walked');
-    const residentBeforeDescent = houseDownstairs.zombies.find(({ id }) => id === residentId);
-    assert.ok(residentBeforeDescent);
-    if (Math.round(residentBeforeDescent.pos[1]) !== Math.round(houseDownstairs.position[1])) {
-      assert.notEqual(residentBeforeDescent.mode, 'search');
+    const groundProjection = await page.evaluate((id) => {
+      const { body, session } = globalThis.stairsWitness;
+      const resident = session.zombieStore.get(id);
+      if (!resident) {
+        throw new Error('stairs_house resident left the entity store');
+      }
+      return [resident.body.pos[0], body.pos[1], resident.body.pos[2]];
+    }, residentId);
+    await walkTo(groundProjection, 'move below resident on the lower floor');
+    const residentBeforeDescent = await state('resident hears player below the upstairs projection');
+    const residentAtProjection = residentBeforeDescent.zombies.find(({ id }) => id === residentId);
+    assert.ok(residentAtProjection);
+    if (Math.round(residentAtProjection.pos[1]) !== Math.round(residentBeforeDescent.position[1])) {
+      assert.notEqual(residentAtProjection.mode, 'search');
     }
     const followed = await waitForSimulation(
       page,
