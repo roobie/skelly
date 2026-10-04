@@ -7,6 +7,7 @@ import type { HandSide, Inventory, Plan, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
+import type { Readable } from './readable.ts';
 
 /** Keys stay ordinary Inventory-owned items; only held definitions authorize a door lock. */
 export const heldKeyLocks = (inventory: Inventory): string[] =>
@@ -64,9 +65,10 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'eat' | 'switch' | 'battery';
+  operation?: 'eat' | 'switch' | 'battery' | 'read';
   light?: Item;
   battery?: Item;
+  readable?: Readable;
 }
 
 export type Option = MoveOption | UseOption;
@@ -197,6 +199,13 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   };
 };
 
+const foodOption = (name: string, drink: boolean): UseOption => ({
+  kind: 'use',
+  label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
+  operation: 'eat',
+  plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
+});
+
 /** Eligibility only: effects remain in the domain command owner. */
 export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
@@ -216,14 +225,11 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (at.kind !== 'hand') {
     return refuseUse(`Take the ${name} in your hands first`);
   }
+  if (def.readable) {
+    return { kind: 'use', label: 'Read', operation: 'read', readable: def.readable, plan: { ok: true, time: 0 } };
+  }
   if (def.food) {
-    const drink = def.category === 'drink';
-    return {
-      kind: 'use',
-      label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
-      operation: 'eat',
-      plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
-    };
+    return foodOption(name, def.category === 'drink');
   }
   return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
 };

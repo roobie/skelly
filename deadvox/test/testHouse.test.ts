@@ -26,6 +26,7 @@ const blocks = {
 /** Furniture sizes in blocks, as furniture.json has them. */
 const FURNITURE_SIZE = new Map<string, [number, number, number]>([
   ['crate', [2, 2, 2]],
+  ['sample_sign', [2, 3, 1]],
   ['fridge', [2, 4, 2]],
   ['kitchen_cupboard', [2, 2, 1]],
   ['wardrobe', [2, 4, 1]],
@@ -130,9 +131,10 @@ describe('test house', () => {
   describe('furniture', () => {
     const specs = testHouseFurniture([4, 10, -4], 0.5, sizeOf);
 
-    it('places a crate, fridge, cupboard and wardrobe at whole blocks, turned by their facing', () => {
+    it('places table-authored furniture and crate loot at whole blocks, turned by their facing', () => {
       expect(specs).toEqual([
-        { type: 'crate', pos: [4, 20, 1], size: [2, 2, 2], facing: 'n' },
+        { type: 'crate', pos: [4, 20, 1], size: [2, 2, 2], facing: 'n', loot: 'sample_note_loot' },
+        { type: 'sample_sign', pos: [-4, 20, 1], size: [2, 3, 1], facing: 'n' },
         { type: 'fridge', pos: [10, 20, 3], size: [2, 4, 2], facing: 'n' },
         { type: 'kitchen_cupboard', pos: [14, 20, 4], size: [2, 2, 1], facing: 'n' },
         { type: 'wardrobe', pos: [26, 20, -5], size: [1, 4, 2], facing: 'w' },

@@ -83,6 +83,9 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
       play: () => undefined,
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in melee fixture');
+    },
     zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
     ...(restore ? { restore } : {}),
   });

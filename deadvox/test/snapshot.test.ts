@@ -122,6 +122,9 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       },
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in snapshot fixture');
+    },
     ...(snapshot ? { restore: snapshot } : {}),
   });
   const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
