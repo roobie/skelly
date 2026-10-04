@@ -63,6 +63,7 @@ import {
 } from './input.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import { handlePlayMenuKey } from './menuKeys.ts';
 import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -678,29 +679,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return true;
   };
 
-  const handleMenuKey = (e: KeyboardEvent): boolean => {
-    // Inventory Use must not become the debug Danger test; other debug priorities stay intact.
-    if (screen.isOpen && !debugTools?.menuOpen && e.code === CONTROL_CODES.use) {
-      screen.onKey(e);
-      e.preventDefault();
-      return true;
-    }
-    if (debugTools?.handleKey(e)) {
-      syncMenuState();
-      return true;
-    }
-    if (e.code === CONTROL_CODES.inventory && !compression.locksInput) {
-      toggleInventory();
-      return true;
-    }
-    if (!screen.isOpen) {
-      return false;
-    }
-    if (screen.onKey(e)) {
-      e.preventDefault();
-    }
-    return true;
-  };
+  const handleMenuKey = (e: KeyboardEvent): boolean =>
+    handlePlayMenuKey(e, {
+      inventory: screen,
+      debug: debugTools,
+      locksInput: compression.locksInput,
+      toggleInventory,
+      syncMenuState,
+    });
 
   const handleGameplayKey = (e: KeyboardEvent): void => {
     if (handleMainMenuKey(e)) {

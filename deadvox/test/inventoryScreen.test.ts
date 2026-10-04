@@ -7,6 +7,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
@@ -100,6 +101,64 @@ function setup() {
 }
 
 describe('inventory screen Lit rendering', () => {
+  it('routes the hint-line keys to inventory without a selection, but preserves debug ownership outside it or in a debug modal', () => {
+    const hints: [string, string[]][] = [
+      ['H hands', ['KeyH']],
+      ['U use', ['KeyU']],
+      ['W wear', ['KeyW']],
+      ['D drop', ['KeyD']],
+      ['E take', ['KeyE']],
+      ['R rotate', ['KeyR']],
+      ['S search', ['KeyS']],
+      ['1–5 quickbar', ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5']],
+      ['X cancel', ['KeyX']],
+      ['Tab close', ['Tab']],
+    ];
+    interface Row {
+      context: string;
+      code: string;
+      inventory: boolean;
+      debug: boolean;
+    }
+    const rows: Row[] = [];
+    const expected: Row[] = [];
+    for (const context of ['inventory', 'gameplay', 'debug-modal'] as const) {
+      const { screen, root } = setup();
+      for (const [hint] of hints) {
+        expect(root.querySelector('.inv-help')?.textContent).toContain(hint);
+      }
+      if (context === 'gameplay') {
+        screen.close();
+      }
+      screen.selected = undefined;
+      const inventoryKey = vi.spyOn(screen, 'onKey');
+      const debugKey = vi.fn(() => true);
+      const toggleInventory = vi.fn();
+      for (const code of hints.flatMap(([, codes]) => codes)) {
+        const before = {
+          inventory: inventoryKey.mock.calls.length,
+          toggle: toggleInventory.mock.calls.length,
+          debug: debugKey.mock.calls.length,
+        };
+        handlePlayMenuKey(new KeyboardEvent('keydown', { code, cancelable: true }), {
+          inventory: screen,
+          debug: { menuOpen: context === 'debug-modal', handleKey: debugKey },
+          locksInput: false,
+          toggleInventory,
+          syncMenuState: () => undefined,
+        });
+        rows.push({
+          context,
+          code,
+          inventory:
+            inventoryKey.mock.calls.length > before.inventory || toggleInventory.mock.calls.length > before.toggle,
+          debug: debugKey.mock.calls.length > before.debug,
+        });
+        expected.push({ context, code, inventory: context === 'inventory', debug: context !== 'inventory' });
+      }
+    }
+    expect(rows).toEqual(expected);
+  });
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];

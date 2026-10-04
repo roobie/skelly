@@ -18,6 +18,19 @@ import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/in
 /** Pixels per inventory cell. */
 export const CELL = 32;
 
+// These item commands remain inventory intents even with no selected item.
+const ITEM_COMMAND_CODES = new Set<string>([
+  ...CONTROL_CODES.quickbar,
+  CONTROL_CODES.hands,
+  CONTROL_CODES.wear,
+  CONTROL_CODES.drop,
+  CONTROL_CODES.rotate,
+  CONTROL_CODES.bestPocket,
+  CONTROL_CODES.takeAll,
+  CONTROL_CODES.use,
+  'Enter',
+]);
+
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
 const SLOT_LABEL: Record<WearSlot, string> = {
@@ -402,7 +415,7 @@ export class InventoryScreen {
       return true;
     }
     if (!item) {
-      return false;
+      return ITEM_COMMAND_CODES.has(e.code);
     }
     if (digit !== undefined) {
       this.hooks.assign(digit, item);

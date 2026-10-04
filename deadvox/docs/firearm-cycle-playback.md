@@ -8,7 +8,10 @@ rounds, without hits or ammunition consumption; firearm sounds are unchanged.
 - LMB fires the held rifle; holding LMB uses the exported rpm.
 - To cock, select the held rifle in inventory and press U. Alternatively assign it
   to a quickbar key while inventory is open; pressing its key while already held
-  cocks it. H moves a selected backpack rifle into the hands.
+  cocks it. H moves a selected backpack rifle into the hands while inventory is open.
+  Inventory hint-line keys take priority over debug shortcuts unless a debug modal
+  is open. Outside inventory, H remains the God-mode shortcut; there is no `god`
+  URL parameter.
 - Cocking is an ordinary handling action, with the exported duration. It prevents
   firing, halves movement pace and prevents sprinting. Automatic action motion is
   also handling, but is not a cancellable manual queue job.
