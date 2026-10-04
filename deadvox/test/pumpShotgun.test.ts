@@ -102,6 +102,21 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
+  it('loads one shell directly from a carried ammunition box without needing nested-pocket UI access', () => {
+    const f = fixture();
+    const box = [...f.inventory.items()].find((item) => item.type === 'shotshell_box')!;
+    expect(f.mechanics.useOption(box)).toMatchObject({
+      label: 'Load one shell into held shotgun',
+      plan: { ok: true, time: SHELL_LOAD_SECONDS },
+    });
+    expect(f.mechanics.use(box, 0)).toBeUndefined();
+    f.finish(SHELL_LOAD_SECONDS, SHELL_LOAD_SECONDS);
+    expect(f.shells.count).toBe(19);
+    expect(f.gun.firearm?.tube).toEqual([shellType]);
+    box.pockets![0]!.splice(0);
+    expect(f.mechanics.useOption(box).plan).toEqual({ ok: false, reason: 'No compatible shells in this box' });
+    expect(f.mechanics.use(box, 1)).toBe('No compatible shells in this box');
+  });
   it('conserves five loaded shells across tube/chamber, firing and manual hull ejection without an automatic cycle', () => {
     const f = fixture();
     expect(f.fire(0)).toBe(false);

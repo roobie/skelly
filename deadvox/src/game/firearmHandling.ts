@@ -262,9 +262,26 @@ export class FirearmMechanics {
       : exportedActionReason(item, this.inventory.registry, 'hand');
   }
 
+  supportsUse(item: Item): boolean {
+    const def = defOf(this.inventory.registry, item.type);
+    return Boolean(def.firearm || def.ammo || def.ammoBox);
+  }
+
+  private shellFrom(item: Item): Item | undefined {
+    const def = defOf(this.inventory.registry, item.type);
+    if (def.ammo) {
+      return item;
+    }
+    return item.pockets
+      ?.flatMap((pocket) => pocket.map((placed) => placed.item))
+      .find((shell) => defOf(this.inventory.registry, shell.type).ammo?.calibre === def.ammoBox);
+  }
+
   useOption(item: Item): UseOption {
-    if (defOf(this.inventory.registry, item.type).ammo) {
-      const reason = this.loadReason(item);
+    const def = defOf(this.inventory.registry, item.type);
+    if (def.ammo || def.ammoBox) {
+      const shell = this.shellFrom(item);
+      const reason = shell ? this.loadReason(shell) : 'No compatible shells in this box';
       return {
         kind: 'use',
         label: 'Load one shell into held shotgun',
@@ -339,7 +356,12 @@ export class FirearmMechanics {
   }
 
   use(item: Item, time: number): string | undefined {
-    return defOf(this.inventory.registry, item.type).ammo ? this.load(item, time) : this.cock(item.uid, time);
+    const def = defOf(this.inventory.registry, item.type);
+    if (def.ammo || def.ammoBox) {
+      const shell = this.shellFrom(item);
+      return shell ? this.load(shell, time) : 'No compatible shells in this box';
+    }
+    return this.cock(item.uid, time);
   }
 
   describe(item: Item): string[] {

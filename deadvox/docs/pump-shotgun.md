@@ -10,8 +10,9 @@ Start a **fresh** world with `?debug=1&loadout=pump&site=testHouse&time=12%3A00&
 The loadout supplies an empty held pump and a backpack containing a box of 20
 00-buck shells. It never replaces saved hands or ammunition.
 
-- Tab opens inventory. Expand/select the shell stack inside the box. **U loads
-  one shell**, with a numbered queue label. Each press is one job; do not hold U
+- Tab opens inventory. Select the carried shotshell box (or a loose carried
+  shell stack). **U loads one shell**, with a numbered queue label; no unpacking
+  or nested-pocket selection is needed. Each press is one job; do not hold U
   expecting an automatic multi-shell reload.
 - Select the held shotgun and **U racks** it. Tab closes inventory. Assigning the
   gun to an inventory quickbar slot allows the corresponding gameplay digit to

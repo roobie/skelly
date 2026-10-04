@@ -103,7 +103,8 @@
       "category": "bag",
       "weight": 40,
       "size": [2, 2],
-      "description": "A cardboard box for twenty shells. Size and empty mass are gameplay estimates; select a shell stack inside and Use to load one shell per job.",
+      "description": "A cardboard box for twenty shells. Size and empty mass are gameplay estimates; Use the carried box to load one shell per job without unpacking it.",
+      "ammoBox": "12-gauge-00-buck",
       "container": { "pockets": [{ "name": "Shells", "grid": [2, 2], "handling": 0.5 }] }
     },
     {

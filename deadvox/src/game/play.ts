@@ -227,9 +227,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     search,
   } = session;
   const useItem = (item: Item): string | undefined =>
-    registry.items.get(item.type)?.firearm || registry.items.get(item.type)?.ammo
-      ? firearms.use(item, sim.time)
-      : survival.use(item);
+    firearms.supportsUse(item) ? firearms.use(item, sim.time) : survival.use(item);
   const { compression } = sim;
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
@@ -357,9 +355,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     notice: showNotice,
     use: useItem,
     useOption: (item, reachView) =>
-      registry.items.get(item.type)?.firearm || registry.items.get(item.type)?.ammo
-        ? firearms.useOption(item)
-        : useOption(item, reachView),
+      firearms.supportsUse(item) ? firearms.useOption(item) : useOption(item, reachView),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     assign: (slot, item) => {
       quickbar.assign(slot, item);

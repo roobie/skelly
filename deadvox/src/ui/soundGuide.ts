@@ -154,7 +154,8 @@ const TRIGGER_ENTRIES = [
     'shotgun_blast',
     {
       trigger: 'Fire a chambered pump shotgun with LMB; rack manually before the next shot.',
-      debugHint: '?debug=1&loadout=pump: Use a shell stack to load, Use the shotgun to rack.',
+      debugHint:
+        '?debug=1&loadout=pump: Use the shotshell box or a loose shell stack to load, Use the shotgun to rack.',
       note: 'Placeholder candidate: two Winchester Model 12 near shots from BR’s CC0 library. Awaiting BR listening verdict. Loud 100 m hearing radius is a gameplay estimate.',
     },
   ],
@@ -175,7 +176,7 @@ const TRIGGER_ENTRIES = [
   [
     'shotgun_insert',
     {
-      trigger: 'Use a carried shell stack; each press starts one 0.9 s loading job.',
+      trigger: 'Use a carried shotshell box or loose shell stack; each press starts one 0.9 s loading job.',
       note: 'Placeholder candidates: two single inserts from zer0_sol, not whole reload sequences. Awaiting BR listening verdict.',
     },
   ],

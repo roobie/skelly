@@ -205,6 +205,8 @@ export const ItemSchema = strictObject({
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
   ammo: optional(AmmoSchema),
+  /** A carried box can supply one matching cartridge per Use, without unpacking it first. */
+  ammoBox: optional(CalibreId),
   light: optional(LightSchema),
   battery: optional(BatterySchema),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
