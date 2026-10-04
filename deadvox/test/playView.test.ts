@@ -24,7 +24,7 @@ const fixture = () => {
   const inventory = new Inventory({ ...registry, models: new Map() });
   const page = new EventTarget();
   const renderer = { toneMapping: 0, toneMappingExposure: 1 };
-  const mood = { restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) };
+  const mood = { post: false, restore: vi.fn(), render: vi.fn((draw: () => void) => draw()) };
   const shadows = { restore: vi.fn(), attachTorch: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
   const engine = {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
@@ -39,23 +39,47 @@ const fixture = () => {
     isSolid: () => false,
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), page);
-  return { engine, view, page, mood, shadows };
+  return {
+    engine,
+    view,
+    page,
+    mood,
+    shadows,
+  };
 };
 
 describe('play presentation ownership', () => {
-  it('routes world and held drawing through mood and warms both render targets', async () => {
+  it('routes one held draw through Mood with renderer, camera, and sky', async () => {
     const { engine, view, mood, shadows } = fixture();
     const draw = vi.spyOn(view.held, 'render').mockImplementation(() => undefined);
     const clock = vi.spyOn(performance, 'now').mockReturnValueOnce(20).mockReturnValueOnce(25);
     expect(view.render()).toBe(5);
-    clock.mockRestore();
     expect(mood.render).toHaveBeenCalledTimes(1);
     expect(draw).toHaveBeenCalledExactlyOnceWith(engine.renderer, engine.camera, engine.sky);
+    clock.mockRestore();
     await view.warmUp();
     expect(shadows.warmUp).toHaveBeenCalledExactlyOnceWith(engine.mood, [
       { scene: engine.scene, camera: engine.camera },
       view.held.warmUpTarget,
     ]);
+    view.dispose();
+  });
+
+  it('skips drawing and shadow warmup without renderer resources', async () => {
+    const inventory = new Inventory({ ...registry, models: new Map() });
+    const engine = {
+      config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
+      registry: inventory.registry,
+      scene: new Scene(),
+      camera: new PerspectiveCamera(),
+      meshes: { setLinearColors: vi.fn(), setPatterns: vi.fn(), setOcclusion: vi.fn() },
+      sky: {},
+      isSolid: () => false,
+    } as unknown as Engine;
+    const view = createPlayView(engine, inventory, vi.fn(), new EventTarget());
+
+    expect(view.render()).toBeNull();
+    await expect(view.warmUp()).resolves.toBeUndefined();
     view.dispose();
   });
 

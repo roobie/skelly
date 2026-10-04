@@ -94,6 +94,7 @@ export interface StartPlayOptions {
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
+  const inputTarget = renderer?.domElement ?? $('view');
   if (options.saveController) {
     streamer.onGenerationError = (error) => {
       if (!options.saveController?.refuseRestore(error)) {
@@ -106,7 +107,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
-  const input = new Input(renderer.domElement);
+  const input = new Input(inputTarget);
   input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
   let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
@@ -526,8 +527,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resume();
     }
   });
-  const menuPointer = mountMenuPointer({ input, canvas: renderer.domElement, cursor: gameCursor });
-  renderer.domElement.addEventListener('click', () => {
+  const menuPointer = mountMenuPointer({ input, canvas: inputTarget, cursor: gameCursor });
+  inputTarget.addEventListener('click', () => {
     if (mainMenuOpen) {
       resume();
       return;
@@ -857,7 +858,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   }
 
-  renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+  inputTarget.addEventListener('contextmenu', (e) => e.preventDefault());
   const handUids = () => ({
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
@@ -1016,7 +1017,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
-  renderer.domElement.addEventListener('mousedown', (e) => {
+  inputTarget.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || compression.locksInput || !debugTools?.buildOn) {
       return;
     }
@@ -1032,7 +1033,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const frameInterval = new FrameTimes();
   const frameWork = new FrameTimes();
   let simulationMs = 0;
-  let renderMs = 0;
+  let renderMs: number | null = engine.renderer ? 0 : null;
   let meshingQueueMs = 0;
 
   const displayCalendar = (): number => sim.calendar;

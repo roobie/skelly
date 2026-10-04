@@ -64,7 +64,7 @@ export interface DebugReadout {
   readonly zombies: number;
   readonly sounds: readonly HeardSound[];
   readonly simulationMs: number;
-  readonly renderMs: number;
+  readonly renderMs: number | null;
   readonly meshingQueueMs: number;
   readonly entities: number;
   readonly memoryBytes: number;
