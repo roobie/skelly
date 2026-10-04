@@ -158,7 +158,10 @@
         "**/deadvox/src/core/zombies.ts",
         "**/deadvox/src/core/zombieRegions.ts",
         "**/deadvox/src/core/zombiePose.ts",
+        "**/deadvox/src/game/session.ts",
+        "**/deadvox/src/game/shamblerAudio.ts",
         "**/deadvox/test/mobActors.test.ts",
+        "**/deadvox/test/shamblerAudio.test.ts",
         "**/deadvox/test/zombieRegions.test.ts"
       ],
       "linter": { "rules": { "correctness": { "noUndeclaredDependencies": "off" } } }

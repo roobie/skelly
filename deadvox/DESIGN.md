@@ -712,8 +712,9 @@ decoration.
   shambler's vocals and body-made sounds shift lower with its realized body
   height, so larger figures sound heavier and the runner/brute templates inherit
   the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, clamps this
-  effect because size variation should be perceptible without making figures
-  sound cartoonish. This changes playback only, never hearing or simulation.
+  effect so size variation stays perceptible without making figures sound
+  cartoonish. BR's direction was, “we should widen the clamp for pitch by 10%
+  more”. This changes playback only, never hearing or simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down

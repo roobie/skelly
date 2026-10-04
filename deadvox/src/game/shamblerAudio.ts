@@ -1,7 +1,6 @@
-// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
 import type { Body } from '@mobgen/core/body.ts';
 
-export const SHAMBLER_PITCH_CLAMP = [0.9, 1.1] as const;
+export const SHAMBLER_PITCH_CLAMP = [0.8, 1.2] as const;
 const REFERENCE_BODY_HEIGHT_METRES = 1.7;
 
 /** Taller bodies resonate lower; square-root scaling keeps ordinary figure variation subtle. */

@@ -1,4 +1,3 @@
-// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
 import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { SHAMBLER_PITCH_CLAMP, shamblerBodyPitch } from '../src/game/shamblerAudio.ts';
@@ -9,7 +8,7 @@ const bodyHeight = (body: ReturnType<typeof shamblerFigure>['realized']['body'])
 };
 
 describe('shambler body-sized audio', () => {
-  it('never raises pitch for a larger body and keeps every figure within the pitch clamp', () => {
+  it('lowers pitch with body height until a clamp binds', () => {
     const figures = SHAMBLER_FIGURE_SEEDS.map((seed) => shamblerFigure(seed).realized.body);
     const measured = figures.map((body) => ({ height: bodyHeight(body), pitch: shamblerBodyPitch(body) }));
 
@@ -18,7 +17,11 @@ describe('shambler body-sized audio', () => {
       expect(smaller.pitch).toBeLessThanOrEqual(SHAMBLER_PITCH_CLAMP[1]);
       for (const larger of measured) {
         if (larger.height > smaller.height) {
-          expect(larger.pitch).toBeLessThanOrEqual(smaller.pitch);
+          expect(
+            larger.pitch < smaller.pitch ||
+              larger.pitch === SHAMBLER_PITCH_CLAMP[0] ||
+              smaller.pitch === SHAMBLER_PITCH_CLAMP[1],
+          ).toBe(true);
         }
       }
     }

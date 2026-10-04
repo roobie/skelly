@@ -4,9 +4,7 @@
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
 
-// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { Character } from '../core/character.ts';
@@ -72,7 +70,7 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { SHAMBLER_PITCH_CLAMP, shamblerBodyPitch } from './shamblerAudio.ts';
+import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { Survival } from './survival.ts';
 
 const PHYSICS_RATE = 60;
@@ -273,12 +271,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const pitch = mobBody
-      ? Math.max(
-          SHAMBLER_PITCH_CLAMP[0],
-          Math.min(SHAMBLER_PITCH_CLAMP[1], selected.pitch * shamblerBodyPitch(mobBody)),
-        )
-      : selected.pitch;
+    const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = player && definition.noise.enabled;
     const sound = freezeSnapshot({
