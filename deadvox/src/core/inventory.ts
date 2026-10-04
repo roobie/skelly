@@ -365,20 +365,23 @@ export class Inventory {
     return plan;
   }
 
+  /** Read-only placement for a newly created, unlocated item (not a move admission). */
+  planAdd(item: Item, target: Target): Plan {
+    switch (target.kind) {
+      case 'hand':
+        return this.hands[target.side] ? refuse('full') : { ok: true, time: 0 };
+      case 'worn': {
+        const slot = defOf(this.registry, item.type).wearable?.slot;
+        return slot && !this.worn[slot] ? { ok: true, time: 0 } : refuse('full');
+      }
+      default:
+        return this.gridPlacement(item, item.count, this.gridOf(target), target);
+    }
+  }
+
   /** Places a new item that isn't anywhere yet (spawning, loot). Returns false when it doesn't fit. */
   add(item: Item, target: Target): boolean {
-    const placement = (() => {
-      switch (target.kind) {
-        case 'hand':
-          return this.hands[target.side] ? refuse('full') : { ok: true as const, time: 0 };
-        case 'worn': {
-          const slot = defOf(this.registry, item.type).wearable?.slot;
-          return slot && !this.worn[slot] ? { ok: true as const, time: 0 } : refuse('full');
-        }
-        default:
-          return this.gridPlacement(item, item.count, this.gridOf(target), target);
-      }
-    })();
+    const placement = this.planAdd(item, target);
     if (!placement.ok) {
       return false;
     }

@@ -1,6 +1,7 @@
 // Keyboard and pointer-lock mouse look.
 
 import type { MoveIntent } from './player.ts';
+import { ReloadInput } from './reloadInput.ts';
 
 const SENSITIVITY = 0.0022;
 const MAC_PLATFORM = /Mac/i;
@@ -29,7 +30,8 @@ export const CONTROL_CODES = {
   walkToggle: 'KeyZ',
   jump: 'Space',
   interact: 'KeyF',
-  rest: 'KeyR',
+  reload: 'KeyR',
+  descend: 'Backspace',
   sleep: 'KeyL',
   inventory: 'Tab',
   cancel: 'KeyX',
@@ -48,6 +50,10 @@ export const CONTROL_CODES = {
   continue: 'KeyC',
   spawnMenu: 'KeyG',
 } as const;
+
+/** Rest has no keyboard binding; sleep alone retains its existing toggle. */
+export const restKindForControl = (control: string): 'sleep' | undefined =>
+  control === CONTROL_CODES.sleep ? 'sleep' : undefined;
 
 export const quickbarSlotForKey = (code: string): number | undefined => {
   const index = CONTROL_CODES.quickbar.indexOf(code as (typeof CONTROL_CODES.quickbar)[number]);
@@ -78,6 +84,7 @@ export const nextMenuCursor = (
 
 export class Input {
   readonly held = new Set<string>();
+  readonly reload = new ReloadInput();
   yaw = 0;
   pitch = 0;
   /** Toggled with Z: walk instead of jog. */
@@ -114,8 +121,11 @@ export class Input {
       }
     });
     globalThis.addEventListener('keydown', (e) => {
-      if (e.code === CONTROL_CODES.inventory) {
-        e.preventDefault();
+      if (
+        e.code === CONTROL_CODES.inventory ||
+        (e.code === CONTROL_CODES.descend && this.locked && !this.menuPointer)
+      ) {
+        e.preventDefault(); // Backspace must not navigate back; menus retain text editing.
       }
       if (e.code === CONTROL_CODES.walkToggle && !e.repeat && !this.menuPointer) {
         this.walking = !this.walking;
@@ -129,12 +139,16 @@ export class Input {
       this.held.add(e.code);
     });
     globalThis.addEventListener('keyup', (e) => {
+      if (e.code === CONTROL_CODES.reload) {
+        this.reload.keyUp(e.timeStamp);
+      }
       this.held.delete(e.code);
       if (e.code === KEY_BINDINGS.leftHandAction.code) {
         this.leftHandActionDown = false;
       }
     });
     globalThis.addEventListener('blur', () => {
+      this.reload.cancel();
       this.held.clear();
       this.rightMouseHeld = false;
       this.primaryActionDown = false;

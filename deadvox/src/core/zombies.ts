@@ -32,6 +32,8 @@ export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' 
 /** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
 export const PLAYER_ARM_REACH_M = 1.2;
 
+import type { PelletShot } from './pellets.ts';
+
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
 
 export interface MeleeActionState extends MeleeActionPose {
@@ -1529,6 +1531,39 @@ export class ZombieSystem {
     };
   }
 
+  /** Hitscan pellets use the same posed regions, solid occlusion, HP/death and dismemberment path as melee.
+   * They do not consume melee stamina, advance its cooldown or emit fist/swing sounds. */
+  firePellets(shot: PelletShot): number {
+    let hits = 0;
+    const weapon: MeleeWeapon = {
+      damage: shot.damage,
+      reach: shot.rangeMetres,
+      cooldown: 0,
+      impulse: shot.impulse,
+      type: 'pierce',
+    };
+    for (const direction of shot.directions) {
+      const aim = this.targetAt(shot.origin, direction, weapon, this.options.isSolid);
+      const zombie = aim && aim.distanceMetres <= shot.rangeMetres ? this.store.get(aim.id) : undefined;
+      if (!(aim && zombie)) {
+        continue;
+      }
+      this.applyMeleeHit({
+        id: aim.id,
+        zombie,
+        region: aim.region,
+        origin: shot.origin,
+        direction,
+        distanceMetres: aim.distanceMetres,
+        weapon,
+        isFist: false,
+        projectile: true,
+      });
+      hits += 1;
+    }
+    return hits;
+  }
+
   /** Starts an attack from the player's sampled tick aim; contact resolves after its bounded wind-up. */
   beginMeleeSwing(start: BeginMeleeSwing): boolean {
     const { weapon, profile } = start;
@@ -1610,7 +1645,8 @@ export class ZombieSystem {
     distanceMetres,
     weapon,
     isFist,
-  }: MeleeHitContext): void {
+    projectile = false,
+  }: MeleeHitContext & { projectile?: boolean }): void {
     const ray = unit(direction);
     const distance = distanceMetres / this.options.blockSize;
     const hit: HitImpulse = {
@@ -1618,10 +1654,14 @@ export class ZombieSystem {
       direction: ray,
       impulse: weapon.impulse ?? 4,
     };
-    this.options.onMeleeContact?.(hit.impulse);
+    if (!projectile) {
+      this.options.onMeleeContact?.(hit.impulse);
+    }
     const healthBefore = zombie.regions[region];
     const severedBefore = new Set(zombie.severed);
-    this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos));
+    if (!projectile) {
+      this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos));
+    }
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
     const healthAfter = Math.max(0, healthBefore - weapon.damage);
     zombie.regions[region] = healthAfter;
@@ -1633,15 +1673,17 @@ export class ZombieSystem {
     const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
     const part = newParts.includes('head') ? 'head' : newParts[0];
     const outcome = meleeOutcome(killed, incapacitated, part);
-    this.options.onMeleeResult?.({
-      id,
-      region,
-      damage: healthBefore - healthAfter,
-      healthBefore,
-      healthAfter,
-      outcome,
-      ...(part === undefined ? {} : { part }),
-    });
+    if (!projectile) {
+      this.options.onMeleeResult?.({
+        id,
+        region,
+        damage: healthBefore - healthAfter,
+        healthBefore,
+        healthAfter,
+        outcome,
+        ...(part === undefined ? {} : { part }),
+      });
+    }
   }
 
   private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
