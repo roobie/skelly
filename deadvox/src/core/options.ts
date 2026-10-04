@@ -15,10 +15,18 @@ export const heldKeyLocks = (inventory: Inventory): string[] =>
     return lock === undefined ? [] : [lock];
   });
 
-export const doorPlan = (inventory: Inventory, entity: BlockEntity, operation: DoorOperation): Plan => {
-  const reason = inventory.canReachEntity(entity)
-    ? inventory.entities.doorRefusal(entity, operation, heldKeyLocks(inventory))
-    : 'Too far away';
+export const doorPlan = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  operation: DoorOperation,
+  keyLocks = heldKeyLocks(inventory),
+): Plan => {
+  const refusal = inventory.entities.doorRefusal(entity, operation, keyLocks);
+  const reason =
+    refusal ??
+    ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)
+      ? 'Too far away'
+      : undefined);
   return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handling };
 };
 
@@ -27,13 +35,13 @@ export const doorOptions = (
   entity: BlockEntity,
 ): { operation: DoorOperation; label: string; plan: Plan }[] => {
   const operation = entity.open ? 'close' : 'open';
-  const lock = entity.lock?.locked ? 'unlock' : 'lock';
+  const lock: DoorOperation = entity.lock?.locked ? 'unlock' : 'lock';
   return [
     { operation, label: entity.open ? 'Close' : 'Open', plan: doorPlan(inventory, entity, operation) },
     ...(entity.lock
       ? [
           {
-            operation: lock as DoorOperation,
+            operation: lock,
             label: entity.lock.locked ? 'Unlock' : 'Lock',
             plan: doorPlan(inventory, entity, lock),
           },

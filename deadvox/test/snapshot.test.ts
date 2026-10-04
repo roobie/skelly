@@ -618,7 +618,6 @@ describe('restored session world state', () => {
     expect(restoredContainer.pockets!.map((pocket) => pocket.map((placed) => placed.item.type))).toEqual(savedContents);
     expect(restoredContainer.searched).toBe(true);
     expect(restoredDoor.open).toBe(true);
-    loaded.inventory.canReachEntity = () => true; // same reach fixture as the source runtime
     loaded.handling.enqueueAction('furniture.door', 'Close door', 0, { entityUid: restoredDoor.uid, closing: true });
     loaded.handling.tick(0);
     expect(loaded.sharedEntities.at(...restoredContainer.pos)).toBe(restoredContainer);

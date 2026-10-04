@@ -146,6 +146,32 @@ describe('door locks', () => {
     inventory.canReachEntity = () => false;
     expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: 'Too far away' });
   });
+  it('open-close plans do not recheck F target reach', () => {
+    const { inventory, door } = make();
+    expect(inventory.entities.setLocked(door, false, ['test_a'])).toBeUndefined();
+    expect(inventory.entities.setOpen(door, true)).toBeUndefined();
+    inventory.canReachEntity = () => false;
+    expect(doorOptions(inventory, door)[0]!.plan).toEqual({ ok: true, time: 0.3 });
+    expect(doorOptions(inventory, door)[1]!.plan).toEqual({ ok: false, reason: 'Close the door first' });
+  });
+  it('queued unlocking rechecks reach at completion', () => {
+    const { inventory, door } = make();
+    const held = inventory.create('lock_test_key_a');
+    inventory.add(held, { kind: 'hand', side: 'right' });
+    const queue = new HandlingQueue(inventory);
+    registerDoorAction({
+      queue,
+      inventory,
+      player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
+      others: () => [],
+      playWorldSound: () => undefined,
+    });
+    queue.enqueueAction(DOOR_ACTION, 'Unlock', 0.3, { entityUid: door.uid, locked: false });
+    queue.tick(0.1);
+    inventory.canReachEntity = () => false;
+    expect(queue.tick(0.2).failed[0]?.reason).toBe('Too far away');
+    expect(door.lock!.locked).toBe(true);
+  });
   it('queued unlocking rechecks the held key and does not emit a sound on success or refusal', () => {
     const { inventory, door } = make();
     const held = inventory.create('lock_test_key_a');
@@ -180,6 +206,15 @@ describe('door locks', () => {
       buildRegistry([{ source: 'locks.json', data }]).issues.some((issue) => issue.path.endsWith('.lock.id')),
     ).toBe(true);
   });
+  it('rejects a locked door whose id no key names', () => {
+    const data = fixture();
+    data.items = [];
+    expect(buildRegistry([{ source: 'locks.json', data }]).issues).toContainEqual({
+      source: 'locks.json',
+      path: 'templates[0].palette',
+      message: 'no key names lock "test_a"',
+    });
+  });
   it('rejects a key naming a lock that no actual door has', () => {
     const data = fixture();
     data.items[0]!.key.lock = 'absent';
@@ -197,7 +232,49 @@ describe('door locks', () => {
       message: 'only a door can have a lock',
     });
   });
-  it('rejects repeating the same lock id in an authored site without placement scoping', () => {
+  it('rejects reusing a lock id across storeys of one authored placement', () => {
+    const data = {
+      ...fixture(),
+      layouts: [
+        {
+          id: 'lock_test_site',
+          bounds: { x0: 0, z0: 0, x1: 4, z1: 4 },
+          ground: 0,
+          buildings: [{ template: 'lock_test_a', position: [0, 0, 0], rotation: 0, storeys: 2 }],
+          player: { position: [1, 0, 1], yaw: 0 },
+          shamblers: [],
+          woodlands: [],
+          tracks: [],
+        },
+      ],
+    };
+    expect(buildRegistry([{ source: 'locks.json', data }]).issues).toContainEqual({
+      source: 'locks.json',
+      path: 'layouts[0].buildings[0]',
+      message: 'lock "test_a" is used more than once in this site',
+    });
+  });
+  it('rejects a palette character that places the same lock on multiple doors', () => {
+    const data = fixture();
+    data.templates[0]!.size = [2, 1, 1];
+    data.templates[0]!.layers = [['DD']];
+    const layout = {
+      id: 'lock_test_site',
+      bounds: { x0: 0, z0: 0, x1: 4, z1: 4 },
+      ground: 0,
+      buildings: [{ template: 'lock_test_a', position: [0, 0, 0], rotation: 0 }],
+      player: { position: [1, 0, 1], yaw: 0 },
+      shamblers: [],
+      woodlands: [],
+      tracks: [],
+    };
+    expect(buildRegistry([{ source: 'locks.json', data: { ...data, layouts: [layout] } }]).issues).toContainEqual({
+      source: 'locks.json',
+      path: 'layouts[0].buildings[0]',
+      message: 'lock "test_a" is used more than once in this site',
+    });
+  });
+  it('rejects repeating the same lock id across placements in an authored site', () => {
     const data = {
       ...fixture(),
       layouts: [

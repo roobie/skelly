@@ -12,7 +12,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { doorOptions, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -318,19 +318,36 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   // ---- furniture: searching and doors ----
 
-  const toggleDoor = (entity: BlockEntity, lock: boolean) => {
-    const option = doorOptions(inventory, entity)[lock ? 1 : 0];
-    if (!option) {
-      showNotice('The door has no lock');
-      return;
-    }
+  const toggleDoor = (entity: BlockEntity) => {
+    const option = doorOptions(inventory, entity)[0]!;
     if (!option.plan.ok) {
       showNotice(option.plan.reason);
       return;
     }
     queue.enqueueAction(DOOR_ACTION, `${option.label} the ${nameOf(entity)}`, option.plan.time, {
       entityUid: entity.uid,
-      ...(lock ? { locked: option.operation === 'lock' } : { closing: option.operation === 'close' }),
+      closing: option.operation === 'close',
+    });
+  };
+
+  const activateKey = (item: Item) => {
+    const entity = lookedAt();
+    if (!(entity && entities.defOf(entity).door)) {
+      return;
+    }
+    const lock = registry.items.get(item.type)?.key?.lock;
+    if (lock === undefined) {
+      return;
+    }
+    const operation = entity.lock?.locked ? 'unlock' : 'lock';
+    const plan = doorPlan(inventory, entity, operation, [lock]);
+    if (!plan.ok) {
+      showNotice(plan.reason);
+      return;
+    }
+    queue.enqueueAction(DOOR_ACTION, `${operation === 'lock' ? 'Lock' : 'Unlock'} the ${nameOf(entity)}`, plan.time, {
+      entityUid: entity.uid,
+      locked: operation === 'lock',
     });
   };
 
@@ -615,7 +632,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     [CONTROL_CODES.sleep, () => toggleRest('sleep')],
   ]);
 
-  const playKeys = (code: string, shift: boolean) => {
+  const playKeys = (code: string) => {
     const restAction = restActions.get(code);
     if (restAction) {
       restAction();
@@ -624,7 +641,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     const quick = quickbarSlotForKey(code);
     const action = worldActionForKey(code);
     if (action === 'interact' && !compression.locksInput) {
-      use(shift);
+      use();
     } else if (action === 'cancel') {
       queue.cancel();
       if (rest.action) {
@@ -704,7 +721,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (timeKeys(e.code)) {
       return;
     }
-    playKeys(e.code, e.shiftKey);
+    playKeys(e.code);
   };
 
   globalThis.addEventListener('keydown', (event) => {
@@ -739,12 +756,28 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       isSolid: engine.isOpaque,
     });
 
-  /** What F would do to it, for the prompt. */
+  const keyLockHint = (entity: BlockEntity): string | undefined => {
+    if (!entities.defOf(entity).door) {
+      return undefined;
+    }
+    const heldKey = [inventory.hands.right, inventory.hands.left].find(
+      (item) => item && registry.items.get(item.type)?.key,
+    );
+    const keyLock = heldKey && registry.items.get(heldKey.type)?.key?.lock;
+    if (keyLock === undefined) {
+      return undefined;
+    }
+    const operation = entity.lock?.locked ? 'unlock' : 'lock';
+    const plan = doorPlan(inventory, entity, operation, [keyLock]);
+    return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
+  };
+
+  /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
-    const [door, lock] = entities.defOf(entity).door ? doorOptions(inventory, entity) : [];
+    const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     return playInteractionText({
       doorReason: door?.plan.ok === false ? door.plan.reason : undefined,
-      lock: lock ? `${lock.label}${lock.plan.ok ? '' : ` — ${lock.plan.reason}`}` : undefined,
+      lock: keyLockHint(entity),
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),
@@ -755,13 +788,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   /** F: opens or closes a door; searches a container and opens the inventory beside it. */
-  function use(lock: boolean): void {
+  function use(): void {
     const entity = lookedAt();
     if (!entity) {
       return;
     }
     if (entities.defOf(entity).door) {
-      toggleDoor(entity, lock);
+      toggleDoor(entity);
     } else if (entity.pockets) {
       playtestObserver?.beginSearch(entity, nameOf(entity));
       search(entity);
@@ -874,7 +907,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       case 'noop':
         return;
       case 'none':
-        showNotice(primaryActionHint(registry, action.item));
+        if (registry.items.get(action.item.type)?.key) {
+          activateKey(action.item);
+        } else {
+          showNotice(primaryActionHint(registry, action.item));
+        }
         return;
       default: {
         const unhandled: never = action;

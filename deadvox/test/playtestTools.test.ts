@@ -285,7 +285,7 @@ describe('controls card', () => {
     expect(rows.map(({ keys }) => keys)).toContain('F9');
     expect(rows.map(({ keys }) => keys)).toContain('F4');
     expect(rows.map(({ keys }) => keys)).toContain('Tab');
-    expect(rows.find(({ keys }) => keys === 'Shift+F')?.action).toContain('Lock or unlock');
+    expect(rows.map(({ keys }) => keys)).not.toContain('Shift+F');
     expect(rows.find(({ keys }) => keys === 'Left click')?.action).toContain('Right-hand primary action');
     expect(rows.find(({ keys }) => keys === '=')?.action).toContain('Left-hand primary action');
     expect(rows.at(-1)?.action).toContain('E: Move to your best pocket');
@@ -297,6 +297,6 @@ describe('controls card', () => {
     );
     const rows = controlsCardRows(remapped);
     expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
-    expect(rows.find(({ action }) => action === 'Lock or unlock a closed door with a held key')?.keys).toBe('Shift+J');
+    expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
   });
 });

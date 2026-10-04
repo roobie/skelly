@@ -16,7 +16,7 @@ inventory. BlockEntities owns the door's lock state, clones authored metadata,
 and saves it alongside `open`; a locked door cannot be open.
 
 Ids are global/authored, not scoped per placement. Content validation rejects
-invalid ids, locks on non-door furniture, and keys naming no actual door.
+invalid ids, locks on non-door furniture, doors whose lock has no key, and keys naming no actual door.
 Authored-site validation rejects repeated lock ids across doors, building
 placements, and storeys. Unused palette declarations do not create usable locks.
 This is intentionally not a procedural placement-id scheme. Explicit bedroom
@@ -27,13 +27,13 @@ Use distinct palette characters and ids for independently keyed doors.
 ## Interaction
 
 - **F** opens/closes. Opening a locked door refuses with **It's locked**.
-- **Shift+F** locks/unlocks a closed door, from either side, in the door's
-  handling time. The matching key must be in either hand and the door in reach.
+- Wield the matching key and activate it on a closed door to lock/unlock it,
+  from either side, in the door's handling time. The door must be in reach.
 - A missing held key says **Hold the key in your hands**; a wrong key says
   **The key doesn't fit**. An open door says **Close the door first**.
-- Door prompts include the alternate action and any refusal. Displayed options,
-  queued commands and completion use the same native eligibility; completion
-  checks the current held key, reach and state. Locking/unlocking is silent.
+- Door prompts show the key's activation verb and any refusal when a held key
+  targets its door. Open/close is admitted by F's target pick; lock/unlock also
+  checks reach, key and state at enqueue and completion. Locking/unlocking is silent.
 
 The authored `lock_test` site has a locked shed with its key in the small box
 beside the front step. Use `?site=lock_test&debug=1` for a preview. The key is

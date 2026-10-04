@@ -135,7 +135,7 @@ export const playInteractionText = ({
   fullName,
 }: InteractionHint): string => {
   if (door) {
-    return `F: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Shift+F ${lock}` : ''}`;
+    return `F: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
   }
   if (container) {
     return `F: ${searched ? 'look in' : 'search'} the ${name}`;
