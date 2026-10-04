@@ -52,7 +52,7 @@ inside the `mobgen/reference/*.blend` files) are out of scope.
 BR, 2026-10-04. The pillar and its reasons are in `README.md`, "Zero drift". When you
 write a doc, a comment or a PR:
 
-- Cue code by path and symbol ("see `path/file.ts`, `symbolName`"). No line numbers, and
+- Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code.
 - A "when" names its trigger: an item ID or an issue. No "today", "currently" or
   "newly". When your PR completes an item, resolve every doc line that names it.
