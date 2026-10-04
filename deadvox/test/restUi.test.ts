@@ -24,7 +24,7 @@ describe('restViewModel', () => {
     expect(vm.clock).toBe(formatClock(sim.calendar));
   });
 
-  it('shows how to stop it, by kind (SLICE-1.md 1.8 follow-up)', () => {
+  it('shows how to stop it, by kind', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
     const stopKey = labelForCode(CONTROL_CODES.cancel);

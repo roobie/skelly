@@ -157,7 +157,7 @@ describe('RestController start/resume/stop', () => {
   });
 });
 
-describe('RestController.toggle (manual stop, SLICE-1.md 1.8 follow-up)', () => {
+describe('RestController.toggle (manual stop)', () => {
   it('starts the action when nothing is running', () => {
     const { rest } = makeRest();
     expect(rest.toggle('rest')).toBeUndefined();
@@ -184,7 +184,7 @@ describe('RestController.toggle (manual stop, SLICE-1.md 1.8 follow-up)', () => 
   });
 });
 
-describe('long-action interruptions (SLICE-1.md, 1.8)', () => {
+describe('long-action interruptions', () => {
   it('stops resting at most one step after a shambler becomes aware, even beyond 30 m', () => {
     const player: PlayerSense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'still', lit: true, lightSeenFrom: 40 };
     const zombieSystem = new ZombieSystem(zombieHooks(player));

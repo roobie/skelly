@@ -99,10 +99,10 @@ from the doc.
   true, amended by dated rulings or superseded by a new ADR. Specification belongs in
   code, cued from the ADR.
 - **Reviews and retros are dated snapshots,** true as of their date, and exempt.
-- **Closed slice plans are dated records too.** `deadvox/SLICE-1.md` keeps its text
-  until the v1 EPIC ships. Then the closed slice plans are removed from the tree, and
-  git and GitHub history keep them (BR, 2026-10-04: "keep it until we've shipped v1
-  EPIC - and when we do that we archive them to the depths of git/hub history").
+- **A slice plan leaves the tree at its retrospective, after its live content moves.**
+  Git and GitHub history keep it (BR, 2026-10-04 21:49: "actually, recall on slice-1
+  directive / let's archive it as soon as possible (which would have been at the
+  retrospective), so next best would be now").
 - **Every doc says why you'd read it.** Its front matter carries `read_if`, a list of
   reasons, each finishing the sentence "Read this if …" (BR, 2026-10-04: "it shall note
   all up front reasons for readin[g] the document"):
@@ -115,9 +115,14 @@ from the doc.
   ---
   ```
 
-A false doc is a defect, and a review returns FIX for it. Until r27 lands, reviews check
-these rules by hand; r27 adds a CI check that every cited path and symbol exists, that no
-doc outside reviews and retros cites a line number, and that every doc has `read_if`.
+A false doc is a defect, and a review returns FIX for it. `tools/zero-drift-check.mjs`
+checks the mechanical rules in CI: every cited path and symbol exists, no doc outside
+reviews and retros cites a line number, and every doc has `read_if` matching
+`tools/read_if.py`. Reviews check the rest. Existing findings are frozen in
+`tools/zero-drift-baseline.json` until the docs sweep (#222); a new finding fails, and
+fixing one means removing its baseline entry. Run
+`node tools/zero-drift-check.mjs --emit-baseline` to print a replacement for
+`tools/zero-drift-baseline.json` on stdout for review.
 
 ## Shared direction
 

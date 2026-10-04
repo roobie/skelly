@@ -312,12 +312,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     noticeUntil = performance.now() + 3000;
   };
 
-  /**
-   * L toggles sleep. Rest has no input binding until restable furniture (d45).
-   * (SLICE-1.md, 1.8 follow-up). Does nothing during the Continue/Stop prompt, which
-   * owns C and X instead, or while busy with something else (e.g. the other kind, or
-   * the debug compression test).
-   */
   const toggleRest = (kind: RestKind): void => {
     if (compression.interruption !== undefined) {
       return;
