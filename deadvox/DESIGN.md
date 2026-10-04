@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change the game's design, especially held-item feedback or hand ownership
+  - you reconcile BR's rulings with player interaction and presentation
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -284,6 +290,13 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   aimed at its target if it has one: "using the key means wielding it, and
   activating it on the door". Ammo boxes are unpacked the same way, never from
   the inventory screen, and no modifier chord bypasses it.
+- **Rummage feedback (BR, 2026-10-04, d50):** "there is no anim for when
+  opening the box of shells / i think we should add a generic \"hands go
+  together and rummage with the held item\"". Handling needs visible feedback,
+  not a second action owner. See `src/render/rummagePose.ts`, `rummageFrame`
+  and `RUMMAGE_POSE`, and `src/render/hands.ts`, `HeldItems.poseRummage`.
+  BR's look gates acceptance; estimates remain un-pinned in
+  `../docs/deferred-assertions.md`, "Rummage pose — BR's look".
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's

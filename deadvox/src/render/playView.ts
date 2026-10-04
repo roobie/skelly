@@ -18,7 +18,7 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
-import { type HeldFirearmPose, HeldItems } from './hands.ts';
+import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { ModelLibrary } from './models.ts';
@@ -180,11 +180,11 @@ export const createPlayView = (
       dt: number,
       pose: MeleePoseFrame,
       light: Item | undefined,
-      firearms: readonly HeldFirearmPose[] = [],
+      handling: HeldHandlingFrame = { firearms: [] },
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
-      held.update(camera, pose, recoil, firearms);
+      held.update(camera, pose, recoil, handling);
       flashlight.update(registry, light, held, camera);
     },
     render: (): number | null => {
