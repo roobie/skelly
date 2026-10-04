@@ -8,7 +8,7 @@ import { loadGunDesign } from '../src/gun/designLoader.ts';
 const FIXTURES = join(import.meta.dirname, '..', 'fixtures');
 const DESIGNS = join(import.meta.dirname, '..', 'designs');
 
-export const expectWatertightMesh = (mesh: TriangleMesh, label = 'mesh'): void => {
+export const expectWatertightMesh = (mesh: TriangleMesh, label = 'mesh'): number => {
   const weld = (index: number): string =>
     [0, 1, 2].map((axis) => (Math.round(mesh.positions[index * 3 + axis]! * 100_000) / 100_000).toFixed(5)).join(',');
   const directed = new Map<string, number>();
@@ -62,6 +62,7 @@ export const expectWatertightMesh = (mesh: TriangleMesh, label = 'mesh'): void =
   if (signedVolume <= 0) {
     throw new Error(`${label}: non-positive signed volume`);
   }
+  return signedVolume;
 };
 
 export const loadFixtures = (): Assembly[] =>
