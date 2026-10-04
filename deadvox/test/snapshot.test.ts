@@ -853,6 +853,21 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
 
+it('a door lock survives the save codec and fresh native entity owner, independently of the source object', async () => {
+  const source = createRuntime();
+  const door = [...source.entities.all].find((entity) => registry.furniture.get(entity.type)?.door)!;
+  door.lock = { id: 'test_shed', locked: true }; // authored metadata in this hamlet save fixture
+  const snapshot = capture(source);
+  expect(source.entities.setLocked(door, false, ['test_shed'])).toBeUndefined();
+  const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  const restored = loaded.entities.byUid(door.uid)!;
+  expect(restored.lock).toEqual({ id: 'test_shed', locked: true });
+  expect(loaded.entities.setOpen(restored, true)).toBe("It's locked");
+  expect(loaded.entities.setLocked(restored, false, ['test_shed'])).toBeUndefined();
+  expect(loaded.entities.setOpen(restored, true)).toBeUndefined();
+});
+
 const jsonCanonical = (value: unknown): string => {
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value);

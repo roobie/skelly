@@ -544,7 +544,7 @@ export const createSession = (options: SessionOptions) => {
   });
   registerDoorAction({
     queue,
-    entities,
+    inventory,
     player: () => body,
     others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
     playWorldSound: (event, position) => playWorldSound(event, position),

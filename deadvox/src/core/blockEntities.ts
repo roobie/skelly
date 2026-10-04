@@ -7,6 +7,7 @@ import type { FurnitureDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced } from './items.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
+import type { DoorLockDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { cellsOf, type Facing } from './templates.ts';
 
@@ -25,6 +26,7 @@ export interface BlockEntity {
   searched: boolean;
   /** Doors only. */
   open: boolean;
+  lock?: DoorLockDef;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -36,8 +38,11 @@ export interface BlockEntityState {
   facing: Facing;
   searched: boolean;
   open: boolean;
+  lock?: DoorLockDef;
   pockets?: PlacedState[][];
 }
+
+export type DoorOperation = 'open' | 'close' | 'lock' | 'unlock';
 
 export interface BlockEntitiesState {
   nextUid: number;
@@ -45,6 +50,7 @@ export interface BlockEntitiesState {
 }
 
 export interface EntitySpec {
+  lock?: DoorLockDef;
   type: string;
   pos: Vec3;
   size: Vec3;
@@ -128,6 +134,7 @@ export class BlockEntities {
         facing: entity.facing,
         searched: entity.searched,
         open: entity.open,
+        ...(entity.lock ? { lock: { ...entity.lock } } : {}),
         ...(entity.pockets === undefined ? {} : { pockets: entity.pockets.map((grid) => grid.map(snapshotPlaced)) }),
       })),
     });
@@ -160,6 +167,9 @@ export class BlockEntities {
         throw new Error(`Duplicate block entity anchor ${saved.pos.join(',')}`);
       }
       entity.searched = saved.searched;
+      if (saved.open && entity.lock?.locked) {
+        throw new Error('A locked door cannot be open');
+      }
       entity.open = saved.open;
       if (saved.pockets) {
         entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(registry, placed)));
@@ -207,6 +217,12 @@ export class BlockEntities {
       searched: false,
       open: false,
     };
+    if (spec.lock) {
+      if (!(def.door && spec.lock.id) || typeof spec.lock.locked !== 'boolean') {
+        throw new Error('Invalid door lock');
+      }
+      entity.lock = { ...spec.lock };
+    }
     if (def.container) {
       entity.pockets = def.container.pockets.map(() => []);
     }
@@ -267,10 +283,60 @@ export class BlockEntities {
     return undefined;
   }
 
-  /** Opens a door or sets state during restore. Use closeDoor for a gameplay close. */
-  setOpen(entity: BlockEntity, open: boolean): void {
+  /** Native eligibility shared by options and effects; key ids come from held definitions. */
+  doorRefusal(entity: BlockEntity, operation: DoorOperation, keys: readonly string[]): string | undefined {
+    if (!this.defOf(entity).door) {
+      return "It isn't a door";
+    }
+    if (operation === 'open') {
+      if (entity.open) {
+        return "It's already open";
+      }
+      return entity.lock?.locked ? "It's locked" : undefined;
+    }
+    if (operation === 'close') {
+      return entity.open ? undefined : "It's already closed";
+    }
+    return this.lockRefusal(entity, operation === 'lock', keys);
+  }
+
+  private lockRefusal(entity: BlockEntity, locked: boolean, keys: readonly string[]): string | undefined {
+    if (!entity.lock) {
+      return 'The door has no lock';
+    }
+    if (entity.open) {
+      return 'Close the door first';
+    }
+    if (keys.length === 0) {
+      return 'Hold the key in your hands';
+    }
+    if (!keys.includes(entity.lock.id)) {
+      return "The key doesn't fit";
+    }
+    return entity.lock.locked === locked ? `It's already ${locked ? 'locked' : 'unlocked'}` : undefined;
+  }
+
+  /** Use closeDoor for a gameplay close, which also checks occupying bodies. */
+  setOpen(entity: BlockEntity, open: boolean): string | undefined {
+    if (open) {
+      const reason = this.doorRefusal(entity, 'open', []);
+      if (reason) {
+        return reason;
+      }
+    }
     entity.open = open;
     this.version += 1;
+    return undefined;
+  }
+
+  setLocked(entity: BlockEntity, locked: boolean, keys: readonly string[]): string | undefined {
+    const reason = this.doorRefusal(entity, locked ? 'lock' : 'unlock', keys);
+    if (reason) {
+      return reason;
+    }
+    entity.lock!.locked = locked;
+    this.version += 1;
+    return undefined;
   }
 
   markSearched(entity: BlockEntity): void {

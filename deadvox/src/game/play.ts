@@ -12,7 +12,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -319,11 +319,35 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   // ---- furniture: searching and doors ----
 
   const toggleDoor = (entity: BlockEntity) => {
-    const closing = entity.open;
-    const time = entities.defOf(entity).door?.handling ?? 0;
-    queue.enqueueAction(DOOR_ACTION, `${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, {
+    const option = doorOptions(inventory, entity)[0]!;
+    if (!option.plan.ok) {
+      showNotice(option.plan.reason);
+      return;
+    }
+    queue.enqueueAction(DOOR_ACTION, `${option.label} the ${nameOf(entity)}`, option.plan.time, {
       entityUid: entity.uid,
-      closing,
+      closing: option.operation === 'close',
+    });
+  };
+
+  const activateKey = (item: Item) => {
+    const entity = lookedAt();
+    if (!(entity && entities.defOf(entity).door)) {
+      return;
+    }
+    const lock = registry.items.get(item.type)?.key?.lock;
+    if (lock === undefined) {
+      return;
+    }
+    const operation = entity.lock?.locked ? 'unlock' : 'lock';
+    const plan = doorPlan(inventory, entity, operation, [lock]);
+    if (!plan.ok) {
+      showNotice(plan.reason);
+      return;
+    }
+    queue.enqueueAction(DOOR_ACTION, `${operation === 'lock' ? 'Lock' : 'Unlock'} the ${nameOf(entity)}`, plan.time, {
+      entityUid: entity.uid,
+      locked: operation === 'lock',
     });
   };
 
@@ -732,9 +756,30 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       isSolid: engine.isOpaque,
     });
 
-  /** What F would do to it, for the prompt. */
-  const useText = (entity: BlockEntity): string =>
-    playInteractionText({
+  const keyLockHint = (entity: BlockEntity): string | undefined => {
+    if (!entities.defOf(entity).door) {
+      return undefined;
+    }
+    const heldKeys = [inventory.hands.right, inventory.hands.left].filter(
+      (item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined,
+    );
+    const heldKey =
+      heldKeys.find((item) => registry.items.get(item.type)?.key?.lock === entity.lock?.id) ?? heldKeys[0];
+    const keyLock = heldKey && registry.items.get(heldKey.type)?.key?.lock;
+    if (keyLock === undefined) {
+      return undefined;
+    }
+    const operation = entity.lock?.locked ? 'unlock' : 'lock';
+    const plan = doorPlan(inventory, entity, operation, [keyLock]);
+    return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
+  };
+
+  /** Describes the displayed action for the selected target. */
+  const useText = (entity: BlockEntity): string => {
+    const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
+    return playInteractionText({
+      doorReason: door?.plan.ok === false ? door.plan.reason : undefined,
+      lock: keyLockHint(entity),
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),
@@ -742,6 +787,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
     });
+  };
 
   /** F: opens or closes a door; searches a container and opens the inventory beside it. */
   function use(): void {
@@ -861,6 +907,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         swing(action.hand);
         return;
       case 'noop':
+        return;
+      case 'key':
+        activateKey(action.item);
         return;
       case 'none':
         showNotice(primaryActionHint(registry, action.item));
