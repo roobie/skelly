@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 const { chromium } = await import('playwright');
 
 import { createServer } from 'vite';
+import { waitForSimulation } from './simulation-wait.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
@@ -165,38 +166,38 @@ try {
     try {
       const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await page.keyboard.down(key);
-      const arrivalHandle = await page.waitForFunction(
-        ({ x, increasing, from }) => {
+      await waitForSimulation(
+        page,
+        ({ x, increasing }) => {
           const { body, session } = globalThis.stairsWitness;
-          const reached = increasing ? body.pos[0] >= x : body.pos[0] <= x;
-          const seconds = session.sim.time - from;
-          const { paused } = session.sim;
-          return reached || seconds >= 10 || paused ? { reached, seconds, paused } : false;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: increasing ? body.pos[0] >= x : body.pos[0] <= x,
+          };
         },
-        { x: targetX, increasing: ascending, from: keyDownTime },
-        { timeout: 0 },
+        { x: targetX, increasing: ascending },
+        {
+          seconds: 10,
+          from: keyDownTime,
+          label: `arrival ${key} x=${targetX}`,
+          record: state,
+          stop: () => page.keyboard.up(key),
+        },
       );
-      const arrival = await arrivalHandle.jsonValue();
-      await page.keyboard.up(key);
-      await state(`arrival ${key} x=${targetX}: ${JSON.stringify(arrival)}`);
-      assert.equal(arrival.reached && !arrival.paused, true, JSON.stringify(arrival));
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       // Same three-second physical bound, now simulation seconds rather than renderer wall time.
       // The outer stage remains capped at 300 s; no retry or larger stage cap.
-      const result = await page.waitForFunction(
-        ({ feet, from }) => {
+      await waitForSimulation(
+        page,
+        (feet) => {
           const { body, session } = globalThis.stairsWitness;
-          const seconds = session.sim.time - from;
           const supported = body.onGround && Math.abs(body.pos[1] - feet) < 0.01;
-          const { paused } = session.sim;
-          return supported || seconds >= 3 || paused ? { supported, seconds, paused } : false;
+          return { time: session.sim.time, paused: session.sim.paused, reached: supported, supported };
         },
-        { feet: targetFeet, from: start },
-        { timeout: 0 },
+        targetFeet,
+        { seconds: 3, from: start, label: `settle ${key} x=${targetX} feet=${targetFeet}`, record: state },
       );
-      const settled = await result.jsonValue();
-      await state(`settle ${key} x=${targetX} feet=${targetFeet}: ${JSON.stringify(settled)}`);
-      assert.equal(settled.supported && !settled.paused, true, JSON.stringify(settled));
     } catch (error) {
       await page.keyboard.up(key);
       await state(`walk/settle failure ${key} x=${targetX} feet=${targetFeet}: ${error}`);

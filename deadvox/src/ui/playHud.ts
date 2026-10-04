@@ -116,7 +116,7 @@ export interface InteractionHint {
   readonly door: boolean;
   readonly open: boolean;
   readonly container: boolean;
-  readonly readable?: boolean;
+  readonly readable: boolean;
   readonly searched: boolean;
   readonly name: string;
   readonly fullName: string;

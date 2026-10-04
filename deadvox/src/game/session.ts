@@ -141,7 +141,7 @@ export interface SessionOptions {
   /** A message that isn't an interruption, such as why a move was refused. */
   notice: (text: string) => void;
   /** Authored text selected by a live domain command; presentation owns its view. */
-  onRead?: (readable: Readonly<Readable>) => void;
+  onRead: (readable: Readonly<Readable>) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
@@ -302,7 +302,7 @@ export const createSession = (options: SessionOptions) => {
     reach,
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: options.notice,
-    read: (readable) => options.onRead?.(readable),
+    read: options.onRead,
   });
   const rest = new RestController(sim, {
     bedQuality: () => {
@@ -640,7 +640,7 @@ export const createSession = (options: SessionOptions) => {
       if (!readable) {
         return 'Nothing to read';
       }
-      options.onRead?.(readable);
+      options.onRead(readable);
       return undefined;
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),

@@ -697,10 +697,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (e.repeat || sim.dead) {
       return;
     }
-    if (handleMenuKey(e)) {
-      return;
-    }
-    if (timeKeys(e.code)) {
+    if (handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
       return;
     }
     playKeys(e.code);

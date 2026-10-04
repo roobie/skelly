@@ -6,6 +6,7 @@ import type { HandSide, Inventory, Plan, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
+import type { Readable } from './readable.ts';
 
 export const EAT_TIME = 3;
 export const DRINK_TIME = 2;
@@ -24,6 +25,7 @@ export interface UseOption {
   operation?: 'eat' | 'switch' | 'battery' | 'read';
   light?: Item;
   battery?: Item;
+  readable?: Readable;
 }
 
 export type Option = MoveOption | UseOption;
@@ -181,7 +183,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
     return refuseUse(`Take the ${name} in your hands first`);
   }
   if (def.readable) {
-    return { kind: 'use', label: 'Read', operation: 'read', plan: { ok: true, time: 0 } };
+    return { kind: 'use', label: 'Read', operation: 'read', readable: def.readable, plan: { ok: true, time: 0 } };
   }
   if (def.food) {
     return foodOption(name, def.category === 'drink');

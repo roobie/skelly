@@ -1,5 +1,5 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
-import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
+import { BlockEntities } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid } from '../core/collision.ts';
 import { blockColors, blockId, type Registry } from '../core/content.ts';
@@ -38,7 +38,7 @@ export interface WorldSetup {
   streamer: Streamer;
   /** Player start in metres (feet), and the yaw that faces the hamlet or the test house. */
   spawn: { pos: Vec3; yaw: number };
-  /** The test house's furniture anchored in a column, empty-handed; a hamlet or city brings its own through `site`. */
+  /** The test house's furniture and table-authored loot in a column; authored/procedural sites bring their own. */
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
 }
 
@@ -81,19 +81,14 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
           return def.size;
         })
       : [];
-  if (scale.blockSize === HAMLET_BLOCK_SIZE) {
-    furniture.push({
-      type: 'sample_sign',
-      pos: [
-        (HOUSE_OFFSET[0] + SPAWN_OFFSET[0] + 2) / scale.blockSize,
-        floor / scale.blockSize,
-        (HOUSE_OFFSET[1] + SPAWN_OFFSET[2] + 1) / scale.blockSize,
-      ],
-      size: registry.furniture.get('sample_sign')!.size,
-      facing: 'n',
-    });
-  }
-  return { structures: rasterize(house, scale.blockSize), spawn: { pos: spawn, yaw: SPAWN_YAW }, furniture };
+  return {
+    structures: rasterize(house, scale.blockSize),
+    spawn: { pos: spawn, yaw: SPAWN_YAW },
+    furniture: furniture.map(({ loot, ...spec }) => ({
+      spec,
+      loot: loot ? rollLoot(registry, loot, Rng.stream(seed, `loot:${spec.pos}`)) : [],
+    })),
+  };
 };
 
 /**
@@ -130,7 +125,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const id = (name: string) => blockId(registry, name);
 
   const built = buildSite(config, registry);
-  const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: EntitySpec[] } = built
+  const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: [] }
     : testHouseSite(config, registry);
   // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
@@ -167,15 +162,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     streamer,
     spawn: site.spawn,
     furnitureIn: (cx, cz) =>
-      site.furniture
-        .filter((spec) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz)
-        .map((spec) => ({
-          spec,
-          loot:
-            spec.type === 'crate'
-              ? rollLoot(registry, 'sample_note_loot', Rng.stream(seed, `reading-sample:${spec.pos.join(',')}`))
-              : [],
-        })),
+      site.furniture.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
   };
 }
 

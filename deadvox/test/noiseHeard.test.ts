@@ -80,6 +80,9 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       },
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in noise fixture');
+    },
   });
   session.sim.paused = false;
   const reader = session.sim.events.reader();

@@ -29,7 +29,7 @@ export interface SurvivalHooks {
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
   /** Presents validated authored text; no time, consumption or save-state mutation. */
-  read?: (readable: Readonly<Readable>) => void;
+  read: (readable: Readonly<Readable>) => void;
 }
 
 export class Survival {
@@ -121,7 +121,10 @@ export class Survival {
       case 'switch':
         return this.switchLight(item);
       case 'read':
-        this.hooks.read?.(defOf(this.inventory.registry, item.type).readable!);
+        if (!option.readable) {
+          throw new Error('Invalid readable core option');
+        }
+        this.hooks.read(option.readable);
         return undefined;
       default:
         throw new Error('Invalid usable core option');

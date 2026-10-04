@@ -9,6 +9,9 @@ Items and furniture share the optional, strict `readable` block:
 }
 ```
 
+**Read wins over Eat/Switch:** do not combine `readable` with `food` or `light`.
+This authoring constraint is documented, not a new validation rejection.
+
 Each distinct authored note/logbook is its own item type (normally `category: "book"`);
 each distinct sign is its own furniture type. Copies of a type share its immutable
 text. Item/furniture saves retain the existing type reference, not duplicated text
@@ -68,8 +71,10 @@ no horizontal overflow, footer/button visible).
 ## Prototype samples, not lore
 
 `readables.json` defines `sample_note`, `sample_sign` and guaranteed
-`sample_note_loot`. `?site=testHouse&seed=1&radius=32&time=12:00` places the sign near
-spawn and the note in test-house crates. The note's 5 g weight and one-cell inventory
+`sample_note_loot`. `?site=testHouse&seed=1&radius=16&time=12:00` places the sign near
+spawn and the note in the table-designated test-house crate.
+`sample_note` is intentionally outside the authored closure and listed unreachable;
+this procedural test-house table is not a final playtest loot placement. The note's 5 g weight and one-cell inventory
 footprint are prototype estimates; its held/piled model remains the ordinary
 fallback, not a bespoke paper mesh.
 
@@ -80,9 +85,10 @@ lead authors #181's actual text and buildings later.
 ## Reading in darkness: report-only
 
 **Yes for a cheap, coarse gate; no for accurate local illumination already today.**
-After d39 integration, combine its sky visibility at the player's eye with the
-existing sky intensity and charged/on held-light state, and inject a read-admission
-predicate into the domain commands. That is an approximation, not photometric lux
+A domain-owned predicate could combine core sky visibility at the player's eye,
+core sky intensity and charged/on held-light state. It must build/cache the core
+volume on the simulation side and fingerprint those inputs, not call the renderer's
+camera-residency-dependent `Skylight.at()`. Outside authored fields, fail open. That is an approximation, not photometric lux
 or a flashlight-beam/occlusion test; direct sun and arbitrary scene lights need more
 work. Current daylight-only adaptation cannot reliably recognize buried darkness.
 No darkness gate is implemented here. BR still chooses a threshold and how the

@@ -12,7 +12,7 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 
-const readable = { title: 'Placeholder', text: 'PLAIN PLACEHOLDER\n\nSecond paragraph.' };
+const readable = { title: 'Placeholder', text: 'PLAIN\tPLACEHOLDER\r\n\nSecond paragraph.' };
 const admit = (value: Readable) =>
   buildRegistry([
     {
@@ -34,7 +34,7 @@ describe('authored readable text', () => {
   });
   it('rejects markup or non-text controls in either readable field on both owners', () => {
     for (const key of ['title', 'text'] as const) {
-      for (const value of ['<b>stray markup</b>', `control${String.fromCharCode(0)}text`]) {
+      for (const value of ['<b>stray markup</b>', 'a > b', 'a\u007fb', `control${String.fromCharCode(0)}text`]) {
         expect(
           admit({ ...readable, [key]: value }).issues.filter((issue) => issue.path.endsWith(`readable.${key}`)),
         ).toHaveLength(2);
