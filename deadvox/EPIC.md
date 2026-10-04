@@ -184,6 +184,12 @@ same world preserve piles left by the previous character?
 - Melee depth (weapon types, stamina, knockback) and blocking.
 - Firearms from gungen assemblies: ammo, magazines, reloading as handling,
   noise and recoil.
+- **Aim sway and the firearms skill (BR, 2026-10-05):** "we should add a aiming
+  variance based on movement, swing and recoil (this should show in game via a
+  sway on the weapon)". The firearms skill "will: 1) mitigate the aim variance
+  2) quicken reload time 3) quicken rack time (shotgun)". It is one skill for
+  now: "which we will expand to separate firearm archetypes later, like
+  skill:smgs, skill:shotguns etc".
 - Modular weapons: the player fits mods (optics first, then suppressors and
   other muzzle devices, foregrips, tactical flashlights and lasers, magazines,
   stocks and so on) found as loot or crafted, through the mount points a gun
