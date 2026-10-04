@@ -52,7 +52,8 @@ into the nearest same-calibre pile within about 20 m.
 Automatic cycles and pending fired cases survive a snapshot. Manual motion is
 omitted from the save copy, just like manual handling jobs, without changing the
 live action; its chamber contents remain saved. No generic durable queue, new
-timer, migration or compatibility path exists. Save schema is 9.
+timer, migration or compatibility path exists. Save schema is 10 (the playable
+[pump](pump-shotgun.md) adds real tube ammunition and a pending hull landing cue).
 
 The case's per-shot RNG stream/key/draw stays at shot admission; sound-picker RNG
 and cooldown/hearing order are unchanged. Case-item UID allocation now happens

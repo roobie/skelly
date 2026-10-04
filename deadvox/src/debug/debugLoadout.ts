@@ -13,7 +13,7 @@ export const equipDebugFirearms = (
 ): boolean => {
   const choice = new URLSearchParams(search).get('loadout');
   if (
-    !((choice === 'ar' || choice === 'ak') && debugMode && newGame) ||
+    !((choice === 'ar' || choice === 'ak' || choice === 'pump') && debugMode && newGame) ||
     inventory.hands.left ||
     inventory.hands.right
   ) {
@@ -22,6 +22,19 @@ export const equipDebugFirearms = (
   const backpack = inventory.worn.back ?? inventory.create('hiking_backpack');
   if (!(inventory.worn.back || inventory.add(backpack, { kind: 'worn' }))) {
     throw new Error('Could not equip firearm preview backpack');
+  }
+  if (choice === 'pump') {
+    const box = inventory.create('shotshell_box');
+    if (
+      !(
+        inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: 'right' }) &&
+        inventory.add(box, { kind: 'pocket', owner: backpack, pocket: 0 }) &&
+        inventory.add(inventory.create('shell_12_gauge_00_buck', 20), { kind: 'pocket', owner: box, pocket: 0 })
+      )
+    ) {
+      throw new Error('Could not equip pump preview loadout');
+    }
+    return true;
   }
   const held = choice === 'ar' ? 'debug_rifle_assault' : 'debug_rifle_ak';
   const other = choice === 'ar' ? 'debug_rifle_ak' : 'debug_rifle_assault';

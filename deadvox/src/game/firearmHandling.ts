@@ -3,19 +3,24 @@
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
-import type { FirearmState, PendingCase } from '../core/firearmState.ts';
+import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { UseOption } from '../core/options.ts';
+import { type PelletShot, pelletShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
+import type { SoundEventId } from '../core/soundEvents.ts';
 
 /** Gameplay estimates for transient ballistics, not claimed as measured export data. */
 const CASE_SPEED = 3.5;
 const CASE_FLIGHT_SECONDS = 0.48;
 const COCK_ACTION = 'firearm.cock';
+const LOAD_ACTION = 'firearm.load';
+/** Single-shell handling estimate, not an exported mechanical phase. */
+export const SHELL_LOAD_SECONDS = 0.9;
 
 type Action = NonNullable<ModelDef['action']>;
 export interface FirearmHandlingData {
@@ -102,8 +107,10 @@ export interface DebugFirearmShotInput extends FirearmPoseInput {
 }
 export interface FirearmCycleFrame {
   readonly uid: number;
-  readonly mode: 'fire' | 'hand';
+  readonly mode: 'fire' | 'hand' | 'load';
   readonly elapsed: number;
+  readonly duration?: number;
+  readonly roundType?: string;
 }
 
 export class FirearmMechanics {
@@ -114,6 +121,8 @@ export class FirearmMechanics {
   private readonly blockSize: number;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
+  private readonly onShot: (shot: PelletShot, time: number) => void;
+  private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
 
   constructor(
     inventory: Inventory,
@@ -122,10 +131,14 @@ export class FirearmMechanics {
       blockSize,
       pose,
       onEjection,
+      onShot = () => undefined,
+      onSound = () => undefined,
     }: {
       blockSize: number;
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
+      onShot?: (shot: PelletShot, time: number) => void;
+      onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
     },
   ) {
     this.inventory = inventory;
@@ -133,8 +146,10 @@ export class FirearmMechanics {
     this.blockSize = blockSize;
     this.pose = pose;
     this.onEjection = onEjection;
+    this.onShot = onShot;
+    this.onSound = onSound;
     for (const item of inventory.items()) {
-      if (item.firearm?.cycle) {
+      if (item.firearm?.cycle || item.firearm?.landing) {
         this.active.add(item.uid);
       }
     }
@@ -144,6 +159,22 @@ export class FirearmMechanics {
         return 'Firearm is no longer held';
       }
       this.advanceCycle(item, actionCycleSeconds(firearmHandlingFor(item, inventory.registry).action, 'hand'));
+      return undefined;
+    });
+    queue.registerAction(LOAD_ACTION, (params): string | undefined => {
+      const gun = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
+      const ammo = typeof params.ammoUid === 'number' ? inventory.itemByUid(params.ammoUid) : undefined;
+      if (!(gun && ammo && this.held(gun.uid))) {
+        return 'Shotgun or shell is no longer held/carried';
+      }
+      const reason = this.loadReason(ammo, true);
+      if (reason) {
+        return reason;
+      }
+      if (!inventory.consume(ammo, 1)) {
+        return 'Shell is no longer carried';
+      }
+      gun.firearm!.tube!.push(ammo.type);
       return undefined;
     });
   }
@@ -162,9 +193,13 @@ export class FirearmMechanics {
     if (!item) {
       return 'Firearm is no longer carried';
     }
-    const reason = exportedActionReason(item, this.inventory.registry, 'fire');
+    const pump = this.isPump(item);
+    const reason = exportedActionReason(item, this.inventory.registry, pump ? 'hand' : 'fire');
     if (reason) {
       return reason;
+    }
+    if (pump && !firearmHandlingFor(item, this.inventory.registry).model.tube) {
+      return 'No exported tube data for this gun';
     }
     // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
     // only an idle empty chamber is a persistent refusal that should stop that cadence.
@@ -175,7 +210,8 @@ export class FirearmMechanics {
   }
 
   fire(input: DebugFirearmShotInput): boolean {
-    if (!(input.debugMode && this.held(input.item.uid)) || this.queue.busy) {
+    const pump = this.isPump(input.item);
+    if (!((input.debugMode || pump) && this.held(input.item.uid)) || this.queue.busy) {
       return false;
     }
     // Advancing to the exact deadline also handles a coarse input sample containing several shots.
@@ -191,12 +227,27 @@ export class FirearmMechanics {
     const emission = this.emission(item, data, input);
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
-    item.firearm = {
-      chamber: 'case',
-      pendingCase: { ...emission, seed },
-      cycle: { mode: 'fire', startedAt: input.simTime, elapsed: 0, ejected: false, feedRound: true },
-    };
-    this.active.add(item.uid);
+    if (pump) {
+      const ammo = item.firearm?.roundType && defOf(this.inventory.registry, item.firearm.roundType).ammo;
+      if (!ammo || ammo.calibre !== data.calibre) {
+        return false;
+      }
+      const state = item.firearm!;
+      state.chamber = 'case';
+      state.roundType = undefined;
+      state.pendingCase = { ...emission, seed };
+      this.onShot(
+        pelletShot({ ammo, origin: input.eye, yaw: input.yaw, pitch: input.pitch, seed: input.seed, key: shotKey }),
+        input.simTime,
+      );
+    } else {
+      item.firearm = {
+        chamber: 'case',
+        pendingCase: { ...emission, seed },
+        cycle: { mode: 'fire', startedAt: input.simTime, elapsed: 0, ejected: false, feedRound: true },
+      };
+      this.active.add(item.uid);
+    }
     return true;
   }
 
@@ -212,14 +263,94 @@ export class FirearmMechanics {
   }
 
   useOption(item: Item): UseOption {
+    if (defOf(this.inventory.registry, item.type).ammo) {
+      const reason = this.loadReason(item);
+      return {
+        kind: 'use',
+        label: 'Load one shell into held shotgun',
+        plan: reason ? { ok: false, reason } : { ok: true, time: SHELL_LOAD_SECONDS },
+      };
+    }
     const reason = this.cockReason(item.uid);
     return {
       kind: 'use',
-      label: `Cock ${this.inventory.name(item)}`,
+      label: `${this.isPump(item) ? 'Rack' : 'Cock'} ${this.inventory.name(item)}`,
       plan: reason
         ? { ok: false, reason }
         : { ok: true, time: actionCycleSeconds(firearmHandlingFor(item, this.inventory.registry).action, 'hand') },
     };
+  }
+
+  private isPump(item: Item): boolean {
+    return defOf(this.inventory.registry, item.type).firearm?.pump === true;
+  }
+
+  private heldPump(): Item | undefined {
+    return Object.values(this.inventory.hands).find((item) => item && this.isPump(item));
+  }
+
+  private carried(item: Item): boolean {
+    let location = this.inventory.locate(item);
+    while (location?.kind === 'pocket') {
+      location = this.inventory.locate(location.owner);
+    }
+    return location?.kind === 'hand' || location?.kind === 'worn';
+  }
+
+  loadReason(ammo: Item, completing = false): string | undefined {
+    const gun = this.heldPump();
+    if (!gun) {
+      return 'Hold a pump shotgun first';
+    }
+    if (!(this.inventory.itemByUid(ammo.uid) === ammo && this.carried(ammo))) {
+      return 'Carry the shells first';
+    }
+    if ((!completing && this.queue.busy) || gun.firearm?.cycle) {
+      return 'Already handling something';
+    }
+    const reason = exportedActionReason(gun, this.inventory.registry, 'hand');
+    if (reason) {
+      return reason;
+    }
+    const data = firearmHandlingFor(gun, this.inventory.registry);
+    if (!(data.model.tube && data.model.anchors?.loading_port)) {
+      return 'No exported loading port/tube';
+    }
+    if (defOf(this.inventory.registry, ammo.type).ammo?.calibre !== data.calibre) {
+      return 'Wrong ammunition';
+    }
+    return (gun.firearm?.tube?.length ?? 0) >= data.model.tube.capacity ? 'Tube is full' : undefined;
+  }
+
+  load(ammo: Item, time: number): string | undefined {
+    const reason = this.loadReason(ammo);
+    if (reason) {
+      return reason;
+    }
+    const gun = this.heldPump()!;
+    this.queue.enqueueAction(
+      LOAD_ACTION,
+      `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.tube!.capacity}`,
+      SHELL_LOAD_SECONDS,
+      { uid: gun.uid, ammoUid: ammo.uid },
+    );
+    this.onSound('shotgun_insert', undefined, time);
+    return undefined;
+  }
+
+  use(item: Item, time: number): string | undefined {
+    return defOf(this.inventory.registry, item.type).ammo ? this.load(item, time) : this.cock(item.uid, time);
+  }
+
+  describe(item: Item): string[] {
+    if (!this.isPump(item)) {
+      return [];
+    }
+    const state = item.firearm!;
+    return [
+      `Chamber: ${{ round: '00 buck shell', case: 'fired hull — rack before firing', empty: 'empty' }[state.chamber]}`,
+      `Tube: ${state.tube!.length}/${firearmHandlingFor(item, this.inventory.registry).model.tube!.capacity} shells`,
+    ];
   }
 
   cock(uid: number, time: number): string | undefined {
@@ -229,51 +360,89 @@ export class FirearmMechanics {
     }
     const item = this.inventory.itemByUid(uid)!;
     const data = firearmHandlingFor(item, this.inventory.registry);
+    const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'round' };
-    state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, ejected: false, feedRound: true };
+    state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, ejected: false, feedRound: !pump };
     item.firearm = state;
     this.active.add(uid);
     this.queue.enqueueAction(
       COCK_ACTION,
-      `Cock ${defOf(this.inventory.registry, item.type).name}`,
+      `${pump ? 'Rack' : 'Cock'} ${defOf(this.inventory.registry, item.type).name}`,
       data.action.hand.durationSeconds,
       { uid },
     );
+    if (pump) {
+      this.onSound('shotgun_rack_back', undefined, time);
+    }
     return undefined;
   }
 
   advanceTo(time: number): void {
     for (const uid of this.active) {
-      const item = this.inventory.itemByUid(uid);
-      const cycle = item?.firearm?.cycle;
-      if (!(item && cycle)) {
+      this.advanceItem(uid, time);
+    }
+  }
+
+  private advanceItem(uid: number, time: number): void {
+    const item = this.inventory.itemByUid(uid);
+    const landing = item?.firearm?.landing;
+    if (landing && time + 1e-9 >= landing.at) {
+      item!.firearm!.landing = undefined;
+      this.onSound('shotgun_hull_drop', landing.position, landing.at);
+    }
+    const cycle = item?.firearm?.cycle;
+    if (!(item && cycle)) {
+      if (!item?.firearm?.landing) {
         this.active.delete(uid);
-        continue;
       }
-      if (cycle.mode === 'hand') {
-        const job = this.queue.jobs.find(
-          (entry) => entry.kind === 'action' && entry.jobType === COCK_ACTION && entry.params.uid === uid,
-        );
-        if (!(job && this.held(uid))) {
-          // Cancelling a hand action leaves its chamber (including an unejected case) intact.
-          item.firearm!.cycle = undefined;
-          this.active.delete(uid);
-          continue;
-        }
-        this.advanceCycle(item, job.elapsed);
-      } else {
-        this.advanceCycle(item, Math.max(cycle.elapsed, time - cycle.startedAt));
-      }
+      return;
+    }
+    if (cycle.mode === 'hand') {
+      this.advanceHand(item);
+    } else {
+      this.advanceCycle(item, Math.max(cycle.elapsed, time - cycle.startedAt));
+    }
+  }
+
+  private advanceHand(item: Item): void {
+    const job = this.queue.jobs.find(
+      (entry) => entry.kind === 'action' && entry.jobType === COCK_ACTION && entry.params.uid === item.uid,
+    );
+    if (!(job && this.held(item.uid))) {
+      // Cancelling motion keeps chamber, tube and any already committed landing cue intact.
+      item.firearm!.cycle = undefined;
+      this.retire(item);
+      return;
+    }
+    this.advanceCycle(item, job.elapsed);
+  }
+
+  private retire(item: Item): void {
+    if (!item.firearm?.landing) {
+      this.active.delete(item.uid);
     }
   }
 
   frames(): readonly FirearmCycleFrame[] {
-    return [...new Set(Object.values(this.inventory.hands).flatMap((item) => (item ? [item.uid] : [])))].flatMap(
-      (uid) => {
-        const cycle = this.inventory.itemByUid(uid)?.firearm?.cycle;
-        return cycle ? [{ uid, mode: cycle.mode, elapsed: cycle.elapsed }] : [];
-      },
-    );
+    return [
+      ...new Set(Object.values(this.inventory.hands).flatMap((item) => (item ? [item.uid] : []))),
+    ].flatMap<FirearmCycleFrame>((uid) => {
+      const cycle = this.inventory.itemByUid(uid)?.firearm?.cycle;
+      if (cycle) {
+        return [{ uid, mode: cycle.mode, elapsed: cycle.elapsed }];
+      }
+      const [job] = this.queue.jobs;
+      const ammo =
+        job?.kind === 'action' &&
+        job.jobType === LOAD_ACTION &&
+        job.params.uid === uid &&
+        typeof job.params.ammoUid === 'number'
+          ? this.inventory.itemByUid(job.params.ammoUid)
+          : undefined;
+      return ammo && job
+        ? [{ uid, mode: 'load', elapsed: job.elapsed, duration: job.duration, roundType: ammo.type }]
+        : [];
+    });
   }
 
   private advanceCycle(item: Item, elapsed: number): void {
@@ -284,23 +453,42 @@ export class FirearmMechanics {
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
     cycle.elapsed = Math.max(cycle.elapsed, elapsed);
+    this.rackForwardCue(item, data, cycle);
     if (!cycle.ejected && cycle.elapsed + 1e-9 >= ejectSeconds(data.action, cycle.mode)) {
-      if (state.chamber === 'case') {
-        this.ejectCase(item, state, data);
-      } else if (state.chamber === 'round' && state.roundType !== undefined) {
-        // Real loaded-round ejection is supplied by the ammunition feature, not silently discarded.
-        throw new Error('Live cartridge ejection requires ammunition handling');
-      } else {
-        state.chamber = 'empty';
-      }
+      this.ejectChamber(item, state, data);
       cycle.ejected = true;
     }
     if (cycle.elapsed + 1e-9 >= actionCycleSeconds(data.action, cycle.mode)) {
-      if (cycle.feedRound) {
-        state.chamber = 'round';
-      }
+      this.feed(item, state, cycle);
       state.cycle = undefined;
-      this.active.delete(item.uid);
+      this.retire(item);
+    }
+  }
+
+  private rackForwardCue(item: Item, data: FirearmHandlingData, cycle: FirearmCycleState): void {
+    const returnAt = data.action.hand.rearwardSeconds + data.action.hand.dwellSeconds;
+    if (this.isPump(item) && !cycle.forwardSounded && cycle.elapsed + 1e-9 >= returnAt) {
+      cycle.forwardSounded = true;
+      this.onSound('shotgun_rack_forward', undefined, cycle.startedAt + returnAt);
+    }
+  }
+
+  private ejectChamber(item: Item, state: FirearmState, data: FirearmHandlingData): void {
+    if (state.chamber === 'case') {
+      this.ejectCase(item, state, data);
+    } else if (state.chamber === 'round' && state.roundType !== undefined) {
+      this.ejectLive(item, state, data);
+    } else {
+      state.chamber = 'empty';
+    }
+  }
+
+  private feed(item: Item, state: FirearmState, cycle: FirearmCycleState): void {
+    if (this.isPump(item)) {
+      state.roundType = state.tube!.shift();
+      state.chamber = state.roundType ? 'round' : 'empty';
+    } else if (cycle.feedRound) {
+      state.chamber = 'round';
     }
   }
 
@@ -316,6 +504,40 @@ export class FirearmMechanics {
     };
   }
 
+  private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): void {
+    const pose = this.pose(item.uid);
+    if (!pose) {
+      throw new Error('Live shell needs a held ejection pose');
+    }
+    const emission = this.emission(item, data, pose);
+    const landing = this.landing(emission);
+    const type = state.roundType!;
+    if (!this.inventory.add(this.inventory.create(type), { kind: 'pile', pos: landing })) {
+      throw new Error('Could not place ejected live shell');
+    }
+    state.chamber = 'empty';
+    state.roundType = undefined;
+    state.cycle!.ejected = true;
+    const seed = Math.floor(Rng.stream(item.uid, `live-shell:${state.cycle!.startedAt}`).next() * 4_294_967_296) >>> 0;
+    const modelId = defOf(this.inventory.registry, type).model;
+    this.onEjection({
+      origin: emission.origin,
+      direction: emission.direction,
+      speed: CASE_SPEED,
+      seed,
+      ...(modelId ? { caseModelId: modelId } : {}),
+    });
+  }
+
+  private landing(emission: Omit<PendingCase, 'seed'>): Vec3 {
+    const distance = CASE_SPEED * CASE_FLIGHT_SECONDS;
+    return [
+      Math.floor((emission.origin[0] + emission.direction[0] * distance) / this.blockSize),
+      emission.feet[1],
+      Math.floor((emission.origin[2] + emission.direction[2] * distance) / this.blockSize),
+    ];
+  }
+
   private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): void {
     const pending = state.pendingCase;
     if (!pending) {
@@ -323,15 +545,9 @@ export class FirearmMechanics {
     }
     const pose = this.pose(item.uid);
     const emission = pose ? this.emission(item, data, pose) : pending;
-    const { blockSize } = this;
-    const distance = CASE_SPEED * CASE_FLIGHT_SECONDS;
-    const landing: Vec3 = [
-      Math.floor((emission.origin[0] + emission.direction[0] * distance) / blockSize),
-      emission.feet[1],
-      Math.floor((emission.origin[2] + emission.direction[2] * distance) / blockSize),
-    ];
+    const landing = this.landing(emission);
     const type = spentCaseItemId(data.calibre);
-    const nearby = pilesInRadius(this.inventory, emission.feet, 20 / blockSize).find((pile) =>
+    const nearby = pilesInRadius(this.inventory, emission.feet, 20 / this.blockSize).find((pile) =>
       pile.items.some(({ item: existing }) => existing.type === type),
     );
     const pos = nearby?.pos ?? landing;
@@ -342,6 +558,12 @@ export class FirearmMechanics {
     state.pendingCase = undefined;
     // Commit the transition before output: a drawing failure must never double its case.
     state.cycle!.ejected = true;
+    if (this.isPump(item)) {
+      state.landing = {
+        at: state.cycle!.startedAt + ejectSeconds(data.action, 'hand') + CASE_FLIGHT_SECONDS,
+        position: [...landing],
+      };
+    }
     this.onEjection({
       origin: emission.origin,
       direction: emission.direction,

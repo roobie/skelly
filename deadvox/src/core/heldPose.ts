@@ -26,11 +26,19 @@ const rz = ([x, y, z]: Vec3, angle: number): Vec3 => [
 ];
 const radians = (degrees: number): number => (degrees * Math.PI) / 180;
 
-const modelToView = (model: ModelDef, vector: Vec3): Vec3 => {
+export const modelToView = (model: ModelDef, vector: Vec3): Vec3 => {
   const [x, y, z] = model.grip?.turn ?? [0, 0, 0];
   // Three's Euler XYZ, followed by rotateX(roll), then the outer hold-pose wrapper.
   const turned = rx(ry(rz(rx(vector, radians(model.roll ?? 0)), radians(z)), radians(y)), radians(x));
   return model.hold === 'upright' ? rz(turned, Math.PI / 2) : ry(turned, Math.PI / 2);
+};
+
+export const heldAnchorOffset = (model: ModelDef, name: string): Vec3 => {
+  const anchor = model.anchors?.[name];
+  if (!(anchor && model.grip)) {
+    throw new Error(`Model ${model.id} needs ${name}/grip`);
+  }
+  return modelToView(model, anchor.map((value, index) => value - model.grip!.at[index]!) as Vec3);
 };
 
 export const heldEjectionPose = ({

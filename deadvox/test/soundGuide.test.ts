@@ -56,7 +56,7 @@ describe('audio listening guide', () => {
     expect(statusNote('door_blocked_close')).toContain('Placeholder');
     expect(statusNote('door_blocked_close')).toContain('2026-10-02');
     expect(statusNote('door_blocked_close')).toContain('shares door_close');
-    expect(statusNote('gunshot')).toContain('random per-shot variants used for all weapons');
+    expect(statusNote('gunshot')).toContain('random per-shot variants used for virtual-round debug rifles');
     expect(statusNote('gunshot_pbs1_reference')).toContain('Reserved PBS-1');
     expect(statusNote('gunshot_pbs1_reference')).toContain('not used by gameplay');
     expect(statusNote('footstep_mud')).toContain('To replace');

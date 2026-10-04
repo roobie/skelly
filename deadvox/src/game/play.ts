@@ -144,14 +144,25 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       primaryAction: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
-        if (!(debugTools?.buildOn || (config.debug && action.kind === 'firearm'))) {
+        if (
+          !(
+            debugTools?.buildOn ||
+            (config.debug && action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
+          )
+        ) {
           performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
         }
       },
       heldPrimaryAction: (time, pressed, triggerHeld) => {
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
         const weapon =
-          config.debug && !debugTools?.buildOn && !queue.busy && action.kind === 'firearm' ? action.item : undefined;
+          config.debug &&
+          !debugTools?.buildOn &&
+          !queue.busy &&
+          action.kind === 'firearm' &&
+          !registry.items.get(action.item.type)?.firearm?.pump
+            ? action.item
+            : undefined;
         const deadlines = firearmTrigger.advance(time, triggerWeapon(weapon, pressed), pressed, triggerHeld);
         if (weapon) {
           for (const deadline of deadlines) {
@@ -216,7 +227,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     search,
   } = session;
   const useItem = (item: Item): string | undefined =>
-    registry.items.get(item.type)?.firearm ? firearms.cock(item.uid, sim.time) : survival.use(item);
+    registry.items.get(item.type)?.firearm || registry.items.get(item.type)?.ammo
+      ? firearms.use(item, sim.time)
+      : survival.use(item);
   const { compression } = sim;
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
@@ -344,8 +357,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     notice: showNotice,
     use: useItem,
     useOption: (item, reachView) =>
-      registry.items.get(item.type)?.firearm ? firearms.useOption(item) : useOption(item, reachView),
-    describe: (item) => survival.describe(item),
+      registry.items.get(item.type)?.firearm || registry.items.get(item.type)?.ammo
+        ? firearms.useOption(item)
+        : useOption(item, reachView),
+    describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
@@ -825,6 +840,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!fired) {
       return false;
     }
+    if (registry.items.get(item.type)?.firearm?.pump) {
+      view.recoil(8);
+      return true;
+    }
     const shot = firearmShotSound(item.type);
     session.playPlayerSound(shot.event, time, shot);
     return true;
@@ -861,7 +880,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
           showNotice(
-            config.debug
+            config.debug || registry.items.get(action.item.type)?.firearm?.pump
               ? (firearms.fireReason(action.item.uid) ?? 'Firearm is not ready')
               : 'Firearms can only be fired in debug mode',
           );

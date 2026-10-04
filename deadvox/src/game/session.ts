@@ -311,6 +311,12 @@ export const createSession = (options: SessionOptions) => {
           }
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
+    onShot: (shot, time) => {
+      zombieSystem.firePellets(shot);
+      playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
+    },
+    onSound: (event, position, time) =>
+      position ? playWorldSound(event, position, time) : playPlayerSound(event, time, { listenerRelative: true }),
   });
 
   const survival = new Survival(sim, inventory, queue, {
