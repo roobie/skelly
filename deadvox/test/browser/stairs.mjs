@@ -479,6 +479,7 @@ try {
         stop: () => page.keyboard.up('KeyW'),
       },
     );
+    await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
       globalThis.stairsWitness.input.yaw = -Math.PI / 2;
