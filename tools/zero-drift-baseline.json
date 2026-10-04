@@ -1,0 +1,489 @@
+{
+  "version": 1,
+  "violations": [
+    { "path": ".claude/CLAUDE.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/CONTROLS.md", "check": "path", "text": "debug/index.ts", "count": 1 },
+    { "path": "deadvox/DESIGN.md", "check": "line_number", "text": "src/core/saveState.ts:153", "count": 1 },
+    { "path": "deadvox/DESIGN.md", "check": "line_number", "text": "src/core/zombies.ts:57", "count": 1 },
+    { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/", "count": 1 },
+    { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/manifest.json", "count": 1 },
+    { "path": "deadvox/docs/content.md", "check": "path", "text": "src/core/schema.ts", "count": 1 },
+    { "path": "deadvox/docs/content.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "path", "text": "src/core/character.ts", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "path", "text": "src/core/itemTree.ts", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "path", "text": "test/crafting.test.ts", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "path", "text": "test/inventory.test.ts", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "path", "text": "test/longAction.test.ts", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "path", "text": "test/snapshot.test.ts", "count": 1 },
+    { "path": "deadvox/docs/crafting.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    {
+      "path": "deadvox/docs/decisions/0001-ui-rendering-with-lit-html.md",
+      "check": "path",
+      "text": "test/uiLitHtml.test.ts",
+      "count": 2
+    },
+    {
+      "path": "deadvox/docs/decisions/0001-ui-rendering-with-lit-html.md",
+      "check": "read_if",
+      "text": "read_if must be a non-empty list of non-empty strings",
+      "count": 1
+    },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "../worker/mesh.worker.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "game/audio.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/", "count": 1 },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/core/blockEntities.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/core/buildRevision.ts",
+      "count": 1
+    },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/entities.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/inventory.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/lights.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/mesher.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/meshInput.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/mood.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/occlusion.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/pileLayout.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/saveFormat.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/saveState.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/shell.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/sideButton.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/sim.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/site.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/sky.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/soundPicker.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/storage.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/weather.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/world.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/worldgen.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/core/zombieSpawns.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/debug/index.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/aim.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/audio.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/config.ts", "count": 1 },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/game/damageFeedback.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/game/debugInterface.ts",
+      "count": 1
+    },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/engine.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/play.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/player.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/quickbar.ts", "count": 2 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/rest.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/saveStorage.ts", "count": 1 },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/game/saveStorageProtocol.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/game/saveStorageRecord.ts",
+      "count": 1
+    },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/session.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/streamer.ts", "count": 3 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/survival.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/game/worldSetup.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/render/frameTimes.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/render/meleePose.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/render/playFrames.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/render/playView.ts", "count": 3 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/audioOptions.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/credits.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/death.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/gameCursor.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/hud.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/hudOptions.ts", "count": 1 },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/ui/inventoryScreen.ts",
+      "count": 1
+    },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/menuPointer.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/menuState.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/playHud.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/playReadout.ts", "count": 1 },
+    { "path": "deadvox/docs/decisions/0002-saves.md", "check": "path", "text": "src/ui/rest.ts", "count": 1 },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "src/worker/save.worker.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "path",
+      "text": "test/simulationFingerprint.test.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "symbol",
+      "text": "src/core/inventory.ts, items.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "symbol",
+      "text": "src/core/sim.ts, clock.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "symbol",
+      "text": "src/core/worldgen.ts, hamlet.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "symbol",
+      "text": "src/debug/index.ts, measureSnapshot",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0002-saves.md",
+      "check": "symbol",
+      "text": "src/game/player.ts, rest.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
+      "check": "path",
+      "text": "src/core/schema.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
+      "check": "path",
+      "text": "src/core/site.ts",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
+      "check": "read_if",
+      "text": "read_if must be a non-empty list of non-empty strings",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/firearm-cycle-playback.md",
+      "check": "path",
+      "text": "src/content/base/assets/manifest.json",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/firearm-cycle-playback.md",
+      "check": "path",
+      "text": "src/content/base/models-firearms.json",
+      "count": 1
+    },
+    { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "core/soundPicker.ts", "count": 1 },
+    { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audio.ts", "count": 1 },
+    { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audioPresentation.ts", "count": 1 },
+    { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "test/browser/full-auto.mjs", "count": 1 },
+    { "path": "deadvox/docs/gunshot-playback.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/docs/locks.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/docs/reach-options.md", "check": "path", "text": "core/options.ts", "count": 1 },
+    { "path": "deadvox/docs/reach-options.md", "check": "path", "text": "core/reach.ts", "count": 1 },
+    { "path": "deadvox/docs/reach-options.md", "check": "path", "text": "src/core/options.ts", "count": 1 },
+    { "path": "deadvox/docs/reach-options.md", "check": "path", "text": "src/core/reach.ts", "count": 1 },
+    { "path": "deadvox/docs/reach-options.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/docs/readables.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    {
+      "path": "deadvox/docs/reviews/2026-09-29-maintainability.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    {
+      "path": "deadvox/docs/reviews/2026-10-03-consolidation.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    { "path": "deadvox/docs/stairs.md", "check": "path", "text": "core/templateSpatial.ts", "count": 1 },
+    { "path": "deadvox/docs/stairs.md", "check": "path", "text": "test/browser/stairs.mjs", "count": 2 },
+    {
+      "path": "deadvox/docs/trees-first-look.md",
+      "check": "path",
+      "text": "assets/audio/footstep-leaves-01.ogg",
+      "count": 1
+    },
+    { "path": "deadvox/docs/trees-first-look.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/GRAPHICS.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/INTERACTIONS.md", "check": "path", "text": "core/food.ts", "count": 1 },
+    {
+      "path": "deadvox/INTERACTIONS.md",
+      "check": "read_if",
+      "text": "read_if must be a non-empty list of non-empty strings",
+      "count": 1
+    },
+    { "path": "deadvox/INTERFACE.md", "check": "line_number", "text": "src/game/input.ts:59", "count": 1 },
+    { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playFrames.ts", "count": 1 },
+    { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playView.ts", "count": 1 },
+    { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/menuPointer.ts", "count": 1 },
+    { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/playHud.ts", "count": 1 },
+    { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/playReadout.ts", "count": 1 },
+    { "path": "deadvox/maps/README.md", "check": "path", "text": "maps/hunting_cabins.tmj", "count": 1 },
+    { "path": "deadvox/maps/README.md", "check": "path", "text": "src/content/base/hunting-cabins.json", "count": 1 },
+    { "path": "deadvox/maps/README.md", "check": "path", "text": "src/core/authoredTerrain.mjs", "count": 1 },
+    { "path": "deadvox/maps/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "assets/", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "content/base/assets/manifest.json", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/assets.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/blockEntities.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/city.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/clock.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/compression.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/content.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/entities.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/events.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/food.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/hamlet.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/handling.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/inventory.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/items.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/lights.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/loot.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/mesher.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/needs.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/pileLayout.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/scale.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/scheduler.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/schema.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/sim.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/site.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/sky.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/structure.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/templates.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/engine.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/play.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/survival.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/chunks.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/flashlight.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/furniture.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/hands.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/models.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/piles.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/sky.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/credits.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/death.ts", "count": 1 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/hud.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/inventoryScreen.ts", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/blockEntities.ts:292", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/content.ts:261-373", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/hamlet.ts:54-57", "count": 2 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/inventory.ts:289", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/lights.ts:59", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/schema.ts:137-140", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/schema.ts:159-168", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/zombies.ts:396", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/session.ts:358", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/session.ts:59", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/survival.ts:172", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/game/targets.ts:36", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/render/flashlight.ts:84", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "path", "text": "core/footsteps.ts", "count": 1 },
+    { "path": "deadvox/SLICE-2.md", "check": "path", "text": "src/game/targets.ts:36", "count": 1 },
+    {
+      "path": "docs/deferred-assertions.md",
+      "check": "path",
+      "text": "mobgen/test/poseEquivalence.test.ts",
+      "count": 1
+    },
+    { "path": "docs/deferred-assertions.md", "check": "path", "text": "src/ui/", "count": 1 },
+    { "path": "docs/PROCESS.md", "check": "path", "text": "skills/agent-mail/TEAM.md", "count": 1 },
+    { "path": "docs/test-pool.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "designs/", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "fixtures/", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "gun/", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "src/ammo/", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "src/ammo/rules.ts", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "test/fixtures/cartridges/", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "path", "text": "viewer/", "count": 1 },
+    { "path": "gungen/cartridges/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "core/resolve.ts", "count": 1 },
+    {
+      "path": "gungen/docs/anti-materiel.md",
+      "check": "path",
+      "text": "designs/archetype-anti-materiel.json",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/anti-materiel.md",
+      "check": "path",
+      "text": "fixtures/archetype-anti-materiel.json",
+      "count": 1
+    },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/anchors.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/antiMateriel/", "count": 2 },
+    {
+      "path": "gungen/docs/anti-materiel.md",
+      "check": "path",
+      "text": "src/gun/antiMateriel/cartridge.ts",
+      "count": 1
+    },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/domain.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/optics.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/palette.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/parts.ts", "count": 2 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "src/gun/templates.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "test/antiMateriel.test.ts", "count": 5 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "test/antiMaterielRules.test.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "test/parts.test.ts", "count": 1 },
+    { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "viewer/scene.ts", "count": 1 },
+    {
+      "path": "gungen/docs/anti-materiel.md",
+      "check": "read_if",
+      "text": "read_if must be a non-empty list of non-empty strings",
+      "count": 1
+    },
+    { "path": "gungen/docs/anti-materiel.md", "check": "symbol", "text": "viewer/scene.ts, glb.ts", "count": 1 },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "path",
+      "text": "cartridges/",
+      "count": 2
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "path",
+      "text": "cartridges/5.56x45.json",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "path",
+      "text": "cartridges/7.62x39.json",
+      "count": 1
+    },
+    { "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md", "check": "path", "text": "src/ammo/", "count": 1 },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "path",
+      "text": "src/gun/antiMateriel/heavyReceiver.ts",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "path",
+      "text": "src/gun/parts.ts",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "path",
+      "text": "src/gun/units.ts#GUN_UNITS",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "read_if",
+      "text": "read_if must be a non-empty list of non-empty strings",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "symbol",
+      "text": "src/gun/antiMateriel/heavyReceiver.ts, heavyMagazine.ts",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md",
+      "check": "symbol",
+      "text": "src/gun/parts.ts, MagazineBands",
+      "count": 1
+    },
+    { "path": "gungen/docs/optics.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    {
+      "path": "gungen/docs/pump-action-export.md",
+      "check": "path",
+      "text": "cartridges/12-gauge-00-buck.json",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/pump-action-export.md",
+      "check": "path",
+      "text": "designs/archetype-pump-shotgun.json",
+      "count": 1
+    },
+    { "path": "gungen/docs/pump-action-export.md", "check": "path", "text": "gun/tubeCapacity.ts", "count": 1 },
+    {
+      "path": "gungen/docs/pump-action-export.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/reviews/2026-09-29-maintainability.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/reviews/2026-10-03-consolidation.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/reviews/g24-ak-stock-step.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    {
+      "path": "gungen/docs/shotshell-export.md",
+      "check": "path",
+      "text": "cartridges/12-gauge-00-buck.json",
+      "count": 1
+    },
+    { "path": "gungen/docs/shotshell-export.md", "check": "path", "text": "src/gun/cartridgeExport.ts", "count": 1 },
+    { "path": "gungen/docs/shotshell-export.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "gungen/PROJECT.md", "check": "line_number", "text": "deadvox/src/core/schema.ts:197-212", "count": 1 },
+    { "path": "gungen/PROJECT.md", "check": "line_number", "text": "deadvox/src/core/schema.ts:202-204", "count": 1 },
+    { "path": "gungen/PROJECT.md", "check": "line_number", "text": "deadvox/src/render/models.ts:50-52", "count": 1 },
+    { "path": "gungen/PROJECT.md", "check": "path", "text": "src/core/suggest.ts", "count": 1 },
+    {
+      "path": "gungen/PROJECT.md",
+      "check": "path",
+      "text": "test/fixtures/broken-connection-contact.json",
+      "count": 1
+    },
+    { "path": "gungen/PROJECT.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "mobgen/CHALLENGES.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    {
+      "path": "mobgen/docs/reviews/2026-09-29-maintainability.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    {
+      "path": "mobgen/docs/reviews/2026-10-03-consolidation.md",
+      "check": "read_if",
+      "text": "missing YAML front matter",
+      "count": 1
+    },
+    { "path": "mobgen/PROJECT.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
+    { "path": "mobgen/reference/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 }
+  ]
+}
