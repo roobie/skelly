@@ -30,6 +30,7 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
+import { mountReading } from '../ui/reading.ts';
 import {
   type PlayStatus,
   playHudText,
@@ -188,6 +189,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       },
     },
     notice: (text) => showNotice(text),
+    onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
@@ -260,6 +262,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const overlay = $('overlay');
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
+  const reading = mountReading($('reading'), () => syncMenuState());
   const hud = $('hud');
   const inventoryStats = $('inventory-stats');
   const hudOptions = readHudOptions();
@@ -425,6 +428,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       started,
       mainMenuOpen,
       inventoryOpen: screen.isOpen,
+      readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
       pointerLocked: input.locked,
       dead: sim.dead !== undefined,
@@ -438,6 +442,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resumeRequested = false;
     }
     if (state.closeOtherMenus) {
+      reading.close();
       closeInventoryScreen();
       debugTools?.closeMenus();
     }
@@ -474,7 +479,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resume();
       return;
     }
-    if (input.locked || screen.isOpen || debugTools?.menuOpen || sim.dead) {
+    if (input.locked || screen.isOpen || reading.isOpen || debugTools?.menuOpen || sim.dead) {
       return;
     }
     resume();
@@ -636,6 +641,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!(e.repeat || sim.dead)) {
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
+        reading.close();
         closeInventoryScreen();
         debugTools?.closeMenus();
       }
@@ -678,6 +684,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   const handleGameplayKey = (e: KeyboardEvent): void => {
+    if (e.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(e)) return;
     if (handleMainMenuKey(e)) {
       return;
     }
@@ -708,7 +715,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   globalThis.addEventListener(
     'wheel',
     (e) => {
-      if (input.locked && mainMenuOpen) {
+      if (reading.isOpen) {
+        $('reading').querySelector<HTMLElement>('.reading-text')!.scrollTop += e.deltaY;
+        e.preventDefault();
+      } else if (input.locked && mainMenuOpen) {
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer) {
@@ -738,6 +748,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),
+      readable: Boolean(entities.defOf(entity).readable),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
@@ -751,6 +762,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     if (entities.defOf(entity).door) {
       toggleDoor(entity);
+    } else if (entities.defOf(entity).readable) {
+      const reason = session.readFurniture(entity);
+      if (reason) showNotice(reason);
     } else if (entity.pockets) {
       playtestObserver?.beginSearch(entity, nameOf(entity));
       search(entity);

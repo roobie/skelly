@@ -12,6 +12,7 @@ import { chargeShare, drainLight, swapBattery, toggleLight } from '../core/light
 import { consume, FOOD_POISONING } from '../core/needs.ts';
 import { useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
+import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 
 const numberParam = (params: JobParams, key: string): number => {
@@ -27,6 +28,8 @@ export interface SurvivalHooks {
   feet: () => Target;
   notice: (text: string) => void;
   reach: () => ReachSnapshot;
+  /** Presents validated authored text; no time, consumption or save-state mutation. */
+  read?: (readable: Readonly<Readable>) => void;
 }
 
 export class Survival {
@@ -117,6 +120,9 @@ export class Survival {
         return undefined;
       case 'switch':
         return this.switchLight(item);
+      case 'read':
+        this.hooks.read?.(defOf(this.inventory.registry, item.type).readable!);
+        return undefined;
       default:
         throw new Error('Invalid usable core option');
     }
@@ -136,7 +142,7 @@ export class Survival {
       const state = item.on ? 'on' : 'off';
       lines.push(`Battery ${Math.round(share * 100)}%${def.light ? ` · ${state}` : ''}`);
     }
-    if (def.food || def.light || def.battery) {
+    if (def.food || def.light || def.battery || def.readable) {
       lines.push('U or its quickbar key: use');
     }
     return lines;

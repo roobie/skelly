@@ -7,6 +7,8 @@ import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { blockPatterns } from '../core/meshInput.ts';
+import { rollLoot } from '../core/loot.ts';
+import { Rng } from '../core/random.ts';
 import type { Scale } from '../core/scale.ts';
 import type { FurnitureSpawn, Site } from '../core/site.ts';
 import { type BlockBox, rasterize } from '../core/structure.ts';
@@ -79,6 +81,9 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
           return def.size;
         })
       : [];
+  if (scale.blockSize === HAMLET_BLOCK_SIZE) {
+    furniture.push({ type: 'sample_sign', pos: [(HOUSE_OFFSET[0] + SPAWN_OFFSET[0] + 2) / scale.blockSize, floor / scale.blockSize, (HOUSE_OFFSET[1] + SPAWN_OFFSET[2] + 1) / scale.blockSize], size: registry.furniture.get('sample_sign')!.size, facing: 'n' });
+  }
   return { structures: rasterize(house, scale.blockSize), spawn: { pos: spawn, yaw: SPAWN_YAW }, furniture };
 };
 
@@ -155,7 +160,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     furnitureIn: (cx, cz) =>
       site.furniture
         .filter((spec) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz)
-        .map((spec) => ({ spec, loot: [] })),
+        .map((spec) => ({ spec, loot: spec.type === 'crate' ? rollLoot(registry, 'sample_note_loot', Rng.stream(seed, `reading-sample:${spec.pos.join(',')}`)) : [] })),
   };
 }
 

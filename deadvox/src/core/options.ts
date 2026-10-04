@@ -21,7 +21,7 @@ export interface UseOption {
   kind: 'use';
   label: string;
   plan: Plan;
-  operation?: 'eat' | 'switch' | 'battery';
+  operation?: 'eat' | 'switch' | 'battery' | 'read';
   light?: Item;
   battery?: Item;
 }
@@ -172,6 +172,9 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   }
   if (at.kind !== 'hand') {
     return refuseUse(`Take the ${name} in your hands first`);
+  }
+  if (def.readable) {
+    return { kind: 'use', label: 'Read', operation: 'read', plan: { ok: true, time: 0 } };
   }
   if (def.food) {
     const drink = def.category === 'drink';

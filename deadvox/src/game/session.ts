@@ -5,6 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import type { Readable } from '../core/readable.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -139,6 +140,8 @@ export interface SessionOptions {
   audio: SessionAudio;
   /** A message that isn't an interruption, such as why a move was refused. */
   notice: (text: string) => void;
+  /** Authored text selected by a live domain command; presentation owns its view. */
+  onRead?: (readable: Readonly<Readable>) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
@@ -299,6 +302,7 @@ export const createSession = (options: SessionOptions) => {
     reach,
     feet: () => ({ kind: 'pile', pos: feet() }),
     notice: options.notice,
+    read: (readable) => options.onRead?.(readable),
   });
   const rest = new RestController(sim, {
     bedQuality: () => {
@@ -622,6 +626,15 @@ export const createSession = (options: SessionOptions) => {
       queue.enqueueAction('furniture.search', `Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), {
         entityUid: entity.uid,
       });
+      return undefined;
+    },
+    /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */
+    readFurniture: (entity: BlockEntity): string | undefined => {
+      if (entities.byUid(entity.uid) !== entity) return 'It is no longer there';
+      if (!inventory.canReachEntity(entity)) return 'Too far away';
+      const readable = entities.defOf(entity).readable;
+      if (!readable) return 'Nothing to read';
+      options.onRead?.(readable);
       return undefined;
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),
