@@ -116,10 +116,13 @@ from the doc.
   ```
 
 A false doc is a defect, and a review returns FIX for it. `tools/zero-drift-check.mjs`
-enforces these rules. Existing findings are frozen in
+checks the mechanical rules in CI: every cited path and symbol exists, no doc outside
+reviews and retros cites a line number, and every doc has `read_if` matching
+`tools/read_if.py`. Reviews check the rest. Existing findings are frozen in
 `tools/zero-drift-baseline.json` until the docs sweep (#222); a new finding fails, and
 fixing one means removing its baseline entry. Run
-`node tools/zero-drift-check.mjs --emit-baseline` to emit the current findings for review.
+`node tools/zero-drift-check.mjs --emit-baseline` to print a replacement for
+`tools/zero-drift-baseline.json` on stdout for review.
 
 ## Shared direction
 

@@ -319,7 +319,7 @@ function failureMap(failures) {
 }
 
 function group(path) {
-  return ['gungen', 'deadvox', 'mobgen'].find((name) => path.startsWith(`${name}/`)) ?? 'root';
+  return [...SUBPROJECTS].find((name) => path.startsWith(`${name}/`)) ?? 'root';
 }
 
 function printStats(failures) {
