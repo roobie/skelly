@@ -1,8 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Group, PerspectiveCamera, Vector3 } from 'three';
-import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import { CircleGeometry, Group, Mesh, PerspectiveCamera, Vector3 } from 'three';
+import { afterEach, expect, it, vi } from 'vitest';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
+import { compassBearing } from '../src/core/coords.ts';
 import { actionCycleSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -10,7 +11,9 @@ import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandlin
 import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
-import { rummageFrame } from '../src/render/rummagePose.ts';
+import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
+
+afterEach(() => vi.unstubAllGlobals());
 
 const base = 'src/content/base';
 const { registry, issues } = buildRegistry([
@@ -47,8 +50,8 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
-const fixture = (type: string, checkState: (before: unknown, after: unknown) => void) => {
-  const inventory = new Inventory(registry);
+const fixture = (type: string, checkState: (before: unknown, after: unknown) => void, content: Registry = registry) => {
+  const inventory = new Inventory(content);
   const item = inventory.create(type);
   if (!inventory.add(item, { kind: 'hand', side: 'right' })) {
     throw new Error('Cannot hold fixture item');
@@ -82,7 +85,7 @@ const fixture = (type: string, checkState: (before: unknown, after: unknown) => 
     });
     return { wrists, separation: wrists[0]!.distanceTo(wrists[1]!) };
   };
-  return { inventory, item, queue, unpacking, mechanics, project };
+  return { inventory, item, queue, unpacking, mechanics, project, camera, held };
 };
 
 it('held unpacking converges without mutating game state and returns after completion or cancellation', () => {
@@ -163,4 +166,61 @@ it('a live firearm pose takes precedence over a generic held move', () => {
   expect(rummageFrame(f.inventory, f.queue.jobs[0], 'right')?.weight).toBeGreaterThan(0);
   const dedicated = f.project({ firearms: f.mechanics.frames() });
   expect(f.project().wrists).toEqual(dedicated.wrists);
+});
+
+it('compass rummage starts from its raised grip, keeps the device attached and follows camera north', () => {
+  // A canvas protocol fixture observes Three transforms, not rendered pixels.
+  const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
+  const content = buildRegistry([
+    {
+      source: 'compass-rummage-fixture.json',
+      data: { items: [{ id: 'compass', name: 'Fixture compass', category: 'misc', weight: 17, size: [1, 1] }] },
+    },
+  ]);
+  expect(content.issues).toEqual([]);
+  const f = fixture('compass', (before, after) => expect(after).toEqual(before), content.registry);
+  expect(f.inventory.move(f.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
+  const empty = f.project();
+  expect(f.inventory.move(f.item, { kind: 'hand', side: 'right' }).ok).toBe(true);
+  const rest = f.project();
+  expect(rest.wrists[0]!.y).toBeGreaterThan(empty.wrists[0]!.y);
+  let pointer: Mesh | undefined;
+  f.held.warmUpTarget.scene.traverse((object) => {
+    if (object instanceof Mesh && object.geometry instanceof CircleGeometry) {
+      pointer = object;
+    }
+  });
+  expect(pointer).toBeDefined();
+  const device = pointer!.parent!;
+  const viewLocal = (position: Vector3) => position.clone().applyQuaternion(f.camera.quaternion.clone().invert());
+  const attachment = (wrist: Vector3) => viewLocal(device.getWorldPosition(new Vector3()).sub(wrist));
+  const restAttachment = attachment(rest.wrists[0]!);
+  expect(f.queue.enqueue(f.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
+  f.queue.tick(Math.min(f.queue.remaining / 8, RUMMAGE_POSE.transitionSeconds / 4));
+  f.camera.rotation.y = -Math.PI / 3;
+  const first = f.project();
+  expect(first.separation).toBeLessThan(rest.separation);
+  const firstWeight = rummageFrame(f.inventory, f.queue.jobs[0], 'right')!.weight;
+  expect(firstWeight).toBeGreaterThan(0);
+  expect(firstWeight).toBeLessThan(1);
+  expect(attachment(first.wrists[0]!).distanceTo(restAttachment)).toBeLessThan(1e-12);
+  expect(pointer!.rotation.z).toBeCloseTo(compassBearing(f.camera.rotation.y) * (Math.PI / 180), 12);
+  const firstGrip = viewLocal(first.wrists[0]!);
+  f.queue.tick(Math.min(f.queue.remaining / 4, RUMMAGE_POSE.transitionSeconds / 4));
+  f.camera.rotation.y = Math.PI / 7;
+  const second = f.project();
+  const secondWeight = rummageFrame(f.inventory, f.queue.jobs[0], 'right')!.weight;
+  expect(secondWeight).toBeGreaterThan(firstWeight);
+  expect(attachment(second.wrists[0]!).distanceTo(restAttachment)).toBeLessThan(1e-12);
+  expect(pointer!.rotation.z).toBeCloseTo(compassBearing(f.camera.rotation.y) * (Math.PI / 180), 12);
+  const secondGrip = viewLocal(second.wrists[0]!);
+  // X has no wave: each weighted displacement must start at the observed raised grip.
+  expect((firstGrip.x - rest.wrists[0]!.x) / firstWeight).toBeCloseTo(
+    (secondGrip.x - rest.wrists[0]!.x) / secondWeight,
+    12,
+  );
+  f.queue.cancel();
+  expect(viewLocal(f.project().wrists[0]!).distanceTo(rest.wrists[0]!)).toBeLessThan(1e-12);
+  f.held.dispose();
 });

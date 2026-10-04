@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, defaultFoundation, profileHeight, standingHeight } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
+import { compassBearing } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
@@ -39,6 +40,13 @@ describe('authored layout acceptance', () => {
       x1: 52,
       z1: 61,
     });
+  });
+  it('maps a clockwise east bearing to an east-facing authored spawn', () => {
+    const east = new AuthoredSite(1, registry, scale, {
+      ...layout,
+      player: { ...layout.player, bearing: 90 },
+    });
+    expect(compassBearing(east.spawn.yaw)).toBeCloseTo(90, 8);
   });
   it('rejects floating foundations and buried interior cells even when footprint corners fit', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], position: [55, 23, 55] }] }, 'foundation cut or fill');

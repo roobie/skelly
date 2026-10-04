@@ -58,7 +58,7 @@
       "name": "player_spawn",
       "members": [
         {
-          "name": "yaw",
+          "name": "bearing",
           "type": "float",
           "value": 0
         }

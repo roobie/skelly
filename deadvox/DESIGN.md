@@ -301,6 +301,10 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   maybe add more specific anims."; shell-loading feedback is d53, after d47.
   Approval does not pin `RUMMAGE_POSE` tuning: see
   `../docs/deferred-assertions.md`.
+  Following #213's merge (d50-3), compass handling must not introduce a second
+  rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
+  `HeldItems.poseRummage`. The needle's world-heading owner remains independent
+  of hand motion: see `src/render/compass.ts`, `createCompass`.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
