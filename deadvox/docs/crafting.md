@@ -93,16 +93,29 @@ hand owns a copy. The native type reserves both hands through `twoHanded`, with
 one right-hand root. Inventory alone escrows/removes/releases inputs, prevents
 independent consumption/moves of escrow, and maintains weights/UID lookup.
 Reach omits escrowed inputs. This core representation is required to prove F2;
-work-item options, command wiring and the two-hand display still belong to step 5.
+work-item options, native command wiring and the derived second-hand label now
+use the step-5 F7 projections. The first-person renderer already uses the generic
+two-handed stand-in box without adding a second item UID.
 
+`LongActions.beginCraft(plan)` admits recipe/knowledge/skill/equipment and secures
+safe compression before calling Inventory's structural escrow primitive. Refusal
+moves no inputs; a stale structural plan stops compression without creating a job.
+Unreferenced work remains legal and can be released via `cancelCraft(workUid)`.
+
+One shared planner admission function and station matcher serve planning, native
+start and Continue/ticks. The work owner adds only payload and hand checks.
 Admission and every action tick recheck recipe/knowledge, material quantities,
 hands, skill, current tool qualities and workstation. Tools/stations are live
 requirements, not stale saved provider references. Stop preserves elapsed work;
-Continue resets only the active-time cursor so stopped time is not charged.
+Continue resets only the active-time cursor so stopped time is not charged. A
+running craft refuses rest with `Stop crafting first`; rest/sleep may replace a
+stopped descriptor, since progress still belongs to the work item.
 Terminal state is cleared before effects; finish consumes escrow once and puts
 the result in the freed hand, while cancel returns exact input UIDs/counts without
-stack merging, spilling into neighbouring piles if necessary. An unplaceable
-return is refused before structural transfer and keeps stopped work intact.
+stack merging. The five ordinary `dropSpots` are shared with craft retirement;
+shadow occupancy reserves every output before transferring any of them. An
+unplaceable return is refused before structural transfer and keeps stopped work
+intact. The debug spawn menu excludes the payload-bearing native work type.
 
 Snapshots/codec now require `character.longAction`; recursive item `work` data
 is included. Loading validates tags/cursors, work ownership, recipe IDs, progress
@@ -122,7 +135,11 @@ separation, stack ordering, filled-container exclusion, missing requirements,
 and records all base-recipe timings on one indexed 200-item reach snapshot.
 One overlapping four-quality case has a deterministic operation-count control,
 varied conditions, shared tool UIDs and a cheapest-allocation guard against
-incorrectly collapsing a provider class to just one representative.
+incorrectly collapsing a provider class to just one representative. A four-cost-
+class variant uses the same 100,000-read guard; component lists are sorted once
+per snapshot, never per provider leaf. This is not a universal provider-class bound.
+The known-set reachability fixture separately keeps the component closure ungated
+by tool availability while the tool closure still rejects self-bootstrap.
 `test/longAction.test.ts` covers equal active work across Stop/Continue, stopped
 world time, both saved statuses, lost tools, terminal cancellation and malformed
 ownership/input payloads. Native codec/session cases separately cover both statuses
@@ -130,6 +147,11 @@ and recipe/job references; existing rest/sleep and rest UI controls retain their
 `test/snapshot.test.ts` round-trips changed skill/knowledge state and signed zero
 without mutating live state. Controlled mutation evidence and measurements are
 retained under `.agent-mail/scratch/d31-*`.
+
+The rough panel shows only known recipes, raw found/needed counts, best usable
+qualities, skill gaps, preferences and refusal reasons. Clicks submit recipe/UID
+intents and revalidate live state; readouts never mutate work or own another tree.
+Panel styling and in-game acceptance still stop at BR's first-look gate.
 
 This is mixed feature/validation/consolidation work, **not an isolated or
 line-reducing refactor**. The staged report names source, test, doc and content

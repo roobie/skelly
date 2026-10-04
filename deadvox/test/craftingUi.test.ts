@@ -74,6 +74,8 @@ describe('crafting read-only presentation', () => {
     renderCraftStatus(root, status, { continue: resume, stop });
     (root.querySelector('button') as HTMLButtonElement).click();
     expect(resume).toHaveBeenCalledOnce();
+    (root.querySelectorAll('button')[1] as HTMLButtonElement).click();
+    expect(stop).toHaveBeenCalledOnce();
     expect(root.textContent).toContain('stopped');
     expect(root.textContent).toContain('cutting');
     expect(item.work.elapsed).toBe(80);

@@ -551,13 +551,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Continues: resumes a rest/sleep action, or the debug compression test. */
+  /** Continue a craft, rest/sleep, or the debug compression test. */
   const continueAction = (): void => {
     const workUid = session.crafting.currentUid;
     if (workUid !== undefined) {
       const reason = session.crafting.act(workUid, 'continue');
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
+      } else {
+        closeInventoryScreen();
+        syncMenuState();
       }
     } else if (rest.action) {
       const reason = rest.resume();
@@ -569,7 +572,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Stops: ends a rest/sleep action, or the debug compression test. */
+  /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
     if (sim.actions.job?.jobType === 'craft') {
       sim.actions.stop();
@@ -629,7 +632,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  /** Rest and sleep keys, each responsible for its own guard. */
+  /** Long-action keys, each responsible for its own guard. */
   const longActionKeys = new Map<string, () => void>([
     // R also descends in noclip (debug), but only while starting; stopping an active rest is fine.
     [CONTROL_CODES.rest, () => (rest.action?.kind === 'rest' || !debugTools?.noclip) && toggleRest('rest')],

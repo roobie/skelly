@@ -135,6 +135,9 @@ describe('live craft commands', () => {
     r.sim.actions.stop();
     const item = r.inventory.hands.right!;
     expect(r.inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(r.inventory.add(r.inventory.create('wax', 2), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(r.inventory.add(r.inventory.create('rag'), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(r.commands.preview('candle')).toHaveProperty('plan');
     const before = r.inventory.snapshotState();
     expect(r.commands.start('candle')).toBe('Finish or take apart the other craft');
     expect(r.inventory.snapshotState()).toEqual(before);
