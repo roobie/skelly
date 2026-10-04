@@ -156,21 +156,21 @@ const TRIGGER_ENTRIES = [
       trigger: 'Fire a chambered pump shotgun with LMB; rack manually before the next shot.',
       debugHint:
         '?debug=1&loadout=pump: wield and activate the sealed box to unpack; wield the pump, hold R to load loose shells, double-R to rack.',
-      note: 'Placeholder candidate: two Winchester Model 12 near shots from BR’s CC0 library. Awaiting BR listening verdict. Loud 100 m hearing radius is a gameplay estimate.',
+      note: 'Winchester Model 12 near shots from BR’s CC0 library. Approved as-is with #209 by BR (2026-10-04); further improvements deferred. Hearing radius remains a gameplay estimate.',
     },
   ],
   [
     'shotgun_rack_back',
     {
       trigger: 'Double-press R or Use Rack on the held pump to start its backward hand stroke.',
-      note: 'BR-selected SpringySpringo source; split back clip. At hand start, unchanged exported timeline. Cut/level still awaiting BR verdict.',
+      note: 'BR-selected SpringySpringo source; split back clip. Approved as-is with #209 by BR (2026-10-04); further improvements deferred.',
     },
   ],
   [
     'shotgun_rack_forward',
     {
       trigger: 'A rack reaches the exported forward-stroke boundary (rearward + dwell).',
-      note: 'BR-selected source; forward half of the same split rack, cue at 0.65 s. Cut/level still awaiting BR verdict.',
+      note: 'Forward half of the BR-selected split rack. Approved as-is with #209 by BR (2026-10-04); further improvements deferred.',
     },
   ],
   [
@@ -178,14 +178,14 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Hold R with the pump in hand and loose shells carried; each insert is a 0.9 s job. Release cancels the partial job; a single tap does nothing.',
-      note: 'Placeholder candidates: two single inserts from zer0_sol, not whole reload sequences. Awaiting BR listening verdict.',
+      note: 'Single inserts from zer0_sol, not whole reload sequences. Approved as-is with #209 by BR (2026-10-04); further improvements deferred.',
     },
   ],
   [
     'shotgun_hull_drop',
     {
       trigger: 'A fired pump hull lands 0.48 s after its exported eject point, on the simulation clock.',
-      note: 'Placeholder: three LFA hollow plastic clicks, not actual brass-headed hull drops; no metal layer. Awaiting BR listening verdict.',
+      note: 'Placeholder: LFA hollow plastic clicks, not actual brass-headed hull drops; no metal layer. Approved as-is with #209 by BR (2026-10-04); further improvements deferred.',
     },
   ],
   ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],

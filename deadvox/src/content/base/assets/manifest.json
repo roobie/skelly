@@ -7,7 +7,7 @@
       "licence": "CC0-1.0",
       "download": "Prepared SFX Library.7z",
       "files": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
-      "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade. Placeholder candidates awaiting BR listening verdict."
+      "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
     },
     {
       "title": "Gun Reload Sounds — pump rack",

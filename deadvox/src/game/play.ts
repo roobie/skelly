@@ -791,7 +791,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   const handleGameplayKey = (e: KeyboardEvent): void => {
-    if (!prepareGameplayKey(e) || handleMenuKey(e) || timeKeys(e.code)) {
+    if (!prepareGameplayKey(e) || handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
       return;
     }
     if (e.code === CONTROL_CODES.reload) {

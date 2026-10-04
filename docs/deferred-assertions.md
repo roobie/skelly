@@ -4,6 +4,9 @@ description: Values deliberately left un-asserted pre-pre-alpha because they dri
 tags: [testing, process]
 created: 2026-10-04
 status: active
+read_if:
+  - you remove or defer an assertion of mutable development data
+  - you review a deferred value or decide whether its release contract is stable enough to pin
 ---
 
 # Deferred assertions
@@ -28,7 +31,7 @@ move its row to the bottom section with the PR that pinned it.
 | Specific audio approval dates, note wording and selected variants | `deadvox/test/soundGuide.test.ts`, `/sounds.html` | BR reviews the listening sheet and provenance. The note test checks nonempty per-event coverage, not mutable verdict copy | when an approved release asset set is frozen |
 | Pump tube capacity, shell payload count and camera FOV as fixed content numbers | `deadvox/test/pumpShotgun.test.ts`, `deadvox/test/unpacking.test.ts`, `deadvox/test/browser/pump-handling.mjs` | Compare exported model/content metadata to BR's chosen gun and box. Unit fixtures own alternate capacity/payload values; the native flow derives current metadata and checks conservation and unchanged FOV | when these authored specifications become release guarantees |
 | Spread, range, base damage/impulse, blast hearing radius and hull flight delay | `deadvox/src/core/pellets.ts`, `deadvox/src/game/firearmHandling.ts`, `deadvox/docs/pump-shotgun.md` | BR plays at different distances/cover and listens to the shot/rack/hull. Tests retain cartridge-driven diameter scaling, occlusion, admitted hearing and once-only saved landing at its committed timestamp | after gameplay/audio tuning is accepted as a stable contract |
-| Rack cant angle — BR's look | `deadvox/src/render/firearmModel.ts`, `deadvox/src/render/hands.ts` | BR racks the held pump and judges whether the exported port/action is visible and the eased return is natural. One unit case protects away-facing-side selection, completion/cancellation and read-only presentation, not an angle | after the held-pose look is accepted as a stable specification |
+| Rack cant angle — BR's look | `deadvox/src/render/firearmModel.ts`, `rackCant`; `deadvox/src/render/hands.ts`, `HeldItems` | BR approved the look on 2026-10-04 as part of #209, with improvements deferred. Recheck port visibility and the eased return when the held pose changes; approval does not pin an angle | only when an explicit stable held-pose specification is agreed; remains un-pinned after the as-is approval |
 | Exact wall-clock handling bounds | `deadvox/test/browserHandlingBudget.test.ts` | Inspect native work/pacing logs under slow software rendering. Tests check monotonic work/pacing scaling and a simulation-work lower bound, not a tuning-derived millisecond golden | when an explicit supported-host latency budget is adopted |
 | Generated world-column level enumeration and raw air-block ID | `deadvox/test/worldgen.test.ts` | Run the worldgen tests; inspect that generated columns cover contiguous chunk levels, have a semantic surface, and resolve air above ground | at worldgen changes |
 | Published-design inventory and resolved geometry; generated-build appearance formerly snapshotted by `designCorpus.test.ts` and `generate.test.ts` | `gungen/test/designCorpus.test.ts` and `gungen/test/generate.test.ts` | Run `npm run check:designs` in `gungen`; inspect published designs in the viewer (`npm run dev`, `?design=<name>`) and generated examples (`?template=<name>&seed=<seed>`) | at generator-change time |
