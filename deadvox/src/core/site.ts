@@ -3,6 +3,7 @@
 // Everything is a pure function of the seed and position, so chunks can generate in
 // any order.
 
+import { rectDistance as cellDistance } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
@@ -22,11 +23,7 @@ export interface Rect {
 }
 
 /** Blocks from a column to a rectangle; 0 inside. */
-export const rectDistance = (r: Rect, x: number, z: number): number => {
-  const dx = x < r.x0 ? r.x0 - x : Math.max(0, x - (r.x1 - 1));
-  const dz = z < r.z0 ? r.z0 - z : Math.max(0, z - (r.z1 - 1));
-  return Math.hypot(dx, dz);
-};
+export const rectDistance = (r: Rect, x: number, z: number): number => cellDistance(r, x + 0.5, z + 0.5, 1);
 
 export const grow = (r: Rect, by: number): Rect => ({ x0: r.x0 - by, z0: r.z0 - by, x1: r.x1 + by, z1: r.z1 + by });
 

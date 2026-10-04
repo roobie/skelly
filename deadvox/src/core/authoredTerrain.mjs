@@ -1,8 +1,15 @@
 // Pure ES6 shared by Tiled 1.11/Qt and the runtime. Metres throughout; no host/editor APIs.
+export const LOT_APRON_M = 2;
+export const LOT_BLEND_M = 4;
+export const SITE_BLEND_M = 16;
 export const smoothstep = (t) => t * t * (3 - 2 * t);
-// Distance to half-metre block centres, preserving the native nearest-owner metric.
-const rectDistance = (r, x, z) =>
-  Math.hypot(Math.max(r.x0 + 0.25 - x, 0, x - (r.x1 - 0.25)), Math.max(r.z0 + 0.25 - z, 0, z - (r.z1 - 0.25)));
+// Coordinates are cell centres; rectangle bounds are exclusive, in the same units.
+export const rectDistance = (r, x, z, cellSize = 0.5) => {
+  const half = cellSize / 2;
+  return Math.hypot(Math.max(r.x0 + half - x, 0, x - (r.x1 - half)), Math.max(r.z0 + half - z, 0, z - (r.z1 - half)));
+};
+export const hasSegment = (points) =>
+  points.some((point, i) => i > 0 && (point[0] !== points[i - 1][0] || point[1] !== points[i - 1][1]));
 export const polylineDistance = ([x, z], points) => {
   let closest = Number.POSITIVE_INFINITY;
   for (let i = 1; i < points.length; i++) {
@@ -58,13 +65,17 @@ export const layoutHeight = (layout, lots, [x, z], natural) => {
   }
   if (closest) {
     const r = closest.rect;
-    const distance = rectDistance({ x0: r.x0 - 2, x1: r.x1 + 2, z0: r.z0 - 2, z1: r.z1 + 2 }, x, z);
-    if (distance < 4) {
-      return closest.floor + (profile - closest.floor) * smoothstep(distance / 4);
+    const distance = rectDistance(
+      { x0: r.x0 - LOT_APRON_M, x1: r.x1 + LOT_APRON_M, z0: r.z0 - LOT_APRON_M, z1: r.z1 + LOT_APRON_M },
+      x,
+      z,
+    );
+    if (distance < LOT_BLEND_M) {
+      return closest.floor + (profile - closest.floor) * smoothstep(distance / LOT_BLEND_M);
     }
   }
   const boundary = rectDistance(layout.bounds, x, z);
-  return profile + (natural - profile) * smoothstep(Math.min(1, boundary / 16));
+  return profile + (natural - profile) * smoothstep(Math.min(1, boundary / SITE_BLEND_M));
 };
 
 // Standing surface of the actual half-metre voxel at this point, including neighbouring lot transitions.

@@ -28,7 +28,7 @@ is preserved if acceptance fails. `npm run validate` is the authoritative conten
 check, including references against the fully merged registry.
 
 Right-click an object in the map and choose **Generate Deadvox property types
-(reopen project)** to rebuild template/zombie enums and the five object classes
+(reopen project)** to rebuild template/zombie enums and the seven object classes
 from base content, including ridge/hill terrain classes. Close/reopen the project immediately afterward: Tiled 1.11 has
 no scripting API to mutate live property types. Do not save stale editor types
 back over the generated project. Enum IDs are preserved; unrelated custom types

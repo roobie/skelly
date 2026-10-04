@@ -27,6 +27,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 
+import { hasSegment } from './authoredTerrain.mjs';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -438,10 +439,7 @@ const TerrainPrimitive = union([
     points: pipe(
       array(LayoutPoint),
       minLength(2),
-      check(
-        (points) => points.some((p, i) => i > 0 && (p[0] !== points[i - 1]![0] || p[1] !== points[i - 1]![1])),
-        'ridge needs a non-zero segment',
-      ),
+      check((points) => hasSegment(points), 'ridge needs a non-zero segment'),
     ),
     rise: PositiveMetres,
     width: PositiveMetres,

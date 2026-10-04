@@ -1,5 +1,11 @@
 // Tiled 1.11 / Qt 5 ES module (ES6, not object spread). No Node/npm runtime dependency.
-import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '../../src/core/authoredTerrain.mjs';
+import {
+  buildingBounds,
+  defaultFoundation,
+  hasSegment,
+  lotOf,
+  standingHeight,
+} from '../../src/core/authoredTerrain.mjs';
 
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -205,7 +211,7 @@ function addTerrain(object, info, { layout }) {
   if (cls === 'ridge') {
     const points = areaPoints(object, info);
     const width = finite(scalar(object, 'width'), `${name}.width`);
-    if (width <= 0 || !points.some((p, i) => i > 0 && (p[0] !== points[i - 1][0] || p[1] !== points[i - 1][1]))) {
+    if (width <= 0 || !hasSegment(points)) {
       throw new Error(`${name}: ridge needs positive width and a non-zero segment`);
     }
     for (const point of points) {

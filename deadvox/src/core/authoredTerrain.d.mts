@@ -6,6 +6,11 @@ export interface GroundLot {
   floor: number;
   key: string;
 }
+export const LOT_APRON_M: number;
+export const LOT_BLEND_M: number;
+export const SITE_BLEND_M: number;
+export function rectDistance(rect: Rect, cellX: number, cellZ: number, cellSize?: number): number;
+export function hasSegment(points: readonly (readonly [number, number])[]): boolean;
 export function smoothstep(t: number): number;
 export function polylineDistance(
   point: readonly [number, number],

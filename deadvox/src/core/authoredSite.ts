@@ -1,22 +1,16 @@
 // Tiled is build-time only. This Site consumes validated layout JSON and existing ASCII templates.
 import { inPolygon } from './authoredLayout.ts';
-import { buildingBounds, layoutHeight, lotOf, polylineDistance } from './authoredTerrain.mjs';
+import { blocks, placementOf } from './authoredPlacement.ts';
+import { buildingBounds, LOT_APRON_M, layoutHeight, lotOf, polylineDistance } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { toChunk, type Vec3 } from './coords.ts';
+import { toChunk } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { furnitureOf, grow, type Rect, type Site, type ZombieSpawn } from './site.ts';
-import {
-  compileTemplate,
-  type Placement,
-  placedSpawns,
-  stackTemplate,
-  stampPlacement,
-  type Turn,
-} from './templates.ts';
+import { type Placement, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -44,21 +38,13 @@ export class AuthoredSite implements Site {
       throw new Error('Authored ASCII sites require 0.5 m blocks');
     }
     const s = scale.blockSize;
-    const blocks = (position: readonly number[]) => position.map((n) => n / s) as Vec3;
     const rectBlocks = (rect: Rect): Rect => ({ x0: rect.x0 / s, x1: rect.x1 / s, z0: rect.z0 / s, z1: rect.z1 / s });
     const area = rectBlocks(layout.bounds);
     const lots = layout.buildings.map((building) => {
       const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
-      return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), 2 / s) };
+      return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
-    this.placements = layout.buildings.map((building) => ({
-      template: stackTemplate(
-        compileTemplate(registry, registry.templates.get(building.template)!),
-        building.storeys ?? 1,
-      ),
-      origin: blocks(building.position),
-      turn: (building.rotation / 90) as Turn,
-    }));
+    this.placements = layout.buildings.map((building) => placementOf(registry, building));
     this.spawn = { pos: [...layout.player.position], yaw: (layout.player.yaw * Math.PI) / 180 };
     const height = (x: number, z: number, natural: number): number =>
       Math.round(layoutHeight(layout, lots, [(x + 0.5) * s, (z + 0.5) * s], natural * s) / s);

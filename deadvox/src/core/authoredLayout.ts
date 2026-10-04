@@ -1,10 +1,11 @@
 // Content-side acceptance of an authored layout; shape/units are checked by schema.ts.
+import { placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
-import { compileTemplate, type Placement, placedBlockAt, stackTemplate, type Turn } from './templates.ts';
+import { type Placement, placedBlockAt } from './templates.ts';
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
@@ -63,11 +64,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     ) {
       issues.push([`.buildings[${i}].position`, `foundation cut or fill exceeds ${FOUNDATION_TOLERANCE} m`]);
     }
-    placements.push({
-      template: stackTemplate(compileTemplate(registry, template), building.storeys ?? 1),
-      origin: building.position.map((v) => v * 2) as Vec3,
-      turn: (building.rotation / 90) as Turn,
-    });
+    placements.push(placementOf(registry, building));
   });
   const lots = footprints.map(({ rect, index }) => lotOf(layout.buildings[index]!, rect));
   const supported = (position: Vec3, path: string) => {

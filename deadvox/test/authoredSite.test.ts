@@ -199,6 +199,7 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   expect(profileHeight(ridge, 64, 20)).toBe(21);
   expect(site.surface.height(128, 160, 42)).toBeGreaterThan(site.surface.height(128, 80, 42));
   expect(site.surface.top(128, 160)).toBe(registry.blockIds.get('dirt'));
+  expect(Math.abs(site.surface.height(84, 180, 42) * scale.blockSize - 31)).toBeLessThanOrEqual(0.5); // 3 m outside cabin 1: blend toward the ridge, not flat ground21.
   expect(standingHeight(ridge, [], 64, 20)).toBe(ridge.player.position[1]);
   expect(site.trees.length).toBeGreaterThan(0);
   expect(new Set(site.trees.map((t) => t.origin[1])).size).toBeGreaterThan(1);
@@ -245,6 +246,33 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   }
 });
 
+it('grounds a seed-owned woodland tree in the lot blend rather than on the raw ridge', () => {
+  const ridge = structuredClone(registry.layouts.get('hunting_cabins')!);
+  const fixture: SiteLayoutDef = {
+    ...ridge,
+    id: 'ridge_tree_blend',
+    buildings: [{ template: 'shed', position: [62.5, 30, 82], rotation: 90 }],
+    tracks: [],
+    woodlands: [
+      {
+        polygon: [
+          [62, 77],
+          [75, 77],
+          [75, 93],
+          [62, 93],
+        ],
+        density: 1,
+      },
+    ],
+  };
+  expect(load(fixture).issues).toEqual([]);
+  const site = new AuthoredSite(73, registry, scale, fixture);
+  // One young tree, canopy just outside the reserved apron. Its feet are31m on
+  // the blend; raw ridge grounding would put them at31.5m (63 blocks).
+  expect(site.trees.map((tree) => tree.origin)).toEqual([[138, 62, 169]]);
+  expect(site.surface.height(138, 169, 42)).toBe(61);
+});
+
 it('keeps adjacent different-elevation lots and their aprons independent of building order', () => {
   const lowered = structuredClone(layout);
   lowered.buildings[1]!.position[1] = 19;
@@ -279,6 +307,7 @@ it('keeps adjacent different-elevation lots and their aprons independent of buil
 
 it('stamps the rotated two-storey house deterministically across columns, with upstairs furniture and spawns', () => {
   const site = new AuthoredSite(1, registry, scale, layout);
+  expect(site.placements[0]!.origin).toEqual([110, 42, 110]);
   const columns: [number, number][] = [
     [3, 3],
     [4, 3],
