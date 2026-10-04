@@ -86,7 +86,7 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
     spawn: { pos: spawn, yaw: SPAWN_YAW },
     furniture: furniture.map(({ loot, ...spec }) => ({
       spec,
-      loot: loot ? rollLoot(registry, loot, Rng.stream(seed, `loot:${spec.pos}`)) : [],
+      loot: loot ? rollLoot(registry, loot, Rng.stream(seed, `loot:${spec.pos.join(',')}`)) : [],
     })),
   };
 };

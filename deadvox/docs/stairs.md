@@ -153,8 +153,10 @@ at block 64, checks real Streamer-to-render cache recovery and both CPU interior
 samples staying dark across the nearest-cellar switch. Its test-only terrain apron
 stays at the shared ground level, exposing the lower west wall. The same local cell
 must be dark in slot zero and lit in slot one (`at()` values `[0, 1]`); that exposed
-wall's GPU luminance must match the sky-one reference. This contrast, not two
-identically dark interiors, detects wrong-slot sampling. The extra cabin and terrain
+wall's GPU luminance must match the sky-one reference. The second-cellar dark
+screenshot proves its field is resident, not the visibility-1 fallback. The wall
+contrast proves it is read from its own slice. This contrast, not two identically dark interiors, detects
+wrong-slot sampling. The extra cabin and terrain
 override exist only in the lighting test's Vite plugin, not the demo or build. Both
 stages keep the existing 300 s outer cap; neither retries to green. Opposite-floor resident/player
 screenshots remain historical scratch evidence, not a test that pins today's AI limitation.
