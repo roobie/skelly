@@ -1,0 +1,25 @@
+{
+  "furniture": [
+    {
+      "id": "dad_front_door",
+      "name": "Dad's cabin front door",
+      "size": [2, 4, 1],
+      "color": "#7a5534",
+      "door": { "handling": 0.6 }
+    },
+    {
+      "id": "gun_cabinet",
+      "name": "Gun cabinet",
+      "size": [2, 4, 1],
+      "color": "#6e5037",
+      "container": {
+        "pockets": [
+          {
+            "grid": [4, 12],
+            "handling": 1.2
+          }
+        ]
+      }
+    }
+  ]
+}
