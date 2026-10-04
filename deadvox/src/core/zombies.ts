@@ -217,7 +217,7 @@ export interface ZombieSystemOptions {
   jumpSpeed: number;
   player: () => PlayerSense;
   hour: () => number;
-  hurtPlayer: (amount: number, area?: PlayerHitArea) => void;
+  hurtPlayer: (amount: number, area: PlayerHitArea) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */

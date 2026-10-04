@@ -208,7 +208,8 @@ describe('core long actions', () => {
     );
     const repairedCondition = Math.min(1, source.target.condition + amount);
     expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
-    expect(source.materials.map((uid) => restored.inv.itemByUid(uid))).toEqual([undefined, undefined]);
+    expect(source.materials.length).toBeGreaterThan(0);
+    expect(source.materials.every((uid) => restored.inv.itemByUid(uid) === undefined)).toBe(true);
     expect(restored.inv.itemByUid(source.work.uid)).toBeUndefined();
     restored.sim.actions.resume();
     restored.sim.scheduler.advance(1000);

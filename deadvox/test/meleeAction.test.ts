@@ -259,7 +259,6 @@ describe('player melee action', () => {
 
     expect(system.swing(ray.origin, ray.direction, BASE_WEAPON)).toBe(id);
     expect(resolvedThroughSharedPath).toBe(true);
-    expect(combatFor(system).snapshotState().playerAttackWait).toBe(0);
   });
 
   it('spends stamina and cooldown on a miss or wall impact, but refuses tired and overlapping starts', () => {

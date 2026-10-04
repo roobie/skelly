@@ -7,11 +7,8 @@ export type PlayerHitArea = Extract<WearSlot, 'head' | 'torso' | 'legs'>;
 /** Maps the supplied hit area to its outermost worn item; later body models own area selection. */
 export const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | undefined => inventory.worn[area];
 
-/** Missing hit-area data deliberately causes no clothing wear. */
-export const wearOnPlayerHit = (inventory: Inventory, area?: PlayerHitArea): void => {
-  if (!area) {
-    return;
-  }
+/** Maps the supplied hit area to its outermost worn item. */
+export const wearOnPlayerHit = (inventory: Inventory, area: PlayerHitArea): void => {
   const item = outermostWornOver(inventory, area);
   const rate = item && defOf(inventory.registry, item.type).wearable?.wearPerHit;
   if (item && rate !== undefined) {

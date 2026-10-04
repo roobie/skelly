@@ -677,6 +677,46 @@ describe('craft job codec and ownership', () => {
       await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
     },
   );
+
+  it('encodes and restores an in-progress repair target and amount', async () => {
+    const runtime = createRuntime();
+    const pos: Vec3 = runtime.player.body.pos.map(Math.floor) as Vec3;
+    for (const item of Object.values(runtime.inventory.hands)) {
+      expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
+    }
+    const target = runtime.inventory.create('crowbar');
+    target.condition = 0.2;
+    expect(runtime.inventory.add(target, { kind: 'pile', pos })).toBe(true);
+    for (const [type, offset] of [
+      ['repair_kit', 1],
+      ['scrap_metal', 2],
+      ['duct_tape', 3],
+    ] as const) {
+      expect(
+        runtime.inventory.add(runtime.inventory.create(type), {
+          kind: 'pile',
+          pos: [pos[0] - 1 + offset, pos[1], pos[2]],
+        }),
+      ).toBe(true);
+    }
+    const recipe = registry.recipes.get('repair_crowbar')!;
+    const planned = runtime.session.planCraft(recipe);
+    if (!('plan' in planned)) {
+      throw new Error(planned.missing.reason);
+    }
+    const amount = recipe.repair!.amount;
+    const work = runtime.inventory.beginWork(planned.plan, { targetUid: target.uid, amount });
+    if (!work) {
+      throw new Error('Cannot gather repair inputs');
+    }
+    expect(runtime.sim.actions.startCraft(work.uid)).toBeUndefined();
+    runtime.sim.actions.craft!.advance(work.uid, 37);
+    const snapshot = capture(runtime);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
+  });
 });
 
 describe('restored session world state', () => {
