@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory, PILE_GRID, type Pile } from '../src/core/inventory.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
+import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { prepareModel } from '../src/render/models.ts';
 
 const BASE = 'src/content/base';
@@ -81,6 +82,37 @@ describe('piles with models', () => {
     );
     expect(layout.models.map((m) => m.yaw)).toEqual([Math.PI / 2, 0]);
   });
+});
+
+it('loads the curated pump through preparation and resolves separate movers by glTF node index, not sanitized name', async () => {
+  const def = registry.models.get('shotgun_pump')!;
+  const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
+  expect(def.calibre).toBe('12-gauge-00-buck');
+  expect(def.tube?.capacity).toBe(4);
+  expect(def.action?.fire).toBeUndefined();
+  expect(def.grip?.turn).toEqual([0, 0, 0]);
+  for (const part of Object.values(def.action!.parts)) {
+    const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
+    expect(index).toBeGreaterThanOrEqual(0);
+    let found = false;
+    gltf.scene.traverse((object) => {
+      if (gltf.parser.associations.get(object)?.nodes === index) {
+        found = true;
+        expect(object.name).not.toBe(part.node); // Three.js strips the colon.
+      }
+    });
+    expect(found, part.node).toBe(true);
+    expect(part.modes).toEqual(['hand']);
+    expect(part.strokeMetres).toBe(0.063_25);
+  }
+  const raw = new Box3().setFromObject(gltf.scene);
+  expect(def.anchors!.muzzle![0]).toBeCloseTo(raw.max.x, 5);
+  const prepared = prepareModel(def, gltf.scene);
+  const ground = new Box3().setFromObject(prepared.ground);
+  expect(ground.min.y).toBeCloseTo(0, 9);
+  expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.x - raw.min.x, 9);
+  const held = new Box3().setFromObject(prepared.held);
+  expect(held.isEmpty()).toBe(false);
 });
 
 describe('model forms', () => {
@@ -322,6 +354,33 @@ describe('base pack melee', () => {
     expect(await dimensions('baseball_bat')).toBeLessThanOrEqual(1.1);
     expect(await dimensions('steel_pipe')).toBeGreaterThanOrEqual(0.9);
     expect(await dimensions('steel_pipe')).toBeLessThanOrEqual(1.0);
+  });
+});
+
+describe('base pack shotshells', () => {
+  it('links stackable ammo and the spent-case counter identity to their real-scale models', () => {
+    const loaded = registry.items.get('shell_12_gauge_00_buck')!;
+    const fired = registry.items.get(spentCaseItemId('12-gauge-00-buck'))!;
+    expect(loaded).toMatchObject({ category: 'ammo', model: 'round_12_h_gauge_h_00_h_buck', stack: 25, weight: 40 });
+    expect(fired).toMatchObject({ model: 'case_12_h_gauge_h_00_h_buck', stack: 10_000, weight: 5 });
+    expect(loaded.description).toContain('estimate');
+    expect(fired.description).toContain('estimate');
+  });
+  it.each([
+    ['round_12_h_gauge_h_00_h_buck', 0.062_23],
+    ['case_12_h_gauge_h_00_h_buck', 0.0701],
+  ] as const)('%s loads through prepareModel and rests at its sourced dimensions', async (id, length) => {
+    const def = registry.models.get(id)!;
+    expect(def.calibre).toBe('12-gauge-00-buck');
+    expect(def.grip).toBeUndefined();
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${def.file}`));
+    const { ground, groundParts } = prepareModel(def, scene);
+    const bounds = new Box3().setFromObject(ground);
+    expect(bounds.getSize(new Vector3()).x).toBeCloseTo(length, 7);
+    expect(bounds.getSize(new Vector3()).y).toBeCloseTo(0.0225, 7);
+    expect(bounds.min.y).toBeCloseTo(0, 7);
+    expect(bounds.getCenter(new Vector3()).x).toBeCloseTo(0, 7);
+    expect(groundParts.length).toBeGreaterThan(0);
   });
 });
 

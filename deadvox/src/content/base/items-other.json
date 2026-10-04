@@ -77,6 +77,26 @@
       "model": "case_5_d_56x45"
     },
     {
+      "id": "shell_12_gauge_00_buck",
+      "name": "12 gauge 00 buckshot shell",
+      "category": "ammo",
+      "weight": 40,
+      "size": [1, 1],
+      "stack": 25,
+      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy.",
+      "model": "round_12_h_gauge_h_00_h_buck"
+    },
+    {
+      "id": "spent_case_12_h_gauge_h_00_h_buck",
+      "name": "Spent 12 gauge hull",
+      "category": "material",
+      "weight": 5,
+      "size": [1, 1],
+      "stack": 10000,
+      "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
+      "model": "case_12_h_gauge_h_00_h_buck"
+    },
+    {
       "id": "shambler_torso",
       "name": "Severed shambler torso",
       "category": "misc",

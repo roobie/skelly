@@ -122,6 +122,9 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       },
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in snapshot fixture');
+    },
     ...(snapshot ? { restore: snapshot } : {}),
   });
   const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
@@ -826,7 +829,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 7,
+  schemaVersion: 8,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -852,6 +855,21 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 };
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
+
+it('a door lock survives the save codec and fresh native entity owner, independently of the source object', async () => {
+  const source = createRuntime();
+  const door = [...source.entities.all].find((entity) => registry.furniture.get(entity.type)?.door)!;
+  door.lock = { id: 'test_shed', locked: true }; // authored metadata in this hamlet save fixture
+  const snapshot = capture(source);
+  expect(source.entities.setLocked(door, false, ['test_shed'])).toBeUndefined();
+  const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  const restored = loaded.entities.byUid(door.uid)!;
+  expect(restored.lock).toEqual({ id: 'test_shed', locked: true });
+  expect(loaded.entities.setOpen(restored, true)).toBe("It's locked");
+  expect(loaded.entities.setLocked(restored, false, ['test_shed'])).toBeUndefined();
+  expect(loaded.entities.setOpen(restored, true)).toBeUndefined();
+});
 
 const jsonCanonical = (value: unknown): string => {
   if (value === null || typeof value !== 'object') {
@@ -1024,6 +1042,17 @@ describe('canonical save format', () => {
 
     expect(restored.regions).toEqual(zombie.regions);
     expect(capture(loaded)).toEqual(decoded.snapshot);
+  });
+
+  it('preserves an authored site id through the save codec', async () => {
+    const snapshot = capture(createRuntime());
+    const bytes = await encodeSave(snapshot, {
+      generation: 1,
+      version: formatVersion,
+      worldOptions: { ...formatWorldOptions, site: 'lone_house' },
+    });
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    expect(decoded.worldOptions.site).toBe('lone_house');
   });
 
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {

@@ -9,7 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import process from 'node:process';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
-import type { MetallicCartridge } from '../ammo/cartridge.ts';
+import type { Cartridge } from '../ammo/cartridge.ts';
 import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { exportFileText } from './exportFile.ts';
@@ -24,7 +24,7 @@ const flag = (args: string[], name: string): string | undefined => {
 
 const readCartridge = (
   id: string | undefined,
-): { readonly ok: true; readonly cartridge?: MetallicCartridge } | { readonly ok: false; readonly message: string } => {
+): { readonly ok: true; readonly cartridge?: Cartridge } | { readonly ok: false; readonly message: string } => {
   if (id === undefined) {
     return { ok: true };
   }
@@ -43,11 +43,7 @@ const readCartridge = (
   if (!parsed.ok) {
     return { ok: false, message: formatCartridgeParseError(parsed.error) };
   }
-  const { cartridge } = parsed;
-  if (cartridge.kind !== 'metallic') {
-    return { ok: false, message: `${JSON.stringify(id)} is not a metallic cartridge` };
-  }
-  return { ok: true, cartridge };
+  return { ok: true, cartridge: parsed.cartridge };
 };
 
 const main = (): number => {

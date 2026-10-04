@@ -1,0 +1,175 @@
+{
+  "automappingRulesFile": "",
+  "commands": [],
+  "extensionsPath": "extensions",
+  "folders": [
+    "."
+  ],
+  "propertyTypes": [
+    {
+      "id": 100,
+      "name": "template_id",
+      "type": "enum",
+      "storageType": "string",
+      "values": [
+        "bungalow",
+        "corner_store",
+        "gas_station",
+        "shed",
+        "small_house"
+      ],
+      "valuesAsFlags": false
+    },
+    {
+      "id": 101,
+      "name": "zombie_type",
+      "type": "enum",
+      "storageType": "string",
+      "values": [
+        "shambler"
+      ],
+      "valuesAsFlags": false
+    },
+    {
+      "id": 102,
+      "name": "building",
+      "members": [
+        {
+          "name": "template",
+          "type": "string",
+          "value": "",
+          "propertyType": "template_id"
+        },
+        {
+          "name": "storeys",
+          "type": "int",
+          "value": 1
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 103,
+      "name": "player_spawn",
+      "members": [
+        {
+          "name": "yaw",
+          "type": "float",
+          "value": 0
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 104,
+      "name": "shambler",
+      "members": [
+        {
+          "name": "zombie",
+          "type": "string",
+          "value": "",
+          "propertyType": "zombie_type"
+        },
+        {
+          "name": "chance",
+          "type": "float",
+          "value": 1
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 105,
+      "name": "woodland",
+      "members": [
+        {
+          "name": "density",
+          "type": "float",
+          "value": 1
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 106,
+      "name": "track",
+      "members": [
+        {
+          "name": "width",
+          "type": "float",
+          "value": 3
+        },
+        {
+          "name": "surface",
+          "type": "string",
+          "value": "dirt"
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 107,
+      "name": "ridge",
+      "members": [
+        {
+          "name": "rise",
+          "type": "float",
+          "value": 10
+        },
+        {
+          "name": "width",
+          "type": "float",
+          "value": 40
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    },
+    {
+      "id": 108,
+      "name": "hill",
+      "members": [
+        {
+          "name": "rise",
+          "type": "float",
+          "value": 4
+        }
+      ],
+      "type": "class",
+      "useAs": [
+        "object"
+      ],
+      "color": "#ff70a080",
+      "drawFill": true
+    }
+  ]
+}

@@ -12,7 +12,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, toHands } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -42,6 +42,7 @@ import {
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
+import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
@@ -188,6 +189,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       },
     },
     notice: (text) => showNotice(text),
+    onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
@@ -260,6 +262,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const overlay = $('overlay');
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
+  const reading = mountReading($('reading'), () => syncMenuState());
   const hud = $('hud');
   const inventoryStats = $('inventory-stats');
   const hudOptions = readHudOptions();
@@ -319,11 +322,35 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   // ---- furniture: searching and doors ----
 
   const toggleDoor = (entity: BlockEntity) => {
-    const closing = entity.open;
-    const time = entities.defOf(entity).door?.handling ?? 0;
-    queue.enqueueAction(DOOR_ACTION, `${closing ? 'Close' : 'Open'} the ${nameOf(entity)}`, time, {
+    const option = doorOptions(inventory, entity)[0]!;
+    if (!option.plan.ok) {
+      showNotice(option.plan.reason);
+      return;
+    }
+    queue.enqueueAction(DOOR_ACTION, `${option.label} the ${nameOf(entity)}`, option.plan.time, {
       entityUid: entity.uid,
-      closing,
+      closing: option.operation === 'close',
+    });
+  };
+
+  const activateKey = (item: Item) => {
+    const entity = lookedAt();
+    if (!(entity && entities.defOf(entity).door)) {
+      return;
+    }
+    const lock = registry.items.get(item.type)?.key?.lock;
+    if (lock === undefined) {
+      return;
+    }
+    const operation = entity.lock?.locked ? 'unlock' : 'lock';
+    const plan = doorPlan(inventory, entity, operation, [lock]);
+    if (!plan.ok) {
+      showNotice(plan.reason);
+      return;
+    }
+    queue.enqueueAction(DOOR_ACTION, `${operation === 'lock' ? 'Lock' : 'Unlock'} the ${nameOf(entity)}`, plan.time, {
+      entityUid: entity.uid,
+      locked: operation === 'lock',
     });
   };
 
@@ -425,6 +452,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       started,
       mainMenuOpen,
       inventoryOpen: screen.isOpen,
+      readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
       pointerLocked: input.locked,
       dead: sim.dead !== undefined,
@@ -438,6 +466,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resumeRequested = false;
     }
     if (state.closeOtherMenus) {
+      reading.close();
       closeInventoryScreen();
       debugTools?.closeMenus();
     }
@@ -474,7 +503,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resume();
       return;
     }
-    if (input.locked || screen.isOpen || debugTools?.menuOpen || sim.dead) {
+    if (input.locked || screen.isOpen || reading.isOpen || debugTools?.menuOpen || sim.dead) {
       return;
     }
     resume();
@@ -636,6 +665,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!(e.repeat || sim.dead)) {
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
+        reading.close();
         closeInventoryScreen();
         debugTools?.closeMenus();
       }
@@ -691,19 +721,20 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (e.repeat || sim.dead) {
       return;
     }
-    if (handleMenuKey(e)) {
-      return;
-    }
-    if (timeKeys(e.code)) {
+    if (handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
       return;
     }
     playKeys(e.code);
   };
 
   globalThis.addEventListener('keydown', (event) => {
-    if (!handleTitleKey(event)) {
-      handleGameplayKey(event);
+    if (handleTitleKey(event)) {
+      return;
     }
+    if (event.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(event)) {
+      return;
+    }
+    handleGameplayKey(event);
   });
   globalThis.addEventListener(
     'wheel',
@@ -732,18 +763,41 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       isSolid: engine.isOpaque,
     });
 
-  /** What F would do to it, for the prompt. */
-  const useText = (entity: BlockEntity): string =>
-    playInteractionText({
+  const keyLockHint = (entity: BlockEntity): string | undefined => {
+    if (!entities.defOf(entity).door) {
+      return undefined;
+    }
+    const heldKeys = [inventory.hands.right, inventory.hands.left].filter(
+      (item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined,
+    );
+    const heldKey =
+      heldKeys.find((item) => registry.items.get(item.type)?.key?.lock === entity.lock?.id) ?? heldKeys[0];
+    const keyLock = heldKey && registry.items.get(heldKey.type)?.key?.lock;
+    if (keyLock === undefined) {
+      return undefined;
+    }
+    const operation = entity.lock?.locked ? 'unlock' : 'lock';
+    const plan = doorPlan(inventory, entity, operation, [keyLock]);
+    return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
+  };
+
+  /** Describes the displayed action for the selected target. */
+  const useText = (entity: BlockEntity): string => {
+    const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
+    return playInteractionText({
+      doorReason: door?.plan.ok === false ? door.plan.reason : undefined,
+      lock: keyLockHint(entity),
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),
+      readable: Boolean(entities.defOf(entity).readable),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
     });
+  };
 
-  /** F: opens or closes a door; searches a container and opens the inventory beside it. */
+  /** F: doors first, then readable furniture, then container search/inventory. */
   function use(): void {
     const entity = lookedAt();
     if (!entity) {
@@ -751,6 +805,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     if (entities.defOf(entity).door) {
       toggleDoor(entity);
+    } else if (entities.defOf(entity).readable) {
+      const reason = session.readFurniture(entity);
+      if (reason) {
+        showNotice(reason);
+      }
     } else if (entity.pockets) {
       playtestObserver?.beginSearch(entity, nameOf(entity));
       search(entity);
@@ -861,6 +920,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         swing(action.hand);
         return;
       case 'noop':
+        return;
+      case 'key':
+        activateKey(action.item);
         return;
       case 'none':
         showNotice(primaryActionHint(registry, action.item));
@@ -1172,6 +1234,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     input.unlock();
     metrics.recordDeath(cause, time * sim.clock.ratio);
     saveMetrics();
+    reading.close();
     closeInventoryScreen();
     inventoryPanel.hidden = true;
     syncMenuState();

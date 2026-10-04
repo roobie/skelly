@@ -920,15 +920,19 @@ Decisions where the plan left representation open:
   `ejectDirection`. The rates are sourced where
   available; cycle timing, spring behaviour, forces, and masses are estimates
   for visual tuning, not physical simulation. These fields are emitted only
-  when the design declares a supported AK/AR action. No angles are present in
+  when the design declares a supported AK/AR/pump action. The pump has **only**
+  `hand`, with both carrier and forend following it; `fire` and `rpm` are absent.
+  Its forward leg is hand-driven, not a spring return. Part modes must reference
+  declared timelines. No angles are present in
   this contract; any angle added later uses degrees, never radians.
   Node names are exact glTF names, not Three.js `Object3D.name` (which sanitizes
   colons). Match the name in `parser.json.nodes`, then find its loaded object
   using `parser.associations`' node index.
   Gun-owned `resolveGunAction` owns discovery, world travel, coupled roles and
-  cycle/ejection data for viewer and exporter. It also owns the pump's
-  carrier/forend open-pose pairing; this remains presentation-only and does not
-  move validation/export geometry or invent a pump firing timeline.
+  cycle/ejection data for viewer and exporter, including the pump's manual
+  carrier/forend cycle. Its static open-pose pairing remains presentation-only;
+  cycle controls hide in that pose, and validation/export geometry stays at rest.
+  No pump firing timeline is invented.
   The AR handle is a separate `ar-charging-handle` family. Its thin shaft and
   finger grips are authored on a 0.05u grid; an enclosed upper channel preserves
   the 0.5u roof skin and clears its continuous 6.5u stroke.
@@ -955,6 +959,15 @@ the geometry declares them, whether or not a cartridge is assigned.
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
   rather than its general content `Id` (which deliberately excludes dots).
+- `anchors.loading_port?: Point` is the integral tube's single-shell entry,
+  in metres at the real underside aperture. Optional `tube?: { capacity: number }`
+  describes a gun's integral magazine, excluding the chamber; it requires calibre
+  and loading_port, and has no detached-box `capacity`/`rounds` column.
+  `src/gun/tubeCapacity.ts#tubeMagazineCapacity` derives fit from actual tube/cap
+  geometry and loaded shell length with explicit visual reserve estimates.
+  Curated hunting pump, reproducible command and estimates:
+  `docs/pump-action-export.md`. Its hand-only viewer is
+  `?design=archetype-pump-shotgun&cycle=hand&cycleSpeed=0.1`.
 - `anchors.magwell?: Point` is the magazine seating point. Like every anchor,
   `Point` is `[x, y, z]` in metres in the model file's frame (+x forward, +y up,
   +z right).
@@ -983,6 +996,16 @@ the geometry declares them, whether or not a cartridge is assigned.
   `src/ammo/calibreSlug.ts` (e.g. `round_7_d_62x39`,
   `round-7_d_62x39.glb`); a test checks every registered id and all accepted
   separator forms. Gungen's internal revolve profiles remain in millimetres.
+- Shotshells use that same cartridge export contract and writer. Shared
+  `src/gun/shotshellGeometry.ts#shotshellGeometry` supplies loaded and opened
+  hull solids to exporter and viewer; known fold/roll closures select their
+  presentation. The current source's unknown closure stays null and uses the
+  authorised generic roll-crimp visual proxy at the 62.23 mm conservative
+  envelope. No primer diameter is invented. Wall/lip/card/material choices and
+  Deadvox's 40 g loaded / 5 g fired gameplay mass estimates are explicitly
+  labelled in `docs/shotshell-export.md`; none is written back as sourced data.
+  `npm run export:cartridges -- <cartridge.json> <model-dir> [entry-dir]` handles
+  both kinds; `?ammo=12-gauge-00-buck` shows shell and hull with a proxy label.
 
 #### 3.0b (implemented)
 

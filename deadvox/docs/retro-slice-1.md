@@ -135,11 +135,11 @@ in place then.
 
 ## 3. What hurt
 
-- **Host capacity.** The first host (3.9 GB) thrashed swap with three coders, a
-  reviewer, Vite servers and browser tests, and the team moved to a 19.5 GiB host on
+- **Host capacity.** The first host was too small: it thrashed swap with three coders,
+  a reviewer, Vite servers and browser tests, and the team moved to a bigger host on
   2026-10-01. On the new host, disk ran out (ENOSPC around 04:10 on 2026-10-02, with
-  about 16 worktrees at ~640 MB each). Later, a Chromium scope reached an 11.4G memory
-  peak outside the agents' intended caps; a scope drop-in now caps it. Memory budgets had
+  about 16 worktrees at ~640 MB each). Later, a Chromium scope's memory peaked far
+  outside the agents' intended caps; a scope drop-in now caps it. Memory budgets had
   been set during the migration, but their estimates and coverage hadn't been validated
   against these workloads. Disk headroom and scope membership need explicit checks as
   well as nominal limits.
@@ -189,9 +189,9 @@ except where a ruling is quoted.
    stricter gate to apply on the way to v1/beta.
 2. **Host budget: the lead, with a designated tooling coder.** Before adding more
    parallel workers, record measured worktree, browser and agent peaks, a free-disk
-   reserve, memory ceilings and the allowed number of heavy runs, in PROCESS.md or a
-   linked host-budget doc. Check those limits on each mail-watch re-arm, and stop
-   admitting work when one is breached.
+   reserve, memory ceilings and the allowed number of heavy runs. Check those limits on
+   each mail-watch re-arm, and stop admitting work when one is breached. (Recorded on
+   2026-10-03; since 2026-10-04 they live in the host's notes, outside the repository.)
 3. **CI: the lead proposes, BR selects, and an assigned coder proves it.** From r5-1, BR
    decided on 2026-10-03:
    - adopted: cancelling superseded PR runs, pruning Pages triggers, and the duplicate

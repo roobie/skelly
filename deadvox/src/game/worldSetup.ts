@@ -1,17 +1,21 @@
-import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
+import { AuthoredSite } from '../core/authoredSite.ts';
+import { BlockEntities } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid } from '../core/collision.ts';
-import { blockColors, blockId, buildRegistry, type ContentSource, type Registry } from '../core/content.ts';
+import { blockColors, blockId, type Registry } from '../core/content.ts';
 import { toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
+import { rollLoot } from '../core/loot.ts';
 import { blockPatterns } from '../core/meshInput.ts';
+import { Rng } from '../core/random.ts';
 import type { Scale } from '../core/scale.ts';
 import type { FurnitureSpawn, Site } from '../core/site.ts';
 import { type BlockBox, rasterize } from '../core/structure.ts';
 import { World } from '../core/world.ts';
 import { terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
+import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
@@ -34,7 +38,7 @@ export interface WorldSetup {
   streamer: Streamer;
   /** Player start in metres (feet), and the yaw that faces the hamlet or the test house. */
   spawn: { pos: Vec3; yaw: number };
-  /** The test house's furniture anchored in a column, empty-handed; a hamlet or city brings its own through `site`. */
+  /** The test house's furniture and table-authored loot in a column; authored/procedural sites bring their own. */
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
 }
 
@@ -77,7 +81,14 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
           return def.size;
         })
       : [];
-  return { structures: rasterize(house, scale.blockSize), spawn: { pos: spawn, yaw: SPAWN_YAW }, furniture };
+  return {
+    structures: rasterize(house, scale.blockSize),
+    spawn: { pos: spawn, yaw: SPAWN_YAW },
+    furniture: furniture.map(({ loot, ...spec }) => ({
+      spec,
+      loot: loot ? rollLoot(registry, loot, Rng.stream(seed, `loot:${spec.pos.join(',')}`)) : [],
+    })),
+  };
 };
 
 /**
@@ -85,6 +96,13 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
  * Otherwise (other block sizes, broken content) the world has the test house.
  */
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
+  const layout = registry.layouts.get(config.site);
+  if (layout) {
+    return new AuthoredSite(config.seed, registry, config.scale, layout);
+  }
+  if (!['hamlet', 'city', 'forest', 'testHouse'].includes(config.site)) {
+    throw new Error(`Content does not define site "${config.site}"`);
+  }
   if (config.site === 'forest') {
     return new Forest(config.seed, registry, config.scale, config.density);
   }
@@ -100,23 +118,14 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
     : new Hamlet(config.seed, registry, config.scale);
 };
 
-export const loadContent = (): { registry: Registry; contentErrors: string } => {
-  // Base content is bundled. Mods would be appended to this list (from URLs or local files).
-  const files = import.meta.glob<unknown>('../content/base/*.json', { eager: true, import: 'default' });
-  const sources: ContentSource[] = Object.entries(files)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([source, data]) => ({ source, data }));
-  const { registry, issues } = buildRegistry(sources);
-  return { registry, contentErrors: issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n') };
-};
-
 export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
-  const { registry, contentErrors } = loadContent();
+  const { registry, issues } = BUNDLED_CONTENT;
+  const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
 
   const built = buildSite(config, registry);
-  const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: EntitySpec[] } = built
+  const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
     ? { structures: [], spawn: built.spawn, furniture: [] }
     : testHouseSite(config, registry);
   // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
@@ -153,9 +162,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     streamer,
     spawn: site.spawn,
     furnitureIn: (cx, cz) =>
-      site.furniture
-        .filter((spec) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz)
-        .map((spec) => ({ spec, loot: [] })),
+      site.furniture.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
   };
 }
 

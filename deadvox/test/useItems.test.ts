@@ -30,6 +30,9 @@ const setup = () => {
     reach,
     feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
     notice: (text) => notices.push(text),
+    read: () => {
+      throw new Error('Unexpected reading in use-items fixture');
+    },
   });
   const hold = (type: string, side: 'right' | 'left' = 'right') => {
     const item = inventory.create(type);

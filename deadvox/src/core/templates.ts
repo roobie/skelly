@@ -8,6 +8,8 @@
 import type { Chunk } from './chunk.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
+import type { DoorLockDef, TemplateAccess } from './schema.ts';
+import { constructFlight } from './stairFlight.ts';
 
 /** Horizontal front facings follow WORLD_NORTH in coords.ts. */
 export type Facing = 'n' | 'e' | 's' | 'w';
@@ -72,8 +74,23 @@ export const findPieces = (
   return { anchors };
 };
 
+/** Actual door-lock occurrences, not unused palette declarations; shared by content and site checks. */
+export const templateLockIds = (registry: Registry, template: TemplateDef): string[] =>
+  Object.entries(template.palette).flatMap(([char, entry]) => {
+    if (typeof entry === 'string' || !entry.lock || !entry.furniture) {
+      return [];
+    }
+    const furniture = registry.furniture.get(entry.furniture);
+    if (!furniture?.door) {
+      return [];
+    }
+    const { id } = entry.lock;
+    return (findPieces(template, char, pieceSize(furniture.size, entry.facing ?? 'n')).anchors ?? []).map(() => id);
+  });
+
 /** A piece of furniture in a template, in template coordinates. */
 export interface Piece {
+  lock?: DoorLockDef;
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
   loot?: string | undefined;
@@ -95,7 +112,18 @@ export interface CompiledTemplate {
   readonly blocks: Uint16Array;
   readonly pieces: readonly Piece[];
   readonly spawns: readonly SpawnMarker[];
+  readonly access?: TemplateAccess;
+  /** The support layer of the declared ground floor, relative to the lowest template layer. */
+  readonly groundLayer?: number;
 }
+
+/** Whether every block and furniture id in a template's palette exists; `compileTemplate` needs that. */
+export const templateResolves = (registry: Registry, template: TemplateDef): boolean =>
+  Object.values(template.palette).every((entry) =>
+    typeof entry === 'string'
+      ? registry.blockIds.has(entry)
+      : entry.furniture === undefined || registry.furniture.has(entry.furniture),
+  );
 
 /** Resolves a template's palette against the registry. The validator has already checked it. */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: palette compilation resolves the template's block, furniture, and spawn encodings in one pass.
@@ -123,14 +151,32 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     const facing = entry.facing ?? 'n';
     const size = pieceSize(def.size, facing);
     for (const pos of findPieces(template, char, size).anchors ?? []) {
-      pieces.push({ furniture: def.id, loot: entry.loot ?? def.loot, facing, pos, size });
+      pieces.push({
+        furniture: def.id,
+        loot: entry.loot ?? def.loot,
+        facing,
+        pos,
+        size,
+        ...(entry.lock ? { lock: entry.lock } : {}),
+      });
     }
   }
   for (const [x, y, z] of cellsOf(template.size)) {
     const entry = template.palette[charAt(template, x, y, z) ?? ''];
     blocks[x + sx * (z + sz * y)] = typeof entry === 'string' ? registry.blockIds.get(entry)! : 0;
   }
-  return { id: template.id, size: [sx, sy, sz], blocks, pieces, spawns };
+  for (const stair of template.access?.stairs ?? []) {
+    constructFlight(blocks, template.size, stair, registry.blockIds.get(stair.block) ?? 0);
+  }
+  const groundLayer = template.access?.storeys.find((floor) => floor.id === template.access?.ground)?.floor;
+  return {
+    id: template.id,
+    size: [sx, sy, sz],
+    blocks,
+    pieces,
+    spawns,
+    ...(template.access ? { access: template.access, groundLayer: (groundLayer ?? 1) - 1 } : {}),
+  };
 };
 
 /** A template put in the world. `origin` is the lowest corner of its turned footprint; layer 0 is at origin[1]. */
@@ -145,7 +191,7 @@ export const footprint = ({ template, turn }: Placement): [number, number] =>
   turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
-const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
+export const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
   const [sx, , sz] = size;
   switch (turn) {
     case 1:
@@ -174,6 +220,15 @@ const unturned = (size: Vec3, turn: Turn, u: number, v: number): [number, number
   }
 };
 
+/** The authored block at a world cell, including air; undefined outside this placement. */
+export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | undefined => {
+  const { template, origin, turn } = placement;
+  const [u, v] = unturned(template.size, turn, x - origin[0], z - origin[2]);
+  const h = y - origin[1];
+  const [sx, sy, sz] = template.size;
+  return u >= 0 && u < sx && v >= 0 && v < sz && h >= 0 && h < sy ? template.blocks[u + sx * (v + sz * h)] : undefined;
+};
+
 /** Writes the part of a placed template that falls inside the chunk. */
 export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
   const { template, origin, turn } = placement;
@@ -195,6 +250,7 @@ export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
 
 /** A placed piece in world coordinates. */
 export interface PlacedPiece {
+  lock?: DoorLockDef;
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
@@ -211,12 +267,29 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
     const [bx, bz] = turned(template.size, turn, piece.pos[0] + piece.size[0] - 1, piece.pos[2] + piece.size[2] - 1);
     return {
       furniture: piece.furniture,
+      ...(piece.lock ? { lock: piece.lock } : {}),
       loot: piece.loot,
       facing: turnFacing(piece.facing, turn),
       pos: [origin[0] + Math.min(ax, bx), origin[1] + piece.pos[1], origin[2] + Math.min(az, bz)],
       size: [Math.abs(bx - ax) + 1, piece.size[1], Math.abs(bz - az) + 1],
     };
   });
+
+/** Point rotation uses the footprint edges, not the cell-index correction used by turned(). */
+export const placedPoint = ({ template, origin, turn }: Placement, [x, y, z]: Vec3): Vec3 => {
+  const [u, v] = turned(template.size, turn, x - 0.5, z - 0.5);
+  return [origin[0] + u + 0.5, origin[1] + y, origin[2] + v + 0.5];
+};
+
+/** Stable floor ids and world-block landing coordinates for future navigation; not an AI route. */
+export const placedFlights = (placement: Placement) =>
+  (placement.template.access?.stairs ?? []).map((stair) => ({
+    from: stair.from,
+    to: stair.to,
+    lower: placedPoint(placement, stair.lower),
+    upper: placedPoint(placement, stair.upper),
+    width: stair.width,
+  }));
 
 export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker[] =>
   template.spawns.map((spawn) => {
@@ -232,6 +305,9 @@ export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker
 export const stackTemplate = (template: CompiledTemplate, storeys: number): CompiledTemplate => {
   if (storeys <= 1) {
     return template;
+  }
+  if (template.access) {
+    throw new Error('Explicit storeys cannot be stress-test stacked');
   }
   const [sx, sy, sz] = template.size;
   const layer = sx * sz;

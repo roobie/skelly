@@ -3,7 +3,7 @@
   "template": "pump-shotgun",
   "assembly": {
     "name": "archetype-pump-shotgun",
-    "description": "Pump-action shotgun: tube magazine under the barrel fixed to its lug, sliding forend, trigger-only lower.",
+    "description": "Hunting-cabin 12-gauge pump of no particular make: mid-length barrel, walnut sporting stock and forend, integral four-shell tube, hand-racked action. Clearances derive from 12-gauge-00-buck source data; not manufacturer dimensions.",
     "root": "receiver",
     "parts": {
       "receiver": {
@@ -12,7 +12,8 @@
           "action": "pump",
           "feed": "tube",
           "bore": "L",
-          "section": "pump"
+          "section": "pump",
+          "rail": "none"
         }
       },
       "bolt-carrier": {
@@ -32,7 +33,8 @@
         }
       },
       "tube": {
-        "family": "tube-magazine"
+        "family": "tube-magazine",
+        "params": { "lengthPercent": "75" }
       },
       "forend": {
         "family": "forend"
@@ -81,8 +83,15 @@
     ]
   },
   "locks": {
-    "params": {},
-    "optionalParts": []
+    "params": {
+      "receiver": ["action", "feed", "bore", "section", "rail"],
+      "bolt-carrier": ["pattern"],
+      "lower": ["layout"],
+      "barrel": ["length"],
+      "tube": ["lengthPercent"],
+      "stock": ["length", "style"]
+    },
+    "optionalParts": ["grip", "stock", "stock-pistol"]
   },
   "status": "published"
 }

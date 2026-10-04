@@ -8,7 +8,10 @@ import {
   check,
   type InferOutput,
   integer,
+  literal,
+  maxLength,
   maxValue,
+  minLength,
   minValue,
   nonEmpty,
   nullable,
@@ -24,7 +27,8 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
-
+import { hasSegment } from './authoredTerrain.mjs';
+import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -101,6 +105,7 @@ export const ITEM_CATEGORIES = [
   'bag',
   'light',
   'battery',
+  'ammo',
   'material',
   'book',
   'misc',
@@ -179,6 +184,18 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
+const readableText = (limit: number) =>
+  pipe(
+    string(),
+    check(hasReadableWords, 'must contain non-whitespace text'),
+    check(isReadablePlainText, 'must be plain text without markup or control characters'),
+    maxLength(limit, `must be at most ${limit} characters`),
+  );
+export const ReadableSchema = strictObject({
+  title: readableText(READABLE_TITLE_LIMIT),
+  text: readableText(READABLE_TEXT_LIMIT),
+});
+
 export const ItemSchema = strictObject({
   id: Id,
   name: Name,
@@ -198,7 +215,10 @@ export const ItemSchema = strictObject({
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
   light: optional(LightSchema),
+  readable: optional(ReadableSchema),
   battery: optional(BatterySchema),
+  /** One authored/global lock id; no per-placement key payload. */
+  key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
   model: optional(Id),
 });
@@ -262,20 +282,30 @@ const ActionPartSchema = strictObject({
   ),
 });
 
-const ActionSchema = strictObject({
-  parts: pipe(
-    record(Id, ActionPartSchema),
-    check((parts) => Object.keys(parts).length > 0, 'needs at least one moving part'),
+const ActionSchema = pipe(
+  strictObject({
+    parts: pipe(
+      record(Id, ActionPartSchema),
+      check((parts) => Object.keys(parts).length > 0, 'needs at least one moving part'),
+    ),
+    fire: optional(ActionCycleSchema),
+    hand: ActionCycleSchema,
+    ejectAt: Fraction,
+    /** Unit direction vector in the exported model frame. */
+    ejectDirection: UnitVector,
+    holdOpen: vBoolean(),
+    /** Cyclic rate in rounds per minute. */
+    rpm: optional(Positive),
+  }),
+  check(
+    (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
+    'moving part modes must reference a declared timeline',
   ),
-  fire: ActionCycleSchema,
-  hand: ActionCycleSchema,
-  ejectAt: Fraction,
-  /** Unit direction vector in the exported model frame. */
-  ejectDirection: UnitVector,
-  holdOpen: vBoolean(),
-  /** Cyclic rate in rounds per minute. */
-  rpm: Positive,
-});
+  check(
+    (action) => (action.fire === undefined) === (action.rpm === undefined),
+    'only an automatic fire timeline has a cyclic rpm',
+  ),
+);
 
 const MagazineRoundSchema = strictObject({
   /** Centre in metres in the magazine model frame (+x forward, +y up, +z right). */
@@ -295,6 +325,8 @@ const ModelSchema = pipe(
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
     capacity: optional(MagazineCapacity),
+    /** Integral tube, loaded singly through anchors.loading_port; no box round-pose column. */
+    tube: optional(strictObject({ capacity: MagazineCapacity })),
     rounds: optional(array(MagazineRoundSchema)),
     /**
      * Where the hand holds it, and how it's turned there (degrees about x, y and z, in
@@ -317,6 +349,12 @@ const ModelSchema = pipe(
         : calibre !== undefined && capacity !== undefined && rounds !== undefined && rounds.length === capacity,
     'magazine metadata needs calibre, capacity, and one round pose per capacity slot',
   ),
+  check(
+    ({ tube, calibre, anchors, capacity, rounds }) =>
+      tube === undefined ||
+      (calibre !== undefined && anchors?.loading_port !== undefined && capacity === undefined && rounds === undefined),
+    'tube metadata needs calibre/loading_port and cannot carry a box round column',
+  ),
 );
 
 // ---- furniture ----
@@ -328,6 +366,7 @@ export const FurnitureSchema = strictObject({
   size: Size,
   color: Color,
   solid: optional(vBoolean()),
+  readable: optional(ReadableSchema),
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
@@ -369,6 +408,8 @@ export const LootTableSchema = strictObject({
 
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
+export const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
+
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
   strictObject({
@@ -376,17 +417,40 @@ const PaletteThingSchema = pipe(
     /** Overrides the furniture's own loot table. */
     loot: optional(Id),
     facing: optional(picklist(['n', 'e', 's', 'w'])),
+    /** Initial lock state, only on a door; ids are unique within an authored site. */
+    lock: optional(DoorLockSchema),
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
   }),
   check((e) => (e.furniture === undefined) !== (e.spawn === undefined), 'needs exactly one of "furniture" or "spawn"'),
   check(
-    (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined),
-    '"loot" and "facing" only go with "furniture"',
+    (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),
+    '"loot", "facing" and "lock" only go with "furniture"',
   ),
   check((e) => e.spawn !== undefined || e.chance === undefined, '"chance" only goes with "spawn"'),
 );
+
+/** Template-local block coordinates; horizontal half cells permit centred, two-cell-wide landings. */
+const CellCoordinate = pipe(
+  number(),
+  check((v) => Number.isFinite(v) && Number.isInteger(v * 2), 'must be on the half-cell grid'),
+);
+const CellPosition = tuple([CellCoordinate, Count, CellCoordinate]);
+const StairSchema = strictObject({
+  from: Id,
+  to: Id,
+  lower: CellPosition,
+  upper: CellPosition,
+  width: pipe(Count, minValue(2)),
+  block: Id,
+});
+const TemplateAccessSchema = strictObject({
+  ground: Id,
+  entrance: CellPosition,
+  storeys: pipe(array(strictObject({ id: Id, floor: Count })), nonEmpty()),
+  stairs: array(StairSchema),
+});
 
 export const TemplateSchema = strictObject({
   id: Id,
@@ -396,6 +460,68 @@ export const TemplateSchema = strictObject({
   palette: record(Char, union([Id, PaletteThingSchema])),
   /** Layers from the bottom up; each is rows along z of characters along x. */
   layers: array(array(string())),
+  /** Explicit floors and flights, never stress-test repetitions. Floor heights are feet heights in blocks. */
+  access: optional(TemplateAccessSchema),
+});
+
+// ---- authored site layouts (metres, independent of chunk/block order) ----
+
+const Metres = pipe(
+  number(),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
+const HalfMetres = pipe(
+  Metres,
+  check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
+);
+const MetrePosition = tuple([Metres, Metres, Metres]);
+const LayoutPoint = tuple([Metres, Metres]); // [x, z]; Tiled's pixel y becomes world z.
+const PositiveMetres = pipe(Metres, minValue(Number.MIN_VALUE));
+const TerrainPrimitive = union([
+  strictObject({
+    kind: literal('ridge'),
+    points: pipe(
+      array(LayoutPoint),
+      minLength(2),
+      check((points) => hasSegment(points), 'ridge needs a non-zero segment'),
+    ),
+    rise: PositiveMetres,
+    width: PositiveMetres,
+  }),
+  strictObject({
+    kind: literal('hill'),
+    centre: LayoutPoint,
+    radii: tuple([PositiveMetres, PositiveMetres]),
+    rise: PositiveMetres,
+  }),
+]);
+const LayoutBuilding = strictObject({
+  template: Id,
+  position: tuple([HalfMetres, HalfMetres, HalfMetres]),
+  rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
+  storeys: optional(pipe(Count, minValue(1), maxValue(8))),
+});
+
+export const SiteLayoutSchema = strictObject({
+  id: Id,
+  bounds: pipe(
+    strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
+    check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),
+  ),
+  /** Foundation elevation: lower face of the top ground block, in metres. */
+  ground: HalfMetres,
+  terrain: array(TerrainPrimitive),
+  buildings: array(LayoutBuilding),
+  player: strictObject({ position: MetrePosition, yaw: Metres }),
+  shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
+  woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
+  tracks: array(
+    strictObject({
+      points: pipe(array(LayoutPoint), minLength(2)),
+      width: pipe(Metres, minValue(Number.MIN_VALUE)),
+      surface: optional(picklist(['dirt', 'asphalt'])),
+    }),
+  ),
 });
 
 // ---- zombies ----
@@ -548,6 +674,7 @@ const SECTION_DESCRIPTOR = {
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+  layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -564,6 +691,10 @@ export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 export type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
+export type StairDef = InferOutput<typeof StairSchema>;
+export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
+export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
+export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;

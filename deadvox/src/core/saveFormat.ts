@@ -28,7 +28,7 @@ export interface SaveVersionIdentity {
 
 export interface SaveWorldOptions {
   blockSize: number;
-  site: 'hamlet' | 'testHouse' | 'city' | 'forest';
+  site: string;
   storeys: number;
   density: number | null;
 }
@@ -129,7 +129,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -265,6 +265,7 @@ const blockEntitySchema = obj({
   facing: enumeration(['n', 'e', 's', 'w']),
   searched: bool,
   open: bool,
+  lock: opt(obj({ id: str({ id: true }), locked: bool })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
@@ -391,7 +392,7 @@ const playerStateInventory = obj({
 });
 const worldOptionsSchema = obj({
   blockSize: positive,
-  site: enumeration(['hamlet', 'testHouse', 'city', 'forest']),
+  site: str({ nonEmpty: true }),
   storeys: num({ integer: true, safe: true, min: 1, max: 20 }),
   density: nullable(num({ min: 0, max: 1 })),
 });

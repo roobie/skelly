@@ -1,11 +1,12 @@
 import { cartridgeModelAsset } from '../ammo/calibreSlug.ts';
-import type { MetallicCartridge } from '../ammo/cartridge.ts';
+import type { Cartridge } from '../ammo/cartridge.ts';
 import { type RoundProfiles, roundProfiles } from '../ammo/roundProfile.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, Palette } from '../core/design.ts';
 import { exportGlb } from '../core/glb.ts';
 import { resolve } from '../core/resolve.ts';
-import type { Assembly, Domain, PartDef, PartFamily, RevolvedSolid } from '../core/schema.ts';
+import type { Assembly, Domain, PartDef, PartFamily, RevolvedSolid, Solid } from '../core/schema.ts';
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
+import { shotshellGeometry, shotshellHullColor } from './shotshellGeometry.ts';
 
 export interface CartridgeModel {
   readonly glb: Uint8Array;
@@ -44,9 +45,9 @@ const AMMO_PALETTE: Palette = {
 const MM_DOMAIN: Domain['units'] = { metresPerUnit: 0.001, grid: 0.001, bevel: 0 };
 
 const makeModelExport = (
-  cartridge: MetallicCartridge,
+  cartridge: Cartridge,
   asset: GlbAssetIdentity,
-  solids: readonly RevolvedSolid[],
+  solids: readonly Solid[],
   appearance?: AppearanceContext,
 ): SingleCartridgeExportResult => {
   const family: PartFamily = {
@@ -75,11 +76,21 @@ const makeModelExport = (
   const resolved = resolve(assembly, domain);
   const effectiveAppearance: AppearanceContext = {
     ...appearance,
-    finish: { ...DEFAULT_CARTRIDGE_FINISH, ...appearance?.finish },
+    finish: { ...DEFAULT_CARTRIDGE_FINISH, hull: 'hull-color', closure: 'closure-card', ...appearance?.finish },
   };
   const result = exportGlb({
     resolved,
-    palette: AMMO_PALETTE,
+    palette:
+      cartridge.kind === 'shotshell'
+        ? {
+            ...AMMO_PALETTE,
+            materials: {
+              ...AMMO_PALETTE.materials,
+              'hull-color': shotshellHullColor(cartridge),
+              'closure-card': [0.27, 0.23, 0.17],
+            },
+          }
+        : AMMO_PALETTE,
     revolveFacets: 96,
     asset,
     appearance: effectiveAppearance,
@@ -108,31 +119,26 @@ const revolved = (id: string, profile: RevolvedSolid['profile'], slot: string): 
   slot,
 });
 
-/** Export loaded-round and fired-case GLBs at their real millimetre-derived dimensions. */
-export const exportCartridgeModels = (
-  cartridge: MetallicCartridge,
-  appearance?: AppearanceContext,
-): CartridgeExportResult => {
+const metallicSolids = (cartridge: Extract<Cartridge, { kind: 'metallic' }>) => {
   const profiles: RoundProfiles = roundProfiles(cartridge);
-  const round = makeModelExport(
-    cartridge,
-    cartridgeModelAsset('round', cartridge.id),
-    [
+  return {
+    round: [
       revolved('case', profiles.loadedCase, 'case'),
       revolved('primer', profiles.primer, 'primer'),
       revolved('bullet', profiles.bullet, 'bullet'),
     ],
-    appearance,
-  );
+    case: [revolved('case', profiles.firedCase, 'case'), revolved('primer', profiles.primer, 'primer')],
+  };
+};
+
+/** Export loaded-round/shell and fired-case/hull GLBs at real millimetre-derived dimensions. */
+export const exportCartridgeModels = (cartridge: Cartridge, appearance?: AppearanceContext): CartridgeExportResult => {
+  const solids = cartridge.kind === 'shotshell' ? shotshellGeometry(cartridge) : metallicSolids(cartridge);
+  const round = makeModelExport(cartridge, cartridgeModelAsset('round', cartridge.id), solids.round, appearance);
   if (!round.ok) {
     return round;
   }
-  const firedCase = makeModelExport(
-    cartridge,
-    cartridgeModelAsset('case', cartridge.id),
-    [revolved('case', profiles.firedCase, 'case'), revolved('primer', profiles.primer, 'primer')],
-    appearance,
-  );
+  const firedCase = makeModelExport(cartridge, cartridgeModelAsset('case', cartridge.id), solids.case, appearance);
   if (!firedCase.ok) {
     return firedCase;
   }

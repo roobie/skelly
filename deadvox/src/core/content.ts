@@ -5,6 +5,7 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { authoredLayoutIssues } from './authoredLayout.ts';
 import {
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -14,7 +15,8 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { findPieces, pieceSize } from './templates.ts';
+import { templateSpatialIssues } from './templateSpatial.ts';
+import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
 export type {
   BlockDef,
@@ -316,10 +318,21 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
   }
+  if (entry.lock && furniture && !furniture.door) {
+    found.push(['.lock', 'only a door can have a lock']);
+  }
   if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }
   return found;
+};
+
+const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
+  if (template.access && templateResolves(registry, template)) {
+    for (const [path, message] of templateSpatialIssues(registry, compileTemplate(registry, template))) {
+      report('templates', template.id, path, message);
+    }
+  }
 };
 
 const checkTemplates = (registry: Registry, report: Report) => {
@@ -334,6 +347,7 @@ const checkTemplates = (registry: Registry, report: Report) => {
         report('templates', template.id, at, `no block "${entry}"`);
       }
     }
+    checkTemplateSpace(registry, template, report);
   }
 };
 
@@ -378,6 +392,25 @@ const checkRecipes = (registry: Registry, report: Report) => {
   }
 };
 
+const checkKeys = (registry: Registry, report: Report) => {
+  const doorLocks = new Set(
+    [...registry.templates.values()].flatMap((template) => templateLockIds(registry, template)),
+  );
+  const keyLocks = new Set([...registry.items.values()].flatMap((item) => (item.key ? [item.key.lock] : [])));
+  for (const item of registry.items.values()) {
+    if (item.key && !doorLocks.has(item.key.lock)) {
+      report('items', item.id, '.key.lock', `no door has lock "${item.key.lock}"`);
+    }
+  }
+  for (const template of registry.templates.values()) {
+    for (const lock of new Set(templateLockIds(registry, template))) {
+      if (!keyLocks.has(lock)) {
+        report('templates', template.id, '.palette', `no key names lock "${lock}"`);
+      }
+    }
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -398,8 +431,14 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
+  checkKeys(registry, report);
   checkZombies(registry, report);
   checkRecipes(registry, report);
+  for (const layout of registry.layouts.values()) {
+    for (const [path, message] of authoredLayoutIssues(layout, registry)) {
+      report('layouts', layout.id, path, message);
+    }
+  }
   return issues;
 };
 

@@ -4,13 +4,14 @@
 // real town costs (memory, meshing, triangles, draw calls, and furniture in play),
 // not to be played through: taller buildings have no stairs between storeys.
 
+import { smoothstep } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES } from './hamlet.ts';
 import { hash3 } from './random.ts';
 import type { Scale } from './scale.ts';
-import { type FurnitureSpawn, furnitureOf, type Rect, rectDistance, type Site, smoothstep } from './site.ts';
+import { type FurnitureSpawn, furnitureOf, type Rect, rectDistance, type Site } from './site.ts';
 import {
   type CompiledTemplate,
   compileTemplate,

@@ -39,7 +39,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 };
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 7,
+  schemaVersion: 8,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -83,6 +83,9 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
       play: () => undefined,
     },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in melee fixture');
+    },
     zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
     ...(restore ? { restore } : {}),
   });
