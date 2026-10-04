@@ -3,17 +3,19 @@ import { join } from 'node:path';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
+import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
+  type DebugFirearmShotInput,
   FirearmMechanics,
   type FirearmShotEffect,
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
 import { DebugFirearmTrigger } from '../src/game/firearmTrigger.ts';
-import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
+import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
 
 const BASE = 'src/content/base';
@@ -103,23 +105,60 @@ describe('debug firearm handling', () => {
     expect(new Set(['5.56x45', '5_56x45', '5-56x45'].map(spentCaseItemId)).size).toBe(3);
   });
 
-  it('reads the exported AR and AK cadence and ejection facts without a stand-in', () => {
-    const rifleModel = registry.models.get('rifle_assault');
-    expect(rifleModel).toMatchObject({
-      calibre: '5.56x45',
-      anchors: { magwell: [-0.048_875, -0.046, 0] },
-    });
-    expect(rifleModel?.anchors?.ejection).toEqual([-0.048_875, 0.002_875, 0.023]);
+  it('reads rifle action and calibre from each item model and selects a matching exported case', () => {
     const { inventory, rifle } = inventoryWithRifle();
-    expect(firearmHandlingFor(rifle, registry).rpm).toBe(800);
-    expect(firearmHandlingFor(inventory.create('debug_rifle_ak'), registry)).toMatchObject({
-      calibre: '7.62x39',
-      rpm: 600,
-      caseModelId: 'case_7_d_62x39',
+    for (const item of [rifle, inventory.create('debug_rifle_ak')]) {
+      const model = registry.models.get(registry.items.get(item.type)!.model!)!;
+      const data = firearmHandlingFor(item, registry);
+      expect(data.model).toBe(model);
+      expect(data.action).toBe(model.action);
+      expect(data.rpm).toBe(model.action!.rpm);
+      expect(data.calibre).toBe(model.calibre);
+      expect(data.caseModelId?.startsWith('case_')).toBe(true);
+      expect(registry.models.get(data.caseModelId!)?.calibre).toBe(model.calibre);
+    }
+  });
+
+  it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
+    const model = registry.models.get('rifle_assault')!;
+    const action = structuredClone(model.action!);
+    const fire = action.fire!;
+    for (const key of ['durationSeconds', 'rearwardSeconds', 'dwellSeconds', 'forwardSeconds'] as const) {
+      fire[key] *= 2;
+    }
+    const fixture = { ...registry, models: new Map(registry.models) };
+    fixture.models.set(model.id, { ...model, action });
+    const inventory = new Inventory(fixture);
+    const rifle = inventory.create('debug_rifle_assault');
+    expect(inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
     });
-    expect(registry.models.get('round_5_d_56x45')?.file).toBe('assets/models/round-5_d_56x45.glb');
-    expect(registry.models.get('case_5_d_56x45')?.file).toBe('assets/models/case-5_d_56x45.glb');
-    expect(registry.items.get(caseType)?.model).toBe('case_5_d_56x45');
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    const duration = 60 / action.rpm!;
+    const ejectAt = (fire.rearwardSeconds * action.ejectAt * duration) / fire.durationSeconds;
+    expect(actionCycleSeconds(action, 'fire')).toBe(duration);
+    expect(ejectSeconds(action, 'fire')).toBeCloseTo(ejectAt);
+    expect(sampleActionStroke(action, 'fire', ejectAt)).toBeCloseTo(action.ejectAt);
+    mechanics.advanceTo(1 + ejectAt - 1e-6);
+    expect(inventory.piles.size).toBe(0);
+    mechanics.advanceTo(1 + ejectAt);
+    expect(inventory.piles.size).toBe(1);
+    mechanics.advanceTo(1 + duration);
+    expect(mechanics.frames()).toEqual([]);
+    expect(rifle.firearm?.chamber).toBe('round');
   });
 
   it('resolves the exported pump calibre and hull without inventing automatic timing', () => {
@@ -228,6 +267,40 @@ describe('debug firearm handling', () => {
     expect(rifle.count).toBe(1);
   });
 
+  it('refuses an empty chamber after cock cancellation past ejection while a fresh virtual round still fires', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    const input: DebugFirearmShotInput = {
+      ...pose,
+      feet: [...pose.feet],
+      eye: [...pose.eye],
+      debugMode: true,
+      item: rifle,
+      seed: 71,
+      simTime: 0,
+    };
+    // Control: the debug rifle starts with a virtual round, and the environment can fire it.
+    expect(mechanics.fire(input)).toBe(true);
+    mechanics.advanceTo(1);
+    expect(mechanics.cock(rifle.uid, 1)).toBeUndefined();
+    const elapsed = firearmHandlingFor(rifle, registry).action.hand.rearwardSeconds;
+    queue.tick(elapsed);
+    mechanics.advanceTo(1 + elapsed);
+    queue.cancel();
+    mechanics.advanceTo(1 + elapsed);
+    expect(rifle.firearm).toEqual({ chamber: 'empty', pendingCase: undefined, cycle: undefined });
+    const before = inventory.snapshotState();
+    const reason = mechanics.fireReason(rifle.uid);
+    const admitted = mechanics.fire({ ...input, simTime: 1 + elapsed });
+    expect({ reason, admitted }).toEqual({ reason: 'Chamber is empty', admitted: false });
+    expect(inventory.snapshotState()).toEqual(before);
+  });
+
   it('uses exported cock duration in the handling queue and prevents firing during the hand action', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const queue = new HandlingQueue(inventory);
@@ -237,7 +310,13 @@ describe('debug firearm handling', () => {
       onEjection: () => undefined,
     });
     const duration = firearmHandlingFor(rifle, registry).action.hand.durationSeconds;
+    expect(mechanics.useOption(rifle)).toEqual({
+      kind: 'use',
+      label: `Cock ${inventory.name(rifle)}`,
+      plan: { ok: true, time: duration },
+    });
     expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
+    expect(mechanics.useOption(rifle).plan).toEqual({ ok: false, reason: 'Already handling something' });
     expect(queue.jobs[0]?.duration).toBe(duration);
     expect(
       mechanics.fire({

@@ -315,11 +315,19 @@ describe('simulation source fingerprint', () => {
     const firearmDrawing = await mutateSimulationSource(
       host,
       'src/render/firearmModel.ts',
-      '60 / action.rpm',
-      '61 / action.rpm',
+      'return time / cycle.rearwardSeconds;',
+      'return 0;',
     );
     expect(firearmDrawing.reads).toBe(0);
     expect(firearmDrawing.value).toBe(original);
+    const sharedFirearmTiming = await mutateSimulationSource(
+      host,
+      'src/core/firearmAction.ts',
+      '60 / action.rpm',
+      '61 / action.rpm',
+    );
+    expect(sharedFirearmTiming.reads).toBe(1);
+    expect(sharedFirearmTiming.value).not.toBe(original);
     const firearmHandling = await mutateSimulationSource(
       host,
       'src/game/firearmHandling.ts',

@@ -2,10 +2,9 @@
 // Child-index paths carry the association into independent held clones without name lookup.
 import { Matrix4, type Object3D, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
-import type { ModelDef } from '../core/content.ts';
+import { actionCycleSeconds, type FirearmAction, type FirearmMode } from '../core/firearmAction.ts';
 
-export type FirearmAction = NonNullable<ModelDef['action']>;
-export type FirearmMode = 'fire' | 'hand';
+export type { FirearmAction, FirearmMode } from '../core/firearmAction.ts';
 
 export interface ActionPartPath {
   readonly path: readonly number[];
@@ -98,10 +97,7 @@ export const sampleActionStroke = (action: FirearmAction, mode: FirearmMode, ela
   if (!cycle || (mode === 'fire' && action.rpm === undefined)) {
     return 0;
   }
-  const duration =
-    mode === 'fire' && action.rpm !== undefined
-      ? Math.min(cycle.durationSeconds, 60 / action.rpm)
-      : cycle.durationSeconds;
+  const duration = actionCycleSeconds(action, mode);
   const time = (elapsed * cycle.durationSeconds) / duration;
   if (elapsed < 0 || elapsed >= duration) {
     return 0;

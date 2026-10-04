@@ -12,7 +12,7 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import { toHands, type UseOption, useOption } from '../core/options.ts';
+import { toHands, useOption } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -343,19 +343,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     searching: session.searching,
     notice: showNotice,
     use: useItem,
-    useOption: (item, reachView): UseOption => {
-      if (!registry.items.get(item.type)?.firearm) {
-        return useOption(item, reachView);
-      }
-      const reason = firearms.cockReason(item.uid);
-      return {
-        kind: 'use',
-        label: `Cock ${inventory.name(item)}`,
-        plan: reason
-          ? { ok: false, reason }
-          : { ok: true, time: firearmHandlingFor(item, registry).action.hand.durationSeconds },
-      };
-    },
+    useOption: (item, reachView) =>
+      registry.items.get(item.type)?.firearm ? firearms.useOption(item) : useOption(item, reachView),
     describe: (item) => survival.describe(item),
     assign: (slot, item) => {
       quickbar.assign(slot, item);

@@ -2,11 +2,13 @@
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import type { FirearmState, PendingCase } from '../core/firearmState.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import type { UseOption } from '../core/options.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
 
@@ -40,19 +42,21 @@ const exportedActionReason = (item: Item, registry: Registry, mode: 'fire' | 'ha
 };
 
 export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandlingData => {
-  const model = firearmModelFor(item, registry);
-  if (!(model?.calibre && model.action?.hand && model.grip && model.anchors?.ejection)) {
-    throw new Error('No exported action data for this gun');
+  const reason = exportedActionReason(item, registry, 'hand');
+  if (reason) {
+    throw new Error(reason);
   }
+  const model = firearmModelFor(item, registry)!;
+  const action = model.action!;
   const [caseModelId] = [...registry.models.values()]
     .filter((candidate) => candidate.calibre === model.calibre && candidate.id.startsWith('case_'))
     .map((candidate) => candidate.id)
     .sort();
   return {
     model,
-    action: model.action,
-    calibre: model.calibre,
-    rpm: model.action.rpm,
+    action,
+    calibre: model.calibre!,
+    rpm: action.rpm,
     ...(caseModelId ? { caseModelId } : {}),
   };
 };
@@ -102,23 +106,6 @@ export interface FirearmCycleFrame {
   readonly elapsed: number;
 }
 
-const cycleDuration = (action: Action, mode: 'fire' | 'hand'): number => {
-  if (mode === 'hand') {
-    return action.hand.durationSeconds;
-  }
-  if (!(action.fire && action.rpm)) {
-    throw new Error('No exported automatic action data for this gun');
-  }
-  return Math.min(action.fire.durationSeconds, 60 / action.rpm);
-};
-const ejectSeconds = (action: Action, mode: 'fire' | 'hand'): number => {
-  const cycle = action[mode];
-  if (!cycle) {
-    throw new Error('No exported automatic action data for this gun');
-  }
-  return (cycle.rearwardSeconds * action.ejectAt * cycleDuration(action, mode)) / cycle.durationSeconds;
-};
-
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
@@ -156,7 +143,7 @@ export class FirearmMechanics {
       if (!(item && this.held(item.uid)) || item.firearm?.cycle?.mode !== 'hand') {
         return 'Firearm is no longer held';
       }
-      this.advanceCycle(item, cycleDuration(firearmHandlingFor(item, inventory.registry).action, 'hand'));
+      this.advanceCycle(item, actionCycleSeconds(firearmHandlingFor(item, inventory.registry).action, 'hand'));
       return undefined;
     });
   }
@@ -169,10 +156,22 @@ export class FirearmMechanics {
     return Object.values(this.inventory.hands).some((item) => item?.firearm?.cycle !== undefined);
   }
 
-  /** Read-only exported-data refusal; neither model admission nor inspection requires mechanics. */
+  /** Read-only admission; neither model admission nor inspection requires mechanics. */
   fireReason(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
-    return item ? exportedActionReason(item, this.inventory.registry, 'fire') : 'Firearm is no longer carried';
+    if (!item) {
+      return 'Firearm is no longer carried';
+    }
+    const reason = exportedActionReason(item, this.inventory.registry, 'fire');
+    if (reason) {
+      return reason;
+    }
+    // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
+    // only an idle empty chamber is a persistent refusal that should stop that cadence.
+    if (!item.firearm || item.firearm.cycle || item.firearm.chamber === 'round') {
+      return;
+    }
+    return item.firearm.chamber === 'empty' ? 'Chamber is empty' : 'Chamber contains a spent case';
   }
 
   fire(input: DebugFirearmShotInput): boolean {
@@ -182,7 +181,7 @@ export class FirearmMechanics {
     // Advancing to the exact deadline also handles a coarse input sample containing several shots.
     this.advanceTo(input.simTime);
     const item = this.inventory.itemByUid(input.item.uid)!;
-    if (!defOf(this.inventory.registry, item.type).firearm || item.firearm?.cycle || item.firearm?.chamber === 'case') {
+    if (!defOf(this.inventory.registry, item.type).firearm || item.firearm?.cycle) {
       return false;
     }
     if (this.fireReason(item.uid)) {
@@ -210,6 +209,17 @@ export class FirearmMechanics {
     return this.queue.busy || item.firearm?.cycle
       ? 'Already handling something'
       : exportedActionReason(item, this.inventory.registry, 'hand');
+  }
+
+  useOption(item: Item): UseOption {
+    const reason = this.cockReason(item.uid);
+    return {
+      kind: 'use',
+      label: `Cock ${this.inventory.name(item)}`,
+      plan: reason
+        ? { ok: false, reason }
+        : { ok: true, time: actionCycleSeconds(firearmHandlingFor(item, this.inventory.registry).action, 'hand') },
+    };
   }
 
   cock(uid: number, time: number): string | undefined {
@@ -285,7 +295,7 @@ export class FirearmMechanics {
       }
       cycle.ejected = true;
     }
-    if (cycle.elapsed + 1e-9 >= cycleDuration(data.action, cycle.mode)) {
+    if (cycle.elapsed + 1e-9 >= actionCycleSeconds(data.action, cycle.mode)) {
       if (cycle.feedRound) {
         state.chamber = 'round';
       }
