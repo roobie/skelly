@@ -12,6 +12,8 @@ export interface CraftWork<Node> {
   elapsed: number;
   duration: number;
   components: Node[];
+  repairTargetUid?: number;
+  repairAmount?: number;
 }
 
 /** Scalar and pocket fields are shared by live items and their saved tree. */

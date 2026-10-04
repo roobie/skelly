@@ -74,6 +74,7 @@ const closure = (
     previous = items.size;
     for (const recipe of registry.recipes.values()) {
       if (
+        recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
         inputsReady(recipe, items) &&
         (!tools ||

@@ -1,3 +1,8 @@
+---
+read_if:
+  - you're implementing or reviewing a Slice 2 milestone and need its approved scope and proofs
+---
+
 # Slice 2 — Craft and mend
 
 The second slice on the [road to version 1](EPIC.md). It builds the crafting
@@ -709,6 +714,9 @@ they don't change those two counts.
 
 1. **Wear when hit:** the outermost clothing over the hit area wears. *Later:*
    items carried in that clothing can be damaged too.
+   Decided (BR, 2026-10-05): "d56:A": "Every shambler hit lands on the torso.
+   Shamblers grab and bite the upper body. This is the simplest, and Slice 3's
+   body model replaces it; crawlers would add legs then."
 2. **Condition and performance:** condition matters only at ruin in Slice 2.
    *Later:* condition affects how an item performs.
 3. **Books** teach recipes only. *Later:* books may also speed up skill
