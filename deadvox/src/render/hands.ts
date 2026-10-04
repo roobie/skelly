@@ -21,9 +21,9 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import type { FigureDef } from '../core/content.ts';
+import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { HOLD } from '../core/heldPose.ts';
+import { HOLD, heldAnchorOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -32,6 +32,7 @@ import {
   type FirearmMode,
   type HeldActionPart,
   poseActionParts,
+  rackCant,
   sampleActionStroke,
 } from './firearmModel.ts';
 import { LENS, type ModelLibrary } from './models.ts';
@@ -44,8 +45,10 @@ const TORSO_Y_AXIS = new Vector3(0, 1, 0);
 
 export interface HeldFirearmPose {
   readonly uid: number;
-  readonly mode: FirearmMode;
+  readonly mode: FirearmMode | 'load';
   readonly elapsed: number;
+  readonly duration?: number;
+  readonly roundType?: string;
 }
 
 export class HeldItems {
@@ -65,6 +68,8 @@ export class HeldItems {
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
   private readonly firearmParts = new Map<number, { action: FirearmAction; parts: readonly HeldActionPart[] }>();
+  private readonly pumpModels = new Map<number, ModelDef>();
+  private readonly loadingShells = new Map<number, Object3D>();
   private readonly arms = new Map<HandSide, Group>();
   private readonly armLengths = new Map<Group, readonly [number, number]>();
   private readonly handBases = new Map<HandSide, Vec3>();
@@ -73,6 +78,7 @@ export class HeldItems {
   private readonly lockedCamera = new Quaternion();
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
+  private readonly rackRotation = new Quaternion();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
@@ -104,10 +110,7 @@ export class HeldItems {
     firearmPoses: readonly HeldFirearmPose[] = [],
   ): void {
     this.sync();
-    for (const [uid, { action, parts }] of this.firearmParts) {
-      const frame = firearmPoses.find((entry) => entry.uid === uid);
-      poseActionParts(parts, frame?.mode, frame ? sampleActionStroke(action, frame.mode, frame.elapsed) : 0);
-    }
+    this.poseFirearms(firearmPoses);
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
     for (const side of ['right', 'left'] as const) {
       const hand = pose?.[side] ?? { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
@@ -123,6 +126,12 @@ export class HeldItems {
       this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
       this.applyViewPose(main, pose, transform);
       this.lockCutBladeRoll(side, pose);
+      const item = this.inventory.hands[side];
+      const model = item && this.pumpModels.get(item.uid);
+      const frame = item && firearmPoses.find((entry) => entry.uid === item.uid);
+      const cant = rackCant(model, side, frame, { x: transform.offset[0], y: transform.offset[1] });
+      this.rackRotation.setFromEuler(this.poseEuler.set(0, 0, cant, 'YXZ'));
+      this.poseRotation.multiply(this.rackRotation);
       const strength = Math.max(0, Math.min(1, recoil));
       transform.offset[1] += 0.012 * strength;
       transform.offset[2] += 0.025 * strength;
@@ -144,6 +153,53 @@ export class HeldItems {
       this.updateArmChain(side, arm);
     }
     this.view.updateMatrixWorld(true);
+  }
+
+  private poseFirearms(frames: readonly HeldFirearmPose[]): void {
+    for (const [uid, { action, parts }] of this.firearmParts) {
+      const frame = frames.find((entry) => entry.uid === uid);
+      const mode = frame?.mode === 'load' ? undefined : frame?.mode;
+      const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed) : 0;
+      poseActionParts(parts, mode, stroke);
+      this.updatePump(uid, frame, stroke);
+    }
+  }
+
+  private updatePump(uid: number, frame: HeldFirearmPose | undefined, stroke: number): void {
+    const model = this.pumpModels.get(uid);
+    const held = this.shown.get(uid);
+    if (!(model && held)) {
+      return;
+    }
+    const side = this.inventory.hands.right?.uid === uid ? 'left' : 'right';
+    const arm = this.arms.get(side);
+    const base = this.handBases.get(side);
+    const part = model.action?.parts.forend;
+    if (arm && base && part) {
+      const travel = modelToView(model, part.axis.map((value) => value * part.strokeMetres) as Vec3);
+      arm.position.set(...base).addScaledVector(new Vector3(...travel), stroke);
+    }
+    if (frame?.mode !== 'load') {
+      this.loadingShells.get(uid)?.removeFromParent();
+      this.loadingShells.delete(uid);
+      return;
+    }
+    let shell = this.loadingShells.get(uid);
+    if (!shell && frame.roundType) {
+      const id = defOf(this.inventory.registry, frame.roundType).model;
+      shell = id ? this.models?.held(id)?.root : undefined;
+      if (shell) {
+        held.add(shell);
+        this.loadingShells.set(uid, shell);
+      }
+    }
+    if (shell) {
+      const progress = Math.min(1, frame.elapsed / frame.duration!);
+      const port = heldAnchorOffset(model, 'loading_port');
+      shell.position.set(port[0], port[1] - 0.12 * (1 - progress), port[2]);
+      // Shell approaches the actual underside port; the short path is a presentation estimate.
+      shell.visible = progress < 0.98;
+    }
   }
 
   /** Keep the cutting edge's rest orientation while preserving the target forward axis. */
@@ -248,6 +304,8 @@ export class HeldItems {
     this.view.add(this.torso);
     this.shown.clear();
     this.firearmParts.clear();
+    this.pumpModels.clear();
+    this.loadingShells.clear();
     this.armLengths.clear();
     this.handBases.clear();
     this.heldByHand.clear();
@@ -365,7 +423,14 @@ export class HeldItems {
 
   private syncOffhandArm(side: HandSide, heldAt: Vec3, modelId: string | undefined, held: Group): void {
     const otherSide: HandSide = side === 'right' ? 'left' : 'right';
-    const pose = modelId ? this.inventory.registry.models.get(modelId)?.hold : undefined;
+    const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
+    if (model?.tube && model.anchors?.support) {
+      const support = heldAnchorOffset(model, 'support');
+      const offhandGrip: Vec3 = support.map((value, index) => value + heldAt[index]!) as Vec3;
+      this.addArm(otherSide, offhandGrip, held, heldAt);
+      return;
+    }
+    const pose = model?.hold;
     const offhandGrip: Vec3 =
       pose === 'upright' ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]] : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
     this.addArm(otherSide, offhandGrip, held, heldAt);
@@ -378,6 +443,10 @@ export class HeldItems {
       const action = this.inventory.registry.models.get(def.model!)?.action;
       if (action) {
         this.firearmParts.set(item.uid, { action, parts: model.parts });
+        const definition = this.inventory.registry.models.get(def.model!)!;
+        if (definition.tube) {
+          this.pumpModels.set(item.uid, definition);
+        }
       }
       return model.root;
     }

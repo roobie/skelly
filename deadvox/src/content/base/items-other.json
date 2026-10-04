@@ -101,8 +101,18 @@
       "weight": 40,
       "size": [1, 1],
       "stack": 25,
-      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy.",
+      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00).",
+      "ammo": { "calibre": "12-gauge-00-buck", "pellets": 9, "diameterMm": 8.38 },
       "model": "round_12_h_gauge_h_00_h_buck"
+    },
+    {
+      "id": "shotshell_box",
+      "name": "Sealed shotshell box (20)",
+      "category": "ammo",
+      "weight": 840,
+      "size": [2, 2],
+      "description": "Sealed cardboard box of twenty 00-buck shells. Wield it and activate it to unpack; any loose shells that do not fit go into a pile at your feet. Size, 40 g cardboard and 40 g per shell are gameplay mass estimates.",
+      "unpack": { "item": "shell_12_gauge_00_buck", "count": 20 }
     },
     {
       "id": "spent_case_12_h_gauge_h_00_h_buck",

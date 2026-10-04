@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -251,6 +251,8 @@ itemSchema = obj({
     obj({
       chamber: enumeration(['empty', 'round', 'case']),
       roundType: opt(str({ id: true })),
+      tube: opt(arr(str({ id: true }))),
+      landing: opt(obj({ at: nonNegative, position: vec3 })),
       pendingCase: opt(
         obj({
           origin: vec3,
@@ -266,6 +268,7 @@ itemSchema = obj({
           elapsed: nonNegative,
           ejected: bool,
           feedRound: bool,
+          forwardSounded: opt(bool),
         }),
       ),
     }),
@@ -1108,6 +1111,9 @@ function validateItemContentReferences(
     if (item.firearm?.roundType) {
       check('item', item.firearm.roundType, `${path}.firearm.roundType`);
     }
+    item.firearm?.tube?.forEach((type, index) => {
+      check('item', type, `${path}.firearm.tube[${index}]`);
+    });
     if (item.work) {
       check('recipe', item.work.recipe, `${path}.work.recipe`);
     }

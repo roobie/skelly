@@ -3,9 +3,11 @@
 import { Matrix4, type Object3D, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef } from '../core/content.ts';
+import { actionCycleSeconds, type FirearmAction, type FirearmMode } from '../core/firearmAction.ts';
+import { heldAnchorOffset } from '../core/heldPose.ts';
+import type { HandSide } from '../core/inventory.ts';
 
-export type FirearmAction = NonNullable<ModelDef['action']>;
-export type FirearmMode = 'fire' | 'hand';
+export type { FirearmAction, FirearmMode } from '../core/firearmAction.ts';
 
 export interface ActionPartPath {
   readonly path: readonly number[];
@@ -98,10 +100,7 @@ export const sampleActionStroke = (action: FirearmAction, mode: FirearmMode, ela
   if (!cycle || (mode === 'fire' && action.rpm === undefined)) {
     return 0;
   }
-  const duration =
-    mode === 'fire' && action.rpm !== undefined
-      ? Math.min(cycle.durationSeconds, 60 / action.rpm)
-      : cycle.durationSeconds;
+  const duration = actionCycleSeconds(action, mode);
   const time = (elapsed * cycle.durationSeconds) / duration;
   if (elapsed < 0 || elapsed >= duration) {
     return 0;
@@ -114,6 +113,42 @@ export const sampleActionStroke = (action: FirearmAction, mode: FirearmMode, ela
     return 1;
   }
   return Math.max(0, 1 - (time - returnAt) / cycle.forwardSeconds);
+};
+
+/** Presentation estimate: bound the geometry-derived turn while exposing an away-facing port. */
+const MAX_RACK_CANT_RADIANS = Math.PI / 4;
+
+export const rackCant = (
+  model: ModelDef | undefined,
+  hand: HandSide,
+  frame: { readonly mode: FirearmMode | 'load'; readonly elapsed: number } | undefined,
+  grip: { readonly x: number; readonly y: number },
+): number => {
+  if (
+    !(model?.tube && model.grip && model.anchors?.ejection && model.anchors.loading_port && model.action) ||
+    frame?.mode !== 'hand'
+  ) {
+    return 0;
+  }
+  const port = heldAnchorOffset(model, 'ejection');
+  const loading = heldAnchorOffset(model, 'loading_port');
+  const across = port[0] - loading[0];
+  const portSide = Math.sign(across);
+  if (portSide * (hand === 'right' ? 1 : -1) <= 0) {
+    return 0; // The camera already sees this side from the opposite wielding hand.
+  }
+  const away = portSide * (grip.x + port[0]);
+  if (away <= 0) {
+    return 0;
+  }
+  // Clear the camera's tangent to the port, then reveal some aperture. A turn
+  // derived only from port/loading separation can leave the side still hidden.
+  const clearance = Math.atan2(away, -grip.y - port[1]);
+  const reveal = Math.atan2(Math.abs(across), Math.abs(port[1] - loading[1]));
+  const angle = Math.min(MAX_RACK_CANT_RADIANS, clearance + reveal);
+  const stroke = sampleActionStroke(model.action, 'hand', frame.elapsed);
+  const eased = stroke * stroke * (3 - 2 * stroke);
+  return portSide * angle * eased;
 };
 
 export const poseActionParts = (

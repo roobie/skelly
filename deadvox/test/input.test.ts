@@ -1,7 +1,40 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Input, isMenuOpeningKey, KEY_BINDINGS, nextMenuCursor, worldActionForKey } from '../src/game/input.ts';
+import {
+  Input,
+  isMenuOpeningKey,
+  KEY_BINDINGS,
+  nextMenuCursor,
+  restKindForControl,
+  worldActionForKey,
+} from '../src/game/input.ts';
 
 describe('menu input', () => {
+  it('keyboard controls expose sleep but no rest binding for R or dollar', () => {
+    expect(restKindForControl('KeyR')).toBeUndefined();
+    expect(restKindForControl('$')).toBeUndefined();
+    expect(restKindForControl('KeyL')).toBe('sleep');
+  });
+
+  it('Backspace suppresses browser navigation in locked play but keeps menu text editing', () => {
+    const listeners = new Map<string, (event: KeyboardEvent) => void>();
+    const target = { addEventListener: () => undefined } as unknown as HTMLElement;
+    vi.stubGlobal('addEventListener', (type: string, listener: (event: KeyboardEvent) => void) =>
+      listeners.set(type, listener),
+    );
+    vi.stubGlobal('document', { pointerLockElement: target, addEventListener: () => undefined });
+    try {
+      const input = new Input(target);
+      const preventDefault = vi.fn();
+      const event = { code: 'Backspace', repeat: false, preventDefault } as unknown as KeyboardEvent;
+      listeners.get('keydown')!(event);
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      input.menuPointer = true;
+      listeners.get('keydown')!(event);
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it('surfaces a native pointer-lock promise rejection without an unhandled rejection', async () => {
     const error = new Error('The browser failed to lock the pointer');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
