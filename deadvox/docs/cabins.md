@@ -1,8 +1,9 @@
 # Beat 3 cabins
 
 `templates-cabins.json` defines Dad's cabin, the hunter's cabin and the woodshed in
-half-metre template blocks. Dad's cabin has a ground storey and a cellar; the cellar
-is reached through the stair opening described by its `access` data. The north wall's
+half-metre template blocks. Dad's cabin has a ground storey and a cellar, with no
+loft or upper storey; a flat, low roof caps the ground-floor ceiling. The cellar is
+reached through the stair opening described by its `access` data. The north wall's
 `dad_front_door` is an ordinary openable door, not locked in this content. Its
 outside key placement anchor is `dad_front_step_key_spot` at local block position
 `[11, 6, 1]` (metres `[5.75, 3, 0.75]` from the template origin). This recess is
