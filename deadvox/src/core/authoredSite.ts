@@ -4,7 +4,7 @@ import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, LOT_APRON_M, layoutHeight, lotOf, polylineDistance } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { toChunk, type Vec3 } from './coords.ts';
+import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
@@ -59,7 +59,7 @@ export class AuthoredSite implements Site {
           ] as Vec3,
         };
       });
-    this.spawn = { pos: [...layout.player.position], yaw: (layout.player.yaw * Math.PI) / 180 };
+    this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
     const height = (x: number, z: number, natural: number): number =>
       Math.round(layoutHeight(layout, lots, [(x + 0.5) * s, (z + 0.5) * s], natural * s) / s);
     const trackAt = (x: number, z: number) =>
