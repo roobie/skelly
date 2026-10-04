@@ -9,6 +9,7 @@
         "z1": 96
       },
       "ground": 21,
+      "terrain": [],
       "buildings": [
         {
           "template": "stairs_house",

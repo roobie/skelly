@@ -44,6 +44,10 @@
       "includes": ["**"],
       "linter": {
         "rules": {
+          "correctness": {
+            // Shared Tiled/runtime ES modules have .d.mts type bridges, but execute as .mjs.
+            "useImportExtensions": { "level": "error", "options": { "extensionMappings": { "mts": "mjs" } } }
+          },
           "complexity": {
             // noExcessiveCognitiveComplexity (on) measures what matters; raw length doesn't.
             "noExcessiveLinesPerFunction": "off"

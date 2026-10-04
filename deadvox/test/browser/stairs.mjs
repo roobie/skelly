@@ -15,6 +15,7 @@ const [, , mode] = process.argv;
 assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
+const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
 await mkdir(artifacts, { recursive: true });
 const vite = await createServer({
   root,
@@ -26,22 +27,19 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'lighting' && id.endsWith('/src/content/base/layouts-stairs.json')) {
-          // Two real authored cellars within the view radius; no tracked demo/lore change.
-          const content = JSON.parse(code);
-          const layout = content.layouts.find((value) => value.id === 'stair_demo');
-          layout.buildings.push({ template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 });
-          return JSON.stringify(content);
-        }
         if (mode === 'lighting' && id.endsWith('/src/core/authoredSite.ts')) {
-          // Fixture-only: keep the raised cabin above the shared terrain, exposing its lower west wall.
-          // Otherwise its raised terrain apron duplicates the first field's buried-wall samples.
-          const anchor = 'floor: building.position[1] / s,';
+          // Post-admission fixture: a deliberate 6 m raise is not valid authored cut/fill.
+          // Keep its lot at shared ground, exposing the lower west wall for slot contrast.
+          const anchor = '    const s = scale.blockSize;';
+          const lot = 'lotOf(building, rect)';
           assert.equal(code.split(anchor).length, 2);
-          return code.replace(
-            anchor,
-            'floor: building.position[0] === 82 ? layout.ground / s : building.position[1] / s,',
-          );
+          assert.equal(code.split(lot).length, 2);
+          return code
+            .replace(
+              anchor,
+              `${anchor}\n    const raisedCabin = ${JSON.stringify(RAISED_CABIN)};\n    layout = {...layout, buildings: [...layout.buildings, raisedCabin]};`,
+            )
+            .replace(lot, '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}');
         }
         if (id.endsWith('/src/render/skylight.ts')) {
           // Test-only reference: identical scene with diffuse sky visibility forced to one.

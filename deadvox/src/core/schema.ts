@@ -8,6 +8,7 @@ import {
   check,
   type InferOutput,
   integer,
+  literal,
   maxValue,
   minLength,
   minValue,
@@ -26,6 +27,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 
+import { hasSegment } from './authoredTerrain.mjs';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -453,6 +455,25 @@ const HalfMetres = pipe(
 );
 const MetrePosition = tuple([Metres, Metres, Metres]);
 const LayoutPoint = tuple([Metres, Metres]); // [x, z]; Tiled's pixel y becomes world z.
+const PositiveMetres = pipe(Metres, minValue(Number.MIN_VALUE));
+const TerrainPrimitive = union([
+  strictObject({
+    kind: literal('ridge'),
+    points: pipe(
+      array(LayoutPoint),
+      minLength(2),
+      check((points) => hasSegment(points), 'ridge needs a non-zero segment'),
+    ),
+    rise: PositiveMetres,
+    width: PositiveMetres,
+  }),
+  strictObject({
+    kind: literal('hill'),
+    centre: LayoutPoint,
+    radii: tuple([PositiveMetres, PositiveMetres]),
+    rise: PositiveMetres,
+  }),
+]);
 const LayoutBuilding = strictObject({
   template: Id,
   position: tuple([HalfMetres, HalfMetres, HalfMetres]),
@@ -468,6 +489,7 @@ export const SiteLayoutSchema = strictObject({
   ),
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,
+  terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
   player: strictObject({ position: MetrePosition, yaw: Metres }),
   shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
