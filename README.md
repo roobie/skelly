@@ -115,9 +115,11 @@ from the doc.
   ---
   ```
 
-A false doc is a defect, and a review returns FIX for it. Until r27 lands, reviews check
-these rules by hand; r27 adds a CI check that every cited path and symbol exists, that no
-doc outside reviews and retros cites a line number, and that every doc has `read_if`.
+A false doc is a defect, and a review returns FIX for it. `tools/zero-drift-check.mjs`
+enforces these rules. Existing findings are frozen in
+`tools/zero-drift-baseline.json` until the docs sweep (#222); a new finding fails, and
+fixing one means removing its baseline entry. Run
+`node tools/zero-drift-check.mjs --emit-baseline` to emit the current findings for review.
 
 ## Shared direction
 

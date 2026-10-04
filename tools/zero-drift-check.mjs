@@ -10,6 +10,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BASELINE_PATH = 'tools/zero-drift-baseline.json';
 const ISSUE_TEMPLATE = /^\.github\/ISSUE_TEMPLATE\//;
 const DATED_SNAPSHOT = /(?:^|\/)docs\/reviews\/[^/]+\.md$|(?:^|\/)retro-[^/]+\.md$/;
+const SUBPROJECTS = new Set(['deadvox', 'gungen', 'mobgen']);
 const LINE_CITATION = /(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
 const LINK = /\[[^\]]*\]\(([^)]+)\)/g;
@@ -162,7 +163,12 @@ function pathCandidates(visible) {
 }
 
 function resolvedCandidates(docPath, value, root) {
-  const candidates = [value, resolve(dirname(resolve(root, docPath)), value)];
+  const [subproject] = docPath.split('/');
+  const candidates = [
+    value,
+    ...(SUBPROJECTS.has(subproject) ? [resolve(root, subproject, value)] : []),
+    resolve(dirname(resolve(root, docPath)), value),
+  ];
   return [
     ...new Set(
       candidates.map((candidate) => resolve(root, candidate)).filter((candidate) => isInsideRepo(root, candidate)),

@@ -14,10 +14,13 @@ before(() => {
   root = mkdtempSync(join(tmpdir(), 'zero-drift-'));
   mkdirSync(join(root, 'docs'), { recursive: true });
   mkdirSync(join(root, 'src'), { recursive: true });
+  mkdirSync(join(root, 'deadvox/docs'), { recursive: true });
+  mkdirSync(join(root, 'deadvox/src'), { recursive: true });
   writeFileSync(
     join(root, 'src/known.ts'),
     'export function startBench() {}\nexport class ChunkMeshes { cull() {} }\n',
   );
+  writeFileSync(join(root, 'deadvox/src/known.ts'), 'export function startBench() {}\n');
 });
 after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -74,6 +77,17 @@ describe('zero-drift line-number check', () => {
     assert.ok(checks(scan(document('The implementation is in foo.mjs:12-30.'))).includes('line_number'));
     assert.ok(!checks(scan(document('> stack at foo.mjs:12\n\n```text\nfoo.ts:3\n```'))).includes('line_number'));
   });
+
+  it('exempts dated review citations and paths but still requires read_if', () => {
+    const failures = checkDocument({
+      path: 'docs/reviews/fixture.md',
+      text: 'No front matter. See `src/missing.ts` and foo.ts:12-14.',
+      root,
+      tracked: new Set(),
+      pythonReadIf: new Map(),
+    });
+    assert.deepEqual(checks(failures), ['read_if']);
+  });
 });
 
 describe('zero-drift path check', () => {
@@ -93,6 +107,18 @@ describe('zero-drift path check', () => {
         }),
       ).includes('path'),
     );
+  });
+
+  it('resolves subproject-relative citations from their subproject root', () => {
+    const path = 'deadvox/docs/fixture.md';
+    const failures = checkDocument({
+      path,
+      text: document('See `src/known.ts`, `startBench`.'),
+      root,
+      tracked: new Set(['deadvox/src/known.ts']),
+      pythonReadIf: new Map([[path, ['read this']]]),
+    });
+    assert.deepEqual(checks(failures), []);
   });
 
   it('ignores URLs, globs, and placeholders', () => {
