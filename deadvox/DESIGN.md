@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change the game's design, especially held-item feedback or hand ownership
+  - you reconcile BR's rulings with player interaction and presentation
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -284,6 +290,21 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   aimed at its target if it has one: "using the key means wielding it, and
   activating it on the door". Ammo boxes are unpacked the same way, never from
   the inventory screen, and no modifier chord bypasses it.
+- **Rummage feedback (BR, 2026-10-04, d50):** "there is no anim for when
+  opening the box of shells / i think we should add a generic \"hands go
+  together and rummage with the held item\"". Handling needs visible feedback,
+  not a second action owner. See `src/render/rummagePose.ts`, `rummageFrame`
+  and `RUMMAGE_POSE`, and `src/render/hands.ts`, `HeldItems.poseRummage`.
+  BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
+  On stowing: "putting away the shotgun from being wielded also plays rummaging
+  anim - i think it kinda fits". The longer-term direction is "over time, we'll
+  maybe add more specific anims."; shell-loading feedback is d53, after d47.
+  Approval does not pin `RUMMAGE_POSE` tuning: see
+  `../docs/deferred-assertions.md`.
+  Following #213's merge (d50-3), compass handling must not introduce a second
+  rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
+  `HeldItems.poseRummage`. The needle's world-heading owner remains independent
+  of hand motion: see `src/render/compass.ts`, `createCompass`.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
