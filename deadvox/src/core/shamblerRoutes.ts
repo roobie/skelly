@@ -51,7 +51,7 @@ const cellOf = (pos: Vec3): Cell => ({ x: Math.round(pos[0]), z: Math.round(pos[
 const heuristic = (a: Cell, b: Cell): number => Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
 const routeHeuristic = (a: RouteCell, b: RouteCell): number => heuristic(a, b) + Math.abs(a.level - b.level);
 const compareHeap = (a: HeapEntry, b: HeapEntry): number =>
-  a.f - b.f || a.g - b.g || a.z - b.z || a.x - b.x || a.level - b.level;
+  a.f - b.f || b.g - a.g || a.z - b.z || a.x - b.x || a.level - b.level;
 
 const heapPush = (heap: HeapEntry[], value: HeapEntry): void => {
   let index = heap.length;
@@ -180,7 +180,8 @@ const expandRouteLevel = (search: GridSearch, current: HeapEntry, nextCell: Cell
   heapPush(search.open, { ...next, g: nextScore, f: nextScore + routeHeuristic(next, search.to) });
 };
 
-const expandRouteCell = (search: GridSearch, current: HeapEntry): void => {
+const expandRouteCell = (search: GridSearch, current: HeapEntry, allowSteps: boolean): void => {
+  const { body, isSolid } = search.context;
   const neighbors = [
     { x: 0, z: -1 },
     { x: 1, z: 0 },
@@ -195,8 +196,12 @@ const expandRouteCell = (search: GridSearch, current: HeapEntry): void => {
     ) {
       continue;
     }
-    for (const level of [current.level, current.level + 1, current.level - 1]) {
-      expandRouteLevel(search, current, nextCell, level);
+    if (bodyClearAt(body, [nextCell.x, current.level, nextCell.z], isSolid)) {
+      expandRouteLevel(search, current, nextCell, current.level);
+    } else if (allowSteps) {
+      for (const level of [current.level + 1, current.level - 1]) {
+        expandRouteLevel(search, current, nextCell, level);
+      }
     }
   }
 };
@@ -218,7 +223,12 @@ const reconstructRoute = (search: GridSearch): Vec3[] | undefined => {
   return reverse.map(({ x, z, level }) => [x, level, z]);
 };
 
-const searchFlatGrid = (context: FlatSearch, from: RouteCell, to: RouteCell): Vec3[] | undefined => {
+const searchFlatGrid = (
+  context: FlatSearch,
+  from: RouteCell,
+  to: RouteCell,
+  options: { allowSteps: boolean; expansionLimit: number },
+): Vec3[] | undefined => {
   const fromKey = routeCellKey(from);
   const toKey = routeCellKey(to);
   const search: GridSearch = {
@@ -234,7 +244,7 @@ const searchFlatGrid = (context: FlatSearch, from: RouteCell, to: RouteCell): Ve
     ]),
   };
   heapPush(search.open, { ...from, g: 0, f: routeHeuristic(from, to) });
-  while (search.open.length > 0 && context.budget.expanded < ROUTE_MAX_EXPANSIONS) {
+  while (search.open.length > 0 && context.budget.expanded < options.expansionLimit) {
     const current = heapPop(search.open)!;
     const currentKey = routeCellKey(current);
     if (current.g !== search.scores.get(currentKey)) {
@@ -244,7 +254,7 @@ const searchFlatGrid = (context: FlatSearch, from: RouteCell, to: RouteCell): Ve
     if (currentKey === toKey) {
       return reconstructRoute(search);
     }
-    expandRouteCell(search, current);
+    expandRouteCell(search, current, options.allowSteps);
   }
   return undefined;
 };
@@ -276,7 +286,11 @@ const flatRoute = (context: FlatSearch, start: Vec3, end: Vec3): Vec3[] | undefi
     return undefined;
   }
 
-  return searchFlatGrid(context, from, to);
+  const levelOnly = searchFlatGrid(context, from, to, {
+    allowSteps: false,
+    expansionLimit: Math.floor((ROUTE_MAX_EXPANSIONS * 3) / 4),
+  });
+  return levelOnly ?? searchFlatGrid(context, from, to, { allowSteps: true, expansionLimit: ROUTE_MAX_EXPANSIONS });
 };
 
 const stairWaypoints = (from: Vec3, to: Vec3): Vec3[] => {
@@ -319,6 +333,23 @@ const stairClear = (body: Body, link: StairRouteLink, isSolid: SolidAt): boolean
   return true;
 };
 
+const compressFlatPath = (body: Body, start: Vec3, points: readonly Vec3[], isSolid: SolidAt): Vec3[] => {
+  const compressed: Vec3[] = [];
+  let anchor = start;
+  let first = 0;
+  while (first < points.length) {
+    let last = points.length - 1;
+    while (last > first && !shamblerRouteSegmentClear(body, anchor, points[last]!, isSolid)) {
+      last -= 1;
+    }
+    const point = points[last]!;
+    compressed.push(point);
+    anchor = point;
+    first = last + 1;
+  }
+  return compressed;
+};
+
 const addEdge = (graph: RouteEdge[][], from: number, edge: RouteEdge): void => {
   graph[from]!.push(edge);
   graph[from]!.sort((a, b) => a.to - b.to || a.cost - b.cost);
@@ -344,12 +375,13 @@ const addFlatEdge = ({ graph, nodes, search }: RouteGraph, from: number, to: num
   if (!points) {
     return search.budget.expanded < ROUTE_MAX_EXPANSIONS;
   }
-  const cost = points.reduce(
-    (sum, point, index) => sum + horizontalDistance(index === 0 ? nodes[from]!.pos : points[index - 1]!, point),
+  const compressed = compressFlatPath(search.body, nodes[from]!.pos, points, search.isSolid);
+  const cost = compressed.reduce(
+    (sum, point, index) => sum + horizontalDistance(index === 0 ? nodes[from]!.pos : compressed[index - 1]!, point),
     0,
   );
-  addEdge(graph, from, { to, cost, waypoints: points });
-  addEdge(graph, to, { to: from, cost, waypoints: [...points.slice(0, -1).reverse(), nodes[from]!.pos] });
+  addEdge(graph, from, { to, cost, waypoints: compressed });
+  addEdge(graph, to, { to: from, cost, waypoints: [...compressed.slice(0, -1).reverse(), nodes[from]!.pos] });
   return true;
 };
 
