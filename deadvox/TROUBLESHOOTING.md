@@ -1,3 +1,11 @@
+---
+read_if:
+  - you're debugging deadvox and need its debug parameters or keys
+  - you need to see the game without a display
+  - a browser contract or stage fails on software GL
+  - you're choosing render-free or pixel mode for a browser stage
+---
+
 # deadvox — troubleshooting
 
 How to look at the game and narrow down a problem. Lessons from past problems are in
@@ -102,6 +110,25 @@ Firefox start-up probe, page load took 6.1 s with the default look against 2.5 s
 `post=0&sunshadow=0&torchshadow=0`. `npm run test:ui-browser` therefore opens the game with
 those three parameters (commit `3299e50`; on the full look the contract took 8m09s against
 its 300 s cap). It tests the UI, not the look.
+
+## Render-free browser logic stages
+
+`?render=0` is a development-only, ordinary-play opt-in that skips WebGL presentation
+(Mood and shadow resources) while keeping world setup, simulation and input active. It is
+ignored by production builds and benchmark URLs. Chromium logic stages pair it with
+`--disable-gpu`; visual stages retain SwiftShader and pixel coverage.
+
+The stages assigned render-free mode in `test/browser/stage-mode.mjs` are `inventory-scroll`,
+`melee-build-click`, `primary-action`, `full-auto`, `save-controller-regressions`, the normal
+`save-storage` cases, `insecure-saves`, `stairs-traversal`, both `reading` contracts, `firefox-ui`,
+and quarantined `firefox-first-click`. The Chromium OPFS Continue autosave scenario and the
+quarantined Firefox IndexedDB Continue scenario are intentional pixel-mode exceptions: each builds
+the production bundle and loads it through Vite preview.
+
+The `melee-build-click` logic stage is newly render-free. Add future stages to the shared mode
+helper and use its URL/launch helpers together so the render choice and browser flags stay aligned.
+Verify that the stage creates no WebGL context while its simulation and input assertions still
+pass; put pixel-only checks in an existing visual stage.
 
 Install Firefox once with `npx playwright install --with-deps firefox`, then from
 `deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).

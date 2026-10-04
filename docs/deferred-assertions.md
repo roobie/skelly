@@ -5,8 +5,10 @@ tags: [testing, process]
 created: 2026-10-04
 status: active
 read_if:
+  - you're writing a test and want to assert a value that can drift during development
   - you remove or defer an assertion of mutable development data
-  - you review a deferred value or decide whether its release contract is stable enough to pin
+  - you're deciding whether to pin a deferred value, or its pin-when trigger has come
+  - a review flags a test for pinning drifting data
 ---
 
 # Deferred assertions

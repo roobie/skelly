@@ -1364,6 +1364,14 @@ body.inventory-open #inventory-stats {
   color: #ffcf7a;
 }
 
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="look"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="post"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="lighting"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="atmosphere"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="diagnostics"] {
+  display: none;
+}
+
 #reading {
   position: fixed;
   inset: 0;

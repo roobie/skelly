@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { benchDraw, benchPostFromUrl, postUrlPart } from '../src/bench/post.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import type { Engine } from '../src/game/engine.ts';
+import type { RenderedEngine } from '../src/game/engine.ts';
 
 const params = (query: string) => new URLSearchParams(query);
 
@@ -44,7 +44,7 @@ describe('benchmark post-processing option', () => {
         },
       },
       shadows: { restore: vi.fn(), update: vi.fn() },
-    } as unknown as Engine;
+    } as unknown as RenderedEngine;
 
     benchDraw(engine, true, 23, (stats) => {
       captured = stats;

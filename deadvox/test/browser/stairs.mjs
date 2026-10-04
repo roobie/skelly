@@ -5,12 +5,14 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
+import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const { chromium } = await import('playwright');
 
 import { createServer } from 'vite';
 import { waitForSimulation } from './simulation-wait.mjs';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
@@ -63,7 +65,7 @@ const vite = await createServer({
         assert.ok(code.includes(marker));
         return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
           marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performPrimaryAction,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}}});\n${marker}`,
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performPrimaryAction,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${marker}`,
         )}`;
       },
     },
@@ -76,13 +78,7 @@ try {
   browser = await chromium.launch({
     headless: true,
     executablePath: process.env.CHROME_BIN,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting'),
   });
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const page = await browser.newPage({
@@ -96,7 +92,10 @@ try {
       errors.push(message.text());
     }
   });
-  await page.goto(`http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`);
+  const stageId = mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting';
+  await page.goto(
+    browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
+  );
   await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   await page.locator('#go').click();
   await page.waitForFunction(
@@ -109,6 +108,72 @@ try {
     mode === 'lighting',
     { timeout: 60_000 },
   );
+  if (mode === 'lighting') {
+    await page.evaluate(() => {
+      const runtime = globalThis.d7Review;
+      globalThis.d7Observed = { frames: [], outsideMood: 0, initialPost: runtime.engine.mood.post };
+      const renderMood = runtime.engine.mood.render.bind(runtime.engine.mood);
+      const renderHands = runtime.held.render.bind(runtime.held);
+      const render = runtime.engine.renderer.render.bind(runtime.engine.renderer);
+      let active;
+      runtime.engine.mood.render = (callback) => {
+        active = { post: runtime.engine.mood.post, hands: 0, targets: [], sequence: [] };
+        try {
+          return renderMood(callback);
+        } finally {
+          globalThis.d7Observed.frames.push(active);
+          globalThis.d7Observed.frames = globalThis.d7Observed.frames.slice(-12);
+          active = undefined;
+        }
+      };
+      runtime.held.render = (...args) => {
+        if (active) {
+          active.hands += 1;
+        } else {
+          globalThis.d7Observed.outsideMood += 1;
+        }
+        return renderHands(...args);
+      };
+      runtime.engine.renderer.render = (scene, camera) => {
+        if (active) {
+          let sceneKind = 'post';
+          if (scene === runtime.held.scene) {
+            sceneKind = 'hands';
+          } else if (scene === runtime.engine.scene) {
+            sceneKind = 'world';
+          }
+          active.sequence.push(sceneKind);
+          if (scene === runtime.held.scene) {
+            active.targets.push(Boolean(runtime.engine.renderer.getRenderTarget()));
+          }
+        }
+        return render(scene, camera);
+      };
+    });
+    for (const post of [true, false]) {
+      // biome-ignore lint/performance/noAwaitInLoops: Post modes need ordered measurements from the same renderer.
+      await page.evaluate((enabled) => {
+        globalThis.d7Observed.frames = [];
+        globalThis.d7Review.engine.mood.setPost(enabled);
+      }, post);
+      await page.waitForFunction(() => globalThis.d7Observed.frames.length >= 3);
+      const proof = await page.evaluate(() => ({
+        frames: globalThis.d7Observed.frames.slice(-3),
+        outsideMood: globalThis.d7Observed.outsideMood,
+      }));
+      await test(`Post=${post}: one held draw inside Mood with the correct render target`, () => {
+        assert.equal(proof.outsideMood, 0);
+        for (const frame of proof.frames) {
+          assert.equal(frame.post, post);
+          assert.equal(frame.hands, 1);
+          assert.deepEqual(frame.targets, [post]);
+          assert.equal(frame.sequence[0], 'world');
+          assert.equal(frame.sequence[1], 'hands');
+        }
+      });
+    }
+    await page.evaluate(() => globalThis.d7Review.engine.mood.setPost(globalThis.d7Observed.initialPost));
+  }
   // The contrast witnesses measure only the world, never the debug hover label or HUD.
   await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
   const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2) => {
@@ -323,18 +388,18 @@ try {
       globalThis.stairsWitness.input.pitch = -0.3;
     });
     await page.waitForTimeout(150);
-    await shot('house-upstairs-looking-down');
+    // No screenshots in render-free traversal mode; they would show no world.
     await page.evaluate(() => {
       globalThis.stairsWitness.input.yaw = -Math.PI / 2;
       globalThis.stairsWitness.input.pitch = 0;
     });
     await walk('s', 112, false, 43);
     assert.ok(Math.abs((await state('house downstairs walked')).position[1] - 43) < 0.01);
-    await shot('house-downstairs');
+
     await stage([143, 43.0001, 115]);
     await walk('s', 134, false, 35);
     assert.ok(Math.abs((await state('cellar lower landing walked')).position[1] - 35) < 0.01);
-    await shot('cellar-lower-landing');
+
     await walk('w', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
   } else {

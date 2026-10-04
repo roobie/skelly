@@ -9,7 +9,7 @@
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather } from '../core/weather.ts';
-import type { Engine } from '../game/engine.ts';
+import type { RenderedEngine } from '../game/engine.ts';
 import { applyLook } from '../render/look.ts';
 
 export const benchPostFromUrl = (params: URLSearchParams): boolean => params.get('post') === '1';
@@ -30,7 +30,7 @@ export interface BenchSceneRenderStats {
 
 /** Renderer counters sampled immediately after the scene pass, before post-processing overwrites them. */
 export const benchDraw = (
-  engine: Engine,
+  engine: RenderedEngine,
   post: boolean,
   hour: number,
   reportSceneRender?: (stats: BenchSceneRenderStats) => void,

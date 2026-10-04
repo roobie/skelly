@@ -19,23 +19,48 @@ import { createWorldSetup, type WorldSetup } from './worldSetup.ts';
 
 export interface Engine extends WorldSetup {
   skylight?: Skylight;
-  renderer: WebGLRenderer;
+  renderer?: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
   meshes: ChunkMeshes;
   /** The scene's lights and fog, for time of day. Starts in daylight, which the benchmark keeps. */
   sky: SkyTargets;
   /** Bloom, grade, film and height fog. Everything starts off; play turns it on (benchmarks never do). */
-  mood: Mood;
+  mood?: Mood;
   /** Sun and flashlight shadows. Everything starts off; play turns it on (benchmarks never do). */
+  shadows?: Shadows;
+}
+
+export interface RenderedEngine extends Engine {
+  renderer: WebGLRenderer;
+  mood: Mood;
   shadows: Shadows;
 }
 
-export const createEngine = (config: GameConfig, view: HTMLElement, stats?: StreamerStats): Engine => {
+export interface EngineOptions {
+  /** Skip all WebGL initialization while retaining simulation, collision and CPU mesh streaming. */
+  render?: boolean;
+}
+
+export function createEngine(config: GameConfig, view: HTMLElement, stats?: StreamerStats): RenderedEngine;
+export function createEngine(
+  config: GameConfig,
+  view: HTMLElement,
+  stats: StreamerStats | undefined,
+  options: EngineOptions,
+): Engine;
+export function createEngine(
+  config: GameConfig,
+  view: HTMLElement,
+  stats?: StreamerStats,
+  { render = true }: EngineOptions = {},
+): Engine {
   const { scale, radiusM } = config;
-  const renderer = new WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
-  view.appendChild(renderer.domElement);
+  const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
+  renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
+  if (renderer) {
+    view.appendChild(renderer.domElement);
+  }
 
   const scene = new Scene();
   // The far plane is set by the sky: it ends where the fog does.
@@ -72,12 +97,12 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
     meshes.cull(cam);
   };
 
-  const mood = new Mood(renderer, scene, camera);
-  const shadows = new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes);
+  const mood = renderer ? new Mood(renderer, scene, camera) : undefined;
+  const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
 
   const resize = () => {
-    renderer.setSize(view.clientWidth, view.clientHeight);
-    mood.setSize(view.clientWidth, view.clientHeight);
+    renderer?.setSize(view.clientWidth, view.clientHeight);
+    mood?.setSize(view.clientWidth, view.clientHeight);
     camera.aspect = view.clientWidth / Math.max(view.clientHeight, 1);
     camera.updateProjectionMatrix();
   };
@@ -87,12 +112,12 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   return {
     ...worldSetup,
     ...(skylight ? { skylight } : {}),
-    renderer,
+    ...(renderer ? { renderer } : {}),
     scene,
     camera,
     meshes,
     sky,
-    mood,
-    shadows,
+    ...(mood ? { mood } : {}),
+    ...(shadows ? { shadows } : {}),
   };
-};
+}

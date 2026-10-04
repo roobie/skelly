@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { handlingWaitMilliseconds } from './handling-budget.ts';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
 
@@ -53,14 +54,7 @@ try {
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--password-store=basic',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('pump-handling', ['--password-store=basic']),
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
@@ -88,7 +82,10 @@ try {
     };
   });
   await page.goto(
-    `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
+    browserStageUrl(
+      'pump-handling',
+      `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
+    ),
   );
   await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
   await page.locator('#go').click();

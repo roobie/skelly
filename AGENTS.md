@@ -1,8 +1,13 @@
+---
+read_if:
+  - you're an agent starting any task in this repository (always)
+---
+
 # Notes for coding agents
 
 Keep this file short: only what every agent needs on every task. Topic detail goes in
-the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), with a
-one-line cue under "Further docs" below.
+the relevant doc (a subproject's TROUBLESHOOTING.md, LESSONS.md and so on), whose
+`read_if` front matter says when to read it ("Further docs" below).
 
 ## Project stage: pre-pre-alpha, no backwards compatibility
 
@@ -41,6 +46,22 @@ review links. A host rule changes there, not through a PR.
 Untracked scratch and mail may use absolute paths. **Don't modify third-party files** to
 meet this rule: they stay as received, so paths embedded in their metadata (for example
 inside the `mobgen/reference/*.blend` files) are out of scope.
+
+## Zero drift: code shows what and how, docs say why and when
+
+BR, 2026-10-04. The pillar and its reasons are in `README.md`, "Zero drift". When you
+write a doc, a comment or a PR:
+
+- Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
+  no lists, tables or values copied from code.
+- A "when" names its trigger: an item ID or an issue. No "today", "currently" or
+  "newly". When your PR completes an item, resolve every doc line that names it.
+- The final reason goes in a tracked doc or ADR before the merge, not only in the PR,
+  an issue or a commit message.
+- Write a comment only for a special why.
+- Every tracked doc starts with front matter whose `read_if` lists the reasons to read
+  it. Add or update it whenever you add or change a doc.
+- A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs
 
@@ -136,10 +157,10 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 
 ## Further docs
 
-- Values tests deliberately don't assert, and when to pin them: `docs/deferred-assertions.md`.
-
-- Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
-- Lessons from past problems: `deadvox/LESSONS.md`.
+Every doc's `read_if` front matter says why you'd read it. `python3 tools/read_if.py`
+lists them all, read from the docs when you run it; add terms to filter
+(`python3 tools/read_if.py saves stairs`). Until the docs sweep (#222) gives every doc a
+`read_if`, `--missing` lists the docs that have none, and those are still worth a look.
 
 ## Before pushing: tiered checks
 

@@ -10,8 +10,12 @@ import {
   clampExposure,
   clampGrade,
   clampTorch,
+  DEFAULT_LOOK,
+  DEFAULT_MOOD,
+  DEFAULT_SHADOWS,
   type LookState,
   type MoodState,
+  nextShadowDistance,
   type ShadowState,
   TORCH_STEP,
 } from '../core/mood.ts';
@@ -56,19 +60,26 @@ type LookMeshes = Pick<
 
 export class LookControls {
   private mode: number;
-  private readonly renderer: LookRenderer;
-  private readonly meshes: LookMeshes;
-  private readonly mood: MoodControls;
+  private readonly renderer: LookRenderer | undefined;
+  private readonly meshes: LookMeshes | undefined;
+  private readonly mood: MoodControls | undefined;
   private readonly weather: Weather;
-  private readonly shadows: ShadowControls;
+  private readonly shadows: ShadowControls | undefined;
   private readonly flashlight: { strength: number };
+  private moodValue: MoodState = { ...DEFAULT_MOOD };
+  private shadowValue: ShadowState = { ...DEFAULT_SHADOWS };
+  private exposureValue = DEFAULT_LOOK.exposure;
+  private linearColorsValue = DEFAULT_LOOK.srgb;
+  private patternsValue = DEFAULT_LOOK.patterns;
+  private occlusionValue = DEFAULT_LOOK.vao;
+  private crackCheckValue = false;
 
   /** Takes the renderer as it is: play has applied the default look, and the tone mode follows it. */
   constructor(
-    renderer: LookRenderer,
-    meshes: LookMeshes,
-    mood: MoodControls,
-    environment: { weather: Weather; shadows: ShadowControls; flashlight: { strength: number } },
+    renderer: LookRenderer | undefined,
+    meshes: LookMeshes | undefined,
+    mood: MoodControls | undefined,
+    environment: { weather: Weather; shadows?: ShadowControls; flashlight: { strength: number } },
   ) {
     this.renderer = renderer;
     this.meshes = meshes;
@@ -78,19 +89,38 @@ export class LookControls {
     this.flashlight = environment.flashlight;
     this.mode = Math.max(
       0,
-      TONE_MODES.findIndex((candidate) => candidate.mapping === renderer.toneMapping),
+      renderer
+        ? TONE_MODES.findIndex((candidate) => candidate.mapping === renderer.toneMapping)
+        : TONE_MODES.findIndex((candidate) => candidate.key === DEFAULT_LOOK.tone),
     );
+    this.exposureValue = renderer?.toneMappingExposure ?? DEFAULT_LOOK.exposure;
+    this.linearColorsValue = meshes?.linearColorsOn ?? DEFAULT_LOOK.srgb;
+    this.patternsValue = meshes?.patternsOn ?? DEFAULT_LOOK.patterns;
+    this.occlusionValue = meshes?.occlusionOn ?? DEFAULT_LOOK.vao;
+    if (mood) {
+      this.moodValue = {
+        post: mood.post,
+        bloom: mood.bloom,
+        film: mood.film,
+        grade: mood.grade,
+        bloomClip: mood.bloomClip,
+      };
+    }
+    this.shadowValue = { ...(environment.shadows?.settings ?? DEFAULT_SHADOWS) };
   }
 
   /** The mood pass as it is now, in the URL's terms. */
   get moodState(): MoodState {
+    if (!this.mood) {
+      return { ...this.moodValue };
+    }
     const { post, bloom, film, grade, bloomClip } = this.mood;
     return { post, bloom, film, grade, bloomClip };
   }
 
   /** The clip bloom works from now: the override, else the active tone mapper's derived value. */
   get bloomClip(): number {
-    return this.mood.bloomClip ?? this.ownBloomClip();
+    return this.moodState.bloomClip ?? this.ownBloomClip();
   }
 
   /** The active tone mapper's own clip; under `auto` it moves with the time of day. */
@@ -100,51 +130,63 @@ export class LookControls {
 
   /** True while the clip follows the tone mapper (no override). */
   get bloomClipIsDefault(): boolean {
-    return this.mood.bloomClip === null;
+    return this.moodState.bloomClip === null;
   }
 
   /** Steps the bloom clip by `steps` of 0.5, clamped. Landing on the tone mapper's own value goes back to following it. */
   stepBloomClip(steps: number): void {
     const next = clampBloomClip(this.bloomClip + steps * BLOOM_CLIP_STEP);
     // Under `auto` the own clip is not on a tenth, so compare at the override's precision.
-    this.mood.setBloomClip(next === clampBloomClip(this.ownBloomClip()) ? null : next);
+    const value = next === clampBloomClip(this.ownBloomClip()) ? null : next;
+    this.moodValue.bloomClip = value;
+    this.mood?.setBloomClip(value);
   }
 
   /** The master: off, the frame is drawn straight to the screen with no bloom, grade, film or height fog. */
   togglePost(): void {
-    this.mood.setPost(!this.mood.post);
+    this.moodValue.post = !this.moodState.post;
+    this.mood?.setPost(this.moodValue.post);
   }
 
   toggleBloom(): void {
-    this.mood.setBloom(!this.mood.bloom);
+    this.moodValue.bloom = !this.moodState.bloom;
+    this.mood?.setBloom(this.moodValue.bloom);
   }
 
   toggleFilm(): void {
-    this.mood.setFilm(!this.mood.film);
+    this.moodValue.film = !this.moodState.film;
+    this.mood?.setFilm(this.moodValue.film);
   }
 
   /** Steps the grade strength by `steps` tenths, clamped to [0, 1]. */
   stepGrade(steps: number): void {
-    this.mood.setGrade(clampGrade(this.mood.grade + steps * GRADE_STEP));
+    this.moodValue.grade = clampGrade(this.moodState.grade + steps * GRADE_STEP);
+    this.mood?.setGrade(this.moodValue.grade);
   }
 
   /** The shadow settings as they are now, in the URL's terms. */
   get shadowState(): ShadowState {
-    return this.shadows.settings;
+    return this.shadows?.settings ?? { ...this.shadowValue };
   }
 
   /** Switching either light's shadows rebuilds the shader programs once (they differ by whether a light casts), so expect a hitch. */
   toggleSunShadows(): void {
-    this.shadows.setSun(!this.shadows.settings.sun);
+    this.shadowValue = { ...this.shadowState, sun: !this.shadowState.sun };
+    this.shadows?.setSun(this.shadowValue.sun);
   }
 
   toggleTorchShadows(): void {
-    this.shadows.setTorch(!this.shadows.settings.torch);
+    this.shadowValue = { ...this.shadowState, torch: !this.shadowState.torch };
+    this.shadows?.setTorch(this.shadowValue.torch);
   }
 
   /** Steps the sun's shadow distance through the allowed list, wrapping. */
   stepShadowDistance(): void {
-    this.shadows.stepDistance();
+    if (this.shadows) {
+      this.shadows.stepDistance();
+    } else {
+      this.shadowValue = { ...this.shadowValue, distance: nextShadowDistance(this.shadowValue.distance) };
+    }
   }
 
   /** Multiplier on the flashlight's intensity (1 is the tuned beam). */
@@ -172,25 +214,27 @@ export class LookControls {
   }
 
   get exposure(): number {
-    return this.renderer.toneMappingExposure;
+    return this.renderer?.toneMappingExposure ?? this.exposureValue;
   }
 
   get linearColors(): boolean {
-    return this.meshes.linearColorsOn;
+    return this.meshes?.linearColorsOn ?? this.linearColorsValue;
   }
 
   get patterns(): boolean {
-    return this.meshes.patternsOn;
+    return this.meshes?.patternsOn ?? this.patternsValue;
   }
 
   /** Wide ambient occlusion on ambient light. */
   get occlusion(): boolean {
-    return this.meshes.occlusionOn;
+    return this.meshes?.occlusionOn ?? this.occlusionValue;
   }
 
   cycleToneMapping(): void {
     this.mode = (this.mode + 1) % TONE_MODES.length;
-    this.renderer.toneMapping = TONE_MODES[this.mode]!.mapping;
+    if (this.renderer) {
+      this.renderer.toneMapping = TONE_MODES[this.mode]!.mapping;
+    }
   }
 
   /** The `?tone=` URL value of the current mode. */
@@ -200,7 +244,10 @@ export class LookControls {
 
   /** Steps exposure by `steps` tenths, clamped. */
   stepExposure(steps: number): void {
-    this.renderer.toneMappingExposure = clampExposure(this.exposure + steps * EXPOSURE_STEP);
+    this.exposureValue = clampExposure(this.exposure + steps * EXPOSURE_STEP);
+    if (this.renderer) {
+      this.renderer.toneMappingExposure = this.exposureValue;
+    }
   }
 
   /** Applies a state read from the URL; an unknown tone key leaves the mode alone. */
@@ -214,32 +261,48 @@ export class LookControls {
         hotCheck: boolean;
       },
   ): void {
-    applyLook(this.renderer, this.meshes, state);
+    if (this.renderer && this.meshes) {
+      applyLook(this.renderer, this.meshes, state);
+    }
+    this.exposureValue = state.exposure;
+    this.linearColorsValue = state.srgb;
+    this.patternsValue = state.patterns;
+    this.occlusionValue = state.vao;
     this.flashlight.strength = clampTorch(state.torch);
     const mode = TONE_MODES.findIndex((candidate) => candidate.key === state.tone);
     if (mode >= 0) {
       this.mode = mode;
     }
     this.weather.fogginess = clampFogginess(state.fogginess);
-    this.mood.restore({
+    this.moodValue = {
+      post: state.post,
+      bloom: state.bloom,
+      film: state.film,
+      grade: state.grade,
+      bloomClip: state.bloomClip,
+    };
+    this.mood?.restore({
       post: state.post,
       bloom: state.bloom,
       film: state.film,
       grade: state.grade,
       bloomClip: state.bloomClip,
     });
-    this.shadows.restore(state.shadows);
-    this.mood.setCrackCheck(state.crackCheck);
+    this.shadowValue = { ...state.shadows };
+    this.shadows?.restore(state.shadows);
+    this.crackCheckValue = state.crackCheck;
+    this.mood?.setCrackCheck(state.crackCheck);
     setHotCheck(state.hotCheck);
   }
 
   /** Background drawn magenta: magenta pixels on the world are holes that show it. */
   get crackCheck(): boolean {
-    return this.mood.crackCheck;
+    return this.mood?.crackCheck ?? this.crackCheckValue;
   }
 
   toggleCrackCheck(): void {
-    this.mood.setCrackCheck(!this.mood.crackCheck);
+    this.crackCheckValue = !this.crackCheck;
+    this.mood?.setCrackCheck(this.crackCheckValue);
   }
 
   /** Lit fragments that are NaN, negative or over-bright drawn cyan. */
@@ -252,15 +315,18 @@ export class LookControls {
   }
 
   toggleLinearColors(): void {
-    this.meshes.setLinearColors(!this.meshes.linearColorsOn);
+    this.linearColorsValue = !this.linearColors;
+    this.meshes?.setLinearColors(this.linearColorsValue);
   }
 
   togglePatterns(): void {
-    this.meshes.setPatterns(!this.meshes.patternsOn);
+    this.patternsValue = !this.patterns;
+    this.meshes?.setPatterns(this.patternsValue);
   }
 
   /** A uniform, so no remesh and no recompile. */
   toggleOcclusion(): void {
-    this.meshes.setOcclusion(!this.meshes.occlusionOn);
+    this.occlusionValue = !this.occlusion;
+    this.meshes?.setOcclusion(this.occlusionValue);
   }
 }
