@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
 import type { Body } from '@mobgen/core/body.ts';
 
 export const SHAMBLER_PITCH_CLAMP = [0.9, 1.1] as const;

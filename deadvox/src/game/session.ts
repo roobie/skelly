@@ -4,12 +4,14 @@
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
 
+// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
+import type { Body as MobBody } from '@mobgen/core/body.ts';
+// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
+import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { Character } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
-import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
@@ -70,8 +72,8 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { Survival } from './survival.ts';
 import { SHAMBLER_PITCH_CLAMP, shamblerBodyPitch } from './shamblerAudio.ts';
+import { Survival } from './survival.ts';
 
 const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
@@ -256,17 +258,25 @@ export const createSession = (options: SessionOptions) => {
     event: SoundEventId,
     position: Vec3,
     time: number,
-    { player, sourceLabel = null, listenerRelative = false, body }: SoundEmissionMeta & { player: boolean; body?: MobBody },
+    {
+      player,
+      sourceLabel = null,
+      listenerRelative = false,
+      body: mobBody,
+    }: SoundEmissionMeta & {
+      player: boolean;
+      body?: MobBody;
+    },
   ): boolean => {
     const selected = soundPicker.pick(event, time);
     if (!selected) {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const pitch = body
+    const pitch = mobBody
       ? Math.max(
           SHAMBLER_PITCH_CLAMP[0],
-          Math.min(SHAMBLER_PITCH_CLAMP[1], selected.pitch * shamblerBodyPitch(body)),
+          Math.min(SHAMBLER_PITCH_CLAMP[1], selected.pitch * shamblerBodyPitch(mobBody)),
         )
       : selected.pitch;
     const pick = { ...selected, pitch };
@@ -419,7 +429,12 @@ export const createSession = (options: SessionOptions) => {
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
     onSound: (event, position, zombie) =>
-      playWorldSound(event, position, sim.time, zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {}),
+      playWorldSound(
+        event,
+        position,
+        sim.time,
+        zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {},
+      ),
     onFootstep: (position, id, mode, zombie) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
         const block = world.getBlock(x, y, z);

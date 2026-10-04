@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen resolves to the sibling mobgen source tree.
 import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { describe, expect, it } from 'vitest';
 import { SHAMBLER_PITCH_CLAMP, shamblerBodyPitch } from '../src/game/shamblerAudio.ts';
 
 const bodyHeight = (body: ReturnType<typeof shamblerFigure>['realized']['body']): number => {
