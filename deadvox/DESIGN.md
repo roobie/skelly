@@ -1,3 +1,9 @@
+---
+read_if:
+  - you need the rationale behind Deadvox's core design decisions
+  - you change shambler navigation or floor-transition behavior
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -528,17 +534,31 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
   rain washes out).
-- **Behaviour:** a small state machine: idle, wander, investigate, chase,
-  attack, lost track. Pathfinding runs on the block grid and allows one-block
-  steps, jumps and drops. It handles dynamic changes, so a door you close
-  changes the route.
-- **Level of detail:**
+- **Navigation rationale:** Collision-aware routing prevents false progress
+  through blockers, while bounded work protects the shared simulation tick.
+  Keeping route planning separate from physics preserves collision ownership.
+  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+- **Storeys:** Matching horizontal projections could connect disconnected
+  floors and falsely complete an unreachable goal. Far-hearing direction must
+  not manufacture a cross-floor target. See `deadvox/src/core/zombies.ts`,
+  `sameRouteFloor` and `farBearingTarget`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+- **Level of detail:** No background flow-field or abstract-horde behavior is
+  part of this design; off-screen simulation needs a separate cost/value case.
+  See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
 
-  | Level | Where | Simulation |
-  | --- | --- | --- |
-  | Active | Within about 48 m | Full AI at 20 Hz, per-frame physics |
-  | Background | Loaded chunks further away | 2 Hz, steering along a shared flow field |
-  | Abstract | Unloaded chunks | Hordes moving as groups on the region map |
+**Decided (BR, 2026-10-04):**
+
+- "At some point we will make everything destructible. Door, walls, appliances,
+  furniture et[c] and yes, normal doors should be possible to breach by an
+  ordinary shambler, given enough time. But the overarching idea is to keep it
+  pretty aligned with how CDDA works"
+- "to answer the question here and now: no, let's not make shamblers breach
+  doors"
+
+A destructive-door mechanic needs its own gameplay contract, so navigation
+must not add one implicitly. See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
 
 ### Models
 

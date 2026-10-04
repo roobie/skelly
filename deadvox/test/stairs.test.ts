@@ -8,6 +8,7 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { TemplateDef } from '../src/core/schema.ts';
+import { planShamblerRoute } from '../src/core/shamblerRoutes.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedFlights, placedPoint, type Turn } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -216,4 +217,40 @@ describe('explicit storeys and ordinary-block flights', () => {
       expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
     },
   );
+
+  it('plans between the cellar and ground through the authored stair_demo flight', () => {
+    const scale = makeScale(0.5);
+    const layout = structuredClone(registry.layouts.get('stair_demo')!);
+    layout.buildings = [{ template: 'stairs_cabin', position: [59.5, 17, 59.5], rotation: 0 }];
+    const site = new AuthoredSite(1, registry, scale, layout);
+    const placement = site.placements[0]!;
+    const world = new World();
+    const terrain = {
+      seed: 1,
+      scale,
+      blocks: {
+        grass: registry.blockIds.get('grass')!,
+        dirt: registry.blockIds.get('dirt')!,
+        stone: registry.blockIds.get('stone')!,
+        sand: registry.blockIds.get('sand')!,
+      },
+      surface: site.surface,
+      stamp: (chunk: Parameters<typeof site.stamp>[0]) => site.stamp(chunk),
+    };
+    const columns = [Math.floor(placement.origin[0] / CHUNK), Math.floor(placement.origin[2] / CHUNK)];
+    for (let cx = columns[0]!; cx <= columns[0]! + 1; cx++) {
+      for (let cz = columns[1]!; cz <= columns[1]! + 1; cz++) {
+        for (const chunk of generateColumn(terrain, cx, cz)) {
+          world.addChunk(chunk);
+        }
+      }
+    }
+    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
+    const [flight] = site.stairFlights!;
+    const body = { pos: flight!.lower, vel: [0, 0, 0] as Vec3, halfWidth: 0.3, height: 1.8, onGround: true };
+    const route = planShamblerRoute(body, flight!.upper, site.stairFlights!, isSolid);
+    expect(route).toBeDefined();
+    expect(route!.at(-1)).toEqual(flight!.upper);
+    expect(route!.some((point) => point[1] > flight!.lower[1])).toBe(true);
+  });
 });
